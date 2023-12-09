@@ -1,0 +1,148 @@
+.content-item {
+    background-color: #41445a;
+    margin: 15px;
+    padding: 15px;
+    border-radius: 10px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.content-metadata {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 10px;
+}
+
+.like-button, .dislike-button, .comment-button, .post-comment {
+    cursor: pointer;
+    padding: 5px 10px;
+    margin-right: 5px;
+    background-color: #2f3966;
+    color: white;
+    border: none;
+    border-radius: 10px;
+    transition: background-color 0.3s;
+}
+.like-button:hover, .dislike-button:hover, .comment-button:hover, .post-comment:hover{
+    background-color: #1f2956;
+}
+.like-count, .dislike-count, .comment-count, .view-count {
+    font-size: 14px;
+    margin-right: 5px;
+}
+
+.comment-section{
+    display: block;
+    width: 100%;
+}
+
+.comment-input{
+    border-radius: 10px;
+    height: 50px;
+    width: 100%;
+}
+
+.reply-button{
+    cursor: pointer;
+    font-size: 20;
+    border-radius: 10px;
+    border: none;
+    background-color: #2f3966;
+    color: white;
+    margin-left: 10px;
+    padding: 5px 10px;
+    transition: background-color 0.3s;
+}
+
+.reply-button:hover{
+    background-color: #1f2956;
+}
+
+.comment-profile-container{
+    position: relative;
+    display: flex;
+    margin-bottom: 5px;
+    align-items: center;
+}
+
+.horizontal-container {
+    position: relative;
+    border-left: 2px solid #6b6b6b;
+    margin-bottom: 10px;
+    padding-left: 10px;
+    display: flex;
+    align-items: center;
+}
+
+.username {
+    font-weight: bold;
+    margin-left: 5px;
+}
+
+.comment-text{
+    margin-left: 10px;
+}
+
+.like-dislike-container{
+    display: inline-flex;
+    align-items: center;
+    margin-left: 10px;
+}
+
+.like-dislike-arrows {
+    background-color: transparent;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    background-size: contain;
+    background-repeat: no-repeat;
+}
+
+.net-likes{
+    margin: 0 5px;
+}
+
+.reply-container {
+    margin-top: 10px;
+    display: flex;
+    width: 100%;
+}
+
+.reply-container textarea {
+    flex-grow: 1;
+    margin-right: 10px;
+    border-radius: 10px;
+    margin-bottom: 10px;
+}
+
+.reply-container button {
+    border-radius: 10px;
+    border: none;
+    flex-shrink: 0;
+    color: white;
+    background-color: #2f3966;
+    transition: background-color 0.3s;
+}
+
+.reply-container button:hover{
+    background-color: #1f2956;
+}
+
+.profile-photo{
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+}
+
+.uploader-info{
+    display: flex;
+    align-items: center;
+    position: relative;
+}
+
+#uploader-photo{
+    height: 40px; 
+    width: 40px; 
+    border-radius: 50%;
+}
+

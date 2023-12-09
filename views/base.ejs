@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+<head>
+   <link rel="stylesheet" href="/static/css/base.css">
+   <link rel="stylesheet" href="/static/css/profile.css">
+   <link rel="stylesheet" href="/static/css/contentFeed.css">
+   <script src="/reactions.js"></script>
+   <script src="/commentsRender.js"></script>
+   <link href="/static/frontend/build/static/css/main.e29de497.css" rel="stylesheet">
+</head>
+<body>
+   <div class="container">
+       <aside>
+           <div class="profile-info">
+               <a id="profileLink" href="/profiles/<%= logged_in_profile_id %>">
+                  <img class="profile-image" src="/static/<%= logged_in_profile_photo %>" alt="Profile Photo">
+               </a>
+               <p id="logged_in_username"><%= logged_in_username %></p>
+           </div>
+           <nav>
+               <ul>
+                  <li><a href="/home">Home</a></li>
+                  <li><a href="/recommended">Recommended</a></li>
+                  <li><a href="/home">Following</a></li>
+                  <li><a href="/home">Personal</a></li>
+               </ul>
+           </nav>
+           <div id="upload-section">
+               <p>Upload content</p>
+               <form id="upload-form" enctype="multipart/form-data" action="/upload" method="post">
+                  <input type="text" name="title" placeholder="Enter title">
+                  <input type="file" name="file">
+                  <input id="upload-submit-button" type="submit" value="Upload">
+               </form>
+               <script src="/upload.js"></script>
+               <div id="confirmation-message"></div>
+           </div>
+       </aside>
+       <main>
+           <header>
+               <div class="spacer"></div>
+               <form id="search-form" action="/search" method="get">
+                  <input type="text" id="keyword" name="keyword" placeholder="Search...">
+                  <input id="search-submit-button" type="submit" value="Search">
+               </form>
+               <div class="spacer"></div>
+               <div id="chat-app-root"></div>
+           </header>
+           <div class="content">
+                <%- include(content) %>
+           </div>
+       </main>
+   </div>
+   <script src="/static/frontend/build/static/js/main.626fe4e3.js"></script>
+</body>
+</html>
