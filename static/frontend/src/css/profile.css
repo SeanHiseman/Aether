@@ -1,0 +1,27 @@
+.small-button{
+    padding: 5px 10px;
+    margin-right: 5px;
+    background-color: #2f3966;
+    color: white;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    display: inline-block;
+    transition: background-color 0.3s;
+}
+
+.small-button:hover{
+    background-color: #1f2956;
+}
+
+#bio-change-text-area{
+    width: 25%;
+    padding: 10px;
+    border: none;
+    border-radius: 10px;
+    background: white;
+}
+
+.friend-request-button-container{
+    margin: 10px;
+}

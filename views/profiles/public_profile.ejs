@@ -1,0 +1,16 @@
+<div class="profile-container">
+    <img class="large-profile-image" src="/static/<%= current_profile_photo %>" alt="Profile Picture">
+    <p id="large-username-text"><%= username %></p>
+    <p id="profile-bio"><%= profile_bio %></p>
+     
+    <div id="friend-request-root" data-receiver-id="<%= current_profile_id %>"></div>
+    </div>
+    <div class="results-wrapper">
+    <div id="results">
+        <% user_content.forEach(function(item) { %>
+            <%- include('../content_widget', {item: item}) %>
+        <% }); %>
+    </div>
+</div>
+
+    
