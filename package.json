@@ -36,7 +36,6 @@
     "socket.io": "^4.7.2",
     "socket.io-client": "^4.7.2",
     "socket.io-parser": "^4.2.4",
-    "sqlite3": "^5.1.6",
     "uuid": "^9.0.1",
     "ws": "^8.11.0",
     "xmlhttprequest-ssl": "^2.0.0"

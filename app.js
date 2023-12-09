@@ -5,11 +5,11 @@ import { fileURLToPath } from 'url';
 import { join } from 'path';
 import { json, urlencoded } from 'express';
 import path from 'path';
-import { Sequelize } from 'sequelize';
 import { Server } from 'socket.io';
 import session from 'express-session';
 import authentication from './routes/authentication.js';
 import commentsLoad from './routes/commentsLoad.js';
+import sequelize  from './databaseSetup.js';
 import directMessages from './routes/directMessages.js';
 import profiles from './routes/profiles.js';
 import routes from './routes/routes.js';
@@ -44,13 +44,6 @@ app.use('/', utils);
 
 io.on('connection', (socket) => {
     directMessages(socket);
-});
-
-//not actual username and password
-const sequelize = new Sequelize('aether', 'root', 'LETMEINpls26', {
-    logging: false,
-    host: 'localhost',
-    dialect: 'mysql',
 });
 
 sequelize.authenticate()
