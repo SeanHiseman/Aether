@@ -84,10 +84,11 @@ header {
 #search-form input[type="text"] {
     flex-grow: 1;
     margin-right: 10px;
+    margin-top: 10px;
     border: none;
     border-radius: 20px;
     padding: 5px;
-    min-height: 30px;
+    min-height: 40px;
 }
 
 #search-submit-button {
@@ -96,8 +97,9 @@ header {
     background-color: #2f3966;
     color: white;
     border: none;
+    margin-top: 10px;
     border-radius: 20px;
-    min-height: 30px;
+    min-height: 40px;
     min-width: 60px;
     transition: background-color 0.3s;
 }
