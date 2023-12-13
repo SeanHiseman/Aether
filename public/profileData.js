@@ -21,9 +21,10 @@ export default async function (req, columns = ['profile_id', 'profile_photo', 'b
         }]
     });
 
-    if (!user || !user.Profile) {
+    const profile = user.dataValues.profile;
+    if (!profile) {
         return columns.map(() => null);
     }
 
-    return columns.map(col => user.Profile[col]);
+    return columns.map(col => profile[col]);
 };

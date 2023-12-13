@@ -12,6 +12,7 @@ router.get('/home', async (req, res) => {
     }
 
     const profile_data = await profileData(req, ['profile_id', 'profile_photo']);
+
     if (profile_data) {
         const [logged_in_profile_id, logged_in_profile_photo] = profile_data;
         res.render('base', {
@@ -89,9 +90,9 @@ router.get('/search', async (req, res) => {
 
     //Search results with user and profile info
     results.forEach(item => {
-        item.username = item.User.username || 'Anonymous';
-        item.profile_id = item.User.Profile.profile_id;
-        item.profile_photo = item.User.Profile.profile_photo;
+        item.username = item.user.username || 'Anonymous';
+        item.profile_id = item.user.profile.profile_id;
+        item.profile_photo = item.user.profile.profile_photo;
     });
 
     //Render the results using a view template
