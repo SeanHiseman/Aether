@@ -9,10 +9,11 @@ import { Server } from 'socket.io';
 import session from 'express-session';
 import authentication from './routes/authentication.js';
 import commentsLoad from './routes/commentsLoad.js';
-import sequelize  from './databaseSetup.js';
 import directMessages from './routes/directMessages.js';
+import groups from './routes/groups.js';
 import profiles from './routes/profiles.js';
 import routes from './routes/routes.js';
+import sequelize  from './databaseSetup.js';
 import utils from './routes/utils.js';
 
 const app = express();
@@ -38,6 +39,7 @@ app.use(session({
 app.use('/', authentication);
 app.use('/', commentsLoad);
 app.use('/', directMessages);
+app.use('/', groups);
 app.use('/profiles', profiles);
 app.use('/', routes);
 app.use('/', utils);
