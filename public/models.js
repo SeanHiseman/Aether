@@ -66,6 +66,26 @@ Groups.belongsTo(Groups, { as: 'ParentGroup', foreignKey: 'parent_id' });
 Groups.hasMany(Groups, { as: 'SubGroups', foreignKey: 'parent_id' });
 
 
+const Channels = sequelize.define('channels', { 
+  channel_id: { type: STRING(36), primaryKey: true}, 
+  channel_name: { type: STRING(100), allowNull: false}, 
+  group_id: { type: STRING(36), allowNull: false}, 
+}); 
+
+Channels.belongsTo(Groups, { foreignKey: 'group_id' }); 
+Groups.hasMany(Channels, { foreignKey: 'group_id' }); 
+
+
+const ChannelMessages = sequelize.define('channel_messages', { 
+  message_id: { type: STRING(36), primaryKey: true }, 
+  message_content: { type: STRING(1000), allowNull: false}, 
+  channel_id: { type: STRING(36), allowNull: false}, 
+}); 
+
+ChannelMessages.belongsTo(Channels, { foreignKey: 'channel_id' }); 
+Channels.hasMany(ChannelMessages, { foreignKey: 'channel_id' });
+
+
 const Comments = sequelize.define('comments', {
   comment_id: { type: STRING(36), primaryKey: true },
   post_id: { type: STRING(36), allowNull: false },
@@ -145,6 +165,8 @@ export {
     Posts,
     Groups,
     UserGroups,
+    Channels,
+    ChannelMessages,
     Comments,
     Friends,
     FriendRequests,
