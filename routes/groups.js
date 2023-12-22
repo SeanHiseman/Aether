@@ -1,3 +1,4 @@
+import { Groups, Channels } from '../public/models.js';
 import { Router } from 'express';
 import profileData from '../public/profileData.js'; 
 const router = Router();
@@ -27,4 +28,35 @@ router.get('/group', async (req, res) => {
         });
     }
 });
+
+//Create a new group
+router.post('/create_group', async (req, res) => {
+    try {
+        const { name, description, parent_id } = req.body;
+        const newGroup = await Groups.create({ name, description, parent_id});
+        res.status(201).json(newGroup);
+    } catch (error) {
+        res.status(400).json({ error: error.message });
+    }
+});
+
+//Create new channel within a group
+router.post('/groups/:groupId/channels', async (req, res) => {
+    try {
+        const { groupId } = req.params;
+        const { channel_name } = req.body;
+
+        //Checks if group can be found
+        const group = await Groups.findByPk(groupId);
+        if (!group) {
+            return res.status(404).jso({ error: 'Group not found'});
+        }
+
+        const newChannel = await Channels.create({ channel_name, group_id: groupId});
+        res.status(201).json(newChannel);
+    } catch (error) {
+        res.status(400).json({ error: error.message });
+    }
+});
+
 export default router;
