@@ -49,6 +49,7 @@ const Groups = sequelize.define('groups', {
   name: { type: STRING(100), allowNull: false},
   description: { type: TEXT, allowNull: true},
   follower_count: { type: INTEGER, defaultValue: 0},
+  date_created: { type: DATE, defaultValue: NOW},
 }, { tableName: 'groups', timestamps: false });
 
 
@@ -70,6 +71,7 @@ const Channels = sequelize.define('channels', {
   channel_id: { type: STRING(36), primaryKey: true}, 
   channel_name: { type: STRING(100), allowNull: false}, 
   group_id: { type: STRING(36), allowNull: false}, 
+  date_created: { type: DATE, defaultValue: NOW},
 }); 
 
 Channels.belongsTo(Groups, { foreignKey: 'group_id' }); 
@@ -80,6 +82,7 @@ const ChannelMessages = sequelize.define('channel_messages', {
   message_id: { type: STRING(36), primaryKey: true }, 
   message_content: { type: STRING(1000), allowNull: false}, 
   channel_id: { type: STRING(36), allowNull: false}, 
+  message_time: { type: DATE, defaultValue: NOW},
 }); 
 
 ChannelMessages.belongsTo(Channels, { foreignKey: 'channel_id' }); 
