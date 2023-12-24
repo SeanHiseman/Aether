@@ -48,7 +48,7 @@ const Groups = sequelize.define('groups', {
   parent_id: { type: STRING(36), allowNull: true },
   name: { type: STRING(100), allowNull: false},
   description: { type: TEXT, allowNull: true},
-  follower_count: { type: INTEGER, defaultValue: 0},
+  member_count: { type: INTEGER, defaultValue: 0},
   date_created: { type: DATE, defaultValue: NOW},
 }, { tableName: 'groups', timestamps: false });
 
