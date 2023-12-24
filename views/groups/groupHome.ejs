@@ -1,20 +1,21 @@
 <head>
-    <title>Group</title>
+    <title><%= group.name &></title>
 </head>
 <body>
     <header>
         <div class="banner">
-            <img class="group-photo" src="../static/images/site_images/blank-group-icon.jpg">
-            <h1>Group</h1>
+            <img class="group-photo" src="<% = group.group_photo %>" alt="<%= group.name %>">
+            <h1><% = group.name %></h1>
+            <p><%= group.member_count %> followers</p>
         </div>
     </header>
     <main>
         <div class="channels">
             <h2>Channels</h2>
             <ul>
-                <li>Hello</li>
-                <li>There</li>
-                <li>Welcome</li>
+                <% group.channels.forEach(function(channel) { %>
+                    <li><%= channel %></li>
+                <% }); %>
             </ul>
         </div>
     </main>
