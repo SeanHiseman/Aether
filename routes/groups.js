@@ -11,7 +11,7 @@ router.get('/group', async (req, res) => {
     }
 
     const profile_data = await profileData(req, ['profile_id', 'profile_photo']);
-
+    //Gets profile data for logged in user
     if (profile_data) {
         const [logged_in_profile_id, logged_in_profile_photo] = profile_data;
         res.render('base', {
@@ -32,8 +32,22 @@ router.get('/group', async (req, res) => {
 //Create a new group
 router.post('/create_group', async (req, res) => {
     try {
-        const { name, description, parent_id } = req.body;
-        const newGroup = await Groups.create({ name, description, parent_id});
+        const { name, description, parent_id, is_private, user_id } = req.body;
+        const group_photo = req.body.new_group_profile_photo || "../static/images/site_images/blank-group-icon.jpg";
+        const newGroup = await Groups.create({ 
+            name, 
+            description, 
+            parent_id,
+            is_private: is_private === 'on',
+            group_photo,
+        });
+
+        //Add creating user to the group
+        await UserGroups.create({
+            user_id: user_id,
+            group_id: newGroup.group_id
+        });
+
         res.status(201).json(newGroup);
     } catch (error) {
         res.status(400).json({ error: error.message });
@@ -56,6 +70,27 @@ router.post('/groups/:groupId/channels', async (req, res) => {
         res.status(201).json(newChannel);
     } catch (error) {
         res.status(400).json({ error: error.message });
+    }
+});
+
+//Adds users to a group:
+router.post('/join_group', async (req, res) => {
+    try{
+        const { group_id } = req.body;
+        const user_id = req.session.userId;
+
+        await UserGroups.create({
+            user_id: user_id,
+            group_id: group_id
+        });
+
+        //Increment group member count
+        const group = await Groups.findByPk(group_id);
+        await group.increment('member_count');
+
+        res.status(200).json();
+    } catch (error) {
+        res.status(500).json({ error: error.message });
     }
 });
 
