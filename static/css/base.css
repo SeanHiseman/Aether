@@ -135,7 +135,7 @@ aside nav ul li a:hover {
     background-color: #444;
 }
 
-#upload-section {
+#upload-section, #create-group-section {
     display: flex;
     flex-direction: column;
     justify-content: flex-start;
@@ -167,7 +167,7 @@ aside nav ul li a:hover {
     margin-bottom: 10px;
 }
 
-#upload-submit-button {
+#upload-submit-button, #create-group-button {
     padding: 6px 12px;
     background-color: #2f3966;
     color: white;
@@ -178,7 +178,7 @@ aside nav ul li a:hover {
     transition: background-color 0.3s;
 }
 
-#upload-submit-button:hover, #search-submit-button:hover{
+#upload-submit-button:hover, #search-submit-button:hover, #create-group-button:hover{
     background-color: #1f2956;
 }
 

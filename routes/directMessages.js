@@ -5,7 +5,7 @@ import { Conversations, Friends, UserConversations, Users, Messages } from '../p
 
 const router = Router();
 
-// Get Friends
+//Get Friends
 router.get('/get_friends', async (req, res) => {
     const userId = req.session.user_id;
     const user = await Users.findOne({ where: { user_id: userId } });
@@ -75,7 +75,7 @@ router.get('/get_chat_messages/:conversation_id', async (req, res) => {
     res.json(messagesData);
 });
 
-//Socket.io Event for Sending Message
+//Socket.io event for sending Message
 export const directMessagesSocket = (socket) => {
     socket.on('send_message', async (message) => {
         const messageLength = message.content.length;
