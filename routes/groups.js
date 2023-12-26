@@ -55,7 +55,7 @@ router.post('/create_group', async (req, res) => {
 });
 
 //Create new channel within a group
-router.post('/groups/:groupId/channels', async (req, res) => {
+router.post('/add_channel', async (req, res) => {
     try {
         const { groupId } = req.params;
         const { channel_name } = req.body;
@@ -73,7 +73,7 @@ router.post('/groups/:groupId/channels', async (req, res) => {
     }
 });
 
-//Adds users to a group:
+//Allows users to join a group
 router.post('/join_group', async (req, res) => {
     try{
         const { group_id } = req.body;
