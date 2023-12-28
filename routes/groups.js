@@ -1,6 +1,6 @@
-import { Groups, Channels } from '../public/models.js';
+import { Groups, Channels } from '../models/models.js';
 import { Router } from 'express';
-import profileData from '../public/profileData.js'; 
+import profileData from '../controllers/profileData.js'; 
 const router = Router();
 
 //Group home page route

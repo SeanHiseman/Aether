@@ -3,7 +3,7 @@ import multer from 'multer';
 import { join, extname } from 'path';
 import { renameSync, statSync } from 'fs';
 import { v4 as uuidv4 } from 'uuid';
-import { Posts, Users } from '../public/models.js'; 
+import { Posts, Users } from '../models/models.js'; 
 
 const router = Router();
 
@@ -52,11 +52,7 @@ router.post('/upload', upload.single('file'), async (req, res) => {
                 content_type: content_type,
                 duration: duration,
                 size: file_size,
-                comments: 0,
-                views: 0,
-                likes: 0,
-                dislikes: 0,
-                userId: user.id, //edit for new database model
+                userId: user.user_id,
                 timestamp: timestamp,
             });
 

@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { v4 } from 'uuid';
 import { Op } from 'sequelize';
-import { Conversations, Friends, UserConversations, Users, Messages } from '../public/models.js';
+import { Conversations, Friends, UserConversations, Users, Messages } from '../models/models.js';
 
 const router = Router();
 

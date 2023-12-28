@@ -1,4 +1,4 @@
-import { Comments, Posts, Profiles, Users } from '../public/models.js';
+import { Comments, Posts, Profiles, Users } from '../models/models.js';
 import { Router } from 'express';
 import session from 'express-session';
 import { v4 as uuidv4 } from 'uuid';

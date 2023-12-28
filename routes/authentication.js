@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { hash, compare } from 'bcrypt';
 import { v4 } from 'uuid';
-import { Users, Profiles } from '../public/models.js';
+import { Users, Profiles } from '../models/models.js';
 
 const router = Router();
 
