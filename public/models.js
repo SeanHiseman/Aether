@@ -52,7 +52,8 @@ const Groups = sequelize.define('groups', {
   group_id: { type: STRING(36), primaryKey: true },
   parent_id: { type: STRING(36), allowNull: true },
   name: { type: STRING(100), allowNull: false },
-  description: { type: TEXT, allowNull: true  },
+  description: { type: STRING(1000), allowNull: true },
+  group_photo: { type: TEXT, allowNull: true },
   member_count: { type: INTEGER, defaultValue: 0 },
   date_created: { type: DATE, defaultValue: NOW },
 }, { tableName: 'groups', timestamps: false });
@@ -61,7 +62,9 @@ const Groups = sequelize.define('groups', {
 //Allows many-to-many relationship between users and groups
 const UserGroups = sequelize.define('user_groups', {
   user_id: { type: STRING(36), primaryKey: true, references: { model: 'Users', key: 'user_id' }},
-  group_id: { type: STRING(36), primaryKey: true, references: { model: 'Groups', key: 'group_id'}}
+  group_id: { type: STRING(36), primaryKey: true, references: { model: 'Groups', key: 'group_id'}},
+  is_mod: { type: BOOLEAN, defaultValue: false },
+  is_admin: { type: BOOLEAN, defaultValue: false },
 }, { tableName: 'user_groups', timestamps: false });
 
 //Groups relationships
