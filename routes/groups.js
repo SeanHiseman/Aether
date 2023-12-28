@@ -32,20 +32,22 @@ router.get('/group', async (req, res) => {
 //Create a new group
 router.post('/create_group', async (req, res) => {
     try {
-        const { name, description, parent_id, is_private, user_id } = req.body;
+        const { name, parent_id, is_private, user_id } = req.body;
         const group_photo = req.body.new_group_profile_photo || "../static/images/site_images/blank-group-icon.jpg";
         const newGroup = await Groups.create({ 
-            name, 
-            description, 
             parent_id,
-            is_private: is_private === 'on',
+            name, 
             group_photo,
+            member_count: 1,
+            is_private: is_private === 'on',
         });
 
-        //Add creating user to the group
+        //Add creating user to the group, giving them permissions
         await UserGroups.create({
             user_id: user_id,
-            group_id: newGroup.group_id
+            group_id: newGroup.group_id,
+            is_mod: true,
+            is_admin: true, 
         });
 
         res.status(201).json(newGroup);
@@ -82,6 +84,7 @@ router.post('/join_group', async (req, res) => {
         await UserGroups.create({
             user_id: user_id,
             group_id: group_id
+            //not admin and mod default anyway
         });
 
         //Increment group member count
