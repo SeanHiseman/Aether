@@ -9,12 +9,13 @@ router.get('/register', (req, res) => {
     res.render('site_entrance/register');
 });
 
-router.get('/register', async (req, res) => {
+router.post('/register', async (req, res) => {
     try{
         const user_id = v4();
         const username = req.body.username;
         const password = req.body.password;
 
+        //Add user info to database, including encrypted password
         const hashedPassword = await hash(password, 10);
         const UserSince = new Date();
         const newUser = await Users.create({
@@ -31,8 +32,13 @@ router.get('/register', async (req, res) => {
         res.redirect('/login');
     }
     catch (error) {
-        console.error(error);
-        res.status(500).send('Server Error');
+        //If username is already taken
+        if (error.name === 'SequelizeUniqueConstraintError') {
+            res.status(400).send('Username already taken');
+        } else{
+            console.error(error);
+            res.status(500).send('Server Error');
+        }
     }
 });
 
@@ -53,12 +59,12 @@ router.post('/login', async (req, res) => {
             res.redirect('/home');
         }
         else {
-            res.redirect('/login');
+            res.json({ success: false, message: 'Invalid username or password' });
         }
     }
     catch (error) {
         console.error(error);
-        res.status(500).send('Server Error');
+        res.status(500).json({ success: false, message: 'Server error' });
     }
 });
 

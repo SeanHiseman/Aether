@@ -1,11 +1,11 @@
 import axios from 'axios';
-import React from 'react';
+import React, { useState } from 'react';
 import { useHistory } from 'react-router-dom';
 import '../css/logins.css'; 
 
 function Login() {
+    const [error, setError] = useState('');
     const history = useHistory();
-   
     const handleSubmit = async (event) => {
         event.preventDefault();
         const formData = new FormData(event.target);
@@ -13,17 +13,14 @@ function Login() {
         const password = formData.get('password');
         
         try {
-            const response = await axios.post('/login', {
-                username,
-                password
-            });
+            const response = await axios.post('/login', { username, password });
 
             //successful login
-            if (response.status === 200 || response.status === 201) {
+            if (response.data.success) {
                 history.push('/home');
             } else {
-                //return to login if unsuccessful
-                history.push('/login');
+                //If login unsuccessful
+                setError(response.data.message);
             }
         } catch (error) {
             setError(error.response ? error.response.data.message : 'Network error');
@@ -36,6 +33,7 @@ function Login() {
                 <h1>Login</h1>
                 <a className="link" href="/register">Register</a>
             </div>
+            {error && <p className="error-message">{error}</p>}
             <form method="post" onSubmit={handleSubmit}>
                 <input className="input-box" type="text" name="username" placeholder="Username" required />
                 <input className="input-box" type="password" name="password" placeholder="Password" required />
