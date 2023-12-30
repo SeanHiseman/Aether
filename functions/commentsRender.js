@@ -1,3 +1,4 @@
+//This code was written before I started to use React, it will be converted
 async function toggleCommentSection(postId) {
     var commentSection = document.getElementById(`comment-section-${postId}`);
     commentSection.style.display = (commentSection.style.display === 'none' || commentSection.style.display === '') ? 'block' : 'none';

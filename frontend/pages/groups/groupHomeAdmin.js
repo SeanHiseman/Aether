@@ -2,7 +2,7 @@ import axios from 'axios';
 import React from 'react';
 import '../css/groups.css'; 
 
-function GroupPage({ group }) {
+function GroupHomeAdmin({ group }) {
     //Uploads content to group
     const handleUploadSubmit = async (event) => {
         event.preventDefault();
@@ -71,4 +71,4 @@ function GroupPage({ group }) {
     );
 }
 
-export default GroupPage;
+export default GroupHomeAdmin;

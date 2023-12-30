@@ -17,7 +17,6 @@ const __dirname = path.dirname(__filename);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(join(__dirname, 'static')));
-app.set('view engine', 'ejs'); 
 app.use(session({ secret: 'EDIT_ME', resave: true, saveUninitialized: true }));
 
 //Multer setup for file uploads
@@ -61,7 +60,7 @@ router.get('/:url_profile_id', async (req, res) => {
         });
         
         //checks if viewing own profile or someone else's
-        let profileTemplate = path.join(__dirname, '..', 'views', req.session.user_id === viewed_profile.user_id ? 'profiles/personal_profile.ejs' : 'profiles/public_profile.ejs');
+        let profileTemplate = req.session.user_id === viewed_profile.user_id ? '../frontend/pages/profiles/personal_profile.js' : '../frontend/pages/profiles/public_profile.js';
        
         //gathers all posts by the profile
         res.render('base', {

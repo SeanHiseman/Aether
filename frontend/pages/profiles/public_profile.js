@@ -1,7 +1,7 @@
 import React from 'react';
 import ContentWidget from '../ContentWidget'; 
 
-function UserProfile({ currentProfilePhoto, username, profileBio, currentProfileId, userContent }) {
+function PublicProfile({ currentProfilePhoto, username, profileBio, currentProfileId, userContent }) {
     return (
         <div className="profile-container">
             <img className="large-profile-image" src={`/static/${currentProfilePhoto}`} alt="Profile Picture" />
@@ -21,4 +21,4 @@ function UserProfile({ currentProfilePhoto, username, profileBio, currentProfile
     );
 }
 
-export default UserProfile;
+export default PublicProfile;

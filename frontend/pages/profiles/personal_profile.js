@@ -1,7 +1,7 @@
 import React from 'react';
 import ContentWidget from '../ContentWidget'; 
 
-function ProfileContainer({ loggedInProfilePhoto, loggedInUsername, profileBio, userContent, handlePhotoSubmit, handleLogout, handleUploadSubmit }) {
+function PersonalProfile({ loggedInProfilePhoto, loggedInUsername, profileBio, userContent, handlePhotoSubmit, handleLogout, handleUploadSubmit }) {
     return (
         <div className="profile-container">
             <div className="profile-header">
@@ -45,4 +45,4 @@ function ProfileContainer({ loggedInProfilePhoto, loggedInUsername, profileBio, 
     );
 }
 
-export default ProfileContainer;
+export default PersonalProfile;

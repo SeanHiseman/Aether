@@ -1,32 +1,34 @@
+import checkIfUserIsAdmin from '../functions/adminCheck.js';
 import { Groups, Channels } from '../models/models.js';
 import { Router } from 'express';
-import profileData from '../controllers/profileData.js'; 
+import profileData from '../functions/profileData.js'; 
 const router = Router();
 
 //Group home page route
-router.get('/group', async (req, res) => {
+router.get('/group/:group_id', async (req, res) => {
     //Check if the user is logged in
     if (!req.session.user_id) {
         return res.redirect('/login'); 
     }
 
+    const groupId = req.params.group_id;
+    const userId = req.session.user_id;
     const profile_data = await profileData(req, ['profile_id', 'profile_photo']);
-    //Gets profile data for logged in user
-    if (profile_data) {
-        const [logged_in_profile_id, logged_in_profile_photo] = profile_data;
-        res.render('base', {
-            content: 'groups/groupHome',
-            user_id: req.session.user_id,
-            logged_in_username: req.session.username,
-            logged_in_profile_id,
-            logged_in_profile_photo
-        });
-    } else {
-        res.render('base', { 
-            content: 'groups/groupHome',
-            user_id: req.session.user_id 
-        });
-    }
+    
+    //Check if user is admin of group
+    const isAdmin = await checkIfUserIsAdmin(userId, groupId);
+
+    //Choose template based on if user is admin
+    const groupTemplate = isAdmin ? 'GroupHomeAdmin' : 'GroupHome';
+    
+    const [logged_in_profile_id, logged_in_profile_photo] = profile_data;
+    res.render('base', {
+        content: 'groups/${groupTemplate}',
+        user_id: userId,
+        logged_in_username: req.session.username,
+        logged_in_profile_id,
+        logged_in_profile_photo
+    });
 });
 
 //Create a new group
