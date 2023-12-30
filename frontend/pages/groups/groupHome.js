@@ -2,7 +2,7 @@ import axios from 'axios';
 import React from 'react';
 import '../css/groups.css'; 
 
-function GroupProfile({ group }) {
+function GroupHome({ group }) {
     //Uploads content to group
     const handleSubmit = async (event) => {
         event.preventDefault();
@@ -51,4 +51,4 @@ function GroupProfile({ group }) {
     );
 }
 
-export default GroupProfile;
+export default GroupHome;
