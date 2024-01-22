@@ -1,8 +1,10 @@
 import axios from 'axios';
-import React from 'react';
-import '../css/groups.css'; 
+import { React, useState} from 'react';
+import '../../css/groups.css'; 
 
 function GroupHomeAdmin({ group }) {
+    const [channels, setChannels] = useState(group.channels || []);
+
     //Uploads content to group
     const handleUploadSubmit = async (event) => {
         event.preventDefault();
@@ -21,11 +23,15 @@ function GroupHomeAdmin({ group }) {
     //Adds channel to group
     const handleAddChannelSubmit = async (event) => {
         event.preventDefault();
+        const channelName = event.target.elements.channel_name.value;
         try {
             const response = await axios.post('/add_channel', {
                 channel_name: channelName,
                 groupId: group.group_id
             });
+            if (response.data && response.status === 200) {
+                setChannels([...channels, response.data]);
+            }
         } catch (error) {
             console.error('Error:', error.response ? error.response.data : error.message);
         }

@@ -10,11 +10,11 @@ const Profiles = sequelize.define('profiles', {
 
 
 const Users = sequelize.define('users', {
-    user_id: { type: STRING(36), primaryKey: true },
-    username: { type: STRING(120), allowNull: false },
-    password: { type: STRING(120), allowNull: false },
-    UserSince: { type: DATE, defaultValue: NOW }
-  }, {tableName: 'users', timestamps: false});
+  user_id: { type: STRING(36), primaryKey: true },
+  username: { type: STRING(120), allowNull: false },
+  password: { type: STRING(120), allowNull: false },
+  UserSince: { type: DATE, defaultValue: NOW }
+}, {tableName: 'users', timestamps: false});
 
 //Users relationships
 Users.hasOne(Profiles, { foreignKey: 'user_id' });
@@ -22,21 +22,21 @@ Profiles.belongsTo(Users, { foreignKey: 'user_id' });
 
 
 const Posts = sequelize.define('posts', {
-    post_id: { type: STRING(36), primaryKey: true },
-    profile_id: { type: STRING(36), allowNull: true }, //if posted to a users profile
-    group_id: { type: STRING(36), allowNull: true }, //if posted to group
-    title: { type: STRING(120), allowNull: false },
-    path: { type: STRING(120), allowNull: false },
-    content_type: { type: STRING(50), allowNull: false },
-    duration: { type: INTEGER, allowNull: true },
-    size: { type: INTEGER, allowNull: false },
-    comments: { type: INTEGER, allowNull: false, defaultValue: 0 },
-    views: { type: INTEGER, allowNull: false, defaultValue: 0 },
-    likes: { type: INTEGER, allowNull: false, defaultValue: 0 },
-    dislikes: { type: INTEGER, allowNull: false, defaultValue: 0 },
-    timestamp: { type: DATE, defaultValue: NOW },
-    poster_id: { type: STRING(36), primaryKey: true }, //Includes allowing groups to make posts
-  }, {tableName: 'posts', timestamps: false});
+  post_id: { type: STRING(36), primaryKey: true },
+  profile_id: { type: STRING(36), allowNull: true }, //if posted to a users profile
+  group_id: { type: STRING(36), allowNull: true }, //if posted to group
+  title: { type: STRING(120), allowNull: false },
+  path: { type: STRING(120), allowNull: false },
+  content_type: { type: STRING(50), allowNull: false },
+  duration: { type: INTEGER, allowNull: true },
+  size: { type: INTEGER, allowNull: false },
+  comments: { type: INTEGER, allowNull: false, defaultValue: 0 },
+  views: { type: INTEGER, allowNull: false, defaultValue: 0 },
+  likes: { type: INTEGER, allowNull: false, defaultValue: 0 },
+  dislikes: { type: INTEGER, allowNull: false, defaultValue: 0 },
+  timestamp: { type: DATE, defaultValue: NOW },
+  poster_id: { type: STRING(36), primaryKey: true }, //Includes allowing groups to make posts
+}, {tableName: 'posts', timestamps: false});
 
 //Posts relationships
 Users.hasMany(Posts, { foreignKey: 'poster_id' });
@@ -117,19 +117,19 @@ Comments.belongsTo(Users, {  as: 'Commenter',foreignKey: 'commenter_id' });
 
 
 const Friends = sequelize.define('friends', {
-    friendship_id: { type: STRING(36), primaryKey: true },
-    user1_id: { type: STRING(36), allowNull: false, references: { model: 'Users', key: 'user_id' }},
-    user2_id: { type: STRING(36), allowNull: false, references: { model: 'Users', key: 'user_id' }},
-    FriendSince: { type: DATE, allowNull: false, defaultValue: NOW }
-  }, { tableName: 'friends', timestamps: false });
+  friendship_id: { type: STRING(36), primaryKey: true },
+  user1_id: { type: STRING(36), allowNull: false, references: { model: 'Users', key: 'user_id' }},
+  user2_id: { type: STRING(36), allowNull: false, references: { model: 'Users', key: 'user_id' }},
+  FriendSince: { type: DATE, allowNull: false, defaultValue: NOW }
+}, { tableName: 'friends', timestamps: false });
 Users.belongsToMany(Users, { as: 'UserFriends', through: Friends, foreignKey: 'user1_id', otherKey: 'user2_id' });
  
 
 const FriendRequests = sequelize.define('friend_requests', {
-    request_id: { type: STRING(36), primaryKey: true },
-    sender_id: { type: STRING(36), allowNull: false, references: { model: 'Users', key: 'user_id' }},
-    receiver_id: { type: STRING(36), allowNull: false, references: { model: 'Users', key: 'user_id' }}
-  }, { tableName: 'friend_requests', timestamps: false });
+  request_id: { type: STRING(36), primaryKey: true },
+  sender_id: { type: STRING(36), allowNull: false, references: { model: 'Users', key: 'user_id' }},
+  receiver_id: { type: STRING(36), allowNull: false, references: { model: 'Users', key: 'user_id' }}
+}, { tableName: 'friend_requests', timestamps: false });
 
 // FriendRequest relationships
 Users.hasMany(FriendRequests, { as: 'sent_requests', foreignKey: 'sender_id' });
