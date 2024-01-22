@@ -1,11 +1,11 @@
 import axios from 'axios';
 import React, { useState } from 'react';
-import { useHistory } from 'react-router-dom';
-import '../css/logins.css'; 
+import { useNavigate } from 'react-router-dom';
+import '../../css/logins.css'; 
 
-function Register() {
+function Login() {
     const [error, setError] = useState('');
-    const history = useHistory();
+    const navigate = useNavigate();
     const handleSubmit = async (event) => {
         event.preventDefault();
         const formData = new FormData(event.target);
@@ -13,13 +13,14 @@ function Register() {
         const password = formData.get('password');
         
         try {
-            const response = await axios.post('/register', { username, password });
+            const response = await axios.post('/login', { username, password });
 
-            if (response.status === 200 || response.status === 201) {
-                history.push('/login');
+            //successful login
+            if (response.data.success) {
+                navigate.push('/home');
             } else {
-                setError('Registration failed, please try again.');
-                history.push('/register');
+                //If login unsuccessful
+                setError(response.data.message);
             }
         } catch (error) {
             setError(error.response ? error.response.data.message : 'Network error');
@@ -29,17 +30,17 @@ function Register() {
     return (
         <div className="container">
             <div className="login-register">
-                <h1>Register</h1>
-                <a className="link" href="/login">Login</a>
+                <h1>Login</h1>
+                <a className="link" href="/register">Register</a>
             </div>
             {error && <p className="error-message">{error}</p>}
             <form method="post" onSubmit={handleSubmit}>
                 <input className="input-box" type="text" name="username" placeholder="Username" required />
                 <input className="input-box" type="password" name="password" placeholder="Password" required />
-                <input className="submit" type="submit" value="Register" />
+                <input className="submit" type="submit" value="Login" />
             </form>
         </div>
     );
 }
 
-export default Register;
+export default Login;

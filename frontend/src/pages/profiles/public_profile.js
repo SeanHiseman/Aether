@@ -1,5 +1,5 @@
 import React from 'react';
-import ContentWidget from '../ContentWidget'; 
+import ContentWidget from '../content_widget'; 
 
 function PublicProfile({ currentProfilePhoto, username, profileBio, currentProfileId, userContent }) {
     return (

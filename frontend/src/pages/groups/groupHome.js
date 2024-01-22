@@ -1,6 +1,6 @@
 import axios from 'axios';
 import React from 'react';
-import '../css/groups.css'; 
+import '../../css/groups.css'; 
 
 function GroupHome({ group }) {
     //Uploads content to group

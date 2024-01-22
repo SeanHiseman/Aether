@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import '../css/base.css';
-import '../css/contentFeed.css';
-import '../css/groups.css';
-import '../css/profile.css';
+import '../../css/base.css';
+import '../../css/contentFeed.css';
+import '../../css/groups.css';
+import '../../css/profile.css';
 
 const BaseLayout = () => {
     const [profile, setProfile] = useState({ id: '', photo: '', username: '' });

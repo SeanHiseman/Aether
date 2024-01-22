@@ -1,12 +1,16 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
+import App from './app';
 import SendFriendRequestButton from './components/sendFriendRequest';
 import FriendRequests from './components/friendRequestsList';
 import UpdateBioButton from './components/updateBio';
 import ChatApp from './components/chatApp';
 import { UserProvider } from './components/userContext';
 
+ReactDOM.render(<App />, document.getElementById('root'));
+
 //Below functions check if a root exists so it can be rendered on the corresponding page
+//This is an old implementation and will be fixed
 
 const friendRequestRoot = document.getElementById('friend-request-root');
 if (friendRequestRoot) {

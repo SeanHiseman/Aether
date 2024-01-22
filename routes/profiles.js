@@ -4,7 +4,7 @@ import { v4 } from 'uuid';
 import { fileURLToPath } from 'url';
 import { join } from 'path';
 import path from 'path';
-import profileData from '../controllers/profileData.js';
+import profileData from '../functions/profileData.js';
 import session from 'express-session';
 import multer, { diskStorage } from 'multer';
 import { Posts, Profiles, Users, UserConversations, Conversations } from '../models/models.js';

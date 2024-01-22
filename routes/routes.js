@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { Posts, Profiles, Users } from '../models/models.js'; 
-import profileData from '../controllers/profileData.js'; 
+import profileData from '../functions/profileData.js'; 
 import { Op } from 'sequelize';
 const router = Router();
 

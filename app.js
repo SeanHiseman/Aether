@@ -4,7 +4,6 @@ import express from 'express';
 import { fileURLToPath } from 'url';
 import { join } from 'path';
 import { json, urlencoded } from 'express';
-import path from 'path';
 import { Server } from 'socket.io';
 import session from 'express-session';
 import authentication from './routes/authentication.js';
@@ -22,12 +21,17 @@ const io = new Server(http);
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-app.use(json());
+app.use(express.json());
 app.use(urlencoded({ extended: true}));
-app.use(express.static(__dirname + '/public'));
-app.use('/static', express.static(join(__dirname, 'static')));
-app.set('view engine', 'ejs'); 
-app.set('views', path.join(__dirname, 'views'));
+app.use(express.static(join(__dirname, './frontend/build')));
+app.get('*', (req, res) => {
+    res.sendFile(join(__dirname, './frontend/build', 'index.html'));
+})
+
+app.get('/data', async (req, res) => {
+    const data = await models.findAll();
+    res.json(data);
+})
 
 app.use(session({
     secret: 'EDIT-ME',
@@ -57,3 +61,4 @@ const PORT = process.env.PORT || 7000;
 http.listen(PORT, () =>{
     console.log(`Server running on port ${PORT}`);
 });
+
