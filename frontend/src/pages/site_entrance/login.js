@@ -35,8 +35,8 @@ function Login() {
             </div>
             {error && <p className="error-message">{error}</p>}
             <form method="post" onSubmit={handleSubmit}>
-                <input className="input-box" type="text" name="username" placeholder="Username" required />
-                <input className="input-box" type="password" name="password" placeholder="Password" required />
+                <input className="authentication-input-box" name="username" placeholder="Username" required />
+                <input className="authentication-input-box" name="password" placeholder="Password" required />
                 <input className="submit" type="submit" value="Login" />
             </form>
         </div>
