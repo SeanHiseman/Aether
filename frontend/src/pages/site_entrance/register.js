@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import '../../css/logins.css'; 
 
 function Register() {
+    document.title = "Home";
     const [error, setError] = useState('');
     const navigate = useNavigate();
     const handleSubmit = async (event) => {
