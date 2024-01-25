@@ -19,7 +19,7 @@ router.post('/register', async (req, res) => {
         });
 
         //Set up initial profile
-        const default_photo = '/images/site_images/blank-profile.png';
+        const default_photo = 'media/images/site_images/blank-profile.png';
         const profile_id = v4();
         await Profiles.create({
             profile_id, user_id, profile_photo: default_photo, bio: ""

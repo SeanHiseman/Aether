@@ -29,7 +29,7 @@ function Login() {
     };
 
     return (
-        <div className="container">
+        <div className="authentication-container">
             <div className="login-register">
                 <h1>Login</h1>
                 <a className="link" href="/register">Register</a>

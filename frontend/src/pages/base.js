@@ -2,12 +2,9 @@ import axios from 'axios';
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import '../css/base.css';
-import '../css/contentFeed.css';
-import '../css/groups.css';
-import '../css/profile.css';
 
 const BaseLayout = () => {
-    const [profile, setProfile] = useState({ profile_id: '', photo: '', username: '' });
+    const [profile, setProfile] = useState({ logged_in_profile_id: '', logged_in_profile_photo: '', logged_in_username: '' });
     const [groups, setGroups] = useState([]);
     const [groupName, setGroupName] = useState('');
     const [groupPhoto, setGroupPhoto] = useState(null);
@@ -55,10 +52,10 @@ const BaseLayout = () => {
         <div className="container">
         <aside>
         <div className="profile-info">
-            <Link id="profileLink" to={`/profiles/${profile.profile_id}`}>
-                <img className="profile-image" src={`/static/${profile.photo}`} alt="Profile image" />
+            <Link id="profileLink" to={`/profiles/${profile.logged_in_profile_id}`}>
+                <img className="profile-image" src={`${profile.logged_in_profile_photo}`} alt="Profile image" />
             </Link>
-            <p id="logged_in_username">{profile.username}</p>
+            <p id="logged_in_username">{profile.logged_in_username}</p>
         </div>
         <nav>
             <ul>
@@ -73,8 +70,8 @@ const BaseLayout = () => {
                 {groups.map(group => (
                 <li key={group.group_id}>
                     <a href={`/group/${group.group_id}`}>
-                    <img src={group.group_photo} alt={group.name} />
-                    {group.name}
+                    <img src={group.group_photo} alt={group.group_name} />
+                    {group.group_name}
                     </a>
                 </li>
                 ))}

@@ -34,11 +34,11 @@ router.get('/group/:group_id', async (req, res) => {
 //Create a new group
 router.post('/create_group', async (req, res) => {
     try {
-        const { name, parent_id, is_private, user_id } = req.body;
+        const { group_name, parent_id, is_private, user_id } = req.body;
         const group_photo = req.body.new_group_profile_photo || "../static/images/site_images/blank-group-icon.jpg";
         const newGroup = await Groups.create({ 
             parent_id,
-            name, 
+            group_name, 
             group_photo,
             member_count: 1,
             is_private: is_private === 'on',

@@ -28,7 +28,7 @@ function Register() {
     };
 
     return (
-        <div className="container">
+        <div className="authentication-container">
             <div className="login-register">
                 <h1>Register</h1>
                 <a className="link" href="/login">Login</a>
