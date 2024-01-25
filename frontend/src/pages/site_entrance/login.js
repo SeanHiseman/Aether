@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import '../../css/logins.css'; 
 
 function Login() {
+    document.title = "Home";
     const [error, setError] = useState('');
     const navigate = useNavigate();
     const handleSubmit = async (event) => {
@@ -17,7 +18,7 @@ function Login() {
 
             //successful login
             if (response.data.success) {
-                navigate.push('/home');
+                navigate('/home');
             } else {
                 //If login unsuccessful
                 setError(response.data.message);

@@ -1,40 +1,71 @@
+import axios from 'axios';
 import React, { useState, useEffect } from 'react';
-import '../../css/base.css';
-import '../../css/contentFeed.css';
-import '../../css/groups.css';
-import '../../css/profile.css';
+import { Link, useNavigate } from 'react-router-dom';
+import '../css/base.css';
+import '../css/contentFeed.css';
+import '../css/groups.css';
+import '../css/profile.css';
 
 const BaseLayout = () => {
-    const [profile, setProfile] = useState({ id: '', photo: '', username: '' });
+    const [profile, setProfile] = useState({ profile_id: '', photo: '', username: '' });
     const [groups, setGroups] = useState([]);
     const [groupName, setGroupName] = useState('');
     const [groupPhoto, setGroupPhoto] = useState(null);
     const [searchKeyword, setSearchKeyword] = useState('');
-
+    const navigate = useNavigate();
     //Fetch profile info and groups 
     useEffect(() => {
-        //Fetch profile data
-        //setProfile(fetchedProfile);
+        axios.get('/home')
+            .then(response => {
+                setProfile(response.data);
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                if (error.response && error.response.status === 401) {
+                    navigate('/login');
+                }
+            })
 
-        //Fetch groups data
-        //setGroups(fetchedGroups);
-    }, []);
+        axios.get('/groups')
+            .then(response => {
+                if (Array.isArray(response.data)) {
+                    setGroups(response.data);
+                } else {
+                    console.error('Expected an array for groups, received: ', response.data)
+                    setGroups([]);
+                }
+            })
+            .catch(error => {
+                console.error('Error fetching groups data:', error);
+                setGroups([]);
+            });
+    }, [navigate]);
+
+    const createGroupSubmit = (e) => {
+        e.preventDefault();
+
+    }
+
+    const handleSearchSubmit = (e) => {
+        e.preventDefault();
+
+    }
 
     return (
         <div className="container">
         <aside>
-            <div className="profile-info">
-                <a id="profileLink" href={`/profiles/${profile.profile_id}`}>
+        <div className="profile-info">
+            <Link id="profileLink" to={`/profiles/${profile.profile_id}`}>
                 <img className="profile-image" src={`/static/${profile.photo}`} alt="Profile image" />
-            </a>
+            </Link>
             <p id="logged_in_username">{profile.username}</p>
         </div>
         <nav>
             <ul>
-                <li><a href="/home">Home</a></li>
-                <li><a href="/recommended">Recommended</a></li>
-                <li><a href="/home">Following</a></li>
-                <li><a href="/home">Personal</a></li>
+                <li><Link to="/home">Home</Link></li>
+                <li><Link to="/recommended">Recommended</Link></li>
+                <li><Link to="/home">Following</Link></li>
+                <li><Link to="/home">Personal</Link></li>
             </ul>
         </nav>
         <nav>
@@ -51,7 +82,7 @@ const BaseLayout = () => {
         </nav>
         <div id="create-group-section">
             <p>Create group</p>
-            <form id="create-group-form" onSubmit={handleGroupSubmit}>
+            <form id="create-group-form" onSubmit={createGroupSubmit}>
                 <input 
                     type="text" 
                     name="Name" 

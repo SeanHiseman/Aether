@@ -5,10 +5,6 @@ import { Users, Profiles } from '../models/models.js';
 
 const router = Router();
 
-router.get('/register', (req, res) => {
-    res.render('site_entrance/register');
-});
-
 router.post('/register', async (req, res) => {
     try{
         const user_id = v4();
@@ -29,7 +25,7 @@ router.post('/register', async (req, res) => {
             profile_id, user_id, profile_photo: default_photo, bio: ""
         });
 
-        res.redirect('/login');
+        res.json({ success: true });
     }
     catch (error) {
         //If username is already taken
@@ -42,10 +38,6 @@ router.post('/register', async (req, res) => {
     }
 });
 
-router.get('/login', (req, res) => {
-    res.render('site_entrance/login');
-});
-
 router.post('/login', async (req, res) => {
     try {
         const username = req.body.username;
@@ -56,7 +48,7 @@ router.post('/login', async (req, res) => {
         if (user && await compare(password, user.password)) {
             req.session.user_id = user.user_id;
             req.session.username = user.username;
-            res.redirect('/home');
+            res.json({ success: true });
         }
         else {
             res.json({ success: false, message: 'Invalid username or password' });
@@ -74,7 +66,7 @@ router.post('/logout', (req, res) => {
             return res.json({ success: false, message: 'Failed to logout'});
         }
         res.clearCookie('sid');
-        return res.redirect('/login');
+        return res.json({ success: true });
     });
 
 });
