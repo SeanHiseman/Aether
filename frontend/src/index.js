@@ -10,7 +10,7 @@ import { UserProvider } from './components/userContext';
 ReactDOM.render(<App />, document.getElementById('root'));
 
 //Below functions check if a root exists so it can be rendered on the corresponding page
-//This is an old implementation and will be fixed
+//This is an old implementation and will be changed
 
 const friendRequestRoot = document.getElementById('friend-request-root');
 if (friendRequestRoot) {

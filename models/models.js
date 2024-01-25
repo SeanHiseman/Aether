@@ -49,7 +49,7 @@ Posts.belongsTo(Profiles, { foreignKey: 'profile_id', allowNull: true });
 const Groups = sequelize.define('groups', {
   group_id: { type: STRING(36), primaryKey: true },
   parent_id: { type: STRING(36), allowNull: true },
-  name: { type: STRING(100), allowNull: false },
+  group_name: { type: STRING(100), allowNull: false },
   description: { type: STRING(1000), allowNull: true },
   group_photo: { type: TEXT, allowNull: true },
   member_count: { type: INTEGER, defaultValue: 0 },

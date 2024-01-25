@@ -22,7 +22,7 @@ app.use(session({ secret: 'EDIT_ME', resave: true, saveUninitialized: true }));
 //Multer setup for file uploads
 const storage = diskStorage({
     destination: function (req, file, cb) {
-        cb(null, 'static/images/profile_images');
+        cb(null, 'media/images/profile_images');
     },
     filename: function (req, file, cb) {
         cb(null, v4() + extname(file.originalname));
@@ -201,7 +201,7 @@ router.post('/update_profile_photo', async (req, res) => {
 
     if (allowedFile(file.name)) {
         const filename = basename(file.name);
-        file.mv(join(__dirname, 'static/images/profile_images', filename));
+        file.mv(join(__dirname, 'media/images/profile_images', filename));
 
         const newPhotoPath = join('images/profile_images', filename).replace(/\\/g, '/');
         const profile = await Profiles.findOne({ where: { profile_id: profileId } });
