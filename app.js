@@ -12,6 +12,7 @@ import commentsLoad from './routes/commentsLoad.js';
 import directMessages from './routes/directMessages.js';
 import groups from './routes/groups.js';
 import profiles from './routes/profiles.js';
+import profileDataRouter from './routes/profileDataRouter.js'
 import routes from './routes/routes.js';
 import sequelize  from './databaseSetup.js';
 import utils from './routes/utils.js';
@@ -34,6 +35,7 @@ app.use(session({
 }));
 
 //file imports
+app.use('/', profileDataRouter);
 app.use('/', authentication);
 app.use('/', commentsLoad);
 app.use('/', directMessages);
@@ -51,8 +53,8 @@ io.on('connection', (socket) => {
 });
 
 sequelize.authenticate()
-.then(() => console.log('Database connected...'))
-.catch(err => console.log('Error: ' + err));
+    .then(() => console.log('Database connected...'))
+    .catch(err => console.log('Error: ' + err));
 
 //Start server
 const PORT = process.env.PORT || 7000;

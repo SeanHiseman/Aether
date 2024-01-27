@@ -4,7 +4,7 @@ import { v4 } from 'uuid';
 import { fileURLToPath } from 'url';
 import { join } from 'path';
 import path from 'path';
-import profileData from '../functions/profileData.js';
+import authenticateCheck from '../functions/authenticateCheck.js';
 import session from 'express-session';
 import multer, { diskStorage } from 'multer';
 import { Posts, Profiles, Users, UserConversations, Conversations } from '../models/models.js';
@@ -31,15 +31,7 @@ const storage = diskStorage({
 const upload = multer({ storage: storage });
 
 //Load profile
-router.get('/:url_profile_id', async (req, res) => {
-    if (!req.session.user_id) {
-        return res.redirect('/login');
-    }
-
-    //gets data for logged in user
-    let logged_in_data = await profileData(req, ['profile_id', 'profile_photo', 'bio']);
-    let [logged_in_profile_id, logged_in_profile_photo, profile_bio] = logged_in_data || [null, null];
-
+router.get('/:url_profile_id', authenticateCheck, async (req, res) => {
     try {
         let viewed_profile = await Profiles.findOne({ where: { profile_id: req.params.url_profile_id } });
         if (!viewed_profile) {
@@ -66,10 +58,6 @@ router.get('/:url_profile_id', async (req, res) => {
         res.render('base', {
             content: profileTemplate,
             user_id: req.session.user_id,
-            logged_in_username: req.session.username,
-            logged_in_profile_id,
-            logged_in_profile_photo, 
-            profile_bio,
             user_content: user_content
         });
 
@@ -79,7 +67,7 @@ router.get('/:url_profile_id', async (req, res) => {
 });
 
 //Send friend request
-router.post('/send_friend_request/:receiverProfileId', async (req, res) => {
+router.post('/send_friend_request/:receiverProfileId', authenticateCheck, async (req, res) => {
     try {
         const receiverProfile = await Profiles.findOne({ where: { profile_id: req.params.receiverProfileId } });
         if (!receiverProfile) {
@@ -116,7 +104,7 @@ router.post('/send_friend_request/:receiverProfileId', async (req, res) => {
 });
 
 //Accept friend request
-router.put('/accept_friend_request/:requestId', async (req, res) => {
+router.put('/accept_friend_request/:requestId', authenticateCheck, async (req, res) => {
     try {
         const friendRequest = await FriendRequest.findByPk(req.params.requestId);
         if (!friendRequest) {
@@ -145,7 +133,7 @@ router.put('/accept_friend_request/:requestId', async (req, res) => {
 });
 
 //Reject friend request
-router.delete('/reject_friend_request/:requestId', async (req, res) => {
+router.delete('/reject_friend_request/:requestId', authenticateCheck, async (req, res) => {
     try {
         const friendRequest = await FriendRequest.findByPk(req.params.requestId);
         if (!friendRequest) {
@@ -160,7 +148,7 @@ router.delete('/reject_friend_request/:requestId', async (req, res) => {
 });
 
 //Get friend requests
-router.get('/get_friend_requests', async (req, res) => {
+router.get('/get_friend_requests', authenticateCheck, async (req, res) => {
     try {
         const userId = req.session.user_id;
         const user = await Users.findOne({ where: { user_id: userId } });
@@ -182,10 +170,7 @@ router.get('/get_friend_requests', async (req, res) => {
 });
 
 //Update profile photo
-router.post('/update_profile_photo', async (req, res) => {
-    if (!req.session.user_id) {
-        return res.redirect('/user/login');
-    }
+router.post('/update_profile_photo', authenticateCheck, async (req, res) => {
 
     const profileId = req.session.profile_id; 
     const file = req.files.new_profile_photo; 
@@ -220,7 +205,7 @@ router.post('/update_profile_photo', async (req, res) => {
 });
 
 //Update profile bio
-router.post('/update_bio', async (req, res) => {
+router.post('/update_bio', authenticateCheck, async (req, res) => {
     try {
         const bio = req.body.bio;
         const profileId = req.session.profile_id; 

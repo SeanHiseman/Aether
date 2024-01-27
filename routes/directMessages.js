@@ -2,11 +2,12 @@ import { Router } from 'express';
 import { v4 } from 'uuid';
 import { Op } from 'sequelize';
 import { Conversations, Friends, UserConversations, Users, Messages } from '../models/models.js';
+import authenticateCheck from '../functions/authenticateCheck.js';
 
 const router = Router();
 
 //Get Friends
-router.get('/get_friends', async (req, res) => {
+router.get('/get_friends', authenticateCheck, async (req, res) => {
     const userId = req.session.user_id;
     const user = await Users.findOne({ where: { user_id: userId } });
 
@@ -45,7 +46,7 @@ router.get('/get_friends', async (req, res) => {
 });
 
 //Get Chat Messages
-router.get('/get_chat_messages/:conversation_id', async (req, res) => {
+router.get('/get_chat_messages/:conversation_id', authenticateCheck, async (req, res) => {
     const userId = req.session.user_id;
     const user = await Users.findOne({ where: { user_id: userId } });
     const conversationId = req.params.conversation_id;

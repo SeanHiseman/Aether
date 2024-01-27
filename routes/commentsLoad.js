@@ -1,3 +1,4 @@
+import authenticateCheck from '../functions/authenticateCheck.js';
 import { Comments, Posts, Profiles, Users } from '../models/models.js';
 import { Router } from 'express';
 import { v4 as uuidv4 } from 'uuid';
@@ -5,7 +6,7 @@ import { v4 as uuidv4 } from 'uuid';
 const router = Router();
 
 //Get Comments Route 
-router.get('/get_comments/:post_id', async (req, res) => {
+router.get('/get_comments/:post_id', authenticateCheck, async (req, res) => {
     try {
         const postId = req.params.post_id;
         const comments = await Comments.findAll({
@@ -28,7 +29,7 @@ router.get('/get_comments/:post_id', async (req, res) => {
 });
 
 //Add Comment Route
-router.post('/add_comment', async (req, res) => {
+router.post('/add_comment', authenticateCheck, async (req, res) => {
     try {
         const { post_id, parent_id, comment_text } = req.body;
         const user_id = req.session.user_id; 
@@ -53,7 +54,7 @@ router.post('/add_comment', async (req, res) => {
 });
 
 //Like or Dislike Comment Route
-router.post('/like_dislike', async (req, res) => {
+router.post('/like_dislike', authenticateCheck, async (req, res) => {
     try {
         const { comment_id, reaction_type } = req.body;
         if (!comment_id || !['like', 'dislike'].includes(reaction_type)) {
