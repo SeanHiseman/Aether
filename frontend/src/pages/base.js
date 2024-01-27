@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import '../css/base.css';
 
-const BaseLayout = () => {
+const BaseLayout = ({ children }) => {
     const [profile, setProfile] = useState({ logged_in_profile_id: '', logged_in_profile_photo: '', logged_in_username: '' });
     const [groups, setGroups] = useState([]);
     const [groupName, setGroupName] = useState('');
@@ -12,7 +12,7 @@ const BaseLayout = () => {
     const navigate = useNavigate();
     //Fetch profile info and groups 
     useEffect(() => {
-        axios.get('/home')
+        axios.get('/profileDataRouter')
             .then(response => {
                 setProfile(response.data);
             })
@@ -122,7 +122,7 @@ const BaseLayout = () => {
             <div id="chat-app-root"></div>
             </header>
             <div className="content">
-                {/* Content goes here */}
+                {children}
             </div>
         </main>
         </div>

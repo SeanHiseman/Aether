@@ -1,14 +1,55 @@
-import React from 'react';
+import axios from 'axios';
+import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import ContentWidget from '../content_widget'; 
 
-function PersonalProfile({ loggedInProfilePhoto, loggedInUsername, profileBio, userContent, handlePhotoSubmit, handleLogout, handleUploadSubmit }) {
+const PersonalProfile = () => {
+    const [profile, setProfile] = useState({ logged_in_profile_id: '', logged_in_profile_photo: '', logged_in_username: '', bio: ''});
+    const [userContent, setUserContent] = useState([]);
+    const navigate = useNavigate();
+
+    useEffect(() => {
+        axios.get('/profiles/')
+            .then(response => {
+                setProfile(response.data);
+                axios.get(`/user-content/$response.data.logged_in_profile_id`)
+                    .then(contentResponse => {
+                        setUserContent(contentResponse.data);
+                    })
+                    .catch(contentError => {
+                        console.error('Error fetching user content:', contentError);
+                    });
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                if (error.response && error.response.status === 401) {
+                    navigate('/login');
+                }
+            })
+    }, [navigate]);
+
+    const handlePhotoSubmit = (e) => {
+        e.preventDefault();
+
+    }
+
+    const handleUploadSubmit = (e) => {
+        e.preventDefault();
+
+    }
+
+    const handleLogout = (e) => {
+        e.preventDefault();
+
+    }
+
     return (
         <div className="profile-container">
             <div className="profile-header">
-                <img className="large-profile-image" src={`/static/${loggedInProfilePhoto}`} alt="Profile Picture" />
+                <img className="large-profile-image" src={`${profile.logged_in_profile_photo}`} alt="Profile Picture" />
                 <div className="viewed-profile-info">
-                    <p id="large-username-text">{loggedInUsername}</p>
-                    <p id="profile-bio">{profileBio}</p>
+                    <p id="large-username-text">{profile.logged_in_username}</p>
+                    <p id="profile-bio">{profile.bio}</p>
                     <div id="update-bio"></div>
                 </div>
             </div>

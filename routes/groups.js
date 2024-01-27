@@ -1,19 +1,13 @@
 import checkIfUserIsAdmin from '../functions/adminCheck.js';
 import { Groups, Channels } from '../models/models.js';
 import { Router } from 'express';
-import profileData from '../functions/profileData.js'; 
+import authenticateCheck from '../functions/authenticateCheck.js';
 const router = Router();
 
 //Group home page route
-router.get('/group/:group_id', async (req, res) => {
-    //Check if the user is logged in
-    if (!req.session.user_id) {
-        return res.redirect('/login'); 
-    }
-
+router.get('/group/:group_id', authenticateCheck, async (req, res) => {
     const groupId = req.params.group_id;
     const userId = req.session.user_id;
-    const profile_data = await profileData(req, ['profile_id', 'profile_photo']);
     
     //Check if user is admin of group
     const isAdmin = await checkIfUserIsAdmin(userId, groupId);
@@ -21,18 +15,14 @@ router.get('/group/:group_id', async (req, res) => {
     //Choose template based on if user is admin
     const groupTemplate = isAdmin ? 'GroupHomeAdmin' : 'GroupHome';
     
-    const [logged_in_profile_id, logged_in_profile_photo] = profile_data;
     res.render('base', {
         content: 'groups/${groupTemplate}',
         user_id: userId,
-        logged_in_username: req.session.username,
-        logged_in_profile_id,
-        logged_in_profile_photo
     });
 });
 
 //Create a new group
-router.post('/create_group', async (req, res) => {
+router.post('/create_group', authenticateCheck, async (req, res) => {
     try {
         const { group_name, parent_id, is_private, user_id } = req.body;
         const group_photo = req.body.new_group_profile_photo || "../static/images/site_images/blank-group-icon.jpg";
@@ -59,7 +49,7 @@ router.post('/create_group', async (req, res) => {
 });
 
 //Create new channel within a group
-router.post('/add_channel', async (req, res) => {
+router.post('/add_channel', authenticateCheck, async (req, res) => {
     try {
         const { groupId } = req.params;
         const { channel_name } = req.body;
@@ -78,7 +68,7 @@ router.post('/add_channel', async (req, res) => {
 });
 
 //Allows users to join a group
-router.post('/join_group', async (req, res) => {
+router.post('/join_group', authenticateCheck, async (req, res) => {
     try{
         const { group_id } = req.body;
         const user_id = req.session.userId;
