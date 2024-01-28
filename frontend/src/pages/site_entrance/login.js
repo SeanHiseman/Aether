@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import '../../css/logins.css'; 
 
 function Login() {
-    document.title = "Home";
+    document.title = "Login";
     const [error, setError] = useState('');
     const navigate = useNavigate();
     const handleSubmit = async (event) => {

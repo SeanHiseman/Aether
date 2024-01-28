@@ -1,19 +1,26 @@
 import axios from 'axios';
 import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import ContentWidget from '../content_widget'; 
+import FriendRequests from '../../components/friendRequestsList';
+import UpdateBioButton from '../../components/updateBio';
+import '../../css/profile.css';
 
 const PersonalProfile = () => {
     const [profile, setProfile] = useState({ logged_in_profile_id: '', logged_in_profile_photo: '', logged_in_username: '', bio: ''});
     const [userContent, setUserContent] = useState([]);
     const navigate = useNavigate();
-
+    const { profileId } = useParams();
+    
     useEffect(() => {
-        axios.get('/profiles/')
+        document.title = "Profile";
+        axios.get(`/personal-profile/${profileId}`)
             .then(response => {
-                setProfile(response.data);
-                axios.get(`/user-content/$response.data.logged_in_profile_id`)
+                setProfile(response.data.profile);
+                console.log("Profile data: ", response.data.profile);
+                axios.get(`/user-content/${response.data.logged_in_profile_id}`)
                     .then(contentResponse => {
+                        console.log("Content Response Data: ", contentResponse.data)
                         setUserContent(contentResponse.data);
                     })
                     .catch(contentError => {
@@ -26,7 +33,7 @@ const PersonalProfile = () => {
                     navigate('/login');
                 }
             })
-    }, [navigate]);
+    }, [profileId, navigate]);
 
     const handlePhotoSubmit = (e) => {
         e.preventDefault();
@@ -40,18 +47,37 @@ const PersonalProfile = () => {
 
     const handleLogout = (e) => {
         e.preventDefault();
-
+        axios.post('/logout')
+            .then(response => {
+                if (response.data.success) {
+                    navigate('/login');
+                } else {
+                    console.error('Logout failed: ', response.data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error during logout: ', error);
+            })
     }
 
     return (
         <div className="profile-container">
             <div className="profile-header">
-                <img className="large-profile-image" src={`${profile.logged_in_profile_photo}`} alt="Profile Picture" />
+                <img className="large-profile-image" src={`../${profile.logged_in_profile_photo}`} alt="Profile Picture" />
                 <div className="viewed-profile-info">
                     <p id="large-username-text">{profile.logged_in_username}</p>
                     <p id="profile-bio">{profile.bio}</p>
-                    <div id="update-bio"></div>
+                    <UpdateBioButton />
                 </div>
+                <div id="upload-section">
+                <p>Upload content</p>
+                <form id="upload-form" enctype="multipart/form-data" action="/upload" method="post" onSubmit={handleUploadSubmit}>
+                    <input type="text" name="title" placeholder="Enter title" />
+                    <input type="file" name="file" />
+                    <input id="upload-submit-button" type="submit" value="Upload" />
+                </form>
+                <div id="confirmation-message"></div>
+            </div>
             </div>
             <div className="profile-actions">
                 <div className="form-container">
@@ -62,22 +88,13 @@ const PersonalProfile = () => {
                     </form>           
                 </div>
             </div>
-            <div id="incoming-requests-root"></div>
+            <FriendRequests />
             <form action="/logout" method="post" onSubmit={handleLogout}>
                 <button className="button" type="submit">Logout</button>
             </form>
-            <div id="upload-section">
-                <p>Upload content</p>
-                <form id="upload-form" enctype="multipart/form-data" action="/upload" method="post" onSubmit={handleUploadSubmit}>
-                    <input type="text" name="title" placeholder="Enter title" />
-                    <input type="file" name="file" />
-                    <input id="upload-submit-button" type="submit" value="Upload" />
-                </form>
-                <div id="confirmation-message"></div>
-            </div>
             <div className="results-wrapper">
                 <div id="results">
-                    {userContent.map(item => (
+                    {Array.isArray(userContent) && userContent.map(item => (
                         <ContentWidget key={item.post_id} item={item} />
                     ))}
                 </div>

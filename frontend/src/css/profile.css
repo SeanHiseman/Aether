@@ -1,4 +1,7 @@
-.small-button{
+#bio-change-text-area {
+    border-radius: 10px;
+}
+.button{
     padding: 5px 10px;
     margin-right: 5px;
     background-color: #2f3966;
@@ -6,22 +9,62 @@
     border: none;
     border-radius: 10px;
     cursor: pointer;
-    display: inline-block;
     transition: background-color 0.3s;
 }
 
-.small-button:hover{
+.button:hover{
     background-color: #1f2956;
 }
-
-#bio-change-text-area{
-    width: 25%;
-    padding: 10px;
-    border: none;
+.profile-container{
+    display: flex;
+    flex-direction: column;
+    width: 1180px;
+    background-color: #41445a;
+    margin: 30px auto;
+    margin-left: 155px;
+    padding: 15px;
     border-radius: 10px;
-    background: white;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
 }
-
-.friend-request-button-container{
-    margin: 10px;
+.profle-header{
+    display: flex;
+    align-items: center;
+}
+.viewed-profile-info{
+    flex: 1;
+}
+.large-profile-image {
+    height: 200px; 
+    width: 200px; 
+    border-radius: 50%;
+    margin: 20px auto;
+    display: block;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+#large-username-text{
+    font-size: 50px;
+    margin-bottom: 10px;
+}
+.form-container{
+    margin-top: 20px;
+}
+.friend-requests{
+    margin-top: 20px;
+}
+form{
+    margin-bottom: 15px;
+}
+#upload-section {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    padding: 5px;
+    background-color: #41445a;
+    border-radius: 10px;
+    border-color: white;
+    border-width: 1px;
+    width: 100%;
+    max-width: 180px; 
+    margin-top: 10px;
+    max-height: 150px;
 }

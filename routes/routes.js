@@ -7,8 +7,7 @@ const router = Router();
 //Home route
 router.get('/home', authenticateCheck, async (req, res) => {
         res.json({
-            content: 'home',
-            user_id: req.session.user_id,
+            //nothing yet
         });
 });
 

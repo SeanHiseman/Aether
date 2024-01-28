@@ -7,11 +7,17 @@ const router = Router();
 
 router.post('/register', async (req, res) => {
     try{
-        const user_id = v4();
         const username = req.body.username;
         const password = req.body.password;
 
+        //Check for existing username
+        const existingUser = await Users.findOne({ where: { username } });
+        if (existingUser) {
+            return res.status(400).send('Username already taken');
+        }
+
         //Add user info to database, including encrypted password
+        const user_id = v4();
         const hashedPassword = await hash(password, 10);
         const UserSince = new Date();
         const newUser = await Users.create({
@@ -19,7 +25,7 @@ router.post('/register', async (req, res) => {
         });
 
         //Set up initial profile
-        const default_photo = 'media/images/site_images/blank-profile.png';
+        const default_photo = 'frontend/public/media/images/site_images/blank-profile.png';
         const profile_id = v4();
         await Profiles.create({
             profile_id, user_id, profile_photo: default_photo, bio: ""

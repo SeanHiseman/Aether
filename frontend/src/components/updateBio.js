@@ -28,10 +28,11 @@ const UpdateBioButton = () => {
             {isEditing ? (
                 <div>
                     <textarea id="bio-change-text-area" value={bio} onChange={(e) => setBio(e.target.value)}/>
-                    <button class="small-button" onClick={() => {setIsEditing(false); handleUpdateBio();}}>Save</button>
+                    <button class="button" onClick={() => {setIsEditing(false); handleUpdateBio();}}>Save</button>
+                    <button className='button' onClick={() => setIsEditing(false)}>Close</button>
                 </div>
             ) : (
-                <button class="small-button" onClick={() => setIsEditing(true)}>Edit Bio</button>
+                <button class="button" onClick={() => setIsEditing(true)}>Edit Bio</button>
             )}
         </div>
     );

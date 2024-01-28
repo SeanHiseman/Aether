@@ -1,9 +1,10 @@
 import axios from 'axios';
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, Outlet, useNavigate } from 'react-router-dom';
+import ChatApp from '../components/chatApp';
 import '../css/base.css';
 
-const BaseLayout = ({ children }) => {
+const BaseLayout = () => {
     const [profile, setProfile] = useState({ logged_in_profile_id: '', logged_in_profile_photo: '', logged_in_username: '' });
     const [groups, setGroups] = useState([]);
     const [groupName, setGroupName] = useState('');
@@ -52,7 +53,7 @@ const BaseLayout = ({ children }) => {
         <div className="container">
         <aside>
         <div className="profile-info">
-            <Link id="profileLink" to={`/profiles/${profile.logged_in_profile_id}`}>
+            <Link id="profileLink" to={`/personal-profile/${profile.logged_in_profile_id}`}>
                 <img className="profile-image" src={`${profile.logged_in_profile_photo}`} alt="Profile image" />
             </Link>
             <p id="logged_in_username">{profile.logged_in_username}</p>
@@ -119,10 +120,10 @@ const BaseLayout = ({ children }) => {
                             />
                     </form>
             <div className="spacer"></div>
-            <div id="chat-app-root"></div>
+            <ChatApp />
             </header>
             <div className="content">
-                {children}
+                <Outlet />
             </div>
         </main>
         </div>
