@@ -3,7 +3,7 @@ import { io } from "socket.io-client";
 import { useUser } from '../components/userContext';
 import '../css/messages.css';
 
-const socket = io("http://localhost:8000/chat");
+const socket = io("http://localhost:7000/chat");
 
 const DirectMessages = ({ friendId , friendName, conversationId }) => {
     const [message, setMessage] = useState('');

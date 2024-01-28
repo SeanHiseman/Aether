@@ -22,7 +22,7 @@ app.use(session({ secret: 'EDIT_ME', resave: true, saveUninitialized: true }));
 //Multer setup for file uploads
 const storage = diskStorage({
     destination: function (req, file, cb) {
-        cb(null, 'media/images/profile_images');
+        cb(null, 'frontend/public/media/images/profile_images');
     },
     filename: function (req, file, cb) {
         cb(null, v4() + extname(file.originalname));
@@ -30,8 +30,8 @@ const storage = diskStorage({
 });
 const upload = multer({ storage: storage });
 
-//Load profile
-router.get('/:url_profile_id', authenticateCheck, async (req, res) => {
+//Load users own profile
+router.get('/personal-profile/:url_profile_id', authenticateCheck, async (req, res) => {
     try {
         let viewed_profile = await Profiles.findOne({ where: { profile_id: req.params.url_profile_id } });
         if (!viewed_profile) {
@@ -39,27 +39,28 @@ router.get('/:url_profile_id', authenticateCheck, async (req, res) => {
         }
 
         let viewed_user = await Users.findOne({ where: { user_id: viewed_profile.user_id } });
-        let user_content = await Posts.findAll({
-            where: { poster_id: viewed_profile.user_id },
-            order: [['timestamp', 'DESC']]
-        });
+        //let user_content = await Posts.findAll({
+            //where: { poster_id: viewed_profile.user_id },
+            //order: [['timestamp', 'DESC']]
+        //});
 
         //Provides each item posted by the user with profile info
-        user_content.forEach(item => {
-            item.username = viewed_user.username;
-            item.profile_photo = viewed_profile.profile_photo;
-            item.profile_id = viewed_profile.profile_id;
-        });
-        
-        //checks if viewing own profile or someone else's
-        let profileTemplate = req.session.user_id === viewed_profile.user_id ? '../frontend/pages/profiles/personal_profile.js' : '../frontend/pages/profiles/public_profile.js';
-       
-        //gathers all posts by the profile
-        res.render('base', {
-            content: profileTemplate,
-            user_id: req.session.user_id,
-            user_content: user_content
-        });
+        //user_content.forEach(item => {
+            //item.username = viewed_user.username;
+            //item.profile_photo = viewed_profile.profile_photo;
+            //item.profile_id = viewed_profile.profile_id;
+        //});
+
+        const responseData = {
+            profile: {
+                logged_in_profile_id: viewed_profile.profile_id,
+                logged_in_profile_photo: viewed_profile.profile_photo,
+                logged_in_username: viewed_user.username,
+                bio: viewed_profile.bio
+            },
+            //user_content: user_content
+        }
+        res.json(responseData);
 
     } catch (error) {
         res.status(500).send(`Internal Server Error: ${error.toString()}`);

@@ -40,7 +40,7 @@ app.use('/', authentication);
 app.use('/', commentsLoad);
 app.use('/', directMessages);
 app.use('/', groups);
-app.use('/profiles', profiles);
+app.use('/', profiles);
 app.use('/', routes);
 app.use('/', utils);
 

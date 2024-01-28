@@ -1,5 +1,4 @@
 import React, { useEffect } from 'react';
-import BaseLayout from './base';
 
 //PLaceholder for now
 function HomePage() {
@@ -8,9 +7,7 @@ function HomePage() {
     }, []);
 
     return (
-        <BaseLayout>
-            {/* home page content */}
-        </BaseLayout>
+        <p>Hello!</p>
     )
 }
 
