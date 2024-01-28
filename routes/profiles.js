@@ -7,7 +7,7 @@ import path from 'path';
 import authenticateCheck from '../functions/authenticateCheck.js';
 import session from 'express-session';
 import multer, { diskStorage } from 'multer';
-import { Posts, Profiles, Users, UserConversations, Conversations } from '../models/models.js';
+import { Profiles, Users, UserConversations, Conversations } from '../models/models.js';
 
 const app = express();
 const router = Router();
@@ -18,17 +18,6 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(join(__dirname, 'static')));
 app.use(session({ secret: 'EDIT_ME', resave: true, saveUninitialized: true }));
-
-//Multer setup for file uploads
-const storage = diskStorage({
-    destination: function (req, file, cb) {
-        cb(null, 'frontend/public/media/images/profile_images');
-    },
-    filename: function (req, file, cb) {
-        cb(null, v4() + extname(file.originalname));
-    }
-});
-const upload = multer({ storage: storage });
 
 //Load users own profile
 router.get('/personal-profile/:url_profile_id', authenticateCheck, async (req, res) => {
@@ -168,6 +157,32 @@ router.get('/get_friend_requests', authenticateCheck, async (req, res) => {
     } catch (error) {
         res.status(500).send(error.message);
     }
+});
+
+//Multer setup for file uploads
+const profile_photo_storage = diskStorage({
+    destination: function (req, file, cb) {
+        cb(null, 'frontend/public/media/images/profile_images');
+    },
+    filename: function (req, file, cb) {
+        cb(null, v4() + extname(file.originalname));
+    }
+});
+//Check file input
+const fileFilter = (req, file, cb) => {
+    if (file.mimetype === 'image/jpeg' || file.mimetype === 'iage/png') {
+        cb(null, true);
+    } else {
+        cb(null, false);
+    }
+}
+//Uploads with file size limit
+const upload = multer({
+    storage: profile_photo_storage,
+    limits: {
+        fileSize: 1024 * 1024 * 5
+    },
+    fileFilter: fileFilter
 });
 
 //Update profile photo
