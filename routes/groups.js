@@ -1,5 +1,6 @@
 import checkIfUserIsAdmin from '../functions/adminCheck.js';
 import { Groups, Channels } from '../models/models.js';
+import multer, { diskStorage } from 'multer';
 import { Router } from 'express';
 import authenticateCheck from '../functions/authenticateCheck.js';
 const router = Router();
@@ -21,11 +22,47 @@ router.get('/group/:group_id', authenticateCheck, async (req, res) => {
     });
 });
 
+//Multer setup for file uploads
+const group_profile_photo_storage = multer.diskStorage({
+    destination: function(req, file, cb) {
+        cb(null, 'frontend/public/media/images/group_images');
+    },
+    filename: function(req, file, cb) {
+        cb(null, Date.now() + Path2D.extname(file.originalname));
+    }
+});
+//Check file input
+const fileFilter = (req, file, cb) => {
+    if (file.mimetype === 'image/jpeg' || file.mimetype === 'image/png') {
+        cb(null, true);
+    } else {
+        cb(null, false);
+    }
+}
+//Uploads with file size limit
+const upload = multer({
+    storage: group_profile_photo_storage,
+    limits: {
+        fileSize: 1024 * 1024 * 5
+    },
+    fileFilter: fileFilter
+});
+
 //Create a new group
 router.post('/create_group', authenticateCheck, async (req, res) => {
     try {
         const { group_name, parent_id, is_private, user_id } = req.body;
-        const group_photo = req.body.new_group_profile_photo || "../static/images/site_images/blank-group-icon.jpg";
+        
+        const existingGroup = await Groups.findOne({ where: { group_name: group_name } });
+        if (existingGroup) {
+            return res.status(400).json({ error: 'A group with this name already exists.'});
+        }
+
+        let group_photo = "images/site_images/blank-group-icon.jpg";
+        if (req.file) {
+            group_photo = req.file.path
+        }
+
         const newGroup = await Groups.create({ 
             parent_id,
             group_name, 

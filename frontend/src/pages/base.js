@@ -42,7 +42,38 @@ const BaseLayout = () => {
     const createGroupSubmit = (e) => {
         e.preventDefault();
 
-    }
+        const formData = new FormData();
+        formData.append('group_name', groupName);
+        formData.append('new_group_profile_photo', groupPhoto)
+
+        axios.post('/create_group', formData, {
+            headers: {
+                'Content-Type': 'multipart/form-data'
+            }
+        })
+        .then(response => {
+            console.log('Group created: ', response.data);
+            setGroups([...groups, response.data]);
+
+            //Redirect to new group
+            const newGroupId = response.data.group_id;
+            navigate(`/group/${newGroupId}`);
+        })
+        .catch(error => {
+            console.error('Error creating group: ', error);
+            if (error.response) {
+                if (error.response.status === 413) {
+                    alert("File too large. Please select a file smaller than 5MB.");
+                } else if (error.response.status === 400) {
+                    alert("Invalid file type. Please select a JPEG or PNG.");
+                } else {
+                    alert("Error creating group. Please try again.");
+                }
+            } else {
+                alert("An unexpected error occured. Please try again.");
+            }
+        });
+    };
 
     const handleSearchSubmit = (e) => {
         e.preventDefault();
