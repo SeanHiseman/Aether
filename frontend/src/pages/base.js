@@ -46,22 +46,19 @@ const BaseLayout = () => {
         formData.append('group_name', groupName);
         formData.append('new_group_profile_photo', groupPhoto)
 
-        axios.post('/create_group', formData, {
-            headers: {
-                'Content-Type': 'multipart/form-data'
-            }
-        })
-        .then(response => {
-            console.log('Group created: ', response.data);
-            setGroups([...groups, response.data]);
+        axios.post('/create_group', formData)
+            .then(response => {
+                console.log('Group created: ', response.data);
+                setGroups([...groups, response.data]);
 
-            //Redirect to new group
-            const newGroupId = response.data.group_id;
-            navigate(`/group/${newGroupId}`);
+                //Redirect to new group
+                const newGroupId = response.data.group_id;
+                navigate(`/group/${newGroupId}`);
         })
         .catch(error => {
             console.error('Error creating group: ', error);
             if (error.response) {
+                console.log('Server response: ', error.response.data);
                 if (error.response.status === 413) {
                     alert("File too large. Please select a file smaller than 5MB.");
                 } else if (error.response.status === 400) {
@@ -128,6 +125,7 @@ const BaseLayout = () => {
                     id="create-group-button" 
                     type="submit" 
                     value="Create"
+                    disabled={!groupName}
                 />
             </form>
         </div>

@@ -33,7 +33,8 @@ const group_profile_photo_storage = multer.diskStorage({
 });
 //Check file input
 const fileFilter = (req, file, cb) => {
-    if (file.mimetype === 'image/jpeg' || file.mimetype === 'image/png') {
+    console.log('Upload file type:', groupPhoto.type);
+    if (file.mimetype.toLowerCase() === 'image/jpeg' || file.mimetype.toLowerCase() === 'image/png') {
         cb(null, true);
     } else {
         cb(null, false);
@@ -50,6 +51,8 @@ const upload = multer({
 
 //Create a new group
 router.post('/create_group', authenticateCheck, async (req, res) => {
+    console.log(req.body);
+    console.log(req.file);
     try {
         const { group_name, parent_id, is_private, user_id } = req.body;
         
