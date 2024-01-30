@@ -6,8 +6,10 @@ import FriendRequests from '../../components/friendRequestsList';
 import UpdateBioButton from '../../components/updateBio';
 import '../../css/profile.css';
 
+//Loads the profile page of the logged in user
 const PersonalProfile = () => {
     const [profile, setProfile] = useState({ logged_in_profile_id: '', logged_in_profile_photo: '', logged_in_username: '', bio: ''});
+    const [uploadStatus, setUploadStatus] = useState('');
     const [userContent, setUserContent] = useState([]);
     const navigate = useNavigate();
     const { profileId } = useParams();
@@ -17,7 +19,6 @@ const PersonalProfile = () => {
         axios.get(`/personal-profile/${profileId}`)
             .then(response => {
                 setProfile(response.data.profile);
-                console.log("Profile data: ", response.data.profile);
                 axios.get(`/user-content/${response.data.logged_in_profile_id}`)
                     .then(contentResponse => {
                         console.log("Content Response Data: ", contentResponse.data)
@@ -37,12 +38,24 @@ const PersonalProfile = () => {
 
     const handlePhotoSubmit = (e) => {
         e.preventDefault();
-
+        const formData = new FormData(e.target);
+        axios.post('/update_profile_photo', formData)
+        .then(response => {
+            console.log('Photo updated: ', response.data);
+        }).catch(error => {
+            console.error('Error updating photo: ', error);
+        });
     }
 
     const handleUploadSubmit = (e) => {
         e.preventDefault();
-
+        const formData = new FormData(e.target);
+        axios.post('/upload', formData)
+        .then(response => {
+            console.log('Content uploaded: ', response.data);
+        }).catch(error => {
+            console.error('Error uploading content: ', error);
+        });
     }
 
     const handleLogout = (e) => {
@@ -67,7 +80,7 @@ const PersonalProfile = () => {
                 <div className="viewed-profile-info">
                     <p id="large-username-text">{profile.logged_in_username}</p>
                     <p id="profile-bio">{profile.bio}</p>
-                    <UpdateBioButton />
+                    <UpdateBioButton currentBio={profile.bio} />
                 </div>
                 <div id="upload-section">
                 <p>Upload content</p>

@@ -1,9 +1,14 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import '../css/profile.css';
 
-const UpdateBioButton = () => {
+//Displays a text area containg the current bio, allowing it to be changed
+const UpdateBioButton = ({ currentBio }) => {
     const [isEditing, setIsEditing] = useState(false);
-    const [bio, setBio] = useState('');
+    const [bio, setBio] = useState(currentBio);
+
+    useEffect(() => {
+        setBio(currentBio);
+    }, [currentBio]);
 
     const handleUpdateBio = async () => {
         try {
