@@ -6,12 +6,20 @@ import '../../css/logins.css';
 function Register() {
     document.title = "Register";
     const [error, setError] = useState('');
+    const [password, setPassword] = useState('');
+    const [confirmPassword, setConfirmPassword] = useState('');
     const navigate = useNavigate();
+
     const handleSubmit = async (event) => {
         event.preventDefault();
+
+        if (password !== confirmPassword) {
+            setError('Passwords do not match.');
+            return;
+        }
+
         const formData = new FormData(event.target);
         const username = formData.get('username');
-        const password = formData.get('password');
         
         try {
             const response = await axios.post('/register', { username, password });
@@ -36,7 +44,18 @@ function Register() {
             {error && <p className="error-message">{error}</p>}
             <form method="post" onSubmit={handleSubmit}>
                 <input className="authentication-input-box" name="username" placeholder="Username" required />
-                <input className="authentication-input-box" name="password" placeholder="Password" required />
+                <input 
+                    type="password" 
+                    className="authentication-input-box" 
+                    name="password" placeholder="Password" 
+                    required onChange={(e) => setPassword(e.target.value)}
+                    />
+                <input 
+                    type="password" 
+                    className="authentication-input-box" 
+                    name="password" placeholder="Re-enter password" 
+                    required onChange={(e) => setConfirmPassword(e.target.value)}
+                    />
                 <input className="submit" type="submit" value="Register" />
             </form>
         </div>

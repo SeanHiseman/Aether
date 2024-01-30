@@ -15,7 +15,7 @@ function allowedFile(filename) {
     return filename.includes('.') && ALLOWED_EXTENSIONS.has(filename.split('.').pop().toLowerCase());
 }
 
-router.post('/upload', upload.single('file'), async (req, res) => {
+router.post('/post_upload', upload.single('file'), async (req, res) => {
     try {
         const file = req.file;
         const title = req.body.title;
