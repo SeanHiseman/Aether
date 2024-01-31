@@ -6,9 +6,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { Posts, Users } from '../models/models.js'; 
 
 const router = Router();
-
 const upload = multer({ dest: 'uploads/' });
-
 const ALLOWED_EXTENSIONS = new Set(['jpg', 'jpeg', 'png', 'gif', 'mp4', 'mkv', 'avi']);
 
 function allowedFile(filename) {
@@ -20,8 +18,9 @@ router.post('/post_upload', upload.single('file'), async (req, res) => {
         const file = req.file;
         const title = req.body.title;
 
+        //Not all posts need a title
         if (!title) {
-            return res.status(400).json({ "status": "error", "message": "Title cannot be empty" });
+            title = null;
         }
 
         if (file && allowedFile(file.originalname)) {
@@ -45,6 +44,7 @@ router.post('/post_upload', upload.single('file'), async (req, res) => {
             }
 
             const timestamp = new Date().toISOString();
+            //Comments, likes, dislikes and views default to 0, no need to insert
             await Posts.create({
                 post_id: id,
                 title: title,
@@ -52,7 +52,7 @@ router.post('/post_upload', upload.single('file'), async (req, res) => {
                 content_type: content_type,
                 duration: duration,
                 size: file_size,
-                userId: user.user_id,
+                poster_id: user.user_id,
                 timestamp: timestamp,
             });
 

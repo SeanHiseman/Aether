@@ -41,7 +41,7 @@ const Posts = sequelize.define('posts', {
 //Posts relationships
 Users.hasMany(Posts, { foreignKey: 'poster_id' });
 Posts.belongsTo(Users, { foreignKey: 'poster_id' });
-//Posts can either be to profiles or groups
+//Profiles can have many posts
 Profiles.hasMany(Posts, { foreignKey: 'profile_id' });
 Posts.belongsTo(Profiles, { foreignKey: 'profile_id', allowNull: true });
 
@@ -56,6 +56,7 @@ const Groups = sequelize.define('groups', {
   date_created: { type: DATE, defaultValue: NOW },
 }, { tableName: 'groups', timestamps: false });
 
+//Groups can have many posts
 Groups.hasMany(Posts, { foreignKey: 'group_id '});
 Posts.belongsTo(Groups, { foreignKey: 'group_id', allowNull: true });
 

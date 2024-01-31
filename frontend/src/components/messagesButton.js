@@ -11,7 +11,7 @@ const MessagesButton = () => {
         fetch('/get_friends')
         .then(response => response.json())
         .then(data => setFriends(data))
-        .catch(error => console.log("Error fetching friends", error))
+        .catch(error => alert("Error fetching friends", error))
     }, []);
 
     const toggleChat = (friendId, friendName, conversationId) => {

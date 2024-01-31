@@ -31,13 +31,13 @@ const DirectMessages = ({ friendId , friendName, conversationId }) => {
             .then(response => response.json())
             .then(data => {
                 if (data.error){
-                    console.error("Conversation not found");
+                    alert("Conversation not found");
                 }
                 else{
                     setChat(data);
                 }
             })
-            .catch(error => console.log("Error fetching chat messages", error));
+            .catch(error => alert("Error fetching chat messages", error));
         }
         return () => {
             socket.off('receive message');

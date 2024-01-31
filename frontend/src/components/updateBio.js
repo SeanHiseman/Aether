@@ -21,11 +21,11 @@ const UpdateBioButton = ({ currentBio }) => {
             });
             const result = await response.json();
             if (!response.ok){
-                console.error('Failed to update bio:', result);
+                alert('Failed to update bio:', result);
             }
         }
         catch (error) {
-            console.error('Error updating bio:', error);
+            alert('Error updating bio:', error);
         }
     };
     return (

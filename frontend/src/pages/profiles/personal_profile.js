@@ -83,14 +83,14 @@ const PersonalProfile = () => {
                     <UpdateBioButton currentBio={profile.bio} />
                 </div>
                 <div id="upload-section">
-                <p>Upload content</p>
-                <form id="upload-form" enctype="multipart/form-data" action="/upload" method="post" onSubmit={handleUploadSubmit}>
-                    <input type="text" name="title" placeholder="Enter title" />
-                    <input type="file" name="file" />
-                    <input id="upload-submit-button" type="submit" value="Upload" />
-                </form>
-                <div id="confirmation-message"></div>
-            </div>
+                    <p>Upload content</p>
+                    <form id="upload-form" enctype="multipart/form-data" action="/upload" method="post" onSubmit={handleUploadSubmit}>
+                        <input type="text" name="title" placeholder="Enter title" />
+                        <input type="file" name="file" />
+                        <input id="upload-submit-button" type="submit" value="Upload" />
+                    </form>
+                    <div id="confirmation-message"></div>
+                </div>
             </div>
             <div className="profile-actions">
                 <div className="form-container">
