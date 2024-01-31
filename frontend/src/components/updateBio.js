@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import '../css/profile.css';
 
 //Displays a text area containg the current bio, allowing it to be changed
 const UpdateBioButton = ({ currentBio }) => {

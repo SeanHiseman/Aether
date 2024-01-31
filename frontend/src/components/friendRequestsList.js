@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import '../css/profile.css';
 
 function FriendRequests() {
     const [requests, setRequests] = useState([]);
@@ -14,7 +13,7 @@ function FriendRequests() {
             })
             .then(data => setRequests(data))
             .catch(error => {
-                alert('There was a problem fetching the friend request: ', error.message);
+                console.log('There was a problem fetching the friend request: ', error.message);
             });
     }, []);
 

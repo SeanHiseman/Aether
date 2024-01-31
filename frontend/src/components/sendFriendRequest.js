@@ -1,13 +1,12 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
-import '../css/profile.css';
 
 function SendFriendRequestButton({ receiverProfileId }) {
     const handleSendRequest = () => {
         fetch(`/send_friend_request/${receiverProfileId}`, { method: 'POST' })
             .then(response => response.json())
             .then(data => {
-                alert(data.message);
+                console.log(data.message);
             });
     };
 

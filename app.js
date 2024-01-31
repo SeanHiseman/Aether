@@ -24,6 +24,7 @@ const io = new Server(http);
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
+app.use('/media', express.static(path.join(__dirname, 'media')));
 app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, './frontend/build')));
