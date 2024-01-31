@@ -1,21 +1,12 @@
 #bio-change-text-area {
     border-radius: 10px;
 }
-.button{
-    padding: 5px 10px;
-    margin-right: 5px;
-    background-color: #2f3966;
-    color: white;
-    border: none;
-    border-radius: 10px;
-    cursor: pointer;
-    transition: background-color 0.3s;
+#change-profile-photo{
+    display: flex;
+    flex-direction: column;
+    max-width: 200px;
 }
-
-.button:hover{
-    background-color: #1f2956;
-}
-.profile-container{
+#profile-container{
     display: flex;
     flex-direction: column;
     width: 1180px;
@@ -26,27 +17,41 @@
     border-radius: 10px;
     box-shadow: 0 2px 5px rgba(0,0,0,0.2);
 }
-.profle-header{
+#profile-header{
+    align-items: center;
+    border: 1px solid #ffffff;
+    border-radius: 10px;
     display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    padding: 10px;
+    position: relative;
+}
+#profile-header-photo{
+    display: flex;
+    flex-direction: column;
+    max-width: 350px;
+}
+#profile-header-side{
+    display: flex;
+    flex-direction: column;
     align-items: center;
 }
-.viewed-profile-info{
-    flex: 1;
+#viewed-profile-info{
+    margin: 10px;
+    max-width: 400px;
 }
-.large-profile-image {
+#large-profile-image {
     height: 200px; 
     width: 200px; 
     border-radius: 50%;
-    margin: 20px auto;
+    margin: 20px;
     display: block;
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
 }
 #large-username-text{
     font-size: 50px;
     margin-bottom: 10px;
-}
-.form-container{
-    margin-top: 20px;
 }
 .friend-requests{
     margin-top: 20px;
@@ -63,6 +68,6 @@ form{
     border-radius: 10px;
     border: 1px solid #ffffff;
     max-width: 180px; 
-    margin-top: 10px;
+    margin: 10px;
     max-height: 150px;
 }

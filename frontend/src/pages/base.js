@@ -10,7 +10,9 @@ const BaseLayout = () => {
     const [groupName, setGroupName] = useState('');
     const [groupPhoto, setGroupPhoto] = useState(null);
     const [searchKeyword, setSearchKeyword] = useState('');
+    const [showForm, setShowForm] = useState(false);
     const navigate = useNavigate();
+
     //Fetch profile info and groups 
     useEffect(() => {
         axios.get('/profileDataRouter')
@@ -77,6 +79,11 @@ const BaseLayout = () => {
 
     }
 
+    //Toggles display of upload form after create post button is pressed
+    const toggleForm = () => {
+        setShowForm(!showForm)
+    }
+
     return (
         <div className="container">
         <aside>
@@ -107,27 +114,31 @@ const BaseLayout = () => {
             </ul>
         </nav>
         <div id="create-group-section">
-            <p>Create group</p>
-            <form id="create-group-form" onSubmit={createGroupSubmit}>
-                <input 
-                    type="text" 
-                    name="Name" 
-                    placeholder="Group name" 
-                    value={groupName}
-                    onChange={(e) => setGroupName(e.target.value)}
-                />
-                <input 
-                    type="file" 
-                    name="Group photo" 
-                    onChange={(e) => setGroupPhoto(e.target.files[0])}
-                />
-                <input 
-                    id="create-group-button" 
-                    type="submit" 
-                    value="Create"
-                    disabled={!groupName}
-                />
-            </form>
+            <button class="button" onClick={toggleForm}>
+                {showForm ? 'Close': 'Create new Group'}
+            </button>
+            {showForm && (
+                <form id="create-group-form" onSubmit={createGroupSubmit}>
+                    <input 
+                        type="text" 
+                        name="Name" 
+                        placeholder="Group name" 
+                        value={groupName}
+                        onChange={(e) => setGroupName(e.target.value)}
+                    />
+                    <input 
+                        type="file" 
+                        name="Group photo" 
+                        onChange={(e) => setGroupPhoto(e.target.files[0])}
+                    />
+                    <input 
+                        id="create-group-button" 
+                        type="submit" 
+                        value="Create"
+                        disabled={!groupName}
+                    />
+                </form>
+            )}
         </div>
         </aside>
         <main>

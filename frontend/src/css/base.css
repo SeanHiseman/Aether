@@ -6,42 +6,49 @@ body,html {
     height: 100%;
     color: white;
 }
-
-main {
-    display:flex;
-    flex-direction: column;
-    flex-grow:1;
+.button{
+    padding: 5px 10px;
+    margin: 10px;
+    background-color: #2f3966;
+    color: white;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: background-color 0.3s;
 }
-
-header {
-    background-color: #000514; 
-    padding: 10px 0;
-    display: flex;
-    align-items: center;
-    position: relative;
-    min-height: 50px;
-    min-width: 100%;
-    justify-content: center;
-    flex-wrap: wrap;
+.button:hover{
+    background-color: #1f2956;
 }
-
-.spacer {
-    flex-grow: 1;
-}
-
 .container {
     display: flex;
     height: 100%;
     width: 100%;
 }
-
 .content{
     display: flex;
     flex-direction: column;
     flex-grow: 1; 
     overflow: auto; /*If the content is larger than the main, it will scroll */
 }
-
+main {
+    display:flex;
+    flex-direction: column;
+    flex-grow:1;
+}
+header {
+    align-items: center;
+    background-color: #000514; 
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    min-height: 50px;
+    min-width: 100%;
+    padding: 10px 0;
+    position: relative;
+}
+.spacer {
+    flex-grow: 1;
+}
 .raw-content{
     border-radius: 10px;
 }
@@ -172,6 +179,7 @@ aside nav ul li a:hover {
 }
 
 #upload-submit-button, #create-group-button {
+    margin: 5px;
     padding: 6px 12px;
     background-color: #2f3966;
     color: white;

@@ -3,6 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import ContentWidget from '../content_widget'; 
 import FriendRequests from '../../components/friendRequestsList';
+import PostForm from '../../components/postForm';
 import UpdateBioButton from '../../components/updateBio';
 import '../../css/profile.css';
 
@@ -74,37 +75,38 @@ const PersonalProfile = () => {
     }
 
     return (
-        <div className="profile-container">
-            <div className="profile-header">
-                <img className="large-profile-image" src={`../${profile.logged_in_profile_photo}`} alt="Profile Picture" />
-                <div className="viewed-profile-info">
-                    <p id="large-username-text">{profile.logged_in_username}</p>
-                    <p id="profile-bio">{profile.bio}</p>
-                    <UpdateBioButton currentBio={profile.bio} />
-                </div>
-                <div id="upload-section">
-                    <p>Upload content</p>
-                    <form id="upload-form" enctype="multipart/form-data" action="/upload" method="post" onSubmit={handleUploadSubmit}>
-                        <input type="text" name="title" placeholder="Enter title" />
-                        <input type="file" name="file" />
-                        <input id="upload-submit-button" type="submit" value="Upload" />
-                    </form>
-                    <div id="confirmation-message"></div>
-                </div>
-            </div>
-            <div className="profile-actions">
-                <div className="form-container">
-                    <form action="/profiles/update_profile_photo" method="post" enctype="multipart/form-data" onSubmit={handlePhotoSubmit}>
+        <div id="profile-container">
+            <div id="profile-header">
+                <div id="profile-header-photo">
+                    <img id="large-profile-image" src={`/${profile.logged_in_profile_photo}`} alt="Profile Picture" />
+                    <form id="change-profile-photo" action="/profiles/update_profile_photo" method="post" enctype="multipart/form-data" onSubmit={handlePhotoSubmit}>
                         <label htmlFor="new_profile_photo">Change Profile Photo:</label>
                         <input type="file" id="new_profile_photo" name="new_profile_photo" accept="image/*" />
                         <input className="button" type="submit" value="Update" />
                     </form>           
                 </div>
+                <div id="viewed-profile-info">
+                    <p id="large-username-text">{profile.logged_in_username}</p>
+                    <p id="profile-bio">{profile.bio}</p>
+                    <UpdateBioButton currentBio={profile.bio} />
+                </div>
+                <FriendRequests />
+                <div id="profile-header-side">
+                    <div id="upload-section">
+                        <p>Upload content</p>
+                        <form id="upload-form" enctype="multipart/form-data" action="/upload" method="post" onSubmit={handleUploadSubmit}>
+                            <input type="text" name="title" placeholder="Enter title" />
+                            <input type="file" name="file" />
+                            <input id="upload-submit-button" type="submit" value="Upload" />
+                        </form>
+                        <div id="confirmation-message"></div>
+                    </div>
+                    <form action="/logout" method="post" onSubmit={handleLogout}>
+                        <button className="button" type="submit">Logout</button>
+                    </form>
+                </div>
             </div>
-            <FriendRequests />
-            <form action="/logout" method="post" onSubmit={handleLogout}>
-                <button className="button" type="submit">Logout</button>
-            </form>
+            <PostForm />
             <div className="results-wrapper">
                 <div id="results">
                     {Array.isArray(userContent) && userContent.map(item => (
