@@ -2,11 +2,12 @@ import { createServer } from 'http';
 import cors from 'cors';
 import { dirname } from 'path';
 import express from 'express';
+import favicon from 'serve-favicon';
 import { fileURLToPath } from 'url';
-import { join } from 'path';
-import { urlencoded } from 'express';
+import path from 'path';
 import { Server } from 'socket.io';
 import session from 'express-session';
+import { urlencoded } from 'express';
 import authentication from './routes/authentication.js';
 import commentsLoad from './routes/commentsLoad.js';
 import directMessages from './routes/directMessages.js';
@@ -25,8 +26,9 @@ const __dirname = dirname(__filename);
 
 app.use(cors());
 app.use(express.json());
+app.use(express.static(path.join(__dirname, './frontend/build')));
+app.use(favicon(path.join(process.cwd(), 'media', 'site_images', 'AetherLogo.png')));
 app.use(urlencoded({ extended: true}));
-app.use(express.static(join(__dirname, './frontend/build')));
 
 app.use(session({
     secret: 'EDIT-ME',
@@ -45,7 +47,7 @@ app.use('/', routes);
 app.use('/', utils);
 
 app.get('*', (req, res) => {
-    res.sendFile(join(__dirname, './frontend/build', 'index.html'));
+    res.sendFile(path.join(__dirname, './frontend/build', 'index.html'));
 })
 
 io.on('connection', (socket) => {

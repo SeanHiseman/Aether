@@ -14,7 +14,7 @@ function FriendRequests() {
             })
             .then(data => setRequests(data))
             .catch(error => {
-                console.log('There was a problem fetching the friend request: ', error.message);
+                alert('There was a problem fetching the friend request: ', error.message);
             });
     }, []);
 

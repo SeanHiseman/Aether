@@ -61,9 +61,7 @@ form{
     padding: 5px;
     background-color: #41445a;
     border-radius: 10px;
-    border-color: white;
-    border-width: 1px;
-    width: 100%;
+    border: 1px solid #ffffff;
     max-width: 180px; 
     margin-top: 10px;
     max-height: 150px;
