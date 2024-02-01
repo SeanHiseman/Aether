@@ -40,6 +40,10 @@ const PersonalProfile = () => {
     const handlePhotoSubmit = (e) => {
         e.preventDefault();
         const formData = new FormData(e.target);
+        if (!formData.get('Update')) {
+            alert('No image has been uploaded.');
+            return;
+        }
         axios.post('/update_profile_photo', formData)
         .then(response => {
             console.log('Photo updated: ', response.data);
@@ -51,6 +55,10 @@ const PersonalProfile = () => {
     const handleUploadSubmit = (e) => {
         e.preventDefault();
         const formData = new FormData(e.target);
+        if (!formData.get('Upload')) {
+            alert('No file has been uploaded.');
+            return;
+        }
         axios.post('/upload', formData)
         .then(response => {
             console.log('Content uploaded: ', response.data);
@@ -97,7 +105,7 @@ const PersonalProfile = () => {
                         <form id="upload-form" enctype="multipart/form-data" action="/upload" method="post" onSubmit={handleUploadSubmit}>
                             <input type="text" name="title" placeholder="Enter title" />
                             <input type="file" name="file" />
-                            <input id="upload-submit-button" type="submit" value="Upload" />
+                            <input className="button" type="submit" value="Upload" />
                         </form>
                         <div id="confirmation-message"></div>
                     </div>

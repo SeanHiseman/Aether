@@ -190,16 +190,7 @@ router.post('/update_profile_photo', authenticateCheck, async (req, res) => {
 
     const profileId = req.session.profile_id; 
     const file = req.files.new_profile_photo; 
-    if (!file) {
-        req.flash('No file part');
-        return res.redirect(req.url);
-    }
-
-    if (file.name === '') {
-        req.flash('No selected file');
-        return res.redirect(req.url);
-    }
-
+    
     if (allowedFile(file.name)) {
         const filename = basename(file.name);
         file.mv(join(__dirname, 'media/images/profile_images', filename));
