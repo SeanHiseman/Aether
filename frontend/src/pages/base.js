@@ -132,7 +132,7 @@ const BaseLayout = () => {
                         onChange={(e) => setGroupPhoto(e.target.files[0])}
                     />
                     <input 
-                        id="create-group-button" 
+                        className="button" 
                         type="submit" 
                         value="Create"
                         disabled={!groupName}
