@@ -1,4 +1,4 @@
-import { BOOLEAN, Sequelize, STRING, DATE, INTEGER, TEXT, NOW } from 'sequelize';
+import { BOOLEAN, STRING, DATE, INTEGER, TEXT, NOW } from 'sequelize';
 import sequelize from '../databaseSetup.js';
 
 const Profiles = sequelize.define('profiles', {
@@ -54,6 +54,7 @@ const Groups = sequelize.define('groups', {
   group_photo: { type: TEXT, allowNull: true },
   member_count: { type: INTEGER, defaultValue: 0 },
   date_created: { type: DATE, defaultValue: NOW },
+  is_private: { type: BOOLEAN, defaultValue: false},
 }, { tableName: 'groups', timestamps: false });
 
 //Groups can have many posts

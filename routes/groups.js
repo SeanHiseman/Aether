@@ -2,6 +2,7 @@ import checkIfUserIsAdmin from '../functions/adminCheck.js';
 import { Groups, Channels } from '../models/models.js';
 import multer, { diskStorage } from 'multer';
 import { Router } from 'express';
+import path from 'path';
 import authenticateCheck from '../functions/authenticateCheck.js';
 const router = Router();
 
@@ -25,15 +26,14 @@ router.get('/group/:group_id', authenticateCheck, async (req, res) => {
 //Multer setup for file uploads
 const group_profile_photo_storage = multer.diskStorage({
     destination: function(req, file, cb) {
-        cb(null, 'frontend/public/media/images/group_images');
+        cb(null, 'media/group_profiles');
     },
     filename: function(req, file, cb) {
-        cb(null, Date.now() + Path2D.extname(file.originalname));
+        cb(null, Date.now() + path.extname(file.originalname));
     }
 });
 //Check file input
 const fileFilter = (req, file, cb) => {
-    console.log('Upload file type:', groupPhoto.type);
     if (file.mimetype.toLowerCase() === 'image/jpeg' || file.mimetype.toLowerCase() === 'image/png') {
         cb(null, true);
     } else {
@@ -50,12 +50,11 @@ const upload = multer({
 });
 
 //Create a new group
-router.post('/create_group', authenticateCheck, async (req, res) => {
-    console.log(req.body);
-    console.log(req.file);
+router.post('/create_group', authenticateCheck, upload.single('new_group_profile_photo'), async (req, res) => {
     try {
-        const { group_name, parent_id, is_private, user_id } = req.body;
+        const { group_name, is_private, group_id, user_id } = req.body;
         
+        //Prevents duplicate group names
         const existingGroup = await Groups.findOne({ where: { group_name: group_name } });
         if (existingGroup) {
             return res.status(400).json({ error: 'A group with this name already exists.'});
@@ -67,11 +66,11 @@ router.post('/create_group', authenticateCheck, async (req, res) => {
         }
 
         const newGroup = await Groups.create({ 
-            parent_id,
+            group_id,
             group_name, 
             group_photo,
             member_count: 1,
-            is_private: is_private === 'on',
+            is_private: is_private,
         });
 
         //Add creating user to the group, giving them permissions

@@ -1,11 +1,17 @@
 import axios from 'axios';
 import React, { useState, useEffect } from 'react';
 import { Link, Outlet, useNavigate } from 'react-router-dom';
+import { v4 as uuidv4 } from 'uuid';
 import ChatApp from '../components/chatApp';
 import '../css/base.css';
 
 const BaseLayout = () => {
-    const [profile, setProfile] = useState({ logged_in_profile_id: '', logged_in_profile_photo: '', logged_in_username: '' });
+    const [profile, setProfile] = useState({ 
+        logged_in_profile_id: '', 
+        logged_in_profile_photo: '', 
+        logged_in_username: '',
+        logged_in_user_id: ''
+    });
     const [groups, setGroups] = useState([]);
     const [groupName, setGroupName] = useState('');
     const [groupPhoto, setGroupPhoto] = useState(null);
@@ -17,7 +23,7 @@ const BaseLayout = () => {
     useEffect(() => {
         axios.get('/profileDataRouter')
             .then(response => {
-                setProfile(response.data);
+                setProfile({...response.data, logged_in_user_id: response.data.user_id });
             })
             .catch(error => {
                 console.error('Error:', error);
@@ -45,8 +51,12 @@ const BaseLayout = () => {
         e.preventDefault();
 
         const formData = new FormData();
+        formData.append('group_id', uuidv4());
         formData.append('group_name', groupName);
-        formData.append('new_group_profile_photo', groupPhoto)
+        formData.append('new_group_profile_photo', groupPhoto);
+        formData.append('is_private', 'false');
+        //Adds user_id so user creating group can become an admin
+        formData.append('user_id', profile.logged_in_user_id);
 
         axios.post('/create_group', formData)
             .then(response => {
@@ -60,11 +70,14 @@ const BaseLayout = () => {
         .catch(error => {
             console.error('Error creating group: ', error);
             if (error.response) {
-                console.log('Server response: ', error.response.data);
                 if (error.response.status === 413) {
                     alert("File too large. Please select a file smaller than 5MB.");
                 } else if (error.response.status === 400) {
-                    alert("Invalid file type. Please select a JPEG or PNG.");
+                    if (error.response.data && error.response.data.error === 'Invalid file type') {
+                        alert("Invalid file type. Please select a JPEG or PNG.");
+                    } else {
+                        alert("Error creating group. Please try again.");
+                    }
                 } else {
                     alert("Error creating group. Please try again.");
                 }
@@ -79,7 +92,7 @@ const BaseLayout = () => {
 
     }
 
-    //Toggles display of upload form after create post button is pressed
+    //Toggles display of create group form after button is pressed
     const toggleForm = () => {
         setShowForm(!showForm)
     }
