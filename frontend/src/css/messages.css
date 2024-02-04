@@ -9,7 +9,8 @@
 }
 
 .messages-dropdown {
-    background-color: #41445a;
+    background-color: #000514;
+    border: 1px solid #ffffff;
     width: 300px;
     box-shadow: 0px 8px 16px 0px rgba(0, 0, 0, 0.2);
     padding: 12px 16px;
@@ -30,9 +31,9 @@
 }
 
 #messages-button{
-    background-color: #2f3966;
+    background-color: #000514;
+    border: 1px solid #ffffff;
     color: white;
-    border: none;
     border-radius: 10px;
     min-height: 40px;
     min-width: 60px;
@@ -101,8 +102,8 @@ input[type="text"] {
 #message-send-button {
     padding: 10px 20px;
     border-radius: 20px;
-    border: none;
-    background-color: #2f3966;
+    background-color: #000514;
+    border: 1px solid #ffffff;
     color: white;
     cursor: pointer;
     margin-top: 5px;

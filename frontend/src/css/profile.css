@@ -6,6 +6,19 @@
     flex-direction: column;
     max-width: 200px;
 }
+.profile-button{
+    padding: 5px 10px;
+    margin: 10px;
+    background-color: #41445a;
+    border: 1px solid #ffffff;
+    color: white;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+.profile-button:hover{
+    background-color: #1f2956;
+}
 #profile-container{
     display: flex;
     flex-direction: column;

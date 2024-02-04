@@ -4,6 +4,7 @@ import { dirname } from 'path';
 import express from 'express';
 import favicon from 'serve-favicon';
 import { fileURLToPath } from 'url';
+import history from 'express-history-api-fallback';
 import path from 'path';
 import { Server } from 'socket.io';
 import session from 'express-session';
@@ -23,11 +24,12 @@ const http = createServer(app);
 const io = new Server(http);
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
+const root = path.join(__dirname, 'frontend', 'build');
 
 app.use('/media', express.static(path.join(__dirname, 'media')));
 app.use(cors());
 app.use(express.json());
-app.use(express.static(path.join(__dirname, './frontend/build')));
+app.use(express.static(root));
 app.use(favicon(path.join(process.cwd(), 'media', 'site_images', 'AetherLogo.png')));
 app.use(urlencoded({ extended: true}));
 
@@ -47,9 +49,15 @@ app.use('/', profiles);
 app.use('/', routes);
 app.use('/', utils);
 
+app.use(history('index.html', { root }));
+
 app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, './frontend/build', 'index.html'));
-})
+    if (req.headers.accept.includes('text/html')) {
+        res.sendFile(path.join(__dirname, './frontend/build', 'index.html'));
+    } else {
+        res.status(404).send('Not found');
+    }
+});
 
 io.on('connection', (socket) => {
     directMessages(socket);
