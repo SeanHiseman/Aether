@@ -1,6 +1,6 @@
 import checkIfUserIsAdmin from '../functions/adminCheck.js';
 import { Groups, Channels } from '../models/models.js';
-import multer, { diskStorage } from 'multer';
+import multer from 'multer';
 import { Router } from 'express';
 import path from 'path';
 import authenticateCheck from '../functions/authenticateCheck.js';
@@ -11,16 +11,17 @@ router.get('/group/:group_id', authenticateCheck, async (req, res) => {
     const groupId = req.params.group_id;
     const userId = req.session.user_id;
     
-    //Check if user is admin of group
-    const isAdmin = await checkIfUserIsAdmin(userId, groupId);
-
-    //Choose template based on if user is admin
-    const groupTemplate = isAdmin ? 'GroupHomeAdmin' : 'GroupHome';
+    try {
+        //Check if user is admin of group
+        const isAdmin = await checkIfUserIsAdmin(userId, groupId);
     
-    res.render('base', {
-        content: 'groups/${groupTemplate}',
-        user_id: userId,
-    });
+        res.json({
+            isAdmin: isAdmin,
+        });
+    } catch (error) {
+        console.error('Error fetching group details: ', error);
+        res.status(500).send('Internal server error');
+    }
 });
 
 //Multer setup for file uploads

@@ -1,7 +1,7 @@
 import axios from 'axios';
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import '../../css/logins.css'; 
+import '../../css/authentication.css'; 
 
 function Register() {
     document.title = "Register";

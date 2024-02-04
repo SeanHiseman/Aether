@@ -23,12 +23,12 @@ body {
     box-sizing: border-box;
 }
 .submit {
-    background-color: #2f3966;
+    background-color: #41445a;
+    border: 1px solid #ffffff;
     color: white;
     padding: 14px 20px;
     margin: 8px 0;
     border-radius: 10px;
-    border: none;
     cursor: pointer;
     width: 100%;
     transition: background-color 0.3s;
@@ -36,7 +36,8 @@ body {
 .link {
     display: inline-block;
     padding: 10px 20px;
-    background-color: #2f3966;
+    background-color: #41445a;
+    border: 1px solid #ffffff;
     color: white;
     text-align: center;
     border-radius: 10px;

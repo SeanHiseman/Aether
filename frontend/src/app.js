@@ -2,7 +2,6 @@ import React from 'react';
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import BaseLayout from './pages/base';
 import GroupHome from './pages/groups/groupHome';
-import GroupHomeAdmin from './pages/groups/groupHomeAdmin';
 import HomePage from './pages/home';
 import Login from './pages/site_entrance/login';
 import Register from './pages/site_entrance/register';
@@ -19,7 +18,6 @@ const App = () => {
                 <Route path="/" element={<BaseLayout />}>
                     <Route path="home" element={<HomePage />} />
                     <Route path="group/:groupId" element={<GroupHome />} />
-                    <Route path="group/:groupId/admin" element={<GroupHomeAdmin />} />
                     <Route path="personal-profile/:profileId" element={<PersonalProfile />} />
                     <Route path="profile/:profileId" element={<Profile />} />
                 </Route>

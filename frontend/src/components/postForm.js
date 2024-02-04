@@ -35,7 +35,7 @@ const PostForm = () => {
 
     return (
         <div id="create-post-container">
-            <button class="button" onClick={toggleForm}>
+            <button class="profile-button" onClick={toggleForm}>
                 {showForm ? 'Close': 'Create new Post'}
             </button>
             {showForm && (

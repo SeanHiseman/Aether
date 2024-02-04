@@ -36,9 +36,9 @@ body,html {
 .button {
     padding: 5px 10px;
     margin: 10px;
-    background-color: #2f3966;
+    background-color: #000514;
+    border: 1px solid #ffffff;
     color: white;
-    border: none;
     border-radius: 10px;
     cursor: pointer;
     transition: background-color 0.3s;
@@ -123,9 +123,9 @@ header {
 #search-submit-button {
     cursor: pointer;
     padding: 5px;
-    background-color: #2f3966;
     color: white;
-    border: none;
+    background-color: #000514;
+    border: 1px solid #ffffff;
     margin-top: 10px;
     border-radius: 20px;
     min-height: 40px;
