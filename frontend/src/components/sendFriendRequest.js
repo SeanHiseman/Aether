@@ -12,7 +12,7 @@ function SendFriendRequestButton({ receiverProfileId }) {
 
     return (
         <div>
-            <button class="small-button" onClick={handleSendRequest}>Send Friend Request</button>
+            <button class="light-button" onClick={handleSendRequest}>Send Friend Request</button>
         </div>
     );
 }
