@@ -90,7 +90,7 @@ const PersonalProfile = () => {
                     <form id="change-profile-photo" action="/profiles/update_profile_photo" method="post" enctype="multipart/form-data" onSubmit={handlePhotoSubmit}>
                         <label htmlFor="new_profile_photo">Change Profile Photo:</label>
                         <input type="file" id="new_profile_photo" name="new_profile_photo" accept="image/*" />
-                        <input className="profile-button" type="submit" value="Update" />
+                        <input className="light-button" type="submit" value="Update" />
                     </form>           
                 </div>
                 <div id="viewed-profile-info">
@@ -105,12 +105,12 @@ const PersonalProfile = () => {
                         <form id="upload-form" enctype="multipart/form-data" action="/upload" method="post" onSubmit={handleUploadSubmit}>
                             <input type="text" name="title" placeholder="Enter title" />
                             <input type="file" name="file" />
-                            <input className="profile-button" type="submit" value="Upload" />
+                            <input className="light-button" type="submit" value="Upload" />
                         </form>
                         <div id="confirmation-message"></div>
                     </div>
                     <form action="/logout" method="post" onSubmit={handleLogout}>
-                        <button className="profile-button" type="submit">Logout</button>
+                        <button className="light-button" type="submit">Logout</button>
                     </form>
                 </div>
             </div>

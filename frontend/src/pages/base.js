@@ -145,7 +145,7 @@ const BaseLayout = () => {
                         onChange={(e) => setGroupPhoto(e.target.files[0])}
                     />
                     <input 
-                        className="button" 
+                        className="light-button" 
                         type="submit" 
                         value="Create"
                         disabled={!groupName}

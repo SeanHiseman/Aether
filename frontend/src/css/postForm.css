@@ -1,5 +1,25 @@
+.ql-toolbar {
+    border-top-left-radius: 10px;
+    border-top-right-radius: 10px;
+    color: white; 
+}
+.ql-container {
+    border-bottom-left-radius: 10px;
+    border-bottom-right-radius: 10px;
+    color: white; 
+}
+.ql-snow .ql-picker{
+    color: white;
+}
+.ql-snow .ql-stroke {
+    stroke: white;
+}
+.ql-snow .ql-fill {
+    fill: white;
+}
+.ql-snow .ql-picker-options {
+    background-color: #41445a;
+}
 #post-form{
-    background-color: #e6eefa;
-    border-radius: 10px;
-    color: black;
+    background-color: #41445a;
 }

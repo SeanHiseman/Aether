@@ -43,7 +43,7 @@ body,html {
     cursor: pointer;
     transition: background-color 0.3s;
 }
-.button:hover, #search-submit-button:hover {
+.button:hover, #search-submit-button:hover, .light-button:hover {
     background-color: #1f2956;
 }
 .container {
@@ -73,13 +73,23 @@ header {
     padding: 10px 0;
     position: relative;
 }
+.light-button {
+    padding: 5px 10px;
+    margin: 10px;
+    background-color: #41445a;
+    border: 1px solid #ffffff;
+    color: white;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
 .spacer {
     flex-grow: 1;
 }
-.raw-content{
+.raw-content {
     border-radius: 10px;
 }
-.results-wrapper{
+.results-wrapper {
     display:flex;
     align-items: center;
     margin-left: 140px;
@@ -89,12 +99,12 @@ header {
     flex-wrap: wrap;
 }
 
-.profile-info{
+.profile-info {
     display: flex;
     align-items: center;
     margin-bottom: 20px;
 }
-#logged_in_username{
+#logged_in_username {
     margin-left: 10px;
     text-align: center;
 }

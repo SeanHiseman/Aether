@@ -13,6 +13,23 @@ const PostForm = () => {
         setFiles(e.target.files);
     };
 
+    //Customises tool bar
+    const modules = {
+        toolbar: [
+            [{ header: '1'}, { header: '2'}, { font: []}],
+            [{ size: []}],
+            ['bold', 'italic', 'underline', 'strike', 'blockquote'],
+            [
+                { list: 'ordered' },
+                { list: 'bullet '},
+                { indent: '-1' },
+                { indent: '+1' }, 
+            ],
+            ['link', 'image', 'video'],
+            ['clean'],
+        ]
+    }
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         const formData = new FormData();
@@ -35,14 +52,14 @@ const PostForm = () => {
 
     return (
         <div id="create-post-container">
-            <button class="profile-button" onClick={toggleForm}>
+            <button class="light-button" onClick={toggleForm}>
                 {showForm ? 'Close': 'Create new Post'}
             </button>
             {showForm && (
                 <form id="post-form" onSubmit={handleSubmit}>
-                    <ReactQuill value={content} onChange={setContent} />
+                    <ReactQuill modules={modules} value={content} onChange={setContent} />
                     <input type="file" multiple onChange={handleFileChange} />
-                    <button class ="button" type="submit">Create Post</button>
+                    <button class="light-button" type="submit">Create Post</button>
                 </form>   
             )}   
         </div>
