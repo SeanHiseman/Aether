@@ -27,7 +27,7 @@ const DirectMessages = ({ friendId , friendName, conversationId }) => {
     
         //Get existing messages
         if (conversationId){
-            fetch(`/get_chat_messages/${conversationId}`)
+            fetch(`/api/get_chat_messages/${conversationId}`)
             .then(response => response.json())
             .then(data => {
                 if (data.error){

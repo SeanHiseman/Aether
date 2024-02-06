@@ -8,10 +8,10 @@ const MessagesButton = () => {
     const [activeChat, setActiveChat] = useState({});
 
     useEffect(() => {
-        fetch('/get_friends')
+        fetch('/api/get_friends')
         .then(response => response.json())
         .then(data => setFriends(data))
-        .catch(error => alert("Error fetching friends", error))
+        .catch(error => console.log("Error fetching friends", error))
     }, []);
 
     const toggleChat = (friendId, friendName, conversationId) => {

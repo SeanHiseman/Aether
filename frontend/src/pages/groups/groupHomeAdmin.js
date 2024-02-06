@@ -1,16 +1,41 @@
 import axios from 'axios';
-import { React, useState} from 'react';
+import React, { useEffect, useState } from 'react';
+import { useParams } from 'react-router-dom';
 import '../../css/groups.css'; 
+import PostForm from '../../components/postForm';
 
-function GroupHomeAdmin({ group }) {
-    const [channels, setChannels] = useState(group.channels || []);
-
+function GroupHomeAdmin() {
+    const { groupId } = useParams();
+    const [isAdmin, setIsAdmin] = useState(true);
+    const [groupDetails, setGroupDetails] = useState({ groupName: '', description: '', groupPhoto: '', memberCount: 0 });
+    const [channels, setChannels] = useState(groupId.channels || []);
+    useEffect(() => {
+        fetch(`/api/group/${groupId}`)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
+            .then(data => {
+                setIsAdmin(data.isAdmin);
+                setGroupDetails({
+                    groupName: data.groupName,
+                    description: data.description,
+                    groupPhoto: data.groupPhoto,
+                    memberCount: data.memberCount
+                });
+            }).catch(error => {
+                console.error('Fetch error:', error);
+            })
+    }, [groupId]);
+    
     //Uploads content to group
     const handleUploadSubmit = async (event) => {
         event.preventDefault();
         const formData = new FormData(event.target);
         try {
-            const response = await axios.post('/upload', formData, {
+            const response = await axios.post('/api/upload', formData, {
                 headers: {
                     'Content-Type': 'multipart/form-data',
                 },
@@ -25,9 +50,9 @@ function GroupHomeAdmin({ group }) {
         event.preventDefault();
         const channelName = event.target.elements.channel_name.value;
         try {
-            const response = await axios.post('/add_channel', {
+            const response = await axios.post('/api/add_channel', {
                 channel_name: channelName,
-                groupId: group.group_id
+                groupId: groupId.group_id
             });
             if (response.data && response.status === 200) {
                 setChannels([...channels, response.data]);
@@ -39,31 +64,21 @@ function GroupHomeAdmin({ group }) {
 
     return (
         <div>
-            <header>
-                <div className="banner">
-                    <img className="group-photo" src={group.group_photo} alt={group.name} />
-                    <h1>{group.name}</h1>
-                    <p>{group.member_count} followers</p>
-                    <p>{group.description}</p>
-                </div>
-                <div id="upload-section">
-                    <p>Upload content</p>
-                    <form id="upload-form" enctype="multipart/form-data" action="/upload" method="post" onSubmit={handleUploadSubmit}>
-                        <input type="text" name="title" placeholder="Enter title" />
-                        <input type="file" name="file" />
-                        <input id="upload-submit-button" type="submit" value="Upload" />
-                    </form>
-                    <div id="confirmation-message"></div>
-                </div>
+            <header className="group-header">
+                <img className="group-photo" src={groupDetails.groupPhoto} alt={groupDetails.groupName} />
+                <h1>{groupDetails.groupName}</h1>
+                <p>{groupDetails.memberCount} members</p>
+                <p>{groupDetails.description}</p>
+                <PostForm />
             </header>
             <main>
                 <div className="channels">
                     <h2>Channels</h2>
-                    <ul>
-                        {group.channels.map((channel, index) => (
+                    {/*<ul>
+                        {groupId.channels.map((channel, index) => (
                             <li key={index}>{channel}</li>
                         ))}
-                    </ul>
+                        </ul>*/}
                 </div>
                 <div id="add-channel-section">
                     <p>Add channel</p>

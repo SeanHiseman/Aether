@@ -17,10 +17,10 @@ const PersonalProfile = () => {
     
     useEffect(() => {
         document.title = "Profile";
-        axios.get(`/personal-profile/${profileId}`)
+        axios.get(`/api/personal-profile/${profileId}`)
             .then(response => {
                 setProfile(response.data.profile);
-                axios.get(`/user-content/${response.data.logged_in_profile_id}`)
+                axios.get(`/api/user-content/${response.data.logged_in_profile_id}`)
                     .then(contentResponse => {
                         console.log("Content Response Data: ", contentResponse.data)
                         setUserContent(contentResponse.data);
@@ -69,7 +69,7 @@ const PersonalProfile = () => {
 
     const handleLogout = (e) => {
         e.preventDefault();
-        axios.post('/logout')
+        axios.post('/api/logout')
             .then(response => {
                 if (response.data.success) {
                     navigate('/login');
@@ -109,7 +109,7 @@ const PersonalProfile = () => {
                         </form>
                         <div id="confirmation-message"></div>
                     </div>
-                    <form action="/logout" method="post" onSubmit={handleLogout}>
+                    <form action="/api/logout" method="post" onSubmit={handleLogout}>
                         <button className="light-button" type="submit">Logout</button>
                     </form>
                 </div>

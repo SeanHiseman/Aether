@@ -7,7 +7,7 @@ export const useUser = () => useContext(UserContext);
 export const UserProvider = ({ children }) => {
     const [user, setUser ] = useState(null);
     useEffect(() => {
-        fetch('/get_current_user')
+        fetch('/api/get_current_user')
             .then(response => response.json())  
             .then(data => {
                 if (data.user_id) {

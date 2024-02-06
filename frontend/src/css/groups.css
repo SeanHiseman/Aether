@@ -1,10 +1,3 @@
-.banner {
-    background-color: #252836;
-    display: flex;
-    padding: 20px;
-    width: 100%;
-}
-
 .channels {
     background-color: #000514; 
     height: 100%;
@@ -13,14 +6,18 @@
     right: 0;
     width: 200px;
 }
-
 .channels ul {
     list-style-type: none;
     padding: 0;
 }
-
 .group-photo{
     width: 100px;
     border-radius: 50%;
     margin-right: 20px;
+}
+.group-header {
+    background-color: #41445a;
+    display: flex;
+    padding: 20px;
+    width: 100%;
 }

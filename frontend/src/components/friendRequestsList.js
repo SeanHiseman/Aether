@@ -4,7 +4,7 @@ function FriendRequests() {
     const [requests, setRequests] = useState([]);
 
     useEffect(() => {
-        fetch(`/get_friend_requests`)
+        fetch(`/api/get_friend_requests`)
             .then(response => {
                 if (!response.ok) {
                     throw new Error('Network response was not ok');
@@ -18,7 +18,7 @@ function FriendRequests() {
     }, []);
 
     const handleAccept = (requestId) => {
-        fetch(`/accept_friend_request/${requestId}`, { method: 'PUT' })
+        fetch(`/api/accept_friend_request/${requestId}`, { method: 'PUT' })
             .then(() => {
                 //Remove accepted request from list
                 setRequests(requests.filter(req => req.request_id !== requestId));
@@ -26,7 +26,7 @@ function FriendRequests() {
     };
 
     const handleReject = (requestId) => {
-        fetch(`/reject_friend_request/${requestId}`, { method: 'DELETE' })
+        fetch(`/api/reject_friend_request/${requestId}`, { method: 'DELETE' })
             .then(() => {
                 // Remove rejected request from list
                 setRequests(requests.filter(req => req.request_id !== requestId));
@@ -34,7 +34,7 @@ function FriendRequests() {
     };
     return (
         <div>
-            <h3>Incoming Friend Requests</h3>
+            <h3>Friend Requests</h3>
             {requests.map(request => (
                 <div class="friend-request-button-container" key={request.request_id}>
                     <p>Request from: {request.senderName}</p>

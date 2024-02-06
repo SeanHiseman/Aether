@@ -39,15 +39,15 @@ app.use(session({
     saveUninitialized: true,
 }));
 
-//file imports
-app.use('/', profileDataRouter);
-app.use('/', authentication);
-app.use('/', commentsLoad);
-app.use('/', directMessages);
-app.use('/', groups);
-app.use('/', profiles);
-app.use('/', routes);
-app.use('/', utils);
+// api prefix prevents clashes with React app
+app.use('/api/', authentication);
+app.use('/api/', commentsLoad);
+app.use('/api/', directMessages);
+app.use('/api/', groups);
+app.use('/api/', profileDataRouter);
+app.use('/api/', profiles);
+app.use('/api/', routes);
+app.use('/api/', utils);
 
 app.use(history('index.html', { root }));
 

@@ -14,7 +14,7 @@ function Login() {
         const password = formData.get('password');
         
         try {
-            const response = await axios.post('/login', { username, password });
+            const response = await axios.post('/api/login', { username, password });
 
             //successful login
             if (response.data.success) {
