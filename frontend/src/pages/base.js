@@ -1,11 +1,13 @@
 import axios from 'axios';
-import React, { useState, useEffect } from 'react';
+import React, { useContext, useState, useEffect } from 'react';
 import { Link, Outlet, useNavigate } from 'react-router-dom';
 import { v4 as uuidv4 } from 'uuid';
+import { AuthContext } from '../components/authContext';
 import ChatApp from '../components/chatApp';
 import '../css/base.css';
 
 const BaseLayout = () => {
+    const { isAuthenticated } = useContext(AuthContext);
     const [profile, setProfile] = useState({ 
         logged_in_profile_id: '', 
         logged_in_profile_photo: '', 
@@ -21,7 +23,8 @@ const BaseLayout = () => {
 
     //Fetch profile info and groups 
     useEffect(() => {
-        axios.get('/api/profileDataRouter')
+        if (isAuthenticated) {
+            axios.get('/api/profileDataRouter')
             .then(response => {
                 setProfile({...response.data, logged_in_user_id: response.data.user_id });
             })
@@ -31,22 +34,25 @@ const BaseLayout = () => {
                     navigate('/login');
                 }
             })
-
-        axios.get('/groups')
-            .then(response => {
-                if (Array.isArray(response.data)) {
-                    setGroups(response.data);
-                } else {
-                    console.error('Expected an array for groups, received: ', response.data)
+            axios.get('/groups')
+                .then(response => {
+                    if (Array.isArray(response.data)) {
+                        setGroups(response.data);
+                    } else {
+                        console.error('Expected an array for groups, received: ', response.data)
+                        setGroups([]);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching groups data:', error);
                     setGroups([]);
-                }
-            })
-            .catch(error => {
-                console.error('Error fetching groups data:', error);
-                setGroups([]);
-            });
-    }, [navigate]);
+                });
+            }
+    }, [isAuthenticated, navigate]);
 
+    if (!isAuthenticated) {
+        return <div>Redirecting...</div>
+    }
     const createGroupSubmit = (e) => {
         e.preventDefault();
 

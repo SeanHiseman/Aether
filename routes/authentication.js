@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { hash, compare } from 'bcrypt';
 import { v4 } from 'uuid';
 import { Users, Profiles } from '../models/models.js';
+import authenticateCheck from '../functions/authenticateCheck.js';
 
 const router = Router();
 
@@ -75,6 +76,11 @@ router.post('/logout', (req, res) => {
         return res.json({ success: true });
     });
 
+});
+
+//Checks if user is logged in
+router.get('/check_authentication', authenticateCheck, (req, res) => {
+    res.json({ authenticated: true});
 });
 
 export default router;

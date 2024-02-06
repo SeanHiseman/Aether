@@ -1,5 +1,6 @@
 import React from 'react';
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
+import { AuthCheck } from './components/authContext';
 import BaseLayout from './pages/base';
 import GroupHome from './pages/groups/groupHome';
 import HomePage from './pages/home';
@@ -15,11 +16,11 @@ const App = () => {
             <Routes>
                 <Route path="/login" element={<Login />} />
                 <Route path="/register" element={<Register />} />
-                <Route path="/" element={<BaseLayout />}>
-                    <Route path="home" element={<HomePage />} />
-                    <Route path="group/:groupId" element={<GroupHome />} />
-                    <Route path="personal-profile/:profileId" element={<PersonalProfile />} />
-                    <Route path="profile/:profileId" element={<Profile />} />
+                <Route path="/" element={<AuthCheck><BaseLayout /></AuthCheck>}>
+                    <Route path="home" element={<AuthCheck><HomePage /></AuthCheck>} />
+                    <Route path="group/:groupId" element={<AuthCheck><GroupHome /></AuthCheck>} />
+                    <Route path="personal-profile/:profileId" element={<AuthCheck><PersonalProfile /></AuthCheck>} />
+                    <Route path="profile/:profileId" element={<AuthCheck><Profile /></AuthCheck>} />
                 </Route>
             </Routes>
         </Router>
