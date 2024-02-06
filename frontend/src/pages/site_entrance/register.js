@@ -22,10 +22,10 @@ function Register() {
         const username = formData.get('username');
         
         try {
-            const response = await axios.post('/register', { username, password });
+            const response = await axios.post('/api/register', { username, password });
 
             if (response.status === 200 || response.status === 201) {
-                navigate.push('/login');
+                navigate.push('/api/login');
             } else {
                 setError('Registration failed, please try again.');
                 navigate.push('/register');

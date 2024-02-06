@@ -1,1 +1,1 @@
-Ignore this folder, it's a bin for old code that may still be useful
+Ignore this folder, it's a bin for old code

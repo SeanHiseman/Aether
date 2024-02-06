@@ -3,7 +3,7 @@ import ReactDOM from 'react-dom';
 
 function SendFriendRequestButton({ receiverProfileId }) {
     const handleSendRequest = () => {
-        fetch(`/send_friend_request/${receiverProfileId}`, { method: 'POST' })
+        fetch(`/api/send_friend_request/${receiverProfileId}`, { method: 'POST' })
             .then(response => response.json())
             .then(data => {
                 console.log(data.message);

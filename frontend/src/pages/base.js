@@ -21,7 +21,7 @@ const BaseLayout = () => {
 
     //Fetch profile info and groups 
     useEffect(() => {
-        axios.get('/profileDataRouter')
+        axios.get('/api/profileDataRouter')
             .then(response => {
                 setProfile({...response.data, logged_in_user_id: response.data.user_id });
             })
@@ -145,7 +145,7 @@ const BaseLayout = () => {
                         onChange={(e) => setGroupPhoto(e.target.files[0])}
                     />
                     <input 
-                        className="light-button" 
+                        className="button" 
                         type="submit" 
                         value="Create"
                         disabled={!groupName}

@@ -6,7 +6,7 @@ import path from 'path';
 import authenticateCheck from '../functions/authenticateCheck.js';
 const router = Router();
 
-//Group home page route
+//Group home page data route
 router.get('/group/:group_id', authenticateCheck, async (req, res) => {
     const groupId = req.params.group_id;
     const userId = req.session.user_id;
@@ -14,9 +14,16 @@ router.get('/group/:group_id', authenticateCheck, async (req, res) => {
     try {
         //Check if user is admin of group
         const isAdmin = await checkIfUserIsAdmin(userId, groupId);
-    
+        const group = await Groups.findByPk(groupId);
+        if (!group) {
+            return res.status(404).send('Group not found');
+        }
         res.json({
             isAdmin: isAdmin,
+            groupName: group.group_name,
+            description: group.description,
+            groupPhoto: group.group_photo,
+            memberCount: group.member_count
         });
     } catch (error) {
         console.error('Error fetching group details: ', error);

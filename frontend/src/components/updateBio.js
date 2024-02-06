@@ -11,7 +11,7 @@ const UpdateBioButton = ({ currentBio }) => {
 
     const handleUpdateBio = async () => {
         try {
-            const response = await fetch('/update_bio', {
+            const response = await fetch('/api/update_bio', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'

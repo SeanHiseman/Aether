@@ -147,7 +147,8 @@ header {
     margin: 10px;
 }
 #create-group-form{
-    background-color: #41445a;
+    background-color: #000514;
+    border: 1px solid #ffffff;
     display: flex;
     flex-direction: column;
     justify-content: flex-start;
