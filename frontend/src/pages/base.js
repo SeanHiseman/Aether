@@ -100,45 +100,45 @@ const BaseLayout = () => {
 
     return (
         <div className="container">
-        <aside>
-        <div className="profile-info">
-            <Link id="profileLink" to={`/personal-profile/${profile.logged_in_username}`}>
-                <img className="profile-image" src={`${profile.logged_in_profile_photo}`} alt="Profile image" />
-            </Link>
-            <p id="logged_in_username">{profile.logged_in_username}</p>
-        </div>
-        <nav>
-            <ul>
-                <li><Link to="/home">Home</Link></li>
-                <li><Link to="/recommended">Recommended</Link></li>
-                <li><Link to="/home">Following</Link></li>
-                <li><Link to="/home">Personal</Link></li>
-            </ul>
-        </nav>
-        <nav>
-            <ul>
-                {groups.map(group => (
-                <li key={group.group_id}>
-                    <a href={`/group/${group.group_name}`}>
-                    <img src={group.group_photo} alt={group.group_name} />
-                    {group.group_name}
-                    </a>
-                </li>
-                ))}
-            </ul>
-        </nav>
-        <div id="create-group-section">
-            <button class="button" onClick={toggleForm}>
-                {showForm ? 'Close': 'Create new Group'}
-            </button>
-            {showForm && (
-                <form id="create-group-form" onSubmit={createGroupSubmit}>
-                    <input type="text" name="Name" placeholder="Group name" value={groupName} onChange={(e) => setGroupName(e.target.value)}/>
-                    <input type="file" name="Group photo" onChange={(e) => setGroupPhoto(e.target.files[0])}/>
-                    <input className="button" type="submit" value="Create" disabled={!groupName}/>
-                </form>
-            )}
-        </div>
+        <aside id="left-aside">
+            <div className="profile-info">
+                <Link id="profileLink" to={`/personal-profile/${profile.logged_in_username}`}>
+                    <img className="profile-image" src={`${profile.logged_in_profile_photo}`} alt="Profile image" />
+                </Link>
+                <p id="logged_in_username">{profile.logged_in_username}</p>
+            </div>
+            <nav>
+                <ul>
+                    <li><Link to="/home">Home</Link></li>
+                    <li><Link to="/recommended">Recommended</Link></li>
+                    <li><Link to="/home">Following</Link></li>
+                    <li><Link to="/home">Personal</Link></li>
+                </ul>
+            </nav>
+            <nav>
+                <ul>
+                    {groups.map(group => (
+                    <li key={group.group_id}>
+                        <a href={`/group/${group.group_name}`}>
+                        <img src={group.group_photo} alt={group.group_name} />
+                        {group.group_name}
+                        </a>
+                    </li>
+                    ))}
+                </ul>
+            </nav>
+            <div id="create-group-section">
+                <button class="button" onClick={toggleForm}>
+                    {showForm ? 'Close': 'Create new Group'}
+                </button>
+                {showForm && (
+                    <form id="create-group-form" onSubmit={createGroupSubmit}>
+                        <input type="text" name="Name" placeholder="Group name" value={groupName} onChange={(e) => setGroupName(e.target.value)}/>
+                        <input type="file" name="Group photo" onChange={(e) => setGroupPhoto(e.target.files[0])}/>
+                        <input className="button" type="submit" value="Create" disabled={!groupName}/>
+                    </form>
+                )}
+            </div>
         </aside>
         <main>
             <header>

@@ -9,11 +9,14 @@ import '../../css/profile.css';
 
 //Loads the profile page of the logged in user
 const PersonalProfile = () => {
+    const { username } = useParams();
+    const [channels, setChannels] = useState(username.channels || []);
+    const [channelName, setChannelName] = useState('');
     const [profile, setProfile] = useState({ logged_in_profile_id: '', logged_in_profile_photo: '', logged_in_username: '', bio: ''});
+    const [showForm, setShowForm] = useState(false);
     const [uploadStatus, setUploadStatus] = useState('');
     const [userContent, setUserContent] = useState([]);
     const navigate = useNavigate();
-    const { username } = useParams();
     useEffect(() => {
         document.title = "Profile";
         axios.get(`/api/personal-profile/${username}`)
@@ -81,6 +84,28 @@ const PersonalProfile = () => {
             })
     }
 
+    //Adds channel to group
+    const AddChannel = async (event) => {
+        event.preventDefault();
+        const channelName = event.target.elements.channel_name.value;
+        try {
+            const response = await axios.post('/api/add_personal_channel', {
+                channel_name: channelName,
+                profileId: username.profile_id
+            });
+            if (response.data && response.status === 200) {
+                setChannels([...channels, response.data]);
+            }
+        } catch (error) {
+            console.error('Error:', error.response ? error.response.data : error.message);
+        }
+    };   
+
+    //Toggles display of create channel form after button is pressed
+    const toggleForm = () => {
+        setShowForm(!showForm)
+    }
+
     return (
         <div id="profile-container">
             <div id="profile-header">
@@ -119,6 +144,25 @@ const PersonalProfile = () => {
                     {Array.isArray(userContent) && userContent.map(item => (
                         <ContentWidget key={item.post_id} item={item} />
                     ))}
+                </div>
+            </div>
+            <div id="right-aside">
+                <h2>Channels</h2>
+                {/*<ul>
+                    {groupId.channels.map((channel, index) => (
+                        <li key={index}>{channel}</li>
+                    ))}
+                    </ul>*/}
+                <div id="add-channel-section">
+                    <button class="button" onClick={toggleForm}>
+                        {showForm ? 'Close': 'Create new Channel'}
+                    </button>
+                    {showForm && (
+                        <form id="add-channel-form" action="/add_channel" method="post" onSubmit={AddChannel}>
+                            <input type="text" name="Name" placeholder="Channel name" value={channelName} onChange={(e) => setChannelName(e.target.value)}/>
+                            <input className="button" type="submit" value="Add" disabled={!channelName}/>
+                        </form>                            
+                    )}
                 </div>
             </div>
         </div>

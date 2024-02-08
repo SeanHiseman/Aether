@@ -9,6 +9,16 @@ const Profiles = sequelize.define('profiles', {
 }, {tableName: 'profiles', timestamps: false });
 
 
+const ProfileChannels = sequelize.define('profile_channels', { 
+  channel_id: { type: STRING(36), primaryKey: true }, 
+  channel_name: { type: STRING(100), allowNull: false }, 
+  group_id: { type: STRING(36), allowNull: false }, 
+  date_created: { type: DATE, defaultValue: NOW },
+}); 
+
+ProfileChannels.belongsTo(Profiles, { foreignKey: 'profile_id' }); 
+Profiles.hasMany(ProfileChannels, { foreignKey: 'profile_id' }); 
+
 const Users = sequelize.define('users', {
   user_id: { type: STRING(36), primaryKey: true },
   username: { type: STRING(120), allowNull: false },
@@ -78,26 +88,26 @@ Groups.belongsTo(Groups, { as: 'ParentGroup', foreignKey: 'parent_id' });
 Groups.hasMany(Groups, { as: 'SubGroups', foreignKey: 'parent_id' });
 
 
-const Channels = sequelize.define('channels', { 
+const GroupChannels = sequelize.define('group_channels', { 
   channel_id: { type: STRING(36), primaryKey: true }, 
   channel_name: { type: STRING(100), allowNull: false }, 
   group_id: { type: STRING(36), allowNull: false }, 
   date_created: { type: DATE, defaultValue: NOW },
 }); 
 
-Channels.belongsTo(Groups, { foreignKey: 'group_id' }); 
-Groups.hasMany(Channels, { foreignKey: 'group_id' }); 
+GroupChannels.belongsTo(Groups, { foreignKey: 'group_id' }); 
+Groups.hasMany(GroupChannels, { foreignKey: 'group_id' }); 
 
 
-const ChannelMessages = sequelize.define('channel_messages', { 
+const GroupChannelMessages = sequelize.define('group_channel_messages', { 
   message_id: { type: STRING(36), primaryKey: true }, 
   message_content: { type: STRING(1000), allowNull: false }, 
   channel_id: { type: STRING(36), allowNull: false }, 
   message_time: { type: DATE, defaultValue: NOW },
 }); 
 
-ChannelMessages.belongsTo(Channels, { foreignKey: 'channel_id' }); 
-Channels.hasMany(ChannelMessages, { foreignKey: 'channel_id' });
+GroupChannelMessages.belongsTo(GroupChannels, { foreignKey: 'channel_id' }); 
+GroupChannels.hasMany(GroupChannelMessages, { foreignKey: 'channel_id' });
 
 
 const Comments = sequelize.define('comments', {
@@ -176,12 +186,13 @@ Messages.belongsTo(Users, { foreignKey: 'sender_id' });
 
 export {
     Profiles,
+    ProfileChannels,
     Users, 
     Posts,
     Groups,
     UserGroups,
-    Channels,
-    ChannelMessages,
+    GroupChannels,
+    GroupChannelMessages,
     Comments,
     Friends,
     FriendRequests,

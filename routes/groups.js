@@ -1,5 +1,5 @@
 import checkIfUserIsAdmin from '../functions/adminCheck.js';
-import { Groups, Channels } from '../models/models.js';
+import { Groups, GroupChannels } from '../models/models.js';
 import multer from 'multer';
 import { Router } from 'express';
 import path from 'path';
@@ -102,18 +102,18 @@ router.post('/create_group', authenticateCheck, upload.single('new_group_profile
 });
 
 //Create new channel within a group
-router.post('/add_channel', authenticateCheck, async (req, res) => {
+router.post('/add_group_channel', authenticateCheck, async (req, res) => {
     try {
-        const { groupId } = req.params;
-        const { channel_name } = req.body;
+        const { groupId } = req.params.groupId;
+        const { channel_name } = req.body.channel_name;
 
         //Checks if group can be found
         const group = await Groups.findByPk(groupId);
         if (!group) {
-            return res.status(404).jso({ error: 'Group not found'});
+            return res.status(404).jsom({ error: 'Group not found'});
         }
 
-        const newChannel = await Channels.create({ channel_name, group_id: groupId});
+        const newChannel = await GroupChannels.create({ channel_name, group_id: groupId});
         res.status(201).json(newChannel);
     } catch (error) {
         res.status(400).json({ error: error.message });
