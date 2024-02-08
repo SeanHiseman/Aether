@@ -7,7 +7,7 @@ import path from 'path';
 import authenticateCheck from '../functions/authenticateCheck.js';
 import session from 'express-session';
 import multer, { diskStorage } from 'multer';
-import { Profiles, Users, UserConversations, Conversations } from '../models/models.js';
+import { Conversations, Profiles, ProfileChannels, Users, UserConversations } from '../models/models.js';
 
 const app = express();
 const router = Router();
@@ -56,6 +56,25 @@ router.get('/personal-profile/:username', authenticateCheck, async (req, res) =>
 
     } catch (error) {
         res.status(500).send(`Internal Server Error: ${error.toString()}`);
+    }
+});
+
+//Create new channel within a profile
+router.post('/add_profile_channel', authenticateCheck, async (req, res) => {
+    try {
+        const { profileId } = req.params.profileId;
+        const { channel_name } = req.body.channel_name;
+
+        //Checks if group can be found
+        const group = await Profiles.findByPk(profileId);
+        if (!group) {
+            return res.status(404).json({ error: 'Group not found'});
+        }
+
+        const newChannel = await ProfileChannels.create({ channel_name, profile_id: profileId});
+        res.status(201).json(newChannel);
+    } catch (error) {
+        res.status(400).json({ error: error.message });
     }
 });
 

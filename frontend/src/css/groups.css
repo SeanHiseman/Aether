@@ -1,35 +1,16 @@
-#add-channel-form{
-    background-color: #000514;
-    border: 1px solid #ffffff;
+#group-container {
     display: flex;
     flex-direction: column;
-    justify-content: flex-start;
-    padding: 5px;
-    border-radius: 10px;
-    width: 90%;
-    max-width: 180px; 
-    margin: 10px;
-}
-.channels {
-    background-color: #000514; 
     height: 100%;
-    padding: 10px;
-    position: absolute;
-    right: 0;
-    width: 200px;
 }
-.channels ul {
-    list-style-type: none;
-    padding: 0;
-}
-.group-photo{
-    width: 100px;
-    border-radius: 50%;
-    margin-right: 20px;
-}
-.group-header {
+#group-header {
     background-color: #41445a;
     display: flex;
     padding: 20px;
-    width: 100%;
+    flex: 0 1 auto
+}
+#large-group-photo {
+    width: 100px;
+    border-radius: 50%;
+    margin-right: 20px;
 }

@@ -1,29 +1,14 @@
-aside {
-    width: 200px;
+#add-channel-form {
     background-color: #000514;
+    border: 1px solid #ffffff;
     display: flex;
     flex-direction: column;
-    align-items: center;
-    overflow: auto;
-    height: 100vh;
-}
-aside nav ul {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-    text-align: center;
-    width: 100%;
-}
-aside nav ul li {
-    padding: 10px;
-    border-bottom: 1px solid #444;
-}
-aside nav ul li a {
-    color: white;
-    text-decoration: none;
-}
-aside nav ul li a:hover {
-    background-color: #444;
+    justify-content: flex-start;
+    padding: 5px;
+    border-radius: 10px;
+    width: 90%;
+    max-width: 180px; 
+    margin: 10px;
 }
 body,html {
     font-family: Arial, sans-serif;
@@ -73,6 +58,33 @@ header {
     padding: 10px 0;
     position: relative;
 }
+#left-aside {
+    width: 200px;
+    background-color: #000514;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    overflow-y: auto;
+    height: 100vh;
+}
+#left-aside nav ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    text-align: center;
+    width: 100%;
+}
+#left-aside nav ul li {
+    padding: 10px;
+    border-bottom: 1px solid #444;
+}
+#left-aside nav ul li a {
+    color: white;
+    text-decoration: none;
+}
+#left-aside nav ul li a:hover {
+    background-color: #444;
+}
 .light-button {
     padding: 5px 10px;
     margin: 10px;
@@ -98,7 +110,19 @@ header {
     display: flex;
     flex-wrap: wrap;
 }
-
+#right-aside {
+    width: 200px;
+    background-color: #000514;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    overflow-y: auto;
+    height: 100vh;
+}
+#right-aside ul {
+    list-style-type: none;
+    padding: 0;
+}
 .profile-info {
     display: flex;
     align-items: center;

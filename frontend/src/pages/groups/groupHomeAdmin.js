@@ -53,7 +53,7 @@ function GroupHomeAdmin() {
         event.preventDefault();
         const channelName = event.target.elements.channel_name.value;
         try {
-            const response = await axios.post('/api/add_channel', {
+            const response = await axios.post('/api/add_group_channel', {
                 channel_name: channelName,
                 groupId: group_name.group_id
             });
@@ -71,35 +71,33 @@ function GroupHomeAdmin() {
     }
 
     return (
-        <div>
-            <header className="group-header">
-                <img className="group-photo" src={groupDetails.groupPhoto} alt={groupDetails.groupName} />
+        <div id="group-container">           
+            <header id="group-header">
+                <img id="large-group-photo" src={groupDetails.groupPhoto} alt={groupDetails.groupName} />
                 <h1>{groupDetails.groupName}</h1>
                 <p>{groupDetails.memberCount} members</p>
                 <p>{groupDetails.description}</p>
                 <PostForm />
             </header>
-            <main>
-                <div className="channels">
-                    <h2>Channels</h2>
-                    {/*<ul>
-                        {groupId.channels.map((channel, index) => (
-                            <li key={index}>{channel}</li>
-                        ))}
-                        </ul>*/}
-                    <div id="add-channel-section">
-                        <button class="button" onClick={toggleForm}>
-                            {showForm ? 'Close': 'Create new Channel'}
-                        </button>
-                        {showForm && (
-                            <form id="add-channel-form" action="/add_channel" method="post" onSubmit={AddChannel}>
-                                <input type="text" name="Name" placeholder="Channel name" value={channelName} onChange={(e) => setChannelName(e.target.value)}/>
-                                <input className="button" type="submit" value="Add" disabled={!channelName}/>
-                            </form>                            
-                        )}
-                    </div>
+            <aside id="right-aside">
+                <h2>Channels</h2>
+                {/*<ul>
+                    {groupId.channels.map((channel, index) => (
+                        <li key={index}>{channel}</li>
+                    ))}
+                    </ul>*/}
+                <div id="add-channel-section">
+                    <button class="button" onClick={toggleForm}>
+                        {showForm ? 'Close': 'Create new Channel'}
+                    </button>
+                    {showForm && (
+                        <form id="add-channel-form" action="/add_group_channel" method="post" onSubmit={AddChannel}>
+                            <input type="text" name="Name" placeholder="Channel name" value={channelName} onChange={(e) => setChannelName(e.target.value)}/>
+                            <input className="button" type="submit" value="Add" disabled={!channelName}/>
+                        </form>                            
+                    )}
                 </div>
-            </main>
+            </aside> 
         </div>
     );
 }
