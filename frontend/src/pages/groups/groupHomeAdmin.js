@@ -5,12 +5,15 @@ import '../../css/groups.css';
 import PostForm from '../../components/postForm';
 
 function GroupHomeAdmin() {
-    const { groupId } = useParams();
+    const { group_name } = useParams();
     const [isAdmin, setIsAdmin] = useState(true);
-    const [groupDetails, setGroupDetails] = useState({ groupName: '', description: '', groupPhoto: '', memberCount: 0 });
-    const [channels, setChannels] = useState(groupId.channels || []);
+    const [channels, setChannels] = useState(group_name.channels || []);
+    const [channelName, setChannelName] = useState('');
+    const [groupDetails, setGroupDetails] = useState({ groupName: group_name, description: '', groupPhoto: '', memberCount: 0 });
+    const [showForm, setShowForm] = useState(false);
+
     useEffect(() => {
-        fetch(`/api/group/${groupId}`)
+        fetch(`/api/group/${group_name}`)
             .then(response => {
                 if (!response.ok) {
                     throw new Error('Network response was not ok');
@@ -28,10 +31,10 @@ function GroupHomeAdmin() {
             }).catch(error => {
                 console.error('Fetch error:', error);
             })
-    }, [groupId]);
-    
+    }, [group_name]);
+    document.title = groupDetails.groupName;
     //Uploads content to group
-    const handleUploadSubmit = async (event) => {
+    const UploadSubmit = async (event) => {
         event.preventDefault();
         const formData = new FormData(event.target);
         try {
@@ -46,13 +49,13 @@ function GroupHomeAdmin() {
     };
 
     //Adds channel to group
-    const handleAddChannelSubmit = async (event) => {
+    const AddChannel = async (event) => {
         event.preventDefault();
         const channelName = event.target.elements.channel_name.value;
         try {
             const response = await axios.post('/api/add_channel', {
                 channel_name: channelName,
-                groupId: groupId.group_id
+                groupId: group_name.group_id
             });
             if (response.data && response.status === 200) {
                 setChannels([...channels, response.data]);
@@ -61,6 +64,11 @@ function GroupHomeAdmin() {
             console.error('Error:', error.response ? error.response.data : error.message);
         }
     };
+
+    //Toggles display of create channel form after button is pressed
+    const toggleForm = () => {
+        setShowForm(!showForm)
+    }
 
     return (
         <div>
@@ -79,13 +87,17 @@ function GroupHomeAdmin() {
                             <li key={index}>{channel}</li>
                         ))}
                         </ul>*/}
-                </div>
-                <div id="add-channel-section">
-                    <p>Add channel</p>
-                    <form id="add-channel-form" action="/add_channel" method="post" onSubmit={handleAddChannelSubmit}>
-                        <input type="text" name="Name" placeholder="Channel name" />
-                        <input id="create-group-button" type="submit" value="Add" />
-                    </form>
+                    <div id="add-channel-section">
+                        <button class="button" onClick={toggleForm}>
+                            {showForm ? 'Close': 'Create new Channel'}
+                        </button>
+                        {showForm && (
+                            <form id="add-channel-form" action="/add_channel" method="post" onSubmit={AddChannel}>
+                                <input type="text" name="Name" placeholder="Channel name" value={channelName} onChange={(e) => setChannelName(e.target.value)}/>
+                                <input className="button" type="submit" value="Add" disabled={!channelName}/>
+                            </form>                            
+                        )}
+                    </div>
                 </div>
             </main>
         </div>

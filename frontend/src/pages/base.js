@@ -8,12 +8,7 @@ import '../css/base.css';
 
 const BaseLayout = () => {
     const { isAuthenticated } = useContext(AuthContext);
-    const [profile, setProfile] = useState({ 
-        logged_in_profile_id: '', 
-        logged_in_profile_photo: '', 
-        logged_in_username: '',
-        logged_in_user_id: ''
-    });
+    const [profile, setProfile] = useState({ logged_in_profile_id: '', logged_in_profile_photo: '', logged_in_username: '',logged_in_user_id: ''});
     const [groups, setGroups] = useState([]);
     const [groupName, setGroupName] = useState('');
     const [groupPhoto, setGroupPhoto] = useState(null);
@@ -70,8 +65,8 @@ const BaseLayout = () => {
                 setGroups([...groups, response.data]);
 
                 //Redirect to new group
-                const newGroupId = response.data.group_id;
-                navigate(`/group/${newGroupId}`);
+                const newGroupName = response.data.group_name
+                navigate(`/group/${newGroupName}`);
         })
         .catch(error => {
             console.error('Error creating group: ', error);
@@ -93,7 +88,7 @@ const BaseLayout = () => {
         });
     };
 
-    const handleSearchSubmit = (e) => {
+    const SearchSubmit = (e) => {
         e.preventDefault();
 
     }
@@ -107,7 +102,7 @@ const BaseLayout = () => {
         <div className="container">
         <aside>
         <div className="profile-info">
-            <Link id="profileLink" to={`/personal-profile/${profile.logged_in_profile_id}`}>
+            <Link id="profileLink" to={`/personal-profile/${profile.logged_in_username}`}>
                 <img className="profile-image" src={`${profile.logged_in_profile_photo}`} alt="Profile image" />
             </Link>
             <p id="logged_in_username">{profile.logged_in_username}</p>
@@ -124,7 +119,7 @@ const BaseLayout = () => {
             <ul>
                 {groups.map(group => (
                 <li key={group.group_id}>
-                    <a href={`/group/${group.group_id}`}>
+                    <a href={`/group/${group.group_name}`}>
                     <img src={group.group_photo} alt={group.group_name} />
                     {group.group_name}
                     </a>
@@ -138,24 +133,9 @@ const BaseLayout = () => {
             </button>
             {showForm && (
                 <form id="create-group-form" onSubmit={createGroupSubmit}>
-                    <input 
-                        type="text" 
-                        name="Name" 
-                        placeholder="Group name" 
-                        value={groupName}
-                        onChange={(e) => setGroupName(e.target.value)}
-                    />
-                    <input 
-                        type="file" 
-                        name="Group photo" 
-                        onChange={(e) => setGroupPhoto(e.target.files[0])}
-                    />
-                    <input 
-                        className="button" 
-                        type="submit" 
-                        value="Create"
-                        disabled={!groupName}
-                    />
+                    <input type="text" name="Name" placeholder="Group name" value={groupName} onChange={(e) => setGroupName(e.target.value)}/>
+                    <input type="file" name="Group photo" onChange={(e) => setGroupPhoto(e.target.files[0])}/>
+                    <input className="button" type="submit" value="Create" disabled={!groupName}/>
                 </form>
             )}
         </div>
@@ -163,20 +143,9 @@ const BaseLayout = () => {
         <main>
             <header>
                 <div className="spacer"></div>
-                    <form id="search-form" onSubmit={handleSearchSubmit}>
-                        <input 
-                            type="text" 
-                            id="keyword" 
-                            name="keyword" 
-                            placeholder="Search..."
-                            value={searchKeyword}
-                            onChange={(e) => setSearchKeyword(e.target.value)}
-                        />
-                        <input 
-                            id="search-submit-button" 
-                            type="submit" 
-                            value="Search"
-                            />
+                    <form id="search-form" onSubmit={SearchSubmit}>
+                        <input type="text" id="keyword" name="keyword" placeholder="Search..." value={searchKeyword} onChange={(e) => setSearchKeyword(e.target.value)}/>
+                        <input id="search-submit-button" type="submit" value="Search"/>
                     </form>
             <div className="spacer"></div>
             <ChatApp />

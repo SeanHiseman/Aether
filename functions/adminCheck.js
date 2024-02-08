@@ -1,7 +1,12 @@
-import { UserGroups } from '../models/models.js';
+import { Groups, UserGroups } from '../models/models.js';
 
-async function checkIfUserIsAdmin(userId, groupId) {
+async function checkIfUserIsAdmin(userId, groupName) {
     try {
+        //Matches group name to group id
+        const group = await Groups.findOne({
+            where: { group_name: groupName}
+        });
+        const groupId = group.group_id;
         const userGroup = await UserGroups.findOne({
             where: {
                 user_id: userId,

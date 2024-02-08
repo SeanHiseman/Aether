@@ -20,32 +20,35 @@ app.use(express.static(join(__dirname, 'static')));
 app.use(session({ secret: 'EDIT_ME', resave: true, saveUninitialized: true }));
 
 //Load users own profile
-router.get('/personal-profile/:url_profile_id', authenticateCheck, async (req, res) => {
+router.get('/personal-profile/:username', authenticateCheck, async (req, res) => {
     try {
-        let viewed_profile = await Profiles.findOne({ where: { profile_id: req.params.url_profile_id } });
-        if (!viewed_profile) {
-            return res.status(404).send("Profile not found");
+        let user = await Users.findOne({ where: { username: req.params.username } });
+        if (!user) {
+            return res.status(404).send("User not found");
         }
-
-        let viewed_user = await Users.findOne({ where: { user_id: viewed_profile.user_id } });
+        //Finds profile associated with user
+        let profile = await Profiles.findOne({ where: { user_id: user.user_id } });
+        if (!profile) {
+            return res.status(404).send("Profile not found")
+        }
         //let user_content = await Posts.findAll({
-            //where: { poster_id: viewed_profile.user_id },
+            //where: { poster_id: profile.user_id },
             //order: [['timestamp', 'DESC']]
         //});
 
         //Provides each item posted by the user with profile info
         //user_content.forEach(item => {
-            //item.username = viewed_user.username;
-            //item.profile_photo = viewed_profile.profile_photo;
-            //item.profile_id = viewed_profile.profile_id;
+            //item.username = user.username;
+            //item.profile_photo = profile.profile_photo;
+            //item.profile_id =profile.profile_id;
         //});
 
         const responseData = {
             profile: {
-                logged_in_profile_id: viewed_profile.profile_id,
-                logged_in_profile_photo: viewed_profile.profile_photo,
-                logged_in_username: viewed_user.username,
-                bio: viewed_profile.bio
+                logged_in_profile_id: profile.profile_id,
+                logged_in_profile_photo: profile.profile_photo,
+                logged_in_username: user.username,
+                bio: profile.bio
             },
             //user_content: user_content
         }
