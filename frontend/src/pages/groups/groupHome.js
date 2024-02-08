@@ -6,11 +6,11 @@ import GroupHomeAdmin from './groupHomeAdmin';
 import PostForm from '../../components/postForm';
 
 function GroupHome() {
-    const { groupId } = useParams();
+    const { group_name } = useParams();
     const [isAdmin, setIsAdmin] = useState(false);
     const [groupDetails, setGroupDetails] = useState({ groupName: '', description: '', groupPhoto: '', memberCount: 0 });
     useEffect(() => {
-        fetch(`/api/group/${groupId}`)
+        fetch(`/api/group/${group_name}`)
             .then(response => {
                 if (!response.ok) {
                     throw new Error('Network response was not ok');
@@ -28,8 +28,8 @@ function GroupHome() {
             }).catch(error => {
                 console.error('Fetch error:', error);
             })
-    }, [groupId]);
-    
+    }, [group_name]);
+    document.title = groupDetails.groupName;
     //Uploads content to group
     const handleSubmit = async (event) => {
         event.preventDefault();

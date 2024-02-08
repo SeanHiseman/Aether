@@ -13,16 +13,15 @@ const PersonalProfile = () => {
     const [uploadStatus, setUploadStatus] = useState('');
     const [userContent, setUserContent] = useState([]);
     const navigate = useNavigate();
-    const { profileId } = useParams();
-    
+    const { username } = useParams();
     useEffect(() => {
         document.title = "Profile";
-        axios.get(`/api/personal-profile/${profileId}`)
+        axios.get(`/api/personal-profile/${username}`)
             .then(response => {
                 setProfile(response.data.profile);
+                console.log("Profile id:", response.data.logged_in_profile_id);
                 axios.get(`/api/user-content/${response.data.logged_in_profile_id}`)
                     .then(contentResponse => {
-                        console.log("Content Response Data: ", contentResponse.data)
                         setUserContent(contentResponse.data);
                     })
                     .catch(contentError => {
@@ -35,9 +34,9 @@ const PersonalProfile = () => {
                     navigate('/login');
                 }
             })
-    }, [profileId, navigate]);
+    }, [username, navigate]);
 
-    const handlePhotoSubmit = (e) => {
+    const PhotoSubmit = (e) => {
         e.preventDefault();
         const formData = new FormData(e.target);
         if (!formData.get('Update')) {
@@ -52,7 +51,7 @@ const PersonalProfile = () => {
         });
     }
 
-    const handleUploadSubmit = (e) => {
+    const UploadSubmit = (e) => {
         e.preventDefault();
         const formData = new FormData(e.target);
         if (!formData.get('Upload')) {
@@ -87,7 +86,7 @@ const PersonalProfile = () => {
             <div id="profile-header">
                 <div id="profile-header-photo">
                     <img id="large-profile-image" src={`/${profile.logged_in_profile_photo}`} alt="Profile Picture" />
-                    <form id="change-profile-photo" action="/profiles/update_profile_photo" method="post" enctype="multipart/form-data" onSubmit={handlePhotoSubmit}>
+                    <form id="change-profile-photo" action="/profiles/update_profile_photo" method="post" enctype="multipart/form-data" onSubmit={PhotoSubmit}>
                         <label htmlFor="new_profile_photo">Change Profile Photo:</label>
                         <input type="file" id="new_profile_photo" name="new_profile_photo" accept="image/*" />
                         <input className="light-button" type="submit" value="Update" />
@@ -102,7 +101,7 @@ const PersonalProfile = () => {
                 <div id="profile-header-side">
                     <div id="upload-section">
                         <p>Upload content</p>
-                        <form id="upload-form" enctype="multipart/form-data" action="/upload" method="post" onSubmit={handleUploadSubmit}>
+                        <form id="upload-form" enctype="multipart/form-data" action="/upload" method="post" onSubmit={UploadSubmit}>
                             <input type="text" name="title" placeholder="Enter title" />
                             <input type="file" name="file" />
                             <input className="light-button" type="submit" value="Upload" />

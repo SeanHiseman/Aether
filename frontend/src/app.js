@@ -18,9 +18,9 @@ const App = () => {
                 <Route path="/register" element={<Register />} />
                 <Route path="/" element={<AuthCheck><BaseLayout /></AuthCheck>}>
                     <Route path="home" element={<AuthCheck><HomePage /></AuthCheck>} />
-                    <Route path="group/:groupId" element={<AuthCheck><GroupHome /></AuthCheck>} />
-                    <Route path="personal-profile/:profileId" element={<AuthCheck><PersonalProfile /></AuthCheck>} />
-                    <Route path="profile/:profileId" element={<AuthCheck><Profile /></AuthCheck>} />
+                    <Route path="group/:group_name" element={<AuthCheck><GroupHome /></AuthCheck>} />
+                    <Route path="personal-profile/:username" element={<AuthCheck><PersonalProfile /></AuthCheck>} />
+                    <Route path="profile/:username" element={<AuthCheck><Profile /></AuthCheck>} />
                 </Route>
             </Routes>
         </Router>

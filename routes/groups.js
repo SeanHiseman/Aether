@@ -3,18 +3,18 @@ import { Groups, Channels } from '../models/models.js';
 import multer from 'multer';
 import { Router } from 'express';
 import path from 'path';
+import { v4 } from 'uuid';
 import authenticateCheck from '../functions/authenticateCheck.js';
 const router = Router();
 
 //Group home page data route
-router.get('/group/:group_id', authenticateCheck, async (req, res) => {
-    const groupId = req.params.group_id;
+router.get('/group/:group_name', authenticateCheck, async (req, res) => {
+    const groupName = req.params.group_name;
     const userId = req.session.user_id;
-    
     try {
         //Check if user is admin of group
-        const isAdmin = await checkIfUserIsAdmin(userId, groupId);
-        const group = await Groups.findByPk(groupId);
+        const isAdmin = await checkIfUserIsAdmin(userId, groupName);
+        const group = await Groups.findOne({where: {group_name: groupName}});
         if (!group) {
             return res.status(404).send('Group not found');
         }
@@ -26,7 +26,6 @@ router.get('/group/:group_id', authenticateCheck, async (req, res) => {
             memberCount: group.member_count
         });
     } catch (error) {
-        console.error('Error fetching group details: ', error);
         res.status(500).send('Internal server error');
     }
 });
@@ -79,6 +78,13 @@ router.post('/create_group', authenticateCheck, upload.single('new_group_profile
             group_photo,
             member_count: 1,
             is_private: is_private,
+        });
+
+        //Adds main channel
+        await Channels.create({
+            channel_id: v4(),
+            channel_name: 'Main',
+            group_id: newGroup.group_id,
         });
 
         //Add creating user to the group, giving them permissions
