@@ -109,6 +109,27 @@ const PersonalProfile = () => {
     return (
         <div id="profile-container">
             <div id="profile-header">
+                <FriendRequests />
+                <div id="profile-header-side">
+                    {/*<div id="upload-section">
+                        <p>Upload content</p>
+                        <form id="upload-form" enctype="multipart/form-data" action="/upload" method="post" onSubmit={UploadSubmit}>
+                            <input type="text" name="title" placeholder="Enter title" />
+                            <input type="file" name="file" />
+                            <input className="light-button" type="submit" value="Upload" />
+                        </form>
+                        <div id="confirmation-message"></div>
+                    </div>*/}
+                    <PostForm />
+                </div>
+                <div id="viewed-profile-info">
+                    <p id="large-username-text">{profile.logged_in_username}</p>
+                    <p id="profile-bio">{profile.bio}</p>
+                    <UpdateBioButton currentBio={profile.bio} />
+                    <form action="/api/logout" method="post" onSubmit={handleLogout}>
+                        <button className="light-button" type="submit">Logout</button>
+                    </form>
+                </div>
                 <div id="profile-header-photo">
                     <img id="large-profile-image" src={`/${profile.logged_in_profile_photo}`} alt="Profile Picture" />
                     <form id="change-profile-photo" action="/profiles/update_profile_photo" method="post" enctype="multipart/form-data" onSubmit={PhotoSubmit}>
@@ -117,28 +138,7 @@ const PersonalProfile = () => {
                         <input className="light-button" type="submit" value="Update" />
                     </form>           
                 </div>
-                <div id="viewed-profile-info">
-                    <p id="large-username-text">{profile.logged_in_username}</p>
-                    <p id="profile-bio">{profile.bio}</p>
-                    <UpdateBioButton currentBio={profile.bio} />
-                </div>
-                <FriendRequests />
-                <div id="profile-header-side">
-                    <div id="upload-section">
-                        <p>Upload content</p>
-                        <form id="upload-form" enctype="multipart/form-data" action="/upload" method="post" onSubmit={UploadSubmit}>
-                            <input type="text" name="title" placeholder="Enter title" />
-                            <input type="file" name="file" />
-                            <input className="light-button" type="submit" value="Upload" />
-                        </form>
-                        <div id="confirmation-message"></div>
-                    </div>
-                    <form action="/api/logout" method="post" onSubmit={handleLogout}>
-                        <button className="light-button" type="submit">Logout</button>
-                    </form>
-                </div>
             </div>
-            <PostForm />
             <div className="results-wrapper">
                 <div id="results">
                     {Array.isArray(userContent) && userContent.map(item => (

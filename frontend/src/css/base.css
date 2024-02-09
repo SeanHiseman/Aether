@@ -59,13 +59,13 @@ header {
     position: relative;
 }
 #left-aside {
-    width: 200px;
     background-color: #000514;
     display: flex;
     flex-direction: column;
     align-items: center;
     overflow-y: auto;
     height: 100vh;
+    min-width: 210px;
 }
 #left-aside nav ul {
     list-style: none;
@@ -111,13 +111,15 @@ header {
     flex-wrap: wrap;
 }
 #right-aside {
-    width: 200px;
+    align-items: center;
     background-color: #000514;
     display: flex;
     flex-direction: column;
-    align-items: center;
+    grid-column: 2 / 3;
+    grid-row: 1 / 3;
+    height: auto;
+    min-width: 210px;
     overflow-y: auto;
-    height: 100vh;
 }
 #right-aside ul {
     list-style-type: none;
