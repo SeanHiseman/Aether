@@ -46,11 +46,6 @@ form{
     padding: 10px;
     z-index: 2;
 }
-#profile-header-photo{
-    display: flex;
-    flex-direction: column;
-    max-width: 350px;
-}
 #profile-header-side{
     display: flex;
     flex-direction: column;

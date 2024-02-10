@@ -2,14 +2,16 @@ import axios from 'axios';
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import '../../css/groups.css'; 
+import ChangeProfilePhoto from '../../components/changeProfilePhoto';
 import PostForm from '../../components/postForm';
 
 function GroupHomeAdmin() {
     const { group_name } = useParams();
-    const [isAdmin, setIsAdmin] = useState(true);
     const [channels, setChannels] = useState(group_name.channels || []);
     const [channelName, setChannelName] = useState('');
     const [groupDetails, setGroupDetails] = useState({ groupName: group_name, description: '', groupPhoto: '', memberCount: 0 });
+    const [isAdmin, setIsAdmin] = useState(true);
+    const [isPhotoFormVisible, setIsPhotoFormVisible] = useState(false);
     const [showForm, setShowForm] = useState(false);
 
     useEffect(() => {
@@ -32,7 +34,7 @@ function GroupHomeAdmin() {
                 console.error('Fetch error:', error);
             })
     }, [group_name]);
-    document.title = groupDetails.groupName;
+
     //Uploads content to group
     const UploadSubmit = async (event) => {
         event.preventDefault();
@@ -78,7 +80,15 @@ function GroupHomeAdmin() {
                 <p>{groupDetails.memberCount} members</p>
                 <p>{groupDetails.description}</p>
                 <h1>{groupDetails.groupName}</h1>
-                <img id="large-group-photo" src={groupDetails.groupPhoto} alt={groupDetails.groupName} />
+                <div id="profile-header-photo">
+                    <img id="large-group-photo" src={groupDetails.groupPhoto} alt={groupDetails.groupName} />
+                    <button className="light-button" onClick={() => setIsPhotoFormVisible(!isPhotoFormVisible)}>
+                        {isPhotoFormVisible ? 'Close' : 'Change Profile Photo'}
+                    </button>
+                    {isPhotoFormVisible && <ChangeProfilePhoto onPhotoUpdated={() => {
+                        setIsPhotoFormVisible(false); 
+                    }} />}
+                </div>
             </header>
             <aside id="right-aside">
                 <h2>Channels</h2>
