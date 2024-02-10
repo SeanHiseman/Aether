@@ -50,6 +50,7 @@ main {
 header {
     align-items: center;
     background-color: #000514; 
+    border-bottom: 1px solid #ffffff;
     display: flex;
     flex-wrap: wrap;
     justify-content: center;
@@ -60,12 +61,13 @@ header {
 }
 #left-aside {
     background-color: #000514;
+    border-right: 1px solid #ffffff;
     display: flex;
     flex-direction: column;
     align-items: center;
     overflow-y: auto;
     height: 100vh;
-    min-width: 210px;
+    min-width: 235px;
 }
 #left-aside nav ul {
     list-style: none;
@@ -113,12 +115,13 @@ header {
 #right-aside {
     align-items: center;
     background-color: #000514;
+    border-left: 1px solid #ffffff;
     display: flex;
     flex-direction: column;
     grid-column: 2 / 3;
     grid-row: 1 / 3;
     height: auto;
-    min-width: 210px;
+    min-width: 235px;
     overflow-y: auto;
 }
 #right-aside ul {

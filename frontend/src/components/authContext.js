@@ -5,6 +5,7 @@ export const AuthContext = createContext();
 //Check if user is logged in
 export const AuthCheck = ({ children }) => {
     const [isAuthenticated, setIsAuthenticated] = useState(false);
+    const [user, setUser] = useState(null);
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -12,7 +13,9 @@ export const AuthCheck = ({ children }) => {
             try {
                 const response = await fetch('/api/check_authentication');
                 if (response.ok) {
+                    const data= await response.json();
                     setIsAuthenticated(true);
+                    setUser(data.user);
                 } else if (response.status === 401) {
                     navigate('/login');
                 }
@@ -24,7 +27,7 @@ export const AuthCheck = ({ children }) => {
     }, [navigate]);
 
     return (
-        <AuthContext.Provider value={{ isAuthenticated }}>
+        <AuthContext.Provider value={{ isAuthenticated, user }}>
             {children}
         </AuthContext.Provider>
     );

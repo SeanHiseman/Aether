@@ -70,14 +70,15 @@ function GroupHomeAdmin() {
         setShowForm(!showForm)
     }
 
+    document.title = groupDetails.groupName;
     return (
         <div id="group-container">           
             <header id="group-header">
-                <img id="large-group-photo" src={groupDetails.groupPhoto} alt={groupDetails.groupName} />
-                <h1>{groupDetails.groupName}</h1>
+                <PostForm />
                 <p>{groupDetails.memberCount} members</p>
                 <p>{groupDetails.description}</p>
-                <PostForm />
+                <h1>{groupDetails.groupName}</h1>
+                <img id="large-group-photo" src={groupDetails.groupPhoto} alt={groupDetails.groupName} />
             </header>
             <aside id="right-aside">
                 <h2>Channels</h2>

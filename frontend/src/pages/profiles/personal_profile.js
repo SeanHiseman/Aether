@@ -12,18 +12,19 @@ const PersonalProfile = () => {
     const { username } = useParams();
     const [channels, setChannels] = useState(username.channels || []);
     const [channelName, setChannelName] = useState('');
-    const [profile, setProfile] = useState({ logged_in_profile_id: '', logged_in_profile_photo: '', logged_in_username: '', bio: ''});
+    const [profile, setProfile] = useState({ profile_id: '', profile_photo: '', username: '', bio: ''});
     const [showForm, setShowForm] = useState(false);
     const [uploadStatus, setUploadStatus] = useState('');
     const [userContent, setUserContent] = useState([]);
     const navigate = useNavigate();
+
     useEffect(() => {
-        document.title = "Profile";
-        axios.get(`/api/personal-profile/${username}`)
+        axios.get(`/api/profile/${username}`)
             .then(response => {
-                setProfile(response.data.profile);
-                console.log("Profile id:", response.data.logged_in_profile_id);
-                axios.get(`/api/user-content/${response.data.logged_in_profile_id}`)
+                const fetchedProfile = response.data.profile;
+                setProfile(fetchedProfile);
+                console.log("Profile id:", fetchedProfile.profile_id);
+                axios.get(`/api/user-content/${fetchedProfile.profile_id}`)
                     .then(contentResponse => {
                         setUserContent(contentResponse.data);
                     })
@@ -35,9 +36,10 @@ const PersonalProfile = () => {
                 console.error('Error:', error);
                 if (error.response && error.response.status === 401) {
                     navigate('/login');
-                }
+                } 
             })
     }, [username, navigate]);
+
 
     const PhotoSubmit = (e) => {
         e.preventDefault();
@@ -84,7 +86,7 @@ const PersonalProfile = () => {
             })
     }
 
-    //Adds channel to group
+    //Adds channel to profile
     const AddChannel = async (event) => {
         event.preventDefault();
         const channelName = event.target.elements.channel_name.value;
@@ -106,6 +108,7 @@ const PersonalProfile = () => {
         setShowForm(!showForm)
     }
 
+    document.title = profile.username || "Profile";
     return (
         <div id="profile-container">
             <div id="profile-header">
@@ -123,7 +126,7 @@ const PersonalProfile = () => {
                     <PostForm />
                 </div>
                 <div id="viewed-profile-info">
-                    <p id="large-username-text">{profile.logged_in_username}</p>
+                    <p id="large-username-text">{profile.username}</p>
                     <p id="profile-bio">{profile.bio}</p>
                     <UpdateBioButton currentBio={profile.bio} />
                     <form action="/api/logout" method="post" onSubmit={handleLogout}>
@@ -131,7 +134,7 @@ const PersonalProfile = () => {
                     </form>
                 </div>
                 <div id="profile-header-photo">
-                    <img id="large-profile-image" src={`/${profile.logged_in_profile_photo}`} alt="Profile Picture" />
+                    <img id="large-profile-image" src={`/${profile.profile_photo}`} alt="Profile Picture" />
                     <form id="change-profile-photo" action="/profiles/update_profile_photo" method="post" enctype="multipart/form-data" onSubmit={PhotoSubmit}>
                         <label htmlFor="new_profile_photo">Change Profile Photo:</label>
                         <input type="file" id="new_profile_photo" name="new_profile_photo" accept="image/*" />
@@ -149,7 +152,7 @@ const PersonalProfile = () => {
             <div id="right-aside">
                 <h2>Channels</h2>
                 {/*<ul>
-                    {groupId.channels.map((channel, index) => (
+                    {user_id.channels.map((channel, index) => (
                         <li key={index}>{channel}</li>
                     ))}
                     </ul>*/}
