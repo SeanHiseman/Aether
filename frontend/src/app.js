@@ -6,7 +6,6 @@ import GroupHome from './pages/groups/groupHome';
 import HomePage from './pages/home';
 import Login from './pages/site_entrance/login';
 import Register from './pages/site_entrance/register';
-import PersonalProfile from './pages/profiles/personal_profile';
 import Profile from './pages/profiles/profile';
 
 //Routes to each layout, some with the base layout wrapper
@@ -19,7 +18,6 @@ const App = () => {
                 <Route path="/" element={<AuthCheck><BaseLayout /></AuthCheck>}>
                     <Route path="home" element={<AuthCheck><HomePage /></AuthCheck>} />
                     <Route path="group/:group_name" element={<AuthCheck><GroupHome /></AuthCheck>} />
-                    <Route path="personal-profile/:username" element={<AuthCheck><PersonalProfile /></AuthCheck>} />
                     <Route path="profile/:username" element={<AuthCheck><Profile /></AuthCheck>} />
                 </Route>
             </Routes>

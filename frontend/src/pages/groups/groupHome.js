@@ -9,6 +9,7 @@ function GroupHome() {
     const { group_name } = useParams();
     const [isAdmin, setIsAdmin] = useState(false);
     const [groupDetails, setGroupDetails] = useState({ groupName: '', description: '', groupPhoto: '', memberCount: 0 });
+
     useEffect(() => {
         fetch(`/api/group/${group_name}`)
             .then(response => {
@@ -29,7 +30,7 @@ function GroupHome() {
                 console.error('Fetch error:', error);
             })
     }, [group_name]);
-    document.title = groupDetails.groupName;
+
     //Uploads content to group
     const handleSubmit = async (event) => {
         event.preventDefault();
@@ -49,26 +50,25 @@ function GroupHome() {
     if (isAdmin) {
         return <GroupHomeAdmin />
     } else {
+        document.title = groupDetails.groupName;
         return (    
-            <div>
-                <header className="group-header">
-                    <img className="group-photo" src={groupDetails.groupPhoto} alt={groupDetails.groupName} />
-                    <h1>{groupDetails.groupName}</h1>
-                    <p>{groupDetails.memberCount} members</p>
-                    <p>{groupDetails.description}</p>
-                    <PostForm />
-                </header>
-                <main>
-                    <div className="channels">
-                        <h2>Channels</h2>
-                        {/*<ul>
-                            {groupId.channels.map((channel, index) => (
-                                <li key={index}>{channel}</li>
-                            ))}
-                            </ul>*/}
-                    </div>
-                </main>
-            </div>
+            <div id="group-container">           
+            <header id="group-header">
+                <PostForm />
+                <p>{groupDetails.memberCount} members</p>
+                <p>{groupDetails.description}</p>
+                <h1>{groupDetails.groupName}</h1>
+                <img id="large-group-photo" src={groupDetails.groupPhoto} alt={groupDetails.groupName} />
+            </header>
+            <aside id="right-aside">
+                <h2>Channels</h2>
+                {/*<ul>
+                    {groupId.channels.map((channel, index) => (
+                        <li key={index}>{channel}</li>
+                    ))}
+                    </ul>*/}
+            </aside> 
+        </div>
         );
     }
 }

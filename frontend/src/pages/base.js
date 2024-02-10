@@ -7,7 +7,7 @@ import ChatApp from '../components/chatApp';
 import '../css/base.css';
 
 const BaseLayout = () => {
-    const { isAuthenticated } = useContext(AuthContext);
+    const { isAuthenticated, user } = useContext(AuthContext);
     const [profile, setProfile] = useState({ logged_in_profile_id: '', logged_in_profile_photo: '', logged_in_username: '',logged_in_user_id: ''});
     const [groups, setGroups] = useState([]);
     const [groupName, setGroupName] = useState('');
@@ -18,7 +18,7 @@ const BaseLayout = () => {
 
     //Fetch profile info and groups 
     useEffect(() => {
-        if (isAuthenticated) {
+        if (isAuthenticated && user) {
             axios.get('/api/profileDataRouter')
             .then(response => {
                 setProfile({...response.data, logged_in_user_id: response.data.user_id });
@@ -43,11 +43,11 @@ const BaseLayout = () => {
                     setGroups([]);
                 });
             }
-    }, [isAuthenticated, navigate]);
+    }, [isAuthenticated, user, navigate]);
 
-    if (!isAuthenticated) {
-        return <div>Redirecting...</div>
-    }
+    //if (!isAuthenticated) {
+        //return <div>Redirecting...</div>
+    //}
     const createGroupSubmit = (e) => {
         e.preventDefault();
 
@@ -102,7 +102,7 @@ const BaseLayout = () => {
         <div className="container">
         <aside id="left-aside">
             <div className="profile-info">
-                <Link id="profileLink" to={`/personal-profile/${profile.logged_in_username}`}>
+                <Link id="profileLink" to={`/profile/${profile.logged_in_username}`}>
                     <img className="profile-image" src={`${profile.logged_in_profile_photo}`} alt="Profile image" />
                 </Link>
                 <p id="logged_in_username">{profile.logged_in_username}</p>

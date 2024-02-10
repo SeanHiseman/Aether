@@ -19,8 +19,8 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.static(join(__dirname, 'static')));
 app.use(session({ secret: 'EDIT_ME', resave: true, saveUninitialized: true }));
 
-//Load users own profile
-router.get('/personal-profile/:username', authenticateCheck, async (req, res) => {
+//Load user profiles
+router.get('/profile/:username', authenticateCheck, async (req, res) => {
     try {
         let user = await Users.findOne({ where: { username: req.params.username } });
         if (!user) {
@@ -45,9 +45,9 @@ router.get('/personal-profile/:username', authenticateCheck, async (req, res) =>
 
         const responseData = {
             profile: {
-                logged_in_profile_id: profile.profile_id,
-                logged_in_profile_photo: profile.profile_photo,
-                logged_in_username: user.username,
+                profile_id: profile.profile_id,
+                profile_photo: profile.profile_photo,
+                username: user.username,
                 bio: profile.bio
             },
             //user_content: user_content

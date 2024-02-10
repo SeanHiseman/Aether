@@ -2,7 +2,6 @@ import { Router } from 'express';
 import { hash, compare } from 'bcrypt';
 import { v4 } from 'uuid';
 import { Users, Profiles } from '../models/models.js';
-import authenticateCheck from '../functions/authenticateCheck.js';
 
 const router = Router();
 
@@ -79,8 +78,22 @@ router.post('/logout', (req, res) => {
 });
 
 //Checks if user is logged in
-router.get('/check_authentication', authenticateCheck, (req, res) => {
-    res.json({ authenticated: true});
+router.get('/check_authentication', async (req, res) => {
+    if (req.session && req.session.user_id) {
+        try {
+            const user = await Users.findByPk(req.session.user_id);
+            if (!user) {
+                return res.status(401).json({ error: 'Not authenticated'});
+            }
+            res.json({ authenticated: true, user: { username: user.username }});
+        } catch (err) {
+            console.error(err);
+            return res.status(500).json({ error: 'Internal server error' });
+        }
+    } else {
+        res.status(401).json({ error: 'Not authenticated' });
+    }
 });
+
 
 export default router;
