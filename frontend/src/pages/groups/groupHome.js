@@ -53,22 +53,22 @@ function GroupHome() {
         document.title = groupDetails.groupName;
         return (    
             <div id="group-container">           
-            <header id="group-header">
-                <PostForm />
-                <p>{groupDetails.memberCount} members</p>
-                <p>{groupDetails.description}</p>
-                <h1>{groupDetails.groupName}</h1>
-                <img id="large-group-photo" src={groupDetails.groupPhoto} alt={groupDetails.groupName} />
-            </header>
-            <aside id="right-aside">
-                <h2>Channels</h2>
-                {/*<ul>
-                    {groupId.channels.map((channel, index) => (
-                        <li key={index}>{channel}</li>
-                    ))}
-                    </ul>*/}
-            </aside> 
-        </div>
+                <header id="group-header">
+                    <PostForm />
+                    <p>{groupDetails.memberCount} members</p>
+                    <p>{groupDetails.description}</p>
+                    <h1>{groupDetails.groupName}</h1>
+                    <img id="large-group-photo" src={groupDetails.groupPhoto} alt={groupDetails.groupName} />
+                </header>
+                <aside id="right-aside">
+                    <h2>Channels</h2>
+                    {/*<ul>
+                        {groupId.channels.map((channel, index) => (
+                            <li key={index}>{channel}</li>
+                        ))}
+                        </ul>*/}
+                </aside> 
+            </div>
         );
     }
 }
