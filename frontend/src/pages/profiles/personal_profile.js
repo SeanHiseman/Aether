@@ -13,6 +13,7 @@ const PersonalProfile = () => {
     const { username } = useParams();
     const [channels, setChannels] = useState(username.channels || []);
     const [channelName, setChannelName] = useState('');
+    const [errorMessage, setErrorMessage] =useState('');
     const [isPhotoFormVisible, setIsPhotoFormVisible] = useState(false);
     const [profile, setProfile] = useState({ profile_id: '', profile_photo: '', username: '', bio: ''});
     const [showForm, setShowForm] = useState(false);
@@ -76,15 +77,19 @@ const PersonalProfile = () => {
         event.preventDefault();
         const channelName = event.target.elements.channel_name.value;
         try {
-            const response = await axios.post('/api/add_personal_channel', {
+            const response = await axios.post('/api/add_profile_channel', {
                 channel_name: channelName,
                 profileId: username.profile_id
             });
-            if (response.data && response.status === 200) {
+            if (response.data && response.status === 201) {
                 setChannels([...channels, response.data]);
+                setChannelName('');
+                setErrorMessage('');
+            } else {
+                setErrorMessage('Failed to add channel. Please try again.');
             }
         } catch (error) {
-            console.error('Error:', error.response ? error.response.data : error.message);
+            setErrorMessage(error.response ? error.response.data.error : 'Failed to add channel. Please try again.');
         }
     };   
 
@@ -150,6 +155,7 @@ const PersonalProfile = () => {
                         <form id="add-channel-form" action="/add_channel" method="post" onSubmit={AddChannel}>
                             <input type="text" name="Name" placeholder="Channel name" value={channelName} onChange={(e) => setChannelName(e.target.value)}/>
                             <input className="button" type="submit" value="Add" disabled={!channelName}/>
+                            {errorMessage && <div className="error-message">{errorMessage}</div>}
                         </form>                            
                     )}
                 </div>
