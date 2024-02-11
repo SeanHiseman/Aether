@@ -58,7 +58,7 @@ function GroupHome() {
                     <p>{groupDetails.memberCount} members</p>
                     <p>{groupDetails.description}</p>
                     <h1>{groupDetails.groupName}</h1>
-                    <img id="large-group-photo" src={groupDetails.groupPhoto} alt={groupDetails.groupName} />
+                    <img id="large-group-photo" src={`${groupDetails.groupPhoto}`} alt={groupDetails.groupName} />
                 </header>
                 <aside id="right-aside">
                     <h2>Channels</h2>

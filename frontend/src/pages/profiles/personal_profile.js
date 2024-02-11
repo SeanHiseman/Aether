@@ -25,7 +25,6 @@ const PersonalProfile = () => {
             .then(response => {
                 const fetchedProfile = response.data.profile;
                 setProfile(fetchedProfile);
-                console.log("Profile id:", fetchedProfile.profile_id);
                 axios.get(`/api/user-content/${fetchedProfile.profile_id}`)
                     .then(contentResponse => {
                         setUserContent(contentResponse.data);

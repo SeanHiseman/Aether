@@ -42,10 +42,25 @@ body,html {
     flex-grow: 1; 
     overflow: auto; /*If the content is larger than the main, it will scroll */
 }
-main {
-    display:flex;
+#create-group-section {
+    align-items: center;
+    display: flex;
     flex-direction: column;
-    flex-grow:1;
+    margin: 10px;
+    width: 90%;
+}
+#create-group-form {
+    background-color: #000514;
+    border: 1px solid #ffffff;
+    border-radius: 10px;
+    display: flex;
+    flex-direction: column;
+    margin: 10px;
+    max-width: 180px; 
+    justify-content: flex-start;
+    padding: 5px;
+    width: 90%;
+
 }
 header {
     align-items: center;
@@ -60,14 +75,14 @@ header {
     position: relative;
 }
 #left-aside {
+    align-items: center;
     background-color: #000514;
     border-right: 1px solid #ffffff;
     display: flex;
     flex-direction: column;
-    align-items: center;
-    overflow-y: auto;
     height: 100vh;
     min-width: 235px;
+    overflow-y: auto;
 }
 #left-aside nav ul {
     list-style: none;
@@ -97,8 +112,26 @@ header {
     cursor: pointer;
     transition: background-color 0.3s;
 }
-.spacer {
-    flex-grow: 1;
+main {
+    display:flex;
+    flex-direction: column;
+    flex-grow:1;
+}
+#logged_in_username {
+    margin-left: 10px;
+    margin-top: 32px;
+    text-align: center;
+}
+#profile-info {
+    align-items: center;
+    display: flex;
+    margin-bottom: 20px;
+}
+#profile-image {
+    height: 40px; 
+    width: 40px; 
+    border-radius: 6px;
+    margin-top: 20px;
 }
 .raw-content {
     border-radius: 10px;
@@ -128,21 +161,6 @@ header {
     list-style-type: none;
     padding: 0;
 }
-.profile-info {
-    display: flex;
-    align-items: center;
-    margin-bottom: 20px;
-}
-#logged_in_username {
-    margin-left: 10px;
-    text-align: center;
-}
-.profile-image {
-    height: 40px; 
-    width: 40px; 
-    border-radius: 50%;
-    margin-top: 20px;
-}
 #search-form {
     max-width: 600px;
     width: 100%;
@@ -171,21 +189,8 @@ header {
     min-width: 60px;
     transition: background-color 0.3s;
 }
-#create-group-section {
-    width: 90%;
-    margin: 10px;
-}
-#create-group-form {
-    background-color: #000514;
-    border: 1px solid #ffffff;
-    display: flex;
-    flex-direction: column;
-    justify-content: flex-start;
-    padding: 5px;
-    border-radius: 10px;
-    width: 90%;
-    max-width: 180px; 
-    margin: 10px;
+.spacer {
+    flex-grow: 1;
 }
 #upload-form {
     display: flex;

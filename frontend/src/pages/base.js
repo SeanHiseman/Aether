@@ -101,9 +101,9 @@ const BaseLayout = () => {
     return (
         <div className="container">
         <aside id="left-aside">
-            <div className="profile-info">
-                <Link id="profileLink" to={`/profile/${profile.logged_in_username}`}>
-                    <img className="profile-image" src={`${profile.logged_in_profile_photo}`} alt="Profile image" />
+            <div id="profile-info">
+                <Link id="profile-link" to={`/profile/${profile.logged_in_username}`}>
+                    <img id="profile-image" src={`/${profile.logged_in_profile_photo}`} alt="Profile image" />
                 </Link>
                 <p id="logged_in_username">{profile.logged_in_username}</p>
             </div>

@@ -1,3 +1,8 @@
+#add-channel-section {
+    align-items: center;
+    display: flex;
+    flex-direction: column;
+}
 #group-container {
     display: grid;
     grid-template-rows: auto 1fr;
