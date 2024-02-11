@@ -81,7 +81,7 @@ function GroupHomeAdmin() {
                 <p>{groupDetails.description}</p>
                 <h1>{groupDetails.groupName}</h1>
                 <div id="profile-header-photo">
-                    <img id="large-group-photo" src={groupDetails.groupPhoto} alt={groupDetails.groupName} />
+                    <img id="large-group-photo" src={`/${groupDetails.groupPhoto}`} alt={groupDetails.groupName} />
                     <button className="light-button" onClick={() => setIsPhotoFormVisible(!isPhotoFormVisible)}>
                         {isPhotoFormVisible ? 'Close' : 'Change Profile Photo'}
                     </button>
