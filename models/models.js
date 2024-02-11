@@ -12,9 +12,9 @@ const Profiles = sequelize.define('profiles', {
 const ProfileChannels = sequelize.define('profile_channels', { 
   channel_id: { type: STRING(36), primaryKey: true }, 
   channel_name: { type: STRING(100), allowNull: false }, 
-  group_id: { type: STRING(36), allowNull: false }, 
+  profile_id: { type: STRING(36), allowNull: false},
   date_created: { type: DATE, defaultValue: NOW },
-}); 
+}, {tableName: 'profile_channels', timestamps: false}); 
 
 ProfileChannels.belongsTo(Profiles, { foreignKey: 'profile_id' }); 
 Profiles.hasMany(ProfileChannels, { foreignKey: 'profile_id' }); 
@@ -93,7 +93,7 @@ const GroupChannels = sequelize.define('group_channels', {
   channel_name: { type: STRING(100), allowNull: false }, 
   group_id: { type: STRING(36), allowNull: false }, 
   date_created: { type: DATE, defaultValue: NOW },
-}); 
+}, { tableName: 'group_channels', timestamps: false }); 
 
 GroupChannels.belongsTo(Groups, { foreignKey: 'group_id' }); 
 Groups.hasMany(GroupChannels, { foreignKey: 'group_id' }); 
@@ -104,7 +104,7 @@ const GroupChannelMessages = sequelize.define('group_channel_messages', {
   message_content: { type: STRING(1000), allowNull: false }, 
   channel_id: { type: STRING(36), allowNull: false }, 
   message_time: { type: DATE, defaultValue: NOW },
-}); 
+}, { tableName: 'group_channel_messages', timestamps: false }); 
 
 GroupChannelMessages.belongsTo(GroupChannels, { foreignKey: 'channel_id' }); 
 GroupChannels.hasMany(GroupChannelMessages, { foreignKey: 'channel_id' });

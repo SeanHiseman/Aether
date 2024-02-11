@@ -1,5 +1,5 @@
 import checkIfUserIsAdmin from '../functions/adminCheck.js';
-import { Groups, GroupChannels } from '../models/models.js';
+import { Groups, GroupChannels, UserGroups } from '../models/models.js';
 import multer from 'multer';
 import { Router } from 'express';
 import path from 'path';
@@ -20,6 +20,7 @@ router.get('/group/:group_name', authenticateCheck, async (req, res) => {
         }
         res.json({
             isAdmin: isAdmin,
+            groupId: group.group_id,
             groupName: group.group_name,
             description: group.description,
             groupPhoto: group.group_photo,
@@ -81,7 +82,7 @@ router.post('/create_group', authenticateCheck, upload.single('new_group_profile
         });
 
         //Adds main channel
-        await Channels.create({
+        await GroupChannels.create({
             channel_id: v4(),
             channel_name: 'Main',
             group_id: newGroup.group_id,
@@ -104,16 +105,20 @@ router.post('/create_group', authenticateCheck, upload.single('new_group_profile
 //Create new channel within a group
 router.post('/add_group_channel', authenticateCheck, async (req, res) => {
     try {
-        const { groupId } = req.params.groupId;
-        const { channel_name } = req.body.channel_name;
+        const { groupId } = req.body;
+        const { channel_name } = req.body;
 
         //Checks if group can be found
         const group = await Groups.findByPk(groupId);
         if (!group) {
-            return res.status(404).jsom({ error: 'Group not found'});
+            return res.status(404).json({ error: 'Group not found'});
         }
 
-        const newChannel = await GroupChannels.create({ channel_name, group_id: groupId});
+        const newChannel = await GroupChannels.create({ 
+            channel_id: v4(),
+            channel_name, 
+            group_id: groupId
+        });
         res.status(201).json(newChannel);
     } catch (error) {
         res.status(400).json({ error: error.message });

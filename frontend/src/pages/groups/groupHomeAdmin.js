@@ -9,6 +9,7 @@ function GroupHomeAdmin() {
     const { group_name } = useParams();
     const [channels, setChannels] = useState(group_name.channels || []);
     const [channelName, setChannelName] = useState('');
+    const [errorMessage, setErrorMessage] =useState('');
     const [groupDetails, setGroupDetails] = useState({ groupName: group_name, description: '', groupPhoto: '', memberCount: 0 });
     const [isAdmin, setIsAdmin] = useState(true);
     const [isPhotoFormVisible, setIsPhotoFormVisible] = useState(false);
@@ -25,6 +26,7 @@ function GroupHomeAdmin() {
             .then(data => {
                 setIsAdmin(data.isAdmin);
                 setGroupDetails({
+                    groupId: data.groupId,
                     groupName: data.groupName,
                     description: data.description,
                     groupPhoto: data.groupPhoto,
@@ -57,13 +59,17 @@ function GroupHomeAdmin() {
         try {
             const response = await axios.post('/api/add_group_channel', {
                 channel_name: channelName,
-                groupId: group_name.group_id
+                groupId: groupDetails.groupId
             });
-            if (response.data && response.status === 200) {
+            if (response.data && response.status === 201) {
                 setChannels([...channels, response.data]);
+                setChannelName('');
+                setErrorMessage('');
+            } else {
+                setErrorMessage('Failed to add channel. Please try again.');
             }
         } catch (error) {
-            console.error('Error:', error.response ? error.response.data : error.message);
+            setErrorMessage(error.response ? error.response.data.error : 'Failed to add channel. Please try again.');
         }
     };
 
@@ -103,8 +109,9 @@ function GroupHomeAdmin() {
                     </button>
                     {showForm && (
                         <form id="add-channel-form" action="/add_group_channel" method="post" onSubmit={AddChannel}>
-                            <input type="text" name="Name" placeholder="Channel name" value={channelName} onChange={(e) => setChannelName(e.target.value)}/>
+                            <input type="text" name="channel_name" placeholder="Channel name" value={channelName} onChange={(e) => setChannelName(e.target.value)}/>
                             <input className="button" type="submit" value="Add" disabled={!channelName}/>
+                            {errorMessage && <div className="error-message">{errorMessage}</div>}
                         </form>                            
                     )}
                 </div>
