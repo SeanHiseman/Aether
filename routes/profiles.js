@@ -45,8 +45,8 @@ router.get('/profile/:username', authenticateCheck, async (req, res) => {
 
         const responseData = {
             profile: {
-                profile_id: profile.profile_id,
-                profile_photo: profile.profile_photo,
+                profileId: profile.profile_id,
+                profilePhoto: profile.profile_photo,
                 username: user.username,
                 bio: profile.bio
             },
@@ -64,7 +64,7 @@ router.post('/add_profile_channel', authenticateCheck, async (req, res) => {
     try {
         const { profileId } = req.body;
         const { channel_name } = req.body;
-
+        
         //Checks if group can be found
         const profile = await Profiles.findByPk(profileId);
         if (!profile) {

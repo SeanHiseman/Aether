@@ -6,9 +6,7 @@ import ContentWidget from '../content_widget';
 import PersonalProfile from './personal_profile';
 import SendFriendRequestButton from '../../components/sendFriendRequest';
 import '../../css/profile.css';
-import FriendRequests from '../../components/friendRequestsList';
-import PostForm from '../../components/postForm';
-import UpdateBioButton from '../../components/updateBio';
+
 function Profile() {
     const { user } = useContext(AuthContext);
     const { username } = useParams();
@@ -19,15 +17,12 @@ function Profile() {
     //Determine if logged in user is viewing their own profile
     const loggedInUsername = user?.username;
     const isLoggedInUser = username === loggedInUsername;
-    const [channelName, setChannelName] = useState('');
-    const [channels, setChannels] = useState(username.channels || []);
-    const [showForm, setShowForm] = useState(false);
     useEffect(() => {
         if (!isLoggedInUser) {
             axios.get(`/api/profile/${username}`)
                 .then(response => {
                     setProfile(response.data.profile);
-                    axios.get(`/api/user-content/${response.data.profile_id}`)
+                    axios.get(`/api/user-content/${response.data.profileId}`)
                         .then(contentResponse => {
                             setUserContent(contentResponse.data);
                         })
@@ -61,7 +56,7 @@ function Profile() {
                     <p id="profile-bio">{profile.bio}</p>
                 </div>
                 <div id="profile-header-photo">
-                    <img id="large-profile-image" src={`/${profile.profile_photo}`} alt="Profile Picture" />         
+                    <img id="large-profile-image" src={`/${profile.profilePhoto}`} alt="Profile Picture" />         
                 </div>
             </div>
             <div className="results-wrapper">

@@ -15,7 +15,7 @@ const PersonalProfile = () => {
     const [channelName, setChannelName] = useState('');
     const [errorMessage, setErrorMessage] =useState('');
     const [isPhotoFormVisible, setIsPhotoFormVisible] = useState(false);
-    const [profile, setProfile] = useState({ profile_id: '', profile_photo: '', username: '', bio: ''});
+    const [profile, setProfile] = useState({ profileId: '', profilePhoto: '', username: '', bio: ''});
     const [showForm, setShowForm] = useState(false);
     const [uploadStatus, setUploadStatus] = useState('');
     const [userContent, setUserContent] = useState([]);
@@ -24,6 +24,23 @@ const PersonalProfile = () => {
     useEffect(() => {
         axios.get(`/api/profile/${username}`)
             .then(response => {
+                //This code doesn't work for some reason
+                //if (!response.ok) {
+                    //throw new Error('Network response was not ok');
+                //}
+                //return response.json();
+            //})
+            //.then(data => {
+                //setProfile({
+                    //bio: data.bio,
+                    //profileId: data.profileId,
+                    //profilePhoto: data.profilePhoto,
+                    //username: data.username
+                //});
+            //}).catch(error => {
+                //console.error('Fetch error:', error);
+            //})
+        //}, [username]);
                 const fetchedProfile = response.data.profile;
                 setProfile(fetchedProfile);
                 axios.get(`/api/user-content/${fetchedProfile.profile_id}`)
@@ -79,7 +96,7 @@ const PersonalProfile = () => {
         try {
             const response = await axios.post('/api/add_profile_channel', {
                 channel_name: channelName,
-                profileId: username.profile_id
+                profileId: profile.profileId
             });
             if (response.data && response.status === 201) {
                 setChannels([...channels, response.data]);
@@ -124,7 +141,7 @@ const PersonalProfile = () => {
                     </form>
                 </div>
                 <div id="profile-header-photo">
-                    <img id="large-profile-image" src={`/${profile.profile_photo}`} alt="Profile Picture" />
+                    <img id="large-profile-image" src={`/${profile.profilePhoto}`} alt="Profile Picture" />
                     <button className="light-button" onClick={() => setIsPhotoFormVisible(!isPhotoFormVisible)}>
                         {isPhotoFormVisible ? 'Close' : 'Change Profile Photo'}
                     </button>
@@ -152,8 +169,8 @@ const PersonalProfile = () => {
                         {showForm ? 'Close': 'Create new Channel'}
                     </button>
                     {showForm && (
-                        <form id="add-channel-form" action="/add_channel" method="post" onSubmit={AddChannel}>
-                            <input type="text" name="Name" placeholder="Channel name" value={channelName} onChange={(e) => setChannelName(e.target.value)}/>
+                        <form id="add-channel-form" action="/add_profile_channel" method="post" onSubmit={AddChannel}>
+                            <input type="text" name="channel_name" placeholder="Channel name" value={channelName} onChange={(e) => setChannelName(e.target.value)}/>
                             <input className="button" type="submit" value="Add" disabled={!channelName}/>
                             {errorMessage && <div className="error-message">{errorMessage}</div>}
                         </form>                            
