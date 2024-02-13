@@ -11,12 +11,13 @@
     margin: 10px;
 }
 body,html {
+    background-color: #252836;
+    color: white;
     font-family: Arial, sans-serif;
+    height: 100%;
     margin: 0;
     padding: 0;
-    background-color: #252836;
-    height: 100%;
-    color: white;
+    word-wrap: break-word;
 }
 .button {
     padding: 5px 10px;
@@ -62,6 +63,15 @@ body,html {
     width: 90%;
 
 }
+.group-list-link {
+    align-items: center;
+    display: flex;
+}
+.group-list-text {
+    font-size: small;
+    margin-left: 5px;
+    margin-top: 32px;
+}
 header {
     align-items: center;
     background-color: #000514; 
@@ -99,9 +109,6 @@ header {
     color: white;
     text-decoration: none;
 }
-#left-aside nav ul li a:hover {
-    background-color: #444;
-}
 .light-button {
     padding: 5px 10px;
     margin: 10px;
@@ -122,10 +129,16 @@ main {
     margin-top: 32px;
     text-align: center;
 }
-#profile-info, .group-list-item {
+#profile-info {
+    margin-bottom: 20px;
+}
+#profile-link {
     align-items: center;
     display: flex;
-    margin-bottom: 20px;
+    text-decoration: none;
+}
+#profile-link:visited {
+    color: inherit;
 }
 #profile-image, .small-group-photo {
     height: 40px; 
