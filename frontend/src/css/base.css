@@ -63,12 +63,11 @@ body,html {
     width: 90%;
 
 }
-.group-list-link {
+.group-list-link, .channel-list-link {
     align-items: center;
     display: flex;
 }
-.group-list-text {
-    font-size: small;
+.group-list-text, .channel-list-text {
     margin-left: 5px;
     margin-top: 32px;
 }

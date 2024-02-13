@@ -82,6 +82,23 @@ router.post('/add_profile_channel', authenticateCheck, async (req, res) => {
     }
 });
 
+//Get channels from a profile
+router.get('/get_profile_channels/:profileId', authenticateCheck, async (req, res) => {
+    try {
+        const profileId = req.params.profileId; 
+        const channels = await ProfileChannels.findAll({
+            include: [{
+                model: Profiles,
+                where: { profile_id: profileId },
+                attributes: [],
+            }]
+        });
+        res.json(channels);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
 //Send friend request
 router.post('/send_friend_request/:receiverProfileId', authenticateCheck, async (req, res) => {
     try {
@@ -212,7 +229,7 @@ const upload = multer({
 //Update profile photo
 router.post('/update_profile_photo/:profileId', authenticateCheck, upload.single('new_profile_photo'), async (req, res) => {
 
-    const { profileId } = req.params; 
+    const profileId = req.params.profileId; 
     const file = req.file; 
     
     if (!file) {

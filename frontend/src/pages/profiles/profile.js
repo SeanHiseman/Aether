@@ -1,6 +1,6 @@
 import axios from 'axios';
 import React, { useState, useEffect, useContext } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { AuthContext } from '../../components/authContext';
 import ContentWidget from '../content_widget'; 
 import PersonalProfile from './personal_profile';
@@ -11,7 +11,7 @@ function Profile() {
     const { user } = useContext(AuthContext);
     const { username } = useParams();
     const navigate = useNavigate();
-    //Initialise user profile and content
+    const [channels, setChannels] = useState([]);
     const [profile, setProfile] = useState({ logged_in_profile_id: '', logged_in_profile_photo: '', logged_in_username: '',logged_in_user_id: ''});
     const [userContent, setUserContent] = useState([]);
     //Determine if logged in user is viewing their own profile
@@ -38,6 +38,23 @@ function Profile() {
                 });
         }
     }, [username, isLoggedInUser, navigate, loggedInUsername, profile?.username]);
+
+    //Fetch channels in user profile
+    useEffect(() => {
+        axios.get(`/api/get_profile_channels/${profile.profileId}`)
+        .then(response => {
+            if (Array.isArray(response.data)) {
+                setChannels(response.data);
+            } else {
+                console.error('Expected an array for channels, received: ', response.data)
+                setChannels([]);
+            }
+        })
+        .catch(error => {
+            console.error('Error fetching channels data:', error);
+            setChannels([]);
+        });
+    }, [profile.profileId]);    
 
     //Loads page for if the user is viewing their own profile
     if (isLoggedInUser) {
@@ -68,11 +85,18 @@ function Profile() {
             </div>
             <div id="right-aside">
                 <h2>Channels</h2>
-                {/*<ul>
-                    {user_id.channels.map((channel, index) => (
-                        <li key={index}>{channel}</li>
-                    ))}
-                    </ul>*/}
+                <nav id="channel-list">
+                    <ul>
+                        {channels.map(channel => (
+                        <li key={channel.channelId}>
+                            <p className="channel-list-text">{channel.channel_name}</p>
+                            {/*<Link className="channel-list-link" to={`/profile_channels/${channel.channelName}`}>
+                                <p className="channel-list-text">{channel.channelName}</p>
+                            </Link>*/}
+                        </li>
+                        ))}
+                    </ul>
+                </nav>
             </div>
         </div>
     );

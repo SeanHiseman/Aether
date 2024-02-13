@@ -1,12 +1,13 @@
 import axios from 'axios';
 import React, { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 import '../../css/groups.css'; 
 import GroupHomeAdmin from './groupHomeAdmin';
 import PostForm from '../../components/postForm';
 
 function GroupHome() {
     const { group_name } = useParams();
+    const [channels, setChannels] = useState([]);
     const [isAdmin, setIsAdmin] = useState(false);
     const [groupDetails, setGroupDetails] = useState({ groupName: '', description: '', groupPhoto: '', memberCount: 0 });
 
@@ -21,6 +22,7 @@ function GroupHome() {
             .then(data => {
                 setIsAdmin(data.isAdmin);
                 setGroupDetails({
+                    groupId: data.groupId,
                     groupName: data.groupName,
                     description: data.description,
                     groupPhoto: data.groupPhoto,
@@ -30,6 +32,23 @@ function GroupHome() {
                 console.error('Fetch error:', error);
             })
     }, [group_name]);
+
+    //Fetch channels in user profile
+    useEffect(() => {
+        axios.get(`/api/get_group_channels/${groupDetails.groupId}`)
+        .then(response => {
+            if (Array.isArray(response.data)) {
+                setChannels(response.data);
+            } else {
+                console.error('Expected an array for channels, received: ', response.data)
+                setChannels([]);
+            }
+        })
+        .catch(error => {
+            console.error('Error fetching channels data:', error);
+            setChannels([]);
+        });
+    }, [groupDetails.groupId]);  
 
     //Uploads content to group
     const handleSubmit = async (event) => {
@@ -62,11 +81,18 @@ function GroupHome() {
                 </header>
                 <aside id="right-aside">
                     <h2>Channels</h2>
-                    {/*<ul>
-                        {groupId.channels.map((channel, index) => (
-                            <li key={index}>{channel}</li>
+                    <nav id="channel-list">
+                    <ul>
+                        {channels.map(channel => (
+                        <li key={channel.channelId}>
+                            <p className="channel-list-text">{channel.channel_name}</p>
+                            {/*<Link className="channel-list-link" to={`/group_channels/${channel.channelName}`}>
+                                <p className="channel-list-text">{channel.channelName}</p>
+                            </Link>*/}
+                        </li>
                         ))}
-                        </ul>*/}
+                    </ul>
+                </nav>
                 </aside> 
             </div>
         );
