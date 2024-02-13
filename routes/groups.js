@@ -1,4 +1,5 @@
 import checkIfUserIsAdmin from '../functions/adminCheck.js';
+import fs from 'fs';
 import { Groups, GroupChannels, Users, UserGroups } from '../models/models.js';
 import multer from 'multer';
 import { Router } from 'express';
@@ -41,6 +42,8 @@ router.get('/groups_list/:userId', async (req, res) => {
                 where: { user_id: userId },
                 attributes: [],
             }],
+            //Returns groups alphabetically
+            order: [['group_name', 'ASC']]
         });
         res.json(groups);
     } catch (error) {
@@ -60,7 +63,7 @@ const group_profile_photo_storage = multer.diskStorage({
 });
 //Check file input
 const fileFilter = (req, file, cb) => {
-    if (file.mimetype.toLowerCase() === 'image/jpeg' || file.mimetype.toLowerCase() === 'image/png') {
+    if (file.mimetype === 'image/jpeg' || file.mimetype === 'image/png') {
         cb(null, true);
     } else {
         cb(null, false);
@@ -86,7 +89,7 @@ router.post('/create_group', authenticateCheck, upload.single('new_group_profile
             return res.status(400).json({ error: 'A group with this name already exists.'});
         }
 
-        let group_photo = "images/site_images/blank-group-icon.jpg";
+        let group_photo = "media/site_images/blank-group-icon.jpg";
         if (req.file) {
             group_photo = req.file.path
         }
@@ -117,6 +120,40 @@ router.post('/create_group', authenticateCheck, upload.single('new_group_profile
         res.status(201).json(newGroup);
     } catch (error) {
         res.status(400).json({ error: error.message });
+    }
+});
+
+//Update group photo
+router.post('/update_group_photo/:groupId', authenticateCheck, upload.single('new_group_photo'), async (req, res) => {
+
+    const { groupId } = req.params; 
+    const file = req.file; 
+
+    if (!file) {
+        return res.status(400).json({ message: "Invalid file type. Please upload jpeg or png"});
+    }
+
+    const filename = file.filename;
+    const newPhotoPath = `media/group_profiles/${filename}`;
+
+    try {
+        const group = await Groups.findOne({ where: { group_id: groupId } });
+        if (group) {
+            group.group_photo = newPhotoPath;
+            //Deletes old photo
+            //if (group.group_photo) {
+                //const currentPhotoPath = path.join(__dirname, '..', group.group_photo);
+                //fs.unlink(currentPhotoPath, (err) => {
+                    //res.status(404).json({ message: "Error deleting old photo", err });
+                //});
+            //}
+            await group.save();
+            return res.redirect(`/group/${groupId}`);
+        } else {
+            res.status(404).json({ message: "Group not found" });
+        }
+    } catch (error) {
+        res.status(500).json({ message: "An error occured while updating the group photo"});
     }
 });
 

@@ -3,7 +3,7 @@ import { Router } from 'express';
 import { v4 } from 'uuid';
 import { fileURLToPath } from 'url';
 import { join } from 'path';
-import path from 'path';
+import path, { extname } from 'path';
 import authenticateCheck from '../functions/authenticateCheck.js';
 import session from 'express-session';
 import multer, { diskStorage } from 'multer';
@@ -122,7 +122,7 @@ router.post('/send_friend_request/:receiverProfileId', authenticateCheck, async 
 //Accept friend request
 router.put('/accept_friend_request/:requestId', authenticateCheck, async (req, res) => {
     try {
-        const friendRequest = await FriendRequest.findByPk(req.params.requestId);
+        const friendRequest = await friendRequest.findByPk(req.params.requestId);
         if (!friendRequest) {
             return res.status(404).json({ error: "Friend request not found" });
         }
@@ -151,7 +151,7 @@ router.put('/accept_friend_request/:requestId', authenticateCheck, async (req, r
 //Reject friend request
 router.delete('/reject_friend_request/:requestId', authenticateCheck, async (req, res) => {
     try {
-        const friendRequest = await FriendRequest.findByPk(req.params.requestId);
+        const friendRequest = await friendRequest.findByPk(req.params.requestId);
         if (!friendRequest) {
             return res.status(404).json({ error: "Friend request not found" });
         }
@@ -188,7 +188,7 @@ router.get('/get_friend_requests', authenticateCheck, async (req, res) => {
 //Multer setup for file uploads
 const profile_photo_storage = diskStorage({
     destination: function (req, file, cb) {
-        cb(null, 'frontend/public/media/images/profile_images');
+        cb(null, 'media/profile_images');
     },
     filename: function (req, file, cb) {
         cb(null, v4() + extname(file.originalname));
@@ -196,7 +196,7 @@ const profile_photo_storage = diskStorage({
 });
 //Check file input
 const fileFilter = (req, file, cb) => {
-    if (file.mimetype === 'image/jpeg' || file.mimetype === 'iage/png') {
+    if (file.mimetype === 'image/jpeg' || file.mimetype === 'image/png') {
         cb(null, true);
     } else {
         cb(null, false);
@@ -205,35 +205,41 @@ const fileFilter = (req, file, cb) => {
 //Uploads with file size limit
 const upload = multer({
     storage: profile_photo_storage,
-    limits: {
-        fileSize: 1024 * 1024 * 5
-    },
+    limits: { fileSize: 1024 * 1024 * 5 },
     fileFilter: fileFilter
 });
 
 //Update profile photo
-router.post('/update_profile_photo', authenticateCheck, async (req, res) => {
+router.post('/update_profile_photo/:profileId', authenticateCheck, upload.single('new_profile_photo'), async (req, res) => {
 
-    const profileId = req.session.profile_id; 
-    const file = req.files.new_profile_photo; 
+    const { profileId } = req.params; 
+    const file = req.file; 
     
-    if (allowedFile(file.name)) {
-        const filename = basename(file.name);
-        file.mv(join(__dirname, 'media/images/profile_images', filename));
+    if (!file) {
+        return res.status(400).json({ message: "Invalid file type. Please upload jpeg or png"});
+    }
 
-        const newPhotoPath = join('images/profile_images', filename).replace(/\\/g, '/');
+    const filename = file.filename;
+    const newPhotoPath = `media/profile_images/${filename}`;
+
+    try {
         const profile = await Profiles.findOne({ where: { profile_id: profileId } });
-
         if (profile) {
             profile.profile_photo = newPhotoPath;
+            //Deletes old photo
+            //if (group.group_photo) {
+                //const currentPhotoPath = path.join(__dirname, '..', group.group_photo);
+                //fs.unlink(currentPhotoPath, (err) => {
+                    //res.status(404).json({ message: "Error deleting old photo", err });
+                //});
+            //}            
             await profile.save();
-            return res.redirect(`/user/profile/${profileId}`);
+            return res.redirect(`/profile/${profileId}`);
         } else {
             res.status(404).json({ message: "Profile not found" });
         }
-    } else {
-        req.flash('File not allowed. Please upload an image.');
-        return res.redirect(req.url);
+    } catch (error) {
+        res.status(500).json({ message: "An error occured while updating the profile photo"});
     }
 });
 

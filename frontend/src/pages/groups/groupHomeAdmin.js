@@ -2,7 +2,6 @@ import axios from 'axios';
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import '../../css/groups.css'; 
-import ChangeProfilePhoto from '../../components/changeProfilePhoto';
 import PostForm from '../../components/postForm';
 
 function GroupHomeAdmin() {
@@ -36,6 +35,26 @@ function GroupHomeAdmin() {
                 console.error('Fetch error:', error);
             })
     }, [group_name]);
+
+    const ChangeGroupPhoto = (e) => {
+        e.preventDefault();
+        const fileInput = e.target.elements.new_group_photo;
+        if (!fileInput.files[0]) {
+            setErrorMessage('Please upload an image');
+            return;
+        }
+        const formData = new FormData();
+        formData.append('new_group_photo', fileInput.files[0]);
+        axios.post(`/api/update_group_photo/${groupDetails.groupId}`, formData)
+            .then(response => {
+                //document.getElementById('large-group-photo').src = response.data.newPhotoPath;
+                setErrorMessage('');
+                setIsPhotoFormVisible(false);
+            }).catch(error => {
+                setErrorMessage('Error updating photo', error.response ? error.response.data : error);
+            });
+    }
+    
 
     //Uploads content to group
     const UploadSubmit = async (event) => {
@@ -89,11 +108,16 @@ function GroupHomeAdmin() {
                 <div id="profile-header-photo">
                     <img id="large-group-photo" src={`/${groupDetails.groupPhoto}`} alt={groupDetails.groupName} />
                     <button className="light-button" onClick={() => setIsPhotoFormVisible(!isPhotoFormVisible)}>
-                        {isPhotoFormVisible ? 'Close' : 'Change Profile Photo'}
+                        {isPhotoFormVisible ? 'Close' : 'Change Group photo'}
                     </button>
-                    {isPhotoFormVisible && <ChangeProfilePhoto onPhotoUpdated={() => {
-                        setIsPhotoFormVisible(false); 
-                    }} />}
+                    {isPhotoFormVisible && (
+                        <form id="change-group-photo" action="/api/update_group_photo" method="post" enctype="multipart/form-data" onSubmit={ChangeGroupPhoto}>
+                            <label htmlFor="new_group_photo">Change Group photo:</label>
+                            <input type="file" id="new_group_photo" name="new_group_photo" accept="image/*" />
+                            {errorMessage && <div className="error-message">{errorMessage}</div>}
+                            <input className="light-button" type="submit" value="Update" />
+                        </form>
+                    )}
                 </div>
             </header>
             <aside id="right-aside">

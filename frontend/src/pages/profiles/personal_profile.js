@@ -1,7 +1,6 @@
 import axios from 'axios';
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import ChangeProfilePhoto from '../../components/changeProfilePhoto';
 import ContentWidget from '../content_widget'; 
 import FriendRequests from '../../components/friendRequestsList';
 import PostForm from '../../components/postForm';
@@ -58,6 +57,27 @@ const PersonalProfile = () => {
                 } 
             })
     }, [username, navigate]);
+
+    const ChangeProfilePhoto = (e) => {
+        e.preventDefault();
+        const fileInput = e.target.elements.new_profile_photo;
+        if (!fileInput.files[0]) {
+            setErrorMessage('Please upload an image');
+            return;
+        }
+        const formData = new FormData();
+        formData.append('new_profile_photo', fileInput.files[0]);
+    
+        axios.post(`/api/update_profile_photo/${profile.profileId}`, formData)
+            .then(response => {
+                //document.getElementById('large-profile-photo').src = response.data.newPhotoPath;
+                setErrorMessage('');
+                setIsPhotoFormVisible(false);
+            }).catch(error => {
+                setErrorMessage('Error updating photo', error.response ? error.response.data : error);
+            });
+    }
+    
 
     const UploadSubmit = (e) => {
         e.preventDefault();
@@ -141,13 +161,18 @@ const PersonalProfile = () => {
                     </form>
                 </div>
                 <div id="profile-header-photo">
-                    <img id="large-profile-image" src={`/${profile.profilePhoto}`} alt="Profile Picture" />
+                    <img id="large-profile-photo" src={`/${profile.profilePhoto}`} alt="Profile Picture" />
                     <button className="light-button" onClick={() => setIsPhotoFormVisible(!isPhotoFormVisible)}>
                         {isPhotoFormVisible ? 'Close' : 'Change Profile Photo'}
                     </button>
-                    {isPhotoFormVisible && <ChangeProfilePhoto onPhotoUpdated={() => {
-                        setIsPhotoFormVisible(false); 
-                    }} />}
+                    {isPhotoFormVisible && (
+                        <form id="change-profile-photo" action="/api/update_profile_photo" method="post" enctype="multipart/form-data" onSubmit={ChangeProfilePhoto}>
+                            <label htmlFor="new_profile_photo">Change Profile Photo:</label>
+                            <input type="file" id="new_profile_photo" name="new_profile_photo" accept="image/*" />
+                            {errorMessage && <div className="error-message">{errorMessage}</div>}
+                            <input className="light-button" type="submit" value="Update" />
+                        </form>
+                    )}
                 </div>
             </div>
             <div className="results-wrapper">

@@ -7,9 +7,12 @@
     border-radius: 10px;
 }
 #change-profile-photo{
+    border: 1px solid #ffffff;
+    border-radius: 10px;
     display: flex;
     flex-direction: column;
     max-width: 200px;
+    padding: 5px;
 }
 .friend-requests{
     margin-top: 20px;
@@ -17,7 +20,7 @@
 form{
     margin-bottom: 15px;
 }
-#large-profile-image {
+#large-profile-photo {
     height: 200px; 
     width: 200px; 
     border-radius: 30px;

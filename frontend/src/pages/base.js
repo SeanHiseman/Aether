@@ -1,5 +1,5 @@
 import axios from 'axios';
-import React, { useContext, useState, useEffect } from 'react';
+import React, { useContext, useRef, useState, useEffect } from 'react';
 import { Link, Outlet, useNavigate } from 'react-router-dom';
 import { v4 as uuidv4 } from 'uuid';
 import { AuthContext } from '../components/authContext';
@@ -67,6 +67,7 @@ const BaseLayout = () => {
                 //Redirect to new group
                 const newGroupName = response.data.group_name
                 navigate(`/group/${newGroupName}`);
+                setGroupName('');
         })
         .catch(error => {
             console.error('Error creating group: ', error);
@@ -104,8 +105,8 @@ const BaseLayout = () => {
             <div id="profile-info">
                 <Link id="profile-link" to={`/profile/${profile.logged_in_username}`}>
                     <img id="profile-image" src={`/${profile.logged_in_profile_photo}`} alt="Profile image" />
+                    <p id="logged_in_username">{profile.logged_in_username}</p>
                 </Link>
-                <p id="logged_in_username">{profile.logged_in_username}</p>
             </div>
             <nav>
                 <ul>
@@ -127,14 +128,15 @@ const BaseLayout = () => {
                     </form>
                 )}
             </div>
+            <h1>Groups</h1>
             <nav id="group-list">
                 <ul>
                     {groups.map(group => (
-                    <li className="group-list-item" key={group.group_id}>
-                        <a href={`/group/${group.group_name}`}>
-                        <img className="small-group-photo" src={group.group_photo} alt={group.group_name} />
-                        {group.group_name}
-                        </a>
+                    <li key={group.group_id}>
+                        <Link className="group-list-link" to={`/group/${group.group_name}`}>
+                            <img className="small-group-photo" src={`/${group.group_photo}`} alt={group.group_name} />
+                            <p className="group-list-text">{group.group_name}</p>
+                        </Link>
                     </li>
                     ))}
                 </ul>
