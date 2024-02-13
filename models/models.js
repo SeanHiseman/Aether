@@ -81,8 +81,8 @@ const UserGroups = sequelize.define('user_groups', {
 }, { tableName: 'user_groups', timestamps: false });
 
 //Groups relationships
-Users.belongsToMany(Groups, { through: UserGroups, foreignKey: 'user_id' });
-Groups.belongsToMany(Users, { through: UserGroups, foreignKey: 'group_id' });
+Users.belongsToMany(Groups, { through: UserGroups, foreignKey: 'user_id', otherKey: 'group_id' });
+Groups.belongsToMany(Users, { through: UserGroups, foreignKey: 'group_id', otherKey: 'user_id' });
 //Nested groups
 Groups.belongsTo(Groups, { as: 'ParentGroup', foreignKey: 'parent_id' });
 Groups.hasMany(Groups, { as: 'SubGroups', foreignKey: 'parent_id' });

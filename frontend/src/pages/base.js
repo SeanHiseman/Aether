@@ -16,12 +16,12 @@ const BaseLayout = () => {
     const [showForm, setShowForm] = useState(false);
     const navigate = useNavigate();
 
-    //Fetch profile info and groups 
+    //Fetch profile info
     useEffect(() => {
         if (isAuthenticated && user) {
             axios.get('/api/profileDataRouter')
             .then(response => {
-                setProfile({...response.data, logged_in_user_id: response.data.user_id });
+                setProfile({...response.data, logged_in_user_id: response.data.logged_in_user_id });
             })
             .catch(error => {
                 console.error('Error:', error);
@@ -29,25 +29,26 @@ const BaseLayout = () => {
                     navigate('/login');
                 }
             })
-            axios.get('/groups')
-                .then(response => {
-                    if (Array.isArray(response.data)) {
-                        setGroups(response.data);
-                    } else {
-                        console.error('Expected an array for groups, received: ', response.data)
-                        setGroups([]);
-                    }
-                })
-                .catch(error => {
-                    console.error('Error fetching groups data:', error);
-                    setGroups([]);
-                });
-            }
+        }
     }, [isAuthenticated, user, navigate]);
 
-    //if (!isAuthenticated) {
-        //return <div>Redirecting...</div>
-    //}
+    //Fetch groups info
+    useEffect(() => {
+        axios.get(`/api/groups_list/${profile.logged_in_user_id}`)
+        .then(response => {
+            if (Array.isArray(response.data)) {
+                setGroups(response.data);
+            } else {
+                console.error('Expected an array for groups, received: ', response.data)
+                setGroups([]);
+            }
+        })
+        .catch(error => {
+            console.error('Error fetching groups data:', error);
+            setGroups([]);
+        });
+    }, [profile.logged_in_user_id]);
+
     const createGroupSubmit = (e) => {
         e.preventDefault();
 
@@ -59,9 +60,8 @@ const BaseLayout = () => {
         //Adds user_id so user creating group can become an admin
         formData.append('user_id', profile.logged_in_user_id);
 
-        axios.post('/create_group', formData)
+        axios.post('/api/create_group', formData)
             .then(response => {
-                console.log('Group created: ', response.data);
                 setGroups([...groups, response.data]);
 
                 //Redirect to new group
@@ -115,18 +115,6 @@ const BaseLayout = () => {
                     <li><Link to="/home">Personal</Link></li>
                 </ul>
             </nav>
-            <nav>
-                <ul>
-                    {groups.map(group => (
-                    <li key={group.group_id}>
-                        <a href={`/group/${group.group_name}`}>
-                        <img src={group.group_photo} alt={group.group_name} />
-                        {group.group_name}
-                        </a>
-                    </li>
-                    ))}
-                </ul>
-            </nav>
             <div id="create-group-section">
                 <button class="button" onClick={toggleForm}>
                     {showForm ? 'Close': 'Create new Group'}
@@ -139,6 +127,18 @@ const BaseLayout = () => {
                     </form>
                 )}
             </div>
+            <nav id="group-list">
+                <ul>
+                    {groups.map(group => (
+                    <li className="group-list-item" key={group.group_id}>
+                        <a href={`/group/${group.group_name}`}>
+                        <img className="small-group-photo" src={group.group_photo} alt={group.group_name} />
+                        {group.group_name}
+                        </a>
+                    </li>
+                    ))}
+                </ul>
+            </nav>
         </aside>
         <main>
             <header>
