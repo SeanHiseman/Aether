@@ -14,6 +14,7 @@ router.get('/profileDataRouter', authenticateCheck, async (req, res) => {
     //}
 
     const userId = req.session.user_id;
+
     try {
         const user = await Users.findOne({
             where: { user_id: userId },
@@ -26,6 +27,7 @@ router.get('/profileDataRouter', authenticateCheck, async (req, res) => {
         const profile = user?.dataValues.profile;
         if (profile) {
             const profileData = {
+                logged_in_user_id: userId,
                 logged_in_profile_id: profile.profile_id,
                 logged_in_username: req.session.username,
                 logged_in_profile_photo: profile.profile_photo,

@@ -64,7 +64,7 @@ router.post('/add_profile_channel', authenticateCheck, async (req, res) => {
     try {
         const { profileId } = req.body;
         const { channel_name } = req.body;
-        
+
         //Checks if group can be found
         const profile = await Profiles.findByPk(profileId);
         if (!profile) {
@@ -240,14 +240,15 @@ router.post('/update_profile_photo', authenticateCheck, async (req, res) => {
 //Update profile bio
 router.post('/update_bio', authenticateCheck, async (req, res) => {
     try {
-        const bio = req.body.bio;
-        const profileId = req.session.profile_id; 
-        const profile = await Profiles.findOne({ where: { profile_id: profileId } });
+        const bio = req.body;
+        const profileId = req.body; 
+        const username = req.body;
+        const profile = await Profiles.findOne({ where: { profileId: profileId } });
 
         if (profile) {
             profile.bio = bio;
             await profile.save();
-            return res.redirect(`/user/profile/${profileId}`);
+            return res.redirect(`/user/profile/${username}`);
         } else {
             res.status(404).json({ message: "Profile not found" });
         }

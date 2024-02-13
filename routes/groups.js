@@ -1,5 +1,5 @@
 import checkIfUserIsAdmin from '../functions/adminCheck.js';
-import { Groups, GroupChannels, UserGroups } from '../models/models.js';
+import { Groups, GroupChannels, Users, UserGroups } from '../models/models.js';
 import multer from 'multer';
 import { Router } from 'express';
 import path from 'path';
@@ -28,6 +28,24 @@ router.get('/group/:group_name', authenticateCheck, async (req, res) => {
         });
     } catch (error) {
         res.status(500).send('Internal server error');
+    }
+});
+
+//Get all groups that a user is a part of
+router.get('/groups_list/:userId', async (req, res) => {
+    try {
+        const userId = req.params.userId;
+        const groups = await Groups.findAll({
+            include: [{
+                model: Users,
+                where: { user_id: userId },
+                attributes: [],
+            }],
+        });
+        res.json(groups);
+    } catch (error) {
+        console.error('Error fetching user groups:', error);
+        res.status(500).send('Server error');
     }
 });
 
