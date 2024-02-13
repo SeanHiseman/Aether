@@ -47,7 +47,6 @@ router.get('/groups_list/:userId', async (req, res) => {
         });
         res.json(groups);
     } catch (error) {
-        console.error('Error fetching user groups:', error);
         res.status(500).send('Server error');
     }
 });
@@ -125,8 +124,7 @@ router.post('/create_group', authenticateCheck, upload.single('new_group_profile
 
 //Update group photo
 router.post('/update_group_photo/:groupId', authenticateCheck, upload.single('new_group_photo'), async (req, res) => {
-
-    const { groupId } = req.params; 
+    const groupId = req.params.group; 
     const file = req.file; 
 
     if (!file) {
@@ -177,6 +175,24 @@ router.post('/add_group_channel', authenticateCheck, async (req, res) => {
         res.status(201).json(newChannel);
     } catch (error) {
         res.status(400).json({ error: error.message });
+    }
+});
+
+//Get channels from a group
+router.get('/get_group_channels/:groupId', authenticateCheck, async (req, res) => {
+    try {
+        const groupId = req.params.groupId; 
+        const channels = await GroupChannels.findAll({
+            include: [{
+                model: Groups,
+                where: { group_id: groupId },
+                attributes: [],
+            }]
+        });
+        res.json(channels);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: error.message });
     }
 });
 

@@ -1,6 +1,6 @@
 import axios from 'axios';
 import React, { useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import ContentWidget from '../content_widget'; 
 import FriendRequests from '../../components/friendRequestsList';
 import PostForm from '../../components/postForm';
@@ -10,7 +10,7 @@ import '../../css/profile.css';
 //Loads the profile page of the logged in user
 const PersonalProfile = () => {
     const { username } = useParams();
-    const [channels, setChannels] = useState(username.channels || []);
+    const [channels, setChannels] = useState([]);
     const [channelName, setChannelName] = useState('');
     const [errorMessage, setErrorMessage] =useState('');
     const [isPhotoFormVisible, setIsPhotoFormVisible] = useState(false);
@@ -58,6 +58,23 @@ const PersonalProfile = () => {
             })
     }, [username, navigate]);
 
+    //Fetch channels in user profile
+    useEffect(() => {
+        axios.get(`/api/get_profile_channels/${profile.profileId}`)
+        .then(response => {
+            if (Array.isArray(response.data)) {
+                setChannels(response.data);
+            } else {
+                console.error('Expected an array for channels, received: ', response.data)
+                setChannels([]);
+            }
+        })
+        .catch(error => {
+            console.error('Error fetching channels data:', error);
+            setChannels([]);
+        });
+    }, [profile.profileId]);    
+
     const ChangeProfilePhoto = (e) => {
         e.preventDefault();
         const fileInput = e.target.elements.new_profile_photo;
@@ -78,7 +95,6 @@ const PersonalProfile = () => {
             });
     }
     
-
     const UploadSubmit = (e) => {
         e.preventDefault();
         const formData = new FormData(e.target);
@@ -184,11 +200,6 @@ const PersonalProfile = () => {
             </div>
             <div id="right-aside">
                 <h2>Channels</h2>
-                {/*<ul>
-                    {user_id.channels.map((channel, index) => (
-                        <li key={index}>{channel}</li>
-                    ))}
-                    </ul>*/}
                 <div id="add-channel-section">
                     <button class="button" onClick={toggleForm}>
                         {showForm ? 'Close': 'Create new Channel'}
@@ -201,6 +212,18 @@ const PersonalProfile = () => {
                         </form>                            
                     )}
                 </div>
+                <nav id="channel-list">
+                    <ul>
+                        {channels.map(channel => (
+                        <li key={channel.channelId}>
+                            <p className="channel-list-text">{channel.channel_name}</p>
+                            {/*<Link className="channel-list-link" to={`/profile_channels/${channel.channelName}`}>
+                                <p className="channel-list-text">{channel.channelName}</p>
+                            </Link>*/}
+                        </li>
+                        ))}
+                    </ul>
+                </nav>
             </div>
         </div>
     );

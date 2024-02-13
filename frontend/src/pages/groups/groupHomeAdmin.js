@@ -1,12 +1,12 @@
 import axios from 'axios';
 import React, { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 import '../../css/groups.css'; 
 import PostForm from '../../components/postForm';
 
 function GroupHomeAdmin() {
     const { group_name } = useParams();
-    const [channels, setChannels] = useState(group_name.channels || []);
+    const [channels, setChannels] = useState([]);
     const [channelName, setChannelName] = useState('');
     const [errorMessage, setErrorMessage] =useState('');
     const [groupDetails, setGroupDetails] = useState({ groupName: group_name, description: '', groupPhoto: '', memberCount: 0 });
@@ -36,6 +36,23 @@ function GroupHomeAdmin() {
             })
     }, [group_name]);
 
+    //Fetch channels in user profile
+    useEffect(() => {
+        axios.get(`/api/get_group_channels/${groupDetails.groupId}`)
+        .then(response => {
+            if (Array.isArray(response.data)) {
+                setChannels(response.data);
+            } else {
+                console.error('Expected an array for channels, received: ', response.data)
+                setChannels([]);
+            }
+        })
+        .catch(error => {
+            console.error('Error fetching channels data:', error);
+            setChannels([]);
+        });
+    }, [groupDetails.groupId]);  
+
     const ChangeGroupPhoto = (e) => {
         e.preventDefault();
         const fileInput = e.target.elements.new_group_photo;
@@ -55,7 +72,6 @@ function GroupHomeAdmin() {
             });
     }
     
-
     //Uploads content to group
     const UploadSubmit = async (event) => {
         event.preventDefault();
@@ -122,11 +138,6 @@ function GroupHomeAdmin() {
             </header>
             <aside id="right-aside">
                 <h2>Channels</h2>
-                {/*<ul>
-                    {groupId.channels.map((channel, index) => (
-                        <li key={index}>{channel}</li>
-                    ))}
-                    </ul>*/}
                 <div id="add-channel-section">
                     <button class="button" onClick={toggleForm}>
                         {showForm ? 'Close': 'Create new Channel'}
@@ -139,6 +150,18 @@ function GroupHomeAdmin() {
                         </form>                            
                     )}
                 </div>
+                <nav id="channel-list">
+                    <ul>
+                        {channels.map(channel => (
+                        <li key={channel.channelId}>
+                            <p className="channel-list-text">{channel.channel_name}</p>
+                            {/*<Link className="channel-list-link" to={`/group_channels/${channel.channelName}`}>
+                                <p className="channel-list-text">{channel.channelName}</p>
+                            </Link>*/}
+                        </li>
+                        ))}
+                    </ul>
+                </nav>
             </aside> 
         </div>
     );

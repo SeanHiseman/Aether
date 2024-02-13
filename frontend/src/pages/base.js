@@ -1,5 +1,5 @@
 import axios from 'axios';
-import React, { useContext, useRef, useState, useEffect } from 'react';
+import React, { useContext, useState, useEffect } from 'react';
 import { Link, Outlet, useNavigate } from 'react-router-dom';
 import { v4 as uuidv4 } from 'uuid';
 import { AuthContext } from '../components/authContext';
@@ -32,14 +32,13 @@ const BaseLayout = () => {
         }
     }, [isAuthenticated, user, navigate]);
 
-    //Fetch groups info
+    //Fetch groups that user is a part of
     useEffect(() => {
         axios.get(`/api/groups_list/${profile.logged_in_user_id}`)
         .then(response => {
             if (Array.isArray(response.data)) {
                 setGroups(response.data);
             } else {
-                console.error('Expected an array for groups, received: ', response.data)
                 setGroups([]);
             }
         })
@@ -116,6 +115,7 @@ const BaseLayout = () => {
                     <li><Link to="/home">Personal</Link></li>
                 </ul>
             </nav>
+            <h1>Groups</h1>
             <div id="create-group-section">
                 <button class="button" onClick={toggleForm}>
                     {showForm ? 'Close': 'Create new Group'}
@@ -128,7 +128,6 @@ const BaseLayout = () => {
                     </form>
                 )}
             </div>
-            <h1>Groups</h1>
             <nav id="group-list">
                 <ul>
                     {groups.map(group => (
