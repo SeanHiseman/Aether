@@ -1,4 +1,5 @@
 import checkIfUserIsAdmin from '../functions/adminCheck.js';
+import checkIfUserIsMember from '../functions/memberCheck.js';
 import fs from 'fs';
 import { Groups, GroupChannels, Users, UserGroups } from '../models/models.js';
 import multer from 'multer';
@@ -13,19 +14,22 @@ router.get('/group/:group_name', authenticateCheck, async (req, res) => {
     const groupName = req.params.group_name;
     const userId = req.session.user_id;
     try {
-        //Check if user is admin of group
+        //Check if user is admin or member of group
         const isAdmin = await checkIfUserIsAdmin(userId, groupName);
+        const isMember = await checkIfUserIsMember(userId, groupName);
         const group = await Groups.findOne({where: {group_name: groupName}});
         if (!group) {
             return res.status(404).send('Group not found');
         }
         res.json({
             isAdmin: isAdmin,
+            isMember: isMember,
             groupId: group.group_id,
             groupName: group.group_name,
             description: group.description,
             groupPhoto: group.group_photo,
-            memberCount: group.member_count
+            memberCount: group.member_count,
+            userId: userId
         });
     } catch (error) {
         res.status(500).send('Internal server error');
@@ -35,7 +39,7 @@ router.get('/group/:group_name', authenticateCheck, async (req, res) => {
 //Get all groups that a user is a part of
 router.get('/groups_list/:userId', async (req, res) => {
     try {
-        const userId = req.params.userId;
+        const { userId } = req.params;
         const groups = await Groups.findAll({
             include: [{
                 model: Users,
@@ -198,23 +202,38 @@ router.get('/get_group_channels/:groupId', authenticateCheck, async (req, res) =
 
 //Allows users to join a group
 router.post('/join_group', authenticateCheck, async (req, res) => {
+    const { userId, groupId } = req.body;
     try{
-        const { group_id } = req.body;
-        const user_id = req.session.userId;
-
         await UserGroups.create({
-            user_id: user_id,
-            group_id: group_id
-            //not admin and mod default anyway
+            user_id: userId,
+            group_id: groupId,
+            is_mod: false,
+            is_admin: false
         });
 
-        //Increment group member count
-        const group = await Groups.findByPk(group_id);
+        //Increase group member count
+        const group = await Groups.findByPk(groupId);
         await group.increment('member_count');
 
         res.status(200).json();
     } catch (error) {
         res.status(500).json({ error: error.message });
+    }
+});
+
+//Allows user to leave group
+router.post('/leave_group', authenticateCheck, async (req, res) => {
+    const { userId, groupId } = req.body;
+    try {
+        await UserGroups.destroy({
+            where: { user_id: userId, group_id: groupId }
+        });
+        //Lower member count
+        const group = await Groups.findByPk(groupId);
+        await group.decrement('member_count');
+        res.status(200).send("Group left successfully")
+    } catch (error) {
+        res.status(500).send(error.message);
     }
 });
 
