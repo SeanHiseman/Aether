@@ -2,6 +2,7 @@ import axios from 'axios';
 import React, { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import '../../css/groups.css'; 
+import MemberChangeButton from '../../components/memberChangeButton';
 import GroupHomeAdmin from './groupHomeAdmin';
 import PostForm from '../../components/postForm';
 
@@ -22,11 +23,13 @@ function GroupHome() {
             .then(data => {
                 setIsAdmin(data.isAdmin);
                 setGroupDetails({
+                    isMember: data.isMember,
                     groupId: data.groupId,
                     groupName: data.groupName,
                     description: data.description,
                     groupPhoto: data.groupPhoto,
-                    memberCount: data.memberCount
+                    memberCount: data.memberCount,
+                    userId: data.userId
                 });
             }).catch(error => {
                 console.error('Fetch error:', error);
@@ -74,9 +77,14 @@ function GroupHome() {
             <div id="group-container">           
                 <header id="group-header">
                     <PostForm />
-                    <p>{groupDetails.memberCount} members</p>
-                    <p>{groupDetails.description}</p>
-                    <h1>{groupDetails.groupName}</h1>
+                    <div id="group-members">
+                        <p>{groupDetails.memberCount} members</p>
+                        <MemberChangeButton userId={groupDetails.userId} groupId={groupDetails.groupId} isMember={groupDetails.isMember}/>
+                    </div>
+                    <div id="group-text">
+                        <h1>{groupDetails.groupName}</h1>
+                        <p>{groupDetails.description}</p>
+                    </div>
                     <img id="large-group-photo" src={`/${groupDetails.groupPhoto}`} alt={groupDetails.groupName} />
                 </header>
                 <aside id="right-aside">

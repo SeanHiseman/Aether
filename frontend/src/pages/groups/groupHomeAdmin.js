@@ -2,6 +2,7 @@ import axios from 'axios';
 import React, { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import '../../css/groups.css'; 
+import MemberChangeButton from '../../components/memberChangeButton';
 import PostForm from '../../components/postForm';
 
 function GroupHomeAdmin() {
@@ -25,11 +26,13 @@ function GroupHomeAdmin() {
             .then(data => {
                 setIsAdmin(data.isAdmin);
                 setGroupDetails({
+                    isMember: true, //Must be member to be admin
                     groupId: data.groupId,
                     groupName: data.groupName,
                     description: data.description,
                     groupPhoto: data.groupPhoto,
-                    memberCount: data.memberCount
+                    memberCount: data.memberCount,
+                    userId: data.userId
                 });
             }).catch(error => {
                 console.error('Fetch error:', error);
@@ -118,9 +121,14 @@ function GroupHomeAdmin() {
         <div id="group-container">           
             <header id="group-header">
                 <PostForm />
-                <p>{groupDetails.memberCount} members</p>
-                <p>{groupDetails.description}</p>
-                <h1>{groupDetails.groupName}</h1>
+                <div id="group-members">
+                    <p>{groupDetails.memberCount} members</p>
+                    <MemberChangeButton userId={groupDetails.userId} groupId={groupDetails.groupId} isMember={groupDetails.isMember}/>
+                </div>
+                <div id="group-text">
+                    <h1>{groupDetails.groupName}</h1>
+                    <p>{groupDetails.description}</p>
+                </div>
                 <div id="profile-header-photo">
                     <img id="large-group-photo" src={`/${groupDetails.groupPhoto}`} alt={groupDetails.groupName} />
                     <button className="light-button" onClick={() => setIsPhotoFormVisible(!isPhotoFormVisible)}>

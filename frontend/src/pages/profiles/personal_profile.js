@@ -12,7 +12,7 @@ const PersonalProfile = () => {
     const { username } = useParams();
     const [channels, setChannels] = useState([]);
     const [channelName, setChannelName] = useState('');
-    const [errorMessage, setErrorMessage] =useState('');
+    const [errorMessage, setErrorMessage] = useState('');
     const [isPhotoFormVisible, setIsPhotoFormVisible] = useState(false);
     const [profile, setProfile] = useState({ profileId: '', profilePhoto: '', username: '', bio: ''});
     const [showForm, setShowForm] = useState(false);
