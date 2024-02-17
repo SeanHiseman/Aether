@@ -261,17 +261,14 @@ router.post('/update_profile_photo/:profileId', authenticateCheck, upload.single
 });
 
 //Update profile bio
-router.post('/update_bio', authenticateCheck, async (req, res) => {
+router.post('/change_bio', authenticateCheck, async (req, res) => {
     try {
-        const bio = req.body;
-        const profileId = req.body; 
-        const username = req.body;
-        const profile = await Profiles.findOne({ where: { profileId: profileId } });
-
+        const { bio, profileId } = req.body;
+        const profile = await Profiles.findOne({ where: { profile_id: profileId } });
         if (profile) {
             profile.bio = bio;
             await profile.save();
-            return res.redirect(`/user/profile/${username}`);
+            res.status(200).json({ message: "Bio updated successfully" });
         } else {
             res.status(404).json({ message: "Profile not found" });
         }

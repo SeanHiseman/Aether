@@ -46,7 +46,6 @@ function GroupHomeAdmin() {
             if (Array.isArray(response.data)) {
                 setChannels(response.data);
             } else {
-                console.error('Expected an array for channels, received: ', response.data)
                 setChannels([]);
             }
         })

@@ -4,7 +4,6 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import ContentWidget from '../content_widget'; 
 import FriendRequests from '../../components/friendRequestsList';
 import PostForm from '../../components/postForm';
-import UpdateBioButton from '../../components/updateBio';
 import '../../css/profile.css';
 
 //Loads the profile page of the logged in user
@@ -14,6 +13,8 @@ const PersonalProfile = () => {
     const [channelName, setChannelName] = useState('');
     const [errorMessage, setErrorMessage] = useState('');
     const [isPhotoFormVisible, setIsPhotoFormVisible] = useState(false);
+    const [isEditingBio, setIsEditingBio] = useState(false);
+    const [newBio, setBio] = useState('');
     const [profile, setProfile] = useState({ profileId: '', profilePhoto: '', username: '', bio: ''});
     const [showForm, setShowForm] = useState(false);
     const [uploadStatus, setUploadStatus] = useState('');
@@ -65,7 +66,6 @@ const PersonalProfile = () => {
             if (Array.isArray(response.data)) {
                 setChannels(response.data);
             } else {
-                console.error('Expected an array for channels, received: ', response.data)
                 setChannels([]);
             }
         })
@@ -74,6 +74,27 @@ const PersonalProfile = () => {
             setChannels([]);
         });
     }, [profile.profileId]);    
+
+    //Adds channel to profile
+    const AddChannel = async (event) => {
+        event.preventDefault();
+        const channelName = event.target.elements.channel_name.value;
+        try {
+            const response = await axios.post('/api/add_profile_channel', {
+                channel_name: channelName,
+                profileId: profile.profileId
+            });
+            if (response.data && response.status === 201) {
+                setChannels([...channels, response.data]);
+                setChannelName('');
+                setErrorMessage('');
+            } else {
+                setErrorMessage('Failed to add channel. Please try again.');
+            }
+        } catch (error) {
+            setErrorMessage(error.response ? error.response.data.error : 'Failed to add channel. Please try again.');
+        }
+    };  
 
     const ChangeProfilePhoto = (e) => {
         e.preventDefault();
@@ -125,26 +146,26 @@ const PersonalProfile = () => {
             })
     }
 
-    //Adds channel to profile
-    const AddChannel = async (event) => {
-        event.preventDefault();
-        const channelName = event.target.elements.channel_name.value;
+    //Set bio in text area to current bio
+    useEffect(() => {
+        if (isEditingBio) {
+            setBio(profile.bio);
+        }
+    }, [isEditingBio, profile.bio]);
+
+    const handleUpdateBio = async () => {
         try {
-            const response = await axios.post('/api/add_profile_channel', {
-                channel_name: channelName,
+            await axios.post('/api/change_bio', {
+                bio: newBio,
                 profileId: profile.profileId
             });
-            if (response.data && response.status === 201) {
-                setChannels([...channels, response.data]);
-                setChannelName('');
-                setErrorMessage('');
-            } else {
-                setErrorMessage('Failed to add channel. Please try again.');
-            }
-        } catch (error) {
-            setErrorMessage(error.response ? error.response.data.error : 'Failed to add channel. Please try again.');
+            setProfile({ ...profile, bio: newBio});
+            setIsEditingBio(false);
         }
-    };   
+        catch (error) {
+            setErrorMessage(`Error changing bio: ${error}`);
+        }
+    }; 
 
     //Toggles display of create channel form after button is pressed
     const toggleForm = () => {
@@ -170,8 +191,22 @@ const PersonalProfile = () => {
                 </div>
                 <div id="viewed-profile-info">
                     <p id="large-username-text">{profile.username}</p>
-                    <p id="profile-bio">{profile.bio}</p>
-                    <UpdateBioButton currentBio={profile.bio} />
+                    <div id="bio-section">
+                        {isEditingBio ? (
+                            <div id="change-bio">
+                                <button className='light-button' onClick={() => setIsEditingBio(false)}>Close</button>
+                                <textarea id="bio-change-text-area" value={newBio} onChange={(e) => setBio(e.target.value)}/>
+                                <button className="light-button" onClick={() => {setIsEditingBio(false); handleUpdateBio();}}>Save</button>
+                            </div>
+                        ) : (
+                            <div>
+                                <p id="profile-bio">{profile.bio}</p>
+                                <button className="light-button" onClick={() => setIsEditingBio(true)}>Edit</button>
+                            </div>
+                        )}
+                        {errorMessage && <div className="error-message">{errorMessage}</div>}
+                    </div>
+
                     <form action="/api/logout" method="post" onSubmit={handleLogout}>
                         <button className="light-button" type="submit">Logout</button>
                     </form>
