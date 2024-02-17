@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 
 //Displays a text area containg the current bio, allowing it to be changed
 const UpdateBioButton = ({ currentBio }) => {
-    const [isEditing, setIsEditing] = useState(false);
+    const [isEditingBio, setIsEditingBio] = useState(false);
     const [bio, setBio] = useState(currentBio);
 
     useEffect(() => {
@@ -11,7 +11,7 @@ const UpdateBioButton = ({ currentBio }) => {
 
     const handleUpdateBio = async () => {
         try {
-            const response = await fetch('/api/update_bio', {
+            const response = await fetch('/api/change_bio', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -20,23 +20,23 @@ const UpdateBioButton = ({ currentBio }) => {
             });
             const result = await response.json();
             if (!response.ok){
-                alert('Failed to update bio:', result);
+                alert('Failed to changing bio:', result);
             }
         }
         catch (error) {
-            alert('Error updating bio:', error);
+            alert('Error changing bio:', error);
         }
     };
     return (
-        <div>
-            {isEditing ? (
+        <div id="change-bio">
+            {isEditingBio ? (
                 <div>
                     <textarea id="bio-change-text-area" value={bio} onChange={(e) => setBio(e.target.value)}/>
-                    <button class="light-button" onClick={() => {setIsEditing(false); handleUpdateBio();}}>Save</button>
-                    <button className='light-button' onClick={() => setIsEditing(false)}>Close</button>
+                    <button class="light-button" onClick={() => {setIsEditingBio(false); handleUpdateBio();}}>Save</button>
+                    <button className='light-button' onClick={() => setIsEditingBio(false)}>Close</button>
                 </div>
             ) : (
-                <button class="light-button" onClick={() => setIsEditing(true)}>Edit Bio</button>
+                <button class="light-button" onClick={() => setIsEditingBio(true)}>Edit Bio</button>
             )}
         </div>
     );
