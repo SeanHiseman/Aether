@@ -81,7 +81,7 @@ function GroupHome() {
                         <MemberChangeButton userId={groupDetails.userId} groupId={groupDetails.groupId} isMember={groupDetails.isMember}/>
                     </div>
                     <div id="group-text">
-                        <h1>{groupDetails.groupName}</h1>
+                        <p className="large-text">{groupDetails.groupName}</p>
                         <p>{groupDetails.description}</p>
                     </div>
                     <img id="large-group-photo" src={`/${groupDetails.groupPhoto}`} alt={groupDetails.groupName} />

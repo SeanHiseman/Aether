@@ -254,4 +254,21 @@ router.post('/change_description', authenticateCheck, async (req, res) => {
     }
 });
 
+//Update group name
+router.post('/change_group_name', authenticateCheck, async (req, res) => {
+    try {
+        const { groupName, groupId } = req.body;
+        const group = await Groups.findOne({ where: { group_id: groupId } });
+        if (group) {
+            group.group_name = groupName;
+            await group.save();
+            res.status(200).json({ message: "Name updated successfully" });
+        } else {
+            res.status(404).json({ message: "Group not found" });
+        }
+    } catch (error) {
+        res.status(500).json({ message: "Failed to update name" });
+    }
+});
+
 export default router;

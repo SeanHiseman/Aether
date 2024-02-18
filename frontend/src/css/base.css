@@ -32,8 +32,14 @@ body,html {
 .button:hover, #search-submit-button:hover, .light-button:hover {
     background-color: #1f2956;
 }
+.change-name-area {
+    border-radius: 10px;
+}
 .change-text-area {
     border-radius: 10px;
+    min-width: 300px;
+    min-height: 100px;
+
 }
 .container {
     display: flex;
@@ -86,6 +92,10 @@ header {
     padding: 10px 0;
     position: relative;
 }
+.large-text{
+    font-size: 50px;
+    margin-bottom: 10px;
+}
 #left-aside {
     align-items: center;
     background-color: #000514;
@@ -130,6 +140,9 @@ main {
     margin-left: 10px;
     margin-top: 32px;
     text-align: center;
+}
+#profile-bio, #description {
+    max-width: 300px;
 }
 #profile-info {
     margin-bottom: 20px;
