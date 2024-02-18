@@ -68,7 +68,7 @@ function Profile() {
                 <div id="profile-header-side">
                 </div>
                 <div id="viewed-profile-info">
-                    <p id="large-username-text">{profile.username}</p>
+                    <p clasName="large-text">{profile.username}</p>
                     <p id="profile-bio">{profile.bio}</p>
                 </div>
                 <div id="profile-header-photo">

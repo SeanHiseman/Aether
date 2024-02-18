@@ -15,7 +15,9 @@ const PersonalProfile = () => {
     const [isPhotoFormVisible, setIsPhotoFormVisible] = useState(false);
     const [isEditingBio, setIsEditingBio] = useState(false);
     const [newBio, setBio] = useState('');
-    const [profile, setProfile] = useState({ profileId: '', profilePhoto: '', username: '', bio: ''});
+    const [profile, setProfile] = useState({ profileId: '', profilePhoto: '', username: '', bio: '', userId: ''});
+    const [isEditingName, setIsEditingName] = useState(false);
+    const [newName, setName] = useState('');
     const [showForm, setShowForm] = useState(false);
     const [uploadStatus, setUploadStatus] = useState('');
     const [userContent, setUserContent] = useState([]);
@@ -168,6 +170,21 @@ const PersonalProfile = () => {
         }
     }; 
 
+    //Changes username
+    const handleUpdateName = async () => {
+        try {
+            await axios.post('/api/change_username', {
+                username: newName,
+                userId: profile.userId
+            });
+            setProfile({ ...profile, username: newName });
+            setIsEditingName(false);
+        }
+        catch (error) {
+            setErrorMessage(`Error changing name: ${error}`);
+        }
+    }; 
+
     //Toggles display of create channel form after button is pressed
     const toggleForm = () => {
         setShowForm(!showForm)
@@ -191,12 +208,43 @@ const PersonalProfile = () => {
                     <PostForm />
                 </div>
                 <div id="viewed-profile-info">
-                    <p id="large-username-text">{profile.username}</p>
+                    <div id="name-section">
+                        {isEditingName ? (
+                            <div className="change-name">
+                                <button className='light-button' onClick={() => setIsEditingName(false)}>Close</button>
+                                <textarea className="change-name-area" value={newName} onChange={(e) => {
+                                    const input = e.target.value;
+                                    const inputLength = input.length;
+                                    if (inputLength <= 100) {
+                                        setName(input)
+                                    } else {
+                                        setErrorMessage('Name cannot exceed 100 characters.');
+                                    }
+                                }}
+                                />
+                                <button className="light-button" onClick={() => {setIsEditingName(false); handleUpdateName();}}>Save</button>
+                            </div>
+                        ) : (
+                            <div>
+                                <p className="large-text">{profile.username}</p>
+                                <button className="light-button" onClick={() => setIsEditingName(true)}>Edit</button>
+                            </div>
+                        )}
+                    </div>
                     <div id="bio-section">
                         {isEditingBio ? (
                             <div id="change-bio">
                                 <button className='light-button' onClick={() => setIsEditingBio(false)}>Close</button>
-                                <textarea className="change-text-area" value={newBio} onChange={(e) => setBio(e.target.value)}/>
+                                <textarea className="change-text-area" value={newBio} onChange={(e) => {
+                                    const input = e.target.value;
+                                    const inputLength = input.length;
+                                    if (inputLength <= 1000) {
+                                        setBio(input)
+                                    } else {
+                                        setErrorMessage('Bio cannot exceed 1000 characters.');
+                                    }
+                                }}
+                                />
                                 <button className="light-button" onClick={() => {setIsEditingBio(false); handleUpdateBio();}}>Save</button>
                             </div>
                         ) : (

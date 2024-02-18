@@ -48,7 +48,8 @@ router.get('/profile/:username', authenticateCheck, async (req, res) => {
                 profileId: profile.profile_id,
                 profilePhoto: profile.profile_photo,
                 username: user.username,
-                bio: profile.bio
+                bio: profile.bio,
+                userId: user.user_id
             },
             //user_content: user_content
         }
@@ -274,6 +275,23 @@ router.post('/change_bio', authenticateCheck, async (req, res) => {
         }
     } catch (error) {
         res.status(500).json({ message: "Failed to update bio" });
+    }
+});
+
+//Update username
+router.post('/change_username', authenticateCheck, async (req, res) => {
+    try {
+        const { username, userId } = req.body;
+        const user = await Users.findOne({ where: { user_id: userId } });
+        if (user) {
+            user.username = username;
+            await user.save();
+            res.status(200).json({ message: "Name updated successfully" });
+        } else {
+            res.status(404).json({ message: "User not found" });
+        }
+    } catch (error) {
+        res.status(500).json({ message: "Failed to update name" });
     }
 });
 

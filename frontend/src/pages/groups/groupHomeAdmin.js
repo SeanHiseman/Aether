@@ -9,12 +9,14 @@ function GroupHomeAdmin() {
     const { group_name } = useParams();
     const [channels, setChannels] = useState([]);
     const [channelName, setChannelName] = useState('');
-    const [errorMessage, setErrorMessage] =useState('');
+    const [errorMessage, setErrorMessage] = useState('');
     const [groupDetails, setGroupDetails] = useState({ groupName: group_name, description: '', groupPhoto: '', memberCount: 0 });
     const [isAdmin, setIsAdmin] = useState(true);
     const [isPhotoFormVisible, setIsPhotoFormVisible] = useState(false);
     const [isEditingDescription, setIsEditingDescription] = useState(false);
     const [newDescription, setDescription] = useState('');
+    const [isEditingName, setIsEditingName] = useState(false);
+    const [newName, setName] = useState('');
     const [showForm, setShowForm] = useState(false);
 
     useEffect(() => {
@@ -134,6 +136,21 @@ function GroupHomeAdmin() {
         }
     }; 
 
+    //Changes group name
+    const handleUpdateName = async () => {
+        try {
+            await axios.post('/api/change_group_name', {
+                groupName: newName,
+                groupId: groupDetails.groupId
+            });
+            setGroupDetails({ ...groupDetails, groupName: newName });
+            setIsEditingName(false);
+        }
+        catch (error) {
+            setErrorMessage(`Error changing name: ${error}`);
+        }
+    }; 
+
     //Toggles display of create channel form after button is pressed
     const toggleForm = () => {
         setShowForm(!showForm)
@@ -149,12 +166,43 @@ function GroupHomeAdmin() {
                     <MemberChangeButton userId={groupDetails.userId} groupId={groupDetails.groupId} isMember={groupDetails.isMember}/>
                 </div>
                 <div id="group-text">
-                    <h1>{groupDetails.groupName}</h1>
+                    <div id="name-section">
+                        {isEditingName ? (
+                            <div className="change-name">
+                                <button className='light-button' onClick={() => setIsEditingName(false)}>Close</button>
+                                <textarea className="change-name-area" value={newName} onChange={(e) => {
+                                    const input = e.target.value;
+                                    const inputLength = input.length;
+                                    if (inputLength <= 100) {
+                                        setDescription(input)
+                                    } else {
+                                        setErrorMessage('Name cannot exceed 100 characters.');
+                                    }
+                                }}
+                                />
+                                <button className="light-button" onClick={() => {setIsEditingName(false); handleUpdateName();}}>Save</button>
+                            </div>
+                        ) : (
+                            <div>
+                                <p className="large-text">{groupDetails.groupName}</p>
+                                <button className="light-button" onClick={() => setIsEditingName(true)}>Edit</button>
+                            </div>
+                        )}
+                    </div>
                     <div id="description-section">
                         {isEditingDescription ? (
                             <div className="change-description">
                                 <button className='light-button' onClick={() => setIsEditingDescription(false)}>Close</button>
-                                <textarea className="change-text-area" value={newDescription} onChange={(e) => setDescription(e.target.value)}/>
+                                <textarea className="change-text-area" value={newDescription} onChange={(e) => {
+                                    const input = e.target.value;
+                                    const inputLength = input.length;
+                                    if (inputLength <= 1000) {
+                                        setDescription(input)
+                                    } else {
+                                        setErrorMessage('Description cannot exceed 1000 characters.');
+                                    }
+                                }}
+                                />
                                 <button className="light-button" onClick={() => {setIsEditingDescription(false); handleUpdateDescription();}}>Save</button>
                             </div>
                         ) : (
