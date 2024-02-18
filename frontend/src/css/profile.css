@@ -3,9 +3,6 @@
     display: flex;
     flex-direction: column;
 }
-#bio-change-text-area {
-    border-radius: 10px;
-}
 #change-profile-photo{
     border: 1px solid #ffffff;
     border-radius: 10px;

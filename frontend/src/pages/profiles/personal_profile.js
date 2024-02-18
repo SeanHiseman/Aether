@@ -153,6 +153,7 @@ const PersonalProfile = () => {
         }
     }, [isEditingBio, profile.bio]);
 
+    //Changes profile bio
     const handleUpdateBio = async () => {
         try {
             await axios.post('/api/change_bio', {
@@ -195,7 +196,7 @@ const PersonalProfile = () => {
                         {isEditingBio ? (
                             <div id="change-bio">
                                 <button className='light-button' onClick={() => setIsEditingBio(false)}>Close</button>
-                                <textarea id="bio-change-text-area" value={newBio} onChange={(e) => setBio(e.target.value)}/>
+                                <textarea className="change-text-area" value={newBio} onChange={(e) => setBio(e.target.value)}/>
                                 <button className="light-button" onClick={() => {setIsEditingBio(false); handleUpdateBio();}}>Save</button>
                             </div>
                         ) : (

@@ -13,6 +13,8 @@ function GroupHomeAdmin() {
     const [groupDetails, setGroupDetails] = useState({ groupName: group_name, description: '', groupPhoto: '', memberCount: 0 });
     const [isAdmin, setIsAdmin] = useState(true);
     const [isPhotoFormVisible, setIsPhotoFormVisible] = useState(false);
+    const [isEditingDescription, setIsEditingDescription] = useState(false);
+    const [newDescription, setDescription] = useState('');
     const [showForm, setShowForm] = useState(false);
 
     useEffect(() => {
@@ -110,6 +112,28 @@ function GroupHomeAdmin() {
         }
     };
 
+    //Set description in text area to current description
+    useEffect(() => {
+        if (isEditingDescription) {
+            setDescription(groupDetails.description);
+        }
+    }, [isEditingDescription, groupDetails.description]);
+
+    //Changes group description
+    const handleUpdateDescription = async () => {
+        try {
+            await axios.post('/api/change_description', {
+                description: newDescription,
+                groupId: groupDetails.groupId
+            });
+            setGroupDetails({ ...groupDetails, description: newDescription });
+            setIsEditingDescription(false);
+        }
+        catch (error) {
+            setErrorMessage(`Error changing description: ${error}`);
+        }
+    }; 
+
     //Toggles display of create channel form after button is pressed
     const toggleForm = () => {
         setShowForm(!showForm)
@@ -126,7 +150,21 @@ function GroupHomeAdmin() {
                 </div>
                 <div id="group-text">
                     <h1>{groupDetails.groupName}</h1>
-                    <p>{groupDetails.description}</p>
+                    <div id="description-section">
+                        {isEditingDescription ? (
+                            <div className="change-description">
+                                <button className='light-button' onClick={() => setIsEditingDescription(false)}>Close</button>
+                                <textarea className="change-text-area" value={newDescription} onChange={(e) => setDescription(e.target.value)}/>
+                                <button className="light-button" onClick={() => {setIsEditingDescription(false); handleUpdateDescription();}}>Save</button>
+                            </div>
+                        ) : (
+                            <div>
+                                <p id="description">{groupDetails.description}</p>
+                                <button className="light-button" onClick={() => setIsEditingDescription(true)}>Edit</button>
+                            </div>
+                        )}
+                        {errorMessage && <div className="error-message">{errorMessage}</div>}
+                    </div>
                 </div>
                 <div id="profile-header-photo">
                     <img id="large-group-photo" src={`/${groupDetails.groupPhoto}`} alt={groupDetails.groupName} />
