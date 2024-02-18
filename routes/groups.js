@@ -237,4 +237,21 @@ router.post('/leave_group', authenticateCheck, async (req, res) => {
     }
 });
 
+//Update group description
+router.post('/change_description', authenticateCheck, async (req, res) => {
+    try {
+        const { description, groupId } = req.body;
+        const group = await Groups.findOne({ where: { group_id: groupId } });
+        if (group) {
+            group.description = description;
+            await group.save();
+            res.status(200).json({ message: "Description updated successfully" });
+        } else {
+            res.status(404).json({ message: "Group not found" });
+        }
+    } catch (error) {
+        res.status(500).json({ message: "Failed to update description" });
+    }
+});
+
 export default router;

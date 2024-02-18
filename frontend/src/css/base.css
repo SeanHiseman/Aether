@@ -32,6 +32,9 @@ body,html {
 .button:hover, #search-submit-button:hover, .light-button:hover {
     background-color: #1f2956;
 }
+.change-text-area {
+    border-radius: 10px;
+}
 .container {
     display: flex;
     height: 100%;
