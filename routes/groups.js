@@ -1,7 +1,6 @@
 import checkIfUserIsAdmin from '../functions/adminCheck.js';
 import checkIfUserIsMember from '../functions/memberCheck.js';
-import fs from 'fs';
-import { Groups, GroupChannels, Users, UserGroups } from '../models/models.js';
+import { Groups, GroupChannels, GroupPosts, Users, UserGroups } from '../models/models.js';
 import multer from 'multer';
 import { Router } from 'express';
 import path from 'path';
@@ -55,7 +54,7 @@ router.get('/groups_list/:userId', async (req, res) => {
     }
 });
 
-//Multer setup for file uploads
+//Multer setup for profile uploads
 const group_profile_photo_storage = multer.diskStorage({
     destination: function(req, file, cb) {
         cb(null, 'media/group_profiles');
@@ -268,6 +267,61 @@ router.post('/change_group_name', authenticateCheck, async (req, res) => {
         }
     } catch (error) {
         res.status(500).json({ message: "Failed to update name" });
+    }
+});
+
+//const upload = multer({ dest: 'uploads/' });
+//const ALLOWED_EXTENSIONS = new Set(['jpg', 'jpeg', 'png', 'gif', 'mp4', 'mkv', 'avi']);
+
+const allowedFile = (filename) => {
+    //placeholder
+    return true;
+    //return filename.includes('.') && ALLOWED_EXTENSIONS.has(filename.split('.').pop().toLowerCase());
+}
+
+//Multer setup for post uploads
+const post_storage = multer.diskStorage({
+    destination: function(req, file, cb) {
+        cb(null, 'media/content');
+    },
+    filename: function(req, file, cb) {
+        cb(null, Date.now() + path.extname(file.originalname));
+    }
+});
+
+//Upload post to group
+router.post('/create_group_post', async (req, res) => {
+    const { group_id, title, content } = req.body;
+    let mediaUrls = [];
+
+    try {
+        title = title || null;
+
+        if (req.files) {
+            mediaUrls = req.files.filter(file => allowedFile(file.originalname)).map(file => {
+                const filepath = path.join(__dirname, 'media', file.filename);
+                return filepath
+            });
+        }
+
+        const post_id = v4();
+        const user = await Users.findOne({ where: { username: req.session.username } });
+        if (!user) {
+            return res.status(404).json({ "status": "error", "message": "Could not fetch user_id" });
+        }
+
+        await GroupPosts.create({
+            post_id,
+            group_id,
+            title,
+            content,
+            mediaUrls: JSON.stringify(mediaUrls),
+            poster_id: user.user_id,
+        });
+        return res.json({ "status": "success", "message": "Successful upload." });
+    } catch (e) {
+        console.error(e);
+        return res.status.json({ "status": "error", "message": e.message });
     }
 });
 

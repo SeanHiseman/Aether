@@ -53,17 +53,19 @@ function GroupHome() {
     }, [groupDetails.groupId]);  
 
     //Uploads content to group
-    const handleSubmit = async (event) => {
-        event.preventDefault();
-        const formData = new FormData(event.target);
+    const handlePostSubmit = async ({ title, content, files, setErrorMessage }) => {
+        const formData = new FormData();
+        formData.append('groupId', groupDetails.groupId); 
+        formData.append('title', title);
+        formData.append('content', content);
         try {
-            const response = await axios.post('/api/upload', formData, {
+            await axios.post('/api/create_group_post', formData, {
                 headers: {
                     'Content-Type': 'multipart/form-data',
                 },
             });
         } catch (error) {
-            console.error('Error uploading file:', error);
+            setErrorMessage("Error creating post. Please try again.");
         }
     };
 
@@ -75,7 +77,7 @@ function GroupHome() {
         return (    
             <div id="group-container">           
                 <header id="group-header">
-                    <PostForm />
+                    <PostForm onSubmit={handlePostSubmit} />
                     <div id="group-members">
                         <p>{groupDetails.memberCount} members</p>
                         <MemberChangeButton userId={groupDetails.userId} groupId={groupDetails.groupId} isMember={groupDetails.isMember}/>
