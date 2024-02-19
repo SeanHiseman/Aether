@@ -174,7 +174,7 @@ function GroupHomeAdmin() {
                                     const input = e.target.value;
                                     const inputLength = input.length;
                                     if (inputLength <= 100) {
-                                        setDescription(input)
+                                        setName(input)
                                     } else {
                                         setErrorMessage('Name cannot exceed 100 characters.');
                                     }

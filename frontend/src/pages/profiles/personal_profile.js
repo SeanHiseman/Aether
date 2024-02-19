@@ -196,15 +196,6 @@ const PersonalProfile = () => {
             <div id="profile-header">
                 <FriendRequests />
                 <div id="profile-header-side">
-                    {/*<div id="upload-section">
-                        <p>Upload content</p>
-                        <form id="upload-form" enctype="multipart/form-data" action="/upload" method="post" onSubmit={UploadSubmit}>
-                            <input type="text" name="title" placeholder="Enter title" />
-                            <input type="file" name="file" />
-                            <input className="light-button" type="submit" value="Upload" />
-                        </form>
-                        <div id="confirmation-message"></div>
-                    </div>*/}
                     <PostForm />
                 </div>
                 <div id="viewed-profile-info">

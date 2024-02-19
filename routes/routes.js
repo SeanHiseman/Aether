@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { Posts, Profiles, Users } from '../models/models.js'; 
+import { ProfilePosts, Profiles, Users } from '../models/models.js'; 
 import authenticateCheck from '../functions/authenticateCheck.js';
 import { Op } from 'sequelize';
 const router = Router();
@@ -13,7 +13,7 @@ router.get('/home', authenticateCheck, async (req, res) => {
 
 //Recommended route (currently just return all posts, will be changed)
 router.get('/recommended', authenticateCheck, async (req, res) => {
-    const recommended_content = await Posts.findAll({
+    const recommended_content = await ProfilePosts.findAll({
         include: [{
             model: Users,
             include: [Profiles]

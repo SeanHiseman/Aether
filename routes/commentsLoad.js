@@ -1,5 +1,5 @@
 import authenticateCheck from '../functions/authenticateCheck.js';
-import { Comments, Posts, Profiles, Users } from '../models/models.js';
+import { Comments, ProfilePosts, Profiles, Users } from '../models/models.js';
 import { Router } from 'express';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -43,7 +43,7 @@ router.post('/add_comment', authenticateCheck, async (req, res) => {
             comment_id, post_id, user_id, comment_text, likes: 0, dislikes: 0, timestamp: new Date(), parent_id 
         });
 
-        const contentToUpdate = await Posts.findByPk(post_id);
+        const contentToUpdate = await ProfilePosts.findByPk(post_id);
         contentToUpdate.comments += 1;
         await contentToUpdate.save();
 

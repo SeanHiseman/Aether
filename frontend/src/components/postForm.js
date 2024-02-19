@@ -4,19 +4,23 @@ import 'react-quill/dist/quill.snow.css';
 import '../css/postForm.css';
 import axios from 'axios';
 
-const PostForm = () => {
+const PostForm = ({ onSubmit }) => {
     const [content, setContent] = useState('');
+    const [errorMessage, setErrorMessage] = useState('');
     const [files, setFiles] = useState([]);
     const [showForm, setShowForm] = useState(false);
-
-    const handleFileChange = (e) => {
-        setFiles(e.target.files);
-    };
+    const [title, setTitle] = useState('');
 
     //Customises tool bar
     const modules = {
+        //Enables undo/redo
+        history: {
+            delay: 2000,
+            maxStack: 500,
+            userOnly: false
+        },
         toolbar: [
-            [{ header: '1'}, { header: '2'}, { font: []}],
+            ['image', 'video', 'link'],
             [{ size: []}],
             ['bold', 'italic', 'underline', 'strike', 'blockquote'],
             [
@@ -25,24 +29,14 @@ const PostForm = () => {
                 { indent: '-1' },
                 { indent: '+1' }, 
             ],
-            ['link', 'image', 'video'],
             ['clean'],
+            ['undo', 'redo']
         ]
     }
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        const formData = new FormData();
-        formData.append('content', content);
-        for (let file of files) {
-            formData.append('media', file);
-        }
-
-        try {
-            const response = await axios.post('create_post', formData);
-        } catch (error) {
-            alert("An unexpected error occured. Please try again.");
-        }
+        onSubmit({ title, content, files, setErrorMessage});
     };
 ;   
     //Toggles display of upload form after create post button is pressed
@@ -57,9 +51,10 @@ const PostForm = () => {
             </button>
             {showForm && (
                 <form id="post-form" onSubmit={handleSubmit}>
-                    <ReactQuill modules={modules} value={content} onChange={setContent} />
-                    <input type="file" multiple onChange={handleFileChange} />
+                    <input type="text" placeholder="Add title (optional)..." value={title} onChange={(e) => setTitle(e.target.value)}/>
+                    <ReactQuill placeholder="Create post..." modules={modules} value={content} onChange={setContent} />
                     <button class="light-button" type="submit">Create Post</button>
+                    {errorMessage && <div className="error-message">{errorMessage}</div>}
                 </form>   
             )}   
         </div>
