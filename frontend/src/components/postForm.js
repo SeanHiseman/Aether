@@ -30,7 +30,7 @@ const PostForm = ({ onSubmit }) => {
                 { indent: '+1' }, 
             ],
             ['clean'],
-            ['undo', 'redo']
+            //['undo', 'redo']
         ]
     }
 
@@ -51,7 +51,7 @@ const PostForm = ({ onSubmit }) => {
             </button>
             {showForm && (
                 <form id="post-form" onSubmit={handleSubmit}>
-                    <input type="text" placeholder="Add title (optional)..." value={title} onChange={(e) => setTitle(e.target.value)}/>
+                    <input id="title-entry" type="text" placeholder="Add title (optional)..." value={title} onChange={(e) => setTitle(e.target.value)}/>
                     <ReactQuill placeholder="Create post..." modules={modules} value={content} onChange={setContent} />
                     <button class="light-button" type="submit">Create Post</button>
                     {errorMessage && <div className="error-message">{errorMessage}</div>}

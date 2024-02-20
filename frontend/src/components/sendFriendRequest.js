@@ -1,33 +1,33 @@
-import React from 'react';
-import ReactDOM from 'react-dom';
+import axios from "axios";
+import React, { useEffect, useState } from "react"
 
-function SendFriendRequestButton({ receiverProfileId }) {
+function SendFriendRequestButton({ userId, receiverUserId, isRequestSent }) {
+    const [errorMessage, setErrorMessage] = useState('');
+    const [request, setRequest] = useState(isRequestSent);
+
+    useEffect(() => {
+        setRequest(isRequestSent);
+    }, [isRequestSent]);
+
     const handleSendRequest = () => {
-        fetch(`/api/send_friend_request/${receiverProfileId}`, { method: 'POST' })
-            .then(response => response.json())
-            .then(data => {
-                console.log(data.message);
+        const url = request ? 'cancel_friend_request' : 'send_friend_request';
+        axios.post(`/api/${url}`, {userId, receiverUserId})
+            .then(() => {
+                setRequest(!isRequestSent);
+            }).catch(error => {
+                setErrorMessage("Friend request error.", error);
             });
     };
 
     return (
         <div>
-            <button class="light-button" onClick={handleSendRequest}>Send Friend Request</button>
+            <button className="light-button" onClick={handleSendRequest}>
+                {request ? 'Cancel request' : 'Add friend'}
+            </button>
+            {errorMessage && <div className="error-message">{errorMessage}</div>}
         </div>
+
     );
-}
-
-const rootElement = document.getElementById('friend-request-root');
-
-//Check if rootElement exists
-if (rootElement){
-    const receiverProfileId = rootElement.getAttribute('data-receiver-id');
-    ReactDOM.render(
-        <React.StrictMode>
-          <SendFriendRequestButton receiverProfileId={receiverProfileId} />
-        </React.StrictMode>,
-        rootElement
-      );
 }
 
 export default SendFriendRequestButton

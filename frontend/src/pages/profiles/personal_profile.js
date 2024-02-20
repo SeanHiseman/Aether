@@ -281,7 +281,7 @@ const PersonalProfile = () => {
                     </button>
                     {showForm && (
                         <form id="add-channel-form" action="/add_profile_channel" method="post" onSubmit={AddChannel}>
-                            <input type="text" name="channel_name" placeholder="Channel name" value={channelName} onChange={(e) => setChannelName(e.target.value)}/>
+                            <input className="channel-input" type="text" name="channel_name" placeholder="Channel name..." value={channelName} onChange={(e) => setChannelName(e.target.value)}/>
                             <input className="button" type="submit" value="Add" disabled={!channelName}/>
                             {errorMessage && <div className="error-message">{errorMessage}</div>}
                         </form>                            

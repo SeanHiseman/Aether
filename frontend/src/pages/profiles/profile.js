@@ -12,7 +12,7 @@ function Profile() {
     const { username } = useParams();
     const navigate = useNavigate();
     const [channels, setChannels] = useState([]);
-    const [profile, setProfile] = useState({ logged_in_profile_id: '', logged_in_profile_photo: '', logged_in_username: '',logged_in_user_id: ''});
+    const [profile, setProfile] = useState({ profileId: '', profilePhoto: '', username: '', userId: '', isFriend: '', isRequested: '' });
     const [userContent, setUserContent] = useState([]);
     //Determine if logged in user is viewing their own profile
     const loggedInUsername = user?.username;
@@ -21,7 +21,8 @@ function Profile() {
         if (!isLoggedInUser) {
             axios.get(`/api/profile/${username}`)
                 .then(response => {
-                    setProfile(response.data.profile);
+                    const fetchedProfile = response.data.profile;
+                    setProfile(fetchedProfile);
                     axios.get(`/api/user-content/${response.data.profileId}`)
                         .then(contentResponse => {
                             setUserContent(contentResponse.data);
@@ -37,7 +38,7 @@ function Profile() {
                     }
                 });
         }
-    }, [username, isLoggedInUser, navigate, loggedInUsername, profile?.username]);
+    }, [username, isLoggedInUser, navigate]);
 
     //Fetch channels in user profile
     useEffect(() => {
@@ -59,20 +60,21 @@ function Profile() {
     if (isLoggedInUser) {
         return <PersonalProfile />
     }
-    
+    const loggedInUserId = user.userId;
+    console.log("loggedInUserId:", loggedInUserId);
     document.title = profile.username || "Profile";
     return (
         <div id="profile-container">
             <div id="profile-header">
-                <SendFriendRequestButton />
+                <SendFriendRequestButton userId={loggedInUserId} receiverUserId={profile.userId} isRequestSent={profile.isRequested} />
                 <div id="profile-header-side">
                 </div>
                 <div id="viewed-profile-info">
-                    <p clasName="large-text">{profile.username}</p>
+                    <p className="large-text">{profile.username}</p>
                     <p id="profile-bio">{profile.bio}</p>
                 </div>
                 <div id="profile-header-photo">
-                    <img id="large-profile-image" src={`/${profile.profilePhoto}`} alt="Profile Picture" />         
+                    <img id="large-profile-photo" src={`/${profile.profilePhoto}`} alt="Profile Picture" />         
                 </div>
             </div>
             <div className="results-wrapper">

@@ -85,7 +85,11 @@ router.get('/check_authentication', async (req, res) => {
             if (!user) {
                 return res.status(401).json({ error: 'Not authenticated'});
             }
-            res.json({ authenticated: true, user: { username: user.username }});
+            const userData = {
+                username: user.username,
+                userId: user.user_id
+            };
+            res.json({ authenticated: true, user: userData });
         } catch (err) {
             console.error(err);
             return res.status(500).json({ error: 'Internal server error' });
@@ -94,6 +98,5 @@ router.get('/check_authentication', async (req, res) => {
         res.status(401).json({ error: 'Not authenticated' });
     }
 });
-
 
 export default router;

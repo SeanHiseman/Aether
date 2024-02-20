@@ -5,9 +5,8 @@ export const AuthContext = createContext();
 //Check if user is logged in
 export const AuthCheck = ({ children }) => {
     const [isAuthenticated, setIsAuthenticated] = useState(false);
-    const [user, setUser] = useState(null);
+    const [user, setUser] = useState({ username: '', userId: null });
     const navigate = useNavigate();
-
     useEffect(() => {
         const checkAuthentication = async () => {
             try {
