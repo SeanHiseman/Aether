@@ -7,7 +7,7 @@ import path, { extname } from 'path';
 import authenticateCheck from '../functions/authenticateCheck.js';
 import session from 'express-session';
 import multer, { diskStorage } from 'multer';
-import { Conversations, Profiles, ProfileChannels, Users, UserConversations } from '../models/models.js';
+import { Conversations, Friends, FriendRequests, Profiles, ProfileChannels, Users, UserConversations } from '../models/models.js';
 
 const app = express();
 const router = Router();
@@ -21,16 +21,42 @@ app.use(session({ secret: 'EDIT_ME', resave: true, saveUninitialized: true }));
 
 //Load user profiles
 router.get('/profile/:username', authenticateCheck, async (req, res) => {
+    const loggedInUserId = req.session.user_id;
     try {
-        let user = await Users.findOne({ where: { username: req.params.username } });
-        if (!user) {
+        let viewedUser = await Users.findOne({ where: { username: req.params.username } });
+        if (!viewedUser) {
             return res.status(404).send("User not found");
         }
         //Finds profile associated with user
-        let profile = await Profiles.findOne({ where: { user_id: user.user_id } });
+        let profile = await Profiles.findOne({ where: { user_id: viewedUser.user_id } });
         if (!profile) {
             return res.status(404).send("Profile not found")
         }
+
+        //let friendship, friendRequest = null;
+        //try {
+            //[friendship, friendRequest] = await Promise.all([
+                //Friends.findOne({
+                    //where: {
+                        //[Op.or]: [
+                            //{ user1_id: loggedInUserId, user2_id: viewedUser.user_id },
+                            //{ user1_id: viewedUser.user_id, user2_id: loggedInUserId}
+                        //]
+                    //}
+                //}),
+                //FriendRequests.findOne({
+                    //where: {
+                        //[Op.or]: [
+                            //{ sender_id: loggedInUserId, receiver_id: viewedUser.user_id },
+                            //{ sender_id: viewedUser.user_id, receiver_id: loggedInUserId}
+                        //]
+                    //}
+                //})
+            //]);
+        //} catch (friendshipError) {
+            //console.error("Error", error);
+            //return res.status(500).send("Error fetching friendship data." + friendshipError);
+        //}
         //let user_content = await Posts.findAll({
             //where: { poster_id: profile.user_id },
             //order: [['timestamp', 'DESC']]
@@ -47,9 +73,11 @@ router.get('/profile/:username', authenticateCheck, async (req, res) => {
             profile: {
                 profileId: profile.profile_id,
                 profilePhoto: profile.profile_photo,
-                username: user.username,
+                username: viewedUser.username,
                 bio: profile.bio,
-                userId: user.user_id
+                userId: viewedUser.user_id, 
+                //isFriend: !!friendship,
+                //isRequested: !!friendRequest
             },
             //user_content: user_content
         }
@@ -101,9 +129,10 @@ router.get('/get_profile_channels/:profileId', authenticateCheck, async (req, re
 });
 
 //Send friend request
-router.post('/send_friend_request/:receiverProfileId', authenticateCheck, async (req, res) => {
+router.post('/send_friend_request', authenticateCheck, async (req, res) => {
+    const { receiverProfileId } = req.body;
     try {
-        const receiverProfile = await Profiles.findOne({ where: { profile_id: req.params.receiverProfileId } });
+        const receiverProfile = await Profiles.findOne({ where: { profile_id: receiverProfileId } });
         if (!receiverProfile) {
             return res.status(404).json({ message: "Receiver profile not found" });
         }
@@ -114,7 +143,7 @@ router.post('/send_friend_request/:receiverProfileId', authenticateCheck, async 
             return res.status(404).json({ message: "Sender user not found" });
         }
 
-        const existingRequest = await FriendRequest.findOne({
+        const existingRequest = await FriendRequests.findOne({
             where: {
                 sender_id: user.user_id,
                 receiver_id: receiverProfile.user_id
@@ -125,13 +154,26 @@ router.post('/send_friend_request/:receiverProfileId', authenticateCheck, async 
             return res.json({ message: "Friend request already sent" });
         }
 
-        await FriendRequest.create({
-            request_id: uuidv4(),
+        await FriendRequests.create({
+            request_id: v4(),
             sender_id: user.user_id,
             receiver_id: receiverProfile.user_id
         });
 
         res.json({ message: "Friend request sent" });
+    } catch (error) {
+        res.status(500).send(error.message);
+    }
+});
+
+//Cancel friend request
+router.post('/cancel_friend_request', authenticateCheck, async (req, res) => {
+    const { userId, receiverUserId } = req.body;
+    try {
+        await FriendRequests.destroy({
+            where: { sender_id: userId, receiver_id: receiverUserId } 
+        });
+        res.status(200).send("Friend request cancelled");
     } catch (error) {
         res.status(500).send(error.message);
     }
@@ -145,14 +187,14 @@ router.put('/accept_friend_request/:requestId', authenticateCheck, async (req, r
             return res.status(404).json({ error: "Friend request not found" });
         }
 
-        await Friend.create({
-            friendship_id: uuidv4(),
+        await Friends.create({
+            friendship_id: v4(),
             user1_id: friendRequest.sender_id,
             user2_id: friendRequest.receiver_id,
             FriendSince: new Date()
         });
 
-        const conversation = await Conversations.create({ conversation_id: uuidv4() });
+        const conversation = await Conversations.create({ conversation_id: v4() });
 
         await UserConversations.bulkCreate([
             { user_id: friendRequest.sender_id, conversation_id: conversation.conversation_id },

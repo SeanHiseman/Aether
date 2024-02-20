@@ -91,7 +91,7 @@
     border-top: 1px solid #000514;
 }
   
-input[type="text"] {
+.input {
     width: 90%;
     padding: 10px;
     margin-right: 5px;

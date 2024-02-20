@@ -122,7 +122,7 @@ const BaseLayout = () => {
                 </button>
                 {showForm && (
                     <form id="create-group-form" onSubmit={createGroupSubmit}>
-                        <input type="text" name="Name" placeholder="Group name" value={groupName} onChange={(e) => setGroupName(e.target.value)}/>
+                        <input id="group-name-input" type="text" name="Name" placeholder="Group name..." value={groupName} onChange={(e) => setGroupName(e.target.value)}/>
                         <input type="file" name="Group photo" onChange={(e) => setGroupPhoto(e.target.files[0])}/>
                         <input className="button" type="submit" value="Create" disabled={!groupName}/>
                     </form>
@@ -142,10 +142,10 @@ const BaseLayout = () => {
             </nav>
         </aside>
         <main>
-            <header>
+            <header id="base-header">
                 <div className="spacer"></div>
                     <form id="search-form" onSubmit={SearchSubmit}>
-                        <input type="text" id="keyword" name="keyword" placeholder="Search..." value={searchKeyword} onChange={(e) => setSearchKeyword(e.target.value)}/>
+                        <input id="search-bar" type="text" name="keyword" placeholder="Search..." value={searchKeyword} onChange={(e) => setSearchKeyword(e.target.value)}/>
                         <input id="search-submit-button" type="submit" value="Search"/>
                     </form>
             <div className="spacer"></div>

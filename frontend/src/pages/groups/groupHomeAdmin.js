@@ -79,17 +79,19 @@ function GroupHomeAdmin() {
     }
     
     //Uploads content to group
-    const UploadSubmit = async (event) => {
-        event.preventDefault();
-        const formData = new FormData(event.target);
+    const handlePostSubmit = async ({ title, content, files, setErrorMessage }) => {
+        const formData = new FormData();
+        formData.append('groupId', groupDetails.groupId); 
+        formData.append('title', title);
+        formData.append('content', content);
         try {
-            const response = await axios.post('/api/upload', formData, {
+            await axios.post('/api/create_group_post', formData, {
                 headers: {
                     'Content-Type': 'multipart/form-data',
                 },
             });
         } catch (error) {
-            console.error('Error uploading file:', error);
+            setErrorMessage("Error creating post. Please try again.");
         }
     };
 
@@ -237,7 +239,7 @@ function GroupHomeAdmin() {
                     </button>
                     {showForm && (
                         <form id="add-channel-form" action="/add_group_channel" method="post" onSubmit={AddChannel}>
-                            <input type="text" name="channel_name" placeholder="Channel name" value={channelName} onChange={(e) => setChannelName(e.target.value)}/>
+                            <input className="channel-input" type="text" name="channel_name" placeholder="Channel name..." value={channelName} onChange={(e) => setChannelName(e.target.value)}/>
                             <input className="button" type="submit" value="Add" disabled={!channelName}/>
                             {errorMessage && <div className="error-message">{errorMessage}</div>}
                         </form>                            

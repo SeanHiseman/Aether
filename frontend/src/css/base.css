@@ -10,26 +10,40 @@
     max-width: 180px; 
     margin: 10px;
 }
+#base-header {
+    align-items: center;
+    background-color: #000514; 
+    border-bottom: 1px solid #ffffff;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    height: 70px;
+    min-width: 100%;
+    padding: 10px 0;
+    position: relative;
+}
 body,html {
     background-color: #252836;
     color: white;
     font-family: Arial, sans-serif;
+    font-size: large;
     height: 100%;
     margin: 0;
     padding: 0;
     word-wrap: break-word;
 }
 .button {
-    padding: 5px 10px;
-    margin: 10px;
     background-color: #000514;
     border: 1px solid #ffffff;
-    color: white;
     border-radius: 10px;
+    color: white;
     cursor: pointer;
+    font-size: large;
+    margin: 10px;
+    padding: 5px 10px;
     transition: background-color 0.3s;
 }
-.button:hover, #search-submit-button:hover, .light-button:hover {
+.button:hover, #search-submit-button:hover, .light-button:hover, #search-bar:focus, .channel-input:focus, #search-bar:hover, .channel-input:hover, #group-name-input:hover, #group-name-input:focus {
     background-color: #1f2956;
 }
 .change-name-area {
@@ -40,6 +54,15 @@ body,html {
     min-width: 300px;
     min-height: 80px;
 
+}
+.channel-input, #group-name-input {
+    background-color: #000514;
+    border: 1px solid white;
+    border-radius: 10px;
+    color: white;
+    font-size: large;
+    padding: 5px;
+    transition: background-color 0.3s;
 }
 .container {
     display: flex;
@@ -70,7 +93,6 @@ body,html {
     justify-content: flex-start;
     padding: 5px;
     width: 90%;
-
 }
 .group-list-link, .channel-list-link {
     align-items: center;
@@ -78,19 +100,10 @@ body,html {
 }
 .group-list-text, .channel-list-text {
     margin-left: 5px;
-    margin-top: 32px;
+    margin-top: 36px;
 }
-header {
-    align-items: center;
-    background-color: #000514; 
-    border-bottom: 1px solid #ffffff;
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    min-height: 50px;
-    min-width: 100%;
-    padding: 10px 0;
-    position: relative;
+input[type="text"] {
+    outline: none;
 }
 .large-text{
     font-size: 50px;
@@ -122,13 +135,14 @@ header {
     text-decoration: none;
 }
 .light-button {
-    padding: 5px 10px;
-    margin: 10px;
     background-color: #41445a;
     border: 1px solid #ffffff;
-    color: white;
     border-radius: 10px;
+    color: white;
     cursor: pointer;
+    margin: 10px;
+    font-size: large;
+    padding: 5px 10px;
     transition: background-color 0.3s;
 }
 main {
@@ -189,32 +203,39 @@ main {
     list-style-type: none;
     padding: 0;
 }
-#search-form {
-    max-width: 600px;
-    width: 100%;
-    display: flex;
-    justify-content: space-between;
-    flex-grow: 0;
-}
-#search-form input[type="text"] {
-    flex-grow: 1;
-    margin-right: 10px;
-    margin-top: 10px;
-    border: none;
+#search-bar {
+    background-color: #000514;
+    border: 1px solid white;
     border-radius: 20px;
+    color: white;
+    flex-grow: 1;
+    font-size: large;
+    margin-right: 10px;
+    max-height: 50px;
     padding: 5px;
-    min-height: 40px;
+    transition: background-color 0.3s;
+}
+.channel-input::placeholder, #group-name-input::placeholder, #search-bar::placeholder {
+    color: white;
+}
+#search-form {
+    display: flex;
+    flex-grow: 0;
+    justify-content: space-between;
+    max-width: 600px;
+    min-height: 52px;
+    width: 100%;
 }
 #search-submit-button {
-    cursor: pointer;
-    padding: 5px;
-    color: white;
     background-color: #000514;
     border: 1px solid #ffffff;
-    margin-top: 10px;
     border-radius: 20px;
-    min-height: 40px;
-    min-width: 60px;
+    cursor: pointer;
+    color: white;
+    font-size: large;
+    min-height: 100%;
+    min-width: 80px;
+    padding: 5px;
     transition: background-color 0.3s;
 }
 .spacer {
@@ -246,9 +267,6 @@ main {
 #upload-form input[type="file"] {
     display: block;  
     width: 100%;    
-}
-content {
-    align-items: center;
 }
 
 
