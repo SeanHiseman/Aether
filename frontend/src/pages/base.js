@@ -132,7 +132,7 @@ const BaseLayout = () => {
                     <ul>
                         {groups.map(group => (
                         <li key={group.group_id}>
-                            <Link className="group-list-link" to={`/group/${group.group_name}/main`}>
+                            <Link className="group-list-link" to={`/group/${group.group_name}/Main`}>
                                 <img className="small-group-photo" src={`/${group.group_photo}`} alt={group.group_name} />
                                 <p className="group-list-text">{group.group_name}</p>
                             </Link>
