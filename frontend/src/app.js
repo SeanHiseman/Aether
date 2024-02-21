@@ -21,12 +21,12 @@ const App = () => {
                     <Route path="home" element={<AuthCheck><HomePage /></AuthCheck>} />
                     <Route path="group/:group_name" element={<AuthCheck><GroupWrapper /></AuthCheck>}>
                         {/* Redirect to main channel by default */}
-                        <Route index element={<Navigate replace to="main" />} />
+                        <Route index element={<Navigate replace to="Main" />} />
                         <Route path=":channel_name" element={<GroupHome />} />
                     </Route>
                     <Route path="profile/:username" element={<AuthCheck><ProfileWrapper /></AuthCheck>}>
                         {/* Redirect to main channel by default */}
-                        <Route index element={<Navigate replace to="main" />} />
+                        <Route index element={<Navigate replace to="Main" />} />
                         <Route path=":channel_name" element={<Profile />} />
                     </Route>
                 </Route>

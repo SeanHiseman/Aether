@@ -90,10 +90,9 @@ function Profile() {
                     <ul>
                         {channels.map(channel => (
                         <li key={channel.channelId}>
-                            <p className="channel-list-text">{channel.channel_name}</p>
-                            {/*<Link className="channel-list-link" to={`/profile_channels/${channel.channelName}`}>
-                                <p className="channel-list-text">{channel.channelName}</p>
-                            </Link>*/}
+                            {<Link className="channel-list-link" to={`/profile/${profile.username}/${channel.channel_name}`}>
+                                <p className="channel-list-text">{channel.channel_name}</p>
+                            </Link>}
                         </li>
                         ))}
                     </ul>

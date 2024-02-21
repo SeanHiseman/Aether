@@ -85,7 +85,7 @@ function GroupHome() {
                     </div>
                     <div id="group-text">
                         <p className="large-text">{groupDetails.groupName}</p>
-                        <p>{groupDetails.description}</p>
+                        <p id="description" >{groupDetails.description}</p>
                     </div>
                     <img id="large-group-photo" src={`/${groupDetails.groupPhoto}`} alt={groupDetails.groupName} />
                 </header>
@@ -95,10 +95,9 @@ function GroupHome() {
                         <ul>
                             {channels.map(channel => (
                             <li key={channel.channelId}>
-                                <p className="channel-list-text">{channel.channel_name}</p>
-                                {/*<Link className="channel-list-link" to={`/group_channels/${channel.channelName}`}>
-                                    <p className="channel-list-text">{channel.channelName}</p>
-                                </Link>*/}
+                                {<Link className="channel-list-link" to={`/group/${groupDetails.groupName}/${channel.channel_name}`}>
+                                    <p className="channel-list-text">{channel.channel_name}</p>
+                                </Link>}
                             </li>
                             ))}
                         </ul>

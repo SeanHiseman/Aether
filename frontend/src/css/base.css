@@ -64,6 +64,10 @@ body,html {
     padding: 5px;
     transition: background-color 0.3s;
 }
+.channel-list-link, .channel-list-link:visited {
+    text-decoration: none;
+    color: white;
+}
 .container {
     display: flex;
     height: 100%;
