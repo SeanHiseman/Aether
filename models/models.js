@@ -34,6 +34,7 @@ Profiles.belongsTo(Users, { foreignKey: 'user_id' });
 const ProfilePosts = sequelize.define('profile_posts', {
   post_id: { type: STRING(36), primaryKey: true },
   profile_id: { type: STRING(36), allowNull: false }, 
+  channel_id: { type: String(36), allowNull: false},
   title: { type: STRING(120), allowNull: true },
   content: { type: TEXT, allowNull: false },
   content_type: { type: STRING(50), allowNull: false },
@@ -69,6 +70,7 @@ const Groups = sequelize.define('groups', {
 const GroupPosts = sequelize.define('group_posts', {
   post_id: { type: STRING(36), primaryKey: true },
   group_id: { type: STRING(36), allowNull: false }, 
+  channel_id: { type: String(36), allowNull: false},
   title: { type: STRING(120), allowNull: true },
   content: { type: TEXT, allowNull: false },
   content_type: { type: STRING(50), allowNull: false },

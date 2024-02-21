@@ -9,9 +9,10 @@ import '../../css/profile.css';
 
 function Profile() {
     const { user } = useContext(AuthContext);
-    const { username } = useParams();
+    const { username, channel_name } = useParams();
     const navigate = useNavigate();
     const [channels, setChannels] = useState([]);
+    const [currentChannel, setCurrentChannel] = useState(null);
     const [profile, setProfile] = useState({ profileId: '', profilePhoto: '', username: '', userId: '', isFriend: '', isRequested: '' });
     const [userContent, setUserContent] = useState([]);
     //Determine if logged in user is viewing their own profile
@@ -61,7 +62,6 @@ function Profile() {
         return <PersonalProfile />
     }
     const loggedInUserId = user.userId;
-    console.log("loggedInUserId:", loggedInUserId);
     document.title = profile.username || "Profile";
     return (
         <div id="profile-container">

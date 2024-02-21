@@ -94,6 +94,23 @@ body,html {
     padding: 5px;
     width: 90%;
 }
+#group-container, #profile-container, #home-container {
+    display: grid;
+    grid-template-rows: auto 1fr;
+    grid-template-columns: 1fr;
+    height: calc(100vh - 50px);
+    width: calc(100%);
+}
+#group-header, #profile-header, #home-header {
+    align-items: center;
+    border-bottom: 1px solid #ffffff;
+    background-color: #41445a;
+    display: flex;
+    grid-column: 1 / 2;
+    justify-content: space-between;
+    padding: 10px;
+    z-index: 2;
+}
 .group-list-link, .channel-list-link {
     align-items: center;
     display: flex;
