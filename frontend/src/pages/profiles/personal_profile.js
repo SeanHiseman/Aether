@@ -8,9 +8,10 @@ import '../../css/profile.css';
 
 //Loads the profile page of the logged in user
 const PersonalProfile = () => {
-    const { username } = useParams();
+    const { username, channel_name } = useParams();
     const [channels, setChannels] = useState([]);
     const [channelName, setChannelName] = useState('');
+    const [currentChannel, setCurrentChannel] = useState(null);
     const [errorMessage, setErrorMessage] = useState('');
     const [isPhotoFormVisible, setIsPhotoFormVisible] = useState(false);
     const [isEditingBio, setIsEditingBio] = useState(false);

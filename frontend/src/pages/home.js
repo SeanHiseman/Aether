@@ -7,7 +7,14 @@ function HomePage() {
     }, []);
 
     return (
-        <p>Hello!</p>
+        <div id="home-container">
+            <header id="home-header">
+                <h1>Welcome</h1>
+            </header>
+            <aside id="right-aside">
+                <p>Hello</p>
+            </aside>
+        </div>
     )
 }
 

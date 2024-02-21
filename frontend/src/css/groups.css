@@ -12,22 +12,6 @@
     margin: 10px;
     padding: 5px;
 }
-#group-container {
-    display: grid;
-    grid-template-rows: auto 1fr;
-    grid-template-columns: 1fr;
-    height: calc(100vh - 50px);
-    width: calc(100%);
-}
-#group-header {
-    align-items: center;
-    border-bottom: 1px solid #ffffff;
-    background-color: #41445a;
-    display: flex;
-    grid-column: 1 / 2;
-    justify-content: space-between;
-    z-index: 2;
-}
 #large-group-photo {
     height: 200px; 
     width: 200px; 

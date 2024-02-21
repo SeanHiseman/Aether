@@ -6,9 +6,10 @@ import MemberChangeButton from '../../components/memberChangeButton';
 import PostForm from '../../components/postForm';
 
 function GroupHomeAdmin() {
-    const { group_name } = useParams();
+    const { group_name, channel_name } = useParams();
     const [channels, setChannels] = useState([]);
     const [channelName, setChannelName] = useState('');
+    const [currentChannel, setCurrentChannel] = useState(null);
     const [errorMessage, setErrorMessage] = useState('');
     const [groupDetails, setGroupDetails] = useState({ groupName: group_name, description: '', groupPhoto: '', memberCount: 0 });
     const [isAdmin, setIsAdmin] = useState(true);

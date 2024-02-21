@@ -100,61 +100,61 @@ const BaseLayout = () => {
 
     return (
         <div className="container">
-        <aside id="left-aside">
-            <div id="profile-info">
-                <Link id="profile-link" to={`/profile/${profile.logged_in_username}`}>
-                    <img id="profile-image" src={`/${profile.logged_in_profile_photo}`} alt="Profile image" />
-                    <p id="logged_in_username">{profile.logged_in_username}</p>
-                </Link>
-            </div>
-            <nav>
-                <ul>
-                    <li><Link to="/home">Home</Link></li>
-                    <li><Link to="/recommended">Recommended</Link></li>
-                    <li><Link to="/home">Following</Link></li>
-                    <li><Link to="/home">Personal</Link></li>
-                </ul>
-            </nav>
-            <h1>Groups</h1>
-            <div id="create-group-section">
-                <button class="button" onClick={toggleForm}>
-                    {showForm ? 'Close': 'Create new Group'}
-                </button>
-                {showForm && (
-                    <form id="create-group-form" onSubmit={createGroupSubmit}>
-                        <input id="group-name-input" type="text" name="Name" placeholder="Group name..." value={groupName} onChange={(e) => setGroupName(e.target.value)}/>
-                        <input type="file" name="Group photo" onChange={(e) => setGroupPhoto(e.target.files[0])}/>
-                        <input className="button" type="submit" value="Create" disabled={!groupName}/>
-                    </form>
-                )}
-            </div>
-            <nav id="group-list">
-                <ul>
-                    {groups.map(group => (
-                    <li key={group.group_id}>
-                        <Link className="group-list-link" to={`/group/${group.group_name}`}>
-                            <img className="small-group-photo" src={`/${group.group_photo}`} alt={group.group_name} />
-                            <p className="group-list-text">{group.group_name}</p>
-                        </Link>
-                    </li>
-                    ))}
-                </ul>
-            </nav>
-        </aside>
-        <main>
-            <header id="base-header">
+            <aside id="left-aside">
+                <div id="profile-info">
+                    <Link id="profile-link" to={`/profile/${profile.logged_in_username}`}>
+                        <img id="profile-image" src={`/${profile.logged_in_profile_photo}`} alt="Profile image" />
+                        <p id="logged_in_username">{profile.logged_in_username}</p>
+                    </Link>
+                </div>
+                <nav>
+                    <ul>
+                        <li><Link to="/home">Home</Link></li>
+                        <li><Link to="/home">Main</Link></li>
+                        <li><Link to="/home">Following</Link></li>
+                        <li><Link to="/home">Friends</Link></li>
+                    </ul>
+                </nav>
+                <h1>Groups</h1>
+                <div id="create-group-section">
+                    <button class="button" onClick={toggleForm}>
+                        {showForm ? 'Close': 'Create new Group'}
+                    </button>
+                    {showForm && (
+                        <form id="create-group-form" onSubmit={createGroupSubmit}>
+                            <input id="group-name-input" type="text" name="Name" placeholder="Group name..." value={groupName} onChange={(e) => setGroupName(e.target.value)}/>
+                            <input type="file" name="Group photo" onChange={(e) => setGroupPhoto(e.target.files[0])}/>
+                            <input className="button" type="submit" value="Create" disabled={!groupName}/>
+                        </form>
+                    )}
+                </div>
+                <nav id="group-list">
+                    <ul>
+                        {groups.map(group => (
+                        <li key={group.group_id}>
+                            <Link className="group-list-link" to={`/group/${group.group_name}/main`}>
+                                <img className="small-group-photo" src={`/${group.group_photo}`} alt={group.group_name} />
+                                <p className="group-list-text">{group.group_name}</p>
+                            </Link>
+                        </li>
+                        ))}
+                    </ul>
+                </nav>
+            </aside>
+            <main>
+                <header id="base-header">
+                    <div className="spacer"></div>
+                        <form id="search-form" onSubmit={SearchSubmit}>
+                            <input id="search-bar" type="text" name="keyword" placeholder="Search..." value={searchKeyword} onChange={(e) => setSearchKeyword(e.target.value)}/>
+                            <input id="search-submit-button" type="submit" value="Search"/>
+                        </form>
                 <div className="spacer"></div>
-                    <form id="search-form" onSubmit={SearchSubmit}>
-                        <input id="search-bar" type="text" name="keyword" placeholder="Search..." value={searchKeyword} onChange={(e) => setSearchKeyword(e.target.value)}/>
-                        <input id="search-submit-button" type="submit" value="Search"/>
-                    </form>
-            <div className="spacer"></div>
-            <ChatApp />
-            </header>
-            <div className="content">
-                <Outlet />
-            </div>
-        </main>
+                <ChatApp />
+                </header>
+                <div className="content">
+                    <Outlet />
+                </div>
+            </main>
         </div>
     );
 };

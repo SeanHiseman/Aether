@@ -7,8 +7,9 @@ import GroupHomeAdmin from './groupHomeAdmin';
 import PostForm from '../../components/postForm';
 
 function GroupHome() {
-    const { group_name } = useParams();
+    const { group_name, channel_name } = useParams();
     const [channels, setChannels] = useState([]);
+    const [currentChannel, setCurrentChannel] = useState(null);
     const [isAdmin, setIsAdmin] = useState(false);
     const [groupDetails, setGroupDetails] = useState({ groupName: '', description: '', groupPhoto: '', memberCount: 0 });
 
@@ -91,18 +92,23 @@ function GroupHome() {
                 <aside id="right-aside">
                     <h2>Channels</h2>
                     <nav id="channel-list">
-                    <ul>
-                        {channels.map(channel => (
-                        <li key={channel.channelId}>
-                            <p className="channel-list-text">{channel.channel_name}</p>
-                            {/*<Link className="channel-list-link" to={`/group_channels/${channel.channelName}`}>
-                                <p className="channel-list-text">{channel.channelName}</p>
-                            </Link>*/}
-                        </li>
-                        ))}
-                    </ul>
-                </nav>
+                        <ul>
+                            {channels.map(channel => (
+                            <li key={channel.channelId}>
+                                <p className="channel-list-text">{channel.channel_name}</p>
+                                {/*<Link className="channel-list-link" to={`/group_channels/${channel.channelName}`}>
+                                    <p className="channel-list-text">{channel.channelName}</p>
+                                </Link>*/}
+                            </li>
+                            ))}
+                        </ul>
+                    </nav>
                 </aside> 
+                <main>
+                    {/*currentChannel (
+                        <div>{currentChannel}</div>
+                    )*/}
+                </main>
             </div>
         );
     }

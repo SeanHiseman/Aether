@@ -34,7 +34,7 @@ function FriendRequests() {
     };
     return (
         <div>
-            <h3>Friend Requests</h3>
+            <h3 id="friend-request-list">Friend Requests</h3>
             {requests.map(request => (
                 <div class="friend-request-button-container" key={request.request_id}>
                     <p>Request from: {request.senderName}</p>
