@@ -7,7 +7,7 @@ function HomePage() {
     }, []);
 
     return (
-        <div id="home-container">
+        <div className="home-container">
             <header id="home-header">
                 <h1>Welcome</h1>
             </header>

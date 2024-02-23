@@ -17,14 +17,6 @@
 #friend-request-list {
     margin: 10px;
 }
-#large-profile-photo {
-    height: 200px; 
-    width: 200px; 
-    border-radius: 30px;
-    margin: 20px;
-    display: block;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-}
 .results-wrapper {
     grid-column: 1 / 2;
     grid-row: 2;

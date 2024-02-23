@@ -64,26 +64,28 @@ function Profile() {
     const loggedInUserId = user.userId;
     document.title = profile.username || "Profile";
     return (
-        <div id="profile-container">
-            <div id="profile-header">
-                <SendFriendRequestButton userId={loggedInUserId} receiverUserId={profile.userId} isRequestSent={profile.isRequested} />
-                <div id="profile-header-side">
-                </div>
-                <div id="viewed-profile-info">
-                    <p className="large-text">{profile.username}</p>
-                    <p id="profile-bio">{profile.bio}</p>
-                </div>
-                <div id="profile-header-photo">
-                    <img id="large-profile-photo" src={`/${profile.profilePhoto}`} alt="Profile Picture" />         
-                </div>
+        <div className="profile-container">
+            <div className="content-feed">
+                <header id="profile-header">
+                    <SendFriendRequestButton userId={loggedInUserId} receiverUserId={profile.userId} isRequestSent={profile.isRequested} />
+                    <div id="profile-header-side">
+                    </div>
+                    <div id="viewed-profile-info">
+                        <p className="large-text">{profile.username}</p>
+                        <p id="profile-bio">{profile.bio}</p>
+                    </div>
+                    <div id="profile-header-photo">
+                        <img id="large-profile-photo" src={`/${profile.profilePhoto}`} alt="Profile Picture" />         
+                    </div>
+                </header>
             </div>
-            <div className="results-wrapper">
+            {/*<div className="results-wrapper">
                 <div id="results">
                     {Array.isArray(userContent) && userContent.map(item => (
                         <ContentWidget key={item.post_id} item={item} />
                     ))}
                 </div>
-            </div>
+            </div>*/}
             <div id="right-aside">
                 <h2>Channels</h2>
                 <nav id="channel-list">
