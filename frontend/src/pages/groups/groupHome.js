@@ -106,11 +106,6 @@ function GroupHome() {
                         </ul>
                     </nav>
                 </aside> 
-                <main>
-                    {/*currentChannel (
-                        <div>{currentChannel}</div>
-                    )*/}
-                </main>
             </div>
         );
     }

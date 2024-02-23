@@ -96,9 +96,8 @@ body,html {
     display: flex;
     flex-direction: column; 
     flex-grow: 1;
-    max-width: calc(100% - 236px);
-    min-width: calc(100% - 236px);
     overflow: auto;
+    width: 100%;
 }
 #create-group-section {
     align-items: center;
@@ -124,8 +123,12 @@ body,html {
     display: flex;
     flex-direction: row;
     flex-grow: 1;
-    height: calc(100vh - 80px);
-    width: 100%;
+    height: calc(100vh - 100px);
+    margin-left: auto;
+    margin-right: 0;
+    margin-top: 20px;
+    max-width: calc(100% - 235px);
+    min-width: calc(100% - 235px);
 }
 #group-header, #profile-header, #home-header {
     align-items: center;
