@@ -193,87 +193,89 @@ const PersonalProfile = () => {
 
     document.title = profile.username || "Profile";
     return (
-        <div id="profile-container">
-            <div id="profile-header">
-                <FriendRequests />
-                <div id="profile-header-side">
-                    <PostForm />
-                </div>
-                <div id="viewed-profile-info">
-                    <div id="name-section">
-                        {isEditingName ? (
-                            <div className="change-name">
-                                <button className='light-button' onClick={() => setIsEditingName(false)}>Close</button>
-                                <textarea className="change-name-area" value={newName} onChange={(e) => {
-                                    const input = e.target.value;
-                                    const inputLength = input.length;
-                                    if (inputLength <= 100) {
-                                        setName(input)
-                                    } else {
-                                        setErrorMessage('Name cannot exceed 100 characters.');
-                                    }
-                                }}
-                                />
-                                <button className="light-button" onClick={() => {setIsEditingName(false); handleUpdateName();}}>Save</button>
-                            </div>
-                        ) : (
-                            <div>
-                                <p className="large-text">{profile.username}</p>
-                                <button className="light-button" onClick={() => setIsEditingName(true)}>Edit</button>
-                            </div>
-                        )}
+        <div className="profile-container">
+            <div className="content-feed">
+                <header id="profile-header">
+                    <FriendRequests />
+                    <div id="profile-header-side">
+                        <PostForm />
                     </div>
-                    <div id="bio-section">
-                        {isEditingBio ? (
-                            <div id="change-bio">
-                                <button className='light-button' onClick={() => setIsEditingBio(false)}>Close</button>
-                                <textarea className="change-text-area" value={newBio} onChange={(e) => {
-                                    const input = e.target.value;
-                                    const inputLength = input.length;
-                                    if (inputLength <= 1000) {
-                                        setBio(input)
-                                    } else {
-                                        setErrorMessage('Bio cannot exceed 1000 characters.');
-                                    }
-                                }}
-                                />
-                                <button className="light-button" onClick={() => {setIsEditingBio(false); handleUpdateBio();}}>Save</button>
-                            </div>
-                        ) : (
-                            <div>
-                                <p id="profile-bio">{profile.bio}</p>
-                                <button className="light-button" onClick={() => setIsEditingBio(true)}>Edit</button>
-                            </div>
-                        )}
-                        {errorMessage && <div className="error-message">{errorMessage}</div>}
-                    </div>
-
-                    <form action="/api/logout" method="post" onSubmit={handleLogout}>
-                        <button className="light-button" type="submit">Logout</button>
-                    </form>
-                </div>
-                <div id="profile-header-photo">
-                    <img id="large-profile-photo" src={`/${profile.profilePhoto}`} alt="Profile Picture" />
-                    <button className="light-button" onClick={() => setIsPhotoFormVisible(!isPhotoFormVisible)}>
-                        {isPhotoFormVisible ? 'Close' : 'Change Profile Photo'}
-                    </button>
-                    {isPhotoFormVisible && (
-                        <form id="change-profile-photo" action="/api/update_profile_photo" method="post" enctype="multipart/form-data" onSubmit={ChangeProfilePhoto}>
-                            <label htmlFor="new_profile_photo">Change Profile Photo:</label>
-                            <input type="file" id="new_profile_photo" name="new_profile_photo" accept="image/*" />
+                    <div id="viewed-profile-info">
+                        <div id="name-section">
+                            {isEditingName ? (
+                                <div className="change-name">
+                                    <button className='light-button' onClick={() => setIsEditingName(false)}>Close</button>
+                                    <textarea className="change-name-area" value={newName} onChange={(e) => {
+                                        const input = e.target.value;
+                                        const inputLength = input.length;
+                                        if (inputLength <= 100) {
+                                            setName(input)
+                                        } else {
+                                            setErrorMessage('Name cannot exceed 100 characters.');
+                                        }
+                                    }}
+                                    />
+                                    <button className="light-button" onClick={() => {setIsEditingName(false); handleUpdateName();}}>Save</button>
+                                </div>
+                            ) : (
+                                <div>
+                                    <p className="large-text">{profile.username}</p>
+                                    <button className="light-button" onClick={() => setIsEditingName(true)}>Edit</button>
+                                </div>
+                            )}
+                        </div>
+                        <div id="bio-section">
+                            {isEditingBio ? (
+                                <div id="change-bio">
+                                    <button className='light-button' onClick={() => setIsEditingBio(false)}>Close</button>
+                                    <textarea className="change-text-area" value={newBio} onChange={(e) => {
+                                        const input = e.target.value;
+                                        const inputLength = input.length;
+                                        if (inputLength <= 1000) {
+                                            setBio(input)
+                                        } else {
+                                            setErrorMessage('Bio cannot exceed 1000 characters.');
+                                        }
+                                    }}
+                                    />
+                                    <button className="light-button" onClick={() => {setIsEditingBio(false); handleUpdateBio();}}>Save</button>
+                                </div>
+                            ) : (
+                                <div>
+                                    <p id="profile-bio">{profile.bio}</p>
+                                    <button className="light-button" onClick={() => setIsEditingBio(true)}>Edit</button>
+                                </div>
+                            )}
                             {errorMessage && <div className="error-message">{errorMessage}</div>}
-                            <input className="light-button" type="submit" value="Update" />
+                        </div>
+
+                        <form action="/api/logout" method="post" onSubmit={handleLogout}>
+                            <button className="light-button" type="submit">Logout</button>
                         </form>
-                    )}
-                </div>
+                    </div>
+                    <div id="profile-header-photo">
+                        <img id="large-profile-photo" src={`/${profile.profilePhoto}`} alt="Profile Picture" />
+                        <button className="light-button" onClick={() => setIsPhotoFormVisible(!isPhotoFormVisible)}>
+                            {isPhotoFormVisible ? 'Close' : 'Change Profile Photo'}
+                        </button>
+                        {isPhotoFormVisible && (
+                            <form id="change-profile-photo" action="/api/update_profile_photo" method="post" enctype="multipart/form-data" onSubmit={ChangeProfilePhoto}>
+                                <label htmlFor="new_profile_photo">Change Profile Photo:</label>
+                                <input type="file" id="new_profile_photo" name="new_profile_photo" accept="image/*" />
+                                {errorMessage && <div className="error-message">{errorMessage}</div>}
+                                <input className="light-button" type="submit" value="Update" />
+                            </form>
+                        )}
+                    </div>
+                </header>
             </div>
-            <div className="results-wrapper">
+            {/*<div className="results-wrapper">
                 <div id="results">
                     {Array.isArray(userContent) && userContent.map(item => (
                         <ContentWidget key={item.post_id} item={item} />
                     ))}
                 </div>
-            </div>
+            </div>*/}
             <div id="right-aside">
                 <h2>Channels</h2>
                 <div id="add-channel-section">

@@ -161,77 +161,79 @@ function GroupHomeAdmin() {
 
     document.title = groupDetails.groupName;
     return (
-        <div id="group-container">           
-            <header id="group-header">
-                <PostForm />
-                <div id="group-members">
-                    <p>{groupDetails.memberCount} members</p>
-                    <MemberChangeButton userId={groupDetails.userId} groupId={groupDetails.groupId} isMember={groupDetails.isMember}/>
-                </div>
-                <div id="group-text">
-                    <div id="name-section">
-                        {isEditingName ? (
-                            <div className="change-name">
-                                <button className='light-button' onClick={() => setIsEditingName(false)}>Close</button>
-                                <textarea className="change-name-area" value={newName} onChange={(e) => {
-                                    const input = e.target.value;
-                                    const inputLength = input.length;
-                                    if (inputLength <= 100) {
-                                        setName(input)
-                                    } else {
-                                        setErrorMessage('Name cannot exceed 100 characters.');
-                                    }
-                                }}
-                                />
-                                <button className="light-button" onClick={() => {setIsEditingName(false); handleUpdateName();}}>Save</button>
-                            </div>
-                        ) : (
-                            <div>
-                                <p className="large-text">{groupDetails.groupName}</p>
-                                <button className="light-button" onClick={() => setIsEditingName(true)}>Edit</button>
-                            </div>
-                        )}
+        <div className="group-container">  
+            <div className="content-feed">
+                <header id="group-header">
+                    <PostForm />
+                    <div id="group-members">
+                        <p>{groupDetails.memberCount} members</p>
+                        <MemberChangeButton userId={groupDetails.userId} groupId={groupDetails.groupId} isMember={groupDetails.isMember}/>
                     </div>
-                    <div id="description-section">
-                        {isEditingDescription ? (
-                            <div className="change-description">
-                                <button className='light-button' onClick={() => setIsEditingDescription(false)}>Close</button>
-                                <textarea className="change-text-area" value={newDescription} onChange={(e) => {
-                                    const input = e.target.value;
-                                    const inputLength = input.length;
-                                    if (inputLength <= 1000) {
-                                        setDescription(input)
-                                    } else {
-                                        setErrorMessage('Description cannot exceed 1000 characters.');
-                                    }
-                                }}
-                                />
-                                <button className="light-button" onClick={() => {setIsEditingDescription(false); handleUpdateDescription();}}>Save</button>
-                            </div>
-                        ) : (
-                            <div>
-                                <p id="description">{groupDetails.description}</p>
-                                <button className="light-button" onClick={() => setIsEditingDescription(true)}>Edit</button>
-                            </div>
-                        )}
-                        {errorMessage && <div className="error-message">{errorMessage}</div>}
-                    </div>
-                </div>
-                <div id="profile-header-photo">
-                    <img id="large-group-photo" src={`/${groupDetails.groupPhoto}`} alt={groupDetails.groupName} />
-                    <button className="light-button" onClick={() => setIsPhotoFormVisible(!isPhotoFormVisible)}>
-                        {isPhotoFormVisible ? 'Close' : 'Change Group photo'}
-                    </button>
-                    {isPhotoFormVisible && (
-                        <form id="change-group-photo" action="/api/update_group_photo" method="post" enctype="multipart/form-data" onSubmit={ChangeGroupPhoto}>
-                            <label htmlFor="new_group_photo">Change Group photo:</label>
-                            <input type="file" id="new_group_photo" name="new_group_photo" accept="image/*" />
+                    <div id="group-text">
+                        <div id="name-section">
+                            {isEditingName ? (
+                                <div className="change-name">
+                                    <button className='light-button' onClick={() => setIsEditingName(false)}>Close</button>
+                                    <textarea className="change-name-area" value={newName} onChange={(e) => {
+                                        const input = e.target.value;
+                                        const inputLength = input.length;
+                                        if (inputLength <= 100) {
+                                            setName(input)
+                                        } else {
+                                            setErrorMessage('Name cannot exceed 100 characters.');
+                                        }
+                                    }}
+                                    />
+                                    <button className="light-button" onClick={() => {setIsEditingName(false); handleUpdateName();}}>Save</button>
+                                </div>
+                            ) : (
+                                <div>
+                                    <p className="large-text">{groupDetails.groupName}</p>
+                                    <button className="light-button" onClick={() => setIsEditingName(true)}>Edit</button>
+                                </div>
+                            )}
+                        </div>
+                        <div id="description-section">
+                            {isEditingDescription ? (
+                                <div className="change-description">
+                                    <button className='light-button' onClick={() => setIsEditingDescription(false)}>Close</button>
+                                    <textarea className="change-text-area" value={newDescription} onChange={(e) => {
+                                        const input = e.target.value;
+                                        const inputLength = input.length;
+                                        if (inputLength <= 1000) {
+                                            setDescription(input)
+                                        } else {
+                                            setErrorMessage('Description cannot exceed 1000 characters.');
+                                        }
+                                    }}
+                                    />
+                                    <button className="light-button" onClick={() => {setIsEditingDescription(false); handleUpdateDescription();}}>Save</button>
+                                </div>
+                            ) : (
+                                <div>
+                                    <p id="description">{groupDetails.description}</p>
+                                    <button className="light-button" onClick={() => setIsEditingDescription(true)}>Edit</button>
+                                </div>
+                            )}
                             {errorMessage && <div className="error-message">{errorMessage}</div>}
-                            <input className="light-button" type="submit" value="Update" />
-                        </form>
-                    )}
-                </div>
-            </header>
+                        </div>
+                    </div>
+                    <div id="profile-header-photo">
+                        <img id="large-group-photo" src={`/${groupDetails.groupPhoto}`} alt={groupDetails.groupName} />
+                        <button className="light-button" onClick={() => setIsPhotoFormVisible(!isPhotoFormVisible)}>
+                            {isPhotoFormVisible ? 'Close' : 'Change Group photo'}
+                        </button>
+                        {isPhotoFormVisible && (
+                            <form id="change-group-photo" action="/api/update_group_photo" method="post" enctype="multipart/form-data" onSubmit={ChangeGroupPhoto}>
+                                <label htmlFor="new_group_photo">Change Group photo:</label>
+                                <input type="file" id="new_group_photo" name="new_group_photo" accept="image/*" />
+                                {errorMessage && <div className="error-message">{errorMessage}</div>}
+                                <input className="light-button" type="submit" value="Update" />
+                            </form>
+                        )}
+                    </div>
+                </header>  
+            </div>     
             <aside id="right-aside">
                 <h2>Channels</h2>
                 <div id="add-channel-section">

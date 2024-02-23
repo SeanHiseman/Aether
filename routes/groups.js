@@ -291,7 +291,7 @@ const post_storage = multer.diskStorage({
 
 //Upload post to group
 router.post('/create_group_post', async (req, res) => {
-    const { group_id, title, content } = req.body;
+    const { group_id, channel_id, title, content } = req.body;
     let mediaUrls = [];
 
     try {
@@ -313,6 +313,7 @@ router.post('/create_group_post', async (req, res) => {
         await GroupPosts.create({
             post_id,
             group_id,
+            channel_id,
             title,
             content,
             mediaUrls: JSON.stringify(mediaUrls),

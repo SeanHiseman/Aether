@@ -7,7 +7,7 @@ import GroupHomeAdmin from './groupHomeAdmin';
 import PostForm from '../../components/postForm';
 
 function GroupHome() {
-    const { group_name, channel_name } = useParams();
+    const { group_name, channel_id } = useParams();
     const [channels, setChannels] = useState([]);
     const [currentChannel, setCurrentChannel] = useState(null);
     const [isAdmin, setIsAdmin] = useState(false);
@@ -56,7 +56,8 @@ function GroupHome() {
     //Uploads content to group
     const handlePostSubmit = async ({ title, content, files, setErrorMessage }) => {
         const formData = new FormData();
-        formData.append('groupId', groupDetails.groupId); 
+        formData.append('group_id', groupDetails.groupId); 
+        formData.append('channel_id', channel_id);
         formData.append('title', title);
         formData.append('content', content);
         try {
@@ -76,19 +77,21 @@ function GroupHome() {
     } else {
         document.title = groupDetails.groupName;
         return (    
-            <div id="group-container">           
-                <header id="group-header">
-                    <PostForm onSubmit={handlePostSubmit} />
-                    <div id="group-members">
-                        <p>{groupDetails.memberCount} members</p>
-                        <MemberChangeButton userId={groupDetails.userId} groupId={groupDetails.groupId} isMember={groupDetails.isMember}/>
-                    </div>
-                    <div id="group-text">
-                        <p className="large-text">{groupDetails.groupName}</p>
-                        <p id="description" >{groupDetails.description}</p>
-                    </div>
-                    <img id="large-group-photo" src={`/${groupDetails.groupPhoto}`} alt={groupDetails.groupName} />
-                </header>
+            <div className="group-container">  
+                <div className="content-feed">
+                    <header id="group-header">
+                        <PostForm onSubmit={handlePostSubmit} />
+                        <div id="group-members">
+                            <p>{groupDetails.memberCount} members</p>
+                            <MemberChangeButton userId={groupDetails.userId} groupId={groupDetails.groupId} isMember={groupDetails.isMember}/>
+                        </div>
+                        <div id="group-text">
+                            <p className="large-text">{groupDetails.groupName}</p>
+                            <p id="description" >{groupDetails.description}</p>
+                        </div>
+                        <img id="large-group-photo" src={`/${groupDetails.groupPhoto}`} alt={groupDetails.groupName} />
+                    </header>
+                </div>         
                 <aside id="right-aside">
                     <h2>Channels</h2>
                     <nav id="channel-list">
