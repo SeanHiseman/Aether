@@ -1,7 +1,7 @@
 import axios from 'axios';
 import React, { useContext, useState, useEffect } from 'react';
 import { Link, Outlet, useNavigate } from 'react-router-dom';
-import { v4 as uuidv4 } from 'uuid';
+import { v4 } from 'uuid';
 import { AuthContext } from '../components/authContext';
 import ChatApp from '../components/chatApp';
 import '../css/base.css';
@@ -12,6 +12,8 @@ const BaseLayout = () => {
     const [groups, setGroups] = useState([]);
     const [groupName, setGroupName] = useState('');
     const [groupPhoto, setGroupPhoto] = useState(null);
+    const [groupPhotoFile, setGroupPhotoFile] = useState('No file chosen');
+    const [privateGroup, setPrivateGroup] = useState(false);
     const [searchKeyword, setSearchKeyword] = useState('');
     const [showForm, setShowForm] = useState(false);
     const navigate = useNavigate();
@@ -52,10 +54,10 @@ const BaseLayout = () => {
         e.preventDefault();
 
         const formData = new FormData();
-        formData.append('group_id', uuidv4());
+        formData.append('group_id', v4());
         formData.append('group_name', groupName);
         formData.append('new_group_profile_photo', groupPhoto);
-        formData.append('is_private', 'false');
+        formData.append('is_private', privateGroup);
         //Adds user_id so user creating group can become an admin
         formData.append('user_id', profile.logged_in_user_id);
 
@@ -87,6 +89,17 @@ const BaseLayout = () => {
             }
         });
     };
+
+    const handleFileChange = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            setGroupPhoto(file);
+            setGroupPhotoFile(file.name);
+        }
+    };
+
+    const handlePublicClick = () => setPrivateGroup(false);
+    const handlePrivateClick = () => setPrivateGroup(true);
 
     const SearchSubmit = (e) => {
         e.preventDefault();
@@ -123,7 +136,16 @@ const BaseLayout = () => {
                     {showForm && (
                         <form id="create-group-form" onSubmit={createGroupSubmit}>
                             <input id="group-name-input" type="text" name="Name" placeholder="Group name..." value={groupName} onChange={(e) => setGroupName(e.target.value)}/>
-                            <input type="file" name="Group photo" onChange={(e) => setGroupPhoto(e.target.files[0])}/>
+                            <div className="file-input">
+                                <p className="file-input-title">Group photo</p>
+                                <label htmlFor="group-photo-input" class="button">Choose file</label>
+                                <input type="file" id="group-photo-input" name="Group photo" onChange={handleFileChange} hidden/>
+                                <span className="file-name">{groupPhotoFile}</span>
+                            </div>
+                            <div id="public-private-section">
+                                <button type="button" class="button" onClick={handlePublicClick}>Public</button>
+                                <button type="button" class="button" onClick={handlePrivateClick}>Private</button>
+                            </div>
                             <input className="button" type="submit" value="Create" disabled={!groupName}/>
                         </form>
                     )}

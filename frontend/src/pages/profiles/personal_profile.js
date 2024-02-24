@@ -218,7 +218,7 @@ const PersonalProfile = () => {
                                     <button className="light-button" onClick={() => {setIsEditingName(false); handleUpdateName();}}>Save</button>
                                 </div>
                             ) : (
-                                <div>
+                                <div className="view-name">
                                     <p className="large-text">{profile.username}</p>
                                     <button className="light-button" onClick={() => setIsEditingName(true)}>Edit</button>
                                 </div>
@@ -226,7 +226,7 @@ const PersonalProfile = () => {
                         </div>
                         <div id="bio-section">
                             {isEditingBio ? (
-                                <div id="change-bio">
+                                <div className="change-bio">
                                     <button className='light-button' onClick={() => setIsEditingBio(false)}>Close</button>
                                     <textarea className="change-text-area" value={newBio} onChange={(e) => {
                                         const input = e.target.value;
@@ -241,7 +241,7 @@ const PersonalProfile = () => {
                                     <button className="light-button" onClick={() => {setIsEditingBio(false); handleUpdateBio();}}>Save</button>
                                 </div>
                             ) : (
-                                <div>
+                                <div className="view-bio">
                                     <p id="profile-bio">{profile.bio}</p>
                                     <button className="light-button" onClick={() => setIsEditingBio(true)}>Edit</button>
                                 </div>
