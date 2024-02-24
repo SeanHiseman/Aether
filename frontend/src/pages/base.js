@@ -98,6 +98,7 @@ const BaseLayout = () => {
         }
     };
 
+    //Set groups to public or private
     const handlePublicClick = () => setPrivateGroup(false);
     const handlePrivateClick = () => setPrivateGroup(true);
 

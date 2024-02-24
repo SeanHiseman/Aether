@@ -13,8 +13,9 @@ function GroupHomeAdmin() {
     const [errorMessage, setErrorMessage] = useState('');
     const [groupDetails, setGroupDetails] = useState({ groupName: group_name, description: '', groupPhoto: '', memberCount: 0 });
     const [isAdmin, setIsAdmin] = useState(true);
-    const [isPhotoFormVisible, setIsPhotoFormVisible] = useState(false);
     const [isEditingDescription, setIsEditingDescription] = useState(false);
+    const [isPhotoFormVisible, setIsPhotoFormVisible] = useState(false);
+    const [isPostChannel, setIsPostChannel] = useState(true);
     const [newDescription, setDescription] = useState('');
     const [isEditingName, setIsEditingName] = useState(false);
     const [newName, setName] = useState('');
@@ -102,8 +103,9 @@ function GroupHomeAdmin() {
         const channelName = event.target.elements.channel_name.value;
         try {
             const response = await axios.post('/api/add_group_channel', {
-                channel_name: channelName,
-                groupId: groupDetails.groupId
+                channelName: channelName,
+                groupId: groupDetails.groupId,
+                isPosts: isPostChannel
             });
             if (response.data && response.status === 201) {
                 setChannels([...channels, response.data]);
@@ -123,6 +125,10 @@ function GroupHomeAdmin() {
             setDescription(groupDetails.description);
         }
     }, [isEditingDescription, groupDetails.description]);
+
+    //Set channels to contain either posts or chats
+    const handleChatClick = () => setIsPostChannel(false);
+    const handlePostClick = () => setIsPostChannel(true);
 
     //Changes group description
     const handleUpdateDescription = async () => {
@@ -241,8 +247,13 @@ function GroupHomeAdmin() {
                         {showForm ? 'Close': 'Create new Channel'}
                     </button>
                     {showForm && (
-                        <form id="add-channel-form" action="/add_group_channel" method="post" onSubmit={AddChannel}>
+                        <form id="add-channel-form" onSubmit={AddChannel}>
                             <input className="channel-input" type="text" name="channel_name" placeholder="Channel name..." value={channelName} onChange={(e) => setChannelName(e.target.value)}/>
+                            <div id="post-chat-section">
+                                <p>Channel type:</p>
+                                <button type="button" class="button" onClick={handlePostClick}>Post</button>
+                                <button type="button" class="button" onClick={handleChatClick}>Chat</button>
+                            </div>
                             <input className="button" type="submit" value="Add" disabled={!channelName}/>
                             {errorMessage && <div className="error-message">{errorMessage}</div>}
                         </form>                            

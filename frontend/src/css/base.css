@@ -1,4 +1,5 @@
-#add-channel-form {
+#add-channel-form, #create-group-form {
+    align-items: center;
     background-color: #000514;
     border: 1px solid #ffffff;
     display: flex;
@@ -9,6 +10,13 @@
     width: 90%;
     max-width: 190px; 
     margin: 10px;
+}
+#add-channel-section, #create-group-section {
+    align-items: center;
+    display: flex;
+    flex-direction: column;
+    margin: 10px;
+    width: 90%;
 }
 #base-header {
     align-items: center;
@@ -80,6 +88,7 @@ html::-webkit-scrollbar, body::-webkit-scrollbar, #left-aside::-webkit-scrollbar
     margin: 10px;
     padding: 5px;
     transition: background-color 0.3s;
+    width: 80%;
 }
 .channel-list-link, .channel-list-link:visited {
     text-decoration: none;
@@ -108,19 +117,6 @@ html::-webkit-scrollbar, body::-webkit-scrollbar, #left-aside::-webkit-scrollbar
     display: flex;
     flex-direction: column;
     margin: 10px;
-    width: 90%;
-}
-#create-group-form {
-    align-items: center;
-    background-color: #000514;
-    border: 1px solid #ffffff;
-    border-radius: 10px;
-    display: flex;
-    flex-direction: column;
-    margin: 10px;
-    max-width: 190px; 
-    justify-content: flex-start;
-    padding: 5px;
     width: 90%;
 }
 #description-section .view-description, #bio-section .view-bio, #name-section .view-name {
@@ -260,7 +256,7 @@ main {
     border-radius: 6px;
     margin-top: 20px;
 }
-#public-private-section {
+#public-private-section, #post-chat-section {
     display: flex;
     max-width: 100%;
 }
