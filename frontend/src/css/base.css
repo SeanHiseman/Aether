@@ -7,7 +7,7 @@
     padding: 5px;
     border-radius: 10px;
     width: 90%;
-    max-width: 180px; 
+    max-width: 190px; 
     margin: 10px;
 }
 #base-header {
@@ -33,7 +33,11 @@ body,html {
     height: 100%;
     margin: 0;
     padding: 0;
+    scrollbar-width: none;
     word-wrap: break-word;
+}
+html::-webkit-scrollbar, body::-webkit-scrollbar, #left-aside::-webkit-scrollbar, #right-aside::-webkit-scrollbar {
+    display: none; /*Hides scroll bar */
 }
 .button {
     background-color: #000514;
@@ -46,7 +50,7 @@ body,html {
     padding: 5px 10px;
     transition: background-color 0.3s;
 }
-.button:hover, #search-submit-button:hover, .light-button:hover, #search-bar:focus, .channel-input:focus, 
+.button:hover, .button:focus, .light-button:focus, #search-submit-button:hover, .light-button:hover, #search-bar:focus, .channel-input:focus, 
 #search-bar:hover, .channel-input:hover, .change-name-area:hover, .change-text-area:hover,
 .change-name-area:focus, .change-text-area:focus #group-name-input:hover, #group-name-input:focus {
     background-color: #1f2956;
@@ -107,16 +111,31 @@ body,html {
     width: 90%;
 }
 #create-group-form {
+    align-items: center;
     background-color: #000514;
     border: 1px solid #ffffff;
     border-radius: 10px;
     display: flex;
     flex-direction: column;
     margin: 10px;
-    max-width: 180px; 
+    max-width: 190px; 
     justify-content: flex-start;
     padding: 5px;
     width: 90%;
+}
+#description-section .view-description, #bio-section .view-bio, #name-section .view-name {
+    align-items: center;
+    display: flex;
+}
+#description-section .change-description, #bio-section .change-bio, #name-section .change-name {
+    display: flex;
+    flex-direction: column;
+}
+.file-input {
+    align-items: center;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
 }
 .group-container, .profile-container, .home-container {
     align-items: stretch;
@@ -147,6 +166,9 @@ body,html {
     margin-left: 5px;
     margin-top: 36px;
     max-width: 160px;
+}
+h1 {
+    margin-left: 10px;
 }
 h2 {
     margin-top: 40px;
@@ -210,7 +232,7 @@ main {
     border-radius: 30px;
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
     height: 200px; 
-    margin: 20px;
+    margin: 10px;
     width: 200px; 
 }
 #logged_in_username {
@@ -237,6 +259,10 @@ main {
     width: 40px; 
     border-radius: 6px;
     margin-top: 20px;
+}
+#public-private-section {
+    display: flex;
+    max-width: 100%;
 }
 .raw-content {
     border-radius: 10px;

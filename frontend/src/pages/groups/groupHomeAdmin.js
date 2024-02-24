@@ -187,7 +187,7 @@ function GroupHomeAdmin() {
                                     <button className="light-button" onClick={() => {setIsEditingName(false); handleUpdateName();}}>Save</button>
                                 </div>
                             ) : (
-                                <div>
+                                <div className="view-name">
                                     <p className="large-text">{groupDetails.groupName}</p>
                                     <button className="light-button" onClick={() => setIsEditingName(true)}>Edit</button>
                                 </div>
@@ -210,7 +210,7 @@ function GroupHomeAdmin() {
                                     <button className="light-button" onClick={() => {setIsEditingDescription(false); handleUpdateDescription();}}>Save</button>
                                 </div>
                             ) : (
-                                <div>
+                                <div className="view-description">
                                     <p id="description">{groupDetails.description}</p>
                                     <button className="light-button" onClick={() => setIsEditingDescription(true)}>Edit</button>
                                 </div>
