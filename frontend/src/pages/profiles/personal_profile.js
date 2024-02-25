@@ -149,6 +149,13 @@ const PersonalProfile = () => {
             })
     }
 
+    //Set name in text area to current description
+    useEffect(() => {
+        if (isEditingName) {
+            setName(profile.username);
+        }
+    }, [isEditingName, profile.username]);
+
     //Set bio in text area to current bio
     useEffect(() => {
         if (isEditingBio) {
