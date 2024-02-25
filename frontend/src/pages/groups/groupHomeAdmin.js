@@ -119,6 +119,13 @@ function GroupHomeAdmin() {
         }
     };
 
+    //Set name in text area to current description
+    useEffect(() => {
+        if (isEditingName) {
+            setName(groupDetails.groupName);
+        }
+    }, [isEditingName, groupDetails.groupName]);
+
     //Set description in text area to current description
     useEffect(() => {
         if (isEditingDescription) {
