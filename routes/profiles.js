@@ -91,8 +91,7 @@ router.get('/profile/:username', authenticateCheck, async (req, res) => {
 //Create new channel within a profile
 router.post('/add_profile_channel', authenticateCheck, async (req, res) => {
     try {
-        const { profileId } = req.body;
-        const { channel_name } = req.body;
+        const { channel_name, isPosts, profileId } = req.body;
 
         //Checks if group can be found
         const profile = await Profiles.findByPk(profileId);
@@ -103,7 +102,8 @@ router.post('/add_profile_channel', authenticateCheck, async (req, res) => {
         const newChannel = await ProfileChannels.create({ 
             channel_id: v4(),
             channel_name, 
-            profile_id: profileId
+            profile_id: profileId,
+            is_posts: isPosts
         });
         res.status(201).json(newChannel);
     } catch (error) {

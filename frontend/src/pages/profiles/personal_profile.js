@@ -1,8 +1,10 @@
 import axios from 'axios';
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
+import ChatChannel from '../groups/chatChannel';
 import ContentWidget from '../content_widget'; 
 import FriendRequests from '../../components/friendRequestsList';
+import PostChannel from '../groups/postChannel';
 import PostForm from '../../components/postForm';
 import '../../css/profile.css';
 
@@ -10,14 +12,14 @@ import '../../css/profile.css';
 const PersonalProfile = () => {
     const { username, channel_name } = useParams();
     const [channels, setChannels] = useState([]);
-    const [channelName, setChannelName] = useState('');
-    const [currentChannel, setCurrentChannel] = useState(null);
+    const [newChannelName, setNewChannelName] = useState('');
     const [errorMessage, setErrorMessage] = useState('');
-    const [isPhotoFormVisible, setIsPhotoFormVisible] = useState(false);
     const [isEditingBio, setIsEditingBio] = useState(false);
+    const [isEditingName, setIsEditingName] = useState(false);
+    const [isPhotoFormVisible, setIsPhotoFormVisible] = useState(false);
+    const [isPostChannel, setIsPostChannel] = useState(true);
     const [newBio, setBio] = useState('');
     const [profile, setProfile] = useState({ profileId: '', profilePhoto: '', username: '', bio: '', userId: ''});
-    const [isEditingName, setIsEditingName] = useState(false);
     const [newName, setName] = useState('');
     const [showForm, setShowForm] = useState(false);
     const [uploadStatus, setUploadStatus] = useState('');
@@ -85,11 +87,12 @@ const PersonalProfile = () => {
         try {
             const response = await axios.post('/api/add_profile_channel', {
                 channel_name: channelName,
-                profileId: profile.profileId
+                profileId: profile.profileId,
+                isPosts: isPostChannel
             });
             if (response.data && response.status === 201) {
                 setChannels([...channels, response.data]);
-                setChannelName('');
+                setNewChannelName('');
                 setErrorMessage('');
             } else {
                 setErrorMessage('Failed to add channel. Please try again.');
@@ -119,6 +122,8 @@ const PersonalProfile = () => {
             });
     }
     
+    const channelRender = channels.find(c => c.channel_name === channel_name);
+
     const UploadSubmit = (e) => {
         e.preventDefault();
         const formData = new FormData(e.target);
@@ -162,6 +167,10 @@ const PersonalProfile = () => {
             setBio(profile.bio);
         }
     }, [isEditingBio, profile.bio]);
+
+    //Set channels to contain either posts or chats
+    const handleChatClick = () => setIsPostChannel(false);
+    const handlePostClick = () => setIsPostChannel(true);
 
     //Changes profile bio
     const handleUpdateBio = async () => {
@@ -275,6 +284,13 @@ const PersonalProfile = () => {
                         )}
                     </div>
                 </header>
+                <div className="channel-feed">
+                    {channelRender && channelRender.is_posts ? (
+                        <PostChannel channel={channelRender} />
+                    ) : (
+                        <ChatChannel channel={channelRender} />
+                    )}
+                </div>
             </div>
             {/*<div className="results-wrapper">
                 <div id="results">
@@ -290,9 +306,14 @@ const PersonalProfile = () => {
                         {showForm ? 'Close': 'Create new Channel'}
                     </button>
                     {showForm && (
-                        <form id="add-channel-form" action="/add_profile_channel" method="post" onSubmit={AddChannel}>
-                            <input className="channel-input" type="text" name="channel_name" placeholder="Channel name..." value={channelName} onChange={(e) => setChannelName(e.target.value)}/>
-                            <input className="button" type="submit" value="Add" disabled={!channelName}/>
+                        <form id="add-channel-form" onSubmit={AddChannel}>
+                            <input className="channel-input" type="text" name="channel_name" placeholder="Channel name..." value={newChannelName} onChange={(e) => setNewChannelName(e.target.value)}/>
+                            <p>Channel type:</p>
+                            <div id="post-chat-section">
+                                <button type="button" class="button" onClick={handlePostClick}>Post</button>
+                                <button type="button" class="button" onClick={handleChatClick}>Chat</button>
+                            </div>
+                            <input className="button" type="submit" value="Add" disabled={!newChannelName}/>
                             {errorMessage && <div className="error-message">{errorMessage}</div>}
                         </form>                            
                     )}
