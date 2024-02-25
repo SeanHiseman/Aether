@@ -13,6 +13,7 @@ const ProfileChannels = sequelize.define('profile_channels', {
   channel_id: { type: STRING(36), primaryKey: true }, 
   channel_name: { type: STRING(100), allowNull: false }, 
   profile_id: { type: STRING(36), allowNull: false},
+  is_posts: { type: BOOLEAN, defaultValue: true},
   date_created: { type: DATE, defaultValue: NOW },
 }, {tableName: 'profile_channels', timestamps: false}); 
 

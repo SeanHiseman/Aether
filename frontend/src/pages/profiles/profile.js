@@ -2,8 +2,10 @@ import axios from 'axios';
 import React, { useState, useEffect, useContext } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { AuthContext } from '../../components/authContext';
+import ChatChannel from '../groups/chatChannel';
 import ContentWidget from '../content_widget'; 
 import PersonalProfile from './personal_profile';
+import PostChannel from '../groups/postChannel';
 import SendFriendRequestButton from '../../components/sendFriendRequest';
 import '../../css/profile.css';
 
@@ -12,7 +14,6 @@ function Profile() {
     const { username, channel_name } = useParams();
     const navigate = useNavigate();
     const [channels, setChannels] = useState([]);
-    const [currentChannel, setCurrentChannel] = useState(null);
     const [profile, setProfile] = useState({ profileId: '', profilePhoto: '', username: '', userId: '', isFriend: '', isRequested: '' });
     const [userContent, setUserContent] = useState([]);
     //Determine if logged in user is viewing their own profile
@@ -57,6 +58,8 @@ function Profile() {
         });
     }, [profile.profileId]);    
 
+    const channelRender = channels.find(c => c.channel_name === channel_name);
+
     //Loads page for if the user is viewing their own profile
     if (isLoggedInUser) {
         return <PersonalProfile />
@@ -78,6 +81,13 @@ function Profile() {
                         <img id="large-profile-photo" src={`/${profile.profilePhoto}`} alt="Profile Picture" />         
                     </div>
                 </header>
+                <div className="channel-feed">
+                    {channelRender && channelRender.is_posts ? (
+                        <PostChannel channel={channelRender} />
+                    ) : (
+                        <ChatChannel channel={channelRender} />
+                    )}
+                </div>
             </div>
             {/*<div className="results-wrapper">
                 <div id="results">

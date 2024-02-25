@@ -161,7 +161,7 @@ router.post('/update_group_photo/:groupId', authenticateCheck, upload.single('ne
 //Create new channel within a group
 router.post('/add_group_channel', authenticateCheck, async (req, res) => {
     try {
-        const { groupId, channel_name, isPosts} = req.body;
+        const { channel_name, groupId, isPosts} = req.body;
 
         //Checks if group can be found
         const group = await Groups.findByPk(groupId);

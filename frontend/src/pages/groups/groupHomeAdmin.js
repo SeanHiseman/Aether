@@ -2,14 +2,15 @@ import axios from 'axios';
 import React, { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import '../../css/groups.css'; 
+import ChatChannel from './chatChannel';
 import MemberChangeButton from '../../components/memberChangeButton';
+import PostChannel from './postChannel';
 import PostForm from '../../components/postForm';
 
 function GroupHomeAdmin() {
     const { group_name, channel_name } = useParams();
     const [channels, setChannels] = useState([]);
     const [newChannelName, setNewChannelName] = useState('');
-    const [currentChannel, setCurrentChannel] = useState(null);
     const [errorMessage, setErrorMessage] = useState('');
     const [groupDetails, setGroupDetails] = useState({ groupName: group_name, description: '', groupPhoto: '', memberCount: 0 });
     const [isAdmin, setIsAdmin] = useState(true);
@@ -80,6 +81,8 @@ function GroupHomeAdmin() {
             });
     }
     
+    const channelRender = channels.find(c => c.channel_name === channel_name);
+
     //Uploads content to group
     const handlePostSubmit = async ({ title, content, files, setErrorMessage }) => {
         const formData = new FormData();
@@ -246,6 +249,13 @@ function GroupHomeAdmin() {
                         )}
                     </div>
                 </header>  
+                <div className="channel-feed">
+                    {channelRender && channelRender.is_posts ? (
+                        <PostChannel channel={channelRender} />
+                    ) : (
+                        <ChatChannel channel={channelRender} />
+                    )}
+                </div>
             </div>     
             <aside id="right-aside">
                 <h2>Channels</h2>
