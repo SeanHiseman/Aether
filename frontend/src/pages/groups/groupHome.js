@@ -2,6 +2,7 @@ import axios from 'axios';
 import React, { useEffect, useState } from 'react';
 import { Link, Outlet, useParams } from 'react-router-dom';
 import '../../css/groups.css'; 
+import ChannelButton from '../../components/channelButton';
 import ChatChannel from './chatChannel';
 import MemberChangeButton from '../../components/memberChangeButton';
 import GroupHomeAdmin from './groupHomeAdmin';
@@ -107,11 +108,9 @@ function GroupHome() {
                     <nav id="channel-list">
                         <ul>
                             {channels.map(channel => (
-                            <li key={channel.channelId}>
-                                {<Link className="channel-list-link" to={`/group/${groupDetails.groupName}/${channel.channel_name}`}>
-                                    <p className="channel-list-text">{channel.channel_name}</p>
-                                </Link>}
-                            </li>
+                                <li key={channel.channelId}>
+                                    {<ChannelButton is_posts={channel.is_posts} channel_name={channel.channel_name} name={groupDetails.groupName} is_group={true} />}
+                                </li>
                             ))}
                         </ul>
                     </nav>

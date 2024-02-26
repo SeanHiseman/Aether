@@ -2,6 +2,7 @@ import axios from 'axios';
 import React, { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import '../../css/groups.css'; 
+import ChannelButton from '../../components/channelButton';
 import ChatChannel from './chatChannel';
 import MemberChangeButton from '../../components/memberChangeButton';
 import PostChannel from './postChannel';
@@ -62,6 +63,27 @@ function GroupHomeAdmin() {
         });
     }, [groupDetails.groupId]);  
 
+    //Adds channel to group
+    const AddChannel = async (event) => {
+        event.preventDefault();
+        try {
+            const response = await axios.post('/api/add_group_channel', {
+                channel_name: newChannelName,
+                groupId: groupDetails.groupId,
+                isPosts: isPostChannel
+            });
+            if (response.data && response.status === 201) {
+                setChannels([...channels, response.data]);
+                setNewChannelName('');
+                setErrorMessage('');
+            } else {
+                setErrorMessage('Failed to add channel. Please try again.');
+            }
+        } catch (error) {
+            setErrorMessage(error.response ? error.response.data.error : 'Failed to add channel. Please try again.');
+        }
+    };
+
     const ChangeGroupPhoto = (e) => {
         e.preventDefault();
         const fileInput = e.target.elements.new_group_photo;
@@ -97,28 +119,6 @@ function GroupHomeAdmin() {
             });
         } catch (error) {
             setErrorMessage("Error creating post. Please try again.");
-        }
-    };
-
-    //Adds channel to group
-    const AddChannel = async (event) => {
-        event.preventDefault();
-        //const channelName = event.target.elements.channel_name.value;
-        try {
-            const response = await axios.post('/api/add_group_channel', {
-                channel_name: newChannelName,
-                groupId: groupDetails.groupId,
-                isPosts: isPostChannel
-            });
-            if (response.data && response.status === 201) {
-                setChannels([...channels, response.data]);
-                setNewChannelName('');
-                setErrorMessage('');
-            } else {
-                setErrorMessage('Failed to add channel. Please try again.');
-            }
-        } catch (error) {
-            setErrorMessage(error.response ? error.response.data.error : 'Failed to add channel. Please try again.');
         }
     };
 
@@ -279,11 +279,9 @@ function GroupHomeAdmin() {
                 <nav id="channel-list">
                     <ul>
                         {channels.map(channel => (
-                        <li key={channel.channelId}>
-                            {<Link className="channel-list-link" to={`/group/${groupDetails.groupName}/${channel.channel_name}`}>
-                                <p className="channel-list-text">{channel.channel_name}</p>
-                            </Link>}
-                        </li>
+                            <li key={channel.channelId}>
+                                {<ChannelButton is_posts={channel.is_posts} channel_name={channel.channel_name} name={groupDetails.groupName} is_group={true} />}
+                            </li>
                         ))}
                     </ul>
                 </nav>
