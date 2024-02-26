@@ -1,6 +1,7 @@
 import axios from 'axios';
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
+import ChannelButton from '../../components/channelButton';
 import ChatChannel from '../groups/chatChannel';
 import ContentWidget from '../content_widget'; 
 import FriendRequests from '../../components/friendRequestsList';
@@ -83,10 +84,9 @@ const PersonalProfile = () => {
     //Adds channel to profile
     const AddChannel = async (event) => {
         event.preventDefault();
-        const channelName = event.target.elements.channel_name.value;
         try {
             const response = await axios.post('/api/add_profile_channel', {
-                channel_name: channelName,
+                channel_name: newChannelName,
                 profileId: profile.profileId,
                 isPosts: isPostChannel
             });
@@ -292,13 +292,6 @@ const PersonalProfile = () => {
                     )}
                 </div>
             </div>
-            {/*<div className="results-wrapper">
-                <div id="results">
-                    {Array.isArray(userContent) && userContent.map(item => (
-                        <ContentWidget key={item.post_id} item={item} />
-                    ))}
-                </div>
-            </div>*/}
             <div id="right-aside">
                 <h2>Channels</h2>
                 <div id="add-channel-section">
@@ -322,9 +315,7 @@ const PersonalProfile = () => {
                     <ul>
                         {channels.map(channel => (
                         <li key={channel.channelId}>
-                            {<Link className="channel-list-link" to={`/profile/${profile.username}/${channel.channel_name}`}>
-                                <p className="channel-list-text">{channel.channel_name}</p>
-                            </Link>}
+                            {<ChannelButton is_posts={channel.is_posts} channel_name={channel.channel_name} name={profile.username} is_group={false} />}
                         </li>
                         ))}
                     </ul>

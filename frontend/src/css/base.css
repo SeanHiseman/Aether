@@ -58,9 +58,9 @@ html::-webkit-scrollbar, body::-webkit-scrollbar, #left-aside::-webkit-scrollbar
     padding: 5px 10px;
     transition: background-color 0.3s;
 }
-.button:hover, .button:focus, .light-button:focus, #search-submit-button:hover, .light-button:hover, #search-bar:focus, .channel-input:focus, 
+.button:hover, .button:focus, .chat-channel-button:hover, .light-button:focus, #search-submit-button:hover, .light-button:hover, #search-bar:focus, .channel-input:focus, 
 #search-bar:hover, .channel-input:hover, .change-name-area:hover, .change-text-area:hover,
-.change-name-area:focus, .change-text-area:focus #group-name-input:hover, #group-name-input:focus {
+.change-name-area:focus, .change-text-area:focus #group-name-input:hover, #group-name-input:focus, .posts-channel-button:hover {
     background-color: #1f2956;
 }
 .change-name-area {
@@ -94,6 +94,23 @@ html::-webkit-scrollbar, body::-webkit-scrollbar, #left-aside::-webkit-scrollbar
     text-decoration: none;
     color: white;
 }
+.chat-channel-button, .posts-channel-button {
+    background-color: #000514;
+    border: 1px solid white;
+    color: white;
+    cursor: pointer;
+    font-size: large;
+    margin: 10px;
+    max-width: 200px;
+    padding: 5px 10px;
+    transition: background-color 0.3s;
+}
+.chat-channel-button {
+    border-radius: 1000px;
+}
+.posts-channel-button {
+    border-radius: 5px;
+}
 .container {
     display: flex;
     flex-direction: row;
@@ -102,7 +119,7 @@ html::-webkit-scrollbar, body::-webkit-scrollbar, #left-aside::-webkit-scrollbar
     display: flex;
     flex-direction: column;
     flex-grow: 1; 
-    overflow: auto; /*If the content is larger than the main, it will scroll */
+    overflow: auto; 
     z-index: 0;
 }
 .content-feed {
@@ -279,6 +296,9 @@ main {
     right: 0;
 }
 #right-aside ul {
+    align-items: center;
+    display: flex;
+    flex-direction: column;
     list-style-type: none;
     padding: 0;
 }
@@ -347,19 +367,3 @@ main {
     display: block;  
     width: 100%;    
 }
-
-
-
-
-  
-
-  
-
-
-
-
-
-
-
-
-
