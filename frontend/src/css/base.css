@@ -44,7 +44,7 @@ body,html {
     scrollbar-width: none;
     word-wrap: break-word;
 }
-html::-webkit-scrollbar, body::-webkit-scrollbar, #left-aside::-webkit-scrollbar, #right-aside::-webkit-scrollbar {
+.channel-feed::-webkit-scrollbar, html::-webkit-scrollbar, body::-webkit-scrollbar, #left-aside::-webkit-scrollbar, #right-aside::-webkit-scrollbar {
     display: none; /*Hides scroll bar */
 }
 .button {
