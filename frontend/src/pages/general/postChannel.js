@@ -1,8 +1,8 @@
 import React from "react";
 
-function PostChannel() {
+function PostChannel({ channelName }) {
     return (
-        <h1>Posts</h1>
+        <h1>{channelName}</h1>
     );
 }
 export default PostChannel;

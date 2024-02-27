@@ -1,8 +1,8 @@
 import React from "react";
 
-function ChatChannel() {
+function ChatChannel({ channelName }) {
     return (
-        <h1>Chat</h1>
+        <h1>{channelName}</h1>
     );
 }
 export default ChatChannel;
