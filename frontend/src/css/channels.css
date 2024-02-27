@@ -1,0 +1,12 @@
+.chat-channel {
+    margin-left: auto;
+    margin-right: 0;
+    width: 100%;
+}
+.chat-channel-header {
+    align-items: center;
+    border-bottom: 1px solid #ffffff;
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+}

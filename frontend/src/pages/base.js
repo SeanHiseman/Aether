@@ -5,6 +5,7 @@ import { v4 } from 'uuid';
 import { AuthContext } from '../components/authContext';
 import ChatApp from '../components/chatApp';
 import '../css/base.css';
+import '../css/channels.css';
 
 const BaseLayout = () => {
     const { isAuthenticated, user } = useContext(AuthContext);

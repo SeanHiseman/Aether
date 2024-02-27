@@ -85,11 +85,11 @@ function Profile() {
                 <div className="channel-feed">
                     {channelRender ? (
                         channelRender.is_posts ? (
-                        <PostChannel channel={channelRender} channelName={channelRender.channel_name} />
-                    ) : (
-                        <ChatChannel channel={channelRender} channelName={channelRender.channel_name} />
-                    )
-                ) : null}
+                            <PostChannel channel={channelRender} channelName={channelRender.channel_name} />
+                                ) : (
+                            <ChatChannel channel={channelRender} channelName={channelRender.channel_name} />
+                        )
+                    ) : null}
                 </div>
             </div>
             <div id="right-aside">
