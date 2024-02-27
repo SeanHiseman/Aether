@@ -3,9 +3,9 @@ import React, { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import '../../css/groups.css'; 
 import ChannelButton from '../../components/channelButton';
-import ChatChannel from './chatChannel';
+import ChatChannel from '../general/chatChannel';
 import MemberChangeButton from '../../components/memberChangeButton';
-import PostChannel from './postChannel';
+import PostChannel from '../general/postChannel';
 import PostForm from '../../components/postForm';
 
 function GroupHomeAdmin() {
@@ -250,11 +250,13 @@ function GroupHomeAdmin() {
                     </div>
                 </header>  
                 <div className="channel-feed">
-                    {channelRender && channelRender.is_posts ? (
-                        <PostChannel channel={channelRender} />
-                    ) : (
-                        <ChatChannel channel={channelRender} />
-                    )}
+                    {channelRender ? (
+                        channelRender.is_posts ? (
+                            <PostChannel channel={channelRender} channelName={channelRender.channel_name} />
+                                ) : (
+                            <ChatChannel channel={channelRender} channelName={channelRender.channel_name} />
+                        )
+                    ) : null}
                 </div>
             </div>     
             <aside id="right-aside">

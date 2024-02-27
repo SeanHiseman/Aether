@@ -2,10 +2,10 @@ import axios from 'axios';
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import ChannelButton from '../../components/channelButton';
-import ChatChannel from '../groups/chatChannel';
+import ChatChannel from '../general/chatChannel';
 import ContentWidget from '../content_widget'; 
 import FriendRequests from '../../components/friendRequestsList';
-import PostChannel from '../groups/postChannel';
+import PostChannel from '../general/postChannel';
 import PostForm from '../../components/postForm';
 import '../../css/profile.css';
 
@@ -285,11 +285,13 @@ const PersonalProfile = () => {
                     </div>
                 </header>
                 <div className="channel-feed">
-                    {channelRender && channelRender.is_posts ? (
-                        <PostChannel channel={channelRender} />
-                    ) : (
-                        <ChatChannel channel={channelRender} />
-                    )}
+                    {channelRender ? (
+                        channelRender.is_posts ? (
+                            <PostChannel channel={channelRender} channelName={channelRender.channel_name} />
+                                ) : (
+                            <ChatChannel channel={channelRender} channelName={channelRender.channel_name} />
+                        )
+                    ) : null}
                 </div>
             </div>
             <div id="right-aside">

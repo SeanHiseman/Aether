@@ -3,10 +3,10 @@ import React, { useEffect, useState } from 'react';
 import { Link, Outlet, useParams } from 'react-router-dom';
 import '../../css/groups.css'; 
 import ChannelButton from '../../components/channelButton';
-import ChatChannel from './chatChannel';
+import ChatChannel from '../general/chatChannel';
 import MemberChangeButton from '../../components/memberChangeButton';
 import GroupHomeAdmin from './groupHomeAdmin';
-import PostChannel from './postChannel';
+import PostChannel from '../general/postChannel';
 import PostForm from '../../components/postForm';
 
 function GroupHome() {
@@ -96,11 +96,13 @@ function GroupHome() {
                         <img id="large-group-photo" src={`/${groupDetails.groupPhoto}`} alt={groupDetails.groupName} />
                     </header>
                     <div className="channel-feed">
-                        {channelRender && channelRender.is_posts ? (
-                            <PostChannel channel={channelRender} />
-                        ) : (
-                            <ChatChannel channel={channelRender} />
-                        )}
+                        {channelRender ? (
+                            channelRender.is_posts ? (
+                                <PostChannel channel={channelRender} channelName={channelRender.channel_name} />
+                                    ) : (
+                                <ChatChannel channel={channelRender} channelName={channelRender.channel_name} />
+                            )
+                        ) : null}
                     </div>
                 </div>         
                 <aside id="right-aside">
