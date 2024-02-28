@@ -1,3 +1,32 @@
+.chat-message-bar {
+    background-color: #41445a;
+    border: 1px solid white;
+    border-radius: 20px;
+    color: white;
+    font-size: large;
+    margin: 10px;
+    min-height: 40px;
+    padding: 5px;
+    width: 80%;
+}
+.chat-message-bar::placeholder {
+    color: white;
+}
+.chat-send-button {
+    background-color: #41445a;
+    border: 1px solid #ffffff;
+    border-radius: 20px;
+    cursor: pointer;
+    color: white;
+    font-size: large;
+    min-height: 50px;
+    min-width: 80px;
+    padding: 5px;
+    transition: background-color 0.3s;
+}
+.chat-message-bar:hover, .chat-message-bar:focus, .chat-send-button:hover {
+    background-color: #1f2956;
+}
 .messages-container {
     position: relative;
     flex-grow: 0;
