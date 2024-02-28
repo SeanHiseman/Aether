@@ -46,14 +46,14 @@ const PostForm = ({ onSubmit }) => {
 
     return (
         <div id="create-post-container">
-            <button class="light-button" onClick={toggleForm}>
+            <button class="button" onClick={toggleForm}>
                 {showForm ? 'Close': 'Create new Post'}
             </button>
             {showForm && (
                 <form id="post-form" onSubmit={handleSubmit}>
                     <input id="title-entry" type="text" placeholder="Add title (optional)..." value={title} onChange={(e) => setTitle(e.target.value)}/>
                     <ReactQuill placeholder="Create post..." modules={modules} value={content} onChange={setContent} />
-                    <button class="light-button" type="submit">Create Post</button>
+                    <button class="button" type="submit">Create Post</button>
                     {errorMessage && <div className="error-message">{errorMessage}</div>}
                 </form>   
             )}   

@@ -220,7 +220,7 @@ const PersonalProfile = () => {
                         <div id="name-section">
                             {isEditingName ? (
                                 <div className="change-name">
-                                    <button className='light-button' onClick={() => setIsEditingName(false)}>Close</button>
+                                    <button className='button' onClick={() => setIsEditingName(false)}>Close</button>
                                     <textarea className="change-name-area" value={newName} onChange={(e) => {
                                         const input = e.target.value;
                                         const inputLength = input.length;
@@ -231,19 +231,19 @@ const PersonalProfile = () => {
                                         }
                                     }}
                                     />
-                                    <button className="light-button" onClick={() => {setIsEditingName(false); handleUpdateName();}}>Save</button>
+                                    <button className="button" onClick={() => {setIsEditingName(false); handleUpdateName();}}>Save</button>
                                 </div>
                             ) : (
                                 <div className="view-name">
                                     <p className="large-text">{profile.username}</p>
-                                    <button className="light-button" onClick={() => setIsEditingName(true)}>Edit</button>
+                                    <button className="button" onClick={() => setIsEditingName(true)}>Edit</button>
                                 </div>
                             )}
                         </div>
                         <div id="bio-section">
                             {isEditingBio ? (
                                 <div className="change-bio">
-                                    <button className='light-button' onClick={() => setIsEditingBio(false)}>Close</button>
+                                    <button className='button' onClick={() => setIsEditingBio(false)}>Close</button>
                                     <textarea className="change-text-area" value={newBio} onChange={(e) => {
                                         const input = e.target.value;
                                         const inputLength = input.length;
@@ -254,24 +254,24 @@ const PersonalProfile = () => {
                                         }
                                     }}
                                     />
-                                    <button className="light-button" onClick={() => {setIsEditingBio(false); handleUpdateBio();}}>Save</button>
+                                    <button className="button" onClick={() => {setIsEditingBio(false); handleUpdateBio();}}>Save</button>
                                 </div>
                             ) : (
                                 <div className="view-bio">
                                     <p id="profile-bio">{profile.bio}</p>
-                                    <button className="light-button" onClick={() => setIsEditingBio(true)}>Edit</button>
+                                    <button className="button" onClick={() => setIsEditingBio(true)}>Edit</button>
                                 </div>
                             )}
                             {errorMessage && <div className="error-message">{errorMessage}</div>}
                         </div>
 
                         <form action="/api/logout" method="post" onSubmit={handleLogout}>
-                            <button className="light-button" type="submit">Logout</button>
+                            <button className="button" type="submit">Logout</button>
                         </form>
                     </div>
                     <div id="profile-header-photo">
                         <img id="large-profile-photo" src={`/${profile.profilePhoto}`} alt="Profile Picture" />
-                        <button className="light-button" onClick={() => setIsPhotoFormVisible(!isPhotoFormVisible)}>
+                        <button className="button" onClick={() => setIsPhotoFormVisible(!isPhotoFormVisible)}>
                             {isPhotoFormVisible ? 'Close' : 'Change Profile Photo'}
                         </button>
                         {isPhotoFormVisible && (
@@ -279,7 +279,7 @@ const PersonalProfile = () => {
                                 <label htmlFor="new_profile_photo">Change Profile photo:</label>
                                 <input type="file" id="new_profile_photo" name="new_profile_photo" accept="image/*" />
                                 {errorMessage && <div className="error-message">{errorMessage}</div>}
-                                <input className="light-button" type="submit" value="Update" />
+                                <input className="button" type="submit" value="Update" />
                             </form>
                         )}
                     </div>

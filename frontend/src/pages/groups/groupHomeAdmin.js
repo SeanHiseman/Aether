@@ -189,7 +189,7 @@ function GroupHomeAdmin() {
                         <div id="name-section">
                             {isEditingName ? (
                                 <div className="change-name">
-                                    <button className='light-button' onClick={() => setIsEditingName(false)}>Close</button>
+                                    <button className='button' onClick={() => setIsEditingName(false)}>Close</button>
                                     <textarea className="change-name-area" value={newName} onChange={(e) => {
                                         const input = e.target.value;
                                         const inputLength = input.length;
@@ -200,19 +200,19 @@ function GroupHomeAdmin() {
                                         }
                                     }}
                                     />
-                                    <button className="light-button" onClick={() => {setIsEditingName(false); handleUpdateName();}}>Save</button>
+                                    <button className="button" onClick={() => {setIsEditingName(false); handleUpdateName();}}>Save</button>
                                 </div>
                             ) : (
                                 <div className="view-name">
                                     <p className="large-text">{groupDetails.groupName}</p>
-                                    <button className="light-button" onClick={() => setIsEditingName(true)}>Edit</button>
+                                    <button className="button" onClick={() => setIsEditingName(true)}>Edit</button>
                                 </div>
                             )}
                         </div>
                         <div id="description-section">
                             {isEditingDescription ? (
                                 <div className="change-description">
-                                    <button className='light-button' onClick={() => setIsEditingDescription(false)}>Close</button>
+                                    <button className='button' onClick={() => setIsEditingDescription(false)}>Close</button>
                                     <textarea className="change-text-area" value={newDescription} onChange={(e) => {
                                         const input = e.target.value;
                                         const inputLength = input.length;
@@ -223,12 +223,12 @@ function GroupHomeAdmin() {
                                         }
                                     }}
                                     />
-                                    <button className="light-button" onClick={() => {setIsEditingDescription(false); handleUpdateDescription();}}>Save</button>
+                                    <button className="button" onClick={() => {setIsEditingDescription(false); handleUpdateDescription();}}>Save</button>
                                 </div>
                             ) : (
                                 <div className="view-description">
                                     <p id="description">{groupDetails.description}</p>
-                                    <button className="light-button" onClick={() => setIsEditingDescription(true)}>Edit</button>
+                                    <button className="button" onClick={() => setIsEditingDescription(true)}>Edit</button>
                                 </div>
                             )}
                             {errorMessage && <div className="error-message">{errorMessage}</div>}
@@ -236,7 +236,7 @@ function GroupHomeAdmin() {
                     </div>
                     <div id="profile-header-photo">
                         <img id="large-group-photo" src={`/${groupDetails.groupPhoto}`} alt={groupDetails.groupName} />
-                        <button className="light-button" onClick={() => setIsPhotoFormVisible(!isPhotoFormVisible)}>
+                        <button className="button" onClick={() => setIsPhotoFormVisible(!isPhotoFormVisible)}>
                             {isPhotoFormVisible ? 'Close' : 'Change Group photo'}
                         </button>
                         {isPhotoFormVisible && (
@@ -244,7 +244,7 @@ function GroupHomeAdmin() {
                                 <label htmlFor="new_group_photo">Change Group photo:</label>
                                 <input type="file" id="new_group_photo" name="new_group_photo" accept="image/*" />
                                 {errorMessage && <div className="error-message">{errorMessage}</div>}
-                                <input className="light-button" type="submit" value="Update" />
+                                <input className="button" type="submit" value="Update" />
                             </form>
                         )}
                     </div>
