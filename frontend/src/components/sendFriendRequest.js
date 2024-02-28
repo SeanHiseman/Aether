@@ -21,7 +21,7 @@ function SendFriendRequestButton({ userId, receiverUserId, isRequestSent }) {
 
     return (
         <div>
-            <button className="light-button" onClick={handleSendRequest}>
+            <button className="button" onClick={handleSendRequest}>
                 {request ? 'Cancel request' : 'Add friend'}
             </button>
             {errorMessage && <div className="error-message">{errorMessage}</div>}

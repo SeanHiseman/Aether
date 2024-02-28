@@ -1,5 +1,5 @@
 .chat-message-bar {
-    background-color: #41445a;
+    background-color: #000514;
     border: 1px solid white;
     border-radius: 20px;
     color: white;
@@ -13,7 +13,7 @@
     color: white;
 }
 .chat-send-button {
-    background-color: #41445a;
+    background-color: #000514;
     border: 1px solid #ffffff;
     border-radius: 20px;
     cursor: pointer;
@@ -25,7 +25,7 @@
     transition: background-color 0.3s;
 }
 .chat-message-bar:hover, .chat-message-bar:focus, .chat-send-button:hover {
-    background-color: #1f2956;
+    background-color: #41445a;
 }
 .messages-container {
     position: relative;

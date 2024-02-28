@@ -84,7 +84,7 @@ function GroupHome() {
             <div className="group-container">  
                 <div className="content-feed">
                     <header id="group-header">
-                        <PostForm onSubmit={handlePostSubmit} />
+                        {/*<PostForm onSubmit={handlePostSubmit} />*/}
                         <div id="group-members">
                             <p>{groupDetails.memberCount} members</p>
                             <MemberChangeButton userId={groupDetails.userId} groupId={groupDetails.groupId} isMember={groupDetails.isMember}/>

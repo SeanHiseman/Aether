@@ -65,8 +65,8 @@ body,html {
 }
 .button:hover, .button:focus, .background-button:hover, .chat-channel-button:hover, .light-button:focus, #search-submit-button:hover, .light-button:hover, #search-bar:focus, .channel-input:focus, 
 #search-bar:hover, .channel-input:hover, .change-name-area:hover, .change-text-area:hover,
-.change-name-area:focus, .change-text-area:focus #group-name-input:hover, #group-name-input:focus, .posts-channel-button:hover {
-    background-color: #1f2956;
+.change-name-area:focus, .change-text-area:focus, #group-name-input:hover, #group-name-input:focus, .posts-channel-button:hover {
+    background-color: #41445a;
 }
 .change-name-area {
     background-color: #41445a;
@@ -176,7 +176,7 @@ body,html {
 #group-header, #profile-header, #home-header {
     align-items: center;
     border-bottom: 1px solid #ffffff;
-    background-color: #41445a;
+    background-color: #000514;
     display: flex;
     justify-content: space-between;
     width: 100%;

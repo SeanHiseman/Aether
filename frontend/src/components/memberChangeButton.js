@@ -25,7 +25,7 @@ const MemberChangeButton = ({ userId, groupId, isMember }) => {
 
     return (
         <div>
-            <button className="light-button" onClick={handleMemberChange}>
+            <button className="button" onClick={handleMemberChange}>
                 {member ? 'Leave' : 'Join'}
             </button>
             {errorMessage && <div className="error-message">{errorMessage}</div>}
