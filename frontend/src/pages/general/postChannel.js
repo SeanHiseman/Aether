@@ -4,7 +4,7 @@ import PostForm from "../../components/postForm";
 function PostChannel({ channelName }) {
     return (
         <div className="post-channel">
-            <h1>{channelName}</h1>
+            <p class="large-text">{channelName}</p>
             <PostForm />
         </div>
     );

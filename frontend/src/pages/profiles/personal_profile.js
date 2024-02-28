@@ -276,7 +276,7 @@ const PersonalProfile = () => {
                         </button>
                         {isPhotoFormVisible && (
                             <form id="change-profile-photo" action="/api/update_profile_photo" method="post" enctype="multipart/form-data" onSubmit={ChangeProfilePhoto}>
-                                <label htmlFor="new_profile_photo">Change Profile Photo:</label>
+                                <label htmlFor="new_profile_photo">Change Profile photo:</label>
                                 <input type="file" id="new_profile_photo" name="new_profile_photo" accept="image/*" />
                                 {errorMessage && <div className="error-message">{errorMessage}</div>}
                                 <input className="light-button" type="submit" value="Update" />
