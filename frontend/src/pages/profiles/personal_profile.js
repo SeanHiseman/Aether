@@ -259,7 +259,7 @@ const PersonalProfile = () => {
                             ) : (
                                 <div className="view-bio">
                                     <p id="profile-bio">{profile.bio}</p>
-                                    <button className="button" onClick={() => setIsEditingBio(true)}>Edit</button>
+                                    <button className="button" onClick={() => setIsEditingBio(true)}>Edit bio</button>
                                 </div>
                             )}
                             {errorMessage && <div className="error-message">{errorMessage}</div>}

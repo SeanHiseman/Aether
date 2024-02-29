@@ -1,16 +1,18 @@
 import React, { useState } from "react";
+import PostForm from "../../components/postForm";
 
 function ChatChannel({ channelName }) {
     const [message, setMessage] = useState('');
     return (
-        <div id="chat-channel">
-            <div id="chat-channel-header">
+        <div id="channel">
+            <div id="channel-header">
                 <p class="large-text">{channelName}</p>
             </div>
-            <div id="chat-channel-feed">
-                <p>Hello!</p>
+            <div id="channel-content">
+                <p>Content goes here</p>
             </div>
-            <div id="chat-channel-input">
+            <div id="channel-input">
+                <PostForm />
                 <input className="chat-message-bar" type="text" value={message} onChange={(e) => setMessage(e.target.value)} placeholder="Type a message..."/>
                 <button className="chat-send-button">Send</button>
             </div>

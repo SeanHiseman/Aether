@@ -3,9 +3,8 @@ import React, { useContext, useState, useEffect } from 'react';
 import { Link, Outlet, useNavigate } from 'react-router-dom';
 import { v4 } from 'uuid';
 import { AuthContext } from '../components/authContext';
-import ChatApp from '../components/chatApp';
 import '../css/base.css';
-import '../css/channels.css';
+import '../css/groups.css';
 import '../css/messages.css';
 
 const BaseLayout = () => {
@@ -174,7 +173,9 @@ const BaseLayout = () => {
                             <input id="search-submit-button" type="submit" value="Search"/>
                         </form>
                 <div className="spacer"></div>
-                <ChatApp />
+                <Link to={`/messages/${profile.logged_in_username}`}>
+                    <button id="messages-button">Messages</button>
+                </Link>
                 </header>
                 <div className="content">
                     <Outlet />

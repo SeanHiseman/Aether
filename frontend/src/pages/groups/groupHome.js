@@ -7,7 +7,6 @@ import ChatChannel from '../general/chatChannel';
 import MemberChangeButton from '../../components/memberChangeButton';
 import GroupHomeAdmin from './groupHomeAdmin';
 import PostChannel from '../general/postChannel';
-import PostForm from '../../components/postForm';
 
 function GroupHome() {
     const { group_name, channel_id, channel_name } = useParams();

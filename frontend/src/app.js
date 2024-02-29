@@ -6,6 +6,7 @@ import GroupHome from './pages/groups/groupHome';
 import GroupWrapper from './pages/groups/groupWrapper';
 import HomePage from './pages/home';
 import Login from './pages/site_entrance/login';
+import MessagesPage from './pages/messages';
 import Register from './pages/site_entrance/register';
 import Profile from './pages/profiles/profile';
 import ProfileWrapper from './pages/profiles/profileWrapper';
@@ -19,6 +20,9 @@ const App = () => {
                 <Route path="/register" element={<Register />} />
                 <Route path="/" element={<AuthCheck><BaseLayout /></AuthCheck>}>
                     <Route path="home" element={<AuthCheck><HomePage /></AuthCheck>} />
+                    <Route path="messages/:username" element={<AuthCheck><MessagesPage /></AuthCheck>} >
+                        <Route path=":friend_name" element={<MessagesPage />} />
+                    </Route>
                     <Route path="group/:group_name" element={<AuthCheck><GroupWrapper /></AuthCheck>}>
                         {/* Redirect to main channel by default */}
                         <Route index element={<Navigate replace to="Main" />} />

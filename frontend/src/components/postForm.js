@@ -47,7 +47,7 @@ const PostForm = ({ onSubmit }) => {
     return (
         <div id="create-post-container">
             <button class="button" onClick={toggleForm}>
-                {showForm ? 'Close': 'Create new Post'}
+                {showForm ? 'Close': 'Created Post'}
             </button>
             {showForm && (
                 <form id="post-form" onSubmit={handleSubmit}>

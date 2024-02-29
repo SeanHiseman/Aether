@@ -7,7 +7,7 @@
     margin: 10px;
     min-height: 40px;
     padding: 5px;
-    width: 80%;
+    width: 70%;
 }
 .chat-message-bar::placeholder {
     color: white;
@@ -30,7 +30,6 @@
 .messages-container {
     position: relative;
     flex-grow: 0;
-    margin-right: 15px;
 }
 
 .dropdown-container{
@@ -59,14 +58,17 @@
     cursor: pointer;
 }
 
-#messages-button{
+#messages-button {
     background-color: #000514;
     border: 1px solid #ffffff;
-    color: white;
     border-radius: 10px;
-    min-height: 40px;
-    min-width: 60px;
+    color: white;
     cursor: pointer;
+    font-size: large;
+    margin: 10px;
+    margin-right: 70px;
+    min-height: 50px;
+    padding: 10px;
     transition: background-color 0.3s;
 }
 
@@ -140,6 +142,6 @@
 }
 
 #messages-button:hover, #message-send-button:hover{
-    background-color: #1f2956;
+    background-color: #252836;
 }
 
