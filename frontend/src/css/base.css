@@ -25,12 +25,11 @@
     display: flex;
     flex-wrap: wrap;
     justify-content: center;
-    height: 80px;
+    max-width: calc(100vw - 235px);
     min-width: 100%;
-    padding: 10px;
+    padding: 5px;
     position: fixed;
     top: 0;
-    width: calc(100% - 235px);
     z-index: 10;
 }
 body,html {
@@ -76,7 +75,7 @@ body,html {
     transition: background-color 0.3s;
 }
 .change-text-area {
-    background-color: #41445a;
+    background-color: #000514;
     border: 1px solid #ffffff;
     border-radius: 10px;
     color: white;
@@ -161,19 +160,18 @@ body,html {
     display: flex;
     flex-direction: column;
 }
-.group-container, .profile-container, .home-container {
+.group-container, .messages-container, .profile-container, .home-container {
     align-items: stretch;
     display: flex;
     flex-direction: row;
     flex-grow: 1;
-    height: calc(100vh - 100px);
+    height: calc(100vh - 80px);
     margin-left: auto;
     margin-right: 0;
-    margin-top: 20px;
     max-width: calc(100% - 235px);
     min-width: calc(100% - 235px);
 }
-#group-header, #profile-header, #home-header {
+#group-header, #messages-header, #profile-header {
     align-items: center;
     border-bottom: 1px solid #ffffff;
     background-color: #000514;
@@ -196,6 +194,14 @@ h1 {
 }
 h2 {
     margin-top: 40px;
+}
+#home-header, #messages-header {
+    align-items: center;
+    border-bottom: 1px solid #ffffff;
+    display: flex;
+    justify-content: center;
+    height: 70px;
+    width: 100%;
 }
 input[type="text"] {
     outline: none;
@@ -323,8 +329,9 @@ main {
     display: flex;
     flex-grow: 0;
     justify-content: space-between;
+    margin-left: 110px;
     max-width: 600px;
-    min-height: 52px;
+    min-height: 50px;
     width: 100%;
 }
 #search-submit-button {

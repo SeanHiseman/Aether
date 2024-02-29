@@ -2,10 +2,7 @@ import React, { useEffect } from 'react';
 
 //PLaceholder for now
 function HomePage() {
-    useEffect(() => {
-        document.title = "Home";
-    }, []);
-
+    document.title = "Home";
     return (
         <div className="home-container">
             <div className="content-feed">
