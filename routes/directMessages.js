@@ -45,7 +45,7 @@ router.get('/get_friends', authenticateCheck, async (req, res) => {
     res.json(friendsData);
 });
 
-//Get Chat Messages
+//Get chat messages
 router.get('/get_chat_messages/:conversation_id', authenticateCheck, async (req, res) => {
     const userId = req.session.user_id;
     const user = await Users.findOne({ where: { user_id: userId } });
@@ -76,8 +76,38 @@ router.get('/get_chat_messages/:conversation_id', authenticateCheck, async (req,
     res.json(messagesData);
 });
 
+//Get all conversations for logged in user
+router.get('/get_conversations', authenticateCheck, async (req, res) => {
+    const userId = req.session.user_id;
+    try {
+        const conversations = await Conversations.findAll({
+            include: [{
+                model: UserConversations,
+                where: { user_id: userId },
+                required: true
+            }]
+        });
+
+        const conversationsData = conversations.map(conversation => ({
+            conversationId: conversation.conversation_id,
+            title: conversation.title,
+            createdAt: conversation.created_at,
+            updatedAt: conversation.updated_at
+        }));
+
+        res.json(conversationsData);
+    } catch (error) {
+        console.error("Failed to fetch user conversations:", error);
+        res.status(500).json({ error: "Failed to fetch user conversations "});
+    }
+});
+
 //Socket.io event for sending Message
 export const directMessagesSocket = (socket) => {
+    socket.on('join_conversation', (conversationId) => {
+        socket.join(conversationId);
+    });
+
     socket.on('send_message', async (message) => {
         const messageLength = message.content.length;
         if (messageLength === 0) {
@@ -96,8 +126,16 @@ export const directMessagesSocket = (socket) => {
             timestamp: new Date()
         });
 
-        emit('message_confirmed', message); //Broadcasting the message
+        socket.to(message.conversationId).emit('message_confirmed', {
+            ...message,
+            message_id: newMessage.message_id,
+            timestamp: newMessage.timestamp
+        }); 
     });
+
+    socket.on('leave_conversation', (conversationId) => {
+        socket.leave(conversationId);
+    })
 };
 
 export default router;
