@@ -173,6 +173,7 @@ FriendRequests.belongsTo(Users, { as: 'receiver', foreignKey: 'receiver_id' });
 
 const Conversations = sequelize.define('conversations', {
   conversation_id: { type: STRING(36), primaryKey: true },
+  title: { type: STRING(256), allowNull: true},
   created_at: { type: DATE, defaultValue: NOW },
   updated_at: { type: DATE, defaultValue: NOW }
 }, { tableName: 'conversations', timestamps: false });  
