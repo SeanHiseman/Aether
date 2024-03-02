@@ -25,7 +25,6 @@ function MessagesPage() {
             .then(response => response.json())
             .then(data => {
                 setConversations(data);
-                console.log("conversations data:", data);
             })
             .catch(error => console.log("Error fetching conversations", error));
         socketRef.current = io(`http://localhost:7000`);
@@ -38,14 +37,13 @@ function MessagesPage() {
     }, []);
     
     useEffect(() => {
-        console.log("Friend name", friend_name);
         if(friend_name && user?.username) {
             const filteredConversations = conversations.filter(conversation => {
                 const participantUsernames = conversation.participants.map(p => p.username);
                 return participantUsernames.includes(friend_name) && participantUsernames.includes(user.username);
             });
-            console.log("filteredConversations:", filteredConversations);
             setSelectedConversations(filteredConversations);
+            setSelectedConversationId(filteredConversations[0].conversationId);
         }
     }, [friend_name, conversations, user?.username]);
 
@@ -54,22 +52,22 @@ function MessagesPage() {
         //Get existing messages
         if (selectedConversationId){
             //Join conversation room 
-            socketRef.current.emit('join_conversation', setSelectedConversationId);
+            socketRef.current.emit('join_conversation', selectedConversationId);
+
+            const handleReceiveMessage = (message) => {
+                setChat(prevChat => [...prevChat, message]);
+            };
 
             //Listen for incoming messages
-            socketRef.current.on('receive_message', (message) => {
-                setChat(prevChat => [...prevChat, message]);
-            });
+            socketRef.current.on('receive_message', handleReceiveMessage);
 
             fetch(`/api/get_chat_messages/${selectedConversationId}`)
                 .then(response => response.json())
                 .then(data => setChat(data))
                 .catch(error => console.log("Error fetching chat messages", error));
             return () => {
-                if (selectedConversationId) {
-                    socketRef.current.emit('leave_conversation', selectedConversationId);
-                    socketRef.current.off('receive_message');
-                }
+                socketRef.current.emit('leave_conversation', selectedConversationId);
+                socketRef.current.off('receive_message', handleReceiveMessage);
             };
         }
     }, [selectedConversationId]);
