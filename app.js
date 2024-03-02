@@ -11,7 +11,7 @@ import session from 'express-session';
 import { urlencoded } from 'express';
 import authentication from './routes/authentication.js';
 import commentsLoad from './routes/commentsLoad.js';
-import directMessages from './routes/directMessages.js';
+import directMessages, { directMessagesSocket } from './routes/directMessages.js';
 import groups from './routes/groups.js';
 import profiles from './routes/profiles.js';
 import profileDataRouter from './routes/profileDataRouter.js'
@@ -60,7 +60,7 @@ app.get('*', (req, res) => {
 });
 
 io.on('connection', (socket) => {
-    directMessages(socket);
+    directMessagesSocket(socket);
 });
 
 sequelize.authenticate()

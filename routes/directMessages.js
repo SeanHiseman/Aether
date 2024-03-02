@@ -80,21 +80,39 @@ router.get('/get_chat_messages/:conversation_id', authenticateCheck, async (req,
 router.get('/get_conversations', authenticateCheck, async (req, res) => {
     const userId = req.session.user_id;
     try {
+        //Conversation ID's that user is a part of
+        const userConversationIds = await UserConversations.findAll({
+            where: { user_id: userId },
+            attributes: ['conversation_id'],
+        });
+        
+        const conversationIds = userConversationIds.map(uc => uc.conversation_id);
+
         const conversations = await Conversations.findAll({
+            where: { conversation_id: conversationIds },
             include: [{
-                model: UserConversations,
-                where: { user_id: userId },
-                required: true
-            }]
+                model: Users,
+                as: 'users',
+                attributes: ['user_id', 'username'],
+                through: { attributes: [] },
+                required: false
+            }],
+            order: [['updated_at', 'ASC']]
         });
 
-        const conversationsData = conversations.map(conversation => ({
-            conversationId: conversation.conversation_id,
-            title: conversation.title,
-            createdAt: conversation.created_at,
-            updatedAt: conversation.updated_at
-        }));
-
+        const conversationsData = conversations.map(conversation => {
+            const participants = conversation.users.map(user => ({
+                userId: user.user_id,
+                username: user.username
+            }));
+            return {
+                conversationId: conversation.conversation_id,
+                title: conversation.title,
+                participants: participants,
+                createdAt: conversation.created_at,
+                updatedAt: conversation.updated_at
+            };
+        });
         res.json(conversationsData);
     } catch (error) {
         console.error("Failed to fetch user conversations:", error);
