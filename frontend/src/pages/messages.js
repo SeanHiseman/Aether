@@ -23,10 +23,12 @@ function MessagesPage() {
         
         fetch(`/api/get_conversations`)
             .then(response => response.json())
-            .then(data => setConversations(data))
+            .then(data => {
+                setConversations(data);
+                console.log("conversations data:", data);
+            })
             .catch(error => console.log("Error fetching conversations", error));
-    
-        socketRef.current = io(`https://localhost:7000`);
+        socketRef.current = io(`http://localhost:7000`);
 
         return () => {
             if (socketRef.current) {
@@ -36,15 +38,19 @@ function MessagesPage() {
     }, []);
     
     useEffect(() => {
-        if(friend_name) {
+        console.log("Friend name", friend_name);
+        if(friend_name && user?.username) {
             const filteredConversations = conversations.filter(conversation => {
-                return conversation.participants.includes(friend_name);
+                const participantUsernames = conversation.participants.map(p => p.username);
+                return participantUsernames.includes(friend_name) && participantUsernames.includes(user.username);
             });
+            console.log("filteredConversations:", filteredConversations);
             setSelectedConversations(filteredConversations);
         }
-    }, [friend_name, conversations]);
+    }, [friend_name, conversations, user?.username]);
 
     useEffect(() => {
+        console.log("selectedConversationId", selectedConversationId);
         //Get existing messages
         if (selectedConversationId){
             //Join conversation room 
@@ -60,8 +66,10 @@ function MessagesPage() {
                 .then(data => setChat(data))
                 .catch(error => console.log("Error fetching chat messages", error));
             return () => {
-                socketRef.current.emit('leave_conversation', selectedConversationId);
-                socketRef.current.off('receive message');
+                if (selectedConversationId) {
+                    socketRef.current.emit('leave_conversation', selectedConversationId);
+                    socketRef.current.off('receive_message');
+                }
             };
         }
     }, [selectedConversationId]);

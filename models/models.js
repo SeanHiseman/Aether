@@ -186,8 +186,8 @@ const UserConversations = sequelize.define('user_conversations', {
 }, { tableName: 'user_conversations', timestamps: false });
 
 //Many to many relationship between Users and Conversations
-Users.belongsToMany(Conversations, { through: UserConversations, foreignKey: 'user_id' });
-Conversations.belongsToMany(Users, { through: UserConversations, foreignKey: 'conversation_id' });
+Users.belongsToMany(Conversations, { through: UserConversations, foreignKey: 'user_id', otherKey: 'conversation_id', as: 'users' });
+Conversations.belongsToMany(Users, { through: UserConversations, foreignKey: 'conversation_id', otherKey: 'user_id', as: 'users' });
 //Direct association between UserConversations and Conversations
 UserConversations.belongsTo(Conversations, { foreignKey: 'conversation_id'});
 Conversations.hasMany(UserConversations, { foreignKey: 'conversation_id'});
