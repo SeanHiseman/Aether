@@ -22,7 +22,7 @@ const BaseLayout = () => {
     //Fetch profile info
     useEffect(() => {
         if (isAuthenticated && user) {
-            axios.get('/api/profileDataRouter')
+            axios.get(`/api/profileDataRouter/${user.userId}`)
             .then(response => {
                 setProfile({...response.data, logged_in_user_id: response.data.logged_in_user_id });
             })
@@ -116,9 +116,9 @@ const BaseLayout = () => {
     return (
         <div className="container">
             <aside id="left-aside">
-                <div id="profile-info">
-                    <Link id="profile-link" to={`/profile/${profile.logged_in_username}`}>
-                        <img id="profile-image" src={`/${profile.logged_in_profile_photo}`} alt="Profile image" />
+                <div className="profile-info">
+                    <Link className="profile-link" to={`/profile/${profile.logged_in_username}`}>
+                        <img className="profile-image" src={`/${profile.logged_in_profile_photo}`} alt="Profile image" />
                         <p id="logged_in_username">{profile.logged_in_username}</p>
                     </Link>
                 </div>

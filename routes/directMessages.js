@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { v4 } from 'uuid';
 import { Op } from 'sequelize';
-import { Conversations, Friends, UserConversations, Users, Messages } from '../models/models.js';
+import { Conversations, Friends, Profiles, UserConversations, Users, Messages } from '../models/models.js';
 import authenticateCheck from '../functions/authenticateCheck.js';
 
 const router = Router();
@@ -35,9 +35,16 @@ router.get('/get_friends', authenticateCheck, async (req, res) => {
             include: [Conversations]
         });
 
+        const friendProfile = await Profiles.findOne({
+            where: {
+                user_id: friendId
+            }
+        });
+
         return {
             friend_id: friend.user_id,
             friend_name: friend.username,
+            friend_profile_photo: friendProfile.profile_photo,
             conversation_id: conversation ? conversation.conversation_id: null
         };
     }));
