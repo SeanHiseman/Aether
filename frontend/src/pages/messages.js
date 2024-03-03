@@ -74,20 +74,27 @@ function MessagesPage() {
             //Emits new message to server
             const newMessage = {
                 content: message,
-                senderId: user.user_id,
+                senderId: user.userId,
                 conversationId: selectedConversationId,
             };
             socketRef.current.emit('send_message', newMessage);
+            setChat(prevChat => [...prevChat, newMessage]);
             setMessage('');
         }
     };
 
+    //Gets profile photo of viewed friend
+    const friendProfileImage = friends.find(friend => friend.friend_name === friend_name)?.friend_profile_photo || '';
+    
     document.title = "Messages";
     return (
         <div className="messages-container">
             <div className="content-feed">
                 <header id="messages-header">
-                    <h1>{friend_name}</h1>
+                    <Link className="profile-link" to={`/profile/${friend_name}/main`}>
+                        <img className="profile-image2" src={`/${friendProfileImage}`} alt="Profile image"/>
+                        <h1>{friend_name}</h1>
+                    </Link>
                 </header>
                 <div id="channel-content">
                     {chat.map((msg, index) => (
@@ -107,11 +114,12 @@ function MessagesPage() {
                 <nav id="friend-list">
                     <ul>
                         {friends.map(friend => (
-                            <li key={friend.friend_id}>
-                                <Link to={`/messages/${username}/${friend.friend_name}`}>
-                                    <button className="chat-channel-button">
+                            <li className="profile-info" key={friend.friend_id}>
+                                <Link className="profile-link" to={`/messages/${username}/${friend.friend_name}`}>
+                                <img className="profile-image" src={`/${friend.friend_profile_photo}`} alt="Profile image"/>
+                                    <div className="chat-username">
                                         {friend.friend_name}
-                                    </button>
+                                    </div>
                                 </Link>
                             </li>
                         ))}

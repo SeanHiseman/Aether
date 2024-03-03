@@ -3,8 +3,8 @@ import authenticateCheck from '../functions/authenticateCheck.js';
 import { Users, Profiles } from '../models/models.js';
 const router = express.Router();
 
-//Route to fetch profile data for logged in user
-router.get('/profileDataRouter', authenticateCheck, async (req, res) => {
+//Route to fetch profile data for a user
+router.get('/profileDataRouter/:userId', authenticateCheck, async (req, res) => {
     const validColumns = new Set(['profile_id,', 'user_id', 'profile_photo', 'bio']);
     const columns = ['profile_id', 'profile_photo', 'bio'];
 
@@ -13,7 +13,7 @@ router.get('/profileDataRouter', authenticateCheck, async (req, res) => {
         //return res.status(400).send('Invalid column names');
     //}
 
-    const userId = req.session.user_id;
+    const userId = req.params.userId;
 
     try {
         const user = await Users.findOne({

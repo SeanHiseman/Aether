@@ -1,3 +1,6 @@
+a {
+    color: inherit;
+}
 #add-channel-form, #create-group-form {
     align-items: center;
     background-color: #000514;
@@ -243,6 +246,11 @@ input[type="text"] {
 .light-button {
     background-color: #41445a;
 }
+#logged_in_username {
+    margin-left: 10px;
+    margin-top: 36px;
+    text-align: center;
+}
 main {
     display:flex;
     flex-direction: column;
@@ -256,30 +264,31 @@ main {
     margin: 10px;
     width: 180px; 
 }
-#logged_in_username {
-    margin-left: 10px;
-    margin-top: 32px;
-    text-align: center;
-}
 #profile-bio, #description {
     max-width: 400px;
 }
-#profile-info {
+.profile-info {
     margin-bottom: 20px;
 }
-#profile-link {
+.profile-link {
     align-items: center;
     display: flex;
     text-decoration: none;
 }
-#profile-link:visited {
+.profile-link:visited {
     color: inherit;
 }
-#profile-image, .small-group-photo {
+.profile-image, .small-group-photo {
     height: 40px; 
     width: 40px; 
     border-radius: 6px;
     margin-top: 20px;
+}
+/*some images need 20px margin, others don't*/
+.profile-image2 {
+    height: 40px; 
+    width: 40px; 
+    border-radius: 6px;
 }
 #public-private-section, #post-chat-section {
     display: flex;
@@ -304,7 +313,7 @@ main {
     right: 0;
 }
 #right-aside ul {
-    align-items: center;
+    align-self: center;
     display: flex;
     flex-direction: column;
     list-style-type: none;
