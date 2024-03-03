@@ -48,7 +48,6 @@ function MessagesPage() {
     }, [friend_name, conversations, user?.username]);
 
     useEffect(() => {
-        console.log("selectedConversationId", selectedConversationId);
         //Get existing messages
         if (selectedConversationId){
             //Join conversation room 
