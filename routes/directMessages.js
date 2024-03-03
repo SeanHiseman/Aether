@@ -66,7 +66,6 @@ router.get('/get_chat_messages/:conversation_id', authenticateCheck, async (req,
         where: { conversation_id: conversationId },
         order: [['timestamp', 'ASC']]
     });
-
     const messagesData = messages.map(m => ({
         senderId: m.sender_id,
         content: m.message_content,

@@ -23,9 +23,7 @@ function MessagesPage() {
         
         fetch(`/api/get_conversations`)
             .then(response => response.json())
-            .then(data => {
-                setConversations(data);
-            })
+            .then(data => setConversations(data))
             .catch(error => console.log("Error fetching conversations", error));
         socketRef.current = io(`http://localhost:7000`);
 
@@ -93,7 +91,7 @@ function MessagesPage() {
                 </header>
                 <div id="channel-content">
                     {chat.map((msg, index) => (
-                        <div key={index} className={`message ${msg.senderId === user.user_id ? 'outgoing' : 'incoming'}`}>
+                        <div key={index} className={`message ${msg.senderId === user.userId ? 'outgoing' : 'incoming'}`}>
                             {msg.content}
                         </div>
                     ))}
