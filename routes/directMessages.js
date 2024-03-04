@@ -82,6 +82,32 @@ router.get('/get_chat_messages/:conversation_id', authenticateCheck, async (req,
     res.json(messagesData);
 });
 
+//Create new conversation
+router.get('/create_conversation', authenticateCheck, async (req, res) => {
+    const { participants } = req.body;
+    console.log("participants:", participants);
+    if (!participants || participants.length < 2) {
+        return res.status(400).json({ message: "Too few participants." });
+    }
+
+    try {
+        const newConversation = await Conversations.create({
+            conversation_id: v4(),
+            title: "New chat"
+        });
+
+        const userConversations = participants.map(userId => ({
+            user_id: userId,
+            conversation_id: newConversation.conversation_id,
+        }));
+        await UserConversations.bulkCreate(userConversations);
+        res.status(201).json(newConversation);
+
+    } catch (error) {
+        res.status(500).json({ message: 'Failed to create conversation' });
+    }
+});
+
 //Get all conversations for logged in user
 router.get('/get_conversations', authenticateCheck, async (req, res) => {
     const userId = req.session.user_id;

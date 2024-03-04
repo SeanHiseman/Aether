@@ -194,7 +194,10 @@ router.put('/accept_friend_request/:requestId', authenticateCheck, async (req, r
             FriendSince: new Date()
         });
 
-        const conversation = await Conversations.create({ conversation_id: v4() });
+        const conversation = await Conversations.create({ 
+            conversation_id: v4(),
+            title: "New chat"
+        });
 
         await UserConversations.bulkCreate([
             { user_id: friendRequest.sender_id, conversation_id: conversation.conversation_id },
