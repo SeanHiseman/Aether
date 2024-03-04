@@ -21,7 +21,9 @@ const App = () => {
                 <Route path="/" element={<AuthCheck><BaseLayout /></AuthCheck>}>
                     <Route path="home" element={<AuthCheck><HomePage /></AuthCheck>} />
                     <Route path="messages/:username" element={<AuthCheck><MessagesPage /></AuthCheck>} >
-                        <Route path=":friend_name" element={<MessagesPage />} />
+                        <Route path=":friend_name" element={<MessagesPage />} >
+                            <Route path=":title" element={<MessagesPage />} />
+                        </Route>
                     </Route>
                     <Route path="group/:group_name" element={<AuthCheck><GroupWrapper /></AuthCheck>}>
                         {/* Redirect to main channel by default */}

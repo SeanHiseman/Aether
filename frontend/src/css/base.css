@@ -65,8 +65,8 @@ body,html {
 .background-button {
     background-color: #252836;
 }
-.button:hover, .button:focus, .background-button:hover, .chat-channel-button:hover, .light-button:focus, #search-submit-button:hover, .light-button:hover, #search-bar:focus, .channel-input:focus, 
-#search-bar:hover, .channel-input:hover, .change-name-area:hover, .change-text-area:hover,
+.button:hover, .button:focus, .background-button:hover, .chat-channel-button:hover, .conversation-button:hover, .light-button:focus, #search-submit-button:hover, 
+.light-button:hover, #search-bar:focus, .channel-input:focus, #search-bar:hover, .channel-input:hover, .change-name-area:hover, .change-text-area:hover,
 .change-name-area:focus, .change-text-area:focus, #group-name-input:hover, #group-name-input:focus, .posts-channel-button:hover {
     background-color: #41445a;
 }
@@ -107,7 +107,7 @@ body,html {
     text-decoration: none;
     color: white;
 }
-.chat-channel-button, .posts-channel-button {
+.chat-channel-button, .conversation-button, .posts-channel-button {
     background-color: #000514;
     border: 1px solid white;
     color: white;
@@ -118,7 +118,7 @@ body,html {
     padding: 5px 10px;
     transition: background-color 0.3s;
 }
-.chat-channel-button {
+.chat-channel-button, .conversation-button {
     border-radius: 1000px;
 }
 .posts-channel-button {
@@ -228,7 +228,7 @@ input[type="text"] {
     position: fixed;
     z-index: 11;
 }
-#left-aside nav ul {
+#left-aside nav ul, #right-aside nav ul {
     list-style: none;
     padding: 0;
     margin: 0;
@@ -239,7 +239,7 @@ input[type="text"] {
     padding: 10px;
     border-bottom: 1px solid #444;
 }
-#left-aside nav ul li a {
+#left-aside nav ul li a, #right-aside nav ul li a {
     color: white;
     text-decoration: none;
 }
