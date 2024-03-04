@@ -1,3 +1,4 @@
+import axios from 'axios';
 import React, { useContext, useEffect, useRef, useState } from 'react';
 import { AuthContext } from '../components/authContext';
 import { io } from "socket.io-client";
@@ -17,7 +18,7 @@ function MessagesPage() {
     const [showForm, setShowForm] = useState(false);
     const socketRef = useRef(null);
     const { user } = useContext(AuthContext)
-    const navigate = useNavigate;
+    const navigate = useNavigate();
 
     useEffect(() => {
         fetch('/api/get_friends')
@@ -62,10 +63,8 @@ function MessagesPage() {
             //Listen for incoming messages
             socketRef.current.on('receive_message', handleReceiveMessage);
 
-            fetch(`/api/get_chat_messages/${selectedConversationId}`)
-                .then(response => response.json())
-                .then(data => setChat(data))
-                .catch(error => console.log("Error fetching chat messages", error));
+            getChatMessages(selectedConversationId);
+
             return () => {
                 socketRef.current.emit('leave_conversation', selectedConversationId);
                 socketRef.current.off('receive_message', handleReceiveMessage);
@@ -73,21 +72,37 @@ function MessagesPage() {
         }
     }, [selectedConversationId]);
 
-    const createNewChat = () => {
-        //Get friend_id
-        const friend = friends.find(f => f.friend_name === friend_name);
-        const friendId = friend.friend_id;
-        const participants = [user.userId, friendId];
-
-        fetch('/api/create_conversation', {
-            method: 'POST',
-            body: JSON.stringify({ participants }),
-        })
-        .then(response => response.json())
-        .then(data => {navigate(`/messages/${username}/${friend_name}/${newChatName}`)})
-        .catch((error) => {console.error('Error:', error)})
+    const createNewChat = async (event) => {
+        event.preventDefault();
+        try {
+            //Get friend_id
+            const friend = friends.find(f => f.friend_name === friend_name);
+            const friendId = friend.friend_id;
+            const participants = [user.userId, friendId];
+            const response = await axios.post('/api/create_conversation', {
+                participants: participants,
+                title: newChatName
+            });
+            if (response.data && response.status === 201) {
+                navigate(`/messages/${username}/${friend_name}/${newChatName}`)
+                setErrorMessage('');
+                setNewChatName('');
+            } else {
+                setErrorMessage("Failed to add chat.");
+            }
+        } catch (error) {
+            console.error("Error creating chat:", error);
+            setErrorMessage("Failed to create chat.");
+        }
     };
 
+    //Get messages from a specific conversation
+    const getChatMessages = (conversationId) => {
+        fetch(`/api/get_chat_messages/${conversationId}`)
+            .then(response => response.json())
+            .then(data => setChat(data))
+            .catch(error => console.log("Error fetching chat messages", error));
+    }
     const sendMessage = () => {
         if (socketRef.current) {
             //Emits new message to server
@@ -105,7 +120,7 @@ function MessagesPage() {
     const toggleForm = () => {
         setShowForm(!showForm)
     }
-    
+
     //Gets profile photo of viewed friend
     const friendProfileImage = friends.find(friend => friend.friend_name === friend_name)?.friend_profile_photo || '';
     

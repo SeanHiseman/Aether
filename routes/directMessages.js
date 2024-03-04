@@ -26,14 +26,14 @@ router.get('/get_friends', authenticateCheck, async (req, res) => {
     const friendsData = await Promise.all(friendships.map(async (friendship) => {
         const friendId = (friendship.user1_id !== user.user_id) ? friendship.user1_id : friendship.user2_id;
         const friend = await Users.findByPk(friendId);
-        const conversation = await UserConversations.findOne({
-            where: {
-                user_id: {
-                    [Op.in]: [user.user_id, friendId]
-                }
-            },
-            include: [Conversations]
-        });
+        //const conversation = await UserConversations.findOne({
+            //where: {
+                //user_id: {
+                    //[Op.in]: [user.user_id, friendId]
+                //}
+            //},
+            //include: [Conversations]
+        //});
 
         const friendProfile = await Profiles.findOne({
             where: {
@@ -45,7 +45,7 @@ router.get('/get_friends', authenticateCheck, async (req, res) => {
             friend_id: friend.user_id,
             friend_name: friend.username,
             friend_profile_photo: friendProfile.profile_photo,
-            conversation_id: conversation ? conversation.conversation_id: null
+            //conversation_id: conversation ? conversation.conversation_id: null
         };
     }));
 
@@ -83,9 +83,9 @@ router.get('/get_chat_messages/:conversation_id', authenticateCheck, async (req,
 });
 
 //Create new conversation
-router.get('/create_conversation', authenticateCheck, async (req, res) => {
-    const { participants } = req.body;
-    console.log("participants:", participants);
+router.post('/create_conversation', authenticateCheck, async (req, res) => {
+    const { participants, title } = req.body;
+
     if (!participants || participants.length < 2) {
         return res.status(400).json({ message: "Too few participants." });
     }
@@ -93,7 +93,7 @@ router.get('/create_conversation', authenticateCheck, async (req, res) => {
     try {
         const newConversation = await Conversations.create({
             conversation_id: v4(),
-            title: "New chat"
+            title: title
         });
 
         const userConversations = participants.map(userId => ({

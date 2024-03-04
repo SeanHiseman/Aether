@@ -77,10 +77,10 @@ function GroupHomeAdmin() {
                 setNewChannelName('');
                 setErrorMessage('');
             } else {
-                setErrorMessage('Failed to add channel. Please try again.');
+                setErrorMessage('Failed to add channel.');
             }
         } catch (error) {
-            setErrorMessage(error.response ? error.response.data.error : 'Failed to add channel. Please try again.');
+            setErrorMessage(error.response ? error.response.data.error : 'Failed to add channel.');
         }
     };
 
