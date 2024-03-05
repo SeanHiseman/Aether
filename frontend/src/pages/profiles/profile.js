@@ -1,10 +1,9 @@
 import axios from 'axios';
 import React, { useState, useEffect, useContext } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { AuthContext } from '../../components/authContext';
 import ChannelButton from '../../components/channelButton';
 import ChatChannel from '../general/chatChannel';
-import ContentWidget from '../content_widget'; 
 import PersonalProfile from './personal_profile';
 import PostChannel from '../general/postChannel';
 import SendFriendRequestButton from '../../components/sendFriendRequest';
@@ -85,9 +84,9 @@ function Profile() {
                 <div className="channel-feed">
                     {channelRender ? (
                         channelRender.is_posts ? (
-                            <PostChannel channel={channelRender} channelName={channelRender.channel_name} />
+                            <PostChannel channel={channelRender} channelName={channelRender.channel_name} isGroup={false} locationId={profile.profileId}/>
                                 ) : (
-                            <ChatChannel channel={channelRender} channelName={channelRender.channel_name} />
+                            <ChatChannel channel={channelRender} channelName={channelRender.channel_name} isGroup={false} locationId={profile.profileId}/>
                         )
                     ) : null}
                 </div>

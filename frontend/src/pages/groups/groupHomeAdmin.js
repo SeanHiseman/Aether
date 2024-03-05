@@ -1,12 +1,11 @@
 import axios from 'axios';
 import React, { useEffect, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import '../../css/groups.css'; 
 import ChannelButton from '../../components/channelButton';
 import ChatChannel from '../general/chatChannel';
 import MemberChangeButton from '../../components/memberChangeButton';
 import PostChannel from '../general/postChannel';
-import PostForm from '../../components/postForm';
 
 function GroupHomeAdmin() {
     const { group_name, channel_name } = useParams();
@@ -105,23 +104,6 @@ function GroupHomeAdmin() {
     
     const channelRender = channels.find(c => c.channel_name === channel_name);
 
-    //Uploads content to group
-    const handlePostSubmit = async ({ title, content, files, setErrorMessage }) => {
-        const formData = new FormData();
-        formData.append('groupId', groupDetails.groupId); 
-        formData.append('title', title);
-        formData.append('content', content);
-        try {
-            await axios.post('/api/create_group_post', formData, {
-                headers: {
-                    'Content-Type': 'multipart/form-data',
-                },
-            });
-        } catch (error) {
-            setErrorMessage("Error creating post. Please try again.");
-        }
-    };
-
     //Set name in text area to current description
     useEffect(() => {
         if (isEditingName) {
@@ -180,7 +162,6 @@ function GroupHomeAdmin() {
         <div className="group-container">  
             <div className="content-feed">
                 <header id="group-header">
-                    <PostForm />
                     <div id="group-members">
                         <p>{groupDetails.memberCount} members</p>
                         <MemberChangeButton userId={groupDetails.userId} groupId={groupDetails.groupId} isMember={groupDetails.isMember}/>
@@ -252,9 +233,9 @@ function GroupHomeAdmin() {
                 <div className="channel-feed">
                     {channelRender ? (
                         channelRender.is_posts ? (
-                            <PostChannel channel={channelRender} channelName={channelRender.channel_name} />
+                            <PostChannel channel={channelRender} channelName={channelRender.channel_name} isGroup={true} locationId={groupDetails.groupId}/>
                                 ) : (
-                            <ChatChannel channel={channelRender} channelName={channelRender.channel_name} />
+                            <ChatChannel channel={channelRender} channelName={channelRender.channel_name} isGroup={true} locationId={groupDetails.groupId}/>
                         )
                     ) : null}
                 </div>

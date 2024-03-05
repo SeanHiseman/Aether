@@ -1,6 +1,6 @@
 import axios from 'axios';
 import React, { useEffect, useState } from 'react';
-import { Link, Outlet, useParams } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import '../../css/groups.css'; 
 import ChannelButton from '../../components/channelButton';
 import ChatChannel from '../general/chatChannel';
@@ -56,24 +56,6 @@ function GroupHome() {
 
     const channelRender = channels.find(c => c.channel_name === channel_name);
 
-    //Uploads content to group
-    const handlePostSubmit = async ({ title, content, files, setErrorMessage }) => {
-        const formData = new FormData();
-        formData.append('group_id', groupDetails.groupId); 
-        formData.append('channel_id', channel_id);
-        formData.append('title', title);
-        formData.append('content', content);
-        try {
-            await axios.post('/api/create_group_post', formData, {
-                headers: {
-                    'Content-Type': 'multipart/form-data',
-                },
-            });
-        } catch (error) {
-            setErrorMessage("Error creating post. Please try again.");
-        }
-    };
-
     //Load different page if user is admin
     if (isAdmin) {
         return <GroupHomeAdmin />
@@ -97,9 +79,9 @@ function GroupHome() {
                     <div className="channel-feed">
                         {channelRender ? (
                             channelRender.is_posts ? (
-                                <PostChannel channel={channelRender} channelName={channelRender.channel_name} />
+                                <PostChannel channel={channelRender} channelName={channelRender.channel_name} isGroup={true} locationId={groupDetails.groupId}/>
                                     ) : (
-                                <ChatChannel channel={channelRender} channelName={channelRender.channel_name} />
+                                <ChatChannel channel={channelRender} channelName={channelRender.channel_name} isGroup={true} locationId={groupDetails.groupId}/>
                             )
                         ) : null}
                     </div>

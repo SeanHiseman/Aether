@@ -2,13 +2,10 @@ import React, { useState } from 'react';
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
 import '../css/postForm.css';
-import axios from 'axios';
 
-const PostForm = ({ onSubmit }) => {
+const PostForm = ({ onSubmit, errorMessage }) => {
     const [content, setContent] = useState('');
-    const [errorMessage, setErrorMessage] = useState('');
     const [files, setFiles] = useState([]);
-    const [showForm, setShowForm] = useState(false);
     const [title, setTitle] = useState('');
 
     //Customises tool bar
@@ -34,29 +31,30 @@ const PostForm = ({ onSubmit }) => {
         ]
     }
 
+    const handleFileChange = (e) => {
+        setFiles([...e.target.files]);
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
-        onSubmit({ title, content, files, setErrorMessage});
+        const formData = new FormData();
+        formData.append('title', title);
+        formData.append('content', content);
+        files.forEach(file => {
+            formData.append('files', file);
+        });
+        onSubmit(formData);
     };
-;   
-    //Toggles display of upload form after create post button is pressed
-    const toggleForm = () => {
-        setShowForm(!showForm)
-    }
 
     return (
         <div id="create-post-container">
-            <button class="button" onClick={toggleForm}>
-                {showForm ? 'Close': 'Upload content'}
-            </button>
-            {showForm && (
-                <form id="post-form" onSubmit={handleSubmit}>
-                    <input id="title-entry" type="text" placeholder="Add title (optional)..." value={title} onChange={(e) => setTitle(e.target.value)}/>
-                    <ReactQuill placeholder="Create post..." modules={modules} value={content} onChange={setContent} />
-                    <button class="button" type="submit">Create Post</button>
-                    {errorMessage && <div className="error-message">{errorMessage}</div>}
-                </form>   
-            )}   
+            <form id="post-form" onSubmit={handleSubmit}>
+                <input id="title-entry" type="text" placeholder="Add title (optional)..." value={title} onChange={(e) => setTitle(e.target.value)}/>
+                <ReactQuill placeholder="Create post..." modules={modules} value={content} onChange={setContent} />
+                <input type="file" multiple onChange={handleFileChange} />
+                <button class="button" type="submit">Create Post</button>
+                {errorMessage && <div className="error-message">{errorMessage}</div>}
+            </form>   
         </div>
     );
 };
