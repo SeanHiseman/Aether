@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import MessagesButton from './messagesButton';
-import DirectMessages from './directMessages';
+import DirectMessages from '../routes/directMessages';
 
 const ChatApp = () => {
     const [selectedFriend, setSelectedFriend] = useState(null);

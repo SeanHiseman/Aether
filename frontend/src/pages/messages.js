@@ -10,7 +10,7 @@ function MessagesPage() {
     const [conversations, setConversations] = useState([]);
     const [errorMessage, setErrorMessage] = useState('');
     const [friends, setFriends] = useState([]);
-    const { friend_name, username } = useParams();
+    const { friend_name, username, title } = useParams();
     const [message, setMessage] = useState('');
     const [newChatName, setNewChatName] = useState('');
     const [selectedConversations, setSelectedConversations] = useState([]);
@@ -39,16 +39,24 @@ function MessagesPage() {
         };
     }, []);
     
+    //Filters conversations to those with a specific friend
     useEffect(() => {
-        if(friend_name && user?.username) {
-            const filteredConversations = conversations.filter(conversation => {
-                const participantUsernames = conversation.participants.map(p => p.username);
-                return participantUsernames.includes(friend_name) && participantUsernames.includes(user.username);
-            });
+        if (conversations.length > 0 && friend_name) {
+            const filteredConversations = conversations.filter(conversation =>
+                conversation.participants.map(p => p.username).includes(friend_name));
             setSelectedConversations(filteredConversations);
-            setSelectedConversationId(filteredConversations[0].conversationId);
+
+            if (title) {
+                const selected = filteredConversations.find(c => c.title === title);
+                if (selected) {
+                    setSelectedConversationId(selected.conversationId);
+                }
+            } else if (filteredConversations.length > 0) {
+                //Default to first conversation if none given
+                setSelectedConversationId(filteredConversations[0].conversationId);
+            }
         }
-    }, [friend_name, conversations, user?.username]);
+    }, [friend_name, conversations, user?.username, title]);
 
     useEffect(() => {
         //Get existing messages
@@ -161,49 +169,52 @@ function MessagesPage() {
                 )}
             </div>
             <aside id="right-aside">
-                <h2>{friend_name ? "Conversations" : "Messages"}</h2>
-                <nav id="friend-list">
-                    {friend_name ? (
+                {friend_name ? (
+                    <nav id="friend-list">
+                        <Link id="chat-profile-link" to={`/profile/${friend_name}`}>
+                            <img className="profile-image2" src={`/${friendProfileImage}`} alt="Profile image"/>
+                            <h1>{friend_name}</h1>
+                        </Link>
+                        <h2>Chats</h2> 
                         <ul>
-                            <Link className="profile-link" to={`/profile/${friend_name}/main`}>
-                                <img className="profile-image2" src={`/${friendProfileImage}`} alt="Profile image"/>
-                                <h1>{friend_name}</h1>
-                            </Link>
-                            {selectedConversations.map((conversation, index) => (
+                            {selectedConversations.map(conversation => (
                                 <li key={conversation.conversationId}>
                                     <Link to={`/messages/${username}/${friend_name}/${conversation.title}`}>
-                                        <button className="conversation-button">{conversation.title}</button>
+                                        <div className="chat-link">{conversation.title}</div>
                                     </Link>
                                 </li>
                             ))}
-                            <div id="add-channel-section">
-                                <button class="button" onClick={toggleForm}>
-                                    {showForm ? 'Close': 'Create new chat'}
-                                </button>
-                                {showForm && (
-                                    <form id="add-channel-form" onSubmit={createNewChat}>
-                                        <input className="channel-input" type="text" name="chat_name" placeholder="Chat name..." value={newChatName} onChange={(e) => setNewChatName(e.target.value)}/>
-                                        <input className="button" type="submit" value="Add" disabled={!newChatName}/>
-                                        {errorMessage && <div className="error-message">{errorMessage}</div>}
-                                    </form>                            
-                                )}
-                            </div>
                         </ul>
+                        <div id="add-channel-section">
+                            <button class="button" onClick={toggleForm}>
+                                {showForm ? 'Close': 'Add chat'}
+                            </button>
+                            {showForm && (
+                                <form id="add-chat-form" onSubmit={createNewChat}>
+                                    <input className="channel-input" type="text" name="chat_name" placeholder="Chat name..." value={newChatName} onChange={(e) => setNewChatName(e.target.value)}/>
+                                    <input className="button" type="submit" value="Add" disabled={!newChatName}/>
+                                    {errorMessage && <div className="error-message">{errorMessage}</div>}
+                                </form>                            
+                            )}
+                        </div>
+                    </nav>
                     ) : (
-                        <ul>
-                            {friends.map(friend => (
-                                <li className="profile-info" key={friend.friend_id}>
-                                    <Link className="profile-link" to={`/messages/${username}/${friend.friend_name}`}>
-                                    <img className="profile-image" src={`/${friend.friend_profile_photo}`} alt="Profile image"/>
-                                        <div className="chat-username">
-                                            {friend.friend_name}
-                                        </div>
-                                    </Link>
-                                </li>
-                            ))}
-                        </ul>
+                        <nav id="friend-list">
+                            <h2>Messages</h2>
+                            <ul>
+                                {friends.map(friend => (
+                                    <li className="profile-info" key={friend.friend_id}>
+                                        <Link className="profile-link" to={`/messages/${username}/${friend.friend_name}`}>
+                                        <img className="profile-image" src={`/${friend.friend_profile_photo}`} alt="Profile image"/>
+                                            <div className="chat-username">
+                                                {friend.friend_name}
+                                            </div>
+                                        </Link>
+                                    </li>
+                                ))}
+                            </ul>
+                        </nav>
                     )}
-                </nav>
             </aside>
         </div>
     );
