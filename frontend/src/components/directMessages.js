@@ -1,4 +1,4 @@
-import React, {useState, useEffect, useRef, useContext } from 'react';
+import React, {useState, useEffect, useRef } from 'react';
 import { io } from "socket.io-client";
 import { useUser } from '../components/userContext';
 import '../css/messages.css';

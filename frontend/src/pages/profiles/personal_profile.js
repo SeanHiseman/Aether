@@ -1,9 +1,8 @@
 import axios from 'axios';
 import React, { useEffect, useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import ChannelButton from '../../components/channelButton';
 import ChatChannel from '../general/chatChannel';
-import ContentWidget from '../content_widget'; 
 import FriendRequests from '../../components/friendRequestsList';
 import PostChannel from '../general/postChannel';
 import PostForm from '../../components/postForm';
@@ -124,21 +123,6 @@ const PersonalProfile = () => {
     
     const channelRender = channels.find(c => c.channel_name === channel_name);
 
-    const UploadSubmit = (e) => {
-        e.preventDefault();
-        const formData = new FormData(e.target);
-        if (!formData.get('Upload')) {
-            alert('No file has been uploaded.');
-            return;
-        }
-        axios.post('/upload', formData)
-        .then(response => {
-            console.log('Content uploaded: ', response.data);
-        }).catch(error => {
-            console.error('Error uploading content: ', error);
-        });
-    }
-
     const handleLogout = (e) => {
         e.preventDefault();
         axios.post('/api/logout')
@@ -213,9 +197,6 @@ const PersonalProfile = () => {
             <div className="content-feed">
                 <header id="profile-header">
                     <FriendRequests />
-                    <div id="profile-header-side">
-                        <PostForm />
-                    </div>
                     <div id="viewed-profile-info">
                         <div id="name-section">
                             {isEditingName ? (
@@ -287,9 +268,9 @@ const PersonalProfile = () => {
                 <div className="channel-feed">
                     {channelRender ? (
                         channelRender.is_posts ? (
-                            <PostChannel channel={channelRender} channelName={channelRender.channel_name} />
+                            <PostChannel channel={channelRender} channelName={channelRender.channel_name} isGroup={false} locationId={profile.profileId}/>
                                 ) : (
-                            <ChatChannel channel={channelRender} channelName={channelRender.channel_name} />
+                            <ChatChannel channel={channelRender} channelName={channelRender.channel_name} isGroup={false} locationId={profile.profileId}/>
                         )
                     ) : null}
                 </div>

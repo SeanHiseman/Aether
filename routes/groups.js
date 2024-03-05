@@ -290,13 +290,11 @@ const post_storage = multer.diskStorage({
 });
 
 //Upload post to group
-router.post('/create_group_post', async (req, res) => {
+router.post('/create_group_post', upload.array('files'), async (req, res) => {
     const { group_id, channel_id, title, content } = req.body;
     let mediaUrls = [];
-
     try {
         title = title || null;
-
         if (req.files) {
             mediaUrls = req.files.filter(file => allowedFile(file.originalname)).map(file => {
                 const filepath = path.join(__dirname, 'media', file.filename);
@@ -316,7 +314,7 @@ router.post('/create_group_post', async (req, res) => {
             channel_id,
             title,
             content,
-            mediaUrls: JSON.stringify(mediaUrls),
+            media_urls: JSON.stringify(mediaUrls),
             poster_id: user.user_id,
         });
         return res.json({ "status": "success", "message": "Successful upload." });

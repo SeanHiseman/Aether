@@ -200,6 +200,7 @@ h2 {
 }
 #home-header, #messages-header {
     align-items: center;
+    background-color: #000514;
     border-bottom: 1px solid #ffffff;
     display: flex;
     justify-content: center;

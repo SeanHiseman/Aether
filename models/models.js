@@ -82,6 +82,7 @@ const GroupPosts = sequelize.define('group_posts', {
   likes: { type: INTEGER, allowNull: false, defaultValue: 0 },
   dislikes: { type: INTEGER, allowNull: false, defaultValue: 0 },
   timestamp: { type: DATE, defaultValue: NOW },
+  media_urls: { type: TEXT, allowNull: true},
   poster_id: { type: STRING(36), primaryKey: true },
 }, {tableName: 'group_posts', timestamps: false});
 
