@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import DirectMessages from './directMessages'; 
+import DirectMessages from '../routes/directMessages'; 
 import '../css/messages.css';
 
 const MessagesButton = () => {

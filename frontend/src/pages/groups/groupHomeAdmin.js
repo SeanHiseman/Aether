@@ -205,7 +205,7 @@ function GroupHomeAdmin() {
                             ) : (
                                 <div className="view-name">
                                     <p className="large-text">{groupDetails.groupName}</p>
-                                    <button className="button" onClick={() => setIsEditingName(true)}>Edit description</button>
+                                    <button className="button" onClick={() => setIsEditingName(true)}>Edit</button>
                                 </div>
                             )}
                         </div>

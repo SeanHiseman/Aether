@@ -1,3 +1,20 @@
+#add-chat-form {
+    align-items: center;
+    background-color: #000514;
+    border: 1px solid #ffffff;
+    border-radius: 10px;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    margin: 10px;
+    padding: 5px;
+    width: 100%;
+}
+.chat-link {
+    border-bottom: 1px solid #444;
+    padding: 10px;
+    text-decoration: none;
+}
 .chat-message-bar {
     background-color: #000514;
     border: 1px solid white;
@@ -11,6 +28,12 @@
 }
 .chat-message-bar::placeholder {
     color: white;
+}
+#chat-profile-link {
+    align-items: center;
+    display: flex;
+    justify-content: center;
+    text-decoration: none;
 }
 .chat-send-button {
     background-color: #000514;
@@ -35,7 +58,10 @@
 .dropdown-container{
     position: relative;
 }
-
+#friend-list {
+    justify-content: center;
+    width: 80%;
+}
 .messages-dropdown {
     background-color: #000514;
     border: 1px solid #ffffff;
