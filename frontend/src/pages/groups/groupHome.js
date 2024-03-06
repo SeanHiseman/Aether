@@ -9,7 +9,7 @@ import GroupHomeAdmin from './groupHomeAdmin';
 import PostChannel from '../general/postChannel';
 
 function GroupHome() {
-    const { group_name, channel_id, channel_name } = useParams();
+    const { group_name, channel_name } = useParams();
     const [channels, setChannels] = useState([]);
     const [isAdmin, setIsAdmin] = useState(false);
     const [groupDetails, setGroupDetails] = useState({ groupName: '', description: '', groupPhoto: '', memberCount: 0 });
@@ -65,7 +65,6 @@ function GroupHome() {
             <div className="group-container">  
                 <div className="content-feed">
                     <header id="group-header">
-                        {/*<PostForm onSubmit={handlePostSubmit} />*/}
                         <div id="group-members">
                             <p>{groupDetails.memberCount} members</p>
                             <MemberChangeButton userId={groupDetails.userId} groupId={groupDetails.groupId} isMember={groupDetails.isMember}/>
@@ -79,9 +78,9 @@ function GroupHome() {
                     <div className="channel-feed">
                         {channelRender ? (
                             channelRender.is_posts ? (
-                                <PostChannel channel={channelRender} channelName={channelRender.channel_name} isGroup={true} locationId={groupDetails.groupId}/>
+                                <PostChannel channel={channelRender} channelId={channelRender.channel_id} channelName={channelRender.channel_name} isGroup={true} locationId={groupDetails.groupId}/>
                                     ) : (
-                                <ChatChannel channel={channelRender} channelName={channelRender.channel_name} isGroup={true} locationId={groupDetails.groupId}/>
+                                <ChatChannel channel={channelRender} channelId={channelRender.channel_id} channelName={channelRender.channel_name} isGroup={true} locationId={groupDetails.groupId}/>
                             )
                         ) : null}
                     </div>

@@ -12,7 +12,6 @@ function ChatChannel({ channelName }) {
                 <p>Content goes here</p>
             </div>
             <div id="channel-input">
-                <PostForm />
                 <input className="chat-message-bar" type="text" value={message} onChange={(e) => setMessage(e.target.value)} placeholder="Type a message..."/>
                 <button className="chat-send-button">Send</button>
             </div>

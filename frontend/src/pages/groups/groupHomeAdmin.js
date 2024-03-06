@@ -233,9 +233,9 @@ function GroupHomeAdmin() {
                 <div className="channel-feed">
                     {channelRender ? (
                         channelRender.is_posts ? (
-                            <PostChannel channel={channelRender} channelName={channelRender.channel_name} isGroup={true} locationId={groupDetails.groupId}/>
+                            <PostChannel channel={channelRender} channelId={channelRender.channel_id} channelName={channelRender.channel_name} isGroup={true} locationId={groupDetails.groupId}/>
                                 ) : (
-                            <ChatChannel channel={channelRender} channelName={channelRender.channel_name} isGroup={true} locationId={groupDetails.groupId}/>
+                            <ChatChannel channel={channelRender} channelId={channelRender.channel_id} channelName={channelRender.channel_name} isGroup={true} locationId={groupDetails.groupId}/>
                         )
                     ) : null}
                 </div>
