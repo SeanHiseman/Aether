@@ -5,7 +5,7 @@ import { AuthContext } from '../../components/authContext';
 import ChannelButton from '../../components/channelButton';
 import ChatChannel from '../general/chatChannel';
 import PersonalProfile from './personal_profile';
-import PostChannel from '../general/postChannel';
+import ProfileFeed from './profileFeed';
 import SendFriendRequestButton from '../../components/sendFriendRequest';
 import '../../css/profile.css';
 
@@ -84,7 +84,7 @@ function Profile() {
                 <div className="channel-feed">
                     {channelRender ? (
                         channelRender.is_posts ? (
-                            <PostChannel channel={channelRender} channelName={channelRender.channel_name} isGroup={false} locationId={profile.profileId}/>
+                            <ProfileFeed channel={channelRender} channelName={channelRender.channel_name} />
                                 ) : (
                             <ChatChannel channel={channelRender} channelName={channelRender.channel_name} isGroup={false} locationId={profile.profileId}/>
                         )

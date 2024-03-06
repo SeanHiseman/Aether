@@ -43,6 +43,7 @@ const PostForm = ({ onSubmit, errorMessage }) => {
         files.forEach(file => {
             formData.append('files', file);
         });
+
         onSubmit(formData);
     };
 

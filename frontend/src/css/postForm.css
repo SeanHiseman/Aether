@@ -1,3 +1,6 @@
+#create-post-container {
+    width: calc(60%);
+}
 .ql-container {
     border-bottom-left-radius: 10px;
     border-bottom-right-radius: 10px;
@@ -23,12 +26,18 @@
     border-top-right-radius: 10px;
     color: white; 
 }
+.quill {
+    width: calc(90% + 20px);
+}
 #post-form {
     align-items: center;
     background-color: #000514;
+    border: 1px solid white;
+    border-radius: 20px;
     display: flex;
     flex-direction: column;
     margin: 10px;
+    padding: 10px;
 }
 #title-entry {
     border: 1px solid white;
@@ -36,7 +45,7 @@
     border-radius: 10px;
     color: white;
     margin-bottom: 10px;
-    min-width: 50%;
+    width: 90%;
     padding: 10px;
     transition: background-color 0.3s;
 }

@@ -291,7 +291,7 @@ const post_storage = multer.diskStorage({
 
 //Upload post to group
 router.post('/create_group_post', upload.array('files'), async (req, res) => {
-    const { group_id, channel_id, title, content } = req.body;
+    let { group_id, channel_id, title, content } = req.body;
     let mediaUrls = [];
     try {
         title = title || null;
@@ -320,7 +320,7 @@ router.post('/create_group_post', upload.array('files'), async (req, res) => {
         return res.json({ "status": "success", "message": "Successful upload." });
     } catch (e) {
         console.error(e);
-        return res.status.json({ "status": "error", "message": e.message });
+        return res.status(404).json({ "status": "error", "message": e.message });
     }
 });
 

@@ -2,17 +2,19 @@ import axios from "axios";
 import React, { useState } from "react";
 import PostForm from "../../components/postForm";
 
-function PostChannel({ channelName, isGroup, locationId }) {
+function PostChannel({ channelId, channelName, isGroup, locationId }) {
     const [showForm, setShowForm] = useState(false);
     const [errorMessage, setErrorMessage] = useState('');
+
     //Uploads content 
     const handlePostSubmit = async (formData) => {
         if (isGroup) {
-            formData.append('groupId', locationId); 
+            formData.append('group_id', locationId); 
         } else {
-            formData.append('profileId', locationId); 
+            formData.append('profile_id', locationId); 
         }
-        
+        formData.append('channel_id', channelId);
+
         try {
             const endpoint = isGroup ? '/api/create_group_post' : '/api/create_profile_post'
             await axios.post(endpoint, formData, {
@@ -35,7 +37,7 @@ function PostChannel({ channelName, isGroup, locationId }) {
             <div id="channel-header">
                 <p class="large-text">{channelName}</p>
                 <button class="button" onClick={toggleForm}>
-                    {showForm ? 'Close' : 'Upload content'}
+                    {showForm ? 'Close' : 'Create post'}
                 </button>
             </div>
             <div id="channel-content">
