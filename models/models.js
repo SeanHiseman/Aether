@@ -66,6 +66,7 @@ const Groups = sequelize.define('groups', {
   member_count: { type: INTEGER, defaultValue: 0 },
   date_created: { type: DATE, defaultValue: NOW },
   is_private: { type: BOOLEAN, defaultValue: false},
+  group_leader: { type: STRING(36), allowNull: false},
 }, { tableName: 'groups', timestamps: false });
 
 const GroupPosts = sequelize.define('group_posts', {
@@ -105,6 +106,8 @@ const UserGroups = sequelize.define('user_groups', {
 //Groups relationships
 Users.belongsToMany(Groups, { through: UserGroups, foreignKey: 'user_id', otherKey: 'group_id' });
 Groups.belongsToMany(Users, { through: UserGroups, foreignKey: 'group_id', otherKey: 'user_id' });
+UserGroups.belongsTo(Users, { foreignKey: 'user_id' });
+UserGroups.belongsTo(Groups, { foreignKey: 'group_id' });
 //Nested groups
 Groups.belongsTo(Groups, { as: 'ParentGroup', foreignKey: 'parent_id' });
 Groups.hasMany(Groups, { as: 'SubGroups', foreignKey: 'parent_id' });

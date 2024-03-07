@@ -102,6 +102,7 @@ router.post('/create_group', authenticateCheck, upload.single('new_group_profile
             group_photo,
             member_count: 1,
             is_private: is_private,
+            group_leader: user_id
         });
 
         //Adds main channel
@@ -290,7 +291,7 @@ const post_storage = multer.diskStorage({
 });
 
 //Upload post to group
-router.post('/create_group_post', upload.array('files'), async (req, res) => {
+router.post('/create_group_post', authenticateCheck, upload.array('files'), async (req, res) => {
     let { group_id, channel_id, title, content } = req.body;
     let mediaUrls = [];
     try {
@@ -321,6 +322,41 @@ router.post('/create_group_post', upload.array('files'), async (req, res) => {
     } catch (e) {
         console.error(e);
         return res.status(404).json({ "status": "error", "message": e.message });
+    }
+});
+
+//Gets details of all members of a group
+router.get('/get_group_members', authenticateCheck, async (req, res) => {
+    const { group_id } = req.query;
+    try {
+        const members = await UserGroups.findAll({
+            where: { group_id: group_id },
+            include: [{
+                model: Users,
+                required: true,
+                attributes: ['user_id', 'username']
+            }],
+            attributes: ['is_mod', 'is_admin']
+        });
+        res.json(members);
+    } catch (error) {
+        console.error('Failed to get group members:', error);
+        res.status(500).send({ error: 'Failed to get group members' });
+    }
+});
+
+//Changes if a user is a moderator
+router.post('/toggle_moderator', async (req, res) => {
+    const { groupId, userId, isMod } = req.body;
+    try {
+        await UserGroups.update(
+            { is_mod: isMod },
+            { where: { group_id: groupId, user_id: userId } }
+        );
+        res.send({ message: 'Moderator status updated.'});
+    } catch (error) {
+        console.error('Failed to update moderator status:', error);
+        res.status(500).send({ error: 'Failed to update moderator status.' });
     }
 });
 

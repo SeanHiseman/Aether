@@ -198,6 +198,9 @@ h1 {
 h2 {
     margin-top: 40px;
 }
+h3 {
+    margin-left: 65px;
+}
 #home-header, #messages-header {
     align-items: center;
     background-color: #000514;
