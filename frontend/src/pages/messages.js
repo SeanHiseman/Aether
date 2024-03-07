@@ -3,7 +3,6 @@ import React, { useContext, useEffect, useRef, useState } from 'react';
 import { AuthContext } from '../components/authContext';
 import { io } from "socket.io-client";
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import PostForm from '../components/postForm';
 
 function MessagesPage() {
     const [chat, setChat] = useState([]);
@@ -79,6 +78,13 @@ function MessagesPage() {
             };
         }
     }, [selectedConversationId]);
+
+    //Ensures header title is reset when returning to main messages page
+    useEffect(() => {
+        if (!friend_name) {
+            setSelectedConversationId(null);
+        }
+    }, [friend_name]);
 
     const createNewChat = async (event) => {
         event.preventDefault();
@@ -162,7 +168,6 @@ function MessagesPage() {
                 </div>
                 {friend_name && (
                     <div id="channel-input">
-                        <PostForm />
                         <input className="chat-message-bar" type="text" value={message} onChange={(e) => setMessage(e.target.value)} placeholder="Type a message..."/>
                         <button className="chat-send-button" onClick={sendMessage}>Send</button>
                     </div>
@@ -175,7 +180,7 @@ function MessagesPage() {
                             <img className="profile-image2" src={`/${friendProfileImage}`} alt="Profile image"/>
                             <h1>{friend_name}</h1>
                         </Link>
-                        <h2>Chats</h2> 
+                        <h3>Chats</h3> 
                         <ul>
                             {selectedConversations.map(conversation => (
                                 <li key={conversation.conversationId}>

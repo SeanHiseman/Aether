@@ -17,6 +17,8 @@ function GroupHomeAdmin() {
     const [isEditingDescription, setIsEditingDescription] = useState(false);
     const [isPhotoFormVisible, setIsPhotoFormVisible] = useState(false);
     const [isPostChannel, setIsPostChannel] = useState(true);
+    const [members, setMembers] = useState(null);
+    const [showMembers, setShowMembers] = useState(false);
     const [newDescription, setDescription] = useState('');
     const [isEditingName, setIsEditingName] = useState(false);
     const [newName, setName] = useState('');
@@ -62,6 +64,20 @@ function GroupHomeAdmin() {
         });
     }, [groupDetails.groupId]);  
 
+    //Set name in text area to current description
+    useEffect(() => {
+        if (isEditingName) {
+            setName(groupDetails.groupName);
+        }
+    }, [isEditingName, groupDetails.groupName]);
+
+    //Set description in text area to current description
+    useEffect(() => {
+        if (isEditingDescription) {
+            setDescription(groupDetails.description);
+        }
+    }, [isEditingDescription, groupDetails.description]);
+
     //Adds channel to group
     const AddChannel = async (event) => {
         event.preventDefault();
@@ -103,20 +119,20 @@ function GroupHomeAdmin() {
     }
     
     const channelRender = channels.find(c => c.channel_name === channel_name);
-
-    //Set name in text area to current description
-    useEffect(() => {
-        if (isEditingName) {
-            setName(groupDetails.groupName);
+    
+    const getGroupMembers = async () => {
+        if (!showMembers) {
+            try {
+                const response = await axios.get('/api/get_group_members', {
+                    params: { group_id: groupDetails.groupId }
+                });
+                setMembers(response.data);
+            } catch (error) {
+                console.error('Error fetching group members:', error);
+            }
         }
-    }, [isEditingName, groupDetails.groupName]);
-
-    //Set description in text area to current description
-    useEffect(() => {
-        if (isEditingDescription) {
-            setDescription(groupDetails.description);
-        }
-    }, [isEditingDescription, groupDetails.description]);
+        setShowMembers(!showMembers);
+    };
 
     //Set channels to contain either posts or chats
     const handleChatClick = () => setIsPostChannel(false);
@@ -157,6 +173,22 @@ function GroupHomeAdmin() {
         setShowForm(!showForm)
     }
 
+    //Allows adding/remvoing of moderators
+    const toggleModeratorStatus = async (userId, isMod) => {
+        try {
+            const response = await axios.post('/api/toggle_moderator', {
+                groupId: groupDetails.groupId,
+                userId: userId,
+                isMod: !isMod, //Opposite to current state
+            });
+            if (response.status === 200) {
+                getGroupMembers();
+            }
+        } catch (error) {
+            console.error("Error toggling moderator status:", error);
+        }
+    };
+
     document.title = groupDetails.groupName;
     return (
         <div className="group-container">  
@@ -164,6 +196,9 @@ function GroupHomeAdmin() {
                 <header id="group-header">
                     <div id="group-members">
                         <p>{groupDetails.memberCount} members</p>
+                        <button className="button" onClick={getGroupMembers}>
+                            {showMembers ? 'Close members' : 'See members'}
+                        </button>
                         <MemberChangeButton userId={groupDetails.userId} groupId={groupDetails.groupId} isMember={groupDetails.isMember}/>
                     </div>
                     <div id="group-text">
@@ -231,13 +266,26 @@ function GroupHomeAdmin() {
                     </div>
                 </header>  
                 <div className="channel-feed">
-                    {channelRender ? (
-                        channelRender.is_posts ? (
-                            <PostChannel channel={channelRender} channelId={channelRender.channel_id} channelName={channelRender.channel_name} isGroup={true} locationId={groupDetails.groupId}/>
-                                ) : (
-                            <ChatChannel channel={channelRender} channelId={channelRender.channel_id} channelName={channelRender.channel_name} isGroup={true} locationId={groupDetails.groupId}/>
-                        )
-                    ) : null}
+                    {showMembers ? (
+                        <div>
+                            {members.map((member, index) => (
+                                <div key={index}>
+                                    {member.user.username}
+                                    <button className="button" onClick={() => toggleModeratorStatus(member.user.user_id, member.is_mod)}>
+                                        {member.is_mod ? 'Remove moderator': 'Make moderator'}
+                                    </button>
+                                </div>
+                            ))}
+                        </div>
+                    ) : (
+                        channelRender ? (
+                            channelRender.is_posts ? (
+                                <PostChannel channel={channelRender} channelId={channelRender.channel_id} channelName={channelRender.channel_name} isGroup={true} locationId={groupDetails.groupId}/>
+                                    ) : (
+                                <ChatChannel channel={channelRender} channelId={channelRender.channel_id} channelName={channelRender.channel_name} isGroup={true} locationId={groupDetails.groupId}/>
+                            )
+                        ) : null
+                    )}
                 </div>
             </div>     
             <aside id="right-aside">
