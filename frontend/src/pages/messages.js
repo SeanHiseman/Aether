@@ -168,7 +168,7 @@ function MessagesPage() {
                 </div>
                 {friend_name && (
                     <div id="channel-input">
-                        <input className="chat-message-bar" type="text" value={message} onChange={(e) => setMessage(e.target.value)} placeholder="Type a message..."/>
+                        <input className="chat-message-bar" type="text" value={message} onChange={(e) => setMessage(e.target.value)} placeholder="Type a message..." onKeyDown={(e) => e.key === 'Enter' && sendMessage()}/>
                         <button className="chat-send-button" onClick={sendMessage}>Send</button>
                     </div>
                 )}

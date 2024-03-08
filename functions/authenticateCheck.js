@@ -1,4 +1,4 @@
-//Redirects user to login if not logged in
+//Ensures only logged in user can access a route
 function authenticateCheck(req, res, next) {
     if (!req.session.user_id) {
         return res.status(401).json({ error: 'Not authenticated'});

@@ -129,6 +129,7 @@ const GroupChannelMessages = sequelize.define('group_channel_messages', {
   message_content: { type: STRING(1000), allowNull: false }, 
   channel_id: { type: STRING(36), allowNull: false }, 
   message_time: { type: DATE, defaultValue: NOW },
+  sender_id: { type: STRING(36), allowNull: false}
 }, { tableName: 'group_channel_messages', timestamps: false }); 
 
 GroupChannelMessages.belongsTo(GroupChannels, { foreignKey: 'channel_id' }); 
