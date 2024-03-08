@@ -1,6 +1,6 @@
 import checkIfUserIsAdmin from '../functions/adminCheck.js';
 import checkIfUserIsMember from '../functions/memberCheck.js';
-import { Groups, GroupChannels, GroupPosts, Users, UserGroups } from '../models/models.js';
+import { Groups, GroupChannels, GroupChannelMessages, GroupPosts, Users, UserGroups } from '../models/models.js';
 import multer from 'multer';
 import { Router } from 'express';
 import path from 'path';
@@ -8,49 +8,60 @@ import { v4 } from 'uuid';
 import authenticateCheck from '../functions/authenticateCheck.js';
 const router = Router();
 
-//Group home page data route
-router.get('/group/:group_name', authenticateCheck, async (req, res) => {
-    const groupName = req.params.group_name;
-    const userId = req.session.user_id;
+//Create new channel within a group
+router.post('/add_group_channel', authenticateCheck, async (req, res) => {
     try {
-        //Check if user is admin or member of group
-        const isAdmin = await checkIfUserIsAdmin(userId, groupName);
-        const isMember = await checkIfUserIsMember(userId, groupName);
-        const group = await Groups.findOne({where: {group_name: groupName}});
+        const { channel_name, groupId, isPosts} = req.body;
+
+        //Checks if group can be found
+        const group = await Groups.findByPk(groupId);
         if (!group) {
-            return res.status(404).send('Group not found');
+            return res.status(404).json({ error: 'Group not found'});
         }
-        res.json({
-            isAdmin: isAdmin,
-            isMember: isMember,
-            groupId: group.group_id,
-            groupName: group.group_name,
-            description: group.description,
-            groupPhoto: group.group_photo,
-            memberCount: group.member_count,
-            userId: userId
+
+        const newChannel = await GroupChannels.create({ 
+            channel_id: v4(),
+            channel_name: channel_name,
+            group_id: groupId,
+            is_posts: isPosts
         });
+        res.status(201).json(newChannel);
     } catch (error) {
-        res.status(500).send('Internal server error');
+        res.status(400).json({ error: error.message });
     }
 });
 
-//Get all groups that a user is a part of
-router.get('/groups_list/:userId', async (req, res) => {
+//Update group description
+router.post('/change_description', authenticateCheck, async (req, res) => {
     try {
-        const { userId } = req.params;
-        const groups = await Groups.findAll({
-            include: [{
-                model: Users,
-                where: { user_id: userId },
-                attributes: [],
-            }],
-            //Returns groups alphabetically
-            order: [['group_name', 'ASC']]
-        });
-        res.json(groups);
+        const { description, groupId } = req.body;
+        const group = await Groups.findOne({ where: { group_id: groupId } });
+        if (group) {
+            group.description = description;
+            await group.save();
+            res.status(200).json({ message: "Description updated successfully" });
+        } else {
+            res.status(404).json({ message: "Group not found" });
+        }
     } catch (error) {
-        res.status(500).send('Server error');
+        res.status(500).json({ message: "Failed to update description" });
+    }
+});
+
+//Update group name
+router.post('/change_group_name', authenticateCheck, async (req, res) => {
+    try {
+        const { groupName, groupId } = req.body;
+        const group = await Groups.findOne({ where: { group_id: groupId } });
+        if (group) {
+            group.group_name = groupName;
+            await group.save();
+            res.status(200).json({ message: "Name updated successfully" });
+        } else {
+            res.status(404).json({ message: "Group not found" });
+        }
+    } catch (error) {
+        res.status(500).json({ message: "Failed to update name" });
     }
 });
 
@@ -126,151 +137,6 @@ router.post('/create_group', authenticateCheck, upload.single('new_group_profile
     }
 });
 
-//Update group photo
-router.post('/update_group_photo/:groupId', authenticateCheck, upload.single('new_group_photo'), async (req, res) => {
-    const groupId = req.params.group; 
-    const file = req.file; 
-
-    if (!file) {
-        return res.status(400).json({ message: "Invalid file type. Please upload jpeg or png"});
-    }
-
-    const filename = file.filename;
-    const newPhotoPath = `media/group_profiles/${filename}`;
-
-    try {
-        const group = await Groups.findOne({ where: { group_id: groupId } });
-        if (group) {
-            group.group_photo = newPhotoPath;
-            //Deletes old photo
-            //if (group.group_photo) {
-                //const currentPhotoPath = path.join(__dirname, '..', group.group_photo);
-                //fs.unlink(currentPhotoPath, (err) => {
-                    //res.status(404).json({ message: "Error deleting old photo", err });
-                //});
-            //}
-            await group.save();
-            return res.redirect(`/group/${groupId}`);
-        } else {
-            res.status(404).json({ message: "Group not found" });
-        }
-    } catch (error) {
-        res.status(500).json({ message: "An error occured while updating the group photo"});
-    }
-});
-
-//Create new channel within a group
-router.post('/add_group_channel', authenticateCheck, async (req, res) => {
-    try {
-        const { channel_name, groupId, isPosts} = req.body;
-
-        //Checks if group can be found
-        const group = await Groups.findByPk(groupId);
-        if (!group) {
-            return res.status(404).json({ error: 'Group not found'});
-        }
-
-        const newChannel = await GroupChannels.create({ 
-            channel_id: v4(),
-            channel_name: channel_name,
-            group_id: groupId,
-            is_posts: isPosts
-        });
-        res.status(201).json(newChannel);
-    } catch (error) {
-        res.status(400).json({ error: error.message });
-    }
-});
-
-//Get channels from a group
-router.get('/get_group_channels/:groupId', authenticateCheck, async (req, res) => {
-    try {
-        const groupId = req.params.groupId; 
-        const channels = await GroupChannels.findAll({
-            include: [{
-                model: Groups,
-                where: { group_id: groupId },
-                attributes: [],
-            }]
-        });
-        res.json(channels);
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ error: error.message });
-    }
-});
-
-//Allows users to join a group
-router.post('/join_group', authenticateCheck, async (req, res) => {
-    const { userId, groupId } = req.body;
-    try{
-        await UserGroups.create({
-            user_id: userId,
-            group_id: groupId,
-            is_mod: false,
-            is_admin: false
-        });
-
-        //Increase group member count
-        const group = await Groups.findByPk(groupId);
-        await group.increment('member_count');
-
-        res.status(200).json();
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
-});
-
-//Allows user to leave group
-router.post('/leave_group', authenticateCheck, async (req, res) => {
-    const { userId, groupId } = req.body;
-    try {
-        await UserGroups.destroy({
-            where: { user_id: userId, group_id: groupId }
-        });
-        //Lower member count
-        const group = await Groups.findByPk(groupId);
-        await group.decrement('member_count');
-        res.status(200).send("Group left successfully")
-    } catch (error) {
-        res.status(500).send(error.message);
-    }
-});
-
-//Update group description
-router.post('/change_description', authenticateCheck, async (req, res) => {
-    try {
-        const { description, groupId } = req.body;
-        const group = await Groups.findOne({ where: { group_id: groupId } });
-        if (group) {
-            group.description = description;
-            await group.save();
-            res.status(200).json({ message: "Description updated successfully" });
-        } else {
-            res.status(404).json({ message: "Group not found" });
-        }
-    } catch (error) {
-        res.status(500).json({ message: "Failed to update description" });
-    }
-});
-
-//Update group name
-router.post('/change_group_name', authenticateCheck, async (req, res) => {
-    try {
-        const { groupName, groupId } = req.body;
-        const group = await Groups.findOne({ where: { group_id: groupId } });
-        if (group) {
-            group.group_name = groupName;
-            await group.save();
-            res.status(200).json({ message: "Name updated successfully" });
-        } else {
-            res.status(404).json({ message: "Group not found" });
-        }
-    } catch (error) {
-        res.status(500).json({ message: "Failed to update name" });
-    }
-});
-
 //const upload = multer({ dest: 'uploads/' });
 //const ALLOWED_EXTENSIONS = new Set(['jpg', 'jpeg', 'png', 'gif', 'mp4', 'mkv', 'avi']);
 
@@ -325,6 +191,126 @@ router.post('/create_group_post', authenticateCheck, upload.array('files'), asyn
     }
 });
 
+//Get channels from a group
+router.get('/get_group_channels/:groupId', authenticateCheck, async (req, res) => {
+    try {
+        const groupId = req.params.groupId; 
+        const channels = await GroupChannels.findAll({
+            include: [{
+                model: Groups,
+                where: { group_id: groupId },
+                attributes: [],
+            }]
+        });
+        res.json(channels);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+//Group home page data route
+router.get('/group/:group_name', authenticateCheck, async (req, res) => {
+    const groupName = req.params.group_name;
+    const userId = req.session.user_id;
+    try {
+        //Check if user is admin or member of group
+        const isAdmin = await checkIfUserIsAdmin(userId, groupName);
+        const isMember = await checkIfUserIsMember(userId, groupName);
+        const group = await Groups.findOne({where: {group_name: groupName}});
+        if (!group) {
+            return res.status(404).send('Group not found');
+        }
+        res.json({
+            isAdmin: isAdmin,
+            isMember: isMember,
+            groupId: group.group_id,
+            groupName: group.group_name,
+            description: group.description,
+            groupPhoto: group.group_photo,
+            memberCount: group.member_count,
+            userId: userId
+        });
+    } catch (error) {
+        res.status(500).send('Error getting group.');
+    }
+});
+
+//Returns messages from a chat channel
+router.get('/group_channel_messages', authenticateCheck, async (req, res) => {
+    const { channel_id } = req.query;
+    try {
+        const messages = await GroupChannelMessages.findAll({
+            where: { channel_id },
+            include: [{
+                model: GroupChannels,
+                attributes: ['channel_name', group_id],
+            }],
+            //Sort chronologically
+            order: [['message_time', 'ASC']]
+        });
+        res.json(messages);
+    } catch (error) {
+        res.status(500).send('Error getting messages.');
+    }
+});
+
+//Get all groups that a user is a part of
+router.get('/groups_list/:userId', async (req, res) => {
+    try {
+        const { userId } = req.params;
+        const groups = await Groups.findAll({
+            include: [{
+                model: Users,
+                where: { user_id: userId },
+                attributes: [],
+            }],
+            //Returns groups alphabetically
+            order: [['group_name', 'ASC']]
+        });
+        res.json(groups);
+    } catch (error) {
+        res.status(500).send('Error getting groups.');
+    }
+});
+
+//Allows users to join a group
+router.post('/join_group', authenticateCheck, async (req, res) => {
+    const { userId, groupId } = req.body;
+    try{
+        await UserGroups.create({
+            user_id: userId,
+            group_id: groupId,
+            is_mod: false,
+            is_admin: false
+        });
+
+        //Increase group member count
+        const group = await Groups.findByPk(groupId);
+        await group.increment('member_count');
+
+        res.status(200).json();
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+//Allows user to leave group
+router.post('/leave_group', authenticateCheck, async (req, res) => {
+    const { userId, groupId } = req.body;
+    try {
+        await UserGroups.destroy({
+            where: { user_id: userId, group_id: groupId }
+        });
+        //Lower member count
+        const group = await Groups.findByPk(groupId);
+        await group.decrement('member_count');
+        res.status(200).send("Group left successfully")
+    } catch (error) {
+        res.status(500).send(error.message);
+    }
+});
+
 //Gets details of all members of a group
 router.get('/get_group_members', authenticateCheck, async (req, res) => {
     const { group_id } = req.query;
@@ -340,13 +326,12 @@ router.get('/get_group_members', authenticateCheck, async (req, res) => {
         });
         res.json(members);
     } catch (error) {
-        console.error('Failed to get group members:', error);
-        res.status(500).send({ error: 'Failed to get group members' });
+        res.status(500).send('Error getting group members:', error);
     }
 });
 
 //Changes if a user is a moderator
-router.post('/toggle_moderator', async (req, res) => {
+router.post('/toggle_moderator', authenticateCheck, async (req, res) => {
     const { groupId, userId, isMod } = req.body;
     try {
         await UserGroups.update(
@@ -355,9 +340,71 @@ router.post('/toggle_moderator', async (req, res) => {
         );
         res.send({ message: 'Moderator status updated.'});
     } catch (error) {
-        console.error('Failed to update moderator status:', error);
         res.status(500).send({ error: 'Failed to update moderator status.' });
     }
 });
+
+//Update group photo
+router.post('/update_group_photo/:groupId', authenticateCheck, upload.single('new_group_photo'), async (req, res) => {
+    const groupId = req.params.group; 
+    const file = req.file; 
+
+    if (!file) {
+        return res.status(400).json({ message: "Invalid file type. Please upload jpeg or png"});
+    }
+
+    const filename = file.filename;
+    const newPhotoPath = `media/group_profiles/${filename}`;
+
+    try {
+        const group = await Groups.findOne({ where: { group_id: groupId } });
+        if (group) {
+            group.group_photo = newPhotoPath;
+            //Deletes old photo
+            //if (group.group_photo) {
+                //const currentPhotoPath = path.join(__dirname, '..', group.group_photo);
+                //fs.unlink(currentPhotoPath, (err) => {
+                    //res.status(404).json({ message: "Error deleting old photo", err });
+                //});
+            //}
+            await group.save();
+            return res.redirect(`/group/${groupId}`);
+        } else {
+            res.status(404).json({ message: "Group not found" });
+        }
+    } catch (error) {
+        res.status(500).json({ message: "An error occured while updating the group photo"});
+    }
+});
+
+export const groupChatChannelSocket = (socket) => {
+    socket.on('join_channel', (channelId) => {
+        socket.join(channelId)
+    });
+
+    socket.on('send_message', async (message) => {
+        const messageLength = message.content.length;
+        if (messageLength === 0) {
+            socket.emit('error_mesasge', { error: "Message too short" });
+            return;
+        } else if (messageLength > 1000) {
+            socket.emit('error_message', { error: "Message too long" });
+            return;
+        }
+        const newMessage = await GroupChannelMessages.create({
+            message_id: v4(),
+            channel_id: message.channelId,
+            sender_id: message.senderId,
+            message_content: message.content,
+            message_time: new Date()
+        });
+
+        socket.to(message.channelId).emit('new_message', newMessage);
+    });
+
+    socket.on('leave_channel', (channelId) => {
+        socket.leave(channelId);
+    })
+};
 
 export default router;

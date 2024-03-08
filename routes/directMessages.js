@@ -6,82 +6,6 @@ import authenticateCheck from '../functions/authenticateCheck.js';
 
 const router = Router();
 
-//Get Friends
-router.get('/get_friends', authenticateCheck, async (req, res) => {
-    const userId = req.session.user_id;
-    const user = await Users.findOne({ where: { user_id: userId } });
-
-    //Get friends for user
-    const friendships = await Friends.findAll({
-        where: {
-            [Op.or]: [
-                { user1_id: user.user_id },
-                { user2_id: user.user_id }
-            ]
-        },
-        order: [['FriendSince', 'ASC']]
-    });
-
-    //Get friend data
-    const friendsData = await Promise.all(friendships.map(async (friendship) => {
-        const friendId = (friendship.user1_id !== user.user_id) ? friendship.user1_id : friendship.user2_id;
-        const friend = await Users.findByPk(friendId);
-        //const conversation = await UserConversations.findOne({
-            //where: {
-                //user_id: {
-                    //[Op.in]: [user.user_id, friendId]
-                //}
-            //},
-            //include: [Conversations]
-        //});
-
-        const friendProfile = await Profiles.findOne({
-            where: {
-                user_id: friendId
-            }
-        });
-
-        return {
-            friend_id: friend.user_id,
-            friend_name: friend.username,
-            friend_profile_photo: friendProfile.profile_photo,
-            //conversation_id: conversation ? conversation.conversation_id: null
-        };
-    }));
-
-    res.json(friendsData);
-});
-
-//Get chat messages
-router.get('/get_chat_messages/:conversation_id', authenticateCheck, async (req, res) => {
-    const userId = req.session.user_id;
-    const user = await Users.findOne({ where: { user_id: userId } });
-    const conversationId = req.params.conversation_id;
-
-    const userConversation = await UserConversations.findOne({
-        where: {
-            user_id: user.user_id,
-            conversation_id: conversationId
-        }
-    });
-
-    if (!userConversation) {
-        return res.status(403).json({ error: "Conversation not found" });
-    }
-
-    const messages = await Messages.findAll({
-        where: { conversation_id: conversationId },
-        order: [['timestamp', 'ASC']]
-    });
-    const messagesData = messages.map(m => ({
-        senderId: m.sender_id,
-        content: m.message_content,
-        timestamp: m.timestamp
-    }));
-
-    res.json(messagesData);
-});
-
 //Create new conversation
 router.post('/create_conversation', authenticateCheck, async (req, res) => {
     const { participants, title } = req.body;
@@ -105,6 +29,40 @@ router.post('/create_conversation', authenticateCheck, async (req, res) => {
 
     } catch (error) {
         res.status(500).json({ message: 'Failed to create conversation' });
+    }
+});
+
+//Get chat messages
+router.get('/get_chat_messages/:conversation_id', authenticateCheck, async (req, res) => {
+    try {
+        const userId = req.session.user_id;
+        const user = await Users.findOne({ where: { user_id: userId } });
+        const conversationId = req.params.conversation_id;
+
+        const userConversation = await UserConversations.findOne({
+            where: {
+                user_id: user.user_id,
+                conversation_id: conversationId
+            }
+        });
+
+        if (!userConversation) {
+            return res.status(403).json({ error: "Conversation not found" });
+        }
+
+        const messages = await Messages.findAll({
+            where: { conversation_id: conversationId },
+            order: [['timestamp', 'ASC']]
+        });
+        const messagesData = messages.map(m => ({
+            senderId: m.sender_id,
+            content: m.message_content,
+            timestamp: m.timestamp
+        }));
+
+        res.json(messagesData);
+    } catch (error) {
+        res.status(500).send('Error getting chat messages: ', error);
     }
 });
 
@@ -149,6 +107,56 @@ router.get('/get_conversations', authenticateCheck, async (req, res) => {
     } catch (error) {
         console.error("Failed to fetch user conversations:", error);
         res.status(500).json({ error: "Failed to fetch user conversations "});
+    }
+});
+
+//Get Friends
+router.get('/get_friends', authenticateCheck, async (req, res) => {
+    try {
+        const userId = req.session.user_id;
+        const user = await Users.findOne({ where: { user_id: userId } });
+
+        //Get friends for user
+        const friendships = await Friends.findAll({
+            where: {
+                [Op.or]: [
+                    { user1_id: user.user_id },
+                    { user2_id: user.user_id }
+                ]
+            },
+            order: [['FriendSince', 'ASC']]
+        });
+
+        //Get friend data
+        const friendsData = await Promise.all(friendships.map(async (friendship) => {
+            const friendId = (friendship.user1_id !== user.user_id) ? friendship.user1_id : friendship.user2_id;
+            const friend = await Users.findByPk(friendId);
+            //const conversation = await UserConversations.findOne({
+                //where: {
+                    //user_id: {
+                        //[Op.in]: [user.user_id, friendId]
+                    //}
+                //},
+                //include: [Conversations]
+            //});
+
+            const friendProfile = await Profiles.findOne({
+                where: {
+                    user_id: friendId
+                }
+            });
+
+            return {
+                friend_id: friend.user_id,
+                friend_name: friend.username,
+                friend_profile_photo: friendProfile.profile_photo,
+                //conversation_id: conversation ? conversation.conversation_id: null
+            };
+        }));
+
+        res.json(friendsData);
+    } catch (error) {
+        res.status(500).send('Error getting friends:', error);  
     }
 });
 

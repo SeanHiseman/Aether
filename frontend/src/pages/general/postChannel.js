@@ -3,8 +3,8 @@ import React, { useState } from "react";
 import PostForm from "../../components/postForm";
 
 function PostChannel({ channelId, channelName, isGroup, locationId }) {
-    const [showForm, setShowForm] = useState(false);
     const [errorMessage, setErrorMessage] = useState('');
+    const [showForm, setShowForm] = useState(false);
 
     //Uploads content 
     const handlePostSubmit = async (formData) => {
