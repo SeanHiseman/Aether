@@ -84,9 +84,9 @@ function Profile() {
                 <div className="channel-feed">
                     {channelRender ? (
                         channelRender.is_posts ? (
-                            <ProfileFeed channel={channelRender} channelName={channelRender.channel_name} />
+                            <ProfileFeed channel={channelRender} channelId={channelRender.channel_id} channelName={channelRender.channel_name} />
                                 ) : (
-                            <ChatChannel channel={channelRender} channelName={channelRender.channel_name} isGroup={false} locationId={profile.profileId}/>
+                            <ChatChannel channel={channelRender} channelId={channelRender.channel_id} channelName={channelRender.channel_name} isGroup={false} locationId={profile.profileId}/>
                         )
                     ) : null}
                 </div>
