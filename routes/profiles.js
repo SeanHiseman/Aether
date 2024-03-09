@@ -196,7 +196,7 @@ router.put('/accept_friend_request/:requestId', authenticateCheck, async (req, r
 
         const conversation = await Conversations.create({ 
             conversation_id: v4(),
-            title: "New chat"
+            title: "General"
         });
 
         await UserConversations.bulkCreate([

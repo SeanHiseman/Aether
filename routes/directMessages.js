@@ -160,13 +160,13 @@ router.get('/get_friends', authenticateCheck, async (req, res) => {
     }
 });
 
-//Socket.io event for sending Message
+//Socket.io event for sending message to an individual user
 export const directMessagesSocket = (socket) => {
     socket.on('join_conversation', (conversationId) => {
         socket.join(conversationId);
     });
 
-    socket.on('send_message', async (message) => {
+    socket.on('send_direct_message', async (message) => {
         const messageLength = message.content.length;
         if (messageLength === 0) {
             socket.emit('error_message', { error: "Message too short" });

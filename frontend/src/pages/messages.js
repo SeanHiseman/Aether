@@ -125,7 +125,7 @@ function MessagesPage() {
                 senderId: user.userId,
                 conversationId: selectedConversationId,
             };
-            socketRef.current.emit('send_message', newMessage);
+            socketRef.current.emit('send_direct_message', newMessage);
             setChat(prevChat => [...prevChat, newMessage]);
             setMessage('');
         }

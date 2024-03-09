@@ -1,3 +1,4 @@
+import authenticateCheck from '../functions/authenticateCheck.js';
 import checkIfUserIsAdmin from '../functions/adminCheck.js';
 import checkIfUserIsMember from '../functions/memberCheck.js';
 import { Groups, GroupChannels, GroupChannelMessages, GroupPosts, Users, UserGroups } from '../models/models.js';
@@ -5,7 +6,6 @@ import multer from 'multer';
 import { Router } from 'express';
 import path from 'path';
 import { v4 } from 'uuid';
-import authenticateCheck from '../functions/authenticateCheck.js';
 const router = Router();
 
 //Create new channel within a group
@@ -237,20 +237,21 @@ router.get('/group/:group_name', authenticateCheck, async (req, res) => {
 });
 
 //Returns messages from a chat channel
-router.get('/group_channel_messages', authenticateCheck, async (req, res) => {
-    const { channel_id } = req.query;
+router.get('/group_channel_messages/:channel_id', authenticateCheck, async (req, res) => {
+    const { channel_id } = req.params;
     try {
         const messages = await GroupChannelMessages.findAll({
             where: { channel_id },
             include: [{
                 model: GroupChannels,
-                attributes: ['channel_name', group_id],
+                attributes: ['channel_name', 'group_id'],
             }],
             //Sort chronologically
             order: [['message_time', 'ASC']]
         });
         res.json(messages);
     } catch (error) {
+        console.error('Error getting group channel messages:', error);
         res.status(500).send('Error getting messages.');
     }
 });
@@ -379,26 +380,27 @@ router.post('/update_group_photo/:groupId', authenticateCheck, upload.single('ne
 
 export const groupChatChannelSocket = (socket) => {
     socket.on('join_channel', (channelId) => {
-        socket.join(channelId)
+        socket.join(channelId);
     });
 
-    socket.on('send_message', async (message) => {
+    socket.on('send_group_message', async (message) => {
         const messageLength = message.content.length;
         if (messageLength === 0) {
-            socket.emit('error_mesasge', { error: "Message too short" });
+            socket.emit('error_message', { error: "Message too short" });
             return;
         } else if (messageLength > 1000) {
             socket.emit('error_message', { error: "Message too long" });
             return;
         }
+
         const newMessage = await GroupChannelMessages.create({
             message_id: v4(),
+            group_id: message.groupId,
             channel_id: message.channelId,
-            sender_id: message.senderId,
             message_content: message.content,
-            message_time: new Date()
+            message_time: new Date(),
+            sender_id: message.senderId,
         });
-
         socket.to(message.channelId).emit('new_message', newMessage);
     });
 

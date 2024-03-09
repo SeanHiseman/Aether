@@ -127,6 +127,7 @@ Groups.hasMany(GroupChannels, { foreignKey: 'group_id' });
 const GroupChannelMessages = sequelize.define('group_channel_messages', { 
   message_id: { type: STRING(36), primaryKey: true }, 
   message_content: { type: STRING(1000), allowNull: false }, 
+  group_id: { type: STRING(36), allowNull: false},
   channel_id: { type: STRING(36), allowNull: false }, 
   message_time: { type: DATE, defaultValue: NOW },
   sender_id: { type: STRING(36), allowNull: false}
