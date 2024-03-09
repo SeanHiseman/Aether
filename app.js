@@ -12,7 +12,7 @@ import { urlencoded } from 'express';
 import authentication from './routes/authentication.js';
 import commentsLoad from './routes/commentsLoad.js';
 import directMessages, { directMessagesSocket } from './routes/directMessages.js';
-import groups from './routes/groups.js';
+import groups, { groupChatChannelSocket } from './routes/groups.js';
 import profiles from './routes/profiles.js';
 import profileDataRouter from './routes/profileDataRouter.js'
 import routes from './routes/routes.js';
@@ -61,6 +61,7 @@ app.get('*', (req, res) => {
 
 io.on('connection', (socket) => {
     directMessagesSocket(socket);
+    groupChatChannelSocket(socket);
 });
 
 sequelize.authenticate()

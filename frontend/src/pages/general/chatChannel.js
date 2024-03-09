@@ -9,19 +9,19 @@ function ChatChannel({ channelId, channelName, isGroup, locationId }) {
     const [currentMessage, setCurrentMessage] = useState('');
     const [errorMessage, setErrorMessage] = useState('');
     const { user } = useContext(AuthContext)
-    const socket = io();
-    
+    const socket = io(`http://localhost:7000`);
+
     //Update messages in the channel
     useEffect(() => {
         getChannelMessages(channelId);
-        socket.on('send_message', (newMessage) => {
+        socket.on('new_message', (newMessage) => {
             if (newMessage.channel_id === channelId) {
                 setChannel((prevMessages) => [...prevMessages, newMessage]);
             }
         });
 
         return () => {
-            socket.off('send_message');
+            socket.off('new_message');
             socket.emit('leave_channel', channelId);
         };
     }, [channelId]);
@@ -29,7 +29,7 @@ function ChatChannel({ channelId, channelName, isGroup, locationId }) {
     //Get messages from the channel
     const getChannelMessages = async (channelId) => {
         try {
-            const endpoint = isGroup ? '/api/group_chat_messages' : '/api/profile_chat_messages';
+            const endpoint = isGroup ? `/api/group_channel_messages/${channelId}` : `/api/profile_channel_messages/${channelId}`;
             const response = await axios.get(endpoint);
             setChannel(response.data);
         } catch (error) {
@@ -37,14 +37,17 @@ function ChatChannel({ channelId, channelName, isGroup, locationId }) {
         }
     }
 
-    const sendChannelMessage = async () => {
+    const sendChannelMessage = () => {
         //Prevents sending empty messages
         if (!currentMessage.trim()) return;
-        socket.emit('send_message', {
+        const newMessage = {
             channelId, 
-            senderId: user.userId,
+            groupId: locationId,
             content: currentMessage,
-        });
+            senderId: user.userId, 
+        }
+        socket.emit('send_group_message', newMessage);
+        //setChannel(prevChannel => [...prevChannel, newMessage]);
         setCurrentMessage('');
     };
 
@@ -55,13 +58,13 @@ function ChatChannel({ channelId, channelName, isGroup, locationId }) {
             </div>
             <div id="channel-content">
                 {channel.map((msg, index) => (
-                    <p key={index} className={`message ${msg.sender_id === user.userId ? 'outgoing' : 'incoming'}`}>{msg.message_content}</p>
+                    <p key={index} class={`message ${msg.sender_id === user.userId ? 'outgoing' : 'incoming'}`}>{msg.message_content}</p>
                 ))}
             </div>
             <div id="channel-input">
-                <input className="chat-message-bar" type="text" value={currentMessage} onChange={(e) => setCurrentMessage(e.target.value)} placeholder="Type a message..." onKeyDown={(e) => e.key === 'Enter' && sendChannelMessage()}/>
-                <button className="chat-send-button" onClick={sendChannelMessage}>Send</button>
-                {errorMessage && <div className="error-message">{errorMessage}</div>}
+                <input class="chat-message-bar" type="text" value={currentMessage} onChange={(e) => setCurrentMessage(e.target.value)} placeholder="Type a message..." onKeyDown={(e) => e.key === 'Enter' && sendChannelMessage()}/>
+                <button class="chat-send-button" onClick={sendChannelMessage}>Send</button>
+                {errorMessage && <div class="error-message">{errorMessage}</div>}
             </div>
         </div>
     );
