@@ -5,7 +5,7 @@ import PostForm from "../../components/postForm";
 function PostChannel({ channelId, channelName, isGroup, locationId }) {
     const [errorMessage, setErrorMessage] = useState('');
     const [showForm, setShowForm] = useState(false);
-
+    
     //Uploads content 
     const handlePostSubmit = async (formData) => {
         if (isGroup) {
@@ -14,7 +14,6 @@ function PostChannel({ channelId, channelName, isGroup, locationId }) {
             formData.append('profile_id', locationId); 
         }
         formData.append('channel_id', channelId);
-
         try {
             const endpoint = isGroup ? '/api/create_group_post' : '/api/create_profile_post'
             await axios.post(endpoint, formData, {

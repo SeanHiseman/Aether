@@ -268,9 +268,9 @@ const PersonalProfile = () => {
                 <div className="channel-feed">
                     {channelRender ? (
                         channelRender.is_posts ? (
-                            <PostChannel channel={channelRender} channelName={channelRender.channel_name} isGroup={false} locationId={profile.profileId}/>
+                            <PostChannel channel={channelRender} channelId={channelRender.channel_id} channelName={channelRender.channel_name} isGroup={false} locationId={profile.profileId}/>
                                 ) : (
-                            <ChatChannel channel={channelRender} channelName={channelRender.channel_name} isGroup={false} locationId={profile.profileId}/>
+                            <ChatChannel channel={channelRender} channelId={channelRender.channel_id} channelName={channelRender.channel_name} isGroup={false} locationId={profile.profileId}/>
                         )
                     ) : null}
                 </div>
