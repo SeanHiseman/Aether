@@ -1,7 +1,7 @@
 .authentication-container {
     width: 300px;
     padding: 16px;
-    background-color: #41445a;
+    background-color: #000514;
     margin: 0 auto;
     margin-top: 100px;
     border-radius: 10px;
@@ -19,7 +19,7 @@
     outline: none;
 }
 .submit {
-    background-color: #41445a;
+    background-color: #000514;
     border: 1px solid #ffffff;
     color: white;
     padding: 14px 20px;
@@ -32,7 +32,7 @@
 .link {
     display: inline-block;
     padding: 10px 20px;
-    background-color: #41445a;
+    background-color: #000514;
     border: 1px solid #ffffff;
     color: white;
     text-align: center;
@@ -43,7 +43,7 @@
 }
 
 .link:hover, .submit:hover{
-    background-color: #1f2956;
+    background-color: #41445a;
 }
 
 .login-register{

@@ -269,7 +269,7 @@ function GroupHomeAdmin() {
                     {showMembers ? (
                         <div>
                             {members.map((member, index) => (
-                                <div key={index}>
+                                <div class="group-member" key={index}>
                                     {member.user.username}
                                     <button className="button" onClick={() => toggleModeratorStatus(member.user.user_id, member.is_mod)}>
                                         {member.is_mod ? 'Remove moderator': 'Make moderator'}
