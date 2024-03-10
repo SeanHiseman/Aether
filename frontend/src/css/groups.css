@@ -37,14 +37,19 @@
     position: sticky;
     width: 100%;
 }
-#change-group-photo{
+#change-group-photo {
+    background-color: #000514;
     border: 1px solid #ffffff;
     border-radius: 10px;
     display: flex;
     flex-direction: column;
     max-width: 200px;
-    margin: 10px;
+    margin-top: 250px;
     padding: 5px;
+    position: absolute;
+}
+.group-member {
+    margin: 10px;
 }
 #group-members {
     margin: 10px;
