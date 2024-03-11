@@ -209,6 +209,25 @@ router.get('/get_group_channels/:groupId', authenticateCheck, async (req, res) =
     }
 });
 
+//Gets details of all members of a group
+router.get('/get_group_members', authenticateCheck, async (req, res) => {
+    const { group_id } = req.query;
+    try {
+        const members = await UserGroups.findAll({
+            where: { group_id: group_id },
+            include: [{
+                model: Users,
+                required: true,
+                attributes: ['user_id', 'username']
+            }],
+            attributes: ['is_mod', 'is_admin']
+        });
+        res.json(members);
+    } catch (error) {
+        res.status(500).send('Error getting group members:', error);
+    }
+});
+
 //Group home page data route
 router.get('/group/:group_name', authenticateCheck, async (req, res) => {
     const groupName = req.params.group_name;
@@ -311,26 +330,6 @@ router.post('/leave_group', authenticateCheck, async (req, res) => {
         res.status(500).send(error.message);
     }
 });
-
-//Gets details of all members of a group
-router.get('/get_group_members', authenticateCheck, async (req, res) => {
-    const { group_id } = req.query;
-    try {
-        const members = await UserGroups.findAll({
-            where: { group_id: group_id },
-            include: [{
-                model: Users,
-                required: true,
-                attributes: ['user_id', 'username']
-            }],
-            attributes: ['is_mod', 'is_admin']
-        });
-        res.json(members);
-    } catch (error) {
-        res.status(500).send('Error getting group members:', error);
-    }
-});
-
 //Changes if a user is a moderator
 router.post('/toggle_moderator', authenticateCheck, async (req, res) => {
     const { groupId, userId, isMod } = req.body;
