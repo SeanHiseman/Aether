@@ -280,9 +280,9 @@ function GroupHomeAdmin() {
                     ) : (
                         channelRender ? (
                             channelRender.is_posts ? (
-                                <PostChannel channel={channelRender} channelId={channelRender.channel_id} channelName={channelRender.channel_name} isGroup={true} locationId={groupDetails.groupId}/>
+                                <PostChannel channelId={channelRender.channel_id} channelName={channelRender.channel_name} isGroup={true} locationId={groupDetails.groupId}/>
                                     ) : (
-                                <ChatChannel channel={channelRender} channelId={channelRender.channel_id} channelName={channelRender.channel_name} isGroup={true} locationId={groupDetails.groupId}/>
+                                <ChatChannel channelId={channelRender.channel_id} channelName={channelRender.channel_name} isGroup={true} locationId={groupDetails.groupId}/>
                             )
                         ) : null
                     )}

@@ -4,6 +4,7 @@ import PostForm from "../../components/postForm";
 
 function PostChannel({ channelId, channelName, isGroup, locationId }) {
     const [errorMessage, setErrorMessage] = useState('');
+    const [posts, setPosts] = useState([]);
     const [showForm, setShowForm] = useState(false);
     
     //Uploads content 
@@ -40,7 +41,10 @@ function PostChannel({ channelId, channelName, isGroup, locationId }) {
                 </button>
             </div>
             <div id="channel-content">
-                {showForm ? <PostForm onSubmit={handlePostSubmit} errorMessage={errorMessage}/> : <p>Posts go here</p>}
+                {showForm ? 
+                    <PostForm onSubmit={handlePostSubmit} errorMessage={errorMessage}/>:
+                    <p>No posts yet</p>
+                }
             </div>
         </div>
     );

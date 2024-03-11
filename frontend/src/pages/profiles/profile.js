@@ -7,15 +7,15 @@ import ChatChannel from '../general/chatChannel';
 import PersonalProfile from './personal_profile';
 import ProfileFeed from './profileFeed';
 import SendFriendRequestButton from '../../components/sendFriendRequest';
-import '../../css/profile.css';
 
 function Profile() {
+    const [channels, setChannels] = useState([]);
+    //const [errorMessage, setErrorMessage] = useState('');
+    const [profile, setProfile] = useState({ profileId: '', profilePhoto: '', username: '', userId: '', isFriend: '', isRequested: '' });
     const { user } = useContext(AuthContext);
     const { username, channel_name } = useParams();
     const navigate = useNavigate();
-    const [channels, setChannels] = useState([]);
-    const [profile, setProfile] = useState({ profileId: '', profilePhoto: '', username: '', userId: '', isFriend: '', isRequested: '' });
-    const [userContent, setUserContent] = useState([]);
+
     //Determine if logged in user is viewing their own profile
     const loggedInUsername = user?.username;
     const isLoggedInUser = username === loggedInUsername;
@@ -25,13 +25,6 @@ function Profile() {
                 .then(response => {
                     const fetchedProfile = response.data.profile;
                     setProfile(fetchedProfile);
-                    axios.get(`/api/user-content/${response.data.profileId}`)
-                        .then(contentResponse => {
-                            setUserContent(contentResponse.data);
-                        })
-                        .catch(contentError => {
-                            console.error('Error fetching user content:', contentError);
-                        });
                 })
                 .catch(error => {
                     console.error('Error:', error);
@@ -84,7 +77,7 @@ function Profile() {
                 <div className="channel-feed">
                     {channelRender ? (
                         channelRender.is_posts ? (
-                            <ProfileFeed channel={channelRender} channelId={channelRender.channel_id} channelName={channelRender.channel_name} />
+                            <ProfileFeed channel={channelRender} channelId={channelRender.channel_id} channelName={channelRender.channel_name} locationId={profile.profileId}/>
                                 ) : (
                             <ChatChannel channel={channelRender} channelId={channelRender.channel_id} channelName={channelRender.channel_name} isGroup={false} locationId={profile.profileId}/>
                         )

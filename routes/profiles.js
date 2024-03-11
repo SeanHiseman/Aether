@@ -219,6 +219,32 @@ router.get('/get_profile_channels/:profileId', authenticateCheck, async (req, re
     }
 });
 
+//Posts made to a profile channel
+router.get('/profile_channel_posts/:profileId/:channelId', authenticateCheck, async (req, res) => {
+    try {
+        const { channelId, profileId } = req.params;
+        const posts = await ProfilePosts.findAll({
+            where: {
+                profile_id: profileId,
+                channel_id: channelId
+            },
+            //include: [{
+                //model: Profiles,
+                //attributes: ['profile_photo'],
+                //include: [{
+                    //model: Users,
+                    //attributes: ['username'],
+                //}]
+            //}],
+            //Posts sorted chronilogically
+            order: [['timestamp', 'DESC']]
+        });
+        res.json(posts);
+    } catch (error) {
+        res.status(500).send('Error fetching posts:', error);   
+    }
+});
+
 //Load user profiles
 router.get('/profile/:username', authenticateCheck, async (req, res) => {
     const loggedInUserId = req.session.user_id;
