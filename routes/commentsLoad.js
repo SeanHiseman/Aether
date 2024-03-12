@@ -1,32 +1,9 @@
 import authenticateCheck from '../functions/authenticateCheck.js';
 import { Comments, ProfilePosts, Profiles, Users } from '../models/models.js';
 import { Router } from 'express';
-import { v4 as uuidv4 } from 'uuid';
+import { v4 } from 'uuid';
 
 const router = Router();
-
-//Get Comments Route 
-router.get('/get_comments/:post_id', authenticateCheck, async (req, res) => {
-    try {
-        const postId = req.params.post_id;
-        const comments = await Comments.findAll({
-            where: { post_id: postId },
-            include: [
-                {
-                    model: Users,
-                    attributes: ['username'],
-                    include: [{
-                        model: Profiles,
-                        attributes: ['profile_photo']
-                    }]
-                }
-            ]
-        });
-        res.json(comments);
-    } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
-    }
-});
 
 //Add Comment Route
 router.post('/add_comment', authenticateCheck, async (req, res) => {
@@ -38,7 +15,7 @@ router.post('/add_comment', authenticateCheck, async (req, res) => {
             return res.status(400).json({ success: false, message: 'Missing required fields' });
         }
 
-        const comment_id = uuidv4();
+        const comment_id = v4();
         const newComment = await Comments.create({ 
             comment_id, post_id, user_id, comment_text, likes: 0, dislikes: 0, timestamp: new Date(), parent_id 
         });
@@ -48,6 +25,30 @@ router.post('/add_comment', authenticateCheck, async (req, res) => {
         await contentToUpdate.save();
 
         res.json({ success: true });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
+//Get Comments Route 
+router.get('/get_comments/:postId', authenticateCheck, async (req, res) => {
+    try {
+        const postId = req.params.postId;
+        const comments = await Comments.findAll({
+            where: { post_id: postId },
+            include: [
+                {
+                    model: Users,
+                    as: 'Commenter',
+                    attributes: ['username'],
+                    include: [{
+                        model: Profiles,
+                        attributes: ['profile_photo']
+                    }]
+                }
+            ]
+        });
+        res.json(comments);
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
     }

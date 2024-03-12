@@ -4,7 +4,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import ChannelButton from '../../components/channelButton';
 import ChatChannel from '../general/chatChannel';
 import FriendRequests from '../../components/friendRequestsList';
-import PostChannel from '../general/postChannel';
+import ProfileFeed from './profileFeed';
 import PostForm from '../../components/postForm';
 import '../../css/profile.css';
 
@@ -268,7 +268,7 @@ const PersonalProfile = () => {
                 <div className="channel-feed">
                     {channelRender ? (
                         channelRender.is_posts ? (
-                            <PostChannel channelId={channelRender.channel_id} channelName={channelRender.channel_name} isGroup={false} locationId={profile.profileId}/>
+                            <ProfileFeed channelId={channelRender.channel_id} channelName={channelRender.channel_name} isGroup={false} locationId={profile.profileId}/>
                                 ) : (
                             <ChatChannel channelId={channelRender.channel_id} channelName={channelRender.channel_name} isGroup={false} locationId={profile.profileId}/>
                         )

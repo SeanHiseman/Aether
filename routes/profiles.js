@@ -223,11 +223,16 @@ router.get('/get_profile_channels/:profileId', authenticateCheck, async (req, re
 router.get('/profile_channel_posts/:profileId/:channelId', authenticateCheck, async (req, res) => {
     try {
         const { channelId, profileId } = req.params;
+        //Limits number of posts returned
+        //const limit = parseInt(req.query.limit) || 10;
+        //const offset = parseInt(req.query.offset) || 0;
         const posts = await ProfilePosts.findAll({
             where: {
                 profile_id: profileId,
                 channel_id: channelId
             },
+            //limit: limit,
+            //offset: offset,
             //include: [{
                 //model: Profiles,
                 //attributes: ['profile_photo'],
