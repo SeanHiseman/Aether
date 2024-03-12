@@ -1,18 +1,31 @@
+.comment-section {
+    display: block;
+    width: 100%;
+}
+.comment-input {
+    background-color: #000514;
+    border: 1px solid white;
+    border-radius: 10px;
+    color: white;
+    height: 50px;
+    margin: 10px;
+    outline: none;
+    padding: 10px;
+    width: 80%;
+}
 .content-item {
     background-color: #000514;
-    margin: 15px;
-    padding: 15px;
-    border-radius: 10px;
+    border: 1px solid white;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    padding: 15px;
+    width: 1000px;
 }
-
 .content-metadata {
     display: flex;
     justify-content: space-between;
     align-items: center;
     margin-top: 10px;
 }
-
 .like-button, .dislike-button, .comment-button, .post-comment {
     cursor: pointer;
     padding: 5px 10px;
@@ -30,18 +43,6 @@
     font-size: 14px;
     margin-right: 5px;
 }
-
-.comment-section{
-    display: block;
-    width: 100%;
-}
-
-.comment-input{
-    border-radius: 10px;
-    height: 50px;
-    width: 100%;
-}
-
 .reply-button{
     cursor: pointer;
     font-size: 20;
@@ -66,12 +67,13 @@
 }
 
 .horizontal-container {
-    position: relative;
+    align-items: flex-start;
     border-left: 2px solid #6b6b6b;
+    display: flex;
+    flex-direction: column;
     margin-bottom: 10px;
     padding-left: 10px;
-    display: flex;
-    align-items: center;
+    position: relative;
 }
 
 .username {
@@ -127,7 +129,9 @@
 .reply-container button:hover{
     background-color: #1f2956;
 }
-
+.post-list {
+    margin: 0px;
+}
 .profile-photo{
     width: 30px;
     height: 30px;

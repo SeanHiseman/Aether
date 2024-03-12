@@ -1,23 +1,75 @@
-import React, { useState } from 'react';
+import axios from 'axios';
+import React, { useEffect, useState } from 'react';
 import ReactQuill from 'react-quill';
+import Comment from '../components/comments/comment';
 
 function ContentWidget({ post }) {
-    const [contentReaction, setContentReaction] = useState('');
+    const [comments, setComments] = useState([]);
+    const [newComment, setNewComment] = useState('');
     const [showComments, setShowComments] = useState(false);
 
-    const addComment = () => {
+    useEffect(() => {
+        if (showComments) {
+            getComments(post.post_id);
+        }
+    }, [showComments, post.post_id]);
+
+    const addComment = async (postId, parentId, commentContent) => {
+        try {
+            await axios.post('/api/add_comment', {
+                post_id: postId,
+                parent_id: parentId || null, 
+                content: commentContent,
+            });
+            getComments(postId); 
+        } catch (error) {
+            console.error("Error posting comment:", error);
+        }
+    };
+
+    const contentReaction = async () => {
         console.log("Testing");
     };
 
+    const getComments = async (postId) => {
+        try {
+            const response = await axios.get(`/api/get_comments/${postId}`);
+            setComments(response.data); 
+            console.log("Comments:", response.data);
+        } catch (error) {
+            console.error("Error getting comments:", error);
+        }
+    };
+
     const handleToggleComments = () => {
-        //toggleCommentSection(post.post_id);
         setShowComments(!showComments);
     };
+
+    //Sorts comments in to replies
+    const nestComments = (comments) => {
+        const commentMap = {};
+        comments.forEach(comment => commentMap[comment.comment_id] = { ...comment, replies: [] });
+    
+        const nestedComments = [];
+        Object.values(commentMap).forEach(comment => {
+            if (comment.parent_id === null) {
+                nestedComments.push(comment);
+            } else if (commentMap[comment.parent_id]) {
+                commentMap[comment.parent_id].replies.push(comment);
+            }
+        });
+        console.log("nestedComments:", nestedComments);
+        return nestedComments;
+    };
+
+    const nestedComments = nestComments(comments);
 
     return (
         <div className="content-item">
             <h1>{post.title}</h1>
-            <ReactQuill value={post.content} readOnly={true} theme={"bubble"} />
+            <div className="react-quill-container">
+                <ReactQuill value={post.content} readOnly={true} theme={"bubble"} />
+            </div>
             <div className="content-metadata">
                 {/*<div className="uploader-info">
                     <a href={`/profile/${post.username}`}>
@@ -25,7 +77,6 @@ function ContentWidget({ post }) {
                     </a>
                     <p className="username">{post.username}</p>
                 </div>*/}
-
                 <button className="like-button" onClick={() => contentReaction(post.post_id, 'like')}>
                     Likes <span id={`like-count-${post.post_id}`} className="like-count">{post.likes}</span>
                 </button>
@@ -40,16 +91,16 @@ function ContentWidget({ post }) {
             </div>
             
             {showComments && (
-                <div className="comment-section" id={`comment-section-${post.post_id}`}>
+                <div className="comment-section">
                     <div className="add-comment">
-                        <textarea className="comment-input" id={`new-comment-${post.post_id}`} placeholder="Add a comment"></textarea>
-                        <button className="post-comment" onClick={() => addComment(post.post_id, null, document.getElementById(`new-comment-${post.post_id}`).value)}>
+                        <textarea className="comment-input" value={newComment} onChange={(e) => setNewComment(e.target.value)} placeholder="Reply..."></textarea>
+                        <button className="post-comment" onClick={() => addComment(null, newComment)}>
                             Post
                         </button>
                     </div>
-                    <ul className="comment-list" id={`comment-list-${post.post_id}`}>
-                        {/* Comments are populated by JavaScript */}
-                    </ul>
+                    {nestedComments.map((comment) => (
+                        <Comment key={comment.comment_id} comment={comment} depth={0} addComment={addComment} />
+                    ))}
                 </div>
             )}
         </div>
@@ -57,3 +108,4 @@ function ContentWidget({ post }) {
 }
 
 export default ContentWidget;
+

@@ -138,7 +138,7 @@ const Comments = sequelize.define('comments', {
   comment_id: { type: STRING(36), primaryKey: true },
   post_id: { type: STRING(36), allowNull: false },
   commenter_id: { type: STRING(36) },
-  comment_text: { type: STRING(1000), allowNull: false },
+  content: { type: STRING(1000), allowNull: false },
   likes: { type: INTEGER, allowNull: false },
   dislikes: { type: INTEGER, allowNull: false },
   timestamp: { type: DATE, defaultValue: NOW },
@@ -146,10 +146,10 @@ const Comments = sequelize.define('comments', {
 }, {tableName: 'comments', timestamps: false});
 
 //Comments relationships
-//Posts.hasMany(Comments, { as: 'PostComments', foreignKey: 'post_id' });
-//Comments.belongsTo(Posts, { as: 'Post', foreignKey: 'post_id' });
-//Users.hasMany(Comments, { as: 'UserComments', foreignKey: 'commenter_id' });
-//Comments.belongsTo(Users, {  as: 'Commenter',foreignKey: 'commenter_id' });
+ProfilePosts.hasMany(Comments, { as: 'ProfilePostComments', foreignKey: 'post_id' });
+Comments.belongsTo(ProfilePosts, { as: 'ProfilePost', foreignKey: 'post_id' });
+Users.hasMany(Comments, { as: 'UserComments', foreignKey: 'commenter_id' });
+Comments.belongsTo(Users, {  as: 'Commenter',foreignKey: 'commenter_id' });
 
 
 const Friends = sequelize.define('friends', {

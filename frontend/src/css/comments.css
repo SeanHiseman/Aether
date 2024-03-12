@@ -1,0 +1,30 @@
+.comment-container {
+    border: 1px solid #ccc;
+    padding: 10px;
+    margin-top: 10px;
+}
+.comment-profile-container {
+    display: flex;
+    align-items: center;
+}
+.username {
+    font-weight: bold;
+}
+.comment-element {
+    margin-top: 10px;
+}
+.reply-form {
+    margin-top: 10px;
+}
+.reply-input {
+    width: 100%;
+    margin-bottom: 10px;
+}
+.like-button, .dislike-button, .reply-button, .post-reply {
+    cursor: pointer;
+    margin-right: 5px;
+}
+.like-dislike-container {
+    margin-top: 10px;
+}
+  
