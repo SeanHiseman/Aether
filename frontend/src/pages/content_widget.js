@@ -2,10 +2,10 @@ import axios from 'axios';
 import React, { useEffect, useState } from 'react';
 import ReactQuill from 'react-quill';
 import Comment from '../components/comments/comment';
+import ReplyForm from '../components/comments/replyForm';
 
 function ContentWidget({ post }) {
     const [comments, setComments] = useState([]);
-    const [newComment, setNewComment] = useState('');
     const [showComments, setShowComments] = useState(false);
 
     useEffect(() => {
@@ -13,19 +13,6 @@ function ContentWidget({ post }) {
             getComments(post.post_id);
         }
     }, [showComments, post.post_id]);
-
-    const addComment = async (postId, parentId, commentContent) => {
-        try {
-            await axios.post('/api/add_comment', {
-                post_id: postId,
-                parent_id: parentId || null, 
-                content: commentContent,
-            });
-            getComments(postId); 
-        } catch (error) {
-            console.error("Error posting comment:", error);
-        }
-    };
 
     const contentReaction = async () => {
         console.log("Testing");
@@ -35,7 +22,6 @@ function ContentWidget({ post }) {
         try {
             const response = await axios.get(`/api/get_comments/${postId}`);
             setComments(response.data); 
-            console.log("Comments:", response.data);
         } catch (error) {
             console.error("Error getting comments:", error);
         }
@@ -58,7 +44,6 @@ function ContentWidget({ post }) {
                 commentMap[comment.parent_id].replies.push(comment);
             }
         });
-        console.log("nestedComments:", nestedComments);
         return nestedComments;
     };
 
@@ -84,7 +69,7 @@ function ContentWidget({ post }) {
                     Dislikes <span id={`dislike-count-${post.post_id}`} className="dislike-count">{post.dislikes}</span>
                 </button>
 
-                <button className="comment-button" data-content-id={post.post_id} onClick={handleToggleComments}>
+                <button className="button" data-content-id={post.post_id} onClick={handleToggleComments}>
                     Comments <span className="comment-count" id={`comment-count-${post.post_id}`}>{post.comments}</span>
                 </button>
                 <span className="view-count">{post.views} Views</span>
@@ -93,13 +78,10 @@ function ContentWidget({ post }) {
             {showComments && (
                 <div className="comment-section">
                     <div className="add-comment">
-                        <textarea className="comment-input" value={newComment} onChange={(e) => setNewComment(e.target.value)} placeholder="Reply..."></textarea>
-                        <button className="post-comment" onClick={() => addComment(null, newComment)}>
-                            Post
-                        </button>
+                        <ReplyForm parentId={null} postId={post.post_id} />
                     </div>
                     {nestedComments.map((comment) => (
-                        <Comment key={comment.comment_id} comment={comment} depth={0} addComment={addComment} />
+                        <Comment key={comment.comment_id} comment={comment} depth={0} />
                     ))}
                 </div>
             )}

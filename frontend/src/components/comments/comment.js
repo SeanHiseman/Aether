@@ -16,11 +16,11 @@ const Comment = ({ comment, depth, addComment }) => {
                 <div className="comment-element">
                 <span className="comment-content">{comment.content}</span>
                 <div className="like-dislike-container">
-                    <button className="like-button">Like</button>
-                    <button className="dislike-button">Dislike</button>
+                    <button className="button">Like</button>
+                    <button className="button">Dislike</button>
                 </div>
-                <button className="reply-button" onClick={toggleReplyForm}>Reply</button>
-                    {showReplyForm && <ReplyForm parentId={comment.comment_id} addComment={addComment} />}
+                <button className="button" onClick={toggleReplyForm}>Reply</button>
+                    {showReplyForm && <ReplyForm postId={comment.post_id} parentId={comment.comment_id} />}
                 </div>
                 {comment.replies && comment.replies.map(reply => (
                     <Comment key={reply.comment_id} comment={reply} depth={depth + 1} addComment={addComment} />

@@ -6,18 +6,18 @@ import { v4 } from 'uuid';
 const router = Router();
 
 //Add Comment Route
-router.post('/add_comment', authenticateCheck, async (req, res) => {
+router.post('/add_reply', authenticateCheck, async (req, res) => {
     try {
-        const { post_id, parent_id, comment_text } = req.body;
-        const user_id = req.session.user_id; 
+        const { post_id, parent_id, content } = req.body;
+        const commenter_id = req.session.user_id; 
 
-        if (!post_id || !comment_text) {
+        if (!post_id || !content) {
             return res.status(400).json({ success: false, message: 'Missing required fields' });
         }
 
         const comment_id = v4();
         const newComment = await Comments.create({ 
-            comment_id, post_id, user_id, comment_text, likes: 0, dislikes: 0, timestamp: new Date(), parent_id 
+            comment_id, post_id, commenter_id, content, likes: 0, dislikes: 0, timestamp: new Date(), parent_id 
         });
 
         const contentToUpdate = await ProfilePosts.findByPk(post_id);
