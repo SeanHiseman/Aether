@@ -6,9 +6,6 @@
     display: flex;
     align-items: center;
 }
-.username {
-    font-weight: bold;
-}
 .reply-input {
     background-color: #000514;
     border: 1px solid #ffffff;
@@ -34,11 +31,7 @@
 .reply-container button:hover {
     background-color: #41445a;
 }
-.like-button, .dislike-button, .post-reply {
-    cursor: pointer;
-    margin-right: 5px;
-}
-.like-dislike-container {
+.reply-vote-container {
     margin-top: 10px;
 }
 .comment-section {
@@ -86,7 +79,7 @@
     font-size: 14px;
     margin-right: 5px;
 }
-.reply-button{
+.reply-button {
     cursor: pointer;
     font-size: 20;
     border-radius: 10px;
@@ -117,12 +110,6 @@
     padding-left: 10px;
     position: relative;
 }
-
-.username {
-    font-weight: bold;
-    margin-left: 5px;
-}
-
 .comment-text{
     margin-left: 10px;
 }
@@ -131,15 +118,6 @@
     display: inline-flex;
     align-items: center;
     margin-left: 10px;
-}
-
-.like-dislike-arrows {
-    background-color: transparent;
-    border: none;
-    padding: 0;
-    cursor: pointer;
-    background-size: contain;
-    background-repeat: no-repeat;
 }
 
 .net-likes{
@@ -153,16 +131,31 @@
     height: 30px;
     border-radius: 50%;
 }
-
 .uploader-info{
     display: flex;
     align-items: center;
     position: relative;
 }
-
 #uploader-photo{
     height: 40px; 
     width: 40px; 
     border-radius: 50%;
+}
+.username {
+    font-weight: bold;
+    margin-left: 5px;
+}
+.vote-arrow {
+    background-color: #000514;
+    cursor: pointer;
+    height: 20px;
+    padding: 0;
+    width: 20px;
+}
+.vote-button {
+    background: none;
+    border: none;
+    margin: 5px;
+    padding: 0;
 }
   
