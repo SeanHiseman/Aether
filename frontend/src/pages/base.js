@@ -4,11 +4,11 @@ import { Link, Outlet, useNavigate } from 'react-router-dom';
 import { v4 } from 'uuid';
 import { AuthContext } from '../components/authContext';
 import '../css/base.css';
-import '../css/comments.css';
 import '../css/groups.css';
 import '../css/messages.css';
 import '../css/postForm.css';
 import '../css/profile.css';
+import '../css/replies.css';
 
 const BaseLayout = () => {
     const { isAuthenticated, user } = useContext(AuthContext);

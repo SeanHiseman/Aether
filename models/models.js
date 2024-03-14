@@ -152,6 +152,14 @@ Users.hasMany(Comments, { as: 'UserComments', foreignKey: 'commenter_id' });
 Comments.belongsTo(Users, {  as: 'Commenter',foreignKey: 'commenter_id' });
 
 
+const contentVotes = sequelize.define('content_votes', {
+  vote_id: { type: STRING(36), primaryKey: true },
+  content_id: { type: STRING(36), allowNull: false },
+  user_id: { type: STRING(36), allowNull: false },
+  vote_count: {type: INTEGER, defaultValue: 0},
+});
+
+
 const Friends = sequelize.define('friends', {
   friendship_id: { type: STRING(36), primaryKey: true },
   user1_id: { type: STRING(36), allowNull: false, references: { model: 'Users', key: 'user_id' }},
@@ -220,6 +228,7 @@ export {
     GroupChannels,
     GroupChannelMessages,
     Comments,
+    contentVotes,
     Friends,
     FriendRequests,
     UserConversations,

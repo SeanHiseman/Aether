@@ -10,7 +10,7 @@ import { Server } from 'socket.io';
 import session from 'express-session';
 import { urlencoded } from 'express';
 import authentication from './routes/authentication.js';
-import commentsLoad from './routes/commentsLoad.js';
+import replies from './routes/replies.js';
 import directMessages, { directMessagesSocket } from './routes/directMessages.js';
 import groups, { groupChatChannelSocket } from './routes/groups.js';
 import profiles from './routes/profiles.js';
@@ -39,14 +39,14 @@ app.use(session({
     saveUninitialized: true,
 }));
 
-// api prefix prevents clashes with React app
+//api prefix prevents clashes with React app
 app.use('/api/', authentication);
-app.use('/api/', commentsLoad);
 app.use('/api/', directMessages);
 app.use('/api/', groups);
+app.use('/api/', replies);
+app.use('/api/', routes);
 app.use('/api/', profileDataRouter);
 app.use('/api/', profiles);
-app.use('/api/', routes);
 app.use('/api/', utils);
 
 app.use(history('index.html', { root }));

@@ -1,8 +1,8 @@
 import axios from 'axios';
 import React, { useEffect, useState } from 'react';
 import ReactQuill from 'react-quill';
-import Comment from '../components/comments/comment';
-import ReplyForm from '../components/comments/replyForm';
+import Reply from '../components/replies/reply';
+import ReplyForm from '../components/replies/replyForm';
 
 function ContentWidget({ post }) {
     const [comments, setComments] = useState([]);
@@ -25,6 +25,12 @@ function ContentWidget({ post }) {
         } catch (error) {
             console.error("Error getting comments:", error);
         }
+    };
+
+    //Updates comments after new one added
+    const handleReplyAdded = (newComment) => {
+        setComments(currentComments => [...currentComments, newComment]);
+        console.log("comments:", comments);
     };
 
     const handleToggleComments = () => {
@@ -70,7 +76,7 @@ function ContentWidget({ post }) {
                 </button>
 
                 <button className="button" data-content-id={post.post_id} onClick={handleToggleComments}>
-                    Comments <span className="comment-count" id={`comment-count-${post.post_id}`}>{post.comments}</span>
+                    Replies <span className="comment-count" id={`comment-count-${post.post_id}`}>{post.comments}</span>
                 </button>
                 <span className="view-count">{post.views} Views</span>
             </div>
@@ -78,10 +84,10 @@ function ContentWidget({ post }) {
             {showComments && (
                 <div className="comment-section">
                     <div className="add-comment">
-                        <ReplyForm parentId={null} postId={post.post_id} />
+                        <ReplyForm parentId={null} postId={post.post_id} onReplyAdded={handleReplyAdded} />
                     </div>
                     {nestedComments.map((comment) => (
-                        <Comment key={comment.comment_id} comment={comment} depth={0} />
+                        <Reply key={comment.comment_id} comment={comment} depth={0} />
                     ))}
                 </div>
             )}

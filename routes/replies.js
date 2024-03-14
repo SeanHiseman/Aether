@@ -54,26 +54,26 @@ router.get('/get_comments/:postId', authenticateCheck, async (req, res) => {
     }
 });
 
-//Like or Dislike Comment Route
-router.post('/like_dislike', authenticateCheck, async (req, res) => {
+//Up or downvote a reply
+router.post('/reply_vote', authenticateCheck, async (req, res) => {
     try {
-        const { comment_id, reaction_type } = req.body;
-        if (!comment_id || !['like', 'dislike'].includes(reaction_type)) {
+        const { comment_id, vote_type } = req.body;
+        if (!comment_id || !['upvote', 'downvote'].includes(vote_type)) {
             return res.status(400).json({ success: false, message: 'Invalid or missing parameters' });
         }
 
-        const commentToUpdate = await Comments.findByPk(comment_id);
-        if (!commentToUpdate) {
-            return res.status(404).json({ success: false, message: 'Comment not found' });
+        const replyToUpdate = await Comments.findByPk(comment_id);
+        if (!replyToUpdate) {
+            return res.status(404).json({ success: false, message: 'Reply not found' });
         }
 
-        if (reaction_type === 'like') {
-            commentToUpdate.likes += 1;
+        if (vote_type === 'upvote') {
+            replyToUpdate.likes += 1;
         } else {
-            commentToUpdate.dislikes += 1;
+            replyToUpdate.dislikes += 1;
         }
 
-        await commentToUpdate.save();
+        await replyToUpdate.save();
         res.json({ success: true });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
