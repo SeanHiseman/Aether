@@ -3,10 +3,11 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import ReplyForm from './replyForm';
 
-const Reply = ({ addComment, comment, depth, onReplyAdded }) => {
+const Reply = ({ addComment, comment, depth, isGroup, onReplyAdded }) => {
     const [showReplyForm, setShowReplyForm] = useState(false);
     const [downvotes, setDownvotes] = useState(comment.dislikes);
     const [upvotes, setUpvotes] = useState(comment.likes);
+    const Replier = isGroup ? 'GroupCommenter' : 'ProfileCommenter'; //Associations used by database
     const toggleReplyForm = () => setShowReplyForm(!showReplyForm);
 
     //Updates up/downvotes
@@ -19,13 +20,11 @@ const Reply = ({ addComment, comment, depth, onReplyAdded }) => {
 
         const vote = {
             comment_id: comment.comment_id,
+            isGroup,
             vote_type: voteType
         };
         
         axios.post('/api/reply_vote', vote)
-            .then(response => {
-                console.log("Success:", response.data);
-            })
             .catch(error => {
                 console.error('Error:', error);
                 if (voteType === 'upvote') {
@@ -38,9 +37,9 @@ const Reply = ({ addComment, comment, depth, onReplyAdded }) => {
 
     return (
         <div className="comment-container" style={{ marginLeft: `${depth * 20}px` }}>
-            <Link className="reply-profile-container" to={`/profile/${comment.Commenter.username}`}>
-                <img className="uploader-profile-image" src={`/${comment.Commenter.profile.profile_photo}` || '/media/site_images/blank-profile.png'} alt="Profile" />
-                <p className="username">{comment.Commenter.username || 'Anonymous'}</p>
+            <Link className="reply-profile-container" to={`/profile/${comment[Replier].username}`}>
+                <img className="uploader-profile-image" src={`/${comment[Replier].profile.profile_photo}` || '/media/site_images/blank-profile.png'} alt="Profile" />
+                <p className="username">{comment[Replier].username || 'Anonymous'}</p>
             </Link>
             <div className="horizontal-container">
                 <div className="comment-element">
@@ -54,7 +53,7 @@ const Reply = ({ addComment, comment, depth, onReplyAdded }) => {
                         <img className="vote-arrow" src="/media/site_images/down.png"/>
                     </button>
                     <button className="button" onClick={toggleReplyForm}>Reply</button>
-                        {showReplyForm && <ReplyForm postId={comment.post_id} parentId={comment.comment_id} onReplyAdded={onReplyAdded} />}
+                        {showReplyForm && <ReplyForm isGroup={isGroup} onReplyAdded={onReplyAdded} parentId={comment.comment_id} postId={comment.post_id} />}
                 </div>
             </div>
                 {comment.replies && comment.replies.map(reply => (
