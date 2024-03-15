@@ -6,7 +6,6 @@ import { AuthContext } from '../components/authContext';
 import '../css/base.css';
 import '../css/groups.css';
 import '../css/messages.css';
-import '../css/postForm.css';
 import '../css/profile.css';
 import '../css/replies.css';
 

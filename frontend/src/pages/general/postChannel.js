@@ -1,12 +1,26 @@
 import axios from "axios";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
+import ContentWidget from "../content_widget";
 import PostForm from "../../components/postForm";
 
+//For both viewing and uploading posts
 function PostChannel({ channelId, channelName, isGroup, locationId }) {
     const [errorMessage, setErrorMessage] = useState('');
     const [posts, setPosts] = useState([]);
     const [showForm, setShowForm] = useState(false);
-    
+
+    //Gets posts from channel
+    useEffect(() => {
+        const url = isGroup ? '/api/group_channel_posts' : '/api/profile_channel_posts';
+        axios.get(`${url}/${locationId}/${channelId}`)
+        .then(response => {
+            setPosts(response.data);
+        })
+        .catch(error => {
+             console.error('Error getting posts:', error);
+        });
+    }, [channelId, locationId]);
+
     //Uploads content 
     const handlePostSubmit = async (formData) => {
         if (isGroup) {
@@ -41,10 +55,19 @@ function PostChannel({ channelId, channelName, isGroup, locationId }) {
                 </button>
             </div>
             <div id="channel-content">
-                {showForm ? 
-                    <PostForm onSubmit={handlePostSubmit} errorMessage={errorMessage}/>:
-                    <p>No posts yet</p>
-                }
+                {showForm ? (
+                    <PostForm onSubmit={handlePostSubmit} errorMessage={errorMessage}/>
+                ) : (
+                    posts.length > 0 ? (
+                        <ul>
+                            {posts.map(post => (
+                                <ContentWidget key={post.post_id} post={post}/>
+                            ))}
+                        </ul>
+                    ) : (
+                        <p>No posts yet</p>
+                    )
+                )}
             </div>
         </div>
     );

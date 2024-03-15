@@ -275,6 +275,36 @@ router.get('/group_channel_messages/:channel_id', authenticateCheck, async (req,
     }
 });
 
+//Posts made to a group channel
+router.get('/group_channel_posts/:groupId/:channelId', authenticateCheck, async (req, res) => {
+    try {
+        const { channelId, groupId } = req.params;
+        //Limits number of posts returned
+        //const limit = parseInt(req.query.limit) || 10;
+        //const offset = parseInt(req.query.offset) || 0;
+        const posts = await GroupPosts.findAll({
+            where: {
+                group_id: groupId,
+                channel_id: channelId
+            },
+            //limit: limit,
+            //offset: offset,
+            //include: [{
+                //model: Profiles,
+                //attributes: ['profile_photo'],
+                //include: [{
+                    //model: Users,
+                    //attributes: ['username'],
+                //}]
+            //}],
+            //Posts sorted chronilogically (temporary)
+            order: [['timestamp', 'DESC']]
+        });
+        res.json(posts);
+    } catch (error) {
+        res.status(500).send('Error fetching posts:', error);   
+    }
+});
 //Get all groups that a user is a part of
 router.get('/groups_list/:userId', async (req, res) => {
     try {
