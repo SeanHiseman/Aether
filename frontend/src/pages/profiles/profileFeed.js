@@ -2,12 +2,13 @@ import axios from "axios";
 import React, { useEffect, useState } from "react";
 import ContentWidget from "../content_widget";
 
+//For viewing, not uploading, posts
 function ProfileFeed({ channelId, channelName, locationId }) {
     //const [hasMore, setHasMore] = useState(true);
     //const [isLoading, setIsLoading] = useState(false);
     //const limit = 10;
     //const [offset, setOffset] = useState(0)
-    const [posts, setPosts] = useState([]);;
+    const [posts, setPosts] = useState([]);
 
     //Fetch limited number of posts in a profile channel
     //const getPosts = async () => {

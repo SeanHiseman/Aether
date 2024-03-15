@@ -4,9 +4,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import ChannelButton from '../../components/channelButton';
 import ChatChannel from '../general/chatChannel';
 import FriendRequests from '../../components/friendRequestsList';
-import ProfileFeed from './profileFeed';
-import PostForm from '../../components/postForm';
-import '../../css/profile.css';
+import PostChannel from '../general/postChannel';
 
 //Loads the profile page of the logged in user
 const PersonalProfile = () => {
@@ -22,7 +20,6 @@ const PersonalProfile = () => {
     const [profile, setProfile] = useState({ profileId: '', profilePhoto: '', username: '', bio: '', userId: ''});
     const [newName, setName] = useState('');
     const [showForm, setShowForm] = useState(false);
-    const [uploadStatus, setUploadStatus] = useState('');
     const [userContent, setUserContent] = useState([]);
     const navigate = useNavigate();
 
@@ -268,7 +265,7 @@ const PersonalProfile = () => {
                 <div className="channel-feed">
                     {channelRender ? (
                         channelRender.is_posts ? (
-                            <ProfileFeed channelId={channelRender.channel_id} channelName={channelRender.channel_name} isGroup={false} locationId={profile.profileId}/>
+                            <PostChannel channelId={channelRender.channel_id} channelName={channelRender.channel_name} isGroup={false} locationId={profile.profileId}/>
                                 ) : (
                             <ChatChannel channelId={channelRender.channel_id} channelName={channelRender.channel_name} isGroup={false} locationId={profile.profileId}/>
                         )
