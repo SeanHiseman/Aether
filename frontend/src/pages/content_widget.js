@@ -22,7 +22,7 @@ function ContentWidget({ isGroup, post }) {
 
     const getComments = async (postId) => {
         try {
-            const response = await axios.get(`/api/get_comments/${postId}`);
+            const response = await axios.get(`/api/get_comments/${postId}?isGroup=${isGroup}`);
             setComments(response.data); 
         } catch (error) {
             console.error("Error getting comments:", error);
@@ -85,10 +85,10 @@ function ContentWidget({ isGroup, post }) {
             {showComments && (
                 <div className="comment-section">
                     <div className="add-comment">
-                        <ReplyForm parentId={null} postId={post.post_id} onReplyAdded={handleReplyAdded} />
+                        <ReplyForm isGroup={isGroup} onReplyAdded={handleReplyAdded} parentId={null} postId={post.post_id} />
                     </div>
                     {nestedComments.map((comment) => (
-                        <Reply key={comment.comment_id} comment={comment} depth={0} />
+                        <Reply key={comment.comment_id} comment={comment} depth={0} isGroup={isGroup} />
                     ))}
                 </div>
             )}

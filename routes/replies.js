@@ -1,44 +1,50 @@
 import authenticateCheck from '../functions/authenticateCheck.js';
-import { Comments, ProfilePosts, Profiles, Users } from '../models/models.js';
+import { GroupComments, GroupPosts, ProfileComments, ProfilePosts, Profiles, Users } from '../models/models.js';
 import { Router } from 'express';
 import { v4 } from 'uuid';
 
 const router = Router();
 
-//Add Comment Route
+//Add reply Route
 router.post('/add_reply', authenticateCheck, async (req, res) => {
-    try {
-        const { post_id, parent_id, content } = req.body;
+    //try {
+        const { content, isGroup, parent_id, post_id } = req.body;
         const commenter_id = req.session.user_id; 
+        const post_type = isGroup ? 'group_post' : 'profile_post'; 
 
         if (!post_id || !content) {
             return res.status(400).json({ success: false, message: 'Missing required fields' });
         }
 
         const comment_id = v4();
-        const newComment = await Comments.create({ 
-            comment_id, post_id, commenter_id, content, likes: 0, dislikes: 0, timestamp: new Date(), parent_id 
+        const CommentModel = isGroup ? GroupComments : ProfileComments;
+        await CommentModel.create({ 
+            comment_id, post_id, post_type, commenter_id, content, likes: 0, dislikes: 0, timestamp: new Date(), parent_id 
         });
 
-        const contentToUpdate = await ProfilePosts.findByPk(post_id);
+        //Depends on if post is in profile or group
+        const PostModel = isGroup ? GroupPosts : ProfilePosts;
+        const contentToUpdate = await PostModel.findByPk(post_id);
         contentToUpdate.comments += 1;
         await contentToUpdate.save();
 
         res.json({ success: true });
-    } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
-    }
+    //} catch (error) {
+        //res.status(500).json({ success: false, message: error.message });
+    //}
 });
 
 //Get Comments Route 
 router.get('/get_comments/:postId', authenticateCheck, async (req, res) => {
-    try {
+    //try {
+        const isGroup = req.query.isGroup === 'true';
         const postId = req.params.postId;
-        const comments = await Comments.findAll({
+        const CommentModel = isGroup ? GroupComments : ProfileComments;
+        const comments = await CommentModel.findAll({
             where: { post_id: postId },
             include: [{
                 model: Users,
-                as: 'Commenter',
+                as: isGroup ? 'GroupCommenter' : 'ProfileCommenter',
                 attributes: ['username'],
                 include: [{
                     model: Profiles,
@@ -47,20 +53,21 @@ router.get('/get_comments/:postId', authenticateCheck, async (req, res) => {
             }]
         });
         res.json(comments);
-    } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
-    }
+    //} catch (error) {
+        //res.status(500).json({ success: false, message: error.message });
+    //}
 });
 
 //Up or downvote a reply
 router.post('/reply_vote', authenticateCheck, async (req, res) => {
     try {
-        const { comment_id, vote_type } = req.body;
+        const { comment_id, isGroup, vote_type } = req.body;
+        const CommentModel = isGroup ? GroupComments : ProfileComments;
         if (!comment_id || !['upvote', 'downvote'].includes(vote_type)) {
             return res.status(400).json({ success: false, message: 'Invalid or missing parameters' });
         }
 
-        const replyToUpdate = await Comments.findByPk(comment_id);
+        const replyToUpdate = await CommentModel.findByPk(comment_id);
         if (!replyToUpdate) {
             return res.status(404).json({ success: false, message: 'Reply not found' });
         }
