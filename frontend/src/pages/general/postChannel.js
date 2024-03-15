@@ -61,7 +61,7 @@ function PostChannel({ channelId, channelName, isGroup, locationId }) {
                     posts.length > 0 ? (
                         <ul>
                             {posts.map(post => (
-                                <ContentWidget key={post.post_id} post={post}/>
+                                <ContentWidget key={post.post_id} isGroup={isGroup} post={post}/>
                             ))}
                         </ul>
                     ) : (

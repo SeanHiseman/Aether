@@ -1,7 +1,7 @@
 import authenticateCheck from '../functions/authenticateCheck.js';
 import checkIfUserIsAdmin from '../functions/adminCheck.js';
 import checkIfUserIsMember from '../functions/memberCheck.js';
-import { Groups, GroupChannels, GroupChannelMessages, GroupPosts, Users, UserGroups } from '../models/models.js';
+import { Groups, GroupChannels, GroupChannelMessages, GroupPosts, Profiles, Users, UserGroups } from '../models/models.js';
 import multer from 'multer';
 import { Router } from 'express';
 import path from 'path';
@@ -289,22 +289,24 @@ router.get('/group_channel_posts/:groupId/:channelId', authenticateCheck, async 
             },
             //limit: limit,
             //offset: offset,
-            //include: [{
-                //model: Profiles,
-                //attributes: ['profile_photo'],
-                //include: [{
-                    //model: Users,
-                    //attributes: ['username'],
-                //}]
-            //}],
+            include: [{
+                model: Users,
+                as: 'GroupPoster',
+                attributes: ['username'],
+                include: [{
+                    model: Profiles,
+                    attributes: ['profile_photo'],
+                }]
+            }],
             //Posts sorted chronilogically (temporary)
             order: [['timestamp', 'DESC']]
         });
         res.json(posts);
     } catch (error) {
-        res.status(500).send('Error fetching posts:', error);   
+        res.status(500).json({ success: false, message: error.message });
     }
 });
+
 //Get all groups that a user is a part of
 router.get('/groups_list/:userId', async (req, res) => {
     try {

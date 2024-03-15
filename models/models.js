@@ -47,8 +47,8 @@ const ProfilePosts = sequelize.define('profile_posts', {
 }, {tableName: 'profile_posts', timestamps: false});
 
 //Profile posts relationships
-Users.hasMany(ProfilePosts, { foreignKey: 'poster_id' });
-ProfilePosts.belongsTo(Users, { foreignKey: 'poster_id' });
+Users.hasMany(ProfilePosts, { as: 'ProfilePoster', foreignKey: 'poster_id' });
+ProfilePosts.belongsTo(Users, {  as: 'ProfilePoster', foreignKey: 'poster_id' });
 //Profiles can have many posts
 Profiles.hasMany(ProfilePosts, { foreignKey: 'profile_id' });
 ProfilePosts.belongsTo(Profiles, { foreignKey: 'profile_id', allowNull: true });
@@ -72,9 +72,6 @@ const GroupPosts = sequelize.define('group_posts', {
   channel_id: { type: String(36), allowNull: false},
   title: { type: STRING(120), allowNull: true },
   content: { type: TEXT, allowNull: false },
-  //content_type: { type: STRING(50), allowNull: false },
-  //duration: { type: INTEGER, allowNull: true },
-  //size: { type: INTEGER, allowNull: false },
   comments: { type: INTEGER, allowNull: false, defaultValue: 0 },
   views: { type: INTEGER, allowNull: false, defaultValue: 0 },
   likes: { type: INTEGER, allowNull: false, defaultValue: 0 },
@@ -85,8 +82,8 @@ const GroupPosts = sequelize.define('group_posts', {
 }, {tableName: 'group_posts', timestamps: false});
 
 //Group posts relationships
-Users.hasMany(ProfilePosts, { foreignKey: 'poster_id' });
-GroupPosts.belongsTo(Users, { foreignKey: 'poster_id' });
+Users.hasMany(GroupPosts, { as: 'GroupPoster', foreignKey: 'poster_id' });
+GroupPosts.belongsTo(Users, { as: 'GroupPoster', foreignKey: 'poster_id' });
 //Groups can have many posts
 Groups.hasMany(GroupPosts, { foreignKey: 'group_id' });
 GroupPosts.belongsTo(Groups, { foreignKey: 'group_id', allowNull: true });
@@ -152,7 +149,7 @@ Users.hasMany(Comments, { as: 'UserComments', foreignKey: 'commenter_id' });
 Comments.belongsTo(Users, {  as: 'Commenter',foreignKey: 'commenter_id' });
 
 
-const contentVotes = sequelize.define('content_votes', {
+const ContentVotes = sequelize.define('content_votes', {
   vote_id: { type: STRING(36), primaryKey: true },
   content_id: { type: STRING(36), allowNull: false },
   user_id: { type: STRING(36), allowNull: false },
@@ -228,7 +225,7 @@ export {
     GroupChannels,
     GroupChannelMessages,
     Comments,
-    contentVotes,
+    ContentVotes,
     Friends,
     FriendRequests,
     UserConversations,

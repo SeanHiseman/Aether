@@ -1,5 +1,6 @@
 import axios from 'axios';
 import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 import ReplyForm from './replyForm';
 
 const Reply = ({ addComment, comment, depth, onReplyAdded }) => {
@@ -37,10 +38,10 @@ const Reply = ({ addComment, comment, depth, onReplyAdded }) => {
 
     return (
         <div className="comment-container" style={{ marginLeft: `${depth * 20}px` }}>
-            <div className="comment-profile-container">
-                <img className="profile-image" src={`/${comment.Commenter.profile.profile_photo}` || '/media/site_images/blank-profile.png'} alt="Profile" />
-                <div className="username">{comment.Commenter.username || 'Anonymous'}</div>
-            </div>
+            <Link className="reply-profile-container" to={`/profile/${comment.Commenter.username}`}>
+                <img className="uploader-profile-image" src={`/${comment.Commenter.profile.profile_photo}` || '/media/site_images/blank-profile.png'} alt="Profile" />
+                <p className="username">{comment.Commenter.username || 'Anonymous'}</p>
+            </Link>
             <div className="horizontal-container">
                 <div className="comment-element">
                 <span className="comment-content">{comment.content}</span>

@@ -36,17 +36,15 @@ router.get('/get_comments/:postId', authenticateCheck, async (req, res) => {
         const postId = req.params.postId;
         const comments = await Comments.findAll({
             where: { post_id: postId },
-            include: [
-                {
-                    model: Users,
-                    as: 'Commenter',
-                    attributes: ['username'],
-                    include: [{
-                        model: Profiles,
-                        attributes: ['profile_photo']
-                    }]
-                }
-            ]
+            include: [{
+                model: Users,
+                as: 'Commenter',
+                attributes: ['username'],
+                include: [{
+                    model: Profiles,
+                    attributes: ['profile_photo']
+                }]
+            }]
         });
         res.json(comments);
     } catch (error) {
