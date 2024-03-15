@@ -1,9 +1,10 @@
 .comment-container {
     width: 100%;
 }
-.comment-profile-container {
-    display: flex;
+.reply-profile-container {
     align-items: center;
+    display: flex;
+    text-decoration: none;
 }
 .reply-input {
     background-color: #000514;

@@ -233,14 +233,15 @@ router.get('/profile_channel_posts/:profileId/:channelId', authenticateCheck, as
             },
             //limit: limit,
             //offset: offset,
-            //include: [{
-                //model: Profiles,
-                //attributes: ['profile_photo'],
-                //include: [{
-                    //model: Users,
-                    //attributes: ['username'],
-                //}]
-            //}],
+            include: [{
+                model: Users,
+                as: 'ProfilePoster',
+                attributes: ['username'],
+                include: [{
+                    model: Profiles,
+                    attributes: ['profile_photo'],
+                }]
+            }],
             //Posts sorted chronilogically
             order: [['timestamp', 'DESC']]
         });
