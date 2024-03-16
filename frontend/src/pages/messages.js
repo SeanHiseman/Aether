@@ -149,11 +149,12 @@ function MessagesPage() {
                 </header>
                 <div id="channel-content">
                     {!friend_name ? (
-                        <ul>
+                        <ul className="friends-page-list">
                             {friends.map(friend => (
                                 <li key={friend.friend_id}>
-                                    <Link to={`/profile/${friend.friend_name}`}>
-                                        {friend.friend_name}
+                                    <Link className="friend-profile" to={`/profile/${friend.friend_name}`}>
+                                        <img className="large-profile-photo" src={`/${friend.friend_profile_photo}`} alt="Profile image" />
+                                        <p className="large-text">{friend.friend_name}</p>
                                     </Link>
                                 </li>
                             ))}

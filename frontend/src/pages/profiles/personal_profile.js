@@ -248,7 +248,7 @@ const PersonalProfile = () => {
                         </form>
                     </div>
                     <div id="profile-header-photo">
-                        <img id="large-profile-photo" src={`/${profile.profilePhoto}`} alt="Profile Picture" />
+                        <img className="large-profile-photo" src={`/${profile.profilePhoto}`} alt="Profile Picture" />
                         <button className="button" onClick={() => setIsPhotoFormVisible(!isPhotoFormVisible)}>
                             {isPhotoFormVisible ? 'Close' : 'Change Profile Photo'}
                         </button>
