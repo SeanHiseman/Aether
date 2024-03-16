@@ -71,7 +71,7 @@ function Profile() {
                         <p id="profile-bio">{profile.bio}</p>
                     </div>
                     <div id="profile-header-photo">
-                        <img id="large-profile-photo" src={`/${profile.profilePhoto}`} alt="Profile Picture" />         
+                        <img className="large-profile-photo" src={`/${profile.profilePhoto}`} alt="Profile Picture" />         
                     </div>
                 </header>
                 <div className="channel-feed">
