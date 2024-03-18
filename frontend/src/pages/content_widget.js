@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { Link } from 'react-router-dom';
 import React, { useEffect, useState } from 'react';
-import ReactQuill from 'react-quill';
+import ReactQuill, { Quill } from 'react-quill';
 import Reply from '../components/replies/reply';
 import ReplyForm from '../components/replies/replyForm';
 
@@ -15,6 +15,24 @@ function ContentWidget({ isGroup, post }) {
             getComments(post.post_id);
         }
     }, [showComments, post.post_id]);
+
+    //Allows React Quill display videos
+    const BlockEmbed = Quill.import('blots/block/embed');
+    class VideoBlot extends BlockEmbed {
+        static create(value) {
+            let node = super.create();
+            node.setAttribute('src', value.url);
+            node.setAttribute('controls', true);
+            return node;
+        }
+
+        static value(node) {
+            return { url: node.getAttribute('src') };
+        }
+    }
+    VideoBlot.blotName = 'video';
+    VideoBlot.tagName = 'video';
+    Quill.register(VideoBlot);
 
     const contentReaction = async (postId, voteType) => {
         console.log("Testing", postId, voteType);
