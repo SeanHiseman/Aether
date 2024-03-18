@@ -259,6 +259,7 @@ input[type="text"] {
     background-color: #41445a;
 }
 #logged_in_username {
+    font-weight: 700;
     margin-left: 10px;
     margin-top: 36px;
     text-align: center;
