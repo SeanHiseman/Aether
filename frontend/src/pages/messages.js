@@ -152,7 +152,7 @@ function MessagesPage() {
                         <ul className="friends-page-list">
                             {friends.map(friend => (
                                 <li key={friend.friend_id}>
-                                    <Link className="friend-profile" to={`/profile/${friend.friend_name}`}>
+                                    <Link className="friend-list-item" to={`/profile/${friend.friend_name}`}>
                                         <img className="large-profile-photo" src={`/${friend.friend_profile_photo}`} alt="Profile image" />
                                         <p className="large-text">{friend.friend_name}</p>
                                     </Link>
@@ -186,7 +186,7 @@ function MessagesPage() {
                             {selectedConversations.map(conversation => (
                                 <li key={conversation.conversationId}>
                                     <Link to={`/messages/${username}/${friend_name}/${conversation.title}`}>
-                                        <div className="chat-link">{conversation.title}</div>
+                                        <div className="channel-link">{conversation.title}</div>
                                     </Link>
                                 </li>
                             ))}

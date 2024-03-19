@@ -103,9 +103,25 @@ body,html {
     transition: background-color 0.3s;
     width: 80%;
 }
+.channel-link {
+    border-bottom: 1px solid #444;
+    padding: 10px;
+    text-decoration: none;
+}
+#channel-list {
+    width: 80%;
+}
 .channel-list-link, .channel-list-link:visited {
     text-decoration: none;
     color: white;
+}
+.channel-list-item {
+    align-items: center;
+    border-bottom: 1px solid #444;
+    display: flex;
+    text-align: center;
+    text-decoration: none;
+    width: 100%;
 }
 .chat-channel-button, .conversation-button, .posts-channel-button {
     background-color: #000514;
@@ -316,7 +332,6 @@ main {
     border-left: 1px solid #ffffff;
     flex-shrink: 0;
     height: 100%;
-    right: 0;
 }
 #right-aside ul {
     align-self: center;
@@ -389,6 +404,9 @@ main {
     color: white;
     margin-left: 10px;
     text-align: right;
+}
+ul {
+    padding-inline-start: 0;
 }
 #upload-form input[type="file"] {
     display: block;  

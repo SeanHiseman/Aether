@@ -1,8 +1,7 @@
 import axios from 'axios';
 import React, { useState, useEffect, useContext } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { AuthContext } from '../../components/authContext';
-import ChannelButton from '../../components/channelButton';
 import ChatChannel from '../general/chatChannel';
 import PersonalProfile from './personal_profile';
 import ProfileFeed from './profileFeed';
@@ -89,9 +88,11 @@ function Profile() {
                 <nav id="channel-list">
                     <ul>
                         {channels.map(channel => (
-                        <li key={channel.channelId}>
-                            {<ChannelButton is_posts={channel.is_posts} channel_name={channel.channel_name} name={profile.username} is_group={false} />}
-                        </li>
+                            <li className="channel-list-item" key={channel.channelId}>
+                                <Link to={`/profile/${profile.username}/${channel.channel_name}`}>
+                                    <div>{channel.channel_name}</div>
+                                </Link>
+                            </li>
                         ))}
                     </ul>
                 </nav>

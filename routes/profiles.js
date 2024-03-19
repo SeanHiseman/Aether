@@ -220,16 +220,16 @@ router.get('/get_profile_channels/:profileId', authenticateCheck, async (req, re
 });
 
 //Posts made to a profile channel
-router.get('/profile_channel_posts/:profileId/:channelId', authenticateCheck, async (req, res) => {
+router.get('/profile_channel_posts', authenticateCheck, async (req, res) => {
     try {
-        const { channelId, profileId } = req.params;
+        const { channel_id, location_id } = req.query;
         //Limits number of posts returned
         //const limit = parseInt(req.query.limit) || 10;
         //const offset = parseInt(req.query.offset) || 0;
         const posts = await ProfilePosts.findAll({
             where: {
-                profile_id: profileId,
-                channel_id: channelId
+                profile_id: location_id,
+                channel_id: channel_id
             },
             //limit: limit,
             //offset: offset,
@@ -247,7 +247,32 @@ router.get('/profile_channel_posts/:profileId/:channelId', authenticateCheck, as
         });
         res.json(posts);
     } catch (error) {
-        res.status(500).send('Error fetching posts:', error);   
+        res.status(500).json({ success: false, message: error.message });   
+    }
+});
+
+//Collates content from across profile in to main feed
+router.get('/profile_main_posts', authenticateCheck, async (req, res) => {
+    try {
+        const { location_id } = req.query;
+
+        const posts = await ProfilePosts.findAll({
+            where: {
+                profile_id: location_id
+            },
+            include: [{
+                model: Users,
+                as: 'ProfilePoster',
+                attributes: ['username'],
+                include: [{
+                    model: Profiles,
+                    attributes: ['profile_photo'],
+                }]
+            }],
+        })
+        res.json(posts);
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
     }
 });
 
