@@ -59,7 +59,7 @@ function PostChannel({ channelId, channelName, isGroup, locationId }) {
                     <PostForm onSubmit={handlePostSubmit} errorMessage={errorMessage}/>
                 ) : (
                     posts.length > 0 ? (
-                        <ul>
+                        <ul className="content-list">
                             {posts.map(post => (
                                 <ContentWidget key={post.post_id} isGroup={isGroup} post={post}/>
                             ))}
