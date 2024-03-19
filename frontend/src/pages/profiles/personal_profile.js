@@ -1,8 +1,6 @@
 import axios from 'axios';
 import React, { useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
-import ChannelButton from '../../components/channelButton';
-import ChatChannel from '../general/chatChannel';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import FriendRequests from '../../components/friendRequestsList';
 import PostChannel from '../general/postChannel';
 
@@ -15,12 +13,10 @@ const PersonalProfile = () => {
     const [isEditingBio, setIsEditingBio] = useState(false);
     const [isEditingName, setIsEditingName] = useState(false);
     const [isPhotoFormVisible, setIsPhotoFormVisible] = useState(false);
-    const [isPostChannel, setIsPostChannel] = useState(true);
     const [newBio, setBio] = useState('');
     const [profile, setProfile] = useState({ profileId: '', profilePhoto: '', username: '', bio: '', userId: ''});
     const [newName, setName] = useState('');
     const [showForm, setShowForm] = useState(false);
-    const [userContent, setUserContent] = useState([]);
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -45,13 +41,6 @@ const PersonalProfile = () => {
         //}, [username]);
                 const fetchedProfile = response.data.profile;
                 setProfile(fetchedProfile);
-                axios.get(`/api/user-content/${fetchedProfile.profile_id}`)
-                    .then(contentResponse => {
-                        setUserContent(contentResponse.data);
-                    })
-                    .catch(contentError => {
-                        console.error('Error fetching user content:', contentError);
-                    });
             })
             .catch(error => {
                 console.error('Error:', error);
@@ -84,7 +73,7 @@ const PersonalProfile = () => {
             const response = await axios.post('/api/add_profile_channel', {
                 channel_name: newChannelName,
                 profileId: profile.profileId,
-                isPosts: isPostChannel
+                isPosts: true
             });
             if (response.data && response.status === 201) {
                 setChannels([...channels, response.data]);
@@ -148,10 +137,6 @@ const PersonalProfile = () => {
             setBio(profile.bio);
         }
     }, [isEditingBio, profile.bio]);
-
-    //Set channels to contain either posts or chats
-    const handleChatClick = () => setIsPostChannel(false);
-    const handlePostClick = () => setIsPostChannel(true);
 
     //Changes profile bio
     const handleUpdateBio = async () => {
@@ -264,11 +249,7 @@ const PersonalProfile = () => {
                 </header>
                 <div className="channel-feed">
                     {channelRender ? (
-                        channelRender.is_posts ? (
-                            <PostChannel channelId={channelRender.channel_id} channelName={channelRender.channel_name} isGroup={false} locationId={profile.profileId}/>
-                                ) : (
-                            <ChatChannel channelId={channelRender.channel_id} channelName={channelRender.channel_name} isGroup={false} locationId={profile.profileId}/>
-                        )
+                        <PostChannel channelId={channelRender.channel_id} channelName={channelRender.channel_name} isGroup={false} locationId={profile.profileId}/>
                     ) : null}
                 </div>
             </div>
@@ -281,22 +262,19 @@ const PersonalProfile = () => {
                     {showForm && (
                         <form id="add-channel-form" onSubmit={AddChannel}>
                             <input className="channel-input" type="text" name="channel_name" placeholder="Channel name..." value={newChannelName} onChange={(e) => setNewChannelName(e.target.value)}/>
-                            <p>Channel type:</p>
-                            <div id="post-chat-section">
-                                <button type="button" class="button" onClick={handlePostClick}>Post</button>
-                                <button type="button" class="button" onClick={handleChatClick}>Chat</button>
-                            </div>
                             <input className="button" type="submit" value="Add" disabled={!newChannelName}/>
                             {errorMessage && <div className="error-message">{errorMessage}</div>}
                         </form>                            
                     )}
                 </div>
-                <nav id="channel-list">
+                <nav id="friend-list">
                     <ul>
                         {channels.map(channel => (
-                        <li key={channel.channelId}>
-                            {<ChannelButton is_posts={channel.is_posts} channel_name={channel.channel_name} name={profile.username} is_group={false} />}
-                        </li>
+                            <li key={channel.channelId}>
+                                <Link to={`/profile/${profile.username}/${channel.channel_name}`}>
+                                    <div className="channel-link">{channel.channel_name}</div>
+                                </Link>
+                            </li>
                         ))}
                     </ul>
                 </nav>

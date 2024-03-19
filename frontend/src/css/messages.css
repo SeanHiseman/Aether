@@ -10,11 +10,6 @@
     padding: 5px;
     width: 100%;
 }
-.chat-link {
-    border-bottom: 1px solid #444;
-    padding: 10px;
-    text-decoration: none;
-}
 .chat-message-bar {
     background-color: #000514;
     border: 1px solid white;
@@ -62,15 +57,16 @@
     justify-content: center;
     width: 80%;
 }
-.friends-page-list {
-    list-style-type: none;
-    width: calc(100% - 40px);
-}
-.friend-profile {
+.friend-list-item {
     align-items: center;
     border-bottom: 1px solid white;
     display: flex;
+    text-align: center;
     text-decoration: none;
+    width: 100%;
+}
+.friends-page-list {
+    list-style-type: none;
     width: 100%;
 }
 .messages-dropdown {

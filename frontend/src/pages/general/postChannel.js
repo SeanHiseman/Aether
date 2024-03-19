@@ -11,8 +11,20 @@ function PostChannel({ channelId, channelName, isGroup, locationId }) {
 
     //Gets posts from channel
     useEffect(() => {
-        const url = isGroup ? '/api/group_channel_posts' : '/api/profile_channel_posts';
-        axios.get(`${url}/${locationId}/${channelId}`)
+        let url = '';
+        //Displays different posts depending on if viewing main channel of a group or profile
+        if (channelName === 'Main') {
+            url = isGroup ? 'group_main_posts' : 'profile_main_posts';
+        } else {
+            url = isGroup ? 'group_channel_posts' : 'profile_channel_posts';
+        }
+
+        const channelData = new URLSearchParams({
+            channel_id: channelId,
+            location_id: locationId
+        }).toString();
+
+        axios.get(`/api/${url}?${channelData}`)
         .then(response => {
             setPosts(response.data);
         })

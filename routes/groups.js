@@ -270,22 +270,21 @@ router.get('/group_channel_messages/:channel_id', authenticateCheck, async (req,
         });
         res.json(messages);
     } catch (error) {
-        console.error('Error getting group channel messages:', error);
-        res.status(500).send('Error getting messages.');
+        res.status(500).json({ success: false, message: error.message });   
     }
 });
 
 //Posts made to a group channel
-router.get('/group_channel_posts/:groupId/:channelId', authenticateCheck, async (req, res) => {
+router.get('/group_channel_posts', authenticateCheck, async (req, res) => {
     try {
-        const { channelId, groupId } = req.params;
+        const { channel_id, location_id } = req.query;
         //Limits number of posts returned
         //const limit = parseInt(req.query.limit) || 10;
         //const offset = parseInt(req.query.offset) || 0;
         const posts = await GroupPosts.findAll({
             where: {
-                group_id: groupId,
-                channel_id: channelId
+                group_id: location_id,
+                channel_id: channel_id
             },
             //limit: limit,
             //offset: offset,
@@ -301,6 +300,30 @@ router.get('/group_channel_posts/:groupId/:channelId', authenticateCheck, async 
             //Posts sorted chronilogically (temporary)
             order: [['timestamp', 'DESC']]
         });
+        res.json(posts);
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
+//Collates content from across group in to main feed
+router.get('/group_main_posts', authenticateCheck, async (req, res) => {
+    try {
+        const { location_id } = req.query;
+        const posts = await GroupPosts.findAll({
+            where: {
+                group_id: location_id
+            },
+            include: [{
+                model: Users,
+                as: 'GroupPoster',
+                attributes: ['username'],
+                include: [{
+                    model: Profiles,
+                    attributes: ['profile_photo'],
+                }]
+            }],
+        })
         res.json(posts);
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
