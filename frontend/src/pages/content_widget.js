@@ -7,6 +7,8 @@ import ReplyForm from '../components/replies/replyForm';
 
 function ContentWidget({ isGroup, post }) {
     const [comments, setComments] = useState([]);
+    const [downvotes, setDownvotes] = useState(post.dislikes);
+    const [upvotes, setUpvotes] = useState(post.likes);
     const [showComments, setShowComments] = useState(false);
     const Poster = isGroup ? 'GroupPoster' : 'ProfilePoster'; //Associations used by database
 
@@ -16,7 +18,7 @@ function ContentWidget({ isGroup, post }) {
         }
     }, [showComments, post.post_id]);
 
-    //Allows React Quill display videos
+    //Allows React Quill to display videos
     const BlockEmbed = Quill.import('blots/block/embed');
     class VideoBlot extends BlockEmbed {
         static create(value) {
@@ -34,8 +36,29 @@ function ContentWidget({ isGroup, post }) {
     VideoBlot.tagName = 'video';
     Quill.register(VideoBlot);
 
+    //Updates up/downvotes
     const contentReaction = async (postId, voteType) => {
-        console.log("Testing", postId, voteType);
+        if (voteType === 'upvote') {
+            setUpvotes(upvotes + 1);
+        } else if (voteType === 'downvote') {
+            setDownvotes(downvotes + 1);
+        }
+
+        const vote = {
+            content_id: postId, 
+            isGroup,
+            vote_type: voteType
+        }
+
+        axios.post('/api/content_vote', vote)
+            .catch(error => {
+                console.error('Error:', error);
+                if (voteType === 'upvote') {
+                    setUpvotes(upvotes); 
+                } else if (voteType === 'downvote') {
+                    setDownvotes(downvotes); 
+                }
+            });
     };
 
     const getComments = async (postId) => {
@@ -88,10 +111,10 @@ function ContentWidget({ isGroup, post }) {
                     </Link>
                 </div>
                 <button className="like-button" onClick={() => contentReaction(post.post_id, 'upvote')}>
-                    Likes <span className="like-count">{post.likes}</span>
+                    Likes <span className="like-count">{upvotes}</span>
                 </button>
                 <button className="dislike-button" onClick={() => contentReaction(post.post_id, 'downvote')}>
-                    Dislikes <span className="dislike-count">{post.dislikes}</span>
+                    Dislikes <span className="dislike-count">{downvotes}</span>
                 </button>
 
                 <button className="button" data-content-id={post.post_id} onClick={handleToggleComments}>

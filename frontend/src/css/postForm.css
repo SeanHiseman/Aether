@@ -9,6 +9,12 @@
 .ql-editor[data-placeholder]::before {
     color: white;
 }
+.ql-editor img, .ql-editor video {
+    display: block;
+    height: auto;
+    margin: 0 auto;
+    width: 80%;
+}
 .ql-snow .ql-picker{
     color: white;
 }
@@ -27,7 +33,7 @@
     color: white; 
 }
 .quill {
-    width: calc(90% + 20px);
+    width: 100%;
 }
 #post-form {
     align-items: center;

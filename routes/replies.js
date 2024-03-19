@@ -1,5 +1,5 @@
 import authenticateCheck from '../functions/authenticateCheck.js';
-import { GroupComments, GroupPosts, ProfileComments, ProfilePosts, Profiles, Users } from '../models/models.js';
+import { GroupComments, GroupPosts, ProfileComments, ProfilePosts, Profiles, ReplyVotes, Users } from '../models/models.js';
 import { Router } from 'express';
 import { v4 } from 'uuid';
 
@@ -7,7 +7,7 @@ const router = Router();
 
 //Add reply Route
 router.post('/add_reply', authenticateCheck, async (req, res) => {
-    //try {
+    try {
         const { content, isGroup, parent_id, post_id } = req.body;
         const commenter_id = req.session.user_id; 
         const post_type = isGroup ? 'group_post' : 'profile_post'; 
@@ -29,9 +29,9 @@ router.post('/add_reply', authenticateCheck, async (req, res) => {
         await contentToUpdate.save();
 
         res.json({ success: true });
-    //} catch (error) {
-        //res.status(500).json({ success: false, message: error.message });
-    //}
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
 });
 
 //Get Comments Route 
@@ -62,19 +62,31 @@ router.get('/get_comments/:postId', authenticateCheck, async (req, res) => {
 router.post('/reply_vote', authenticateCheck, async (req, res) => {
     try {
         const { comment_id, isGroup, vote_type } = req.body;
-        const CommentModel = isGroup ? GroupComments : ProfileComments;
-        if (!comment_id || !['upvote', 'downvote'].includes(vote_type)) {
-            return res.status(400).json({ success: false, message: 'Invalid or missing parameters' });
-        }
+        const userId = req.session.user_id;
 
-        const replyToUpdate = await CommentModel.findByPk(comment_id);
-        if (!replyToUpdate) {
-            return res.status(404).json({ success: false, message: 'Reply not found' });
-        }
+        const [vote] = await ReplyVotes.findOrCreate({
+            where: {
+                reply_id: comment_id,
+                user_id: userId
+            },
+            defaults: {
+                vote_id: v4(),
+            }
+        });
 
         if (vote_type === 'upvote') {
+            vote.vote_count += 1; 
+        } else if (vote_type === 'downvote') {
+            vote.vote_count -= 1; 
+        }
+        await vote.save();
+
+        const CommentModel = isGroup ? GroupComments : ProfileComments;
+
+        const replyToUpdate = await CommentModel.findByPk(comment_id);
+        if (vote_type === 'upvote') {
             replyToUpdate.likes += 1;
-        } else {
+        } else if (vote_type === 'downvote') {
             replyToUpdate.dislikes += 1;
         }
 

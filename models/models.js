@@ -171,8 +171,18 @@ const ContentVotes = sequelize.define('content_votes', {
   content_id: { type: STRING(36), allowNull: false },
   user_id: { type: STRING(36), allowNull: false },
   vote_count: {type: INTEGER, defaultValue: 0},
-});
+}, {tableName: 'content_votes', timestamps: false});
 
+const ReplyVotes = sequelize.define('reply_votes', {
+  vote_id: { type: STRING(36), primaryKey: true },
+  reply_id: { type: STRING(36), allowNull: false },
+  user_id: { type: STRING(36), allowNull: false },
+  vote_count: {type: INTEGER, defaultValue: 0},
+}, {tableName: 'reply_votes', timestamps: false});
+
+//Each user can have many votes
+Users.hasMany(ContentVotes, { as: 'content_vote', foreignKey: 'user_id' });
+Users.hasMany(ReplyVotes, { as: 'reply_vote', foreignKey: 'user_id' });
 
 const Friends = sequelize.define('friends', {
   friendship_id: { type: STRING(36), primaryKey: true },
@@ -244,6 +254,7 @@ export {
     GroupChannelMessages,
     GroupComments,
     ContentVotes,
+    ReplyVotes,
     Friends,
     FriendRequests,
     UserConversations,
