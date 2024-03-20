@@ -44,7 +44,7 @@ const upload = multer({
 });
 
 //Accept friend request
-router.put('/accept_friend_request/:requestId', authenticateCheck, async (req, res) => {
+router.post('/accept_friend_request/:requestId', authenticateCheck, async (req, res) => {
     try {
         const friendRequest = await friendRequest.findByPk(req.params.requestId);
         if (!friendRequest) {
@@ -314,17 +314,6 @@ router.get('/profile/:username', authenticateCheck, async (req, res) => {
             //console.error("Error", error);
             //return res.status(500).send("Error fetching friendship data." + friendshipError);
         //}
-        //let user_content = await Posts.findAll({
-            //where: { poster_id: profile.user_id },
-            //order: [['timestamp', 'DESC']]
-        //});
-
-        //Provides each item posted by the user with profile info
-        //user_content.forEach(item => {
-            //item.username = user.username;
-            //item.profile_photo = profile.profile_photo;
-            //item.profile_id =profile.profile_id;
-        //});
 
         const responseData = {
             profile: {
@@ -336,7 +325,6 @@ router.get('/profile/:username', authenticateCheck, async (req, res) => {
                 //isFriend: !!friendship,
                 //isRequested: !!friendRequest
             },
-            //user_content: user_content
         }
         res.json(responseData);
 

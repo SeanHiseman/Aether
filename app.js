@@ -17,7 +17,6 @@ import profiles from './routes/profiles.js';
 import profileDataRouter from './routes/profileDataRouter.js'
 import routes from './routes/routes.js';
 import sequelize  from './databaseSetup.js';
-import utils from './routes/utils.js';
 
 const app = express();
 const http = createServer(app);
@@ -47,7 +46,6 @@ app.use('/api/', replies);
 app.use('/api/', routes);
 app.use('/api/', profileDataRouter);
 app.use('/api/', profiles);
-app.use('/api/', utils);
 
 app.use(history('index.html', { root }));
 

@@ -36,7 +36,12 @@ function ProfileFeed({ channelId, channelName, isGroup, locationId }) {
     //}, [isLoading]);
 
     useEffect(() => {
-        axios.get(`/api/profile_channel_posts/${locationId}/${channelId}`)
+        const channelData = new URLSearchParams({
+            channel_id: channelId,
+            location_id: locationId
+        }).toString();
+
+        axios.get(`/api/profile_channel_posts?${channelData}`)
         .then(response => {
             setPosts(response.data);
         })

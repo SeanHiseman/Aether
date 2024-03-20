@@ -190,6 +190,7 @@ const Friends = sequelize.define('friends', {
   user2_id: { type: STRING(36), allowNull: false, references: { model: 'Users', key: 'user_id' }},
   FriendSince: { type: DATE, allowNull: false, defaultValue: NOW }
 }, { tableName: 'friends', timestamps: false });
+
 Users.belongsToMany(Users, { as: 'UserFriends', through: Friends, foreignKey: 'user1_id', otherKey: 'user2_id' });
  
 
