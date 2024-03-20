@@ -1,13 +1,14 @@
-import React from 'react';
+import axios from 'axios';
+import React, { useEffect, useState } from 'react';
+import ContentWidget from '../content_widget';
 
-//PLaceholder for now
-function HomePage() {
-    document.title = "Home";
+function FollowingPage() {
+    document.title = "Following";
     return (
         <div className="home-container">
             <div className="content-feed">
                 <header id="home-header">
-                    <h1>Welcome</h1>
+                    <h1>Following</h1>
                 </header>
             </div>
             <aside id="right-aside">
@@ -17,4 +18,4 @@ function HomePage() {
     )
 }
 
-export default HomePage;
+export default FollowingPage;

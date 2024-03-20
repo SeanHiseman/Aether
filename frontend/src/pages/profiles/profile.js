@@ -88,9 +88,9 @@ function Profile() {
                 <nav id="channel-list">
                     <ul>
                         {channels.map(channel => (
-                            <li className="channel-list-item" key={channel.channelId}>
+                            <li key={channel.channelId}>
                                 <Link to={`/profile/${profile.username}/${channel.channel_name}`}>
-                                    <div>{channel.channel_name}</div>
+                                    <div className="channel-link">{channel.channel_name}</div>
                                 </Link>
                             </li>
                         ))}

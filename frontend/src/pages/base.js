@@ -128,9 +128,9 @@ const BaseLayout = () => {
                 <nav>
                     <ul>
                         <li><Link to="/home">Home</Link></li>
-                        <li><Link to="/home">Main</Link></li>
-                        <li><Link to="/home">Following</Link></li>
-                        <li><Link to="/home">Friends</Link></li>
+                        <li><Link to="/main">Main</Link></li>
+                        <li><Link to="/following">Following</Link></li>
+                        <li><Link to="/friends">Friends</Link></li>
                     </ul>
                 </nav>
                 <h1>Groups</h1>

@@ -1,8 +1,95 @@
 import { Router } from 'express';
-import { ProfilePosts, Profiles, Users } from '../models/models.js'; 
+import { Friends, ProfilePosts, Profiles, Users } from '../models/models.js'; 
 import authenticateCheck from '../functions/authenticateCheck.js';
 import { Op } from 'sequelize';
 const router = Router();
+
+//Up or downvote content
+router.post('/content_vote', authenticateCheck, async (req, res) => {
+    try {
+        const { content_id, isGroup, vote_type } = req.body;
+        const userId = req.session.user_id;
+    
+        const [vote] = await ContentVotes.findOrCreate({
+            where: {
+                content_id: content_id,
+                user_id: userId
+            },
+            defaults: {
+                vote_id: v4(),
+            }
+        });
+
+        if (vote_type === 'upvote') {
+            vote.vote_count += 1; 
+        } else if (vote_type === 'downvote') {
+            vote.vote_count -= 1; 
+        }
+        await vote.save();
+
+        const PostModel = isGroup ? GroupPosts : ProfilePosts;
+        const content = await PostModel.findByPk(content_id);
+        if (vote_type === 'upvote') {
+            content.likes += 1;
+        } else if (vote_type === 'downvote') {
+            content.dislikes += 1;
+        }
+        await content.save();
+        return res.json({ success: true });
+    } catch (error) {
+        return res.status(404).json({ success: false, message: error.message });
+    }
+});
+
+router.get('/friend_posts', authenticateCheck, async (req, res)=> {
+    try {
+        const user_id = req.session.user_id;
+        const friends = await Friends.findAll({
+            where: {
+                [Op.or]: [
+                    { user1_id: user_id },
+                    { user2_id: user_id }
+                ]
+            },
+            attributes: ['user1_id', 'user2_id']
+        });
+
+        //Get friend IDs, since the user might be in either column
+        const friendIds = friends.reduce((acc, friend) => {
+            if (friend.user1_id !== user_id && !acc.includes(friend.user1_id)) acc.push(friend.user1_id);
+            if (friend.user2_id !== user_id && !acc.includes(friend.user2_id)) acc.push(friend.user2_id);
+            return acc;
+        }, []);
+
+        const posts = await ProfilePosts.findAll({
+            where: {
+                poster_id: { [Op.in]: friendIds }
+            },
+            include: [{
+                model: Users,
+                as: 'ProfilePoster',
+                attributes: ['username'],
+                include: [{
+                    model: Profiles,
+                    attributes: ['profile_photo'],
+                }]
+            }],
+            //Posts sorted chronilogically
+            order: [['timestamp', 'DESC']]
+        });
+        res.json(posts);
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });   
+    }
+});
+
+router.get('/get_current_user', authenticateCheck, (req, res) => {
+    const userId = req.session.user_id;
+    if (userId) {
+        return res.json({ user_id: userId });
+    }
+    return res.status(401).json({ "error": "No user logged in" });
+});
 
 //Home route
 router.get('/home', authenticateCheck, async (req, res) => {
@@ -65,6 +152,7 @@ router.get('/search', authenticateCheck, async (req, res) => {
         user_id: req.session.user_id,
     });
 });
+
 
 export default router;
 
