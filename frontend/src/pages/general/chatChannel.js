@@ -53,9 +53,6 @@ function ChatChannel({ channelId, channelName, isGroup, locationId }) {
 
     return (
         <div id="channel">
-            <div id="channel-header">
-                <p class="large-text">{channelName}</p>
-            </div>
             <div id="channel-content">
                 {channel.map((msg, index) => (
                     <p key={index} class={`message ${msg.sender_id === user.userId ? 'outgoing' : 'incoming'}`}>{msg.message_content}</p>

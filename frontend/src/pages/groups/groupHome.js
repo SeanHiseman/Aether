@@ -7,12 +7,15 @@ import ChatChannel from '../general/chatChannel';
 import MemberChangeButton from '../../components/memberChangeButton';
 import GroupHomeAdmin from './groupHomeAdmin';
 import PostChannel from '../general/postChannel';
+import PostForm from "../../components/postForm";
 
 function GroupHome() {
     const { group_name, channel_name } = useParams();
     const [channels, setChannels] = useState([]);
+    const [errorMessage, setErrorMessage] = useState('');
     const [isAdmin, setIsAdmin] = useState(false);
     const [groupDetails, setGroupDetails] = useState({ groupName: '', description: '', groupPhoto: '', memberCount: 0 });
+    const [showPostForm, setShowPostForm] = useState(false);
 
     useEffect(() => {
         fetch(`/api/group/${group_name}`)
@@ -56,6 +59,22 @@ function GroupHome() {
 
     const channelRender = channels.find(c => c.channel_name === channel_name);
 
+    //Uploads content 
+    const handlePostSubmit = async (formData) => {
+        formData.append('group_id', groupDetails.groupId);
+        formData.append('channel_id', channelRender.channel_id);
+        try {
+            await axios.post('/api/create_group_post', formData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data'
+                },
+            });
+            setShowPostForm(false);
+        } catch (error) {
+            setErrorMessage("Error creating post.");
+        }
+    };
+
     //Load different page if user is admin
     if (isAdmin) {
         return <GroupHomeAdmin />
@@ -76,16 +95,37 @@ function GroupHome() {
                         <img id="large-group-photo" src={`/${groupDetails.groupPhoto}`} alt={groupDetails.groupName} />
                     </header>
                     <div className="channel-feed">
-                        {channelRender ? (
+                        {showPostForm ? (
+                            <PostForm onSubmit={handlePostSubmit} errorMessage={errorMessage} />
+                        ) : channelRender ? (
                             channelRender.is_posts ? (
-                                <PostChannel channelId={channelRender.channel_id} channelName={channelRender.channel_name} isGroup={true} locationId={groupDetails.groupId}/>
-                                    ) : (
-                                <ChatChannel channelId={channelRender.channel_id} channelName={channelRender.channel_name} isGroup={true} locationId={groupDetails.groupId}/>
+                                <PostChannel
+                                    channelId={channelRender.channel_id}
+                                    channelName={channelRender.channel_name}
+                                    isGroup={true}
+                                    locationId={groupDetails.groupId}
+                                />
+                            ) : (
+                                <ChatChannel
+                                    channelId={channelRender.channel_id}
+                                    channelName={channelRender.channel_name}
+                                    isGroup={true}
+                                    locationId={groupDetails.groupId}
+                                />
                             )
                         ) : null}
                     </div>
                 </div>         
                 <aside id="right-aside">
+                    <h1>{channel_name}</h1>
+                    {showPostForm && (
+                        <div>
+                            <button class="button" onClick={() => setShowPostForm(false)}>Close</button>
+                        </div>
+                    )}
+                    {!showPostForm && (
+                        <button class="button" onClick={() => setShowPostForm(true)}>Create Post</button>
+                    )}
                     <h2>Channels</h2>
                     <nav id="channel-list">
                         <ul>
@@ -96,7 +136,7 @@ function GroupHome() {
                             ))}
                         </ul>
                     </nav>
-                </aside> 
+                </aside>
             </div>
         );
     }

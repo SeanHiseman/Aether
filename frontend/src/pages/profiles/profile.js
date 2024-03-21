@@ -76,7 +76,7 @@ function Profile() {
                 <div className="channel-feed">
                     {channelRender ? (
                         channelRender.is_posts ? (
-                            <ProfileFeed channelId={channelRender.channel_id} channelName={channelRender.channel_name} isGroup={false} locationId={profile.profileId}/>
+                            <ProfileFeed channelId={channelRender.channel_id} isGroup={false} locationId={profile.profileId}/>
                                 ) : (
                             <ChatChannel channelId={channelRender.channel_id} channelName={channelRender.channel_name} isGroup={false} locationId={profile.profileId}/>
                         )
@@ -84,6 +84,7 @@ function Profile() {
                 </div>
             </div>
             <div id="right-aside">
+                <h1>{channel_name}</h1>
                 <h2>Channels</h2>
                 <nav id="channel-list">
                     <ul>

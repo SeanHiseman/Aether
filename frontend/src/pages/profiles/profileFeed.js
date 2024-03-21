@@ -3,7 +3,7 @@ import React, { useEffect, useState } from "react";
 import ContentWidget from "../content_widget";
 
 //For viewing, not uploading, posts
-function ProfileFeed({ channelId, channelName, isGroup, locationId }) {
+function ProfileFeed({ channelId, isGroup, locationId }) {
     //const [hasMore, setHasMore] = useState(true);
     //const [isLoading, setIsLoading] = useState(false);
     //const limit = 10;
@@ -52,12 +52,9 @@ function ProfileFeed({ channelId, channelName, isGroup, locationId }) {
 
     return (
         <div id="channel">
-            <div id="channel-header">
-                <p class="large-text">{channelName}</p>
-            </div>
             <div id="channel-content">
                 {posts.length > 0 ? (
-                    <ul>
+                    <ul className="content-list">
                         {posts.map(post => (
                             <ContentWidget key={post.post_id} isGroup={isGroup} post={post}/>
                         ))}
