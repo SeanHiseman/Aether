@@ -4,6 +4,7 @@ import { v4 } from 'uuid';
 import { fileURLToPath } from 'url';
 import { join } from 'path';
 import path, { extname } from 'path';
+import { Op } from 'sequelize';
 import authenticateCheck from '../functions/authenticateCheck.js';
 import session from 'express-session';
 import multer, { diskStorage } from 'multer';
@@ -281,39 +282,31 @@ router.get('/profile/:username', authenticateCheck, async (req, res) => {
     const loggedInUserId = req.session.user_id;
     try {
         let viewedUser = await Users.findOne({ where: { username: req.params.username } });
-        if (!viewedUser) {
-            return res.status(404).send("User not found");
-        }
         //Finds profile associated with user
         let profile = await Profiles.findOne({ where: { user_id: viewedUser.user_id } });
-        if (!profile) {
-            return res.status(404).send("Profile not found")
+        let friendship, friendRequest = null;
+        try {
+            [friendship, friendRequest] = await Promise.all([
+                Friends.findOne({
+                    where: {
+                        [Op.or]: [
+                            { user1_id: loggedInUserId, user2_id: viewedUser.user_id },
+                            { user1_id: viewedUser.user_id, user2_id: loggedInUserId}
+                        ]
+                    }
+                }),
+                FriendRequests.findOne({
+                    where: {
+                        [Op.or]: [
+                            { sender_id: loggedInUserId, receiver_id: viewedUser.user_id },
+                            { sender_id: viewedUser.user_id, receiver_id: loggedInUserId}
+                        ]
+                    }
+                })
+            ]);
+        } catch (friendshipError) {
+            return res.status(500).json("Error fetching friendship data." + friendshipError);
         }
-
-        //let friendship, friendRequest = null;
-        //try {
-            //[friendship, friendRequest] = await Promise.all([
-                //Friends.findOne({
-                    //where: {
-                        //[Op.or]: [
-                            //{ user1_id: loggedInUserId, user2_id: viewedUser.user_id },
-                            //{ user1_id: viewedUser.user_id, user2_id: loggedInUserId}
-                        //]
-                    //}
-                //}),
-                //FriendRequests.findOne({
-                    //where: {
-                        //[Op.or]: [
-                            //{ sender_id: loggedInUserId, receiver_id: viewedUser.user_id },
-                            //{ sender_id: viewedUser.user_id, receiver_id: loggedInUserId}
-                        //]
-                    //}
-                //})
-            //]);
-        //} catch (friendshipError) {
-            //console.error("Error", error);
-            //return res.status(500).send("Error fetching friendship data." + friendshipError);
-        //}
 
         const responseData = {
             profile: {
@@ -322,8 +315,8 @@ router.get('/profile/:username', authenticateCheck, async (req, res) => {
                 username: viewedUser.username,
                 bio: profile.bio,
                 userId: viewedUser.user_id, 
-                //isFriend: !!friendship,
-                //isRequested: !!friendRequest
+                isFriend: !!friendship,
+                isRequested: !!friendRequest
             },
         }
         res.json(responseData);
@@ -348,32 +341,34 @@ router.delete('/reject_friend_request/:requestId', authenticateCheck, async (req
     }
 });
 
+//Deletes friendship
+router.delete('/remove_friend', authenticateCheck, async (req, res) => {
+    const loggedInUserId = req.session.user_id;
+    const { receiverUserId } = req.body;
+
+    try {
+        await Friends.destroy({
+            where: {
+                [Op.or]: [
+                    { user1_id: loggedInUserId, user2_id: receiverUserId },
+                    { user1_id: receiverUserId, user2_id: loggedInUserId }
+                ]
+            }
+        });
+
+        res.json({ message: 'Friend removed successfully.' });
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to remove friend.' });
+    }
+});
+
 //Send friend request
 router.post('/send_friend_request', authenticateCheck, async (req, res) => {
     const { receiverProfileId } = req.body;
     try {
         const receiverProfile = await Profiles.findOne({ where: { profile_id: receiverProfileId } });
-        if (!receiverProfile) {
-            return res.status(404).json({ message: "Receiver profile not found" });
-        }
-
         const userId = req.session.user_id;
         const user = await Users.findOne({ where: { user_id: userId } });
-        if (!user) {
-            return res.status(404).json({ message: "Sender user not found" });
-        }
-
-        const existingRequest = await FriendRequests.findOne({
-            where: {
-                sender_id: user.user_id,
-                receiver_id: receiverProfile.user_id
-            }
-        });
-
-        if (existingRequest) {
-            return res.json({ message: "Friend request already sent" });
-        }
-
         await FriendRequests.create({
             request_id: v4(),
             sender_id: user.user_id,
