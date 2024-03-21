@@ -15,7 +15,7 @@ const PersonalProfile = () => {
     const [isEditingName, setIsEditingName] = useState(false);
     const [isPhotoFormVisible, setIsPhotoFormVisible] = useState(false);
     const [newBio, setBio] = useState('');
-    const [profile, setProfile] = useState({ profileId: '', profilePhoto: '', username: '', bio: '', userId: ''});
+    const [profile, setProfile] = useState({ profileId: '', profilePhoto: '', username: '', userId: '', isFriend: '', isRequested: '' });
     const [newName, setName] = useState('');
     const [showChannelForm, setShowChannelForm] = useState(false);
     const [showPostForm, setShowPostForm] = useState(false);

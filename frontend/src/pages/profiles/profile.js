@@ -3,9 +3,9 @@ import React, { useState, useEffect, useContext } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { AuthContext } from '../../components/authContext';
 import ChatChannel from '../general/chatChannel';
+import ManageFriendshipButton from '../../components/manageFriendship';
 import PersonalProfile from './personal_profile';
 import ProfileFeed from './profileFeed';
-import SendFriendRequestButton from '../../components/sendFriendRequest';
 
 function Profile() {
     const [channels, setChannels] = useState([]);
@@ -62,7 +62,7 @@ function Profile() {
         <div className="profile-container">
             <div className="content-feed">
                 <header id="profile-header">
-                    <SendFriendRequestButton userId={loggedInUserId} receiverUserId={profile.userId} isRequestSent={profile.isRequested} />
+                    <ManageFriendshipButton userId={loggedInUserId} receiverProfileId={profile.profileId} receiverUserId={profile.userId} isRequestSent={profile.isRequested} isFriend={profile.isFriend} />
                     <div id="profile-header-side">
                     </div>
                     <div id="viewed-profile-info">
