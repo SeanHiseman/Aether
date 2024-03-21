@@ -20,9 +20,6 @@ function FriendsPage() {
     return (
         <div className="home-container">
             <div className="content-feed">
-                <header id="home-header">
-                    <h1>Friends</h1>
-                </header>
                 <div id="channel-content">
                         {posts.length > 0 ? (
                             <ul className="content-list">
@@ -37,7 +34,7 @@ function FriendsPage() {
                 </div>
             </div>
             <aside id="right-aside">
-                <p>Hello</p>
+                <h1>Friends</h1>
             </aside>
         </div>
     )

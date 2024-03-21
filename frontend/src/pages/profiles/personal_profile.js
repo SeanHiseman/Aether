@@ -3,6 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import FriendRequests from '../../components/friendRequestsList';
 import PostChannel from '../general/postChannel';
+import PostForm from "../../components/postForm";
 
 //Loads the profile page of the logged in user
 const PersonalProfile = () => {
@@ -16,7 +17,8 @@ const PersonalProfile = () => {
     const [newBio, setBio] = useState('');
     const [profile, setProfile] = useState({ profileId: '', profilePhoto: '', username: '', bio: '', userId: ''});
     const [newName, setName] = useState('');
-    const [showForm, setShowForm] = useState(false);
+    const [showChannelForm, setShowChannelForm] = useState(false);
+    const [showPostForm, setShowPostForm] = useState(false);
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -138,6 +140,22 @@ const PersonalProfile = () => {
         }
     }, [isEditingBio, profile.bio]);
 
+    //Uploads content 
+    const handlePostSubmit = async (formData) => {
+        formData.append('profile_id', profile.profileId);
+        formData.append('channel_id', channelRender.channel_id);
+        try {
+            await axios.post('/api/create_profile_post', formData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data'
+                },
+            });
+            setShowPostForm(false);
+        } catch (error) {
+            setErrorMessage("Error creating post.");
+        }
+    };
+
     //Changes profile bio
     const handleUpdateBio = async () => {
         try {
@@ -169,8 +187,8 @@ const PersonalProfile = () => {
     }; 
 
     //Toggles display of create channel form after button is pressed
-    const toggleForm = () => {
-        setShowForm(!showForm)
+    const toggleChannelForm = () => {
+        setShowChannelForm(!showChannelForm)
     }
 
     document.title = profile.username || "Profile";
@@ -248,18 +266,34 @@ const PersonalProfile = () => {
                     </div>
                 </header>
                 <div className="channel-feed">
-                    {channelRender ? (
-                        <PostChannel channelId={channelRender.channel_id} channelName={channelRender.channel_name} isGroup={false} locationId={profile.profileId}/>
-                    ) : null}
+                    {showPostForm ? (
+                        <PostForm onSubmit={handlePostSubmit} errorMessage={errorMessage} />
+                    ) : ( channelRender ? (
+                        <PostChannel 
+                            channelId={channelRender.channel_id} 
+                            channelName={channelRender.channel_name} 
+                            isGroup={false} 
+                            locationId={profile.profileId}/>
+                    ) : null
+                    )}
                 </div>
             </div>
             <div id="right-aside">
+                <h1>{channel_name}</h1>
+                {showPostForm && (
+                    <div>
+                        <button class="button" onClick={() => setShowPostForm(false)}>Close</button>
+                    </div>
+                )}
+                {!showPostForm && (
+                       <button class="button" onClick={() => setShowPostForm(true)}>Create Post</button>
+                )}
                 <h2>Channels</h2>
                 <div id="add-channel-section">
-                    <button class="button" onClick={toggleForm}>
-                        {showForm ? 'Close': 'Create new Channel'}
+                    <button class="button" onClick={toggleChannelForm}>
+                        {showChannelForm ? 'Close': 'Create new Channel'}
                     </button>
-                    {showForm && (
+                    {showChannelForm && (
                         <form id="add-channel-form" onSubmit={AddChannel}>
                             <input className="channel-input" type="text" name="channel_name" placeholder="Channel name..." value={newChannelName} onChange={(e) => setNewChannelName(e.target.value)}/>
                             <input className="button" type="submit" value="Add" disabled={!newChannelName}/>

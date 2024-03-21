@@ -6,6 +6,7 @@ import ChannelButton from '../../components/channelButton';
 import ChatChannel from '../general/chatChannel';
 import MemberChangeButton from '../../components/memberChangeButton';
 import PostChannel from '../general/postChannel';
+import PostForm from "../../components/postForm";
 
 function GroupHomeAdmin() {
     const { group_name, channel_name } = useParams();
@@ -22,7 +23,8 @@ function GroupHomeAdmin() {
     const [newDescription, setDescription] = useState('');
     const [isEditingName, setIsEditingName] = useState(false);
     const [newName, setName] = useState('');
-    const [showForm, setShowForm] = useState(false);
+    const [showChannelForm, setShowChannelForm] = useState(false);
+    const [showPostForm, setShowPostForm] = useState(false);
 
     useEffect(() => {
         fetch(`/api/group/${group_name}`)
@@ -153,6 +155,22 @@ function GroupHomeAdmin() {
         }
     }; 
 
+    //Uploads content 
+    const handlePostSubmit = async (formData) => {
+        formData.append('group_id', groupDetails.groupId);
+        formData.append('channel_id', channelRender.channel_id);
+        try {
+            await axios.post('/api/create_group_post', formData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data'
+                },
+            });
+            setShowPostForm(false);
+        } catch (error) {
+            setErrorMessage("Error creating post.");
+        }
+    };
+
     //Changes group name
     const handleUpdateName = async () => {
         try {
@@ -169,8 +187,8 @@ function GroupHomeAdmin() {
     }; 
 
     //Toggles display of create channel form after button is pressed
-    const toggleForm = () => {
-        setShowForm(!showForm)
+    const toggleChannelForm = () => {
+        setShowChannelForm(!showChannelForm)
     }
 
     //Allows adding/remvoing of moderators
@@ -278,23 +296,44 @@ function GroupHomeAdmin() {
                             ))}
                         </div>
                     ) : (
-                        channelRender ? (
+                        showPostForm ? (
+                            <PostForm onSubmit={handlePostSubmit} errorMessage={errorMessage} />
+                        ) : channelRender ? (
                             channelRender.is_posts ? (
-                                <PostChannel channelId={channelRender.channel_id} channelName={channelRender.channel_name} isGroup={true} locationId={groupDetails.groupId}/>
-                                    ) : (
-                                <ChatChannel channelId={channelRender.channel_id} channelName={channelRender.channel_name} isGroup={true} locationId={groupDetails.groupId}/>
+                                <PostChannel
+                                    channelId={channelRender.channel_id}
+                                    channelName={channelRender.channel_name}
+                                    isGroup={true}
+                                    locationId={groupDetails.groupId}
+                                />
+                            ) : (
+                                <ChatChannel
+                                    channelId={channelRender.channel_id}
+                                    channelName={channelRender.channel_name}
+                                    isGroup={true}
+                                    locationId={groupDetails.groupId}
+                                />
                             )
                         ) : null
                     )}
                 </div>
             </div>     
             <aside id="right-aside">
+                <h1>{channel_name}</h1>
+                {showPostForm && (
+                    <div>
+                        <button class="button" onClick={() => setShowPostForm(false)}>Close</button>
+                    </div>
+                )}
+                {!showPostForm && (
+                       <button class="button" onClick={() => setShowPostForm(true)}>Create Post</button>
+                )}
                 <h2>Channels</h2>
                 <div id="add-channel-section">
-                    <button class="button" onClick={toggleForm}>
-                        {showForm ? 'Close': 'Create new Channel'}
+                    <button class="button" onClick={toggleChannelForm}>
+                        {showChannelForm ? 'Close': 'Create new Channel'}
                     </button>
-                    {showForm && (
+                    {showChannelForm && (
                         <form id="add-channel-form" onSubmit={AddChannel}>
                             <input className="channel-input" type="text" name="channel_name" placeholder="Channel name..." value={newChannelName} onChange={(e) => setNewChannelName(e.target.value)}/>
                             <p>Channel type:</p>

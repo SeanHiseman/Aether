@@ -7,12 +7,9 @@ function FollowingPage() {
     return (
         <div className="home-container">
             <div className="content-feed">
-                <header id="home-header">
-                    <h1>Following</h1>
-                </header>
             </div>
             <aside id="right-aside">
-                <p>Hello</p>
+                <h1>Following</h1>
             </aside>
         </div>
     )
