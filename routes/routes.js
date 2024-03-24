@@ -20,6 +20,13 @@ router.post('/content_vote', authenticateCheck, async (req, res) => {
             }
         });
 
+        //Limits upvotes and downvotes on each post to 10
+        if (vote.vote_count === 10 && vote_type === 'upvote') {
+            return res.json({ success: false, message: 'Upvote limit' });
+        } else if (vote.vote_count === -10 && vote_type === 'downvote') {
+            return res.json({ success: false, message: 'downvote limit' });
+        }
+
         if (vote_type === 'upvote') {
             vote.vote_count += 1; 
         } else if (vote_type === 'downvote') {
