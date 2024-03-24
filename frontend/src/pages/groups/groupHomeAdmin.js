@@ -9,21 +9,21 @@ import PostChannel from '../general/postChannel';
 import PostForm from "../../components/postForm";
 
 function GroupHomeAdmin() {
-    const { group_name, channel_name } = useParams();
+    const [isAdmin, setIsAdmin] = useState(true);
     const [channels, setChannels] = useState([]);
     const [newChannelName, setNewChannelName] = useState('');
     const [errorMessage, setErrorMessage] = useState('');
     const [groupDetails, setGroupDetails] = useState({ groupName: group_name, description: '', groupPhoto: '', memberCount: 0 });
-    const [isAdmin, setIsAdmin] = useState(true);
+    const { group_name, channel_name } = useParams();
     const [isEditingDescription, setIsEditingDescription] = useState(false);
+    const [isEditingName, setIsEditingName] = useState(false);
     const [isPhotoFormVisible, setIsPhotoFormVisible] = useState(false);
     const [isPostChannel, setIsPostChannel] = useState(true);
     const [members, setMembers] = useState(null);
-    const [showMembers, setShowMembers] = useState(false);
     const [newDescription, setDescription] = useState('');
-    const [isEditingName, setIsEditingName] = useState(false);
     const [newName, setName] = useState('');
     const [showChannelForm, setShowChannelForm] = useState(false);
+    const [showMembers, setShowMembers] = useState(false);
     const [showPostForm, setShowPostForm] = useState(false);
 
     useEffect(() => {
