@@ -1,7 +1,6 @@
 import axios from 'axios';
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import FriendRequests from '../../components/friendRequestsList';
 import PostChannel from '../general/postChannel';
 import PostForm from "../../components/postForm";
 
@@ -11,13 +10,15 @@ const PersonalProfile = () => {
     const [channels, setChannels] = useState([]);
     const [newChannelName, setNewChannelName] = useState('');
     const [errorMessage, setErrorMessage] = useState('');
+    const [friendRequests, setFriendRequests] = useState('');
     const [isEditingBio, setIsEditingBio] = useState(false);
     const [isEditingName, setIsEditingName] = useState(false);
     const [isPhotoFormVisible, setIsPhotoFormVisible] = useState(false);
     const [newBio, setBio] = useState('');
-    const [profile, setProfile] = useState({ profileId: '', profilePhoto: '', username: '', userId: '', isFriend: '', isRequested: '' });
     const [newName, setName] = useState('');
+    const [profile, setProfile] = useState({ profileId: '', profilePhoto: '', username: '', userId: '', isFriend: '', isRequested: '' });
     const [showChannelForm, setShowChannelForm] = useState(false);
+    const [showFriendRequests, setShowFriendRequests] = useState(false);
     const [showPostForm, setShowPostForm] = useState(false);
     const navigate = useNavigate();
 
@@ -66,7 +67,21 @@ const PersonalProfile = () => {
             console.error('Error fetching channels data:', error);
             setChannels([]);
         });
-    }, [profile.profileId]);    
+    }, [profile.profileId]);   
+    
+    //Set name in text area to current description
+    useEffect(() => {
+        if (isEditingName) {
+            setName(profile.username);
+        }
+    }, [isEditingName, profile.username]);
+
+    //Set bio in text area to current bio
+    useEffect(() => {
+        if (isEditingBio) {
+            setBio(profile.bio);
+        }
+    }, [isEditingBio, profile.bio]);
 
     //Adds channel to profile
     const AddChannel = async (event) => {
@@ -89,9 +104,9 @@ const PersonalProfile = () => {
         }
     };  
 
-    const ChangeProfilePhoto = (e) => {
+    const ChangeProfilePhoto = (event) => {
         e.preventDefault();
-        const fileInput = e.target.elements.new_profile_photo;
+        const fileInput = event.target.elements.new_profile_photo;
         if (!fileInput.files[0]) {
             setErrorMessage('Please upload an image');
             return;
@@ -111,6 +126,34 @@ const PersonalProfile = () => {
     
     const channelRender = channels.find(c => c.channel_name === channel_name);
 
+    const getFriendRequests = async () => {
+        if (!showFriendRequests) {
+            try {
+                const response = await axios.get('/api/get_friend_requests', {
+                    params: { group_id: groupDetails.groupId }
+                });
+                setFriendRequests(response.data);
+            } catch (error) {
+                setErrorMessage('Error fetching friend requests:', error);
+            }
+        }
+        setShowFriendRequests(!showFriendRequests);
+    };
+
+    const HandleFriendRequest = async (request, result) => {
+        try {
+            if (result === 'Accept') {
+                axios.post('/api/accept_friend_request', request)
+                setFriendRequests(friendRequests.filter(req => req.request_id !== request.request_id));
+            } else if (result === 'Reject') {
+                axios.delete('/api/reject_friend_request', request)
+                setFriendRequests(friendRequests.filter(req => req.request_id !== request.request_id));
+            }
+        } catch (error) {
+            setErrorMessage("Error handling request:", error);
+        }
+    };
+    
     const handleLogout = (e) => {
         e.preventDefault();
         axios.post('/api/logout')
@@ -126,20 +169,6 @@ const PersonalProfile = () => {
             })
     }
 
-    //Set name in text area to current description
-    useEffect(() => {
-        if (isEditingName) {
-            setName(profile.username);
-        }
-    }, [isEditingName, profile.username]);
-
-    //Set bio in text area to current bio
-    useEffect(() => {
-        if (isEditingBio) {
-            setBio(profile.bio);
-        }
-    }, [isEditingBio, profile.bio]);
-
     //Uploads content 
     const handlePostSubmit = async (formData) => {
         formData.append('profile_id', profile.profileId);
@@ -152,7 +181,7 @@ const PersonalProfile = () => {
             });
             setShowPostForm(false);
         } catch (error) {
-            setErrorMessage("Error creating post.");
+            setErrorMessage("Error creating post:", error);
         }
     };
 
@@ -196,7 +225,9 @@ const PersonalProfile = () => {
         <div className="profile-container">
             <div className="content-feed">
                 <header id="profile-header">
-                    <FriendRequests />
+                    <button className="button" onClick={getFriendRequests}>
+                        {showFriendRequests ? 'Close requests' : `${friendRequests.length} friend requests`}
+                    </button>
                     <div id="viewed-profile-info">
                         <div id="name-section">
                             {isEditingName ? (
@@ -264,17 +295,33 @@ const PersonalProfile = () => {
                             </form>
                         )}
                     </div>
-                </header>
+                </header>                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       
                 <div className="channel-feed">
-                    {showPostForm ? (
-                        <PostForm onSubmit={handlePostSubmit} errorMessage={errorMessage} />
-                    ) : ( channelRender ? (
-                        <PostChannel 
-                            channelId={channelRender.channel_id} 
-                            channelName={channelRender.channel_name} 
-                            isGroup={false} 
-                            locationId={profile.profileId}/>
-                    ) : null
+                    {showFriendRequests ? (
+                        <div>
+                            {friendRequests.map((request, index) => (
+                                <div class="group-member" key={index}>
+                                    {request.user.username}
+                                    <button className="button" onClick={() => HandleFriendRequest(request, 'Accept')}>
+                                        Accept friend request
+                                    </button>
+                                    <button className="button" onClick={() => HandleFriendRequest(request, 'Reject')}>
+                                        Reject friend request
+                                    </button>
+                                </div>
+                            ))}
+                        </div>                                                                                                                    
+                    ) : (
+                        showPostForm ? (
+                            <PostForm onSubmit={handlePostSubmit} errorMessage={errorMessage} />
+                        ) : ( channelRender ? (
+                            <PostChannel 
+                                channelId={channelRender.channel_id} 
+                                channelName={channelRender.channel_name} 
+                                isGroup={false} 
+                                locationId={profile.profileId}/>
+                        ) : null
+                        )
                     )}
                 </div>
             </div>

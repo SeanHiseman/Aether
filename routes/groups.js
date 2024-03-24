@@ -224,7 +224,7 @@ router.get('/get_group_members', authenticateCheck, async (req, res) => {
         });
         res.json(members);
     } catch (error) {
-        res.status(500).send('Error getting group members:', error);
+        res.status(500).json('Error getting group members:', error);
     }
 });
 

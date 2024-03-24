@@ -45,12 +45,10 @@ const upload = multer({
 });
 
 //Accept friend request
-router.post('/accept_friend_request/:requestId', authenticateCheck, async (req, res) => {
+router.post('/accept_friend_request', authenticateCheck, async (req, res) => {
     try {
-        const friendRequest = await friendRequest.findByPk(req.params.requestId);
-        if (!friendRequest) {
-            return res.status(404).json({ error: "Friend request not found" });
-        }
+        const { request } = req.body;
+        const friendRequest = await FriendRequests.findByPk(request.request_id);
 
         await Friends.create({
             friendship_id: v4(),
@@ -64,15 +62,15 @@ router.post('/accept_friend_request/:requestId', authenticateCheck, async (req, 
             title: "General"
         });
 
+        //Create new conversation between users
         await UserConversations.bulkCreate([
             { user_id: friendRequest.sender_id, conversation_id: conversation.conversation_id },
             { user_id: friendRequest.receiver_id, conversation_id: conversation.conversation_id }
         ]);
 
         await friendRequest.destroy();
-        res.json({ message: "Friend request accepted" });
     } catch (error) {
-        res.status(500).send(error.message);
+        res.status(500).json(error.message);
     }
 });
 
@@ -106,9 +104,9 @@ router.post('/cancel_friend_request', authenticateCheck, async (req, res) => {
         await FriendRequests.destroy({
             where: { sender_id: userId, receiver_id: receiverUserId } 
         });
-        res.status(200).send("Friend request cancelled");
+        res.status(200).json("Friend request cancelled");
     } catch (error) {
-        res.status(500).send(error.message);
+        res.status(500).json(error.message);
     }
 });
 
@@ -185,21 +183,17 @@ router.post('/create_profile_post', authenticateCheck, upload.array('files'), as
 router.get('/get_friend_requests', authenticateCheck, async (req, res) => {
     try {
         const userId = req.session.user_id;
-        const user = await Users.findOne({ where: { user_id: userId } });
-        if (!user) {
-            return res.status(404).json({ error: "User not found" });
-        }
-
-        const requests = await FriendRequest.findAll({ where: { receiver_id: userId } });
-        const response = requests.map(req => ({
-            request_id: req.request_id,
-            from: req.sender_id,
-            senderName: req.sender.username 
-        }));
-
-        res.json(response);
+        const requests = await FriendRequests.findAll({ 
+            where: { receiver_id: userId },
+            include: [{
+                model: Users, 
+                required: true,
+                attributes: ['user_id', 'username']
+            }],
+        });
+        res.json(requests);
     } catch (error) {
-        res.status(500).send(error.message);
+        res.status(500).json(error.message);
     }
 });
 
@@ -322,20 +316,16 @@ router.get('/profile/:username', authenticateCheck, async (req, res) => {
         res.json(responseData);
 
     } catch (error) {
-        res.status(500).send(`Internal Server Error: ${error.toString()}`);
+        res.status(500).json(`Internal Server Error: ${error.toString()}`);
     }
 });
 
 //Reject friend request
-router.delete('/reject_friend_request/:requestId', authenticateCheck, async (req, res) => {
+router.delete('/reject_friend_request', authenticateCheck, async (req, res) => {
     try {
-        const friendRequest = await friendRequest.findByPk(req.params.requestId);
-        if (!friendRequest) {
-            return res.status(404).json({ error: "Friend request not found" });
-        }
-
+        const { request } = req.body;
+        const friendRequest = await friendRequest.findByPk(request.request_id);
         await friendRequest.destroy();
-        res.json({ message: "Friend request rejected" });
     } catch (error) {
         res.status(500).send(error.message);
     }
