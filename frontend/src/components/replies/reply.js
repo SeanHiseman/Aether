@@ -6,17 +6,30 @@ import ReplyForm from './replyForm';
 const Reply = ({ addComment, comment, depth, isGroup, onReplyAdded }) => {
     const [showReplyForm, setShowReplyForm] = useState(false);
     const [downvotes, setDownvotes] = useState(comment.dislikes);
+    const [downvoteLimit, setDownvoteLimit] = useState(false);
     const [upvotes, setUpvotes] = useState(comment.likes);
+    const [upvoteLimit, setUpvoteLimit] = useState(false);
     const Replier = isGroup ? 'GroupCommenter' : 'ProfileCommenter'; //Associations used by database
     const toggleReplyForm = () => setShowReplyForm(!showReplyForm);
 
     //Updates up/downvotes
     const handleVote = (voteType) => {
-        if (voteType === 'upvote') {
-            setUpvotes(upvotes + 1);
-        } else if (voteType === 'downvote') {
-            setDownvotes(downvotes + 1);
+        //Reset before request
+        setDownvoteLimit(false);
+        setUpvoteLimit(false);
+
+        //Check if at voting limit
+        if (voteType === 'upvote' && upvotes === 10) {
+            setUpvoteLimit(true);
+            return;
+        } else if (voteType === 'downvote' && downvotes === 10) {
+            setDownvoteLimit(true);
+            return;
         }
+
+        //Update if limit hasn't been reached
+        setUpvotes(voteType === 'upvote' ? upvotes + 1 : upvotes);
+        setDownvotes(voteType === 'downvote' ? downvotes + 1 : downvotes);
 
         const vote = {
             comment_id: comment.comment_id,
@@ -35,6 +48,9 @@ const Reply = ({ addComment, comment, depth, isGroup, onReplyAdded }) => {
             });
     };
 
+    const downvoteStyle = downvoteLimit ? 'downvote-disabled' : 'downvote-enabled';
+    const upvoteStyle = upvoteLimit ? 'upvote-disabled' : 'upvote-enabled';
+    
     return (
         <div className="comment-container" style={{ marginLeft: `${depth * 20}px` }}>
             <Link className="reply-profile-container" to={`/profile/${comment[Replier].username}`}>
@@ -45,11 +61,11 @@ const Reply = ({ addComment, comment, depth, isGroup, onReplyAdded }) => {
                 <div className="comment-element">
                 <span className="comment-content">{comment.content}</span>
                 <div className="reply-vote-container">
-                    <button className="vote-button" onClick={() => handleVote('upvote')}>
+                    <button className={upvoteStyle} onClick={() => handleVote('upvote')}>
                         <img className="vote-arrow" src="/media/site_images/up.png"/>
                     </button>
                     <span className="total-votes">{upvotes - downvotes}</span>
-                    <button className="vote-button" onClick={() => handleVote('downvote')}>
+                    <button className={downvoteStyle} onClick={() => handleVote('downvote')}>
                         <img className="vote-arrow" src="/media/site_images/down.png"/>
                     </button>
                     <button className="button" onClick={toggleReplyForm}>Reply</button>

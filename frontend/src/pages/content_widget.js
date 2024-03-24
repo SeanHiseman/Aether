@@ -8,7 +8,9 @@ import ReplyForm from '../components/replies/replyForm';
 function ContentWidget({ isGroup, post }) {
     const [comments, setComments] = useState([]);
     const [downvotes, setDownvotes] = useState(post.dislikes);
+    const [downvoteLimit, setDownvoteLimit] = useState(false);
     const [upvotes, setUpvotes] = useState(post.likes);
+    const [upvoteLimit, setUpvoteLimit] = useState(false);
     const [showComments, setShowComments] = useState(false);
     const Poster = isGroup ? 'GroupPoster' : 'ProfilePoster'; //Associations used by database
 
@@ -38,11 +40,22 @@ function ContentWidget({ isGroup, post }) {
 
     //Updates up/downvotes
     const contentReaction = async (postId, voteType) => {
-        if (voteType === 'upvote') {
-            setUpvotes(upvotes + 1);
-        } else if (voteType === 'downvote') {
-            setDownvotes(downvotes + 1);
+        //Reset before request
+        setDownvoteLimit(false);
+        setUpvoteLimit(false);
+
+        //Check if at voting limit
+        if (voteType === 'upvote' && upvotes === 10) {
+            setUpvoteLimit(true);
+            return;
+        } else if (voteType === 'downvote' && downvotes === 10) {
+            setDownvoteLimit(true);
+            return;
         }
+
+        //Update if limit hasn't been reached
+        setUpvotes(voteType === 'upvote' ? upvotes + 1 : upvotes);
+        setDownvotes(voteType === 'downvote' ? downvotes + 1 : downvotes);
 
         const vote = {
             content_id: postId, 
@@ -96,6 +109,8 @@ function ContentWidget({ isGroup, post }) {
     };
 
     const nestedComments = nestComments(comments);
+    const downvoteStyle = downvoteLimit ? 'downvote-disabled' : 'downvote-enabled';
+    const upvoteStyle = upvoteLimit ? 'upvote-disabled' : 'upvote-enabled';
 
     return (
         <div className="content-item">
@@ -110,13 +125,15 @@ function ContentWidget({ isGroup, post }) {
                         <p className="username">{post[Poster].username}</p>
                     </Link>
                 </div>
-                <button className="like-button" onClick={() => contentReaction(post.post_id, 'upvote')}>
-                    Likes <span className="like-count">{upvotes}</span>
-                </button>
-                <button className="dislike-button" onClick={() => contentReaction(post.post_id, 'downvote')}>
-                    Dislikes <span className="dislike-count">{downvotes}</span>
-                </button>
-
+                <div className="reply-vote-container">
+                    <button className={upvoteStyle} onClick={() => contentReaction(post.post_id, 'upvote')}>
+                        <img className="vote-arrow" src="/media/site_images/up.png"/>
+                    </button>
+                    <span className="total-votes">{upvotes - downvotes}</span>
+                    <button className={downvoteStyle} onClick={() => contentReaction(post.post_id, 'downvote')}>
+                        <img className="vote-arrow" src="/media/site_images/down.png"/>
+                    </button>
+                </div>
                 <button className="button" data-content-id={post.post_id} onClick={handleToggleComments}>
                     Replies <span className="comment-count" id={`comment-count-${post.post_id}`}>{post.comments}</span>
                 </button>
