@@ -1,6 +1,7 @@
 import axios from 'axios';
-import React, { useState } from 'react';
+import React, { useContext, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { AuthContext } from '../components/authContext';
 import ReplyForm from './replyForm';
 
 const Reply = ({ addComment, comment, depth, isGroup, onReplyAdded }) => {
@@ -9,6 +10,8 @@ const Reply = ({ addComment, comment, depth, isGroup, onReplyAdded }) => {
     const [downvoteLimit, setDownvoteLimit] = useState(false);
     const [upvotes, setUpvotes] = useState(comment.likes);
     const [upvoteLimit, setUpvoteLimit] = useState(false);
+    const { user } = useContext(AuthContext);
+    const isReplier = comment.commenter_id === user.user_id ? true : false;
     const Replier = isGroup ? 'GroupCommenter' : 'ProfileCommenter'; //Associations used by database
     const toggleReplyForm = () => setShowReplyForm(!showReplyForm);
 
@@ -48,6 +51,16 @@ const Reply = ({ addComment, comment, depth, isGroup, onReplyAdded }) => {
             });
     };
 
+    //Deletes the reply
+    const removeReply = async (isGroup, comment_id) => {
+        try {
+            const replyData = { isGroup, comment_id }
+            axios.delete('/api/remove_reply', { data: replyData });
+        } catch (error) {
+            console.error("Error removing reply:", error); 
+        }
+    };
+
     const downvoteStyle = downvoteLimit ? 'downvote-disabled' : 'downvote-enabled';
     const upvoteStyle = upvoteLimit ? 'upvote-disabled' : 'upvote-enabled';
     
@@ -71,6 +84,9 @@ const Reply = ({ addComment, comment, depth, isGroup, onReplyAdded }) => {
                     <button className="button" onClick={toggleReplyForm}>Reply</button>
                         {showReplyForm && <ReplyForm isGroup={isGroup} onReplyAdded={onReplyAdded} parentId={comment.comment_id} postId={comment.post_id} />}
                 </div>
+                {isReplier ? (
+                    <button className="button" onClick={() => removeReply(isGroup, comment.comment_id)}>Delete</button>
+                ) : null}
             </div>
                 {comment.replies && comment.replies.map(reply => (
                     <Reply key={reply.comment_id} comment={reply} depth={depth + 1} addComment={addComment} />

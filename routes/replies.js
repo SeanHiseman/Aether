@@ -58,6 +58,17 @@ router.get('/get_comments/:postId', authenticateCheck, async (req, res) => {
     //}
 });
 
+//Allows reply to be taken down either by the user or moderators
+router.delete('/remove_reply', authenticateCheck, async (req, res) => {
+    try {
+        const { isGroup, comment_id } = req.body;
+        const postModel = isGroup ? GroupComments : ProfileComments;
+        await postModel.findByIdAndDelete(comment_id);
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
 //Up or downvote a reply
 router.post('/reply_vote', authenticateCheck, async (req, res) => {
     try {
