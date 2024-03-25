@@ -132,7 +132,7 @@ router.delete('/remove_post', authenticateCheck, async (req, res) => {
     try {
         const { isGroup, post_id } = req.body;
         const postModel = isGroup ? GroupPosts : ProfilePosts;
-        await postModel.findByIdAndDelete(post_id);
+        await postModel.destroy({ where: { post_id }});
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
     }
