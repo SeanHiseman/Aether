@@ -13,7 +13,7 @@ function GroupHome() {
     const [channels, setChannels] = useState([]);
     const [errorMessage, setErrorMessage] = useState('');
     const [isAdmin, setIsAdmin] = useState(false);
-    const [groupDetails, setGroupDetails] = useState({ groupName: '', description: '', groupPhoto: '', memberCount: 0 });
+    const [groupDetails, setGroupDetails] = useState({ groupName: group_name, memberCount: 0 });
     const [showPostForm, setShowPostForm] = useState(false);
 
     useEffect(() => {

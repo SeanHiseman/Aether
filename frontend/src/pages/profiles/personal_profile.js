@@ -105,7 +105,7 @@ const PersonalProfile = () => {
     };  
 
     const ChangeProfilePhoto = (event) => {
-        e.preventDefault();
+        event.preventDefault();
         const fileInput = event.target.elements.new_profile_photo;
         if (!fileInput.files[0]) {
             setErrorMessage('Please upload an image');
@@ -129,9 +129,7 @@ const PersonalProfile = () => {
     const getFriendRequests = async () => {
         if (!showFriendRequests) {
             try {
-                const response = await axios.get('/api/get_friend_requests', {
-                    params: { group_id: groupDetails.groupId }
-                });
+                const response = await axios.get('/api/get_friend_requests');
                 setFriendRequests(response.data);
             } catch (error) {
                 setErrorMessage('Error fetching friend requests:', error);

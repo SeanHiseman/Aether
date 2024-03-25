@@ -1,7 +1,8 @@
 import axios from 'axios';
 import { Link } from 'react-router-dom';
-import React, { useEffect, useState } from 'react';
+import React, { useContext, useEffect, useState } from 'react';
 import ReactQuill, { Quill } from 'react-quill';
+import { AuthContext } from '../components/authContext';
 import Reply from '../components/replies/reply';
 import ReplyForm from '../components/replies/replyForm';
 
@@ -12,6 +13,8 @@ function ContentWidget({ isGroup, post }) {
     const [upvotes, setUpvotes] = useState(post.likes);
     const [upvoteLimit, setUpvoteLimit] = useState(false);
     const [showComments, setShowComments] = useState(false);
+    const { user } = useContext(AuthContext);
+    const isUploader = post.poster_id === user.user_id ? true : false;
     const Poster = isGroup ? 'GroupPoster' : 'ProfilePoster'; //Associations used by database
 
     useEffect(() => {
@@ -39,7 +42,7 @@ function ContentWidget({ isGroup, post }) {
     Quill.register(VideoBlot);
 
     //Updates up/downvotes
-    const contentReaction = async (postId, voteType) => {
+    const postVote = async (postId, voteType) => {
         //Reset before request
         setDownvoteLimit(false);
         setUpvoteLimit(false);
@@ -108,6 +111,16 @@ function ContentWidget({ isGroup, post }) {
         return nestedComments;
     };
 
+    //Deletes the post
+    const removePost = async (isGroup, postId) => {
+        try {
+            const postData = { isGroup, postId }
+            axios.delete('/api/remove_post', { data: postData });
+        } catch (error) {
+            console.error("Error removing post:", error); 
+        }
+    };
+
     const nestedComments = nestComments(comments);
     const downvoteStyle = downvoteLimit ? 'downvote-disabled' : 'downvote-enabled';
     const upvoteStyle = upvoteLimit ? 'upvote-disabled' : 'upvote-enabled';
@@ -126,11 +139,11 @@ function ContentWidget({ isGroup, post }) {
                     </Link>
                 </div>
                 <div className="reply-vote-container">
-                    <button className={upvoteStyle} onClick={() => contentReaction(post.post_id, 'upvote')}>
+                    <button className={upvoteStyle} onClick={() => postVote(post.post_id, 'upvote')}>
                         <img className="vote-arrow" src="/media/site_images/up.png"/>
                     </button>
                     <span className="total-votes">{upvotes - downvotes}</span>
-                    <button className={downvoteStyle} onClick={() => contentReaction(post.post_id, 'downvote')}>
+                    <button className={downvoteStyle} onClick={() => postVote(post.post_id, 'downvote')}>
                         <img className="vote-arrow" src="/media/site_images/down.png"/>
                     </button>
                 </div>
@@ -138,6 +151,9 @@ function ContentWidget({ isGroup, post }) {
                     Replies <span className="comment-count" id={`comment-count-${post.post_id}`}>{post.comments}</span>
                 </button>
                 <span className="view-count">{post.views} Views</span>
+                {isUploader ? (
+                    <button className="button" onClick={() => removePost(isGroup, post.post_id)}>Delete</button>
+                ) : null}
             </div>
             
             {showComments && (

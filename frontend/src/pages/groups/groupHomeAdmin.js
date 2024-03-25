@@ -12,7 +12,7 @@ function GroupHomeAdmin() {
     const [channels, setChannels] = useState([]);
     const [newChannelName, setNewChannelName] = useState('');
     const [errorMessage, setErrorMessage] = useState('');
-    const [groupDetails, setGroupDetails] = useState({ groupName: group_name, description: '', groupPhoto: '', memberCount: 0 });
+    const [groupDetails, setGroupDetails] = useState({ groupName: group_name, memberCount: 0 });
     const { group_name, channel_name } = useParams();
     const [isEditingDescription, setIsEditingDescription] = useState(false);
     const [isEditingName, setIsEditingName] = useState(false);
@@ -188,6 +188,7 @@ function GroupHomeAdmin() {
     //Admins can remove members
     const removeMember = async (memberId) => {
         try {
+            const groupId = groupDetails.groupId;
             axios.post('/api/leave_group', { memberId, groupId })
                 getGroupMembers();
         } catch (error) {

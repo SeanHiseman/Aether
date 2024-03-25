@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { Friends, ProfilePosts, Profiles, Users } from '../models/models.js'; 
+import { Friends, GroupPosts, ProfilePosts, Profiles, Users } from '../models/models.js'; 
 import authenticateCheck from '../functions/authenticateCheck.js';
 import { Op } from 'sequelize';
 const router = Router();
@@ -125,6 +125,17 @@ router.get('/recommended', authenticateCheck, async (req, res) => {
         content_items: recommended_content,
         user_id: req.session.user_id,
     });
+});
+
+//Allows post to be taken down either by the user or moderators
+router.delete('/remove_post', authenticateCheck, async (req, res) => {
+    try {
+        const { isGroup, postId } = req.body;
+        const postModel = isGroup ? GroupPosts : ProfilePosts;
+        await postModel.findByIdAndDelete(postId);
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
 });
 
 //Search route (currently just searches for matching strings, more advanced search is being worked on)
