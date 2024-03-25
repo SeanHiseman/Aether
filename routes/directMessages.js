@@ -165,7 +165,7 @@ router.get('/get_friends', authenticateCheck, async (req, res) => {
 router.delete('/remove_message', authenticateCheck, async (req, res) => {
     try {
         const { message_id } = req.body;
-        await Messages.findByIdAndDelete(message_id);
+        await Messages.destroy({ where: { message_id } });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
     }

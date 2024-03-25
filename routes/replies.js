@@ -36,7 +36,7 @@ router.post('/add_reply', authenticateCheck, async (req, res) => {
 
 //Get Comments Route 
 router.get('/get_comments/:postId', authenticateCheck, async (req, res) => {
-    //try {
+    try {
         const isGroup = req.query.isGroup === 'true';
         const postId = req.params.postId;
         const CommentModel = isGroup ? GroupComments : ProfileComments;
@@ -53,9 +53,9 @@ router.get('/get_comments/:postId', authenticateCheck, async (req, res) => {
             }]
         });
         res.json(comments);
-    //} catch (error) {
-        //res.status(500).json({ success: false, message: error.message });
-    //}
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
 });
 
 //Allows reply to be taken down either by the user or moderators
@@ -63,7 +63,7 @@ router.delete('/remove_reply', authenticateCheck, async (req, res) => {
     try {
         const { isGroup, comment_id } = req.body;
         const postModel = isGroup ? GroupComments : ProfileComments;
-        await postModel.findByIdAndDelete(comment_id);
+        await postModel.destroy({ where: { comment_id } });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
     }

@@ -1,4 +1,6 @@
 import axios from 'axios';
+import confirmAlert from 'react-confirm-alert';
+import 'react-confirm-alert/src/react-confirm-alert.css';
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import PostChannel from '../general/postChannel';
@@ -124,6 +126,32 @@ const PersonalProfile = () => {
             });
     }
     
+    //User is shown a confirmation before deleting their account
+    const deleteAccount = () => {
+        confirmAlert({
+            title: 'Delete Account',
+            message: 'Are you sure you want to delete your account? This action is irreversible.',
+            buttons: [{
+                label: 'Yes, Delete',
+                onClick: () => {
+                    axios.delete('/api/delete_account', { data: { user_id: profile.userId } })
+                    .then((response) => {
+                        if (response.data.success) {
+                            navigate('/login');
+                        } else {
+                            setErrorMessage(response.data.message);
+                        }
+                    })
+                    .catch((error) => {
+                        setErrorMessage('Failed to delete account:', error);
+                    });
+                },
+            },
+                {label: 'Cancel',},
+            ],
+        });
+    };
+
     const channelRender = channels.find(c => c.channel_name === channel_name);
 
     const getFriendRequests = async () => {
@@ -278,6 +306,7 @@ const PersonalProfile = () => {
                         <form action="/api/logout" method="post" onSubmit={handleLogout}>
                             <button className="button" type="submit">Logout</button>
                         </form>
+                        <button className="button" onClick={deleteAccount}>Delete account</button>
                     </div>
                     <div id="profile-header-photo">
                         <img className="large-profile-photo" src={`/${profile.profilePhoto}`} alt="Profile Picture" />
