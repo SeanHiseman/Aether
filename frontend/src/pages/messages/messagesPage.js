@@ -1,8 +1,9 @@
 import axios from 'axios';
 import React, { useContext, useEffect, useRef, useState } from 'react';
-import { AuthContext } from '../components/authContext';
+import { AuthContext } from '../../components/authContext';
 import { io } from "socket.io-client";
 import { Link, useNavigate, useParams } from 'react-router-dom';
+import Message from './message';
 
 function MessagesPage() {
     const [chat, setChat] = useState([]);
@@ -161,9 +162,12 @@ function MessagesPage() {
                         </ul>
                     ) : (
                         chat.map((msg, index) => (
-                            <div key={index} className={`message ${msg.senderId === user.userId ? 'outgoing' : 'incoming'}`}>
-                                {msg.content}
-                            </div>
+                            <Message
+                                key={index}
+                                message={msg}
+                                isOutgoing={msg.senderId === user.userId}
+                                user={user}
+                          />
                         ))
                     )}
                 </div>
