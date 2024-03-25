@@ -370,7 +370,7 @@ router.post('/join_group', authenticateCheck, async (req, res) => {
     }
 });
 
-//Allows user to leave group
+//Allows user to leave/be removed from group
 router.post('/leave_group', authenticateCheck, async (req, res) => {
     const { userId, groupId } = req.body;
     try {
@@ -380,9 +380,8 @@ router.post('/leave_group', authenticateCheck, async (req, res) => {
         //Lower member count
         const group = await Groups.findByPk(groupId);
         await group.decrement('member_count');
-        res.status(200).send("Group left successfully")
     } catch (error) {
-        res.status(500).send(error.message);
+        res.status(500).json(error.message);
     }
 });
 //Changes if a user is a moderator
@@ -393,9 +392,8 @@ router.post('/toggle_moderator', authenticateCheck, async (req, res) => {
             { is_mod: isMod },
             { where: { group_id: groupId, user_id: userId } }
         );
-        res.send({ message: 'Moderator status updated.'});
     } catch (error) {
-        res.status(500).send({ error: 'Failed to update moderator status.' });
+        res.status(500).json({ error: 'Failed to update moderator status.' });
     }
 });
 

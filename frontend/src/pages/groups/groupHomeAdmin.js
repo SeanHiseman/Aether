@@ -1,7 +1,6 @@
 import axios from 'axios';
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import '../../css/groups.css'; 
 import ChannelButton from '../../components/channelButton';
 import ChatChannel from '../general/chatChannel';
 import MemberChangeButton from '../../components/memberChangeButton';
@@ -167,7 +166,7 @@ function GroupHomeAdmin() {
             });
             setShowPostForm(false);
         } catch (error) {
-            setErrorMessage("Error creating post.");
+            setErrorMessage("Error creating post:", error);
         }
     };
 
@@ -182,9 +181,19 @@ function GroupHomeAdmin() {
             setIsEditingName(false);
         }
         catch (error) {
-            setErrorMessage(`Error changing name: ${error}`);
+            setErrorMessage('Error changing name:', error);
         }
     }; 
+
+    //Admins can remove members
+    const removeMember = async (memberId) => {
+        try {
+            axios.post('/api/leave_group', { memberId, groupId })
+                getGroupMembers();
+        } catch (error) {
+            setErrorMessage('Error removing member:', error);
+        }
+    };
 
     //Toggles display of create channel form after button is pressed
     const toggleChannelForm = () => {
@@ -292,6 +301,7 @@ function GroupHomeAdmin() {
                                     <button className="button" onClick={() => toggleModeratorStatus(member.user.user_id, member.is_mod)}>
                                         {member.is_mod ? 'Remove moderator': 'Make moderator'}
                                     </button>
+                                    <button className="button" onClick={() => removeMember(member.user.user_id)}>Remove member</button>
                                 </div>
                             ))}
                         </div>

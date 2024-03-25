@@ -410,3 +410,10 @@ ul {
     display: block;  
     width: 100%;    
 }
+.vote-arrow {
+    background-color: #000514;
+    cursor: pointer;
+    height: 20px;
+    padding: 0;
+    width: 20px;
+}
