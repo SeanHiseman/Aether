@@ -1,7 +1,6 @@
 import axios from 'axios';
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import '../../css/groups.css'; 
 import ChannelButton from '../../components/channelButton';
 import ChatChannel from '../general/chatChannel';
 import MemberChangeButton from '../../components/memberChangeButton';
