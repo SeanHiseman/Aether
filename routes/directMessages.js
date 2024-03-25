@@ -161,6 +161,16 @@ router.get('/get_friends', authenticateCheck, async (req, res) => {
     }
 });
 
+//Allows message to be taken down either by the user
+router.delete('/remove_message', authenticateCheck, async (req, res) => {
+    try {
+        const { message_id } = req.body;
+        await Messages.findByIdAndDelete(message_id);
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
 //Socket.io event for sending message to an individual user
 export const directMessagesSocket = (socket) => {
     socket.on('join_conversation', (conversationId) => {
