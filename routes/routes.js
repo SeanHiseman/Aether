@@ -130,9 +130,9 @@ router.get('/recommended', authenticateCheck, async (req, res) => {
 //Allows post to be taken down either by the user or moderators
 router.delete('/remove_post', authenticateCheck, async (req, res) => {
     try {
-        const { isGroup, postId } = req.body;
+        const { isGroup, post_id } = req.body;
         const postModel = isGroup ? GroupPosts : ProfilePosts;
-        await postModel.findByIdAndDelete(postId);
+        await postModel.findByIdAndDelete(post_id);
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
     }

@@ -112,9 +112,9 @@ function ContentWidget({ isGroup, post }) {
     };
 
     //Deletes the post
-    const removePost = async (isGroup, postId) => {
+    const removePost = async (isGroup, post_id) => {
         try {
-            const postData = { isGroup, postId }
+            const postData = { isGroup, post_id }
             axios.delete('/api/remove_post', { data: postData });
         } catch (error) {
             console.error("Error removing post:", error); 
