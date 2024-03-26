@@ -118,6 +118,18 @@ function MessagesPage() {
             .then(data => setChat(data))
             .catch(error => console.log("Error fetching chat messages", error));
     }
+
+    //Deletes friendship
+    const removeFriend = (friendId) => {
+        try {
+            axios.delete('api/remove_friend', { data: { receiverUserId: friendId } });
+            //Update friends list
+            setFriends(prevFriends => prevFriends.filter(friend => friend.friend_id !== friendId));
+        } catch (error) {
+            setErrorMessage("Error removing friend.", error);
+        }
+    };
+
     const sendMessage = () => {
         if (socketRef.current) {
             //Emits new message to server
@@ -157,6 +169,7 @@ function MessagesPage() {
                                         <img className="large-profile-photo" src={`/${friend.friend_profile_photo}`} alt="Profile image" />
                                         <p className="large-text">{friend.friend_name}</p>
                                     </Link>
+                                    <button className="button" onClick={removeFriend(friend.friend_id)}>Remove friend</button>
                                 </li>
                             ))}
                         </ul>

@@ -132,14 +132,6 @@ router.get('/get_friends', authenticateCheck, async (req, res) => {
         const friendsData = await Promise.all(friendships.map(async (friendship) => {
             const friendId = (friendship.user1_id !== user.user_id) ? friendship.user1_id : friendship.user2_id;
             const friend = await Users.findByPk(friendId);
-            //const conversation = await UserConversations.findOne({
-                //where: {
-                    //user_id: {
-                        //[Op.in]: [user.user_id, friendId]
-                    //}
-                //},
-                //include: [Conversations]
-            //});
 
             const friendProfile = await Profiles.findOne({
                 where: {
@@ -151,7 +143,6 @@ router.get('/get_friends', authenticateCheck, async (req, res) => {
                 friend_id: friend.user_id,
                 friend_name: friend.username,
                 friend_profile_photo: friendProfile.profile_photo,
-                //conversation_id: conversation ? conversation.conversation_id: null
             };
         }));
 
