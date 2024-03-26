@@ -5,7 +5,8 @@ const Profiles = sequelize.define('profiles', {
   profile_id: { type: STRING(36), primaryKey: true },
   user_id: { type: STRING(36), allowNull: false },
   profile_photo: { type: STRING(120) },
-  bio: { type: STRING(1000) }
+  bio: { type: STRING(1000) },
+  follower_count: { type: INTEGER, defaultValue: 0 },
 }, {tableName: 'profiles', timestamps: false });
 
 
@@ -30,6 +31,17 @@ const Users = sequelize.define('users', {
 //Users relationships
 Users.hasOne(Profiles, { foreignKey: 'user_id' });
 Profiles.belongsTo(Users, { foreignKey: 'user_id' });
+
+
+const Followers = sequelize.define('followers', {
+  follow_id: { type: STRING(36), primaryKey: true },
+  follower_id: { type: STRING(36), allowNull: false },
+  profile_id: { type: STRING(36), allowNull: false },
+}, {tableName: 'users', timestamps: false});
+
+//Followers relationships
+Profiles.belongsToMany(Users, { through: Followers, foreignKey: 'follower_id', otherKey: 'follower_id', as: 'followedProfiles' });
+Users.belongsToMany(Profiles, { through: Followers, foreignKey: 'follower_id', otherKey: 'profile_id', as: 'followers' });
 
 
 const ProfilePosts = sequelize.define('profile_posts', {
@@ -184,6 +196,7 @@ const ReplyVotes = sequelize.define('reply_votes', {
 Users.hasMany(ContentVotes, { as: 'content_vote', foreignKey: 'user_id' });
 Users.hasMany(ReplyVotes, { as: 'reply_vote', foreignKey: 'user_id' });
 
+
 const Friends = sequelize.define('friends', {
   friendship_id: { type: STRING(36), primaryKey: true },
   user1_id: { type: STRING(36), allowNull: false, references: { model: 'Users', key: 'user_id' }},
@@ -228,6 +241,7 @@ Conversations.belongsToMany(Users, { through: UserConversations, foreignKey: 'co
 UserConversations.belongsTo(Conversations, { foreignKey: 'conversation_id'});
 Conversations.hasMany(UserConversations, { foreignKey: 'conversation_id'});
 
+
 const Messages = sequelize.define('messages', {
   message_id: { type: STRING(36), primaryKey: true },
   conversation_id: { type: STRING(36), allowNull: false, references: { model: 'Conversations', key: 'conversation_id' }},
@@ -246,6 +260,7 @@ export {
     Profiles,
     ProfileChannels,
     Users, 
+    Followers,
     ProfilePosts,
     ProfileComments,
     Groups,

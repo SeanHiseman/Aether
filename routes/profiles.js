@@ -8,7 +8,7 @@ import { Op } from 'sequelize';
 import authenticateCheck from '../functions/authenticateCheck.js';
 import session from 'express-session';
 import multer, { diskStorage } from 'multer';
-import { Conversations, Friends, FriendRequests, Profiles, ProfileChannels, ProfilePosts, Users, UserConversations } from '../models/models.js';
+import { Conversations, Followers, Friends, FriendRequests, Profiles, ProfileChannels, ProfilePosts, Users, UserConversations } from '../models/models.js';
 
 const app = express();
 const router = Router();
@@ -179,6 +179,26 @@ router.post('/create_profile_post', authenticateCheck, upload.array('files'), as
     }
 });
 
+//User can follow a profile
+router.post('/follow_profile', authenticateCheck, async (req, res) => {
+    const { userId, profileId } = req.body;
+    try{
+        await Followers.create({
+            follow_id: v4(),
+            follower_id: userId,
+            profile_id: profileId
+        });
+
+        //Increase group member count
+        const followedProfile = await Profiles.findByPk(profileId);
+        await followedProfile.increment('follower_count');
+
+        res.status(200).json();
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
 //Get friend requests
 router.get('/get_friend_requests', authenticateCheck, async (req, res) => {
     try {
@@ -278,9 +298,13 @@ router.get('/profile/:username', authenticateCheck, async (req, res) => {
         let viewedUser = await Users.findOne({ where: { username: req.params.username } });
         //Finds profile associated with user
         let profile = await Profiles.findOne({ where: { user_id: viewedUser.user_id } });
-        let friendship, friendRequest = null;
+        let follower, friendship, friendRequest = null;
         try {
-            [friendship, friendRequest] = await Promise.all([
+            [follower, friendship, friendRequest] = await Promise.all([
+                Followers.findOne({
+                    follower_id: loggedInUserId,
+                    profile_id: profile.profile_id
+                }),
                 Friends.findOne({
                     where: {
                         [Op.or]: [
@@ -298,8 +322,8 @@ router.get('/profile/:username', authenticateCheck, async (req, res) => {
                     }
                 })
             ]);
-        } catch (friendshipError) {
-            return res.status(500).json("Error fetching friendship data." + friendshipError);
+        } catch (error) {
+            return res.status(500).json("Error fetching friendship data.", error);
         }
 
         const responseData = {
@@ -309,6 +333,7 @@ router.get('/profile/:username', authenticateCheck, async (req, res) => {
                 username: viewedUser.username,
                 bio: profile.bio,
                 userId: viewedUser.user_id, 
+                isFollowing: !!follower,
                 isFriend: !!friendship,
                 isRequested: !!friendRequest
             },
@@ -330,6 +355,21 @@ router.delete('/reject_friend_request', authenticateCheck, async (req, res) => {
         res.status(500).send(error.message);
     }
 });
+
+//Removes follower
+router.post('/remove_follower', authenticateCheck, async (req, res) => {
+    const { userId, profileId } = req.body;
+    try {
+        await Followers.destroy({
+            where: { user_id: userId, profile_id: profileId }
+        });
+        //Lower follower count
+        const profile = await Profiles.findByPk(profileId);
+        await profile.decrement('follower_count');
+    } catch (error) {
+        res.status(500).json(error.message);
+    }
+}); 
 
 //Deletes friendship
 router.delete('/remove_friend', authenticateCheck, async (req, res) => {

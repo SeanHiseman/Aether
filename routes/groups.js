@@ -237,9 +237,6 @@ router.get('/group/:group_name', authenticateCheck, async (req, res) => {
         const isAdmin = await checkIfUserIsAdmin(userId, groupName);
         const isMember = await checkIfUserIsMember(userId, groupName);
         const group = await Groups.findOne({where: {group_name: groupName}});
-        if (!group) {
-            return res.status(404).send('Group not found');
-        }
         res.json({
             isAdmin: isAdmin,
             isMember: isMember,
@@ -384,6 +381,7 @@ router.post('/leave_group', authenticateCheck, async (req, res) => {
         res.status(500).json(error.message);
     }
 });
+
 //Changes if a user is a moderator
 router.post('/toggle_moderator', authenticateCheck, async (req, res) => {
     const { groupId, userId, isMod } = req.body;
