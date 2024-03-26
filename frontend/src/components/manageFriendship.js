@@ -14,17 +14,34 @@ function ManageFriendshipButton({ userId, receiverProfileId, receiverUserId, isR
 
     const handleSendRequest = async () => {
         try {
-            const method = friend ? 'delete' : 'post';
-            const requestData = { userId, receiverUserId, receiverProfileId };
-            const url = request ? 'cancel_friend_request' : 'send_friend_request';
+            let method, requestData, url;
+            if (friend) {
+                method = 'delete';
+                requestData = { receiverUserId };
+                url = 'remove_friend';
+            } else if (request) {
+                method = 'delete';
+                requestData = { receiverProfileId,  receiverUserId, userId };
+                url = 'cancel_friend_request';
+            } else {
+                method = 'post';
+                requestData = { receiverProfileId, receiverUserId, userId };
+                url = 'send_friend_request';
+            }
 
             const response = await axios[method](`/api/${url}`, requestData);
 
             if (response.status === 200) {
                 if (method === 'delete') {
-                    //Removing a friend or canceling a request
+                    if (url === 'remove_friend') {
+                    //Removing a friend
                     setFriend(false);
                     setRequest(false);
+                    } else {
+                        //Canceling a request
+                        setFriend(false);
+                        setRequest(false);
+                    }
                 } else {
                     //Sending a friend request
                     setRequest(true);
