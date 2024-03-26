@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { Friends, GroupPosts, ProfilePosts, Profiles, Users } from '../models/models.js'; 
+import { Followers, Friends, GroupPosts, ProfilePosts, Profiles, Users } from '../models/models.js'; 
 import authenticateCheck from '../functions/authenticateCheck.js';
 import { Op } from 'sequelize';
 const router = Router();
@@ -84,6 +84,53 @@ router.get('/friend_posts', authenticateCheck, async (req, res)=> {
             //Posts sorted chronilogically
             order: [['timestamp', 'DESC']]
         });
+        res.json(posts);
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });   
+    }
+});
+
+//Profiles and groups followed/joined by user
+router.get('/following_posts', authenticateCheck, async (req, res)=> {
+    try {
+        const userId = req.session.user_id;
+        const followedProfiles= await Followers.findAll({
+            where: { follower_id: userId },
+                include: [{
+                    model: Profiles,
+                    include: [{
+                        model: ProfilePosts,
+                        attributes: ['post_id', 'title', 'content', 'replies', 'views', 'upvotes', 'downvotes', 'timestamp'],
+                    }]
+                }]
+        });
+        
+        const userGroups = await Users.findOne({
+            where: { user_id: userId },
+            include: [{
+                model: Groups,
+                include: [{
+                    model: GroupPosts,
+                    attributes: ['post_id', 'title', 'content', 'replies', 'views', 'upvotes', 'downvotes', 'timestamp'],
+                }]
+            }]
+        })
+
+        const posts = [
+            ...followedProfiles.flatMap((profile) => 
+                profile.Profiles.ProfilePosts.map((post) => ({
+                    ...post.toJSON(),
+                    isGroup: false,
+                }))
+            ),
+            ...userGroups.Groups.flatMap((group) =>
+                group.GroupPosts.map((post) => ({
+                    ...post.toJSON(), 
+                    isGroup: true,
+                }))
+            )
+        ];
+
         res.json(posts);
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });   
