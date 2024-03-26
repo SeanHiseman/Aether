@@ -6,6 +6,7 @@ import ChatChannel from '../general/chatChannel';
 import ManageFriendshipButton from '../../components/manageFriendship';
 import PersonalProfile from './personal_profile';
 import ProfileFeed from './profileFeed';
+import FollowerChangeButton from '../../components/followerChangeButton';
 
 function Profile() {
     const [channels, setChannels] = useState([]);
@@ -62,6 +63,7 @@ function Profile() {
         <div className="profile-container">
             <div className="content-feed">
                 <header id="profile-header">
+                    <FollowerChangeButton userId={loggedInUserId} ProfileId={profile.profileId} isFollowing={profile.isFollowing} />
                     <ManageFriendshipButton userId={loggedInUserId} receiverProfileId={profile.profileId} receiverUserId={profile.userId} isRequestSent={profile.isRequested} isFriend={profile.isFriend} />
                     <div id="profile-header-side">
                     </div>
