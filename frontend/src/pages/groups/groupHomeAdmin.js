@@ -1,10 +1,10 @@
 import axios from 'axios';
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import ChannelButton from '../../components/channelButton';
-import ChatChannel from '../general/chatChannel';
+import ChannelButton from '../../components/channels/channelButton';
+import ChatChannel from '../../components/channels/chatChannel';
 import MemberChangeButton from '../../components/memberChangeButton';
-import PostChannel from '../general/postChannel';
+import PostChannel from '../../components/channels/postChannel';
 import PostForm from "../../components/postForm";
 
 function GroupHomeAdmin() {

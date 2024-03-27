@@ -2,14 +2,15 @@ import axios from 'axios';
 import { Link } from 'react-router-dom';
 import React, { useContext, useEffect, useState } from 'react';
 import ReactQuill, { Quill } from 'react-quill';
-import { AuthContext } from '../components/authContext';
-import Reply from '../components/replies/reply';
-import ReplyForm from '../components/replies/replyForm';
+import { AuthContext } from './authContext';
+import Reply from './replies/reply';
+import ReplyForm from './replies/replyForm';
 
 function ContentWidget({ isGroup, post }) {
     const [comments, setComments] = useState([]);
     const [downvotes, setDownvotes] = useState(post.dislikes);
     const [downvoteLimit, setDownvoteLimit] = useState(false);
+    const [hasViewed, setHasViewed] = useState(false);
     const [upvotes, setUpvotes] = useState(post.likes);
     const [upvoteLimit, setUpvoteLimit] = useState(false);
     const [showComments, setShowComments] = useState(false);
@@ -17,11 +18,20 @@ function ContentWidget({ isGroup, post }) {
     const isUploader = post.poster_id === user.user_id ? true : false;
     const Poster = isGroup ? 'GroupPoster' : 'ProfilePoster'; //Associations used by database
 
+    //Opens comments
     useEffect(() => {
         if (showComments) {
             getComments(post.post_id);
         }
     }, [showComments, post.post_id]);
+    
+    //Adds a view if comments are opened
+    useEffect(() => {
+        if (showComments && !hasViewed) {
+            incrementViews(post.post_id);
+            setHasViewed(true);
+        }
+    }, [showComments, post.post_id, hasViewed]);
 
     //Allows React Quill to display videos
     const BlockEmbed = Quill.import('blots/block/embed');
@@ -41,42 +51,6 @@ function ContentWidget({ isGroup, post }) {
     VideoBlot.tagName = 'video';
     Quill.register(VideoBlot);
 
-    //Updates up/downvotes
-    const postVote = async (postId, voteType) => {
-        //Reset before request
-        setDownvoteLimit(false);
-        setUpvoteLimit(false);
-
-        //Check if at voting limit
-        if (voteType === 'upvote' && upvotes === 10) {
-            setUpvoteLimit(true);
-            return;
-        } else if (voteType === 'downvote' && downvotes === 10) {
-            setDownvoteLimit(true);
-            return;
-        }
-
-        //Update if limit hasn't been reached
-        setUpvotes(voteType === 'upvote' ? upvotes + 1 : upvotes);
-        setDownvotes(voteType === 'downvote' ? downvotes + 1 : downvotes);
-
-        const vote = {
-            content_id: postId, 
-            isGroup,
-            vote_type: voteType
-        }
-
-        axios.post('/api/content_vote', vote)
-            .catch(error => {
-                console.error('Error:', error);
-                if (voteType === 'upvote') {
-                    setUpvotes(upvotes); 
-                } else if (voteType === 'downvote') {
-                    setDownvotes(downvotes); 
-                }
-            });
-    };
-
     const getComments = async (postId) => {
         try {
             const response = await axios.get(`/api/get_comments/${postId}?isGroup=${isGroup}`);
@@ -93,6 +67,15 @@ function ContentWidget({ isGroup, post }) {
 
     const handleToggleComments = () => {
         setShowComments(!showComments);
+    };
+
+    //Adds a view to the post
+    const incrementViews = async (postId) => {
+        try {
+            await axios.post('/api/increment_views', { postId, isGroup });
+        } catch (error) {
+            console.error("Error incrementing views:", error);
+        }
     };
 
     //Sorts comments in to replies
@@ -119,6 +102,47 @@ function ContentWidget({ isGroup, post }) {
         } catch (error) {
             console.error("Error removing post:", error); 
         }
+    };
+
+    //Updates up/downvotes
+    const postVote = async (postId, voteType) => {
+        //Reset before request
+        setDownvoteLimit(false);
+        setUpvoteLimit(false);
+
+        //Check if at voting limit
+        if (voteType === 'upvote' && upvotes === 10) {
+            setUpvoteLimit(true);
+            return;
+        } else if (voteType === 'downvote' && downvotes === 10) {
+            setDownvoteLimit(true);
+            return;
+        }
+
+        //Update if limit hasn't been reached
+        setUpvotes(voteType === 'upvote' ? upvotes + 1 : upvotes);
+        setDownvotes(voteType === 'downvote' ? downvotes + 1 : downvotes);
+
+        const vote = {
+            content_id: postId, 
+            isGroup,
+            vote_type: voteType
+        }
+
+        if(!hasViewed) {
+            incrementViews(postId);
+            setHasViewed(true);
+        }
+
+        axios.post('/api/content_vote', vote)
+            .catch(error => {
+                console.error('Error:', error);
+                if (voteType === 'upvote') {
+                    setUpvotes(upvotes); 
+                } else if (voteType === 'downvote') {
+                    setDownvotes(downvotes); 
+                }
+            });
     };
 
     const nestedComments = nestComments(comments);

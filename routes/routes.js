@@ -152,6 +152,18 @@ router.get('/home', authenticateCheck, async (req, res) => {
         });
 });
 
+//Adds one view to a piece of content
+router.post('/increment_views', async (req, res) => {
+    const { isGroup, postId } = req.body;
+    try {
+        const post = isGroup ? await GroupPosts.findByPk(postId) : await ProfilePosts.findByPk(postId);
+        post.views += 1;
+        await post.save();
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });   
+    }
+});
+
 //Recommended route (currently just return all posts, will be changed)
 router.get('/recommended', authenticateCheck, async (req, res) => {
     const recommended_content = await ProfilePosts.findAll({

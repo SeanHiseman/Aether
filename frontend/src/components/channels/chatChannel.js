@@ -1,8 +1,8 @@
 import axios from 'axios';
 import React, { useContext, useEffect, useState } from 'react';
-import { AuthContext } from '../../components/authContext';
+import { AuthContext } from '../authContext';
 import { io } from "socket.io-client";
-import PostForm from "../../components/postForm";
+import PostForm from "../postForm";
 
 function ChatChannel({ channelId, channelName, isGroup, locationId }) {
     const [channel, setChannel] = useState([]);
