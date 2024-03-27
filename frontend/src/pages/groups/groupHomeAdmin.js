@@ -1,6 +1,6 @@
 import axios from 'axios';
 import React, { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useFetcher, useParams } from 'react-router-dom';
 import ChannelButton from '../../components/channels/channelButton';
 import ChatChannel from '../../components/channels/chatChannel';
 import MemberChangeButton from '../../components/memberChangeButton';
@@ -8,7 +8,6 @@ import PostChannel from '../../components/channels/postChannel';
 import PostForm from "../../components/postForm";
 
 function GroupHomeAdmin() {
-    const [isAdmin, setIsAdmin] = useState(true);
     const [channels, setChannels] = useState([]);
     const [newChannelName, setNewChannelName] = useState('');
     const [errorMessage, setErrorMessage] = useState('');
@@ -21,29 +20,25 @@ function GroupHomeAdmin() {
     const [members, setMembers] = useState(null);
     const [newDescription, setDescription] = useState('');
     const [newName, setName] = useState('');
+    const [requests, setRequests] = useState([]);
     const [showChannelForm, setShowChannelForm] = useState(false);
     const [showMembers, setShowMembers] = useState(false);
+    const [showRequests, setShowRequests] = useState(false);
     const [showPostForm, setShowPostForm] = useState(false);
 
     useEffect(() => {
         fetch(`/api/group/${group_name}`)
             .then(response => {
-                if (!response.ok) {
-                    throw new Error('Network response was not ok');
-                }
-                return response.json();
-            })
-            .then(data => {
-                setIsAdmin(data.isAdmin);
                 setGroupDetails({
-                    isMember: true, //Must be member to be admin
-                    groupId: data.groupId,
-                    groupName: data.groupName,
-                    description: data.description,
-                    groupPhoto: data.groupPhoto,
-                    memberCount: data.memberCount,
-                    userId: data.userId
-                });
+                    isMember: true, // Must be member to be admin
+                    groupId: response.data.groupId,
+                    groupName: response.data.groupName,
+                    description: response.data.description,
+                    groupPhoto: response.data.groupPhoto,
+                    memberCount: response.data.memberCount,
+                    isPrivate: response.data.isPrivate,
+                    userId: response.data.userId
+                  });
             }).catch(error => {
                 console.error('Fetch error:', error);
             })
@@ -121,6 +116,16 @@ function GroupHomeAdmin() {
     
     const channelRender = channels.find(c => c.channel_name === channel_name);
     
+    //Gets requests to join a group if it is a private group
+    const fetchRequests = async () => {
+        try {
+            const response = await axios.get(`/api/group_requests/${groupDetails.groupId}`);
+            setRequests(response.data);
+        } catch (error) {
+            console.error('Error fetching requests:', error);
+        }
+    };
+
     const getGroupMembers = async () => {
         if (!showMembers) {
             try {
@@ -138,6 +143,20 @@ function GroupHomeAdmin() {
     //Set channels to contain either posts or chats
     const handleChatClick = () => setIsPostChannel(false);
     const handlePostClick = () => setIsPostChannel(true);
+
+    //Accepts or rejects join request
+    const handleRequestAction = async (action, requestId) => {
+        try {
+            if (action === 'accept') {
+                await axios.post(`/api/groups/${groupDetails.groupId}/join/${requestId}`);
+            } else if (action === 'reject') {
+                await axios.delete(`/api/group_requests/${requestId}`);
+            }
+            fetchRequests();
+        } catch (error) {
+            setErrorMessage('Error handling request:', error);
+        }
+    };
 
     //Changes group description
     const handleUpdateDescription = async () => {
@@ -306,8 +325,7 @@ function GroupHomeAdmin() {
                                 </div>
                             ))}
                         </div>
-                    ) : (
-                        showPostForm ? (
+                    ) : showPostForm ? (
                             <PostForm onSubmit={handlePostSubmit} errorMessage={errorMessage} />
                         ) : channelRender ? (
                             channelRender.is_posts ? (
@@ -325,10 +343,31 @@ function GroupHomeAdmin() {
                                     locationId={groupDetails.groupId}
                                 />
                             )
-                        ) : null
+                        ) : null}
+                    {showRequests && (
+                        <div>
+                            <h2>Join requests</h2>
+                            {requests.length === 0 ? (
+                                <p>No pending requests</p>
+                            ) : (
+                                <ul>
+                                    {requests.map((request) => (
+                                        <li key={request.request_id}>
+                                            {request.sender.username}
+                                            <button className="button" onClick={() => handleRequestAction(request.request_id, 'accept')}>
+                                                Accept
+                                            </button>
+                                            <button className="button" onClick={() => handleRequestAction(request.request_id, 'reject')}>
+                                                Reject
+                                            </button>
+                                        </li>
+                                    ))}
+                                </ul>
+                            )}
+                        </div>
                     )}
                 </div>
-            </div>     
+            </div>  
             <aside id="right-aside">
                 <h1>{channel_name}</h1>
                 {showPostForm && (
