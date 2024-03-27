@@ -8,7 +8,7 @@ import { Op } from 'sequelize';
 import authenticateCheck from '../functions/authenticateCheck.js';
 import session from 'express-session';
 import multer, { diskStorage } from 'multer';
-import { Conversations, Followers, Friends, FriendRequests, Profiles, ProfileChannels, ProfilePosts, Users, UserConversations } from '../models/models.js';
+import { Conversations, Followers, Friends, FriendRequests, Messages, Profiles, ProfileChannels, ProfilePosts, Users, UserConversations } from '../models/models.js';
 
 const app = express();
 const router = Router();
@@ -373,20 +373,45 @@ router.post('/remove_follower', authenticateCheck, async (req, res) => {
 
 //Deletes friendship
 router.delete('/remove_friend', authenticateCheck, async (req, res) => {
-    const loggedInUserId = req.session.user_id;
-    const { receiverUserId } = req.body;
-
     try {
+        const loggedInUserId = req.session.user_id;
+        const { receiverUserId } = req.body;
+        //Gets all conversations involving the two users
+        const conversationIds = await UserConversations.findAll({
+            attributes: ['conversation_id'],
+            where: {
+                [Op.or]: [
+                    { user_id: loggedInUserId },
+                    { user_id: receiverUserId}
+                ]}
+        }).map(entry => entry.conversation_id);
+
+        await Conversations.destroy({
+            where: {
+                conversation_id: conversationIds
+            }
+        });
         await Friends.destroy({
             where: {
                 [Op.or]: [
                     { user1_id: loggedInUserId, user2_id: receiverUserId },
                     { user1_id: receiverUserId, user2_id: loggedInUserId }
-                ]
-            }
+                ]}
         });
-
-        res.json({ message: 'Friend removed successfully.' });
+        await Messages.destroy({
+            where: {
+                [Op.or]: [
+                    { sender_id: loggedInUserId, receiver_id: receiverUserId },
+                    { sender_id: receiverUserId, receiver_id: loggedInUserId},
+                ]}
+        });
+        await UserConversations.destroy({
+            where: {
+                [Op.or]: [
+                    { user_id: loggedInUserId, conversation_id: conversationIds },
+                    { user_id: receiverUserId, conversation_id: conversationIds }
+                ]}
+        });
     } catch (error) {
         res.status(500).json({ error: 'Failed to remove friend.' });
     }
