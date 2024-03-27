@@ -138,10 +138,10 @@ Groups.hasMany(Groups, { as: 'SubGroups', foreignKey: 'parent_id' });
 const GroupRequests = sequelize.define('group_requests', {
   request_id: { type: STRING(36), primaryKey: true },
   sender_id: { type: STRING(36), allowNull: false, references: { model: 'Users', key: 'user_id' }},
-  receiver_id: { type: STRING(36), allowNull: false, references: { model: 'Groups', key: 'group_id' }}
+  group_id: { type: STRING(36), allowNull: false, references: { model: 'Groups', key: 'group_id' }}
 }, { tableName: 'group_requests', timestamps: false });
 
-// FriendRequest relationships
+//GroupRequest relationships
 Users.hasMany(GroupRequests, { as: 'sent_requests', foreignKey: 'sender_id' });
 GroupRequests.belongsTo(Users, { as: 'sender', foreignKey: 'sender_id' });
 GroupRequests.belongsTo(Groups, { as: 'receiver', foreignKey: 'receiver_id' });

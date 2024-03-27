@@ -1,12 +1,30 @@
 import authenticateCheck from '../functions/authenticateCheck.js';
 import checkIfUserIsAdmin from '../functions/adminCheck.js';
 import checkIfUserIsMember from '../functions/memberCheck.js';
-import { Groups, GroupChannels, GroupChannelMessages, GroupPosts, Profiles, Users, UserGroups } from '../models/models.js';
+import { Groups, GroupChannels, GroupChannelMessages, GroupPosts, GroupRequests, Profiles, Users, UserGroups } from '../models/models.js';
 import multer from 'multer';
 import { Router } from 'express';
 import path from 'path';
 import { v4 } from 'uuid';
 const router = Router();
+
+//Adds user to private group
+router.post('/accept_request', authenticateCheck, async (req, res) => {
+    try {
+        const { groupId, userId } = req.body;
+        await UserGroups.create({
+            user_id: userId,
+            group_id: groupId
+        });
+        await Groups.increment('member_count', { where: { group_id: groupId } });
+        await GroupRequests.destroy({
+            where: { request_id: requestId }
+        });
+        res.status(200).json({ message: 'User added to group'});
+    } catch (error) {
+        res.status.json({ error: error.message });
+    }
+});
 
 //Create new channel within a group
 router.post('/add_group_channel', authenticateCheck, async (req, res) => {
@@ -28,6 +46,19 @@ router.post('/add_group_channel', authenticateCheck, async (req, res) => {
         res.status(201).json(newChannel);
     } catch (error) {
         res.status(400).json({ error: error.message });
+    }
+});
+
+//Cancel join request
+router.delete('/cancel_join_request', authenticateCheck, async (req, res) => {
+    const { userId, groupId } = req.body;
+    try {
+        await GroupRequests.destroy({
+            where: { sender_id: userId, group_id: groupId } 
+        });
+        res.status(200).json("Join request rejected");
+    } catch (error) {
+        res.status(500).json(error.message);
     }
 });
 
