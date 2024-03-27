@@ -1,6 +1,6 @@
 import axios from 'axios';
 import React, { useEffect, useState } from 'react';
-import ContentWidget from '../content_widget';
+import ContentWidget from '../../components/contentWidget';
 
 function FollowingPage() {
     const [posts, setPosts] = useState([]);

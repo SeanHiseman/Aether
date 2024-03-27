@@ -3,8 +3,8 @@ import confirmAlert from 'react-confirm-alert';
 import 'react-confirm-alert/src/react-confirm-alert.css';
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import PostChannel from '../general/postChannel';
-import PostForm from "../../components/postForm";
+import PostChannel from '../../components/channels/postChannel';
+import PostForm from '../../components/postForm';
 
 //Loads the profile page of the logged in user
 const PersonalProfile = () => {
@@ -18,7 +18,7 @@ const PersonalProfile = () => {
     const [isPhotoFormVisible, setIsPhotoFormVisible] = useState(false);
     const [newBio, setBio] = useState('');
     const [newName, setName] = useState('');
-    const [profile, setProfile] = useState({ profileId: '', profilePhoto: '', username: '', userId: '', isFriend: '', isRequested: '' });
+    const [profile, setProfile] = useState('');
     const [showChannelForm, setShowChannelForm] = useState(false);
     const [showFriendRequests, setShowFriendRequests] = useState(false);
     const [showPostForm, setShowPostForm] = useState(false);
@@ -309,7 +309,7 @@ const PersonalProfile = () => {
                         <button className="button" onClick={deleteAccount}>Delete account</button>
                     </div>
                     <div id="profile-header-photo">
-                        <img className="large-profile-photo" src={`/${profile.profilePhoto}`} alt="Profile Picture" />
+                        <img className="large-profile-photo" src={`/${profile.profilePhoto}`} alt="Profile" />
                         <button className="button" onClick={() => setIsPhotoFormVisible(!isPhotoFormVisible)}>
                             {isPhotoFormVisible ? 'Close' : 'Change Profile Photo'}
                         </button>

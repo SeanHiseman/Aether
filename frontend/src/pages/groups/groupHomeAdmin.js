@@ -12,7 +12,7 @@ function GroupHomeAdmin() {
     const [channels, setChannels] = useState([]);
     const [newChannelName, setNewChannelName] = useState('');
     const [errorMessage, setErrorMessage] = useState('');
-    const [groupDetails, setGroupDetails] = useState({ groupName: group_name, memberCount: 0 });
+    const [groupDetails, setGroupDetails] = useState('');
     const { group_name, channel_name } = useParams();
     const [isEditingDescription, setIsEditingDescription] = useState(false);
     const [isEditingName, setIsEditingName] = useState(false);

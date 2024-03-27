@@ -166,7 +166,7 @@ function MessagesPage() {
                             {friends.map(friend => (
                                 <li key={friend.friend_id}>
                                     <Link className="friend-list-item" to={`/profile/${friend.friend_name}`}>
-                                        <img className="large-profile-photo" src={`/${friend.friend_profile_photo}`} alt="Profile image" />
+                                        <img className="large-profile-photo" src={`/${friend.friend_profile_photo}`} alt="Profile" />
                                         <p className="large-text">{friend.friend_name}</p>
                                     </Link>
                                     <button className="button" onClick={removeFriend(friend.friend_id)}>Remove friend</button>
@@ -195,7 +195,7 @@ function MessagesPage() {
                 {friend_name ? (
                     <nav id="friend-list">
                         <Link id="chat-profile-link" to={`/profile/${friend_name}`}>
-                            <img className="profile-image2" src={`/${friendProfileImage}`} alt="Profile image"/>
+                            <img className="profile-image2" src={`/${friendProfileImage}`} alt="Profile"/>
                             <h1>{friend_name}</h1>
                         </Link>
                         <h3>Chats</h3> 
@@ -228,7 +228,7 @@ function MessagesPage() {
                                 {friends.map(friend => (
                                     <li className="profile-info" key={friend.friend_id}>
                                         <Link className="profile-link" to={`/messages/${username}/${friend.friend_name}`}>
-                                        <img className="profile-image" src={`/${friend.friend_profile_photo}`} alt="Profile image"/>
+                                        <img className="profile-image" src={`/${friend.friend_profile_photo}`} alt="Profile"/>
                                             <div className="chat-username">
                                                 {friend.friend_name}
                                             </div>

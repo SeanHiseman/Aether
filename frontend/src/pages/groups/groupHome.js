@@ -13,31 +13,30 @@ function GroupHome() {
     const [channels, setChannels] = useState([]);
     const [errorMessage, setErrorMessage] = useState('');
     const [isAdmin, setIsAdmin] = useState(false);
-    const [groupDetails, setGroupDetails] = useState({ groupName: group_name, memberCount: 0 });
+    const [groupDetails, setGroupDetails] = useState('');
     const [showPostForm, setShowPostForm] = useState(false);
+    document.title = groupDetails.groupName;
 
+    //Loads group info 
     useEffect(() => {
-        fetch(`/api/group/${group_name}`)
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error('Network response was not ok');
-                }
-                return response.json();
-            })
-            .then(data => {
-                setIsAdmin(data.isAdmin);
-                setGroupDetails({
-                    isMember: data.isMember,
-                    groupId: data.groupId,
-                    groupName: data.groupName,
-                    description: data.description,
-                    groupPhoto: data.groupPhoto,
-                    memberCount: data.memberCount,
-                    userId: data.userId
-                });
-            }).catch(error => {
-                console.error('Fetch error:', error);
-            })
+        try {
+            const response  = axios.get(`/api/group/${group_name}`);
+            const data = response.data;
+            setIsAdmin(data.isAdmin);
+            setGroupDetails({
+                isMember: data.isMember,
+                groupId: data.groupId,
+                groupName: data.groupName,
+                description: data.description,
+                groupPhoto: data.groupPhoto,
+                memberCount: data.memberCount,
+                isPrivate: data.isPrivate,
+                isRequestSent: data.isRequestSent,
+                userId: data.userId
+            });
+        } catch (error) {
+            setErrorMessage("Error fetching group details:", error);
+        };
     }, [group_name]);
 
     //Fetch channels in user profile
@@ -74,18 +73,46 @@ function GroupHome() {
         }
     };
 
+    //Checks membership if group is private
+    const isNotPrivateMember = !groupDetails.isMember && groupDetails.isPrivate;
     //Load different page if user is admin
     if (isAdmin) {
         return <GroupHomeAdmin />
+    }
+    else if (isNotPrivateMember) {
+        return (
+            <header id="group-header">
+                <div id="group-members">
+                    <p>{groupDetails.memberCount} members</p>
+                    <MemberChangeButton 
+                        userId={groupDetails.userId} 
+                        groupId={groupDetails.groupId} 
+                        isMember={groupDetails.isMember} 
+                        isRequestSent={groupDetails.isRequestSent}
+                        isPrivate={groupDetails.isPrivate}
+                    />
+                </div>
+                <div id="group-text">
+                    <p className="large-text">{groupDetails.groupName}</p>
+                    <p id="description" >{groupDetails.description}</p>
+                </div>
+                <img id="large-group-photo" src={`/${groupDetails.groupPhoto}`} alt={groupDetails.groupName} />
+            </header>   
+        )
     } else {
-        document.title = groupDetails.groupName;
         return (    
             <div className="group-container">  
                 <div className="content-feed">
                     <header id="group-header">
                         <div id="group-members">
                             <p>{groupDetails.memberCount} members</p>
-                            <MemberChangeButton userId={groupDetails.userId} groupId={groupDetails.groupId} isMember={groupDetails.isMember}/>
+                            <MemberChangeButton 
+                                userId={groupDetails.userId} 
+                                groupId={groupDetails.groupId} 
+                                isMember={groupDetails.isMember} 
+                                isRequestSent={groupDetails.isRequestSent} 
+                                isPrivate={groupDetails.isPrivate}
+                            />
                         </div>
                         <div id="group-text">
                             <p className="large-text">{groupDetails.groupName}</p>
