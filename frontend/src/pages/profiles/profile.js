@@ -2,7 +2,6 @@ import axios from 'axios';
 import React, { useState, useEffect, useContext } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { AuthContext } from '../../components/authContext';
-import ChatChannel from '../general/chatChannel';
 import ManageFriendshipButton from '../../components/manageFriendship';
 import PersonalProfile from './personal_profile';
 import ProfileFeed from './profileFeed';
@@ -11,7 +10,7 @@ import FollowerChangeButton from '../../components/followerChangeButton';
 function Profile() {
     const [channels, setChannels] = useState([]);
     //const [errorMessage, setErrorMessage] = useState('');
-    const [profile, setProfile] = useState({ profileId: '', profilePhoto: '', username: '', userId: '', isFriend: '', isRequested: '' });
+    const [profile, setProfile] = useState('');
     const { user } = useContext(AuthContext);
     const { username, channel_name } = useParams();
     const navigate = useNavigate();
@@ -72,16 +71,12 @@ function Profile() {
                         <p id="profile-bio">{profile.bio}</p>
                     </div>
                     <div id="profile-header-photo">
-                        <img className="large-profile-photo" src={`/${profile.profilePhoto}`} alt="Profile Picture" />         
+                        <img className="large-profile-photo" src={`/${profile.profilePhoto}`} alt="Profile" />         
                     </div>
                 </header>
                 <div className="channel-feed">
                     {channelRender ? (
-                        channelRender.is_posts ? (
-                            <ProfileFeed channelId={channelRender.channel_id} isGroup={false} locationId={profile.profileId}/>
-                                ) : (
-                            <ChatChannel channelId={channelRender.channel_id} channelName={channelRender.channel_name} isGroup={false} locationId={profile.profileId}/>
-                        )
+                        <ProfileFeed channelId={channelRender.channel_id} isGroup={false} locationId={profile.profileId}/>
                     ) : null}
                 </div>
             </div>

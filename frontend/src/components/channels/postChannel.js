@@ -1,6 +1,6 @@
 import axios from "axios";
 import React, { useEffect, useState } from "react";
-import ContentWidget from "../content_widget";
+import ContentWidget from "../contentWidget";
 
 //For both viewing and uploading posts
 function PostChannel({ channelId, channelName, isGroup, locationId }) {
@@ -28,7 +28,7 @@ function PostChannel({ channelId, channelName, isGroup, locationId }) {
         .catch(error => {
              console.error('Error getting posts:', error);
         });
-    }, [channelId, locationId]);
+    }, [channelId, channelName, isGroup, locationId]);
 
     return (
         <div id="channel">

@@ -164,11 +164,11 @@ function ContentWidget({ isGroup, post }) {
                 </div>
                 <div className="reply-vote-container">
                     <button className={upvoteStyle} onClick={() => postVote(post.post_id, 'upvote')}>
-                        <img className="vote-arrow" src="/media/site_images/up.png"/>
+                        <img className="vote-arrow" src="/media/site_images/up.png" alt="upvote" />
                     </button>
                     <span className="total-votes">{upvotes - downvotes}</span>
                     <button className={downvoteStyle} onClick={() => postVote(post.post_id, 'downvote')}>
-                        <img className="vote-arrow" src="/media/site_images/down.png"/>
+                        <img className="vote-arrow" src="/media/site_images/down.png" alt="downvote" />
                     </button>
                 </div>
                 <button className="button" data-content-id={post.post_id} onClick={handleToggleComments}>

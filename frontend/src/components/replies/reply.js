@@ -75,11 +75,11 @@ const Reply = ({ addComment, comment, depth, isGroup, onReplyAdded }) => {
                 <span className="comment-content">{comment.content}</span>
                 <div className="reply-vote-container">
                     <button className={upvoteStyle} onClick={() => handleVote('upvote')}>
-                        <img className="vote-arrow" src="/media/site_images/up.png"/>
+                        <img className="vote-arrow" src="/media/site_images/up.png" alt="upvote" />
                     </button>
                     <span className="total-votes">{upvotes - downvotes}</span>
                     <button className={downvoteStyle} onClick={() => handleVote('downvote')}>
-                        <img className="vote-arrow" src="/media/site_images/down.png"/>
+                        <img className="vote-arrow" src="/media/site_images/down.png" alt="downvote" />
                     </button>
                     <button className="button" onClick={toggleReplyForm}>Reply</button>
                         {showReplyForm && <ReplyForm isGroup={isGroup} onReplyAdded={onReplyAdded} parentId={comment.comment_id} postId={comment.post_id} />}

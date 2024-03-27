@@ -1,32 +1,55 @@
 import axios from "axios";
 import React, { useEffect, useState } from "react"
 
-const MemberChangeButton = ({ userId, groupId, isMember }) => {
+const MemberChangeButton = ({ userId, groupId, isMember, isRequestSent, isPrivate }) => {
     const [errorMessage, setErrorMessage] = useState('');
     const [member, setMember] = useState(isMember);
+    const [request, setRequest] = useState(isRequestSent);
 
-    //Update member state
+    //Update member state, including requests for private groups
     useEffect(() => {
+        setRequest(isRequestSent);
         setMember(isMember);
-    }, [isMember]);
+    }, [isRequestSent, isMember]);
 
     const handleMemberChange = () => {
-        //Depends on if user is already a group member
-        const url = member ? 'leave_group' : 'join_group';
-        axios.post(`/api/${url}`, { userId, groupId })
-            .then(() => {
-                setMember(!member);
-                //Reload page upon joining/leaving
-                //window.location.reload();
-            }).catch(error => {
-                setErrorMessage("Error updating group membership", error);
-            });
+        if (isPrivate && !member && !request) {
+            //Send join request for private group
+            axios.post('/api/join_group', { userId, groupId })
+                .then(() => {
+                    setRequest(true);
+                })
+                .catch(error => {
+                    setErrorMessage("Error sending join request", error);
+                });
+        } else if (isPrivate && request) {
+            //Cancel join request for private group
+            axios.post('/api/cancel_request', { userId, groupId })
+                .then(() => {
+                    setRequest(false);
+                })
+                .catch(error => {
+                    setErrorMessage("Error canceling join request", error);
+                });
+        } else {
+            //Join or leave public group
+            const url = member ? 'leave_group' : 'join_group';
+            axios.post(`/api/${url}`, { userId, groupId })
+                .then(() => {
+                    setMember(!member);
+                })
+                .catch(error => {
+                    setErrorMessage("Error updating group membership", error);
+                });
+        }
     };
+
+    const buttonText = member ? 'Leave' : request && isPrivate ? 'Cancel request' : 'Join';
 
     return (
         <div>
             <button className="button" onClick={handleMemberChange}>
-                {member ? 'Leave' : 'Join'}
+                {buttonText}
             </button>
             {errorMessage && <div className="error-message">{errorMessage}</div>}
         </div>

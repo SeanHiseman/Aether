@@ -121,7 +121,7 @@ const BaseLayout = () => {
             <aside id="left-aside">
                 <div className="profile-info">
                     <Link className="profile-link" to={`/profile/${profile.logged_in_username}`}>
-                        <img className="profile-image" src={`/${profile.logged_in_profile_photo}`} alt="Profile image" />
+                        <img className="profile-image" src={`/${profile.logged_in_profile_photo}`} alt="Profile" />
                         <p id="logged_in_username">{profile.logged_in_username}</p>
                     </Link>
                 </div>

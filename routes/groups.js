@@ -237,16 +237,23 @@ router.get('/group/:group_name', authenticateCheck, async (req, res) => {
         const isAdmin = await checkIfUserIsAdmin(userId, groupName);
         const isMember = await checkIfUserIsMember(userId, groupName);
         const group = await Groups.findOne({where: {group_name: groupName}});
-        res.json({
-            isAdmin: isAdmin,
-            isMember: isMember,
-            groupId: group.group_id,
-            groupName: group.group_name,
-            description: group.description,
-            groupPhoto: group.group_photo,
-            memberCount: group.member_count,
-            userId: userId
-        });
+        const groupData = group.toJSON(); 
+        groupData.isAdmin = isAdmin;
+        groupData.isMember = isMember;
+        groupData.userId = userId;
+        //Finds user join request if private group
+        if (group.is_private) {
+            const hasJoinRequest = await GroupRequests.findOne({
+                where: {
+                    sender_id: userId,
+                    receiver_id: group.group_id,
+                },
+            });
+            groupData.isRequestSent = !!hasJoinRequest;
+        } else {
+            groupData.isRequestSent = false;
+        }
+        res.json(groupData);
     } catch (error) {
         res.status(500).send('Error getting group.');
     }
