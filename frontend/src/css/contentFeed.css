@@ -1,8 +1,8 @@
-.comment-section {
+.reply-section {
     display: block;
     width: 100%;
 }
-.comment-input {
+.reply-input {
     background-color: #000514;
     border: 1px solid white;
     border-radius: 10px;
@@ -13,7 +13,7 @@
     padding: 10px;
     width: 80%;
 }
-.content-item {
+.reply-item {
     background-color: #000514;
     border-left: 1px solid white;
     border-right: 1px solid white;
@@ -22,11 +22,11 @@
     padding: 15px;
     width: 800px;
 }
-.content-list {
+.reply-list {
     border-bottom: 1px solid white;
     padding: 0;
 }
-.content-metadata {
+.reply-metadata {
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -45,7 +45,7 @@
     margin: 5px;
     padding: 0;
 }
-.like-button, .dislike-button, .comment-button, .post-comment {
+.upvote-button, .downvote-button, .reply-button, .post-reply {
     cursor: pointer;
     padding: 5px 10px;
     margin-right: 5px;
@@ -55,14 +55,14 @@
     border-radius: 10px;
     transition: background-color 0.3s;
 }
-.like-button:hover, .dislike-button:hover, .comment-button:hover, .post-comment:hover{
+.upvote-button:hover, .downvote-button:hover, .reply-button:hover, .post-reply:hover{
     background-color: #1f2956;
 }
-.like-count, .dislike-count, .comment-count, .view-count {
+.upvote-count, .downvote-count, .reply-count, .view-count {
     font-size: 14px;
     margin-right: 5px;
 }
-.reply-button{
+.reply-button {
     cursor: pointer;
     font-size: 20;
     border-radius: 10px;
@@ -74,11 +74,11 @@
     transition: background-color 0.3s;
 }
 
-.reply-button:hover{
+.reply-button:hover {
     background-color: #1f2956;
 }
 
-.comment-profile-container{
+.reply-profile-container {
     position: relative;
     display: flex;
     margin-bottom: 5px;
@@ -99,28 +99,13 @@
     font-weight: bold;
     margin-left: 5px;
 }
-
-.comment-text{
-    margin-left: 10px;
-}
-
-.like-dislike-container{
-    display: inline-flex;
-    align-items: center;
-    margin-left: 10px;
-}
-
-.like-dislike-arrows {
+.vote-arrows {
     background-color: transparent;
     border: none;
     padding: 0;
     cursor: pointer;
     background-size: contain;
     background-repeat: no-repeat;
-}
-
-.net-likes{
-    margin: 0 5px;
 }
 .post-list {
     margin: 0px;

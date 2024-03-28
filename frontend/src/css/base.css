@@ -138,8 +138,10 @@ body,html {
 .chat-channel-button, .conversation-button {
     border-radius: 1000px;
 }
-.posts-channel-button {
-    border-radius: 5px;
+#confirmation-message {
+    color: white;
+    margin-left: 10px;
+    text-align: right;
 }
 .container {
     display: flex;
@@ -284,6 +286,9 @@ main {
     margin-top: 80px;
     width: 100%;
 }
+.posts-channel-button {
+    border-radius: 5px;
+}
 #profile-bio, #description {
     max-width: 400px;
 }
@@ -397,11 +402,6 @@ main {
     border-radius: 6px;
     height: 40px;
     width: 40px;
-}
-#confirmation-message {
-    color: white;
-    margin-left: 10px;
-    text-align: right;
 }
 ul {
     padding-inline-start: 0;

@@ -7,31 +7,31 @@ import Reply from './replies/reply';
 import ReplyForm from './replies/replyForm';
 
 function ContentWidget({ isGroup, post }) {
-    const [comments, setComments] = useState([]);
+    const [replies, setReplies] = useState([]);
     const [downvotes, setDownvotes] = useState(post.dislikes);
     const [downvoteLimit, setDownvoteLimit] = useState(false);
     const [hasViewed, setHasViewed] = useState(false);
     const [upvotes, setUpvotes] = useState(post.likes);
     const [upvoteLimit, setUpvoteLimit] = useState(false);
-    const [showComments, setShowComments] = useState(false);
+    const [showReplies, setShowReplies] = useState(false);
     const { user } = useContext(AuthContext);
     const isUploader = post.poster_id === user.user_id ? true : false;
     const Poster = isGroup ? 'GroupPoster' : 'ProfilePoster'; //Associations used by database
 
-    //Opens comments
+    //Opens replies
     useEffect(() => {
-        if (showComments) {
-            getComments(post.post_id);
+        if (showReplies) {
+            getReplies(post.post_id);
         }
-    }, [showComments, post.post_id]);
+    }, [showReplies, post.post_id]);
     
-    //Adds a view if comments are opened
+    //Adds a view if replies are opened
     useEffect(() => {
-        if (showComments && !hasViewed) {
+        if (showReplies && !hasViewed) {
             incrementViews(post.post_id);
             setHasViewed(true);
         }
-    }, [showComments, post.post_id, hasViewed]);
+    }, [showReplies, post.post_id, hasViewed]);
 
     //Allows React Quill to display videos
     const BlockEmbed = Quill.import('blots/block/embed');
@@ -51,22 +51,22 @@ function ContentWidget({ isGroup, post }) {
     VideoBlot.tagName = 'video';
     Quill.register(VideoBlot);
 
-    const getComments = async (postId) => {
+    const getReplies = async (postId) => {
         try {
-            const response = await axios.get(`/api/get_comments/${postId}?isGroup=${isGroup}`);
-            setComments(response.data); 
+            const response = await axios.get(`/api/get_replies/${postId}?isGroup=${isGroup}`);
+            setReplies(response.data); 
         } catch (error) {
-            console.error("Error getting comments:", error);
+            console.error("Error getting replies:", error);
         }
     };
 
-    //Updates comments after new one added
-    const handleReplyAdded = (newComment) => {
-        setComments(currentComments => [...currentComments, newComment]);
+    //Updates replies after new one added
+    const handleReplyAdded = (newReply) => {
+        setReplies(currentReplies => [...currentReplies, newReply]);
     };
 
-    const handleToggleComments = () => {
-        setShowComments(!showComments);
+    const handleToggleReplies = () => {
+        setShowReplies(!showReplies);
     };
 
     //Adds a view to the post
@@ -78,20 +78,20 @@ function ContentWidget({ isGroup, post }) {
         }
     };
 
-    //Sorts comments in to replies
-    const nestComments = (comments) => {
-        const commentMap = {};
-        comments.forEach(comment => commentMap[comment.comment_id] = { ...comment, replies: [] });
+    //Sorts replies by parent
+    const nestReplies = (replies) => {
+        const replyMap = {};
+        replies.forEach(reply => replyMap[reply.reply_id] = { ...reply, replies: [] });
     
-        const nestedComments = [];
-        Object.values(commentMap).forEach(comment => {
-            if (comment.parent_id === null) {
-                nestedComments.push(comment);
-            } else if (commentMap[comment.parent_id]) {
-                commentMap[comment.parent_id].replies.push(comment);
+        const nestedReplies = [];
+        Object.values(replyMap).forEach(reply => {
+            if (reply.parent_id === null) {
+                nestedReplies.push(reply);
+            } else if (replyMap[reply.parent_id]) {
+                replyMap[reply.parent_id].replies.push(reply);
             }
         });
-        return nestedComments;
+        return nestedReplies;
     };
 
     //Deletes the post
@@ -145,7 +145,7 @@ function ContentWidget({ isGroup, post }) {
             });
     };
 
-    const nestedComments = nestComments(comments);
+    const nestedReplies = nestReplies(replies);
     const downvoteStyle = downvoteLimit ? 'downvote-disabled' : 'downvote-enabled';
     const upvoteStyle = upvoteLimit ? 'upvote-disabled' : 'upvote-enabled';
 
@@ -171,8 +171,8 @@ function ContentWidget({ isGroup, post }) {
                         <img className="vote-arrow" src="/media/site_images/down.png" alt="downvote" />
                     </button>
                 </div>
-                <button className="button" data-content-id={post.post_id} onClick={handleToggleComments}>
-                    Replies <span className="comment-count" id={`comment-count-${post.post_id}`}>{post.comments}</span>
+                <button className="button" data-content-id={post.post_id} onClick={handleToggleReplies}>
+                    Replies <span className="reply-count" id={`reply-count-${post.post_id}`}>{post.replies}</span>
                 </button>
                 <span className="view-count">{post.views} Views</span>
                 {isUploader ? (
@@ -181,12 +181,12 @@ function ContentWidget({ isGroup, post }) {
             </div>
             
             {showComments && (
-                <div className="comment-section">
-                    <div className="add-comment">
+                <div className="reply-section">
+                    <div className="add-reply">
                         <ReplyForm isGroup={isGroup} onReplyAdded={handleReplyAdded} parentId={null} postId={post.post_id} />
                     </div>
-                    {nestedComments.map((comment) => (
-                        <Reply key={comment.comment_id} comment={comment} depth={0} isGroup={isGroup} />
+                    {nestedReplies.map((reply) => (
+                        <Reply key={reply.reply_id} reply={reply} depth={0} isGroup={isGroup} />
                     ))}
                 </div>
             )}
