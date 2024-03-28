@@ -4,15 +4,15 @@ import { Link } from 'react-router-dom';
 import { AuthContext } from '../authContext';
 import ReplyForm from './replyForm';
 
-const Reply = ({ addComment, comment, depth, isGroup, onReplyAdded }) => {
+const Reply = ({ addReply, reply, depth, isGroup, onReplyAdded }) => {
     const [showReplyForm, setShowReplyForm] = useState(false);
-    const [downvotes, setDownvotes] = useState(comment.dislikes);
+    const [downvotes, setDownvotes] = useState(reply.downvotes);
     const [downvoteLimit, setDownvoteLimit] = useState(false);
-    const [upvotes, setUpvotes] = useState(comment.likes);
+    const [upvotes, setUpvotes] = useState(reply.upvotes);
     const [upvoteLimit, setUpvoteLimit] = useState(false);
     const { user } = useContext(AuthContext);
-    const isReplier = comment.commenter_id === user.user_id ? true : false;
-    const Replier = isGroup ? 'GroupCommenter' : 'ProfileCommenter'; //Associations used by database
+    const isReplier = reply.replier_id === user.user_id ? true : false;
+    const Replier = isGroup ? 'GroupReplier' : 'ProfileReplier'; //Associations used by database
     const toggleReplyForm = () => setShowReplyForm(!showReplyForm);
 
     //Updates up/downvotes
@@ -35,7 +35,7 @@ const Reply = ({ addComment, comment, depth, isGroup, onReplyAdded }) => {
         setDownvotes(voteType === 'downvote' ? downvotes + 1 : downvotes);
 
         const vote = {
-            comment_id: comment.comment_id,
+            reply_id: reply.reply_id,
             isGroup,
             vote_type: voteType
         };
@@ -52,9 +52,9 @@ const Reply = ({ addComment, comment, depth, isGroup, onReplyAdded }) => {
     };
 
     //Deletes the reply
-    const removeReply = async (isGroup, comment_id) => {
+    const removeReply = async (isGroup, reply_id) => {
         try {
-            const replyData = { isGroup, comment_id }
+            const replyData = { isGroup, reply_id }
             axios.delete('/api/remove_reply', { data: replyData });
         } catch (error) {
             console.error("Error removing reply:", error); 
@@ -65,14 +65,14 @@ const Reply = ({ addComment, comment, depth, isGroup, onReplyAdded }) => {
     const upvoteStyle = upvoteLimit ? 'upvote-disabled' : 'upvote-enabled';
     
     return (
-        <div className="comment-container" style={{ marginLeft: `${depth * 20}px` }}>
-            <Link className="reply-profile-container" to={`/profile/${comment[Replier].username}`}>
-                <img className="uploader-profile-image" src={`/${comment[Replier].profile.profile_photo}` || '/media/site_images/blank-profile.png'} alt="Profile" />
-                <p className="username">{comment[Replier].username || 'Anonymous'}</p>
+        <div className="reply-container" style={{ marginLeft: `${depth * 20}px` }}>
+            <Link className="reply-profile-container" to={`/profile/${reply[Replier].username}`}>
+                <img className="uploader-profile-image" src={`/${reply[Replier].profile.profile_photo}` || '/media/site_images/blank-profile.png'} alt="Profile" />
+                <p className="username">{reply[Replier].username || 'Anonymous'}</p>
             </Link>
             <div className="horizontal-container">
-                <div className="comment-element">
-                <span className="comment-content">{comment.content}</span>
+                <div className="reply-element">
+                <span className="reply-content">{reply.content}</span>
                 <div className="reply-vote-container">
                     <button className={upvoteStyle} onClick={() => handleVote('upvote')}>
                         <img className="vote-arrow" src="/media/site_images/up.png" alt="upvote" />
@@ -82,14 +82,14 @@ const Reply = ({ addComment, comment, depth, isGroup, onReplyAdded }) => {
                         <img className="vote-arrow" src="/media/site_images/down.png" alt="downvote" />
                     </button>
                     <button className="button" onClick={toggleReplyForm}>Reply</button>
-                        {showReplyForm && <ReplyForm isGroup={isGroup} onReplyAdded={onReplyAdded} parentId={comment.comment_id} postId={comment.post_id} />}
+                        {showReplyForm && <ReplyForm isGroup={isGroup} onReplyAdded={onReplyAdded} parentId={reply.reply_id} postId={reply.post_id} />}
                 </div>
                 {isReplier ? (
-                    <button className="button" onClick={() => removeReply(isGroup, comment.comment_id)}>Delete</button>
+                    <button className="button" onClick={() => removeReply(isGroup, reply.reply_id)}>Delete</button>
                 ) : null}
             </div>
-                {comment.replies && comment.replies.map(reply => (
-                    <Reply key={reply.comment_id} comment={reply} depth={depth + 1} addComment={addComment} />
+                {reply.replies && reply.replies.map(reply => (
+                    <Reply key={reply.reply_id} reply={reply} depth={depth + 1} addReply={addReply} />
                 ))}
             </div>
         </div>

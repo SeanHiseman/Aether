@@ -4,8 +4,8 @@ import React, { useState } from "react";
 const ReplyForm = ({ isGroup, onReplyAdded, postId, parentId }) => {
     const [replyContent, setReplyContent] = useState('');
     
-    const addReply = async (e) => {
-        e.preventDefault();
+    const addReply = async (event) => {
+        event.preventDefault();
         try {
             const response = await axios.post('/api/add_reply', {
                 content: replyContent,

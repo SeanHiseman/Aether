@@ -37,9 +37,9 @@ router.post('/content_vote', authenticateCheck, async (req, res) => {
         const PostModel = isGroup ? GroupPosts : ProfilePosts;
         const content = await PostModel.findByPk(content_id);
         if (vote_type === 'upvote') {
-            content.likes += 1;
+            content.upvotes += 1;
         } else if (vote_type === 'downvote') {
-            content.dislikes += 1;
+            content.downvotes += 1;
         }
         await content.save();
         return res.json({ success: true });

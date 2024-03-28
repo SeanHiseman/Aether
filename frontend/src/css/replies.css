@@ -1,4 +1,4 @@
-.comment-container {
+.reply-container {
     width: 100%;
 }
 .reply-profile-container {
@@ -33,11 +33,11 @@
 .reply-vote-container {
     margin-top: 10px;
 }
-.comment-section {
+.reply-section {
     display: block;
     width: 100%;
 }
-.comment-input {
+.reply-input {
     background-color: #000514;
     border: 1px solid white;
     border-radius: 10px;
@@ -48,13 +48,13 @@
     padding: 10px;
     width: 80%;
 }
-.content-metadata {
+.reply-metadata {
     display: flex;
     justify-content: space-between;
     align-items: center;
     margin-top: 10px;
 }
-.like-button, .dislike-button, .comment-button, .post-comment {
+.upvote-button, .downvote-button, .reply-button, .post-comment {
     cursor: pointer;
     padding: 5px 10px;
     margin-right: 5px;
@@ -64,10 +64,10 @@
     border-radius: 10px;
     transition: background-color 0.3s;
 }
-.like-button:hover, .dislike-button:hover, .comment-button:hover, .post-comment:hover{
+.upvote-button:hover, .downvote-button:hover, .reply-button:hover, .post-reply:hover{
     background-color: #1f2956;
 }
-.like-count, .dislike-count, .comment-count, .view-count {
+.upvote-count, .downvote-count, .reply-count, .view-count {
     font-size: 14px;
     margin-right: 5px;
 }
@@ -87,7 +87,7 @@
     background-color: #1f2956;
 }
 
-.comment-profile-container{
+.reply-profile-container{
     position: relative;
     display: flex;
     margin-bottom: 5px;
@@ -102,17 +102,17 @@
     padding-left: 10px;
     position: relative;
 }
-.comment-text{
+.reply-text {
     margin-left: 10px;
 }
 
-.like-dislike-container{
+.reply-vote-container {
     display: inline-flex;
     align-items: center;
     margin-left: 10px;
 }
 
-.net-likes{
+.net-upvotes {
     margin: 0 5px;
 }
 .post-list {

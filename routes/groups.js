@@ -202,9 +202,6 @@ router.post('/create_group_post', authenticateCheck, upload.array('files'), asyn
 
         const post_id = v4();
         const user = await Users.findOne({ where: { username: req.session.username } });
-        if (!user) {
-            return res.status(404).json({ "status": "error", "message": "Could not fetch user_id" });
-        }
 
         await GroupPosts.create({
             post_id,
@@ -216,9 +213,8 @@ router.post('/create_group_post', authenticateCheck, upload.array('files'), asyn
             poster_id: user.user_id,
         });
         return res.json({ "status": "success", "message": "Successful upload." });
-    } catch (e) {
-        console.error(e);
-        return res.status(404).json({ "status": "error", "message": e.message });
+    } catch (error) {
+        return res.status(404).json({ "status": "error", "message": error.message });
     }
 });
 

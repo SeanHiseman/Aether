@@ -52,8 +52,8 @@ const ProfilePosts = sequelize.define('profile_posts', {
   content: { type: TEXT, allowNull: false },
   comments: { type: INTEGER, allowNull: false, defaultValue: 0 },
   views: { type: INTEGER, allowNull: false, defaultValue: 0 },
-  likes: { type: INTEGER, allowNull: false, defaultValue: 0 },
-  dislikes: { type: INTEGER, allowNull: false, defaultValue: 0 },
+  upvotes: { type: INTEGER, allowNull: false, defaultValue: 0 },
+  downvotes: { type: INTEGER, allowNull: false, defaultValue: 0 },
   timestamp: { type: DATE, defaultValue: NOW },
   poster_id: { type: STRING(36), primaryKey: true },
 }, {tableName: 'profile_posts', timestamps: false});
@@ -66,21 +66,21 @@ Profiles.hasMany(ProfilePosts, { foreignKey: 'profile_id' });
 ProfilePosts.belongsTo(Profiles, { foreignKey: 'profile_id', allowNull: true });
 
 
-const ProfileComments = sequelize.define('profile_comments', {
-  comment_id: { type: STRING(36), primaryKey: true },
+const ProfileReplies = sequelize.define('profile_replies', {
+  reply_id: { type: STRING(36), primaryKey: true },
   post_id: { type: STRING(36), allowNull: false },
-  commenter_id: { type: STRING(36) },
+  replier_id: { type: STRING(36) },
   content: { type: STRING(1000), allowNull: false },
-  likes: { type: INTEGER, allowNull: false },
-  dislikes: { type: INTEGER, allowNull: false },
+  upvotes: { type: INTEGER, allowNull: false },
+  downvotes: { type: INTEGER, allowNull: false },
   timestamp: { type: DATE, defaultValue: NOW },
   parent_id: { type: STRING(36) }
 }, {tableName: 'profile_comments', timestamps: false});
 
-ProfilePosts.hasMany(ProfileComments, { as: 'ProfilePostComments', foreignKey: 'post_id' });
-ProfileComments.belongsTo(ProfilePosts, { as: 'ProfilePost', foreignKey: 'post_id' });
-Users.hasMany(ProfileComments, { as: 'UserProfileComments', foreignKey: 'commenter_id' });
-ProfileComments.belongsTo(Users, { as: 'ProfileCommenter',foreignKey: 'commenter_id' });
+ProfilePosts.hasMany(ProfileReplies, { as: 'ProfilePostReplies', foreignKey: 'post_id' });
+ProfileReplies.belongsTo(ProfilePosts, { as: 'ProfilePost', foreignKey: 'post_id' });
+Users.hasMany(ProfileReplies, { as: 'UserProfileRepliers', foreignKey: 'replier_id' });
+ProfileReplies.belongsTo(Users, { as: 'ProfileReplier',foreignKey: 'commenter_id' });
 
 
 const Groups = sequelize.define('groups', {
@@ -103,8 +103,8 @@ const GroupPosts = sequelize.define('group_posts', {
   content: { type: TEXT, allowNull: false },
   comments: { type: INTEGER, allowNull: false, defaultValue: 0 },
   views: { type: INTEGER, allowNull: false, defaultValue: 0 },
-  likes: { type: INTEGER, allowNull: false, defaultValue: 0 },
-  dislikes: { type: INTEGER, allowNull: false, defaultValue: 0 },
+  upvotes: { type: INTEGER, allowNull: false, defaultValue: 0 },
+  downvotes: { type: INTEGER, allowNull: false, defaultValue: 0 },
   timestamp: { type: DATE, defaultValue: NOW },
   media_urls: { type: TEXT, allowNull: true},
   poster_id: { type: STRING(36), primaryKey: true },
@@ -171,22 +171,22 @@ GroupChannelMessages.belongsTo(GroupChannels, { foreignKey: 'channel_id' });
 GroupChannels.hasMany(GroupChannelMessages, { foreignKey: 'channel_id' });
 
 
-const GroupComments = sequelize.define('group_comments', {
-  comment_id: { type: STRING(36), primaryKey: true },
+const GroupReplies = sequelize.define('group_replies', {
+  reply_id: { type: STRING(36), primaryKey: true },
   post_id: { type: STRING(36), allowNull: false },
-  commenter_id: { type: STRING(36) },
+  replier_id: { type: STRING(36) },
   content: { type: STRING(1000), allowNull: false },
-  likes: { type: INTEGER, allowNull: false },
-  dislikes: { type: INTEGER, allowNull: false },
+  upvotes: { type: INTEGER, allowNull: false },
+  downvotes: { type: INTEGER, allowNull: false },
   timestamp: { type: DATE, defaultValue: NOW },
   parent_id: { type: STRING(36) }
-}, {tableName: 'group_comments', timestamps: false});
+}, {tableName: 'group_replies', timestamps: false});
 
 //Comments relationships
-GroupPosts.hasMany(GroupComments, { as: 'GroupPostComments', foreignKey: 'post_id' });
-GroupComments.belongsTo(GroupPosts, { as: 'GroupPost', foreignKey: 'post_id' });
-Users.hasMany(GroupComments, { as: 'UserGroupComments', foreignKey: 'commenter_id' });
-GroupComments.belongsTo(Users, { as: 'GroupCommenter',foreignKey: 'commenter_id' });
+GroupPosts.hasMany(GroupReplies, { as: 'GroupPostReplies', foreignKey: 'post_id' });
+GroupReplies.belongsTo(GroupPosts, { as: 'GroupPost', foreignKey: 'post_id' });
+Users.hasMany(GroupReplies, { as: 'UserGroupReplies', foreignKey: 'replier_id' });
+GroupReplies.belongsTo(Users, { as: 'GroupReplier',foreignKey: 'replier_id' });
 
 
 const ContentVotes = sequelize.define('content_votes', {
@@ -273,14 +273,14 @@ export {
     Users, 
     Followers,
     ProfilePosts,
-    ProfileComments,
+    ProfileReplies,
     Groups,
     GroupPosts,
     UserGroups,
     GroupRequests,
     GroupChannels,
     GroupChannelMessages,
-    GroupComments,
+    GroupReplies,
     ContentVotes,
     ReplyVotes,
     Friends,

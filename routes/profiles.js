@@ -159,9 +159,6 @@ router.post('/create_profile_post', authenticateCheck, upload.array('files'), as
 
         const post_id = v4();
         const user = await Users.findOne({ where: { username: req.session.username } });
-        if (!user) {
-            return res.status(404).json({ "status": "error", "message": "Could not fetch user_id" });
-        }
 
         await ProfilePosts.create({
             post_id,
@@ -173,9 +170,8 @@ router.post('/create_profile_post', authenticateCheck, upload.array('files'), as
             poster_id: user.user_id,
         });
         return res.json({ "status": "success", "message": "Successful upload." });
-    } catch (e) {
-        console.error(e);
-        return res.status(404).json({ "status": "error", "message": e.message });
+    } catch (error) {
+        return res.status(404).json({ "status": "error", "message": error.message });
     }
 });
 
