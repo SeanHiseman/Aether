@@ -180,7 +180,7 @@ function ContentWidget({ isGroup, post }) {
                 ) : null}
             </div>
             
-            {showComments && (
+            {showReplies && (
                 <div className="reply-section">
                     <div className="add-reply">
                         <ReplyForm isGroup={isGroup} onReplyAdded={handleReplyAdded} parentId={null} postId={post.post_id} />

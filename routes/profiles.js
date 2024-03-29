@@ -328,6 +328,8 @@ router.get('/profile/:username', authenticateCheck, async (req, res) => {
                 profilePhoto: profile.profile_photo,
                 username: viewedUser.username,
                 bio: profile.bio,
+                followerCount: profile.followerCount,
+                isPrivate: profile.is_private,
                 userId: viewedUser.user_id, 
                 isFollowing: !!follower,
                 isFriend: !!friendship,
@@ -427,6 +429,20 @@ router.post('/send_friend_request', authenticateCheck, async (req, res) => {
         });
 
         res.json({ message: "Friend request sent" });
+    } catch (error) {
+        res.status(500).send(error.message);
+    }
+});
+
+//Changes private status of profile
+router.post('/toggle_private_profile', authenticateCheck, async (req, res) => {
+    try {
+        const { profile_id } = req.body;
+        const profile = await Profiles.findOne({ where: { profile_id } });
+        const updatedProfile = await profile.update({
+            is_private: !profile.is_private,
+        });
+        res.status(200).json(updatedProfile);
     } catch (error) {
         res.status(500).send(error.message);
     }

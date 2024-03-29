@@ -34,6 +34,9 @@ function Profile() {
         }
     }, [username, isLoggedInUser, navigate]);
 
+    //Check if profile is private and user is not friends
+    const isPrivateNotFriend = !profile.isFriend && profile.isPrivate;
+
     //Fetch channels in user profile
     useEffect(() => {
         axios.get(`/api/get_profile_channels/${profile.profileId}`)
@@ -58,7 +61,20 @@ function Profile() {
     }
     const loggedInUserId = user.userId;
     document.title = profile.username || "Profile";
-    return (
+    if (isPrivateNotFriend) {
+        <header id="profile-header">
+            <ManageFriendshipButton userId={loggedInUserId} receiverProfileId={profile.profileId} receiverUserId={profile.userId} isRequestSent={profile.isRequested} isFriend={profile.isFriend} />
+            <div id="profile-header-side">
+            </div>
+            <div id="viewed-profile-info">
+                <p className="large-text">{profile.username}</p>
+                <p id="profile-bio">{profile.bio}</p>
+            </div>
+            <div id="profile-header-photo">
+                <img className="large-profile-photo" src={`/${profile.profilePhoto}`} alt="Profile" />         
+            </div>
+        </header>  
+    } else return (
         <div className="profile-container">
             <div className="content-feed">
                 <header id="profile-header">
