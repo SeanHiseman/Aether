@@ -7,6 +7,7 @@ const Profiles = sequelize.define('profiles', {
   profile_photo: { type: STRING(120) },
   bio: { type: STRING(1000) },
   follower_count: { type: INTEGER, defaultValue: 0 },
+  is_private: { type: BOOLEAN, defaultValue: true},
 }, {tableName: 'profiles', timestamps: false });
 
 

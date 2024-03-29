@@ -16,6 +16,7 @@ const PersonalProfile = () => {
     const [isEditingBio, setIsEditingBio] = useState(false);
     const [isEditingName, setIsEditingName] = useState(false);
     const [isPhotoFormVisible, setIsPhotoFormVisible] = useState(false);
+    const [isPrivate, setIsPrivate] = useState(null);
     const [newBio, setBio] = useState('');
     const [newName, setName] = useState('');
     const [profile, setProfile] = useState('');
@@ -27,24 +28,8 @@ const PersonalProfile = () => {
     useEffect(() => {
         axios.get(`/api/profile/${username}`)
             .then(response => {
-                //This code doesn't work for some reason
-                //if (!response.ok) {
-                    //throw new Error('Network response was not ok');
-                //}
-                //return response.json();
-            //})
-            //.then(data => {
-                //setProfile({
-                    //bio: data.bio,
-                    //profileId: data.profileId,
-                    //profilePhoto: data.profilePhoto,
-                    //username: data.username
-                //});
-            //}).catch(error => {
-                //console.error('Fetch error:', error);
-            //})
-        //}, [username]);
                 const fetchedProfile = response.data.profile;
+                setIsPrivate(response.data.isPrivate);
                 setProfile(fetchedProfile);
             })
             .catch(error => {
@@ -246,6 +231,17 @@ const PersonalProfile = () => {
         setShowChannelForm(!showChannelForm)
     }
 
+    //Changes profile between public and private
+    const togglePrivate = async () => {
+        try {
+            const profile_id = profile.profileIdl
+            const response = await axios.post('/api/toggle_private_profile', profile_id);
+            setIsPrivate(response.data.isPrivate);
+        } catch (error) {
+            setErrorMessage('Error changing private status:', error);
+        }
+    };
+
     document.title = profile.username || "Profile";
     return (
         <div className="profile-container">
@@ -302,7 +298,7 @@ const PersonalProfile = () => {
                             )}
                             {errorMessage && <div className="error-message">{errorMessage}</div>}
                         </div>
-
+                        <button className="button" onClick={() => togglePrivate}>{isPrivate ? "Profile: private" : "Profile: public"}</button>
                         <form action="/api/logout" method="post" onSubmit={handleLogout}>
                             <button className="button" type="submit">Logout</button>
                         </form>

@@ -17,6 +17,7 @@ function GroupHomeAdmin() {
     const [isEditingName, setIsEditingName] = useState(false);
     const [isPhotoFormVisible, setIsPhotoFormVisible] = useState(false);
     const [isPostChannel, setIsPostChannel] = useState(true);
+    const [isPrivate, setIsPrivate] = useState(null);
     const [members, setMembers] = useState(null);
     const [newDescription, setDescription] = useState('');
     const [newName, setName] = useState('');
@@ -39,6 +40,7 @@ function GroupHomeAdmin() {
                     isPrivate: response.data.isPrivate,
                     userId: response.data.userId
                   });
+                setIsPrivate(groupDetails.isPrivate);
             }).catch(error => {
                 console.error('Fetch error:', error);
             })
@@ -115,16 +117,6 @@ function GroupHomeAdmin() {
     }
     
     const channelRender = channels.find(c => c.channel_name === channel_name);
-    
-    //Gets requests to join a group if it is a private group
-    const fetchRequests = async () => {
-        try {
-            const response = await axios.get(`/api/group_requests/${groupDetails.groupId}`);
-            setRequests(response.data);
-        } catch (error) {
-            console.error('Error fetching requests:', error);
-        }
-    };
 
     const getGroupMembers = async () => {
         if (!showMembers) {
@@ -140,6 +132,16 @@ function GroupHomeAdmin() {
         setShowMembers(!showMembers);
     };
 
+    //Gets requests to join a group if it is a private group
+    const getJoinRequests = async () => {
+        try {
+            const response = await axios.get(`/api/group_requests/${groupDetails.groupId}`);
+            setRequests(response.data);
+        } catch (error) {
+            console.error('Error fetching requests:', error);
+        }
+    };
+
     //Set channels to contain either posts or chats
     const handleChatClick = () => setIsPostChannel(false);
     const handlePostClick = () => setIsPostChannel(true);
@@ -152,7 +154,7 @@ function GroupHomeAdmin() {
             } else if (action === 'reject') {
                 await axios.delete(`/api/group_requests/${requestId}`);
             }
-            fetchRequests();
+            getJoinRequests();
         } catch (error) {
             setErrorMessage('Error handling request:', error);
         }
@@ -235,6 +237,17 @@ function GroupHomeAdmin() {
             console.error("Error toggling moderator status:", error);
         }
     };
+    
+    //Changes group between public and private
+    const togglePrivate = async () => {
+        try {
+            const group_id = groupDetails.groupId;
+            const response = await axios.post('/api/toggle_private_group', group_id);
+            setIsPrivate(response.data.isPrivate);
+        } catch (error) {
+            setErrorMessage('Error changing private status:', error);
+        }
+    };
 
     document.title = groupDetails.groupName;
     return (
@@ -246,6 +259,12 @@ function GroupHomeAdmin() {
                         <button className="button" onClick={getGroupMembers}>
                             {showMembers ? 'Close members' : 'See members'}
                         </button>
+                        {isPrivate ? (
+                            <button className="button" onClick={() => {getJoinRequests(); setShowRequests(!showRequests)}}>
+                                {showRequests ? 'Close join requests' : 'See join requests'}
+                            </button>
+                        ) : null}
+                        <button className="button" onClick={() => togglePrivate}>{isPrivate ? "Profile: private" : "Profile: public"}</button>
                         <MemberChangeButton userId={groupDetails.userId} groupId={groupDetails.groupId} isMember={groupDetails.isMember}/>
                     </div>
                     <div id="group-text">

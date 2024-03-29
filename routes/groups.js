@@ -429,6 +429,20 @@ router.post('/toggle_moderator', authenticateCheck, async (req, res) => {
     }
 });
 
+//Changes private status of profile
+router.post('/toggle_private_group', authenticateCheck, async (req, res) => {
+    try {
+        const { group_id } = req.body;
+        const group = await Groups.findOne({ where: { group_id } });
+        const updatedGroup = await group.update({
+            is_private: !group.is_private,
+        });
+        res.status(200).json(updatedGroup);
+    } catch (error) {
+        res.status(500).send(error.message);
+    }
+});
+
 //Update group photo
 router.post('/update_group_photo/:groupId', authenticateCheck, upload.single('new_group_photo'), async (req, res) => {
     const groupId = req.params.group; 
