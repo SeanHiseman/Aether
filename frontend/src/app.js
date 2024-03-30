@@ -33,12 +33,12 @@ const App = () => {
                         </Route>
                     </Route>
                     <Route path="group/:group_name" element={<AuthCheck><GroupWrapper /></AuthCheck>}>
-                        {/* Redirect to main channel by default */}
-                        <Route index element={<Navigate replace to="Main" />} />
-                        <Route path=":channel_name" element={<GroupHome />} />
+                        <Route path=":channel_name/:channel_mode?" element={<GroupHome />}>
+                            <Route index element={<Navigate replace to="Main/post" />} />
+                            <Route path=":channel_name" element={<GroupHome />} />
+                        </Route>
                     </Route>
                     <Route path="profile/:username" element={<AuthCheck><ProfileWrapper /></AuthCheck>}>
-                        {/* Redirect to main channel by default */}
                         <Route index element={<Navigate replace to="Main" />} />
                         <Route path=":channel_name" element={<Profile />} />
                     </Route>

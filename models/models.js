@@ -152,6 +152,7 @@ const GroupChannels = sequelize.define('group_channels', {
   channel_name: { type: STRING(100), allowNull: false }, 
   group_id: { type: STRING(36), allowNull: false }, 
   is_posts: { type: BOOLEAN, defaultValue: true},
+  is_chat: { type: BOOLEAN, defaultValue: true},
   date_created: { type: DATE, defaultValue: NOW },
 }, { tableName: 'group_channels', timestamps: false }); 
 

@@ -9,8 +9,9 @@ import PostChannel from '../../components/channels/postChannel';
 import PostForm from "../../components/postForm";
 
 function GroupHome() {
-    const { group_name, channel_name } = useParams();
+    const { group_name, channel_name, channel_mode } = useParams();
     const [channels, setChannels] = useState([]);
+    const [channelMode, setChannelMode] = useState('post');
     const [errorMessage, setErrorMessage] = useState('');
     const [isAdmin, setIsAdmin] = useState(false);
     const [groupDetails, setGroupDetails] = useState('');
@@ -144,6 +145,10 @@ function GroupHome() {
                 </div>         
                 <aside id="right-aside">
                     <h1>{channel_name}</h1>
+                    <div>
+                        <button className={channelMode === 'post' ? 'active' : ''} onClick={() => setChannelMode('post')}>Posts</button>
+                        <button className={channelMode === 'chat' ? 'active' : ''} onClick={() => setChannelMode('chat')}>Chat</button>
+                    </div>
                     {showPostForm && (
                         <div>
                             <button class="button" onClick={() => setShowPostForm(false)}>Close</button>
