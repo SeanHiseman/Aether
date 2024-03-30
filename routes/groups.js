@@ -29,19 +29,17 @@ router.post('/accept_request', authenticateCheck, async (req, res) => {
 //Create new channel within a group
 router.post('/add_group_channel', authenticateCheck, async (req, res) => {
     try {
-        const { channel_name, groupId, isPosts} = req.body;
+        const { channel_name, groupId, isPosts, isChat } = req.body;
 
         //Checks if group can be found
         const group = await Groups.findByPk(groupId);
-        if (!group) {
-            return res.status(404).json({ error: 'Group not found'});
-        }
 
         const newChannel = await GroupChannels.create({ 
             channel_id: v4(),
             channel_name: channel_name,
             group_id: groupId,
-            is_posts: isPosts
+            is_posts: isPosts,
+            is_chat: isChat
         });
         res.status(201).json(newChannel);
     } catch (error) {

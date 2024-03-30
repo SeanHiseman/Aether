@@ -1,6 +1,6 @@
 import axios from 'axios';
 import React, { useEffect, useState } from 'react';
-import { useFetcher, useParams } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import ChannelButton from '../../components/channels/channelButton';
 import ChatChannel from '../../components/channels/chatChannel';
 import MemberChangeButton from '../../components/memberChangeButton';
@@ -9,10 +9,12 @@ import PostForm from "../../components/postForm";
 
 function GroupHomeAdmin() {
     const [channels, setChannels] = useState([]);
+    const [channelMode, setChannelMode] = useState('post');
     const [newChannelName, setNewChannelName] = useState('');
     const [errorMessage, setErrorMessage] = useState('');
     const [groupDetails, setGroupDetails] = useState('');
-    const { group_name, channel_name } = useParams();
+    const { group_name, channel_name, channel_mode } = useParams();
+    const [isChatChannel, setIsChatChannel] = useState(true);
     const [isEditingDescription, setIsEditingDescription] = useState(false);
     const [isEditingName, setIsEditingName] = useState(false);
     const [isPhotoFormVisible, setIsPhotoFormVisible] = useState(false);
@@ -83,7 +85,8 @@ function GroupHomeAdmin() {
             const response = await axios.post('/api/add_group_channel', {
                 channel_name: newChannelName,
                 groupId: groupDetails.groupId,
-                isPosts: isPostChannel
+                isPosts: isPostChannel,
+                isChat: isChatChannel
             });
             if (response.data && response.status === 201) {
                 setChannels([...channels, response.data]);
@@ -116,7 +119,7 @@ function GroupHomeAdmin() {
             });
     }
     
-    const channelRender = channels.find(c => c.channel_name === channel_name);
+    const channelRender = channels.find(c => c.channel_name === channel_name && c.is_posts === (channel_mode === 'post'));
 
     const getGroupMembers = async () => {
         if (!showMembers) {
@@ -142,8 +145,8 @@ function GroupHomeAdmin() {
         }
     };
 
-    //Set channels to contain either posts or chats
-    const handleChatClick = () => setIsPostChannel(false);
+    //Set channels to contain either posts or chats, or both
+    const handleChatClick = () => setIsChatChannel(true);
     const handlePostClick = () => setIsPostChannel(true);
 
     //Accepts or rejects join request
@@ -347,7 +350,7 @@ function GroupHomeAdmin() {
                     ) : showPostForm ? (
                             <PostForm onSubmit={handlePostSubmit} errorMessage={errorMessage} />
                         ) : channelRender ? (
-                            channelRender.is_posts ? (
+                            channelMode === 'post' ? (
                                 <PostChannel
                                     channelId={channelRender.channel_id}
                                     channelName={channelRender.channel_name}
@@ -389,6 +392,10 @@ function GroupHomeAdmin() {
             </div>  
             <aside id="right-aside">
                 <h1>{channel_name}</h1>
+                <div>
+                    <button className={channelMode === 'post' ? 'active' : ''} onClick={() => setChannelMode('post')}>Posts</button>
+                    <button className={channelMode === 'chat' ? 'active' : ''} onClick={() => setChannelMode('chat')}>Chat</button>
+                </div>
                 {showPostForm && (
                     <div>
                         <button class="button" onClick={() => setShowPostForm(false)}>Close</button>
