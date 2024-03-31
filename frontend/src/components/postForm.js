@@ -31,12 +31,12 @@ const PostForm = ({ onSubmit, errorMessage }) => {
         ]
     }
 
-    const handleFileChange = (e) => {
-        setFiles([...e.target.files]);
+    const handleFileChange = (event) => {
+        setFiles([...event.target.files]);
     };
 
-    const handleSubmit = async (e) => {
-        e.preventDefault();
+    const handleSubmit = async (event) => {
+        event.preventDefault();
         const formData = new FormData();
         formData.append('title', title);
         formData.append('content', content);

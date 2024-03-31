@@ -94,8 +94,8 @@ const BaseLayout = () => {
         });
     };
 
-    const handleFileChange = (e) => {
-        const file = e.target.files[0];
+    const handleFileChange = (event) => {
+        const file = event.target.files[0];
         if (file) {
             setGroupPhoto(file);
             setGroupPhotoFile(file.name);
@@ -106,10 +106,14 @@ const BaseLayout = () => {
     const handlePublicClick = () => setPrivateGroup(false);
     const handlePrivateClick = () => setPrivateGroup(true);
 
-    const SearchSubmit = (e) => {
-        e.preventDefault();
-
-    }
+    const SearchSubmit = async (event) => {
+        event.preventDefault();
+        try {
+            navigate(`/search?keyword=${searchKeyword}`);
+        } catch (error) {
+            console.error(error);
+        }
+    };
 
     //Toggles display of create group form after button is pressed
     const toggleForm = () => {

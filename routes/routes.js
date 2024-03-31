@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { Followers, Friends, GroupPosts, ProfilePosts, Profiles, Users } from '../models/models.js'; 
+import { Followers, Friends, Groups, GroupPosts, ProfilePosts, Profiles, Users, ProfileChannels } from '../models/models.js'; 
 import authenticateCheck from '../functions/authenticateCheck.js';
 import { Op } from 'sequelize';
 const router = Router();
@@ -197,39 +197,99 @@ router.delete('/remove_post', authenticateCheck, async (req, res) => {
     }
 });
 
-//Search route (currently just searches for matching strings, more advanced search is being worked on)
-router.get('/search', authenticateCheck, async (req, res) => {
-    //Retrieve the keyword from query parameters
-    const keyword = req.query.keyword || '';
-
-    //Search for content that matches the keyword in the title
-    const results = await Posts.findAll({
-        where: {
-            title: {
-                [Op.like]: '%' + keyword + '%'
-            }
-        },
-        include: [{
-            model: Users,
-            include: [Profiles]
-        }]
-    });
-
-    //Search results with user and profile info
-    results.forEach(item => {
-        item.username = item.user.username || 'Anonymous';
-        item.profile_id = item.user.profile.profile_id;
-        item.profile_photo = item.user.profile.profile_photo;
-    });
-
-    //Render the results using a view template
-    res.json({
-        content: 'content_feed',
-        content_items: results,
-        user_id: req.session.user_id,
-    });
+//Searches groups
+router.get('/search/groups', authenticateCheck, async (req, res) => {
+    try {
+        const keyword = req.query.keyword.toLowerCase();
+        const groupResults = await Groups.findAll({
+            where: {
+                group_name: {
+                    [Op.iLike]: `%${keyword}%`,
+                },
+            },
+            attributes: ['group_id', 'group_name', 'description', 'group_photo'],
+        });
+    
+        res.json(groupResults);
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message }); 
+    }
 });
 
+//Searches posts
+router.get('/search/posts', authenticateCheck, async (req, res) => {
+    try {
+        const keyword = req.query.keyword.toLowerCase();
+        const profilePostResults = await ProfilePosts.findAll({
+            where: {
+                [Op.or]: [{
+                    title: {
+                        [Op.iLike]: `%${keyword}`,
+                    },
+                }, {
+                    content: {
+                        [Op.iLike]: `%${keyword}`,
+                    },
+                }],
+            },
+            include: [{
+                model: Users, 
+                as: 'ProfilePoster',
+                attributes: ['username']
+            }],
+        });
+
+        const groupPostResults = await GroupPosts.findAll({
+            where: {
+                [Op.or]: [{
+                    title: {
+                        [Op.iLike]: `%${keyword}`,
+                    },
+                }, {
+                    content: {
+                        [Op.iLike]: `%${keyword}`,
+                    },
+                }],
+            },
+            include: [{
+                model: Users,
+                as: 'GroupPoster',
+                attributes: ['username'],
+            }],
+        });
+
+        res.json({
+            posts: [...profilePostResults, ...groupPostResults],
+        });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
+//Searches profiles
+router.get('/search/profiles', authenticateCheck, async (req, res) => {
+    try {
+        const keyword = req.query.keyword.toLowerCase();
+        const profileResults = await Profiles.findAll({
+            where: {
+                [Op.or]: [{
+                    bio: {
+                        [Op.iLike]: `%${keyword}%`,
+                    },
+                }],
+            },
+            attributes: ['profile_id', 'bio', 'profile_photo'],
+            include: [{
+                model: ProfileChannels,
+                attributes: ['channel_name'],
+            }],
+        });
+    
+        res.json(profileResults);
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message }); 
+    }
+});
 
 export default router;
 
