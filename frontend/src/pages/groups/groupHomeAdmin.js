@@ -14,11 +14,11 @@ function GroupHomeAdmin() {
     const [errorMessage, setErrorMessage] = useState('');
     const [groupDetails, setGroupDetails] = useState('');
     const { group_name, channel_name, channel_mode } = useParams();
-    const [isChatChannel, setIsChatChannel] = useState(true);
+    const [isChatChannel, setIsChatChannel] = useState(false);
     const [isEditingDescription, setIsEditingDescription] = useState(false);
     const [isEditingName, setIsEditingName] = useState(false);
     const [isPhotoFormVisible, setIsPhotoFormVisible] = useState(false);
-    const [isPostChannel, setIsPostChannel] = useState(true);
+    const [isPostChannel, setIsPostChannel] = useState(false);
     const [isPrivate, setIsPrivate] = useState(null);
     const [members, setMembers] = useState(null);
     const [newDescription, setDescription] = useState('');
@@ -29,23 +29,24 @@ function GroupHomeAdmin() {
     const [showRequests, setShowRequests] = useState(false);
     const [showPostForm, setShowPostForm] = useState(false);
 
+    //Loads group info 
     useEffect(() => {
-        fetch(`/api/group/${group_name}`)
-            .then(response => {
-                setGroupDetails({
-                    isMember: true, // Must be member to be admin
-                    groupId: response.data.groupId,
-                    groupName: response.data.groupName,
-                    description: response.data.description,
-                    groupPhoto: response.data.groupPhoto,
-                    memberCount: response.data.memberCount,
-                    isPrivate: response.data.isPrivate,
-                    userId: response.data.userId
-                  });
-                setIsPrivate(groupDetails.isPrivate);
-            }).catch(error => {
-                console.error('Fetch error:', error);
-            })
+        try {
+            const response  = axios.get(`/api/group/${group_name}`);
+            const data = response.data;
+            setGroupDetails({
+                isMember: data.isMember,
+                groupId: data.groupId,
+                groupName: data.groupName,
+                description: data.description,
+                groupPhoto: data.groupPhoto,
+                memberCount: data.memberCount,
+                isPrivate: data.isPrivate,
+                userId: data.userId
+            });
+        } catch (error) {
+            setErrorMessage("Error fetching group details:", error);
+        };
     }, [group_name]);
 
     //Fetch channels in user profile
@@ -146,8 +147,8 @@ function GroupHomeAdmin() {
     };
 
     //Set channels to contain either posts or chats, or both
-    const handleChatClick = () => setIsChatChannel(true);
-    const handlePostClick = () => setIsPostChannel(true);
+    const handleChatClick = () => setIsChatChannel(!isChatChannel);
+    const handlePostClick = () => setIsPostChannel(!isPostChannel);
 
     //Accepts or rejects join request
     const handleRequestAction = async (action, requestId) => {

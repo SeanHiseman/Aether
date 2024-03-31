@@ -8,11 +8,12 @@ import GroupHome from './pages/groups/groupHome';
 import GroupWrapper from './pages/groups/groupWrapper';
 import HomePage from './pages/feeds/home';
 import Login from './pages/site_entrance/login';
-import MainPage from './pages/feeds/mains';
+import MainPage from './pages/feeds/main';
 import MessagesPage from './pages/messages/messagesPage';
 import Register from './pages/site_entrance/register';
 import Profile from './pages/profiles/profile';
 import ProfileWrapper from './pages/profiles/profileWrapper';
+import SearchResults from './pages/searchResults';
 
 //Routes to each layout, some with the base layout wrapper
 const App = () => {
@@ -26,6 +27,7 @@ const App = () => {
                     <Route path="main" element={<AuthCheck><MainPage /></AuthCheck>} />
                     <Route path="following" element={<AuthCheck><FollowingPage /></AuthCheck>} />
                     <Route path="friends" element={<AuthCheck><FriendsPage /></AuthCheck>} />
+                    <Route path="search" element={<AuthCheck><SearchResults /></AuthCheck>} />
                     <Route path="messages/:username" element={<AuthCheck><MessagesPage /></AuthCheck>} >
                         <Route path=":friend_name" element={<MessagesPage />} >
                             <Route index element={<Navigate replace to="Chat" />} />
