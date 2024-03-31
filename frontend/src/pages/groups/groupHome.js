@@ -1,7 +1,6 @@
 import axios from 'axios';
 import React, { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
-import ChannelButton from '../../components/channels/channelButton';
+import { Link, useParams } from 'react-router-dom';
 import ChatChannel from '../../components/channels/chatChannel';
 import MemberChangeButton from '../../components/memberChangeButton';
 import GroupHomeAdmin from './groupHomeAdmin';
@@ -162,7 +161,9 @@ function GroupHome() {
                         <ul>
                             {channels.map(channel => (
                                 <li key={channel.channelId}>
-                                    {<ChannelButton is_posts={channel.is_posts} channel_name={channel.channel_name} name={groupDetails.groupName} is_group={true} />}
+                                    <Link to={`/group/${groupDetails.groupName}/${channel.channel_name}`}>
+                                        <div className="channel-link">{channel.channel_name}</div>
+                                    </Link>
                                 </li>
                             ))}
                         </ul>
