@@ -55,7 +55,7 @@ function GroupHome() {
         });
     }, [groupDetails.groupId]);  
 
-    const channelRender = channels.find(c => c.channel_name === channel_name);
+    const channelRender = channels.find(c => c.channel_name === channel_name && c.is_posts === (channel_mode === 'post'));
 
     //Uploads content 
     const handlePostSubmit = async (formData) => {

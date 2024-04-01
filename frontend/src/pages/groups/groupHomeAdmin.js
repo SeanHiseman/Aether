@@ -117,9 +117,22 @@ function GroupHomeAdmin() {
             }).catch(error => {
                 setErrorMessage('Error updating photo', error.response ? error.response.data : error);
             });
-    }
+    };
     
     const channelRender = channels.find(c => c.channel_name === channel_name && c.is_posts === (channel_mode === 'post'));
+
+    const deleteChannel = async () => {
+        try {
+            //Main channels are default, so can't be deleted
+            if (channel_name === 'Main') {
+                return;
+            } else {
+                await axios.delete(`/api/delete_group_channel`, { data: {channel_name: channel_name, group_id: groupDetails.groupId} });
+            }
+        } catch (error) {
+            console.error('Error deleting channel:', error);
+        }
+    };
 
     const getGroupMembers = async () => {
         if (!showMembers) {
@@ -392,6 +405,9 @@ function GroupHomeAdmin() {
             </div>  
             <aside id="right-aside">
                 <h1>{channel_name}</h1>
+                {channel_name !== 'Main' && (
+                    <button className="button" onClick={() => deleteChannel()}>Delete channel</button>
+                )}
                 <div>
                     <button className={channelMode === 'post' ? 'active' : ''} onClick={() => setChannelMode('post')}>Posts</button>
                     <button className={channelMode === 'chat' ? 'active' : ''} onClick={() => setChannelMode('chat')}>Chat</button>
@@ -425,11 +441,11 @@ function GroupHomeAdmin() {
                 <nav id="channel-list">
                     <ul>
                         {channels.map(channel => (
-                                <li key={channel.channelId}>
-                                    <Link to={`/group/${groupDetails.groupName}/${channel.channel_name}`}>
-                                        <div className="channel-link">{channel.channel_name}</div>
-                                    </Link>
-                                </li>
+                            <li key={channel.channelId}>
+                                <Link to={`/group/${groupDetails.groupName}/${channel.channel_name}`}>
+                                    <div className="channel-link">{channel.channel_name}</div>
+                                </Link>
+                            </li>
                         ))}
                     </ul>
                 </nav>

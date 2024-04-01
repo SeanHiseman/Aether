@@ -175,6 +175,27 @@ router.post('/create_profile_post', authenticateCheck, upload.array('files'), as
     }
 });
 
+//Deletes channel 
+router.delete('/delete_profile_channel', authenticateCheck, async (req, res) => {
+    try {
+        const { channel_name, profile_id } = req.body;
+        //Main channels are default, so can't be deleted
+        if (channel_name === 'Main') {
+            res.status(500).json({ message: 'Main channels cannot be deleted' });
+        } else {
+            await ProfileChannels.destroy({
+                where: { 
+                    channel_name,
+                    profile_id
+                },
+            });
+            res.status(200).json({ message: 'Channel deleted successfully '});
+        }
+    } catch (error) {
+        res.status(500).json('Error deleting channel:', error);
+    }
+});  
+
 //User can follow a profile
 router.post('/follow_profile', authenticateCheck, async (req, res) => {
     const { userId, profileId } = req.body;
