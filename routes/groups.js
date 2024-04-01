@@ -216,6 +216,27 @@ router.post('/create_group_post', authenticateCheck, upload.array('files'), asyn
     }
 });
 
+//Deletes channel 
+router.delete('/delete_group_channel', authenticateCheck, async (req, res) => {
+    try {
+        const { channel_name, group_id } = req.body;
+        //Main channels are default, so can't be deleted
+        if (channel_name === 'Main') {
+            res.status(500).json({ message: 'Main channels cannot be deleted' });
+        } else {
+            await GroupChannels.destroy({
+                where: { 
+                    channel_name,
+                    group_id
+                },
+            });
+            res.status(200).json({ message: 'Channel deleted successfully '});
+        }
+    } catch (error) {
+        res.status(500).json('Error deleting channel:', error);
+    }
+});
+
 //Get channels from a group
 router.get('/get_group_channels/:groupId', authenticateCheck, async (req, res) => {
     try {
@@ -229,7 +250,6 @@ router.get('/get_group_channels/:groupId', authenticateCheck, async (req, res) =
         });
         res.json(channels);
     } catch (error) {
-        console.error(error);
         res.status(500).json({ error: error.message });
     }
 });

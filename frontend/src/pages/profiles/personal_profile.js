@@ -111,6 +111,8 @@ const PersonalProfile = () => {
             });
     }
     
+    const channelRender = channels.find(c => c.channel_name === channel_name);
+
     //User is shown a confirmation before deleting their account
     const deleteAccount = () => {
         confirmAlert({
@@ -137,7 +139,18 @@ const PersonalProfile = () => {
         });
     };
 
-    const channelRender = channels.find(c => c.channel_name === channel_name);
+    const deleteChannel = async () => {
+        try {
+            //Main channels are default, so can't be deleted
+            if (channel_name === 'Main') {
+                return;
+            } else {
+                await axios.delete(`/api/delete_profile_channel`, { data: {channel_name: channel_name, profile_id: profile.profileId} });
+            }
+        } catch (error) {
+            console.error('Error deleting channel:', error);
+        }
+    };
 
     const getFriendRequests = async () => {
         if (!showFriendRequests) {
