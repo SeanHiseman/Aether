@@ -3,7 +3,7 @@ import React, { useEffect, useState } from "react";
 import ContentWidget from "../contentWidget";
 
 //For both viewing and uploading posts
-function PostChannel({ channelId, channelName, isGroup, locationId }) {
+function PostChannel({ canRemvove, channelId, channelName, isGroup, locationId }) {
     const [posts, setPosts] = useState([]);
 
     //Gets posts from channel
@@ -36,7 +36,7 @@ function PostChannel({ channelId, channelName, isGroup, locationId }) {
                 {posts.length > 0 ? (
                     <ul className="content-list">
                         {posts.map(post => (
-                            <ContentWidget key={post.post_id} isGroup={isGroup} post={post} />
+                            <ContentWidget key={post.post_id} canRemove={canRemvove} isGroup={isGroup} post={post} />
                         ))}
                     </ul>
                 ) : (

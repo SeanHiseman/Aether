@@ -2,9 +2,9 @@ import axios from 'axios';
 import React, { useContext, useEffect, useState } from 'react';
 import { AuthContext } from '../authContext';
 import { io } from "socket.io-client";
-import PostForm from "../postForm";
+import Message from '../message';
 
-function ChatChannel({ channelId, channelName, isGroup, locationId }) {
+function ChatChannel({ canRemove, channelId, channelName, isGroup, locationId }) {
     const [channel, setChannel] = useState([]);
     const [currentMessage, setCurrentMessage] = useState('');
     const [errorMessage, setErrorMessage] = useState('');
@@ -55,7 +55,7 @@ function ChatChannel({ channelId, channelName, isGroup, locationId }) {
         <div id="channel">
             <div id="channel-content">
                 {channel.map((msg, index) => (
-                    <p key={index} class={`message ${msg.sender_id === user.userId ? 'outgoing' : 'incoming'}`}>{msg.message_content}</p>
+                    <Message canRemove={canRemove} key={index} message={msg} isOutgoing={msg.senderId === user.userId} user={user} />
                 ))}
             </div>
             <div id="channel-input">

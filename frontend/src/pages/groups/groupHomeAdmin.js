@@ -365,6 +365,7 @@ function GroupHomeAdmin() {
                         ) : channelRender ? (
                             channelMode === 'post' ? (
                                 <PostChannel
+                                    canRemvove={true}
                                     channelId={channelRender.channel_id}
                                     channelName={channelRender.channel_name}
                                     isGroup={true}
@@ -372,6 +373,7 @@ function GroupHomeAdmin() {
                                 />
                             ) : (
                                 <ChatChannel
+                                    canRemvove={true}
                                     channelId={channelRender.channel_id}
                                     channelName={channelRender.channel_name}
                                     isGroup={true}

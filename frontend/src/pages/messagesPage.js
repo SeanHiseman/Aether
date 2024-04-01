@@ -1,9 +1,9 @@
 import axios from 'axios';
 import React, { useContext, useEffect, useRef, useState } from 'react';
-import { AuthContext } from '../../components/authContext';
+import { AuthContext } from '../components/authContext';
 import { io } from "socket.io-client";
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import Message from './message';
+import Message from '../components/message';
 
 function MessagesPage() {
     const [chat, setChat] = useState([]);
@@ -21,14 +21,12 @@ function MessagesPage() {
     const navigate = useNavigate();
 
     useEffect(() => {
-        fetch('/api/get_friends')
-            .then(response => response.json())
-            .then(data => setFriends(data))
+        axios.get('/api/get_friends')
+            .then(response => setFriends(response.data))
             .catch(error => console.log("Error fetching friends", error));
-        
-        fetch(`/api/get_conversations`)
-            .then(response => response.json())
-            .then(data => setConversations(data))
+    
+        axios.get('/api/get_conversations')
+            .then(response => setConversations(response.data))
             .catch(error => console.log("Error fetching conversations", error));
         socketRef.current = io(`http://localhost:7000`);
 
@@ -175,12 +173,7 @@ function MessagesPage() {
                         </ul>
                     ) : (
                         chat.map((msg, index) => (
-                            <Message
-                                key={index}
-                                message={msg}
-                                isOutgoing={msg.senderId === user.userId}
-                                user={user}
-                          />
+                            <Message key={index} message={msg} isOutgoing={msg.senderId === user.userId} user={user} />
                         ))
                     )}
                 </div>

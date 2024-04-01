@@ -1,8 +1,11 @@
 import axios from 'axios';
 import React from 'react';
 
-const Message = ({ message, isOutgoing, user }) => {
-    const isSender = message.message_id === user.user_id ? true : false;
+const Message = ({ canRemove, message, isOutgoing, user }) => {
+    //Users can delete their own messages
+    if (message.message_id === user.user_id) {
+        canRemove = true;
+    };
     
     //Deletes the message
     const removeMessage = async (message_id) => {
@@ -16,7 +19,7 @@ const Message = ({ message, isOutgoing, user }) => {
     return (
         <div className={`message ${isOutgoing ? 'outgoing' : 'incoming'}`}>
             {message.content}
-            {isSender ? (
+            {canRemove ? (
                 <button className="button" onClick={() => removeMessage(message.message_id)}>Delete</button>
             ) : null}
         </div>

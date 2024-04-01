@@ -9,7 +9,7 @@ import GroupWrapper from './pages/groups/groupWrapper';
 import HomePage from './pages/feeds/home';
 import Login from './pages/site_entrance/login';
 import MainPage from './pages/feeds/main';
-import MessagesPage from './pages/messages/messagesPage';
+import MessagesPage from './pages/messagesPage';
 import Register from './pages/site_entrance/register';
 import Profile from './pages/profiles/profile';
 import ProfileWrapper from './pages/profiles/profileWrapper';
