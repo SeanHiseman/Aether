@@ -9,10 +9,12 @@ import PostForm from "../../components/postForm";
 
 function GroupHome() {
     const { group_name, channel_name, channel_mode } = useParams();
+    const [canRemove, setCanRemove] = useState(false);
     const [channels, setChannels] = useState([]);
     const [channelMode, setChannelMode] = useState('post');
     const [errorMessage, setErrorMessage] = useState('');
     const [isAdmin, setIsAdmin] = useState(false);
+    const [isModerator, setIsModerator] = useState(false);
     const [groupDetails, setGroupDetails] = useState('');
     const [showPostForm, setShowPostForm] = useState(false);
     document.title = groupDetails.groupName;
@@ -20,9 +22,10 @@ function GroupHome() {
     //Loads group info 
     useEffect(() => {
         try {
-            const response  = axios.get(`/api/group/${group_name}`);
+            const response = axios.get(`/api/group/${group_name}`);
             const data = response.data;
             setIsAdmin(data.isAdmin);
+            setIsModerator(data.isModerator);
             setGroupDetails({
                 isMember: data.isMember,
                 groupId: data.groupId,
@@ -38,6 +41,11 @@ function GroupHome() {
             setErrorMessage("Error fetching group details:", error);
         };
     }, [group_name]);
+
+    //Moderators can remove content
+    if (isModerator) {
+        setCanRemove(true);
+    };
 
     //Fetch channels in user profile
     useEffect(() => {
@@ -126,6 +134,7 @@ function GroupHome() {
                         ) : channelRender ? (
                             channelRender.is_posts ? (
                                 <PostChannel
+                                    canRemvove={canRemove}
                                     channelId={channelRender.channel_id}
                                     channelName={channelRender.channel_name}
                                     isGroup={true}
@@ -133,6 +142,7 @@ function GroupHome() {
                                 />
                             ) : (
                                 <ChatChannel
+                                    canRemvove={canRemove}
                                     channelId={channelRender.channel_id}
                                     channelName={channelRender.channel_name}
                                     isGroup={true}

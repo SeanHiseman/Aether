@@ -6,17 +6,21 @@ import { AuthContext } from './authContext';
 import Reply from './replies/reply';
 import ReplyForm from './replies/replyForm';
 
-function ContentWidget({ isGroup, post }) {
+function ContentWidget({ canRemove, isGroup, post }) {
     const [replies, setReplies] = useState([]);
-    const [downvotes, setDownvotes] = useState(post.dislikes);
+    const [downvotes, setDownvotes] = useState(post.downvotes);
     const [downvoteLimit, setDownvoteLimit] = useState(false);
     const [hasViewed, setHasViewed] = useState(false);
-    const [upvotes, setUpvotes] = useState(post.likes);
+    const [upvotes, setUpvotes] = useState(post.upvotes);
     const [upvoteLimit, setUpvoteLimit] = useState(false);
     const [showReplies, setShowReplies] = useState(false);
     const { user } = useContext(AuthContext);
-    const isUploader = post.poster_id === user.user_id ? true : false;
     const Poster = isGroup ? 'GroupPoster' : 'ProfilePoster'; //Associations used by database
+
+    //Allows users to remove their own posts
+    if (post.poster_id === user.user_id) {
+        canRemove = true;
+    };
 
     //Opens replies
     useEffect(() => {
@@ -175,7 +179,7 @@ function ContentWidget({ isGroup, post }) {
                     Replies <span className="reply-count" id={`reply-count-${post.post_id}`}>{post.replies}</span>
                 </button>
                 <span className="view-count">{post.views} Views</span>
-                {isUploader ? (
+                {canRemove ? (
                     <button className="button" onClick={() => removePost(isGroup, post.post_id)}>Delete</button>
                 ) : null}
             </div>
