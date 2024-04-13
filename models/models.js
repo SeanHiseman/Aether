@@ -139,7 +139,8 @@ Groups.hasMany(Groups, { as: 'SubGroups', foreignKey: 'parent_id' });
 const GroupRequests = sequelize.define('group_requests', {
   request_id: { type: STRING(36), primaryKey: true },
   sender_id: { type: STRING(36), allowNull: false, references: { model: 'Users', key: 'user_id' }},
-  group_id: { type: STRING(36), allowNull: false, references: { model: 'Groups', key: 'group_id' }}
+  group_id: { type: STRING(36), allowNull: false, references: { model: 'Groups', key: 'group_id' }},
+  is_group: { type: BOOLEAN, defaultValue: false}, //Allows for nested groups
 }, { tableName: 'group_requests', timestamps: false });
 
 //GroupRequest relationships

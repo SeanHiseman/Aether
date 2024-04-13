@@ -434,6 +434,23 @@ router.post('/leave_group', authenticateCheck, async (req, res) => {
     }
 });
 
+//Send join request
+router.post('/send_join_request', authenticateCheck, async (req, res) => {
+    const { isGroup, receiverId, senderId } = req.body;
+    try {
+        const receiverGroup = await Groups.findOne({ where: { group_id: receiverId } });
+        await GroupRequests.create({
+            request_id: v4(),
+            sender_id: senderId,
+            receiver_id: receiverGroup.group_id,
+            is_group: isGroup
+        });
+        res.json({ message: "Join request sent" });
+    } catch (error) {
+        res.status(500).send(error.message);
+    }
+});
+
 //Changes if a user is a moderator
 router.post('/toggle_moderator', authenticateCheck, async (req, res) => {
     const { groupId, userId, isMod } = req.body;

@@ -1,0 +1,48 @@
+<div class="content-item">
+    <!-- Content Display -->
+    <h1><%= item.title %></h1>
+    <% if (item.content_type == "image") { %>
+        <img class="raw-content" src="/static/<%= item.path %>" alt="Content Image" width="560">
+    <% } else if (item.content_type == "video") { %>
+        <video width="560" height="315" controls>
+            <source class="raw-content" src="/static/<%= item.path %>" type="video/mp4">
+            Your browser does not support the video tag.
+        </video>
+    <% } %>
+
+    <div class="content-metadata">
+        <div class="uploader-info">
+            <a href="/profiles/<%= item.profile_id %>">
+               <img id="uploader-photo" src="/static/<%= item.profile_photo %>" alt="Profile picture">
+            </a>
+            <p class="username"><%= item.username %></p>
+        </div>
+
+        <!--Like/Dislike Buttons-->
+        <button class="like-button" onclick="contentReaction('<%= item.post_id %>', 'like')">Likes
+            <span id="like-count-<%= item.post_id %>" class="like-count"><%= item.likes %></span>
+        </button>
+        <button class="dislike-button" onclick="contentReaction('<%= item.post_id %>', 'dislike')">Dislikes
+            <span id="dislike-count-<%= item.post_id %>" class="dislike-count"><%= item.dislikes %></span>
+        </button>
+
+        <!--Comments-->
+        <button class="comment-button" data-content-id="<%= item.post_id %>" onclick="toggleCommentSection('<%= item.post_id %>')">Comments
+            <span class="comment-count" id="comment-count-<%= item.post_id %>"><%= item.comments %></span>
+        </button>
+        <span class="view-count"><%= item.views %> Views</span>
+    </div>
+    <!--Hidden Comment Section for each item of content-->
+    <div class="comment-section" id="comment-section-<%= item.post_id %>" style="display:none;">
+        <!--Add a Comment-->
+        <div class="add-comment">
+            <textarea class="comment-input" id="new-comment-<%= item.post_id %>" placeholder="Add a comment"></textarea>
+            <button class="post-comment" onclick="addComment('<%= item.post_id %>', null, document.getElementById('new-comment-<%= item.post_id %>').value)">Post</button>
+        </div>
+        <ul class="comment-list" id="comment-list-<%= item.post_id %>">
+            <!--Populated by JavaScript-->
+        </ul>
+    </div>               
+</div>
+
+ 
