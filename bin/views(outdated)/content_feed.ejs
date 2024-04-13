@@ -1,0 +1,9 @@
+<div class="results-wrapper">
+   <div id="results">
+        <% content_items.forEach(function(item) { %>
+            <%- include('./content_widget', {item: item}) %>
+        <% }); %>
+   </div>
+</div>
+
+    

@@ -27,6 +27,7 @@ function GroupHomeAdmin() {
     const [showMembers, setShowMembers] = useState(false);
     const [showRequests, setShowRequests] = useState(false);
     const [showPostForm, setShowPostForm] = useState(false);
+    const [subGroups, setSubGroups] = useState([]);
 
     //Loads group info 
     useEffect(() => {
@@ -63,6 +64,19 @@ function GroupHomeAdmin() {
             setChannels([]);
         });
     }, [groupDetails.groupId]);  
+
+    //Fetch subgroups
+    useEffect(() => {
+        const fetchSubGroups = async () => {
+            try {
+                const response = await axios.get(`/api/sub_groups/${groupDetails.groupId}`);
+                setSubGroups(response.data);
+            } catch (error) {
+                console.error('Error fetching sub groups: ', error);
+            }
+        };
+        fetchSubGroups();
+    }, [groupDetails.groupId]);
 
     //Set name in text area to current description
     useEffect(() => {
@@ -233,6 +247,19 @@ function GroupHomeAdmin() {
         }
     };
 
+    //Allows group to join another group
+    const sendGroupJoinRequest = async (receiverGroupId) => {
+        try {
+            await axios.post('/api/send_join_request', {
+                isGroup: true, 
+                receiverGroupId,
+                senderId: groupDetails.groupId,
+            });
+        } catch (error) {
+            setErrorMessage('Error sending join request:', error);
+        }
+    };
+
     //Toggles display of create channel form after button is pressed
     const toggleChannelForm = () => {
         setShowChannelForm(!showChannelForm)
@@ -280,7 +307,11 @@ function GroupHomeAdmin() {
                                 {showRequests ? 'Close join requests' : 'See join requests'}
                             </button>
                         ) : null}
-                        <button className="button" onClick={() => togglePrivate}>{isPrivate ? "Profile: private" : "Profile: public"}</button>
+                        <button className="button" onClick={() => {
+                            const receiverGroupName = window.prompt('Enter group name');
+                            sendGroupJoinRequest(receiverGroupName);
+                        }}> Add to group </button>
+                        <button className="button" onClick={() => togglePrivate}>{isPrivate ? "Group: private" : "Group: public"}</button>
                         <MemberChangeButton userId={groupDetails.userId} groupId={groupDetails.groupId} isMember={groupDetails.isMember}/>
                     </div>
                     <div id="group-text">
@@ -451,6 +482,12 @@ function GroupHomeAdmin() {
                         ))}
                     </ul>
                 </nav>
+                <h2>Groups</h2>
+                {subGroups.map((subGroup) => (
+                    <div key={subGroup.group_id}>
+                        <div>{subGroup.group_name}</div>
+                    </div>
+                ))}
             </aside> 
         </div>
     );

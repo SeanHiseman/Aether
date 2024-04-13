@@ -1,0 +1,33 @@
+<head>
+    <title><%= group.name &></title>
+</head>
+<body>
+    <header>
+        <div class="banner">
+            <img class="group-photo" src="<% = group.group_photo %>" alt="<%= group.name %>">
+            <h1><% = group.name %></h1>
+            <p><%= group.member_count %> followers</p>
+            <p><%= group.description %></p>
+        </div>
+        <div id="upload-section">
+            <p>Upload content</p>
+            <form id="upload-form" enctype="multipart/form-data" action="/upload" method="post">
+               <input type="text" name="title" placeholder="Enter title">
+               <input type="file" name="file">
+               <input id="upload-submit-button" type="submit" value="Upload">
+            </form>
+            <script src="/upload.js"></script>
+            <div id="confirmation-message"></div>
+        </div>
+    </header>
+    <main>
+        <div class="channels">
+            <h2>Channels</h2>
+            <ul>
+                <% group.channels.forEach(function(channel) { %>
+                    <li><%= channel %></li>
+                <% }); %>
+            </ul>
+        </div>
+    </main>
+</body>

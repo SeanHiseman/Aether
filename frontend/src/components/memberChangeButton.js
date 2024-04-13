@@ -15,7 +15,7 @@ const MemberChangeButton = ({ userId, groupId, isMember, isRequestSent, isPrivat
     const handleMemberChange = () => {
         if (isPrivate && !member && !request) {
             //Send join request for private group
-            axios.post('/api/join_group', { userId, groupId })
+            axios.post('/api/send_join_request', { isGroup: false, receiverId: groupId, senderId: userId })
                 .then(() => {
                     setRequest(true);
                 })
