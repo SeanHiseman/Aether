@@ -290,8 +290,7 @@ router.get('/group/:group_name', authenticateCheck, async (req, res) => {
         if (group.is_private) {
             const hasJoinRequest = await GroupRequests.findOne({
                 where: {
-                    sender_id: userId,
-                    receiver_id: group.group_id,
+                    group_id: group.group_id,
                 },
             });
             groupData.isRequestSent = !!hasJoinRequest;
@@ -448,13 +447,13 @@ router.post('/leave_group', authenticateCheck, async (req, res) => {
 
 //Send join request
 router.post('/send_join_request', authenticateCheck, async (req, res) => {
-    const { isGroup, receiverId, senderId } = req.body;
     try {
+        const { isGroup, receiverId, senderId } = req.body;
         const receiverGroup = await Groups.findOne({ where: { group_id: receiverId } });
         await GroupRequests.create({
             request_id: v4(),
             sender_id: senderId,
-            receiver_id: receiverGroup.group_id,
+            group_id: receiverGroup.group_id,
             is_group: isGroup
         });
         res.json({ message: "Join request sent" });

@@ -92,29 +92,34 @@ function GroupHome() {
 
     //Checks membership if group is private
     const isNotPrivateMember = !groupDetails.isMember && groupDetails.isPrivate;
+
     //Load different page if user is admin
     if (isAdmin) {
         return <GroupHomeAdmin />
     }
     else if (isNotPrivateMember) {
         return (
-            <header id="group-header">
-                <div id="group-members">
-                    <p>{groupDetails.memberCount} members</p>
-                    <MemberChangeButton 
-                        userId={groupDetails.userId} 
-                        groupId={groupDetails.groupId} 
-                        isMember={groupDetails.isMember} 
-                        isRequestSent={groupDetails.isRequestSent}
-                        isPrivate={groupDetails.isPrivate}
-                    />
+            <div className="group-container">
+                <div className="content-feed">
+                    <header id="group-header">
+                        <div id="group-members">
+                            <p>{groupDetails.memberCount} members</p>
+                            <MemberChangeButton 
+                                userId={groupDetails.userId} 
+                                groupId={groupDetails.groupId} 
+                                isMember={groupDetails.isMember} 
+                                isRequestSent={groupDetails.isRequestSent}
+                                isPrivate={groupDetails.isPrivate}
+                            />
+                        </div>
+                        <div id="group-text">
+                            <p className="large-text">{groupDetails.groupName}</p>
+                            <p id="description" >{groupDetails.description}</p>
+                        </div>
+                        <img id="large-group-photo" src={`/${groupDetails.groupPhoto}`} alt={groupDetails.groupName} />
+                    </header>   
                 </div>
-                <div id="group-text">
-                    <p className="large-text">{groupDetails.groupName}</p>
-                    <p id="description" >{groupDetails.description}</p>
-                </div>
-                <img id="large-group-photo" src={`/${groupDetails.groupPhoto}`} alt={groupDetails.groupName} />
-            </header>   
+            </div>
         )
     } else {
         return (    

@@ -392,7 +392,7 @@ router.post('/remove_follower', authenticateCheck, async (req, res) => {
     const { userId, profileId } = req.body;
     try {
         await Followers.destroy({
-            where: { user_id: userId, profile_id: profileId }
+            where: { follower_id: userId, profile_id: profileId }
         });
         //Lower follower count
         const profile = await Profiles.findByPk(profileId);
