@@ -178,8 +178,8 @@ const PersonalProfile = () => {
         }
     };
     
-    const handleLogout = (e) => {
-        e.preventDefault();
+    const handleLogout = (event) => {
+        event.preventDefault();
         axios.post('/api/logout')
             .then(response => {
                 if (response.data.success) {
@@ -384,7 +384,7 @@ const PersonalProfile = () => {
                         </form>                            
                     )}
                 </div>
-                <nav id="friend-list">
+                <nav id="channel-list">
                     <ul>
                         {channels.map(channel => (
                             <li key={channel.channelId}>
@@ -395,6 +395,9 @@ const PersonalProfile = () => {
                         ))}
                     </ul>
                 </nav>
+                {channel_name !== 'Main' && (
+                    <button className="button" onClick={() => deleteChannel()}>Delete channel</button>
+                )}
             </div>
         </div>
     );

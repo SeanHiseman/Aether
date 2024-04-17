@@ -15,10 +15,9 @@ function Login() {
         
         try {
             const response = await axios.post('/api/login', { username, password });
-
             //successful login
             if (response.data.success) {
-                navigate('/home');
+                navigate('/main');
             } else {
                 //If login unsuccessful
                 setError(response.data.message);

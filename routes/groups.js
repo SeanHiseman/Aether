@@ -1,7 +1,7 @@
 import authenticateCheck from '../functions/authenticateCheck.js';
 import checkIfUserIsAdmin from '../functions/adminCheck.js';
 import checkIfUserIsMember from '../functions/memberCheck.js';
-import { Groups, GroupChannels, GroupChannelMessages, GroupPosts, GroupRequests, Profiles, Users, UserGroups } from '../models/models.js';
+import { ContentVotes, Groups, GroupChannels, GroupChannelMessages, GroupPosts, GroupRequests, Profiles, Users, UserGroups } from '../models/models.js';
 import multer from 'multer';
 import { Router } from 'express';
 import path from 'path';
@@ -343,9 +343,15 @@ router.get('/group_channel_posts', authenticateCheck, async (req, res) => {
                 attributes: ['username'],
                 include: [{
                     model: Profiles,
-                    attributes: ['profile_photo'],
+                    attributes: ['profile_photo']
                 }]
+            }, {
+                model: ContentVotes,
+                as: 'GroupPostVotes',
+                attributes: ['vote_count'],
+                required: false
             }],
+            attributes: ['post_id', 'title', 'content', 'replies', 'views', 'upvotes', 'downvotes', 'timestamp'],
             //Posts sorted chronilogically (temporary)
             order: [['timestamp', 'DESC']]
         });
@@ -369,9 +375,15 @@ router.get('/group_main_posts', authenticateCheck, async (req, res) => {
                 attributes: ['username'],
                 include: [{
                     model: Profiles,
-                    attributes: ['profile_photo'],
+                    attributes: ['profile_photo']
                 }]
+            }, {
+                model: ContentVotes,
+                as: 'GroupPostVotes',
+                attributes: ['vote_count'],
+                required: false
             }],
+            attributes: ['post_id', 'title', 'content', 'replies', 'views', 'upvotes', 'downvotes', 'timestamp'],
         })
         res.json(posts);
     } catch (error) {

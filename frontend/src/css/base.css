@@ -104,6 +104,9 @@ body,html {
     transition: background-color 0.3s;
     width: 80%;
 }
+.channel-input::placeholder, #group-name-input::placeholder, #search-bar::placeholder {
+    color: white;
+}
 .channel-link {
     border-bottom: 1px solid #444;
     padding: 10px;
@@ -215,7 +218,10 @@ h2 {
     margin-top: 40px;
 }
 h3 {
-    margin-left: 65px;
+    margin-left: 10px;
+}
+h4 {
+    margin-left: 40px;
 }
 #home-header, #messages-header {
     align-items: center;
@@ -272,7 +278,7 @@ input[type="text"] {
     text-decoration: none;
 }
 .light-button {
-    background-color: #41445a;
+    background-color: #252836;
 }
 #logged_in_username {
     font-weight: 700;
@@ -354,9 +360,6 @@ main {
     max-height: 50px;
     padding: 5px;
     transition: background-color 0.3s;
-}
-.channel-input::placeholder, #group-name-input::placeholder, #search-bar::placeholder {
-    color: white;
 }
 #search-form {
     display: flex;

@@ -31,22 +31,27 @@ function GroupHomeAdmin() {
 
     //Loads group info 
     useEffect(() => {
-        try {
-            const response  = axios.get(`/api/group/${group_name}`);
-            const data = response.data;
-            setGroupDetails({
-                isMember: data.isMember,
-                groupId: data.groupId,
-                groupName: data.groupName,
-                description: data.description,
-                groupPhoto: data.groupPhoto,
-                memberCount: data.memberCount,
-                isPrivate: data.isPrivate,
-                userId: data.userId
-            });
-        } catch (error) {
-            setErrorMessage("Error fetching group details:", error);
-        };
+        const fetchGroupData = () => {
+            axios.get(`/api/group/${group_name}`)
+                .then(response => {
+                    const groupData = response.data;
+                    setGroupDetails({
+                        isMember: groupData.isMember,
+                        groupId: groupData.group_id,
+                        groupName: groupData.group_name,
+                        description: groupData.description,
+                        groupPhoto: groupData.group_photo,
+                        memberCount: groupData.member_count,
+                        isPrivate: groupData.is_private,
+                        isRequestSent: groupData.isRequestSent,
+                        userId: groupData.userId
+                    });
+                })
+                .catch(error => {
+                    setErrorMessage("Error fetching group details:", error);
+                });
+            };
+        fetchGroupData();
     }, [group_name]);
 
     //Fetch channels in user profile
@@ -133,7 +138,12 @@ function GroupHomeAdmin() {
             });
     };
     
-    const channelRender = channels.find(c => c.channel_name === channel_name && c.is_posts === (channel_mode === 'post'));
+    const channelRender = channels.find(
+        (c) =>
+            c.channel_name === channel_name &&
+            (c.is_posts && channelMode === 'post') ||
+            (!c.is_posts && channelMode === 'chat')
+    );
 
     const deleteChannel = async () => {
         try {
@@ -438,9 +448,6 @@ function GroupHomeAdmin() {
             </div>  
             <aside id="right-aside">
                 <h1>{channel_name}</h1>
-                {channel_name !== 'Main' && (
-                    <button className="button" onClick={() => deleteChannel()}>Delete channel</button>
-                )}
                 <div>
                     <button className={channelMode === 'post' ? 'active' : ''} onClick={() => setChannelMode('post')}>Posts</button>
                     <button className={channelMode === 'chat' ? 'active' : ''} onClick={() => setChannelMode('chat')}>Chat</button>
@@ -483,11 +490,14 @@ function GroupHomeAdmin() {
                     </ul>
                 </nav>
                 <h2>Groups</h2>
-                {subGroups.map((subGroup) => (
+                {/*subGroups.map((subGroup) => (
                     <div key={subGroup.group_id}>
                         <div>{subGroup.group_name}</div>
                     </div>
-                ))}
+                ))*/}
+                {channel_name !== 'Main' && (
+                    <button className="button" onClick={() => deleteChannel()}>Delete channel</button>
+                )}
             </aside> 
         </div>
     );

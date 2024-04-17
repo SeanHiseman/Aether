@@ -1,5 +1,5 @@
 import authenticateCheck from '../functions/authenticateCheck.js';
-import { GroupComments, GroupPosts, ProfileComments, ProfilePosts, Profiles, ReplyVotes, Users } from '../models/models.js';
+import { GroupReplies, GroupPosts, ProfileReplies, ProfilePosts, Profiles, ReplyVotes, Users } from '../models/models.js';
 import { Router } from 'express';
 import { v4 } from 'uuid';
 
@@ -12,7 +12,7 @@ router.post('/add_reply', authenticateCheck, async (req, res) => {
         const replier_id = req.session.user_id; 
         const post_type = isGroup ? 'group_post' : 'profile_post'; 
         const reply_id = v4();
-        const ReplyModel = isGroup ? GroupReplies : ProfileReplies;;
+        const ReplyModel = isGroup ? GroupReplies : ProfileReplies;
         
         await ReplyModel.create({ 
             reply_id, post_id, post_type, replier_id, content, upvotes: 0, downvotes: 0, timestamp: new Date(), parent_id 

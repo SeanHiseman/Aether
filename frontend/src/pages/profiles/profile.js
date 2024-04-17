@@ -92,7 +92,7 @@ function Profile() {
                 </header>
                 <div className="channel-feed">
                     {channelRender ? (
-                        <ProfileFeed channelId={channelRender.channel_id} isGroup={false} locationId={profile.profileId}/>
+                        <ProfileFeed channelId={channelRender.channel_id} isGroup={false} locationId={profile.profileId} />
                     ) : null}
                 </div>
             </div>

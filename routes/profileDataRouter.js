@@ -5,13 +5,7 @@ const router = express.Router();
 
 //Route to fetch profile data for a user
 router.get('/profileDataRouter/:userId', authenticateCheck, async (req, res) => {
-    const validColumns = new Set(['profile_id,', 'user_id', 'profile_photo', 'bio']);
-    const columns = ['profile_id', 'profile_photo', 'bio'];
-
-    //Validate column names to prevent SQL injection
-    //if (!columns.every(col => validColumns.has(col))) {
-        //return res.status(400).send('Invalid column names');
-    //}
+    const columns = ['profile_id', 'profile_photo', 'bio', 'follower_count', 'is_private'];
 
     const userId = req.params.userId;
 
@@ -30,7 +24,9 @@ router.get('/profileDataRouter/:userId', authenticateCheck, async (req, res) => 
             logged_in_profile_id: profile.profile_id,
             logged_in_username: req.session.username,
             logged_in_profile_photo: profile.profile_photo,
-            bio: profile.bio
+            bio: profile.bio,
+            follower_count: profile.follower_count,
+            is_private: profile.is_private
         };
         res.json(profileData);
 
