@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { hash, compare } from 'bcrypt';
 import { v4 } from 'uuid';
 import authenticateCheck from '../functions/authenticateCheck.js';
-import { ContentVotes, Friends, FriendRequests, GroupComments, GroupPosts, Messages, Profiles, ProfileChannels, ProfileComments, ProfilePosts, ReplyVotes, Users, UserConversations, UserGroups } from '../models/models.js';
+import { ContentVotes, Followers, Friends, FriendRequests, GroupReplies, GroupPosts, Messages, Profiles, ProfileChannels, ProfileReplies, ProfilePosts, ReplyVotes, Users, UserConversations, UserGroups } from '../models/models.js';
 
 const router = Router();
 
@@ -19,8 +19,7 @@ router.get('/check_authentication', async (req, res) => {
                 userId: user.user_id
             };
             res.json({ authenticated: true, user: userData });
-        } catch (err) {
-            console.error(err);
+        } catch (error) {
             return res.status(500).json({ error: 'Internal server error' });
         }
     } else {
@@ -38,10 +37,11 @@ router.delete('/delete_account', authenticateCheck, async (req, res) => {
         await Profiles.destroy({ where: { user_id } });
         await ProfileChannels.destroy({ where: { profile_id: { [Op.in]: profileIds } } });
         await ProfilePosts.destroy({ where: { poster_id: user_id } });
-        await ProfileComments.destroy({ where: { commenter_id: user_id } });
+        await ProfileReplies.destroy({ where: { commenter_id: user_id } });
         await UserGroups.destroy({ where: { user_id } });
         await GroupPosts.destroy({ where: { poster_id: user_id } });
-        await GroupComments.destroy({ where: { commenter_id: user_id } });
+        await GroupReplies.destroy({ where: { commenter_id: user_id } });
+        await Followers.destroy({ where: { follower_id: user_id } });
         await ContentVotes.destroy({ where: { user_id } });
         await ReplyVotes.destroy({ where: { user_id } });
         await Friends.destroy({ where: { [Op.or]: [{ user1_id: user_id }, { user2_id: user_id }] } });
@@ -71,7 +71,7 @@ router.post('/register', async (req, res) => {
         const user_id = v4();
         const hashedPassword = await hash(password, 10);
         const UserSince = new Date();
-        const newUser = await Users.create({
+        await Users.create({
             user_id, username, password: hashedPassword, UserSince
         });
 
@@ -116,13 +116,13 @@ router.post('/login', async (req, res) => {
 });
 
 router.post('/logout', (req, res) => {
-    req.session.destroy( err => {
-        if(err){
+    req.session.destroy( error => {
+        if (error) {
             return res.json({ success: false, message: 'Failed to logout'});
         }
         res.clearCookie('sid');
+        return res.json({ success: true });
     });
-
 });
 
 export default router;

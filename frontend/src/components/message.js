@@ -3,7 +3,7 @@ import React from 'react';
 
 const Message = ({ canRemove, message, isOutgoing, user }) => {
     //Users can delete their own messages
-    if (message.message_id === user.user_id) {
+    if (isOutgoing) {
         canRemove = true;
     };
     
@@ -17,11 +17,13 @@ const Message = ({ canRemove, message, isOutgoing, user }) => {
     };
 
     return (
-        <div className={`message ${isOutgoing ? 'outgoing' : 'incoming'}`}>
-            {message.content}
+        <div className={`message-container ${isOutgoing ? 'outgoing' : 'incoming'}`}>
             {canRemove ? (
-                <button className="button" onClick={() => removeMessage(message.message_id)}>Delete</button>
+                <button className="light-button" onClick={() => removeMessage(message.message_id)}>Delete</button>
             ) : null}
+            <div className={`message ${isOutgoing ? 'outgoing' : 'incoming'}`}>
+                {message.content}
+            </div>
         </div>
     );
 };

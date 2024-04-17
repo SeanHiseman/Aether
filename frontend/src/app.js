@@ -6,10 +6,10 @@ import FollowingPage from './pages/feeds/following';
 import FriendsPage from './pages/feeds/friends';
 import GroupHome from './pages/groups/groupHome';
 import GroupWrapper from './pages/groups/groupWrapper';
-import HomePage from './pages/feeds/home';
 import Login from './pages/site_entrance/login';
 import MainPage from './pages/feeds/main';
 import MessagesPage from './pages/messagesPage';
+import RecommendedPage from './pages/feeds/recommended';
 import Register from './pages/site_entrance/register';
 import Profile from './pages/profiles/profile';
 import ProfileWrapper from './pages/profiles/profileWrapper';
@@ -23,8 +23,8 @@ const App = () => {
                 <Route path="/login" element={<Login />} />
                 <Route path="/register" element={<Register />} />
                 <Route path="/" element={<AuthCheck><BaseLayout /></AuthCheck>}>
-                    <Route path="home" element={<AuthCheck><HomePage /></AuthCheck>} />
                     <Route path="main" element={<AuthCheck><MainPage /></AuthCheck>} />
+                    <Route path="recommended" element={<AuthCheck><RecommendedPage /></AuthCheck>} />
                     <Route path="following" element={<AuthCheck><FollowingPage /></AuthCheck>} />
                     <Route path="friends" element={<AuthCheck><FriendsPage /></AuthCheck>} />
                     <Route path="search" element={<AuthCheck><SearchResults /></AuthCheck>} />
@@ -37,7 +37,7 @@ const App = () => {
                     <Route path="group/:group_name" element={<AuthCheck><GroupWrapper /></AuthCheck>}>
                         <Route path=":channel_name/:channel_mode?" element={<GroupHome />}>
                             <Route index element={<Navigate replace to="Main/post" />} />
-                            <Route path=":channel_name" element={<GroupHome />} />
+                            <Route path=":channel_name/:channel_mode" element={<GroupHome />} />
                         </Route>
                     </Route>
                     <Route path="profile/:username" element={<AuthCheck><ProfileWrapper /></AuthCheck>}>

@@ -2,7 +2,7 @@ import axios from 'axios';
 import React, { useEffect, useState } from 'react';
 import ContentWidget from '../../components/contentWidget';
 
-function HomePage() {
+function RecommendedPage() {
     document.title = "Home";
     return (
         <div className="home-container">
@@ -15,4 +15,4 @@ function HomePage() {
     )
 }
 
-export default HomePage;
+export default RecommendedPage;

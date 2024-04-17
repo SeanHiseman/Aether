@@ -111,22 +111,22 @@ function MessagesPage() {
 
     //Get messages from a specific conversation
     const getChatMessages = (conversationId) => {
-        fetch(`/api/get_chat_messages/${conversationId}`)
-            .then(response => response.json())
+        axios.get(`/api/get_chat_messages/${conversationId}`)
+            .then(response => response.data)
             .then(data => setChat(data))
             .catch(error => console.log("Error fetching chat messages", error));
     }
 
     //Deletes friendship
-    const removeFriend = (friendId) => {
-        try {
-            axios.delete('api/remove_friend', { data: { receiverUserId: friendId } });
+    //const removeFriend = (friendId) => {
+        //try {
+            //axios.delete('api/remove_friend', { data: { receiverUserId: friendId } });
             //Update friends list
-            setFriends(prevFriends => prevFriends.filter(friend => friend.friend_id !== friendId));
-        } catch (error) {
-            setErrorMessage("Error removing friend.", error);
-        }
-    };
+            //setFriends(prevFriends => prevFriends.filter(friend => friend.friend_id !== friendId));
+        //} catch (error) {
+            //setErrorMessage("Error removing friend.", error);
+        //}
+    //};
 
     const sendMessage = () => {
         if (socketRef.current) {
@@ -148,7 +148,7 @@ function MessagesPage() {
 
     //Gets profile photo of viewed friend
     const friendProfileImage = friends.find(friend => friend.friend_name === friend_name)?.friend_profile_photo || '';
-    
+
     document.title = "Messages";
     return (
         <div className="messages-container">
@@ -167,13 +167,13 @@ function MessagesPage() {
                                         <img className="large-profile-photo" src={`/${friend.friend_profile_photo}`} alt="Profile" />
                                         <p className="large-text">{friend.friend_name}</p>
                                     </Link>
-                                    <button className="button" onClick={removeFriend(friend.friend_id)}>Remove friend</button>
+                                    {/*<button className="button" onClick={removeFriend(friend.friend_id)}>Remove friend</button>*/}
                                 </li>
                             ))}
                         </ul>
                     ) : (
                         chat.map((msg, index) => (
-                            <Message key={index} message={msg} isOutgoing={msg.senderId === user.userId} user={user} />
+                            <Message key={index} canRemove={false} message={msg} isOutgoing={msg.senderId === user.userId} user={user} />
                         ))
                     )}
                 </div>
@@ -189,9 +189,9 @@ function MessagesPage() {
                     <nav id="friend-list">
                         <Link id="chat-profile-link" to={`/profile/${friend_name}`}>
                             <img className="profile-image2" src={`/${friendProfileImage}`} alt="Profile"/>
-                            <h1>{friend_name}</h1>
+                            <h3>{friend_name}</h3>
                         </Link>
-                        <h3>Chats</h3> 
+                        <h4>Chats</h4> 
                         <ul>
                             {selectedConversations.map(conversation => (
                                 <li key={conversation.conversationId}>

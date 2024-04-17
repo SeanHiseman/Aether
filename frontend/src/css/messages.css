@@ -53,7 +53,7 @@
 .dropdown-container{
     position: relative;
 }
-#friend-list {
+#right-aside-list {
     justify-content: center;
     width: 80%;
 }
@@ -138,23 +138,27 @@
     text-align: center;
 }
 .message {
+    border-radius: 10px;
     margin: 10px;
     padding: 10px;
-    border-radius: 10px;
-    max-width: 70%;
 }
-  
 .message.incoming {
-    align-self: flex-start;
     background-color: #000514;
 }
-  
 .message.outgoing {
-    align-self: flex-end;
     background-color: #252836;
     border: 1px solid white;
 }
-  
+.message-container.incoming {
+    align-self: flex-start;
+    max-width: 70%;
+}
+.message-container.outgoing {
+    align-self: flex-end;
+    display: flex;
+    justify-content: center;
+    max-width: 70%;
+}
 .chat-input {
     padding: 10px;
     background-color: #f5f5f5;

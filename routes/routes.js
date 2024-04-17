@@ -1,7 +1,8 @@
 import { Router } from 'express';
-import { Followers, Friends, Groups, GroupPosts, ProfilePosts, Profiles, Users, ProfileChannels } from '../models/models.js'; 
+import { ContentVotes, Followers, Friends, Groups, GroupPosts, ProfilePosts, Profiles, Users, ProfileChannels, UserGroups } from '../models/models.js'; 
 import authenticateCheck from '../functions/authenticateCheck.js';
 import { Op } from 'sequelize';
+import { v4 } from 'uuid';
 const router = Router();
 
 //Up or downvote content
@@ -11,27 +12,17 @@ router.post('/content_vote', authenticateCheck, async (req, res) => {
         const userId = req.session.user_id;
     
         const [vote] = await ContentVotes.findOrCreate({
-            where: {
-                content_id: content_id,
-                user_id: userId
-            },
-            defaults: {
-                vote_id: v4(),
-            }
+            where: { content_id: content_id, user_id: userId },
+            defaults: { vote_id: v4(), vote_count: 0 },
         });
 
         //Limits upvotes and downvotes on each post to 10
-        if (vote.vote_count === 10 && vote_type === 'upvote') {
-            return res.json({ success: false, message: 'Upvote limit' });
-        } else if (vote.vote_count === -10 && vote_type === 'downvote') {
-            return res.json({ success: false, message: 'downvote limit' });
+        if (vote_type === 'upvote') {
+            vote.vote_count = Math.min(vote.vote_count + 1, 10);
+        } else if (vote_type === 'downvote') {
+            vote.vote_count = Math.max(vote.vote_count - 1, -10);
         }
 
-        if (vote_type === 'upvote') {
-            vote.vote_count += 1; 
-        } else if (vote_type === 'downvote') {
-            vote.vote_count -= 1; 
-        }
         await vote.save();
 
         const PostModel = isGroup ? GroupPosts : ProfilePosts;
@@ -104,18 +95,19 @@ router.get('/following_posts', authenticateCheck, async (req, res)=> {
                     }]
                 }]
         });
-        
-        const userGroups = await Users.findOne({
+        console.log("followedProfiles:", followedProfiles);
+        const userGroups = await UserGroups.findAll({
             where: { user_id: userId },
             include: [{
                 model: Groups,
+                through: { model: Users },
                 include: [{
                     model: GroupPosts,
                     attributes: ['post_id', 'title', 'content', 'replies', 'views', 'upvotes', 'downvotes', 'timestamp'],
                 }]
             }]
         })
-
+        console.log("userGroups:", userGroups);
         const posts = [
             ...followedProfiles.flatMap((profile) => 
                 profile.Profiles.ProfilePosts.map((post) => ({
@@ -130,7 +122,7 @@ router.get('/following_posts', authenticateCheck, async (req, res)=> {
                 }))
             )
         ];
-
+        console.log("posts:", posts);
         res.json(posts);
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });   

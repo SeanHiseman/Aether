@@ -114,19 +114,6 @@ function ContentWidget({ canRemove, isGroup, post }) {
         setDownvoteLimit(false);
         setUpvoteLimit(false);
 
-        //Check if at voting limit
-        if (voteType === 'upvote' && upvotes === 10) {
-            setUpvoteLimit(true);
-            return;
-        } else if (voteType === 'downvote' && downvotes === 10) {
-            setDownvoteLimit(true);
-            return;
-        }
-
-        //Update if limit hasn't been reached
-        setUpvotes(voteType === 'upvote' ? upvotes + 1 : upvotes);
-        setDownvotes(voteType === 'downvote' ? downvotes + 1 : downvotes);
-
         const vote = {
             content_id: postId, 
             isGroup,

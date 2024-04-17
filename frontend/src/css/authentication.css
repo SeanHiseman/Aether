@@ -1,44 +1,45 @@
 .authentication-container {
-    width: 300px;
-    padding: 16px;
     background-color: #000514;
-    margin: 0 auto;
-    margin-top: 100px;
+    border: 1px solid white;
     border-radius: 10px;
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    margin: 0 auto;
+    margin-top: 100px;
+    padding: 16px;
     text-align: center;
+    width: 300px;
 }
 .authentication-input-box {
-    width: 100%;
-    padding: 12px;
-    margin: 8px 0;
-    display: inline-block;
     border: 1px solid #ccc;
     border-radius: 10px;
     box-sizing: border-box;
+    display: inline-block;
+    margin: 8px 0;
     outline: none;
+    padding: 12px;
+    width: 100%;
 }
 .submit {
     background-color: #000514;
     border: 1px solid #ffffff;
     color: white;
-    padding: 14px 20px;
-    margin: 8px 0;
     border-radius: 10px;
     cursor: pointer;
-    width: 100%;
+    margin: 8px 0;
+    padding: 14px 20px;
     transition: background-color 0.3s;
+    width: 100%;
 }
 .link {
-    display: inline-block;
-    padding: 10px 20px;
+    align-self: center;
     background-color: #000514;
     border: 1px solid #ffffff;
-    color: white;
-    text-align: center;
     border-radius: 10px;
+    color: white;
+    display: inline-block;
+    padding: 10px 20px;
+    text-align: center;
     text-decoration: none;
-    align-self: center;
     transition: background-color 0.3s;
 }
 

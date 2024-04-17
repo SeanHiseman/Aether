@@ -11,7 +11,7 @@ function GroupHome() {
     const { group_name, channel_name, channel_mode } = useParams();
     const [canRemove, setCanRemove] = useState(false);
     const [channels, setChannels] = useState([]);
-    const [channelMode, setChannelMode] = useState('post');
+    const [channelMode, setChannelMode] = useState(channel_mode || 'post');
     const [errorMessage, setErrorMessage] = useState('');
     const [isAdmin, setIsAdmin] = useState(false);
     const [isModerator, setIsModerator] = useState(false);
@@ -21,25 +21,29 @@ function GroupHome() {
 
     //Loads group info 
     useEffect(() => {
-        try {
-            const response = axios.get(`/api/group/${group_name}`);
-            const data = response.data;
-            setIsAdmin(data.isAdmin);
-            setIsModerator(data.isModerator);
-            setGroupDetails({
-                isMember: data.isMember,
-                groupId: data.groupId,
-                groupName: data.groupName,
-                description: data.description,
-                groupPhoto: data.groupPhoto,
-                memberCount: data.memberCount,
-                isPrivate: data.isPrivate,
-                isRequestSent: data.isRequestSent,
-                userId: data.userId
-            });
-        } catch (error) {
-            setErrorMessage("Error fetching group details:", error);
-        };
+        const fetchGroupData = () => {
+            axios.get(`/api/group/${group_name}`)
+                .then(response => {
+                    const groupData = response.data;
+                    setIsAdmin(groupData.isAdmin);
+                    setIsModerator(groupData.isModerator);
+                    setGroupDetails({
+                        isMember: groupData.isMember,
+                        groupId: groupData.group_id,
+                        groupName: groupData.group_name,
+                        description: groupData.description,
+                        groupPhoto: groupData.group_photo,
+                        memberCount: groupData.member_count,
+                        isPrivate: groupData.is_private,
+                        isRequestSent: groupData.isRequestSent,
+                        userId: groupData.userId
+                    });
+                })
+                .catch(error => {
+                    setErrorMessage("Error fetching group details:", error);
+                });
+            };
+        fetchGroupData();
     }, [group_name]);
 
     //Moderators can remove content
@@ -63,7 +67,12 @@ function GroupHome() {
         });
     }, [groupDetails.groupId]);  
 
-    const channelRender = channels.find(c => c.channel_name === channel_name && c.is_posts === (channel_mode === 'post'));
+    const channelRender = channels.find(
+        (c) =>
+            c.channel_name === channel_name &&
+            (c.is_posts && channelMode === 'post') ||
+            (!c.is_posts && channelMode === 'chat')
+    );
 
     //Uploads content 
     const handlePostSubmit = async (formData) => {
@@ -132,9 +141,9 @@ function GroupHome() {
                         {showPostForm ? (
                             <PostForm onSubmit={handlePostSubmit} errorMessage={errorMessage} />
                         ) : channelRender ? (
-                            channelRender.is_posts ? (
+                        channelMode === 'post' ? (
                                 <PostChannel
-                                    canRemvove={canRemove}
+                                    canRemove={canRemove}
                                     channelId={channelRender.channel_id}
                                     channelName={channelRender.channel_name}
                                     isGroup={true}
@@ -142,7 +151,7 @@ function GroupHome() {
                                 />
                             ) : (
                                 <ChatChannel
-                                    canRemvove={canRemove}
+                                    canRemove={canRemove}
                                     channelId={channelRender.channel_id}
                                     channelName={channelRender.channel_name}
                                     isGroup={true}

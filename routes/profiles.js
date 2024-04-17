@@ -8,7 +8,7 @@ import { Op } from 'sequelize';
 import authenticateCheck from '../functions/authenticateCheck.js';
 import session from 'express-session';
 import multer, { diskStorage } from 'multer';
-import { Conversations, Followers, Friends, FriendRequests, Messages, Profiles, ProfileChannels, ProfilePosts, Users, UserConversations } from '../models/models.js';
+import { ContentVotes, Conversations, Followers, Friends, FriendRequests, Messages, Profiles, ProfileChannels, ProfilePosts, Users, UserConversations } from '../models/models.js';
 
 const app = express();
 const router = Router();
@@ -271,9 +271,15 @@ router.get('/profile_channel_posts', authenticateCheck, async (req, res) => {
                 attributes: ['username'],
                 include: [{
                     model: Profiles,
-                    attributes: ['profile_photo'],
+                    attributes: ['profile_photo']
                 }]
+            }, {
+                model: ContentVotes,
+                as: 'ProfilePostVotes',
+                attributes: ['vote_count'],
+                required: false
             }],
+            attributes: ['post_id', 'title', 'content', 'replies', 'views', 'upvotes', 'downvotes', 'timestamp'],
             //Posts sorted chronilogically
             order: [['timestamp', 'DESC']]
         });
@@ -298,9 +304,15 @@ router.get('/profile_main_posts', authenticateCheck, async (req, res) => {
                 attributes: ['username'],
                 include: [{
                     model: Profiles,
-                    attributes: ['profile_photo'],
+                    attributes: ['profile_photo']
                 }]
+            }, {
+                model: ContentVotes,
+                as: 'ProfilePostVotes',
+                attributes: ['vote_count'],
+                required: false
             }],
+            attributes: ['post_id', 'title', 'content', 'replies', 'views', 'upvotes', 'downvotes', 'timestamp'],
         })
         res.json(posts);
     } catch (error) {
