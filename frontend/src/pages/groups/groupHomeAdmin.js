@@ -176,6 +176,7 @@ function GroupHomeAdmin() {
     const getJoinRequests = async () => {
         try {
             const response = await axios.get(`/api/group_requests/${groupDetails.groupId}`);
+            console.log("response.data:", response.data);
             setRequests(response.data);
         } catch (error) {
             console.error('Error fetching requests:', error);
@@ -312,7 +313,7 @@ function GroupHomeAdmin() {
                         <button className="button" onClick={getGroupMembers}>
                             {showMembers ? 'Close members' : 'See members'}
                         </button>
-                        {isPrivate ? (
+                        {groupDetails.isPrivate ? (
                             <button className="button" onClick={() => {getJoinRequests(); setShowRequests(!showRequests)}}>
                                 {showRequests ? 'Close join requests' : 'See join requests'}
                             </button>
@@ -321,7 +322,7 @@ function GroupHomeAdmin() {
                             const receiverGroupName = window.prompt('Enter group name');
                             sendGroupJoinRequest(receiverGroupName);
                         }}> Add to group </button>
-                        <button className="button" onClick={() => togglePrivate}>{isPrivate ? "Group: private" : "Group: public"}</button>
+                        <button className="button" onClick={() => togglePrivate}>{groupDetails.isPrivate ? "Group: private" : "Group: public"}</button>
                         <MemberChangeButton userId={groupDetails.userId} groupId={groupDetails.groupId} isMember={groupDetails.isMember}/>
                     </div>
                     <div id="group-text">

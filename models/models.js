@@ -146,7 +146,7 @@ const GroupRequests = sequelize.define('group_requests', {
 //GroupRequest relationships
 Users.hasMany(GroupRequests, { as: 'sent_group_requests', foreignKey: 'sender_id' });
 GroupRequests.belongsTo(Users, { as: 'sender', foreignKey: 'sender_id' });
-GroupRequests.belongsTo(Groups, { as: 'receiver', foreignKey: 'receiver_id' });
+GroupRequests.belongsTo(Groups, { as: 'receiver', foreignKey: 'group_id' });
 
 const GroupChannels = sequelize.define('group_channels', { 
   channel_id: { type: STRING(36), primaryKey: true }, 

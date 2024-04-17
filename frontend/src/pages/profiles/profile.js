@@ -78,7 +78,7 @@ function Profile() {
         <div className="profile-container">
             <div className="content-feed">
                 <header id="profile-header">
-                    <FollowerChangeButton userId={loggedInUserId} ProfileId={profile.profileId} isFollowing={profile.isFollowing} />
+                    <FollowerChangeButton userId={loggedInUserId} profileId={profile.profileId} isFollowing={profile.isFollowing} />
                     <ManageFriendshipButton userId={loggedInUserId} receiverProfileId={profile.profileId} receiverUserId={profile.userId} isRequestSent={profile.isRequested} isFriend={profile.isFriend} />
                     <div id="profile-header-side">
                     </div>

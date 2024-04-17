@@ -83,7 +83,7 @@ router.get('/friend_posts', authenticateCheck, async (req, res)=> {
 
 //Profiles and groups followed/joined by user
 router.get('/following_posts', authenticateCheck, async (req, res)=> {
-    try {
+    //try {
         const userId = req.session.user_id;
         const followedProfiles= await Followers.findAll({
             where: { follower_id: userId },
@@ -124,9 +124,9 @@ router.get('/following_posts', authenticateCheck, async (req, res)=> {
         ];
         console.log("posts:", posts);
         res.json(posts);
-    } catch (error) {
-        res.status(500).json({ success: false, message: error.message });   
-    }
+    //} catch (error) {
+        //res.status(500).json({ success: false, message: error.message });   
+    //}
 });
 
 router.get('/get_current_user', authenticateCheck, (req, res) => {
@@ -135,13 +135,6 @@ router.get('/get_current_user', authenticateCheck, (req, res) => {
         return res.json({ user_id: userId });
     }
     return res.status(401).json({ "error": "No user logged in" });
-});
-
-//Home route
-router.get('/home', authenticateCheck, async (req, res) => {
-        res.json({
-            //nothing yet
-        });
 });
 
 //Adds one view to a piece of content
