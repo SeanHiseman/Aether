@@ -506,14 +506,14 @@ router.post('/update_group_photo/:groupId', authenticateCheck, upload.single('ne
         if (group) {
             group.group_photo = newPhotoPath;
             //Deletes old photo
-            //if (group.group_photo) {
-                //const currentPhotoPath = path.join(__dirname, '..', group.group_photo);
-                //fs.unlink(currentPhotoPath, (err) => {
-                    //res.status(404).json({ message: "Error deleting old photo", err });
-                //});
-            //}
+            if (group.group_photo) {
+                const currentPhotoPath = path.join(__dirname, '..', group.group_photo);
+                fs.unlink(currentPhotoPath, (err) => {
+                    res.status(404).json({ message: "Error deleting old photo", err });
+                });
+            }
             await group.save();
-            return res.redirect(`/group/${groupId}`);
+            return res.json({ newPhotoPath });
         } else {
             res.status(404).json({ message: "Group not found" });
         }

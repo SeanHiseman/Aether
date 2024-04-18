@@ -5,10 +5,12 @@
     border-top: 1px solid white;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     padding: 15px;
-    width: 1000px;
+    width: 100%;
 }
 .content-list {
     border-bottom: 1px solid white;
+    max-width: 1000px;
+    width: 70%;
 }
 .downvote-disabled, .upvote-disabled {
     background-color: #444;

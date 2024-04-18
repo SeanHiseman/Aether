@@ -148,10 +148,14 @@ function ContentWidget({ canRemove, isGroup, post }) {
             </div>
             <div className="content-metadata">
                 <div className="profile-info">
-                    <Link className="profile-link" to={`/profile/${post[Poster].username}`}>
-                        <img class="uploader-profile-image" src={`/${post[Poster].profile.profile_photo}`} alt="Profile" />
-                        <p className="username">{post[Poster].username}</p>
-                    </Link>
+                    {post[Poster] && post[Poster].username && post[Poster].profile && post[Poster].profile.profile_photo ? (
+                        <Link className="profile-link" to={`/profile/${post[Poster].username}`}>
+                            <img className="uploader-profile-image" src={`/${post[Poster].profile.profile_photo}`} alt="Profile" />
+                            <p className="username">{post[Poster].username}</p>
+                        </Link>
+                    ) : (
+                        <p>Unknown user</p>
+                    )}
                 </div>
                 <div className="reply-vote-container">
                     <button className={upvoteStyle} onClick={() => postVote(post.post_id, 'upvote')}>

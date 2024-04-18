@@ -130,7 +130,7 @@ function GroupHomeAdmin() {
         formData.append('new_group_photo', fileInput.files[0]);
         axios.post(`/api/update_group_photo/${groupDetails.groupId}`, formData)
             .then(response => {
-                //document.getElementById('large-group-photo').src = response.data.newPhotoPath;
+                document.getElementById('large-group-photo').src = response.data.newPhotoPath;
                 setErrorMessage('');
                 setIsPhotoFormVisible(false);
             }).catch(error => {

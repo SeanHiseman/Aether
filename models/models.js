@@ -7,16 +7,16 @@ const Profiles = sequelize.define('profiles', {
   profile_photo: { type: STRING(120) },
   bio: { type: STRING(1000) },
   follower_count: { type: INTEGER, defaultValue: 0 },
-  is_private: { type: BOOLEAN, defaultValue: true},
+  is_private: { type: BOOLEAN, defaultValue: true },
 }, {tableName: 'profiles', timestamps: false });
 
 
 const ProfileChannels = sequelize.define('profile_channels', { 
   channel_id: { type: STRING(36), primaryKey: true }, 
   channel_name: { type: STRING(100), allowNull: false }, 
-  profile_id: { type: STRING(36), allowNull: false},
+  profile_id: { type: STRING(36), allowNull: false },
   date_created: { type: DATE, defaultValue: NOW },
-}, {tableName: 'profile_channels', timestamps: false}); 
+}, {tableName: 'profile_channels', timestamps: false }); 
 
 ProfileChannels.belongsTo(Profiles, { foreignKey: 'profile_id' }); 
 Profiles.hasMany(ProfileChannels, { foreignKey: 'profile_id' }); 
@@ -37,7 +37,7 @@ const Followers = sequelize.define('followers', {
   follow_id: { type: STRING(36), primaryKey: true },
   follower_id: { type: STRING(36), allowNull: false },
   profile_id: { type: STRING(36), allowNull: false },
-}, {tableName: 'followers', timestamps: false});
+}, {tableName: 'followers', timestamps: false });
 
 //Followers relationships
 Profiles.belongsToMany(Users, { through: Followers, foreignKey: 'profile_id', otherKey: 'follower_id', as: 'followedProfiles' });
@@ -57,7 +57,7 @@ const ProfilePosts = sequelize.define('profile_posts', {
   downvotes: { type: INTEGER, allowNull: false, defaultValue: 0 },
   timestamp: { type: DATE, defaultValue: NOW },
   poster_id: { type: STRING(36), primaryKey: true },
-}, {tableName: 'profile_posts', timestamps: false});
+}, {tableName: 'profile_posts', timestamps: false });
 
 //Profile posts relationships
 Users.hasMany(ProfilePosts, { as: 'ProfilePoster', foreignKey: 'poster_id' });
@@ -76,7 +76,7 @@ const ProfileReplies = sequelize.define('profile_replies', {
   downvotes: { type: INTEGER, allowNull: false },
   timestamp: { type: DATE, defaultValue: NOW },
   parent_id: { type: STRING(36) }
-}, {tableName: 'profile_replies', timestamps: false});
+}, {tableName: 'profile_replies', timestamps: false });
 
 ProfilePosts.hasMany(ProfileReplies, { as: 'ProfilePostReplies', foreignKey: 'post_id' });
 ProfileReplies.belongsTo(ProfilePosts, { as: 'ProfilePost', foreignKey: 'post_id' });
@@ -92,14 +92,14 @@ const Groups = sequelize.define('groups', {
   group_photo: { type: TEXT, allowNull: true },
   member_count: { type: INTEGER, defaultValue: 0 },
   date_created: { type: DATE, defaultValue: NOW },
-  is_private: { type: BOOLEAN, defaultValue: false},
-  group_leader: { type: STRING(36), allowNull: false},
+  is_private: { type: BOOLEAN, defaultValue: false },
+  group_leader: { type: STRING(36), allowNull: false },
 }, { tableName: 'groups', timestamps: false });
 
 const GroupPosts = sequelize.define('group_posts', {
   post_id: { type: STRING(36), primaryKey: true },
   group_id: { type: STRING(36), allowNull: false }, 
-  channel_id: { type: String(36), allowNull: false},
+  channel_id: { type: String(36), allowNull: false },
   title: { type: STRING(120), allowNull: true },
   content: { type: TEXT, allowNull: false },
   replies: { type: INTEGER, allowNull: false, defaultValue: 0 },
