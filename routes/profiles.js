@@ -1,7 +1,7 @@
 import express from 'express';
+import fs from 'fs';
 import { Router } from 'express';
 import { v4 } from 'uuid';
-import { fileURLToPath } from 'url';
 import { join } from 'path';
 import path, { extname } from 'path';
 import { Op } from 'sequelize';
@@ -12,8 +12,7 @@ import { ContentVotes, Conversations, Followers, Friends, FriendRequests, Messag
 
 const app = express();
 const router = Router();
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const __dirname = path.dirname(import.meta.url);
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -37,6 +36,7 @@ const fileFilter = (req, file, cb) => {
         cb(null, false);
     }
 }
+
 //Uploads with file size limit
 const upload = multer({
     storage: profile_photo_storage,
@@ -482,29 +482,30 @@ router.post('/toggle_private_profile', authenticateCheck, async (req, res) => {
 });
 
 //Update profile photo
-router.post('/update_profile_photo/:profileId', authenticateCheck, upload.single('new_profile_photo'), async (req, res) => {
-
-    const profileId = req.params.profileId; 
-    const file = req.file; 
-    
-    if (!file) {
-        return res.status(400).json({ message: "Invalid file type. Please upload jpeg or png"});
-    }
-
-    const filename = file.filename;
-    const newPhotoPath = `media/profile_images/${filename}`;
-
+router.put('/update_profile_photo/:profileId', authenticateCheck, upload.single('new_profile_photo'), async (req, res) => {
     try {
+        const profileId = req.params.profileId; 
+        const file = req.file; 
+    
+        if (!file) {
+            return res.status(400).json({ message: "Invalid file type. Please upload jpeg or png"});
+        }
+
+        const filename = file.filename;
+        const newPhotoPath = `media/profile_images/${filename}`;
         const profile = await Profiles.findOne({ where: { profile_id: profileId } });
+        
         if (profile) {
-            profile.profile_photo = newPhotoPath;
             //Deletes old photo
             if (profile.profile_photo) {
-            const currentPhotoPath = path.join(__dirname, '..', profile.profile_photo);
+            const currentPhotoPath = path.join(profile.profile_photo);
                 fs.unlink(currentPhotoPath, (error) => {
-                    res.status(404).json({ message: "Error deleting old photo", error });
+                    if (error) {
+                        console.error(`Error deleting old photo: ${error}`);
+                    }
                 });
-            }            
+            }       
+            profile.profile_photo = newPhotoPath;     
             await profile.save();
             return res.json({ newPhotoPath });
         } else {

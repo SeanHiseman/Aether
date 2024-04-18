@@ -70,6 +70,17 @@ body,html {
 .change-name-area:focus, .change-text-area:focus, #group-name-input:hover, #group-name-input:focus, .posts-channel-button:hover {
     background-color: #41445a;
 }
+#change-group-photo, #change-profile-photo {
+    background-color: #000514;
+    border: 1px solid #ffffff;
+    border-radius: 10px;
+    display: flex;
+    flex-direction: column;
+    max-width: 200px;
+    margin-top: 250px;
+    padding: 5px;
+    position: absolute;
+}
 .change-name-area {
     background-color: #41445a;
     border: 1px solid #ffffff;
