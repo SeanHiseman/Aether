@@ -103,7 +103,7 @@ const PersonalProfile = () => {
     
         axios.post(`/api/update_profile_photo/${profile.profileId}`, formData)
             .then(response => {
-                //document.getElementById('large-profile-photo').src = response.data.newPhotoPath;
+                document.getElementById('large-profile-photo').src = response.data.newPhotoPath;
                 setErrorMessage('');
                 setIsPhotoFormVisible(false);
             }).catch(error => {
@@ -311,12 +311,13 @@ const PersonalProfile = () => {
                             )}
                             {errorMessage && <div className="error-message">{errorMessage}</div>}
                         </div>
-                        <button className="button" onClick={() => togglePrivate}>{isPrivate ? "Profile: private" : "Profile: public"}</button>
-                        <form action="/api/logout" method="post" onSubmit={handleLogout}>
-                            <button className="button" type="submit">Logout</button>
-                        </form>
-                        <button className="button" onClick={deleteAccount}>Delete account</button>
                     </div>
+                    <p>{profile.followerCount} followers</p>
+                    <button className="button" onClick={() => togglePrivate}>{isPrivate ? "Profile: private" : "Profile: public"}</button>
+                    <form action="/api/logout" method="post" onSubmit={handleLogout}>
+                        <button className="button" type="submit">Logout</button>
+                    </form>
+                    <button className="button" onClick={deleteAccount}>Delete account</button>
                     <div id="profile-header-photo">
                         <img className="large-profile-photo" src={`/${profile.profilePhoto}`} alt="Profile" />
                         <button className="button" onClick={() => setIsPhotoFormVisible(!isPhotoFormVisible)}>

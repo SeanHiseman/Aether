@@ -4,6 +4,7 @@ import ContentWidget from '../../components/contentWidget';
 
 function FollowingPage() {
     const [posts, setPosts] = useState([]);
+
     //Gets posts from profiles and groups followed by user
     useEffect(() => {
         axios.get('/api/following_posts')

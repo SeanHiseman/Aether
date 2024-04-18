@@ -75,6 +75,7 @@ router.get('/friend_posts', authenticateCheck, async (req, res)=> {
             //Posts sorted chronilogically
             order: [['timestamp', 'DESC']]
         });
+
         res.json(posts);
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });   
@@ -82,51 +83,70 @@ router.get('/friend_posts', authenticateCheck, async (req, res)=> {
 });
 
 //Profiles and groups followed/joined by user
-router.get('/following_posts', authenticateCheck, async (req, res)=> {
-    //try {
+router.get('/following_posts', authenticateCheck, async (req, res) => {
+    try {
         const userId = req.session.user_id;
-        const followedProfiles= await Followers.findAll({
+
+        //Fetch followed profiles
+        const followedProfiles = await Followers.findAll({
             where: { follower_id: userId },
-                include: [{
+            include: [{
                     model: Profiles,
-                    include: [{
-                        model: ProfilePosts,
-                        attributes: ['post_id', 'title', 'content', 'replies', 'views', 'upvotes', 'downvotes', 'timestamp'],
-                    }]
-                }]
+                    attributes: ['profile_id'],
+                }],
+            attributes: [],
         });
-        console.log("followedProfiles:", followedProfiles);
+
+        //Fetch user groups
         const userGroups = await UserGroups.findAll({
             where: { user_id: userId },
             include: [{
-                model: Groups,
-                through: { model: Users },
+                    model: Groups,
+                    attributes: ['group_id'],
+                }],
+            attributes: [],
+        });
+
+        //Get profile IDs and group IDs
+        const profileIds = followedProfiles.map((follower) => follower.profile.profile_id);
+        const groupIds = userGroups.map((userGroup) => userGroup.group.group_id);
+
+        //Fetch posts from followed profiles
+        const profilePosts = await ProfilePosts.findAll({
+            where: { profile_id: { [Op.in]: profileIds } },
+            include: [{
+                model: Users,
+                as: 'ProfilePoster',
+                attributes: ['username'],
                 include: [{
-                    model: GroupPosts,
-                    attributes: ['post_id', 'title', 'content', 'replies', 'views', 'upvotes', 'downvotes', 'timestamp'],
-                }]
-            }]
-        })
-        console.log("userGroups:", userGroups);
-        const posts = [
-            ...followedProfiles.flatMap((profile) => 
-                profile.Profiles.ProfilePosts.map((post) => ({
-                    ...post.toJSON(),
-                    isGroup: false,
-                }))
-            ),
-            ...userGroups.Groups.flatMap((group) =>
-                group.GroupPosts.map((post) => ({
-                    ...post.toJSON(), 
-                    isGroup: true,
-                }))
-            )
-        ];
-        console.log("posts:", posts);
+                        model: Profiles,
+                        attributes: ['profile_photo'],
+                    }],
+                }],
+            order: [['timestamp', 'DESC']],
+        });
+
+        //Fetch posts from user groups
+        const groupPosts = await GroupPosts.findAll({
+            where: { group_id: { [Op.in]: groupIds } },
+            include: [{
+                model: Users,
+                as: 'GroupPoster',
+                attributes: ['username'],
+                include: [{
+                        model: Profiles,
+                        attributes: ['profile_photo'],
+                    }],
+                }],
+            order: [['timestamp', 'DESC']],
+        });
+
+        //Combine posts from profiles and groups
+        const posts = [...profilePosts, ...groupPosts];
         res.json(posts);
-    //} catch (error) {
-        //res.status(500).json({ success: false, message: error.message });   
-    //}
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
 });
 
 router.get('/get_current_user', authenticateCheck, (req, res) => {

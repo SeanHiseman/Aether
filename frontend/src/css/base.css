@@ -193,8 +193,7 @@ body,html {
     height: calc(100vh - 80px);
     margin-left: auto;
     margin-right: 0;
-    max-width: calc(100% - 235px);
-    min-width: calc(100% - 235px);
+    min-width: 86%;
 }
 #group-header, #messages-header, #profile-header {
     align-items: center;
@@ -253,7 +252,7 @@ input[type="text"] {
     display: flex;
     flex-direction: column;
     overflow-y: auto;
-    width: 235px;
+    width: 14%;
 }
 #left-aside {
     border-right: 1px solid #ffffff;
@@ -366,7 +365,7 @@ main {
     flex-grow: 0;
     justify-content: space-between;
     margin-left: 110px;
-    max-width: 600px;
+    max-width: 35%;
     min-height: 50px;
     width: 100%;
 }

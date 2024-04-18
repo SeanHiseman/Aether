@@ -43,7 +43,6 @@ function ProfileFeed({ channelId, isGroup, locationId }) {
 
         axios.get(`/api/profile_channel_posts?${channelData}`)
         .then(response => {
-            console.log("response:", response.data);
             setPosts(response.data);
         })
         .catch(error => {

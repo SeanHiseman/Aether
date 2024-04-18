@@ -70,6 +70,7 @@ function Profile() {
                 <p className="large-text">{profile.username}</p>
                 <p id="profile-bio">{profile.bio}</p>
             </div>
+            <p>{profile.followerCount} followers</p>
             <div id="profile-header-photo">
                 <img className="large-profile-photo" src={`/${profile.profilePhoto}`} alt="Profile" />         
             </div>
@@ -86,6 +87,7 @@ function Profile() {
                         <p className="large-text">{profile.username}</p>
                         <p id="profile-bio">{profile.bio}</p>
                     </div>
+                    <p>{profile.followerCount} followers</p>
                     <div id="profile-header-photo">
                         <img className="large-profile-photo" src={`/${profile.profilePhoto}`} alt="Profile" />         
                     </div>

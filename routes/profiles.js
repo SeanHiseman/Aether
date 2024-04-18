@@ -322,8 +322,8 @@ router.get('/profile_main_posts', authenticateCheck, async (req, res) => {
 
 //Load user profiles
 router.get('/profile/:username', authenticateCheck, async (req, res) => {
-    const loggedInUserId = req.session.user_id;
     try {
+        const loggedInUserId = req.session.user_id;
         let viewedUser = await Users.findOne({ where: { username: req.params.username } });
         //Finds profile associated with user
         let profile = await Profiles.findOne({ where: { user_id: viewedUser.user_id } });
@@ -361,7 +361,7 @@ router.get('/profile/:username', authenticateCheck, async (req, res) => {
                 profilePhoto: profile.profile_photo,
                 username: viewedUser.username,
                 bio: profile.bio,
-                followerCount: profile.followerCount,
+                followerCount: profile.follower_count,
                 isPrivate: profile.is_private,
                 userId: viewedUser.user_id, 
                 isFollowing: !!follower,
@@ -499,14 +499,14 @@ router.post('/update_profile_photo/:profileId', authenticateCheck, upload.single
         if (profile) {
             profile.profile_photo = newPhotoPath;
             //Deletes old photo
-            //if (group.group_photo) {
-                //const currentPhotoPath = path.join(__dirname, '..', group.group_photo);
-                //fs.unlink(currentPhotoPath, (err) => {
-                    //res.status(404).json({ message: "Error deleting old photo", err });
-                //});
-            //}            
+            if (profile.profile_photo) {
+            const currentPhotoPath = path.join(__dirname, '..', profile.profile_photo);
+                fs.unlink(currentPhotoPath, (error) => {
+                    res.status(404).json({ message: "Error deleting old photo", error });
+                });
+            }            
             await profile.save();
-            return res.redirect(`/profile/${profileId}`);
+            return res.json({ newPhotoPath });
         } else {
             res.status(404).json({ message: "Profile not found" });
         }
