@@ -2,11 +2,44 @@ import authenticateCheck from '../functions/authenticateCheck.js';
 import checkIfUserIsAdmin from '../functions/adminCheck.js';
 import checkIfUserIsMember from '../functions/memberCheck.js';
 import { ContentVotes, Groups, GroupChannels, GroupChannelMessages, GroupPosts, GroupRequests, Profiles, Users, UserGroups } from '../models/models.js';
+import express from 'express';
+import fs from 'fs';
 import multer from 'multer';
+import { join } from 'path';
 import { Router } from 'express';
 import path from 'path';
 import { v4 } from 'uuid';
+
+const app = express();
 const router = Router();
+const __dirname = path.dirname(import.meta.url);
+app.use(express.static(join(__dirname, 'static')));
+
+//Multer setup for profile uploads
+const group_photo_storage = multer.diskStorage({
+    destination: function(req, file, cb) {
+        cb(null, 'media/group_profiles');
+    },
+    filename: function(req, file, cb) {
+        cb(null, Date.now() + path.extname(file.originalname));
+    }
+});
+//Check file input
+const fileFilter = (req, file, cb) => {
+    if (file.mimetype === 'image/jpeg' || file.mimetype === 'image/png') {
+        cb(null, true);
+    } else {
+        cb(null, false);
+    }
+}
+//Uploads with file size limit
+const upload = multer({
+    storage: group_photo_storage,
+    limits: {
+        fileSize: 1024 * 1024 * 5
+    },
+    fileFilter: fileFilter
+});
 
 //Adds user to private group
 router.post('/accept_request', authenticateCheck, async (req, res) => {
@@ -92,32 +125,6 @@ router.post('/change_group_name', authenticateCheck, async (req, res) => {
     } catch (error) {
         res.status(500).json({ message: "Failed to update name" });
     }
-});
-
-//Multer setup for profile uploads
-const group_profile_photo_storage = multer.diskStorage({
-    destination: function(req, file, cb) {
-        cb(null, 'media/group_profiles');
-    },
-    filename: function(req, file, cb) {
-        cb(null, Date.now() + path.extname(file.originalname));
-    }
-});
-//Check file input
-const fileFilter = (req, file, cb) => {
-    if (file.mimetype === 'image/jpeg' || file.mimetype === 'image/png') {
-        cb(null, true);
-    } else {
-        cb(null, false);
-    }
-}
-//Uploads with file size limit
-const upload = multer({
-    storage: group_profile_photo_storage,
-    limits: {
-        fileSize: 1024 * 1024 * 5
-    },
-    fileFilter: fileFilter
 });
 
 //Create a new group
@@ -490,28 +497,30 @@ router.post('/toggle_private_group', authenticateCheck, async (req, res) => {
 });
 
 //Update group photo
-router.post('/update_group_photo/:groupId', authenticateCheck, upload.single('new_group_photo'), async (req, res) => {
-    const groupId = req.params.group; 
-    const file = req.file; 
-
-    if (!file) {
-        return res.status(400).json({ message: "Invalid file type. Please upload jpeg or png"});
-    }
-
-    const filename = file.filename;
-    const newPhotoPath = `media/group_profiles/${filename}`;
-
+router.put('/update_group_photo/:groupId', authenticateCheck, upload.single('new_group_photo'), async (req, res) => {
     try {
+        const groupId = req.params.groupId; 
+        const file = req.file; 
+
+        if (!file) {
+            return res.status(400).json({ message: "Invalid file type. Please upload jpeg or png"});
+        }
+
+        const filename = file.filename;
+        const newPhotoPath = `media/group_profiles/${filename}`;
         const group = await Groups.findOne({ where: { group_id: groupId } });
+        
         if (group) {
-            group.group_photo = newPhotoPath;
             //Deletes old photo
             if (group.group_photo) {
-                const currentPhotoPath = path.join(__dirname, '..', group.group_photo);
-                fs.unlink(currentPhotoPath, (err) => {
-                    res.status(404).json({ message: "Error deleting old photo", err });
+                const currentPhotoPath = path.join(group.group_photo);
+                fs.unlink(currentPhotoPath, (error) => {
+                    if (error) {
+                        console.error(`Error deleting old photo: ${error}`);
+                    }
                 });
             }
+            group.group_photo = newPhotoPath;
             await group.save();
             return res.json({ newPhotoPath });
         } else {

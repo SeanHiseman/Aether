@@ -20,6 +20,7 @@ const PersonalProfile = () => {
     const [newBio, setBio] = useState('');
     const [newName, setName] = useState('');
     const [profile, setProfile] = useState('');
+    //const [profilePhoto, setProfilePhoto] = useState('');
     const [showChannelForm, setShowChannelForm] = useState(false);
     const [showFriendRequests, setShowFriendRequests] = useState(false);
     const [showPostForm, setShowPostForm] = useState(false);
@@ -31,6 +32,7 @@ const PersonalProfile = () => {
                 const fetchedProfile = response.data.profile;
                 setIsPrivate(response.data.isPrivate);
                 setProfile(fetchedProfile);
+                //setProfilePhoto(response.data.profilePhoto);
             })
             .catch(error => {
                 console.error('Error:', error);
@@ -91,24 +93,27 @@ const PersonalProfile = () => {
         }
     };  
 
-    const ChangeProfilePhoto = (event) => {
-        event.preventDefault();
-        const fileInput = event.target.elements.new_profile_photo;
-        if (!fileInput.files[0]) {
-            setErrorMessage('Please upload an image');
-            return;
-        }
-        const formData = new FormData();
-        formData.append('new_profile_photo', fileInput.files[0]);
-    
-        axios.post(`/api/update_profile_photo/${profile.profileId}`, formData)
-            .then(response => {
-                document.getElementById('large-profile-photo').src = response.data.newPhotoPath;
-                setErrorMessage('');
-                setIsPhotoFormVisible(false);
-            }).catch(error => {
-                setErrorMessage('Error updating photo', error.response ? error.response.data : error);
-            });
+    const ChangeProfilePhoto = async (event) => {
+        try {
+            event.preventDefault();
+            const fileInput = event.target.elements.new_profile_photo;
+            if (!fileInput.files[0]) {
+                setErrorMessage('Please upload an image');
+                return;
+            }
+            const formData = new FormData();
+            formData.append('new_profile_photo', fileInput.files[0]);
+            axios.put(`/api/update_profile_photo/${profile.profileId}`, formData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data',
+                }, 
+            })
+            //setProfilePhoto(response.data.newPhotoPath);
+            setErrorMessage('Update successful');
+            setIsPhotoFormVisible(false);
+        } catch(error) {
+            setErrorMessage('Error updating photo', error.response ? error.response.data : error);
+        };
     }
     
     const channelRender = channels.find(c => c.channel_name === channel_name);

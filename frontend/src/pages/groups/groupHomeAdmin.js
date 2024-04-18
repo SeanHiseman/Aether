@@ -119,23 +119,27 @@ function GroupHomeAdmin() {
         }
     };
 
-    const ChangeGroupPhoto = (e) => {
-        e.preventDefault();
-        const fileInput = e.target.elements.new_group_photo;
-        if (!fileInput.files[0]) {
-            setErrorMessage('Please upload an image');
-            return;
-        }
-        const formData = new FormData();
-        formData.append('new_group_photo', fileInput.files[0]);
-        axios.post(`/api/update_group_photo/${groupDetails.groupId}`, formData)
-            .then(response => {
-                document.getElementById('large-group-photo').src = response.data.newPhotoPath;
-                setErrorMessage('');
-                setIsPhotoFormVisible(false);
-            }).catch(error => {
+    const ChangeGroupPhoto = (event) => {
+        try {
+            event.preventDefault();
+            const fileInput = event.target.elements.new_group_photo;
+            if (!fileInput.files[0]) {
+                setErrorMessage('Please upload an image');
+                return;
+            }
+            const formData = new FormData();
+            formData.append('new_group_photo', fileInput.files[0]);
+            axios.put(`/api/update_group_photo/${groupDetails.groupId}`, formData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data',
+                },    
+            })
+            //document.getElementById('large-group-photo').src = response.data.newPhotoPath;
+            setErrorMessage('Update successful');
+            setIsPhotoFormVisible(false);
+        } catch(error) {
                 setErrorMessage('Error updating photo', error.response ? error.response.data : error);
-            });
+        };
     };
     
     const channelRender = channels.find(
