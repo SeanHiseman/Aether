@@ -54,8 +54,8 @@ const BaseLayout = () => {
         });
     }, [profile.logged_in_user_id]);
 
-    const createGroupSubmit = (e) => {
-        e.preventDefault();
+    const createGroupSubmit = (event) => {
+        event.preventDefault();
 
         const formData = new FormData();
         formData.append('group_id', v4());
