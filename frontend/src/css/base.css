@@ -1,5 +1,6 @@
 a {
     color: inherit;
+    text-decoration: none;
 }
 #add-channel-form, #create-group-form {
     align-items: center;
@@ -196,7 +197,7 @@ body,html {
     display: flex;
     flex-direction: column;
 }
-.group-container, .messages-container, .profile-container, .home-container {
+.group-container, .home-container, .messages-container, .profile-container, .search-container {
     align-items: stretch;
     display: flex;
     flex-direction: row;

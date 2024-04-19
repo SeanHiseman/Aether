@@ -206,16 +206,16 @@ router.delete('/remove_post', authenticateCheck, async (req, res) => {
 router.get('/search/groups', authenticateCheck, async (req, res) => {
     try {
         const keyword = req.query.keyword.toLowerCase();
-        const groupResults = await Groups.findAll({
+        const groupData = await Groups.findAll({
             where: {
                 group_name: {
-                    [Op.iLike]: `%${keyword}%`,
+                    [Op.like]: `%${keyword}%`,
                 },
             },
             attributes: ['group_id', 'group_name', 'description', 'group_photo'],
         });
-    
-        res.json(groupResults);
+
+        res.json(groupData);
     } catch (error) {
         res.status(500).json({ success: false, message: error.message }); 
     }
@@ -229,11 +229,11 @@ router.get('/search/posts', authenticateCheck, async (req, res) => {
             where: {
                 [Op.or]: [{
                     title: {
-                        [Op.iLike]: `%${keyword}`,
+                        [Op.like]: `%${keyword}%`,
                     },
                 }, {
                     content: {
-                        [Op.iLike]: `%${keyword}`,
+                        [Op.like]: `%${keyword}%`,
                     },
                 }],
             },
@@ -248,11 +248,11 @@ router.get('/search/posts', authenticateCheck, async (req, res) => {
             where: {
                 [Op.or]: [{
                     title: {
-                        [Op.iLike]: `%${keyword}`,
+                        [Op.like]: `%${keyword}%`,
                     },
                 }, {
                     content: {
-                        [Op.iLike]: `%${keyword}`,
+                        [Op.like]: `%${keyword}%`,
                     },
                 }],
             },
@@ -263,9 +263,7 @@ router.get('/search/posts', authenticateCheck, async (req, res) => {
             }],
         });
 
-        res.json({
-            posts: [...profilePostResults, ...groupPostResults],
-        });
+        res.json([...profilePostResults, ...groupPostResults]);
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
     }
@@ -275,22 +273,22 @@ router.get('/search/posts', authenticateCheck, async (req, res) => {
 router.get('/search/profiles', authenticateCheck, async (req, res) => {
     try {
         const keyword = req.query.keyword.toLowerCase();
-        const profileResults = await Profiles.findAll({
+        const profileData = await Users.findAll({
             where: {
                 [Op.or]: [{
-                    bio: {
-                        [Op.iLike]: `%${keyword}%`,
+                    username: {
+                        [Op.like]: `%${keyword}%`,
                     },
                 }],
             },
-            attributes: ['profile_id', 'bio', 'profile_photo'],
+            attributes: ['user_id'],
             include: [{
-                model: ProfileChannels,
-                attributes: ['channel_name'],
-            }],
+                model: Profiles,
+                attributes: ['profile_id', 'bio', 'profile_photo'],
+            }]
         });
-    
-        res.json(profileResults);
+
+        res.json(profileData);
     } catch (error) {
         res.status(500).json({ success: false, message: error.message }); 
     }

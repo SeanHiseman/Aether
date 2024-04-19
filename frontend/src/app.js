@@ -27,7 +27,7 @@ const App = () => {
                     <Route path="recommended" element={<AuthCheck><RecommendedPage /></AuthCheck>} />
                     <Route path="following" element={<AuthCheck><FollowingPage /></AuthCheck>} />
                     <Route path="friends" element={<AuthCheck><FriendsPage /></AuthCheck>} />
-                    <Route path="search" element={<AuthCheck><SearchResults /></AuthCheck>} />
+                    <Route path="search/:tab?" element={<AuthCheck><SearchResults /></AuthCheck>} />
                     <Route path="messages/:username" element={<AuthCheck><MessagesPage /></AuthCheck>} >
                         <Route path=":friend_name" element={<MessagesPage />} >
                             <Route index element={<Navigate replace to="Chat" />} />
