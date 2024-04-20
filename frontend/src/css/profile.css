@@ -3,6 +3,9 @@
     display: flex;
     flex-direction: column;
 }
+#follow-info {
+    margin-right: 10px;
+}
 .friend-requests {
     margin-top: 20px;
 }

@@ -146,8 +146,7 @@ const BaseLayout = () => {
                         <form id="create-group-form" onSubmit={createGroupSubmit}>
                             <input id="group-name-input" type="text" name="Name" placeholder="Group name..." value={groupName} onChange={(e) => setGroupName(e.target.value)}/>
                             <div className="file-input">
-                                <p className="file-input-title">Group photo</p>
-                                <label htmlFor="group-photo-input" class="button">Choose file</label>
+                                <label htmlFor="group-photo-input" class="button">Choose photo</label>
                                 <input type="file" id="group-photo-input" name="Group photo" onChange={handleFileChange} hidden/>
                                 <span className="file-name">{groupPhotoFile}</span>
                             </div>

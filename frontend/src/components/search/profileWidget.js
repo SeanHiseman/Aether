@@ -1,26 +1,36 @@
 import React, { useContext } from 'react';
 import { AuthContext } from '../authContext';
 import FollowerChangeButton from '../followerChangeButton';
+import { Link } from 'react-router-dom';
 import ManageFriendshipButton from '../manageFriendship';
 
 const ProfileWidget = ({ profile }) => {
     const { user } = useContext(AuthContext);
     const loggedInUserId = user.userId;
     return (
-        <header id="profile-header">
-            <FollowerChangeButton userId={loggedInUserId} profileId={profile.profile_id} isFollowing={profile.is_following} />
-            <ManageFriendshipButton userId={loggedInUserId} receiverProfileId={profile.profile_id} receiverUserId={profile.user_id} isRequestSent={profile.is_requested} isFriend={profile.is_friend} />
+        <div className="result-widget">
+            <Link to={`/profile/${profile.user.username}`}>
+                <div id="viewed-profile-info">
+                    <p className="large-text">{profile.user.username}</p>
+                    <p id="profile-bio">{profile.bio}</p>
+                </div>
+            </Link>
+            <p>{profile.is_private ? "Private" : "Public"}</p>
+            <ManageFriendshipButton userId={loggedInUserId} receiverProfileId={profile.profile_id} receiverUserId={profile.user_id} isRequestSent={profile.isRequestSent} isFriend={profile.isFriend} />
             <div id="profile-header-side">
             </div>
-            <div id="viewed-profile-info">
-                <p className="large-text">{profile.username}</p>
-                <p id="profile-bio">{profile.bio}</p>
-            </div>
-            <p>{profile.followerCount} followers</p>
-            <div id="profile-header-photo">
+                {profile.is_private ? (
+                    null
+                ) : (
+                    <div>
+                        <p>{profile.follower_count} followers</p>
+                        <FollowerChangeButton userId={loggedInUserId} profileId={profile.profile_id} isFollowing={profile.is_following} isPrivate={profile.is_private}/>
+                    </div>
+                )}
+            <Link to={`/profile/${profile.user.username}`}>
                 <img className="large-profile-photo" src={`/${profile.profile_photo}`} alt="Profile" />         
-            </div>
-        </header>
+            </Link>
+        </div>
     )
 }
 

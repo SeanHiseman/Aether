@@ -1,6 +1,7 @@
 import { Router } from 'express';
-import { ContentVotes, Followers, Friends, Groups, GroupPosts, ProfilePosts, Profiles, Users, ProfileChannels, UserGroups } from '../models/models.js'; 
+import { ContentVotes, Followers, Friends, FriendRequests, Groups, GroupRequests, GroupPosts, ProfilePosts, Profiles, Users, UserGroups } from '../models/models.js'; 
 import authenticateCheck from '../functions/authenticateCheck.js';
+import checkIfUserIsMember from '../functions/memberCheck.js';
 import { Op } from 'sequelize';
 import { v4 } from 'uuid';
 const router = Router();
@@ -150,11 +151,14 @@ router.get('/following_posts', authenticateCheck, async (req, res) => {
 });
 
 router.get('/get_current_user', authenticateCheck, (req, res) => {
-    const userId = req.session.user_id;
-    if (userId) {
-        return res.json({ user_id: userId });
+    try{ 
+        const userId = req.session.user_id;
+        if (userId) {
+            res.json({ user_id: userId });
+        }    
+    } catch (error) {
+        res.status(401).json({ "error": "No user logged in" });
     }
-    return res.status(401).json({ "error": "No user logged in" });
 });
 
 //Adds one view to a piece of content
@@ -205,15 +209,38 @@ router.delete('/remove_post', authenticateCheck, async (req, res) => {
 //Searches groups
 router.get('/search/groups', authenticateCheck, async (req, res) => {
     try {
+        const userId = req.session.user_id;
         const keyword = req.query.keyword.toLowerCase();
-        const groupData = await Groups.findAll({
+
+        //Sees if a user has sent a join request to a private group
+        const user = await Users.findOne({
+            where: { user_id: userId },
+            include: [{
+                model: GroupRequests,
+                as: 'sent_group_requests',
+                attributes: ['group_id'],
+                required: false,
+            }]
+        });
+
+        const groups = await Groups.findAll({
             where: {
                 group_name: {
                     [Op.like]: `%${keyword}%`,
                 },
             },
-            attributes: ['group_id', 'group_name', 'description', 'group_photo'],
+            attributes: ['group_id', 'group_name', 'description', 'group_photo', 'member_count', 'is_private'],
         });
+
+        const groupData = await Promise.all(groups.map(async (group) => {
+            const isMember = await checkIfUserIsMember(userId, group.group_name);
+            const isRequestSent = group.is_private && user.sent_group_requests.some((request) => request.group_id === group.group_id);
+            return {
+                ...group.toJSON(),
+                is_member: isMember,
+                isRequestSent
+            };
+        }));
 
         res.json(groupData);
     } catch (error) {
@@ -228,42 +255,48 @@ router.get('/search/posts', authenticateCheck, async (req, res) => {
         const profilePostResults = await ProfilePosts.findAll({
             where: {
                 [Op.or]: [{
-                    title: {
-                        [Op.like]: `%${keyword}%`,
-                    },
-                }, {
-                    content: {
-                        [Op.like]: `%${keyword}%`,
-                    },
+                    title: {[Op.like]: `%${keyword}%`},
+                }, {content: {[Op.like]: `%${keyword}%`,},
                 }],
             },
             include: [{
                 model: Users, 
                 as: 'ProfilePoster',
-                attributes: ['username']
+                attributes: ['username'],
+                include: [{
+                    model: Profiles,
+                    attributes: ['profile_photo'],
+                }]
             }],
         });
 
         const groupPostResults = await GroupPosts.findAll({
             where: {
                 [Op.or]: [{
-                    title: {
-                        [Op.like]: `%${keyword}%`,
-                    },
+                    title: {[Op.like]: `%${keyword}%`,},
                 }, {
-                    content: {
-                        [Op.like]: `%${keyword}%`,
-                    },
+                    content: {[Op.like]: `%${keyword}%`,},
                 }],
             },
             include: [{
                 model: Users,
                 as: 'GroupPoster',
                 attributes: ['username'],
+                include: [{
+                    model: Profiles,
+                    attributes: ['profile_photo'],
+                }]
             }],
         });
+        //Adds group true/false to posts
+        const finalProfileResults = profilePostResults.map((post) => {
+            return { ...post.dataValues, is_group: false };
+        });
+        const finalGroupResults = groupPostResults.map((post) => {
+            return { ...post.dataValues, is_group: true };
+        });
 
-        res.json([...profilePostResults, ...groupPostResults]);
+        res.json([...finalProfileResults, ...finalGroupResults]);
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
     }
@@ -272,25 +305,57 @@ router.get('/search/posts', authenticateCheck, async (req, res) => {
 //Searches profiles
 router.get('/search/profiles', authenticateCheck, async (req, res) => {
     try {
-        const keyword = req.query.keyword.toLowerCase();
-        const profileData = await Users.findAll({
-            where: {
-                [Op.or]: [{
-                    username: {
-                        [Op.like]: `%${keyword}%`,
-                    },
-                }],
+        const loggedInUserId = req.session.user_id; 
+        const keyword = req.query.keyword.toLowerCase(); 
+
+        // Fetch profiles based on search keyword
+        const profiles = await Profiles.findAll({
+        where: {
+            [Op.or]: [
+            { '$user.username$': { [Op.like]: `%${keyword}%` } },
+            ],
+        },
+        attributes: ['profile_id', 'bio', 'profile_photo', 'follower_count', 'is_private'],
+        include: [
+            {
+            model: Users,
+            attributes: ['username', 'user_id'], 
             },
-            attributes: ['user_id'],
-            include: [{
-                model: Profiles,
-                attributes: ['profile_id', 'bio', 'profile_photo'],
-            }]
+        ],
         });
 
-        res.json(profileData);
+        //Check friendship for each profile
+        const formattedProfileData = await Promise.all(profiles.map(async (profile) => {
+        const viewedUserId = profile.user.user_id;
+        const friendship = await Friends.findOne({
+            where: {
+            [Op.or]: [
+                { user1_id: loggedInUserId, user2_id: viewedUserId },
+                { user1_id: viewedUserId, user2_id: loggedInUserId },
+            ],
+            },
+        });
+
+        const isFriend = !!friendship; 
+        const isRequestSent = profile.is_private && (await FriendRequests.findOne({
+            where: {
+            sender_id: loggedInUserId,
+            receiver_id: viewedUserId,
+            },
+        }));
+
+        return {
+            ...profile.toJSON(),
+            isFriend,
+            isRequestSent: !!isRequestSent, 
+        };
+        }));
+
+        res.json(formattedProfileData);
+
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message }); 
+        console.error("Error during profile search:", error);
+        res.status(500).json({ success: false, message: "An error occurred during profile search." });
     }
 });
 

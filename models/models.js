@@ -132,6 +132,7 @@ Users.belongsToMany(Groups, { through: UserGroups, foreignKey: 'user_id', otherK
 Groups.belongsToMany(Users, { through: UserGroups, foreignKey: 'group_id', otherKey: 'user_id' });
 UserGroups.belongsTo(Users, { foreignKey: 'user_id' });
 UserGroups.belongsTo(Groups, { foreignKey: 'group_id' });
+Groups.hasMany(UserGroups, { foreignKey: 'group_id' });
 //Nested groups
 Groups.belongsTo(Groups, { as: 'ParentGroup', foreignKey: 'parent_id' });
 Groups.hasMany(Groups, { as: 'SubGroups', foreignKey: 'parent_id' });
@@ -145,6 +146,7 @@ const GroupRequests = sequelize.define('group_requests', {
 
 //GroupRequest relationships
 Users.hasMany(GroupRequests, { as: 'sent_group_requests', foreignKey: 'sender_id' });
+Groups.hasMany(GroupRequests, { as: 'received_group_requests', foreignKey: 'group_id'})
 GroupRequests.belongsTo(Users, { as: 'sender', foreignKey: 'sender_id' });
 GroupRequests.belongsTo(Groups, { as: 'receiver', foreignKey: 'group_id' });
 
@@ -226,6 +228,8 @@ const Friends = sequelize.define('friends', {
   FriendSince: { type: DATE, allowNull: false, defaultValue: NOW }
 }, { tableName: 'friends', timestamps: false });
 
+//Friends.belongsTo(Users, { as: 'User1', foreignKey: 'user1_id' });
+//Friends.belongsTo(Users, { as: 'User2', foreignKey: 'user2_id' });
 Users.belongsToMany(Users, { as: 'UserFriends', through: Friends, foreignKey: 'user1_id', otherKey: 'user2_id' });
  
 

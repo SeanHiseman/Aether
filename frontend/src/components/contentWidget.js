@@ -16,7 +16,7 @@ function ContentWidget({ canRemove, isGroup, post }) {
     const [showReplies, setShowReplies] = useState(false);
     const { user } = useContext(AuthContext);
     const Poster = isGroup ? 'GroupPoster' : 'ProfilePoster'; //Associations used by database
-
+    console.log("isGroup:", isGroup);
     //Allows users to remove their own posts
     if (post.poster_id === user.user_id) {
         canRemove = true;

@@ -27,8 +27,7 @@ const SearchResults = () => {
                         setPostResults(response.data);
                         break;
                     case 'profiles':
-                        const profileData = response.data.map((user) => user.profile);
-                        setProfileResults(profileData);
+                        setProfileResults(response.data);
                         break;
                     default:
                         break;
@@ -49,7 +48,7 @@ const SearchResults = () => {
             case 'posts':
                 if (postResults.length > 0) {
                     return postResults.map((post) => (
-                        <ContentWidget key={post.post_id} post={post} isGroup={false} />
+                        <ContentWidget key={post.post_id} post={post} isGroup={post.is_group} />
                     ));
                 } else {
                     return <div>No results</div>;  
