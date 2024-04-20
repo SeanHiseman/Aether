@@ -79,7 +79,14 @@ function Profile() {
         <div className="profile-container">
             <div className="content-feed">
                 <header id="profile-header">
-                    <FollowerChangeButton userId={loggedInUserId} profileId={profile.profileId} isFollowing={profile.isFollowing} />
+                    {profile.isPrivate ? (
+                        null
+                    ) : (
+                        <div id="follow-info">
+                            <p>{profile.followerCount} followers</p>
+                            <FollowerChangeButton userId={loggedInUserId} profileId={profile.profileId} isFollowing={profile.isFollowing} />
+                        </div>
+                    )}
                     <ManageFriendshipButton userId={loggedInUserId} receiverProfileId={profile.profileId} receiverUserId={profile.userId} isRequestSent={profile.isRequested} isFriend={profile.isFriend} />
                     <div id="profile-header-side">
                     </div>
@@ -87,7 +94,6 @@ function Profile() {
                         <p className="large-text">{profile.username}</p>
                         <p id="profile-bio">{profile.bio}</p>
                     </div>
-                    <p>{profile.followerCount} followers</p>
                     <div id="profile-header-photo">
                         <img className="large-profile-photo" src={`/${profile.profilePhoto}`} alt="Profile" />         
                     </div>

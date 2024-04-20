@@ -1,7 +1,7 @@
 import axios from "axios";
 import React, { useEffect, useState } from "react"
 
-const FollowerChangeButton = ({ userId, profileId, isFollowing }) => {
+const FollowerChangeButton = ({ userId, profileId, isFollowing, isPrivate }) => {
     const [errorMessage, setErrorMessage] = useState('');
     const [following, setFollowing] = useState(isFollowing);
 
@@ -20,15 +20,19 @@ const FollowerChangeButton = ({ userId, profileId, isFollowing }) => {
                 setErrorMessage("Error changing following", error);
             });
     };
-
-    return (
-        <div>
-            <button className="button" onClick={handleFollowerChange}>
-                {following ? 'Unfollow' : 'Follow'}
-            </button>
-            {errorMessage && <div className="error-message">{errorMessage}</div>}
-        </div>
-    )
+    //Private profiles don't have followers
+    if (isPrivate) {
+        return;
+    } else {
+        return (
+            <div>
+                <button className="button" onClick={handleFollowerChange}>
+                    {following ? 'Unfollow' : 'Follow'}
+                </button>
+                {errorMessage && <div className="error-message">{errorMessage}</div>}
+            </div>
+        )
+    }
 }
 
 export default FollowerChangeButton;

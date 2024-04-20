@@ -282,9 +282,10 @@ router.get('/get_group_members', authenticateCheck, async (req, res) => {
 
 //Group home page data route
 router.get('/group/:group_name', authenticateCheck, async (req, res) => {
-    const groupName = req.params.group_name;
-    const userId = req.session.user_id;
     try {
+        const groupName = req.params.group_name;
+        const userId = req.session.user_id;
+
         //Check if user is admin or member of group
         const isAdmin = await checkIfUserIsAdmin(userId, groupName);
         const isMember = await checkIfUserIsMember(userId, groupName);
@@ -312,8 +313,8 @@ router.get('/group/:group_name', authenticateCheck, async (req, res) => {
 
 //Returns messages from a chat channel
 router.get('/group_channel_messages/:channel_id', authenticateCheck, async (req, res) => {
-    const { channel_id } = req.params;
     try {
+        const { channel_id } = req.params;
         const messages = await GroupChannelMessages.findAll({
             where: { channel_id },
             include: [{
@@ -418,8 +419,9 @@ router.get('/groups_list/:userId', async (req, res) => {
 
 //Allows users to join a group
 router.post('/join_group', authenticateCheck, async (req, res) => {
-    const { userId, groupId } = req.body;
     try{
+        const { userId, groupId } = req.body;
+
         await UserGroups.create({
             user_id: userId,
             group_id: groupId,
@@ -439,8 +441,9 @@ router.post('/join_group', authenticateCheck, async (req, res) => {
 
 //Allows user to leave/be removed from group
 router.post('/leave_group', authenticateCheck, async (req, res) => {
-    const { userId, groupId } = req.body;
     try {
+        const { userId, groupId } = req.body;
+
         await UserGroups.destroy({
             where: { user_id: userId, group_id: groupId }
         });
@@ -471,8 +474,9 @@ router.post('/send_join_request', authenticateCheck, async (req, res) => {
 
 //Changes if a user is a moderator
 router.post('/toggle_moderator', authenticateCheck, async (req, res) => {
-    const { groupId, userId, isMod } = req.body;
     try {
+        const { groupId, userId, isMod } = req.body;
+        
         await UserGroups.update(
             { is_mod: isMod },
             { where: { group_id: groupId, user_id: userId } }

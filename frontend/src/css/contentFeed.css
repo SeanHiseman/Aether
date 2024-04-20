@@ -12,13 +12,6 @@
     max-width: 1000px;
     width: 70%;
 }
-.content-list-search {
-    border-left: 1px solid white;
-    border-right: 1px solid white;
-    border-top: 1px solid white;
-    max-width: 1000px;
-    width: 70%;
-}
 .downvote-disabled, .upvote-disabled {
     background-color: #444;
     border: none;
@@ -95,6 +88,17 @@
     display: flex;
     margin-bottom: 5px;
     align-items: center;
+}
+.result-widget {
+    align-items: center;
+    background-color: #000514;
+    border-left: 1px solid white;
+    border-right: 1px solid white;
+    border-top: 1px solid white;
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+    z-index: 2;
 }
 .post-list {
     margin: 0px;
