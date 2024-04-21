@@ -37,6 +37,34 @@
     position: sticky;
     width: 100%;
 }
+#channel-toggle {
+    border: 1px solid white;
+    border-radius: 10px;
+    display: flex;
+    overflow: hidden;
+}
+#channel-toggle button {
+    background-color: #000514;
+    border: none;
+    color: white;
+    cursor: pointer;
+    flex: 1;
+    font-weight: bold;
+    outline: none;
+    padding: 10px 20px;
+    transition: background-color 0.3s ease;
+}
+#channel-toggle button.active-mode {
+    background-color: #41445a;
+}
+#channel-toggle button:first-child {
+    border-top-left-radius: 10px;
+    border-bottom-left-radius: 10px;
+}
+#channel-toggle button:last-child {
+    border-top-right-radius: 10px;
+    border-bottom-right-radius: 10px;
+}
 .group-member {
     margin: 10px;
 }

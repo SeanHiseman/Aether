@@ -16,7 +16,7 @@ function ContentWidget({ canRemove, isGroup, post }) {
     const [showReplies, setShowReplies] = useState(false);
     const { user } = useContext(AuthContext);
     const Poster = isGroup ? 'GroupPoster' : 'ProfilePoster'; //Associations used by database
-    console.log("isGroup:", isGroup);
+
     //Allows users to remove their own posts
     if (post.poster_id === user.user_id) {
         canRemove = true;
@@ -76,7 +76,10 @@ function ContentWidget({ canRemove, isGroup, post }) {
     //Adds a view to the post
     const incrementViews = async (postId) => {
         try {
-            await axios.post('/api/increment_views', { postId, isGroup });
+            if (hasViewed == false) {
+                await axios.post('/api/increment_views', { postId, isGroup });
+                setHasViewed(true);
+            }
         } catch (error) {
             console.error("Error incrementing views:", error);
         }
@@ -149,7 +152,7 @@ function ContentWidget({ canRemove, isGroup, post }) {
             <div className="content-metadata">
                 <div className="profile-info">
                     {post[Poster] && post[Poster].username && post[Poster].profile && post[Poster].profile.profile_photo ? (
-                        <Link className="profile-link" to={`/profile/${post[Poster].username}`}>
+                        <Link className="profile-link" to={`/profile/${post[Poster].username}`} onClick={() => incrementViews(post.post_id)}>
                             <img className="uploader-profile-image" src={`/${post[Poster].profile.profile_photo}`} alt="Profile" />
                             <p className="username">{post[Poster].username}</p>
                         </Link>

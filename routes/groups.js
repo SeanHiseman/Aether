@@ -64,9 +64,6 @@ router.post('/add_group_channel', authenticateCheck, async (req, res) => {
     try {
         const { channel_name, groupId, isPosts, isChat } = req.body;
 
-        //Checks if group can be found
-        const group = await Groups.findByPk(groupId);
-
         const newChannel = await GroupChannels.create({ 
             channel_id: v4(),
             channel_name: channel_name,

@@ -141,12 +141,11 @@ function GroupHomeAdmin() {
                 setErrorMessage('Error updating photo', error.response ? error.response.data : error);
         };
     };
-    
+
     const channelRender = channels.find(
         (c) =>
             c.channel_name === channel_name &&
-            (c.is_posts && channelMode === 'post') ||
-            (!c.is_posts && channelMode === 'chat')
+            (c.is_posts || c.is_posts)
     );
 
     const deleteChannel = async () => {
@@ -188,8 +187,8 @@ function GroupHomeAdmin() {
     };
 
     //Set channels to contain either posts or chats, or both
-    const handleChatClick = () => setIsChatChannel(!isChatChannel);
-    const handlePostClick = () => setIsPostChannel(!isPostChannel);
+    const handleChatClick = () => setIsChatChannel((prev) => !prev);
+    const handlePostClick = () => setIsPostChannel((prev) => !prev);
 
     //Accepts or rejects join request
     const handleRequestAction = async (action, requestId) => {
@@ -276,9 +275,7 @@ function GroupHomeAdmin() {
     };
 
     //Toggles display of create channel form after button is pressed
-    const toggleChannelForm = () => {
-        setShowChannelForm(!showChannelForm)
-    }
+    const toggleChannelForm = () => {setShowChannelForm((prev) => !prev)};
 
     //Allows adding/remvoing of moderators
     const toggleModeratorStatus = async (userId, isMod) => {
@@ -453,16 +450,18 @@ function GroupHomeAdmin() {
             </div>  
             <aside id="right-aside">
                 <h1>{channel_name}</h1>
-                <div>
-                    <button className={channelMode === 'post' ? 'active' : ''} onClick={() => setChannelMode('post')}>Posts</button>
-                    <button className={channelMode === 'chat' ? 'active' : ''} onClick={() => setChannelMode('chat')}>Chat</button>
+                {channelRender && (channelRender.is_posts && channelRender.is_chat) && (
+                <div id="channel-toggle">
+                    <button className={channelMode === 'post' ? 'active-mode' : 'passive-mode'} onClick={() => setChannelMode('post')}>Posts</button>
+                    <button className={channelMode === 'chat' ? 'active-mode' : 'passive-mode'} onClick={() => setChannelMode('chat')}>Chat</button>
                 </div>
-                {showPostForm && (
+                )}
+                {showPostForm && channelMode === 'post' && (
                     <div>
                         <button class="button" onClick={() => setShowPostForm(false)}>Close</button>
                     </div>
                 )}
-                {!showPostForm && (
+                {!showPostForm && channelMode === 'post' && (
                        <button class="button" onClick={() => setShowPostForm(true)}>Create Post</button>
                 )}
                 <h2>Channels</h2>
@@ -472,12 +471,15 @@ function GroupHomeAdmin() {
                     </button>
                     {showChannelForm && (
                         <form id="add-channel-form" onSubmit={AddChannel}>
-                            <input className="channel-input" type="text" name="channel_name" placeholder="Channel name..." value={newChannelName} onChange={(e) => setNewChannelName(e.target.value)}/>
-                            <p>Channel type:</p>
-                            <div id="post-chat-section">
-                                <button type="button" class="button" onClick={handlePostClick}>Post</button>
-                                <button type="button" class="button" onClick={handleChatClick}>Chat</button>
-                            </div>
+                            <input className="channel-input" type="text" placeholder="Channel name..." value={newChannelName} onChange={(e) => setNewChannelName(e.target.value)}/>
+                            <label>
+                                <input type="checkbox" checked={isPostChannel} onChange={handlePostClick}/>
+                                Post Channel
+                            </label>
+                            <label>
+                                <input type="checkbox" checked={isChatChannel} onChange={handleChatClick}/>
+                                Chat Channel
+                            </label>
                             <input className="button" type="submit" value="Add" disabled={!newChannelName}/>
                             {errorMessage && <div className="error-message">{errorMessage}</div>}
                         </form>                            
