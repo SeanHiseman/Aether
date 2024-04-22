@@ -151,6 +151,8 @@
 }
 .message-container.incoming {
     align-self: flex-start;
+    display: flex;
+    justify-content: center;
     max-width: 70%;
 }
 .message-container.outgoing {

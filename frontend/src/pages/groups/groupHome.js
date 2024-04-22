@@ -70,8 +70,7 @@ function GroupHome() {
     const channelRender = channels.find(
         (c) =>
             c.channel_name === channel_name &&
-            (c.is_posts && channelMode === 'post') ||
-            (!c.is_posts && channelMode === 'chat')
+            (c.is_posts || c.is_posts)
     );
 
     //Uploads content 
@@ -158,7 +157,6 @@ function GroupHome() {
                                 <ChatChannel
                                     canRemove={canRemove}
                                     channelId={channelRender.channel_id}
-                                    channelName={channelRender.channel_name}
                                     isGroup={true}
                                     locationId={groupDetails.groupId}
                                 />
@@ -168,17 +166,19 @@ function GroupHome() {
                 </div>         
                 <aside id="right-aside">
                     <h1>{channel_name}</h1>
-                    <div>
-                        <button className={channelMode === 'post' ? 'active' : ''} onClick={() => setChannelMode('post')}>Posts</button>
-                        <button className={channelMode === 'chat' ? 'active' : ''} onClick={() => setChannelMode('chat')}>Chat</button>
+                    {channelRender && (channelRender.is_posts && channelRender.is_chat) && (
+                    <div id="channel-toggle">
+                        <button className={channelMode === 'post' ? 'active-mode' : 'passive-mode'} onClick={() => setChannelMode('post')}>Posts</button>
+                        <button className={channelMode === 'chat' ? 'active-mode' : 'passive-mode'} onClick={() => setChannelMode('chat')}>Chat</button>
                     </div>
-                    {showPostForm && (
+                    )}
+                    {showPostForm && channelMode === 'post' && (
                         <div>
                             <button class="button" onClick={() => setShowPostForm(false)}>Close</button>
                         </div>
                     )}
-                    {!showPostForm && (
-                        <button class="button" onClick={() => setShowPostForm(true)}>Create Post</button>
+                    {!showPostForm && channelMode === 'post' && (
+                       <button class="button" onClick={() => setShowPostForm(true)}>Create Post</button>
                     )}
                     <h2>Channels</h2>
                     <nav id="channel-list">

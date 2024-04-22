@@ -452,6 +452,16 @@ router.post('/leave_group', authenticateCheck, async (req, res) => {
     }
 });
 
+//Allows message to be taken removed by the user or moderator
+router.delete('/remove_group_message', authenticateCheck, async (req, res) => {
+    try {
+        const { message_id } = req.body;
+        await GroupChannelMessages.destroy({ where: { message_id } });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
 //Send join request
 router.post('/send_join_request', authenticateCheck, async (req, res) => {
     try {
@@ -533,34 +543,38 @@ router.put('/update_group_photo/:groupId', authenticateCheck, upload.single('new
 });
 
 export const groupChatChannelSocket = (socket) => {
-    socket.on('join_channel', (channelId) => {
-        socket.join(channelId);
-    });
-
-    socket.on('send_group_message', async (message) => {
-        const messageLength = message.content.length;
-        if (messageLength === 0) {
-            socket.emit('error_message', { error: "Message too short" });
-            return;
-        } else if (messageLength > 1000) {
-            socket.emit('error_message', { error: "Message too long" });
-            return;
-        }
-
-        const newMessage = await GroupChannelMessages.create({
-            message_id: v4(),
-            group_id: message.groupId,
-            channel_id: message.channelId,
-            message_content: message.content,
-            message_time: new Date(),
-            sender_id: message.senderId,
+    try {
+        socket.on('join_channel', (channelId) => {
+            socket.join(channelId);
         });
-        socket.to(message.channelId).emit('new_message', newMessage);
-    });
-
-    socket.on('leave_channel', (channelId) => {
-        socket.leave(channelId);
-    })
+    
+        socket.on('send_group_message', async (message) => {
+            const messageLength = message.message_content.length;
+            if (messageLength === 0) {
+                socket.emit('error_message', { error: "Message too short" });
+                return;
+            } else if (messageLength > 1000) {
+                socket.emit('error_message', { error: "Message too long" });
+                return;
+            }
+    
+            const newMessage = await GroupChannelMessages.create({
+                message_id: v4(),
+                group_id: message.groupId,
+                channel_id: message.channelId,
+                message_content: message.message_content,
+                message_time: new Date(),
+                sender_id: message.senderId,
+            });
+            socket.to(message.channelId).emit('new_message', newMessage);
+        });
+    
+        socket.on('leave_channel', (channelId) => {
+            socket.leave(channelId);
+        }) 
+    } catch (error) {
+        console.log("Socket error:", error);
+    }
 };
 
 export default router;
