@@ -4,7 +4,7 @@ import { AuthContext } from '../authContext';
 import { io } from "socket.io-client";
 import Message from '../message';
 
-function ChatChannel({ canRemove, channelId, channelName, isGroup, locationId }) {
+function ChatChannel({ canRemove, channelId, isGroup, locationId }) {
     const [channel, setChannel] = useState([]);
     const [currentMessage, setCurrentMessage] = useState('');
     const [errorMessage, setErrorMessage] = useState('');
@@ -14,14 +14,21 @@ function ChatChannel({ canRemove, channelId, channelName, isGroup, locationId })
     //Update messages in the channel
     useEffect(() => {
         getChannelMessages(channelId);
+        //Listens for new messages
         socket.on('new_message', (newMessage) => {
             if (newMessage.channel_id === channelId) {
                 setChannel((prevMessages) => [...prevMessages, newMessage]);
             }
         });
-
+        //Listens for deletions
+        socket.on('delete_message', (deletedMessage) => {
+            if (deletedMessage.channel_id === channelId) {
+                setChannel((prev) => prev.filter((msg) => msg.message_id !== deletedMessage.message_id));
+            }
+        });
         return () => {
             socket.off('new_message');
+            socket.off('delete_message');
             socket.emit('leave_channel', channelId);
         };
     }, [channelId]);
@@ -43,11 +50,10 @@ function ChatChannel({ canRemove, channelId, channelName, isGroup, locationId })
         const newMessage = {
             channelId, 
             groupId: locationId,
-            content: currentMessage,
+            message_content: currentMessage,
             senderId: user.userId, 
         }
         socket.emit('send_group_message', newMessage);
-        //setChannel(prevChannel => [...prevChannel, newMessage]);
         setCurrentMessage('');
     };
 
@@ -55,7 +61,7 @@ function ChatChannel({ canRemove, channelId, channelName, isGroup, locationId })
         <div id="channel">
             <div id="channel-content">
                 {channel.map((msg, index) => (
-                    <Message canRemove={canRemove} key={index} message={msg} isOutgoing={msg.senderId === user.userId} user={user} />
+                    <Message canRemove={canRemove} key={index} message={msg} isGroup={isGroup} isOutgoing={msg.sender_id === user.userId} socket={socket} channelId={channelId}/>
                 ))}
             </div>
             <div id="channel-input">

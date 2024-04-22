@@ -61,11 +61,12 @@ function MessagesPage() {
         if (selectedConversationId){
             //Join conversation room 
             socketRef.current.emit('join_conversation', selectedConversationId);
-
             const handleReceiveMessage = (message) => {
                 setChat(prevChat => [...prevChat, message]);
             };
-
+            const handleDeleteMessage = (deletedMessage) => {
+                setChat((prevChat) => prevChat.filter((msg) => msg.message_id !== deletedMessage.message_id));
+            }
             //Listen for incoming messages
             socketRef.current.on('receive_message', handleReceiveMessage);
 
@@ -74,6 +75,7 @@ function MessagesPage() {
             return () => {
                 socketRef.current.emit('leave_conversation', selectedConversationId);
                 socketRef.current.off('receive_message', handleReceiveMessage);
+                socketRef.current.off('delete_message', handleDeleteMessage);
             };
         }
     }, [selectedConversationId]);
@@ -132,7 +134,7 @@ function MessagesPage() {
         if (socketRef.current) {
             //Emits new message to server
             const newMessage = {
-                content: message,
+                message_content: message,
                 senderId: user.userId,
                 conversationId: selectedConversationId,
             };
@@ -173,7 +175,7 @@ function MessagesPage() {
                         </ul>
                     ) : (
                         chat.map((msg, index) => (
-                            <Message key={index} canRemove={false} message={msg} isOutgoing={msg.senderId === user.userId} user={user} />
+                            <Message key={index} canRemove={false} message={msg} isOutgoing={msg.senderId === user.userId} socket={socketRef.current} channelId={selectedConversationId} />
                         ))
                     )}
                 </div>

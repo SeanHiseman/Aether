@@ -35,28 +35,15 @@ router.post('/create_conversation', authenticateCheck, async (req, res) => {
 //Get chat messages
 router.get('/get_chat_messages/:conversation_id', authenticateCheck, async (req, res) => {
     try {
-        const userId = req.session.user_id;
-        const user = await Users.findOne({ where: { user_id: userId } });
         const conversationId = req.params.conversation_id;
-
-        const userConversation = await UserConversations.findOne({
-            where: {
-                user_id: user.user_id,
-                conversation_id: conversationId
-            }
-        });
-
-        if (!userConversation) {
-            return res.status(403).json({ error: "Conversation not found" });
-        }
-
         const messages = await Messages.findAll({
             where: { conversation_id: conversationId },
             order: [['timestamp', 'ASC']]
         });
         const messagesData = messages.map(m => ({
+            message_id: m.message_id, //not messageId since group messages use message_id
             senderId: m.sender_id,
-            content: m.message_content,
+            message_content: m.message_content,
             timestamp: m.timestamp
         }));
 
@@ -152,7 +139,7 @@ router.get('/get_friends', authenticateCheck, async (req, res) => {
     }
 });
 
-//Allows message to be taken down either by the user
+//Allows message to be taken removed by the user
 router.delete('/remove_message', authenticateCheck, async (req, res) => {
     try {
         const { message_id } = req.body;
@@ -164,38 +151,42 @@ router.delete('/remove_message', authenticateCheck, async (req, res) => {
 
 //Socket.io event for sending message to an individual user
 export const directMessagesSocket = (socket) => {
-    socket.on('join_conversation', (conversationId) => {
-        socket.join(conversationId);
-    });
-
-    socket.on('send_direct_message', async (message) => {
-        const messageLength = message.content.length;
-        if (messageLength === 0) {
-            socket.emit('error_message', { error: "Message too short" });
-            return;
-        } else if (messageLength > 1000) {
-            socket.emit('error_message', { error: "Message too long" });
-            return;
-        }
-
-        const newMessage = await Messages.create({
-            message_id: v4(),
-            conversation_id: message.conversationId,
-            sender_id: message.senderId,
-            message_content: message.content,
-            timestamp: new Date()
+    try {
+        socket.on('join_conversation', (conversationId) => {
+            socket.join(conversationId);
         });
-
-        socket.to(message.conversationId).emit('message_confirmed', {
-            ...message,
-            message_id: newMessage.message_id,
-            timestamp: newMessage.timestamp
-        }); 
-    });
-
-    socket.on('leave_conversation', (conversationId) => {
-        socket.leave(conversationId);
-    })
+    
+        socket.on('send_direct_message', async (message) => {
+            const messageLength = message.message_content.length;
+            if (messageLength === 0) {
+                socket.emit('error_message', { error: "Message too short" });
+                return;
+            } else if (messageLength > 1000) {
+                socket.emit('error_message', { error: "Message too long" });
+                return;
+            }
+    
+            const newMessage = await Messages.create({
+                message_id: v4(),
+                conversation_id: message.conversationId,
+                sender_id: message.senderId,
+                message_content: message.message_content,
+                timestamp: new Date()
+            });
+    
+            socket.to(message.conversationId).emit('message_confirmed', {
+                ...message,
+                message_id: newMessage.message_id,
+                timestamp: newMessage.timestamp
+            }); 
+        });
+    
+        socket.on('leave_conversation', (conversationId) => {
+            socket.leave(conversationId);
+        })
+    } catch (error) {
+        console.log("Socket error:", error);
+    }
 };
 
 export default router;
