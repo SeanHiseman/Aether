@@ -24,7 +24,7 @@ const MemberChangeButton = ({ userId, groupId, isMember, isRequestSent, isPrivat
                 });
         } else if (isPrivate && request) {
             //Cancel join request for private group
-            axios.post('/api/cancel_request', { userId, groupId })
+            axios.delete('/api/cancel_join_request', { data: { userId, groupId } })
                 .then(() => {
                     setRequest(false);
                 })

@@ -42,11 +42,11 @@ const upload = multer({
 });
 
 //Adds user to private group
-router.post('/accept_request', authenticateCheck, async (req, res) => {
+router.post('/accept_join_request', authenticateCheck, async (req, res) => {
     try {
-        const { groupId, userId } = req.body;
+        const { groupId, requestId, senderId } = req.body;
         await UserGroups.create({
-            user_id: userId,
+            user_id: senderId,
             group_id: groupId
         });
         await Groups.increment('member_count', { where: { group_id: groupId } });
@@ -79,8 +79,8 @@ router.post('/add_group_channel', authenticateCheck, async (req, res) => {
 
 //Cancel join request
 router.delete('/cancel_join_request', authenticateCheck, async (req, res) => {
-    const { userId, groupId } = req.body;
     try {
+        const { userId, groupId } = req.body;
         await GroupRequests.destroy({
             where: { sender_id: userId, group_id: groupId } 
         });
@@ -295,13 +295,15 @@ router.get('/group/:group_name', authenticateCheck, async (req, res) => {
         if (group.is_private) {
             const hasJoinRequest = await GroupRequests.findOne({
                 where: {
-                    group_id: group.group_id,
+                    sender_id: userId,
                 },
             });
+
             groupData.isRequestSent = !!hasJoinRequest;
         } else {
             groupData.isRequestSent = false;
         }
+
         res.json(groupData);
     } catch (error) {
         res.status(500).send('Error getting group.');
@@ -414,6 +416,26 @@ router.get('/groups_list/:userId', async (req, res) => {
     }
 });
 
+//Private group join requests
+router.get('/group_requests/:groupId', authenticateCheck, async (req, res) => {
+    try {
+        const groupId = req.params.groupId;
+        const requests = await GroupRequests.findAll({ 
+            where: { group_id: groupId },
+            include: [{
+                model: Users, 
+                as: 'sender',
+                required: true,
+                attributes: ['user_id', 'username']
+            }],
+        }); 
+
+        res.json(requests);
+    } catch (error) {
+        res.status(500).json(error.message);
+    }
+});
+
 //Allows users to join a group
 router.post('/join_group', authenticateCheck, async (req, res) => {
     try{
@@ -457,6 +479,19 @@ router.delete('/remove_group_message', authenticateCheck, async (req, res) => {
     try {
         const { message_id } = req.body;
         await GroupChannelMessages.destroy({ where: { message_id } });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
+//Rejects request to join private group 
+router.delete('/reject_group_request', authenticateCheck, async (req, res) => {
+    try {
+        const { requestId } = req.body;
+        await GroupRequests.destroy({
+            where: { request_id: requestId }
+        });
+        res.status(200).json({ success: true, message: 'Request rejected.' });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
     }

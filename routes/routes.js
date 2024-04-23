@@ -210,12 +210,12 @@ router.delete('/remove_post', authenticateCheck, async (req, res) => {
 //Searches groups
 router.get('/search/groups', authenticateCheck, async (req, res) => {
     try {
-        const userId = req.session.user_id;
+        const user_id = req.session.user_id;
         const keyword = req.query.keyword.toLowerCase();
 
         //Sees if a user has sent a join request to a private group
         const user = await Users.findOne({
-            where: { user_id: userId },
+            where: { user_id },
             include: [{
                 model: GroupRequests,
                 as: 'sent_group_requests',
@@ -234,11 +234,12 @@ router.get('/search/groups', authenticateCheck, async (req, res) => {
         });
 
         const groupData = await Promise.all(groups.map(async (group) => {
-            const isMember = await checkIfUserIsMember(userId, group.group_name);
+            const isMember = await checkIfUserIsMember(user_id, group.group_name);
             const isRequestSent = group.is_private && user.sent_group_requests.some((request) => request.group_id === group.group_id);
             return {
                 ...group.toJSON(),
-                is_member: isMember,
+                userId: user_id,
+                isMember: isMember,
                 isRequestSent
             };
         }));
