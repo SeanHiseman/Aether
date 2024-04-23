@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
 import '../css/postForm.css';
@@ -7,6 +7,7 @@ const PostForm = ({ onSubmit, errorMessage }) => {
     const [content, setContent] = useState('');
     const [files, setFiles] = useState([]);
     const [title, setTitle] = useState('');
+    const quillRef = useRef(null);
 
     //Customises tool bar
     const modules = {
@@ -27,32 +28,43 @@ const PostForm = ({ onSubmit, errorMessage }) => {
                 { indent: '+1' }, 
             ],
             ['clean'],
-            //['undo', 'redo']
         ]
     }
 
-    const handleFileChange = (event) => {
-        setFiles([...event.target.files]);
-    };
-
     const handleSubmit = async (event) => {
         event.preventDefault();
-        const formData = new FormData();
-        formData.append('title', title);
-        formData.append('content', content);
-        files.forEach(file => {
-            formData.append('files', file);
-        });
+        try {
+            const editor = quillRef.current.getEditor();
+            const content = editor.getContents();
+            const formData = new FormData();
+            formData.append('title', title);
+            const formattedContent = content.ops.map((op) => {
+                if (op.insert && typeof op.insert === 'string') {
+                    return op.insert;
+                } else if (op.insert && op.insert.image) {
+                    return `<img src="/media/content/${op.insert.image}">`;
+                } else if (op.insert && op.insert.video) {
+                    return `<video src="/media/content/${op.insert.video}">`;
+                }
+                return '';
+            }).join('');
 
-        onSubmit(formData);
+            formData.append('content', formattedContent);
+            files.forEach(file => {
+                formData.append('files', file);
+            });
+
+            onSubmit(formData);
+        } catch (error) {
+            console.error("Upload error:", error);
+        }
     };
 
     return (
         <div id="create-post-container">
             <form id="post-form" onSubmit={handleSubmit}>
                 <input id="title-entry" type="text" placeholder="Add title (optional)..." value={title} onChange={(e) => setTitle(e.target.value)}/>
-                <ReactQuill placeholder="Create post..." modules={modules} value={content} onChange={setContent} />
-                <input type="file" multiple onChange={handleFileChange} />
+                <ReactQuill placeholder="Create post..." modules={modules} value={content} onChange={setContent} ref={quillRef} />
                 <button class="button" type="submit">Create Post</button>
                 {errorMessage && <div className="error-message">{errorMessage}</div>}
             </form>   
