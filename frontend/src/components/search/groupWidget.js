@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import MemberChangeButton from '../memberChangeButton';
 
 const GroupWidget = ({ group }) => {
+    console.log("group:", group);
     return (
         <div className="result-widget">
             <Link to={`/group/${group.group_name}/Main`}>
@@ -14,7 +15,7 @@ const GroupWidget = ({ group }) => {
             <div id="group-members">
                 <p>{group.member_count} members</p>
                 <p>{group.is_private ? "Private" : "Public"}</p>
-                <MemberChangeButton userId={group.user_id} groupId={group.group_id} isMember={group.is_member} isRequestSent={group.isRequestSent} isPrivate={group.is_private}/>
+                <MemberChangeButton userId={group.userId} groupId={group.group_id} isMember={group.isMember} isRequestSent={group.isRequestSent} isPrivate={group.is_private}/>
             </div>
             <Link to={`/group/${group.group_name}/Main`}>
                 <img id="large-group-photo" src={`/${group.group_photo}`} alt={group.group_name} />

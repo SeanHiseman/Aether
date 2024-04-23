@@ -179,7 +179,6 @@ function GroupHomeAdmin() {
     const getJoinRequests = async () => {
         try {
             const response = await axios.get(`/api/group_requests/${groupDetails.groupId}`);
-            console.log("response.data:", response.data);
             setRequests(response.data);
         } catch (error) {
             console.error('Error fetching requests:', error);
@@ -191,12 +190,18 @@ function GroupHomeAdmin() {
     const handlePostClick = () => setIsPostChannel((prev) => !prev);
 
     //Accepts or rejects join request
-    const handleRequestAction = async (action, requestId) => {
+    const handleRequestAction = async (action, requestId, senderId) => {
         try {
             if (action === 'accept') {
-                await axios.post(`/api/groups/${groupDetails.groupId}/join/${requestId}`);
+                await axios.post('/api/accept_join_request', {
+                    groupId: groupDetails.groupId, 
+                    requestId,
+                    senderId,
+                });
             } else if (action === 'reject') {
-                await axios.delete(`/api/group_requests/${requestId}`);
+                await axios.delete('/api/reject_group_request', { 
+                    data: { requestId: requestId }
+                });
             }
             getJoinRequests();
         } catch (error) {
@@ -391,41 +396,23 @@ function GroupHomeAdmin() {
                     </div>
                 </header>  
                 <div className="channel-feed">
-                    {showMembers ? (
+                    {showMembers && (
                         <div>
                             {members.map((member, index) => (
-                                <div class="group-member" key={index}>
+                                <div className="group-member" key={index}>
                                     {member.user.username}
                                     <button className="button" onClick={() => toggleModeratorStatus(member.user.user_id, member.is_mod)}>
-                                        {member.is_mod ? 'Remove moderator': 'Make moderator'}
+                                        {member.is_mod ? 'Remove moderator' : 'Make moderator'}
                                     </button>
                                     <button className="button" onClick={() => removeMember(member.user.user_id)}>Remove member</button>
                                 </div>
                             ))}
                         </div>
-                    ) : showPostForm ? (
-                            <PostForm onSubmit={handlePostSubmit} errorMessage={errorMessage} />
-                        ) : channelRender ? (
-                            channelMode === 'post' ? (
-                                <PostChannel
-                                    canRemove={true}
-                                    channelId={channelRender.channel_id}
-                                    channelName={channelRender.channel_name}
-                                    isGroup={true}
-                                    locationId={groupDetails.groupId}
-                                />
-                            ) : (
-                                <ChatChannel
-                                    canRemove={true}
-                                    channelId={channelRender.channel_id}
-                                    isGroup={true}
-                                    locationId={groupDetails.groupId}
-                                />
-                            )
-                        ) : null}
+                    )}
+
                     {showRequests && (
                         <div>
-                            <h2>Join requests</h2>
+                            <h2>Join Requests</h2>
                             {requests.length === 0 ? (
                                 <p>No pending requests</p>
                             ) : (
@@ -433,10 +420,10 @@ function GroupHomeAdmin() {
                                     {requests.map((request) => (
                                         <li key={request.request_id}>
                                             {request.sender.username}
-                                            <button className="button" onClick={() => handleRequestAction(request.request_id, 'accept')}>
+                                            <button className="button" onClick={() => handleRequestAction("accept", request.request_id, request.sender_id)}>
                                                 Accept
                                             </button>
-                                            <button className="button" onClick={() => handleRequestAction(request.request_id, 'reject')}>
+                                            <button className="button" onClick={() => handleRequestAction("reject", request.request_id)}>
                                                 Reject
                                             </button>
                                         </li>
@@ -444,6 +431,30 @@ function GroupHomeAdmin() {
                                 </ul>
                             )}
                         </div>
+                    )}
+                    {!showMembers && !showRequests && (
+                        <>
+                            {showPostForm ? (
+                                <PostForm onSubmit={handlePostSubmit} errorMessage={errorMessage} />
+                            ) : channelRender ? (
+                                channelMode === 'post' ? (
+                                    <PostChannel
+                                        canRemove={true}
+                                        channelId={channelRender.channel_id}
+                                        channelName={channelRender.channel_name}
+                                        isGroup={true}
+                                        locationId={groupDetails.groupId}
+                                    />
+                                ) : (
+                                    <ChatChannel
+                                        canRemove={true}
+                                        channelId={channelRender.channel_id}
+                                        isGroup={true}
+                                        locationId={groupDetails.groupId}
+                                    />
+                                )
+                            ) : null}
+                        </>
                     )}
                 </div>
             </div>  
