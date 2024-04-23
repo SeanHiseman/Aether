@@ -198,9 +198,10 @@ router.get('/recommended', authenticateCheck, async (req, res) => {
 //Allows post to be taken down either by the user or moderators
 router.delete('/remove_post', authenticateCheck, async (req, res) => {
     try {
-        const { isGroup, post_id } = req.body;
+        const { postData } = req.body;
+        const { isGroup, postId } = postData;
         const postModel = isGroup ? GroupPosts : ProfilePosts;
-        await postModel.destroy({ where: { post_id }});
+        await postModel.destroy({ where: { post_id: postId }});
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
     }
