@@ -46,7 +46,7 @@ const upload = multer({
 
 //Accept friend request
 router.post('/accept_friend_request', authenticateCheck, async (req, res) => {
-    try {
+    //try {
         const { request } = req.body;
         const friendRequest = await FriendRequests.findByPk(request.request_id);
 
@@ -69,9 +69,9 @@ router.post('/accept_friend_request', authenticateCheck, async (req, res) => {
         ]);
 
         await friendRequest.destroy();
-    } catch (error) {
-        res.status(500).json(error.message);
-    }
+    //} catch (error) {
+        //res.status(500).json(error.message);
+    //}
 });
 
 //Create new channel within a profile
@@ -224,10 +224,12 @@ router.get('/get_friend_requests', authenticateCheck, async (req, res) => {
             where: { receiver_id: userId },
             include: [{
                 model: Users, 
+                as: 'sender',
                 required: true,
                 attributes: ['user_id', 'username']
             }],
         });
+
         res.json(requests);
     } catch (error) {
         res.status(500).json(error.message);
@@ -248,6 +250,19 @@ router.get('/get_profile_channels/:profileId', authenticateCheck, async (req, re
         res.json(channels);
     } catch (error) {
         res.status(500).json({ error: error.message });
+    }
+});
+
+//Rejects friend requests
+router.delete('/reject_friend_request', authenticateCheck, async (req, res) => {
+    try {
+        const { requestId } = req.body;
+        await FriendRequests.destroy({
+            where: { request_id: requestId }
+        });
+        res.status(200).json({ success: true, message: 'Request rejected.' });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
     }
 });
 
