@@ -169,15 +169,16 @@ const PersonalProfile = () => {
         setShowFriendRequests(!showFriendRequests);
     };
 
-    const HandleFriendRequest = async (request, result) => {
+    const handleFriendRequest = async (request, result) => {
         try {
             if (result === 'Accept') {
-                axios.post('/api/accept_friend_request', request)
-                setFriendRequests(friendRequests.filter(req => req.request_id !== request.request_id));
+                await axios.post('/api/accept_friend_request', {request} )
             } else if (result === 'Reject') {
-                axios.delete('/api/reject_friend_request', request)
-                setFriendRequests(friendRequests.filter(req => req.request_id !== request.request_id));
+                await axios.delete('/api/reject_friend_request', {
+                    data: {request}
+                });
             }
+            getFriendRequests();
         } catch (error) {
             setErrorMessage("Error handling request:", error);
         }
@@ -266,7 +267,8 @@ const PersonalProfile = () => {
             <div className="content-feed">
                 <header id="profile-header">
                     <button className="button" onClick={getFriendRequests}>
-                        {showFriendRequests ? 'Close requests' : `${friendRequests.length} friend requests`}
+                        {/*{showFriendRequests ? 'Close requests' : `${friendRequests.length} friend requests`}*/}
+                        {showFriendRequests ? 'Close requests' : 'See friend requests'}
                     </button>
                     <div id="viewed-profile-info">
                         <div id="name-section">
@@ -341,17 +343,24 @@ const PersonalProfile = () => {
                 <div className="channel-feed">
                     {showFriendRequests ? (
                         <div>
-                            {friendRequests.map((request, index) => (
-                                <div class="group-member" key={index}>
-                                    {request.user.username}
-                                    <button className="button" onClick={() => HandleFriendRequest(request, 'Accept')}>
-                                        Accept friend request
-                                    </button>
-                                    <button className="button" onClick={() => HandleFriendRequest(request, 'Reject')}>
-                                        Reject friend request
-                                    </button>
-                                </div>
-                            ))}
+                            <h2>Friend Requests</h2>
+                            {friendRequests.length === 0 ? (
+                                <p>No pending requests</p>
+                            ) : (
+                                <ul>
+                                    {friendRequests.map((request, index) => (
+                                        <li key={index}>
+                                            {request.sender.username}
+                                            <button className="button" onClick={() => handleFriendRequest(request, 'Accept')}>
+                                                Accept friend request
+                                            </button>
+                                            <button className="button" onClick={() => handleFriendRequest(request, 'Reject')}>
+                                                Reject friend request
+                                            </button>
+                                        </li>
+                                    ))}
+                                </ul>
+                            )}
                         </div>                                                                                                                    
                     ) : (
                         showPostForm ? (

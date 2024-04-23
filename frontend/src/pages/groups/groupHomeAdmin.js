@@ -321,6 +321,7 @@ function GroupHomeAdmin() {
                         </button>
                         {groupDetails.isPrivate ? (
                             <button className="button" onClick={() => {getJoinRequests(); setShowRequests(!showRequests)}}>
+                                {/*{showRequests ? 'Close join requests' : `${requests.length} join requests`}*/}
                                 {showRequests ? 'Close join requests' : 'See join requests'}
                             </button>
                         ) : null}
