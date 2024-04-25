@@ -29,7 +29,7 @@ router.get('/check_authentication', async (req, res) => {
 
 //Deletes user accont and all associated data
 router.delete('/delete_account', authenticateCheck, async (req, res) => {
-    try {
+    //try {
         const { user_id } = req.body;
         const userProfiles = await Profiles.findAll({ attributes: ['profile_id'], where: { user_id } });
         //In case of multiple profiles per user
@@ -51,13 +51,13 @@ router.delete('/delete_account', authenticateCheck, async (req, res) => {
         await Users.destroy({ where: { user_id } });
         res.clearCookie('sid');
         return res.json({ success: true });
-    } catch(error) {
-        return res.json({ success: false, message: 'Failed to delete account'});
-    }
+    //} catch(error) {
+        //return res.json({ success: false, message: 'Failed to delete account'});
+    //}
 });
 
 router.post('/register', async (req, res) => {
-    try{
+    //try {
         const username = req.body.username;
         const password = req.body.password;
 
@@ -83,15 +83,14 @@ router.post('/register', async (req, res) => {
         });
 
         res.json({ success: true });
-    }
-    catch (error) {
+    //} catch (error) {
         //If username is already taken
-        if (error.name === 'SequelizeUniqueConstraintError') {
-            res.status(400).send('Username already taken');
-        } else{
-            res.status(500).send('Server Error');
-        }
-    }
+        //if (error.name === 'SequelizeUniqueConstraintError') {
+            //res.status(400).send('Username already taken');
+        //} else {
+            //res.status(500).send('Server Error');
+        //}
+    //}
 });
 
 router.post('/login', async (req, res) => {

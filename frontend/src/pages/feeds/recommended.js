@@ -9,7 +9,7 @@ function RecommendedPage() {
             <div className="content-feed">
             </div>
             <aside id="right-aside">
-                <h1>Home</h1>
+                <h1>Recommended</h1>
             </aside>
         </div>
     )

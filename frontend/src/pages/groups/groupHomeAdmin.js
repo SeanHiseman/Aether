@@ -302,7 +302,7 @@ function GroupHomeAdmin() {
     const togglePrivate = async () => {
         try {
             const group_id = groupDetails.groupId;
-            const response = await axios.post('/api/toggle_private_group', group_id);
+            const response = await axios.post('/api/toggle_private_group', { group_id });
             setIsPrivate(response.data.isPrivate);
         } catch (error) {
             setErrorMessage('Error changing private status:', error);
@@ -329,7 +329,7 @@ function GroupHomeAdmin() {
                             const receiverGroupName = window.prompt('Enter group name');
                             sendGroupJoinRequest(receiverGroupName);
                         }}> Add to group </button>
-                        <button className="button" onClick={() => togglePrivate}>{groupDetails.isPrivate ? "Group: private" : "Group: public"}</button>
+                        <button className="button" onClick={() => togglePrivate()}>{groupDetails.isPrivate ? "Group: private" : "Group: public"}</button>
                         <MemberChangeButton userId={groupDetails.userId} groupId={groupDetails.groupId} isMember={groupDetails.isMember}/>
                     </div>
                     <div id="group-text">

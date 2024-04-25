@@ -499,6 +499,7 @@ router.post('/toggle_private_profile', authenticateCheck, async (req, res) => {
 //Update profile photo
 router.put('/update_profile_photo/:profileId', authenticateCheck, upload.single('new_profile_photo'), async (req, res) => {
     try {
+        const defaultProfilePhotoPath = 'media/site_images/blank-profile.png'; //To prevent default photo from being deleted
         const profileId = req.params.profileId; 
         const file = req.file; 
     
@@ -512,7 +513,7 @@ router.put('/update_profile_photo/:profileId', authenticateCheck, upload.single(
         
         if (profile) {
             //Deletes old photo
-            if (profile.profile_photo) {
+            if (profile.profile_photo && profile.profile_photo !== defaultProfilePhotoPath) {
             const currentPhotoPath = path.join(profile.profile_photo);
                 fs.unlink(currentPhotoPath, (error) => {
                     if (error) {

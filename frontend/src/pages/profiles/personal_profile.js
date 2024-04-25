@@ -1,5 +1,5 @@
 import axios from 'axios';
-import confirmAlert from 'react-confirm-alert';
+import ConfirmAlert from 'react-confirm-alert';
 import 'react-confirm-alert/src/react-confirm-alert.css';
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
@@ -25,13 +25,14 @@ const PersonalProfile = () => {
     const [showFriendRequests, setShowFriendRequests] = useState(false);
     const [showPostForm, setShowPostForm] = useState(false);
     const navigate = useNavigate();
+    const confirmAlertInstance = new ConfirmAlert();
 
     useEffect(() => {
         axios.get(`/api/profile/${username}`)
             .then(response => {
                 const fetchedProfile = response.data.profile;
-                setIsPrivate(response.data.isPrivate);
                 setProfile(fetchedProfile);
+                setIsPrivate(profile.isPrivate);
                 //setProfilePhoto(response.data.profilePhoto);
             })
             .catch(error => {
@@ -120,7 +121,8 @@ const PersonalProfile = () => {
 
     //User is shown a confirmation before deleting their account
     const deleteAccount = () => {
-        confirmAlert({
+        console.log("Delete account button clicked");
+        confirmAlertInstance.confirmAlert({
             title: 'Delete Account',
             message: 'Are you sure you want to delete your account? This action is irreversible.',
             buttons: [{
@@ -253,8 +255,8 @@ const PersonalProfile = () => {
     //Changes profile between public and private
     const togglePrivate = async () => {
         try {
-            const profile_id = profile.profileIdl
-            const response = await axios.post('/api/toggle_private_profile', profile_id);
+            const profile_id = profile.profileId;
+            const response = await axios.post('/api/toggle_private_profile', { profile_id} );
             setIsPrivate(response.data.isPrivate);
         } catch (error) {
             setErrorMessage('Error changing private status:', error);
@@ -320,7 +322,7 @@ const PersonalProfile = () => {
                         </div>
                     </div>
                     <p>{profile.followerCount} followers</p>
-                    <button className="button" onClick={() => togglePrivate}>{isPrivate ? "Profile: private" : "Profile: public"}</button>
+                    <button className="button" onClick={() => togglePrivate()}>{profile.isPrivate ? "Profile: private" : "Profile: public"}</button>
                     <form action="/api/logout" method="post" onSubmit={handleLogout}>
                         <button className="button" type="submit">Logout</button>
                     </form>
