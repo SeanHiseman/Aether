@@ -94,8 +94,8 @@ body,html {
     border: 1px solid #ffffff;
     border-radius: 10px;
     color: white;
-    min-width: 300px;
-    min-height: 80px;
+    min-width: 120px;
+    min-height: 40px;
     transition: background-color 0.3s;
 }
 .channel-feed {
