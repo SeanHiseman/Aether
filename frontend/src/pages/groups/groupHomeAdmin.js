@@ -256,10 +256,10 @@ function GroupHomeAdmin() {
     }; 
 
     //Admins can remove members
-    const removeMember = async (memberId) => {
+    const removeMember = async (userId) => {
         try {
             const groupId = groupDetails.groupId;
-            axios.post('/api/leave_group', { memberId, groupId })
+            axios.post('/api/leave_group', { userId, groupId })
                 getGroupMembers();
         } catch (error) {
             setErrorMessage('Error removing member:', error);
