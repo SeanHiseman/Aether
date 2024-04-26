@@ -18,9 +18,11 @@ function ContentWidget({ canRemove, isGroup, post }) {
     const Poster = isGroup ? 'GroupPoster' : 'ProfilePoster'; //Associations used by database
 
     //Allows users to remove their own posts
-    if (post.poster_id === user.user_id) {
-        canRemove = true;
-    };
+    useEffect(() => {
+        if (post.poster_id === user.user_id) {
+            canRemove = true;
+        }
+    }, [post.poster_id, user.user_id]);
 
     //Opens replies
     useEffect(() => {

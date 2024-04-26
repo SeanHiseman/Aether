@@ -16,7 +16,6 @@
     width: 90%;
 }
 .reply-container {
-    display: flex;
     width: 100%;
 }
 .reply-container button {
