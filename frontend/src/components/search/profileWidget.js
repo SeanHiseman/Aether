@@ -7,6 +7,7 @@ import ManageFriendshipButton from '../manageFriendship';
 const ProfileWidget = ({ profile }) => {
     const { user } = useContext(AuthContext);
     const loggedInUserId = user.userId;
+
     return (
         <div className="result-widget">
             <Link to={`/profile/${profile.user.username}`}>
@@ -24,7 +25,7 @@ const ProfileWidget = ({ profile }) => {
                 ) : (
                     <div>
                         <p>{profile.follower_count} followers</p>
-                        <FollowerChangeButton userId={loggedInUserId} profileId={profile.profile_id} isFollowing={profile.is_following} isPrivate={profile.is_private}/>
+                        <FollowerChangeButton userId={loggedInUserId} profileId={profile.profile_id} isFollowing={profile.isFollowing} isPrivate={profile.is_private}/>
                     </div>
                 )}
             <Link to={`/profile/${profile.user.username}`}>

@@ -314,47 +314,51 @@ router.get('/search/profiles', authenticateCheck, async (req, res) => {
         const profiles = await Profiles.findAll({
         where: {
             [Op.or]: [
-            { '$user.username$': { [Op.like]: `%${keyword}%` } },
+                { '$user.username$': { [Op.like]: `%${keyword}%` } },
             ],
         },
         attributes: ['profile_id', 'bio', 'profile_photo', 'follower_count', 'is_private'],
-        include: [
-            {
-            model: Users,
-            attributes: ['username', 'user_id'], 
-            },
-        ],
+        include: [{
+                model: Users,
+                attributes: ['username', 'user_id'], 
+            }],
         });
 
         //Check friendship for each profile
         const formattedProfileData = await Promise.all(profiles.map(async (profile) => {
-        const viewedUserId = profile.user.user_id;
-        const friendship = await Friends.findOne({
-            where: {
-            [Op.or]: [
-                { user1_id: loggedInUserId, user2_id: viewedUserId },
-                { user1_id: viewedUserId, user2_id: loggedInUserId },
-            ],
-            },
-        });
+            const viewedUserId = profile.user.user_id;
+            const friendship = await Friends.findOne({
+                where: {
+                    [Op.or]: [
+                        { user1_id: loggedInUserId, user2_id: viewedUserId },
+                        { user1_id: viewedUserId, user2_id: loggedInUserId },
+                    ],
+                },
+            });
 
-        const isFriend = !!friendship; 
-        const isRequestSent = profile.is_private && (await FriendRequests.findOne({
-            where: {
-            sender_id: loggedInUserId,
-            receiver_id: viewedUserId,
-            },
+            const isFollowing = await Followers.findOne({
+                where: {
+                    follower_id: loggedInUserId,
+                    profile_id: profile.profile_id
+                },
+            });
+
+            const isFriend = !!friendship; 
+            const isRequestSent = profile.is_private && (await FriendRequests.findOne({
+                where: {
+                    sender_id: loggedInUserId,
+                    receiver_id: viewedUserId,
+                },
+            }));
+
+            return {
+                ...profile.toJSON(),
+                isFollowing: !!isFollowing,
+                isFriend,
+                isRequestSent: !!isRequestSent, 
+            };
         }));
-
-        return {
-            ...profile.toJSON(),
-            isFriend,
-            isRequestSent: !!isRequestSent, 
-        };
-        }));
-
         res.json(formattedProfileData);
-
     } catch (error) {
         console.error("Error during profile search:", error);
         res.status(500).json({ success: false, message: "An error occurred during profile search." });

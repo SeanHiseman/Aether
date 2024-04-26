@@ -256,9 +256,9 @@ router.get('/get_profile_channels/:profileId', authenticateCheck, async (req, re
 //Rejects friend requests
 router.delete('/reject_friend_request', authenticateCheck, async (req, res) => {
     try {
-        const { requestId } = req.body;
+        const { request } = req.body;
         await FriendRequests.destroy({
-            where: { request_id: requestId }
+            where: { request_id: request.request_id }
         });
         res.status(200).json({ success: true, message: 'Request rejected.' });
     } catch (error) {
