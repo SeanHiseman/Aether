@@ -46,7 +46,7 @@ const upload = multer({
 
 //Accept friend request
 router.post('/accept_friend_request', authenticateCheck, async (req, res) => {
-    //try {
+    try {
         const { request } = req.body;
         const friendRequest = await FriendRequests.findByPk(request.request_id);
 
@@ -69,9 +69,9 @@ router.post('/accept_friend_request', authenticateCheck, async (req, res) => {
         ]);
 
         await friendRequest.destroy();
-    //} catch (error) {
-        //res.status(500).json(error.message);
-    //}
+    } catch (error) {
+        res.status(500).json(error.message);
+    }
 });
 
 //Create new channel within a profile
@@ -419,9 +419,10 @@ router.post('/remove_follower', authenticateCheck, async (req, res) => {
 
 //Deletes friendship
 router.delete('/remove_friend', authenticateCheck, async (req, res) => {
-    try {
+    //try {
         const loggedInUserId = req.session.user_id;
         const { receiverUserId } = req.body;
+
         //Gets all conversations involving the two users
         const conversationIds = await UserConversations.findAll({
             attributes: ['conversation_id'],
@@ -430,13 +431,18 @@ router.delete('/remove_friend', authenticateCheck, async (req, res) => {
                     { user_id: loggedInUserId },
                     { user_id: receiverUserId}
                 ]}
-        }).map(entry => entry.conversation_id);
-
-        await Conversations.destroy({
-            where: {
-                conversation_id: conversationIds
-            }
-        });
+        }).then(results => results.map(entry => entry.conversation_id));
+        //Deletions don't yet work
+        //await UserConversations.destroy({
+            //where: {
+                //[Op.or]: [
+                    //{ user_id: loggedInUserId, conversation_id: conversationIds },
+                    //{ user_id: receiverUserId, conversation_id: conversationIds }
+                //]}
+        //});
+        //await Conversations.destroy({
+            //where: { conversation_id: conversationIds }
+        //});
         await Friends.destroy({
             where: {
                 [Op.or]: [
@@ -444,23 +450,17 @@ router.delete('/remove_friend', authenticateCheck, async (req, res) => {
                     { user1_id: receiverUserId, user2_id: loggedInUserId }
                 ]}
         });
-        await Messages.destroy({
-            where: {
-                [Op.or]: [
-                    { sender_id: loggedInUserId, receiver_id: receiverUserId },
-                    { sender_id: receiverUserId, receiver_id: loggedInUserId},
-                ]}
-        });
-        await UserConversations.destroy({
-            where: {
-                [Op.or]: [
-                    { user_id: loggedInUserId, conversation_id: conversationIds },
-                    { user_id: receiverUserId, conversation_id: conversationIds }
-                ]}
-        });
-    } catch (error) {
-        res.status(500).json({ error: 'Failed to remove friend.' });
-    }
+        //await Messages.destroy({
+            //where: {
+                //[Op.or]: [
+                    //{ sender_id: loggedInUserId, receiver_id: receiverUserId },
+                    //{ sender_id: receiverUserId, receiver_id: loggedInUserId },
+                //]}
+        //});
+        res.status(200);
+    //} catch (error) {
+        //res.status(500).json({ error: 'Failed to remove friend.' });
+    //}
 });
 
 //Send friend request

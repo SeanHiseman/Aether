@@ -13,24 +13,30 @@ function ManageFriendshipButton({ userId, receiverProfileId, receiverUserId, isR
     }, [isRequestSent, isFriend]);
 
     const handleSendRequest = async () => {
-        try {
+        //try {
             let method, requestData, url;
             if (friend) {
                 method = 'delete';
+                url = '/api/remove_friend';
                 requestData = { receiverUserId };
-                url = 'remove_friend';
             } else if (request) {
                 method = 'delete';
-                requestData = { receiverProfileId,  receiverUserId, userId };
-                url = 'cancel_friend_request';
+                requestData = { receiverProfileId, userId };
+                url = '/api/cancel_friend_request';
             } else {
                 method = 'post';
-                requestData = { receiverProfileId, receiverUserId, userId };
-                url = 'send_friend_request';
+                requestData = { receiverProfileId, userId };
+                url = '/api/send_friend_request';
             }
-
-            const response = await axios[method](`/api/${url}`, requestData);
-
+            console.log("method:", method);
+            console.log("requestData:", requestData);
+            console.log("url:", url);
+            const response = await axios({
+                method,
+                url,
+                data: requestData,
+            });
+            console.log("response:", response);
             if (response.status === 200) {
                 if (method === 'delete') {
                     if (url === 'remove_friend') {
@@ -50,9 +56,9 @@ function ManageFriendshipButton({ userId, receiverProfileId, receiverUserId, isR
             } else {
                 console.error('Error:', response.data);
             }
-        } catch (error) {
-            setErrorMessage("Friend request error.", error);
-        }
+        //} catch (error) {
+            //setErrorMessage("Friend request error.", error);
+        //}
     };
 
     return (
