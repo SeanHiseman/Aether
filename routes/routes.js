@@ -3,6 +3,7 @@ import { ContentVotes, Followers, Friends, FriendRequests, Groups, GroupRequests
 import authenticateCheck from '../functions/authenticateCheck.js';
 import checkIfUserIsMember from '../functions/memberCheck.js';
 import { Op } from 'sequelize';
+import sortPostsByWeightedRatio from '../functions/postSorting.js';
 import { v4 } from 'uuid';
 const router = Router();
 
@@ -95,7 +96,9 @@ router.get('/friend_posts', authenticateCheck, async (req, res)=> {
             order: [['timestamp', 'DESC']]
         });
 
-        res.json(posts);
+        //Applies weighting algorithm to posts
+        const sortedPosts = sortPostsByWeightedRatio(posts);
+        res.json(sortedPosts);
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });   
     }
@@ -162,7 +165,10 @@ router.get('/following_posts', authenticateCheck, async (req, res) => {
 
         //Combine posts from profiles and groups
         const posts = [...profilePosts, ...groupPosts];
-        res.json(posts);
+
+        //Applies weighting algorithm to posts
+        const sortedPosts = sortPostsByWeightedRatio(posts);
+        res.json(sortedPosts);
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
     }
@@ -310,8 +316,12 @@ router.get('/search/posts', authenticateCheck, async (req, res) => {
         const finalGroupResults = groupPostResults.map((post) => {
             return { ...post.dataValues, is_group: true };
         });
+        const posts = [...finalProfileResults, ...finalGroupResults]
 
-        res.json([...finalProfileResults, ...finalGroupResults]);
+        //Applies weighting algorithm to posts
+        const sortedPosts = sortPostsByWeightedRatio(posts);
+        console.log("sortedPosts:", sortedPosts);
+        res.json(sortedPosts);
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
     }
