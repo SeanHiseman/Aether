@@ -30,7 +30,7 @@ router.post('/add_reply', authenticateCheck, async (req, res) => {
     }
 });
 
-//Get Comments Route 
+//Get replies Route 
 router.get('/get_replies/:postId', authenticateCheck, async (req, res) => {
     try {
         const isGroup = req.query.isGroup === 'true';
@@ -46,8 +46,9 @@ router.get('/get_replies/:postId', authenticateCheck, async (req, res) => {
                     model: Profiles,
                     attributes: ['profile_photo']
                 }]
-            }]
+            }],
         });
+        
         res.json(replies);
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
@@ -72,19 +73,24 @@ router.post('/reply_vote', authenticateCheck, async (req, res) => {
         const userId = req.session.user_id;
 
         const [vote] = await ReplyVotes.findOrCreate({
-            where: {
-                reply_id: reply_id,
-                user_id: userId
-            },
-            defaults: {
-                vote_id: v4(),
-            }
+            where: { reply_id: reply_id, user_id: userId },
+            defaults: { vote_id: v4(), vote_count: 0 }
         });
 
+        if (vote_type === 'check_vote') {
+            if (vote.vote_count >= 10) {
+                return res.json({ success: true, message: 'upvote limit' });
+            } else if (vote.vote_count <= -10) {
+                return res.json({ success: true, message: 'downvote limit' });
+            } else {
+                return res.json({ success: true, message: 'no limit' });
+            }
+        }
+        
         //Limits upvotes and downvotes on each reply to 10
-        if (vote.vote_count === 10 && vote_type === 'upvote') {
+        if (vote.vote_count >= 10 && vote_type === 'upvote') {
             return res.json({ success: false, message: 'Upvote limit' });
-        } else if (vote.vote_count === -10 && vote_type === 'downvote') {
+        } else if (vote.vote_count <= -10 && vote_type === 'downvote') {
             return res.json({ success: false, message: 'downvote limit' });
         }
 

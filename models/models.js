@@ -214,10 +214,10 @@ ProfilePosts.hasMany(ContentVotes, { as: 'ProfilePostVotes', foreignKey: 'conten
 ContentVotes.belongsTo(ProfilePosts, { as: 'ProfilePost', foreignKey: 'content_id', constraints: false });
 GroupPosts.hasMany(ContentVotes, { as: 'GroupPostVotes', foreignKey: 'content_id' });
 ContentVotes.belongsTo(GroupPosts, { as: 'GroupPost', foreignKey: 'content_id', constraints: false });
-ProfileReplies.hasMany(ReplyVotes, { as: 'ProfileReplyVotes', foreignKey: 'content_id' });
-ReplyVotes.belongsTo(ProfileReplies, { as: 'ProfileReply', foreignKey: 'content_id', constraints: false });
-GroupReplies.hasMany(ReplyVotes, { as: 'GroupReplyVotes', foreignKey: 'content_id' });
-ReplyVotes.belongsTo(GroupReplies, { as: 'GroupReply', foreignKey: 'content_id', constraints: false });
+ProfileReplies.hasMany(ReplyVotes, { as: 'ProfileReplyVotes', foreignKey: 'reply_id' });
+ReplyVotes.belongsTo(ProfileReplies, { as: 'ProfileReply', foreignKey: 'reply_id', constraints: false });
+GroupReplies.hasMany(ReplyVotes, { as: 'GroupReplyVotes', foreignKey: 'reply_id' });
+ReplyVotes.belongsTo(GroupReplies, { as: 'GroupReply', foreignKey: 'reply_id', constraints: false });
 
 
 const Friends = sequelize.define('friends', {

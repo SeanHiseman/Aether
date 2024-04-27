@@ -12,19 +12,6 @@
     max-width: 1000px;
     width: 70%;
 }
-.downvote-disabled, .upvote-disabled {
-    background-color: #444;
-    border: none;
-    margin: 5px;
-    padding: 0;
-}
-.downvote-enabled, .upvote-enabled {
-    background: none;
-    border: none;
-    cursor: pointer;
-    margin: 5px;
-    padding: 0;
-}
 .horizontal-container {
     align-items: flex-start;
     border-left: 2px solid #6b6b6b;

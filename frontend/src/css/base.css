@@ -431,3 +431,17 @@ ul {
     padding: 0;
     width: 20px;
 }
+.vote-arrow-container {
+    background: none;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    margin: 5px;
+    padding: 5px;
+}
+.vote-enabled {
+    background-color: #000514;
+}
+.vote-disabled {
+    background-color: #444;
+}

@@ -24,7 +24,7 @@ const ReplyForm = ({ isGroup, onReplyAdded, postId, parentId }) => {
     return (
         <form onSubmit={addReply} className="reply-form">
             <textarea className="reply-input" value={replyContent} onChange={(e) => setReplyContent(e.target.value)} placeholder="Reply..."/>
-            <button type="submit" className="button">Post</button>
+            <button type="submit" className="button">Reply</button>
         </form>
     );
 };
