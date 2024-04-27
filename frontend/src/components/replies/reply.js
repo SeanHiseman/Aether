@@ -1,5 +1,5 @@
 import axios from 'axios';
-import React, { useContext, useState } from 'react';
+import React, { useContext, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { AuthContext } from '../authContext';
 import ReplyForm from './replyForm';
@@ -15,40 +15,55 @@ const Reply = ({ addReply, reply, depth, isGroup, onReplyAdded }) => {
     const Replier = isGroup ? 'GroupReplier' : 'ProfileReplier'; //Associations used by database
     const toggleReplyForm = () => setShowReplyForm(!showReplyForm);
 
+    //Sets the upvote/downvote limits upon rendering
+    useEffect(() => {
+        const checkVoteLimit = async () => {
+            try {
+                const response = await axios.post('/api/reply_vote', { reply_id: reply.reply_id, isGroup, vote_type: 'check_vote' });
+
+                if (response.data.message === 'upvote limit') {
+                    setUpvoteLimit(true);
+                } else if (response.data.message === 'downvote limit') {
+                    setDownvoteLimit(true);
+                }
+            } catch (error) {
+                console.error('Error checking vote limit:', error);
+            }
+        };
+
+        checkVoteLimit();
+    }, [reply.reply_id, isGroup]);
+
     //Updates up/downvotes
     const handleVote = (voteType) => {
-        //Reset before request
-        setDownvoteLimit(false);
-        setUpvoteLimit(false);
-
-        //Check if at voting limit
-        if (voteType === 'upvote' && upvotes === 10) {
-            setUpvoteLimit(true);
-            return;
-        } else if (voteType === 'downvote' && downvotes === 10) {
-            setDownvoteLimit(true);
-            return;
+        try {
+            if ((voteType === 'upvote' && upvoteLimit) || (voteType === 'downvote' && downvoteLimit)) {
+                return;
+            }
+            //Reset before request
+            setDownvoteLimit(false);
+            setUpvoteLimit(false);
+            axios.post('/api/reply_vote', { reply_id: reply.reply_id, isGroup, vote_type: voteType })
+                .then((response) => {
+                    if (response.data.success) {
+                        if (voteType === 'upvote') {
+                            setUpvotes(upvotes + 1);
+                        } else if (voteType === 'downvote')  {
+                            setDownvotes(downvotes + 1);
+                        }
+                    } else {
+                        if (voteType === 'upvote') {
+                            setUpvoteLimit(true);
+                        } else if (voteType === 'downvote') {
+                            setDownvoteLimit(true);
+                        }
+                    }
+                }).catch(error => {
+                    console.error('Error:', error);
+                });
+        } catch (error) {
+            console.error('Error voting:', error);
         }
-
-        //Update if limit hasn't been reached
-        setUpvotes(voteType === 'upvote' ? upvotes + 1 : upvotes);
-        setDownvotes(voteType === 'downvote' ? downvotes + 1 : downvotes);
-
-        const vote = {
-            reply_id: reply.reply_id,
-            isGroup,
-            vote_type: voteType
-        };
-        
-        axios.post('/api/reply_vote', vote)
-            .catch(error => {
-                console.error('Error:', error);
-                if (voteType === 'upvote') {
-                    setUpvotes(upvotes); 
-                } else if (voteType === 'downvote') {
-                    setDownvotes(downvotes); 
-                }
-            });
     };
 
     //Deletes the reply
@@ -61,8 +76,8 @@ const Reply = ({ addReply, reply, depth, isGroup, onReplyAdded }) => {
         }
     };
 
-    const downvoteStyle = downvoteLimit ? 'downvote-disabled' : 'downvote-enabled';
-    const upvoteStyle = upvoteLimit ? 'upvote-disabled' : 'upvote-enabled';
+    const downvoteClass = downvoteLimit ? 'vote-disabled' : 'vote-enabled';
+    const upvoteClass = upvoteLimit ? 'vote-disabled' : 'vote-enabled';
     
     return (
         <div className="reply-container" style={{ marginLeft: `${depth * 20}px` }}>
@@ -74,14 +89,14 @@ const Reply = ({ addReply, reply, depth, isGroup, onReplyAdded }) => {
                 <div className="reply-element">
                 <span className="reply-content">{reply.content}</span>
                 <div className="reply-vote-container">
-                    <button className={upvoteStyle} onClick={() => handleVote('upvote')}>
-                        <img className="vote-arrow" src="/media/site_images/up.png" alt="upvote" />
+                    <button className={`vote-arrow-container ${upvoteClass}`} onClick={() => handleVote('upvote')}>
+                        <img className={`vote-arrow ${upvoteClass}`} src="/media/site_images/up.png" alt="upvote" />
                     </button>
                     <span className="total-votes">{upvotes - downvotes}</span>
-                    <button className={downvoteStyle} onClick={() => handleVote('downvote')}>
-                        <img className="vote-arrow" src="/media/site_images/down.png" alt="downvote" />
+                    <button className={`vote-arrow-container ${downvoteClass}`} onClick={() => handleVote('downvote')}>
+                        <img className={`vote-arrow ${downvoteClass}`} src="/media/site_images/down.png" alt="downvote" />
                     </button>
-                    <button className="button" onClick={toggleReplyForm}>Reply</button>
+                    <button className="reply-container-button" onClick={toggleReplyForm}>Reply</button>
                         {showReplyForm && <ReplyForm isGroup={isGroup} onReplyAdded={onReplyAdded} parentId={reply.reply_id} postId={reply.post_id} />}
                 </div>
                 {isReplier ? (

@@ -39,6 +39,25 @@ function ContentWidget({ canRemove, isGroup, post }) {
         }
     }, [showReplies, post.post_id, hasViewed]);
 
+    //Sets the upvote/downvote limits upon rendering
+    useEffect(() => {
+        const checkVoteLimit = async () => {
+            try {
+                const response = await axios.post('/api/content_vote', { content_id: post.post_id, isGroup, vote_type: 'check_vote' });
+
+                if (response.data.message === 'upvote limit') {
+                    setUpvoteLimit(true);
+                } else if (response.data.message === 'downvote limit') {
+                    setDownvoteLimit(true);
+                }
+            } catch (error) {
+                console.error('Error checking vote limit:', error);
+            }
+        };
+
+        checkVoteLimit();
+    }, [post.post_id, isGroup]);
+
     //Allows React Quill to display videos
     const BlockEmbed = Quill.import('blots/block/embed');
     class VideoBlot extends BlockEmbed {
@@ -78,7 +97,7 @@ function ContentWidget({ canRemove, isGroup, post }) {
     //Adds a view to the post
     const incrementViews = async (postId) => {
         try {
-            if (hasViewed == false) {
+            if (hasViewed === false) {
                 await axios.post('/api/increment_views', { postId, isGroup });
                 setHasViewed(true);
             }
@@ -87,7 +106,7 @@ function ContentWidget({ canRemove, isGroup, post }) {
         }
     };
 
-    //Sorts replies by parent
+    //Sorts replies by parent and by net upvotes
     const nestReplies = (replies) => {
         const replyMap = {};
         replies.forEach(reply => replyMap[reply.reply_id] = { ...reply, replies: [] });
@@ -100,7 +119,12 @@ function ContentWidget({ canRemove, isGroup, post }) {
                 replyMap[reply.parent_id].replies.push(reply);
             }
         });
-        return nestedReplies;
+        const sortByNetUpvotes = (a, b) => (b.upvotes - b.downvotes) - (a.upvotes - a.downvotes);
+        const sortedReplies = nestedReplies.map(reply => {
+            const sortedChildReplies = [...reply.replies].sort(sortByNetUpvotes);
+            return { ...reply, replies: sortedChildReplies };
+        })
+        return sortedReplies.sort(sortByNetUpvotes);
     };
 
     //Deletes the post
@@ -115,35 +139,43 @@ function ContentWidget({ canRemove, isGroup, post }) {
 
     //Updates up/downvotes
     const postVote = async (postId, voteType) => {
-        //Reset before request
-        setDownvoteLimit(false);
-        setUpvoteLimit(false);
-
-        const vote = {
-            content_id: postId, 
-            isGroup,
-            vote_type: voteType
+        try {
+            if ((voteType === 'upvote' && upvoteLimit) || (voteType === 'downvote' && downvoteLimit)) {
+                return;
+            }
+            setDownvoteLimit(false);
+            setUpvoteLimit(false);
+            axios.post('/api/content_vote', { content_id: postId, isGroup, vote_type: voteType })
+                .then((response) => {
+                    if (response.data.success) {
+                        if (voteType === 'upvote') {
+                            setUpvotes(upvotes + 1);
+                        } else if (voteType === 'downvote')  {
+                            setDownvotes(downvotes + 1);
+                        }
+                    } else {
+                        if (voteType === 'upvote') {
+                            setUpvoteLimit(true);
+                        } else if (voteType === 'downvote') {
+                            setDownvoteLimit(true);
+                        }
+                    }
+                }).catch(error => {
+                    console.error('Error:', error);
+                });
+            
+            if(!hasViewed) {
+                incrementViews(postId);
+                setHasViewed(true);
+            }
+        } catch (error) {
+            console.error('Error voting:', error);
         }
-
-        if(!hasViewed) {
-            incrementViews(postId);
-            setHasViewed(true);
-        }
-
-        axios.post('/api/content_vote', vote)
-            .catch(error => {
-                console.error('Error:', error);
-                if (voteType === 'upvote') {
-                    setUpvotes(upvotes); 
-                } else if (voteType === 'downvote') {
-                    setDownvotes(downvotes); 
-                }
-            });
     };
 
     const nestedReplies = nestReplies(replies);
-    const downvoteStyle = downvoteLimit ? 'downvote-disabled' : 'downvote-enabled';
-    const upvoteStyle = upvoteLimit ? 'upvote-disabled' : 'upvote-enabled';
+    const downvoteClass = downvoteLimit ? 'vote-disabled' : 'vote-enabled';
+    const upvoteClass = upvoteLimit ? 'vote-disabled' : 'vote-enabled';
 
     return (
         <div className="content-item">
@@ -163,12 +195,12 @@ function ContentWidget({ canRemove, isGroup, post }) {
                     )}
                 </div>
                 <div className="reply-vote-container">
-                    <button className={upvoteStyle} onClick={() => postVote(post.post_id, 'upvote')}>
-                        <img className="vote-arrow" src="/media/site_images/up.png" alt="upvote" />
+                    <button className={`vote-arrow-container ${upvoteClass}`} onClick={() => postVote(post.post_id, 'upvote')}>
+                        <img className={`vote-arrow ${upvoteClass}`} src="/media/site_images/up.png" alt="upvote" />
                     </button>
                     <span className="total-votes">{upvotes - downvotes}</span>
-                    <button className={downvoteStyle} onClick={() => postVote(post.post_id, 'downvote')}>
-                        <img className="vote-arrow" src="/media/site_images/down.png" alt="downvote" />
+                    <button className={`vote-arrow-container ${downvoteClass}`} onClick={() => postVote(post.post_id, 'downvote')}>
+                        <img className={`vote-arrow ${downvoteClass}`} src="/media/site_images/down.png" alt="downvote" />
                     </button>
                 </div>
                 <button className="button" data-content-id={post.post_id} onClick={handleToggleReplies}>

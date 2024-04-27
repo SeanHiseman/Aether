@@ -17,11 +17,28 @@ router.post('/content_vote', authenticateCheck, async (req, res) => {
             defaults: { vote_id: v4(), vote_count: 0 },
         });
 
+        if (vote_type === 'check_vote') {
+            if (vote.vote_count >= 10) {
+                return res.json({ success: true, message: 'upvote limit' });
+            } else if (vote.vote_count <= -10) {
+                return res.json({ success: true, message: 'downvote limit' });
+            } else {
+                return res.json({ success: true, message: 'no limit' });
+            }
+        }
+
+        if (vote.vote_count >= 10 && vote_type === 'upvote') {
+            return res.json({ success: false, message: 'upvote limit'});
+        } else if (vote.vote_count <= -10 && vote_type === 'downvote') {
+            return res.json({ success: false, message: 'downvote limit '});
+        }
+
+
         //Limits upvotes and downvotes on each post to 10
         if (vote_type === 'upvote') {
-            vote.vote_count = Math.min(vote.vote_count + 1, 10);
+            vote.vote_count += 1;
         } else if (vote_type === 'downvote') {
-            vote.vote_count = Math.max(vote.vote_count - 1, -10);
+            vote.vote_count -= 1;
         }
 
         await vote.save();
@@ -33,6 +50,7 @@ router.post('/content_vote', authenticateCheck, async (req, res) => {
         } else if (vote_type === 'downvote') {
             content.downvotes += 1;
         }
+
         await content.save();
         return res.json({ success: true });
     } catch (error) {
@@ -225,11 +243,7 @@ router.get('/search/groups', authenticateCheck, async (req, res) => {
         });
 
         const groups = await Groups.findAll({
-            where: {
-                group_name: {
-                    [Op.like]: `%${keyword}%`,
-                },
-            },
+            where: { group_name: { [Op.like]: `%${keyword}%` } },
             attributes: ['group_id', 'group_name', 'description', 'group_photo', 'member_count', 'is_private'],
         });
 
@@ -258,9 +272,8 @@ router.get('/search/posts', authenticateCheck, async (req, res) => {
             where: {
                 [Op.or]: [{
                     title: {[Op.like]: `%${keyword}%`},
-                }, {content: {[Op.like]: `%${keyword}%`,},
-                }],
-            },
+                }, {content: {[Op.like]: `%${keyword}%`,}}
+            ]},
             include: [{
                 model: Users, 
                 as: 'ProfilePoster',
@@ -337,18 +350,12 @@ router.get('/search/profiles', authenticateCheck, async (req, res) => {
             });
 
             const isFollowing = await Followers.findOne({
-                where: {
-                    follower_id: loggedInUserId,
-                    profile_id: profile.profile_id
-                },
+                where: { follower_id: loggedInUserId, profile_id: profile.profile_id },
             });
 
             const isFriend = !!friendship; 
             const isRequestSent = profile.is_private && (await FriendRequests.findOne({
-                where: {
-                    sender_id: loggedInUserId,
-                    receiver_id: viewedUserId,
-                },
+                where: { sender_id: loggedInUserId, receiver_id: viewedUserId },
             }));
 
             return {

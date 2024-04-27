@@ -18,15 +18,16 @@
 .reply-container {
     width: 100%;
 }
-.reply-container button {
+.reply-container-button {
+    background-color: #000514;
     border-radius: 10px;
-    border: none;
-    flex-shrink: 0;
+    border: 1px solid white;
     color: white;
-    background-color: #2f3966;
+    flex-shrink: 0;
+    padding: 10px;
     transition: background-color 0.3s;
 }
-.reply-container button:hover {
+.reply-container-button:hover {
     background-color: #41445a;
 }
 .reply-vote-container {
