@@ -1,14 +1,15 @@
+import authenticateCheck from '../functions/authenticateCheck.js';
+import { ContentVotes, Conversations, Followers, Friends, FriendRequests, Profiles, ProfileChannels, ProfilePosts, Users, UserConversations } from '../models/models.js';
 import express from 'express';
 import fs from 'fs';
-import { Router } from 'express';
-import { v4 } from 'uuid';
 import { join } from 'path';
-import path, { extname } from 'path';
-import { Op } from 'sequelize';
-import authenticateCheck from '../functions/authenticateCheck.js';
-import session from 'express-session';
 import multer, { diskStorage } from 'multer';
-import { ContentVotes, Conversations, Followers, Friends, FriendRequests, Messages, Profiles, ProfileChannels, ProfilePosts, Users, UserConversations } from '../models/models.js';
+import { Op } from 'sequelize';
+import path, { extname } from 'path';
+import { Router } from 'express';
+import session from 'express-session';
+import sortPostsByWeightedRatio from '../functions/postSorting.js';
+import { v4 } from 'uuid';
 
 const app = express();
 const router = Router();
@@ -298,7 +299,10 @@ router.get('/profile_channel_posts', authenticateCheck, async (req, res) => {
             //Posts sorted chronilogically
             order: [['timestamp', 'DESC']]
         });
-        res.json(posts);
+
+        //Applies weighting algorithm to posts
+        const sortedPosts = sortPostsByWeightedRatio(posts);
+        res.json(sortedPosts);
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });   
     }
@@ -328,8 +332,12 @@ router.get('/profile_main_posts', authenticateCheck, async (req, res) => {
                 required: false
             }],
             attributes: ['post_id', 'title', 'content', 'replies', 'views', 'upvotes', 'downvotes', 'timestamp'],
-        })
-        res.json(posts);
+        });
+
+        //Applies weighting algorithm to posts
+        const sortedPosts = sortPostsByWeightedRatio(posts);
+        console.log("sortedPosts:", sortedPosts);
+        res.json(sortedPosts);
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
     }

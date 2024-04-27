@@ -8,6 +8,7 @@ import multer from 'multer';
 import { join } from 'path';
 import { Router } from 'express';
 import path from 'path';
+import sortPostsByWeightedRatio from '../functions/postSorting.js';
 import { v4 } from 'uuid';
 
 const app = express();
@@ -361,7 +362,10 @@ router.get('/group_channel_posts', authenticateCheck, async (req, res) => {
             //Posts sorted chronilogically (temporary)
             order: [['timestamp', 'DESC']]
         });
-        res.json(posts);
+        
+        //Applies weighting algorithm to posts
+        const sortedPosts = sortPostsByWeightedRatio(posts);
+        res.json(sortedPosts);
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
     }
@@ -391,7 +395,10 @@ router.get('/group_main_posts', authenticateCheck, async (req, res) => {
             }],
             attributes: ['post_id', 'title', 'content', 'replies', 'views', 'upvotes', 'downvotes', 'timestamp'],
         })
-        res.json(posts);
+        
+        //Applies weighting algorithm to posts
+        const sortedPosts = sortPostsByWeightedRatio(posts);
+        res.json(sortedPosts);
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
     }
