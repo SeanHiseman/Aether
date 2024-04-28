@@ -24,7 +24,7 @@ function FollowingPage() {
                     {posts.length > 0 ? (
                         <ul className="content-list">
                             {posts.map(post => (
-                                <ContentWidget key={post.post_id} isGroup={post.isGroup} post={post}/>
+                                <ContentWidget key={post.post_id} isGroup={post.is_group} post={post}/>
                             ))}
                         </ul>
                         ) : (

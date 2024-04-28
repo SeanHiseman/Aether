@@ -300,14 +300,7 @@ router.get('/profile_channel_posts', authenticateCheck, async (req, res) => {
             order: [['timestamp', 'DESC']]
         });
 
-        //Prepares data structure for sorting
-        const finalResults = posts.map((post) => ({
-            ...post.dataValues, is_group: false,
-        }));
-
-        //Applies weighting algorithm to posts
-        const sortedPosts = sortPostsByWeightedRatio(finalResults);
-        res.json(sortedPosts);
+        res.json(posts);
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });   
     }
