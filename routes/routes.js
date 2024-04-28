@@ -95,9 +95,12 @@ router.get('/friend_posts', authenticateCheck, async (req, res)=> {
             //Posts sorted chronilogically
             order: [['timestamp', 'DESC']]
         });
+        
+        const finalResults = posts.map((post) => ({
+            ...post.dataValues, is_group: false,
+        }));
 
-        //Applies weighting algorithm to posts
-        const sortedPosts = sortPostsByWeightedRatio(posts);
+        const sortedPosts = sortPostsByWeightedRatio(finalResults);
         res.json(sortedPosts);
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });   
@@ -166,8 +169,11 @@ router.get('/following_posts', authenticateCheck, async (req, res) => {
         //Combine posts from profiles and groups
         const posts = [...profilePosts, ...groupPosts];
 
-        //Applies weighting algorithm to posts
-        const sortedPosts = sortPostsByWeightedRatio(posts);
+        const finalResults = posts.map((post) => ({
+            ...post.dataValues, is_group: false,
+        }));
+
+        const sortedPosts = sortPostsByWeightedRatio(finalResults);
         res.json(sortedPosts);
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
@@ -310,17 +316,16 @@ router.get('/search/posts', authenticateCheck, async (req, res) => {
             }],
         });
         //Adds group true/false to posts
-        const finalProfileResults = profilePostResults.map((post) => {
-            return { ...post.dataValues, is_group: false };
-        });
-        const finalGroupResults = groupPostResults.map((post) => {
-            return { ...post.dataValues, is_group: true };
-        });
-        const posts = [...finalProfileResults, ...finalGroupResults]
+        const finalProfileResults = profilePostResults.map((post) => ({
+            ...post.dataValues, is_group: false,
+        }));
 
+        const finalGroupResults = groupPostResults.map((post) => ({
+            ...post.dataValues, is_group: true,
+        }));
+        const posts = [...finalProfileResults, ...finalGroupResults]
         //Applies weighting algorithm to posts
         const sortedPosts = sortPostsByWeightedRatio(posts);
-        console.log("sortedPosts:", sortedPosts);
         res.json(sortedPosts);
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
