@@ -38,7 +38,7 @@ function ContentWidget({ canRemove, isGroup, post }) {
             setHasViewed(true);
         }
     }, [showReplies, post.post_id, hasViewed]);
-
+ 
     //Sets the upvote/downvote limits upon rendering
     useEffect(() => {
         const checkVoteLimit = async () => {

@@ -364,7 +364,7 @@ router.get('/group_channel_posts', authenticateCheck, async (req, res) => {
         });
 
         const finalResults = posts.map((post) => ({
-            ...post.dataValues, is_group: false,
+            ...post.dataValues, is_group: true,
         }));
 
         const sortedPosts = sortPostsByWeightedRatio(finalResults);
@@ -400,7 +400,7 @@ router.get('/group_main_posts', authenticateCheck, async (req, res) => {
         })
         
         const finalResults = posts.map((post) => ({
-            ...post.dataValues, is_group: false,
+            ...post.dataValues, is_group: true,
         }));
 
         const sortedPosts = sortPostsByWeightedRatio(finalResults);

@@ -95,13 +95,8 @@ router.get('/friend_posts', authenticateCheck, async (req, res)=> {
             //Posts sorted chronilogically
             order: [['timestamp', 'DESC']]
         });
-        
-        const finalResults = posts.map((post) => ({
-            ...post.dataValues, is_group: false,
-        }));
 
-        const sortedPosts = sortPostsByWeightedRatio(finalResults);
-        res.json(sortedPosts);
+        res.json(posts);
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });   
     }
@@ -148,7 +143,6 @@ router.get('/following_posts', authenticateCheck, async (req, res) => {
                         attributes: ['profile_photo'],
                     }],
                 }],
-            order: [['timestamp', 'DESC']],
         });
 
         //Fetch posts from user groups
@@ -163,17 +157,21 @@ router.get('/following_posts', authenticateCheck, async (req, res) => {
                         attributes: ['profile_photo'],
                     }],
                 }],
-            order: [['timestamp', 'DESC']],
         });
 
-        //Combine posts from profiles and groups
-        const posts = [...profilePosts, ...groupPosts];
-
-        const finalResults = posts.map((post) => ({
+        //Adds group true/false to posts
+        const finalProfileResults = profilePosts.map((post) => ({
             ...post.dataValues, is_group: false,
         }));
+        const finalGroupResults = groupPosts.map((post) => ({
+            ...post.dataValues, is_group: true,
+        }));
 
-        const sortedPosts = sortPostsByWeightedRatio(finalResults);
+        //Combine posts from profiles and groups
+        const posts = [...finalProfileResults, ...finalGroupResults]
+
+        const sortedPosts = sortPostsByWeightedRatio(posts);
+
         res.json(sortedPosts);
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
@@ -315,15 +313,18 @@ router.get('/search/posts', authenticateCheck, async (req, res) => {
                 }]
             }],
         });
+
         //Adds group true/false to posts
         const finalProfileResults = profilePostResults.map((post) => ({
             ...post.dataValues, is_group: false,
         }));
-
         const finalGroupResults = groupPostResults.map((post) => ({
             ...post.dataValues, is_group: true,
         }));
+
+        //Combine posts from profiles and groups
         const posts = [...finalProfileResults, ...finalGroupResults]
+
         //Applies weighting algorithm to posts
         const sortedPosts = sortPostsByWeightedRatio(posts);
         res.json(sortedPosts);
