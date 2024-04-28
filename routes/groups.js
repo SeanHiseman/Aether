@@ -362,9 +362,12 @@ router.get('/group_channel_posts', authenticateCheck, async (req, res) => {
             //Posts sorted chronilogically (temporary)
             order: [['timestamp', 'DESC']]
         });
-        
-        //Applies weighting algorithm to posts
-        const sortedPosts = sortPostsByWeightedRatio(posts);
+
+        const finalResults = posts.map((post) => ({
+            ...post.dataValues, is_group: false,
+        }));
+
+        const sortedPosts = sortPostsByWeightedRatio(finalResults);
         res.json(sortedPosts);
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
@@ -396,8 +399,11 @@ router.get('/group_main_posts', authenticateCheck, async (req, res) => {
             attributes: ['post_id', 'title', 'content', 'replies', 'views', 'upvotes', 'downvotes', 'timestamp'],
         })
         
-        //Applies weighting algorithm to posts
-        const sortedPosts = sortPostsByWeightedRatio(posts);
+        const finalResults = posts.map((post) => ({
+            ...post.dataValues, is_group: false,
+        }));
+
+        const sortedPosts = sortPostsByWeightedRatio(finalResults);
         res.json(sortedPosts);
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });

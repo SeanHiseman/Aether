@@ -8,7 +8,7 @@ import { Op } from 'sequelize';
 import path, { extname } from 'path';
 import { Router } from 'express';
 import session from 'express-session';
-import sortPostsByWeightedRatio from '../functions/postSorting.js';
+import sortPostsByWeightedRatio from'../functions/postSorting.js';
 import { v4 } from 'uuid';
 
 const app = express();
@@ -300,8 +300,13 @@ router.get('/profile_channel_posts', authenticateCheck, async (req, res) => {
             order: [['timestamp', 'DESC']]
         });
 
+        //Prepares data structure for sorting
+        const finalResults = posts.map((post) => ({
+            ...post.dataValues, is_group: false,
+        }));
+
         //Applies weighting algorithm to posts
-        const sortedPosts = sortPostsByWeightedRatio(posts);
+        const sortedPosts = sortPostsByWeightedRatio(finalResults);
         res.json(sortedPosts);
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });   
@@ -334,9 +339,12 @@ router.get('/profile_main_posts', authenticateCheck, async (req, res) => {
             attributes: ['post_id', 'title', 'content', 'replies', 'views', 'upvotes', 'downvotes', 'timestamp'],
         });
 
+        const finalResults = posts.map((post) => ({
+            ...post.dataValues, is_group: false,
+        }));
+
         //Applies weighting algorithm to posts
-        const sortedPosts = sortPostsByWeightedRatio(posts);
-        console.log("sortedPosts:", sortedPosts);
+        const sortedPosts = sortPostsByWeightedRatio(finalResults);
         res.json(sortedPosts);
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
