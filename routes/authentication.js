@@ -1,7 +1,8 @@
+import authenticateCheck from '../functions/authenticateCheck.js';
 import { Router } from 'express';
 import { hash, compare } from 'bcrypt';
+import { Op } from 'sequelize';
 import { v4 } from 'uuid';
-import authenticateCheck from '../functions/authenticateCheck.js';
 import { ContentVotes, Followers, Friends, FriendRequests, GroupReplies, GroupPosts, Messages, Profiles, ProfileChannels, ProfileReplies, ProfilePosts, ReplyVotes, Users, UserConversations, UserGroups } from '../models/models.js';
 
 const router = Router();
@@ -29,18 +30,15 @@ router.get('/check_authentication', async (req, res) => {
 
 //Deletes user accont and all associated data
 router.delete('/delete_account', authenticateCheck, async (req, res) => {
-    //try {
+    try {
         const { user_id } = req.body;
-        const userProfiles = await Profiles.findAll({ attributes: ['profile_id'], where: { user_id } });
-        //In case of multiple profiles per user
-        const profileIds = userProfiles.map(profile => profile.profile_id);
-        await Profiles.destroy({ where: { user_id } });
-        await ProfileChannels.destroy({ where: { profile_id: { [Op.in]: profileIds } } });
+        const profile = await Profiles.findOne({ where: { user_id } });
+        await ProfileChannels.destroy({ where: { profile_id: profile.profile_id } });
         await ProfilePosts.destroy({ where: { poster_id: user_id } });
-        await ProfileReplies.destroy({ where: { commenter_id: user_id } });
+        await ProfileReplies.destroy({ where: { replier_id: user_id } });
         await UserGroups.destroy({ where: { user_id } });
         await GroupPosts.destroy({ where: { poster_id: user_id } });
-        await GroupReplies.destroy({ where: { commenter_id: user_id } });
+        await GroupReplies.destroy({ where: { replier_id: user_id } });
         await Followers.destroy({ where: { follower_id: user_id } });
         await ContentVotes.destroy({ where: { user_id } });
         await ReplyVotes.destroy({ where: { user_id } });
@@ -48,28 +46,27 @@ router.delete('/delete_account', authenticateCheck, async (req, res) => {
         await FriendRequests.destroy({ where: { [Op.or]: [{ sender_id: user_id }, { receiver_id: user_id }] } });
         await UserConversations.destroy({ where: { user_id } });
         await Messages.destroy({ where: { sender_id: user_id } });
+        await Profiles.destroy({ where: { user_id } });
         await Users.destroy({ where: { user_id } });
         res.clearCookie('sid');
         return res.json({ success: true });
-    //} catch(error) {
-        //return res.json({ success: false, message: 'Failed to delete account'});
-    //}
+    } catch (error) {
+        return res.json({ success: false, message: 'Failed to delete account'});
+    }
 });
 
 router.post('/register', async (req, res) => {
-    //try {
+    try {
         const username = req.body.username;
-        const password = req.body.password;
-
         //Check for existing username
         const existingUser = await Users.findOne({ where: { username } });
         if (existingUser) {
-            return res.status(400).send('Username already taken');
+            return res.status(400).json({ message: 'Username already taken' });
         }
 
         //Add user info to database, including encrypted password
         const user_id = v4();
-        const hashedPassword = await hash(password, 10);
+        const hashedPassword = await hash(req.body.password, 10);
         const UserSince = new Date();
         await Users.create({
             user_id, username, password: hashedPassword, UserSince
@@ -81,16 +78,16 @@ router.post('/register', async (req, res) => {
         await Profiles.create({
             profile_id, user_id, profile_photo: default_photo, bio: ""
         });
+        //Sets up main channel
+        const channel_id = v4();
+        await ProfileChannels.create({
+            channel_id, channel_name: 'Main', profile_id
+        });
 
         res.json({ success: true });
-    //} catch (error) {
-        //If username is already taken
-        //if (error.name === 'SequelizeUniqueConstraintError') {
-            //res.status(400).send('Username already taken');
-        //} else {
-            //res.status(500).send('Server Error');
-        //}
-    //}
+    } catch (error) {
+        res.status(500).json({ message: 'Server error', error: error.message });
+    }
 });
 
 router.post('/login', async (req, res) => {
