@@ -120,30 +120,37 @@ const PersonalProfile = () => {
     const channelRender = channels.find(c => c.channel_name === channel_name);
 
     //User is shown a confirmation before deleting their account
-    const deleteAccount = () => {
-        console.log("Delete account button clicked");
-        confirmAlertInstance.confirmAlert({
-            title: 'Delete Account',
-            message: 'Are you sure you want to delete your account? This action is irreversible.',
-            buttons: [{
-                label: 'Yes, Delete',
-                onClick: () => {
-                    axios.delete('/api/delete_account', { data: { user_id: profile.userId } })
-                    .then((response) => {
-                        if (response.data.success) {
-                            navigate('/login');
-                        } else {
-                            setErrorMessage(response.data.message);
-                        }
-                    })
-                    .catch((error) => {
-                        setErrorMessage('Failed to delete account:', error);
-                    });
-                },
-            },
-                {label: 'Cancel',},
-            ],
-        });
+    const deleteAccount = async () => {
+        //confirmAlertInstance.confirmAlert({
+            //title: 'Delete Account',
+            //message: 'Are you sure you want to delete your account? This action is irreversible.',
+            //buttons: [{
+                //label: 'Yes, Delete',
+                //onClick: () => {
+                    //axios.delete('/api/delete_account', { data: { user_id: profile.userId } })
+                    //.then((response) => {
+                        //if (response.data.success) {
+                            //navigate('/login');
+                        //} else {
+                            //setErrorMessage(response.data.message);
+                        //}
+                    //})
+                    //.catch((error) => {
+                        //setErrorMessage('Failed to delete account:', error);
+                    //});
+                //},
+            //},
+                //{label: 'Cancel',},
+            //],
+        //});
+        try {
+            const response = await axios.delete('/api/delete_account', { data: { user_id: profile.userId } });
+                if (response.data.success) {
+                    navigate('/login');
+                }
+        } catch (error) {
+            setErrorMessage('Error deleting account:', error);
+        }
     };
 
     const deleteChannel = async () => {

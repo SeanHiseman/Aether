@@ -12,23 +12,18 @@ function Register() {
 
     const handleSubmit = async (event) => {
         event.preventDefault();
-
+        
         if (password !== confirmPassword) {
             setError('Passwords do not match.');
             return;
         }
-
-        const formData = new FormData(event.target);
-        const username = formData.get('username');
         
         try {
-            const response = await axios.post('/api/register', { username, password });
-
-            if (response.status === 200 || response.status === 201) {
-                navigate.push('/api/login');
+            const response = await axios.post('/api/register', { username: event.target.username.value, password });
+            if (response.data.success) {
+                navigate('/login');
             } else {
                 setError('Registration failed, please try again.');
-                navigate.push('/register');
             }
         } catch (error) {
             setError(error.response ? error.response.data.message : 'Network error');
