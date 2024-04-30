@@ -29,20 +29,19 @@ const profile_photo_storage = diskStorage({
         cb(null, v4() + extname(file.originalname));
     }
 });
-//Check file input
-const fileFilter = (req, file, cb) => {
-    if (file.mimetype === 'image/jpeg' || file.mimetype === 'image/png') {
+//Check file input for profile photo
+const profileFilter = (req, file, cb) => {
+    if (file.mimetype.startsWith('/image')) {
         cb(null, true);
     } else {
         cb(null, false);
     }
 }
-
 //Uploads with file size limit
-const upload = multer({
+const profile_upload = multer({
     storage: profile_photo_storage,
     limits: { fileSize: 1024 * 1024 * 5 },
-    fileFilter: fileFilter
+    fileFilter: profileFilter
 });
 
 //Accept friend request
@@ -145,32 +144,57 @@ router.post('/change_username', authenticateCheck, async (req, res) => {
     }
 });
 
-//Upload post to profile
-router.post('/create_profile_post', authenticateCheck, upload.array('files'), async (req, res) => {
-    let { profile_id, channel_id, title, content } = req.body;
-    let mediaUrls = [];
-    try {
-        title = title || null;
-        if (req.files) {
-            mediaUrls = req.files.filter(file => allowedFile(file.originalname)).map(file => {
-                const filepath = path.join(__dirname, 'media', file.filename);
-                return filepath
-            });
-        }
+//Checks input for post uploads
+const postFilter = (req, file, cb) => {
+    if (file.mimetype.startsWith('/image') || file.mimetype.startsWith('/video')) {
+        cb(null, true);
+    } else {
+        //cb(new Error('Not an image or video file'), false);
+        cb(null, true);
+    }
+};
+//Multer setup for post uploads
+const post_storage = multer.diskStorage({
+    destination: function(req, file, cb) {
+        cb(null, 'media/content');
+    },
+    filename: function(req, file, cb) {
+        cb(null, Date.now() + path.extname(file.originalname));
+    }
+});
 
+//Uploads with file size limit
+const post_upload = multer({
+    storage: post_storage,
+    limits: {
+        fileSize: 1024 * 1024 * 100
+    },
+    fileFilter: postFilter
+});
+
+//Upload post to profile
+router.post('/create_profile_post', authenticateCheck, post_upload.array('files'), async (req, res) => {
+    try {
+        const { profile_id, channel_id, title, content } = req.body;
         const post_id = v4();
         const user = await Users.findOne({ where: { username: req.session.username } });
+        let formattedContent = content;
 
-        await ProfilePosts.create({
+        req.files.forEach((file) => {
+            const fileType = file.mimetype.startsWith('image') ? 'img' : 'video';
+            const fileTag = fileType === 'img' ? `<img src="/media/content/${file.filename}">` : `<video src="/media/content/${file.filename}" controls></video>`;
+            formattedContent += ' ' + fileTag;
+        });
+
+        const post = await ProfilePosts.create({
             post_id,
             profile_id,
             channel_id,
             title,
-            content,
-            media_urls: JSON.stringify(mediaUrls),
+            content: formattedContent,
             poster_id: user.user_id,
         });
-        return res.json({ "status": "success", "message": "Successful upload." });
+        return res.json({ status: "success", "message": "Post created successfully.", post });
     } catch (error) {
         return res.status(404).json({ "status": "error", "message": error.message });
     }
@@ -295,7 +319,7 @@ router.get('/profile_channel_posts', authenticateCheck, async (req, res) => {
                 attributes: ['vote_count'],
                 required: false
             }],
-            attributes: ['post_id', 'title', 'content', 'replies', 'views', 'upvotes', 'downvotes', 'timestamp'],
+            attributes: ['post_id', 'title', 'content', 'replies', 'views', 'upvotes', 'downvotes', 'timestamp', 'poster_id'],
             //Posts sorted chronilogically
             order: [['timestamp', 'DESC']]
         });
@@ -329,7 +353,7 @@ router.get('/profile_main_posts', authenticateCheck, async (req, res) => {
                 attributes: ['vote_count'],
                 required: false
             }],
-            attributes: ['post_id', 'title', 'content', 'replies', 'views', 'upvotes', 'downvotes', 'timestamp'],
+            attributes: ['post_id', 'title', 'content', 'replies', 'views', 'upvotes', 'downvotes', 'timestamp', 'poster_id'],
         });
 
         const finalResults = posts.map((post) => ({
@@ -506,7 +530,7 @@ router.post('/toggle_private_profile', authenticateCheck, async (req, res) => {
 });
 
 //Update profile photo
-router.put('/update_profile_photo/:profileId', authenticateCheck, upload.single('new_profile_photo'), async (req, res) => {
+router.put('/update_profile_photo/:profileId', authenticateCheck, profile_upload.single('new_profile_photo'), async (req, res) => {
     try {
         const defaultProfilePhotoPath = 'media/site_images/blank-profile.png'; //To prevent default photo from being deleted
         const profileId = req.params.profileId; 

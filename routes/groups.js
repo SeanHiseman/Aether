@@ -25,21 +25,21 @@ const group_photo_storage = multer.diskStorage({
         cb(null, Date.now() + path.extname(file.originalname));
     }
 });
-//Check file input
-const fileFilter = (req, file, cb) => {
-    if (file.mimetype === 'image/jpeg' || file.mimetype === 'image/png') {
+//Check file input for group photo
+const profileFilter = (req, file, cb) => {
+    if (file.mimetype.startsWith('/image')) {
         cb(null, true);
     } else {
         cb(null, false);
     }
 }
 //Uploads with file size limit
-const upload = multer({
+const profile_upload = multer({
     storage: group_photo_storage,
     limits: {
         fileSize: 1024 * 1024 * 5
     },
-    fileFilter: fileFilter
+    fileFilter: profileFilter
 });
 
 //Adds user to private group
@@ -126,7 +126,7 @@ router.post('/change_group_name', authenticateCheck, async (req, res) => {
 });
 
 //Create a new group
-router.post('/create_group', authenticateCheck, upload.single('new_group_profile_photo'), async (req, res) => {
+router.post('/create_group', authenticateCheck, profile_upload.single('new_group_profile_photo'), async (req, res) => {
     try {
         const { group_name, is_private, group_id, user_id } = req.body;
         
@@ -180,6 +180,15 @@ const allowedFile = (filename) => {
     //return filename.includes('.') && ALLOWED_EXTENSIONS.has(filename.split('.').pop().toLowerCase());
 }
 
+//Checks input for post uploads
+const postFilter = (req, file, cb) => {
+    if (file.mimetype.startsWith('/image') || file.mimetype.startsWith('/video')) {
+        cb(null, true);
+    } else {
+        cb(null, true);
+        //cb(new Error('Not an image or video file'), false);
+    }
+};
 //Multer setup for post uploads
 const post_storage = multer.diskStorage({
     destination: function(req, file, cb) {
@@ -189,35 +198,40 @@ const post_storage = multer.diskStorage({
         cb(null, Date.now() + path.extname(file.originalname));
     }
 });
+//Uploads with file size limit
+const post_upload = multer({
+    storage: post_storage,
+    limits: {
+        fileSize: 1024 * 1024 * 100
+    },
+    fileFilter: postFilter
+});
 
 //Upload post to group
-router.post('/create_group_post', authenticateCheck, upload.array('files'), async (req, res) => {
-    let { group_id, channel_id, title, content } = req.body;
-    let mediaUrls = [];
+router.post('/create_group_post', authenticateCheck, post_upload.array('files'), async (req, res) => {
     try {
-        title = title || null;
-        if (req.files) {
-            mediaUrls = req.files.filter(file => allowedFile(file.originalname)).map(file => {
-                const filepath = path.join(__dirname, 'media', file.filename);
-                return filepath
-            });
-        }
-
+        const { group_id, channel_id, title, content } = req.body;
         const post_id = v4();
         const user = await Users.findOne({ where: { username: req.session.username } });
+        let formattedContent = content;
 
-        await GroupPosts.create({
+        req.files.forEach((file) => {
+            const fileType = file.mimetype.startsWith('image') ? 'img' : 'video';
+            const fileTag = fileType === 'img' ? `<img src="/media/content/${file.filename}">` : `<video src="/media/content/${file.filename}" controls></video>`;
+            formattedContent += ' ' + fileTag;
+        });
+
+        const post = await GroupPosts.create({
             post_id,
             group_id,
             channel_id,
             title,
-            content,
-            media_urls: JSON.stringify(mediaUrls),
+            content: formattedContent,
             poster_id: user.user_id,
         });
-        return res.json({ "status": "success", "message": "Successful upload." });
+        return res.json({ status: "success", "message": "Post created successfully.", post });
     } catch (error) {
-        return res.status(404).json({ "status": "error", "message": error.message });
+        return res.status(404).json({ status: "error", "message": error.message });
     }
 });
 
@@ -358,7 +372,7 @@ router.get('/group_channel_posts', authenticateCheck, async (req, res) => {
                 attributes: ['vote_count'],
                 required: false
             }],
-            attributes: ['post_id', 'title', 'content', 'replies', 'views', 'upvotes', 'downvotes', 'timestamp'],
+            attributes: ['post_id', 'title', 'content', 'replies', 'views', 'upvotes', 'downvotes', 'timestamp', 'poster_id'],
             //Posts sorted chronilogically (temporary)
             order: [['timestamp', 'DESC']]
         });
@@ -396,7 +410,7 @@ router.get('/group_main_posts', authenticateCheck, async (req, res) => {
                 attributes: ['vote_count'],
                 required: false
             }],
-            attributes: ['post_id', 'title', 'content', 'replies', 'views', 'upvotes', 'downvotes', 'timestamp'],
+            attributes: ['post_id', 'title', 'content', 'replies', 'views', 'upvotes', 'downvotes', 'timestamp', 'poster_id'],
         })
         
         const finalResults = posts.map((post) => ({
@@ -556,7 +570,7 @@ router.post('/toggle_private_group', authenticateCheck, async (req, res) => {
 });
 
 //Update group photo
-router.put('/update_group_photo/:groupId', authenticateCheck, upload.single('new_group_photo'), async (req, res) => {
+router.put('/update_group_photo/:groupId', authenticateCheck, profile_upload.single('new_group_photo'), async (req, res) => {
     try {
         const groupId = req.params.groupId; 
         const file = req.file; 
