@@ -6,21 +6,22 @@ import { AuthContext } from './authContext';
 import Reply from './replies/reply';
 import ReplyForm from './replies/replyForm';
 
-function ContentWidget({ canRemove, isGroup, post }) {
-    const [replies, setReplies] = useState([]);
+function ContentWidget({ canRemove: canRemoveProp , isGroup, post }) {
+    const [canRemove, setCanRemove] = useState(canRemoveProp);
     const [downvotes, setDownvotes] = useState(post.downvotes);
     const [downvoteLimit, setDownvoteLimit] = useState(false);
     const [hasViewed, setHasViewed] = useState(false);
+    const [replies, setReplies] = useState([]);
+    const [showReplies, setShowReplies] = useState(false);
     const [upvotes, setUpvotes] = useState(post.upvotes);
     const [upvoteLimit, setUpvoteLimit] = useState(false);
-    const [showReplies, setShowReplies] = useState(false);
     const { user } = useContext(AuthContext);
     const Poster = isGroup ? 'GroupPoster' : 'ProfilePoster'; //Associations used by database
 
     //Allows users to remove their own posts
     useEffect(() => {
-        if (post.poster_id === user.user_id) {
-            canRemove = true;
+        if (post.poster_id === user.userId) {
+            setCanRemove(true);
         }
     }, [post.poster_id, user.user_id]);
 

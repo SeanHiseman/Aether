@@ -21,7 +21,7 @@ router.post('/add_reply', authenticateCheck, async (req, res) => {
         //Depends on if post is in profile or group
         const PostModel = isGroup ? GroupPosts : ProfilePosts;
         const contentToUpdate = await PostModel.findByPk(post_id);
-        contentToUpdate.comments += 1;
+        contentToUpdate.replies += 1;
         await contentToUpdate.save();
 
         res.json({ success: true });

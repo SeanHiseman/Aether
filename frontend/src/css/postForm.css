@@ -13,6 +13,7 @@
     display: block;
     height: auto;
     margin: 0 auto;
+    max-height: 700px;
     width: 80%;
 }
 .ql-snow .ql-picker{
