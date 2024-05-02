@@ -18,7 +18,6 @@ function GroupHomeAdmin() {
     const [isEditingName, setIsEditingName] = useState(false);
     const [isPhotoFormVisible, setIsPhotoFormVisible] = useState(false);
     const [isPostChannel, setIsPostChannel] = useState(false);
-    const [isPrivate, setIsPrivate] = useState(null);
     const [members, setMembers] = useState(null);
     const [nestRequests, setNestRequests] = useState(null);
     const [newDescription, setDescription] = useState('');
@@ -120,7 +119,7 @@ function GroupHomeAdmin() {
         }
     };
 
-    const ChangeGroupPhoto = (event) => {
+    const ChangeGroupPhoto = async (event) => {
         try {
             event.preventDefault();
             const fileInput = event.target.elements.new_group_photo;
@@ -130,13 +129,15 @@ function GroupHomeAdmin() {
             }
             const formData = new FormData();
             formData.append('new_group_photo', fileInput.files[0]);
-            axios.put(`/api/update_group_photo/${groupDetails.groupId}`, formData, {
+            const response = await axios.put(`/api/update_group_photo/${groupDetails.groupId}`, formData, {
                 headers: {
                     'Content-Type': 'multipart/form-data',
                 },    
             })
-            //document.getElementById('large-group-photo').src = response.data.newPhotoPath;
-            setErrorMessage('Update successful');
+            setGroupDetails(prevDetails => ({
+                ...prevDetails,
+                groupPhoto: response.data.newPhotoPath
+            }))
             setIsPhotoFormVisible(false);
         } catch(error) {
                 setErrorMessage('Error updating photo', error.response ? error.response.data : error);

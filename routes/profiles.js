@@ -556,7 +556,7 @@ router.put('/update_profile_photo/:profileId', authenticateCheck, profile_upload
             }       
             profile.profile_photo = newPhotoPath;     
             await profile.save();
-            return res.json({ newPhotoPath });
+            return res.json({ newPhotoPath: newPhotoPath });
         } else {
             res.status(404).json({ message: "Profile not found" });
         }

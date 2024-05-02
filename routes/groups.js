@@ -665,7 +665,7 @@ router.put('/update_group_photo/:groupId', authenticateCheck, profile_upload.sin
             }
             group.group_photo = newPhotoPath;
             await group.save();
-            return res.json({ newPhotoPath });
+            return res.json({ newPhotoPath: newPhotoPath });
         } else {
             res.status(404).json({ message: "Group not found" });
         }

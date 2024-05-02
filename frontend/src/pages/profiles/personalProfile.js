@@ -16,24 +16,21 @@ const PersonalProfile = () => {
     const [isEditingBio, setIsEditingBio] = useState(false);
     const [isEditingName, setIsEditingName] = useState(false);
     const [isPhotoFormVisible, setIsPhotoFormVisible] = useState(false);
-    const [isPrivate, setIsPrivate] = useState(null);
     const [newBio, setBio] = useState('');
     const [newName, setName] = useState('');
     const [profile, setProfile] = useState('');
-    //const [profilePhoto, setProfilePhoto] = useState('');
     const [showChannelForm, setShowChannelForm] = useState(false);
     const [showFriendRequests, setShowFriendRequests] = useState(false);
     const [showPostForm, setShowPostForm] = useState(false);
     const navigate = useNavigate();
-    const confirmAlertInstance = new ConfirmAlert();
+    //const confirmAlertInstance = new ConfirmAlert();
 
     useEffect(() => {
         axios.get(`/api/profile/${username}`)
             .then(response => {
                 const fetchedProfile = response.data.profile;
                 setProfile(fetchedProfile);
-                setIsPrivate(profile.isPrivate);
-                //setProfilePhoto(response.data.profilePhoto);
+                //setIsPrivate(profile.isPrivate);
             })
             .catch(error => {
                 console.error('Error:', error);
@@ -104,13 +101,15 @@ const PersonalProfile = () => {
             }
             const formData = new FormData();
             formData.append('new_profile_photo', fileInput.files[0]);
-            axios.put(`/api/update_profile_photo/${profile.profileId}`, formData, {
+            const response = await axios.put(`/api/update_profile_photo/${profile.profileId}`, formData, {
                 headers: {
                     'Content-Type': 'multipart/form-data',
                 }, 
             })
-            //setProfilePhoto(response.data.newPhotoPath);
-            setErrorMessage('Update successful');
+            setProfile(prevDetails => ({
+                ...prevDetails,
+                profilePhoto: response.data.newPhotoPath
+            }));
             setIsPhotoFormVisible(false);
         } catch(error) {
             setErrorMessage('Error updating photo', error.response ? error.response.data : error);
