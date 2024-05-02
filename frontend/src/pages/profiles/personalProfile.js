@@ -264,7 +264,10 @@ const PersonalProfile = () => {
         try {
             const profile_id = profile.profileId;
             const response = await axios.post('/api/toggle_private_profile', { profile_id} );
-            setIsPrivate(response.data.isPrivate);
+            setProfile(prevDetails => ({
+                ...prevDetails,
+                isPrivate: response.data.is_private
+            }));
         } catch (error) {
             setErrorMessage('Error changing private status:', error);
         }

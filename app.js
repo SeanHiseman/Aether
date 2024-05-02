@@ -33,7 +33,7 @@ app.use(favicon(path.join(process.cwd(), 'media', 'site_images', 'AetherLogo.png
 app.use(urlencoded({ extended: true}));
 
 app.use(session({
-    secret: 'EDIT-ME',
+    secret: 'abc123', //Not too important for a prototype
     resave: false,
     saveUninitialized: true,
 }));

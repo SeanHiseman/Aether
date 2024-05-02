@@ -126,28 +126,47 @@ const UserGroups = sequelize.define('user_groups', {
   is_admin: { type: BOOLEAN, defaultValue: false },
 }, { tableName: 'user_groups', timestamps: false });
 
+//Groups can be members of other groups
+const NestedGroupMembers = sequelize.define('nested_group_members', {
+  sub_group_id: { type: STRING(36), primaryKey: true, references: { model: 'Groups', key: 'group_id' }},
+  parent_group_id: { type: STRING(36), primaryKey: true, references: { model: 'Groups', key: 'group_id' }},
+}, { tableName: 'nested_group_members', timestamps: false });
+
 //Groups relationships
 Users.belongsToMany(Groups, { through: UserGroups, foreignKey: 'user_id', otherKey: 'group_id' });
 Groups.belongsToMany(Users, { through: UserGroups, foreignKey: 'group_id', otherKey: 'user_id' });
 UserGroups.belongsTo(Users, { foreignKey: 'user_id' });
 UserGroups.belongsTo(Groups, { foreignKey: 'group_id' });
 Groups.hasMany(UserGroups, { foreignKey: 'group_id' });
+
 //Nested groups
-Groups.belongsTo(Groups, { as: 'ParentGroup', foreignKey: 'parent_id' });
-Groups.hasMany(Groups, { as: 'SubGroups', foreignKey: 'parent_id' });
+Groups.hasMany(NestedGroupMembers, { foreignKey: 'parent_group_id',as: 'NestedMembersAsParent' });
+Groups.hasMany(NestedGroupMembers, { foreignKey: 'sub_group_id', as: 'NestedMembersAsSub' });
+NestedGroupMembers.belongsTo(Groups, { foreignKey: 'parent_group_id', as: 'ParentGroup' });
+NestedGroupMembers.belongsTo(Groups, { foreignKey: 'sub_group_id', as: 'SubGroup' });
+
 
 const GroupRequests = sequelize.define('group_requests', {
   request_id: { type: STRING(36), primaryKey: true },
   sender_id: { type: STRING(36), allowNull: false, references: { model: 'Users', key: 'user_id' }},
   group_id: { type: STRING(36), allowNull: false, references: { model: 'Groups', key: 'group_id' }},
-  is_group: { type: BOOLEAN, defaultValue: false}, //Allows for nested groups
 }, { tableName: 'group_requests', timestamps: false });
 
-//GroupRequest relationships
+const NestedGroupRequests = sequelize.define('nested_group_requests', {
+  request_id: { type: STRING(36), primaryKey: true },
+  sender_id: { type: STRING(36), allowNull: false, references: { model: 'Groups', key: 'group_id' }},
+  parent_group_id: { type: STRING(36), allowNull: false, references: { model: 'Groups', key: 'group_id' }},
+}, { tableName: 'nested_group_requests', timestamps: false });
+
+//(Nested)GroupRequest relationships
 Users.hasMany(GroupRequests, { as: 'sent_group_requests', foreignKey: 'sender_id' });
 Groups.hasMany(GroupRequests, { as: 'received_group_requests', foreignKey: 'group_id'})
 GroupRequests.belongsTo(Users, { as: 'sender', foreignKey: 'sender_id' });
 GroupRequests.belongsTo(Groups, { as: 'receiver', foreignKey: 'group_id' });
+Groups.hasMany(NestedGroupRequests, { as: 'sent_nest_requests', foreignKey: 'sender_id' });
+Groups.hasMany(NestedGroupRequests, { as: 'received_nest_requests', foreignKey: 'parent_group_id'})
+NestedGroupRequests.belongsTo(Groups, { as: 'nest_sender', foreignKey: 'sender_id' });
+NestedGroupRequests.belongsTo(Groups, { as: 'nest_receiver', foreignKey: 'parent_group_id' });
 
 const GroupChannels = sequelize.define('group_channels', { 
   channel_id: { type: STRING(36), primaryKey: true }, 
@@ -186,7 +205,7 @@ const GroupReplies = sequelize.define('group_replies', {
   parent_id: { type: STRING(36) }
 }, {tableName: 'group_replies', timestamps: false});
 
-//Comments relationships
+//Replies relationships
 GroupPosts.hasMany(GroupReplies, { as: 'GroupPostReplies', foreignKey: 'post_id' });
 GroupReplies.belongsTo(GroupPosts, { as: 'GroupPost', foreignKey: 'post_id' });
 Users.hasMany(GroupReplies, { as: 'UserGroupReplies', foreignKey: 'replier_id' });
@@ -291,7 +310,9 @@ export {
     Groups,
     GroupPosts,
     UserGroups,
+    NestedGroupMembers,
     GroupRequests,
+    NestedGroupRequests,
     GroupChannels,
     GroupChannelMessages,
     GroupReplies,

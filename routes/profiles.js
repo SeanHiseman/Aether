@@ -20,7 +20,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.static(join(__dirname, 'static')));
 app.use(session({ secret: 'EDIT_ME', resave: true, saveUninitialized: true }));
 
-//Multer setup for file uploads
+//Multer setup for profile uploads
 const profile_photo_storage = diskStorage({
     destination: function (req, file, cb) {
         cb(null, 'media/profile_images');
@@ -34,7 +34,7 @@ const profileFilter = (req, file, cb) => {
     if (file.mimetype.startsWith('/image')) {
         cb(null, true);
     } else {
-        cb(null, false);
+        cb(null, true);
     }
 }
 //Uploads with file size limit
