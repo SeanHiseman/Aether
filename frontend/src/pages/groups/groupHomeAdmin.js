@@ -12,7 +12,7 @@ function GroupHomeAdmin() {
     const [newChannelName, setNewChannelName] = useState('');
     const [errorMessage, setErrorMessage] = useState('');
     const [groupDetails, setGroupDetails] = useState('');
-    const { group_name, channel_name, channel_mode } = useParams();
+    const { group_name, channel_name } = useParams();
     const [isChatChannel, setIsChatChannel] = useState(false);
     const [isEditingDescription, setIsEditingDescription] = useState(false);
     const [isEditingName, setIsEditingName] = useState(false);
@@ -20,6 +20,7 @@ function GroupHomeAdmin() {
     const [isPostChannel, setIsPostChannel] = useState(false);
     const [isPrivate, setIsPrivate] = useState(null);
     const [members, setMembers] = useState(null);
+    const [nestRequests, setNestRequests] = useState(null);
     const [newDescription, setDescription] = useState('');
     const [newName, setName] = useState('');
     const [requests, setRequests] = useState([]);
@@ -77,7 +78,7 @@ function GroupHomeAdmin() {
                 const response = await axios.get(`/api/sub_groups/${groupDetails.groupId}`);
                 setSubGroups(response.data);
             } catch (error) {
-                console.error('Error fetching sub groups: ', error);
+                console.log("Error fetching sub groups:", error);
             }
         };
         fetchSubGroups();
@@ -180,6 +181,8 @@ function GroupHomeAdmin() {
         try {
             const response = await axios.get(`/api/group_requests/${groupDetails.groupId}`);
             setRequests(response.data);
+            //const nestResponse = await axios.get(`/api/group_nest_requests/${groupDetails.groupId}`);
+            //setNestRequests(nestResponse.data);
         } catch (error) {
             console.error('Error fetching requests:', error);
         }
@@ -200,6 +203,26 @@ function GroupHomeAdmin() {
                 });
             } else if (action === 'reject') {
                 await axios.delete('/api/reject_group_request', { 
+                    data: { requestId: requestId }
+                });
+            }
+            getJoinRequests();
+        } catch (error) {
+            setErrorMessage('Error handling request:', error);
+        }
+    };
+
+    //Accepts or rejects join request
+    const handleNestRequest = async (action, requestId, senderId) => {
+        try {
+            if (action === 'accept') {
+                await axios.post('/api/accept_nest_request', {
+                    groupId: groupDetails.groupId, 
+                    requestId,
+                    senderId,
+                });
+            } else if (action === 'reject') {
+                await axios.delete('/api/reject_nest_request', { 
                     data: { requestId: requestId }
                 });
             }
@@ -267,11 +290,10 @@ function GroupHomeAdmin() {
     };
 
     //Allows group to join another group
-    const sendGroupJoinRequest = async (receiverGroupId) => {
+    const sendGroupJoinRequest = async (receiverName) => {
         try {
-            await axios.post('/api/send_join_request', {
-                isGroup: true, 
-                receiverGroupId,
+            await axios.post('/api/send_nest_request', {
+                receiverName: receiverName,
                 senderId: groupDetails.groupId,
             });
         } catch (error) {
@@ -303,7 +325,10 @@ function GroupHomeAdmin() {
         try {
             const group_id = groupDetails.groupId;
             const response = await axios.post('/api/toggle_private_group', { group_id });
-            setIsPrivate(response.data.isPrivate);
+            setGroupDetails(prevDetails => ({
+                ...prevDetails, 
+                isPrivate: response.data.is_private
+            }));
         } catch (error) {
             setErrorMessage('Error changing private status:', error);
         }
@@ -321,13 +346,12 @@ function GroupHomeAdmin() {
                         </button>
                         {groupDetails.isPrivate ? (
                             <button className="button" onClick={() => {getJoinRequests(); setShowRequests(!showRequests)}}>
-                                {/*{showRequests ? 'Close join requests' : `${requests.length} join requests`}*/}
                                 {showRequests ? 'Close join requests' : 'See join requests'}
                             </button>
                         ) : null}
                         <button className="button" onClick={() => {
-                            const receiverGroupName = window.prompt('Enter group name');
-                            sendGroupJoinRequest(receiverGroupName);
+                            const receiverName = window.prompt('Enter group name');
+                            sendGroupJoinRequest(receiverName);
                         }}> Add to group </button>
                         <button className="button" onClick={() => togglePrivate()}>{groupDetails.isPrivate ? "Group: private" : "Group: public"}</button>
                         <MemberChangeButton userId={groupDetails.userId} groupId={groupDetails.groupId} isMember={groupDetails.isMember}/>
@@ -417,19 +441,36 @@ function GroupHomeAdmin() {
                             {requests.length === 0 ? (
                                 <p>No pending requests</p>
                             ) : (
-                                <ul>
-                                    {requests.map((request) => (
-                                        <li key={request.request_id}>
-                                            {request.sender.username}
-                                            <button className="button" onClick={() => handleRequestAction("accept", request.request_id, request.sender_id)}>
-                                                Accept
-                                            </button>
-                                            <button className="button" onClick={() => handleRequestAction("reject", request.request_id)}>
-                                                Reject
-                                            </button>
-                                        </li>
-                                    ))}
-                                </ul>
+                                <div>
+                                    <ul>
+                                        <p>Users</p>
+                                        {requests.map((request) => (
+                                            <li key={request.request_id}>
+                                                {request.sender.username}
+                                                <button className="button" onClick={() => handleRequestAction("accept", request.request_id, request.sender_id)}>
+                                                    Accept
+                                                </button>
+                                                <button className="button" onClick={() => handleRequestAction("reject", request.request_id)}>
+                                                    Reject
+                                                </button>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                    <ul>
+                                        <p>Groups</p>
+                                        {nestRequests.map((request) => (
+                                            <li key={request.request_id}>
+                                                {request.sender.groupName}
+                                                <button className="button" onClick={() => handleNestRequest("accept", request.request_id, request.sender_id)}>
+                                                    Accept
+                                                </button>
+                                                <button className="button" onClick={() => handleNestRequest("reject", request.request_id)}>
+                                                    Reject
+                                                </button>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
                             )}
                         </div>
                     )}
@@ -507,14 +548,23 @@ function GroupHomeAdmin() {
                         ))}
                     </ul>
                 </nav>
-                <h2>Groups</h2>
-                {/*subGroups.map((subGroup) => (
-                    <div key={subGroup.group_id}>
-                        <div>{subGroup.group_name}</div>
-                    </div>
-                ))*/}
                 {channel_name !== 'Main' && (
                     <button className="button" onClick={() => deleteChannel()}>Delete channel</button>
+                )}
+                {subGroups.length === 0 ? (
+                    <div></div>
+                ) : (
+                    subGroups.map((subGroup) => (
+                        <>
+                            <h2>Groups</h2>
+                            <li key={subGroup.group_id}>
+                                <Link className="group-list-link" to={`/group/${subGroup.group_name}/Main`}>
+                                    <img className="small-group-photo" src={`/${subGroup.group_photo}`} alt={subGroup.group_name} />
+                                    <p className="group-list-text">{subGroup.group_name}</p>
+                                </Link>
+                            </li>
+                        </>
+                    ))
                 )}
             </aside> 
         </div>

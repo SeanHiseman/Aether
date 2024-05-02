@@ -1,7 +1,7 @@
 import authenticateCheck from '../functions/authenticateCheck.js';
 import checkIfUserIsAdmin from '../functions/adminCheck.js';
 import checkIfUserIsMember from '../functions/memberCheck.js';
-import { ContentVotes, Groups, GroupChannels, GroupChannelMessages, GroupPosts, GroupRequests, Profiles, Users, UserGroups } from '../models/models.js';
+import { ContentVotes, Groups, GroupChannels, GroupChannelMessages, GroupPosts, GroupRequests, NestedGroupMembers, NestedGroupRequests, Profiles, Users, UserGroups } from '../models/models.js';
 import express from 'express';
 import fs from 'fs';
 import multer from 'multer';
@@ -30,7 +30,7 @@ const profileFilter = (req, file, cb) => {
     if (file.mimetype.startsWith('/image')) {
         cb(null, true);
     } else {
-        cb(null, false);
+        cb(null, true);
     }
 }
 //Uploads with file size limit
@@ -60,11 +60,30 @@ router.post('/accept_join_request', authenticateCheck, async (req, res) => {
     }
 });
 
+//Adds sub group to parent group
+router.post('/accept_nest_request', authenticateCheck, async (req, res) => {
+    try {
+        const { groupId, requestId, senderId } = req.body;
+        await NestedGroupMembers.create({
+            sub_group_id: senderId,
+            parent_group_id: groupId
+        });
+        await Groups.update({
+            parent_id: groupId
+        });
+        await NestedGroupRequests.destroy({
+            where: { request_id: requestId }
+        });
+        res.status(200).json({ message: 'User added to group'});
+    } catch (error) {
+        res.status.json({ error: error.message });
+    }
+});
+
 //Create new channel within a group
 router.post('/add_group_channel', authenticateCheck, async (req, res) => {
     try {
         const { channel_name, groupId, isPosts, isChat } = req.body;
-
         const newChannel = await GroupChannels.create({ 
             channel_id: v4(),
             channel_name: channel_name,
@@ -524,21 +543,71 @@ router.delete('/reject_group_request', authenticateCheck, async (req, res) => {
     }
 });
 
-//Send join request
+//Rejects sub group request to join parent group
+router.delete('/reject_nest_request', authenticateCheck, async (req, res) => {
+    try {
+        const { requestId } = req.body;
+        await NestedGroupRequests.destroy({
+            where: { request_id: requestId }
+        });
+        res.status(200).json({ success: true, message: 'Request rejected.' });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
+//Send user join request
 router.post('/send_join_request', authenticateCheck, async (req, res) => {
     try {
-        const { isGroup, receiverId, senderId } = req.body;
-        const receiverGroup = await Groups.findOne({ where: { group_id: receiverId } });
+        const { receiverId, senderId } = req.body;
         await GroupRequests.create({
             request_id: v4(),
             sender_id: senderId,
-            group_id: receiverGroup.group_id,
-            is_group: isGroup
+            group_id: receiverId,
         });
         res.json({ message: "Join request sent" });
     } catch (error) {
         res.status(500).send(error.message);
     }
+});
+
+//Send request for one group to join another
+router.post('/send_nest_request', authenticateCheck, async (req, res) => {
+    try {
+        const { receiverName, senderId } = req.body;
+        const receiverGroup = await Groups.findOne({ where: { group_name: receiverName }});
+        await NestedGroupRequests.create({
+            request_id: v4(),
+            sender_id: senderId,
+            parent_group_id: receiverGroup.group_id,
+        });
+        res.json({ message: "Join request sent" });
+    } catch (error) {
+        console.log("Error:", error);
+        res.status(500).json(error.message);
+    }
+});
+
+//Gets sub groups for a parent group
+router.get('/sub_groups/:group_id', authenticateCheck, async (req, res) => {
+    try {
+        const { group_id } = req.params; //parent group_id
+        const subGroups = await NestedGroupMembers.findAll({ 
+            where: { parent_group_id: group_id }, 
+            include: [{
+                model: Groups,
+                as: 'SubGroup',
+                attributes: ['group_name', 'group_photo']
+            }],
+            //Returns grous alphabetically
+            order: [[{ model: Groups, as: 'SubGroup' }, 'group_name', 'ASC']]
+        });
+
+        res.json(subGroups);
+    } catch (error) {
+        console.error("sub group error:", error);
+        res.status(500).json(error.message);  
+    }   
 });
 
 //Changes if a user is a moderator
@@ -572,6 +641,7 @@ router.post('/toggle_private_group', authenticateCheck, async (req, res) => {
 //Update group photo
 router.put('/update_group_photo/:groupId', authenticateCheck, profile_upload.single('new_group_photo'), async (req, res) => {
     try {
+        const defaultGroupPhotoPath = 'media/site_images/blank-group-icon.jpg';
         const groupId = req.params.groupId; 
         const file = req.file; 
 
@@ -585,7 +655,7 @@ router.put('/update_group_photo/:groupId', authenticateCheck, profile_upload.sin
         
         if (group) {
             //Deletes old photo
-            if (group.group_photo) {
+            if (group.group_photo && group.group_photo !== defaultGroupPhotoPath) {
                 const currentPhotoPath = path.join(group.group_photo);
                 fs.unlink(currentPhotoPath, (error) => {
                     if (error) {

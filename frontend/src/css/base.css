@@ -254,8 +254,8 @@ input[type="text"] {
     width: 180px; 
 }
 .large-text {
-    font-size: 50px;
-    max-width: 600px;
+    font-size: 40px;
+    max-width: 300px;
     text-decoration: none;
 }
 #left-aside, #right-aside {
