@@ -246,6 +246,9 @@ h4 {
 input[type="text"] {
     outline: none;
 }
+label {
+    margin-left: 10px;
+}
 #large-group-photo, .large-profile-photo {
     border-radius: 27px;
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
