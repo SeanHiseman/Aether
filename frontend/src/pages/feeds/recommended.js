@@ -5,7 +5,7 @@ import ContentWidget from '../../components/contentWidget';
 function RecommendedPage() {
     const [posts, setPosts] = useState([]);
     const [filterPreference, setFilterPreference] = useState(0.5);
-    const [timePreference, setTimePreference] = useState(0.5);
+    const [timePreference, setTimePreference] = useState(0.001);
 
     //Posts recommended based on hybrid algorithm
     useEffect(() => {
@@ -88,7 +88,7 @@ function RecommendedPage() {
                 <label>Recommendations are similar to my friends:</label>
                 <input type="range" min="0" max="1" step="0.01" value={filterPreference} onChange={handleSliderChange} />
                 <label>Posts are recent:</label>
-                <input type="range" min="0" max="0.001" step="0.00001" value={timePreference} onChange={handleTimeChange} />
+                <input type="range" min="0" max="0.01" step="0.00001" value={timePreference} onChange={handleTimeChange} />
             </aside>
         </div>
     )

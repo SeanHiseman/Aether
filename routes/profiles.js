@@ -334,7 +334,7 @@ router.get('/profile_channel_posts', authenticateCheck, async (req, res) => {
 router.get('/profile_main_posts', authenticateCheck, async (req, res) => {
     try {
         const { location_id } = req.query;
-
+        const userId = req.session.user_id;
         const posts = await ProfilePosts.findAll({
             where: {
                 profile_id: location_id
@@ -361,7 +361,7 @@ router.get('/profile_main_posts', authenticateCheck, async (req, res) => {
         }));
 
         //Applies weighting algorithm to posts
-        const sortedPosts = sortPostsByWeightedRatio(finalResults);
+        const sortedPosts = await sortPostsByWeightedRatio(finalResults, userId);
         res.json(sortedPosts);
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });

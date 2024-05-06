@@ -247,7 +247,7 @@ input[type="text"] {
     outline: none;
 }
 label {
-    margin-left: 10px;
+    margin: 10px;
 }
 #large-group-photo, .large-profile-photo {
     border-radius: 27px;
