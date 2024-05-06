@@ -1,6 +1,15 @@
-function sortPostsByWeightedRatio(posts, time_weight_constant = 0.0001) {
-    try {
+import { Users } from "../models/models.js";
+
+async function sortPostsByWeightedRatio(posts, userId) {
+    //try {
         const now = new Date();
+
+        //Gets users recency preference
+        const user = await Users.findByPk(userId, {
+            attributes: ['time_preference'],
+        });
+
+        const time_weight_constant = Math.max(user.time_preference, 0.0001); //In case constant is 0
 
         //Calculates ratio of upvotes to downvotes and views per upvotes, weighted by time
         const sortedPosts = posts.map((post) => {
@@ -27,9 +36,9 @@ function sortPostsByWeightedRatio(posts, time_weight_constant = 0.0001) {
         //});
         
         return sortedPosts; 
-    } catch (error) {
-        console.log("Sorting error:", error);
-    }
+    //} catch (error) {
+        //console.log("Sorting error:", error);
+    //}
 }
 
 export default sortPostsByWeightedRatio;

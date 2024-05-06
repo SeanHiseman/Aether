@@ -10,6 +10,7 @@ const SearchResults = () => {
     const [postResults, setPostResults] = useState([]);
     const [profileResults, setProfileResults] = useState([]);
     const { tab = 'posts' } = useParams(); 
+    const [timePreference, setTimePreference] = useState(0.001);
     //Gets search term
     const [searchParams] = useSearchParams();
     const keyword = (searchParams.get('keyword') || '').trim();
@@ -41,6 +42,30 @@ const SearchResults = () => {
             fetchResults();
         }
     }, [keyword, tab]);
+
+    //Load user's time preference
+    useEffect(() => {
+        axios.get('/api/get_time_preference')
+            .then(response => {
+                setTimePreference(response.data.preference);
+            })
+            .catch(error => {
+                console.error('Error getting preference:', error);
+            });
+    }, []);
+
+    //Save time value to backend
+    const handleTimeChange = (event) => {
+        try {
+            const newValue = parseFloat(event.target.value);
+            setTimePreference(newValue);
+    
+            axios.post('/api/set_time_preference', { preference: newValue })
+            //setTimePreference(response.data);
+        } catch (error) {
+            console.error(error);
+        }
+    };
 
     //Determines widget based on result type
     const renderResults = () => {
@@ -96,6 +121,8 @@ const SearchResults = () => {
                         <Link to={`/search/profiles?keyword=${keyword}`}>
                             <li className="channel-link">Profiles</li>
                         </Link>
+                        <label>Posts are recent:</label>
+                        <input type="range" min="0" max="0.01" step="0.00001" value={timePreference} onChange={handleTimeChange} />
                     </ul>
                 </nav>
             </div>

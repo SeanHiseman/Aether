@@ -4,6 +4,7 @@ import ContentWidget from '../../components/contentWidget';
 
 function FollowingPage() {
     const [posts, setPosts] = useState([]);
+    const [timePreference, setTimePreference] = useState(0.001);
 
     //Gets posts from profiles and groups followed by user
     useEffect(() => {
@@ -15,6 +16,30 @@ function FollowingPage() {
              console.error('Error getting posts:', error);
         });
     }, []);
+
+    //Load user's time preference
+    useEffect(() => {
+        axios.get('/api/get_time_preference')
+            .then(response => {
+                setTimePreference(response.data.preference);
+            })
+            .catch(error => {
+                console.error('Error getting preference:', error);
+            });
+    }, []);
+
+    //Save time value to backend
+    const handleTimeChange = (event) => {
+        try {
+            const newValue = parseFloat(event.target.value);
+            setTimePreference(newValue);
+    
+            axios.post('/api/set_time_preference', { preference: newValue })
+            //setTimePreference(response.data);
+        } catch (error) {
+            console.error(error);
+        }
+    };
 
     document.title = "Following";
     return (
@@ -35,6 +60,8 @@ function FollowingPage() {
             </div>
             <aside id="right-aside">
                 <h1>Following</h1>
+                <label>Posts are recent:</label>
+                <input type="range" min="0" max="0.001" step="0.00001" value={timePreference} onChange={handleTimeChange} />
             </aside>
         </div>
     )

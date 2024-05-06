@@ -173,7 +173,7 @@ router.get('/following_posts', authenticateCheck, async (req, res) => {
         //Combine posts from profiles and groups
         const posts = [...finalProfileResults, ...finalGroupResults]
 
-        const sortedPosts = sortPostsByWeightedRatio(posts);
+        const sortedPosts = await sortPostsByWeightedRatio(posts, userId);
 
         res.json(sortedPosts);
     } catch (error) {
@@ -311,6 +311,7 @@ router.get('/search/groups', authenticateCheck, async (req, res) => {
 router.get('/search/posts', authenticateCheck, async (req, res) => {
     try {
         const keyword = req.query.keyword.toLowerCase();
+        const userId = req.session.user_id;
         const profilePostResults = await ProfilePosts.findAll({
             where: {
                 [Op.or]: [{
@@ -359,7 +360,7 @@ router.get('/search/posts', authenticateCheck, async (req, res) => {
         const posts = [...finalProfileResults, ...finalGroupResults]
 
         //Applies weighting algorithm to posts
-        const sortedPosts = sortPostsByWeightedRatio(posts);
+        const sortedPosts = await sortPostsByWeightedRatio(posts, userId);
         res.json(sortedPosts);
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
