@@ -2,8 +2,11 @@ import { Router } from 'express';
 import { ContentVotes, Followers, Friends, FriendRequests, Groups, GroupRequests, GroupPosts, ProfilePosts, Profiles, Users, UserGroups } from '../models/models.js'; 
 import authenticateCheck from '../functions/authenticateCheck.js';
 import checkIfUserIsMember from '../functions/memberCheck.js';
+import combineRecommendations from '../functions/recommendation/hybrid.js';
+import { findSimilarUsers, similarUserRecommendations } from '../functions/recommendation/collaborative.js';
 import { Op } from 'sequelize';
 import sortPostsByWeightedRatio from '../functions/postSorting.js';
+import { userInteractionRecommendations } from '../functions/recommendation/contentBased.js';
 import { v4 } from 'uuid';
 const router = Router();
 
@@ -189,6 +192,40 @@ router.get('/get_current_user', authenticateCheck, (req, res) => {
     }
 });
 
+//Get recommendation preference
+router.get('/get_filter_preference', async (req, res) => {
+    try {
+        const userId = req.session.user_id;
+        const user = await Users.findByPk(userId, {
+            attributes: ['collaborative_preference'],
+        });
+        if (user) {
+            res.json({ preference: user.recommendation_preference });
+        } else {
+            res.status(404).json({ error: 'User not found' });
+        }
+    } catch (error) {
+        res.status(500).json({ error: 'Database error' });
+    }
+});
+
+//Get recommendation preference
+router.get('/get_time_preference', async (req, res) => {
+    try {
+        const userId = req.session.user_id;
+        const user = await Users.findByPk(userId, {
+            attributes: ['time_preference'],
+        });
+        if (user) {
+            res.json({ preference: user.time_preference });
+        } else {
+            res.status(404).json({ error: 'User not found' });
+        }
+    } catch (error) {
+        res.status(500).json({ error: 'Database error' });
+    }
+});
+
 //Adds one view to a piece of content
 router.post('/increment_views', async (req, res) => {
     const { isGroup, postId } = req.body;
@@ -201,26 +238,22 @@ router.post('/increment_views', async (req, res) => {
     }
 });
 
-//Recommended route (currently just return all posts, will be changed)
-router.get('/recommended', authenticateCheck, async (req, res) => {
-    const recommended_content = await ProfilePosts.findAll({
-        include: [{
-            model: Users,
-            include: [Profiles]
-        }]
-    });
-
-    recommended_content.forEach(item => {
-        item.username = item.User.username || 'Anonymous';
-        item.profile_id = item.User.Profile.profile_id || {};
-        item.profile_photo = item.User.Profile.profile_photo;
-    });
-
-    res.json({
-        content: 'content_feed',
-        content_items: recommended_content,
-        user_id: req.session.user_id,
-    });
+//Accesses recommendation algorithm to provide content
+router.get('/recommended_posts', authenticateCheck, async (req, res) => {
+    //try {
+        const userId = req.session.user_id;
+        const user = await Users.findByPk(userId);
+        const similarUsers = await findSimilarUsers(user);
+        //console.log("similarUsers:", similarUsers);
+        const contentRecommendations = await userInteractionRecommendations(user);
+        //console.log("contentRecommendations:", contentRecommendations);
+        //const hybridRecommendations = combineRecommendations(similarUsers, contentRecommendations);
+        //res.status(200).json({ success: true, recommendations: hybridRecommendations });
+        res.status(200).json({ success: true, recommendations: contentRecommendations });
+    //} catch (error) {
+        //console.error(error);
+        //res.status(500).json({ success: false, message: error.message });
+    //}
 });
 
 //Allows post to be taken down either by the user or moderators
@@ -385,6 +418,34 @@ router.get('/search/profiles', authenticateCheck, async (req, res) => {
     } catch (error) {
         console.error("Error during profile search:", error);
         res.status(500).json({ success: false, message: "An error occurred during profile search." });
+    }
+});
+
+//Update recommendation preference
+router.post('/set_filter_preference', async (req, res) => {
+    try {
+        const userId = req.session.user_id;
+        const { preference } = req.body;
+        const user = await Users.findByPk(userId);
+        user.collaborative_preference = preference;
+        await user.save();
+        res.status(200).json({ success: true });
+    } catch (error) {
+        res.status(500).json({ error: 'Database error' });
+    }
+});
+
+//Update time preference
+router.post('/set_time_preference', async (req, res) => {
+    try {
+        const userId = req.session.user_id;
+        const { preference } = req.body;
+        const user = await Users.findByPk(userId);
+        user.time_preference = preference;
+        await user.save();
+        res.status(200).json({ success: true });
+    } catch (error) {
+        res.status(500).json({ error: 'Database error' });
     }
 });
 

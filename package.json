@@ -23,6 +23,7 @@
   "dependencies": {
     "axios": "^1.6.3",
     "bcrypt": "^5.1.1",
+    "cheerio": "^1.0.0-rc.12",
     "debug": "^4.3.4",
     "ejs": "^3.1.9",
     "engine.io-client": "^6.5.2",
@@ -35,6 +36,7 @@
     "multer": "^1.4.5-lts.1",
     "mysql": "^2.18.1",
     "mysql2": "^3.6.5",
+    "natural": "^7.0.5",
     "react-confirm-alert": "^3.0.6",
     "react-quill": "^2.0.0",
     "sequelize": "^6.35.1",

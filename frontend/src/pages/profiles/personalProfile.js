@@ -278,7 +278,6 @@ const PersonalProfile = () => {
             <div className="content-feed">
                 <header id="profile-header">
                     <button className="button" onClick={getFriendRequests}>
-                        {/*{showFriendRequests ? 'Close requests' : `${friendRequests.length} friend requests`}*/}
                         {showFriendRequests ? 'Close requests' : 'See friend requests'}
                     </button>
                     <div id="viewed-profile-info">

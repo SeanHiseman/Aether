@@ -1,4 +1,4 @@
-import { BOOLEAN, STRING, DATE, INTEGER, TEXT, NOW } from 'sequelize';
+import { BOOLEAN, FLOAT, STRING, DATE, INTEGER, TEXT, NOW } from 'sequelize';
 import sequelize from '../databaseSetup.js';
 
 const Profiles = sequelize.define('profiles', {
@@ -25,7 +25,9 @@ const Users = sequelize.define('users', {
   user_id: { type: STRING(36), primaryKey: true },
   username: { type: STRING(120), allowNull: false },
   password: { type: STRING(120), allowNull: false },
-  UserSince: { type: DATE, defaultValue: NOW }
+  UserSince: { type: DATE, defaultValue: NOW },
+  collaborative_preference: { type: FLOAT, allowNull: false, defaultValue: 0.5 },
+  time_preference: { type: FLOAT, allowNull: false, defaultValue: 0.0001 },
 }, {tableName: 'users', timestamps: false});
 
 //Users relationships
@@ -246,8 +248,6 @@ const Friends = sequelize.define('friends', {
   FriendSince: { type: DATE, allowNull: false, defaultValue: NOW }
 }, { tableName: 'friends', timestamps: false });
 
-//Friends.belongsTo(Users, { as: 'User1', foreignKey: 'user1_id' });
-//Friends.belongsTo(Users, { as: 'User2', foreignKey: 'user2_id' });
 Users.belongsToMany(Users, { as: 'UserFriends', through: Friends, foreignKey: 'user1_id', otherKey: 'user2_id' });
  
 
