@@ -96,7 +96,7 @@ const Reply = ({ addReply, reply, depth, isGroup, onReplyAdded }) => {
                     <button className={`vote-arrow-container ${downvoteClass}`} onClick={() => handleVote('downvote')}>
                         <img className={`vote-arrow ${downvoteClass}`} src="/media/site_images/down.png" alt="downvote" />
                     </button>
-                    <button className="reply-container-button" onClick={toggleReplyForm}>Reply</button>
+                    <button className="button" onClick={toggleReplyForm}>Reply</button>
                         {showReplyForm && <ReplyForm isGroup={isGroup} onReplyAdded={onReplyAdded} parentId={reply.reply_id} postId={reply.post_id} />}
                 </div>
                 {isReplier ? (

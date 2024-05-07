@@ -277,9 +277,16 @@ const PersonalProfile = () => {
         <div className="profile-container">
             <div className="content-feed">
                 <header id="profile-header">
-                    <button className="button" onClick={getFriendRequests}>
-                        {showFriendRequests ? 'Close requests' : 'See friend requests'}
-                    </button>
+                    <div id="profile-options">
+                        <button className="button" onClick={getFriendRequests}>
+                            {showFriendRequests ? 'Close requests' : 'See friend requests'}
+                        </button>
+                        <button className="button" onClick={() => togglePrivate()}>{profile.isPrivate ? "Profile: private" : "Profile: public"}</button>
+                        <p>{profile.followerCount} followers</p>   
+                    </div>
+                    <form action="/api/logout" method="post" onSubmit={handleLogout}>
+                        <button className="button" type="submit">Logout</button>
+                    </form>
                     <div id="viewed-profile-info">
                         <div id="name-section">
                             {isEditingName ? (
@@ -328,13 +335,8 @@ const PersonalProfile = () => {
                             )}
                             {errorMessage && <div className="error-message">{errorMessage}</div>}
                         </div>
+                        <button className="button" onClick={deleteAccount}>Delete account</button>
                     </div>
-                    <p>{profile.followerCount} followers</p>
-                    <button className="button" onClick={() => togglePrivate()}>{profile.isPrivate ? "Profile: private" : "Profile: public"}</button>
-                    <form action="/api/logout" method="post" onSubmit={handleLogout}>
-                        <button className="button" type="submit">Logout</button>
-                    </form>
-                    <button className="button" onClick={deleteAccount}>Delete account</button>
                     <div id="profile-header-photo">
                         <img className="large-profile-photo" src={`/${profile.profilePhoto}`} alt="Profile" />
                         <button className="button" onClick={() => setIsPhotoFormVisible(!isPhotoFormVisible)}>

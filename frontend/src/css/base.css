@@ -430,9 +430,9 @@ ul {
 .vote-arrow {
     background-color: #000514;
     cursor: pointer;
-    height: 20px;
+    height: 40px;
     padding: 0;
-    width: 20px;
+    width: 40px;
 }
 .vote-arrow-container {
     background: none;

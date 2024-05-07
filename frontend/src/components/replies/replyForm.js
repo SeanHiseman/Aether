@@ -14,7 +14,6 @@ const ReplyForm = ({ isGroup, onReplyAdded, postId, parentId }) => {
                 post_id: postId,
             });
             onReplyAdded(response.data);
-            console.log("response.data", response.data);
             setReplyContent('');
         } catch (error) {
             console.error("Error posting comment:", error);

@@ -2,9 +2,13 @@ import { ContentVotes, GroupPosts, Profiles, ProfilePosts, Users } from "../../m
 import natural from 'natural';
 const { TfIdf } = natural;
 
+//HTML tags are present in raw content
 const stripHtmlTags = (content) => {
     return content.replace(/<[^>]*>?/gm, '');
 };
+
+//Ensures text is in same format
+const normalizeText = (text) => text.trim().toLowerCase();
 
 const cosineSimilarity = (vector1, vector2) => {
     const terms = new Set([...vector1.keys(), ...vector2.keys()]);
@@ -41,15 +45,17 @@ const processPostText = (title, content) => {
 const userInteractionVector = (upvotedPosts, tfidf) => {
     const interactionVector = new Map();
     upvotedPosts.forEach((upvotedPostText) => {
+        const normalizedUpvotedPostText = normalizeText(upvotedPostText);
         const index = tfidf.documents.findIndex((doc) => {
-            const docText = Object.keys(doc).join(' ');
-            return docText === upvotedPostText;
+            const docText = normalizeText(Object.keys(doc).filter(key => key !== '__key').join(' '));
+            return docText === normalizedUpvotedPostText;
         });
 
         if (index < 0) return; //Skip if not found
         const terms = tfidf.listTerms(index);
-        terms.forEach(({ term, tfidf }) => {
-            interactionVector.set(term, (interactionVector.get(term) || 0) + tfidf);
+
+        terms.forEach(({ term, tfidf: termTfidf }) => {
+            interactionVector.set(term, (interactionVector.get(term) || 0) + termTfidf);
         });
     });
 
@@ -69,7 +75,7 @@ const userInteractionRecommendations = async (user) => {
         ...(vote.ProfilePost ? [processPostText(vote.ProfilePost.title, vote.ProfilePost.content)] : []),
         ...(vote.GroupPost ? [processPostText(vote.GroupPost.title, vote.GroupPost.content)] : []),
     ]);
-    //console.log("userUpvotedPostContents:", userUpvotedPostContents);
+
     const profilePosts = await ProfilePosts.findAll({
         include: [{
                 model: Users,
@@ -97,16 +103,16 @@ const userInteractionRecommendations = async (user) => {
             profile_photo: profilePhoto,
         };
     });
-    //console.log("allPosts:", allPosts);
+
     const tfidf = new TfIdf();
     allPosts.forEach((post) => {
         const postText = processPostText(post.title, post.content);
         tfidf.addDocument(postText);
     });
-    //console.log("tfidf:", tfidf);
+
     //Creates interaction vector from upvoted posts
     const interactionVector = userInteractionVector(userUpvotedPostContents, tfidf);
-    //console.log("interaction vector:", interactionVector);
+
     //Finds similarity scores
     const recommendations = allPosts
         .map((post, index) => {

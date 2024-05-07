@@ -22,6 +22,12 @@
     flex-direction: column;
     align-items: center;
 }
+#profile-options {
+    align-items: center;
+    display: flex;
+    flex-direction: column;
+    padding: 10px;
+}
 #upload-section {
     display: flex;
     flex-direction: column;

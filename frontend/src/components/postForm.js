@@ -13,7 +13,7 @@ const PostForm = ({ onSubmit, errorMessage }) => {
     //Customises tool bar
     const modules = {
         toolbar: [
-            ['video', 'link'],
+            ['link'],
             [{ size: []}],
             ['bold', 'italic', 'underline', 'strike', 'blockquote'],
             [
