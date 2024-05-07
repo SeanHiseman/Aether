@@ -47,7 +47,7 @@ function RecommendedPage() {
             setFilterPreference(newValue);
     
             axios.post('/api/set_filter_preference', { preference: newValue })
-            //setFilterPreference(response.data);
+
         } catch (error) {
             console.error(error);
         }
@@ -60,7 +60,7 @@ function RecommendedPage() {
             setTimePreference(newValue);
     
             axios.post('/api/set_time_preference', { preference: newValue })
-            //setTimePreference(response.data);
+
         } catch (error) {
             console.error(error);
         }
@@ -74,7 +74,7 @@ function RecommendedPage() {
                     {posts.length > 0 ? (
                         <ul className="content-list">
                             {posts.map(post => (
-                                <ContentWidget key={post.post.post_id} isGroup={post.is_group} post={post.post}/>
+                                <ContentWidget key={post.post_id} isGroup={post.is_group} post={post}/>
                             ))}
                         </ul>
                         ) : (
