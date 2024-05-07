@@ -17,7 +17,7 @@ function ContentWidget({ canRemove: canRemoveProp , isGroup, post }) {
     const [upvoteLimit, setUpvoteLimit] = useState(false);
     const { user } = useContext(AuthContext);
     const Poster = isGroup ? 'GroupPoster' : 'ProfilePoster'; //Associations used by database
-    //console.log("post:", post);
+    console.log(post);
     //Allows users to remove their own posts
     useEffect(() => {
         if (post.poster_id === user.userId) {

@@ -81,28 +81,43 @@ const userInteractionRecommendations = async (user) => {
                 model: Users,
                 as: 'ProfilePoster',
                 attributes: ['username'],
-            },{
-                model: Profiles,
-                attributes: ['profile_photo'],
+                include: [{
+                    model: Profiles,
+                    attributes: ['profile_photo'],
+                }]
             }],
     });
+    
     const groupPosts = await GroupPosts.findAll({
         include: [{
                 model: Users,
                 as: 'GroupPoster',
                 attributes: ['username'],
+                include: [{
+                    model: Profiles,
+                    attributes: ['profile_photo'],
+                }]
             }],
     });
 
-    const allPosts = [...profilePosts, ...groupPosts].map((post) => {
-        const posterDetails = post.ProfilePoster || post.GroupPoster;
-        const profilePhoto = post.profile_photo || null;
-        return {
-            ...post.dataValues,
-            username: posterDetails?.username,
-            profile_photo: profilePhoto,
-        };
-    });
+    const allPosts = [
+        ...profilePosts.map(post => ({
+            ...post.get({ plain: true }),
+            is_group: false, 
+            ProfilePoster: {
+                username: post.ProfilePoster.username,
+                profile: post.ProfilePoster.profile 
+            },
+        })),
+        ...groupPosts.map(post => ({
+            ...post.get({ plain: true }), 
+            is_group: true, 
+            GroupPoster: {
+                username: post.GroupPoster.username,
+                profile: post.GroupPoster.profile 
+            },
+        }))
+    ];
 
     const tfidf = new TfIdf();
     allPosts.forEach((post) => {
@@ -121,11 +136,11 @@ const userInteractionRecommendations = async (user) => {
                 postVector.set(term, tfidf);
             });
             const score = cosineSimilarity(interactionVector, postVector);
-            return { post, score };
+            return { ...post, score };
         })
         .sort((a, b) => b.score - a.score)
-        .slice(0, 10);
-    //console.log("recommendations:", recommendations);
+        //.slice(0, 10);
+        //console.log("recommendations:", recommendations);
     return recommendations;
 };
 

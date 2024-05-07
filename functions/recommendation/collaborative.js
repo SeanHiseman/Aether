@@ -28,7 +28,7 @@ const findSimilarUsers = async (user) => {
         similarityScores[otherUser.user_id] = similarityScore;
     }
   
-    // Sort users by similarity score and return the most similar users
+    //Sort users by similarity score and return the most similar users
     const sortedUsers = Object.entries(similarityScores).sort((a, b) => b[1] - a[1]);
     const topSimilarUsers = sortedUsers.slice(0, 10).map(([userId, score]) => ({
         userId,

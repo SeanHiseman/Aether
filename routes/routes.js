@@ -249,7 +249,8 @@ router.get('/recommended_posts', authenticateCheck, async (req, res) => {
         //console.log("contentRecommendations:", contentRecommendations);
         //const hybridRecommendations = combineRecommendations(similarUsers, contentRecommendations);
         //res.status(200).json({ success: true, recommendations: hybridRecommendations });
-        res.status(200).json({ success: true, recommendations: contentRecommendations });
+        const sortedPosts = await sortPostsByWeightedRatio(contentRecommendations, userId);
+        res.status(200).json({ success: true, recommendations: sortedPosts });
     //} catch (error) {
         //console.error(error);
         //res.status(500).json({ success: false, message: error.message });
