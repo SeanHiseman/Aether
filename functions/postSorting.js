@@ -1,7 +1,7 @@
 import { Users } from "../models/models.js";
 
 async function sortPostsByWeightedRatio(posts, userId) {
-    //try {
+    try {
         const now = new Date();
 
         //Gets users recency preference
@@ -36,9 +36,9 @@ async function sortPostsByWeightedRatio(posts, userId) {
         //});
         
         return sortedPosts; 
-    //} catch (error) {
-        //console.log("Sorting error:", error);
-    //}
+    } catch (error) {
+        console.log("Sorting error:", error);
+    }
 }
 
 export default sortPostsByWeightedRatio;

@@ -3,6 +3,7 @@
     border-left: 1px solid white;
     border-right: 1px solid white;
     border-top: 1px solid white;
+    font-size: x-large;
     padding: 15px;
     width: 100%;
 }
@@ -13,6 +14,12 @@
 }
 .content-item, .content-list {
     box-sizing: border-box;
+}
+.content-metadata {
+    align-items: center;
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
 }
 .horizontal-container {
     align-items: flex-start;
@@ -121,7 +128,6 @@
     background-color: #1f2956;
 }
 .upvote-count, .downvote-count, .reply-count, .view-count {
-    font-size: 14px;
     margin-right: 5px;
 }
 .username {

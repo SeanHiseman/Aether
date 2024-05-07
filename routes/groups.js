@@ -437,7 +437,7 @@ router.get('/group_main_posts', authenticateCheck, async (req, res) => {
             ...post.dataValues, is_group: true,
         }));
 
-        const sortedPosts = sortPostsByWeightedRatio(finalResults, userId);
+        const sortedPosts = await sortPostsByWeightedRatio(finalResults, userId);
         res.json(sortedPosts);
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });

@@ -208,6 +208,7 @@ function ContentWidget({ canRemove: canRemoveProp , isGroup, post }) {
                     Replies <span className="reply-count" id={`reply-count-${post.post_id}`}>{post.replies}</span>
                 </button>
                 <span className="view-count">{post.views} Views</span>
+                <p>{new Date(post.timestamp).toLocaleDateString()}</p>
                 {canRemove ? (
                     <button className="button" onClick={() => removePost(isGroup, post.post_id)}>Delete</button>
                 ) : null}
