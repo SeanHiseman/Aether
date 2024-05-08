@@ -7,7 +7,6 @@ import FriendsPage from './pages/feeds/friends';
 import GroupHome from './pages/groups/groupHome';
 import GroupWrapper from './pages/groups/groupWrapper';
 import Login from './pages/site_entrance/login';
-import MainPage from './pages/feeds/main';
 import MessagesPage from './pages/messagesPage';
 import RecommendedPage from './pages/feeds/recommended';
 import Register from './pages/site_entrance/register';
@@ -23,7 +22,6 @@ const App = () => {
                 <Route path="/login" element={<Login />} />
                 <Route path="/register" element={<Register />} />
                 <Route path="/" element={<AuthCheck><BaseLayout /></AuthCheck>}>
-                    <Route path="main" element={<AuthCheck><MainPage /></AuthCheck>} />
                     <Route path="recommended" element={<AuthCheck><RecommendedPage /></AuthCheck>} />
                     <Route path="following" element={<AuthCheck><FollowingPage /></AuthCheck>} />
                     <Route path="friends" element={<AuthCheck><FriendsPage /></AuthCheck>} />

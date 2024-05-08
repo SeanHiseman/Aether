@@ -11,6 +11,7 @@ function RecommendedPage() {
     useEffect(() => {
         axios.get('/api/recommended_posts')
             .then(response => {
+                console.log("response.data", response.data);
                 setPosts(response.data.recommendations);
             })
             .catch(error => {

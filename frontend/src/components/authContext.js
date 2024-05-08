@@ -1,8 +1,9 @@
+import axios from 'axios';
 import React, { createContext, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 export const AuthContext = createContext();
-//Check if user is logged in
+
 export const AuthCheck = ({ children }) => {
     const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [user, setUser] = useState({ username: '', userId: null });
@@ -10,18 +11,18 @@ export const AuthCheck = ({ children }) => {
     useEffect(() => {
         const checkAuthentication = async () => {
             try {
-                const response = await fetch('/api/check_authentication');
-                if (response.ok) {
-                    const data= await response.json();
-                    setIsAuthenticated(true);
-                    setUser(data.user);
-                } else if (response.status === 401) {
-                    navigate('/login');
-                }
+                const response = await axios.get('/api/check_authentication');
+                setIsAuthenticated(true);
+                setUser(response.data.user);
             } catch (error) {
-                console.error('Error:', error);
-            } 
+                if (error.response && error.response.status === 401) {
+                    navigate('/login');
+                } else {
+                    console.error('Error:', error);
+                }
+            }
         };
+
         checkAuthentication();
     }, [navigate]);
 

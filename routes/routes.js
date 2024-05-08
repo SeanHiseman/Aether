@@ -2,8 +2,8 @@ import { Router } from 'express';
 import { ContentVotes, Followers, Friends, FriendRequests, Groups, GroupRequests, GroupPosts, ProfilePosts, Profiles, Users, UserGroups } from '../models/models.js'; 
 import authenticateCheck from '../functions/authenticateCheck.js';
 import checkIfUserIsMember from '../functions/memberCheck.js';
-import combineRecommendations from '../functions/recommendation/hybrid.js';
-import { findSimilarUsers, similarUserRecommendations } from '../functions/recommendation/collaborative.js';
+import { hybridRecommendations } from '../functions/recommendation/hybrid.js';
+import { findFriendVotes, similarUserRecommendations } from '../functions/recommendation/collaborative.js';
 import { Op } from 'sequelize';
 import sortPostsByWeightedRatio from '../functions/postSorting.js';
 import { userInteractionRecommendations } from '../functions/recommendation/contentBased.js';
@@ -243,14 +243,10 @@ router.get('/recommended_posts', authenticateCheck, async (req, res) => {
     //try {
         const userId = req.session.user_id;
         const user = await Users.findByPk(userId);
-        const similarUsers = await findSimilarUsers(user);
-        //console.log("similarUsers:", similarUsers);
-        const contentRecommendations = await userInteractionRecommendations(user);
-        //console.log("contentRecommendations:", contentRecommendations);
-        //const hybridRecommendations = combineRecommendations(similarUsers, contentRecommendations);
-        //res.status(200).json({ success: true, recommendations: hybridRecommendations });
-        const sortedPosts = await sortPostsByWeightedRatio(contentRecommendations, userId);
-        res.status(200).json({ success: true, recommendations: sortedPosts });
+        const recommendations = await hybridRecommendations(user);
+        //console.log("recommendations:", recommendations);
+        //const sortedPosts = await sortPostsByWeightedRatio(recommendations);
+        res.status(200).json({ success: true, recommendations: recommendations });
     //} catch (error) {
         //console.error(error);
         //res.status(500).json({ success: false, message: error.message });
