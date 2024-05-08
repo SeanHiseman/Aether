@@ -1,9 +1,46 @@
-import { ContentVotes, GroupPosts, ProfilePosts, Users } from "../../models/models.js";
+import { ContentVotes, Friends, GroupPosts, ProfilePosts, Users } from "../../models/models.js";
 import { Op } from 'sequelize';
 
-const findSimilarUsers = async (user) => {
+const pearsonCorrelation = (user1Votes, user2Votes) => {
+    const ratings1 = user1Votes.reduce((acc, vote) => {
+        acc[vote.content_id] = vote.vote_count;
+        return acc;
+    }, {});
+    const ratings2 = user2Votes.reduce((acc, vote) => {
+        acc[vote.content_id] = vote.vote_count;
+        return acc;
+    }, {});
+
+    const commonPostIds = Object.keys(ratings1).filter(postId => ratings2.hasOwnProperty(postId));
+    if (commonPostIds.length === 0) return 0;
+
+    let sum1 = 0, sum2 = 0, sum1Sq = 0, sum2Sq = 0, pSum = 0;
+    for (const postId of commonPostIds) {
+        const r1 = ratings1[postId];
+        const r2 = ratings2[postId];
+        sum1 += r1;
+        sum2 += r2;
+        sum1Sq += r1 * r1;
+        sum2Sq += r2 * r2;
+        pSum += r1 * r2;
+    }
+
+    const num = pSum - (sum1 * sum2 / commonPostIds.length);
+    const denominator = Math.sqrt((sum1Sq - sum1 * sum1 / commonPostIds.length) * (sum2Sq - sum2 * sum2 / commonPostIds.length));
+
+    return denominator === 0 ? 0 : num / denominator;
+};
+
+const findFriendVotes = async (user) => {
+    //Finds all of a users friends
+    const friends = await Friends.findAll({
+        where: { user1_id: user.user_id },
+        attributes: ['user2_id'],
+    });
+    const friendIds = friends.map(friend => friend.user2_id);
+
     const userUpvotes = await ContentVotes.findAll({
-        where: { user_id: user.user_id, vote_count: 1 },
+        where: { user_id: { [Op.in]: friendIds }, vote_count: { [Op.gt]: 0 } },
         include: [
             { model: ProfilePosts, as: 'ProfilePost' },
             { model: GroupPosts, as: 'GroupPost' },
@@ -12,65 +49,32 @@ const findSimilarUsers = async (user) => {
   
     const similarityScores = {};
 
-    //Calculate similarity scores between the user and other users
+    //Calculate similarity scores between the user and their friends
     const otherUsers = await Users.findAll({
         where: { user_id: { [Op.ne]: user.user_id } },
         include: [
-            { model: ContentVotes, as: 'content_vote', where: { vote_count: 1 } },
+            { model: ContentVotes, as: 'content_vote', where: { user_id: { [Op.in]: friendIds }, vote_count: { [Op.gt]: 0 } } },
             { model: ProfilePosts, as: 'ProfilePoster' },
             { model: GroupPosts, as: 'GroupPoster' },
         ],
     });
   
     for (const otherUser of otherUsers) {
-        const otherUserUpvotes = otherUser.content_vote.filter(vote => vote.vote_count === 1);
+        const otherUserUpvotes = otherUser.content_vote.filter(vote => vote.vote_count > 0 );
+        //console.log("otherUserUpvotes:", otherUserUpvotes);
         const similarityScore = pearsonCorrelation(userUpvotes, otherUserUpvotes);
+        //console.log("similarityScore", similarityScore);
         similarityScores[otherUser.user_id] = similarityScore;
     }
-  
-    //Sort users by similarity score and return the most similar users
+
+    //Sort friends by similarity score and return the most similar friends
     const sortedUsers = Object.entries(similarityScores).sort((a, b) => b[1] - a[1]);
-    const topSimilarUsers = sortedUsers.slice(0, 10).map(([userId, score]) => ({
+    const topSimilarUsers = sortedUsers.map(([userId, score]) => ({
         userId,
         score,
     }));
-  
+    //console.log("topSimilarUsers:", topSimilarUsers);
     return topSimilarUsers; 
-};
-
-const pearsonCorrelation = (user1Upvotes, user2Upvotes) => {
-    const user1UpvotedPostIds = new Set(user1Upvotes.map(({ content_id }) => content_id));
-    const user2UpvotedPostIds = new Set(user2Upvotes.map(({ content_id }) => content_id));
-  
-    const commonPostIds = new Set([...user1UpvotedPostIds].filter(post_id => user2UpvotedPostIds.has(post_id)));
-    
-    let numerator = 0;
-    let user1Sum = 0;
-    let user2Sum = 0;
-    let user1SquaredSum = 0;
-    let user2SquaredSum = 0;
-  
-    for (const postId of commonPostIds) {
-        const user1Rating = user1UpvotedPostIds.has(postId) ? 1 : 0;
-        const user2Rating = user2UpvotedPostIds.has(postId) ? 1 : 0;
-    
-        numerator += user1Rating * user2Rating;
-        user1Sum += user1Rating;
-        user2Sum += user2Rating;
-        user1SquaredSum += user1Rating ** 2;
-        user2SquaredSum += user2Rating ** 2;
-    }
-  
-    const n = commonPostIds.size;
-  
-    const denominator1 = Math.sqrt(user1SquaredSum - (user1Sum ** 2) / n);
-    const denominator2 = Math.sqrt(user2SquaredSum - (user2Sum ** 2) / n);
-  
-    if (denominator1 === 0 || denominator2 === 0) {
-        return 0;
-    }
-  
-    return numerator / (n * denominator1 * denominator2);   
 };
 
 const similarUserRecommendations = async (similarUsers) => {
@@ -78,20 +82,28 @@ const similarUserRecommendations = async (similarUsers) => {
   
     for (const { userId, score } of similarUsers) {
         const user = await Users.findByPk(userId, {
-            include: [
-                { model: ProfilePosts, as: 'ProfilePoster' },
-                { model: GroupPosts, as: 'GroupPoster' },
+            include: [{
+                    model: ContentVotes,
+                    as: 'content_vote',
+                    where: { vote_count: { [Op.gt]: 0 } },
+                    include: [
+                        { model: ProfilePosts, as: 'ProfilePost' },
+                        { model: GroupPosts, as: 'GroupPost' }
+                    ]},
             ],
         });
-    
-        const userUpvotedPosts = [
-            ...(vote.ProfilePost ? [vote.ProfilePost] : []),
-            ...(vote.GroupPost ? [vote.GroupPost] : []),
-        ];
-    
-        recommendations.push(...userUpvotedPosts.map((post) => ({ post, score })));
-    }  
+
+        user.content_vote.forEach(vote => {
+            if (vote.ProfilePost) recommendations.push({ post: vote.ProfilePost, score });
+            if (vote.GroupPost) recommendations.push({ post: vote.GroupPost, score });
+        });
+    }
+    //Checks scores
+    //recommendations.forEach((post) => {
+        //console.log("collaborative:", post.title, post.score);
+    //});
+    console.log("recommendations:", recommendations);
     return recommendations;
 };
 
-export { findSimilarUsers, similarUserRecommendations };
+export { findFriendVotes, similarUserRecommendations };

@@ -17,7 +17,7 @@ function Login() {
             const response = await axios.post('/api/login', { username, password });
             //successful login
             if (response.data.success) {
-                navigate('/main');
+                navigate('/recommended');
             } else {
                 //If login unsuccessful
                 setError(response.data.message);

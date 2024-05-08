@@ -131,7 +131,6 @@ const BaseLayout = () => {
                 </div>
                 <nav>
                     <ul>
-                        <li><Link to="/main">Main</Link></li>
                         <li><Link to="/recommended">Recommended</Link></li>
                         <li><Link to="/following">Following</Link></li>
                         <li><Link to="/friends">Friends</Link></li>

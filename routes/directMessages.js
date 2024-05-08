@@ -111,7 +111,7 @@ router.get('/get_friends', authenticateCheck, async (req, res) => {
                     { user2_id: user.user_id }
                 ]
             },
-            //More recend friends are first
+            //More recent friends are first
             order: [['FriendSince', 'ASC']]
         });
 
