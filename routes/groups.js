@@ -367,16 +367,11 @@ router.get('/group_channel_messages/:channel_id', authenticateCheck, async (req,
 router.get('/group_channel_posts', authenticateCheck, async (req, res) => {
     try {
         const { channel_id, location_id } = req.query;
-        //Limits number of posts returned
-        //const limit = parseInt(req.query.limit) || 10;
-        //const offset = parseInt(req.query.offset) || 0;
         const posts = await GroupPosts.findAll({
             where: {
                 group_id: location_id,
                 channel_id: channel_id
             },
-            //limit: limit,
-            //offset: offset,
             include: [{
                 model: Users,
                 as: 'GroupPoster',
@@ -392,8 +387,6 @@ router.get('/group_channel_posts', authenticateCheck, async (req, res) => {
                 required: false
             }],
             attributes: ['post_id', 'title', 'content', 'replies', 'views', 'upvotes', 'downvotes', 'timestamp', 'poster_id'],
-            //Posts sorted chronilogically (temporary)
-            order: [['timestamp', 'DESC']]
         });
 
         const finalResults = posts.map((post) => ({

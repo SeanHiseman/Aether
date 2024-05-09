@@ -1,12 +1,10 @@
 import { Router } from 'express';
-import { ContentVotes, Followers, Friends, FriendRequests, Groups, GroupRequests, GroupPosts, ProfilePosts, Profiles, Users, UserGroups } from '../models/models.js'; 
+import { ContentVotes, Followers, Friends, FriendRequests, Groups, GroupReplies, GroupRequests, GroupPosts, ProfileReplies, ProfilePosts, Profiles, Users, UserGroups } from '../models/models.js'; 
 import authenticateCheck from '../functions/authenticateCheck.js';
 import checkIfUserIsMember from '../functions/memberCheck.js';
 import { hybridRecommendations } from '../functions/recommendation/hybrid.js';
-import { findFriendVotes, similarUserRecommendations } from '../functions/recommendation/collaborative.js';
 import { Op } from 'sequelize';
 import sortPostsByWeightedRatio from '../functions/postSorting.js';
-import { userInteractionRecommendations } from '../functions/recommendation/contentBased.js';
 import { v4 } from 'uuid';
 const router = Router();
 
@@ -258,6 +256,8 @@ router.delete('/remove_post', authenticateCheck, async (req, res) => {
     try {
         const { postData } = req.body;
         const { isGroup, postId } = postData;
+        const repliesModel = isGroup ? GroupReplies : ProfileReplies;
+        await repliesModel.destroy({ where : { post_id: postId }});
         const postModel = isGroup ? GroupPosts : ProfilePosts;
         await postModel.destroy({ where: { post_id: postId }});
     } catch (error) {
@@ -370,7 +370,7 @@ router.get('/search/profiles', authenticateCheck, async (req, res) => {
         const loggedInUserId = req.session.user_id; 
         const keyword = req.query.keyword.toLowerCase(); 
 
-        // Fetch profiles based on search keyword
+        //Fetch profiles based on search keyword
         const profiles = await Profiles.findAll({
         where: {
             [Op.or]: [

@@ -83,13 +83,13 @@ const similarUserRecommendations = async (similarUsers) => {
     for (const { userId, score } of similarUsers) {
         const user = await Users.findByPk(userId, {
             include: [{
-                    model: ContentVotes,
-                    as: 'content_vote',
-                    where: { vote_count: { [Op.gt]: 0 } },
-                    include: [
-                        { model: ProfilePosts, as: 'ProfilePost' },
-                        { model: GroupPosts, as: 'GroupPost' }
-                    ]},
+                model: ContentVotes,
+                as: 'content_vote',
+                where: { vote_count: { [Op.gt]: 0 } },
+                include: [
+                    { model: ProfilePosts, as: 'ProfilePost' },
+                    { model: GroupPosts, as: 'GroupPost' }
+                ]},
             ],
         });
 
