@@ -334,7 +334,6 @@ router.get('/profile_channel_posts', authenticateCheck, async (req, res) => {
 router.get('/profile_main_posts', authenticateCheck, async (req, res) => {
     try {
         const { location_id } = req.query;
-        const userId = req.session.user_id;
         const posts = await ProfilePosts.findAll({
             where: {
                 profile_id: location_id
@@ -353,16 +352,12 @@ router.get('/profile_main_posts', authenticateCheck, async (req, res) => {
                 attributes: ['vote_count'],
                 required: false
             }],
+            //Newest first
+            order: [['timestamp', 'DESC']],
             attributes: ['post_id', 'title', 'content', 'replies', 'views', 'upvotes', 'downvotes', 'timestamp', 'poster_id'],
         });
 
-        const finalResults = posts.map((post) => ({
-            ...post.dataValues, is_group: false,
-        }));
-
-        //Applies weighting algorithm to posts
-        const sortedPosts = await sortPostsByWeightedRatio(finalResults, userId);
-        res.json(sortedPosts);
+        res.json(posts);
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
     }
