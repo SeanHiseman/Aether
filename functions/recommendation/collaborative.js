@@ -71,9 +71,7 @@ const findFriendVotes = async (user) => {
   
     for (const otherUser of otherUsers) {
         const otherUserUpvotes = otherUser.content_vote.filter(vote => vote.vote_count > 0 );
-        //console.log("otherUserUpvotes:", otherUserUpvotes);
         const similarityScore = pearsonCorrelation(userUpvotes, otherUserUpvotes);
-        //console.log("similarityScore", similarityScore);
         similarityScores[otherUser.user_id] = similarityScore;
     }
 
@@ -83,7 +81,6 @@ const findFriendVotes = async (user) => {
         userId,
         score,
     }));
-    //console.log("topSimilarUsers:", topSimilarUsers);
     return topSimilarUsers; 
 };
 
@@ -107,10 +104,6 @@ const similarUserRecommendations = async (similarUsers) => {
             if (vote.ProfilePost) {
                 recommendations.push({
                     ...vote.ProfilePost.dataValues,
-                    //ProfilePoster: {
-                        //username: vote.ProfilePost.ProfilePoster.username,
-                        //profile: vote.ProfilePost.ProfilePoster 
-                    //},
                     is_group: false,
                     score
                 });
@@ -118,21 +111,12 @@ const similarUserRecommendations = async (similarUsers) => {
             if (vote.GroupPost) {
                 recommendations.push({
                     ...vote.GroupPost.dataValues,
-                    //GroupPoster: {
-                        //username: vote.GroupPost.GroupPoster.username,
-                        //profile: vote.GroupPost.GroupPoster 
-                    //},
                     is_group: true,
                     score
                 });
             }
         });
     }
-    //Checks scores
-    //recommendations.forEach((post) => {
-        //console.log("collaborative:", post.title, post.score);
-    //});
-    //console.log("recommendations:", recommendations);
     return recommendations;
 };
 

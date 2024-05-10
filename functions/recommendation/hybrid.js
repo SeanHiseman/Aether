@@ -5,7 +5,6 @@ const hybridRecommendations = async (user) => {
     const collaborativeWeight = user.collaborative_preference;
     const contentBasedWeight = 1 - collaborativeWeight;
     const collaborativeRecommendations = await similarUserRecommendations(await findFriendVotes(user));
-    //console.log("collaborativeRecommendations:", collaborativeRecommendations);
     const contentBasedRecommendations = await userInteractionRecommendations(user);
     let combinedRecommendations = {};
 
@@ -28,13 +27,10 @@ const hybridRecommendations = async (user) => {
         }
         combinedRecommendations[recommendation.post_id].score += recommendation.score * contentBasedWeight; 
     }
-
+    //const finalRecommendations = Object.values(combinedRecommendations)
     const finalRecommendations = Object.values(combinedRecommendations)
         .sort((a, b) => b.score - a.score);
-
-    //finalRecommendations.forEach((post) => {
-        //console.log(post.title, post.score);
-    //});
+    
     return finalRecommendations;
 };
 

@@ -238,17 +238,19 @@ router.post('/increment_views', async (req, res) => {
 
 //Accesses recommendation algorithm to provide content
 router.get('/recommended_posts', authenticateCheck, async (req, res) => {
-    //try {
+    try {
         const userId = req.session.user_id;
         const user = await Users.findByPk(userId);
         const recommendations = await hybridRecommendations(user);
-        //console.log("recommendations:", recommendations);
-        //const sortedPosts = await sortPostsByWeightedRatio(recommendations);
-        res.status(200).json({ success: true, recommendations: recommendations });
-    //} catch (error) {
-        //console.error(error);
-        //res.status(500).json({ success: false, message: error.message });
-    //}
+        const sortedPosts = await sortPostsByWeightedRatio(recommendations, userId);
+        //Logs scores
+        //sortedPosts.forEach((post) => {
+            //console.log(post.title, post.score);
+        //});
+        res.status(200).json({ success: true, recommendations: sortedPosts });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
 });
 
 //Allows post to be taken down either by the user or moderators
