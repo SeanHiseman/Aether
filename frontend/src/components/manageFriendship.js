@@ -13,7 +13,7 @@ function ManageFriendshipButton({ userId, receiverProfileId, receiverUserId, isR
     }, [isRequestSent, isFriend]);
 
     const handleSendRequest = async () => {
-        //try {
+        try {
             let method, requestData, url;
             if (friend) {
                 method = 'delete';
@@ -56,9 +56,9 @@ function ManageFriendshipButton({ userId, receiverProfileId, receiverUserId, isR
             } else {
                 console.error('Error:', response.data);
             }
-        //} catch (error) {
-            //setErrorMessage("Friend request error.", error);
-        //}
+        } catch (error) {
+            setErrorMessage("Friend request error.", error);
+        }
     };
 
     return (

@@ -27,10 +27,10 @@ const hybridRecommendations = async (user) => {
         }
         combinedRecommendations[recommendation.post_id].score += recommendation.score * contentBasedWeight; 
     }
-    //const finalRecommendations = Object.values(combinedRecommendations)
+
     const finalRecommendations = Object.values(combinedRecommendations)
         .sort((a, b) => b.score - a.score);
-    
+
     return finalRecommendations;
 };
 

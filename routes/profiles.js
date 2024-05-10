@@ -149,7 +149,6 @@ const postFilter = (req, file, cb) => {
     if (file.mimetype.startsWith('/image') || file.mimetype.startsWith('/video')) {
         cb(null, true);
     } else {
-        //cb(new Error('Not an image or video file'), false);
         cb(null, true);
     }
 };
@@ -444,52 +443,6 @@ router.post('/remove_follower', authenticateCheck, async (req, res) => {
         res.status(500).json(error.message);
     }
 }); 
-
-//Deletes friendship
-router.delete('/remove_friend', authenticateCheck, async (req, res) => {
-    //try {
-        const loggedInUserId = req.session.user_id;
-        const { receiverUserId } = req.body;
-
-        //Gets all conversations involving the two users
-        const conversationIds = await UserConversations.findAll({
-            attributes: ['conversation_id'],
-            where: {
-                [Op.or]: [
-                    { user_id: loggedInUserId },
-                    { user_id: receiverUserId}
-                ]}
-        }).then(results => results.map(entry => entry.conversation_id));
-        //Deletions don't yet work
-        //await UserConversations.destroy({
-            //where: {
-                //[Op.or]: [
-                    //{ user_id: loggedInUserId, conversation_id: conversationIds },
-                    //{ user_id: receiverUserId, conversation_id: conversationIds }
-                //]}
-        //});
-        //await Conversations.destroy({
-            //where: { conversation_id: conversationIds }
-        //});
-        await Friends.destroy({
-            where: {
-                [Op.or]: [
-                    { user1_id: loggedInUserId, user2_id: receiverUserId },
-                    { user1_id: receiverUserId, user2_id: loggedInUserId }
-                ]}
-        });
-        //await Messages.destroy({
-            //where: {
-                //[Op.or]: [
-                    //{ sender_id: loggedInUserId, receiver_id: receiverUserId },
-                    //{ sender_id: receiverUserId, receiver_id: loggedInUserId },
-                //]}
-        //});
-        res.status(200);
-    //} catch (error) {
-        //res.status(500).json({ error: 'Failed to remove friend.' });
-    //}
-});
 
 //Send friend request
 router.post('/send_friend_request', authenticateCheck, async (req, res) => {
