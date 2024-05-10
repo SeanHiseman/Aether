@@ -555,17 +555,19 @@ function GroupHomeAdmin() {
                 {subGroups.length === 0 ? (
                     <div></div>
                 ) : (
-                    subGroups.map((subGroup) => (
-                        <>
-                            <h2>Groups</h2>
-                            <li key={subGroup.group_id}>
-                                <Link className="group-list-link" to={`/group/${subGroup.group_name}/Main`}>
-                                    <img className="small-group-photo" src={`/${subGroup.group_photo}`} alt={subGroup.group_name} />
-                                    <p className="group-list-text">{subGroup.group_name}</p>
-                                </Link>
-                            </li>
-                        </>
-                    ))
+                    <div>
+                        <h2>Groups</h2>
+                        <ul>
+                            {subGroups.map((subGroup, index) => (
+                                <li key={index}>
+                                    <Link className="group-list-link" to={`/group/${subGroup.SubGroup.group_name}/Main`}>
+                                        <img className="small-group-photo" src={`/${subGroup.SubGroup.group_photo}`} alt={subGroup.SubGroup.group_name} />
+                                        <p className="group-list-text">{subGroup.SubGroup.group_name}</p>
+                                    </Link>
+                                </li>
+                            ))}
+                        </ul>
+                    </div>
                 )}
             </aside> 
         </div>

@@ -78,26 +78,26 @@ const userInteractionRecommendations = async (user) => {
 
     const profilePosts = await ProfilePosts.findAll({
         include: [{
-                model: Users,
-                as: 'ProfilePoster',
-                attributes: ['username'],
-                include: [{
-                    model: Profiles,
-                    attributes: ['profile_photo'],
-                }]
-            }],
+            model: Users,
+            as: 'ProfilePoster',
+            attributes: ['username'],
+            include: [{
+                model: Profiles,
+                attributes: ['profile_photo'],
+            }]
+        }],
     });
     
     const groupPosts = await GroupPosts.findAll({
         include: [{
-                model: Users,
-                as: 'GroupPoster',
-                attributes: ['username'],
-                include: [{
-                    model: Profiles,
-                    attributes: ['profile_photo'],
-                }]
-            }],
+            model: Users,
+            as: 'GroupPoster',
+            attributes: ['username'],
+            include: [{
+                model: Profiles,
+                   attributes: ['profile_photo'],
+            }]
+        }],
     });
 
     const allPosts = [

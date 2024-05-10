@@ -38,13 +38,26 @@ router.get('/get_chat_messages/:conversation_id', authenticateCheck, async (req,
         const conversationId = req.params.conversation_id;
         const messages = await Messages.findAll({
             where: { conversation_id: conversationId },
+            include: [{
+                model: Users,
+                attributes: ['user_id'],
+                include: [{
+                    model: Profiles,
+                    attributes: ['profile_photo']
+                }]
+            }],
             order: [['timestamp', 'ASC']]
         });
         const messagesData = messages.map(m => ({
             message_id: m.message_id, //not messageId since group messages use message_id
             senderId: m.sender_id,
             message_content: m.message_content,
-            timestamp: m.timestamp
+            timestamp: m.timestamp,
+            user: {
+                profile: {
+                    profile_photo: m.user.profile.profile_photo
+                }
+            }
         }));
 
         res.json(messagesData);

@@ -1,0 +1,94 @@
+import { Op } from 'sequelize';
+import { ContentVotes, Friends, GroupPosts, ProfilePosts, Users } from "../../models/models.js";
+
+// Pearson Correlation Coefficient function
+const pearsonCorrelation = (ratings1, ratings2) => {
+    const commonIds = Object.keys(ratings1).filter(id => id in ratings2);
+    const n = commonIds.length;
+    if (n === 0) return 0;
+
+    let sum1 = 0, sum2 = 0, sum1Sq = 0, sum2Sq = 0, pSum = 0;
+    for (const id of commonIds) {
+        sum1 += ratings1[id];
+        sum2 += ratings2[id];
+        sum1Sq += ratings1[id] ** 2;
+        sum2Sq += ratings2[id] ** 2;
+        pSum += ratings1[id] * ratings2[id];
+    }
+
+    const num = pSum - (sum1 * sum2 / n);
+    const den = Math.sqrt((sum1Sq - sum1 ** 2 / n) * (sum2Sq - sum2 ** 2 / n));
+    return den === 0 ? 0 : num / den;
+};
+
+// Fetch votes for a user
+const getUserVotes = async (userId) => {
+    return await ContentVotes.findAll({
+        where: { user_id: userId },
+        include: [
+            { model: ProfilePosts, as: 'ProfilePost', include: [{ model: Users, as: 'ProfilePoster' }] },
+            { model: GroupPosts, as: 'GroupPost', include: [{ model: Users, as: 'GroupPoster' }] }
+        ]
+    });
+};
+
+// Fetch friends for a user
+const getFriendIds = async (userId) => {
+    const friends = await Friends.findAll({
+        where: { [Op.or]: [{ user1_id: userId }, { user2_id: userId }] }
+    });
+    return friends.map(friend => friend.user1_id === userId ? friend.user2_id : friend.user1_id);
+};
+
+// Compute recommendations based on friends' likes
+const friendUpvoteRecommendations = async (userId) => {
+    const userVotes = await getUserVotes(userId);
+    const friendIds = await getFriendIds(userId);
+    //console.log("userVotes:", userVotes);
+    //console.log("friendIds:", friendIds);
+    const scores = [];
+
+    let userScores = {};
+    userVotes.forEach(vote => userScores[vote.content_id] = vote.vote_count);
+    //console.log("userScores:", userScores);
+    for (let friendId of friendIds) {
+        const friendVotes = await getUserVotes(friendId);
+        //console.log("friendVotes:", friendVotes);
+        let friendScores = {};
+        friendVotes.forEach(vote => friendScores[vote.content_id] = vote.vote_count);
+        //console.log("friendScores:", friendScores);
+        const similarity = pearsonCorrelation(userScores, friendScores);
+        //console.log("similarity:", similarity);
+        friendVotes.forEach(vote => {
+            const post = vote.dataValues.ProfilePost || vote.dataValues.GroupPost;
+            console.log("post:", post);
+            scores.push({
+                post_id: post.post_id,
+                group_id: post.group_id,
+                channel_id: post.channel_id,
+                title: post.title,
+                content: post.content,
+                replies: post.replies,
+                views: post.views,
+                upvotes: post.upvotes,
+                downvotes: post.downvotes,
+                timestamp: post.timestamp,
+                poster_id: post.poster_id,
+                GroupPoster: vote.GroupPost ? {
+                    username: vote.GroupPost.User.username,
+                    profile: vote.GroupPost.User.Profile
+                } : null,
+                ProfilePoster: vote.ProfilePost ? {
+                    username: vote.ProfilePost.User.username,
+                    profile: vote.ProfilePost.User.Profile
+                } : null,
+                is_group: !!vote.GroupPost,
+                score: similarity
+            });
+        });
+    }
+    //console.log("scores:", scores);
+    return scores.sort((a, b) => b.score - a.score);
+};
+
+export { friendUpvoteRecommendations };

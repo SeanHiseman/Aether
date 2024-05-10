@@ -83,10 +83,6 @@
 .dropdown-container{
     position: relative;
 }
-#right-aside-list {
-    justify-content: center;
-    width: 80%;
-}
 .friend-chat-box{
     border-color: #000514;
     border-width: 2px;
@@ -159,6 +155,7 @@
     align-self: flex-start;
     display: flex;
     justify-content: center;
+    margin: 10px;
     max-width: 70%;
 }
 .message-container.outgoing {
@@ -180,4 +177,7 @@
 #messages-button:hover, #message-send-button:hover {
     background-color: #252836;
 }
-
+#right-aside-list {
+    justify-content: center;
+    width: 80%;
+}
