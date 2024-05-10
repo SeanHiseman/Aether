@@ -34,10 +34,20 @@ const pearsonCorrelation = (user1Votes, user2Votes) => {
 const findFriendVotes = async (user) => {
     //Finds all of a users friends
     const friends = await Friends.findAll({
-        where: { user1_id: user.user_id },
-        attributes: ['user2_id'],
+        where: {
+            [Op.or]: [
+                { user1_id: user.user_id },
+                { user2_id: user.user_id }
+            ]
+        },
+        attributes: ['user1_id', 'user2_id'],
     });
-    const friendIds = friends.map(friend => friend.user2_id);
+
+    const friendIds = friends.reduce((ids, friend) => {
+        if (friend.user1_id === user.user_id) ids.push(friend.user2_id);
+        if (friend.user2_id === user.user_id) ids.push(friend.user1_id);
+        return ids;
+    }, []);
 
     const userUpvotes = await ContentVotes.findAll({
         where: { user_id: { [Op.in]: friendIds }, vote_count: { [Op.gt]: 0 } },
@@ -94,15 +104,35 @@ const similarUserRecommendations = async (similarUsers) => {
         });
 
         user.content_vote.forEach(vote => {
-            if (vote.ProfilePost) recommendations.push({ post: vote.ProfilePost, score });
-            if (vote.GroupPost) recommendations.push({ post: vote.GroupPost, score });
+            if (vote.ProfilePost) {
+                recommendations.push({
+                    ...vote.ProfilePost.dataValues,
+                    //ProfilePoster: {
+                        //username: vote.ProfilePost.ProfilePoster.username,
+                        //profile: vote.ProfilePost.ProfilePoster 
+                    //},
+                    is_group: false,
+                    score
+                });
+            }
+            if (vote.GroupPost) {
+                recommendations.push({
+                    ...vote.GroupPost.dataValues,
+                    //GroupPoster: {
+                        //username: vote.GroupPost.GroupPoster.username,
+                        //profile: vote.GroupPost.GroupPoster 
+                    //},
+                    is_group: true,
+                    score
+                });
+            }
         });
     }
     //Checks scores
     //recommendations.forEach((post) => {
         //console.log("collaborative:", post.title, post.score);
     //});
-    console.log("recommendations:", recommendations);
+    //console.log("recommendations:", recommendations);
     return recommendations;
 };
 

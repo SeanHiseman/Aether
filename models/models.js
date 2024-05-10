@@ -58,7 +58,7 @@ const ProfilePosts = sequelize.define('profile_posts', {
   upvotes: { type: INTEGER, allowNull: false, defaultValue: 0 },
   downvotes: { type: INTEGER, allowNull: false, defaultValue: 0 },
   timestamp: { type: DATE, defaultValue: NOW },
-  poster_id: { type: STRING(36), primaryKey: true },
+  poster_id: { type: STRING(36), allowNull: false },
 }, {tableName: 'profile_posts', timestamps: false });
 
 //Profile posts relationships
@@ -109,7 +109,7 @@ const GroupPosts = sequelize.define('group_posts', {
   upvotes: { type: INTEGER, allowNull: false, defaultValue: 0 },
   downvotes: { type: INTEGER, allowNull: false, defaultValue: 0 },
   timestamp: { type: DATE, defaultValue: NOW },
-  poster_id: { type: STRING(36), primaryKey: true },
+  poster_id: { type: STRING(36), allowNull: false },
 }, {tableName: 'group_posts', timestamps: false});
 
 //Group posts relationships
@@ -194,7 +194,8 @@ const GroupChannelMessages = sequelize.define('group_channel_messages', {
 
 GroupChannelMessages.belongsTo(GroupChannels, { foreignKey: 'channel_id' }); 
 GroupChannels.hasMany(GroupChannelMessages, { foreignKey: 'channel_id' });
-
+GroupChannelMessages.belongsTo(Users, { foreignKey: 'sender_id' });
+Users.hasMany(GroupChannelMessages, { foreignKey: 'sender_id' });
 
 const GroupReplies = sequelize.define('group_replies', {
   reply_id: { type: STRING(36), primaryKey: true },

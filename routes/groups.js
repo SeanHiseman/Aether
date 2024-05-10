@@ -1,7 +1,7 @@
 import authenticateCheck from '../functions/authenticateCheck.js';
 import checkIfUserIsAdmin from '../functions/adminCheck.js';
 import checkIfUserIsMember from '../functions/memberCheck.js';
-import { ContentVotes, Groups, GroupChannels, GroupChannelMessages, GroupPosts, GroupRequests, NestedGroupMembers, NestedGroupRequests, Profiles, Users, UserGroups } from '../models/models.js';
+import { ContentVotes, Groups, GroupChannels, GroupChannelMessages, GroupPosts, GroupRequests, Messages, NestedGroupMembers, NestedGroupRequests, Profiles, Users, UserGroups } from '../models/models.js';
 import express from 'express';
 import fs from 'fs';
 import multer from 'multer';
@@ -353,6 +353,12 @@ router.get('/group_channel_messages/:channel_id', authenticateCheck, async (req,
             include: [{
                 model: GroupChannels,
                 attributes: ['channel_name', 'group_id'],
+            }, {
+                model: Users,
+                include: [{
+                    model: Profiles,
+                    attributes: ['profile_photo']
+                }]
             }],
             //Sort chronologically
             order: [['message_time', 'ASC']]

@@ -327,7 +327,7 @@ main {
     height: 40px; 
     width: 40px; 
     border-radius: 6px;
-    margin-top: 20px;
+    margin-top: 10px;
 }
 /*some images need 20px margin, others don't*/
 .profile-image2 {

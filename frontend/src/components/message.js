@@ -23,6 +23,7 @@ const Message = ({ canRemove, message, isGroup, isOutgoing, socket, channelId })
 
     return (
         <div className={`message-container ${isOutgoing ? 'outgoing' : 'incoming'}`}>
+            <img className="profile-image" src={`/${message.user.profile.profile_photo}`} alt="Profile" />
             {canRemove ? (
                 <button className="light-button" onClick={() => removeMessage(message.message_id)}>Delete</button>
             ) : null}
