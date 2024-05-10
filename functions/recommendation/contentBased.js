@@ -139,11 +139,7 @@ const userInteractionRecommendations = async (user) => {
             return { ...post, score };
         })
         .sort((a, b) => b.score - a.score)
-    //Checks scores
-    //recommendations.forEach((post) => {
-        //console.log("content based:", post.title, post.score);
-    //});
-    //console.log("recommendations:", recommendations);
+
     return recommendations;
 };
 

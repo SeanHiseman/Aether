@@ -1,6 +1,4 @@
 import axios from 'axios';
-import ConfirmAlert from 'react-confirm-alert';
-import 'react-confirm-alert/src/react-confirm-alert.css';
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import PostChannel from '../../components/channels/postChannel';
@@ -23,14 +21,12 @@ const PersonalProfile = () => {
     const [showFriendRequests, setShowFriendRequests] = useState(false);
     const [showPostForm, setShowPostForm] = useState(false);
     const navigate = useNavigate();
-    //const confirmAlertInstance = new ConfirmAlert();
 
     useEffect(() => {
         axios.get(`/api/profile/${username}`)
             .then(response => {
                 const fetchedProfile = response.data.profile;
                 setProfile(fetchedProfile);
-                //setIsPrivate(profile.isPrivate);
             })
             .catch(error => {
                 console.error('Error:', error);
@@ -118,30 +114,7 @@ const PersonalProfile = () => {
     
     const channelRender = channels.find(c => c.channel_name === channel_name);
 
-    //User is shown a confirmation before deleting their account
     const deleteAccount = async () => {
-        //confirmAlertInstance.confirmAlert({
-            //title: 'Delete Account',
-            //message: 'Are you sure you want to delete your account? This action is irreversible.',
-            //buttons: [{
-                //label: 'Yes, Delete',
-                //onClick: () => {
-                    //axios.delete('/api/delete_account', { data: { user_id: profile.userId } })
-                    //.then((response) => {
-                        //if (response.data.success) {
-                            //navigate('/login');
-                        //} else {
-                            //setErrorMessage(response.data.message);
-                        //}
-                    //})
-                    //.catch((error) => {
-                        //setErrorMessage('Failed to delete account:', error);
-                    //});
-                //},
-            //},
-                //{label: 'Cancel',},
-            //],
-        //});
         try {
             const response = await axios.delete('/api/delete_account', { data: { user_id: profile.userId } });
                 if (response.data.success) {
