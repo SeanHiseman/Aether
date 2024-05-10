@@ -190,22 +190,12 @@ router.post('/create_group', authenticateCheck, profile_upload.single('new_group
     }
 });
 
-//const upload = multer({ dest: 'uploads/' });
-//const ALLOWED_EXTENSIONS = new Set(['jpg', 'jpeg', 'png', 'gif', 'mp4', 'mkv', 'avi']);
-
-const allowedFile = (filename) => {
-    //placeholder
-    return true;
-    //return filename.includes('.') && ALLOWED_EXTENSIONS.has(filename.split('.').pop().toLowerCase());
-}
-
 //Checks input for post uploads
 const postFilter = (req, file, cb) => {
     if (file.mimetype.startsWith('/image') || file.mimetype.startsWith('/video')) {
         cb(null, true);
     } else {
         cb(null, true);
-        //cb(new Error('Not an image or video file'), false);
     }
 };
 //Multer setup for post uploads

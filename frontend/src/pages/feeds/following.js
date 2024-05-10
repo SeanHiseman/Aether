@@ -35,7 +35,6 @@ function FollowingPage() {
             setTimePreference(newValue);
     
             axios.post('/api/set_time_preference', { preference: newValue })
-            //setTimePreference(response.data);
         } catch (error) {
             console.error(error);
         }
