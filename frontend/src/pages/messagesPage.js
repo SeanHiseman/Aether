@@ -3,6 +3,7 @@ import React, { useContext, useEffect, useRef, useState } from 'react';
 import { AuthContext } from '../components/authContext';
 import { io } from "socket.io-client";
 import { Link, useNavigate, useParams } from 'react-router-dom';
+import { v4 } from 'uuid';
 import Message from '../components/message';
 
 function MessagesPage() {
@@ -64,18 +65,24 @@ function MessagesPage() {
             const handleReceiveMessage = (message) => {
                 setChat(prevChat => [...prevChat, message]);
             };
-            const handleDeleteMessage = (deletedMessage) => {
-                setChat((prevChat) => prevChat.filter((msg) => msg.message_id !== deletedMessage.message_id));
-            }
+            const handleMessageConfirmed = (message) => {
+                setChat(prevChat => prevChat.map(msg => {
+                    if (msg.senderId === message.senderId && msg.message_content === message.message_content && msg.conversationId === message.conversationId) {
+                        return { ...msg, message_id: message.message_id };
+                    }
+                    return msg;
+                }));
+            };
             //Listen for incoming messages
             socketRef.current.on('receive_message', handleReceiveMessage);
+            socketRef.current.on('message_confirmed', handleMessageConfirmed);
 
             getChatMessages(selectedConversationId);
 
             return () => {
                 socketRef.current.emit('leave_conversation', selectedConversationId);
                 socketRef.current.off('receive_message', handleReceiveMessage);
-                socketRef.current.off('delete_message', handleDeleteMessage);
+                socketRef.current.off('message_confirmed', handleMessageConfirmed);
             };
         }
     }, [selectedConversationId]);
@@ -111,6 +118,19 @@ function MessagesPage() {
         }
     };
 
+    //Deletes the message
+    const deleteMessage = (messageId) => {
+        if (messageId) { //Currently only works after page is refreshed upon posting message
+            socketRef.current.emit('delete_message', {
+                message_id: messageId,
+                channel_id: selectedConversationId,
+            });
+            setChat(prevChat => prevChat.filter(msg => msg.message_id !== messageId));
+        } else {
+            console.error('Invalid messageId:', messageId);
+        }
+    };
+
     //Get messages from a specific conversation
     const getChatMessages = (conversationId) => {
         axios.get(`/api/get_chat_messages/${conversationId}`)
@@ -124,10 +144,12 @@ function MessagesPage() {
             //Emits new message to server
             const newMessage = {
                 message_content: message,
+                message_id: v4(),
                 senderId: user.userId,
-                conversationId: selectedConversationId,
+                conversationId: selectedConversationId
             };
             socketRef.current.emit('send_direct_message', newMessage);
+
             setChat(prevChat => [...prevChat, newMessage]);
             setMessage('');
         }
@@ -163,7 +185,7 @@ function MessagesPage() {
                         </ul>
                     ) : (
                         chat.map((msg, index) => (
-                            <Message key={index} canRemove={false} message={msg} isOutgoing={msg.senderId === user.userId} socket={socketRef.current} channelId={selectedConversationId} />
+                            <Message key={index} canRemove={false} deleteMessage={deleteMessage} message={msg} isOutgoing={msg.senderId === user.userId} />
                         ))
                     )}
                 </div>
