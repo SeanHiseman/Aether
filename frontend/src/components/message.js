@@ -1,31 +1,18 @@
-import axios from 'axios';
 import React from 'react';
 
-const Message = ({ canRemove, message, isGroup, isOutgoing, socket, channelId }) => {
+const Message = ({ canRemove, deleteMessage, message, isOutgoing }) => {
     //Users can delete their own messages
     if (isOutgoing) {
         canRemove = true;
     };
-
-    //Deletes the message
-    const removeMessage = async (message_id) => {
-        try {
-            const route = isGroup ? 'remove_group_message' : 'remove_message';
-            axios.delete(`/api/${route}`, { data: { message_id } });
-            socket.emit('delete_message', {
-                message_id,
-                channel_id: channelId,
-            });
-        } catch (error) {
-            console.error("Error removing post:", error); 
-        }
-    };
-
+    console.log("message:", message);
     return (
         <div className={`message-container ${isOutgoing ? 'outgoing' : 'incoming'}`}>
-            <img className="profile-image" src={`/${message.user.profile.profile_photo}`} alt="Profile" />
+            {!isOutgoing && (
+                <img className="profile-image" src={`/${message.user.profile.profile_photo}`} alt="Profile" />
+            )}
             {canRemove ? (
-                <button className="light-button" onClick={() => removeMessage(message.message_id)}>Delete</button>
+                <button className="light-button" onClick={() => deleteMessage(message.message_id)}>-</button>
             ) : null}
             <div className={`message ${isOutgoing ? 'outgoing' : 'incoming'}`}>
                 {message.message_content}

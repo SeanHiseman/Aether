@@ -152,23 +152,23 @@ router.get('/get_friends', authenticateCheck, async (req, res) => {
     }
 });
 
-//Allows message to be taken removed by the user
-router.delete('/remove_message', authenticateCheck, async (req, res) => {
-    try {
-        const { message_id } = req.body;
-        await Messages.destroy({ where: { message_id } });
-    } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
-    }
-});
-
 //Socket.io event for sending message to an individual user
 export const directMessagesSocket = (socket) => {
     try {
         socket.on('join_conversation', (conversationId) => {
             socket.join(conversationId);
         });
-    
+
+        socket.on('leave_conversation', (conversationId) => {
+            socket.leave(conversationId);
+        });
+
+        socket.on('delete_message', async (data) => {
+            const { message_id, channel_id } = data;
+            await Messages.destroy({ where: { message_id } });
+            socket.to(channel_id).emit('delete_message', { message_id });
+        });
+
         socket.on('send_direct_message', async (message) => {
             const messageLength = message.message_content.length;
             if (messageLength === 0) {
@@ -180,23 +180,18 @@ export const directMessagesSocket = (socket) => {
             }
     
             const newMessage = await Messages.create({
-                message_id: v4(),
+                message_id: message.message_id,
                 conversation_id: message.conversationId,
                 sender_id: message.senderId,
                 message_content: message.message_content,
                 timestamp: new Date()
             });
-    
             socket.to(message.conversationId).emit('message_confirmed', {
                 ...message,
                 message_id: newMessage.message_id,
                 timestamp: newMessage.timestamp
             }); 
         });
-    
-        socket.on('leave_conversation', (conversationId) => {
-            socket.leave(conversationId);
-        })
     } catch (error) {
         console.log("Socket error:", error);
     }
