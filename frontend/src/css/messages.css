@@ -141,8 +141,13 @@
 }
 .message {
     border-radius: 10px;
-    margin: 10px;
+    margin: 5px;
     padding: 10px;
+}
+.message-content {
+    align-items: center;
+    display: flex;
+    justify-content: space-between;
 }
 .message.incoming {
     background-color: #000514;
@@ -153,16 +158,21 @@
 }
 .message-container.incoming {
     align-self: flex-start;
-    display: flex;
-    justify-content: center;
     margin: 10px;
     max-width: 70%;
 }
 .message-container.outgoing {
     align-self: flex-end;
-    display: flex;
-    justify-content: center;
     max-width: 70%;
+}
+.message-date {
+    font-size: medium;  
+}
+.message-date.incoming {
+    margin: 0;
+}
+.message-date.outgoing {
+    margin: 0 10px
 }
 #message-send-button {
     padding: 10px 20px;
