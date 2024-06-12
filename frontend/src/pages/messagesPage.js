@@ -22,13 +22,26 @@ function MessagesPage() {
     const navigate = useNavigate();
 
     useEffect(() => {
-        axios.get('/api/get_friends')
-            .then(response => setFriends(response.data))
-            .catch(error => console.log("Error fetching friends", error));
-    
-        axios.get('/api/get_conversations')
-            .then(response => setConversations(response.data))
-            .catch(error => console.log("Error fetching conversations", error));
+        const getFriends = async () => {
+            try {
+                const response = await axios.get('/api/get_friends');
+                setFriends(response.data);
+            } catch (error) {
+                console.log("Error fetching friends", error);
+            }
+        };
+ 
+        const getConversations = async () => {
+            try {
+                const response = await axios.get('/api/get_conversations');
+                setConversations(response.data);
+            } catch (error) {
+                console.log("Error fetching conversations", error);
+            }
+        };
+ 
+        getFriends();
+        getConversations();
         socketRef.current = io(`http://localhost:7000`);
 
         return () => {
@@ -120,7 +133,7 @@ function MessagesPage() {
 
     //Deletes the message
     const deleteMessage = (messageId) => {
-        if (messageId) { //Currently only works after page is refreshed upon posting message
+        if (messageId) {
             socketRef.current.emit('delete_message', {
                 message_id: messageId,
                 channel_id: selectedConversationId,
@@ -132,26 +145,33 @@ function MessagesPage() {
     };
 
     //Get messages from a specific conversation
-    const getChatMessages = (conversationId) => {
-        axios.get(`/api/get_chat_messages/${conversationId}`)
-            .then(response => response.data)
-            .then(data => setChat(data))
-            .catch(error => console.log("Error fetching chat messages", error));
-    }
+    const getChatMessages = async (conversationId) => {
+        try {
+            const response = await axios.get(`/api/get_chat_messages/${conversationId}`);
+            setChat(response.data);
+        } catch (error) {
+            setErrorMessage("Error getting messages");
+        }
+    };
 
     const sendMessage = () => {
-        if (socketRef.current) {
+        try {
+            //Prevents sending empty messages
+            if (!message.trim()) return;
             //Emits new message to server
             const newMessage = {
-                message_content: message,
                 message_id: v4(),
+                message_content: message,
                 senderId: user.userId,
-                conversationId: selectedConversationId
+                conversationId: selectedConversationId,
+                timestamp: new Date()
             };
-            socketRef.current.emit('send_direct_message', newMessage);
 
+            socketRef.current.emit('send_direct_message', newMessage);
             setChat(prevChat => [...prevChat, newMessage]);
             setMessage('');
+        } catch (error) {
+            setErrorMessage("Error sending message");
         }
     };
 

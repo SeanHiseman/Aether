@@ -9,7 +9,7 @@ const Message = ({ canRemove, deleteMessage, message, isOutgoing }) => {
     return (
         <div className={`message-container ${isOutgoing ? 'outgoing' : 'incoming'}`}>
             <div className="message-content">
-                {!isOutgoing && (
+                {!isOutgoing && message.user && (
                     <img className="profile-image2" src={`/${message.user.profile.profile_photo}`} alt="Profile" />
                 )}
                 {canRemove ? (

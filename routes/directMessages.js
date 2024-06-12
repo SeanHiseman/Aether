@@ -184,7 +184,7 @@ export const directMessagesSocket = (socket) => {
                 conversation_id: message.conversationId,
                 sender_id: message.senderId,
                 message_content: message.message_content,
-                timestamp: new Date()
+                timestamp: message.timestamp
             });
             socket.to(message.conversationId).emit('message_confirmed', {
                 ...message,

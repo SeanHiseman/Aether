@@ -351,7 +351,7 @@ router.get('/group_channel_messages/:channel_id', authenticateCheck, async (req,
                 }]
             }],
             //Sort chronologically
-            order: [['message_time', 'ASC']]
+            order: [['timestamp', 'ASC']]
         });
         res.json(messages);
     } catch (error) {
@@ -510,16 +510,6 @@ router.post('/leave_group', authenticateCheck, async (req, res) => {
     }
 });
 
-//Allows message to be taken removed by the user or moderator
-router.delete('/remove_group_message', authenticateCheck, async (req, res) => {
-    try {
-        const { message_id } = req.body;
-        await GroupChannelMessages.destroy({ where: { message_id } });
-    } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
-    }
-});
-
 //Rejects request to join private group 
 router.delete('/reject_group_request', authenticateCheck, async (req, res) => {
     try {
@@ -669,7 +659,13 @@ export const groupChatChannelSocket = (socket) => {
         socket.on('join_channel', (channelId) => {
             socket.join(channelId);
         });
-    
+
+        socket.on('delete_message', async (data) => {
+            const { message_id, channel_id } = data;
+            await GroupChannelMessages.destroy({ where: { message_id } });
+            socket.to(channel_id).emit('delete_message', { message_id });
+        });
+
         socket.on('send_group_message', async (message) => {
             const messageLength = message.message_content.length;
             if (messageLength === 0) {
@@ -681,12 +677,12 @@ export const groupChatChannelSocket = (socket) => {
             }
     
             const newMessage = await GroupChannelMessages.create({
-                message_id: v4(),
+                message_id: message.message_id,
                 group_id: message.groupId,
                 channel_id: message.channelId,
                 message_content: message.message_content,
-                message_time: new Date(),
                 sender_id: message.senderId,
+                timestamp: message.timestamp,
             });
             socket.to(message.channelId).emit('new_message', newMessage);
         });
