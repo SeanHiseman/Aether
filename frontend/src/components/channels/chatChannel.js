@@ -2,6 +2,7 @@ import axios from 'axios';
 import React, { useContext, useEffect, useState } from 'react';
 import { AuthContext } from '../authContext';
 import { io } from "socket.io-client";
+import { v4 } from 'uuid';
 import Message from '../message';
 
 function ChatChannel({ canRemove, channelId, isGroup, locationId }) {
@@ -20,48 +21,61 @@ function ChatChannel({ canRemove, channelId, isGroup, locationId }) {
                 setChannel((prevMessages) => [...prevMessages, newMessage]);
             }
         });
-        //Listens for deletions
-        socket.on('delete_message', (deletedMessage) => {
-            if (deletedMessage.channel_id === channelId) {
-                setChannel((prev) => prev.filter((msg) => msg.message_id !== deletedMessage.message_id));
-            }
-        });
         return () => {
             socket.off('new_message');
-            socket.off('delete_message');
             socket.emit('leave_channel', channelId);
         };
     }, [channelId]);
 
+    //Deletes the message
+    const deleteMessage = (messageId) => {
+        if (messageId) {
+            socket.emit('delete_message', {
+                message_id: messageId,
+                channel_id: channelId,
+            });
+            setChannel(prevChat => prevChat.filter(msg => msg.message_id !== messageId));
+        } else {
+            console.error('Invalid messageId:', messageId);
+        }
+    };
+
     //Get messages from the channel
     const getChannelMessages = async (channelId) => {
         try {
-            const endpoint = isGroup ? `/api/group_channel_messages/${channelId}` : `/api/profile_channel_messages/${channelId}`;
-            const response = await axios.get(endpoint);
+            const response = await axios.get(`/api/group_channel_messages/${channelId}`);
             setChannel(response.data);
         } catch (error) {
-            setErrorMessage("Error getting messages.");
+            setErrorMessage("Error getting messages");
         }
-    }
+    };
 
     const sendChannelMessage = () => {
-        //Prevents sending empty messages
-        if (!currentMessage.trim()) return;
-        const newMessage = {
-            channelId, 
-            groupId: locationId,
-            message_content: currentMessage,
-            senderId: user.userId, 
+        try {
+            //Prevents sending empty messages
+            if (!currentMessage.trim()) return;
+            const newMessage = {
+                message_id: v4(),
+                message_content: currentMessage,
+                channelId, 
+                groupId: locationId,
+                senderId: user.userId, 
+                timestamp: new Date()
+            }
+
+            socket.emit('send_group_message', newMessage);
+            setChannel(prevChat => [...prevChat, newMessage]);
+            setCurrentMessage('');
+        } catch (error) {
+            setErrorMessage("Error sending message");
         }
-        socket.emit('send_group_message', newMessage);
-        setCurrentMessage('');
     };
 
     return (
         <div id="channel">
             <div id="channel-content">
                 {channel.map((msg, index) => (
-                    <Message canRemove={canRemove} key={index} message={msg} isGroup={isGroup} isOutgoing={msg.sender_id === user.userId} socket={socket} channelId={channelId}/>
+                    <Message canRemove={canRemove} deleteMessage={deleteMessage} key={index} message={msg} isGroup={isGroup} isOutgoing={msg.sender_id === user.userId} socket={socket} channelId={channelId}/>
                 ))}
             </div>
             <div id="channel-input">
