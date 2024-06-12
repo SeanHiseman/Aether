@@ -5,18 +5,21 @@ const Message = ({ canRemove, deleteMessage, message, isOutgoing }) => {
     if (isOutgoing) {
         canRemove = true;
     };
-    console.log("message:", message);
+
     return (
         <div className={`message-container ${isOutgoing ? 'outgoing' : 'incoming'}`}>
-            {!isOutgoing && (
-                <img className="profile-image" src={`/${message.user.profile.profile_photo}`} alt="Profile" />
-            )}
-            {canRemove ? (
-                <button className="light-button" onClick={() => deleteMessage(message.message_id)}>-</button>
-            ) : null}
-            <div className={`message ${isOutgoing ? 'outgoing' : 'incoming'}`}>
-                {message.message_content}
+            <div className="message-content">
+                {!isOutgoing && (
+                    <img className="profile-image2" src={`/${message.user.profile.profile_photo}`} alt="Profile" />
+                )}
+                {canRemove ? (
+                    <button className="light-button" onClick={() => deleteMessage(message.message_id)}>-</button>
+                ) : null}
+                <div className={`message ${isOutgoing ? 'outgoing' : 'incoming'}`}>
+                    {message.message_content}
+                </div>
             </div>
+            <p className={`message-date ${isOutgoing ? 'outgoing' : 'incoming'}`}>{new Date(message.timestamp).toLocaleDateString()}</p>
         </div>
     );
 };
