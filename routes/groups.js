@@ -681,7 +681,7 @@ export const groupChatChannelSocket = (socket) => {
                 group_id: message.groupId,
                 channel_id: message.channelId,
                 message_content: message.message_content,
-                sender_id: message.senderId,
+                sender_id: message.sender_id,
                 timestamp: message.timestamp,
             });
             socket.to(message.channelId).emit('new_message', newMessage);

@@ -204,7 +204,7 @@ function MessagesPage() {
                             ))}
                         </ul>
                     ) : (
-                        chat.map((msg, index) => (
+                        chat.slice().reverse().map((msg, index) => (
                             <Message key={index} canRemove={false} deleteMessage={deleteMessage} message={msg} isOutgoing={msg.senderId === user.userId} />
                         ))
                     )}
