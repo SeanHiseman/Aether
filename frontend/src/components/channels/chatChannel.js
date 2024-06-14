@@ -21,6 +21,7 @@ function ChatChannel({ canRemove, channelId, isGroup, locationId }) {
                 setChannel((prevMessages) => [...prevMessages, newMessage]);
             }
         });
+
         return () => {
             socket.off('new_message');
             socket.emit('leave_channel', channelId);
@@ -47,6 +48,7 @@ function ChatChannel({ canRemove, channelId, isGroup, locationId }) {
             setChannel(response.data);
         } catch (error) {
             setErrorMessage("Error getting messages");
+            console.log("error:", error);
         }
     };
 
@@ -59,7 +61,7 @@ function ChatChannel({ canRemove, channelId, isGroup, locationId }) {
                 message_content: currentMessage,
                 channelId, 
                 groupId: locationId,
-                senderId: user.userId, 
+                sender_id: user.userId, 
                 timestamp: new Date()
             }
 
@@ -74,7 +76,7 @@ function ChatChannel({ canRemove, channelId, isGroup, locationId }) {
     return (
         <div id="channel">
             <div id="channel-content">
-                {channel.map((msg, index) => (
+                {channel.slice().reverse().map((msg, index) => (
                     <Message canRemove={canRemove} deleteMessage={deleteMessage} key={index} message={msg} isGroup={isGroup} isOutgoing={msg.sender_id === user.userId} socket={socket} channelId={channelId}/>
                 ))}
             </div>
