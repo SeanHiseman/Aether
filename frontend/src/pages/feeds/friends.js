@@ -20,7 +20,7 @@ function FriendsPage() {
     return (
         <div className="home-container">
             <div className="content-feed">
-                <div id="channel-content">
+                <div className="channel-content">
                     {posts.length > 0 ? (
                         <ul className="content-list">
                             {posts.map(post => (

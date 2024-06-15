@@ -98,6 +98,13 @@ body,html {
     min-height: 40px;
     transition: background-color 0.3s;
 }
+.channel-content {
+    align-items: center;
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+    overflow-y: auto;
+}
 .channel-feed {
     align-items: center;
     display: flex;
@@ -257,8 +264,8 @@ label {
     width: 120px; 
 }
 .large-text {
-    font-size: 40px;
-    max-width: 300px;
+    font-size: 36px;
+    max-width: 400px;
     text-decoration: none;
 }
 #left-aside, #right-aside {
@@ -305,9 +312,6 @@ main {
     flex-direction: column;
     margin-top: 80px;
     width: 100%;
-}
-#name-section {
-    height: 80px;
 }
 .posts-channel-button {
     border-radius: 5px;

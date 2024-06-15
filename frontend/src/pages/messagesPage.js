@@ -4,6 +4,7 @@ import { AuthContext } from '../components/authContext';
 import { io } from "socket.io-client";
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { v4 } from 'uuid';
+import ManageFriendshipButton from '../components/manageFriendship';
 import Message from '../components/message';
 
 function MessagesPage() {
@@ -191,15 +192,20 @@ function MessagesPage() {
                         <h1>{selectedConversations.find(c => c.conversationId === selectedConversationId)?.title || 'Conversation'}</h1>
                     ) : <h1>Friends</h1>}
                 </header>
-                <div id="channel-content">
+                <div className={`channel-content ${!friend_name ? '' : 'messages'}`}>
                     {!friend_name ? (
                         <ul className="friends-page-list">
                             {friends.map(friend => (
                                 <li key={friend.friend_id}>
-                                    <Link className="friend-list-item" to={`/profile/${friend.friend_name}`}>
-                                        <img className="large-profile-photo" src={`/${friend.friend_profile_photo}`} alt="Profile" />
-                                        <p className="large-text">{friend.friend_name}</p>
-                                    </Link>
+                                    <div className="friend-list-item">
+                                        <Link to={`/profile/${friend.friend_name}`}>
+                                            <img className="large-profile-photo" src={`/${friend.friend_profile_photo}`} alt="Profile" />
+                                            <p className="large-text profile-name">{friend.friend_name}</p>
+                                        </Link>
+                                        <div className="remove-friend-box">
+                                            <ManageFriendshipButton userId={user.userId} receiverProfileId={friend.friend_profile_id} receiverUserId={friend.friend_id} isRequestSent={false} isFriend={true} />
+                                        </div>
+                                    </div>
                                 </li>
                             ))}
                         </ul>

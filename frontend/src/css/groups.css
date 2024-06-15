@@ -11,13 +11,6 @@
     margin-right: 0;
     width: 100%;
 }
-#channel-content, #channel-feed {
-    align-items: center;
-    display: flex;
-    flex-direction: column-reverse;
-    flex-grow: 1;
-    overflow-y: auto;
-}
 #channel-header {
     align-items: center;
     border-bottom: 1px solid #ffffff;
