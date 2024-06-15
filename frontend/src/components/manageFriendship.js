@@ -18,7 +18,7 @@ function ManageFriendshipButton({ userId, receiverProfileId, receiverUserId, isR
             if (friend) {
                 method = 'delete';
                 url = '/api/remove_friend';
-                requestData = { receiverUserId };
+                requestData = { receiverUserId, userId };
             } else if (request) {
                 method = 'delete';
                 requestData = { receiverProfileId, userId };
@@ -28,15 +28,12 @@ function ManageFriendshipButton({ userId, receiverProfileId, receiverUserId, isR
                 requestData = { receiverProfileId, userId };
                 url = '/api/send_friend_request';
             }
-            console.log("method:", method);
-            console.log("requestData:", requestData);
-            console.log("url:", url);
             const response = await axios({
                 method,
                 url,
                 data: requestData,
             });
-            console.log("response:", response);
+
             if (response.status === 200) {
                 if (method === 'delete') {
                     if (url === 'remove_friend') {

@@ -102,7 +102,7 @@ const SearchResults = () => {
     return (
         <div className="search-container">
             <div className="content-feed">
-                <div id="channel-content">
+                <div className="channel-content">
                     <ul className="content-list">
                         {renderResults()}
                     </ul>

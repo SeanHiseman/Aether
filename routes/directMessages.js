@@ -141,6 +141,7 @@ router.get('/get_friends', authenticateCheck, async (req, res) => {
 
             return {
                 friend_id: friend.user_id,
+                friend_profile_id: friendProfile.profile_id,
                 friend_name: friend.username,
                 friend_profile_photo: friendProfile.profile_photo,
             };

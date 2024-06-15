@@ -290,6 +290,58 @@ router.delete('/reject_friend_request', authenticateCheck, async (req, res) => {
     }
 });
 
+//Removes a friend and associated chats
+router.delete('/remove_friend', authenticateCheck, async (req, res) => {
+    try {
+        const { receiverUserId, userId } = req.body;
+        await Friends.destroy({
+            where: { [Op.or]: [
+                { user1_id: receiverUserId, user2_id: userId },
+                { user2_id: receiverUserId, user1_id: userId },
+            ]}
+        });
+
+        //Find all conversations involving both users
+        const conversations = await Conversations.findAll({
+            include: [{
+                model: UserConversations,
+                where: { [Op.or]: [
+                        { user_id: userId },
+                        { user_id: receiverUserId }
+                    ]}
+            }]
+        });
+
+        //Remove both users from all conversations
+        for (const conversation of conversations) {
+            await UserConversations.destroy({
+                where: {
+                    conversation_id: conversation.conversation_id,
+                    [Op.or]: [
+                        { user_id: userId },
+                        { user_id: receiverUserId }
+                    ]}
+            });
+        }
+        const conversationsToRemove = await Conversations.findAll({
+            include: [{
+                model: UserConversations,
+                attributes: ['conversation_id'],
+            }]
+        });
+
+        await Conversations.destroy({
+            where: {
+                conversation_id: conversationsToRemove.map(c => c.conversation_id)
+            }
+        });
+        
+        res.status(200).json({ success: true, message: 'Request rejected.' });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
 //Posts made to a profile channel
 router.get('/profile_channel_posts', authenticateCheck, async (req, res) => {
     try {

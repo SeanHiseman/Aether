@@ -75,7 +75,7 @@ function ChatChannel({ canRemove, channelId, isGroup, locationId }) {
 
     return (
         <div id="channel">
-            <div id="channel-content">
+            <div className="channel-content messages">
                 {channel.slice().reverse().map((msg, index) => (
                     <Message canRemove={canRemove} deleteMessage={deleteMessage} key={index} message={msg} isGroup={isGroup} isOutgoing={msg.sender_id === user.userId} socket={socket} channelId={channelId}/>
                 ))}

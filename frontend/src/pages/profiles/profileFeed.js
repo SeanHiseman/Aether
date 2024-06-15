@@ -23,7 +23,7 @@ function ProfileFeed({ channelId, isGroup, locationId }) {
 
     return (
         <div id="channel">
-            <div id="channel-content">
+            <div className="channel-content">
                 {posts.length > 0 ? (
                     <ul className="content-list">
                         {posts.map(post => (
