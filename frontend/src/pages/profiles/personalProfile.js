@@ -160,6 +160,7 @@ const PersonalProfile = () => {
                 });
             }
             getFriendRequests();
+            //setFriendRequests(prevRequest => prevRequest.filter(request => request.request_id !== requestId));
         } catch (error) {
             setErrorMessage("Error handling request:", error);
         }

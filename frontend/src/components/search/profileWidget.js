@@ -1,12 +1,20 @@
-import React, { useContext } from 'react';
+import React, { useContext, useState } from 'react';
 import { AuthContext } from '../authContext';
 import FollowerChangeButton from '../followerChangeButton';
 import { Link } from 'react-router-dom';
 import ManageFriendshipButton from '../manageFriendship';
 
 const ProfileWidget = ({ profile }) => {
+    const [followerCount, setFollowerCount] = useState(profile.follower_count);
+    const [isFollowing, setIsFollowing] = useState(profile.isFollowing);
     const { user } = useContext(AuthContext);
     const loggedInUserId = user.userId;
+
+    //Updates follower count number
+    const handleFollowerCountChange = (newIsFollowing) => {
+        setFollowerCount(prevCount => newIsFollowing ? prevCount + 1 : prevCount - 1);
+        setIsFollowing(newIsFollowing);
+    };
 
     return (
         <div className="result-widget">
@@ -24,8 +32,8 @@ const ProfileWidget = ({ profile }) => {
                     null
                 ) : (
                     <div>
-                        <p>{profile.follower_count} followers</p>
-                        <FollowerChangeButton userId={loggedInUserId} profileId={profile.profile_id} isFollowing={profile.isFollowing} isPrivate={profile.is_private}/>
+                        <p>{followerCount} followers</p>
+                        <FollowerChangeButton userId={loggedInUserId} profileId={profile.profile_id} isFollowing={isFollowing} isPrivate={profile.is_private} onFollowerChange={handleFollowerCountChange}/>
                     </div>
                 )}
             <Link to={`/profile/${profile.user.username}`}>
@@ -35,4 +43,4 @@ const ProfileWidget = ({ profile }) => {
     )
 }
 
-export default ProfileWidget
+export default ProfileWidget;

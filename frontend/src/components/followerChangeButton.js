@@ -1,25 +1,20 @@
 import axios from "axios";
 import React, { useEffect, useState } from "react"
 
-const FollowerChangeButton = ({ userId, profileId, isFollowing, isPrivate }) => {
+const FollowerChangeButton = ({ userId, profileId, isFollowing, isPrivate, onFollowerChange }) => {
     const [errorMessage, setErrorMessage] = useState('');
-    const [following, setFollowing] = useState(isFollowing);
-
-    //Update following state
-    useEffect(() => {
-        setFollowing(isFollowing);
-    }, [isFollowing]);
 
     const handleFollowerChange = () => {
         //Depends on if user is already following the profile
-        const url = following ? 'remove_follower' : 'follow_profile';
+        const url = isFollowing ? 'remove_follower' : 'follow_profile';
         axios.post(`/api/${url}`, { userId, profileId })
             .then(() => {
-                setFollowing(!following);
+                onFollowerChange(!isFollowing);
             }).catch(error => {
                 setErrorMessage("Error changing following", error);
             });
     };
+    console.log("isFollowing:", isFollowing);
     //Private profiles don't have followers
     if (isPrivate) {
         return;
@@ -27,7 +22,7 @@ const FollowerChangeButton = ({ userId, profileId, isFollowing, isPrivate }) => 
         return (
             <div>
                 <button className="button" onClick={handleFollowerChange}>
-                    {following ? 'Unfollow' : 'Follow'}
+                    {isFollowing ? 'Unfollow' : 'Follow'}
                 </button>
                 {errorMessage && <div className="error-message">{errorMessage}</div>}
             </div>

@@ -98,7 +98,7 @@ const SearchResults = () => {
                 return null;
         }
     };
-
+    document.title = keyword;
     return (
         <div className="search-container">
             <div className="content-feed">
