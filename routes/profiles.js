@@ -98,7 +98,7 @@ router.post('/add_profile_channel', authenticateCheck, async (req, res) => {
 });
 
 //Cancel friend request
-router.post('/cancel_friend_request', authenticateCheck, async (req, res) => {
+router.delete('/cancel_friend_request', authenticateCheck, async (req, res) => {
     const { userId, receiverUserId } = req.body;
     try {
         await FriendRequests.destroy({
@@ -490,7 +490,8 @@ router.post('/remove_follower', authenticateCheck, async (req, res) => {
         });
         //Lower follower count
         const profile = await Profiles.findByPk(profileId);
-        await profile.decrement('follower_count');
+        const updatedFollowerCount = await profile.decrement('follower_count', { returning: true });
+        res.status(200).json({ followerCount: updatedFollowerCount });
     } catch (error) {
         res.status(500).json(error.message);
     }
