@@ -25,7 +25,7 @@ const ProfileWidget = ({ profile }) => {
                 </div>
             </Link>
             <p>{profile.is_private ? "Private" : "Public"}</p>
-            <ManageFriendshipButton userId={loggedInUserId} receiverProfileId={profile.profile_id} receiverUserId={profile.user_id} isRequestSent={profile.isRequestSent} isFriend={profile.isFriend} />
+            <ManageFriendshipButton userId={loggedInUserId} receiverUserId={profile.user.user_id} isRequestSent={profile.isRequestSent} isFriend={profile.isFriend} />
             <div id="profile-header-side">
             </div>
                 {profile.is_private ? (

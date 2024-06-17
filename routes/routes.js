@@ -403,9 +403,9 @@ router.get('/search/profiles', authenticateCheck, async (req, res) => {
             });
 
             const isFriend = !!friendship; 
-            const isRequestSent = profile.is_private && (await FriendRequests.findOne({
+            const isRequestSent = await FriendRequests.findOne({
                 where: { sender_id: loggedInUserId, receiver_id: viewedUserId },
-            }));
+            });
 
             return {
                 ...profile.toJSON(),

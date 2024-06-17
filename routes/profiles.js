@@ -99,8 +99,8 @@ router.post('/add_profile_channel', authenticateCheck, async (req, res) => {
 
 //Cancel friend request
 router.delete('/cancel_friend_request', authenticateCheck, async (req, res) => {
-    const { userId, receiverUserId } = req.body;
     try {
+        const { userId, receiverUserId } = req.body;
         await FriendRequests.destroy({
             where: { sender_id: userId, receiver_id: receiverUserId } 
         });
@@ -448,7 +448,7 @@ router.get('/profile/:username', authenticateCheck, async (req, res) => {
         } catch (error) {
             return res.status(500).json("Error fetching friendship data.", error);
         }
-
+        //Could probably be simplified
         const responseData = {
             profile: {
                 profileId: profile.profile_id,
@@ -499,18 +499,19 @@ router.post('/remove_follower', authenticateCheck, async (req, res) => {
 
 //Send friend request
 router.post('/send_friend_request', authenticateCheck, async (req, res) => {
-    const { receiverProfileId } = req.body;
+    const { receiverUserId } = req.body;
+
     try {
-        const receiverProfile = await Profiles.findOne({ where: { profile_id: receiverProfileId } });
+        const receiverUser = await Users.findOne({ where: { user_id: receiverUserId } });
         const userId = req.session.user_id;
         const user = await Users.findOne({ where: { user_id: userId } });
         await FriendRequests.create({
             request_id: v4(),
             sender_id: user.user_id,
-            receiver_id: receiverProfile.user_id
+            receiver_id: receiverUser.user_id
         });
 
-        res.json({ message: "Friend request sent" });
+        res.status(200).json({ message: "Friend request sent" });
     } catch (error) {
         res.status(500).send(error.message);
     }

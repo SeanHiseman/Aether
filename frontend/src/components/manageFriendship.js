@@ -1,7 +1,7 @@
 import axios from "axios";
 import React, { useEffect, useState } from "react"
 
-function ManageFriendshipButton({ userId, receiverProfileId, receiverUserId, isRequestSent, isFriend }) {
+function ManageFriendshipButton({ userId, receiverUserId, isRequestSent, isFriend }) {
     const [errorMessage, setErrorMessage] = useState('');
     const [friend, setFriend] = useState(isFriend);
     const [request, setRequest] = useState(isRequestSent);
@@ -21,11 +21,11 @@ function ManageFriendshipButton({ userId, receiverProfileId, receiverUserId, isR
                 requestData = { receiverUserId, userId };
             } else if (request) {
                 method = 'delete';
-                requestData = { receiverProfileId, userId };
+                requestData = { receiverUserId, userId };
                 url = '/api/cancel_friend_request';
             } else {
                 method = 'post';
-                requestData = { receiverProfileId, userId };
+                requestData = { receiverUserId, userId };
                 url = '/api/send_friend_request';
             }
             const response = await axios({
@@ -57,7 +57,10 @@ function ManageFriendshipButton({ userId, receiverProfileId, receiverUserId, isR
             setErrorMessage("Friend request error.", error);
         }
     };
-
+    //If user is viewing themselves
+    if (userId == receiverUserId) {
+        return (<></>);
+    } else {
     return (
         <div>
             <button className="button" onClick={handleSendRequest}>
@@ -66,7 +69,7 @@ function ManageFriendshipButton({ userId, receiverProfileId, receiverUserId, isR
             {errorMessage && <div className="error-message">{errorMessage}</div>}
         </div>
 
-    );
+    )};
 }
 
 export default ManageFriendshipButton;

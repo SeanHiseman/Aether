@@ -14,7 +14,7 @@ const FollowerChangeButton = ({ userId, profileId, isFollowing, isPrivate, onFol
                 setErrorMessage("Error changing following", error);
             });
     };
-    console.log("isFollowing:", isFollowing);
+
     //Private profiles don't have followers
     if (isPrivate) {
         return;
