@@ -139,28 +139,25 @@ const PersonalProfile = () => {
     };
 
     const getFriendRequests = async () => {
-        if (!showFriendRequests) {
-            try {
-                const response = await axios.get('/api/get_friend_requests');
-                setFriendRequests(response.data);
-            } catch (error) {
-                setErrorMessage('Error fetching friend requests:', error);
-            }
+        try {
+            const response = await axios.get('/api/get_friend_requests');
+            setFriendRequests(response.data);
+        } catch (error) {
+            setErrorMessage('Error fetching friend requests:', error);
+        } finally {
+            setShowFriendRequests(true);
         }
-        setShowFriendRequests(!showFriendRequests);
     };
 
     const handleFriendRequest = async (request, result) => {
         try {
             if (result === 'Accept') {
-                await axios.post('/api/accept_friend_request', {request} )
+                await axios.post('/api/accept_friend_request', { request });
+                setFriendRequests(prevRequests => prevRequests.filter(req => req.request_id !== request.request_id));
             } else if (result === 'Reject') {
-                await axios.delete('/api/reject_friend_request', {
-                    data: {request}
-                });
+                await axios.delete('/api/reject_friend_request', { data: { request } });
+                setFriendRequests(prevRequests => prevRequests.filter(req => req.request_id !== request.request_id));
             }
-            getFriendRequests();
-            //setFriendRequests(prevRequest => prevRequest.filter(request => request.request_id !== requestId));
         } catch (error) {
             setErrorMessage("Error handling request:", error);
         }

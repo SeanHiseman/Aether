@@ -1,7 +1,7 @@
 import axios from "axios";
-import React, { useEffect, useState } from "react"
+import React, { useState } from "react"
 
-const FollowerChangeButton = ({ userId, profileId, isFollowing, isPrivate, onFollowerChange }) => {
+const FollowerChangeButton = ({ userId, receiverUserId, profileId, isFollowing, isPrivate, onFollowerChange }) => {
     const [errorMessage, setErrorMessage] = useState('');
 
     const handleFollowerChange = () => {
@@ -17,6 +17,9 @@ const FollowerChangeButton = ({ userId, profileId, isFollowing, isPrivate, onFol
 
     //Private profiles don't have followers
     if (isPrivate) {
+        return;
+        //If user is viewing their own profile
+    } else if (userId == receiverUserId) {
         return;
     } else {
         return (

@@ -1,5 +1,5 @@
 import authenticateCheck from '../functions/authenticateCheck.js';
-import { ContentVotes, Conversations, Followers, Friends, FriendRequests, Profiles, ProfileChannels, ProfilePosts, Users, UserConversations } from '../models/models.js';
+import { ContentVotes, Conversations, Followers, Friends, FriendRequests, Messages, Profiles, ProfileChannels, ProfilePosts, Users, UserConversations } from '../models/models.js';
 import express from 'express';
 import fs from 'fs';
 import { join } from 'path';
@@ -292,7 +292,7 @@ router.delete('/reject_friend_request', authenticateCheck, async (req, res) => {
 
 //Removes a friend and associated chats
 router.delete('/remove_friend', authenticateCheck, async (req, res) => {
-    try {
+    //try {
         const { receiverUserId, userId } = req.body;
         await Friends.destroy({
             where: { [Op.or]: [
@@ -312,6 +312,14 @@ router.delete('/remove_friend', authenticateCheck, async (req, res) => {
             }]
         });
 
+        //Deletes all messages between users
+        for (const conversation of conversations) {
+            await Messages.destroy({
+                where: {
+                    conversation_id: conversation.conversation_id
+                }
+            });
+        }
         //Remove both users from all conversations
         for (const conversation of conversations) {
             await UserConversations.destroy({
@@ -327,9 +335,16 @@ router.delete('/remove_friend', authenticateCheck, async (req, res) => {
             include: [{
                 model: UserConversations,
                 attributes: ['conversation_id'],
-            }]
+                where: {
+                    user_id: {
+                        [Op.in]: [userId, receiverUserId]
+                    }
+                },
+                required: true
+            }],
+            group: ['conversation_id'],
         });
-
+        console.log("conversationsToRemove:", conversationsToRemove);
         await Conversations.destroy({
             where: {
                 conversation_id: conversationsToRemove.map(c => c.conversation_id)
@@ -337,9 +352,9 @@ router.delete('/remove_friend', authenticateCheck, async (req, res) => {
         });
         
         res.status(200).json({ success: true, message: 'Request rejected.' });
-    } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
-    }
+    //} catch (error) {
+        //res.status(500).json({ success: false, message: error.message });
+    //}
 });
 
 //Posts made to a profile channel
@@ -425,8 +440,10 @@ router.get('/profile/:username', authenticateCheck, async (req, res) => {
         try {
             [follower, friendship, friendRequest] = await Promise.all([
                 Followers.findOne({
-                    follower_id: loggedInUserId,
-                    profile_id: profile.profile_id
+                    where: {
+                        follower_id: loggedInUserId,
+                        profile_id: profile.profile_id
+                    }
                 }),
                 Friends.findOne({
                     where: {
