@@ -94,6 +94,10 @@
     border-radius: 10px;
     cursor: pointer;
 }
+.friend-link{
+    align-items: center;
+    display: flex;
+}
 .friend-list-item {
     align-items: center;
     border-bottom: 1px solid white;

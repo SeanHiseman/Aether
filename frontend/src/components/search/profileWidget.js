@@ -33,7 +33,7 @@ const ProfileWidget = ({ profile }) => {
                 ) : (
                     <div>
                         <p>{followerCount} followers</p>
-                        <FollowerChangeButton userId={loggedInUserId} profileId={profile.profile_id} isFollowing={isFollowing} isPrivate={profile.is_private} onFollowerChange={handleFollowerCountChange}/>
+                        <FollowerChangeButton userId={loggedInUserId} receiverUserId={profile.user.user_id} profileId={profile.profile_id} isFollowing={isFollowing} isPrivate={profile.is_private} onFollowerChange={handleFollowerCountChange}/>
                     </div>
                 )}
             <Link to={`/profile/${profile.user.username}`}>

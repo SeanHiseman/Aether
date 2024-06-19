@@ -198,7 +198,7 @@ function MessagesPage() {
                             {friends.map(friend => (
                                 <li key={friend.friend_id}>
                                     <div className="friend-list-item">
-                                        <Link to={`/profile/${friend.friend_name}`}>
+                                        <Link className="friend-link" to={`/profile/${friend.friend_name}`}>
                                             <img className="large-profile-photo" src={`/${friend.friend_profile_photo}`} alt="Profile" />
                                             <p className="large-text profile-name">{friend.friend_name}</p>
                                         </Link>

@@ -59,7 +59,7 @@ function ManageFriendshipButton({ userId, receiverUserId, isRequestSent, isFrien
     };
     //If user is viewing themselves
     if (userId == receiverUserId) {
-        return (<></>);
+        return;
     } else {
     return (
         <div>
