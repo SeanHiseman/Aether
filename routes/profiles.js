@@ -250,7 +250,13 @@ router.get('/get_friend_requests', authenticateCheck, async (req, res) => {
                 model: Users, 
                 as: 'sender',
                 required: true,
-                attributes: ['user_id', 'username']
+                attributes: ['user_id', 'username'],
+                include: [{
+                    model: Profiles,
+                    as: 'profile',
+                    required: false,
+                    attributes: ['profile_photo', 'bio', 'follower_count', 'is_private']
+                }]
             }],
         });
 

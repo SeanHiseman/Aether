@@ -325,21 +325,26 @@ const PersonalProfile = () => {
                 </header>                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       
                 <div className="channel-feed">
                     {showFriendRequests ? (
-                        <div>
+                        <div className="channel-content">
                             <h2>Friend Requests</h2>
                             {friendRequests.length === 0 ? (
                                 <p>No pending requests</p>
                             ) : (
-                                <ul>
+                                <ul className="friends-page-list">
                                     {friendRequests.map((request, index) => (
                                         <li key={index}>
-                                            {request.sender.username}
-                                            <button className="button" onClick={() => handleFriendRequest(request, 'Accept')}>
-                                                Accept friend request
-                                            </button>
-                                            <button className="button" onClick={() => handleFriendRequest(request, 'Reject')}>
-                                                Reject friend request
-                                            </button>
+                                            <div className="friend-list-item">
+                                                <Link className="friend-link" to={`/profile/${request.sender.username}`}>
+                                                    <img className="large-profile-photo" src={`/${request.sender.profile.profile_photo}`} alt="Profile" />
+                                                    <p className="large-text profile-name">{request.sender.username}</p>
+                                                </Link>
+                                                <button className="button" onClick={() => handleFriendRequest(request, 'Accept')}>
+                                                    Accept friend request
+                                                </button>
+                                                <button className="button" onClick={() => handleFriendRequest(request, 'Reject')}>
+                                                    Reject friend request
+                                                </button>
+                                            </div>
                                         </li>
                                     ))}
                                 </ul>
