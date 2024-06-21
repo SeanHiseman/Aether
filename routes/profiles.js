@@ -69,6 +69,7 @@ router.post('/accept_friend_request', authenticateCheck, async (req, res) => {
         ]);
 
         await friendRequest.destroy();
+        res.status(200).json({ success: true, message: 'Friend request accepted.' });
     } catch (error) {
         res.status(500).json(error.message);
     }
@@ -298,69 +299,62 @@ router.delete('/reject_friend_request', authenticateCheck, async (req, res) => {
 
 //Removes a friend and associated chats
 router.delete('/remove_friend', authenticateCheck, async (req, res) => {
-    //try {
+    try {
         const { receiverUserId, userId } = req.body;
+
         await Friends.destroy({
-            where: { [Op.or]: [
-                { user1_id: receiverUserId, user2_id: userId },
-                { user2_id: receiverUserId, user1_id: userId },
-            ]}
+            where: { 
+                [Op.or]: [
+                    { user1_id: receiverUserId, user2_id: userId },
+                    { user2_id: receiverUserId, user1_id: userId },
+                ]
+            }
         });
 
         //Find all conversations involving both users
         const conversations = await Conversations.findAll({
             include: [{
                 model: UserConversations,
-                where: { [Op.or]: [
+                where: { 
+                    [Op.or]: [
                         { user_id: userId },
                         { user_id: receiverUserId }
-                    ]}
+                    ]
+                }
             }]
         });
 
-        //Deletes all messages between users
         for (const conversation of conversations) {
+            //Deletes all messages in the conversation
             await Messages.destroy({
                 where: {
                     conversation_id: conversation.conversation_id
                 }
             });
-        }
-        //Remove both users from all conversations
-        for (const conversation of conversations) {
+
+            //Removes both users from the conversation
             await UserConversations.destroy({
                 where: {
                     conversation_id: conversation.conversation_id,
                     [Op.or]: [
                         { user_id: userId },
                         { user_id: receiverUserId }
-                    ]}
+                    ]
+                }
+            });
+
+            //Deletes the conversation
+            await Conversations.destroy({
+                where: {
+                    conversation_id: conversation.conversation_id
+                }
             });
         }
-        const conversationsToRemove = await Conversations.findAll({
-            include: [{
-                model: UserConversations,
-                attributes: ['conversation_id'],
-                where: {
-                    user_id: {
-                        [Op.in]: [userId, receiverUserId]
-                    }
-                },
-                required: true
-            }],
-            group: ['conversation_id'],
-        });
-        console.log("conversationsToRemove:", conversationsToRemove);
-        await Conversations.destroy({
-            where: {
-                conversation_id: conversationsToRemove.map(c => c.conversation_id)
-            }
-        });
         
-        res.status(200).json({ success: true, message: 'Request rejected.' });
-    //} catch (error) {
-        //res.status(500).json({ success: false, message: error.message });
-    //}
+        res.status(200).json({ success: true, message: 'Friend removed.' });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
 });
 
 //Posts made to a profile channel
