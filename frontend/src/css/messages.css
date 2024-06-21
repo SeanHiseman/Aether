@@ -98,19 +98,6 @@
     align-items: center;
     display: flex;
 }
-.friend-list-item {
-    align-items: center;
-    border-bottom: 1px solid white;
-    display: flex;
-    justify-content: space-between;
-    text-align: center;
-    text-decoration: none;
-    width: 100%;
-}
-.friends-page-list {
-    list-style-type: none;
-    width: 100%;
-}
 .input {
     width: 90%;
     padding: 10px;
