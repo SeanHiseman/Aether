@@ -330,10 +330,10 @@ const PersonalProfile = () => {
                             {friendRequests.length === 0 ? (
                                 <p>No pending requests</p>
                             ) : (
-                                <ul className="friends-page-list">
+                                <ul className="content-list">
                                     {friendRequests.map((request, index) => (
                                         <li key={index}>
-                                            <div className="friend-list-item">
+                                            <div className="result-widget">
                                                 <Link className="friend-link" to={`/profile/${request.sender.username}`}>
                                                     <img className="large-profile-photo" src={`/${request.sender.profile.profile_photo}`} alt="Profile" />
                                                     <p className="large-text profile-name">{request.sender.username}</p>

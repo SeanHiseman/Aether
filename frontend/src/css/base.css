@@ -302,6 +302,9 @@ label {
 .light-button {
     background-color: #252836;
 }
+li {
+    list-style-type: none;
+}
 #logged_in_username {
     font-weight: 700;
     margin-left: 10px;
