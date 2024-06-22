@@ -15,7 +15,7 @@ a {
     max-width: 190px; 
     margin: 10px;
 }
-#add-channel-section, #create-group-section {
+#add-channel-section, #add-chat-section, #create-group-section {
     align-items: center;
     display: flex;
     flex-direction: column;
@@ -184,13 +184,6 @@ body,html {
     overflow: auto;
     width: 100%;
 }
-#create-group-section {
-    align-items: center;
-    display: flex;
-    flex-direction: column;
-    margin: 10px;
-    width: 90%;
-}
 #description-section .view-description, #bio-section .view-bio, #name-section .view-name {
     align-items: center;
     display: flex;
@@ -238,9 +231,6 @@ h2 {
 }
 h3 {
     margin-left: 10px;
-}
-h4 {
-    margin-left: 40px;
 }
 #home-header, #messages-header {
     align-items: center;
