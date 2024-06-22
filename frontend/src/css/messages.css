@@ -1,7 +1,8 @@
+@import url('variables.css');
 #add-chat-form {
     align-items: center;
-    background-color: #000514;
-    border: 1px solid #ffffff;
+    background-color: var(--darkest);
+    border: 1px solid var(--border);
     border-radius: 10px;
     display: flex;
     flex-direction: column;
@@ -20,29 +21,21 @@
     display: flex;
     flex-direction: column;
     height: 70vh;
-    border: 1px solid #000514;
+    border: 1px solid var(--darkest);
     border-radius: 10px;
     box-shadow: 0 2px 10px rgba(0,0,0,0.1);
     overflow: hidden;
 }
 .chat-header {
     padding: 10px;
-    background: #000514;
-    border-bottom: 1px solid #000514;
-}
-.chat-messages {
-    display: flex;
-    flex-direction: column;
-    flex-grow: 1;
-    padding: 15px;
-    overflow-y: auto;
-    background-color: #252836;
+    background: var(--darkest);
+    border-bottom: 1px solid var(--darkest);
 }
 .chat-message-bar {
-    background-color: #000514;
-    border: 1px solid white;
+    background-color: var(--darkest);
+    border: 1px solid var(--border);
     border-radius: 20px;
-    color: white;
+    color: var(--border);
     font-size: large;
     margin: 10px;
     min-height: 40px;
@@ -50,7 +43,7 @@
     width: 70%;
 }
 .chat-message-bar::placeholder {
-    color: white;
+    color: var(--border);
 }
 #chat-profile-link {
     align-items: center;
@@ -59,11 +52,11 @@
     text-decoration: none;
 }
 .chat-send-button {
-    background-color: #000514;
-    border: 1px solid #ffffff;
+    background-color: var(--darkest);
+    border: 1px solid var(--border);
     border-radius: 20px;
     cursor: pointer;
-    color: white;
+    color: var(--border);
     font-size: large;
     min-height: 50px;
     min-width: 80px;
@@ -71,12 +64,12 @@
     transition: background-color 0.3s;
 }
 .chat-message-bar:hover, .chat-message-bar:focus, .chat-send-button:hover {
-    background-color: #41445a;
+    background-color: var(--button-hover);
 }
 .chat-input {
     padding: 10px;
-    background-color: #f5f5f5;
-    border-top: 1px solid #000514;
+    background-color: var(--border);
+    border-top: 1px solid var(--darkest);
 }
 .chat-username {
     margin-left: 10px;
@@ -87,7 +80,7 @@
     position: relative;
 }
 .friend-chat-box{
-    border-color: #000514;
+    border-color: var(--darkest);
     border-width: 2px;
     width: 100%;
     margin: 10px;
@@ -102,7 +95,7 @@
     width: 90%;
     padding: 10px;
     margin-right: 5px;
-    border: 1px solid #000514;
+    border: 1px solid var(--darkest);
     border-radius: 20px;
 }
 .large-text.profile-name {
@@ -113,8 +106,8 @@
     flex-grow: 0;
 }
 .messages-dropdown {
-    background-color: #000514;
-    border: 1px solid #ffffff;
+    background-color: var(--darkest);
+    border: 1px solid var(--border);
     width: 300px;
     box-shadow: 0px 8px 16px 0px rgba(0, 0, 0, 0.2);
     padding: 12px 16px;
@@ -125,10 +118,10 @@
     border-radius: 10px;
 }
 #messages-button {
-    background-color: #000514;
-    border: 1px solid #ffffff;
+    background-color: var(--darkest);
+    border: 1px solid var(--border);
     border-radius: 10px;
-    color: white;
+    color: var(--border);
     cursor: pointer;
     font-size: large;
     margin: 10px;
@@ -148,11 +141,11 @@
     justify-content: space-between;
 }
 .message.incoming {
-    background-color: #000514;
+    background-color: var(--darkest);
 }
 .message.outgoing {
-    background-color: #252836;
-    border: 1px solid white;
+    background-color: var(--dark);
+    border: 1px solid var(--border);
 }
 .message-container.incoming {
     align-self: flex-start;
@@ -171,19 +164,6 @@
 }
 .message-date.outgoing {
     margin: 0 10px
-}
-#message-send-button {
-    padding: 10px 20px;
-    border-radius: 20px;
-    background-color: #000514;
-    border: 1px solid #ffffff;
-    color: white;
-    cursor: pointer;
-    margin-top: 5px;
-    transition: background-color 0.3s;
-}
-#messages-button:hover, #message-send-button:hover {
-    background-color: #252836;
 }
 #right-aside-list {
     justify-content: center;

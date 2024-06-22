@@ -1,6 +1,7 @@
+@import url('variables.css');
 .authentication-container {
-    background-color: #000514;
-    border: 1px solid white;
+    background-color: var(--darkest);
+    border: 1px solid var(--border);
     border-radius: 10px;
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
     margin: 0 auto;
@@ -10,7 +11,7 @@
     width: 300px;
 }
 .authentication-input-box {
-    border: 1px solid #ccc;
+    border: 1px solid var(--border);
     border-radius: 10px;
     box-sizing: border-box;
     display: inline-block;
@@ -20,9 +21,9 @@
     width: 100%;
 }
 .submit {
-    background-color: #000514;
-    border: 1px solid #ffffff;
-    color: white;
+    background-color: var(--darkest);
+    border: 1px solid var(--border);
+    color: var(--border);
     border-radius: 10px;
     cursor: pointer;
     margin: 8px 0;
@@ -32,10 +33,10 @@
 }
 .link {
     align-self: center;
-    background-color: #000514;
-    border: 1px solid #ffffff;
+    background-color: var(--darkest);
+    border: 1px solid var(--border);
     border-radius: 10px;
-    color: white;
+    color: var(--border);
     display: inline-block;
     padding: 10px 20px;
     text-align: center;
@@ -44,7 +45,7 @@
 }
 
 .link:hover, .submit:hover{
-    background-color: #41445a;
+    background-color: var(--button-hover);
 }
 
 .login-register{

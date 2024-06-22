@@ -1,13 +1,14 @@
+@import url('variables.css');
 #create-post-container {
     width: calc(60%);
 }
 .ql-container {
     border-bottom-left-radius: 10px;
     border-bottom-right-radius: 10px;
-    color: white; 
+    color: var(--border); 
 }
 .ql-editor[data-placeholder]::before {
-    color: white;
+    color: var(--border);
 }
 .ql-editor img, .ql-editor video {
     display: block;
@@ -17,29 +18,29 @@
     width: 80%;
 }
 .ql-snow .ql-picker{
-    color: white;
+    color: var(--border);
 }
 .ql-snow .ql-stroke {
-    stroke: white;
+    stroke: var(--border);
 }
 .ql-snow .ql-fill {
-    fill: white;
+    fill: var(--border);
 }
 .ql-snow .ql-picker-options {
-    background-color: #000514;
+    background-color: var(--darkest);
 }
 .ql-toolbar {
     border-top-left-radius: 10px;
     border-top-right-radius: 10px;
-    color: white; 
+    color: var(--border); 
 }
 .quill {
     width: 100%;
 }
 #post-form {
     align-items: center;
-    background-color: #000514;
-    border: 1px solid white;
+    background-color: var(--darkest);
+    border: 1px solid var(--border);
     border-radius: 20px;
     display: flex;
     flex-direction: column;
@@ -47,18 +48,18 @@
     padding: 10px;
 }
 #title-entry {
-    border: 1px solid white;
-    background-color: #000514;
+    border: 1px solid var(--border);
+    background-color: var(--darkest);
     border-radius: 10px;
-    color: white;
+    color: var(--border);
     margin-bottom: 10px;
     width: 90%;
     padding: 10px;
     transition: background-color 0.3s;
 }
 #title-entry:hover, #title-entry:focus {
-    background-color: #41445a;
+    background-color: var(--button-hover);
 }
 #title-entry::placeholder {
-    color: white;
+    color: var(--border);
 }

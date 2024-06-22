@@ -1,14 +1,15 @@
+@import url('variables.css');
 .content-item {
-    background-color: #000514;
-    border-left: 1px solid white;
-    border-right: 1px solid white;
-    border-top: 1px solid white;
+    background-color: var(--darkest);
+    border-left: 1px solid var(--border);
+    border-right: 1px solid var(--border);
+    border-top: 1px solid var(--border);
     font-size: x-large;
     padding: 15px;
     width: 100%;
 }
 .content-list {
-    border-bottom: 1px solid white;
+    border-bottom: 1px solid var(--border);
     max-width: 1000px;
     width: 70%;
 }
@@ -23,7 +24,7 @@
 }
 .horizontal-container {
     align-items: flex-start;
-    border-left: 2px solid #6b6b6b;
+    border-left: 1px solid var(--dark-line);
     display: flex;
     flex-direction: column;
     margin-bottom: 10px;
@@ -35,10 +36,10 @@
     width: 100%;
 }
 .reply-input {
-    background-color: #000514;
-    border: 1px solid white;
+    background-color: var(--darkest);
+    border: 1px solid var(--border);
     border-radius: 10px;
-    color: white;
+    color: var(--border);
     height: 50px;
     margin: 10px;
     outline: none;
@@ -46,16 +47,16 @@
     width: 80%;
 }
 .reply-item {
-    background-color: #000514;
-    border-left: 1px solid white;
-    border-right: 1px solid white;
-    border-top: 1px solid white;
+    background-color: var(--darkest);
+    border-left: 1px solid var(--border);
+    border-right: 1px solid var(--border);
+    border-top: 1px solid var(--border);
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     padding: 15px;
     width: 800px;
 }
 .reply-list {
-    border-bottom: 1px solid white;
+    border-bottom: 1px solid var(--border);
     padding: 0;
 }
 .reply-metadata {
@@ -63,21 +64,6 @@
     justify-content: space-between;
     align-items: center;
     margin-top: 10px;
-}
-.reply-button {
-    cursor: pointer;
-    font-size: 20;
-    border-radius: 10px;
-    border: none;
-    background-color: #2f3966;
-    color: white;
-    margin-left: 10px;
-    padding: 5px 10px;
-    transition: background-color 0.3s;
-}
-
-.reply-button:hover {
-    background-color: #1f2956;
 }
 .reply-profile-container {
     position: relative;
@@ -87,10 +73,10 @@
 }
 .result-widget {
     align-items: center;
-    background-color: #000514;
-    border-left: 1px solid white;
-    border-right: 1px solid white;
-    border-top: 1px solid white;
+    background-color: var(--darkest);
+    border-left: 1px solid var(--border);
+    border-right: 1px solid var(--border);
+    border-top: 1px solid var(--border);
     display: flex;
     justify-content: space-between;
     width: 100%;
@@ -113,22 +99,6 @@
     height: 40px; 
     width: 40px; 
     border-radius: 50%;
-}
-.upvote-button, .downvote-button, .reply-button, .post-reply {
-    cursor: pointer;
-    padding: 5px 10px;
-    margin-right: 5px;
-    background-color: #2f3966;
-    color: white;
-    border: none;
-    border-radius: 10px;
-    transition: background-color 0.3s;
-}
-.upvote-button:hover, .downvote-button:hover, .reply-button:hover, .post-reply:hover{
-    background-color: #1f2956;
-}
-.upvote-count, .downvote-count, .reply-count, .view-count {
-    margin-right: 5px;
 }
 .username {
     font-weight: bold;
