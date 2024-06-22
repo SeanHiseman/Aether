@@ -14,8 +14,8 @@
     display: block;
     height: auto;
     margin: 0 auto;
-    max-height: 700px;
-    width: 80%;
+    max-height: 600px;
+    width: 75%;
 }
 .ql-snow .ql-picker{
     color: var(--border);
