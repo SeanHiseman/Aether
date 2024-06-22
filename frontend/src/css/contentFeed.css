@@ -10,8 +10,8 @@
 }
 .content-list {
     border-bottom: 1px solid var(--border);
-    max-width: 1000px;
-    width: 70%;
+    max-width: 900px;
+    width: 60%;
 }
 .content-item, .content-list {
     box-sizing: border-box;

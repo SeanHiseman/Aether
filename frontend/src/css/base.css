@@ -69,7 +69,7 @@ body,html {
 }
 .button:hover, .button:focus, .background-button:hover, .chat-channel-button:hover, .conversation-button:hover, .light-button:focus, #search-submit-button:hover, 
 .light-button:hover, #search-bar:focus, .channel-input:focus, #search-bar:hover, .channel-input:hover, .change-name-area:hover, .change-text-area:hover,
-.change-name-area:focus, .change-text-area:focus, #group-name-input:hover, #group-name-input:focus, .posts-channel-button:hover {
+.change-name-area:focus, .change-text-area:focus, #group-name-input:hover, #group-name-input:focus, #messages-button:hover, .posts-channel-button:hover {
     background-color: var(--button-hover);
 }
 #change-group-photo, #change-profile-photo {
