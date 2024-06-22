@@ -1,3 +1,4 @@
+@import url('variables.css');
 .reply-container {
     width: 100%;
 }
@@ -10,7 +11,7 @@
     width: 100%;
 }
 .reply-container-button:hover {
-    background-color: #41445a;
+    background-color: var(--button-hover);
 }
 .reply-form {
     align-items: center;
@@ -24,10 +25,10 @@
     width: 100%;
 }
 .reply-input {
-    background-color: #000514;
-    border: 1px solid white;
+    background-color: var(--darkest);
+    border: 1px solid var(--border);
     border-radius: 10px;
-    color: white;
+    color: var(--border);
     height: 50px;
     margin: 10px;
     outline: none;
@@ -40,49 +41,11 @@
     align-items: center;
     margin-top: 10px;
 }
-.upvote-button, .downvote-button, .reply-button, .post-comment {
-    cursor: pointer;
-    padding: 5px 10px;
-    margin-right: 5px;
-    background-color: #2f3966;
-    color: white;
-    border: none;
-    border-radius: 10px;
-    transition: background-color 0.3s;
-}
-.upvote-button:hover, .downvote-button:hover, .reply-button:hover, .post-reply:hover{
-    background-color: #1f2956;
-}
-.upvote-count, .downvote-count, .reply-count, .view-count {
-    margin-right: 5px;
-}
-.reply-button {
-    cursor: pointer;
-    font-size: 20;
-    border-radius: 10px;
-    border: none;
-    background-color: #2f3966;
-    color: white;
-    margin-left: 10px;
-    padding: 5px 10px;
-    transition: background-color 0.3s;
-}
-.reply-button:hover{
-    background-color: #1f2956;
-}
 .reply-profile-container{
     position: relative;
     display: flex;
     margin-bottom: 5px;
     align-items: center;
-}
-.horizontal-container {
-    align-items: flex-start;
-    border-left: 2px solid #6b6b6b;
-    display: flex;
-    flex-direction: column;
-    padding-left: 10px;
-    position: relative;
 }
 .reply-text {
     margin-left: 10px;

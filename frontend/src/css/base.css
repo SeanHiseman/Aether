@@ -1,11 +1,12 @@
+@import url('variables.css');
 a {
     color: inherit;
     text-decoration: none;
 }
 #add-channel-form, #create-group-form {
     align-items: center;
-    background-color: #000514;
-    border: 1px solid #ffffff;
+    background-color: var(--darkest);
+    border: 1px solid var(--border);
     display: flex;
     flex-direction: column;
     justify-content: flex-start;
@@ -24,8 +25,8 @@ a {
 }
 #base-header {
     align-items: center;
-    background-color: #000514; 
-    border-bottom: 1px solid #ffffff;
+    background-color: var(--darkest); 
+    border-bottom: 1px solid var(--border);
     display: flex;
     flex-wrap: wrap;
     justify-content: center;
@@ -37,8 +38,8 @@ a {
     z-index: 10;
 }
 body,html {
-    background-color: #252836;
-    color: white;
+    background-color: var(--dark);
+    color: var(--border);
     font-family: Arial, sans-serif;
     font-size: large;
     height: 100%;
@@ -51,12 +52,12 @@ body,html {
     display: none; /*Hides scroll bar */
 }
 .button {
-    background-color: #000514;
+    background-color: var(--darkest);
 }
 .button, .background-button, .light-button {
-    border: 1px solid #ffffff;
+    border: 1px solid var(--border);
     border-radius: 10px;
-    color: white;
+    color: var(--border);
     cursor: pointer;
     font-size: large;
     margin: 6px;
@@ -64,16 +65,16 @@ body,html {
     transition: background-color 0.3s;
 }
 .background-button {
-    background-color: #252836;
+    background-color: var(--dark);
 }
 .button:hover, .button:focus, .background-button:hover, .chat-channel-button:hover, .conversation-button:hover, .light-button:focus, #search-submit-button:hover, 
 .light-button:hover, #search-bar:focus, .channel-input:focus, #search-bar:hover, .channel-input:hover, .change-name-area:hover, .change-text-area:hover,
 .change-name-area:focus, .change-text-area:focus, #group-name-input:hover, #group-name-input:focus, .posts-channel-button:hover {
-    background-color: #41445a;
+    background-color: var(--button-hover);
 }
 #change-group-photo, #change-profile-photo {
-    background-color: #000514;
-    border: 1px solid #ffffff;
+    background-color: var(--darkest);
+    border: 1px solid var(--border);
     border-radius: 10px;
     display: flex;
     flex-direction: column;
@@ -83,17 +84,17 @@ body,html {
     position: absolute;
 }
 .change-name-area {
-    background-color: #41445a;
-    border: 1px solid #ffffff;
+    background-color: var(--button-hover);
+    border: 1px solid var(--border);
     border-radius: 10px;
-    color: white;
+    color: var(--border);
     transition: background-color 0.3s;
 }
 .change-text-area {
-    background-color: #000514;
-    border: 1px solid #ffffff;
+    background-color: var(--darkest);
+    border: 1px solid var(--border);
     border-radius: 10px;
-    color: white;
+    color: var(--border);
     min-width: 120px;
     min-height: 40px;
     transition: background-color 0.3s;
@@ -114,10 +115,10 @@ body,html {
     width: 100%
 }
 .channel-input, #group-name-input {
-    background-color: #000514;
-    border: 1px solid white;
+    background-color: var(--darkest);
+    border: 1px solid var(--border);
     border-radius: 10px;
-    color: white;
+    color: var(--border);
     font-size: large;
     margin: 10px;
     padding: 5px;
@@ -125,10 +126,10 @@ body,html {
     width: 80%;
 }
 .channel-input::placeholder, #group-name-input::placeholder, #search-bar::placeholder {
-    color: white;
+    color: var(--border);
 }
 .channel-link {
-    border-bottom: 1px solid #444;
+    border-bottom: 1px solid var(--dark-line);
     padding: 10px;
     text-decoration: none;
 }
@@ -137,20 +138,20 @@ body,html {
 }
 .channel-list-link, .channel-list-link:visited {
     text-decoration: none;
-    color: white;
+    color: var(--border);
 }
 .channel-list-item {
     align-items: center;
-    border-bottom: 1px solid #444;
+    border-bottom: 1px solid var(--dark-line);
     display: flex;
     text-align: center;
     text-decoration: none;
     width: 100%;
 }
 .chat-channel-button, .conversation-button, .posts-channel-button {
-    background-color: #000514;
-    border: 1px solid white;
-    color: white;
+    background-color: var(--darkest);
+    border: 1px solid var(--border);
+    color: var(--border);
     cursor: pointer;
     font-size: large;
     margin: 10px;
@@ -162,7 +163,7 @@ body,html {
     border-radius: 1000px;
 }
 #confirmation-message {
-    color: white;
+    color: var(--border);
     margin-left: 10px;
     text-align: right;
 }
@@ -210,8 +211,8 @@ body,html {
 }
 #group-header, #messages-header, #profile-header {
     align-items: center;
-    border-bottom: 1px solid #ffffff;
-    background-color: #000514;
+    border-bottom: 1px solid var(--border);
+    background-color: var(--darkest);
     display: flex;
     justify-content: space-between;
     width: 100%;
@@ -234,8 +235,8 @@ h3 {
 }
 #home-header, #messages-header {
     align-items: center;
-    background-color: #000514;
-    border-bottom: 1px solid #ffffff;
+    background-color: var(--darkest);
+    border-bottom: 1px solid var(--border);
     display: flex;
     justify-content: center;
     height: 70px;
@@ -261,14 +262,14 @@ label {
 }
 #left-aside, #right-aside {
     align-items: center;
-    background-color: #000514;
+    background-color: var(--darkest);
     display: flex;
     flex-direction: column;
     overflow-y: auto;
     width: 14%;
 }
 #left-aside {
-    border-right: 1px solid #ffffff;
+    border-right: 1px solid var(--border);
     height: 100%;
     left: 0;
     position: fixed;
@@ -283,14 +284,14 @@ label {
 }
 #left-aside nav ul li {
     padding: 10px;
-    border-bottom: 1px solid #444;
+    border-bottom: 1px solid var(--dark-line);
 }
 #left-aside nav ul li a, #right-aside nav ul li a {
-    color: white;
+    color: var(--border);
     text-decoration: none;
 }
 .light-button {
-    background-color: #252836;
+    background-color: var(--dark);
 }
 li {
     list-style-type: none;
@@ -353,7 +354,7 @@ main {
     flex-wrap: wrap;
 }
 #right-aside {
-    border-left: 1px solid #ffffff;
+    border-left: 1px solid var(--border);
     flex-shrink: 0;
     height: 100%;
 }
@@ -365,10 +366,10 @@ main {
     padding: 0;
 }
 #search-bar {
-    background-color: #000514;
-    border: 1px solid white;
+    background-color: var(--darkest);
+    border: 1px solid var(--border);
     border-radius: 20px;
-    color: white;
+    color: var(--border);
     flex-grow: 1;
     font-size: large;
     margin-right: 10px;
@@ -386,11 +387,11 @@ main {
     width: 100%;
 }
 #search-submit-button {
-    background-color: #000514;
-    border: 1px solid #ffffff;
+    background-color: var(--darkest);
+    border: 1px solid var(--border);
     border-radius: 20px;
     cursor: pointer;
-    color: white;
+    color: var(--border);
     font-size: large;
     min-height: 100%;
     min-width: 80px;
@@ -429,7 +430,7 @@ ul {
     width: 100%;    
 }
 .vote-arrow {
-    background-color: #000514;
+    background-color: var(--darkest);
     cursor: pointer;
     height: 40px;
     padding: 0;
@@ -444,8 +445,8 @@ ul {
     padding: 5px;
 }
 .vote-enabled {
-    background-color: #000514;
+    background-color: var(--darkest);
 }
 .vote-disabled {
-    background-color: #444;
+    background-color: var(--dark-line);
 }
