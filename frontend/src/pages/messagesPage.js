@@ -224,7 +224,7 @@ function MessagesPage() {
             </div>
             <aside id="right-aside">
                 {friend_name ? (
-                    <nav id="friend-list">
+                    <div id="add-chat-section">
                         <Link id="chat-profile-link" to={`/profile/${friend_name}`}>
                             <img className="profile-image2" src={`/${friendProfileImage}`} alt="Profile"/>
                             <h3>{friend_name}</h3>
@@ -251,7 +251,7 @@ function MessagesPage() {
                                 </form>                            
                             )}
                         </div>
-                    </nav>
+                    </div>
                     ) : (
                         <nav id="friend-list">
                             <h2>Messages</h2>
