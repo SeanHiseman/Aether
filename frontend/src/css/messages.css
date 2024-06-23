@@ -147,17 +147,18 @@
     background-color: var(--dark);
     border: 1px solid var(--border);
 }
-.message-container.incoming {
-    align-self: flex-start;
+.message-container {
     margin: 10px;
     max-width: 70%;
 }
+.message-container.incoming {
+    align-self: flex-start;
+}
 .message-container.outgoing {
     align-self: flex-end;
-    max-width: 70%;
 }
 .message-date {
-    font-size: medium;  
+    font-size: small;  
 }
 .message-date.incoming {
     margin: 0;
