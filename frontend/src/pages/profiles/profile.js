@@ -89,7 +89,7 @@ function Profile() {
                             null
                         ) : (
                             <div id="follow-info">
-                                <p>{profile.followerCount} followers</p>
+                                <p>{profile.followerCount} {profile.followerCount === 1 ? 'follower' : 'followers'}</p>
                                 <FollowerChangeButton userId={loggedInUserId} profileId={profile.profileId} isFollowing={profile.isFollowing} />
                             </div>
                         )}
