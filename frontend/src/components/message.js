@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 
 const Message = ({ canRemove, deleteMessage, message, isOutgoing }) => {
     //Users can delete their own messages
@@ -10,7 +11,9 @@ const Message = ({ canRemove, deleteMessage, message, isOutgoing }) => {
         <div className={`message-container ${isOutgoing ? 'outgoing' : 'incoming'}`}>
             <div className="message-content">
                 {!isOutgoing && message.user && (
-                    <img className="profile-image2" src={`/${message.user.profile.profile_photo}`} alt="Profile" />
+                    <Link to={`/profile/${message.user.username}`}>
+                        <img className="profile-image2" src={`/${message.user.profile.profile_photo}`} alt="Profile" />
+                    </Link>
                 )}
                 {canRemove ? (
                     <button className="light-button" onClick={() => deleteMessage(message.message_id)}>-</button>

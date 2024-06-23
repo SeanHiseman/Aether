@@ -141,7 +141,7 @@ const PersonalProfile = () => {
                         <button className="button" onClick={getFriendRequests}>
                             {showFriendRequests ? 'Close requests' : 'See friend requests'}
                         </button>
-                        <p>{profile.followerCount} followers</p>   
+                        <p>{profile.followerCount} {profile.followerCount === 1 ? 'follower' : 'followers'}</p>  
                     </div>
                     <div id="viewed-profile-info">
                         <div id="name-section">

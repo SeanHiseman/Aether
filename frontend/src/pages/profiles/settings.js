@@ -143,12 +143,8 @@ const Settings = () => {
             <div className="content-feed">
                 <header id="profile-header">
                     <div id="profile-options">
-                        <button className="button" onClick={() => togglePrivate()}>{profile.isPrivate ? "Profile: private" : "Profile: public"}</button>
-                        <p>{profile.followerCount} followers</p>   
+                        <button className="button" onClick={() => togglePrivate()}>{profile.isPrivate ? "Profile: private" : "Profile: public"}</button>  
                     </div>
-                    <form action="/api/logout" method="post" onSubmit={handleLogout}>
-                        <button className="button" type="submit">Logout</button>
-                    </form>
                     <div id="viewed-profile-info">
                         <div id="name-section">
                             {isEditingName ? (
@@ -216,7 +212,12 @@ const Settings = () => {
                 </header>                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       
             </div>
             <div id="right-aside">
-                <p>Settings</p>
+                <h2>Settings</h2>
+                <p>Profile</p>
+                <p>Account deletion</p>
+                <form action="/api/logout" method="post" onSubmit={handleLogout}>
+                    <button className="button" type="submit">Logout</button>
+                </form>
             </div>
         </div>
     );
