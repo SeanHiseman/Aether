@@ -13,6 +13,7 @@ import Register from './pages/site_entrance/register';
 import Profile from './pages/profiles/profile';
 import ProfileWrapper from './pages/profiles/profileWrapper';
 import SearchResults from './pages/searchResults';
+import Settings from './pages/profiles/settings';
 
 //Routes to each layout, some with the base layout wrapper
 const App = () => {
@@ -25,6 +26,7 @@ const App = () => {
                     <Route path="recommended" element={<AuthCheck><RecommendedPage /></AuthCheck>} />
                     <Route path="following" element={<AuthCheck><FollowingPage /></AuthCheck>} />
                     <Route path="friends" element={<AuthCheck><FriendsPage /></AuthCheck>} />
+                    <Route path="settings/:username" element={<AuthCheck><Settings /></AuthCheck>} />
                     <Route path="search/:tab?" element={<AuthCheck><SearchResults /></AuthCheck>} />
                     <Route path="messages/:username" element={<AuthCheck><MessagesPage /></AuthCheck>} >
                         <Route path=":friend_name" element={<MessagesPage />} >
