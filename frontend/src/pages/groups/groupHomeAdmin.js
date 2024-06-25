@@ -7,21 +7,16 @@ import PostChannel from '../../components/channels/postChannel';
 import PostForm from "../../components/postForm";
 
 function GroupHomeAdmin() {
+    const { channel_mode, channel_name, group_name } = useParams();
     const [channels, setChannels] = useState([]);
-    const [channelMode, setChannelMode] = useState('post');
+    const [channelMode, setChannelMode] = useState(channel_mode || 'post');
     const [newChannelName, setNewChannelName] = useState('');
     const [errorMessage, setErrorMessage] = useState('');
     const [groupDetails, setGroupDetails] = useState('');
-    const { group_name, channel_name } = useParams();
     const [isChatChannel, setIsChatChannel] = useState(false);
-    const [isEditingDescription, setIsEditingDescription] = useState(false);
-    const [isEditingName, setIsEditingName] = useState(false);
-    const [isPhotoFormVisible, setIsPhotoFormVisible] = useState(false);
     const [isPostChannel, setIsPostChannel] = useState(false);
     const [members, setMembers] = useState(null);
     const [nestRequests, setNestRequests] = useState(null);
-    const [newDescription, setDescription] = useState('');
-    const [newName, setName] = useState('');
     const [requests, setRequests] = useState([]);
     const [showChannelForm, setShowChannelForm] = useState(false);
     const [showMembers, setShowMembers] = useState(false);
@@ -54,7 +49,7 @@ function GroupHomeAdmin() {
         fetchGroupData();
     }, [group_name]);
 
-    //Fetch channels in user profile
+    //Fetch channels in a group
     useEffect(() => {
         axios.get(`/api/get_group_channels/${groupDetails.groupId}`)
         .then(response => {
@@ -83,20 +78,6 @@ function GroupHomeAdmin() {
         fetchSubGroups();
     }, [groupDetails.groupId]);
 
-    //Set name in text area to current description
-    useEffect(() => {
-        if (isEditingName) {
-            setName(groupDetails.groupName);
-        }
-    }, [isEditingName, groupDetails.groupName]);
-
-    //Set description in text area to current description
-    useEffect(() => {
-        if (isEditingDescription) {
-            setDescription(groupDetails.description);
-        }
-    }, [isEditingDescription, groupDetails.description]);
-
     //Adds channel to group
     const AddChannel = async (event) => {
         event.preventDefault();
@@ -117,31 +98,6 @@ function GroupHomeAdmin() {
         } catch (error) {
             setErrorMessage(error.response ? error.response.data.error : 'Failed to add channel.');
         }
-    };
-
-    const ChangeGroupPhoto = async (event) => {
-        try {
-            event.preventDefault();
-            const fileInput = event.target.elements.new_group_photo;
-            if (!fileInput.files[0]) {
-                setErrorMessage('Please upload an image');
-                return;
-            }
-            const formData = new FormData();
-            formData.append('new_group_photo', fileInput.files[0]);
-            const response = await axios.put(`/api/update_group_photo/${groupDetails.groupId}`, formData, {
-                headers: {
-                    'Content-Type': 'multipart/form-data',
-                },    
-            })
-            setGroupDetails(prevDetails => ({
-                ...prevDetails,
-                groupPhoto: response.data.newPhotoPath
-            }))
-            setIsPhotoFormVisible(false);
-        } catch(error) {
-                setErrorMessage('Error updating photo', error.response ? error.response.data : error);
-        };
     };
 
     const channelRender = channels.find(
@@ -231,21 +187,6 @@ function GroupHomeAdmin() {
         } catch (error) {
             setErrorMessage('Error handling request:', error);
         }
-    };
-
-    //Changes group description
-    const handleUpdateDescription = async () => {
-        try {
-            await axios.post('/api/change_description', {
-                description: newDescription,
-                groupId: groupDetails.groupId
-            });
-            setGroupDetails({ ...groupDetails, description: newDescription });
-            setIsEditingDescription(false);
-        }
-        catch (error) {
-            setErrorMessage(`Error changing description: ${error}`);
-        }
     }; 
 
     //Uploads content 
@@ -263,21 +204,6 @@ function GroupHomeAdmin() {
             setErrorMessage("Error creating post:", error);
         }
     };
-
-    //Changes group name
-    const handleUpdateName = async () => {
-        try {
-            await axios.post('/api/change_group_name', {
-                groupName: newName,
-                groupId: groupDetails.groupId
-            });
-            setGroupDetails({ ...groupDetails, groupName: newName });
-            setIsEditingName(false);
-        }
-        catch (error) {
-            setErrorMessage('Error changing name:', error);
-        }
-    }; 
 
     //Admins can remove members
     const removeMember = async (userId) => {
@@ -320,28 +246,17 @@ function GroupHomeAdmin() {
             console.error("Error toggling moderator status:", error);
         }
     };
-    
-    //Changes group between public and private
-    const togglePrivate = async () => {
-        try {
-            const group_id = groupDetails.groupId;
-            const response = await axios.post('/api/toggle_private_group', { group_id });
-            setGroupDetails(prevDetails => ({
-                ...prevDetails, 
-                isPrivate: response.data.is_private
-            }));
-        } catch (error) {
-            setErrorMessage('Error changing private status:', error);
-        }
-    };
 
     document.title = groupDetails.groupName;
     return (
         <div className="group-container">  
             <div className="content-feed">
                 <header id="group-header">
+                    <Link to={`/group_settings/${group_name}`}>
+                        <button className="button">Settings</button>
+                    </Link>
                     <div id="group-members">
-                        <p>{groupDetails.memberCount} members</p>
+                        <p>{groupDetails.memberCount} {groupDetails.memberCount === 1 ? 'member' : 'members'}</p>
                         <button className="button" onClick={getGroupMembers}>
                             {showMembers ? 'Close members' : 'See members'}
                         </button>
@@ -354,71 +269,22 @@ function GroupHomeAdmin() {
                             const receiverName = window.prompt('Enter group name');
                             sendGroupJoinRequest(receiverName);
                         }}> Add to group </button>
-                        <button className="button" onClick={() => togglePrivate()}>{groupDetails.isPrivate ? "Group: private" : "Group: public"}</button>
                         <MemberChangeButton userId={groupDetails.userId} groupId={groupDetails.groupId} isMember={groupDetails.isMember}/>
                     </div>
                     <div id="group-text">
                         <div id="name-section">
-                            {isEditingName ? (
-                                <div className="change-name">
-                                    <button className='button' onClick={() => setIsEditingName(false)}>Close</button>
-                                    <textarea className="change-name-area" value={newName} onChange={(e) => {
-                                        const input = e.target.value;
-                                        const inputLength = input.length;
-                                        if (inputLength <= 100) {
-                                            setName(input)
-                                        } else {
-                                            setErrorMessage('Name cannot exceed 100 characters.');
-                                        }
-                                    }}
-                                    />
-                                    <button className="button" onClick={() => {setIsEditingName(false); handleUpdateName();}}>Save</button>
-                                </div>
-                            ) : (
-                                <div className="view-name">
-                                    <p className="large-text">{groupDetails.groupName}</p>
-                                    <button className="button" onClick={() => setIsEditingName(true)}>Edit</button>
-                                </div>
-                            )}
+                            <div className="view-name">
+                                <p className="large-text">{groupDetails.groupName}</p>
+                            </div>
                         </div>
                         <div id="description-section">
-                            {isEditingDescription ? (
-                                <div className="change-description">
-                                    <button className='button' onClick={() => setIsEditingDescription(false)}>Close</button>
-                                    <textarea className="change-text-area" value={newDescription} onChange={(e) => {
-                                        const input = e.target.value;
-                                        const inputLength = input.length;
-                                        if (inputLength <= 1000) {
-                                            setDescription(input)
-                                        } else {
-                                            setErrorMessage('Description cannot exceed 1000 characters.');
-                                        }
-                                    }}
-                                    />
-                                    <button className="button" onClick={() => {setIsEditingDescription(false); handleUpdateDescription();}}>Save</button>
-                                </div>
-                            ) : (
-                                <div className="view-description">
-                                    <p id="description">{groupDetails.description}</p>
-                                    <button className="button" onClick={() => setIsEditingDescription(true)}>Edit</button>
-                                </div>
-                            )}
-                            {errorMessage && <div className="error-message">{errorMessage}</div>}
+                            <div className="view-description">
+                                <p id="description">{groupDetails.description}</p>
+                            </div>
                         </div>
                     </div>
                     <div id="profile-header-photo">
                         <img id="large-group-photo" src={`/${groupDetails.groupPhoto}`} alt={groupDetails.groupName} />
-                        <button className="button" onClick={() => setIsPhotoFormVisible(!isPhotoFormVisible)}>
-                            {isPhotoFormVisible ? 'Close' : 'Change Group photo'}
-                        </button>
-                        {isPhotoFormVisible && (
-                            <form id="change-group-photo" action="/api/update_group_photo" method="post" enctype="multipart/form-data" onSubmit={ChangeGroupPhoto}>
-                                <label htmlFor="new_group_photo">Change Group photo:</label>
-                                <input type="file" id="new_group_photo" name="new_group_photo" accept="image/*" />
-                                {errorMessage && <div className="error-message">{errorMessage}</div>}
-                                <input className="button" type="submit" value="Update" />
-                            </form>
-                        )}
                     </div>
                 </header>  
                 <div className="channel-feed">

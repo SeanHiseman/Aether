@@ -5,6 +5,7 @@ import BaseLayout from './pages/base';
 import FollowingPage from './pages/feeds/following';
 import FriendsPage from './pages/feeds/friends';
 import GroupHome from './pages/groups/groupHome';
+import GroupSettings from './pages/groups/groupSettings';
 import GroupWrapper from './pages/groups/groupWrapper';
 import Login from './pages/site_entrance/login';
 import MessagesPage from './pages/messagesPage';
@@ -27,6 +28,7 @@ const App = () => {
                     <Route path="following" element={<AuthCheck><FollowingPage /></AuthCheck>} />
                     <Route path="friends" element={<AuthCheck><FriendsPage /></AuthCheck>} />
                     <Route path="settings/:username" element={<AuthCheck><Settings /></AuthCheck>} />
+                    <Route path="group_settings/:group_name" element={<AuthCheck><GroupSettings /></AuthCheck>} />
                     <Route path="search/:tab?" element={<AuthCheck><SearchResults /></AuthCheck>} />
                     <Route path="messages/:username" element={<AuthCheck><MessagesPage /></AuthCheck>} >
                         <Route path=":friend_name" element={<MessagesPage />} >
@@ -37,6 +39,7 @@ const App = () => {
                     <Route path="group/:group_name" element={<AuthCheck><GroupWrapper /></AuthCheck>}>
                         <Route path=":channel_name/:channel_mode?" element={<GroupHome />}>
                             <Route index element={<Navigate replace to="Main/post" />} />
+                            <Route path=":channel_name" element={<GroupHome />} />
                             <Route path=":channel_name/:channel_mode" element={<GroupHome />} />
                         </Route>
                     </Route>

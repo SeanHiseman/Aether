@@ -11,7 +11,7 @@ function GroupHome() {
     const { group_name, channel_name, channel_mode } = useParams();
     const [canRemove, setCanRemove] = useState(false);
     const [channels, setChannels] = useState([]);
-    const [channelMode, setChannelMode] = useState(channel_mode || 'post');
+    const [channelMode, setChannelMode] = useState(channel_mode);
     const [errorMessage, setErrorMessage] = useState('');
     const [isAdmin, setIsAdmin] = useState(false);
     const [isModerator, setIsModerator] = useState(false);
@@ -51,7 +51,7 @@ function GroupHome() {
         setCanRemove(true);
     };
 
-    //Fetch channels in user profile
+    //Fetch channels in a group
     useEffect(() => {
         axios.get(`/api/get_group_channels/${groupDetails.groupId}`)
         .then(response => {
