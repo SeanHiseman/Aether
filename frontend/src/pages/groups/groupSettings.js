@@ -199,6 +199,7 @@ function GroupSettings() {
             <aside id="right-aside">
                 <h2>Settings</h2>
                 <p>Group profile</p>
+                <p>Nested grouping</p>
             </aside> 
         </div>
     );
