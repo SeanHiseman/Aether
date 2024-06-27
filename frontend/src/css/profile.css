@@ -18,6 +18,9 @@
     grid-row: 2;
     overflow-y: auto;
 }
+#logout-form {
+    margin: 10px;
+}
 #profile-header-side {
     display: flex;
     flex-direction: column;

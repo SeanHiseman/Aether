@@ -3,6 +3,9 @@ a {
     color: inherit;
     text-decoration: none;
 }
+.file-input, #search-submit-button, .settings-item, .vote-arrow, .vote-arrow-container {
+    cursor: pointer;
+}
 #add-channel-form, #create-group-form {
     align-items: center;
     background-color: var(--darkest);
@@ -195,7 +198,6 @@ body,html {
 }
 .file-input {
     align-items: center;
-    cursor: pointer;
     display: flex;
     flex-direction: column;
 }
@@ -282,7 +284,7 @@ label {
     text-align: center;
     width: 100%;
 }
-#left-aside nav ul li {
+#left-aside nav ul li, .settings-item {
     padding: 10px;
     border-bottom: 1px solid var(--dark-line);
 }
@@ -390,7 +392,6 @@ main {
     background-color: var(--darkest);
     border: 1px solid var(--border);
     border-radius: 20px;
-    cursor: pointer;
     color: var(--border);
     font-size: large;
     min-height: 100%;
@@ -431,7 +432,6 @@ ul {
 }
 .vote-arrow {
     background-color: var(--darkest);
-    cursor: pointer;
     height: 40px;
     padding: 0;
     width: 40px;
@@ -440,7 +440,6 @@ ul {
     background: none;
     border: none;
     border-radius: 5px;
-    cursor: pointer;
     margin: 5px;
     padding: 5px;
 }

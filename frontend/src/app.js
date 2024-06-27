@@ -14,7 +14,7 @@ import Register from './pages/site_entrance/register';
 import Profile from './pages/profiles/profile';
 import ProfileWrapper from './pages/profiles/profileWrapper';
 import SearchResults from './pages/searchResults';
-import Settings from './pages/profiles/settings';
+import Settings from './pages/profiles/settings/settings';
 
 //Routes to each layout, some with the base layout wrapper
 const App = () => {
