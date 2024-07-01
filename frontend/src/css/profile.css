@@ -4,6 +4,23 @@
     display: flex;
     flex-direction: column;
 }
+.button.delete {
+    color: red;
+    font-size: 36px;
+    margin-bottom: 20px;
+    padding: 20px
+}
+.button.edit{
+    margin-left: 30px;
+}
+#deletion-area {
+    align-items: center;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    justify-content: space-between;
+    width: 100%;
+}
 #follow-info {
     margin-left: 10px;
 }
@@ -21,16 +38,54 @@
 #logout-form {
     margin: 10px;
 }
-#profile-header-side {
+#name-photo-area {
+    align-items: center; 
+    display: flex;
+    justify-content: space-between;
+}
+#private-toggle {
+    align-items: center;
     display: flex;
     flex-direction: column;
+    padding: 100px;
+}
+#profile-bio-settings {
+    font-size: 36px;
+    max-width: 400px;
+}
+#profile-header-side {
     align-items: center;
+    display: flex;
+    flex-direction: column;
 }
 #profile-options {
     align-items: center;
     display: flex;
     flex-direction: column;
-    padding: 10px;
+    margin-left: 10px;
+}
+#profile-settings {
+    align-items: center;
+    background-color: var(--darkest);
+    border-radius: 20px;
+    display: flex;
+    flex-direction: column;
+    height: 65%;
+    margin-top: -160px;
+    width: 60%;
+}
+.settings-area {
+    align-items: center;
+    display: flex;
+    justify-content: center;
+    height: calc(100vh - 80px);
+    width: 100%;
+}
+#settings-profile-photo {
+    border-radius: 54px;
+    height: 240px; 
+    margin: 20px;
+    width: 240px; 
 }
 #upload-section {
     display: flex;
