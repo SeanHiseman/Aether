@@ -43,7 +43,7 @@ const Settings = () => {
     document.title = "Settings";
     return (
         <div className="profile-container">
-            <div className="content-feed">
+            <div className="settings-area">
                 {currentView === 'profile' ? (
                     <ProfileView
                         profile={profile}

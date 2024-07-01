@@ -71,8 +71,7 @@ body,html {
     background-color: var(--dark);
 }
 .button:hover, .button:focus, .background-button:hover, .chat-channel-button:hover, .conversation-button:hover, .light-button:focus, #search-submit-button:hover, 
-.light-button:hover, #search-bar:focus, .channel-input:focus, #search-bar:hover, .channel-input:hover, .change-name-area:hover, .change-text-area:hover,
-.change-name-area:focus, .change-text-area:focus, #group-name-input:hover, #group-name-input:focus, #messages-button:hover, .posts-channel-button:hover {
+.light-button:hover, #search-bar:focus, .channel-input:focus, #search-bar:hover, .channel-input:hover, #group-name-input:hover, #group-name-input:focus, #messages-button:hover, .posts-channel-button:hover {
     background-color: var(--button-hover);
 }
 #change-group-photo, #change-profile-photo {
@@ -86,21 +85,14 @@ body,html {
     padding: 5px;
     position: absolute;
 }
-.change-name-area {
-    background-color: var(--button-hover);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    color: var(--border);
-    transition: background-color 0.3s;
-}
-.change-text-area {
+.change-name-area, .change-text-area {
     background-color: var(--darkest);
     border: 1px solid var(--border);
     border-radius: 10px;
     color: var(--border);
-    min-width: 120px;
-    min-height: 40px;
-    transition: background-color 0.3s;
+    font-size: 16px;
+    min-width: 200px;
+    min-height: 80px;
 }
 .channel-content {
     align-items: center;
@@ -252,7 +244,6 @@ label {
 }
 #large-group-photo, .large-profile-photo {
     border-radius: 27px;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
     height: 120px; 
     margin: 10px;
     width: 120px; 
@@ -448,4 +439,9 @@ ul {
 }
 .vote-disabled {
     background-color: var(--dark-line);
+}
+.xl-text {
+    font-size: 72px;
+    max-width: 400px;
+    text-decoration: none;
 }
