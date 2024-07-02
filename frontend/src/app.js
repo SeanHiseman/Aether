@@ -5,7 +5,7 @@ import BaseLayout from './pages/base';
 import FollowingPage from './pages/feeds/following';
 import FriendsPage from './pages/feeds/friends';
 import GroupHome from './pages/groups/groupHome';
-import GroupSettings from './pages/groups/groupSettings';
+import GroupSettings from './pages/groups/settings/groupSettings';
 import GroupWrapper from './pages/groups/groupWrapper';
 import Login from './pages/site_entrance/login';
 import MessagesPage from './pages/messagesPage';
