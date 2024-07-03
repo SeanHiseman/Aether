@@ -2,6 +2,7 @@ import axios from 'axios';
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import GroupProfileView from './groupProfileView';
+import GroupDeletion from './groupDeletion';
 
 function GroupSettings() {
     const { group_name } = useParams();
@@ -16,6 +17,7 @@ function GroupSettings() {
                     const groupData = response.data;
                     setGroupDetails({
                         isMember: groupData.isMember,
+                        isLeader: groupData.isLeader, 
                         groupId: groupData.group_id,
                         groupName: groupData.group_name,
                         description: groupData.description,
@@ -43,7 +45,9 @@ function GroupSettings() {
                         setGroupDetails={setGroupDetails}
                     />
                 ) : (
-                    <div/>
+                    <GroupDeletion
+                        group={groupDetails}
+                    />
                 )}
             </div>  
             <div id="right-aside">
@@ -51,7 +55,15 @@ function GroupSettings() {
                     <ul>
                         <h2>Settings</h2>
                         <li className="settings-item" onClick={() => setCurrentView('profile')}>Group profile</li>
-                        <li className="settings-item" onClick={() => setCurrentView('groupDeletion')} style={{color: 'red'}}>Delete group</li>
+                        {groupDetails.isLeader && (
+                            <li 
+                                className="settings-item" 
+                                onClick={() => setCurrentView('groupDeletion')} 
+                                style={{color: 'red'}}
+                            >
+                                Delete group
+                            </li>
+                        )}
                     </ul>
                 </nav>
             </div>
