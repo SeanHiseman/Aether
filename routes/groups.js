@@ -1,7 +1,7 @@
 import authenticateCheck from '../functions/authenticateCheck.js';
 import checkIfUserIsAdmin from '../functions/adminCheck.js';
 import checkIfUserIsMember from '../functions/memberCheck.js';
-import { ContentVotes, Groups, GroupChannels, GroupChannelMessages, GroupPosts, GroupRequests, Messages, NestedGroupMembers, NestedGroupRequests, Profiles, Users, UserGroups } from '../models/models.js';
+import { ContentVotes, Groups, GroupChannels, GroupChannelMessages, GroupRequests, GroupReplies, GroupPosts, NestedGroupMembers, NestedGroupRequests, Profiles, Users, UserGroups } from '../models/models.js';
 import express from 'express';
 import fs from 'fs';
 import multer from 'multer';
@@ -244,6 +244,39 @@ router.post('/create_group_post', authenticateCheck, post_upload.array('files'),
     }
 });
 
+//Deletes group (only available to group leaders)
+router.delete('/delete_group', authenticateCheck, async (req, res) => {
+    //try {
+        const { group_id } = req.body;
+
+        //await GroupReplies.destroy({
+            //where: { group_id },
+        //});
+        await GroupPosts.destroy({
+            where: { group_id },
+        });
+        await GroupRequests.destroy({
+            where: { group_id },
+        });
+        await UserGroups.destroy({
+            where: { group_id },
+        });
+        await GroupChannels.destroy({
+            where: { group_id },
+        });
+        await GroupChannelMessages.destroy({
+            where: { group_id },
+        });
+        await Groups.destroy({
+            where: { group_id },
+        });
+
+        res.status(200).json({ success: true});
+    //} catch (error) {
+        //res.status(500).json({ error: 'Error deleting group' });
+    //}
+});
+
 //Deletes channel 
 router.delete('/delete_group_channel', authenticateCheck, async (req, res) => {
     try {
@@ -261,7 +294,7 @@ router.delete('/delete_group_channel', authenticateCheck, async (req, res) => {
             res.status(200).json({ message: 'Channel deleted successfully '});
         }
     } catch (error) {
-        res.status(500).json('Error deleting channel:', error);
+        res.status(500).json({ error: 'Error deleting channel' });
     }
 });
 
@@ -297,7 +330,7 @@ router.get('/get_group_members', authenticateCheck, async (req, res) => {
         });
         res.json(members);
     } catch (error) {
-        res.status(500).json('Error getting group members:', error);
+        res.status(500).json({error: 'Error getting group members' });
     }
 });
 
@@ -313,6 +346,7 @@ router.get('/group/:group_name', authenticateCheck, async (req, res) => {
         const group = await Groups.findOne({where: {group_name: groupName}});
         const groupData = group.toJSON(); 
         groupData.isAdmin = isAdmin;
+        groupData.isLeader = (userId === group.group_leader);
         groupData.isMember = isMember;
         groupData.userId = userId;
         //Finds user join request if private group
