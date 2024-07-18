@@ -1,7 +1,7 @@
 import axios from 'axios';
 import React, { useEffect, useState } from 'react';
 
-function GroupProfileView({ groupDetails, setGroupDetails }) {
+function GroupProfileView({ group, setGroup }) {
     const [errorMessage, setErrorMessage] = useState('');
     const [isEditingDescription, setIsEditingDescription] = useState(false);
     const [isEditingName, setIsEditingName] = useState(false);
@@ -12,16 +12,16 @@ function GroupProfileView({ groupDetails, setGroupDetails }) {
     //Set name in text area to current description
     useEffect(() => {
         if (isEditingName) {
-            setName(groupDetails.groupName);
+            setName(group.groupName);
         }
-    }, [isEditingName, groupDetails.groupName]);
+    }, [isEditingName, group.groupName]);
 
     //Set description in text area to current description
     useEffect(() => {
         if (isEditingDescription) {
-            setDescription(groupDetails.description);
+            setDescription(group.description);
         }
-    }, [isEditingDescription, groupDetails.description]);
+    }, [isEditingDescription, group.description]);
 
     const ChangeGroupPhoto = async (event) => {
         try {
@@ -33,12 +33,12 @@ function GroupProfileView({ groupDetails, setGroupDetails }) {
             }
             const formData = new FormData();
             formData.append('new_group_photo', fileInput.files[0]);
-            const response = await axios.put(`/api/update_group_photo/${groupDetails.groupId}`, formData, {
+            const response = await axios.put(`/api/update_group_photo/${group.groupId}`, formData, {
                 headers: {
                     'Content-Type': 'multipart/form-data',
                 },    
             })
-            setGroupDetails(prevDetails => ({
+            setGroup(prevDetails => ({
                 ...prevDetails,
                 groupPhoto: response.data.newPhotoPath
             }))
@@ -53,9 +53,9 @@ function GroupProfileView({ groupDetails, setGroupDetails }) {
         try {
             await axios.post('/api/change_description', {
                 description: newDescription,
-                groupId: groupDetails.groupId
+                groupId: group.groupId
             });
-            setGroupDetails({ ...groupDetails, description: newDescription });
+            setGroup({ ...group, description: newDescription });
             setIsEditingDescription(false);
         }
         catch (error) {
@@ -68,9 +68,9 @@ function GroupProfileView({ groupDetails, setGroupDetails }) {
         try {
             await axios.post('/api/change_group_name', {
                 groupName: newName,
-                groupId: groupDetails.groupId
+                groupId: group.groupId
             });
-            setGroupDetails({ ...groupDetails, groupName: newName });
+            setGroup({ ...group, groupName: newName });
             setIsEditingName(false);
         }
         catch (error) {
@@ -81,9 +81,9 @@ function GroupProfileView({ groupDetails, setGroupDetails }) {
     //Changes group between public and private
     const togglePrivate = async () => {
         try {
-            const group_id = groupDetails.groupId;
+            const group_id = group.groupId;
             const response = await axios.post('/api/toggle_private_group', { group_id });
-            setGroupDetails(prevDetails => ({
+            setGroup(prevDetails => ({
                 ...prevDetails, 
                 isPrivate: response.data.is_private
             }));
@@ -96,7 +96,7 @@ function GroupProfileView({ groupDetails, setGroupDetails }) {
         <div id="profile-settings">  
             <div id="name-photo-area">
                 <div id="profile-header-photo">
-                    <img id="settings-profile-photo" src={`/${groupDetails.groupPhoto}`} alt={groupDetails.groupName} />
+                    <img id="settings-profile-photo" src={`/${group.groupPhoto}`} alt={group.groupName} />
                     <button className="button" onClick={() => setIsPhotoFormVisible(!isPhotoFormVisible)}>
                         {isPhotoFormVisible ? 'Close' : 'Change Group photo'}
                     </button>
@@ -128,7 +128,7 @@ function GroupProfileView({ groupDetails, setGroupDetails }) {
                             </div>
                         ) : (
                             <div className="view-name">
-                                <p className="large-text">{groupDetails.groupName}</p>
+                                <p className="large-text">{group.groupName}</p>
                                 <button className="button edit" onClick={() => setIsEditingName(true)}>Change group name</button>
                             </div>
                         )}
@@ -151,7 +151,7 @@ function GroupProfileView({ groupDetails, setGroupDetails }) {
                             </div>
                         ) : (
                             <div className="view-description">
-                                <p id="description">{groupDetails.description}</p>
+                                <p id="description">{group.description}</p>
                                 <button className="button" onClick={() => setIsEditingDescription(true)}>Edit</button>
                             </div>
                         )}
@@ -160,7 +160,7 @@ function GroupProfileView({ groupDetails, setGroupDetails }) {
                 </div>
             </div>
             <div id="private-toggle">
-                <button className="button" onClick={() => togglePrivate()}>{groupDetails.isPrivate ? "Group: private" : "Group: public"}</button>
+                <button className="button" onClick={() => togglePrivate()}>{group.isPrivate ? "Group: private" : "Group: public"}</button>
             </div>
         </div>
     );

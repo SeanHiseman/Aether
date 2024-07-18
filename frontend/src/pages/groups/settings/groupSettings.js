@@ -1,8 +1,10 @@
 import axios from 'axios';
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import GroupProfileView from './groupProfileView';
 import GroupDeletion from './groupDeletion';
+import GroupMembers from './groupMembers';
+import GroupProfileView from './groupProfileView';
+import MemberJoinRequests from './memberJoinRequests';
 
 function GroupSettings() {
     const { group_name } = useParams();
@@ -35,26 +37,35 @@ function GroupSettings() {
         fetchGroupData();
     }, [group_name]);
 
+    //Switches between admin states
+    const renderComponent = () => {
+        switch (currentView) {
+            case 'profile':
+                return <GroupProfileView group={groupDetails} setGroup={setGroupDetails} />;
+            case 'groupDeletion':
+                return <GroupDeletion group={groupDetails} />;
+            case 'members':
+                return <GroupMembers group={groupDetails} />;
+            case 'join-requests':
+                return <MemberJoinRequests group={groupDetails} />;
+            default:
+                return null;
+        }
+    };
+
     document.title = "Settings";
     return (
         <div className="profile-container">  
             <div className="settings-area">
-                {currentView === 'profile' ? (
-                    <GroupProfileView
-                        groupDetails={groupDetails}
-                        setGroupDetails={setGroupDetails}
-                    />
-                ) : (
-                    <GroupDeletion
-                        group={groupDetails}
-                    />
-                )}
+                {renderComponent()}
             </div>  
             <div id="right-aside">
                 <nav id="channel-list">
                     <ul>
                         <h2>Settings</h2>
                         <li className="settings-item" onClick={() => setCurrentView('profile')}>Group profile</li>
+                        <li className="settings-item" onClick={() => setCurrentView('members')}>Members</li>
+                        <li className="settings-item" onClick={() => setCurrentView('join-requests')}>Join requests</li>
                         {groupDetails.isLeader && (
                             <li 
                                 className="settings-item" 
