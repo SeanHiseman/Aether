@@ -124,23 +124,6 @@ function GroupHome() {
         return (    
             <div className="group-container">  
                 <div className="content-feed">
-                    <header id="group-header">
-                        <div id="group-members">
-                            <p>{groupDetails.memberCount} members</p>
-                            <MemberChangeButton 
-                                userId={groupDetails.userId} 
-                                groupId={groupDetails.groupId} 
-                                isMember={groupDetails.isMember} 
-                                isRequestSent={groupDetails.isRequestSent} 
-                                isPrivate={groupDetails.isPrivate}
-                            />
-                        </div>
-                        <div id="group-text">
-                            <p className="large-text">{groupDetails.groupName}</p>
-                            <p id="description" >{groupDetails.description}</p>
-                        </div>
-                        <img id="large-group-photo" src={`/${groupDetails.groupPhoto}`} alt={groupDetails.groupName} />
-                    </header>
                     <div className="channel-feed">
                         {showPostForm ? (
                             <PostForm onSubmit={handlePostSubmit} errorMessage={errorMessage} />
@@ -165,6 +148,19 @@ function GroupHome() {
                     </div>
                 </div>         
                 <aside id="right-aside">
+                    <div id="profile-summary">
+                        <img id="large-group-photo" src={`/${groupDetails.groupPhoto}`} alt={groupDetails.groupName} />
+                        <p className="large-text">{groupDetails.groupName}</p>
+                        <p id="description" >{groupDetails.description}</p>
+                        <p id="user-count">{groupDetails.memberCount} members</p>
+                        <MemberChangeButton 
+                            userId={groupDetails.userId} 
+                            groupId={groupDetails.groupId} 
+                            isMember={groupDetails.isMember} 
+                            isRequestSent={groupDetails.isRequestSent} 
+                            isPrivate={groupDetails.isPrivate}
+                        />
+                    </div>
                     <h1>{channel_name}</h1>
                     {channelRender && (channelRender.is_posts && channelRender.is_chat) && (
                     <div id="channel-toggle">

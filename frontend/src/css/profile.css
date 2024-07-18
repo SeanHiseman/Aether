@@ -74,6 +74,13 @@
     margin-top: -160px;
     width: 60%;
 }
+#profile-summary {
+    align-items: center;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    width: 100%
+}
 .settings-area {
     align-items: center;
     display: flex;

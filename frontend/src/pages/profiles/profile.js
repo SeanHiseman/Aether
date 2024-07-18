@@ -84,26 +84,6 @@ function Profile() {
         return (
             <div className="profile-container">
                 <div className="content-feed">
-                    <header id="profile-header">
-                        {profile.isPrivate ? (
-                            null
-                        ) : (
-                            <div id="follow-info">
-                                <p>{profile.followerCount} {profile.followerCount === 1 ? 'follower' : 'followers'}</p>
-                                <FollowerChangeButton userId={loggedInUserId} profileId={profile.profileId} isFollowing={profile.isFollowing} />
-                            </div>
-                        )}
-                        <ManageFriendshipButton userId={loggedInUserId} receiverProfileId={profile.profileId} receiverUserId={profile.userId} isRequestSent={profile.isRequested} isFriend={profile.isFriend} />
-                        <div id="profile-header-side">
-                        </div>
-                        <div id="viewed-profile-info">
-                            <p className="large-text">{profile.username}</p>
-                            <p id="profile-bio">{profile.bio}</p>
-                        </div>
-                        <div id="profile-header-photo">
-                            <img className="large-profile-photo" src={`/${profile.profilePhoto}`} alt="Profile" />         
-                        </div>
-                    </header>
                     <div className="channel-feed">
                         {channelRender ? (
                             <ProfileFeed channelId={channelRender.channel_id} isGroup={false} locationId={profile.profileId} />
@@ -111,6 +91,14 @@ function Profile() {
                     </div>
                 </div>
                 <div id="right-aside">
+                    <div id="profile-summary">
+                        <img className="large-profile-photo" src={`/${profile.profilePhoto}`} alt="Profile" /> 
+                        <p className="large-text">{profile.username}</p>
+                        <p id="profile-bio">{profile.bio}</p>
+                        <p id="user-count">{profile.followerCount} {profile.followerCount === 1 ? 'follower' : 'followers'}</p>
+                        <FollowerChangeButton userId={loggedInUserId} profileId={profile.profileId} isFollowing={profile.isFollowing} />
+                        <ManageFriendshipButton userId={loggedInUserId} receiverProfileId={profile.profileId} receiverUserId={profile.userId} isRequestSent={profile.isRequested} isFriend={profile.isFriend} />
+                    </div>
                     <h1>{channel_name}</h1>
                     <h2>Channels</h2>
                     <nav id="channel-list">

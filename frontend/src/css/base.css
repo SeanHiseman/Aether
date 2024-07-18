@@ -248,12 +248,13 @@ label {
 #large-group-photo, .large-profile-photo {
     border-radius: 27px;
     height: 120px; 
-    margin: 10px;
+    margin-top: 10px;
     width: 120px; 
 }
 .large-text {
     font-size: 36px;
-    max-width: 400px;
+    margin: 5px;
+    max-width: 100%;
     text-decoration: none;
 }
 #left-aside, #right-aside {
@@ -307,7 +308,8 @@ main {
     border-radius: 5px;
 }
 #profile-bio, #description {
-    max-width: 400px;
+    margin: 5px;
+    max-width: 100%;
 }
 .profile-info {
     margin-bottom: 20px;
@@ -422,6 +424,9 @@ ul {
 #upload-form input[type="file"] {
     display: block;  
     width: 100%;    
+}
+#user-count {
+    margin: 5px;
 }
 .vote-arrow {
     background-color: var(--darkest);
