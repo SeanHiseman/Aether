@@ -3,7 +3,7 @@ a {
     color: inherit;
     text-decoration: none;
 }
-.file-input, #search-submit-button, .settings-item, .vote-arrow, .vote-arrow-container {
+.file-input, .submit-button, .settings-item, .vote-arrow, .vote-arrow-container {
     cursor: pointer;
 }
 #add-channel-form, #create-group-form {
@@ -70,8 +70,8 @@ body,html {
 .background-button {
     background-color: var(--dark);
 }
-.button:hover, .button:focus, .background-button:hover, .chat-channel-button:hover, .conversation-button:hover, .light-button:focus, #search-submit-button:hover, 
-.light-button:hover, #search-bar:focus, .channel-input:focus, #search-bar:hover, .channel-input:hover, #group-name-input:hover, #group-name-input:focus, #messages-button:hover, .posts-channel-button:hover {
+.button:hover, .button:focus, .background-button:hover, .chat-channel-button:hover, .conversation-button:hover, .light-button:focus, .submit-button:hover, 
+.light-button:hover, .channel-input:focus, .channel-input:hover, #group-name-input:hover, #group-name-input:focus, #messages-button:hover, .posts-channel-button:hover {
     background-color: var(--button-hover);
 }
 #change-group-photo, #change-profile-photo {
@@ -188,6 +188,9 @@ body,html {
     display: flex;
     flex-direction: column;
 }
+.feed-link {
+    padding: 10px;
+}
 .file-input {
     align-items: center;
     display: flex;
@@ -276,7 +279,6 @@ label {
     width: 100%;
 }
 #left-aside nav ul li, .settings-item {
-    padding: 10px;
     border-bottom: 1px solid var(--dark-line);
 }
 #left-aside nav ul li a, #right-aside nav ul li a {
@@ -365,21 +367,24 @@ main {
     color: var(--border);
     flex-grow: 1;
     font-size: large;
+    margin-left: 10px;
     margin-right: 10px;
     max-height: 50px;
     padding: 5px;
-    transition: background-color 0.3s;
 }
 #search-form {
     display: flex;
     flex-grow: 0;
     justify-content: space-between;
-    margin-left: 110px;
+    margin-left: 150px;
     max-width: 35%;
     min-height: 50px;
     width: 100%;
 }
-#search-submit-button {
+.spacer {
+    flex-grow: 1;
+}
+.submit-button {
     background-color: var(--darkest);
     border: 1px solid var(--border);
     border-radius: 20px;
@@ -389,9 +394,6 @@ main {
     min-width: 80px;
     padding: 5px;
     transition: background-color 0.3s;
-}
-.spacer {
-    flex-grow: 1;
 }
 #upload-form {
     display: flex;

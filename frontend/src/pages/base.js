@@ -12,7 +12,7 @@ import '../css/replies.css';
 
 const BaseLayout = () => {
     const { isAuthenticated, user } = useContext(AuthContext);
-    const [profile, setProfile] = useState({ logged_in_profile_id: '', logged_in_profile_photo: '', logged_in_username: '',logged_in_user_id: ''});
+    const [profile, setProfile] = useState({ logged_in_profile_id: '', logged_in_profile_photo: '', logged_in_username: '', logged_in_user_id: ''});
     const [groups, setGroups] = useState([]);
     const [groupName, setGroupName] = useState('');
     const [groupPhoto, setGroupPhoto] = useState(null);
@@ -27,7 +27,7 @@ const BaseLayout = () => {
         if (isAuthenticated && user) {
             axios.get(`/api/profileDataRouter/${user.userId}`)
             .then(response => {
-                setProfile({...response.data, logged_in_user_id: response.data.logged_in_user_id });
+                setProfile({...response.data, logged_in_user_id: response.data.logged_in_user_id, hasMembership: response.data.has_membership });
             })
             .catch(error => {
                 console.error('Error:', error);
@@ -131,9 +131,9 @@ const BaseLayout = () => {
                 </div>
                 <nav>
                     <ul>
-                        <li><Link to="/recommended">Recommended</Link></li>
-                        <li><Link to="/following">Following</Link></li>
-                        <li><Link to="/friends">Friends</Link></li>
+                        <li className="feed-link"><Link to="/recommended">Recommended</Link></li>
+                        <li className="feed-link"><Link to="/following">Following</Link></li>
+                        <li className="feed-link"><Link to="/friends">Friends</Link></li>
                     </ul>
                 </nav>
                 <h1>Groups</h1>
@@ -174,8 +174,11 @@ const BaseLayout = () => {
                 <header id="base-header">
                     <div className="spacer"></div>
                         <form id="search-form" onSubmit={SearchSubmit}>
+                            {profile.hasMembership && (
+                                <input className="submit-button" type="submit" value="Ask"/>
+                            )}
                             <input id="search-bar" type="text" name="keyword" placeholder="Search..." value={searchKeyword} onChange={(e) => setSearchKeyword(e.target.value)}/>
-                            <input id="search-submit-button" type="submit" value="Search"/>
+                            <input className="submit-button" type="submit" value="Search"/>
                         </form>
                 <div className="spacer"></div>
                 <Link to={`/messages/${profile.logged_in_username}`}>

@@ -26,7 +26,8 @@ router.get('/profileDataRouter/:userId', authenticateCheck, async (req, res) => 
             logged_in_profile_photo: profile.profile_photo,
             bio: profile.bio,
             follower_count: profile.follower_count,
-            is_private: profile.is_private
+            is_private: profile.is_private,
+            has_membership: user.has_membership
         };
         res.json(profileData);
 

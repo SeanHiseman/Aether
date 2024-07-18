@@ -81,6 +81,9 @@
     height: calc(100vh - 80px);
     width: 100%;
 }
+.settings-item {
+    padding: 10px;
+}
 #settings-profile-photo {
     border-radius: 54px;
     height: 240px; 
