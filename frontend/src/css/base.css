@@ -189,6 +189,7 @@ body,html {
     flex-direction: column;
 }
 .feed-link {
+    border-bottom: 1px solid var(--dark-line);
     padding: 10px;
 }
 .file-input {
@@ -248,7 +249,7 @@ label {
 #large-group-photo, .large-profile-photo {
     border-radius: 27px;
     height: 120px; 
-    margin-top: 10px;
+    margin: 10px;
     width: 120px; 
 }
 .large-text {
@@ -279,9 +280,6 @@ label {
     text-align: center;
     width: 100%;
 }
-#left-aside nav ul li, .settings-item {
-    border-bottom: 1px solid var(--dark-line);
-}
 #left-aside nav ul li a, #right-aside nav ul li a {
     color: var(--border);
     text-decoration: none;
@@ -303,6 +301,11 @@ main {
     flex-direction: column;
     margin-top: 80px;
     width: 100%;
+}
+.name-text {
+    font-size: x-large;
+    font-weight: bold;
+    margin: 5px;
 }
 .posts-channel-button {
     border-radius: 5px;

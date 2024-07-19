@@ -89,6 +89,7 @@
     width: 100%;
 }
 .settings-item {
+    border-bottom: 1px solid var(--dark-line);
     padding: 10px;
 }
 #settings-profile-photo {

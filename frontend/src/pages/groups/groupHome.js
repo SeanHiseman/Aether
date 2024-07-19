@@ -3,21 +3,25 @@ import React, { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import ChatChannel from '../../components/channels/chatChannel';
 import MemberChangeButton from '../../components/memberChangeButton';
-import GroupHomeAdmin from './groupHomeAdmin';
 import PostChannel from '../../components/channels/postChannel';
 import PostForm from "../../components/postForm";
 
 function GroupHome() {
     const { group_name, channel_name, channel_mode } = useParams();
+    console.log("channel_name:", channel_name);
     const [canRemove, setCanRemove] = useState(false);
     const [channels, setChannels] = useState([]);
-    const [channelMode, setChannelMode] = useState(channel_mode);
+    const [channelMode, setChannelMode] = useState(channel_mode || 'post');
     const [errorMessage, setErrorMessage] = useState('');
     const [isAdmin, setIsAdmin] = useState(false);
+    const [isChatChannel, setIsChatChannel] = useState(false);
+    const [isPostChannel, setIsPostChannel] = useState(false);
     const [isModerator, setIsModerator] = useState(false);
     const [groupDetails, setGroupDetails] = useState('');
+    const [newChannelName, setNewChannelName] = useState('');
+    const [showChannelForm, setShowChannelForm] = useState(false);
     const [showPostForm, setShowPostForm] = useState(false);
-    document.title = groupDetails.groupName;
+    const [subGroups, setSubGroups] = useState([]);
 
     //Loads group info 
     useEffect(() => {
@@ -67,11 +71,59 @@ function GroupHome() {
         });
     }, [groupDetails.groupId]);  
 
-    const channelRender = channels.find(
-        (c) =>
-            c.channel_name === channel_name &&
-            (c.is_posts || c.is_posts)
-    );
+    //Fetch subgroups
+    useEffect(() => {
+        const fetchSubGroups = async () => {
+            try {
+                const response = await axios.get(`/api/sub_groups/${groupDetails.groupId}`);
+                setSubGroups(response.data);
+            } catch (error) {
+                console.log("Error fetching sub groups:", error);
+            }
+        };
+        fetchSubGroups();
+    }, [groupDetails.groupId]);
+
+    //Adds channel to group
+    const AddChannel = async (event) => {
+        event.preventDefault();
+        try {
+            const response = await axios.post('/api/add_group_channel', {
+                channel_name: newChannelName,
+                groupId: groupDetails.groupId,
+                isPosts: isPostChannel,
+                isChat: isChatChannel
+            });
+            if (response.data && response.status === 201) {
+                setChannels([...channels, response.data]);
+                setNewChannelName('');
+                setErrorMessage('');
+            } else {
+                setErrorMessage('Failed to add channel.');
+            }
+        } catch (error) {
+            setErrorMessage(error.response ? error.response.data.error : 'Failed to add channel.');
+        }
+    };
+
+    const channelRender = channels.find(c => c.channel_name === channel_name);
+
+    const deleteChannel = async () => {
+        try {
+            //Main channels are default, so can't be deleted
+            if (channel_name === 'Main') {
+                return;
+            } else {
+                await axios.delete(`/api/delete_group_channel`, { data: {channel_name: channel_name, group_id: groupDetails.groupId} });
+            }
+        } catch (error) {
+            console.error('Error deleting channel:', error);
+        }
+    };
+
+    //Set channels to contain either posts or chats, or both
+    const handleChatClick = () => setIsChatChannel((prev) => !prev);
+    const handlePostClick = () => setIsPostChannel((prev) => !prev);
 
     //Uploads content 
     const handlePostSubmit = async (formData) => {
@@ -89,14 +141,14 @@ function GroupHome() {
         }
     };
 
+    //Toggles display of create channel form after button is pressed
+    const toggleChannelForm = () => {setShowChannelForm((prev) => !prev)};
+
     //Checks membership if group is private
     const isNotPrivateMember = !groupDetails.isMember && groupDetails.isPrivate;
 
-    //Load different page if user is admin
-    if (isAdmin) {
-        return <GroupHomeAdmin />
-    }
-    else if (isNotPrivateMember) {
+    document.title = groupDetails.groupName;
+    if (isNotPrivateMember) {
         return (
             <div className="group-container">
                 <div className="content-feed">
@@ -112,7 +164,7 @@ function GroupHome() {
                             />
                         </div>
                         <div id="group-text">
-                            <p className="large-text">{groupDetails.groupName}</p>
+                            <p className="name-text">{groupDetails.groupName}</p>
                             <p id="description" >{groupDetails.description}</p>
                         </div>
                         <img id="large-group-photo" src={`/${groupDetails.groupPhoto}`} alt={groupDetails.groupName} />
@@ -149,8 +201,13 @@ function GroupHome() {
                 </div>         
                 <aside id="right-aside">
                     <div id="profile-summary">
+                        {isAdmin && (
+                            <Link to={`/group_settings/${group_name}`}>
+                                <button className="button">Settings</button>
+                            </Link>
+                        )}
                         <img id="large-group-photo" src={`/${groupDetails.groupPhoto}`} alt={groupDetails.groupName} />
-                        <p className="large-text">{groupDetails.groupName}</p>
+                        <p className="name-text">{groupDetails.groupName}</p>
                         <p id="description" >{groupDetails.description}</p>
                         <p id="user-count">{groupDetails.memberCount} members</p>
                         <MemberChangeButton 
@@ -177,6 +234,28 @@ function GroupHome() {
                        <button class="button" onClick={() => setShowPostForm(true)}>Create Post</button>
                     )}
                     <h2>Channels</h2>
+                    {isAdmin && (
+                        <div id="add-channel-section">
+                            <button class="button" onClick={toggleChannelForm}>
+                                {showChannelForm ? 'Close': 'Create new Channel'}
+                            </button>
+                            {showChannelForm && (
+                                <form id="add-channel-form" onSubmit={AddChannel}>
+                                    <input className="channel-input" type="text" placeholder="Channel name..." value={newChannelName} onChange={(e) => setNewChannelName(e.target.value)}/>
+                                    <label>
+                                        <input type="checkbox" checked={isPostChannel} onChange={handlePostClick}/>
+                                        Post Channel
+                                    </label>
+                                    <label>
+                                        <input type="checkbox" checked={isChatChannel} onChange={handleChatClick}/>
+                                        Chat Channel
+                                    </label>
+                                    <input className="button" type="submit" value="Add" disabled={!newChannelName}/>
+                                    {errorMessage && <div className="error-message">{errorMessage}</div>}
+                                </form>                            
+                            )}
+                        </div>
+                    )}
                     <nav id="channel-list">
                         <ul>
                             {channels.map(channel => (
@@ -188,6 +267,28 @@ function GroupHome() {
                             ))}
                         </ul>
                     </nav>
+                    {isAdmin && channel_name !== 'Main' && (
+                        <button className="button" onClick={() => deleteChannel()}>Delete channel</button> 
+                    )}
+                    {isAdmin && (
+                        subGroups.length === 0 ? (
+                            <div></div>
+                        ) : (
+                            <div>
+                                <h2>Groups</h2>
+                                <ul>
+                                    {subGroups.map((subGroup, index) => (
+                                        <li key={index}>
+                                            <Link className="group-list-link" to={`/group/${subGroup.SubGroup.group_name}/Main`}>
+                                                <img className="small-group-photo" src={`/${subGroup.SubGroup.group_photo}`} alt={subGroup.SubGroup.group_name} />
+                                                <p className="group-list-text">{subGroup.SubGroup.group_name}</p>
+                                            </Link>
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
+                        )
+                    )}
                 </aside>
             </div>
         );
