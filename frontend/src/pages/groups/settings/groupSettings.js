@@ -42,7 +42,7 @@ function GroupSettings() {
         switch (currentView) {
             case 'profile':
                 return <GroupProfileView group={groupDetails} setGroup={setGroupDetails} />;
-            case 'groupDeletion':
+            case 'group-deletion':
                 return <GroupDeletion group={groupDetails} />;
             case 'members':
                 return <GroupMembers group={groupDetails} />;
@@ -65,11 +65,11 @@ function GroupSettings() {
                         <h2>Settings</h2>
                         <li className="settings-item" onClick={() => setCurrentView('profile')}>Group profile</li>
                         <li className="settings-item" onClick={() => setCurrentView('members')}>Members</li>
-                        <li className="settings-item" onClick={() => setCurrentView('join-requests')}>Join requests</li>
+                        {groupDetails.isPrivate && (<li className="settings-item" onClick={() => setCurrentView('join-requests')}>Join requests</li>)}
                         {groupDetails.isLeader && (
                             <li 
                                 className="settings-item" 
-                                onClick={() => setCurrentView('groupDeletion')} 
+                                onClick={() => setCurrentView('group-deletion')} 
                                 style={{color: 'red'}}
                             >
                                 Delete group
