@@ -2,6 +2,7 @@ import axios from 'axios';
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import AccountDeletion from './accountDeletion';
+import FriendRequests from './friendRequests';
 import ProfileView from './profileView';
 
 //Page for all settings related to a user
@@ -40,27 +41,33 @@ const Settings = () => {
             })
     };
 
+    //Switches between settings states
+    const renderComponent = () => {
+        switch (currentView) {
+            case 'profile':
+                return <ProfileView profile={profile} setProfile={setProfile} />;
+            case 'account-deletion':
+                return <AccountDeletion profile={profile} />;
+            case 'friend-requests':
+                return <FriendRequests  profile={profile} />;
+            default:
+                return null;
+        }
+    };
+
     document.title = "Settings";
     return (
         <div className="profile-container">
             <div className="settings-area">
-                {currentView === 'profile' ? (
-                    <ProfileView
-                        profile={profile}
-                        setProfile={setProfile}
-                    />
-                ) : (
-                    <AccountDeletion
-                        profile={profile}
-                    />
-                )}                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      
+                {renderComponent()}                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     
             </div>
             <div id="right-aside">
                 <nav id="channel-list">
                     <ul>
                         <h2>Settings</h2>
                         <li className="settings-item" onClick={() => setCurrentView('profile')}>Profile</li>
-                        <li className="settings-item" onClick={() => setCurrentView('accountDeletion')} style={{color: 'red'}}>Delete account</li>
+                        <li className="settings-item" onClick={() => setCurrentView('friend-requests')}>Friend requests</li>
+                        <li className="settings-item" onClick={() => setCurrentView('account-deletion')} style={{color: 'red'}}>Delete account</li>
                         <form id="logout-form" action="/api/logout" method="post" onSubmit={handleLogout}>
                             <button className="button" type="submit">Logout</button>
                         </form>
