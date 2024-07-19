@@ -93,7 +93,7 @@ function Profile() {
                 <div id="right-aside">
                     <div id="profile-summary">
                         <img className="large-profile-photo" src={`/${profile.profilePhoto}`} alt="Profile" /> 
-                        <p className="large-text">{profile.username}</p>
+                        <p className="name-text">{profile.username}</p>
                         <p id="profile-bio">{profile.bio}</p>
                         <p id="user-count">{profile.followerCount} {profile.followerCount === 1 ? 'follower' : 'followers'}</p>
                         <FollowerChangeButton userId={loggedInUserId} profileId={profile.profileId} isFollowing={profile.isFollowing} />

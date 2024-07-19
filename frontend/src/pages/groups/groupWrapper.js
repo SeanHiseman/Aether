@@ -8,8 +8,8 @@ function GroupWrapper() {
 
     //Directs to group main channel by default
     useEffect(() => {
-        if (!channel_name || !channel_mode) {
-            navigate(`/group/${group_name}/Main/post`, { replace: true });
+        if (!channel_name) {
+            navigate(`/group/${group_name}/Main`, { replace: true });
         }
     }, [group_name, channel_name, navigate]);
 

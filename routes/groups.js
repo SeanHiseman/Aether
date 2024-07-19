@@ -397,6 +397,7 @@ router.get('/group_channel_messages/:channel_id', authenticateCheck, async (req,
 router.get('/group_channel_posts', authenticateCheck, async (req, res) => {
     try {
         const { channel_id, location_id } = req.query;
+        const userId = req.session.user_id;
         const posts = await GroupPosts.findAll({
             where: {
                 group_id: location_id,
@@ -423,7 +424,7 @@ router.get('/group_channel_posts', authenticateCheck, async (req, res) => {
             ...post.dataValues, is_group: true,
         }));
 
-        const sortedPosts = sortPostsByWeightedRatio(finalResults);
+        const sortedPosts = sortPostsByWeightedRatio(finalResults, userId);
         res.json(sortedPosts);
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });

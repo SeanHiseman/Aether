@@ -35,6 +35,7 @@
     border: 1px solid var(--border);
     border-radius: 10px;
     display: flex;
+    min-height: 36px;
     overflow: hidden;
 }
 #channel-toggle button {
