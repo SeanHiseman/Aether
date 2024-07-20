@@ -63,7 +63,7 @@
     padding: 5px;
     transition: background-color 0.3s;
 }
-.chat-message-bar:hover, .chat-message-bar:focus, .chat-send-button:hover {
+.chat-send-button:hover {
     background-color: var(--button-hover);
 }
 .chat-input {
