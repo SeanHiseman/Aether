@@ -1,6 +1,7 @@
 import React from 'react';
 import { Navigate, BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import { AuthCheck } from './components/authContext';
+import AskChannel from './pages/askChannel';
 import BaseLayout from './pages/base';
 import FollowingPage from './pages/feeds/following';
 import FriendsPage from './pages/feeds/friends';
@@ -24,6 +25,7 @@ const App = () => {
                 <Route path="/login" element={<Login />} />
                 <Route path="/register" element={<Register />} />
                 <Route path="/" element={<AuthCheck><BaseLayout /></AuthCheck>}>
+                    <Route path="ask" element={<AuthCheck><AskChannel /></AuthCheck>} />
                     <Route path="recommended" element={<AuthCheck><RecommendedPage /></AuthCheck>} />
                     <Route path="following" element={<AuthCheck><FollowingPage /></AuthCheck>} />
                     <Route path="friends" element={<AuthCheck><FriendsPage /></AuthCheck>} />

@@ -8,7 +8,6 @@ import PostForm from "../../components/postForm";
 
 function GroupHome() {
     const { group_name, channel_name, channel_mode } = useParams();
-    console.log("channel_name:", channel_name);
     const [canRemove, setCanRemove] = useState(false);
     const [channels, setChannels] = useState([]);
     const [channelMode, setChannelMode] = useState(channel_mode || 'post');

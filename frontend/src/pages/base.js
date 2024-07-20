@@ -12,16 +12,17 @@ import '../css/replies.css';
 
 const BaseLayout = () => {
     const { isAuthenticated, user } = useContext(AuthContext);
-    const [profile, setProfile] = useState({ logged_in_profile_id: '', logged_in_profile_photo: '', logged_in_username: '', logged_in_user_id: ''});
     const [groups, setGroups] = useState([]);
     const [groupName, setGroupName] = useState('');
     const [groupPhoto, setGroupPhoto] = useState(null);
     const [groupPhotoFile, setGroupPhotoFile] = useState('No file chosen');
+    const [isAsking, setIsAsking] = useState(false);
     const [privateGroup, setPrivateGroup] = useState(false);
+    const [profile, setProfile] = useState({ logged_in_profile_id: '', logged_in_profile_photo: '', logged_in_username: '', logged_in_user_id: ''});
     const [searchKeyword, setSearchKeyword] = useState('');
     const [showForm, setShowForm] = useState(false);
     const navigate = useNavigate();
-
+    console.log("isAsking:", isAsking);
     //Fetch profile info
     useEffect(() => {
         if (isAuthenticated && user) {
@@ -102,14 +103,31 @@ const BaseLayout = () => {
         }
     };
 
+    const handleAskClick = (event) => {
+        event.preventDefault();
+        setIsAsking(true);
+        SearchSubmit(event);
+    };
+
+    const handleSearchClick = (event) => {
+        event.preventDefault();
+        setIsAsking(false);
+        SearchSubmit(event);
+    };
+
     //Set groups to public or private
     const handlePublicClick = () => setPrivateGroup(false);
     const handlePrivateClick = () => setPrivateGroup(true);
 
+    //User either searches or asks
     const SearchSubmit = async (event) => {
         event.preventDefault();
         try {
-            navigate(`/search?keyword=${searchKeyword}`);
+            if (isAsking) {
+                navigate(`/ask`);
+            } else {
+                navigate(`/search?keyword=${searchKeyword}`);
+            }
         } catch (error) {
             console.error(error);
         }
@@ -175,10 +193,10 @@ const BaseLayout = () => {
                     <div className="spacer"></div>
                         <form id="search-form" onSubmit={SearchSubmit}>
                             {profile.hasMembership && (
-                                <input className="submit-button" type="submit" value="Ask"/>
+                                <input className="submit-button" type="submit" value="Ask" onClick={handleAskClick} />
                             )}
-                            <input id="search-bar" type="text" name="keyword" placeholder="Search..." value={searchKeyword} onChange={(e) => setSearchKeyword(e.target.value)}/>
-                            <input className="submit-button" type="submit" value="Search"/>
+                            <input id="search-bar" type="text" name="keyword" placeholder="Search or Ask..." value={searchKeyword} onChange={(e) => setSearchKeyword(e.target.value)}/>
+                            <input className="submit-button" type="submit" value="Search" onClick={handleSearchClick}/>
                         </form>
                 <div className="spacer"></div>
                 <Link to={`/messages/${profile.logged_in_username}`}>
