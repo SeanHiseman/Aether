@@ -1,23 +1,27 @@
 import axios from 'axios';
 import React, { useContext, useEffect, useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import { v4 } from 'uuid';
 
 function AskChannel() {
     const [channel, setChannel] = useState([]);
     const [currentMessage, setCurrentMessage] = useState('');
     const [errorMessage, setErrorMessage] = useState('');
+    const location = useLocation();
+    const query = location.state?.query || '';
 
     const sendAskMessage = () => {
         console.log("Ask message test.");
     };
 
+    document.title="Ask";
     return (
         <div className="search-container">  
             <div className="content-feed">
                 <div className="channel-feed">
                     <div id="channel">
                         <div className="channel-content messages">
-                            <p>Hello!</p>
+                            <p>{query}</p>
                         </div>
                         <div id="channel-input">
                             <input class="chat-message-bar" type="text" value={currentMessage} onChange={(e) => setCurrentMessage(e.target.value)} placeholder="Ask..." onKeyDown={(e) => e.key === 'Enter' && sendAskMessage()}/>
