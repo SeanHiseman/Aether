@@ -12,17 +12,16 @@ import '../css/replies.css';
 
 const BaseLayout = () => {
     const { isAuthenticated, user } = useContext(AuthContext);
+    const [currentQuery, setCurrentQuery] = useState('');
     const [groups, setGroups] = useState([]);
     const [groupName, setGroupName] = useState('');
     const [groupPhoto, setGroupPhoto] = useState(null);
     const [groupPhotoFile, setGroupPhotoFile] = useState('No file chosen');
-    const [isAsking, setIsAsking] = useState(false);
     const [privateGroup, setPrivateGroup] = useState(false);
     const [profile, setProfile] = useState({ logged_in_profile_id: '', logged_in_profile_photo: '', logged_in_username: '', logged_in_user_id: ''});
-    const [searchKeyword, setSearchKeyword] = useState('');
     const [showForm, setShowForm] = useState(false);
     const navigate = useNavigate();
-    console.log("isAsking:", isAsking);
+
     //Fetch profile info
     useEffect(() => {
         if (isAuthenticated && user) {
@@ -103,35 +102,20 @@ const BaseLayout = () => {
         }
     };
 
+    //Sends to ask page
     const handleAskClick = (event) => {
         event.preventDefault();
-        setIsAsking(true);
-        SearchSubmit(event);
+        navigate('/ask', { state: { query: currentQuery } });
     };
-
+    //Sends to search page
     const handleSearchClick = (event) => {
         event.preventDefault();
-        setIsAsking(false);
-        SearchSubmit(event);
+        navigate(`/search?keyword=${currentQuery}`);
     };
 
     //Set groups to public or private
     const handlePublicClick = () => setPrivateGroup(false);
     const handlePrivateClick = () => setPrivateGroup(true);
-
-    //User either searches or asks
-    const SearchSubmit = async (event) => {
-        event.preventDefault();
-        try {
-            if (isAsking) {
-                navigate(`/ask`);
-            } else {
-                navigate(`/search?keyword=${searchKeyword}`);
-            }
-        } catch (error) {
-            console.error(error);
-        }
-    };
 
     //Toggles display of create group form after button is pressed
     const toggleForm = () => {
@@ -191,11 +175,11 @@ const BaseLayout = () => {
             <main>
                 <header id="base-header">
                     <div className="spacer"></div>
-                        <form id="search-form" onSubmit={SearchSubmit}>
+                        <form id="search-form" onSubmit={(e) => e.preventDefault()}>
                             {profile.hasMembership && (
                                 <input className="submit-button" type="submit" value="Ask" onClick={handleAskClick} />
                             )}
-                            <input id="search-bar" type="text" name="keyword" placeholder="Search or Ask..." value={searchKeyword} onChange={(e) => setSearchKeyword(e.target.value)}/>
+                            <input id="search-bar" type="text" name="keyword" placeholder="Search or Ask..." value={currentQuery} onChange={(e) => setCurrentQuery(e.target.value)}/>
                             <input className="submit-button" type="submit" value="Search" onClick={handleSearchClick}/>
                         </form>
                 <div className="spacer"></div>
