@@ -29,7 +29,7 @@ app.use('/media', express.static(path.join(__dirname, 'media')));
 app.use(cors());
 app.use(express.json());
 app.use(express.static(root));
-app.use(favicon(path.join(process.cwd(), 'media', 'site_images', 'AetherLogo.png')));
+app.use(favicon(path.join(process.cwd(), 'media', 'site_images', 'Logo.png')));
 app.use(urlencoded({ extended: true}));
 
 app.use(session({
