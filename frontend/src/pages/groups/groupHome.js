@@ -206,7 +206,7 @@ function GroupHome() {
                             </Link>
                         )}
                         <img id="large-group-photo" src={`/${groupDetails.groupPhoto}`} alt={groupDetails.groupName} />
-                        <p className="name-text">{groupDetails.groupName}</p>
+                        <p className="large-text">{groupDetails.groupName}</p>
                         <p id="description" >{groupDetails.description}</p>
                         <p id="user-count">{groupDetails.memberCount} members</p>
                         <MemberChangeButton 
@@ -218,12 +218,6 @@ function GroupHome() {
                         />
                     </div>
                     <h1>{channel_name}</h1>
-                    {channelRender && (channelRender.is_posts && channelRender.is_chat) && (
-                    <div id="channel-toggle">
-                        <button className={channelMode === 'post' ? 'active-mode' : 'passive-mode'} onClick={() => setChannelMode('post')}>Posts</button>
-                        <button className={channelMode === 'chat' ? 'active-mode' : 'passive-mode'} onClick={() => setChannelMode('chat')}>Chat</button>
-                    </div>
-                    )}
                     {showPostForm && channelMode === 'post' && (
                         <div>
                             <button class="button" onClick={() => setShowPostForm(false)}>Close</button>
@@ -232,7 +226,12 @@ function GroupHome() {
                     {!showPostForm && channelMode === 'post' && (
                        <button class="button" onClick={() => setShowPostForm(true)}>Create Post</button>
                     )}
-                    <h2>Channels</h2>
+                    {channelRender && (channelRender.is_posts && channelRender.is_chat) && (
+                    <div id="channel-toggle">
+                        <button className={channelMode === 'post' ? 'active-mode' : 'passive-mode'} onClick={() => setChannelMode('post')}>Posts</button>
+                        <button className={channelMode === 'chat' ? 'active-mode' : 'passive-mode'} onClick={() => setChannelMode('chat')}>Chat</button>
+                    </div>
+                    )}
                     {isAdmin && (
                         <div id="add-channel-section">
                             <button class="button" onClick={toggleChannelForm}>
@@ -274,7 +273,7 @@ function GroupHome() {
                             <div></div>
                         ) : (
                             <div>
-                                <h2>Groups</h2>
+                                <p className="large-text">Groups</p>
                                 <ul>
                                     {subGroups.map((subGroup, index) => (
                                         <li key={index}>
