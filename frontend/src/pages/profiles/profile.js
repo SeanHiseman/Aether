@@ -21,20 +21,18 @@ function Profile() {
     const loggedInUsername = user?.username;
     const isLoggedInUser = username === loggedInUsername;
     useEffect(() => {
-        if (!isLoggedInUser) {
-            axios.get(`/api/profile/${username}`)
-                .then(response => {
-                    const fetchedProfile = response.data.profile;
-                    setProfile(fetchedProfile);
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    if (error.response && error.response.status === 401) {
-                        navigate('/login');
-                    }
-                });
-        }
-    }, [username, isLoggedInUser, navigate]);
+        axios.get(`/api/profile/${username}`)
+            .then(response => {
+                const fetchedProfile = response.data.profile;
+                setProfile(fetchedProfile);
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                if (error.response && error.response.status === 401) {
+                    navigate('/login');
+                }
+            });
+    }, [username, navigate]);
 
     //Fetch channels in user profile
     useEffect(() => {
