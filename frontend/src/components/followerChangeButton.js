@@ -1,36 +1,35 @@
 import axios from "axios";
-import React, { useState } from "react"
+import React, { useEffect, useState } from "react"
 
-const FollowerChangeButton = ({ userId, receiverUserId, profileId, isFollowing, isPrivate, onFollowerChange }) => {
+const FollowerChangeButton = ({ userId, profileId, isFollowing }) => {
     const [errorMessage, setErrorMessage] = useState('');
+    const [status, setStatus] = useState(isFollowing); //Initial following status
+    
+    useEffect(() => {
+        setStatus(isFollowing);
+    }, [isFollowing]);
 
-    const handleFollowerChange = () => {
+    const handleFollowerChange = async () => {
+        const newStatus = !status;
         //Depends on if user is already following the profile
-        const url = isFollowing ? 'remove_follower' : 'follow_profile';
-        axios.post(`/api/${url}`, { userId, profileId })
-            .then(() => {
-                onFollowerChange(!isFollowing);
-            }).catch(error => {
-                setErrorMessage("Error changing following", error);
-            });
+        const url = status ? 'remove_follower' : 'follow_profile';
+
+        try {
+            axios.post(`/api/${url}`, { userId, profileId }); 
+            setStatus(newStatus);
+        } catch {
+            setErrorMessage("Error changing following");
+        };
     };
 
-    //Private profiles don't have followers
-    if (isPrivate) {
-        return;
-        //If user is viewing their own profile
-    } else if (userId == receiverUserId) {
-        return;
-    } else {
-        return (
-            <div>
-                <button className="button" onClick={handleFollowerChange}>
-                    {isFollowing ? 'Unfollow' : 'Follow'}
-                </button>
-                {errorMessage && <div className="error-message">{errorMessage}</div>}
-            </div>
-        )
-    }
+    return (
+        <div>
+            <button className="button" onClick={handleFollowerChange}>
+                {status ? 'Unfollow' : 'Follow'}
+            </button>
+            {errorMessage && <div className="error-message">{errorMessage}</div>}
+        </div>
+    )
 }
 
 export default FollowerChangeButton;
