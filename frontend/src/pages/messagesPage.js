@@ -7,6 +7,7 @@ import { v4 } from 'uuid';
 import ManageFriendshipButton from '../components/manageFriendship';
 import Message from '../components/message';
 
+//chats and conversations in variable names are used interchangeably, to be corrected
 function MessagesPage() {
     const [chat, setChat] = useState([]);
     const [conversations, setConversations] = useState([]);
@@ -62,11 +63,11 @@ function MessagesPage() {
             if (title) {
                 const selected = filteredConversations.find(c => c.title === title);
                 if (selected) {
-                    setSelectedConversationId(selected.conversationId);
+                    setSelectedConversationId(selected.conversationId || selected.conversation_id);
                 }
             } else if (filteredConversations.length > 0) {
                 //Default to first conversation if none given
-                setSelectedConversationId(filteredConversations[0].conversationId);
+                setSelectedConversationId(filteredConversations[0].conversationId || filteredConversations[0].conversation_id);
             }
         }
     }, [friend_name, conversations, user?.username, title]);
@@ -120,9 +121,22 @@ function MessagesPage() {
                 title: newChatName
             });
             if (response.data && response.status === 201) {
+                const newConversation = {
+                    ...response.data,
+                    conversationId: response.data.conversation_id,
+                    participants: [
+                        { username: user.username },
+                        { username: friend_name }
+                    ]
+                };
+                //Updates chats and viewed chats
+                setConversations(prevConversations => [...prevConversations, newConversation]);
+                setSelectedConversations(prevSelected => [...prevSelected, newConversation]);
+                setSelectedConversationId(newConversation.conversationId);
                 navigate(`/messages/${username}/${friend_name}/${newChatName}`)
                 setErrorMessage('');
                 setNewChatName('');
+                setShowForm(false);
             } else {
                 setErrorMessage("Failed to add chat.");
             }
@@ -232,7 +246,7 @@ function MessagesPage() {
                         <h4>Chats</h4> 
                         <ul>
                             {selectedConversations.map(conversation => (
-                                <li key={conversation.conversationId}>
+                                <li key={conversation.conversationId} className="chat-item">
                                     <Link to={`/messages/${username}/${friend_name}/${conversation.title}`}>
                                         <div className="channel-link">{conversation.title}</div>
                                     </Link>
