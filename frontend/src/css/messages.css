@@ -38,7 +38,6 @@
     from { opacity: 0; }
     to { opacity: 1; }
 }
-
 .chat-message-bar {
     background-color: var(--darkest);
     border: 1px solid var(--border);

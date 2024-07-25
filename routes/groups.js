@@ -246,7 +246,7 @@ router.post('/create_group_post', authenticateCheck, post_upload.array('files'),
 
 //Deletes group (only available to group leaders)
 router.delete('/delete_group', authenticateCheck, async (req, res) => {
-    //try {
+    try {
         const { group_id } = req.body;
 
         //await GroupReplies.destroy({
@@ -272,9 +272,9 @@ router.delete('/delete_group', authenticateCheck, async (req, res) => {
         });
 
         res.status(200).json({ success: true});
-    //} catch (error) {
-        //res.status(500).json({ error: 'Error deleting group' });
-    //}
+    } catch (error) {
+        res.status(500).json({ error: 'Error deleting group' });
+    }
 });
 
 //Deletes channel 
