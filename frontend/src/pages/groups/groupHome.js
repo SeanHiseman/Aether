@@ -273,7 +273,6 @@ function GroupHome() {
                             <div></div>
                         ) : (
                             <div>
-                                <p className="large-text">Groups</p>
                                 <ul>
                                     {subGroups.map((subGroup, index) => (
                                         <li key={index}>

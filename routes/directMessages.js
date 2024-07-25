@@ -32,6 +32,31 @@ router.post('/create_conversation', authenticateCheck, async (req, res) => {
     }
 });
 
+//Deletes chat
+router.delete('/delete_chat', authenticateCheck, async (req, res) => {
+    try {
+        const { conversation_id, title } = req.body;
+        //Main channels are default, so can't be deleted
+        if (title === 'General') {
+            res.status(500).json({ message: 'General chats cannot be deleted' });
+        } else {
+            await UserConversations.destroy({
+                where: { 
+                    conversation_id: conversation_id
+                },
+            });
+            await Conversations.destroy({
+                where: { 
+                    conversation_id: conversation_id
+                },
+            });
+            res.status(200).json({ message: 'Chat deleted successfully '});
+        }
+    } catch (error) {
+        res.status(500).json({ error: 'Error deleting chat' });
+    }
+});
+
 //Get chat messages
 router.get('/get_chat_messages/:conversation_id', authenticateCheck, async (req, res) => {
     try {

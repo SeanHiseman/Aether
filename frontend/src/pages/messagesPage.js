@@ -53,7 +53,7 @@ function MessagesPage() {
         };
     }, []);
     
-    //Filters conversations to those with a specific friend
+    //Filters conversations to those with a specific friend 
     useEffect(() => {
         if (conversations.length > 0 && friend_name) {
             const filteredConversations = conversations.filter(conversation =>
@@ -63,11 +63,11 @@ function MessagesPage() {
             if (title) {
                 const selected = filteredConversations.find(c => c.title === title);
                 if (selected) {
-                    setSelectedConversationId(selected.conversationId || selected.conversation_id);
+                    setSelectedConversationId(selected.conversationId);
                 }
-            } else if (filteredConversations.length > 0) {
-                //Default to first conversation if none given
-                setSelectedConversationId(filteredConversations[0].conversationId || filteredConversations[0].conversation_id);
+            } else {
+                const generalChat = filteredConversations.find(c => c.title === 'General');
+                setSelectedConversationId(generalChat.conversationId);
             }
         }
     }, [friend_name, conversations, user?.username, title]);
@@ -116,33 +116,45 @@ function MessagesPage() {
             const friend = friends.find(f => f.friend_name === friend_name);
             const friendId = friend.friend_id;
             const participants = [user.userId, friendId];
-            const response = await axios.post('/api/create_conversation', {
-                participants: participants,
-                title: newChatName
-            });
-            if (response.data && response.status === 201) {
-                const newConversation = {
-                    ...response.data,
-                    conversationId: response.data.conversation_id,
-                    participants: [
-                        { username: user.username },
-                        { username: friend_name }
-                    ]
-                };
-                //Updates chats and viewed chats
-                setConversations(prevConversations => [...prevConversations, newConversation]);
-                setSelectedConversations(prevSelected => [...prevSelected, newConversation]);
-                setSelectedConversationId(newConversation.conversationId);
-                navigate(`/messages/${username}/${friend_name}/${newChatName}`)
-                setErrorMessage('');
-                setNewChatName('');
-                setShowForm(false);
+            if (newChatName === 'General') {
+                setErrorMessage("Chats can't be named General");
             } else {
-                setErrorMessage("Failed to add chat.");
+                const response = await axios.post('/api/create_conversation', {
+                    participants: participants,
+                    title: newChatName
+                });
+                if (response.data && response.status === 201) {
+                    const newConversation = {
+                        ...response.data,
+                        conversationId: response.data.conversation_id,
+                        participants: [
+                            { username: user.username },
+                            { username: friend_name }
+                        ]
+                    };
+                    //Updates chats and viewed chats
+                    setConversations(prevConversations => [...prevConversations, newConversation]);
+                    setSelectedConversations(prevSelected => [...prevSelected, newConversation]);
+                    setSelectedConversationId(newConversation.conversationId);
+                    navigate(`/messages/${username}/${friend_name}/${newChatName}`)
+                    setErrorMessage('');
+                    setNewChatName('');
+                    setShowForm(false);
+                } else {
+                    setErrorMessage("Failed to add chat.");
+                }
             }
         } catch (error) {
             console.error("Error creating chat:", error);
             setErrorMessage("Failed to create chat.");
+        }
+    };
+
+    const deleteChat = async () => {
+        try {
+            await axios.delete(`/api/delete_chat`, { data: {conversation_id: selectedConversationId, title: title} });
+        } catch (error) {
+            console.error('Error deleting chat:', error);
         }
     };
 
@@ -201,11 +213,6 @@ function MessagesPage() {
     return (
         <div className="messages-container">
             <div className="content-feed">
-                <header id="messages-header">
-                    {selectedConversationId ? (
-                        <h1>{selectedConversations.find(c => c.conversationId === selectedConversationId)?.title || 'Conversation'}</h1>
-                    ) : <h1>Friends</h1>}
-                </header>
                 <div className={`channel-content ${!friend_name ? '' : 'messages'}`}>
                     {!friend_name ? (
                         <ul className="content-list">
@@ -243,7 +250,10 @@ function MessagesPage() {
                             <img className="profile-image2" src={`/${friendProfileImage}`} alt="Profile"/>
                             <h3>{friend_name}</h3>
                         </Link>
-                        <h4>Chats</h4> 
+                        <p className="large-text">{selectedConversations.find(c => c.conversationId === selectedConversationId)?.title}</p> 
+                        {title !== 'General' && (
+                            <button className="button" onClick={() => deleteChat()}>Delete chat</button> 
+                        )}
                         <ul>
                             {selectedConversations.map(conversation => (
                                 <li key={conversation.conversationId} className="chat-item">
