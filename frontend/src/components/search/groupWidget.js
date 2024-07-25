@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import MemberChangeButton from '../memberChangeButton';
 
 const GroupWidget = ({ group }) => {
-    console.log("group:", group);
+
     return (
         <div className="result-widget">
             <Link to={`/group/${group.group_name}/Main`}>

@@ -98,7 +98,7 @@ function Profile() {
                     <p className="large-text">{profile.username}</p>
                     <p id="profile-bio">{profile.bio}</p>
                     <p id="user-count">{profile.followerCount} {profile.followerCount === 1 ? 'follower' : 'followers'}</p>
-                    {!isLoggedInUser && (<FollowerChangeButton userId={loggedInUserId} profileId={profile.profileId} isFollowing={profile.isFollowing} />)}
+                    {!isLoggedInUser && !profile.isPrivate && (<FollowerChangeButton userId={loggedInUserId} profileId={profile.profileId} isFollowing={profile.isFollowing} />)}
                     <ManageFriendshipButton userId={loggedInUserId} receiverProfileId={profile.profileId} receiverUserId={profile.userId} isRequestSent={profile.isRequested} isFriend={profile.isFriend} />
                 </div>
                 <p className="large-text">{channel_name}</p>
