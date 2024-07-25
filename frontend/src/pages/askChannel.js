@@ -32,7 +32,7 @@ function AskChannel() {
                 </div>
             </div>
             <aside id="right-aside">
-                <p>Test</p>
+                <p className="large-text">Ask</p>
             </aside>
         </div>
     );
