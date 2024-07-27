@@ -69,7 +69,7 @@ function Profile() {
     };
 
     //Check if profile is private and user is not friends
-    const isPrivateNotFriend = !profile.isFriend && profile.isPrivate;
+    const isPrivateNotFriend = !profile.isFriend && profile.isPrivate && !isLoggedInUser;
     document.title = profile.username || "Profile";
 
     return (

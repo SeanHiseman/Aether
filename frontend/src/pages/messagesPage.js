@@ -66,8 +66,8 @@ function MessagesPage() {
                     setSelectedConversationId(selected.conversationId);
                 }
             } else {
-                const generalChat = filteredConversations.find(c => c.title === 'General');
-                setSelectedConversationId(generalChat.conversationId);
+                const mainChat = filteredConversations.find(c => c.title === 'Main');
+                setSelectedConversationId(mainChat.conversationId);
             }
         }
     }, [friend_name, conversations, user?.username, title]);
@@ -116,32 +116,36 @@ function MessagesPage() {
             const friend = friends.find(f => f.friend_name === friend_name);
             const friendId = friend.friend_id;
             const participants = [user.userId, friendId];
-            if (newChatName === 'General') {
-                setErrorMessage("Chats can't be named General");
+            if (newChatName.length === 0) {
+                setErrorMessage("Chat needs a name");
             } else {
-                const response = await axios.post('/api/create_conversation', {
-                    participants: participants,
-                    title: newChatName
-                });
-                if (response.data && response.status === 201) {
-                    const newConversation = {
-                        ...response.data,
-                        conversationId: response.data.conversation_id,
-                        participants: [
-                            { username: user.username },
-                            { username: friend_name }
-                        ]
-                    };
-                    //Updates chats and viewed chats
-                    setConversations(prevConversations => [...prevConversations, newConversation]);
-                    setSelectedConversations(prevSelected => [...prevSelected, newConversation]);
-                    setSelectedConversationId(newConversation.conversationId);
-                    navigate(`/messages/${username}/${friend_name}/${newChatName}`)
-                    setErrorMessage('');
-                    setNewChatName('');
-                    setShowForm(false);
+                if (newChatName === 'Main') {
+                    setErrorMessage("Chats can't be named Main");
                 } else {
-                    setErrorMessage("Failed to add chat.");
+                    const response = await axios.post('/api/create_conversation', {
+                        participants: participants,
+                        title: newChatName
+                    });
+                    if (response.data && response.status === 201) {
+                        const newConversation = {
+                            ...response.data,
+                            conversationId: response.data.conversation_id,
+                            participants: [
+                                { username: user.username },
+                                { username: friend_name }
+                            ]
+                        };
+                        //Updates chats and viewed chats
+                        setConversations(prevConversations => [...prevConversations, newConversation]);
+                        setSelectedConversations(prevSelected => [...prevSelected, newConversation]);
+                        setSelectedConversationId(newConversation.conversationId);
+                        navigate(`/messages/${username}/${friend_name}/${newChatName}`)
+                        setErrorMessage('');
+                        setNewChatName('');
+                        setShowForm(false);
+                    } else {
+                        setErrorMessage("Failed to add chat.");
+                    }
                 }
             }
         } catch (error) {
@@ -152,7 +156,21 @@ function MessagesPage() {
 
     const deleteChat = async () => {
         try {
+            if (title === 'Main') {
+                setErrorMessage("Main chat cannot be deleted.");
+                return;
+            }
             await axios.delete(`/api/delete_chat`, { data: {conversation_id: selectedConversationId, title: title} });
+            //Show chat list without deleted chat
+            setConversations(prevConversations => 
+                prevConversations.filter(conv => conv.conversationId !== selectedConversationId)
+            );
+            setSelectedConversations(prevSelected => 
+                prevSelected.filter(conv => conv.conversationId !== selectedConversationId)
+            );
+            setSelectedConversationId(null);
+            setChat([]);
+            navigate(`/messages/${username}/${friend_name}/Main`);
         } catch (error) {
             console.error('Error deleting chat:', error);
         }
@@ -251,12 +269,12 @@ function MessagesPage() {
                             <h3>{friend_name}</h3>
                         </Link>
                         <p className="large-text">{selectedConversations.find(c => c.conversationId === selectedConversationId)?.title}</p> 
-                        {title !== 'General' && (
+                        {title !== 'Main' && (
                             <button className="button" onClick={() => deleteChat()}>Delete chat</button> 
                         )}
                         <ul>
                             {selectedConversations.map(conversation => (
-                                <li key={conversation.conversationId} className="chat-item">
+                                <li key={conversation.conversationId} className="channel-item">
                                     <Link to={`/messages/${username}/${friend_name}/${conversation.title}`}>
                                         <div className="channel-link">{conversation.title}</div>
                                     </Link>
@@ -270,7 +288,7 @@ function MessagesPage() {
                             {showForm && (
                                 <form id="add-chat-form" onSubmit={createNewChat}>
                                     <input className="channel-input" type="text" name="chat_name" placeholder="Chat name..." value={newChatName} onChange={(e) => setNewChatName(e.target.value)}/>
-                                    <input className="button" type="submit" value="Add" disabled={!newChatName}/>
+                                    <input className="button" type="submit" value="Add"/>
                                     {errorMessage && <div className="error-message">{errorMessage}</div>}
                                 </form>                            
                             )}

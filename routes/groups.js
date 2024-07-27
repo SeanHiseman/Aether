@@ -83,7 +83,12 @@ router.post('/accept_nest_request', authenticateCheck, async (req, res) => {
 //Create new channel within a group
 router.post('/add_group_channel', authenticateCheck, async (req, res) => {
     try {
-        const { channel_name, groupId, isPosts, isChat } = req.body;
+        let { channel_name, groupId, isPosts, isChat } = req.body;
+        //If channel types are not specified
+        if (isPosts === false && isChat === false) {
+            isPosts = true;
+            isChat = true;
+        };
         const newChannel = await GroupChannels.create({ 
             channel_id: v4(),
             channel_name: channel_name,
