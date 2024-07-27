@@ -7,10 +7,10 @@ import PostChannel from '../../components/channels/postChannel';
 import PostForm from "../../components/postForm";
 
 function GroupHome() {
-    const { group_name, channel_name, channel_mode } = useParams();
+    const { group_name, channel_name } = useParams();
     const [canRemove, setCanRemove] = useState(false);
     const [channels, setChannels] = useState([]);
-    const [channelMode, setChannelMode] = useState(channel_mode || 'post');
+    const [channelMode, setChannelMode] = useState('post');
     const [errorMessage, setErrorMessage] = useState('');
     const [isAdmin, setIsAdmin] = useState(false);
     const [isChatChannel, setIsChatChannel] = useState(false);
@@ -61,6 +61,14 @@ function GroupHome() {
         .then(response => {
             if (Array.isArray(response.data)) {
                 setChannels(response.data);
+                const currentChannel = response.data.find(c => c.channel_name === channel_name);
+                if (currentChannel) {
+                    if (currentChannel.is_chat && !currentChannel.is_posts) {
+                        setChannelMode('chat');
+                    } else {
+                        setChannelMode('post');
+                    }
+                }
             } else {
                 setChannels([]);
             }
@@ -69,7 +77,7 @@ function GroupHome() {
             console.error('Error fetching channels data:', error);
             setChannels([]);
         });
-    }, [groupDetails.groupId]);  
+    }, [groupDetails.groupId, channel_name]);  
 
     //Fetch subgroups
     useEffect(() => {
@@ -163,7 +171,24 @@ function GroupHome() {
                     {showPostForm ? (
                         <PostForm onSubmit={handlePostSubmit} errorMessage={errorMessage} />
                     ) : channelRender && !isNotPrivateMember ? (
-                    channelMode === 'post' ? (
+                        channelRender.is_posts && channelRender.is_chat ? (
+                            channelMode === 'post' ? (
+                                <PostChannel
+                                    canRemove={canRemove}
+                                    channelId={channelRender.channel_id}
+                                    channelName={channelRender.channel_name}
+                                    isGroup={true}
+                                    locationId={groupDetails.groupId}
+                                />
+                            ) : (
+                                <ChatChannel
+                                    canRemove={canRemove}
+                                    channelId={channelRender.channel_id}
+                                    isGroup={true}
+                                    locationId={groupDetails.groupId}
+                                />
+                            )
+                        ) : channelRender.is_posts ? (
                             <PostChannel
                                 canRemove={canRemove}
                                 channelId={channelRender.channel_id}
@@ -210,11 +235,11 @@ function GroupHome() {
                 {!showPostForm && channelMode === 'post' && (
                     <button class="button" onClick={() => setShowPostForm(true)}>Create Post</button>
                 )}
-                {channelRender && (channelRender.is_posts && channelRender.is_chat) && (
-                <div id="channel-toggle">
-                    <button className={channelMode === 'post' ? 'active-mode' : 'passive-mode'} onClick={() => setChannelMode('post')}>Posts</button>
-                    <button className={channelMode === 'chat' ? 'active-mode' : 'passive-mode'} onClick={() => setChannelMode('chat')}>Chat</button>
-                </div>
+                {channelRender && channelRender.is_posts && channelRender.is_chat && (
+                    <div id="channel-toggle">
+                        <button className={channelMode === 'post' ? 'active-mode' : 'passive-mode'} onClick={() => setChannelMode('post')}>Posts</button>
+                        <button className={channelMode === 'chat' ? 'active-mode' : 'passive-mode'} onClick={() => setChannelMode('chat')}>Chat</button>
+                    </div>
                 )}
                 {isAdmin && (
                     <div id="add-channel-section">

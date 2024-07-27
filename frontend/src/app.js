@@ -39,7 +39,7 @@ const App = () => {
                         </Route>
                     </Route>
                     <Route path="group/:group_name" element={<AuthCheck><GroupWrapper /></AuthCheck>}>
-                        <Route path=":channel_name/:channel_mode?" element={<GroupHome />}>
+                        <Route path=":channel_name" element={<GroupHome />}>
                             <Route index element={<Navigate replace to="Main" />} />
                             <Route path=":channel_name" element={<GroupHome />} />
                         </Route>
