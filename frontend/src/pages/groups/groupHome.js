@@ -156,149 +156,124 @@ function GroupHome() {
     const isNotPrivateMember = !groupDetails.isMember && groupDetails.isPrivate;
 
     document.title = groupDetails.groupName;
-    if (isNotPrivateMember) {
-        return (
-            <div className="group-container">
-                <div className="content-feed">
-                    <header id="group-header">
-                        <div id="group-members">
-                            <p>{groupDetails.memberCount} members</p>
-                            <MemberChangeButton 
-                                userId={groupDetails.userId} 
-                                groupId={groupDetails.groupId} 
-                                isMember={groupDetails.isMember} 
-                                isRequestSent={groupDetails.isRequestSent}
-                                isPrivate={groupDetails.isPrivate}
+    return (    
+        <div className="group-container">  
+            <div className="content-feed">
+                <div className="channel-feed">
+                    {showPostForm ? (
+                        <PostForm onSubmit={handlePostSubmit} errorMessage={errorMessage} />
+                    ) : channelRender && !isNotPrivateMember ? (
+                    channelMode === 'post' ? (
+                            <PostChannel
+                                canRemove={canRemove}
+                                channelId={channelRender.channel_id}
+                                channelName={channelRender.channel_name}
+                                isGroup={true}
+                                locationId={groupDetails.groupId}
                             />
-                        </div>
-                        <div id="group-text">
-                            <p className="name-text">{groupDetails.groupName}</p>
-                            <p id="description" >{groupDetails.description}</p>
-                        </div>
-                        <img id="large-group-photo" src={`/${groupDetails.groupPhoto}`} alt={groupDetails.groupName} />
-                    </header>   
-                </div>
-            </div>
-        )
-    } else {
-        return (    
-            <div className="group-container">  
-                <div className="content-feed">
-                    <div className="channel-feed">
-                        {showPostForm ? (
-                            <PostForm onSubmit={handlePostSubmit} errorMessage={errorMessage} />
-                        ) : channelRender ? (
-                        channelMode === 'post' ? (
-                                <PostChannel
-                                    canRemove={canRemove}
-                                    channelId={channelRender.channel_id}
-                                    channelName={channelRender.channel_name}
-                                    isGroup={true}
-                                    locationId={groupDetails.groupId}
-                                />
-                            ) : (
-                                <ChatChannel
-                                    canRemove={canRemove}
-                                    channelId={channelRender.channel_id}
-                                    isGroup={true}
-                                    locationId={groupDetails.groupId}
-                                />
-                            )
-                        ) : null}
-                    </div>
-                </div>         
-                <aside id="right-aside">
-                    <div id="profile-summary">
-                        {isAdmin && (
-                            <Link to={`/group_settings/${group_name}`}>
-                                <button className="button">Settings</button>
-                            </Link>
-                        )}
-                        <img id="large-group-photo" src={`/${groupDetails.groupPhoto}`} alt={groupDetails.groupName} />
-                        <p className="large-text">{groupDetails.groupName}</p>
-                        <p id="description" >{groupDetails.description}</p>
-                        <p id="user-count">{groupDetails.memberCount} members</p>
-                        <MemberChangeButton 
-                            userId={groupDetails.userId} 
-                            groupId={groupDetails.groupId} 
-                            isMember={groupDetails.isMember} 
-                            isRequestSent={groupDetails.isRequestSent} 
-                            isPrivate={groupDetails.isPrivate}
-                        />
-                    </div>
-                    <h1>{channel_name}</h1>
-                    {showPostForm && channelMode === 'post' && (
-                        <div>
-                            <button class="button" onClick={() => setShowPostForm(false)}>Close</button>
-                        </div>
-                    )}
-                    {!showPostForm && channelMode === 'post' && (
-                       <button class="button" onClick={() => setShowPostForm(true)}>Create Post</button>
-                    )}
-                    {channelRender && (channelRender.is_posts && channelRender.is_chat) && (
-                    <div id="channel-toggle">
-                        <button className={channelMode === 'post' ? 'active-mode' : 'passive-mode'} onClick={() => setChannelMode('post')}>Posts</button>
-                        <button className={channelMode === 'chat' ? 'active-mode' : 'passive-mode'} onClick={() => setChannelMode('chat')}>Chat</button>
-                    </div>
-                    )}
-                    {isAdmin && (
-                        <div id="add-channel-section">
-                            <button class="button" onClick={toggleChannelForm}>
-                                {showChannelForm ? 'Close': 'Create new Channel'}
-                            </button>
-                            {showChannelForm && (
-                                <form id="add-channel-form" onSubmit={AddChannel}>
-                                    <input className="channel-input" type="text" placeholder="Channel name..." value={newChannelName} onChange={(e) => setNewChannelName(e.target.value)}/>
-                                    <label>
-                                        <input type="checkbox" checked={isPostChannel} onChange={handlePostClick}/>
-                                        Post Channel
-                                    </label>
-                                    <label>
-                                        <input type="checkbox" checked={isChatChannel} onChange={handleChatClick}/>
-                                        Chat Channel
-                                    </label>
-                                    <input className="button" type="submit" value="Add"/>
-                                    {errorMessage && <div className="error-message">{errorMessage}</div>}
-                                </form>                            
-                            )}
-                        </div>
-                    )}
-                    <nav id="channel-list">
-                        <ul>
-                            {channels.map(channel => (
-                                <li key={channel.channelId} className="channel-item">
-                                    <Link to={`/group/${groupDetails.groupName}/${channel.channel_name}`}>
-                                        <div className="channel-link">{channel.channel_name}</div>
-                                    </Link>
-                                </li>
-                            ))}
-                        </ul>
-                    </nav>
-                    {isAdmin && channel_name !== 'Main' && (
-                        <button className="button" onClick={() => deleteChannel()}>Delete channel</button> 
-                    )}
-                    {isAdmin && (
-                        subGroups.length === 0 ? (
-                            <div></div>
                         ) : (
-                            <div>
-                                <ul>
-                                    {subGroups.map((subGroup, index) => (
-                                        <li key={index}>
-                                            <Link className="group-list-link" to={`/group/${subGroup.SubGroup.group_name}/Main`}>
-                                                <img className="small-group-photo" src={`/${subGroup.SubGroup.group_photo}`} alt={subGroup.SubGroup.group_name} />
-                                                <p className="group-list-text">{subGroup.SubGroup.group_name}</p>
-                                            </Link>
-                                        </li>
-                                    ))}
-                                </ul>
-                            </div>
+                            <ChatChannel
+                                canRemove={canRemove}
+                                channelId={channelRender.channel_id}
+                                isGroup={true}
+                                locationId={groupDetails.groupId}
+                            />
                         )
+                    ) : <p className="large-text">This group is private</p>}
+                </div>
+            </div>         
+            <aside id="right-aside">
+                <div id="profile-summary">
+                    {isAdmin && (
+                        <Link to={`/group_settings/${group_name}`}>
+                            <button className="button">Settings</button>
+                        </Link>
                     )}
-                </aside>
-            </div>
-        );
-    }
+                    <img id="large-group-photo" src={`/${groupDetails.groupPhoto}`} alt={groupDetails.groupName} />
+                    <p className="large-text">{groupDetails.groupName}</p>
+                    <p id="description" >{groupDetails.description}</p>
+                    <p id="user-count">{groupDetails.memberCount} members</p>
+                    <MemberChangeButton 
+                        userId={groupDetails.userId} 
+                        groupId={groupDetails.groupId} 
+                        isMember={groupDetails.isMember} 
+                        isRequestSent={groupDetails.isRequestSent} 
+                        isPrivate={groupDetails.isPrivate}
+                    />
+                </div>
+                <h1>{channel_name}</h1>
+                {showPostForm && channelMode === 'post' && (
+                    <div>
+                        <button class="button" onClick={() => setShowPostForm(false)}>Close</button>
+                    </div>
+                )}
+                {!showPostForm && channelMode === 'post' && (
+                    <button class="button" onClick={() => setShowPostForm(true)}>Create Post</button>
+                )}
+                {channelRender && (channelRender.is_posts && channelRender.is_chat) && (
+                <div id="channel-toggle">
+                    <button className={channelMode === 'post' ? 'active-mode' : 'passive-mode'} onClick={() => setChannelMode('post')}>Posts</button>
+                    <button className={channelMode === 'chat' ? 'active-mode' : 'passive-mode'} onClick={() => setChannelMode('chat')}>Chat</button>
+                </div>
+                )}
+                {isAdmin && (
+                    <div id="add-channel-section">
+                        <button class="button" onClick={toggleChannelForm}>
+                            {showChannelForm ? 'Close': 'Create new Channel'}
+                        </button>
+                        {showChannelForm && (
+                            <form id="add-channel-form" onSubmit={AddChannel}>
+                                <input className="channel-input" type="text" placeholder="Channel name..." value={newChannelName} onChange={(e) => setNewChannelName(e.target.value)}/>
+                                <label>
+                                    <input type="checkbox" checked={isPostChannel} onChange={handlePostClick}/>
+                                    Post Channel
+                                </label>
+                                <label>
+                                    <input type="checkbox" checked={isChatChannel} onChange={handleChatClick}/>
+                                    Chat Channel
+                                </label>
+                                <input className="button" type="submit" value="Add"/>
+                                {errorMessage && <div className="error-message">{errorMessage}</div>}
+                            </form>                            
+                        )}
+                    </div>
+                )}
+                <nav id="channel-list">
+                    <ul>
+                        {channels.map(channel => (
+                            <li key={channel.channelId} className="channel-item">
+                                <Link to={`/group/${groupDetails.groupName}/${channel.channel_name}`}>
+                                    <div className="channel-link">{channel.channel_name}</div>
+                                </Link>
+                            </li>
+                        ))}
+                    </ul>
+                </nav>
+                {isAdmin && channel_name !== 'Main' && (
+                    <button className="button" onClick={() => deleteChannel()}>Delete channel</button> 
+                )}
+                {isAdmin && (
+                    subGroups.length === 0 ? (
+                        <div></div>
+                    ) : (
+                        <div>
+                            <ul>
+                                {subGroups.map((subGroup, index) => (
+                                    <li key={index}>
+                                        <Link className="group-list-link" to={`/group/${subGroup.SubGroup.group_name}/Main`}>
+                                            <img className="small-group-photo" src={`/${subGroup.SubGroup.group_photo}`} alt={subGroup.SubGroup.group_name} />
+                                            <p className="group-list-text">{subGroup.SubGroup.group_name}</p>
+                                        </Link>
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
+                    )
+                )}
+            </aside>
+        </div>
+    );
 }
+
 
 export default GroupHome;
