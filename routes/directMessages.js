@@ -37,8 +37,8 @@ router.delete('/delete_chat', authenticateCheck, async (req, res) => {
     try {
         const { conversation_id, title } = req.body;
         //Main channels are default, so can't be deleted
-        if (title === 'General') {
-            res.status(500).json({ message: 'General chats cannot be deleted' });
+        if (title === 'Main') {
+            res.status(500).json({ message: 'Main chats cannot be deleted' });
         } else {
             await UserConversations.destroy({
                 where: { 

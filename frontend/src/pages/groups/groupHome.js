@@ -1,6 +1,6 @@
 import axios from 'axios';
 import React, { useEffect, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import ChatChannel from '../../components/channels/chatChannel';
 import MemberChangeButton from '../../components/memberChangeButton';
 import PostChannel from '../../components/channels/postChannel';
@@ -17,6 +17,7 @@ function GroupHome() {
     const [isPostChannel, setIsPostChannel] = useState(false);
     const [isModerator, setIsModerator] = useState(false);
     const [groupDetails, setGroupDetails] = useState('');
+    const navigate = useNavigate();
     const [newChannelName, setNewChannelName] = useState('');
     const [showChannelForm, setShowChannelForm] = useState(false);
     const [showPostForm, setShowPostForm] = useState(false);
@@ -87,18 +88,24 @@ function GroupHome() {
     const AddChannel = async (event) => {
         event.preventDefault();
         try {
-            const response = await axios.post('/api/add_group_channel', {
-                channel_name: newChannelName,
-                groupId: groupDetails.groupId,
-                isPosts: isPostChannel,
-                isChat: isChatChannel
-            });
-            if (response.data && response.status === 201) {
-                setChannels([...channels, response.data]);
-                setNewChannelName('');
-                setErrorMessage('');
+            if (newChannelName.length === 0) {
+                setErrorMessage("Channel needs a name");
             } else {
-                setErrorMessage('Failed to add channel.');
+                const response = await axios.post('/api/add_group_channel', {
+                    channel_name: newChannelName,
+                    groupId: groupDetails.groupId,
+                    isPosts: isPostChannel,
+                    isChat: isChatChannel
+                });
+                if (response.data && response.status === 201) {
+                    setChannels([...channels, response.data]);
+                    setErrorMessage('');
+                    setNewChannelName('');
+                    setShowChannelForm(false);
+                    navigate(`/group/${group_name}/${newChannelName}`);
+                } else {
+                    setErrorMessage('Failed to add channel.');
+                }
             }
         } catch (error) {
             setErrorMessage(error.response ? error.response.data.error : 'Failed to add channel.');
@@ -114,6 +121,8 @@ function GroupHome() {
                 return;
             } else {
                 await axios.delete(`/api/delete_group_channel`, { data: {channel_name: channel_name, group_id: groupDetails.groupId} });
+                setChannels(prevChannels => prevChannels.filter(channel => channel.channel_name !== channel_name));
+                navigate(`/group/${group_name}/Main`);
             }
         } catch (error) {
             console.error('Error deleting channel:', error);
@@ -248,7 +257,7 @@ function GroupHome() {
                                         <input type="checkbox" checked={isChatChannel} onChange={handleChatClick}/>
                                         Chat Channel
                                     </label>
-                                    <input className="button" type="submit" value="Add" disabled={!newChannelName}/>
+                                    <input className="button" type="submit" value="Add"/>
                                     {errorMessage && <div className="error-message">{errorMessage}</div>}
                                 </form>                            
                             )}
@@ -257,7 +266,7 @@ function GroupHome() {
                     <nav id="channel-list">
                         <ul>
                             {channels.map(channel => (
-                                <li key={channel.channelId}>
+                                <li key={channel.channelId} className="channel-item">
                                     <Link to={`/group/${groupDetails.groupName}/${channel.channel_name}`}>
                                         <div className="channel-link">{channel.channel_name}</div>
                                     </Link>

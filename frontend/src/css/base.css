@@ -123,12 +123,20 @@ body,html {
 .channel-input::placeholder, #group-name-input::placeholder, #search-bar::placeholder {
     color: var(--border);
 }
+.channel-item {
+    animation: fadeIn 0.3s ease-in-out;
+}
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
 .channel-link {
     border-bottom: 1px solid var(--dark-line);
     padding: 10px;
     text-decoration: none;
 }
 #channel-list {
+    margin-bottom: 40px;
     width: 80%;
 }
 .channel-list-link, .channel-list-link:visited {

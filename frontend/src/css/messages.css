@@ -31,13 +31,6 @@
     background: var(--darkest);
     border-bottom: 1px solid var(--darkest);
 }
-.chat-item {
-    animation: fadeIn 0.3s ease-in-out;
-}
-@keyframes fadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
-}
 .chat-message-bar {
     background-color: var(--darkest);
     border: 1px solid var(--border);

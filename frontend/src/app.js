@@ -34,7 +34,7 @@ const App = () => {
                     <Route path="search/:tab?" element={<AuthCheck><SearchResults /></AuthCheck>} />
                     <Route path="messages/:username" element={<AuthCheck><MessagesPage /></AuthCheck>} >
                         <Route path=":friend_name" element={<MessagesPage />} >
-                            <Route index element={<Navigate replace to="General" />} />
+                            <Route index element={<Navigate replace to="Main" />} />
                             <Route path=":title" element={<MessagesPage />} />
                         </Route>
                     </Route>

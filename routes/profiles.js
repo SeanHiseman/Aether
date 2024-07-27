@@ -59,7 +59,7 @@ router.post('/accept_friend_request', authenticateCheck, async (req, res) => {
 
         const conversation = await Conversations.create({ 
             conversation_id: v4(),
-            title: "General"
+            title: "Main"
         });
 
         //Create new conversation between users
