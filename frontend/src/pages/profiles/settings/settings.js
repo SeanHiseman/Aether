@@ -1,8 +1,10 @@
 import axios from 'axios';
-import React, { useEffect, useState } from 'react';
+import { AuthContext } from '../../../components/authContext';
+import React, { useContext, useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import AccountDeletion from './accountDeletion';
 import FriendRequests from './friendRequests';
+import MembershipSettings from './membership';
 import ProfileView from './profileView';
 
 //Page for all settings related to a user
@@ -11,6 +13,7 @@ const Settings = () => {
     const [currentView, setCurrentView] = useState('profile');
     const [profile, setProfile] = useState('');
     const navigate = useNavigate();
+    const { user } = useContext(AuthContext);
 
     useEffect(() => {
         axios.get(`/api/profile/${username}`)
@@ -50,6 +53,8 @@ const Settings = () => {
                 return <AccountDeletion profile={profile} />;
             case 'friend-requests':
                 return <FriendRequests  profile={profile} />;
+            case 'membership-settings':
+                return <MembershipSettings user={user} />;
             default:
                 return null;
         }
@@ -66,6 +71,7 @@ const Settings = () => {
                     <ul>
                         <h2>Settings</h2>
                         <li className="settings-item" onClick={() => setCurrentView('profile')}>Profile</li>
+                        <li className="settings-item" onClick={() => setCurrentView('membership-settings')}>Membership</li>
                         <li className="settings-item" onClick={() => setCurrentView('friend-requests')}>Friend requests</li>
                         <li className="settings-item" onClick={() => setCurrentView('account-deletion')} style={{color: 'red'}}>Delete account</li>
                         <form id="logout-form" action="/api/logout" method="post" onSubmit={handleLogout}>

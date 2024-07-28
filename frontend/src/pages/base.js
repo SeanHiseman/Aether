@@ -1,5 +1,5 @@
 import axios from 'axios';
-import React, { useContext, useState, useEffect } from 'react';
+import React, { useContext, useEffect, useState } from 'react';
 import { Link, Outlet, useNavigate } from 'react-router-dom';
 import { v4 } from 'uuid';
 import { AuthContext } from '../components/authContext';
@@ -138,7 +138,6 @@ const BaseLayout = () => {
                         <li className="feed-link"><Link to="/friends">Friends</Link></li>
                     </ul>
                 </nav>
-                <h1>Groups</h1>
                 <div id="create-group-section">
                     <button class="button" onClick={toggleForm}>
                         {showForm ? 'Close': 'Create new Group'}
@@ -161,14 +160,18 @@ const BaseLayout = () => {
                 </div>
                 <nav id="group-list">
                     <ul>
-                        {groups.map(group => (
-                        <li key={group.group_id}>
-                            <Link className="group-list-link" to={`/group/${group.group_name}/Main`}>
-                                <img className="small-group-photo" src={`/${group.group_photo}`} alt={group.group_name} />
-                                <p className="group-list-text">{group.group_name}</p>
-                            </Link>
-                        </li>
-                        ))}
+                        {groups.length === 0 ? (
+                            <p>Joined groups show up here</p>
+                        ) : (
+                            groups.map(group => (
+                                <li key={group.group_id}>
+                                    <Link className="group-list-link" to={`/group/${group.group_name}/Main`}>
+                                        <img className="small-group-photo" src={`/${group.group_photo}`} alt={group.group_name} />
+                                        <p className="group-list-text">{group.group_name}</p>
+                                    </Link>
+                                </li>
+                            ))
+                        )}
                     </ul>
                 </nav>
             </aside>
