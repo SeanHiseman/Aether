@@ -18,7 +18,7 @@ const AccountDeletion = ({ profile }) => {
     };
 
     return (
-        <div id="profile-settings">
+        <div id="display-settings">
             <div id="deletion-area">
                 <p style={{fontSize: 36}}>Are you sure you wish to delete your account?</p>
                 <p style={{fontSize: 24}}>This action cannot be reversed</p>

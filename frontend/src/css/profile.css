@@ -6,20 +6,14 @@
 }
 .button.delete {
     color: red;
+}
+.button.delete, .button.join {
     font-size: 36px;
     margin-bottom: 20px;
     padding: 20px
 }
 .button.edit{
     margin-left: 30px;
-}
-#deletion-area {
-    align-items: center;
-    display: flex;
-    flex-direction: column;
-    height: 100%;
-    justify-content: space-between;
-    width: 100%;
 }
 #follow-info {
     margin-left: 10px;
@@ -70,7 +64,6 @@
     border-radius: 20px;
     display: flex;
     flex-direction: column;
-    height: 65%;
     margin-top: -160px;
     width: 60%;
 }

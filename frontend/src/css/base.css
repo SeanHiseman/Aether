@@ -71,7 +71,7 @@ body,html {
     background-color: var(--dark);
 }
 .button:hover, .button:focus, .background-button:hover, .chat-channel-button:hover, .conversation-button:hover, .light-button:focus, .submit-button:hover, 
-.light-button:hover, .channel-input:focus, .channel-input:hover, #group-name-input:hover, #group-name-input:focus, #messages-button:hover, .posts-channel-button:hover {
+.light-button:hover, #messages-button:hover, .posts-channel-button:hover {
     background-color: var(--button-hover);
 }
 #change-group-photo, #change-profile-photo {
@@ -195,6 +195,14 @@ body,html {
 #description-section .change-description, #bio-section .change-bio, #name-section .change-name {
     display: flex;
     flex-direction: column;
+}
+#display-area {
+    align-items: center;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    justify-content: space-between;
+    width: 100%;
 }
 .feed-link {
     border-bottom: 1px solid var(--dark-line);
