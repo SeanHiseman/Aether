@@ -179,17 +179,6 @@ router.get('/following_posts', authenticateCheck, async (req, res) => {
     }
 });
 
-router.get('/get_current_user', authenticateCheck, (req, res) => {
-    try{ 
-        const userId = req.session.user_id;
-        if (userId) {
-            res.json({ user_id: userId });
-        }    
-    } catch (error) {
-        res.status(401).json({ "error": "No user logged in" });
-    }
-});
-
 //Get recommendation preference
 router.get('/get_filter_preference', async (req, res) => {
     try {

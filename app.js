@@ -14,7 +14,6 @@ import replies from './routes/replies.js';
 import directMessages, { directMessagesSocket } from './routes/directMessages.js';
 import groups, { groupChatChannelSocket } from './routes/groups.js';
 import profiles from './routes/profiles.js';
-import profileDataRouter from './routes/profileDataRouter.js'
 import routes from './routes/routes.js';
 import sequelize  from './databaseSetup.js';
 
@@ -44,7 +43,6 @@ app.use('/api/', directMessages);
 app.use('/api/', groups);
 app.use('/api/', replies);
 app.use('/api/', routes);
-app.use('/api/', profileDataRouter);
 app.use('/api/', profiles);
 
 app.use(history('index.html', { root }));
