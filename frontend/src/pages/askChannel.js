@@ -11,7 +11,11 @@ function AskChannel() {
     const query = location.state?.query || '';
 
     const sendAskMessage = () => {
-        console.log("Ask message test.");
+        try{
+            setCurrentMessage('');
+        } catch {
+            setErrorMessage("Error sending message");
+        }
     };
 
     document.title="Ask";
@@ -22,10 +26,11 @@ function AskChannel() {
                     <div id="channel">
                         <div className="channel-content messages">
                             <p>{query}</p>
+                            <p>{currentMessage}</p>
                         </div>
                         <div id="channel-input">
                             <input class="chat-message-bar" type="text" value={currentMessage} onChange={(e) => setCurrentMessage(e.target.value)} placeholder="Ask..." onKeyDown={(e) => e.key === 'Enter' && sendAskMessage()}/>
-                            <button class="chat-send-button" onClick={sendAskMessage()}>Send</button>
+                            <button class="chat-send-button" onClick={sendAskMessage}>Send</button>
                             {errorMessage && <div class="error-message">{errorMessage}</div>}
                         </div>
                     </div>
