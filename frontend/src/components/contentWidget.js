@@ -59,6 +59,14 @@ function ContentWidget({ canRemove: canRemoveProp , isGroup, post }) {
         checkVoteLimit();
     }, [post.post_id, isGroup]);
 
+    const askPost = () => {
+        try {
+            console.log("ask button test");
+        } catch (error) {
+            console.error(error);
+        }
+    };
+
     //Allows React Quill to display videos
     const BlockEmbed = Quill.import('blots/block/embed');
     class VideoBlot extends BlockEmbed {
@@ -212,6 +220,7 @@ function ContentWidget({ canRemove: canRemoveProp , isGroup, post }) {
                 {canRemove ? (
                     <button className="button" onClick={() => removePost(isGroup, post.post_id)}>Delete</button>
                 ) : null}
+                <button className="button" onClick={askPost}>Ask</button>
             </div>
             
             {showReplies && (
