@@ -18,16 +18,16 @@ const BaseLayout = () => {
     const [groupPhoto, setGroupPhoto] = useState(null);
     const [groupPhotoFile, setGroupPhotoFile] = useState('No file chosen');
     const [privateGroup, setPrivateGroup] = useState(false);
-    const [profile, setProfile] = useState({ logged_in_profile_id: '', logged_in_profile_photo: '', logged_in_username: '', logged_in_user_id: ''});
+    const [profile, setProfile] = useState([]);
     const [showForm, setShowForm] = useState(false);
     const navigate = useNavigate();
 
     //Fetch profile info
     useEffect(() => {
         if (isAuthenticated && user) {
-            axios.get(`/api/profileDataRouter/${user.userId}`)
+            axios.get(`/api/profile/${user.username}`)
             .then(response => {
-                setProfile({...response.data, logged_in_user_id: response.data.logged_in_user_id, hasMembership: response.data.has_membership });
+                setProfile({...response.data.profile });
             })
             .catch(error => {
                 console.error('Error:', error);
@@ -40,7 +40,7 @@ const BaseLayout = () => {
 
     //Fetch groups that user is a part of
     useEffect(() => {
-        axios.get(`/api/groups_list/${profile.logged_in_user_id}`)
+        axios.get(`/api/groups_list/${profile.userId}`)
         .then(response => {
             if (Array.isArray(response.data)) {
                 setGroups(response.data);
@@ -52,7 +52,7 @@ const BaseLayout = () => {
             console.error('Error fetching groups data:', error);
             setGroups([]);
         });
-    }, [profile.logged_in_user_id]);
+    }, [profile.userId]);
 
     const createGroupSubmit = (event) => {
         event.preventDefault();
@@ -63,7 +63,7 @@ const BaseLayout = () => {
         formData.append('new_group_profile_photo', groupPhoto);
         formData.append('is_private', privateGroup);
         //Adds user_id so user creating group can become an admin
-        formData.append('user_id', profile.logged_in_user_id);
+        formData.append('user_id', profile.userId);
 
         axios.post('/api/create_group', formData)
             .then(response => {
@@ -126,9 +126,9 @@ const BaseLayout = () => {
         <div className="container">
             <aside id="left-aside">
                 <div className="profile-info">
-                    <Link className="profile-link" to={`/profile/${profile.logged_in_username}`}>
-                        <img className="profile-image" src={`/${profile.logged_in_profile_photo}`} alt="Profile" />
-                        <p id="logged_in_username">{profile.logged_in_username}</p>
+                    <Link className="profile-link" to={`/profile/${profile.username}`}>
+                        <img className="profile-image" src={`/${profile.profilePhoto}`} alt="Profile" />
+                        <p id="logged_in_username">{profile.username}</p>
                     </Link>
                 </div>
                 <nav>
@@ -179,14 +179,14 @@ const BaseLayout = () => {
                 <header id="base-header">
                     <div className="spacer"></div>
                         <form id="search-form" onSubmit={(e) => e.preventDefault()}>
-                            {profile.hasMembership && (
+                            {user.hasMembership && (
                                 <input className="submit-button" type="submit" value="Ask" onClick={handleAskClick} />
                             )}
                             <input id="search-bar" type="text" name="keyword" placeholder="Search or Ask..." value={currentQuery} onChange={(e) => setCurrentQuery(e.target.value)}/>
                             <input className="submit-button" type="submit" value="Search" onClick={handleSearchClick}/>
                         </form>
                 <div className="spacer"></div>
-                <Link to={`/messages/${profile.logged_in_username}`}>
+                <Link to={`/messages/${profile.username}`}>
                     <button id="messages-button">Messages</button>
                 </Link>
                 </header>

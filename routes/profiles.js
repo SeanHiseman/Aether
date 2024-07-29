@@ -465,7 +465,7 @@ router.get('/profile/:username', authenticateCheck, async (req, res) => {
         } catch (error) {
             return res.status(500).json("Error fetching friendship data.", error);
         }
-        //Could be simplified
+        //Changes to frontend format
         const responseData = {
             profile: {
                 profileId: profile.profile_id,
