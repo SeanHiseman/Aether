@@ -8,6 +8,7 @@ import FriendsPage from './pages/feeds/friends';
 import GroupHome from './pages/groups/groupHome';
 import GroupSettings from './pages/groups/settings/groupSettings';
 import GroupWrapper from './pages/groups/groupWrapper';
+import Welcome from './pages/welcome';
 import Login from './pages/site_entrance/login';
 import MessagesPage from './pages/messagesPage';
 import RecommendedPage from './pages/feeds/recommended';
@@ -22,6 +23,7 @@ const App = () => {
     return (
         <Router>
             <Routes>
+                <Route path="/welcome" element={<Welcome />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/register" element={<Register />} />
                 <Route path="/" element={<AuthCheck><BaseLayout /></AuthCheck>}>
