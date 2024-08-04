@@ -10,20 +10,21 @@ const MembershipSettings = ({ user }) => {
         <div id="profile-settings">
             {user.hasMembership ? (
                 <div id="display-area">
-                    <p style={{fontSize: 36}}>Thank you for joining</p>
-                    <p style={{fontSize: 24}}>Your support helps us grow</p>
-                    <p style={{fontSize: 24}}>If you wish to cancel, do it here</p>
+                    <p class="text36">Thank you for joining</p>
+                    <p class="text24">Your support helps us grow</p>
+                    <p class="text24">If you wish to cancel, do it here</p>
                     <button className="button delete">Cancel membership</button>
                     {errorMessage && <div className="error-message">{errorMessage}</div>}
                 </div>
             ) : (
                 <div id="display-area">
-                    <p style={{fontSize: 36}}>Membership benefits</p>
-                    <p style={{fontSize: 24}}>Earn money from posts</p>
-                    <p style={{fontSize: 24}}>Copilot</p>
-                    <p style={{fontSize: 24}}>Adjustable feeds</p>
-                    <p style={{fontSize: 24}}>Custom appearance</p>
-                    <p style={{fontSize: 24}}>Voting</p>
+                    <p class="text36">Membership benefits</p>
+                    <p class="text24">Earn money from posts</p>
+                    <p class="text24">Copilot</p>
+                    <p class="text24">Adjustable feeds</p>
+                    <p class="text24">Custom appearance</p>
+                    <p class="text24">Longer posts</p>
+                    <p class="text24">Voting</p>
                     <button className="button join">Join</button>
                     {errorMessage && <div className="error-message">{errorMessage}</div>}
                 </div>
