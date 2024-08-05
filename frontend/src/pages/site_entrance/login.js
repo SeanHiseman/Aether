@@ -23,7 +23,7 @@ function Login() {
                 setError(response.data.message);
             }
         } catch (error) {
-            setError(error.response ? error.response.data.message : 'Network error');
+            setError('Login error, please try again');
         }
     };
 

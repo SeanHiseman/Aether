@@ -88,6 +88,7 @@ const Welcome = () => {
         }
     };
 
+    document.title="welcome";
     return (
         <div className="container">
             <aside id="left-aside">
