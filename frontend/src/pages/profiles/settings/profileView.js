@@ -114,7 +114,7 @@ const ProfileView = ({ profile, setProfile }) => {
                         {isEditingName ? (
                             <div className="change-name">
                                 <button className="button" onClick={() => setIsEditingName(false)}>Close</button>
-                                <textarea className="change-name-area" value={newName} onChange={(e) => {
+                                <textarea className="change-name-area" value={newName} placeholder="New name" onChange={(e) => {
                                     const input = e.target.value;
                                     const inputLength = input.length;
                                     if (inputLength <= 100) {
@@ -137,7 +137,7 @@ const ProfileView = ({ profile, setProfile }) => {
                         {isEditingBio ? (
                             <div className="change-bio">
                                 <button className='button' onClick={() => setIsEditingBio(false)}>Close</button>
-                                <textarea className="change-text-area" value={newBio} onChange={(e) => {
+                                <textarea className="change-text-area" value={newBio} placeholder="Bio..." onChange={(e) => {
                                     const input = e.target.value;
                                     const inputLength = input.length;
                                     if (inputLength <= 1000) {

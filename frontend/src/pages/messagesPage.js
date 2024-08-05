@@ -9,6 +9,7 @@ import Message from '../components/message';
 
 //chats and conversations in variable names are used interchangeably, to be corrected
 function MessagesPage() {
+    const [changedChatName, setChangedChatName] = useState('');
     const [chat, setChat] = useState([]);
     const [conversations, setConversations] = useState([]);
     const [errorMessage, setErrorMessage] = useState('');
@@ -33,7 +34,6 @@ function MessagesPage() {
                 console.log("Error fetching friends", error);
             }
         };
- 
         const getConversations = async () => {
             try {
                 const response = await axios.get('/api/get_conversations');
@@ -42,11 +42,9 @@ function MessagesPage() {
                 console.log("Error fetching conversations", error);
             }
         };
- 
         getFriends();
         getConversations();
         socketRef.current = io(`http://localhost:7000`);
-
         return () => {
             if (socketRef.current) {
                 socketRef.current.disconnect();
@@ -114,31 +112,40 @@ function MessagesPage() {
     const changeChatName = async (event) => {
         event.preventDefault();
         try {
-            const response = await axios.post('/api/change_chat_name', {
-                conversationId: selectedConversationId,
-                newTitle: newChatName
-            });
+            if (changedChatName.length === 0) {
+                setErrorMessage("Chat needs a name");
+                return;
+            //Names over 30 characters already prevented
+            } else if (changedChatName === 'Main') {
+                setErrorMessage("Chats cannot be named Main");
+                return;
+            } else {
+                const response = await axios.post('/api/change_chat_name', {
+                    conversationId: selectedConversationId,
+                    newTitle: changedChatName
+                });
 
-            if (response.status === 200) {
-                setConversations(prevConversations => 
-                    prevConversations.map(chat =>
-                        chat.conversationId === selectedConversationId
-                        ? {...chat, title: newChatName}
-                        : chat
-                    )
-                );
-                setSelectedConversations(prevSelected =>
-                    prevSelected.map(chat =>
-                        chat.conversationId === selectedConversationId
-                            ? {...chat, title: newChatName}
+                if (response.status === 200) {
+                    setConversations(prevConversations => 
+                        prevConversations.map(chat =>
+                            chat.conversationId === selectedConversationId
+                            ? {...chat, title: changedChatName}
                             : chat
-                    )
-                );
-                setIsEditingChatName(false);
-                setNewChatName('');
-                navigate(`/messages/${username}/${friend_name}/${newChatName}`);
+                        )
+                    );
+                    setSelectedConversations(prevSelected =>
+                        prevSelected.map(chat =>
+                            chat.conversationId === selectedConversationId
+                                ? {...chat, title: changedChatName}
+                                : chat
+                        )
+                    );
+                    setErrorMessage('');
+                    setIsEditingChatName(false);
+                    setChangedChatName('');
+                    navigate(`/messages/${username}/${friend_name}/${changedChatName}`);
+                }
             }
-
         } catch {
             setErrorMessage("Error changing chat name");
         }
@@ -153,34 +160,37 @@ function MessagesPage() {
             const participants = [user.userId, friendId];
             if (newChatName.length === 0) {
                 setErrorMessage("Chat needs a name");
+                return;
+            } else if (newChatName.length >= 30) {
+                setErrorMessage("Name cannot exceed 30 characters"); 
+                return; 
+            } else if (newChatName === 'Main') {
+                setErrorMessage("Chats cannot be named Main");
+                return;
             } else {
-                if (newChatName === 'Main') {
-                    setErrorMessage("Chats can't be named Main");
+                const response = await axios.post('/api/create_conversation', {
+                    participants: participants,
+                    title: newChatName
+                });
+                if (response.data && response.status === 201) {
+                    const newConversation = {
+                        ...response.data,
+                        conversationId: response.data.conversation_id,
+                        participants: [
+                            { username: user.username },
+                            { username: friend_name }
+                        ]
+                    };
+                    //Updates chats and viewed chats
+                    setConversations(prevConversations => [...prevConversations, newConversation]);
+                    setSelectedConversations(prevSelected => [...prevSelected, newConversation]);
+                    setSelectedConversationId(newConversation.conversationId);
+                    navigate(`/messages/${username}/${friend_name}/${newChatName}`)
+                    setErrorMessage('');
+                    setNewChatName('');
+                    setShowForm(false);
                 } else {
-                    const response = await axios.post('/api/create_conversation', {
-                        participants: participants,
-                        title: newChatName
-                    });
-                    if (response.data && response.status === 201) {
-                        const newConversation = {
-                            ...response.data,
-                            conversationId: response.data.conversation_id,
-                            participants: [
-                                { username: user.username },
-                                { username: friend_name }
-                            ]
-                        };
-                        //Updates chats and viewed chats
-                        setConversations(prevConversations => [...prevConversations, newConversation]);
-                        setSelectedConversations(prevSelected => [...prevSelected, newConversation]);
-                        setSelectedConversationId(newConversation.conversationId);
-                        navigate(`/messages/${username}/${friend_name}/${newChatName}`)
-                        setErrorMessage('');
-                        setNewChatName('');
-                        setShowForm(false);
-                    } else {
-                        setErrorMessage("Failed to add chat.");
-                    }
+                    setErrorMessage("Failed to add chat.");
                 }
             }
         } catch (error) {
@@ -313,25 +323,25 @@ function MessagesPage() {
                             <div id="chat-change">
                                 {isEditingChatName ? (
                                     <div id="change-name">
-                                        <textarea className="change-name-area" value={newChatName} onChange={(e) => {
+                                        <textarea className="change-name-area" value={changedChatName} placeholder="New name" onChange={(e) => {
+                                            e.preventDefault();
                                             const input = e.target.value;
                                             const inputLength = input.length;
-                                            if (inputLength <= 100) {
-                                                setNewChatName(input)
+                                            if (inputLength <= 30) {
+                                                setChangedChatName(input)
                                             } else {
-                                                setErrorMessage('Name cannot exceed 100 characters');
+                                                setErrorMessage('Name cannot exceed 30 characters');
                                             }
                                         }}
                                         />
                                         <div id="cancel-save">
                                             <button className="button" onClick={() => {
                                                 setIsEditingChatName(false);
-                                                setNewChatName('');
+                                                setChangedChatName('');
                                             }}>Cancel</button>
                                             <button className="button" onClick={(e) => {
                                                 e.preventDefault();
                                                 changeChatName(e)
-                                                setIsEditingChatName(false);
                                             }}>Save</button>
                                         </div>
                                     </div>
@@ -340,7 +350,7 @@ function MessagesPage() {
                                         <p className="large-text">{selectedConversations.find(c => c.conversationId === selectedConversationId)?.title}</p> 
                                         <button className="button" onClick={() => {
                                             setIsEditingChatName(true);
-                                            setNewChatName(selectedConversations.find(c => c.conversationId === selectedConversationId)?.title || '');
+                                            setChangedChatName(selectedConversations.find(c => c.conversationId === selectedConversationId)?.title || '');
                                         }}>Change name</button>
                                     </div>
                                 )}
@@ -366,7 +376,6 @@ function MessagesPage() {
                                 <form id="add-chat-form" onSubmit={createNewChat}>
                                     <input className="channel-input" type="text" name="chat_name" placeholder="Chat name..." value={newChatName} onChange={(e) => setNewChatName(e.target.value)}/>
                                     <input className="button" type="submit" value="Add"/>
-                                    {errorMessage && <div className="error-message">{errorMessage}</div>}
                                 </form>                            
                             )}
                         </div>
@@ -388,6 +397,7 @@ function MessagesPage() {
                             </ul>
                         </nav>
                     )}
+                <div className="error-message">{errorMessage}</div>
             </aside>
         </div>
     );
