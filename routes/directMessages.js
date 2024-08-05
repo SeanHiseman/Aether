@@ -10,13 +10,15 @@ const router = Router();
 router.post('/change_chat_name', authenticateCheck, async (req, res) => {
     try {
         const { conversationId, newTitle } = req.body;
-
-        await Conversations.update(
-            { title: newTitle },
-            { where: { conversation_id: conversationId } }
-        );
-
-        res.status(200).json({ success: true });
+        if (newTitle === 'Main') {
+            res.status(401).json({ success: false, message: "Chat can't be called main"})
+        } else {
+            await Conversations.update(
+                { title: newTitle },
+                { where: { conversation_id: conversationId } }
+            );
+            res.status(200).json({ success: true });
+        }
     } catch (error) {
         res.status(500).json({ error: "Error changing chat name"});
     }

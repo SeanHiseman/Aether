@@ -217,6 +217,7 @@ body,html {
 }
 .error-message {
     height: 20px;
+    margin: 10px;
 }
 .feed-link {
     border-bottom: 1px solid var(--dark-line);
