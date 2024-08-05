@@ -14,6 +14,7 @@ function MessagesPage() {
     const [errorMessage, setErrorMessage] = useState('');
     const [friends, setFriends] = useState([]);
     const { friend_name, username, title } = useParams();
+    const [isEditingChatName, setIsEditingChatName] = useState(false);
     const [message, setMessage] = useState('');
     const [newChatName, setNewChatName] = useState('');
     const [selectedConversations, setSelectedConversations] = useState([]);
@@ -109,6 +110,40 @@ function MessagesPage() {
         }
     }, [friend_name]);
 
+    //Either user can change chat name
+    const changeChatName = async (event) => {
+        event.preventDefault();
+        try {
+            const response = await axios.post('/api/change_chat_name', {
+                conversationId: selectedConversationId,
+                newTitle: newChatName
+            });
+
+            if (response.status === 200) {
+                setConversations(prevConversations => 
+                    prevConversations.map(chat =>
+                        chat.conversationId === selectedConversationId
+                        ? {...chat, title: newChatName}
+                        : chat
+                    )
+                );
+                setSelectedConversations(prevSelected =>
+                    prevSelected.map(chat =>
+                        chat.conversationId === selectedConversationId
+                            ? {...chat, title: newChatName}
+                            : chat
+                    )
+                );
+                setIsEditingChatName(false);
+                setNewChatName('');
+                navigate(`/messages/${username}/${friend_name}/${newChatName}`);
+            }
+
+        } catch {
+            setErrorMessage("Error changing chat name");
+        }
+    };
+
     const createNewChat = async (event) => {
         event.preventDefault();
         try {
@@ -199,6 +234,12 @@ function MessagesPage() {
         }
     };
 
+    //Ensures main chat can't be modified upon initial render (may be able to remove)
+    const isMainChat = () => {
+        const currentChat = selectedConversations.find(c => c.conversationId === selectedConversationId);
+        return currentChat?.title === 'Main' || title === 'Main';
+    };
+
     const sendMessage = () => {
         try {
             //Prevents sending empty messages
@@ -268,9 +309,45 @@ function MessagesPage() {
                             <img className="profile-image2" src={`/${friendProfileImage}`} alt="Profile"/>
                             <h3>{friend_name}</h3>
                         </Link>
-                        <p className="large-text">{selectedConversations.find(c => c.conversationId === selectedConversationId)?.title}</p> 
-                        {title !== 'Main' && (
-                            <button className="button" onClick={() => deleteChat()}>Delete chat</button> 
+                        {!isMainChat() ? (
+                            <div id="chat-change">
+                                {isEditingChatName ? (
+                                    <div id="change-name">
+                                        <textarea className="change-name-area" value={newChatName} onChange={(e) => {
+                                            const input = e.target.value;
+                                            const inputLength = input.length;
+                                            if (inputLength <= 100) {
+                                                setNewChatName(input)
+                                            } else {
+                                                setErrorMessage('Name cannot exceed 100 characters');
+                                            }
+                                        }}
+                                        />
+                                        <div id="cancel-save">
+                                            <button className="button" onClick={() => {
+                                                setIsEditingChatName(false);
+                                                setNewChatName('');
+                                            }}>Cancel</button>
+                                            <button className="button" onClick={(e) => {
+                                                e.preventDefault();
+                                                changeChatName(e)
+                                                setIsEditingChatName(false);
+                                            }}>Save</button>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div id="chat-name">
+                                        <p className="large-text">{selectedConversations.find(c => c.conversationId === selectedConversationId)?.title}</p> 
+                                        <button className="button" onClick={() => {
+                                            setIsEditingChatName(true);
+                                            setNewChatName(selectedConversations.find(c => c.conversationId === selectedConversationId)?.title || '');
+                                        }}>Change name</button>
+                                    </div>
+                                )}
+                                <button className="button" onClick={() => deleteChat()}>Delete chat</button> 
+                            </div>
+                        ) : (
+                            <p className="large-text">Main</p>  
                         )}
                         <ul>
                             {selectedConversations.map(conversation => (

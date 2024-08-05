@@ -6,6 +6,22 @@ import authenticateCheck from '../functions/authenticateCheck.js';
 
 const router = Router();
 
+//Changes name of chat between users
+router.post('/change_chat_name', authenticateCheck, async (req, res) => {
+    try {
+        const { conversationId, newTitle } = req.body;
+
+        await Conversations.update(
+            { title: newTitle },
+            { where: { conversation_id: conversationId } }
+        );
+
+        res.status(200).json({ success: true });
+    } catch (error) {
+        res.status(500).json({ error: "Error changing chat name"});
+    }
+});
+
 //Create new conversation
 router.post('/create_conversation', authenticateCheck, async (req, res) => {
     const { participants, title } = req.body;
