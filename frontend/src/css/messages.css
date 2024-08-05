@@ -14,22 +14,9 @@
 .channel-content.messages {
     flex-direction: column-reverse;
 }
-.chat-container {
-    top: 100%;
-    left: 0;
-    width: 300px;
+#chat-change {
     display: flex;
     flex-direction: column;
-    height: 70vh;
-    border: 1px solid var(--darkest);
-    border-radius: 10px;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-    overflow: hidden;
-}
-.chat-header {
-    padding: 10px;
-    background: var(--darkest);
-    border-bottom: 1px solid var(--darkest);
 }
 .chat-message-bar {
     background-color: var(--darkest);

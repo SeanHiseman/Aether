@@ -75,6 +75,11 @@ body,html {
 .light-button:hover, #messages-button:hover, .posts-channel-button:hover {
     background-color: var(--button-hover);
 }
+#cancel-save {
+    align-items: center;
+    display: flex;
+    justify-content: center;
+}
 #change-group-photo, #change-profile-photo {
     background-color: var(--darkest);
     border: 1px solid var(--border);
@@ -165,6 +170,11 @@ body,html {
 }
 .chat-channel-button, .conversation-button {
     border-radius: 1000px;
+}
+#chat-name, #change-name {
+    align-items: center;
+    display: flex;
+    flex-direction: column;
 }
 #confirmation-message {
     color: var(--border);
@@ -273,7 +283,7 @@ label {
     width: 120px; 
 }
 .large-text {
-    font-size: x-large;
+    font-size: 36px;
     font-weight: bold;
     margin: 10px;
     max-width: 100%;

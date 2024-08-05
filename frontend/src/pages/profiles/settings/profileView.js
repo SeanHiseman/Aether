@@ -120,7 +120,7 @@ const ProfileView = ({ profile, setProfile }) => {
                                     if (inputLength <= 100) {
                                         setName(input)
                                     } else {
-                                        setErrorMessage('Name cannot exceed 100 characters.');
+                                        setErrorMessage('Name cannot exceed 100 characters');
                                     }
                                 }}
                                 />
