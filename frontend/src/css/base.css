@@ -205,6 +205,9 @@ body,html {
     justify-content: space-between;
     width: 100%;
 }
+.error-message {
+    height: 20px;
+}
 .feed-link {
     border-bottom: 1px solid var(--dark-line);
     padding: 10px;

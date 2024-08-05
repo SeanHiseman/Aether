@@ -5,6 +5,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import AccountDeletion from './accountDeletion';
 import FriendRequests from './friendRequests';
 import MembershipSettings from './membership';
+import PasswordPersonal from './passwordPersonal';
 import ProfileView from './profileView';
 
 //Page for all settings related to a user
@@ -55,6 +56,8 @@ const Settings = () => {
                 return <FriendRequests  profile={profile} />;
             case 'membership-settings':
                 return <MembershipSettings user={user} />;
+            case 'password-personal':
+                return <PasswordPersonal user={user} />;
             default:
                 return null;
         }
@@ -71,6 +74,7 @@ const Settings = () => {
                     <ul>
                         <h2>Settings</h2>
                         <li className="settings-item" onClick={() => setCurrentView('profile')}>Profile</li>
+                        <li className="settings-item" onClick={() => setCurrentView('password-personal')}>Password and personal info</li>
                         <li className="settings-item" onClick={() => setCurrentView('membership-settings')}>Membership</li>
                         <li className="settings-item" onClick={() => setCurrentView('friend-requests')}>Friend requests</li>
                         <li className="settings-item" onClick={() => setCurrentView('account-deletion')} style={{color: 'red'}}>Delete account</li>

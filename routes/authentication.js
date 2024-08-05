@@ -7,6 +7,19 @@ import { ContentVotes, Followers, Friends, FriendRequests, GroupReplies, GroupPo
 
 const router = Router();
 
+//Changes user password
+router.post('/change_password', authenticateCheck, async (req, res) => {
+    try {
+        const { password, user_id } = req.body;
+        const hashedPassword = await hash(password, 10);
+        const user = await Users.findOne({ where: {user_id} });
+        await user.update({ password: hashedPassword });
+        res.json({ success: true });
+    } catch (error) {
+        res.status(500).json({ error: 'Error changing password'});
+    }
+});
+
 //Checks if user is logged in
 router.get('/check_authentication', async (req, res) => {
     if (req.session && req.session.user_id) {

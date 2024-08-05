@@ -14,7 +14,7 @@ function Register() {
         event.preventDefault();
         
         if (password !== confirmPassword) {
-            setError('Passwords do not match.');
+            setError('Passwords do not match');
             return;
         }
         
@@ -23,7 +23,7 @@ function Register() {
             if (response.data.success) {
                 navigate('/login');
             } else {
-                setError('Registration failed, please try again.');
+                setError('Registration failed, please try again');
             }
         } catch (error) {
             setError(error.response ? error.response.data.message : 'Network error');
