@@ -10,7 +10,9 @@ import FollowerChangeButton from '../../components/followerChangeButton';
 function Profile() {
     const [channels, setChannels] = useState([]);
     const [errorMessage, setErrorMessage] = useState('');
+    const [newChannelName, setNewChannelName] = useState('');
     const [profile, setProfile] = useState('');
+    const [showChannelForm, setShowChannelForm] = useState(false);
     const [showPostForm, setShowPostForm] = useState(false);
     const { user } = useContext(AuthContext);
     const { username, channel_name } = useParams();
@@ -45,12 +47,55 @@ function Profile() {
             }
         })
         .catch(error => {
-            console.error('Error fetching channels data:', error);
+            setErrorMessage('Error fetching channels data', error);
             setChannels([]);
         });
     }, [profile.profileId]);    
 
+    //Adds channel to profile
+    const AddChannel = async (event) => {
+        event.preventDefault();
+        try {
+            if (newChannelName === 'Main') {
+                setErrorMessage("Chats cannot be named Main");
+                return;
+            } else {
+                const response = await axios.post('/api/add_profile_channel', {
+                    channel_name: newChannelName,
+                    profileId: profile.profileId,
+                    isPosts: true
+                });
+                if (response.data && response.status === 201) {
+                    setChannels([...channels, response.data]);
+                    setNewChannelName('');
+                    setErrorMessage('');
+                    setShowChannelForm(false);
+                    navigate(`/profile/${username}/${newChannelName}`);
+                } else {
+                    setErrorMessage('Failed to add channel. Please try again');
+                }
+            }
+        } catch (error) {
+            setErrorMessage('Failed to add channel. Please try again');
+        }
+    };  
+    
     const channelRender = channels.find(c => c.channel_name === channel_name);
+
+    const deleteChannel = async () => {
+        try {
+            //Main channels are default, so can't be deleted
+            if (channel_name === 'Main') {
+                return;
+            } else {
+                await axios.delete(`/api/delete_profile_channel`, { data: {channel_name: channel_name, profile_id: profile.profileId} });
+                setChannels(prevChannels => prevChannels.filter(channel => channel.channel_name !== channel_name));
+                navigate(`/profile/${username}/Main`);
+            }
+        } catch (error) {
+            setErrorMessage('Error deleting channel');
+        }
+    };
     
     //Uploads content 
     const handlePostSubmit = async (formData) => {
@@ -67,6 +112,11 @@ function Profile() {
             setErrorMessage("Error creating post:", error);
         }
     };
+
+    //Toggles display of create channel form after button is pressed
+    const toggleChannelForm = () => {
+        setShowChannelForm(!showChannelForm)
+    }
 
     //Check if profile is private and user is not friends
     const isPrivateNotFriend = !profile.isFriend && profile.isPrivate && !isLoggedInUser;
@@ -100,7 +150,7 @@ function Profile() {
                     <ManageFriendshipButton userId={loggedInUserId} receiverProfileId={profile.profileId} receiverUserId={profile.userId} isRequestSent={profile.isRequested} isFriend={profile.isFriend} />
                 </div>
                 <p className="large-text">{channel_name}</p>
-                {isLoggedInUser &&(
+                {isLoggedInUser && (
                     showPostForm ? (
                         <div>
                             <button class="button" onClick={() => setShowPostForm(false)}>Close</button>
@@ -109,17 +159,42 @@ function Profile() {
                         <button class="button" onClick={() => setShowPostForm(true)}>Create Post</button>
                     )
                 )}
+                {isLoggedInUser && (
+                    <div id="add-channel-section">
+                        <button class="button" onClick={toggleChannelForm}>
+                            {showChannelForm ? 'Close': 'Create new Channel'}
+                        </button>
+                        {showChannelForm && (
+                            <form id="add-channel-form" onSubmit={AddChannel}>
+                                <input className="channel-input" type="text" name="channel_name" placeholder="Channel name..." value={newChannelName} onChange={(e) => {
+                                    const input = e.target.value;
+                                    const inputLength = input.length;
+                                    if (inputLength <= 30) {
+                                        setNewChannelName(input)
+                                    } else {
+                                        setErrorMessage('Name cannot exceed 30 characters');
+                                    }
+                                }}/>
+                                <input className="button" type="submit" value="Add" disabled={!newChannelName}/>
+                            </form>                            
+                        )}
+                    </div>
+                )}
+                <div className="error-message">{errorMessage}</div> 
                 <nav id="channel-list">
                     <ul>
                         {channels.map(channel => (
                             <li key={channel.channelId}>
-                                <Link to={`/profile/${profile.username}/${channel.channel_name}`}>
+                                <Link to={`/profile/${profile.username}/${channel.channel_name}`} className="channel-item">
                                     <div className="channel-link">{channel.channel_name}</div>
                                 </Link>
                             </li>
                         ))}
                     </ul>
                 </nav>
+                {channel_name !== 'Main' && isLoggedInUser && (
+                    <button className="button" onClick={() => deleteChannel()}>Delete channel</button>
+                )}
             </div>
         </div>
     );
