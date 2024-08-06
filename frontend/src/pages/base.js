@@ -178,8 +178,11 @@ const BaseLayout = () => {
             <main>
                 <header id="base-header">
                     <div className="spacer"></div>
-                        <form id="search-form" onSubmit={(e) => e.preventDefault()}>
-                            <input className="submit-button" type="submit" value="Ask" onClick={handleAskClick} />
+                        <form id="search-form" onSubmit={(e) => {
+                            e.preventDefault();
+                            handleSearchClick();
+                        }}>
+                            <input className="submit-button" type="button" value="Ask" onClick={handleAskClick} />
                             <input id="search-bar" type="text" name="keyword" placeholder="Search or Ask..." value={currentQuery} onChange={(e) => setCurrentQuery(e.target.value)}/>
                             <input className="submit-button" type="submit" value="Search" onClick={handleSearchClick}/>
                         </form>

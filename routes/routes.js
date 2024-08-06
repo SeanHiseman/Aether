@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { ContentVotes, Followers, Friends, FriendRequests, Groups, GroupReplies, GroupRequests, GroupPosts, ProfileReplies, ProfilePosts, Profiles, Users, UserGroups } from '../models/models.js'; 
+import { ContentVotes, Followers, Friends, FriendRequests, GroupChannels, Groups, GroupReplies, GroupRequests, GroupPosts, ProfileChannels, ProfileReplies, ProfilePosts, Profiles, Users, UserGroups } from '../models/models.js'; 
 import authenticateCheck from '../functions/authenticateCheck.js';
 import checkIfUserIsMember from '../functions/memberCheck.js';
 import { hybridRecommendations } from '../functions/recommendation/hybrid.js';
@@ -7,6 +7,30 @@ import { Op } from 'sequelize';
 import sortPostsByWeightedRatio from '../functions/postSorting.js';
 import { v4 } from 'uuid';
 const router = Router();
+
+//Changes name on profile, group or chat channel
+router.post('/change_channel_name', authenticateCheck, async (req, res) => {
+    try {
+        const { channelType, channelId, newChannelName } = req.body;
+        let dataModel = null;
+        if (newChannelName === 'Main') {
+            res.status(401).json({ success: false, message: "Channel can't be called main"})
+        } else { 
+            if (channelType === "profile") {
+                dataModel = ProfileChannels
+            } else if (channelType === 'group') {
+                dataModel = GroupChannels
+            }
+            await dataModel.update(
+                { channel_name: newChannelName },
+                { where: { channel_id: channelId } }
+            );
+            res.status(200).json({ success: true });
+        }
+    } catch (error) {
+        res.status(500).json({ error: "Error changing channel name"});
+    }
+});
 
 //Up or downvote content
 router.post('/content_vote', authenticateCheck, async (req, res) => {

@@ -143,6 +143,7 @@ body,html {
 }
 #channel-list {
     margin-bottom: 40px;
+    margin-top: 10px;
     width: 80%;
 }
 .channel-list-link, .channel-list-link:visited {
@@ -156,6 +157,9 @@ body,html {
     text-align: center;
     text-decoration: none;
     width: 100%;
+}
+#channel-name-section {
+    margin: 10px;
 }
 .chat-channel-button, .conversation-button, .posts-channel-button {
     background-color: var(--darkest);
@@ -216,8 +220,8 @@ body,html {
     width: 100%;
 }
 .error-message {
-    height: 20px;
-    margin: 10px;
+    height: 16px;
+    margin: 8px;
 }
 .feed-link {
     border-bottom: 1px solid var(--dark-line);
@@ -285,7 +289,6 @@ label {
 }
 .large-text {
     font-size: 36px;
-    font-weight: bold;
     margin: 10px;
     max-width: 100%;
     text-decoration: none;
@@ -429,9 +432,11 @@ main {
 }
 .text24 {
     font-size: 24px;
+    margin: 10px;
 }
 .text36 {
     font-size: 36px;
+    margin: 10px;
 }
 #upload-form {
     display: flex;

@@ -128,24 +128,6 @@ router.post('/change_bio', authenticateCheck, async (req, res) => {
     }
 });
 
-//Changes name on profile channel
-router.post('/change_profile_channel_name', authenticateCheck, async (req, res) => {
-    try {
-        const { profileId, newName } = req.body;
-        if (newName === 'Main') {
-            res.status(401).json({ success: false, message: "Channel can't be called main"})
-        } else {
-            await ProfileChannels.update(
-                { channel_name: newName },
-                { where: { profile_id: profileId } }
-            );
-            res.status(200).json({ success: true });
-        }
-    } catch (error) {
-        res.status(500).json({ error: "Error changing channel name"});
-    }
-});
-
 //Update username
 router.post('/change_username', authenticateCheck, async (req, res) => {
     try {
