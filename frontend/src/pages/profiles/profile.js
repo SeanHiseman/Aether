@@ -2,6 +2,7 @@ import axios from 'axios';
 import React, { useState, useEffect, useContext } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { AuthContext } from '../../components/authContext';
+import ChannelName from '../../components/channels/channelName';
 import ManageFriendshipButton from '../../components/manageFriendship';
 import PostForm from '../../components/postForm';
 import ProfileFeed from './profileFeed';
@@ -22,6 +23,7 @@ function Profile() {
     //Determine if logged in user is viewing their own profile
     const loggedInUsername = user?.username;
     const isLoggedInUser = username === loggedInUsername;
+
     useEffect(() => {
         axios.get(`/api/profile/${username}`)
             .then(response => {
@@ -34,7 +36,7 @@ function Profile() {
                     navigate('/login');
                 }
             });
-    }, [username, navigate]);
+    }, [username, navigate, channel_name]);
 
     //Fetch channels in user profile
     useEffect(() => {
@@ -80,7 +82,17 @@ function Profile() {
         }
     };  
     
+    //Accesses data about current channel
     const channelRender = channels.find(c => c.channel_name === channel_name);
+
+    //Updates list of channels when channel name changed
+    const channelUpdate = (channelId, newName) => {
+        setChannels(prevChannels => 
+            prevChannels.map(channel =>
+                channel.channel_id === channelId ? {...channel, channel_name: newName} : channel
+            )
+        );
+    };
 
     const deleteChannel = async () => {
         try {
@@ -137,7 +149,7 @@ function Profile() {
             </div>
             <div id="right-aside">
                 <div id="profile-summary">
-                    {isLoggedInUser &&(
+                    {isLoggedInUser && (
                         <Link to={`/settings/${username}`}>
                             <button className="button">Settings</button>
                         </Link>
@@ -149,7 +161,16 @@ function Profile() {
                     {!isLoggedInUser && !profile.isPrivate && (<FollowerChangeButton userId={loggedInUserId} profileId={profile.profileId} isFollowing={profile.isFollowing} />)}
                     <ManageFriendshipButton userId={loggedInUserId} receiverProfileId={profile.profileId} receiverUserId={profile.userId} isRequestSent={profile.isRequested} isFriend={profile.isFriend} />
                 </div>
-                <p className="large-text">{channel_name}</p>
+                {channelRender && (
+                    isLoggedInUser ? (
+                        <ChannelName channelId={channelRender.channel_id} channelName={channel_name} channelType={'profile'} locationName={username} channelUpdate={channelUpdate}/>
+                    ) : (
+                        <p className="text36">{channel_name}</p>  
+                    )
+                )}
+                {channel_name !== 'Main' && isLoggedInUser && (
+                    <button className="button" onClick={() => deleteChannel()}>Delete channel</button>
+                )}
                 {isLoggedInUser && (
                     showPostForm ? (
                         <div>
@@ -192,9 +213,6 @@ function Profile() {
                         ))}
                     </ul>
                 </nav>
-                {channel_name !== 'Main' && isLoggedInUser && (
-                    <button className="button" onClick={() => deleteChannel()}>Delete channel</button>
-                )}
             </div>
         </div>
     );

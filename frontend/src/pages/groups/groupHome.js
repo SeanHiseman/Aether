@@ -1,6 +1,7 @@
 import axios from 'axios';
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
+import ChannelName from '../../components/channels/channelName';
 import ChatChannel from '../../components/channels/chatChannel';
 import MemberChangeButton from '../../components/memberChangeButton';
 import PostChannel from '../../components/channels/postChannel';
@@ -122,6 +123,15 @@ function GroupHome() {
 
     const channelRender = channels.find(c => c.channel_name === channel_name);
 
+    //Updates list of channels when channel name changed
+    const channelUpdate = (channelId, newName) => {
+        setChannels(prevChannels => 
+            prevChannels.map(channel =>
+                channel.channel_id === channelId ? {...channel, channel_name: newName} : channel
+            )
+        );
+    };
+
     const deleteChannel = async () => {
         try {
             //Main channels are default, so can't be deleted
@@ -226,7 +236,13 @@ function GroupHome() {
                         isPrivate={groupDetails.isPrivate}
                     />
                 </div>
-                <h1>{channel_name}</h1>
+                {channelRender && (
+                    isAdmin ? (
+                    <ChannelName channelId={channelRender.channel_id} channelName={channel_name} channelType={'group'} locationName={group_name} channelUpdate={channelUpdate}/>
+                    ) : (
+                        <p className="text36">{channel_name}</p>
+                    ) 
+                )}
                 {showPostForm && channelMode === 'post' && (
                     <div>
                         <button class="button" onClick={() => setShowPostForm(false)}>Close</button>
