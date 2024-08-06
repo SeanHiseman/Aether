@@ -158,10 +158,7 @@ function MessagesPage() {
             const friend = friends.find(f => f.friend_name === friend_name);
             const friendId = friend.friend_id;
             const participants = [user.userId, friendId];
-            if (newChatName.length === 0) {
-                setErrorMessage("Chat needs a name");
-                return;
-            } else if (newChatName.length >= 30) {
+            if (newChatName.length >= 30) {
                 setErrorMessage("Name cannot exceed 30 characters"); 
                 return; 
             } else if (newChatName === 'Main') {
@@ -375,7 +372,7 @@ function MessagesPage() {
                             {showForm && (
                                 <form id="add-chat-form" onSubmit={createNewChat}>
                                     <input className="channel-input" type="text" name="chat_name" placeholder="Chat name..." value={newChatName} onChange={(e) => setNewChatName(e.target.value)}/>
-                                    <input className="button" type="submit" value="Add"/>
+                                    <input className="button" type="submit" value="Add" disabled={!newChatName}/>
                                 </form>                            
                             )}
                         </div>
