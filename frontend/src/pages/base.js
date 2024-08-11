@@ -140,7 +140,7 @@ const BaseLayout = () => {
                 </nav>
                 <div id="create-group-section">
                     <button class="button" onClick={toggleForm}>
-                        {showForm ? 'Close': 'Create new Group'}
+                        {showForm ? 'Close': 'Create group'}
                     </button>
                     {showForm && (
                         <form id="create-group-form" onSubmit={createGroupSubmit}>
@@ -182,9 +182,15 @@ const BaseLayout = () => {
                             e.preventDefault();
                             handleSearchClick();
                         }}>
-                            <input className="submit-button" type="button" value="Ask" onClick={handleAskClick} />
-                            <input id="search-bar" type="text" name="keyword" placeholder="Search or Ask..." value={currentQuery} onChange={(e) => setCurrentQuery(e.target.value)}/>
-                            <input className="submit-button" type="submit" value="Search" onClick={handleSearchClick}/>
+                            <div className="search-container">
+                                <button className="icon-button" type="button" onClick={handleAskClick}>
+                                    <img className="standard-icon" src="/media/site_images/icons/ask.png" alt="Ask"/>
+                                </button>
+                                <input id="search-bar" type="text" name="keyword" placeholder="Type..." value={currentQuery} onChange={(e) => setCurrentQuery(e.target.value)}/>
+                                <button className="icon-button" type="submit" onClick={handleSearchClick}>
+                                    <img className="standard-icon" src="/media/site_images/icons/search.png" alt="Search"/>
+                                </button>
+                            </div>
                         </form>
                 <div className="spacer"></div>
                 <Link to={`/messages/${profile.username}`}>

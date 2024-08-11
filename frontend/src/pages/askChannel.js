@@ -20,7 +20,7 @@ function AskChannel() {
 
     document.title="Ask";
     return (
-        <div className="search-container">  
+        <div className="results-container">  
             <div className="content-feed">
                 <div className="channel-feed">
                     <div id="channel">
