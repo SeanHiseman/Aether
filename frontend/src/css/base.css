@@ -371,7 +371,7 @@ li {
     text-align: center;
 }
 main {
-    display:flex;
+    display: flex;
     flex-direction: column;
     margin-top: 80px;
     width: 100%;
@@ -519,12 +519,6 @@ ul {
 }
 .vote-disabled {
     background-color: var(--dark-line);
-}
-#welcome-items {
-    align-items: center;
-    display: flex;
-    height: 100%;
-    justify-self: center;
 }
 .xl-text {
     font-size: 72px;
