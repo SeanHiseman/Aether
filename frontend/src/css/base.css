@@ -1,3 +1,4 @@
+/*This sheet is for styles that are used across the site*/
 @import url('variables.css');
 a {
     color: inherit;
@@ -277,7 +278,42 @@ h3 {
     border: none;
     background-color: var(--darkest);
     height: 100%;
+    position: relative;
     transition: background-color 0.3s;
+}
+.icon-button.ask {
+    border-top-left-radius: 20px;
+    border-bottom-left-radius: 20px;
+    border-right: 1px solid var(--border);
+}
+.icon-button.search {
+    border-top-right-radius: 20px;
+    border-bottom-right-radius: 20px;
+    border-left: 1px solid var(--border);
+}
+.icon-button:hover::after {
+    background-color: var(--button-hover);
+    border-radius: .3rem;
+    color: var(--border);
+    content: attr(data-tooltip);
+    font-size: large;
+    opacity: 1;
+    padding: .5rem;
+    position: absolute;
+    text-align: center;
+    transition: opacity 0.3s ease;
+    width: max-content;
+    z-index: 1000;
+}
+.ask:hover::after {
+    bottom: 7px;
+    margin-right: 10px;
+    right: 100%;
+}
+.search:hover::after {
+    bottom: 7px;
+    left: 100%;
+    margin-left: 10px;
 }
 input[type="text"] {
     outline: none;
@@ -400,12 +436,9 @@ main {
 #search-bar {
     background-color: var(--darkest);
     border: none;
-    border-left: 1px solid var(--border);
-    border-right: 1px solid var(--border);
     color: var(--border);
     flex-grow: 1;
     font-size: large;
-    height: 100%;
     padding: 10px;
 }
 .search-container {
@@ -413,7 +446,8 @@ main {
     border: 1px solid var(--border);
     border-radius: 20px;
     display: flex;
-    overflow: hidden;
+    overflow: visible;
+    position: relative;
     width: 100%;
 }
 #search-form {
@@ -422,6 +456,7 @@ main {
     margin-left: 150px;
     max-width: 35%;
     height: 80%;
+    position: relative;
     width: 100%;
 }
 .spacer {
