@@ -12,7 +12,7 @@ import Welcome from './pages/welcome';
 import Login from './pages/site_entrance/login';
 import MessagesPage from './pages/messagesPage';
 import RecommendedPage from './pages/feeds/recommended';
-import Register from './pages/site_entrance/register';
+import Join from './pages/site_entrance/join';
 import Profile from './pages/profiles/profile';
 import ProfileWrapper from './pages/profiles/profileWrapper';
 import SearchResults from './pages/searchResults';
@@ -25,7 +25,7 @@ const App = () => {
             <Routes>
                 <Route path="/welcome" element={<Welcome />} />
                 <Route path="/login" element={<Login />} />
-                <Route path="/register" element={<Register />} />
+                <Route path="/join" element={<Join />} />
                 <Route path="/" element={<AuthCheck><BaseLayout /></AuthCheck>}>
                     <Route path="ask" element={<AuthCheck><AskChannel /></AuthCheck>} />
                     <Route path="recommended" element={<AuthCheck><RecommendedPage /></AuthCheck>} />

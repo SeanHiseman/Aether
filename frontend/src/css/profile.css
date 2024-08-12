@@ -7,7 +7,7 @@
 .button.delete {
     color: red;
 }
-.button.delete, .button.join {
+.button.delete, .button.join, .light-button.join {
     font-size: 36px;
     margin-bottom: 20px;
     padding: 20px

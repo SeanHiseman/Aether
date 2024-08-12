@@ -1,14 +1,15 @@
 @import url('variables.css');
 .authentication-container {
+    align-items: center;
+    display: flex;
+    flex-direction: column;
+}
+.authentication-box {
     background-color: var(--darkest);
-    border: 1px solid var(--border);
     border-radius: 10px;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-    margin: 0 auto;
-    margin-top: 100px;
-    padding: 16px;
+    padding: 20px;
     text-align: center;
-    width: 300px;
+    width: 400px;
 }
 .authentication-input-box {
     border: 1px solid var(--border);
@@ -51,4 +52,9 @@
 .login-register{
     display: flex;
     justify-content: space-between;
+}
+.welcome-text {
+    font-size: 36px;
+    margin-bottom: 30px;
+    margin-top: 50px;
 }

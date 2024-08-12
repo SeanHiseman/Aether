@@ -69,7 +69,7 @@ router.delete('/delete_account', authenticateCheck, async (req, res) => {
     }
 });
 
-router.post('/register', async (req, res) => {
+router.post('/join', async (req, res) => {
     try {
         const username = req.body.username;
         //Check for existing username
