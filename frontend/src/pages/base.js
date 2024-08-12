@@ -183,11 +183,11 @@ const BaseLayout = () => {
                             handleSearchClick();
                         }}>
                             <div className="search-container">
-                                <button className="icon-button" type="button" onClick={handleAskClick}>
+                                <button className="icon-button ask" data-tooltip="Ask" type="button" onClick={handleAskClick}>
                                     <img className="standard-icon" src="/media/site_images/icons/ask.png" alt="Ask"/>
                                 </button>
                                 <input id="search-bar" type="text" name="keyword" placeholder="Type..." value={currentQuery} onChange={(e) => setCurrentQuery(e.target.value)}/>
-                                <button className="icon-button" type="submit" onClick={handleSearchClick}>
+                                <button className="icon-button search" data-tooltip="Search" type="submit" onClick={handleSearchClick}>
                                     <img className="standard-icon" src="/media/site_images/icons/search.png" alt="Search"/>
                                 </button>
                             </div>
