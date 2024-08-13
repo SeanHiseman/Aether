@@ -13,6 +13,7 @@ import '../css/replies.css';
 const BaseLayout = () => {
     const { isAuthenticated, user } = useContext(AuthContext);
     const [currentQuery, setCurrentQuery] = useState('');
+    const [errorMessage, setErrorMessage] = useState('');
     const [groups, setGroups] = useState([]);
     const [groupName, setGroupName] = useState('');
     const [groupPhoto, setGroupPhoto] = useState(null);
@@ -56,7 +57,6 @@ const BaseLayout = () => {
 
     const createGroupSubmit = (event) => {
         event.preventDefault();
-
         const formData = new FormData();
         formData.append('group_id', v4());
         formData.append('group_name', groupName);
@@ -64,32 +64,26 @@ const BaseLayout = () => {
         formData.append('is_private', privateGroup);
         //Adds user_id so user creating group can become an admin
         formData.append('user_id', profile.userId);
-
         axios.post('/api/create_group', formData)
             .then(response => {
                 setGroups([...groups, response.data]);
-
                 //Redirect to new group
                 const newGroupName = response.data.group_name
                 navigate(`/group/${newGroupName}`);
                 setGroupName('');
+                setShowForm(false);
         })
         .catch(error => {
-            console.error('Error creating group: ', error);
             if (error.response) {
                 if (error.response.status === 413) {
-                    alert("File too large. Please select a file smaller than 5MB.");
+                    setErrorMessage("File cannot be more than 5MB");
                 } else if (error.response.status === 400) {
-                    if (error.response.data && error.response.data.error === 'Invalid file type') {
-                        alert("Invalid file type. Please select a JPEG or PNG.");
-                    } else {
-                        alert("Error creating group. Please try again.");
-                    }
+                    setErrorMessage(error.response.data.error || "Error, please try again");
                 } else {
-                    alert("Error creating group. Please try again.");
+                    setErrorMessage("Error, please try again");
                 }
             } else {
-                alert("An unexpected error occured. Please try again.");
+                setErrorMessage("Error, please try again");
             }
         });
     };
@@ -114,8 +108,14 @@ const BaseLayout = () => {
     };
 
     //Set groups to public or private
-    const handlePublicClick = () => setPrivateGroup(false);
-    const handlePrivateClick = () => setPrivateGroup(true);
+    const handlePublicClick = (event) => {
+        event.preventDefault();
+        setPrivateGroup(false);
+    }
+    const handlePrivateClick = (event) => {
+        event.preventDefault();
+        setPrivateGroup(true);
+    }
 
     //Toggles display of create group form after button is pressed
     const toggleForm = () => {
@@ -146,15 +146,16 @@ const BaseLayout = () => {
                         <form id="create-group-form" onSubmit={createGroupSubmit}>
                             <input id="group-name-input" type="text" name="Name" placeholder="Group name..." value={groupName} onChange={(e) => setGroupName(e.target.value)}/>
                             <div className="file-input">
-                                <label htmlFor="group-photo-input" class="button">Choose photo</label>
+                                <label htmlFor="group-photo-input" class="light-button">Choose photo</label>
                                 <input type="file" id="group-photo-input" name="Group photo" onChange={handleFileChange} hidden/>
                                 <span className="file-name">{groupPhotoFile}</span>
                             </div>
                             <div id="public-private-section">
-                                <button type="button" class="button" onClick={handlePublicClick}>Public</button>
-                                <button type="button" class="button" onClick={handlePrivateClick}>Private</button>
+                                <button type="button" class="light-button selected" onClick={handlePublicClick}>Public</button>
+                                <button type="button" class="light-button selected" onClick={handlePrivateClick}>Private</button>
                             </div>
-                            <input className="button" type="submit" value="Create" disabled={!groupName}/>
+                            <input className="light-button" type="submit" value="Create" disabled={!groupName}/>
+                            <div className="error-message">{errorMessage}</div>
                         </form>
                     )}
                 </div>

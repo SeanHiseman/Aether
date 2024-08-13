@@ -124,7 +124,7 @@ const Welcome = () => {
         }
     };
 
-    document.title="welcome";
+    document.title="Welcome";
     return (
         <div className="container">
             <aside id="left-aside">
