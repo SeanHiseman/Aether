@@ -273,7 +273,7 @@ function GroupHome() {
                                     <input type="checkbox" checked={isChatChannel} onChange={handleChatClick}/>
                                     Chat Channel
                                 </label>
-                                <input className="button" type="submit" value="Add"/>
+                                <input className="light-button" type="submit" value="Add"/>
                                 {errorMessage && <div className="error-message">{errorMessage}</div>}
                             </form>                            
                         )}

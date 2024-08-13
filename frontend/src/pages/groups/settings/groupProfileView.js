@@ -32,7 +32,7 @@ function GroupProfileView({ group, setGroup }) {
                 return;
             }
             const formData = new FormData();
-            formData.append('new_group_photo', fileInput.files[0]);
+            formData.append('new_group_profile_photo', fileInput.files[0]);
             const response = await axios.put(`/api/update_group_photo/${group.groupId}`, formData, {
                 headers: {
                     'Content-Type': 'multipart/form-data',
@@ -43,8 +43,16 @@ function GroupProfileView({ group, setGroup }) {
                 groupPhoto: response.data.newPhotoPath
             }))
             setIsPhotoFormVisible(false);
+            setErrorMessage('');
         } catch(error) {
-                setErrorMessage('Error updating photo', error.response ? error.response.data : error);
+            console.log("error:", error);
+            if (error.response.status === 413) {
+                setErrorMessage("File cannot be more than 5MB");
+            } else if (error.response.status === 400) {
+                setErrorMessage(error.response.data.error || "Error, please try again");
+            } else {
+                setErrorMessage("Error, please try again");
+            }
         };
     };
 
@@ -104,7 +112,6 @@ function GroupProfileView({ group, setGroup }) {
                         <form id="change-group-photo" action="/api/update_group_photo" method="post" enctype="multipart/form-data" onSubmit={ChangeGroupPhoto}>
                             <label htmlFor="new_group_photo">Change Group photo:</label>
                             <input type="file" id="new_group_photo" name="new_group_photo" accept="image/*" />
-                            {errorMessage && <div className="error-message">{errorMessage}</div>}
                             <input className="button" type="submit" value="Update" />
                         </form>
                     )}
@@ -155,13 +162,13 @@ function GroupProfileView({ group, setGroup }) {
                                 <button className="button" onClick={() => setIsEditingDescription(true)}>Edit</button>
                             </div>
                         )}
-                        {errorMessage && <div className="error-message">{errorMessage}</div>}
                     </div>
                 </div>
             </div>
             <div id="private-toggle">
                 <button className="button" onClick={() => togglePrivate()}>{group.isPrivate ? "Group: private" : "Group: public"}</button>
             </div>
+            <div className="error-message">{errorMessage}</div>
         </div>
     );
 }

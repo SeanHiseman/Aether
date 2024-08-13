@@ -9,7 +9,7 @@ a {
 }
 #add-channel-form, #create-group-form {
     align-items: center;
-    background-color: var(--darkest);
+    background-color: var(--dark);
     border: 1px solid var(--border);
     display: flex;
     flex-direction: column;
@@ -71,7 +71,7 @@ body,html {
 .background-button {
     background-color: var(--dark);
 }
-.button:hover, .background-button:hover, .chat-channel-button:hover, .conversation-button:hover, .icon-button:hover, .light-button:hover, #messages-button:hover, .posts-channel-button:hover {
+.button:hover, .button.selected:focus, .background-button:hover, .chat-channel-button:hover, .conversation-button:hover, .icon-button:hover, .light-button:hover, .light-button.selected:focus, #messages-button:hover, .posts-channel-button:hover {
     background-color: var(--button-hover);
 }
 #cancel-save {
@@ -115,7 +115,7 @@ body,html {
     width: 100%
 }
 .channel-input, #group-name-input {
-    background-color: var(--darkest);
+    background-color: var(--dark);
     border: 1px solid var(--border);
     border-radius: 10px;
     color: var(--border);

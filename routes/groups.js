@@ -27,10 +27,10 @@ const group_photo_storage = multer.diskStorage({
 });
 //Check file input for group photo
 const profileFilter = (req, file, cb) => {
-    if (file.mimetype.startsWith('/image')) {
+    if (file.mimetype.startsWith('image/')) {
         cb(null, true);
     } else {
-        cb(null, true);
+        cb(new Error('Invalid file type'), false);
     }
 }
 //Uploads with file size limit
@@ -40,7 +40,7 @@ const profile_upload = multer({
         fileSize: 1024 * 1024 * 5
     },
     fileFilter: profileFilter
-});
+}).single('new_group_profile_photo');
 
 //Adds user to private group
 router.post('/accept_join_request', authenticateCheck, async (req, res) => {
@@ -150,49 +150,61 @@ router.post('/change_group_name', authenticateCheck, async (req, res) => {
 });
 
 //Create a new group
-router.post('/create_group', authenticateCheck, profile_upload.single('new_group_profile_photo'), async (req, res) => {
-    try {
-        const { group_name, is_private, group_id, user_id } = req.body;
-        
-        //Prevents duplicate group names
-        const existingGroup = await Groups.findOne({ where: { group_name: group_name } });
-        if (existingGroup) {
-            return res.status(400).json({ error: 'A group with this name already exists.'});
+router.post('/create_group', authenticateCheck, (req, res) => {
+    profile_upload(req, res, async function(err) {
+        if (err instanceof multer.MulterError) {
+            //A Multer error occurred when uploading
+            if (err.code === 'LIMIT_FILE_SIZE') {
+                return res.status(413).json({ error: 'File cannot be more than 5MB' });
+            }
+            return res.status(400).json({ error: 'Error uploading file' });
+        } else if (err) {
+            return res.status(400).json({ error: err.message });
         }
 
-        let group_photo = "media/site_images/blank-group-icon.jpg";
-        if (req.file) {
-            group_photo = req.file.path
+        try {
+            const { group_name, is_private, group_id, user_id } = req.body;
+
+            //Prevents duplicate group names
+            const existingGroup = await Groups.findOne({ where: { group_name: group_name } });
+            if (existingGroup) {
+                return res.status(400).json({ error: 'Name taken' });
+            }
+
+            let group_photo = "media/site_images/blank-group-icon.jpg";
+            if (req.file) {
+                group_photo = req.file.path;
+            }
+
+            const newGroup = await Groups.create({
+                group_id,
+                group_name,
+                group_photo,
+                member_count: 1,
+                is_private: is_private,
+                group_leader: user_id
+            });
+
+            //Adds main channel
+            await GroupChannels.create({
+                channel_id: v4(),
+                channel_name: 'Main',
+                group_id: newGroup.group_id,
+            });
+
+            //Add creating user to the group, giving them permissions
+            await UserGroups.create({
+                user_id: user_id,
+                group_id: newGroup.group_id,
+                is_mod: true,
+                is_admin: true,
+            });
+
+            res.status(201).json(newGroup);
+        } catch (error) {
+            res.status(500).json({ error: 'Error, please try again' });
         }
-
-        const newGroup = await Groups.create({ 
-            group_id,
-            group_name, 
-            group_photo,
-            member_count: 1,
-            is_private: is_private,
-            group_leader: user_id
-        });
-
-        //Adds main channel
-        await GroupChannels.create({
-            channel_id: v4(),
-            channel_name: 'Main',
-            group_id: newGroup.group_id,
-        });
-
-        //Add creating user to the group, giving them permissions
-        await UserGroups.create({
-            user_id: user_id,
-            group_id: newGroup.group_id,
-            is_mod: true,
-            is_admin: true, 
-        });
-
-        res.status(201).json(newGroup);
-    } catch (error) {
-        res.status(400).json({ error: error.message });
-    }
+    });
 });
 
 //Checks input for post uploads
@@ -659,39 +671,46 @@ router.post('/toggle_private_group', authenticateCheck, async (req, res) => {
 });
 
 //Update group photo
-router.put('/update_group_photo/:groupId', authenticateCheck, profile_upload.single('new_group_photo'), async (req, res) => {
-    try {
-        const defaultGroupPhotoPath = 'media/site_images/blank-group-icon.jpg';
-        const groupId = req.params.groupId; 
-        const file = req.file; 
-
-        if (!file) {
-            return res.status(400).json({ message: "Invalid file type. Please upload jpeg or png"});
-        }
-
-        const filename = file.filename;
-        const newPhotoPath = `media/group_profiles/${filename}`;
-        const group = await Groups.findOne({ where: { group_id: groupId } });
-        
-        if (group) {
-            //Deletes old photo
-            if (group.group_photo && group.group_photo !== defaultGroupPhotoPath) {
-                const currentPhotoPath = path.join(group.group_photo);
-                fs.unlink(currentPhotoPath, (error) => {
-                    if (error) {
-                        console.error(`Error deleting old photo: ${error}`);
-                    }
-                });
+router.put('/update_group_photo/:groupId', authenticateCheck, async (req, res) => {
+    profile_upload(req, res, async function(err) {
+        if (err instanceof multer.MulterError) {
+            //A Multer error occurred when uploading
+            if (err.code === 'LIMIT_FILE_SIZE') {
+                return res.status(413).json({ error: 'File cannot be more than 5MB' });
             }
-            group.group_photo = newPhotoPath;
-            await group.save();
-            return res.json({ newPhotoPath: newPhotoPath });
-        } else {
-            res.status(404).json({ message: "Group not found" });
+            return res.status(400).json({ error: 'Error uploading file' });
+        } else if (err) {
+            return res.status(400).json({ error: err.message });
         }
-    } catch (error) {
-        res.status(500).json({ message: "An error occured while updating the group photo"});
-    }
+
+        try {
+            const defaultGroupPhotoPath = 'media/site_images/blank-group-icon.jpg';
+            const groupId = req.params.groupId; 
+            const file = req.file; 
+            const filename = file.filename;
+            const newPhotoPath = `media/group_profiles/${filename}`;
+            const group = await Groups.findOne({ where: { group_id: groupId } });
+            
+            if (group) {
+                //Deletes old photo
+                if (group.group_photo && group.group_photo !== defaultGroupPhotoPath) {
+                    const currentPhotoPath = path.join(group.group_photo);
+                    fs.unlink(currentPhotoPath, (error) => {
+                        if (error) {
+                            console.error(`Error deleting old photo: ${error}`);
+                        }
+                    });
+                }
+                group.group_photo = newPhotoPath;
+                await group.save();
+                return res.json({ newPhotoPath: newPhotoPath });
+            } else {
+                res.status(404).json({ message: "Group not found" });
+            }
+        } catch (error) {
+            res.status(500).json({ message: "An error occured while updating the group photo"});
+        };
+    });
 });
 
 export const groupChatChannelSocket = (socket) => {
