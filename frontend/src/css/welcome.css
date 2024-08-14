@@ -7,6 +7,10 @@
 #join-login {
     align-items: center;
 }
+.left-aligned-text {
+    margin: 30px;
+    text-align: left;
+}
 #right-aside.light {
     background-color: var(--dark);
 }

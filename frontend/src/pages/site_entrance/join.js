@@ -1,6 +1,6 @@
 import axios from 'axios';
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import '../../css/authentication.css'; 
 
 function Join() {
@@ -32,13 +32,15 @@ function Join() {
 
     return (
         <div className="authentication-container">
-            <p className="welcome-text">Welcome to Aether</p>
+            <Link to="/welcome">
+                <p className="welcome-text pointer">Welcome to Aether</p>
+            </Link>
             <div className="authentication-box">
                 <div className="login-register">
                     <h1>Join</h1>
                     <a className="link" href="/login">Login</a>
                 </div>
-                {error && <p className="error-message">{error}</p>}
+                <p className="error-message">{error}</p>
                 <form method="post" onSubmit={handleSubmit}>
                     <input className="authentication-input-box" name="username" placeholder="Username" required />
                     <input 

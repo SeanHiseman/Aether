@@ -58,3 +58,6 @@
     margin-bottom: 30px;
     margin-top: 50px;
 }
+.welcome-text.pointer {
+    cursor: pointer;
+}
