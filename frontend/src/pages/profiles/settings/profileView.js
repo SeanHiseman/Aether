@@ -117,10 +117,10 @@ const ProfileView = ({ profile, setProfile }) => {
                                 <textarea className="change-name-area" value={newName} placeholder="New name" onChange={(e) => {
                                     const input = e.target.value;
                                     const inputLength = input.length;
-                                    if (inputLength <= 100) {
+                                    if (inputLength <= 30) {
                                         setName(input)
                                     } else {
-                                        setErrorMessage('Name cannot exceed 100 characters');
+                                        setErrorMessage('Name cannot exceed 30 characters');
                                     }
                                 }}
                                 />

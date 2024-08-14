@@ -106,11 +106,11 @@ function GroupProfileView({ group, setGroup }) {
                 <div id="profile-header-photo">
                     <img id="settings-profile-photo" src={`/${group.groupPhoto}`} alt={group.groupName} />
                     <button className="button" onClick={() => setIsPhotoFormVisible(!isPhotoFormVisible)}>
-                        {isPhotoFormVisible ? 'Close' : 'Change Group photo'}
+                        {isPhotoFormVisible ? 'Close' : 'Change feed photo'}
                     </button>
                     {isPhotoFormVisible && (
                         <form id="change-group-photo" action="/api/update_group_photo" method="post" enctype="multipart/form-data" onSubmit={ChangeGroupPhoto}>
-                            <label htmlFor="new_group_photo">Change Group photo:</label>
+                            <label htmlFor="new_group_photo">Change feed photo:</label>
                             <input type="file" id="new_group_photo" name="new_group_photo" accept="image/*" />
                             <input className="button" type="submit" value="Update" />
                         </form>
@@ -124,10 +124,10 @@ function GroupProfileView({ group, setGroup }) {
                                 <textarea className="change-name-area" value={newName} onChange={(e) => {
                                     const input = e.target.value;
                                     const inputLength = input.length;
-                                    if (inputLength <= 100) {
+                                    if (inputLength <= 30) {
                                         setName(input)
                                     } else {
-                                        setErrorMessage('Name cannot exceed 100 characters.');
+                                        setErrorMessage('Name cannot exceed 30 characters.');
                                     }
                                 }}
                                 />
@@ -136,7 +136,7 @@ function GroupProfileView({ group, setGroup }) {
                         ) : (
                             <div className="view-name">
                                 <p className="large-text">{group.groupName}</p>
-                                <button className="button edit" onClick={() => setIsEditingName(true)}>Change group name</button>
+                                <button className="button edit" onClick={() => setIsEditingName(true)}>Change feed name</button>
                             </div>
                         )}
                     </div>
@@ -166,7 +166,7 @@ function GroupProfileView({ group, setGroup }) {
                 </div>
             </div>
             <div id="private-toggle">
-                <button className="button" onClick={() => togglePrivate()}>{group.isPrivate ? "Group: private" : "Group: public"}</button>
+                <button className="button" onClick={() => togglePrivate()}>{group.isPrivate ? "Feed: private" : "Feed: public"}</button>
             </div>
             <div className="error-message">{errorMessage}</div>
         </div>

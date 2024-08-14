@@ -6,7 +6,7 @@ const MemberChangeButton = ({ userId, groupId, isMember, isRequestSent, isPrivat
     const [member, setMember] = useState(isMember);
     const [request, setRequest] = useState(isRequestSent);
 
-    //Update member state, including requests for private groups
+    //Update member state, including requests for private feeds
     useEffect(() => {
         setRequest(isRequestSent);
         setMember(isMember);
@@ -20,7 +20,7 @@ const MemberChangeButton = ({ userId, groupId, isMember, isRequestSent, isPrivat
                     setRequest(true);
                 })
                 .catch(error => {
-                    setErrorMessage("Error sending join request", error);
+                    setErrorMessage("Error sending follow request", error);
                 });
         } else if (isPrivate && request) {
             //Cancel join request for private group
@@ -29,7 +29,7 @@ const MemberChangeButton = ({ userId, groupId, isMember, isRequestSent, isPrivat
                     setRequest(false);
                 })
                 .catch(error => {
-                    setErrorMessage("Error canceling join request", error);
+                    setErrorMessage("Error cancelling follow request", error);
                 });
         } else {
             //Join or leave public group
@@ -39,12 +39,12 @@ const MemberChangeButton = ({ userId, groupId, isMember, isRequestSent, isPrivat
                     setMember(!member);
                 })
                 .catch(error => {
-                    setErrorMessage("Error updating group membership", error);
+                    setErrorMessage("Error", error);
                 });
         }
     };
 
-    const buttonText = member ? 'Leave' : request && isPrivate ? 'Cancel request' : 'Join';
+    const buttonText = member ? 'Unfollow' : request && isPrivate ? 'Cancel request' : 'Follow';
 
     return (
         <div>

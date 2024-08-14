@@ -14,11 +14,11 @@ function ChannelName({ channelId, channelName, channelType, locationName, channe
         event.preventDefault();
         try {
             if (newChannelName.length === 0) {
-                setErrorMessage("Channel needs a name");
+                setErrorMessage("Feed needs a name");
                 return;
             //Names over 30 characters already prevented
             } else if (newChannelName === 'Main') {
-                setErrorMessage("Channels cannot be named Main");
+                setErrorMessage("Feeds cannot be named Main");
                 return;
             } else {
                 const response = await axios.post('/api/change_channel_name', {
@@ -35,7 +35,7 @@ function ChannelName({ channelId, channelName, channelType, locationName, channe
                 }
             }
         } catch {
-            setErrorMessage("Error changing channel name");
+            setErrorMessage("Error changing feed name");
         }
     };
 

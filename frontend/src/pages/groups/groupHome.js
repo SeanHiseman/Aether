@@ -45,7 +45,7 @@ function GroupHome() {
                     });
                 })
                 .catch(error => {
-                    setErrorMessage("Error fetching group details:", error);
+                    setErrorMessage("Error fetching feed details", error);
                 });
             };
         fetchGroupData();
@@ -75,7 +75,7 @@ function GroupHome() {
             }
         })
         .catch(error => {
-            console.error('Error fetching channels data:', error);
+            console.error('Error fetching channel data:', error);
             setChannels([]);
         });
     }, [groupDetails.groupId, channel_name]);  
@@ -87,7 +87,7 @@ function GroupHome() {
                 const response = await axios.get(`/api/sub_groups/${groupDetails.groupId}`);
                 setSubGroups(response.data);
             } catch (error) {
-                console.log("Error fetching sub groups:", error);
+                console.log("Error fetching feeds:", error);
             }
         };
         fetchSubGroups();
@@ -98,7 +98,7 @@ function GroupHome() {
         event.preventDefault();
         try {
             if (newChannelName.length === 0) {
-                setErrorMessage("Channel needs a name");
+                setErrorMessage("Feed needs a name");
             } else {
                 const response = await axios.post('/api/add_group_channel', {
                     channel_name: newChannelName,
@@ -113,11 +113,11 @@ function GroupHome() {
                     setShowChannelForm(false);
                     navigate(`/group/${group_name}/${newChannelName}`);
                 } else {
-                    setErrorMessage('Failed to add channel.');
+                    setErrorMessage('Failed to add channel');
                 }
             }
         } catch (error) {
-            setErrorMessage(error.response ? error.response.data.error : 'Failed to add channel.');
+            setErrorMessage(error.response ? error.response.data.error : 'Failed to add channel');
         }
     };
 
@@ -143,7 +143,7 @@ function GroupHome() {
                 navigate(`/group/${group_name}/Main`);
             }
         } catch (error) {
-            console.error('Error deleting channel:', error);
+            console.error('Error deleting channel', error);
         }
     };
 
@@ -163,7 +163,7 @@ function GroupHome() {
             });
             setShowPostForm(false);
         } catch (error) {
-            setErrorMessage("Error creating post.");
+            setErrorMessage("Error creating post");
         }
     };
 
@@ -214,7 +214,7 @@ function GroupHome() {
                                 locationId={groupDetails.groupId}
                             />
                         )
-                    ) : <p className="large-text">This group is private</p>}
+                    ) : <p className="large-text">This feed is private</p>}
                 </div>
             </div>         
             <aside id="right-aside">

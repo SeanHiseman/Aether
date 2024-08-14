@@ -140,11 +140,11 @@ const BaseLayout = () => {
                 </nav>
                 <div id="create-group-section">
                     <button class="button" onClick={toggleForm}>
-                        {showForm ? 'Close': 'Create group'}
+                        {showForm ? 'Close': 'Create feed'}
                     </button>
                     {showForm && (
                         <form id="create-group-form" onSubmit={createGroupSubmit}>
-                            <input id="group-name-input" type="text" name="Name" placeholder="Group name..." value={groupName} onChange={(e) => setGroupName(e.target.value)}/>
+                            <input id="group-name-input" type="text" name="Name" placeholder="Feed name..." value={groupName} onChange={(e) => setGroupName(e.target.value)}/>
                             <div className="file-input">
                                 <label htmlFor="group-photo-input" class="light-button">Choose photo</label>
                                 <input type="file" id="group-photo-input" name="Group photo" onChange={handleFileChange} hidden/>
@@ -162,7 +162,7 @@ const BaseLayout = () => {
                 <nav id="group-list">
                     <ul>
                         {groups.length === 0 ? (
-                            <p>Joined groups show up here</p>
+                            <p>Followed feeds show up here</p>
                         ) : (
                             groups.map(group => (
                                 <li key={group.group_id}>
