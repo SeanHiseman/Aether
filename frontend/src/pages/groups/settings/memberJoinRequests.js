@@ -60,7 +60,7 @@ const MemberJoinRequests = ({ group }) => {
 
     return (
         <div>
-            <h2>Join Requests</h2>
+            <h2>Follow Requests</h2>
             {requests.length === 0 ? (
                 <p>No pending requests</p>
             ) : (
@@ -80,7 +80,7 @@ const MemberJoinRequests = ({ group }) => {
                         ))}
                     </ul>
                     <ul>
-                        <p>Groups</p>
+                        <p>Group feeds</p>
                         {nestRequests.map((request) => (
                             <li key={request.request_id}>
                                 {request.sender.groupName}

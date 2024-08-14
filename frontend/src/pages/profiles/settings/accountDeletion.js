@@ -24,7 +24,7 @@ const AccountDeletion = ({ profile }) => {
                 <p style={{fontSize: 24}}>This action cannot be reversed</p>
                 <p style={{fontSize: 24}}>All posts, messages, friends and account information will be lost</p>
                 <button className="button delete" onClick={deleteAccount}>Delete account</button>
-                {errorMessage && <div className="error-message">{errorMessage}</div>}
+                <div className="error-message">{errorMessage}</div>
             </div>
         </div>
     );

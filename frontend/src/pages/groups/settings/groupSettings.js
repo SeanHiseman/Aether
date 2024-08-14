@@ -63,16 +63,16 @@ function GroupSettings() {
                 <nav id="channel-list">
                     <ul>
                         <h2>Settings</h2>
-                        <li className="settings-item" onClick={() => setCurrentView('profile')}>Group profile</li>
-                        <li className="settings-item" onClick={() => setCurrentView('members')}>Members</li>
-                        {groupDetails.isPrivate && (<li className="settings-item" onClick={() => setCurrentView('join-requests')}>Join requests</li>)}
+                        <li className="settings-item" onClick={() => setCurrentView('profile')}>Feed profile</li>
+                        <li className="settings-item" onClick={() => setCurrentView('members')}>Followers</li>
+                        {groupDetails.isPrivate && (<li className="settings-item" onClick={() => setCurrentView('join-requests')}>Follow requests</li>)}
                         {groupDetails.isLeader && (
                             <li 
                                 className="settings-item" 
                                 onClick={() => setCurrentView('group-deletion')} 
                                 style={{color: 'red'}}
                             >
-                                Delete group
+                                Delete feed
                             </li>
                         )}
                     </ul>

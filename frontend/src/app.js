@@ -3,15 +3,15 @@ import { Navigate, BrowserRouter as Router, Route, Routes } from 'react-router-d
 import { AuthCheck } from './components/authContext';
 import AskChannel from './pages/askChannel';
 import BaseLayout from './pages/base';
-import FollowingPage from './pages/feeds/following';
-import FriendsPage from './pages/feeds/friends';
+import FollowingPage from './pages/personal_feeds/following';
+import FriendsPage from './pages/personal_feeds/friends';
 import GroupHome from './pages/groups/groupHome';
 import GroupSettings from './pages/groups/settings/groupSettings';
 import GroupWrapper from './pages/groups/groupWrapper';
 import Welcome from './pages/welcome';
 import Login from './pages/site_entrance/login';
 import MessagesPage from './pages/messagesPage';
-import RecommendedPage from './pages/feeds/recommended';
+import RecommendedPage from './pages/personal_feeds/recommended';
 import Join from './pages/site_entrance/join';
 import Profile from './pages/profiles/profile';
 import ProfileWrapper from './pages/profiles/profileWrapper';

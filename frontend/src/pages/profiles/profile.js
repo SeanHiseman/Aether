@@ -59,7 +59,7 @@ function Profile() {
         event.preventDefault();
         try {
             if (newChannelName === 'Main') {
-                setErrorMessage("Chats cannot be named Main");
+                setErrorMessage("Channels cannot be named Main");
                 return;
             } else {
                 const response = await axios.post('/api/add_profile_channel', {
@@ -74,11 +74,11 @@ function Profile() {
                     setShowChannelForm(false);
                     navigate(`/profile/${username}/${newChannelName}`);
                 } else {
-                    setErrorMessage('Failed to add channel. Please try again');
+                    setErrorMessage('Failed to add channel');
                 }
             }
         } catch (error) {
-            setErrorMessage('Failed to add channel. Please try again');
+            setErrorMessage('Failed to add channel');
         }
     };  
     
@@ -143,7 +143,7 @@ function Profile() {
                     ) : (
                         channelRender && !isPrivateNotFriend ? (
                             <ProfileFeed channelId={channelRender.channel_id} isGroup={false} locationId={profile.profileId} />
-                        ) : <p className="large-text">This profile is private</p>
+                        ) : <p className="large-text">This feed is private</p>
                     )}
                 </div>
             </div>

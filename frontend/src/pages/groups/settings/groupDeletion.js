@@ -13,18 +13,18 @@ const GroupDeletion = ({ group }) => {
                     navigate('/recommended');
                 }
         } catch (error) {
-            setErrorMessage('Error deleting account:' +  error);
+            setErrorMessage('Error deleting feed', error);
         }
     };
 
     return (
         <div id="profile-settings">
             <div id="deletion-area">
-                <p style={{fontSize: 36}}>Are you sure you wish to delete this group?</p>
+                <p style={{fontSize: 36}}>Are you sure you wish to delete this feed?</p>
                 <p style={{fontSize: 24}}>This action cannot be reversed</p>
-                <p style={{fontSize: 24}}>All posts, channels, members and group information will be lost</p>
+                <p style={{fontSize: 24}}>All posts, channels, followers and feed information will be lost</p>
                 <button className="button delete" onClick={deleteGroup}>Delete group</button>
-                {errorMessage && <div className="error-message">{errorMessage}</div>}
+                <div className="error-message">{errorMessage}</div>
             </div>
         </div>
     );
