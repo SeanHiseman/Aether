@@ -1,23 +1,9 @@
-import axios from 'axios';
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import '../css/welcome.css';
 
 const Welcome = () => {
-    const [currentQuery, setCurrentQuery] = useState('');
     const [currentView, setCurrentView] = useState('welcome');
-    const navigate = useNavigate();
-
-    //Sends to ask page
-    const handleAskClick = (event) => {
-        event.preventDefault();
-        navigate('/ask', { state: { query: currentQuery } });
-    };
-    //Sends to search page
-    const handleSearchClick = (event) => {
-        event.preventDefault();
-        navigate(`/search?keyword=${currentQuery}`);
-    };
     
     //Switches between settings states
     const renderComponent = () => {
@@ -25,8 +11,17 @@ const Welcome = () => {
             case 'welcome':
                 return (
                     <div className="channel-content">
-                        <p class="text36">Welcome to Aether</p>
-                        <p class="text24">Better social media</p>
+                        <div className="left-aligned-text">
+                            <p class="text36">Welcome to Aether</p>
+                            <p class="text24">Better social media</p>
+                            <div className="spacer20px"/>
+                            <p class="text24">-No ads, full privacy</p>
+                            <p class="text24">-Content focused on quality</p>
+                            <p class="text24">-Groups, large and small. Public or private</p>
+                            <p class="text24">-Premium features with membership. Get paid for posts</p>
+                            <div className="spacer20px"/>
+                            <p class="text24">This is a prototype. Outlined here is a vision. Help make it a reality</p>
+                        </div>
                         <div id="join-login">
                             <Link to="/join">
                                 <button className="light-button join">Join</button>
@@ -37,23 +32,21 @@ const Welcome = () => {
                         </div>
                     </div>
                 );
-            case 'groups':
+            case 'feeds':
                 return (
                     <div className="channel-content">
-                        <p class="text36">Groups</p>
-                        <p class="text24">Join public groups</p>
-                        <p class="text24">Create groups with your friends</p>
-                        <Link to="/join">
-                            <button className="light-button join">Join</button>
-                        </Link>
-                    </div>
-                );
-            case 'profiles':
-                return (
-                    <div className="channel-content">
-                        <p class="text36">Profiles</p>
-                        <p class="text24">Different feeds for different content</p>
-                        <p class="text24">Public or private</p>
+                        <div className="left-aligned-text">
+                            <p class="text36">Feeds</p>
+                            <div className="spacer20px"/>
+                            <p class="text24">-Aether is built around feeds for posts and chats. Each feed contains channels</p>
+                            <p class="text24">-Feeds can be for groups or individuals, and be public or private</p>
+                            <div className="spacer20px"/>
+                            <p class="text36">Personal feeds</p>
+                            <div className="spacer20px"/>
+                            <p class="text24">-These are feeds only visible to you. They contain specific types of posts</p>
+                            <p class="text24">-You can view posts from friends, feeds you follow, and recommendations</p>
+                            <p class="text24">-Members can create custom feeds</p>
+                        </div>
                         <Link to="/join">
                             <button className="light-button join">Join</button>
                         </Link>
@@ -62,19 +55,13 @@ const Welcome = () => {
             case 'posts':
                 return (
                     <div className="channel-content">
-                        <p class="text36">Posts</p>
-                        <p class="text24">Images, videos and text all in one</p>
-                        <Link to="/join">
-                            <button className="light-button join">Join</button>
-                        </Link>
-                    </div>
-                );
-            case 'feeds':
-                return (
-                    <div className="channel-content">
-                        <p class="text36">Feeds</p>
-                        <p class="text24">View posts from friends, following and recommendations</p>
-                        <p class="text24">Create custom feeds</p>
+                        <div className="left-aligned-text">
+                            <p class="text36">Posts</p>
+                            <div className="spacer20px"/>
+                            <p class="text24">-Images, videos, text and more all in one</p>
+                            <p class="text24">-Posts can be made in reply to other posts</p>
+                            <p class="text24">-Members can write longer posts</p>
+                        </div>
                         <Link to="/join">
                             <button className="light-button join">Join</button>
                         </Link>
@@ -83,11 +70,15 @@ const Welcome = () => {
             case 'algorithm':
                 return (
                     <div className="channel-content">
-                        <p class="text36">Algorithm</p>
-                        <p class="text24">Focused on quality, not quantity</p>
-                        <p class="text24">Multiple votes on content</p>
-                        <p class="text24">Misinformation is controlled</p>
-                        <p class="text24">You are in control</p>
+                        <div className="left-aligned-text">
+                            <p class="text36">Algorithm</p>
+                            <div className="spacer20px"/>
+                            <p class="text24">-Focused on quality, not quantity</p>
+                            <p class="text24">-Posts with higher upvotes and lower downvotes per view are boosted</p>
+                            <p class="text24">-Multiple votes on content, so users can better expresss their view</p>
+                            <p class="text24">-Posts containing misinformation are weighted lower, so you only see what's true</p>
+                            <p class="text24">-Your algorithm can be adjusted. You are in control</p>
+                        </div>
                         <Link to="/join">
                             <button className="light-button join">Join</button>
                         </Link>
@@ -96,22 +87,32 @@ const Welcome = () => {
             case 'membership':
                 return (
                     <div className="channel-content">
-                        <p class="text36">Membership benefits</p>
-                        <p class="text24">Earn money from posts</p>
-                        <p class="text24">Copilot</p>
-                        <p class="text24">Adjustable feeds</p>
-                        <p class="text24">Custom appearance</p>
-                        <p class="text24">Longer posts</p>
-                        <p class="text24">Voting</p>
+                        <div className="left-aligned-text">
+                            <p class="text36">Membership</p>
+                            <div className="spacer20px"/>
+                            <p class="text36">Ask</p>
+                            <p class="text24">-Ask is an assistant that aids throughout Aether</p>
+                            <p class="text24">-Need to check the accuracy of a post, find the perfect content or get help using the site? Just Ask</p>
+                            <div className="spacer20px"/>
+                            <p class="text36">Benefits</p>
+                            <p class="text24">-Earn money from posts. The more upvotes and fewer downvotes, the more you make per view</p>
+                            <p class="text24">-Custom personal feeds. Full control over how you sort your content</p>
+                            <p class="text24">-Dive in to detail by writing longer posts. Up to 100,000 characters</p>
+                            <p class="text24">-Voting for moderators, admins, leaders and features</p>
+                            <p class="text24"></p>
+                        </div>
                         <button className="light-button join">Buy membership</button>
                     </div>
                 );
             case 'privacy':
                 return (
                     <div className="channel-content">
-                        <p class="text36">Privacy</p>
-                        <p class="text24">All data is encrypted, never leaves Aether</p>
-                        <p class="text24">Your data is for you, not us</p>
+                        <div className="left-aligned-text">
+                            <p class="text36">Privacy</p>
+                            <div className="spacer20px"/>
+                            <p class="text24">-All data is encrypted, never leaves Aether</p>
+                            <p class="text24">-Your data is for you, not us</p>
+                        </div>
                         <Link to="/join">
                             <button className="light-button join">Join</button>
                         </Link>
@@ -133,10 +134,8 @@ const Welcome = () => {
                     <nav>
                         <ul>
                             <li className="settings-item" onClick={() => setCurrentView('membership')}>Membership</li>
-                            <li className="settings-item" onClick={() => setCurrentView('groups')}>Groups</li>
-                            <li className="settings-item" onClick={() => setCurrentView('profiles')}>Profiles</li>
-                            <li className="settings-item" onClick={() => setCurrentView('posts')}>Posts</li>
                             <li className="settings-item" onClick={() => setCurrentView('feeds')}>Feeds</li>
+                            <li className="settings-item" onClick={() => setCurrentView('posts')}>Posts</li>
                             <li className="settings-item" onClick={() => setCurrentView('algorithm')}>Algorithm</li>
                             <li className="settings-item" onClick={() => setCurrentView('privacy')}>Privacy</li>
                         </ul>
@@ -145,23 +144,6 @@ const Welcome = () => {
             </aside>
             <main>
                 <header id="base-header">
-                    <div className="spacer"></div>
-                        <form id="search-form" onSubmit={(e) => {
-                            e.preventDefault();
-                            handleSearchClick();
-                        }}>
-                            <div className="search-container">
-                                <button className="icon-button ask" data-tooltip="Ask" type="button" onClick={handleAskClick}>
-                                    <img className="standard-icon" src="/media/site_images/icons/ask.png" alt="Ask"/>
-                                </button>
-                                <input id="search-bar" type="text" name="keyword" placeholder="Type..." value={currentQuery} onChange={(e) => setCurrentQuery(e.target.value)}/>
-                                <button className="icon-button search" data-tooltip="Search" type="submit" onClick={handleSearchClick}>
-                                    <img className="standard-icon" src="/media/site_images/icons/search.png" alt="Search"/>
-                                </button>
-                            </div>
-                        </form>
-                <div className="spacer"></div>
-                <button id="messages-button">Messages</button>
                 </header>
                 <div className="content">
                     <div className="home-container">

@@ -462,6 +462,9 @@ main {
 .spacer {
     flex-grow: 1;
 }
+.spacer20px {
+    height: 20px;
+}
 .standard-icon, .vote-arrow {
     height: 40px;
     padding: 0;
