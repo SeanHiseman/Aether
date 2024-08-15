@@ -52,9 +52,6 @@ body,html {
     scrollbar-width: none;
     word-wrap: break-word;
 }
-.content-feed::-webkit-scrollbar, #left-aside::-webkit-scrollbar, #right-aside::-webkit-scrollbar {
-    display: none; /*Hides scroll bar */
-}
 .button {
     background-color: var(--darkest);
 }
@@ -202,6 +199,9 @@ body,html {
     overflow: auto;
     width: 100%;
 }
+.content-feed::-webkit-scrollbar, #left-aside::-webkit-scrollbar, #right-aside::-webkit-scrollbar {
+    display: none; /*Hides scroll bar */
+}
 #description-section .view-description, #bio-section .view-bio, #name-section .view-name {
     align-items: center;
     display: flex;
@@ -225,6 +225,18 @@ body,html {
 .feed-link {
     border-bottom: 1px solid var(--dark-line);
     padding: 10px;
+}
+.feed-list-item {
+    background-color: var(--darkest);
+    margin: 6px;
+    padding: 6px;
+    transition: background-color 0.3s;
+}
+.feed-list-item.profile {
+    border-right: 2px solid var(--dark-line);
+}
+.feed-list-item:hover {
+    background-color: var(--dark);
 }
 .file-input {
     align-items: center;
@@ -250,13 +262,13 @@ body,html {
     width: 100%;
     z-index: 2;
 }
-.group-list-link, .channel-list-link {
+.group-list-link {
     align-items: center;
     display: flex;
 }
-.group-list-text, .channel-list-text {
+.group-list-text {
+    margin: 0;
     margin-left: 5px;
-    margin-top: 36px;
     max-width: 160px;
 }
 h2 {
@@ -398,6 +410,8 @@ main {
     height: 40px; 
     width: 40px; 
     border-radius: 6px;
+}
+.profile-image {
     margin-top: 20px;
 }
 /*some images need 20px margin, others don't*/
@@ -527,4 +541,18 @@ ul {
     font-size: 72px;
     max-width: 400px;
     text-decoration: none;
+}
+::-webkit-scrollbar {
+    width: 10px;
+}
+::-webkit-scrollbar-track {
+    background-color: var(--dark);
+}
+::-webkit-scrollbar-thumb {
+    background-color: var(--darkest);
+    border-radius: 6px;
+    box-shadow: inset 0 0 0 2px var(--dark);
+}
+::-webkit-scrollbar-thumb:hover {
+    background-color: var(--button-hover);
 }

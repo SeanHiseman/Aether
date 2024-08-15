@@ -1,6 +1,6 @@
 import axios from 'axios';
 import React, { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 import GroupDeletion from './groupDeletion';
 import GroupMembers from './groupMembers';
 import GroupProfileView from './groupProfileView';
@@ -62,7 +62,9 @@ function GroupSettings() {
             <div id="right-aside">
                 <nav id="channel-list">
                     <ul>
-                        <h2>Settings</h2>
+                        <Link to={`/group/${group_name}`}>
+                            <h2>{group_name}</h2>
+                        </Link>
                         <li className="settings-item" onClick={() => setCurrentView('profile')}>Feed profile</li>
                         <li className="settings-item" onClick={() => setCurrentView('members')}>Followers</li>
                         {groupDetails.isPrivate && (<li className="settings-item" onClick={() => setCurrentView('join-requests')}>Follow requests</li>)}

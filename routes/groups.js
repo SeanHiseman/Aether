@@ -324,7 +324,8 @@ router.get('/get_group_channels/:groupId', authenticateCheck, async (req, res) =
                 model: Groups,
                 where: { group_id: groupId },
                 attributes: [],
-            }]
+            }],
+            order: [['date_created', 'ASC']]
         });
         res.json(channels);
     } catch (error) {
