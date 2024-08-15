@@ -1,25 +1,24 @@
 import axios from 'axios';
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 
 const GroupMembers = ({ group }) => {
     const [errorMessage, setErrorMessage] = useState('');
     const [members, setMembers] = useState([]);
 
-    const getGroupMembers = async () => {
-        //try {
+    const getGroupMembers = useCallback(async () => {
+        try {
             const response = await axios.get('/api/get_group_members', {
                 params: { group_id: group.groupId }
             });
             setMembers(response.data);
-            console.log("members:", response.data);
-        //} catch (error) {
-            //console.error('Error fetching group members:', error);
-        //}
-    };
-
+        } catch (error) {
+            setErrorMessage('Error fetching feed members');
+        }
+    }, [group.groupId]);
+    
     useEffect(() => {
         getGroupMembers();
-    }, []);
+    }, [getGroupMembers]);
 
     //Admins can remove members
     const removeMember = async (userId) => {
@@ -28,7 +27,7 @@ const GroupMembers = ({ group }) => {
             await axios.post('/api/leave_group', { userId, groupId })
             getGroupMembers();
         } catch (error) {
-            setErrorMessage('Error removing member:', error);
+            setErrorMessage('Error removing member');
         }
     };
 
@@ -44,13 +43,14 @@ const GroupMembers = ({ group }) => {
                 getGroupMembers();
             }
         } catch (error) {
-            console.error("Error toggling moderator status:", error);
+            setErrorMessage("Error toggling moderator status");
         }
     };
 
     return (
         <div id="profile-settings">
             <div>
+                <div className="error-message">{errorMessage}</div>
                 {members.map((member, index) => (
                     <div className="group-member" key={index}>
                         {member.user.username}

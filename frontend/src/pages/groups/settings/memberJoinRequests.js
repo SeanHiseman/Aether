@@ -66,6 +66,7 @@ const MemberJoinRequests = ({ group }) => {
             ) : (
                 <div>
                     <ul>
+                        <div className="error-message">{errorMessage}</div>
                         <p>Users</p>
                         {requests.map((request) => (
                             <li key={request.request_id}>

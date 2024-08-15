@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import GroupHome from './groupHome';
 
 function GroupWrapper() {
-    const { group_name, channel_name, channel_mode } = useParams();
+    const { group_name, channel_name } = useParams();
     const navigate = useNavigate();
 
     //Directs to group main channel by default
