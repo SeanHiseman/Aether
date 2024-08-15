@@ -172,7 +172,7 @@ const BaseLayout = () => {
                             <p>Followed feeds show up here</p>
                         ) : (
                             feeds.map(feed => (
-                                <li key={feed.feed_id}>
+                                <li className={`feed-list-item ${feed.type}`} key={feed.feed_id}>
                                     <Link className="group-list-link" to={`/${feed.type}/${feed.name}/Main`}>
                                         <img className="small-group-photo" src={`/${feed.photo}`} alt={feed.name} />
                                         <p className="group-list-text">{feed.name}</p>

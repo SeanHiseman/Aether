@@ -155,12 +155,12 @@ const ProfileView = ({ profile, setProfile }) => {
                                 <button className="button edit" onClick={() => setIsEditingBio(true)}>Edit bio</button>
                             </div>
                         )}
-                        {errorMessage && <div className="error-message">{errorMessage}</div>}
+                        <div className="error-message">{errorMessage}</div>
                     </div>
                 </div>  
             </div>
             <div id="private-toggle">
-                <button className="button" onClick={() => togglePrivate()}>{profile.isPrivate ? "Profile: private" : "Profile: public"}</button>  
+                <button className="button" onClick={() => togglePrivate()}>{profile.isPrivate ? "Feed: private" : "Feed: public"}</button>  
             </div>
         </div> 
     );

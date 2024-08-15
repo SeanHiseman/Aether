@@ -300,7 +300,7 @@ function GroupHome() {
                         <div>
                             <ul>
                                 {subGroups.map((subGroup, index) => (
-                                    <li key={index}>
+                                    <li className="feed-list-item group" key={index}>
                                         <Link className="group-list-link" to={`/group/${subGroup.SubGroup.group_name}/Main`}>
                                             <img className="small-group-photo" src={`/${subGroup.SubGroup.group_photo}`} alt={subGroup.SubGroup.group_name} />
                                             <p className="group-list-text">{subGroup.SubGroup.group_name}</p>

@@ -276,7 +276,8 @@ router.get('/get_profile_channels/:profileId', authenticateCheck, async (req, re
                 model: Profiles,
                 where: { profile_id: profileId },
                 attributes: [],
-            }]
+            }],
+            order: [['date_created', 'ASC']]
         });
         res.json(channels);
     } catch (error) {
