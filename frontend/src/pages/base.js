@@ -14,7 +14,7 @@ const BaseLayout = () => {
     const { isAuthenticated, user } = useContext(AuthContext);
     const [currentQuery, setCurrentQuery] = useState('');
     const [errorMessage, setErrorMessage] = useState('');
-    const [groups, setGroups] = useState([]);
+    const [feeds, setFeeds] = useState([]);
     const [groupName, setGroupName] = useState('');
     const [groupPhoto, setGroupPhoto] = useState(null);
     const [groupPhotoFile, setGroupPhotoFile] = useState('No file chosen');
@@ -25,55 +25,62 @@ const BaseLayout = () => {
 
     //Fetch profile info
     useEffect(() => {
-        if (isAuthenticated && user) {
-            axios.get(`/api/profile/${user.username}`)
-            .then(response => {
-                setProfile({...response.data.profile });
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                if (error.response && error.response.status === 401) {
-                    navigate('/login');
+        const fetchProfile = async () => {
+            if (isAuthenticated && user) {
+                try {
+                    const response = await axios.get(`/api/profile/${user.username}`);
+                    setProfile({ ...response.data.profile });
+                } catch (error) {
+                    console.error('Error:', error);
+                    if (error.response && error.response.status === 401) {
+                        navigate('/login');
+                    }
                 }
-            })
-        }
+            }
+        };
+        fetchProfile();
     }, [isAuthenticated, user, navigate]);
 
-    //Fetch groups that user is a part of
+    //Fetch feeds that a user follows
     useEffect(() => {
-        axios.get(`/api/groups_list/${profile.userId}`)
-        .then(response => {
-            if (Array.isArray(response.data)) {
-                setGroups(response.data);
-            } else {
-                setGroups([]);
+        const fetchFeeds = async () => {
+            try {
+                const response = await axios.get(`/api/feed_list/${profile.userId}`);
+                if (Array.isArray(response.data)) {
+                    setFeeds(response.data);
+                } else {
+                    setFeeds([]);
+                }
+            } catch (error) {
+                console.error('Error fetching feed data');
+                setFeeds([]);
             }
-        })
-        .catch(error => {
-            console.error('Error fetching groups data:', error);
-            setGroups([]);
-        });
+        };
+        //Only called when profile has loaded
+        if (profile.userId) {
+            fetchFeeds();
+        }
     }, [profile.userId]);
 
-    const createGroupSubmit = (event) => {
+    //Create group submit handler
+    const createGroupSubmit = async (event) => {
         event.preventDefault();
         const formData = new FormData();
         formData.append('group_id', v4());
         formData.append('group_name', groupName);
         formData.append('new_group_profile_photo', groupPhoto);
         formData.append('is_private', privateGroup);
-        //Adds user_id so user creating group can become an admin
-        formData.append('user_id', profile.userId);
-        axios.post('/api/create_group', formData)
-            .then(response => {
-                setGroups([...groups, response.data]);
-                //Redirect to new group
-                const newGroupName = response.data.group_name
-                navigate(`/group/${newGroupName}`);
-                setGroupName('');
-                setShowForm(false);
-        })
-        .catch(error => {
+        formData.append('user_id', profile.userId); //Adds user_id so user creating group can become an admin
+
+        try {
+            const response = await axios.post('/api/create_group', formData);
+            setFeeds([...feeds, response.data]);
+            //Redirect to new group
+            const newGroupName = response.data.group_name;
+            navigate(`/group/${newGroupName}`);
+            setGroupName('');
+            setShowForm(false);
+        } catch (error) {
             if (error.response) {
                 if (error.response.status === 413) {
                     setErrorMessage("File cannot be more than 5MB");
@@ -85,7 +92,7 @@ const BaseLayout = () => {
             } else {
                 setErrorMessage("Error, please try again");
             }
-        });
+        }
     };
 
     const handleFileChange = (event) => {
@@ -161,14 +168,14 @@ const BaseLayout = () => {
                 </div>
                 <nav id="group-list">
                     <ul>
-                        {groups.length === 0 ? (
+                        {feeds.length === 0 ? (
                             <p>Followed feeds show up here</p>
                         ) : (
-                            groups.map(group => (
-                                <li key={group.group_id}>
-                                    <Link className="group-list-link" to={`/group/${group.group_name}/Main`}>
-                                        <img className="small-group-photo" src={`/${group.group_photo}`} alt={group.group_name} />
-                                        <p className="group-list-text">{group.group_name}</p>
+                            feeds.map(feed => (
+                                <li key={feed.feed_id}>
+                                    <Link className="group-list-link" to={`/${feed.type}/${feed.name}/Main`}>
+                                        <img className="small-group-photo" src={`/${feed.photo}`} alt={feed.name} />
+                                        <p className="group-list-text">{feed.name}</p>
                                     </Link>
                                 </li>
                             ))

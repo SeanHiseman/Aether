@@ -203,6 +203,65 @@ router.get('/following_posts', authenticateCheck, async (req, res) => {
     }
 });
 
+//Get all feeds that a user follows
+router.get('/feed_list/:userId', async (req, res) => {
+    try {
+        const { userId } = req.params;
+
+        //Groups that the user is following
+        const groups = await Groups.findAll({
+            include: [{
+                model: Users,
+                where: { user_id: userId },
+                attributes: [],
+            }],
+            attributes: [
+                //Converts to common format
+                ['group_id', 'feed_id'],
+                ['group_name', 'name'],
+                ['group_photo', 'photo'],
+            ],
+            //Returns groups alphabetically
+            order: [['group_name', 'ASC']],
+        })
+
+        //Formats group list
+        const formattedGroups = groups.map(group => ({
+            ...group.dataValues,
+            type: 'group',
+        }));
+
+        //User feeds that a user is following
+        const userFeeds = await Followers.findAll({
+            where: { follower_id: userId },
+            include: [{
+                model: Profiles,
+                include: [{ model: Users, attributes: ['user_id', 'username'] }],
+            }],
+            attributes: [],
+            order: [[ {model: Profiles }, { model: Users, as: 'user' }, 'username', 'ASC']],
+        });
+
+        //Formats profile list
+        const formattedProfiles = userFeeds.map(feed => ({
+            feed_id: feed.profile.user.user_id,
+            name: feed.profile.user.username,
+            photo: feed.profile.profile_photo,
+            type: 'profile',
+        }));
+
+        //Combine group and profile follows
+        const feedList = [...formattedGroups, ...formattedProfiles];
+
+        //Sorts combined feed
+        feedList.sort((a, b) => a.name.localeCompare(b.name));
+        
+        res.json(feedList);
+    } catch (error) {
+        res.status(500).send('Error getting feeds');
+    }
+});
+
 //Get recommendation preference
 router.get('/get_filter_preference', async (req, res) => {
     try {
