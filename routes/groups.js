@@ -485,25 +485,6 @@ router.get('/group_main_posts', authenticateCheck, async (req, res) => {
     }
 });
 
-//Get all groups that a user is a part of
-router.get('/groups_list/:userId', async (req, res) => {
-    try {
-        const { userId } = req.params;
-        const groups = await Groups.findAll({
-            include: [{
-                model: Users,
-                where: { user_id: userId },
-                attributes: [],
-            }],
-            //Returns groups alphabetically
-            order: [['group_name', 'ASC']]
-        });
-        res.json(groups);
-    } catch (error) {
-        res.status(500).send('Error getting groups.');
-    }
-});
-
 //Private group join requests
 router.get('/group_requests/:groupId', authenticateCheck, async (req, res) => {
     try {
