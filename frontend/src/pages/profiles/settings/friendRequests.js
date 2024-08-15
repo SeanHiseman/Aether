@@ -2,7 +2,7 @@ import axios from 'axios';
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 
-const FriendRequests = ({ profile }) => {
+const FriendRequests = () => {
     const [errorMessage, setErrorMessage] = useState('');
     const [friendRequests, setFriendRequests] = useState([]);
 
@@ -40,6 +40,7 @@ const FriendRequests = ({ profile }) => {
                 <p>No pending requests</p>
             ) : (
                 <ul className="content-list">
+                    <div className="error-message">{errorMessage}</div>
                     {friendRequests.map((request, index) => (
                         <li key={index}>
                             <div className="result-widget">

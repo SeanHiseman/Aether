@@ -1,6 +1,6 @@
 import axios from 'axios';
 import { Link } from 'react-router-dom';
-import React, { useContext, useEffect, useState } from 'react';
+import React, { useCallback, useContext, useEffect, useState } from 'react';
 import ReactQuill, { Quill } from 'react-quill';
 import { AuthContext } from './authContext';
 import Reply from './replies/reply';
@@ -18,19 +18,40 @@ function ContentWidget({ canRemove: canRemoveProp , isGroup, post }) {
     const { user } = useContext(AuthContext);
     const Poster = isGroup ? 'GroupPoster' : 'ProfilePoster'; //Associations used by database
 
+    const getReplies = useCallback(async (postId) => {
+        try {
+            const response = await axios.get(`/api/get_replies/${postId}?isGroup=${isGroup}`);
+            setReplies(response.data); 
+        } catch (error) {
+            console.error("Error getting replies:", error);
+        }
+    }, [isGroup]);
+
+    //Adds a view to the post
+    const incrementViews = useCallback(async (postId) => {
+        try {
+            if (hasViewed === false) {
+                await axios.post('/api/increment_views', { postId, isGroup });
+                setHasViewed(true);
+            }
+        } catch (error) {
+            console.error("Error incrementing views:", error);
+        }
+    }, [hasViewed, isGroup]);
+    
     //Allows users to remove their own posts
     useEffect(() => {
         if (post.poster_id === user.userId) {
             setCanRemove(true);
         }
-    }, [post.poster_id, user.user_id]);
+    }, [post.poster_id, user.userId]);
 
     //Opens replies
     useEffect(() => {
         if (showReplies) {
             getReplies(post.post_id);
         }
-    }, [showReplies, post.post_id]);
+    }, [getReplies, post.post_id, showReplies]);
     
     //Adds a view if replies are opened
     useEffect(() => {
@@ -38,7 +59,7 @@ function ContentWidget({ canRemove: canRemoveProp , isGroup, post }) {
             incrementViews(post.post_id);
             setHasViewed(true);
         }
-    }, [showReplies, post.post_id, hasViewed]);
+    }, [hasViewed, incrementViews, post.post_id, showReplies]);
  
     //Sets the upvote/downvote limits upon rendering
     useEffect(() => {
@@ -85,15 +106,6 @@ function ContentWidget({ canRemove: canRemoveProp , isGroup, post }) {
     VideoBlot.tagName = 'video';
     Quill.register(VideoBlot);
 
-    const getReplies = async (postId) => {
-        try {
-            const response = await axios.get(`/api/get_replies/${postId}?isGroup=${isGroup}`);
-            setReplies(response.data); 
-        } catch (error) {
-            console.error("Error getting replies:", error);
-        }
-    };
-
     //Updates replies after new one added
     const handleReplyAdded = (newReply) => {
         setReplies(currentReplies => [...currentReplies, newReply]);
@@ -101,18 +113,6 @@ function ContentWidget({ canRemove: canRemoveProp , isGroup, post }) {
 
     const handleToggleReplies = () => {
         setShowReplies(!showReplies);
-    };
-
-    //Adds a view to the post
-    const incrementViews = async (postId) => {
-        try {
-            if (hasViewed === false) {
-                await axios.post('/api/increment_views', { postId, isGroup });
-                setHasViewed(true);
-            }
-        } catch (error) {
-            console.error("Error incrementing views:", error);
-        }
     };
 
     //Sorts replies by parent and by net upvotes
