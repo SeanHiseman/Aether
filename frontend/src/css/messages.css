@@ -1,13 +1,20 @@
 @import url('variables.css');
+.fade-in {
+    animation: fadeIn 0.2s ease-in-out forwards;
+}
+.fade-out {
+    animation: fadeOut 0.2s ease-in-out forwards;
+}
 #add-chat-form {
     align-items: center;
-    background-color: var(--darkest);
+    background-color: var(--dark);
     border: 1px solid var(--border);
     border-radius: 10px;
     display: flex;
     flex-direction: column;
     justify-content: flex-start;
     margin: 10px;
+    opacity: 0;
     padding: 5px;
     width: 100%;
 }

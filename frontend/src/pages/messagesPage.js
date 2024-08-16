@@ -9,6 +9,7 @@ import Message from '../components/message';
 
 //chats and conversations in variable names are used interchangeably, to be corrected
 function MessagesPage() {
+    const [animationClass, setAnimationClass] = useState('');
     const [changedChatName, setChangedChatName] = useState('');
     const [chat, setChat] = useState([]);
     const [conversations, setConversations] = useState([]);
@@ -191,7 +192,6 @@ function MessagesPage() {
                 }
             }
         } catch (error) {
-            console.error("Error creating chat:", error);
             setErrorMessage("Failed to create chat.");
         }
     };
@@ -271,6 +271,15 @@ function MessagesPage() {
     const toggleForm = () => {
         setShowForm(!showForm)
     }
+
+    //Sets form to fade in or out
+    useEffect(() => {
+        if (showForm) {
+            setAnimationClass('fade-in');
+        } else {
+            setAnimationClass('fade-out');
+        }
+    }, [showForm]);
 
     //Gets profile photo of viewed friend
     const friendProfileImage = friends.find(friend => friend.friend_name === friend_name)?.friend_profile_photo || '';
@@ -369,10 +378,14 @@ function MessagesPage() {
                             <button class="button" onClick={toggleForm}>
                                 {showForm ? 'Close': 'Add chat'}
                             </button>
-                            {showForm && (
-                                <form id="add-chat-form" onSubmit={createNewChat}>
+                            {(showForm || animationClass === 'fade-out') && (
+                                <form id="add-chat-form" className={animationClass} onAnimationEnd={() => {
+                                    if (animationClass === 'fade-out') {
+                                        setAnimationClass('');
+                                    }
+                                }} onSubmit={createNewChat}>
                                     <input className="channel-input" type="text" name="chat_name" placeholder="Chat name..." value={newChatName} onChange={(e) => setNewChatName(e.target.value)}/>
-                                    <input className="button" type="submit" value="Add" disabled={!newChatName}/>
+                                    <input className="light-button" type="submit" value="Add" disabled={!newChatName}/>
                                 </form>                            
                             )}
                         </div>
