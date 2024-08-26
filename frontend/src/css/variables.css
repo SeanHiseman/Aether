@@ -5,6 +5,13 @@
     --dark: #1f2022;
     --dark-line: #444;
 }
+body.light {
+    --border: #616161;
+    --button-hover: #ffffff;
+    --darkest: #c7c7c7;
+    --dark: #e1e1e1;
+    --dark-line: #7b7b7b;
+}
 @keyframes fadeIn {
     from { opacity: 0; }
     to { opacity: 1; }

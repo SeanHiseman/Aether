@@ -196,7 +196,7 @@ function Profile() {
                                         setErrorMessage('Name cannot exceed 30 characters');
                                     }
                                 }}/>
-                                <input className="button" type="submit" value="Add" disabled={!newChannelName}/>
+                                <input className="light-button" type="submit" value="Add" disabled={!newChannelName}/>
                             </form>                            
                         )}
                     </div>

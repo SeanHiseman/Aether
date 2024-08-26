@@ -7,6 +7,8 @@ import FriendRequests from './friendRequests';
 import MembershipSettings from './membership';
 import PasswordPersonal from './passwordPersonal';
 import ProfileView from './profileView';
+import Theme from './theme';
+import { ThemeContext } from '../../../themeProvider';
 
 //Page for all settings related to a user
 const Settings = () => {
@@ -14,6 +16,7 @@ const Settings = () => {
     const [currentView, setCurrentView] = useState('profile');
     const [profile, setProfile] = useState('');
     const navigate = useNavigate();
+    const { setTheme } = useContext(ThemeContext);
     const { user } = useContext(AuthContext);
 
     useEffect(() => {
@@ -35,6 +38,7 @@ const Settings = () => {
         axios.post('/api/logout')
             .then(response => {
                 if (response.data.success) {
+                    setTheme('dark');
                     navigate('/login');
                 } else {
                     alert('Logout failed: ', response.data.message);
@@ -50,14 +54,16 @@ const Settings = () => {
         switch (currentView) {
             case 'profile':
                 return <ProfileView profile={profile} setProfile={setProfile} />;
-            case 'account-deletion':
-                return <AccountDeletion profile={profile} />;
-            case 'friend-requests':
-                return <FriendRequests  profile={profile} />;
             case 'membership-settings':
                 return <MembershipSettings user={user} />;
+            case 'theme':
+                return <Theme />;
+            case 'friend-requests':
+                return <FriendRequests  profile={profile} />;
             case 'password-personal':
                 return <PasswordPersonal user={user} />;
+            case 'account-deletion':
+                return <AccountDeletion profile={profile} />;
             default:
                 return null;
         }
@@ -74,8 +80,10 @@ const Settings = () => {
                     <ul>
                         <h2>Settings</h2>
                         <li className="settings-item" onClick={() => setCurrentView('profile')}>Profile</li>
-                        <li className="settings-item" onClick={() => setCurrentView('password-personal')}>Password and personal info</li>
                         <li className="settings-item" onClick={() => setCurrentView('membership-settings')}>Membership</li>
+                        <li className="settings-item" onClick={() => setCurrentView('theme')}>Theme</li>
+                        <li className="settings-item" onClick={() => setCurrentView('friend-requests')}>Friend requests</li>
+                        <li className="settings-item" onClick={() => setCurrentView('password-personal')}>Password and personal info</li>
                         <li className="settings-item" onClick={() => setCurrentView('friend-requests')}>Friend requests</li>
                         <li className="settings-item" onClick={() => setCurrentView('account-deletion')} style={{color: 'red'}}>Delete account</li>
                         <form id="logout-form" action="/api/logout" method="post" onSubmit={handleLogout}>

@@ -4,7 +4,6 @@ import { useNavigate } from 'react-router-dom';
 import '../../css/authentication.css'; 
 
 function Login() {
-    document.title = "Login";
     const [error, setError] = useState('');
     const navigate = useNavigate();
     const handleSubmit = async (event) => {
@@ -27,6 +26,7 @@ function Login() {
         }
     };
 
+    document.title = "Login";
     return (
         <div className="authentication-container">
             <p className="welcome-text">Welcome back</p>
