@@ -307,7 +307,6 @@ router.get('/get_profile_channels/:profileId', authenticateCheck, async (req, re
 router.get('/get_theme', async (req, res) => {
     try {
         const userId = req.session.user_id;
-        console.log("userId:", userId);
         if (!userId) {
             return res.json({ theme: 'dark'});
         }
@@ -318,7 +317,6 @@ router.get('/get_theme', async (req, res) => {
         if (!user) {
             return res.json({ theme: 'dark'});
         }
-        console.log("user.theme:", user.theme);
         res.json({ theme: user.theme });
     } catch (error) {
         res.status(500).json({ error: 'Internal server error' }); 

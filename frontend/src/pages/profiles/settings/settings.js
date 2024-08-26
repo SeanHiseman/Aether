@@ -20,33 +20,33 @@ const Settings = () => {
     const { user } = useContext(AuthContext);
 
     useEffect(() => {
-        axios.get(`/api/profile/${username}`)
-            .then(response => {
+        const fetchProfile = async () => {
+            try {
+                const response = await axios.get(`/api/profile/${username}`);
                 const fetchedProfile = response.data.profile;
                 setProfile(fetchedProfile);
-            })
-            .catch(error => {
-                console.error('Error:', error);
+            } catch (error) {
                 if (error.response && error.response.status === 401) {
                     navigate('/login');
-                } 
-            })
-    }, [username, navigate]); 
-
-    const handleLogout = (event) => {
-        event.preventDefault();
-        axios.post('/api/logout')
-            .then(response => {
-                if (response.data.success) {
-                    setTheme('dark');
-                    navigate('/login');
-                } else {
-                    alert('Logout failed: ', response.data.message);
                 }
-            })
-            .catch(error => {
-                alert('Error during logout: ', error);
-            })
+            }
+        };
+    
+        fetchProfile();
+    }, [username, navigate]);
+    
+    const handleLogout = async (event) => {
+        event.preventDefault();
+        try {
+            const response = await axios.post('/api/logout');
+            if (response.data.success) {
+                navigate('/login');
+            } else {
+                alert('Logout failed: ' + response.data.message);
+            }
+        } catch (error) {
+            alert('Error during logout: ' + error);
+        }
     };
 
     //Switches between settings states

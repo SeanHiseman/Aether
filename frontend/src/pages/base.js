@@ -33,7 +33,6 @@ const BaseLayout = () => {
                     const response = await axios.get(`/api/profile/${user.username}`);
                     setProfile({ ...response.data.profile });
                     const themeResponse = await axios.get('/api/get_theme');
-                    console.log("themeResponse.data.theme:", themeResponse.data.theme);
                     setTheme(themeResponse.data.theme);
                 } catch (error) {
                     if (error.response && error.response.status === 401) {
