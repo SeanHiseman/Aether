@@ -16,7 +16,6 @@ const Settings = () => {
     const [currentView, setCurrentView] = useState('profile');
     const [profile, setProfile] = useState('');
     const navigate = useNavigate();
-    const { setTheme } = useContext(ThemeContext);
     const { user } = useContext(AuthContext);
 
     useEffect(() => {
@@ -57,7 +56,7 @@ const Settings = () => {
             case 'membership-settings':
                 return <MembershipSettings user={user} />;
             case 'theme':
-                return <Theme />;
+                return <Theme user={user} setCurrentView={setCurrentView}/>;
             case 'friend-requests':
                 return <FriendRequests  profile={profile} />;
             case 'password-personal':

@@ -2,7 +2,7 @@ import React, { useContext } from 'react';
 import { ThemeContext } from '../../../themeProvider';
 import ThemeButton from './themeButton';
 
-const Theme = () => {
+const Theme = ({ user, setCurrentView }) => {
     const { setTheme } = useContext(ThemeContext);
     const themeColors = {
         dark: { darkest: '#0f0f0f', dark: '#1f2022', buttonHover: '#4a4b55' },
@@ -13,10 +13,12 @@ const Theme = () => {
         red: { darkest: '#160000', dark: '#312626', buttonHover: '#b85c5c' }
     };
 
+    const availableThemes = user.hasMembership ? themeColors : { light: themeColors.light, dark: themeColors.dark };
+
     return (
         <div id="profile-settings">
             <div id="display-area">
-                {Object.keys(themeColors).map((theme) => (
+                {Object.keys(availableThemes).map((theme) => (
                     <ThemeButton
                         key={theme}
                         themeName={theme}
@@ -24,6 +26,12 @@ const Theme = () => {
                         setTheme={setTheme}
                     />
                 ))}
+                {!user.hasMembership && (
+                    <div className="membership-join">
+                        <p className="text24">More themes available with membership</p>
+                        <button className="button join" onClick={() => setCurrentView('membership-settings')}>Join</button>
+                    </div>
+                )}
             </div>
         </div>
     );
