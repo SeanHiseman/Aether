@@ -29,6 +29,7 @@ const Users = sequelize.define('users', {
   collaborative_preference: { type: FLOAT, allowNull: false, defaultValue: 0.5 },
   time_preference: { type: FLOAT, allowNull: false, defaultValue: 0.0001 },
   has_membership: { type: BOOLEAN, defaultValue: false }, //If user has membership subscription
+  theme: { type: STRING(120), allowNull: true },
 }, {tableName: 'users', timestamps: false});
 
 //Users relationships

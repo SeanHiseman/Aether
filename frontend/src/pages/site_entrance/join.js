@@ -4,7 +4,6 @@ import { Link, useNavigate } from 'react-router-dom';
 import '../../css/authentication.css'; 
 
 function Join() {
-    document.title = "Join";
     const [error, setError] = useState('');
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
@@ -30,6 +29,7 @@ function Join() {
         }
     };
 
+    document.title = "Join";
     return (
         <div className="authentication-container">
             <Link to="/welcome">

@@ -3,6 +3,7 @@ import React, { useContext, useEffect, useState } from 'react';
 import { Link, Outlet, useNavigate } from 'react-router-dom';
 import { v4 } from 'uuid';
 import { AuthContext } from '../components/authContext';
+import { ThemeContext } from '../themeProvider';
 import '../css/base.css';
 import '../css/contentFeed.css';
 import '../css/groups.css';
@@ -14,6 +15,7 @@ const BaseLayout = () => {
     const { isAuthenticated, user } = useContext(AuthContext);
     const [currentQuery, setCurrentQuery] = useState('');
     const [errorMessage, setErrorMessage] = useState('');
+    const { setTheme } = useContext(ThemeContext);
     const [feeds, setFeeds] = useState([]);
     const [groupName, setGroupName] = useState('');
     const [groupPhoto, setGroupPhoto] = useState(null);
@@ -30,8 +32,10 @@ const BaseLayout = () => {
                 try {
                     const response = await axios.get(`/api/profile/${user.username}`);
                     setProfile({ ...response.data.profile });
+                    const themeResponse = await axios.get('/api/get_theme');
+                    console.log("themeResponse.data.theme:", themeResponse.data.theme);
+                    setTheme(themeResponse.data.theme);
                 } catch (error) {
-                    console.error('Error:', error);
                     if (error.response && error.response.status === 401) {
                         navigate('/login');
                     }
@@ -39,7 +43,7 @@ const BaseLayout = () => {
             }
         };
         fetchProfile();
-    }, [isAuthenticated, user, navigate]);
+    }, [isAuthenticated, user, navigate, setTheme]);
 
     //Fetch feeds that a user follows
     useEffect(() => {
