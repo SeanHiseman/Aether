@@ -68,7 +68,7 @@ body,html {
 .background-button {
     background-color: var(--dark);
 }
-.button:hover, .button.selected:focus, .background-button:hover, .chat-channel-button:hover, .conversation-button:hover, .icon-button:hover, .light-button:hover, .light-button.selected:focus, #messages-button:hover, .posts-channel-button:hover {
+.button.active, .button:hover, .button.selected:focus, .background-button:hover, .chat-channel-button:hover, .conversation-button:hover, .icon-button:hover, .light-button:hover, .light-button.selected:focus, #messages-button:hover, .posts-channel-button:hover {
     background-color: var(--button-hover);
 }
 #cancel-save {
@@ -476,9 +476,9 @@ main {
     height: 20px;
 }
 .standard-icon, .vote-arrow {
-    height: 40px;
+    height: 30px;
     padding: 0;
-    width: 40px;
+    width: 30px;
     transition: background-color 0.3s;
 }
 .text24 {

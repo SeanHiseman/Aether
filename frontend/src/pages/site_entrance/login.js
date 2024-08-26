@@ -1,11 +1,14 @@
 import axios from 'axios';
-import React, { useState } from 'react';
+import React, { useContext, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import '../../css/authentication.css'; 
+import { ThemeContext } from '../../themeProvider';
 
 function Login() {
     const [error, setError] = useState('');
     const navigate = useNavigate();
+    const { setTheme } = useContext(ThemeContext);
+
     const handleSubmit = async (event) => {
         event.preventDefault();
         const formData = new FormData(event.target);
@@ -16,7 +19,7 @@ function Login() {
             const response = await axios.post('/api/login', { username, password });
             //successful login
             if (response.data.success) {
-                navigate('/recommended');
+                navigate(`/profile/${username}`);
             } else {
                 //If login unsuccessful
                 setError(response.data.message);

@@ -12,6 +12,34 @@ body.light {
     --dark: #e1e1e1;
     --dark-line: #7b7b7b;
 }
+body.blue {
+    --border: #dddddd;
+    --button-hover: #3d52a0;
+    --darkest: #0b132b;
+    --dark: #1c2541;
+    --dark-line: #444;
+}
+body.green {
+    --border: #dddddd;
+    --button-hover: #5a8a6c;
+    --darkest: #001a0c;
+    --dark: #003325;
+    --dark-line: #444;
+}
+body.purple {
+    --border: #dddddd;
+    --button-hover: #5b1e7a;
+    --darkest: #13001c;
+    --dark: #240343;
+    --dark-line: #444;
+}
+body.red {
+    --border: #dddddd;
+    --button-hover: #b85c5c;
+    --darkest: #160000;
+    --dark: #312626;
+    --dark-line: #444;
+}
 @keyframes fadeIn {
     from { opacity: 0; }
     to { opacity: 1; }

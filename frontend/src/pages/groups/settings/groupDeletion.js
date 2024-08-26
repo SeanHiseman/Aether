@@ -23,7 +23,7 @@ const GroupDeletion = ({ group }) => {
                 <p style={{fontSize: 36}}>Are you sure you wish to delete this feed?</p>
                 <p style={{fontSize: 24}}>This action cannot be reversed</p>
                 <p style={{fontSize: 24}}>All posts, channels, followers and feed information will be lost</p>
-                <button className="button delete" onClick={deleteGroup}>Delete group</button>
+                <button className="button delete" onClick={deleteGroup}>Delete feed</button>
                 <div className="error-message">{errorMessage}</div>
             </div>
         </div>

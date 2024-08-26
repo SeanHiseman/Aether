@@ -1,13 +1,15 @@
 import axios from 'axios';
-import React, { useState } from 'react';
+import React, { useContext, useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import '../../css/authentication.css'; 
+import { ThemeContext } from '../../themeProvider';
 
 function Join() {
     const [error, setError] = useState('');
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
     const navigate = useNavigate();
+    const { setTheme } = useContext(ThemeContext);
 
     const handleSubmit = async (event) => {
         event.preventDefault();

@@ -6,6 +6,8 @@ export const ThemeProvider = ({ children }) => {
     const [isLoading, setIsLoading] = useState(true);
     const [theme, setTheme] = useState('dark');
 
+    const themes = ['dark', 'light', 'blue', 'green', 'purple', 'red'];
+
     useEffect(() => {
         fetchTheme();
     }, []);
@@ -21,7 +23,6 @@ export const ThemeProvider = ({ children }) => {
             const response = await axios.get('/api/get_theme');
             setTheme(response.data.theme);
         } catch (error) {
-            console.error('Error fetching theme:', error);
             //Default theme 
             setTheme('dark');
         } finally {
@@ -38,18 +39,13 @@ export const ThemeProvider = ({ children }) => {
         }
     };
 
-    const toggleTheme = () => {
-        const newTheme = theme === 'light' ? 'dark' : 'light';
-        updateTheme(newTheme);
-    };
-
     //Render nothing until the theme is fetched
     if (isLoading) {
         return null;  
     }
 
     return (
-        <ThemeContext.Provider value={{ theme, toggleTheme, setTheme }}>
+        <ThemeContext.Provider value={{ theme, setTheme: updateTheme, themes }}>
             {children}
         </ThemeContext.Provider>
     );
