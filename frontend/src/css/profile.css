@@ -10,7 +10,8 @@
 .button.delete, .button.join, .light-button.join {
     font-size: 36px;
     margin-bottom: 20px;
-    padding: 20px
+    padding: 20px;
+    width: 200px;
 }
 .button.edit {
     margin-left: 30px;
@@ -39,6 +40,12 @@
 }
 #logout-form {
     margin: 10px;
+}
+.membership-join {
+    align-items: center;
+    display: flex;
+    flex-direction: column;
+    margin-top: 40px;
 }
 #name-photo-area {
     align-items: center; 
@@ -72,7 +79,7 @@
     border-radius: 20px;
     display: flex;
     flex-direction: column;
-    margin-top: -160px;
+    margin-top: -140px;
     min-height: 30%;
     width: 60%;
 }
