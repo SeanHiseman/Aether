@@ -31,7 +31,8 @@ router.get('/check_authentication', async (req, res) => {
             const userData = {
                 username: user.username,
                 userId: user.user_id,
-                hasMembership: user.has_membership
+                hasMembership: user.has_membership,
+                points: user.points
             };
             res.json({ authenticated: true, user: userData });
         } catch (error) {

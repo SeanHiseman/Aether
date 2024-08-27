@@ -30,6 +30,7 @@ const Users = sequelize.define('users', {
   time_preference: { type: FLOAT, allowNull: false, defaultValue: 0.0001 },
   has_membership: { type: BOOLEAN, defaultValue: false }, //If user has membership subscription
   theme: { type: STRING(120), allowNull: true },
+  points: { type: INTEGER, allowNull: false, defaultValue: 0 },
 }, {tableName: 'users', timestamps: false});
 
 //Users relationships

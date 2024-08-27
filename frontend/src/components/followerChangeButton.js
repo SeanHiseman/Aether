@@ -27,7 +27,7 @@ const FollowerChangeButton = ({ userId, profileId, isFollowing }) => {
             <button className="button" onClick={handleFollowerChange}>
                 {status ? 'Unfollow' : 'Follow'}
             </button>
-            {errorMessage && <div className="error-message">{errorMessage}</div>}
+            <div className="error-message">{errorMessage}</div>
         </div>
     )
 }

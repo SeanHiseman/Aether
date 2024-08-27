@@ -11,6 +11,8 @@
     font-size: 36px;
     margin-bottom: 20px;
     padding: 20px;
+}
+.button.join, .light-button.join {
     width: 200px;
 }
 .button.edit {
