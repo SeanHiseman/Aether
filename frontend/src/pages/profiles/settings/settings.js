@@ -6,9 +6,9 @@ import AccountDeletion from './accountDeletion';
 import FriendRequests from './friendRequests';
 import MembershipSettings from './membership';
 import PasswordPersonal from './passwordPersonal';
+import Points from './points';
 import ProfileView from './profileView';
 import Theme from './theme';
-import { ThemeContext } from '../../../themeProvider';
 
 //Page for all settings related to a user
 const Settings = () => {
@@ -53,10 +53,12 @@ const Settings = () => {
         switch (currentView) {
             case 'profile':
                 return <ProfileView profile={profile} setProfile={setProfile} />;
+            case 'points':
+                return <Points user={user} setCurrentView={setCurrentView} />;
             case 'membership-settings':
                 return <MembershipSettings user={user} />;
             case 'theme':
-                return <Theme user={user} setCurrentView={setCurrentView}/>;
+                return <Theme user={user} setCurrentView={setCurrentView} />;
             case 'friend-requests':
                 return <FriendRequests  profile={profile} />;
             case 'password-personal':
@@ -79,6 +81,7 @@ const Settings = () => {
                     <ul>
                         <h2>Settings</h2>
                         <li className="settings-item" onClick={() => setCurrentView('profile')}>Profile</li>
+                        <li className="settings-item" onClick={() => setCurrentView('points')}>Earnings</li>
                         <li className="settings-item" onClick={() => setCurrentView('membership-settings')}>Membership</li>
                         <li className="settings-item" onClick={() => setCurrentView('theme')}>Theme</li>
                         <li className="settings-item" onClick={() => setCurrentView('friend-requests')}>Friend requests</li>

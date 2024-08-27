@@ -32,7 +32,7 @@ const ProfileWidget = ({ profile }) => {
                     null
                 ) : (
                     <div>
-                        <p>{followerCount} followers</p>
+                        <p>{followerCount} {followerCount === 1 ? 'follower' : 'followers'}</p>
                         <FollowerChangeButton userId={loggedInUserId} receiverUserId={profile.user.user_id} profileId={profile.profile_id} isFollowing={isFollowing} isPrivate={profile.is_private} onFollowerChange={handleFollowerCountChange}/>
                     </div>
                 )}

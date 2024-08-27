@@ -13,7 +13,7 @@ const GroupWidget = ({ group }) => {
                 </div>
             </Link>
             <div id="group-members">
-                <p>{group.member_count} members</p>
+                <p>{group.member_count} {group.member_count === 1 ? 'follower' : 'followers'}</p>
                 <p>{group.is_private ? "Private" : "Public"}</p>
                 <MemberChangeButton userId={group.userId} groupId={group.group_id} isMember={group.isMember} isRequestSent={group.isRequestSent} isPrivate={group.is_private}/>
             </div>

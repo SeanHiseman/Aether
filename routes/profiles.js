@@ -129,7 +129,7 @@ router.post('/change_bio', authenticateCheck, async (req, res) => {
 });
 
 //Changes user colour theme
-router.post('/change_theme', async (req, res) => {
+router.post('/change_theme', authenticateCheck, async (req, res) => {
     try {
         const { theme } = req.body;
         const userId = req.session.user_id;
@@ -304,7 +304,7 @@ router.get('/get_profile_channels/:profileId', authenticateCheck, async (req, re
 });
 
 //Accesses users colour scheme
-router.get('/get_theme', async (req, res) => {
+router.get('/get_theme', authenticateCheck, async (req, res) => {
     try {
         const userId = req.session.user_id;
         if (!userId) {

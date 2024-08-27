@@ -227,7 +227,7 @@ function GroupHome() {
                     <img id="large-group-photo" src={`/${groupDetails.groupPhoto}`} alt={groupDetails.groupName} />
                     <p className="large-text">{groupDetails.groupName}</p>
                     <p id="description" >{groupDetails.description}</p>
-                    <p id="user-count">{groupDetails.memberCount} members</p>
+                    <p id="user-count">{groupDetails.memberCount} {groupDetails.memberCount === 1 ? 'follower' : 'followers'}</p>
                     <MemberChangeButton 
                         userId={groupDetails.userId} 
                         groupId={groupDetails.groupId} 
