@@ -62,6 +62,7 @@ const ProfilePosts = sequelize.define('profile_posts', {
   downvotes: { type: INTEGER, allowNull: false, defaultValue: 0 },
   timestamp: { type: DATE, defaultValue: NOW },
   poster_id: { type: STRING(36), allowNull: false },
+  points: { type: INTEGER, allowNull: false, defaultValue: 0 },
 }, {tableName: 'profile_posts', timestamps: false });
 
 //Profile posts relationships
@@ -113,6 +114,7 @@ const GroupPosts = sequelize.define('group_posts', {
   downvotes: { type: INTEGER, allowNull: false, defaultValue: 0 },
   timestamp: { type: DATE, defaultValue: NOW },
   poster_id: { type: STRING(36), allowNull: false },
+  points: { type: INTEGER, allowNull: false, defaultValue: 0 },
 }, {tableName: 'group_posts', timestamps: false});
 
 //Group posts relationships

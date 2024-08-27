@@ -1,5 +1,5 @@
 import authenticateCheck from '../functions/authenticateCheck.js';
-import { ContentVotes, Conversations, Followers, Friends, FriendRequests, Messages, Profiles, ProfileChannels, ProfilePosts, Users, UserConversations } from '../models/models.js';
+import { ContentVotes, Conversations, Followers, Friends, FriendRequests, GroupPosts, Messages, Profiles, ProfileChannels, ProfilePosts, Users, UserConversations } from '../models/models.js';
 import express from 'express';
 import fs from 'fs';
 import { join } from 'path';
@@ -303,6 +303,24 @@ router.get('/get_profile_channels/:profileId', authenticateCheck, async (req, re
     }
 });
 
+//Calculates users total points
+router.get('/get_points', authenticateCheck, async (req, res) => {
+    try {
+        const userId = req.session.user_id;
+        const profilePoints = await ProfilePosts.findOne({
+            where: { poster_id: userId },
+            attributes: ['points']
+        });
+        const groupPoints = await GroupPosts.findOne({
+            where: { poster_id: userId },
+            attributes: ['points']
+        });
+        res.json({ totalPoints });
+    } catch (error) {
+        res.status(500).json({ error: 'Internal server error' }); 
+    }
+});
+
 //Accesses users colour scheme
 router.get('/get_theme', authenticateCheck, async (req, res) => {
     try {
@@ -424,7 +442,7 @@ router.get('/profile_channel_posts', authenticateCheck, async (req, res) => {
                 attributes: ['vote_count'],
                 required: false
             }],
-            attributes: ['post_id', 'title', 'content', 'replies', 'views', 'upvotes', 'downvotes', 'timestamp', 'poster_id'],
+            attributes: ['post_id', 'title', 'content', 'replies', 'views', 'upvotes', 'downvotes', 'timestamp', 'poster_id', 'points'],
             //Posts sorted chronilogically
             order: [['timestamp', 'DESC']]
         });

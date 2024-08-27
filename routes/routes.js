@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { ContentVotes, Followers, Friends, FriendRequests, GroupChannels, Groups, GroupReplies, GroupRequests, GroupPosts, ProfileChannels, ProfileReplies, ProfilePosts, Profiles, Users, UserGroups } from '../models/models.js'; 
 import authenticateCheck from '../functions/authenticateCheck.js';
+import calculatePoints from '../functions/postPoints.js';
 import checkIfUserIsMember from '../functions/memberCheck.js';
 import { hybridRecommendations } from '../functions/recommendation/hybrid.js';
 import { Op } from 'sequelize';
@@ -43,6 +44,7 @@ router.post('/content_vote', authenticateCheck, async (req, res) => {
             defaults: { vote_id: v4(), vote_count: 0 },
         });
 
+        //Limits upvotes and downvotes on each post to 10
         if (vote_type === 'check_vote') {
             if (vote.vote_count >= 10) {
                 return res.json({ success: true, message: 'upvote limit' });
@@ -59,16 +61,15 @@ router.post('/content_vote', authenticateCheck, async (req, res) => {
             return res.json({ success: false, message: 'downvote limit '});
         }
 
-
-        //Limits upvotes and downvotes on each post to 10
+        //Update contentVotes table
         if (vote_type === 'upvote') {
             vote.vote_count += 1;
         } else if (vote_type === 'downvote') {
             vote.vote_count -= 1;
         }
-
         await vote.save();
 
+        //Update individual posts
         const PostModel = isGroup ? GroupPosts : ProfilePosts;
         const content = await PostModel.findByPk(content_id);
         if (vote_type === 'upvote') {
@@ -77,7 +78,15 @@ router.post('/content_vote', authenticateCheck, async (req, res) => {
             content.downvotes += 1;
         }
 
+        //Recalculate content points
+        content.points = calculatePoints(content.upvotes, content.downvotes, content.views);
         await content.save();
+
+        //Update user total points
+        const user = await Users.findByPk(content.poster_id);
+        user.points = await ProfilePosts.sum('points', { where: { poster_id: content.poster_id } });
+        await user.save();
+
         return res.json({ success: true });
     } catch (error) {
         return res.status(404).json({ success: false, message: error.message });
@@ -298,11 +307,21 @@ router.get('/get_time_preference', async (req, res) => {
 
 //Adds one view to a piece of content
 router.post('/increment_views', async (req, res) => {
-    const { isGroup, postId } = req.body;
     try {
+        const { isGroup, postId } = req.body;
         const post = isGroup ? await GroupPosts.findByPk(postId) : await ProfilePosts.findByPk(postId);
         post.views += 1;
+
+        //Update post points
+        post.points = calculatePoints(post.upvotes, post.downvotes, post.views);
         await post.save();
+
+        //Update user points
+        const user = await Users.findByPk(post.poster_id);
+        user.points = await ProfilePosts.sum('points', { where: { poster_id: post.poster_id } });
+        await user.save();
+
+        res.json({ success: true });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });   
     }
