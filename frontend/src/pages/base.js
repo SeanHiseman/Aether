@@ -111,10 +111,12 @@ const BaseLayout = () => {
         try {
             event.preventDefault();
             const newChatId = v4();
-            await axios.post('/api/create_ask_chat', {
-                chatId: newChatId,
-                name: "New chat"
-            });
+            if (user.hasMembership) {
+                await axios.post('/api/create_ask_chat', {
+                    chatId: newChatId,
+                    name: "New chat"
+                });
+            };
             navigate(`/ask/${newChatId}`);
             setErrorMessage('');
         } catch (error) {

@@ -64,9 +64,15 @@ router.get('/get_ask_chats', authenticateCheck, async (req, res) => {
 
 router.post('/send_ask_message', authenticateCheck, async (req, res) => {
     try {
-        const userId = req.session.user_id;
-
-        res.status(201).json({ success: true });
+        const { chatId, messageContent, senderId } = req.body;
+        const newMessage = await AskMessages.create({
+            message_id: v4(),
+            chat_id: chatId,
+            sender_id: senderId,
+            message_content: messageContent,
+            timestamp: new Date()
+        });
+        res.status(201).json({ success: true, message: newMessage });
     } catch (error) {
         res.status(500).json({ error: 'Error sending message' });
     }
