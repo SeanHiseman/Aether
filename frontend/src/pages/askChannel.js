@@ -10,14 +10,14 @@ function AskChannel() {
     const [currentMessage, setCurrentMessage] = useState('');
     const [errorMessage, setErrorMessage] = useState('');
     const [isEditingChatName, setIsEditingChatName] = useState(false);
+    const [messages, setMessages] = useState([]);
     const location = useLocation();
     const query = location.state?.query || '';
-    const [selectedChatId, setSelectedChatId] = useState(null);    
     const navigate = useNavigate();
     const { chatId } = useParams();
     const { user } = useContext(AuthContext);
 
-    //Get users previous Ask chats
+    //Get user's previous Ask chats
     useEffect(() => {
         const fetchChats = async () => {
             try {
@@ -29,6 +29,22 @@ function AskChannel() {
         };
         fetchChats();
     }, []);
+
+    //Get messages from current chat
+    useEffect(() => {
+        const fetchMessages = async () => {
+            try {
+                //Home chat doesn't have ID or messages
+                if (chatId) {
+                    const response = await axios.get('/api/get_ask_messages', { params: { chatId } });
+                    setMessages(response.data.messages);
+                }
+            } catch (error) {
+                setErrorMessage('Error getting messages');
+            }
+        };
+        fetchMessages();
+    }, [chatId]);
 
     //Find current chat based on Id in url
     const currentChat = chats.find(chat => chat.chat_id === chatId);
@@ -66,7 +82,6 @@ function AskChannel() {
                 };
                 //Updates chats and viewed chats
                 setChats(prevChats => [...prevChats, newChat]);
-                setSelectedChatId(newChat.chatId);
                 navigate(`/ask/${newChat.chatId}`)
                 setErrorMessage('');
             } else {
@@ -79,12 +94,11 @@ function AskChannel() {
 
     const deleteChat = async () => {
         try {
-            await axios.delete(`/api/delete_ask_chat`, { data: {chat_id: chatId } });
+            await axios.delete('/api/delete_ask_chat', { data: {chat_id: chatId } });
             //Show chat list without deleted chat
             setChats(prevChats => 
                 prevChats.filter(chat => chat.chat_id !== chatId)
             );
-            setSelectedChatId(null);
             navigate('/ask/home');
         } catch (error) {
             setErrorMessage('Error deleting chat:', error);
@@ -109,27 +123,23 @@ function AskChannel() {
 
     const sendAskMessage = async () => {
         try {
-            if (currentMessage.trim()) {
-                const response = await axios.post('/api/send_ask_message', {
-                    chatId: selectedChatId,
-                    messageContent: currentMessage,
-                    senderId: user.user_id, 
+            const response = await axios.post('/api/send_ask_message', {
+                chatId: chatId,
+                messageContent: currentMessage,
+                senderId: user.userId, 
+            });
+
+            if (response.data && response.status === 201) {
+                setChats(prevChats => {
+                    const updatedChats = [...prevChats];
+                    const chatIndex = updatedChats.findIndex(chat => chat.chat_id === chatId);
+                    updatedChats[chatIndex].messages = [...(updatedChats[chatIndex].messages || []), response.data.message];
+                    return updatedChats;
                 });
-    
-                if (response.data && response.status === 201) {
-                    setChats(prevChats => {
-                        const updatedChats = [...prevChats];
-                        const chatIndex = updatedChats.findIndex(chat => chat.chat_id === selectedChatId);
-                        updatedChats[chatIndex].messages = [...(updatedChats[chatIndex].messages || []), response.data.message];
-                        return updatedChats;
-                    });
-                    setCurrentMessage('');
-                    setErrorMessage('');
-                } else {
-                    setErrorMessage("Failed to send message");
-                }
+                setCurrentMessage('');
+                setErrorMessage('');
             } else {
-                setErrorMessage("Message cannot be empty");
+                setErrorMessage("Failed to send message");
             }
         } catch (error) {
             setErrorMessage("Error sending message");
@@ -162,11 +172,13 @@ function AskChannel() {
                         ) : (
                             <div id="channel">
                                 <div className="channel-content messages">
-                                    <div className="message-container outgoing">
-                                        <div className="message outgoing">
-                                            {query}
-                                        </div>
-                                    </div>
+                                    {messages.map((msg, index) => (
+                                        <div key={index} className={`message-container ${msg.sender_id === user.userId ? 'outgoing' : 'incoming'}`}>
+                                            <div className={`message ${msg.sender_id === user.userId ? 'outgoing' : 'incoming'}`}>
+                                                {msg.message_content}
+                                            </div>
+                                        </div>  
+                                    ))}
                                 </div>
                                 <div id="channel-input">
                                     <input class="chat-message-bar" type="text" value={currentMessage} onChange={(e) => setCurrentMessage(e.target.value)} placeholder="Ask..." onKeyDown={(e) => e.key === 'Enter' && sendAskMessage()}/>

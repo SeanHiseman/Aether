@@ -62,6 +62,20 @@ router.get('/get_ask_chats', authenticateCheck, async (req, res) => {
     }
 });
 
+//Get messages within a specific chat
+router.get('/get_ask_messages', authenticateCheck, async (req, res) => {
+    try {
+        const chatId = req.query.chatId;
+        const messages = await AskMessages.findAll({
+            where: { chat_id: chatId },
+            order: [['timestamp', 'DESC']]
+        });
+        res.status(200).json({ messages });
+    } catch (error) {
+        res.status(500).json({ error: 'Error getting Ask chats' });
+    }
+});
+
 router.post('/send_ask_message', authenticateCheck, async (req, res) => {
     try {
         const { chatId, messageContent, senderId } = req.body;
