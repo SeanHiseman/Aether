@@ -29,7 +29,9 @@ const App = () => {
                     <Route path="/login" element={<Login />} />
                     <Route path="/join" element={<Join />} />
                     <Route path="/" element={<AuthCheck><BaseLayout /></AuthCheck>}>
-                        <Route path="ask" element={<AuthCheck><AskChannel /></AuthCheck>} />
+                        <Route path="ask" element={<AuthCheck><AskChannel /></AuthCheck>} >
+                            <Route path=":chatId" element={<AuthCheck><AskChannel /></AuthCheck>} />
+                        </Route>
                         <Route path="recommended" element={<AuthCheck><RecommendedPage /></AuthCheck>} />
                         <Route path="following" element={<AuthCheck><FollowingPage /></AuthCheck>} />
                         <Route path="friends" element={<AuthCheck><FriendsPage /></AuthCheck>} />
@@ -37,20 +39,20 @@ const App = () => {
                         <Route path="group_settings/:group_name" element={<AuthCheck><GroupSettings /></AuthCheck>} />
                         <Route path="search/:tab?" element={<AuthCheck><SearchResults /></AuthCheck>} />
                         <Route path="messages/:username" element={<AuthCheck><MessagesPage /></AuthCheck>} >
-                            <Route path=":friend_name" element={<MessagesPage />} >
+                            <Route path=":friend_name" element={<AuthCheck><MessagesPage /></AuthCheck>} >
                                 <Route index element={<Navigate replace to="Main" />} />
-                                <Route path=":title" element={<MessagesPage />} />
+                                <Route path=":title" element={<AuthCheck><MessagesPage /></AuthCheck>} />
                             </Route>
                         </Route>
                         <Route path="group/:group_name" element={<AuthCheck><GroupWrapper /></AuthCheck>}>
-                            <Route path=":channel_name" element={<GroupHome />}>
+                            <Route path=":channel_name" element={<AuthCheck><GroupHome /></AuthCheck>}>
                                 <Route index element={<Navigate replace to="Main" />} />
-                                <Route path=":channel_name" element={<GroupHome />} />
+                                <Route path=":channel_name" element={<AuthCheck><GroupHome /></AuthCheck>} />
                             </Route>
                         </Route>
                         <Route path="profile/:username" element={<AuthCheck><ProfileWrapper /></AuthCheck>}>
                             <Route index element={<Navigate replace to="Main" />} />
-                            <Route path=":channel_name" element={<Profile />} />
+                            <Route path=":channel_name" element={<AuthCheck><Profile /></AuthCheck>} />
                         </Route>
                     </Route>
                 </Routes>

@@ -168,7 +168,9 @@ function GroupHome() {
     };
 
     //Toggles display of create channel form after button is pressed
-    const toggleChannelForm = () => {setShowChannelForm((prev) => !prev)};
+    const toggleChannelForm = () => {
+        setShowChannelForm((prev) => !prev)
+    };
 
     //Checks membership if group is private
     const isNotPrivateMember = !groupDetails.isMember && groupDetails.isPrivate;

@@ -102,7 +102,7 @@ router.post('/add_group_channel', authenticateCheck, async (req, res) => {
     }
 });
 
-//Cancel join request
+//Cancel private group feed follow request
 router.delete('/cancel_join_request', authenticateCheck, async (req, res) => {
     try {
         const { userId, groupId } = req.body;
@@ -149,7 +149,7 @@ router.post('/change_group_name', authenticateCheck, async (req, res) => {
     }
 });
 
-//Create a new group
+//Create a new group feed
 router.post('/create_group', authenticateCheck, (req, res) => {
     profile_upload(req, res, async function(err) {
         if (err instanceof multer.MulterError) {
@@ -570,7 +570,7 @@ router.delete('/reject_nest_request', authenticateCheck, async (req, res) => {
     }
 });
 
-//Send user join request
+//Send user private feed follow request
 router.post('/send_join_request', authenticateCheck, async (req, res) => {
     try {
         const { receiverId, senderId } = req.body;
@@ -652,7 +652,6 @@ router.post('/toggle_private_group', authenticateCheck, async (req, res) => {
     }
 });
 
-//Update group photo
 router.put('/update_group_photo/:groupId', authenticateCheck, async (req, res) => {
     profile_upload(req, res, async function(err) {
         if (err instanceof multer.MulterError) {

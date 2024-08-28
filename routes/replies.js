@@ -5,7 +5,6 @@ import { v4 } from 'uuid';
 
 const router = Router();
 
-//Add reply Route
 router.post('/add_reply', authenticateCheck, async (req, res) => {
     try {
         const { content, isGroup, parent_id, post_id } = req.body;
@@ -30,7 +29,6 @@ router.post('/add_reply', authenticateCheck, async (req, res) => {
     }
 });
 
-//Get replies Route 
 router.get('/get_replies/:postId', authenticateCheck, async (req, res) => {
     try {
         const isGroup = req.query.isGroup === 'true';

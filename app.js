@@ -9,6 +9,7 @@ import path from 'path';
 import { Server } from 'socket.io';
 import session from 'express-session';
 import { urlencoded } from 'express';
+import ask from './routes/ask.js';
 import authentication from './routes/authentication.js';
 import replies from './routes/replies.js';
 import directMessages, { directMessagesSocket } from './routes/directMessages.js';
@@ -38,6 +39,7 @@ app.use(session({
 }));
 
 //api prefix prevents clashes with React app
+app.use('/api/', ask);
 app.use('/api/', authentication);
 app.use('/api/', directMessages);
 app.use('/api/', groups);

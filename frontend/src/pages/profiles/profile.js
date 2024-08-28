@@ -59,7 +59,7 @@ function Profile() {
         event.preventDefault();
         try {
             if (newChannelName === 'Main') {
-                setErrorMessage("Channels cannot be named Main");
+                setErrorMessage("Cannot be named Main");
                 return;
             } else {
                 const response = await axios.post('/api/add_profile_channel', {
@@ -161,6 +161,7 @@ function Profile() {
                     {!isLoggedInUser && !profile.isPrivate && (<FollowerChangeButton userId={loggedInUserId} profileId={profile.profileId} isFollowing={profile.isFollowing} />)}
                     <ManageFriendshipButton userId={loggedInUserId} receiverProfileId={profile.profileId} receiverUserId={profile.userId} isRequestSent={profile.isRequested} isFriend={profile.isFriend} />
                 </div>
+                <div className="error-message">{errorMessage}</div> 
                 {channelRender && (
                     isLoggedInUser ? (
                         <ChannelName channelId={channelRender.channel_id} channelName={channel_name} channelType={'profile'} locationName={username} channelUpdate={channelUpdate}/>
@@ -193,7 +194,7 @@ function Profile() {
                                     if (inputLength <= 30) {
                                         setNewChannelName(input)
                                     } else {
-                                        setErrorMessage('Name cannot exceed 30 characters');
+                                        setErrorMessage('Name too long');
                                     }
                                 }}/>
                                 <input className="light-button" type="submit" value="Add" disabled={!newChannelName}/>
@@ -201,7 +202,6 @@ function Profile() {
                         )}
                     </div>
                 )}
-                <div className="error-message">{errorMessage}</div> 
                 <nav id="channel-list">
                     <ul>
                         {channels.map(channel => (
