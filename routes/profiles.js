@@ -44,7 +44,6 @@ const profile_upload = multer({
     fileFilter: profileFilter
 });
 
-//Accept friend request
 router.post('/accept_friend_request', authenticateCheck, async (req, res) => {
     try {
         const { request } = req.body;
@@ -98,7 +97,6 @@ router.post('/add_profile_channel', authenticateCheck, async (req, res) => {
     }
 });
 
-//Cancel friend request
 router.delete('/cancel_friend_request', authenticateCheck, async (req, res) => {
     try {
         const { userId, receiverUserId } = req.body;
@@ -111,7 +109,6 @@ router.delete('/cancel_friend_request', authenticateCheck, async (req, res) => {
     }
 });
 
-//Update profile bio
 router.post('/change_bio', authenticateCheck, async (req, res) => {
     try {
         const { bio, profileId } = req.body;
@@ -146,7 +143,6 @@ router.post('/change_theme', authenticateCheck, async (req, res) => {
     }
 });
 
-//Update username
 router.post('/change_username', authenticateCheck, async (req, res) => {
     try {
         const { username, userId } = req.body;
@@ -218,7 +214,6 @@ router.post('/create_profile_post', authenticateCheck, post_upload.array('files'
     }
 });
 
-//Deletes channel 
 router.delete('/delete_profile_channel', authenticateCheck, async (req, res) => {
     try {
         const { channel_name, profile_id } = req.body;
@@ -239,7 +234,7 @@ router.delete('/delete_profile_channel', authenticateCheck, async (req, res) => 
     }
 });  
 
-//User can follow a profile
+//User can follow another profile
 router.post('/follow_profile', authenticateCheck, async (req, res) => {
     const { userId, profileId } = req.body;
     try{
@@ -259,7 +254,6 @@ router.post('/follow_profile', authenticateCheck, async (req, res) => {
     }
 });
 
-//Get friend requests
 router.get('/get_friend_requests', authenticateCheck, async (req, res) => {
     try {
         const userId = req.session.user_id;
@@ -300,24 +294,6 @@ router.get('/get_profile_channels/:profileId', authenticateCheck, async (req, re
         res.json(channels);
     } catch (error) {
         res.status(500).json({ error: error.message });
-    }
-});
-
-//Calculates users total points
-router.get('/get_points', authenticateCheck, async (req, res) => {
-    try {
-        const userId = req.session.user_id;
-        const profilePoints = await ProfilePosts.findOne({
-            where: { poster_id: userId },
-            attributes: ['points']
-        });
-        const groupPoints = await GroupPosts.findOne({
-            where: { poster_id: userId },
-            attributes: ['points']
-        });
-        res.json({ totalPoints });
-    } catch (error) {
-        res.status(500).json({ error: 'Internal server error' }); 
     }
 });
 
@@ -544,7 +520,6 @@ router.get('/profile/:username', authenticateCheck, async (req, res) => {
     }
 });
 
-//Reject friend request
 router.delete('/reject_friend_request', authenticateCheck, async (req, res) => {
     try {
         const { request } = req.body;
@@ -555,7 +530,7 @@ router.delete('/reject_friend_request', authenticateCheck, async (req, res) => {
     }
 });
 
-//Removes follower
+//Can be used by either user to stop the following of a profile
 router.post('/remove_follower', authenticateCheck, async (req, res) => {
     const { userId, profileId } = req.body;
     try {
@@ -571,7 +546,6 @@ router.post('/remove_follower', authenticateCheck, async (req, res) => {
     }
 }); 
 
-//Send friend request
 router.post('/send_friend_request', authenticateCheck, async (req, res) => {
     const { receiverUserId } = req.body;
 
@@ -605,7 +579,6 @@ router.post('/toggle_private_profile', authenticateCheck, async (req, res) => {
     }
 });
 
-//Update profile photo
 router.put('/update_profile_photo/:profileId', authenticateCheck, profile_upload.single('new_profile_photo'), async (req, res) => {
     try {
         const defaultProfilePhotoPath = 'media/site_images/blank-profile.png'; //To prevent default photo from being deleted

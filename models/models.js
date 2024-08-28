@@ -30,7 +30,7 @@ const Users = sequelize.define('users', {
   time_preference: { type: FLOAT, allowNull: false, defaultValue: 0.0001 },
   has_membership: { type: BOOLEAN, defaultValue: false }, //If user has membership subscription
   theme: { type: STRING(120), allowNull: true },
-  points: { type: INTEGER, allowNull: false, defaultValue: 0 },
+  points: { type: INTEGER, allowNull: false, defaultValue: 50 }, //Points for signing up
 }, {tableName: 'users', timestamps: false});
 
 //Users relationships
@@ -306,6 +306,34 @@ Messages.belongsTo(Conversations, { foreignKey: 'conversation_id' });
 Users.hasMany(Messages, { foreignKey: 'sender_id' });
 Messages.belongsTo(Users, { foreignKey: 'sender_id' });
 
+
+//Separate chats each user has with Ask
+const AskChats = sequelize.define('ask_chats', {
+  chat_id: { type: STRING(36), primaryKey: true },
+  name: { type: STRING(256), allowNull: true, defaultValue: 'New chat'},
+  user_id: { type: STRING(36), allowNull: false, references: { model: 'Users', key: 'user_id' }},
+  created_at: { type: DATE, defaultValue: NOW },
+  updated_at: { type: DATE, defaultValue: NOW }
+}, { tableName: 'ask_chats', timestamps: false });  
+
+//Messages sent within Ask chats
+const AskMessages = sequelize.define('ask_messages', {
+  message_id: { type: STRING(36), primaryKey: true },
+  chat_id: { type: STRING(36), allowNull: false, references: { model: 'AskChats', key: 'chat_id' }},
+  sender_id: { type: STRING(36), allowNull: false, references: { model: 'Users', key: 'user_id' }},
+  message_content: { type: STRING(1000), allowNull: false },
+  timestamp: { type: DATE, defaultValue: NOW }
+}, { tableName: 'ask_messages', timestamps: false });
+
+//AskChats relationships
+AskChats.belongsTo(Users, { foreignKey: 'user_id', as: 'user' });
+Users.belongsTo(AskChats, { foreignKey: 'user_id', as: 'askChats' });
+//AskMessages relationships
+AskChats.hasMany(AskMessages, { foreignKey: 'chat_id', as: 'messages' });
+AskMessages.belongsTo(AskChats, { foreignKey: 'chat_id', as: 'chat' });
+Users.hasMany(AskMessages, { foreignKey: 'sender_id', as: 'sentMessages' });
+AskMessages.belongsTo(Users, { foreignKey: 'sender_id', as: 'sender' });
+
 export {
     Profiles,
     ProfileChannels,
@@ -329,5 +357,7 @@ export {
     UserConversations,
     Conversations,
     Messages,
+    AskChats,
+    AskMessages,
 }
   

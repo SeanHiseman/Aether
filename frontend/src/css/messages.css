@@ -1,9 +1,9 @@
 @import url('variables.css');
 .fade-in {
-    animation: fadeIn 0.2s ease-in-out forwards;
+    animation: fadeIn 0s ease-in-out forwards;
 }
 .fade-out {
-    animation: fadeOut 0.2s ease-in-out forwards;
+    animation: fadeOut 0s ease-in-out forwards;
 }
 #add-chat-form {
     align-items: center;

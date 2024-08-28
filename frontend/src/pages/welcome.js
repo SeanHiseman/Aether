@@ -1,11 +1,9 @@
-import React, { useContext, useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import '../css/welcome.css';
-import { ThemeContext } from '../themeProvider';
 
 const Welcome = () => {
     const [currentView, setCurrentView] = useState('welcome');
-    const { setTheme } = useContext(ThemeContext);
 
     //Switches between settings states
     const renderComponent = () => {

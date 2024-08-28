@@ -107,10 +107,21 @@ const BaseLayout = () => {
     };
 
     //Sends to ask page
-    const handleAskClick = (event) => {
-        event.preventDefault();
-        navigate('/ask', { state: { query: currentQuery } });
+    const handleAskClick = async (event) => {
+        try {
+            event.preventDefault();
+            const newChatId = v4();
+            await axios.post('/api/create_ask_chat', {
+                chatId: newChatId,
+                name: "New chat"
+            });
+            navigate(`/ask/${newChatId}`);
+            setErrorMessage('');
+        } catch (error) {
+            setErrorMessage("Error sending Ask");
+        }
     };
+
     //Sends to search page
     const handleSearchClick = (event) => {
         event.preventDefault();

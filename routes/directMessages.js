@@ -24,7 +24,6 @@ router.post('/change_chat_name', authenticateCheck, async (req, res) => {
     }
 });
 
-//Create new conversation
 router.post('/create_conversation', authenticateCheck, async (req, res) => {
     const { participants, title } = req.body;
 
@@ -50,7 +49,6 @@ router.post('/create_conversation', authenticateCheck, async (req, res) => {
     }
 });
 
-//Deletes chat
 router.delete('/delete_chat', authenticateCheck, async (req, res) => {
     try {
         const { conversation_id, title } = req.body;
@@ -75,7 +73,7 @@ router.delete('/delete_chat', authenticateCheck, async (req, res) => {
     }
 });
 
-//Get chat messages
+//Get messages for specific user conversation
 router.get('/get_chat_messages/:conversation_id', authenticateCheck, async (req, res) => {
     try {
         const conversationId = req.params.conversation_id;
@@ -102,17 +100,16 @@ router.get('/get_chat_messages/:conversation_id', authenticateCheck, async (req,
                 }
             }
         }));
-
         res.json(messagesData);
     } catch (error) {
-        res.status(500).send('Error getting chat messages: ', error);
+        res.status(500).send('Error getting chat messages: ' + error);
     }
 });
 
 //Get all conversations for logged in user
 router.get('/get_conversations', authenticateCheck, async (req, res) => {
-    const userId = req.session.user_id;
     try {
+        const userId = req.session.user_id;
         //Conversation ID's that user is a part of
         const userConversationIds = await UserConversations.findAll({
             where: { user_id: userId },
@@ -148,12 +145,10 @@ router.get('/get_conversations', authenticateCheck, async (req, res) => {
         });
         res.json(conversationsData);
     } catch (error) {
-        console.error("Failed to fetch user conversations:", error);
-        res.status(500).json({ error: "Failed to fetch user conversations "});
+       res.status(500).json({ error: "Failed to fetch user conversations "});
     }
 });
 
-//Get Friends
 router.get('/get_friends', authenticateCheck, async (req, res) => {
     try {
         const userId = req.session.user_id;
@@ -192,7 +187,7 @@ router.get('/get_friends', authenticateCheck, async (req, res) => {
 
         res.json(friendsData);
     } catch (error) {
-        res.status(500).send('Error getting friends:', error);  
+        res.status(500).send('Error getting friends:' + error);  
     }
 });
 

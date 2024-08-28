@@ -32,7 +32,7 @@ function MessagesPage() {
                 const response = await axios.get('/api/get_friends');
                 setFriends(response.data);
             } catch (error) {
-                console.log("Error fetching friends", error);
+                setErrorMessage("Error fetching friends", error);
             }
         };
         const getConversations = async () => {
@@ -40,7 +40,7 @@ function MessagesPage() {
                 const response = await axios.get('/api/get_conversations');
                 setConversations(response.data);
             } catch (error) {
-                console.log("Error fetching conversations", error);
+                setErrorMessage("Error fetching conversations", error);
             }
         };
         getFriends();
@@ -118,7 +118,7 @@ function MessagesPage() {
                 return;
             //Names over 30 characters already prevented
             } else if (changedChatName === 'Main') {
-                setErrorMessage("Chats cannot be named Main");
+                setErrorMessage("Cannot be named Main");
                 return;
             } else {
                 const response = await axios.post('/api/change_chat_name', {
@@ -160,10 +160,10 @@ function MessagesPage() {
             const friendId = friend.friend_id;
             const participants = [user.userId, friendId];
             if (newChatName.length >= 30) {
-                setErrorMessage("Name cannot exceed 30 characters"); 
+                setErrorMessage("Name too long"); 
                 return; 
             } else if (newChatName === 'Main') {
-                setErrorMessage("Chats cannot be named Main");
+                setErrorMessage("Cannot be named Main");
                 return;
             } else {
                 const response = await axios.post('/api/create_conversation', {
@@ -325,6 +325,7 @@ function MessagesPage() {
                             <img className="profile-image2" src={`/${friendProfileImage}`} alt="Profile"/>
                             <h3>{friend_name}</h3>
                         </Link>
+                        <div className="error-message">{errorMessage}</div>
                         {!isMainChat() ? (
                             <div id="chat-change">
                                 {isEditingChatName ? (
@@ -336,7 +337,7 @@ function MessagesPage() {
                                             if (inputLength <= 30) {
                                                 setChangedChatName(input)
                                             } else {
-                                                setErrorMessage('Name cannot exceed 30 characters');
+                                                setErrorMessage('Name too long');
                                             }
                                         }}
                                         />
@@ -344,6 +345,7 @@ function MessagesPage() {
                                             <button className="button" onClick={() => {
                                                 setIsEditingChatName(false);
                                                 setChangedChatName('');
+                                                setErrorMessage('');
                                             }}>Cancel</button>
                                             <button className="button" onClick={(e) => {
                                                 e.preventDefault();
@@ -390,24 +392,23 @@ function MessagesPage() {
                             )}
                         </div>
                     </div>
-                    ) : (
-                        <nav id="friend-list">
-                            <h2>Messages</h2>
-                            <ul>
-                                {friends.map(friend => (
-                                    <li className="profile-info" key={friend.friend_id}>
-                                        <Link className="profile-link" to={`/messages/${username}/${friend.friend_name}`}>
-                                        <img className="profile-image" src={`/${friend.friend_profile_photo}`} alt="Profile"/>
-                                            <div className="chat-username">
-                                                {friend.friend_name}
-                                            </div>
-                                        </Link>
-                                    </li>
-                                ))}
-                            </ul>
-                        </nav>
-                    )}
-                <div className="error-message">{errorMessage}</div>
+                ) : (
+                    <nav id="friend-list">
+                        <h2>Messages</h2>
+                        <ul>
+                            {friends.map(friend => (
+                                <li className="profile-info" key={friend.friend_id}>
+                                    <Link className="profile-link" to={`/messages/${username}/${friend.friend_name}`}>
+                                    <img className="profile-image" src={`/${friend.friend_profile_photo}`} alt="Profile"/>
+                                        <div className="chat-username">
+                                            {friend.friend_name}
+                                        </div>
+                                    </Link>
+                                </li>
+                            ))}
+                        </ul>
+                    </nav>
+                )}
             </aside>
         </div>
     );
