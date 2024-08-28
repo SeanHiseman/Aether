@@ -152,10 +152,13 @@ function MessagesPage() {
         }
     };
 
+    //Currently viewed chat
+    const currentChat = selectedConversations.find(c => c.conversationId === selectedConversationId)
+    const currentChatName = currentChat?.title
+
     const createNewChat = async (event) => {
         event.preventDefault();
         try {
-            //Get friend_id
             const friend = friends.find(f => f.friend_name === friend_name);
             const friendId = friend.friend_id;
             const participants = [user.userId, friendId];
@@ -214,11 +217,10 @@ function MessagesPage() {
             setChat([]);
             navigate(`/messages/${username}/${friend_name}/Main`);
         } catch (error) {
-            console.error('Error deleting chat:', error);
+            setErrorMessage('Error deleting chat:', error);
         }
     };
 
-    //Deletes the message
     const deleteMessage = (messageId) => {
         if (messageId) {
             socketRef.current.emit('delete_message', {
@@ -241,10 +243,9 @@ function MessagesPage() {
         }
     };
 
-    //Ensures main chat can't be modified upon initial render (may be able to remove)
+    //Ensures main chat can't be modified upon initial render
     const isMainChat = () => {
-        const currentChat = selectedConversations.find(c => c.conversationId === selectedConversationId);
-        return currentChat?.title === 'Main' || title === 'Main';
+        return currentChatName === 'Main' || title === 'Main';
     };
 
     const sendMessage = () => {
@@ -352,17 +353,19 @@ function MessagesPage() {
                                                 changeChatName(e)
                                             }}>Save</button>
                                         </div>
+                                        <button className="button" onClick={() => deleteChat()}>Delete chat</button> 
                                     </div>
                                 ) : (
                                     <div id="chat-name">
-                                        <p className="large-text">{selectedConversations.find(c => c.conversationId === selectedConversationId)?.title}</p> 
+                                        <p className="large-text">{currentChatName}</p> 
                                         <button className="button" onClick={() => {
                                             setIsEditingChatName(true);
-                                            setChangedChatName(selectedConversations.find(c => c.conversationId === selectedConversationId)?.title || '');
+                                            setChangedChatName(currentChatName);
                                         }}>Change name</button>
+                                        <button className="button" onClick={() => deleteChat()}>Delete chat</button> 
                                     </div>
+                                    
                                 )}
-                                <button className="button" onClick={() => deleteChat()}>Delete chat</button> 
                             </div>
                         ) : (
                             <p className="large-text">Main</p>  

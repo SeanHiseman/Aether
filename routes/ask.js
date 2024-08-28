@@ -6,6 +6,19 @@ import { AskChats, AskMessages, Users } from '../models/models.js';
 
 const router = Router();
 
+router.post('/change_ask_chat_name', authenticateCheck, async (req, res) => {
+    try {
+        const { chatId, newName } = req.body;
+        await AskChats.update(
+            { name: newName },
+            { where: { chat_id: chatId } }
+        );
+        res.status(200).json({ success: true });
+    } catch (error) {
+        res.status(500).json({ error: "Error changing chat name"});
+    }
+});
+
 router.post('/create_ask_chat', authenticateCheck, async (req, res) => {
     try {
         const userId = req.session.user_id;
@@ -18,6 +31,20 @@ router.post('/create_ask_chat', authenticateCheck, async (req, res) => {
         res.status(201).json(newChat);
     } catch (error) {
         res.status(500).json({ error: 'Error creating chat' });
+    }
+});
+
+router.delete('/delete_ask_chat', authenticateCheck, async (req, res) => {
+    try {
+        const { chat_id } = req.body;
+        await AskChats.destroy({
+            where: { 
+                chat_id: chat_id
+            },
+        });
+        res.status(200).json({ message: 'Chat deleted successfully '});
+    } catch (error) {
+        res.status(500).json({ error: 'Error deleting chat' });
     }
 });
 

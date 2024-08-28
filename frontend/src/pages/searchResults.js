@@ -127,7 +127,7 @@ const SearchResults = () => {
                 </nav>
             </div>
         </div>
-    )
+    );
 }
 
 export default SearchResults;
