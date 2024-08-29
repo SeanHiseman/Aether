@@ -37,6 +37,11 @@ router.post('/create_ask_chat', authenticateCheck, async (req, res) => {
 router.delete('/delete_ask_chat', authenticateCheck, async (req, res) => {
     try {
         const { chat_id } = req.body;
+        await AskMessages.destroy({
+            where: {
+                chat_id: chat_id
+            }
+        });
         await AskChats.destroy({
             where: { 
                 chat_id: chat_id

@@ -130,12 +130,7 @@ function AskChannel() {
             });
 
             if (response.data && response.status === 201) {
-                setChats(prevChats => {
-                    const updatedChats = [...prevChats];
-                    const chatIndex = updatedChats.findIndex(chat => chat.chat_id === chatId);
-                    updatedChats[chatIndex].messages = [...(updatedChats[chatIndex].messages || []), response.data.message];
-                    return updatedChats;
-                });
+                setMessages(prevMessages => [response.data.message, ...prevMessages]);
                 setCurrentMessage('');
                 setErrorMessage('');
             } else {
