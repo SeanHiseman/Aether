@@ -74,7 +74,7 @@ function ChannelName({ channelId, channelName, channelType, locationName, channe
                             <button className="button" onClick={() => {
                                 setIsEditingChannelName(true);
                                 setNewChannelName(channelName);
-                            }}>Edit name</button>
+                            }}>Rename</button>
                         </div>
                     )}
                 </div>
