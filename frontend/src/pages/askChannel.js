@@ -48,7 +48,7 @@ function AskChannel() {
 
     //Find current chat based on Id in url
     const currentChat = chats.find(chat => chat.chat_id === chatId);
-    const chatName = currentChat ? currentChat.name : 'Home';
+    const chatName = currentChat ? currentChat.name : 'Ask';
 
     const changeChatName = async (event) => {
         event.preventDefault();
@@ -56,20 +56,26 @@ function AskChannel() {
             if (changedChatName.length === 0) {
                 setErrorMessage("Chat needs a name");
                 return;
-            } else {
-                const response = await axios.post('/api/change_ask_chat_name', {
-                    chatId: chatId,
-                    newName: changedChatName
-                });
             }
+            const response = await axios.post('/api/change_ask_chat_name', {
+                chatId: chatId,
+                newName: changedChatName
+            });
+            if (response.status === 200) {
+                setChats(prevChats => prevChats.map(chat => 
+                    chat.chat_id === chatId ? { ...chat, name: changedChatName } : chat
+                ));
+                setIsEditingChatName(false);
+                setChangedChatName('');
+            }
+
         } catch {
             setErrorMessage("Error changing chat name");
         }
     };
 
-    const createNewAskChat = async (event) => {
-        event.preventDefault();
-        try {
+    const createNewAskChat = async (messageContent = '') => {
+        //try {
             const newChatId = v4();
             const response = await axios.post('/api/create_ask_chat', {
                 chatId: newChatId,
@@ -81,15 +87,18 @@ function AskChannel() {
                     chatId: response.data.chat_id,
                 };
                 //Updates chats and viewed chats
-                setChats(prevChats => [...prevChats, newChat]);
+                setChats(prevChats => [newChat, ...prevChats]);
                 navigate(`/ask/${newChat.chatId}`)
                 setErrorMessage('');
+                if (messageContent) {
+                    await sendAskMessage(newChat.chatId, messageContent);
+                }
             } else {
-                setErrorMessage("Failed to add chat");
+                setErrorMessage("create new ask chat 1");
             }
-        } catch (error) {
-            setErrorMessage("Failed to add chat");
-        }
+        //} catch (error) {
+            //setErrorMessage("create new ask chat 2");
+        //}
     };
 
     const deleteChat = async () => {
@@ -109,10 +118,8 @@ function AskChannel() {
     const handleHomeSubmit = async (event) => {
         event.preventDefault();
         try {
-            //if (currentMessage.trim()) {
-                //await createNewAskChat(currentMessage.trim());
-                setCurrentMessage('');
-            //}
+            await createNewAskChat(currentMessage);
+            setCurrentMessage('');
         } catch (error) {
             setErrorMessage("Error submitting chat");
         }
@@ -121,11 +128,11 @@ function AskChannel() {
     //Checks if viewing home chat
     const isHome = location.pathname === '/ask/home';
 
-    const sendAskMessage = async () => {
-        try {
+    const sendAskMessage = async (chatId, messageContent = currentMessage) => {
+        //try {
             const response = await axios.post('/api/send_ask_message', {
                 chatId: chatId,
-                messageContent: currentMessage,
+                messageContent: messageContent,
                 senderId: user.userId, 
             });
 
@@ -134,11 +141,11 @@ function AskChannel() {
                 setCurrentMessage('');
                 setErrorMessage('');
             } else {
-                setErrorMessage("Failed to send message");
+                setErrorMessage("send ask message 1");
             }
-        } catch (error) {
-            setErrorMessage("Error sending message");
-        }
+        //} catch (error) {
+            //setErrorMessage("send ask message 2");
+        //}
     };
 
     document.title="Ask";
@@ -160,7 +167,7 @@ function AskChannel() {
                                     <p className="text36">Ask anything...</p>
                                 </div>
                                 <div id="channel-input">
-                                    <input class="chat-message-bar" type="text" value={currentMessage} onChange={(e) => setCurrentMessage(e.target.value)} placeholder="Ask..." onKeyDown={(e) => e.key === 'Enter' && handleHomeSubmit()}/>
+                                    <input class="chat-message-bar" type="text" value={currentMessage} onChange={(e) => setCurrentMessage(e.target.value)} placeholder="Ask..." onKeyDown={(e) => e.key === 'Enter' && handleHomeSubmit(e)}/>
                                     <button class="chat-send-button" onClick={handleHomeSubmit}>Send</button>
                                 </div>
                             </div>
@@ -176,8 +183,8 @@ function AskChannel() {
                                     ))}
                                 </div>
                                 <div id="channel-input">
-                                    <input class="chat-message-bar" type="text" value={currentMessage} onChange={(e) => setCurrentMessage(e.target.value)} placeholder="Ask..." onKeyDown={(e) => e.key === 'Enter' && sendAskMessage()}/>
-                                    <button class="chat-send-button" onClick={sendAskMessage}>Send</button>
+                                    <input class="chat-message-bar" type="text" value={currentMessage} onChange={(e) => setCurrentMessage(e.target.value)} placeholder="Ask..." onKeyDown={(e) => e.key === 'Enter' && sendAskMessage(chatId, currentMessage)}/>
+                                    <button class="chat-send-button" onClick={() => sendAskMessage(chatId, currentMessage)}>Send</button>
                                 </div>
                             </div>
                         )}
@@ -191,7 +198,7 @@ function AskChannel() {
             ) : (
                 <aside id="right-aside">
                     <div class="error-message">{errorMessage}</div>
-                    {chatName !== 'Home' ? (
+                    {chatName !== 'Ask' ? (
                         <div id="chat-change">
                             {isEditingChatName ? (
                                 <div id="change-name">
@@ -225,7 +232,7 @@ function AskChannel() {
                                     <button className="button" onClick={() => {
                                         setIsEditingChatName(true);
                                         setChangedChatName(chatName);
-                                    }}>Change name</button>
+                                    }}>Rename</button>
                                     <button className="button" onClick={() => deleteChat()}>Delete chat</button> 
                                 </div>
                             )}
@@ -235,15 +242,10 @@ function AskChannel() {
                     )}
                     <div id="add-chat-section">
                         <div id="add-channel-section">
-                            <button class="button" onClick={createNewAskChat}>New chat</button>
+                            <button class="button" onClick={() => createNewAskChat()}>New chat</button>
                         </div>
                     </div>
                     <ul>
-                        <li className="channel-item">
-                            <Link to='/ask/home'>
-                                <div className="channel-link">Home</div>
-                            </Link>
-                        </li>
                         {chats.map(chat => (
                             <li key={chat.chat_id} className="channel-item">
                                 <Link to={`/ask/${chat.chat_id}`}>

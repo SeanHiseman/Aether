@@ -361,7 +361,7 @@ function MessagesPage() {
                                         <button className="button" onClick={() => {
                                             setIsEditingChatName(true);
                                             setChangedChatName(currentChatName);
-                                        }}>Change name</button>
+                                        }}>Rename</button>
                                         <button className="button" onClick={() => deleteChat()}>Delete chat</button> 
                                     </div>
                                     
