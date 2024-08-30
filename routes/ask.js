@@ -87,7 +87,7 @@ router.get('/get_ask_messages', authenticateCheck, async (req, res) => {
 router.post('/send_ask_message', authenticateCheck, async (req, res) => {
     try {
         const { chatId, messageContent, senderId, timestamp } = req.body;
-        console.log("messageContent:", messageContent);
+
         //Creates API assistant
         const assistant = await openai.beta.assistants.create({
             name: "Ask",
@@ -110,7 +110,7 @@ router.post('/send_ask_message', authenticateCheck, async (req, res) => {
             thread.id,
             {
                 assistant_id: assistant.id, 
-                instructions: "Your info:( Name: Ask, Site name: Aether) rules: (reply length < 3 sentences) "
+                instructions: "Your info:( Name: Ask, Site name: Aether) rules: (reply length < 3 sentences if possible) "
             }
         );
 
@@ -123,7 +123,7 @@ router.post('/send_ask_message', authenticateCheck, async (req, res) => {
         //Get OpenAI response
         const messages = await openai.beta.threads.messages.list(thread.id);
         const aiReply = messages.data.find(msg => msg.role === 'assistant').content[0].text.value;
-        console.log(aiReply);
+
         //Save user message 
         const newMessage = await AskMessages.create({
             message_id: v4(),
@@ -142,6 +142,12 @@ router.post('/send_ask_message', authenticateCheck, async (req, res) => {
             timestamp: Date.now()
         });
 
+        //Update chat timestamp
+        await AskChats.update(
+            { updated_at: Date.now() },
+            { where: { chat_id: chatId } }
+        );
+        
         res.status(201).json({ success: true, userMessage: newMessage, assistantMessage });
     } catch (error) {
         res.status(500).json({ error: 'Error sending message' });

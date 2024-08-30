@@ -132,6 +132,12 @@ function AskChannel() {
         try {
             setIsLoading(true);
             setCurrentMessage('');
+            //Move current chat to top of chat list
+            setChats(prevChats => {
+                const currentChat = prevChats.find(chat => chat.chat_id === chatId);
+                const otherChats = prevChats.filter(chat => chat.chat_id !== chatId);
+                return currentChat ? [currentChat, ...otherChats] : prevChats;
+            });
             const response = await axios.post('/api/send_ask_message', {
                 chatId: chatId,
                 messageContent: messageContent,
@@ -189,8 +195,8 @@ function AskChannel() {
                                     ))}
                                 </div>
                                 <div id="channel-input">
-                                    <input class="chat-message-bar" type="text" value={currentMessage} onChange={(e) => setCurrentMessage(e.target.value)} placeholder="Ask..." onKeyDown={(e) => e.key === 'Enter' && sendAskMessage(chatId, currentMessage)}/>
-                                    <button class="chat-send-button" onClick={() => sendAskMessage(chatId, currentMessage)}>{isLoading ? 'Loading...' : 'Send'}</button>
+                                    <input class="chat-message-bar" type="text" value={currentMessage} onChange={(e) => setCurrentMessage(e.target.value)} placeholder="Ask..." onKeyDown={(e) => e.key === 'Enter' && sendAskMessage(chatId, currentMessage)} disabled={isLoading}/>
+                                    <button class="chat-send-button" onClick={() => sendAskMessage(chatId, currentMessage)} disabled={isLoading}>{isLoading ? 'Loading...' : 'Send'}</button>
                                 </div>
                             </div>
                         )}
