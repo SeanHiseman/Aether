@@ -86,8 +86,8 @@ router.get('/get_ask_messages', authenticateCheck, async (req, res) => {
 
 router.post('/send_ask_message', authenticateCheck, async (req, res) => {
     try {
-        const { chatId, messageContent, senderId } = req.body;
-
+        const { chatId, messageContent, senderId, timestamp } = req.body;
+        console.log("messageContent:", messageContent);
         //Creates API assistant
         const assistant = await openai.beta.assistants.create({
             name: "Ask",
@@ -123,15 +123,14 @@ router.post('/send_ask_message', authenticateCheck, async (req, res) => {
         //Get OpenAI response
         const messages = await openai.beta.threads.messages.list(thread.id);
         const aiReply = messages.data.find(msg => msg.role === 'assistant').content[0].text.value;
-        console.log("aiReply:", aiReply);
-
+        console.log(aiReply);
         //Save user message 
         const newMessage = await AskMessages.create({
             message_id: v4(),
             chat_id: chatId,
             sender_id: senderId,
             message_content: messageContent,
-            timestamp: new Date()
+            timestamp: timestamp
         });
 
         //Save reply
@@ -140,7 +139,7 @@ router.post('/send_ask_message', authenticateCheck, async (req, res) => {
             chat_id: chatId,
             sender_id: 'ask', //distinguishes from human messages
             message_content: aiReply,
-            timestamp: new Date()
+            timestamp: Date.now()
         });
 
         res.status(201).json({ success: true, userMessage: newMessage, assistantMessage });
