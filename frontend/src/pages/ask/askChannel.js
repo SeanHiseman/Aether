@@ -2,7 +2,7 @@ import axios from 'axios';
 import React, { useContext, useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { v4 } from 'uuid';
-import { AuthContext } from '../components/authContext';
+import { AuthContext } from '../../components/authContext';
 
 function AskChannel() {
     const [changedChatName, setChangedChatName] = useState('');
@@ -12,7 +12,6 @@ function AskChannel() {
     const [isEditingChatName, setIsEditingChatName] = useState(false);
     const [messages, setMessages] = useState([]);
     const location = useLocation();
-    const query = location.state?.query || '';
     const navigate = useNavigate();
     const { chatId } = useParams();
     const { user } = useContext(AuthContext);
@@ -75,7 +74,7 @@ function AskChannel() {
     };
 
     const createNewAskChat = async (messageContent = '') => {
-        //try {
+        try {
             const newChatId = v4();
             const response = await axios.post('/api/create_ask_chat', {
                 chatId: newChatId,
@@ -94,11 +93,11 @@ function AskChannel() {
                     await sendAskMessage(newChat.chatId, messageContent);
                 }
             } else {
-                setErrorMessage("create new ask chat 1");
+                setErrorMessage("Error creating chat");
             }
-        //} catch (error) {
-            //setErrorMessage("create new ask chat 2");
-        //}
+        } catch (error) {
+            setErrorMessage("Error creating chat");
+        }
     };
 
     const deleteChat = async () => {
@@ -129,7 +128,7 @@ function AskChannel() {
     const isHome = location.pathname === '/ask/home';
 
     const sendAskMessage = async (chatId, messageContent = currentMessage) => {
-        //try {
+        try {
             const response = await axios.post('/api/send_ask_message', {
                 chatId: chatId,
                 messageContent: messageContent,
@@ -141,11 +140,11 @@ function AskChannel() {
                 setCurrentMessage('');
                 setErrorMessage('');
             } else {
-                setErrorMessage("send ask message 1");
+                setErrorMessage("Error sending message");
             }
-        //} catch (error) {
-            //setErrorMessage("send ask message 2");
-        //}
+        } catch (error) {
+            setErrorMessage("Error sending message");
+        }
     };
 
     document.title="Ask";
