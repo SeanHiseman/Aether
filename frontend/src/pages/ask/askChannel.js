@@ -136,7 +136,8 @@ function AskChannel() {
             });
 
             if (response.data && response.status === 201) {
-                setMessages(prevMessages => [response.data.message, ...prevMessages]);
+                const { userMessage, assistantMessage } = response.data;
+                setMessages(prevMessages => [assistantMessage, userMessage, ...prevMessages]);
                 setCurrentMessage('');
                 setErrorMessage('');
             } else {
