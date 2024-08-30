@@ -110,6 +110,11 @@ const BaseLayout = () => {
     const handleAskClick = async (event) => {
         try {
             event.preventDefault();
+            //Check if input bar is empty
+            if (!currentQuery.trim()) {
+                navigate('/ask/home');
+                return;
+            }
             const newChatId = v4();
             if (user.hasMembership) {
                 await axios.post('/api/create_ask_chat', {

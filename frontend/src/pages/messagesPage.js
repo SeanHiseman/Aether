@@ -162,6 +162,8 @@ function MessagesPage() {
             const friend = friends.find(f => f.friend_name === friend_name);
             const friendId = friend.friend_id;
             const participants = [user.userId, friendId];
+            const chatName = newChatName.length === 0 ? 'New chat' : newChatName;
+
             if (newChatName.length >= 30) {
                 setErrorMessage("Name too long"); 
                 return; 
@@ -171,7 +173,7 @@ function MessagesPage() {
             } else {
                 const response = await axios.post('/api/create_conversation', {
                     participants: participants,
-                    title: newChatName
+                    title: chatName
                 });
                 if (response.data && response.status === 201) {
                     const newConversation = {
@@ -258,7 +260,7 @@ function MessagesPage() {
                 message_content: message,
                 senderId: user.userId,
                 conversationId: selectedConversationId,
-                timestamp: new Date()
+                timestamp: Date.now()
             };
 
             socketRef.current.emit('send_direct_message', newMessage);
@@ -390,7 +392,7 @@ function MessagesPage() {
                                     }
                                 }} onSubmit={createNewChat}>
                                     <input className="channel-input" type="text" name="chat_name" placeholder="Chat name..." value={newChatName} onChange={(e) => setNewChatName(e.target.value)}/>
-                                    <input className="light-button" type="submit" value="Add" disabled={!newChatName}/>
+                                    <input className="light-button" type="submit" value="Add" />
                                 </form>                            
                             )}
                         </div>

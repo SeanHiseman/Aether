@@ -10,6 +10,7 @@ function AskChannel() {
     const [currentMessage, setCurrentMessage] = useState('');
     const [errorMessage, setErrorMessage] = useState('');
     const [isEditingChatName, setIsEditingChatName] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
     const [messages, setMessages] = useState([]);
     const location = useLocation();
     const navigate = useNavigate();
@@ -129,10 +130,13 @@ function AskChannel() {
 
     const sendAskMessage = async (chatId, messageContent = currentMessage) => {
         try {
+            setIsLoading(true);
+            setCurrentMessage('');
             const response = await axios.post('/api/send_ask_message', {
                 chatId: chatId,
                 messageContent: messageContent,
                 senderId: user.userId, 
+                timestamp: Date.now() //Set timestamp now so reply has different
             });
 
             if (response.data && response.status === 201) {
@@ -145,6 +149,8 @@ function AskChannel() {
             }
         } catch (error) {
             setErrorMessage("Error sending message");
+        } finally {
+            setIsLoading(false);
         }
     };
 
@@ -184,7 +190,7 @@ function AskChannel() {
                                 </div>
                                 <div id="channel-input">
                                     <input class="chat-message-bar" type="text" value={currentMessage} onChange={(e) => setCurrentMessage(e.target.value)} placeholder="Ask..." onKeyDown={(e) => e.key === 'Enter' && sendAskMessage(chatId, currentMessage)}/>
-                                    <button class="chat-send-button" onClick={() => sendAskMessage(chatId, currentMessage)}>Send</button>
+                                    <button class="chat-send-button" onClick={() => sendAskMessage(chatId, currentMessage)}>{isLoading ? 'Loading...' : 'Send'}</button>
                                 </div>
                             </div>
                         )}
@@ -242,7 +248,9 @@ function AskChannel() {
                     )}
                     <div id="add-chat-section">
                         <div id="add-channel-section">
-                            <button class="button" onClick={() => createNewAskChat()}>New chat</button>
+                            <Link to={"/ask/home"}>
+                                <button class="button">New chat</button>
+                            </Link>
                         </div>
                     </div>
                     <ul>
