@@ -1,7 +1,7 @@
 import React from 'react';
 import { Navigate, BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import { AuthCheck } from './components/authContext';
-import AskChannel from './pages/askChannel';
+import AskChannel from './pages/ask/askChannel';
 import BaseLayout from './pages/base';
 import FollowingPage from './pages/personal_feeds/following';
 import FriendsPage from './pages/personal_feeds/friends';
