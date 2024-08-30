@@ -1,9 +1,12 @@
 import authenticateCheck from '../functions/authenticateCheck.js';
+import dotenv from 'dotenv';
+import OpenAI from "openai";
 import { Router } from 'express';
-import { Op } from 'sequelize';
 import { v4 } from 'uuid';
-import { AskChats, AskMessages, Users } from '../models/models.js';
+import { AskChats, AskMessages } from '../models/models.js';
 
+dotenv.config();
+const openai = new OpenAI();
 const router = Router();
 
 router.post('/change_ask_chat_name', authenticateCheck, async (req, res) => {
@@ -84,6 +87,45 @@ router.get('/get_ask_messages', authenticateCheck, async (req, res) => {
 router.post('/send_ask_message', authenticateCheck, async (req, res) => {
     try {
         const { chatId, messageContent, senderId } = req.body;
+
+        //Creates API assistant
+        const assistant = await openai.beta.assistants.create({
+            name: "Ask",
+            instructions: "Assist users",
+            model: "gpt-4o-mini",
+        });
+
+        //Send user message to OpenAI
+        const thread = await openai.beta.threads.create();
+        const userMessage = await openai.beta.threads.messages.create(
+            thread.id,
+            {
+                role: "user",
+                content: messageContent
+            }
+        );
+
+        //Run OpenAI assistant
+        const run = await openai.beta.threads.runs.create(
+            thread.id,
+            {
+                assistant_id: assistant.id, 
+                instructions: "Your info:( Name: Ask, Site name: Aether) rules: (reply length < 3 sentences) "
+            }
+        );
+
+        //Wait for OpenAI response
+        let runStatus = await openai.beta.threads.runs.retrieve(thread.id, run.id);
+        while (runStatus.status !== "completed") {
+            runStatus = await openai.beta.threads.runs.retrieve(thread.id, run.id);
+        }
+
+        //Get OpenAI response
+        const messages = await openai.beta.threads.messages.list(thread.id);
+        const aiReply = messages.data.find(msg => msg.role === 'assistant').content[0].text.value;
+        console.log("aiReply:", aiReply);
+
+        //Save user message 
         const newMessage = await AskMessages.create({
             message_id: v4(),
             chat_id: chatId,
@@ -91,7 +133,17 @@ router.post('/send_ask_message', authenticateCheck, async (req, res) => {
             message_content: messageContent,
             timestamp: new Date()
         });
-        res.status(201).json({ success: true, message: newMessage });
+
+        //Save reply
+        const assistantMessage = await AskMessages.create({
+            message_id: v4(),
+            chat_id: chatId,
+            sender_id: 'ask', //distinguishes from human messages
+            message_content: aiReply,
+            timestamp: new Date()
+        });
+
+        res.status(201).json({ success: true, userMessage: newMessage, assistantMessage });
     } catch (error) {
         res.status(500).json({ error: 'Error sending message' });
     }
