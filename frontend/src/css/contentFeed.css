@@ -1,4 +1,15 @@
 @import url('variables.css');
+.ask-note {
+    background-color: var(--dark);
+    border: 1px solid var(--dark-line);
+    border-radius: 10px;
+    padding: 1px;
+    width: 100%;
+}
+.ask-note-text {
+    font-size: medium;
+    margin: 10px;
+}
 .content-item {
     background-color: var(--darkest);
     border-left: 1px solid var(--border);
