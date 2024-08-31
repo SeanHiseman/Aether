@@ -346,7 +346,7 @@ const AskNotes = sequelize.define('ask_notes', {
 
 //AskNotes relationships
 AskNotes.belongsTo(GroupPosts, { foreignKey: 'post_id', as: 'parentPost'});
-GroupPosts.hasOne(AskNotes, { foreignKey: 'post_id', as: 'childNote'});
+GroupPosts.hasOne(AskNotes, { foreignKey: 'post_id', as: 'note'});
 
 export {
     Profiles,
