@@ -417,7 +417,7 @@ router.get('/group_channel_posts', authenticateCheck, async (req, res) => {
         const { channel_id, location_id } = req.query;
         const userId = req.session.user_id;
 
-        // Determine the filter based on whether channel_id is provided or not
+        //Determine the filter based on whether channel_id is provided or not
         const whereChannel = {
             group_id: location_id,
             ...(channel_id ? { channel_id: channel_id } : {})
@@ -441,7 +441,7 @@ router.get('/group_channel_posts', authenticateCheck, async (req, res) => {
             }, {
                 model: AskNotes,
                 as: 'note',
-                attributes: ['note_id', 'note_content', 'timestamp'],
+                attributes: ['note_id', 'note_content', 'timestamp', 'is_misinfo'],
                 required: false
             }],
             attributes: ['post_id', 'title', 'content', 'replies', 'views', 'upvotes', 'downvotes', 'timestamp', 'poster_id', 'points'],

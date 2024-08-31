@@ -12,9 +12,9 @@ function ContentWidget({ canRemove: canRemoveProp , isGroup, post }) {
     const [downvoteLimit, setDownvoteLimit] = useState(false);
     const [hasViewed, setHasViewed] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
-    const [note, setNote] = useState('');
+    const [note, setNote] = useState(post.note ? post.note.note_content : '');
     const [replies, setReplies] = useState([]);
-    const [showNote, setShowNote] = useState(false);
+    const [showNote, setShowNote] = useState(post.note && post.note.is_misinfo);
     const [showReplies, setShowReplies] = useState(false);
     const [upvotes, setUpvotes] = useState(post.upvotes);
     const [upvoteLimit, setUpvoteLimit] = useState(false);
@@ -93,16 +93,15 @@ function ContentWidget({ canRemove: canRemoveProp , isGroup, post }) {
         try { 
             if (showNote) {
                 setShowNote(false);
-                setNote('');
             } else {
-                if (post.note) {
-                    setNote(post.note.note_content);
+                if (note) {
                     setShowNote(true);
                 } else {
                     setIsLoading(true);
                     const normalisedContent = stripHtmlTags(post.content);
                     const response = await axios.post('/api/ask_button', { postTitle: post.title, postContent: normalisedContent, postId: post.post_id });
-                    setNote(response.data.newNote.note_content);
+                    const { newNote } = response.data;
+                    setNote(newNote.note_content);
                     setShowNote(true);
                 }
             }
@@ -250,7 +249,9 @@ function ContentWidget({ canRemove: canRemoveProp , isGroup, post }) {
                 {canRemove ? (
                     <button className="button" onClick={() => removePost(isGroup, post.post_id)}>Delete</button>
                 ) : null}
-                <button className={`${isLoading ? 'button-disabled' : 'button'}`} onClick={askPost} disabled={isLoading}>{showNote ? 'Close' : (isLoading ? 'Loading...' : 'Ask')}</button>
+                {!post.note?.is_misinfo && (
+                    <button className={`${isLoading ? 'button-disabled' : 'button'}`} onClick={askPost} disabled={isLoading}>{showNote ? 'Close' : (isLoading ? 'Loading...' : 'Ask')}</button>
+                )}
             </div>
             
             {showReplies && (
