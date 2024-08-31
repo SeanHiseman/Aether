@@ -55,6 +55,15 @@ body,html {
 .button {
     background-color: var(--darkest);
 }
+.button-disabled {
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background-color: var(--dark-line);
+    color: var(--border);
+    font-size: large;
+    margin: 10px;
+    padding: 3px 6px;
+}
 .button, .background-button, .light-button {
     border: 1px solid var(--border);
     border-radius: 10px;

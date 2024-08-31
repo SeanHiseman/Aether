@@ -36,7 +36,7 @@ router.post('/ask_button', authenticateCheck, async (req, res) => {
             thread.id,
             {
                 assistant_id: assistant.id, 
-                instructions: "Check input for misinformation. State if none present. Definite tone. Reply length < 3 sentences if possible"
+                instructions: "Check input for misinformation. Definite tone. No mention if none present, instead make regular comment. Reply length < 3 sentences if possible"
             }
         );
 
