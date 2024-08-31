@@ -4,8 +4,8 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { AuthContext } from '../../components/authContext';
 import ChannelName from '../../components/channels/channelName';
 import ManageFriendshipButton from '../../components/manageFriendship';
+import PostChannel from '../../components/channels/postChannel';
 import PostForm from '../../components/postForm';
-import ProfileFeed from './profileFeed';
 import FollowerChangeButton from '../../components/followerChangeButton';
 
 function Profile() {
@@ -142,7 +142,7 @@ function Profile() {
                         <PostForm onSubmit={handlePostSubmit} errorMessage={errorMessage} />
                     ) : (
                         channelRender && !isPrivateNotFriend ? (
-                            <ProfileFeed channelId={channelRender.channel_id} isGroup={false} locationId={profile.profileId} />
+                            <PostChannel canRemove={isLoggedInUser} channelId={channelRender.channel_id} channelName={channelRender.channel_name} isGroup={false} locationId={profile.profileId} />
                         ) : <p className="large-text">This feed is private</p>
                     )}
                 </div>

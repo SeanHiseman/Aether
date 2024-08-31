@@ -411,16 +411,20 @@ router.get('/group_channel_messages/:channel_id', authenticateCheck, async (req,
     }
 });
 
-//Posts made to a group channel
+//Posts made to a group channel, including Main
 router.get('/group_channel_posts', authenticateCheck, async (req, res) => {
     try {
         const { channel_id, location_id } = req.query;
         const userId = req.session.user_id;
+
+        // Determine the filter based on whether channel_id is provided or not
+        const whereChannel = {
+            group_id: location_id,
+            ...(channel_id ? { channel_id: channel_id } : {})
+        };
+
         const posts = await GroupPosts.findAll({
-            where: {
-                group_id: location_id,
-                channel_id: channel_id
-            },
+            where: whereChannel,
             include: [{
                 model: Users,
                 as: 'GroupPoster',
@@ -442,45 +446,8 @@ router.get('/group_channel_posts', authenticateCheck, async (req, res) => {
             ...post.dataValues, is_group: true,
         }));
 
-        const sortedPosts = sortPostsByWeightedRatio(finalResults, userId);
-        res.json(sortedPosts);
-    } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
-    }
-});
-
-//Collates content from across group in to main feed
-router.get('/group_main_posts', authenticateCheck, async (req, res) => {
-    try {
-        const { location_id } = req.query;
-        const userId = req.session.user_id;
-        const posts = await GroupPosts.findAll({
-            where: {
-                group_id: location_id
-            },
-            include: [{
-                model: Users,
-                as: 'GroupPoster',
-                attributes: ['username'],
-                include: [{
-                    model: Profiles,
-                    attributes: ['profile_photo']
-                }]
-            }, {
-                model: ContentVotes,
-                as: 'GroupPostVotes',
-                attributes: ['vote_count'],
-                required: false
-            }],
-            attributes: ['post_id', 'title', 'content', 'replies', 'views', 'upvotes', 'downvotes', 'timestamp', 'poster_id'],
-        })
-        
-        const finalResults = posts.map((post) => ({
-            ...post.dataValues, is_group: true,
-        }));
-
-        const sortedPosts = await sortPostsByWeightedRatio(finalResults, userId);
-        res.json(sortedPosts);
+        //const sortedPosts = sortPostsByWeightedRatio(finalResults, userId);
+        res.json(finalResults);
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
     }

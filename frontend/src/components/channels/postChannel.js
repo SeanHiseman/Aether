@@ -8,27 +8,27 @@ function PostChannel({ canRemove, channelId, channelName, isGroup, locationId })
 
     //Gets posts from channel
     useEffect(() => {
-        let url = '';
-        //Displays different posts depending on if viewing main channel of a group or profile
-        if (channelName === 'Main') {
-            url = isGroup ? 'group_main_posts' : 'profile_main_posts';
-        } else {
-            url = isGroup ? 'group_channel_posts' : 'profile_channel_posts';
-        }
-
-        const channelData = new URLSearchParams({
-            channel_id: channelId,
-            location_id: locationId
-        }).toString();
-
-        axios.get(`/api/${url}?${channelData}`)
-        .then(response => {
-            setPosts(response.data);
-        })
-        .catch(error => {
-             console.error('Error getting posts:', error);
-        });
+        const getPosts = async () => {
+            try {
+                const isMain = channelName === 'Main';
+                const url = isGroup ? 'group_channel_posts' : 'profile_channel_posts';
+      
+                const response = await axios.get(`/api/${url}`, {
+                    params: {
+                        location_id: locationId,
+                        ...(isMain ? {} : { channel_id: channelId }) //Only include channelId if not viewing Main
+                    }
+                });
+      
+                setPosts(response.data);
+            } catch (error) {
+                console.error('Error getting posts:', error);
+            }
+        };
+      
+        getPosts();
     }, [channelId, channelName, isGroup, locationId]);
+      
 
     return (
         <div id="channel">

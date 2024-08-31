@@ -390,20 +390,18 @@ router.delete('/remove_friend', authenticateCheck, async (req, res) => {
     }
 });
 
-//Posts made to a profile channel
+//Posts made to a profile channel, including Main
 router.get('/profile_channel_posts', authenticateCheck, async (req, res) => {
     try {
         const { channel_id, location_id } = req.query;
-        //Limits number of posts returned
-        //const limit = parseInt(req.query.limit) || 10;
-        //const offset = parseInt(req.query.offset) || 0;
+
+        const whereChannel = {
+            profile_id: location_id,
+            ...(channel_id ? { channel_id: channel_id } : {})
+        };
+
         const posts = await ProfilePosts.findAll({
-            where: {
-                profile_id: location_id,
-                channel_id: channel_id
-            },
-            //limit: limit,
-            //offset: offset,
+            where: whereChannel,
             include: [{
                 model: Users,
                 as: 'ProfilePoster',
@@ -418,42 +416,8 @@ router.get('/profile_channel_posts', authenticateCheck, async (req, res) => {
                 attributes: ['vote_count'],
                 required: false
             }],
-            attributes: ['post_id', 'title', 'content', 'replies', 'views', 'upvotes', 'downvotes', 'timestamp', 'poster_id', 'points'],
-            //Posts sorted chronilogically
-            order: [['timestamp', 'DESC']]
-        });
-
-        res.json(posts);
-    } catch (error) {
-        res.status(500).json({ success: false, message: error.message });   
-    }
-});
-
-//Collates content from across profile in to main feed
-router.get('/profile_main_posts', authenticateCheck, async (req, res) => {
-    try {
-        const { location_id } = req.query;
-        const posts = await ProfilePosts.findAll({
-            where: {
-                profile_id: location_id
-            },
-            include: [{
-                model: Users,
-                as: 'ProfilePoster',
-                attributes: ['username'],
-                include: [{
-                    model: Profiles,
-                    attributes: ['profile_photo']
-                }]
-            }, {
-                model: ContentVotes,
-                as: 'ProfilePostVotes',
-                attributes: ['vote_count'],
-                required: false
-            }],
-            //Newest first
-            order: [['timestamp', 'DESC']],
             attributes: ['post_id', 'title', 'content', 'replies', 'views', 'upvotes', 'downvotes', 'timestamp', 'poster_id'],
+            order: [['timestamp', 'DESC']] //Posts sorted chronologically
         });
 
         res.json(posts);
