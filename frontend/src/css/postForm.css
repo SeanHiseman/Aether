@@ -55,10 +55,6 @@
     margin-bottom: 10px;
     width: 90%;
     padding: 10px;
-    transition: background-color 0.3s;
-}
-#title-entry:hover, #title-entry:focus {
-    background-color: var(--button-hover);
 }
 #title-entry::placeholder {
     color: var(--border);

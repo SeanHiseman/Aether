@@ -10,10 +10,11 @@ function ContentWidget({ canRemove: canRemoveProp , isGroup, post }) {
     const [canRemove, setCanRemove] = useState(canRemoveProp);
     const [downvotes, setDownvotes] = useState(post.downvotes);
     const [downvoteLimit, setDownvoteLimit] = useState(false);
-    const [hasNote, setHasNote] = useState(!!post.note);
     const [hasViewed, setHasViewed] = useState(false);
-    const [note, setNote] = useState(post.note ? post.note.note_content : '');
+    const [isLoading, setIsLoading] = useState(false);
+    const [note, setNote] = useState('');
     const [replies, setReplies] = useState([]);
+    const [showNote, setShowNote] = useState(false);
     const [showReplies, setShowReplies] = useState(false);
     const [upvotes, setUpvotes] = useState(post.upvotes);
     const [upvoteLimit, setUpvoteLimit] = useState(false);
@@ -89,13 +90,26 @@ function ContentWidget({ canRemove: canRemoveProp , isGroup, post }) {
 
     //Checks post using Ask
     const askPost = async () => {
-        try {
-            const normalisedContent = stripHtmlTags(post.content);
-            const response = await axios.post('/api/ask_button', { postTitle: post.title, postContent: normalisedContent, postId: post.post_id });
-            setHasNote(true);
-            setNote(response.data.newNote.note_content);
+        try { 
+            if (showNote) {
+                setShowNote(false);
+                setNote('');
+            } else {
+                if (post.note) {
+                    setNote(post.note.note_content);
+                    setShowNote(true);
+                } else {
+                    setIsLoading(true);
+                    const normalisedContent = stripHtmlTags(post.content);
+                    const response = await axios.post('/api/ask_button', { postTitle: post.title, postContent: normalisedContent, postId: post.post_id });
+                    setNote(response.data.newNote.note_content);
+                    setShowNote(true);
+                }
+            }
         } catch (error) {
             console.error(error);
+        } finally {
+            setIsLoading(false);
         }
     };
 
@@ -203,7 +217,7 @@ function ContentWidget({ canRemove: canRemoveProp , isGroup, post }) {
             <div className="react-quill-container">
                 <ReactQuill value={post.content} readOnly={true} theme={"bubble"} />
             </div>
-            {hasNote && (
+            {showNote && (
                 <div className="ask-note">
                     <p className="ask-note-text">{note}</p>
                 </div>
@@ -236,7 +250,7 @@ function ContentWidget({ canRemove: canRemoveProp , isGroup, post }) {
                 {canRemove ? (
                     <button className="button" onClick={() => removePost(isGroup, post.post_id)}>Delete</button>
                 ) : null}
-                <button className="button" onClick={askPost} disabled={hasNote}>Ask</button>
+                <button className={`${isLoading ? 'button-disabled' : 'button'}`} onClick={askPost} disabled={isLoading}>{showNote ? 'Close' : (isLoading ? 'Loading...' : 'Ask')}</button>
             </div>
             
             {showReplies && (
