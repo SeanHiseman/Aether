@@ -105,7 +105,7 @@ const Groups = sequelize.define('groups', {
 const GroupPosts = sequelize.define('group_posts', {
   post_id: { type: STRING(36), primaryKey: true },
   group_id: { type: STRING(36), allowNull: false }, 
-  channel_id: { type: String(36), allowNull: false },
+  channel_id: { type: STRING(36), allowNull: false },
   title: { type: STRING(120), allowNull: true },
   content: { type: TEXT, allowNull: false },
   replies: { type: INTEGER, allowNull: false, defaultValue: 0 },
@@ -316,6 +316,11 @@ const AskChats = sequelize.define('ask_chats', {
   updated_at: { type: DATE, defaultValue: NOW }
 }, { tableName: 'ask_chats', timestamps: false });  
 
+//AskChats relationships
+AskChats.belongsTo(Users, { foreignKey: 'user_id', as: 'user' });
+Users.belongsTo(AskChats, { foreignKey: 'user_id', as: 'askChats' });
+
+
 //Messages sent within Ask chats
 const AskMessages = sequelize.define('ask_messages', {
   message_id: { type: STRING(36), primaryKey: true },
@@ -325,14 +330,23 @@ const AskMessages = sequelize.define('ask_messages', {
   timestamp: { type: DATE, defaultValue: NOW }
 }, { tableName: 'ask_messages', timestamps: false });
 
-//AskChats relationships
-AskChats.belongsTo(Users, { foreignKey: 'user_id', as: 'user' });
-Users.belongsTo(AskChats, { foreignKey: 'user_id', as: 'askChats' });
 //AskMessages relationships
 AskChats.hasMany(AskMessages, { foreignKey: 'chat_id', as: 'messages' });
 AskMessages.belongsTo(AskChats, { foreignKey: 'chat_id', as: 'chat' });
 Users.hasMany(AskMessages, { foreignKey: 'sender_id', as: 'sentMessages' });
 AskMessages.belongsTo(Users, { foreignKey: 'sender_id', as: 'sender' });
+
+
+const AskNotes = sequelize.define('ask_notes', {
+  note_id: { type: STRING(36), primaryKey: true },
+  post_id: { type: STRING(36), allowNull: false, references: { model: 'GroupPosts', key: 'post_id' }},
+  note_content: { type: STRING(1000), allowNull: false },
+  timestamp: { type: DATE, defaultValue: NOW }
+}, { tableName: 'ask_notes', timestamps: false });
+
+//AskNotes relationships
+AskNotes.belongsTo(GroupPosts, { foreignKey: 'post_id', as: 'parentPost'});
+GroupPosts.hasOne(AskNotes, { foreignKey: 'post_id', as: 'childNote'});
 
 export {
     Profiles,
@@ -359,5 +373,6 @@ export {
     Messages,
     AskChats,
     AskMessages,
+    AskNotes,
 }
   

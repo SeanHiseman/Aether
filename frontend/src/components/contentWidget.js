@@ -10,7 +10,9 @@ function ContentWidget({ canRemove: canRemoveProp , isGroup, post }) {
     const [canRemove, setCanRemove] = useState(canRemoveProp);
     const [downvotes, setDownvotes] = useState(post.downvotes);
     const [downvoteLimit, setDownvoteLimit] = useState(false);
+    const [hasNote, setHasNote] = useState(false);
     const [hasViewed, setHasViewed] = useState(false);
+    const [note, setNote] = useState('');
     const [replies, setReplies] = useState([]);
     const [showReplies, setShowReplies] = useState(false);
     const [upvotes, setUpvotes] = useState(post.upvotes);
@@ -80,9 +82,17 @@ function ContentWidget({ canRemove: canRemoveProp , isGroup, post }) {
         checkVoteLimit();
     }, [post.post_id, isGroup]);
 
-    const askPost = () => {
+    //Extracts posts content from raw format
+    const stripHtmlTags = (content) => {
+        return content.replace(/<[^>]*>?/gm, '');
+    };
+
+    const askPost = async () => {
         try {
-            console.log("ask button test");
+            const normalisedContent = stripHtmlTags(post.content);
+            const response = await axios.post('/api/ask_button', { postTitle: post.title, postContent: normalisedContent, postId: post.post_id });
+            setHasNote(true);
+            setNote(response.data.newNote.note_content);
         } catch (error) {
             console.error(error);
         }
@@ -192,6 +202,11 @@ function ContentWidget({ canRemove: canRemoveProp , isGroup, post }) {
             <div className="react-quill-container">
                 <ReactQuill value={post.content} readOnly={true} theme={"bubble"} />
             </div>
+            {hasNote && (
+                <div className="ask-note">
+                    <p className="ask-note-text">{note}</p>
+                </div>
+            )}
             <div className="content-metadata">
                 <div className="profile-info">
                     {post[Poster] && post[Poster].username && post[Poster].profile && post[Poster].profile.profile_photo ? (
