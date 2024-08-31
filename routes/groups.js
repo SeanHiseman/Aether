@@ -1,7 +1,7 @@
 import authenticateCheck from '../functions/authenticateCheck.js';
 import checkIfUserIsAdmin from '../functions/adminCheck.js';
 import checkIfUserIsMember from '../functions/memberCheck.js';
-import { ContentVotes, Groups, GroupChannels, GroupChannelMessages, GroupRequests, GroupReplies, GroupPosts, NestedGroupMembers, NestedGroupRequests, Profiles, Users, UserGroups } from '../models/models.js';
+import { AskNotes, ContentVotes, Groups, GroupChannels, GroupChannelMessages, GroupRequests, GroupReplies, GroupPosts, NestedGroupMembers, NestedGroupRequests, Profiles, Users, UserGroups } from '../models/models.js';
 import express from 'express';
 import fs from 'fs';
 import multer from 'multer';
@@ -437,6 +437,11 @@ router.get('/group_channel_posts', authenticateCheck, async (req, res) => {
                 model: ContentVotes,
                 as: 'GroupPostVotes',
                 attributes: ['vote_count'],
+                required: false
+            }, {
+                model: AskNotes,
+                as: 'note',
+                attributes: ['note_id', 'note_content', 'timestamp'],
                 required: false
             }],
             attributes: ['post_id', 'title', 'content', 'replies', 'views', 'upvotes', 'downvotes', 'timestamp', 'poster_id', 'points'],

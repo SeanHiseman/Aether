@@ -10,9 +10,9 @@ function ContentWidget({ canRemove: canRemoveProp , isGroup, post }) {
     const [canRemove, setCanRemove] = useState(canRemoveProp);
     const [downvotes, setDownvotes] = useState(post.downvotes);
     const [downvoteLimit, setDownvoteLimit] = useState(false);
-    const [hasNote, setHasNote] = useState(false);
+    const [hasNote, setHasNote] = useState(!!post.note);
     const [hasViewed, setHasViewed] = useState(false);
-    const [note, setNote] = useState('');
+    const [note, setNote] = useState(post.note ? post.note.note_content : '');
     const [replies, setReplies] = useState([]);
     const [showReplies, setShowReplies] = useState(false);
     const [upvotes, setUpvotes] = useState(post.upvotes);
@@ -87,6 +87,7 @@ function ContentWidget({ canRemove: canRemoveProp , isGroup, post }) {
         return content.replace(/<[^>]*>?/gm, '');
     };
 
+    //Checks post using Ask
     const askPost = async () => {
         try {
             const normalisedContent = stripHtmlTags(post.content);
@@ -235,7 +236,7 @@ function ContentWidget({ canRemove: canRemoveProp , isGroup, post }) {
                 {canRemove ? (
                     <button className="button" onClick={() => removePost(isGroup, post.post_id)}>Delete</button>
                 ) : null}
-                <button className="button" onClick={askPost}>Ask</button>
+                <button className="button" onClick={askPost} disabled={hasNote}>Ask</button>
             </div>
             
             {showReplies && (
