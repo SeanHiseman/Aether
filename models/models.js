@@ -341,7 +341,8 @@ const AskNotes = sequelize.define('ask_notes', {
   note_id: { type: STRING(36), primaryKey: true },
   post_id: { type: STRING(36), allowNull: false, references: { model: 'GroupPosts', key: 'post_id' }},
   note_content: { type: STRING(1000), allowNull: false },
-  timestamp: { type: DATE, defaultValue: NOW }
+  timestamp: { type: DATE, defaultValue: NOW },
+  is_misinfo: { type: BOOLEAN, defaultValue: false},
 }, { tableName: 'ask_notes', timestamps: false });
 
 //AskNotes relationships
