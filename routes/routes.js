@@ -3,11 +3,19 @@ import { ContentVotes, Followers, Friends, FriendRequests, GroupChannels, Groups
 import authenticateCheck from '../functions/authenticateCheck.js';
 import calculatePoints from '../functions/postPoints.js';
 import checkIfUserIsMember from '../functions/memberCheck.js';
+import fs from 'fs';
+import { fileURLToPath } from 'url';
 import { hybridRecommendations } from '../functions/recommendation/hybrid.js';
+import { dirname } from 'path';
 import { Op } from 'sequelize';
+import path from 'path';
 import sortPostsByWeightedRatio from '../functions/postSorting.js';
 import { v4 } from 'uuid';
+
 const router = Router();
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename); 
+const rootDir = path.resolve(__dirname, '..');
 
 //Changes name on profile, group or chat channel
 router.post('/change_channel_name', authenticateCheck, async (req, res) => {
@@ -350,9 +358,27 @@ router.delete('/remove_post', authenticateCheck, async (req, res) => {
         const { postData } = req.body;
         const { isGroup, postId } = postData;
         const repliesModel = isGroup ? GroupReplies : ProfileReplies;
-        await repliesModel.destroy({ where : { post_id: postId }});
         const postModel = isGroup ? GroupPosts : ProfilePosts;
-        await postModel.destroy({ where: { post_id: postId }});
+
+        //Deletes media associated with post
+        const post = await postModel.findOne({ where: { post_id: postId } });
+        const mediaFiles = [];
+        const content = post.content;
+        const mediaRegex = /\/media\/content\/([\w.-]+)/g;
+        let match;
+        while ((match = mediaRegex.exec(content)) !== null) {
+            mediaFiles.push(match[1]);
+        }
+        mediaFiles.forEach(file => {
+            const filePath = path.join(rootDir, 'media', 'content', file);
+            fs.unlink(filePath, (error) => {
+                if (error) console.error(`Failed to delete file: ${filePath}`, err);
+            });
+        });
+
+        await repliesModel.destroy({ where: { post_id: postId } });
+        await postModel.destroy({ where: { post_id: postId } });
+        res.json({ success: true, message: 'Post deleted successfully' });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
     }

@@ -27,7 +27,8 @@ const PostForm = ({ onSubmit, errorMessage }) => {
 
     //Handles attached files
     const handleFilesChange = (event) => {
-        setFiles([...event.target.files]);
+        const newFiles = Array.from(event.target.files);
+        setFiles((prevFiles) => [...prevFiles, ...newFiles]);
     };
 
     const handleSubmit = async (event) => {
@@ -50,9 +51,21 @@ const PostForm = ({ onSubmit, errorMessage }) => {
             <form id="post-form" onSubmit={handleSubmit}>
                 <input id="title-entry" type="text" placeholder="Add title (optional)..." value={title} onChange={(e) => setTitle(e.target.value)}/>
                 <ReactQuill placeholder="Create post..." modules={modules} value={content} onChange={setContent} ref={quillRef} />
-                <input type="file" accept="image/*,video/*" multiple onChange={handleFilesChange} />
-                <button class="button" type="submit">Create Post</button>
-                {errorMessage && <div className="error-message">{errorMessage}</div>}
+                <div id="post-file-input">
+                    <label htmlFor="media-input" class="button">Add media</label>
+                    <input type="file" id="media-input" accept="image/*,video/*" hidden multiple onChange={handleFilesChange} />
+                    <div className="file-names">
+                        {files.length > 0 && (
+                            <ul>
+                                {files.map((file, index) => (
+                                    <li key={index}>{file.name}</li>
+                                ))}
+                            </ul>
+                        )}
+                    </div>
+                    <button class="button" type="submit">Create Post</button>
+                    <div className="error-message">{errorMessage}</div>
+                </div>
             </form>   
         </div>
     );
