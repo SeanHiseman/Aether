@@ -26,59 +26,66 @@ function GroupHome() {
 
     //Loads group info 
     useEffect(() => {
-        const fetchGroupData = () => {
-            axios.get(`/api/group/${group_name}`)
-                .then(response => {
-                    const groupData = response.data;
-                    setIsAdmin(groupData.isAdmin);
-                    setIsModerator(groupData.isModerator);
-                    setGroupDetails({
-                        isMember: groupData.isMember,
-                        groupId: groupData.group_id,
-                        groupName: groupData.group_name,
-                        description: groupData.description,
-                        groupPhoto: groupData.group_photo,
-                        memberCount: groupData.member_count,
-                        isPrivate: groupData.is_private,
-                        isRequestSent: groupData.isRequestSent,
-                        userId: groupData.userId
-                    });
-                })
-                .catch(error => {
-                    setErrorMessage("Error fetching feed details", error);
+        const fetchGroupData = async () => {
+            try {
+                const response = await axios.get(`/api/group/${group_name}`);
+                const groupData = response.data;
+                setIsAdmin(groupData.isAdmin);
+                setIsModerator(groupData.isMod);
+                setGroupDetails({
+                    isMember: groupData.isMember,
+                    groupId: groupData.group_id,
+                    groupName: groupData.group_name,
+                    description: groupData.description,
+                    groupPhoto: groupData.group_photo,
+                    memberCount: groupData.member_count,
+                    isPrivate: groupData.is_private,
+                    isRequestSent: groupData.isRequestSent,
+                    userId: groupData.userId
                 });
-            };
+            } catch (error) {
+                setErrorMessage("Error fetching feed details", error);
+            }
+        };
+        
         fetchGroupData();
     }, [group_name]);
+    
 
-    //Moderators can remove content
-    if (isModerator) {
-        setCanRemove(true);
-    };
-
+    //Moderators and admins can remove content
+    useEffect(() => {
+        if (isAdmin || isModerator) {
+            setCanRemove(true);
+        };
+    }, [isAdmin, isModerator]);
+    
     //Fetch channels in a group
     useEffect(() => {
-        axios.get(`/api/get_group_channels/${groupDetails.groupId}`)
-        .then(response => {
-            if (Array.isArray(response.data)) {
-                setChannels(response.data);
-                const currentChannel = response.data.find(c => c.channel_name === channel_name);
-                if (currentChannel) {
-                    if (currentChannel.is_chat && !currentChannel.is_posts) {
-                        setChannelMode('chat');
-                    } else {
-                        setChannelMode('post');
+        const fetchChannels = async () => {
+            try {
+                const response = await axios.get(`/api/get_group_channels/${groupDetails.groupId}`);
+                
+                if (Array.isArray(response.data)) {
+                    setChannels(response.data);
+                    const currentChannel = response.data.find(c => c.channel_name === channel_name);
+                    if (currentChannel) {
+                        if (currentChannel.is_chat && !currentChannel.is_posts) {
+                            setChannelMode('chat');
+                        } else {
+                            setChannelMode('post');
+                        }
                     }
+                } else {
+                    setChannels([]);
                 }
-            } else {
+            } catch (error) {
+                console.error('Error fetching channel data:', error);
                 setChannels([]);
             }
-        })
-        .catch(error => {
-            console.error('Error fetching channel data:', error);
-            setChannels([]);
-        });
-    }, [groupDetails.groupId, channel_name]);  
+        };
+    
+        fetchChannels();
+    }, [groupDetails.groupId, channel_name]);
 
     //Fetch subgroups
     useEffect(() => {
