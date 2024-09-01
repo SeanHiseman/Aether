@@ -19,6 +19,7 @@ function ContentWidget({ canRemove: canRemoveProp , isGroup, post }) {
     const [upvotes, setUpvotes] = useState(post.upvotes);
     const [upvoteLimit, setUpvoteLimit] = useState(false);
     const { user } = useContext(AuthContext);
+    const isViewingOwnPost = post.poster_id === user.userId; //If user is viewing a post they made
     const Poster = isGroup ? 'GroupPoster' : 'ProfilePoster'; //Associations used by database
 
     const getReplies = useCallback(async (postId) => {
@@ -44,7 +45,7 @@ function ContentWidget({ canRemove: canRemoveProp , isGroup, post }) {
     
     //Allows users to remove their own posts
     useEffect(() => {
-        if (post.poster_id === user.userId) {
+        if (isViewingOwnPost) {
             setCanRemove(true);
         }
     }, [post.poster_id, user.userId]);
@@ -207,8 +208,8 @@ function ContentWidget({ canRemove: canRemoveProp , isGroup, post }) {
     };
 
     const nestedReplies = nestReplies(replies);
-    const downvoteClass = downvoteLimit ? 'vote-disabled' : 'vote-enabled';
-    const upvoteClass = upvoteLimit ? 'vote-disabled' : 'vote-enabled';
+    const downvoteClass = downvoteLimit || isViewingOwnPost ? 'vote-disabled' : 'vote-enabled';
+    const upvoteClass = upvoteLimit || isViewingOwnPost ? 'vote-disabled' : 'vote-enabled';
 
     return (
         <div className="content-item">
@@ -233,11 +234,11 @@ function ContentWidget({ canRemove: canRemoveProp , isGroup, post }) {
                     )}
                 </div>
                 <div className="reply-vote-container">
-                    <button className={`vote-arrow-container ${upvoteClass}`} onClick={() => postVote(post.post_id, 'upvote')}>
+                    <button className={`vote-arrow-container ${upvoteClass}`} onClick={() => postVote(post.post_id, 'upvote')} disabled={isViewingOwnPost}>
                         <img className={`vote-arrow ${upvoteClass}`} src="/media/site_images/up.png" alt="upvote" />
                     </button>
                     <span className="total-votes">{upvotes - downvotes}</span>
-                    <button className={`vote-arrow-container ${downvoteClass}`} onClick={() => postVote(post.post_id, 'downvote')}>
+                    <button className={`vote-arrow-container ${downvoteClass}`} onClick={() => postVote(post.post_id, 'downvote')} disabled={isViewingOwnPost}>
                         <img className={`vote-arrow ${downvoteClass}`} src="/media/site_images/down.png" alt="downvote" />
                     </button>
                 </div>
