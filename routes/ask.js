@@ -3,15 +3,15 @@ import dotenv from 'dotenv';
 import OpenAI from "openai";
 import { Router } from 'express';
 import { v4 } from 'uuid';
-import { AskChats, AskMessages, AskNotes } from '../models/models.js';
+import { AskChats, AskMessages, GroupNotes, GroupReplyNotes, ProfileNotes, ProfileReplyNotes } from '../models/models.js';
 
 dotenv.config();
 const openai = new OpenAI();
 const router = Router();
 
 router.post('/ask_button', authenticateCheck, async (req, res) => {
-    try {
-        const { postTitle, postContent, postId } = req.body;
+    //try {
+        const { isGroup, isReply, postTitle, postContent, id } = req.body;
         const combinedContent = `Title: ${postTitle}, Content: ${postContent}`;
 
         //Creates API assistant
@@ -50,18 +50,39 @@ router.post('/ask_button', authenticateCheck, async (req, res) => {
             //Remove 'MISINFO:' from beginning of message
             aiReply = aiReply.replace(/^MISINFO:\s*/, '');
         }
-        //Save user message 
-        const newNote = await AskNotes.create({
+
+        let noteModel;
+        let foreignKey;
+        if (isGroup) {
+            if (isReply) {
+                noteModel = GroupReplyNotes;
+                foreignKey = 'reply_id';
+            } else {
+                noteModel = GroupNotes;
+                foreignKey = 'post_id';
+            }
+        } else {
+            if (isReply) {
+                noteModel = ProfileReplyNotes;
+                foreignKey = 'reply_id';
+            } else {
+                noteModel = ProfileNotes;
+                foreignKey = 'post_id';
+            }
+        }
+        
+        //Save note to correct table
+        const newNote = await noteModel.create({
             note_id: v4(),
-            post_id: postId,
+            [foreignKey]: id,
             note_content: aiReply,
             timestamp: Date.now(),
             is_misinfo: isMisinfo
         });
         res.status(200).json({ newNote });
-    } catch (error) {
-        res.status(500).json({ error: "Ask button error" });
-    }
+    //} catch (error) {
+        //res.status(500).json({ error: "Ask button error" });
+    //}
 });
 
 router.post('/change_ask_chat_name', authenticateCheck, async (req, res) => {

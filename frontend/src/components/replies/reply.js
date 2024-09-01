@@ -2,12 +2,15 @@ import axios from 'axios';
 import React, { useContext, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { AuthContext } from '../authContext';
+import AskButton from '../askButton';
 import ReplyForm from './replyForm';
 
 const Reply = ({ addReply, reply, depth, isGroup, onReplyAdded }) => {
     const [showReplyForm, setShowReplyForm] = useState(false);
     const [downvotes, setDownvotes] = useState(reply.downvotes);
-    const [downvoteLimit, setDownvoteLimit] = useState(false);
+    const [downvoteLimit, setDownvoteLimit] = useState(false);    
+    const [note, setNote] = useState(reply.note ? reply.note.note_content : '');
+    const [showNote, setShowNote] = useState(reply.note && reply.note.is_misinfo);
     const [upvotes, setUpvotes] = useState(reply.upvotes);
     const [upvoteLimit, setUpvoteLimit] = useState(false);
     const { user } = useContext(AuthContext);
@@ -84,6 +87,11 @@ const Reply = ({ addReply, reply, depth, isGroup, onReplyAdded }) => {
             <div className="horizontal-container">
                 <div className="reply-element">
                 <span className="reply-content">{reply.content}</span>
+                {showNote && (
+                    <div className="ask-note">
+                        <p className="ask-note-text">{note}</p>
+                    </div>
+                )}
                 <div className="reply-vote-container">
                     <button className={`vote-arrow-container ${upvoteClass}`} onClick={() => handleVote('upvote')} disabled={isReplier}>
                         <img className={`vote-arrow ${upvoteClass}`} src="/media/site_images/up.png" alt="upvote" />
@@ -98,6 +106,9 @@ const Reply = ({ addReply, reply, depth, isGroup, onReplyAdded }) => {
                 {isReplier ? (
                     <button className="button" onClick={() => removeReply(isGroup, reply.reply_id)}>Delete</button>
                 ) : null}
+                {!reply.note?.is_misinfo && (
+                    <AskButton isGroup={isGroup} isReply={true} content={reply} showNote={showNote} setShowNote={setShowNote} note={note} setNote={setNote} />
+                )}
             </div>
                 {reply.replies && reply.replies.map(reply => (
                     <Reply key={reply.reply_id} reply={reply} depth={depth + 1} addReply={addReply} />

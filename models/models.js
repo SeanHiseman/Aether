@@ -337,17 +337,48 @@ Users.hasMany(AskMessages, { foreignKey: 'sender_id', as: 'sentMessages' });
 AskMessages.belongsTo(Users, { foreignKey: 'sender_id', as: 'sender' });
 
 
-const AskNotes = sequelize.define('ask_notes', {
+const GroupNotes = sequelize.define('group_notes', {
   note_id: { type: STRING(36), primaryKey: true },
   post_id: { type: STRING(36), allowNull: false, references: { model: 'GroupPosts', key: 'post_id' }},
   note_content: { type: STRING(1000), allowNull: false },
   timestamp: { type: DATE, defaultValue: NOW },
   is_misinfo: { type: BOOLEAN, defaultValue: false},
-}, { tableName: 'ask_notes', timestamps: false });
+}, { tableName: 'group_notes', timestamps: false });
+
+const ProfileNotes = sequelize.define('profile_notes', {
+  note_id: { type: STRING(36), primaryKey: true },
+  post_id: { type: STRING(36), allowNull: false, references: { model: 'ProfilePosts', key: 'post_id' }},
+  note_content: { type: STRING(1000), allowNull: false },
+  timestamp: { type: DATE, defaultValue: NOW },
+  is_misinfo: { type: BOOLEAN, defaultValue: false},
+}, { tableName: 'profile_notes', timestamps: false });
+
+const GroupReplyNotes = sequelize.define('group_reply_notes', {
+  note_id: { type: STRING(36), primaryKey: true },
+  reply_id: { type: STRING(36), allowNull: false, references: { model: 'GroupReplies', key: 'reply_id' }},
+  note_content: { type: STRING(1000), allowNull: false },
+  timestamp: { type: DATE, defaultValue: NOW },
+  is_misinfo: { type: BOOLEAN, defaultValue: false},
+}, { tableName: 'group_reply_notes', timestamps: false });
+
+const ProfileReplyNotes = sequelize.define('profile_reply_notes', {
+  note_id: { type: STRING(36), primaryKey: true },
+  reply_id: { type: STRING(36), allowNull: false, references: { model: 'ProfileReplies', key: 'reply_id' }},
+  note_content: { type: STRING(1000), allowNull: false },
+  timestamp: { type: DATE, defaultValue: NOW },
+  is_misinfo: { type: BOOLEAN, defaultValue: false},
+}, { tableName: 'profile_reply_notes', timestamps: false });
 
 //AskNotes relationships
-AskNotes.belongsTo(GroupPosts, { foreignKey: 'post_id', as: 'parentPost'});
-GroupPosts.hasOne(AskNotes, { foreignKey: 'post_id', as: 'note'});
+GroupNotes.belongsTo(GroupPosts, { foreignKey: 'post_id', as: 'parentPost'});
+GroupPosts.hasOne(GroupNotes, { foreignKey: 'post_id', as: 'note'});
+ProfileNotes.belongsTo(ProfilePosts, { foreignKey: 'post_id', as: 'parentPost'});
+ProfilePosts.hasOne(ProfileNotes, { foreignKey: 'post_id', as: 'note'});
+GroupReplyNotes.belongsTo(GroupReplies, { foreignKey: 'reply_id', as: 'parentReply'});
+GroupReplies.hasOne(GroupReplyNotes, { foreignKey: 'reply_id', as: 'note'});
+ProfileReplyNotes.belongsTo(ProfileReplies, { foreignKey: 'reply_id', as: 'parentReply'});
+ProfileReplies.hasOne(ProfileReplyNotes, { foreignKey: 'reply_id', as: 'note'});
+
 
 export {
     Profiles,
@@ -374,6 +405,9 @@ export {
     Messages,
     AskChats,
     AskMessages,
-    AskNotes,
+    GroupNotes,
+    ProfileNotes,
+    GroupReplyNotes,
+    ProfileReplyNotes
 }
   

@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { AskNotes, ContentVotes, Followers, Friends, FriendRequests, GroupChannels, Groups, GroupReplies, GroupRequests, GroupPosts, ProfileChannels, ProfileReplies, ProfilePosts, Profiles, Users, UserGroups } from '../models/models.js'; 
+import { ContentVotes, Followers, Friends, FriendRequests, GroupChannels, Groups, GroupNotes, GroupReplies, GroupRequests, GroupPosts, ProfileChannels, ProfileNotes, ProfileReplies, ProfilePosts, Profiles, Users, UserGroups } from '../models/models.js'; 
 import authenticateCheck from '../functions/authenticateCheck.js';
 import calculatePoints from '../functions/postPoints.js';
 import checkIfUserIsMember from '../functions/memberCheck.js';
@@ -358,6 +358,7 @@ router.delete('/remove_post', authenticateCheck, async (req, res) => {
         const { postData } = req.body;
         const { isGroup, postId } = postData;
         const repliesModel = isGroup ? GroupReplies : ProfileReplies;
+        const notesModel = isGroup ? GroupNotes : ProfileNotes;
         const postModel = isGroup ? GroupPosts : ProfilePosts;
 
         //Deletes media associated with post
@@ -377,7 +378,7 @@ router.delete('/remove_post', authenticateCheck, async (req, res) => {
         });
 
         await repliesModel.destroy({ where: { post_id: postId } });
-        await AskNotes.destroy({ where: { post_id: postId }});
+        await notesModel.destroy({ where: { post_id: postId } })
         await postModel.destroy({ where: { post_id: postId } });
         res.json({ success: true, message: 'Post deleted successfully' });
     } catch (error) {
