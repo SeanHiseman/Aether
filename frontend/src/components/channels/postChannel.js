@@ -2,7 +2,7 @@ import axios from "axios";
 import React, { useEffect, useState } from "react";
 import ContentWidget from "../contentWidget";
 
-//For both viewing and uploading posts
+//For viewing posts in both group and profile feeds
 function PostChannel({ canRemove, channelId, channelName, isGroup, locationId }) {
     const [posts, setPosts] = useState([]);
 
@@ -28,7 +28,11 @@ function PostChannel({ canRemove, channelId, channelName, isGroup, locationId })
       
         getPosts();
     }, [channelId, channelName, isGroup, locationId]);
-      
+    
+    //Updates post list upon removal
+    const handlePostRemoved = (postId) => {
+        setPosts((prevPosts) => prevPosts.filter(post => post.post_id !== postId));
+    };
 
     return (
         <div id="channel">
@@ -36,7 +40,7 @@ function PostChannel({ canRemove, channelId, channelName, isGroup, locationId })
                 {posts.length > 0 ? (
                     <ul className="content-list">
                         {posts.map(post => (
-                            <ContentWidget key={post.post_id} canRemove={canRemove} isGroup={isGroup} post={post} />
+                            <ContentWidget key={post.post_id} canRemove={canRemove} isGroup={isGroup} onPostRemoved={handlePostRemoved} post={post} />
                         ))}
                     </ul>
                 ) : (

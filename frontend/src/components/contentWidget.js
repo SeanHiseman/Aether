@@ -6,7 +6,7 @@ import { AuthContext } from './authContext';
 import Reply from './replies/reply';
 import ReplyForm from './replies/replyForm';
 
-function ContentWidget({ canRemove: canRemoveProp , isGroup, post }) {
+function ContentWidget({ canRemove: canRemoveProp , isGroup, onPostRemoved, post }) {
     const [canRemove, setCanRemove] = useState(canRemoveProp);
     const [downvotes, setDownvotes] = useState(post.downvotes);
     const [downvoteLimit, setDownvoteLimit] = useState(false);
@@ -162,10 +162,13 @@ function ContentWidget({ canRemove: canRemoveProp , isGroup, post }) {
     };
 
     //Deletes the post
-    const removePost = async (isGroup, postId) => {
+    const removePost = async () => {
         try {
-            const postData = { isGroup, postId }
-            axios.delete('/api/remove_post', { data: { postData } } );
+            const postData = { isGroup, postId: post.post_id };
+            const response = axios.delete('/api/remove_post', { data: { postData } } );
+            if ((await response).data.success) {
+                onPostRemoved(post.post_id);
+            }
         } catch (error) {
             console.error("Error removing post:", error); 
         }

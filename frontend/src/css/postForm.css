@@ -1,11 +1,13 @@
 @import url('variables.css');
 #create-post-container {
+    height: 60%;
     width: calc(60%);
 }
 .ql-container {
     border-bottom-left-radius: 10px;
     border-bottom-right-radius: 10px;
     color: var(--border); 
+    height: 90%;
 }
 .ql-editor[data-placeholder]::before {
     color: var(--border);
@@ -35,7 +37,14 @@
     color: var(--border); 
 }
 .quill {
+    height: 100%;
     width: 100%;
+}
+#post-file-input {
+    align-items: center;
+    display: flex;
+    justify-content: center;
+    margin: 10px;
 }
 #post-form {
     align-items: center;
@@ -44,6 +53,7 @@
     border-radius: 20px;
     display: flex;
     flex-direction: column;
+    height: 100%;
     margin: 10px;
     padding: 10px;
 }
