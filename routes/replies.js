@@ -1,5 +1,5 @@
 import authenticateCheck from '../functions/authenticateCheck.js';
-import { GroupReplies, GroupPosts, ProfileReplies, ProfilePosts, Profiles, ReplyVotes, Users } from '../models/models.js';
+import { GroupReplies, GroupReplyNotes, GroupPosts, ProfileReplies, ProfileReplyNotes, ProfilePosts, Profiles, ReplyVotes, Users } from '../models/models.js';
 import { Router } from 'express';
 import { v4 } from 'uuid';
 
@@ -34,6 +34,7 @@ router.get('/get_replies/:postId', authenticateCheck, async (req, res) => {
         const isGroup = req.query.isGroup === 'true';
         const postId = req.params.postId;
         const ReplyModel = isGroup ? GroupReplies : ProfileReplies;
+        const NoteModel = isGroup ? GroupReplyNotes : ProfileReplyNotes;
         const replies = await ReplyModel.findAll({
             where: { post_id: postId },
             include: [{
@@ -44,6 +45,11 @@ router.get('/get_replies/:postId', authenticateCheck, async (req, res) => {
                     model: Profiles,
                     attributes: ['profile_photo']
                 }]
+            }, {
+                model: NoteModel,
+                as: 'note',
+                attributes: ['note_id', 'note_content', 'timestamp', 'is_misinfo'],
+                required: false
             }],
         });
         
@@ -57,8 +63,10 @@ router.get('/get_replies/:postId', authenticateCheck, async (req, res) => {
 router.delete('/remove_reply', authenticateCheck, async (req, res) => {
     try {
         const { isGroup, reply_id } = req.body;
-        const postModel = isGroup ? GroupReplies : ProfileReplies;
-        await postModel.destroy({ where: { reply_id } });
+        const replyModel = isGroup ? GroupReplies : ProfileReplies;
+        const noteModel = isGroup ? GroupReplyNotes : ProfileReplyNotes;
+        await noteModel.destroy({ where: { reply_id } });
+        await replyModel.destroy({ where: { reply_id } });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
     }

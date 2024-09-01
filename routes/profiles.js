@@ -1,5 +1,5 @@
 import authenticateCheck from '../functions/authenticateCheck.js';
-import { ContentVotes, Conversations, Followers, Friends, FriendRequests, GroupPosts, Messages, Profiles, ProfileChannels, ProfilePosts, Users, UserConversations } from '../models/models.js';
+import { ContentVotes, Conversations, Followers, Friends, FriendRequests, Messages, Profiles, ProfileChannels, ProfileNotes, ProfilePosts, Users, UserConversations } from '../models/models.js';
 import express from 'express';
 import fs from 'fs';
 import { join } from 'path';
@@ -414,6 +414,11 @@ router.get('/profile_channel_posts', authenticateCheck, async (req, res) => {
                 model: ContentVotes,
                 as: 'ProfilePostVotes',
                 attributes: ['vote_count'],
+                required: false
+            }, {
+                model: ProfileNotes,
+                as: 'note',
+                attributes: ['note_id', 'note_content', 'timestamp', 'is_misinfo'],
                 required: false
             }],
             attributes: ['post_id', 'title', 'content', 'replies', 'views', 'upvotes', 'downvotes', 'timestamp', 'poster_id'],

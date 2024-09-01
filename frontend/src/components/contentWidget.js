@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import React, { useCallback, useContext, useEffect, useState } from 'react';
 import ReactQuill, { Quill } from 'react-quill';
 import { AuthContext } from './authContext';
+import AskButton from './askButton';
 import Reply from './replies/reply';
 import ReplyForm from './replies/replyForm';
 
@@ -11,7 +12,6 @@ function ContentWidget({ canRemove: canRemoveProp , isGroup, onPostRemoved, post
     const [downvotes, setDownvotes] = useState(post.downvotes);
     const [downvoteLimit, setDownvoteLimit] = useState(false);
     const [hasViewed, setHasViewed] = useState(false);
-    const [isLoading, setIsLoading] = useState(false);
     const [note, setNote] = useState(post.note ? post.note.note_content : '');
     const [replies, setReplies] = useState([]);
     const [showNote, setShowNote] = useState(post.note && post.note.is_misinfo);
@@ -83,35 +83,6 @@ function ContentWidget({ canRemove: canRemoveProp , isGroup, onPostRemoved, post
 
         checkVoteLimit();
     }, [post.post_id, isGroup]);
-
-    //Extracts posts content from raw format
-    const stripHtmlTags = (content) => {
-        return content.replace(/<[^>]*>?/gm, '');
-    };
-
-    //Checks post using Ask
-    const askPost = async () => {
-        try { 
-            if (showNote) {
-                setShowNote(false);
-            } else {
-                if (note) {
-                    setShowNote(true);
-                } else {
-                    setIsLoading(true);
-                    const normalisedContent = stripHtmlTags(post.content);
-                    const response = await axios.post('/api/ask_button', { postTitle: post.title, postContent: normalisedContent, postId: post.post_id });
-                    const { newNote } = response.data;
-                    setNote(newNote.note_content);
-                    setShowNote(true);
-                }
-            }
-        } catch (error) {
-            console.error(error);
-        } finally {
-            setIsLoading(false);
-        }
-    };
 
     //Allows React Quill to display videos
     const BlockEmbed = Quill.import('blots/block/embed');
@@ -254,7 +225,7 @@ function ContentWidget({ canRemove: canRemoveProp , isGroup, onPostRemoved, post
                     <button className="button" onClick={() => removePost(isGroup, post.post_id)}>Delete</button>
                 ) : null}
                 {!post.note?.is_misinfo && (
-                    <button className={`${isLoading ? 'button-disabled' : 'button'}`} onClick={askPost} disabled={isLoading}>{showNote ? 'Close' : (isLoading ? 'Loading...' : 'Ask')}</button>
+                    <AskButton isGroup={isGroup} isReply={false} content={post} showNote={showNote} setShowNote={setShowNote} note={note} setNote={setNote} />
                 )}
             </div>
             
