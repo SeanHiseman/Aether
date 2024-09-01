@@ -11,7 +11,7 @@ const Reply = ({ addReply, reply, depth, isGroup, onReplyAdded }) => {
     const [upvotes, setUpvotes] = useState(reply.upvotes);
     const [upvoteLimit, setUpvoteLimit] = useState(false);
     const { user } = useContext(AuthContext);
-    const isReplier = reply.replier_id === user.user_id ? true : false;
+    const isReplier = reply.replier_id === user.userId ? true : false;
     const Replier = isGroup ? 'GroupReplier' : 'ProfileReplier'; //Associations used by database
     const toggleReplyForm = () => setShowReplyForm(!showReplyForm);
 
@@ -35,7 +35,7 @@ const Reply = ({ addReply, reply, depth, isGroup, onReplyAdded }) => {
     }, [reply.reply_id, isGroup]);
 
     //Updates up/downvotes
-    const handleVote = (voteType) => {
+    const handleVote = async (voteType) => {
         try {
             if ((voteType === 'upvote' && upvoteLimit) || (voteType === 'downvote' && downvoteLimit)) {
                 return;
@@ -43,24 +43,20 @@ const Reply = ({ addReply, reply, depth, isGroup, onReplyAdded }) => {
             //Reset before request
             setDownvoteLimit(false);
             setUpvoteLimit(false);
-            axios.post('/api/reply_vote', { reply_id: reply.reply_id, isGroup, vote_type: voteType })
-                .then((response) => {
-                    if (response.data.success) {
-                        if (voteType === 'upvote') {
-                            setUpvotes(upvotes + 1);
-                        } else if (voteType === 'downvote')  {
-                            setDownvotes(downvotes + 1);
-                        }
-                    } else {
-                        if (voteType === 'upvote') {
-                            setUpvoteLimit(true);
-                        } else if (voteType === 'downvote') {
-                            setDownvoteLimit(true);
-                        }
+            const response = await axios.post('/api/reply_vote', { reply_id: reply.reply_id, isGroup, vote_type: voteType })
+                if (response.data.success) {
+                    if (voteType === 'upvote') {
+                        setUpvotes(upvotes + 1);
+                    } else if (voteType === 'downvote')  {
+                        setDownvotes(downvotes + 1);
                     }
-                }).catch(error => {
-                    console.error('Error:', error);
-                });
+                } else {
+                    if (voteType === 'upvote') {
+                        setUpvoteLimit(true);
+                    } else if (voteType === 'downvote') {
+                        setDownvoteLimit(true);
+                    }
+                }
         } catch (error) {
             console.error('Error voting:', error);
         }
@@ -76,8 +72,8 @@ const Reply = ({ addReply, reply, depth, isGroup, onReplyAdded }) => {
         }
     };
 
-    const downvoteClass = downvoteLimit ? 'vote-disabled' : 'vote-enabled';
-    const upvoteClass = upvoteLimit ? 'vote-disabled' : 'vote-enabled';
+    const downvoteClass = downvoteLimit || isReplier ? 'vote-disabled' : 'vote-enabled';
+    const upvoteClass = upvoteLimit || isReplier ? 'vote-disabled' : 'vote-enabled';
     
     return (
         <div className="reply-container" style={{ marginLeft: `${depth * 20}px` }}>
@@ -89,11 +85,11 @@ const Reply = ({ addReply, reply, depth, isGroup, onReplyAdded }) => {
                 <div className="reply-element">
                 <span className="reply-content">{reply.content}</span>
                 <div className="reply-vote-container">
-                    <button className={`vote-arrow-container ${upvoteClass}`} onClick={() => handleVote('upvote')}>
+                    <button className={`vote-arrow-container ${upvoteClass}`} onClick={() => handleVote('upvote')} disabled={isReplier}>
                         <img className={`vote-arrow ${upvoteClass}`} src="/media/site_images/up.png" alt="upvote" />
                     </button>
                     <span className="total-votes">{upvotes - downvotes}</span>
-                    <button className={`vote-arrow-container ${downvoteClass}`} onClick={() => handleVote('downvote')}>
+                    <button className={`vote-arrow-container ${downvoteClass}`} onClick={() => handleVote('downvote')} disabled={isReplier}>
                         <img className={`vote-arrow ${downvoteClass}`} src="/media/site_images/down.png" alt="downvote" />
                     </button>
                     <button className="button" onClick={toggleReplyForm}>Reply</button>
