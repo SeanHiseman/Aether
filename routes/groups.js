@@ -1,5 +1,5 @@
 import authenticateCheck from '../functions/authenticateCheck.js';
-import checkIfUserIsAdmin from '../functions/adminCheck.js';
+import checkIfUserIsAdminOrMod from '../functions/adminModCheck.js';
 import checkIfUserIsMember from '../functions/memberCheck.js';
 import { AskNotes, ContentVotes, Groups, GroupChannels, GroupChannelMessages, GroupRequests, GroupReplies, GroupPosts, NestedGroupMembers, NestedGroupRequests, Profiles, Users, UserGroups } from '../models/models.js';
 import express from 'express';
@@ -358,12 +358,13 @@ router.get('/group/:group_name', authenticateCheck, async (req, res) => {
         const groupName = req.params.group_name;
         const userId = req.session.user_id;
 
-        //Check if user is admin or member of group
-        const isAdmin = await checkIfUserIsAdmin(userId, groupName);
+        //Check if user is admin, moderator or member of group
+        const { isAdmin, isMod } = await checkIfUserIsAdminOrMod(userId, groupName);
         const isMember = await checkIfUserIsMember(userId, groupName);
         const group = await Groups.findOne({where: {group_name: groupName}});
         const groupData = group.toJSON(); 
         groupData.isAdmin = isAdmin;
+        groupData.isMod = isMod;
         groupData.isLeader = (userId === group.group_leader);
         groupData.isMember = isMember;
         groupData.userId = userId;

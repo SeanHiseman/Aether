@@ -1,6 +1,6 @@
 import { Groups, UserGroups } from '../models/models.js';
 
-async function checkIfUserIsAdmin(userId, groupName) {
+async function checkIfUserIsAdminOrMod(userId, groupName) {
     try {
         //Matches group name to group id
         const group = await Groups.findOne({
@@ -14,11 +14,10 @@ async function checkIfUserIsAdmin(userId, groupName) {
             }
         });
 
-        return userGroup ? userGroup.is_admin : false;
+        return { isAdmin: userGroup.is_admin, isMod: userGroup.is_mod };
     } catch (error) {
-        console.error('Error in admin check: ', error);
-        return false;
+        return { isAdmin: false, isMod: false };
     }
 }
 
-export default checkIfUserIsAdmin;
+export default checkIfUserIsAdminOrMod;
