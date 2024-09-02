@@ -1,31 +1,71 @@
 import authenticateCheck from '../functions/authenticateCheck.js';
-import { GroupReplies, GroupReplyNotes, GroupPosts, ProfileReplies, ProfileReplyNotes, ProfilePosts, Profiles, ReplyVotes, Users } from '../models/models.js';
+import { GroupReplies, GroupReplyNotes, ProfileReplies, ProfileReplyNotes, Profiles, ReplyVotes, Users } from '../models/models.js';
+import multer from 'multer';
 import { Router } from 'express';
 import { v4 } from 'uuid';
 
 const router = Router();
 
-router.post('/add_reply', authenticateCheck, async (req, res) => {
+const reply_storage = multer.diskStorage({
+    destination: function(req, file, cb) {
+        cb(null, 'media/replies');
+    },
+    filename: function(req, file, cb) {
+        cb(null, Date.now() + path.extname(file.originalname));
+    }
+});
+
+// File filter for replies (similar to posts)
+const replyFilter = (req, file, cb) => {
+    if (file.mimetype.startsWith('image') || file.mimetype.startsWith('video')) {
+        cb(null, true);
+    } else {
+        cb(null, false);
+    }
+};
+
+// Upload middleware for replies
+const reply_upload = multer({
+    storage: reply_storage,
+    limits: {
+        fileSize: 1024 * 1024 * 100
+    },
+    fileFilter: replyFilter
+});
+
+router.post('/add_reply', authenticateCheck, reply_upload.array('files'), async (req, res) => {
     try {
-        const { content, isGroup, parent_id, post_id } = req.body;
-        const replier_id = req.session.user_id; 
-        const post_type = isGroup ? 'group_post' : 'profile_post'; 
+        const { post_id, parent_id, content, isGroup } = req.body;
+        //Convert to boolean
+        const isGroupBool = isGroup === 'true';
+        //Convert parentId to correct type
+        const parentId = parent_id === 'null' || parent_id === '' ? null : parent_id;
+        const ReplyModel = isGroupBool ? GroupReplies : ProfileReplies;
         const reply_id = v4();
-        const ReplyModel = isGroup ? GroupReplies : ProfileReplies;
-        
-        await ReplyModel.create({ 
-            reply_id, post_id, post_type, replier_id, content, upvotes: 0, downvotes: 0, timestamp: new Date(), parent_id 
+        const user = await Users.findOne({ where: { username: req.session.username } });
+        let formattedContent = content;
+
+        //Add media tags to content
+        req.files.forEach((file) => {
+            const fileType = file.mimetype.startsWith('image') ? 'img' : 'video';
+            const fileTag = fileType === 'img' ? `<img src="/media/replies/${file.filename}">` : `<video src="/media/replies/${file.filename}" controls></video>`;
+            formattedContent += ' ' + fileTag;
         });
 
-        //Depends on if post is in profile or group
-        const PostModel = isGroup ? GroupPosts : ProfilePosts;
-        const contentToUpdate = await PostModel.findByPk(post_id);
-        contentToUpdate.replies += 1;
-        await contentToUpdate.save();
+        //Create reply in database
+        const reply = await ReplyModel.create({
+            reply_id,
+            post_id,
+            parent_id: parentId,
+            content: formattedContent,
+            replier_id: user.user_id,
+            upvotes: 0,
+            downvotes: 0,
+        });
 
-        res.json({ success: true });
+        return res.json({ status: "success", message: "Reply added successfully", reply });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        return res.status(500).json({ status: "error", message: error.message });
     }
 });
 

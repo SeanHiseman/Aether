@@ -5,7 +5,7 @@ import ContentWidget from "../contentWidget";
 //For viewing posts in both group and profile feeds
 function PostChannel({ canRemove, channelId, channelName, isGroup, locationId }) {
     const [posts, setPosts] = useState([]);
-
+    
     //Gets posts from channel
     useEffect(() => {
         const getPosts = async () => {

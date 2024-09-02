@@ -1,7 +1,7 @@
 import authenticateCheck from '../functions/authenticateCheck.js';
 import checkIfUserIsAdminOrMod from '../functions/adminModCheck.js';
 import checkIfUserIsMember from '../functions/memberCheck.js';
-import { ContentVotes, Groups, GroupChannels, GroupChannelMessages, GroupNotes, GroupRequests, GroupReplies, GroupPosts, NestedGroupMembers, NestedGroupRequests, Profiles, Users, UserGroups } from '../models/models.js';
+import { ContentVotes, Groups, GroupChannels, GroupChannelMessages, GroupNotes, GroupRequests, GroupPosts, NestedGroupMembers, NestedGroupRequests, Profiles, Users, UserGroups } from '../models/models.js';
 import express from 'express';
 import fs from 'fs';
 import multer from 'multer';

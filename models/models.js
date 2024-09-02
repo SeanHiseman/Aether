@@ -81,7 +81,7 @@ const ProfileReplies = sequelize.define('profile_replies', {
   upvotes: { type: INTEGER, allowNull: false },
   downvotes: { type: INTEGER, allowNull: false },
   timestamp: { type: DATE, defaultValue: NOW },
-  parent_id: { type: STRING(36) }
+  parent_id: { type: STRING(36), allowNull: true }
 }, {tableName: 'profile_replies', timestamps: false });
 
 ProfilePosts.hasMany(ProfileReplies, { as: 'ProfilePostReplies', foreignKey: 'post_id' });
@@ -210,7 +210,7 @@ const GroupReplies = sequelize.define('group_replies', {
   upvotes: { type: INTEGER, allowNull: false },
   downvotes: { type: INTEGER, allowNull: false },
   timestamp: { type: DATE, defaultValue: NOW },
-  parent_id: { type: STRING(36) }
+  parent_id: { type: STRING(36), allowNull: true }
 }, {tableName: 'group_replies', timestamps: false});
 
 //Replies relationships

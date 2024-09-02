@@ -5,7 +5,7 @@ import { AuthContext } from '../../components/authContext';
 import ChannelName from '../../components/channels/channelName';
 import ManageFriendshipButton from '../../components/manageFriendship';
 import PostChannel from '../../components/channels/postChannel';
-import PostForm from '../../components/postForm';
+import ContentForm from '../../components/contentForm';
 import FollowerChangeButton from '../../components/followerChangeButton';
 
 function Profile() {
@@ -139,7 +139,7 @@ function Profile() {
             <div className="content-feed">
                 <div className="channel-feed">
                     {showPostForm ? (
-                        <PostForm onSubmit={handlePostSubmit} errorMessage={errorMessage} />
+                        <ContentForm isReply={false} onSubmit={handlePostSubmit} errorMessage={errorMessage} />
                     ) : (
                         channelRender && !isPrivateNotFriend ? (
                             <PostChannel canRemove={isLoggedInUser} channelId={channelRender.channel_id} channelName={channelRender.channel_name} isGroup={false} locationId={profile.profileId} />

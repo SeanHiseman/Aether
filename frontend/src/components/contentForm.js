@@ -1,9 +1,9 @@
 import React, { useRef, useState } from 'react';
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
-import '../css/postForm.css';
+import '../css/contentForm.css';
 
-const PostForm = ({ onSubmit, errorMessage }) => {
+const ContentForm = ({ isGroup, isReply, onSubmit, postId, parentId, errorMessage }) => {
     const [content, setContent] = useState('');
     const [files, setFiles] = useState([]);
     const [title, setTitle] = useState('');
@@ -35,12 +35,15 @@ const PostForm = ({ onSubmit, errorMessage }) => {
         event.preventDefault();
         try {
             const formData = new FormData();
-            formData.append('title', title);
             formData.append('content', content);
+            formData.append('post_id', postId);
+            formData.append('parent_id', parentId); // Use an empty string if parentId is undefined
+            formData.append('isGroup', isGroup);
+            if (!isReply) formData.append('title', title);
             files.forEach((file) => {
                 formData.append('files', file);
             }); 
-            onSubmit(formData);
+            await onSubmit(formData);
         } catch (error) {
             console.log("Upload error:", error);
         }
@@ -49,8 +52,8 @@ const PostForm = ({ onSubmit, errorMessage }) => {
     return (
         <div id="create-post-container">
             <form id="post-form" onSubmit={handleSubmit}>
-                <input id="title-entry" type="text" placeholder="Add title (optional)..." value={title} onChange={(e) => setTitle(e.target.value)}/>
-                <ReactQuill placeholder="Create post..." modules={modules} value={content} onChange={setContent} ref={quillRef} />
+                {!isReply && (<input id="title-entry" type="text" placeholder="Add title (optional)..." value={title} onChange={(e) => setTitle(e.target.value)}/>)}
+                <ReactQuill placeholder={isReply ? "Type your reply..." : "Type your post..."} modules={modules} value={content} onChange={setContent} ref={quillRef} />
                 <div id="post-file-input">
                     <label htmlFor="media-input" class="button">Add media</label>
                     <input type="file" id="media-input" accept="image/*,video/*" hidden multiple onChange={handleFilesChange} />
@@ -63,7 +66,7 @@ const PostForm = ({ onSubmit, errorMessage }) => {
                             </ul>
                         )}
                     </div>
-                    <button class="button" type="submit">Create Post</button>
+                    <button class="button" type="submit">{isReply ? "Reply" : "Post"}</button>
                     <div className="error-message">{errorMessage}</div>
                 </div>
             </form>   
@@ -71,4 +74,4 @@ const PostForm = ({ onSubmit, errorMessage }) => {
     );
 };
 
-export default PostForm;
+export default ContentForm;
