@@ -4,8 +4,8 @@ import React, { useCallback, useContext, useEffect, useState } from 'react';
 import ReactQuill, { Quill } from 'react-quill';
 import { AuthContext } from './authContext';
 import AskButton from './askButton';
+import ContentForm from './contentForm';
 import Reply from './replies/reply';
-import ReplyForm from './replies/replyForm';
 
 function ContentWidget({ canRemove: canRemoveProp , isGroup, onPostRemoved, post }) {
     const [canRemove, setCanRemove] = useState(canRemoveProp);
@@ -107,6 +107,24 @@ function ContentWidget({ canRemove: canRemoveProp , isGroup, onPostRemoved, post
         setReplies(currentReplies => [...currentReplies, newReply]);
     };
 
+    const handleReplySubmit = async (formData) => {
+        try {
+            //Send the form data to the server
+            const response = await axios.post('/api/add_reply', formData, {
+                headers: { 'Content-Type': 'multipart/form-data' }
+            });
+
+            if (response.data.status === "success") {
+                //Add the new reply to the local state
+                setReplies(currentReplies => [...currentReplies, response.data.reply]);
+            } else {
+                console.error("Failed to add reply:", response.data.message);
+            }
+        } catch (error) {
+            console.error("Error adding reply:", error);
+        }
+    };
+
     const handleToggleReplies = () => {
         setShowReplies(!showReplies);
     };
@@ -153,26 +171,27 @@ function ContentWidget({ canRemove: canRemoveProp , isGroup, onPostRemoved, post
             }
             setDownvoteLimit(false);
             setUpvoteLimit(false);
-            axios.post('/api/content_vote', { content_id: postId, isGroup, vote_type: voteType })
-                .then((response) => {
-                    if (response.data.success) {
-                        if (voteType === 'upvote') {
-                            setUpvotes(upvotes + 1);
-                        } else if (voteType === 'downvote')  {
-                            setDownvotes(downvotes + 1);
-                        }
-                    } else {
-                        if (voteType === 'upvote') {
-                            setUpvoteLimit(true);
-                        } else if (voteType === 'downvote') {
-                            setDownvoteLimit(true);
-                        }
+            try {
+                const response = await axios.post('/api/content_vote', { content_id: postId, isGroup, vote_type: voteType });
+    
+                if (response.data.success) {
+                    if (voteType === 'upvote') {
+                        setUpvotes(upvotes + 1);
+                    } else if (voteType === 'downvote') {
+                        setDownvotes(downvotes + 1);
                     }
-                }).catch(error => {
-                    console.error('Error:', error);
-                });
-            
-            if(!hasViewed) {
+                } else {
+                    if (voteType === 'upvote') {
+                        setUpvoteLimit(true);
+                    } else if (voteType === 'downvote') {
+                        setDownvoteLimit(true);
+                    }
+                }
+            } catch (error) {
+                console.error('Error:', error);
+            }
+    
+            if (!hasViewed) {
                 incrementViews(postId);
                 setHasViewed(true);
             }
@@ -180,7 +199,7 @@ function ContentWidget({ canRemove: canRemoveProp , isGroup, onPostRemoved, post
             console.error('Error voting:', error);
         }
     };
-
+    
     const nestedReplies = nestReplies(replies);
     const downvoteClass = downvoteLimit || isViewingOwnPost ? 'vote-disabled' : 'vote-enabled';
     const upvoteClass = upvoteLimit || isViewingOwnPost ? 'vote-disabled' : 'vote-enabled';
@@ -232,10 +251,10 @@ function ContentWidget({ canRemove: canRemoveProp , isGroup, onPostRemoved, post
             {showReplies && (
                 <div className="reply-section">
                     <div className="add-reply">
-                        <ReplyForm isGroup={isGroup} onReplyAdded={handleReplyAdded} parentId={null} postId={post.post_id} />
+                        <ContentForm isGroup={isGroup} isReply={true} onSubmit={handleReplySubmit} postId={post.post_id} parentId={null} />
                     </div>
                     {nestedReplies.map((reply) => (
-                        <Reply key={reply.reply_id} reply={reply} depth={0} isGroup={isGroup} />
+                        <Reply key={reply.reply_id} reply={reply} depth={0} isGroup={isGroup} onReplyAdded={handleReplyAdded}/>
                     ))}
                 </div>
             )}

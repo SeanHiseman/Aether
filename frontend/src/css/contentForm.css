@@ -1,16 +1,17 @@
 @import url('variables.css');
 #create-post-container {
     height: 60%;
-    width: calc(60%);
 }
 .ql-container {
     border-bottom-left-radius: 10px;
     border-bottom-right-radius: 10px;
     color: var(--border); 
+    font-size: inherit;
     height: 90%;
 }
 .ql-editor[data-placeholder]::before {
     color: var(--border);
+    font-size: medium;
 }
 .ql-editor img, .ql-editor video {
     display: block;
@@ -36,6 +37,9 @@
     border-top-right-radius: 10px;
     color: var(--border); 
 }
+.ql-tooltip.ql-hidden {
+    height: 0;
+}
 .quill {
     height: 100%;
     width: 100%;
@@ -49,7 +53,6 @@
 #post-form {
     align-items: center;
     background-color: var(--darkest);
-    border: 1px solid var(--border);
     border-radius: 20px;
     display: flex;
     flex-direction: column;

@@ -3,9 +3,9 @@ import React, { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import ChannelName from '../../components/channels/channelName';
 import ChatChannel from '../../components/channels/chatChannel';
+import ContentForm from "../../components/contentForm";
 import MemberChangeButton from '../../components/memberChangeButton';
 import PostChannel from '../../components/channels/postChannel';
-import PostForm from "../../components/postForm";
 
 function GroupHome() {
     const { group_name, channel_name } = useParams();
@@ -164,9 +164,7 @@ function GroupHome() {
         formData.append('channel_id', channelRender.channel_id);
         try {
             await axios.post('/api/create_group_post', formData, {
-                headers: {
-                    'Content-Type': 'multipart/form-data'
-                },
+                headers: { 'Content-Type': 'multipart/form-data' },
             });
             setShowPostForm(false);
         } catch (error) {
@@ -188,7 +186,7 @@ function GroupHome() {
             <div className="content-feed">
                 <div className="channel-feed">
                     {showPostForm ? (
-                        <PostForm onSubmit={handlePostSubmit} errorMessage={errorMessage} />
+                        <ContentForm isReply={false} onSubmit={handlePostSubmit} errorMessage={errorMessage} />
                     ) : channelRender && !isNotPrivateMember ? (
                         channelRender.is_posts && channelRender.is_chat ? (
                             channelMode === 'post' ? (
