@@ -1,4 +1,5 @@
 import authenticateCheck from '../functions/authenticateCheck.js';
+import deleteMedia from '../functions/deleteMedia.js';
 import { GroupReplies, GroupReplyNotes, GroupPosts, ProfileReplies, ProfileReplyNotes, ProfilePosts, Profiles, ReplyVotes, Users } from '../models/models.js';
 import multer from 'multer';
 import { Router } from 'express';
@@ -35,9 +36,8 @@ const reply_upload = multer({
 });
 
 router.post('/add_reply', authenticateCheck, reply_upload.array('files'), async (req, res) => {
-    //try {
+    try {
         const { postId, parent_id, content, isGroup } = req.body;
-        console.log("req.body:", req.body);
         //Convert to boolean
         const isGroupBool = isGroup === 'true';
         //Convert parentId to correct type
@@ -79,9 +79,9 @@ router.post('/add_reply', authenticateCheck, reply_upload.array('files'), async 
             }]
         });
         return res.json({ success: true, reply: replyWithUser });
-    //} catch (error) {
-        //return res.status(500).json({ status: "error", message: error.message });
-    //}
+    } catch (error) {
+        return res.status(500).json({ status: "error", message: error.message });
+    }
 });
 
 router.get('/get_replies/:postId', authenticateCheck, async (req, res) => {
@@ -121,12 +121,16 @@ router.delete('/remove_reply', authenticateCheck, async (req, res) => {
         const replyModel = isGroup ? GroupReplies : ProfileReplies;
         const postModel = isGroup ? GroupPosts : ProfilePosts;
         const noteModel = isGroup ? GroupReplyNotes : ProfileReplyNotes;
+        const reply = await replyModel.findOne({
+            where: { reply_id: replyId }
+        });
+        deleteMedia(reply.content);
         await noteModel.destroy({ where: { reply_id: replyId } });
         await postModel.decrement('replies', { where: { post_id: postId} });
         await replyModel.destroy({ where: { reply_id: replyId } });
         res.json({ success: true });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        res.status(500).json({ success: false });
     }
 });
 
