@@ -1,0 +1,22 @@
+#aside-welcome-text {
+    cursor: pointer;
+    font-size: 48px;
+    margin-top: 20px;
+    position: relative;
+}
+#join-login {
+    align-items: center;
+}
+.left-aligned-text {
+    margin: 30px;
+    text-align: left;
+}
+#right-aside.light {
+    background-color: var(--dark);
+}
+#welcome-items {
+    align-items: center;
+    display: flex;
+    margin-top: 20px;
+    position: relative;
+}

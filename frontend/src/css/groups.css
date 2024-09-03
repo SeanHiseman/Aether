@@ -1,0 +1,65 @@
+@import url('variables.css');
+#add-channel-section {
+    align-items: center;
+    display: flex;
+    flex-direction: column;
+}
+#channel {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    margin-left: auto;
+    margin-right: 0;
+    width: 100%;
+}
+#channel-input {
+    align-items: center;
+    background-color: var(--darkest);
+    bottom: 0;
+    display: flex;
+    height: 80px;
+    justify-content: center;
+    position: sticky;
+    width: 100%;
+}
+#channel-toggle {
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    display: flex;
+    min-height: 36px;
+    overflow: hidden;
+}
+#channel-toggle button {
+    background-color: var(--darkest);
+    border: none;
+    color: var(--border);
+    cursor: pointer;
+    flex: 1;
+    font-weight: bold;
+    outline: none;
+    padding: 10px 20px;
+    transition: background-color 0.3s ease;
+}
+#channel-toggle button.active-mode {
+    background-color: var(--button-hover);
+}
+#channel-toggle button:first-child {
+    border-top-left-radius: 10px;
+    border-bottom-left-radius: 10px;
+}
+#channel-toggle button:last-child {
+    border-top-right-radius: 10px;
+    border-bottom-right-radius: 10px;
+}
+.group-member {
+    margin: 10px;
+}
+#group-members {
+    margin: 10px;
+}
+#profile-header-photo {
+    align-items: center;
+    display: flex;
+    flex-direction: column;
+    max-width: 350px;
+}

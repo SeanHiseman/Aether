@@ -1,0 +1,128 @@
+@import url('variables.css');
+.ask-note {
+    background-color: var(--dark);
+    border: 1px solid var(--dark-line);
+    border-radius: 10px;
+    margin: 10px;
+    padding: 1px;
+    width: 96%;
+}
+.ask-note-text {
+    font-size: medium;
+    margin: 10px;
+}
+.content-item {
+    background-color: var(--darkest);
+    border-left: 1px solid var(--border);
+    border-right: 1px solid var(--border);
+    border-top: 1px solid var(--border);
+    font-size: x-large;
+    padding: 15px;
+    width: 100%;
+}
+.content-list {
+    border-bottom: 1px solid var(--border);
+    margin: 0;
+    max-width: 900px;
+    width: 60%;
+}
+.content-item, .content-list {
+    box-sizing: border-box;
+}
+.content-metadata {
+    align-items: center;
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+}
+.horizontal-container {
+    align-items: flex-start;
+    border-left: 1px solid var(--dark-line);
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 10px;
+    padding-left: 10px;
+    position: relative;
+}
+.reply-section {
+    display: block;
+    width: 100%;
+}
+.reply-input {
+    background-color: var(--darkest);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    color: var(--border);
+    height: 50px;
+    margin: 10px;
+    outline: none;
+    padding: 10px;
+    width: 80%;
+}
+.reply-item {
+    background-color: var(--darkest);
+    border-left: 1px solid var(--border);
+    border-right: 1px solid var(--border);
+    border-top: 1px solid var(--border);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    padding: 15px;
+    width: 800px;
+}
+.reply-list {
+    border-bottom: 1px solid var(--border);
+    padding: 0;
+}
+.reply-metadata {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 10px;
+}
+.reply-profile-container {
+    position: relative;
+    display: flex;
+    margin-bottom: 5px;
+    align-items: center;
+}
+.result-widget {
+    align-items: center;
+    background-color: var(--darkest);
+    border-left: 1px solid var(--border);
+    border-right: 1px solid var(--border);
+    border-top: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+    z-index: 2;
+}
+.post-list {
+    margin: 0px;
+}
+.profile-photo{
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+}
+.uploader-info{
+    display: flex;
+    align-items: center;
+    position: relative;
+}
+#uploader-photo{
+    height: 40px; 
+    width: 40px; 
+    border-radius: 50%;
+}
+.username {
+    font-weight: bold;
+    margin-left: 5px;
+}
+.vote-arrows {
+    background-color: transparent;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    background-size: contain;
+    background-repeat: no-repeat;
+}
+

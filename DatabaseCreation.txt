@@ -1,0 +1,228 @@
+CREATE TABLE `users` (
+   `user_id` varchar(255) NOT NULL,
+   `username` text DEFAULT NULL,
+   `password` text DEFAULT NULL,
+   `UserSince` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+   `collaborative_preference` float NOT NULL DEFAULT 0.5,
+   `time_preference` float NOT NULL DEFAULT 0.0001,
+   PRIMARY KEY (`user_id`)
+ ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE `conversations` (
+   `conversation_id` varchar(255) NOT NULL,
+   `title` varchar(255) DEFAULT NULL,
+   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+   `updated_at` timestamp NOT NULL DEFAULT current_timestamp(),
+   PRIMARY KEY (`conversation_id`)
+ ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE `groups` (
+   `group_id` varchar(36) NOT NULL,
+   `parent_id` varchar(36) DEFAULT NULL,
+   `group_name` varchar(100) NOT NULL,
+   `description` varchar(1000) DEFAULT NULL,
+   `group_photo` text DEFAULT NULL,
+   `member_count` int(11) DEFAULT 0,
+   `date_created` datetime DEFAULT current_timestamp(),
+   `is_private` tinyint(1) DEFAULT 0,
+   `group_leader` varchar(36) NOT NULL,
+   PRIMARY KEY (`group_id`),
+   KEY `parent_id` (`parent_id`),
+   CONSTRAINT `groups_ibfk_1` FOREIGN KEY (`parent_id`) REFERENCES `groups` (`group_id`) ON DELETE SET NULL
+ ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE `nested_group_members` (
+   `sub_group_id` varchar(36) NOT NULL,
+   `parent_group_id` varchar(36) NOT NULL,
+   PRIMARY KEY (`sub_group_id`,`parent_group_id`),
+   KEY `parent_group_id` (`parent_group_id`),
+   CONSTRAINT `nested_group_members_ibfk_1` FOREIGN KEY (`sub_group_id`) REFERENCES `groups` (`group_id`),
+   CONSTRAINT `nested_group_members_ibfk_2` FOREIGN KEY (`parent_group_id`) REFERENCES `groups` (`group_id`)
+ ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE `user_groups` (
+   `user_id` varchar(36) NOT NULL,
+   `group_id` varchar(36) NOT NULL,
+   `is_mod` tinyint(1) DEFAULT 0,
+   `is_admin` tinyint(1) DEFAULT 0,
+   PRIMARY KEY (`user_id`,`group_id`),
+   KEY `group_id` (`group_id`),
+   CONSTRAINT `user_groups_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`user_id`) ON DELETE CASCADE,
+   CONSTRAINT `user_groups_ibfk_2` FOREIGN KEY (`group_id`) REFERENCES `groups` (`group_id`) ON DELETE CASCADE
+ ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE `profiles` (
+   `profile_id` varchar(255) NOT NULL,
+   `user_id` varchar(255) DEFAULT NULL,
+   `profile_photo` text DEFAULT NULL,
+   `bio` text DEFAULT NULL,
+   `follower_count` int(11) DEFAULT 0,
+   `is_private` tinyint(1) DEFAULT 0,
+   PRIMARY KEY (`profile_id`),
+   KEY `user_id` (`user_id`),
+   CONSTRAINT `profiles_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`user_id`)
+ ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE `followers` (
+   `follow_id` varchar(36) NOT NULL,
+   `follower_id` varchar(36) NOT NULL,
+   `profile_id` varchar(36) NOT NULL,
+   PRIMARY KEY (`follow_id`)
+ ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE `friends` (
+   `friendship_id` varchar(255) NOT NULL,
+   `user1_id` varchar(255) DEFAULT NULL,
+   `user2_id` varchar(255) DEFAULT NULL,
+   `FriendSince` timestamp NOT NULL DEFAULT current_timestamp(),
+   PRIMARY KEY (`friendship_id`),
+   UNIQUE KEY `user1_id` (`user1_id`,`user2_id`)
+ ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE `group_channels` (
+   `channel_id` varchar(36) NOT NULL,
+   `channel_name` varchar(100) NOT NULL,
+   `group_id` varchar(36) NOT NULL,
+   `date_created` datetime DEFAULT current_timestamp(),
+   `is_posts` tinyint(1) DEFAULT 1,
+   `is_chat` tinyint(1) DEFAULT 1,
+   PRIMARY KEY (`channel_id`),
+   KEY `group_id` (`group_id`),
+   CONSTRAINT `group_channels_ibfk_1` FOREIGN KEY (`group_id`) REFERENCES `groups` (`group_id`) ON DELETE CASCADE
+ ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE `group_posts` (
+   `post_id` varchar(36) NOT NULL,
+   `group_id` varchar(36) NOT NULL,
+   `title` varchar(120) DEFAULT NULL,
+   `content` text NOT NULL,
+   `replies` int(11) NOT NULL DEFAULT 0,
+   `views` int(11) NOT NULL DEFAULT 0,
+   `upvotes` int(11) NOT NULL DEFAULT 0,
+   `downvotes` int(11) NOT NULL DEFAULT 0,
+   `timestamp` datetime DEFAULT current_timestamp(),
+   `poster_id` varchar(36) DEFAULT NULL,
+   `channel_id` varchar(36) NOT NULL,
+   PRIMARY KEY (`post_id`),
+   KEY `poster_id` (`poster_id`),
+   KEY `group_id` (`group_id`),
+   CONSTRAINT `group_posts_ibfk_1` FOREIGN KEY (`poster_id`) REFERENCES `users` (`user_id`),
+   CONSTRAINT `group_posts_ibfk_2` FOREIGN KEY (`group_id`) REFERENCES `groups` (`group_id`)
+ ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE `group_replies` (
+   `reply_id` varchar(36) NOT NULL,
+   `post_id` varchar(36) NOT NULL,
+   `replier_id` varchar(36) DEFAULT NULL,
+   `content` varchar(1000) NOT NULL,
+   `upvotes` int(11) NOT NULL,
+   `downvotes` int(11) NOT NULL,
+   `timestamp` datetime DEFAULT current_timestamp(),
+   `parent_id` varchar(36) DEFAULT NULL,
+   PRIMARY KEY (`reply_id`),
+   KEY `fk_group_comments_post` (`post_id`),
+   KEY `fk_group_comments_commenter` (`replier_id`),
+   CONSTRAINT `fk_group_comments_post` FOREIGN KEY (`post_id`) REFERENCES `group_posts` (`post_id`)
+ ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+ 
+ CREATE TABLE `group_requests` (
+   `request_id` varchar(36) NOT NULL,
+   `sender_id` varchar(36) NOT NULL,
+   `group_id` varchar(36) NOT NULL,
+   PRIMARY KEY (`request_id`)
+ ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+ 
+ CREATE TABLE `profile_posts` (
+   `post_id` varchar(255) NOT NULL,
+   `title` text DEFAULT NULL,
+   `content` text DEFAULT NULL,
+   `replies` int(11) DEFAULT 0,
+   `views` int(11) DEFAULT 0,
+   `upvotes` int(11) DEFAULT 0,
+   `downvotes` int(11) DEFAULT 0,
+   `timestamp` timestamp NOT NULL DEFAULT current_timestamp(),
+   `poster_id` text DEFAULT NULL,
+   `channel_id` varchar(36) NOT NULL,
+   `profile_id` varchar(36) NOT NULL,
+   PRIMARY KEY (`post_id`)
+ ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE `profile_replies` (
+   `reply_id` varchar(255) NOT NULL,
+   `post_id` varchar(255) DEFAULT NULL,
+   `replier_id` text DEFAULT NULL,
+   `content` text DEFAULT NULL,
+   `upvotes` int(11) DEFAULT NULL,
+   `downvotes` int(11) DEFAULT NULL,
+   `timestamp` timestamp NOT NULL DEFAULT current_timestamp(),
+   `parent_id` text DEFAULT NULL,
+   PRIMARY KEY (`reply_id`),
+   KEY `post_id` (`post_id`),
+   CONSTRAINT `profile_replies_ibfk_1` FOREIGN KEY (`post_id`) REFERENCES `profile_posts` (`post_id`)
+ ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+ 
+ CREATE TABLE `messages` (
+   `message_id` varchar(255) NOT NULL,
+   `conversation_id` varchar(255) DEFAULT NULL,
+   `sender_id` varchar(255) DEFAULT NULL,
+   `message_content` text NOT NULL,
+   `timestamp` timestamp NOT NULL DEFAULT current_timestamp(),
+   PRIMARY KEY (`message_id`),
+   KEY `conversation_id` (`conversation_id`),
+   KEY `sender_id` (`sender_id`),
+   CONSTRAINT `messages_ibfk_1` FOREIGN KEY (`conversation_id`) REFERENCES `conversations` (`conversation_id`),
+   CONSTRAINT `messages_ibfk_2` FOREIGN KEY (`sender_id`) REFERENCES `users` (`user_id`)
+ ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+ 
+ CREATE TABLE `user_conversations` (
+   `user_id` varchar(255) NOT NULL,
+   `conversation_id` varchar(255) NOT NULL,
+   PRIMARY KEY (`user_id`,`conversation_id`),
+   KEY `conversation_id` (`conversation_id`),
+   CONSTRAINT `user_conversations_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`user_id`),
+   CONSTRAINT `user_conversations_ibfk_2` FOREIGN KEY (`conversation_id`) REFERENCES `conversations` (`conversation_id`)
+ ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+ 
+ CREATE TABLE `content_votes` (
+   `vote_id` varchar(36) NOT NULL,
+   `content_id` varchar(36) NOT NULL,
+   `user_id` varchar(36) NOT NULL,
+   `vote_count` int(11) DEFAULT 0,
+   PRIMARY KEY (`vote_id`),
+   KEY `user_id` (`user_id`),
+   CONSTRAINT `content_votes_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`user_id`)
+ ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE `reply_votes` (
+   `vote_id` varchar(36) NOT NULL,
+   `reply_id` varchar(36) NOT NULL,
+   `user_id` varchar(36) NOT NULL,
+   `vote_count` int(11) DEFAULT 0,
+   PRIMARY KEY (`vote_id`),
+   KEY `user_id` (`user_id`),
+   CONSTRAINT `reply_votes_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`user_id`)
+ ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+
+
+--Shows code used to create the table--
+show create table content_votes;
+show create table conversations;
+show create table followers;
+show create table friend_requests;
+show create table friends;
+show create table group_channels;
+show create table group_posts;
+show create table group_replies;
+show create table group_requests;
+show create table `groups`;
+show create table messages;
+show create table nested_group_members;
+show create table nested_group_requests;
+show create table profile_channels;
+show create table profile_posts;
+show create table profile_replies;
+show create table profiles;
+show create table reply_votes;
+show create table user_conversations;
+show create table user_groups;
+show create table users;

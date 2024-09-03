@@ -1,0 +1,142 @@
+@import url('variables.css');
+#add-channel-section {
+    align-items: center;
+    display: flex;
+    flex-direction: column;
+}
+.button.delete {
+    color: red;
+}
+.button.delete, .button.join, .light-button.join {
+    font-size: 36px;
+    margin-bottom: 20px;
+    padding: 20px;
+}
+.button.join, .light-button.join {
+    width: 200px;
+}
+.button.join-small {
+    font-size: 18px;
+    padding: 10px;
+    width: 100px;
+}
+.button.edit {
+    margin-left: 30px;
+}
+.button.theme {
+    align-items: center;
+    box-sizing: border-box;
+    display: flex;
+    justify-content: space-between;
+    min-width: 200px;
+    padding-right: 10px;
+}
+#follow-info {
+    margin-left: 10px;
+}
+.friend-requests {
+    margin-top: 20px;
+}
+#friend-request-list {
+    margin: 10px;
+}
+.results-wrapper {
+    grid-column: 1 / 2;
+    grid-row: 2;
+    overflow-y: auto;
+}
+#logout-form {
+    margin: 10px;
+}
+.membership-join {
+    align-items: center;
+    display: flex;
+    flex-direction: column;
+    margin-top: 40px;
+}
+#name-photo-area {
+    align-items: center; 
+    display: flex;
+    justify-content: space-between;
+}
+#private-toggle {
+    align-items: center;
+    display: flex;
+    flex-direction: column;
+    padding: 100px;
+}
+#profile-bio-settings {
+    font-size: 24px;
+    max-width: 400px;
+}
+#profile-header-side {
+    align-items: center;
+    display: flex;
+    flex-direction: column;
+}
+#profile-options {
+    align-items: center;
+    display: flex;
+    flex-direction: column;
+    margin-left: 10px;
+}
+#profile-settings {
+    align-items: center;
+    background-color: var(--darkest);
+    border-radius: 20px;
+    display: flex;
+    flex-direction: column;
+    margin-top: -140px;
+    min-height: 30%;
+    width: 60%;
+}
+#profile-summary {
+    align-items: center;
+    display: flex;
+    flex-direction: column;
+    width: 100%
+}
+.settings-area {
+    align-items: center;
+    display: flex;
+    justify-content: center;
+    height: calc(100vh - 80px);
+    width: 100%;
+}
+.settings-item {
+    border-bottom: 1px solid var(--dark-line);
+    padding: 10px;
+}
+#settings-profile-photo {
+    border-radius: 54px;
+    height: 240px; 
+    margin: 20px;
+    width: 240px; 
+}
+.theme-box {
+    border: 1px solid var(--border);
+    height: 20px;
+    margin: 0 5px;
+    width: 20px;
+}
+.theme-container {
+    display: flex;
+    margin-left: auto;
+    margin-right: 0;
+}
+#upload-section {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    padding: 5px;
+    background-color: var(--button-hover);
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    max-width: 200px; 
+    margin: 10px;
+    max-height: 200px;
+}
+#viewed-profile-info {
+    margin: 10px;
+    max-width: 400px;
+}

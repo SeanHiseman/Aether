@@ -1,0 +1,84 @@
+@import url('variables.css');
+.reply-container {
+    width: 100%;
+}
+.reply-profile-container {
+    align-items: center;
+    display: flex;
+    text-decoration: none;
+}
+.reply-container {
+    width: 100%;
+}
+.reply-container-button:hover {
+    background-color: var(--button-hover);
+}
+.reply-form {
+    align-items: center;
+    display: flex;
+}
+.reply-vote-container {
+    margin-top: 10px;
+}
+.reply-section {
+    display: block;
+    width: 100%;
+}
+.reply-input {
+    background-color: var(--darkest);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    color: var(--border);
+    height: 50px;
+    margin: 10px;
+    outline: none;
+    padding: 10px;
+    width: 80%;
+}
+.reply-metadata {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 10px;
+}
+.reply-profile-container{
+    position: relative;
+    display: flex;
+    margin-bottom: 5px;
+    align-items: center;
+}
+.reply-text {
+    margin-left: 10px;
+}
+.reply-vote-container {
+    display: inline-flex;
+    align-items: center;
+    margin-left: 10px;
+}
+.net-upvotes {
+    margin: 0 5px;
+}
+.post-list {
+    margin: 0px;
+}
+.profile-photo{
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+}
+.uploader-info{
+    display: flex;
+    align-items: center;
+    position: relative;
+}
+#uploader-photo{
+    height: 40px; 
+    width: 40px; 
+    border-radius: 50%;
+}
+.username {
+    font-weight: bold;
+    margin-left: 5px;
+}
+
+  

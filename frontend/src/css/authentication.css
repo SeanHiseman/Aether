@@ -1,0 +1,60 @@
+@import url('variables.css');
+.authentication-container {
+    align-items: center;
+    display: flex;
+    flex-direction: column;
+}
+.authentication-box {
+    background-color: var(--darkest);
+    border-radius: 10px;
+    padding: 20px;
+    text-align: center;
+    width: 400px;
+}
+.authentication-input-box {
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    box-sizing: border-box;
+    display: inline-block;
+    margin: 8px 0;
+    outline: none;
+    padding: 12px;
+    width: 100%;
+}
+.submit {
+    background-color: var(--darkest);
+    border: 1px solid var(--border);
+    color: var(--border);
+    border-radius: 10px;
+    cursor: pointer;
+    margin: 8px 0;
+    padding: 14px 20px;
+    transition: background-color 0.3s;
+    width: 100%;
+}
+.link {
+    align-self: center;
+    background-color: var(--darkest);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    color: var(--border);
+    display: inline-block;
+    padding: 10px 20px;
+    text-align: center;
+    text-decoration: none;
+    transition: background-color 0.3s;
+}
+
+.link:hover, .submit:hover{
+    background-color: var(--button-hover);
+}
+
+.login-register{
+    display: flex;
+    justify-content: space-between;
+}
+.welcome-text {
+    font-size: 36px;
+    margin-bottom: 30px;
+    margin-top: 50px;
+}
