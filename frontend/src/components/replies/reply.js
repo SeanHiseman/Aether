@@ -6,7 +6,7 @@ import ReactQuill from 'react-quill';
 import AskButton from '../askButton';
 import ContentForm from '../contentForm';
 
-const Reply = ({ addReply, reply, depth, isGroup, onReplyAdded }) => {
+const Reply = ({ addReply, reply, depth, isGroup, onReplyAdded, onReplyRemoved, postId }) => {
     const [downvotes, setDownvotes] = useState(reply.downvotes);
     const [downvoteLimit, setDownvoteLimit] = useState(false);    
     const [note, setNote] = useState(reply.note ? reply.note.note_content : '');
@@ -40,16 +40,14 @@ const Reply = ({ addReply, reply, depth, isGroup, onReplyAdded }) => {
 
     const handleReplySubmit = async (formData) => {
         try {
-            formData.append('post_id', reply.post_id);
             formData.append('parent_id', reply.reply_id);
-            formData.append('isGroup', isGroup);
-            
+            formData.append('postId', postId);
             // Send the form data to the server
             const response = await axios.post('/api/add_reply', formData, {
                 headers: { 'Content-Type': 'multipart/form-data' }
             });
 
-            if (response.data.status === "success") {
+            if (response.data.success === true) {
                 onReplyAdded(response.data.reply);
                 setShowReplyForm(false);
             }
@@ -87,15 +85,18 @@ const Reply = ({ addReply, reply, depth, isGroup, onReplyAdded }) => {
     };
 
     //Deletes the reply
-    const removeReply = async (isGroup, reply_id) => {
+    const removeReply = async (replyId) => {
         try {
-            const replyData = { isGroup, reply_id }
-            axios.delete('/api/remove_reply', { data: replyData });
+            const replyData = { isGroup, replyId, postId }
+            const response = await axios.delete('/api/remove_reply', { data: replyData });
+            if (response.data.success) {
+                onReplyRemoved(replyId);
+            }
         } catch (error) {
             console.error("Error removing reply:", error); 
         }
     };
-
+ 
     const downvoteClass = downvoteLimit || isReplier ? 'vote-disabled' : 'vote-enabled';
     const upvoteClass = upvoteLimit || isReplier ? 'vote-disabled' : 'vote-enabled';
     
@@ -125,14 +126,14 @@ const Reply = ({ addReply, reply, depth, isGroup, onReplyAdded }) => {
                         {showReplyForm && <ContentForm isReply={true} onSubmit={handleReplySubmit} />}
                     </div>
                     {isReplier ? (
-                        <button className="button" onClick={() => removeReply(isGroup, reply.reply_id)}>Delete</button>
+                        <button className="button" onClick={() => removeReply(reply.reply_id)}>Delete</button>
                     ) : null}
                     {!reply.note?.is_misinfo && (
                         <AskButton isGroup={isGroup} isReply={true} content={reply} showNote={showNote} setShowNote={setShowNote} note={note} setNote={setNote} />
                     )}
                 </div>
                 {reply.replies && reply.replies.map(reply => (
-                    <Reply key={reply.reply_id} reply={reply} depth={depth + 1} isGroup={isGroup} addReply={addReply} />
+                    <Reply key={reply.reply_id} addReply={addReply} reply={reply} depth={depth + 1} isGroup={isGroup} onReplyAdded={onReplyAdded} onReplyRemoved={onReplyRemoved} postId={postId} />
                 ))}
             </div>
         </div>

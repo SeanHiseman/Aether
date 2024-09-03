@@ -107,14 +107,20 @@ function ContentWidget({ canRemove: canRemoveProp , isGroup, onPostRemoved, post
         setReplies(currentReplies => [...currentReplies, newReply]);
     };
 
+    const handleReplyRemoved = (replyId) => {
+        setReplies((prevReplies) => prevReplies.filter((reply) => reply.reply_id !== replyId));
+    };
+
     const handleReplySubmit = async (formData) => {
         try {
+            formData.append('postId', post.post_id);
+            formData.append('isGroup', isGroup);
             //Send the form data to the server
             const response = await axios.post('/api/add_reply', formData, {
                 headers: { 'Content-Type': 'multipart/form-data' }
             });
 
-            if (response.data.status === "success") {
+            if (response.data.success === true) {
                 //Add the new reply to the local state
                 setReplies(currentReplies => [...currentReplies, response.data.reply]);
             } else {
@@ -154,8 +160,8 @@ function ContentWidget({ canRemove: canRemoveProp , isGroup, onPostRemoved, post
     const removePost = async () => {
         try {
             const postData = { isGroup, postId: post.post_id };
-            const response = axios.delete('/api/remove_post', { data: { postData } } );
-            if ((await response).data.success) {
+            const response = await axios.delete('/api/remove_post', { data: { postData } } );
+            if (response.data.success) {
                 onPostRemoved(post.post_id);
             }
         } catch (error) {
@@ -251,10 +257,10 @@ function ContentWidget({ canRemove: canRemoveProp , isGroup, onPostRemoved, post
             {showReplies && (
                 <div className="reply-section">
                     <div className="add-reply">
-                        <ContentForm isGroup={isGroup} isReply={true} onSubmit={handleReplySubmit} postId={post.post_id} parentId={null} />
+                        <ContentForm isReply={true} onSubmit={handleReplySubmit} />
                     </div>
                     {nestedReplies.map((reply) => (
-                        <Reply key={reply.reply_id} reply={reply} depth={0} isGroup={isGroup} onReplyAdded={handleReplyAdded}/>
+                        <Reply key={reply.reply_id} reply={reply} depth={0} isGroup={isGroup} onReplyAdded={handleReplyAdded} onReplyRemoved={handleReplyRemoved} postId={post.post_id} />
                     ))}
                 </div>
             )}
