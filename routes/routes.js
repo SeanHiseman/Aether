@@ -1,15 +1,16 @@
-import { Router } from 'express';
-import { ContentVotes, Followers, Friends, FriendRequests, GroupChannels, Groups, GroupNotes, GroupReplies, GroupRequests, GroupPosts, ProfileChannels, ProfileNotes, ProfileReplies, ProfilePosts, Profiles, Users, UserGroups } from '../models/models.js'; 
 import authenticateCheck from '../functions/authenticateCheck.js';
 import calculatePoints from '../functions/postPoints.js';
 import checkIfUserIsMember from '../functions/memberCheck.js';
+import deleteMedia from '../functions/deleteMedia.js';
+import { hybridRecommendations } from '../functions/recommendation/hybrid.js';
+import sortPostsByWeightedRatio from '../functions/postSorting.js';
+import { Router } from 'express';
+import { ContentVotes, Followers, Friends, FriendRequests, GroupChannels, Groups, GroupNotes, GroupReplies, GroupRequests, GroupPosts, ProfileChannels, ProfileNotes, ProfileReplies, ProfilePosts, Profiles, Users, UserGroups } from '../models/models.js'; 
 import fs from 'fs';
 import { fileURLToPath } from 'url';
-import { hybridRecommendations } from '../functions/recommendation/hybrid.js';
 import { dirname } from 'path';
 import { Op } from 'sequelize';
 import path from 'path';
-import sortPostsByWeightedRatio from '../functions/postSorting.js';
 import { v4 } from 'uuid';
 
 const router = Router();
@@ -359,30 +360,17 @@ router.delete('/remove_post', authenticateCheck, async (req, res) => {
         const { isGroup, postId } = postData;
         const repliesModel = isGroup ? GroupReplies : ProfileReplies;
         const notesModel = isGroup ? GroupNotes : ProfileNotes;
-        const postModel = isGroup ? GroupPosts : ProfilePosts;
-
-        //Deletes media associated with post
-        const post = await postModel.findOne({ where: { post_id: postId } });
-        const mediaFiles = [];
-        const content = post.content;
-        const mediaRegex = /\/media\/content\/([\w.-]+)/g;
-        let match;
-        while ((match = mediaRegex.exec(content)) !== null) {
-            mediaFiles.push(match[1]);
-        }
-        mediaFiles.forEach(file => {
-            const filePath = path.join(rootDir, 'media', 'content', file);
-            fs.unlink(filePath, (error) => {
-                if (error) console.error(`Failed to delete file: ${filePath}`, err);
-            });
+        const postModel = isGroup ? GroupPosts : ProfilePosts;  
+        const post = await postModel.findOne({
+            where: { post_id: postId }
         });
-
+        deleteMedia(post.content);
         await repliesModel.destroy({ where: { post_id: postId } });
         await notesModel.destroy({ where: { post_id: postId } })
         await postModel.destroy({ where: { post_id: postId } });
-        res.json({ success: true, message: 'Post deleted successfully' });
+        res.json({ success: true });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        res.status(500).json({ success: false });
     }
 });
 
