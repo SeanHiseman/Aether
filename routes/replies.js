@@ -80,7 +80,7 @@ router.post('/add_reply', authenticateCheck, reply_upload.array('files'), async 
         });
         return res.json({ success: true, reply: replyWithUser });
     } catch (error) {
-        return res.status(500).json({ status: "error", message: error.message });
+        return res.status(500).json({ success: false });
     }
 });
 
@@ -107,10 +107,9 @@ router.get('/get_replies/:postId', authenticateCheck, async (req, res) => {
                 required: false
             }],
         });
-        
         res.json(replies);
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        res.status(500).json({ success: false });
     }
 });
 
@@ -139,12 +138,10 @@ router.post('/reply_vote', authenticateCheck, async (req, res) => {
     try {
         const { reply_id, isGroup, vote_type } = req.body;
         const userId = req.session.user_id;
-
         const [vote] = await ReplyVotes.findOrCreate({
             where: { reply_id: reply_id, user_id: userId },
             defaults: { vote_id: v4(), vote_count: 0 }
         });
-
         if (vote_type === 'check_vote') {
             if (vote.vote_count >= 10) {
                 return res.json({ success: true, message: 'upvote limit' });
@@ -154,34 +151,29 @@ router.post('/reply_vote', authenticateCheck, async (req, res) => {
                 return res.json({ success: true, message: 'no limit' });
             }
         }
-        
         //Limits upvotes and downvotes on each reply to 10
         if (vote.vote_count >= 10 && vote_type === 'upvote') {
             return res.json({ success: false, message: 'Upvote limit' });
         } else if (vote.vote_count <= -10 && vote_type === 'downvote') {
             return res.json({ success: false, message: 'downvote limit' });
         }
-
         if (vote_type === 'upvote') {
             vote.vote_count += 1; 
         } else if (vote_type === 'downvote') {
             vote.vote_count -= 1; 
         }
         await vote.save();
-
         const ReplyModel = isGroup ? GroupReplies : ProfileReplies;
-
         const replyToUpdate = await ReplyModel.findByPk(reply_id);
         if (vote_type === 'upvote') {
             replyToUpdate.upvotes += 1;
         } else if (vote_type === 'downvote') {
             replyToUpdate.downvotes += 1;
         }
-
         await replyToUpdate.save();
         res.json({ success: true });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        res.status(500).json({ success: false });
     }
 });
 

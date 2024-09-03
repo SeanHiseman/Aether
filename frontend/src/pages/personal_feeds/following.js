@@ -8,25 +8,30 @@ function FollowingPage() {
 
     //Gets posts from profiles and groups followed by user
     useEffect(() => {
-        axios.get('/api/following_posts')
-        .then(response => {
-            setPosts(response.data);
-        })
-        .catch(error => {
-             console.error('Error getting posts:', error);
-        });
+        const fetchPosts = async () => {
+            try {
+                const response = await axios.get('/api/following_posts');
+                setPosts(response.data);
+            } catch (error) {
+                console.error('Error getting posts:', error);
+            }
+        };
+        fetchPosts();
     }, []);
-
+    
     //Load user's time preference
     useEffect(() => {
-        axios.get('/api/get_time_preference')
-            .then(response => {
+        const fetchTimePreference = async () => {
+            try {
+                const response = await axios.get('/api/get_time_preference');
                 setTimePreference(response.data.preference);
-            })
-            .catch(error => {
+            } catch (error) {
                 console.error('Error getting preference:', error);
-            });
+            }
+        };
+        fetchTimePreference();
     }, []);
+    
 
     //Save time value to backend
     const handleTimeChange = (event) => {

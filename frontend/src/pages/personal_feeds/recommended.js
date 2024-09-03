@@ -9,36 +9,41 @@ function RecommendedPage() {
 
     //Posts recommended based on hybrid algorithm
     useEffect(() => {
-        axios.get('/api/recommended_posts')
-            .then(response => {
-                //console.log("response.data", response.data);
+        const fetchPosts = async () => {
+            try {
+                const response = await axios.get('/api/recommended_posts');
                 setPosts(response.data.recommendations);
-            })
-            .catch(error => {
+            } catch (error) {
                 console.error('Error getting posts:', error);
-            });
+            }
+        };
+        fetchPosts();
     }, []);
-
+    
     //Load user's recommendation preference
     useEffect(() => {
-        axios.get('/api/get_filter_preference')
-            .then(response => {
+        const fetchFilterPreference = async () => {
+            try {
+                const response = await axios.get('/api/get_filter_preference');
                 setFilterPreference(response.data.preference);
-            })
-            .catch(error => {
+            } catch (error) {
                 console.error('Error getting preference:', error);
-            });
+            }
+        };
+        fetchFilterPreference();
     }, []);
-
+    
     //Load user's time preference
     useEffect(() => {
-        axios.get('/api/get_time_preference')
-            .then(response => {
+        const fetchTimePreference = async () => {
+            try {
+                const response = await axios.get('/api/get_time_preference');
                 setTimePreference(response.data.preference);
-            })
-            .catch(error => {
+            } catch (error) {
                 console.error('Error getting preference:', error);
-            });
+            }
+        };
+        fetchTimePreference();
     }, []);
 
     //Save slider value to backend

@@ -11,21 +11,18 @@ function PostChannel({ canRemove, channelId, channelName, isGroup, locationId })
         const getPosts = async () => {
             try {
                 const isMain = channelName === 'Main';
-                const url = isGroup ? 'group_channel_posts' : 'profile_channel_posts';
-      
-                const response = await axios.get(`/api/${url}`, {
+                const response = await axios.get('/api/channel_posts', {
                     params: {
+                        isGroup,
                         location_id: locationId,
                         ...(isMain ? {} : { channel_id: channelId }) //Only include channelId if not viewing Main
                     }
                 });
-      
                 setPosts(response.data);
             } catch (error) {
                 console.error('Error getting posts:', error);
             }
         };
-      
         getPosts();
     }, [channelId, channelName, isGroup, locationId]);
     

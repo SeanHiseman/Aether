@@ -89,8 +89,7 @@ function GroupProfileView({ group, setGroup }) {
     //Changes group between public and private
     const togglePrivate = async () => {
         try {
-            const group_id = group.groupId;
-            const response = await axios.post('/api/toggle_private_group', { group_id });
+            const response = await axios.post('/api/toggle_private', { locationId: group.groupId, isGroup: true });
             setGroup(prevDetails => ({
                 ...prevDetails, 
                 isPrivate: response.data.is_private

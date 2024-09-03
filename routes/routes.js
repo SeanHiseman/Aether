@@ -1,22 +1,14 @@
 import authenticateCheck from '../functions/authenticateCheck.js';
 import calculatePoints from '../functions/postPoints.js';
 import checkIfUserIsMember from '../functions/memberCheck.js';
-import deleteMedia from '../functions/deleteMedia.js';
 import { hybridRecommendations } from '../functions/recommendation/hybrid.js';
 import sortPostsByWeightedRatio from '../functions/postSorting.js';
-import { Router } from 'express';
-import { ContentVotes, Followers, Friends, FriendRequests, GroupChannels, Groups, GroupNotes, GroupReplies, GroupRequests, GroupPosts, ProfileChannels, ProfileNotes, ProfileReplies, ProfilePosts, Profiles, Users, UserGroups } from '../models/models.js'; 
-import fs from 'fs';
-import { fileURLToPath } from 'url';
-import { dirname } from 'path';
+import { ContentVotes, Followers, Friends, FriendRequests, GroupChannels, Groups, GroupRequests, GroupPosts, ProfileChannels, ProfilePosts, Profiles, Users, UserGroups } from '../models/models.js'; 
 import { Op } from 'sequelize';
-import path from 'path';
+import { Router } from 'express';
 import { v4 } from 'uuid';
 
 const router = Router();
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename); 
-const rootDir = path.resolve(__dirname, '..');
 
 //Changes name on profile, group or chat channel
 router.post('/change_channel_name', authenticateCheck, async (req, res) => {
@@ -38,7 +30,7 @@ router.post('/change_channel_name', authenticateCheck, async (req, res) => {
             res.status(200).json({ success: true });
         }
     } catch (error) {
-        res.status(500).json({ error: "Error changing channel name"});
+        res.status(500).json({ success: false });
     }
 });
 
@@ -47,12 +39,10 @@ router.post('/content_vote', authenticateCheck, async (req, res) => {
     try {
         const { content_id, isGroup, vote_type } = req.body;
         const userId = req.session.user_id;
-    
         const [vote] = await ContentVotes.findOrCreate({
             where: { content_id: content_id, user_id: userId },
             defaults: { vote_id: v4(), vote_count: 0 },
         });
-
         //Limits upvotes and downvotes on each post to 10
         if (vote_type === 'check_vote') {
             if (vote.vote_count >= 10) {
@@ -63,13 +53,11 @@ router.post('/content_vote', authenticateCheck, async (req, res) => {
                 return res.json({ success: true, message: 'no limit' });
             }
         }
-
         if (vote.vote_count >= 10 && vote_type === 'upvote') {
             return res.json({ success: false, message: 'upvote limit'});
         } else if (vote.vote_count <= -10 && vote_type === 'downvote') {
             return res.json({ success: false, message: 'downvote limit '});
         }
-
         //Update contentVotes table
         if (vote_type === 'upvote') {
             vote.vote_count += 1;
@@ -77,7 +65,6 @@ router.post('/content_vote', authenticateCheck, async (req, res) => {
             vote.vote_count -= 1;
         }
         await vote.save();
-
         //Update individual posts
         const PostModel = isGroup ? GroupPosts : ProfilePosts;
         const content = await PostModel.findByPk(content_id);
@@ -86,19 +73,16 @@ router.post('/content_vote', authenticateCheck, async (req, res) => {
         } else if (vote_type === 'downvote') {
             content.downvotes += 1;
         }
-
         //Recalculate content points
         content.points = calculatePoints(content.upvotes, content.downvotes, content.views);
         await content.save();
-
         //Update user total points
         const user = await Users.findByPk(content.poster_id);
         user.points = await ProfilePosts.sum('points', { where: { poster_id: content.poster_id } });
         await user.save();
-
         return res.json({ success: true });
     } catch (error) {
-        return res.status(404).json({ success: false, message: error.message });
+        return res.status(404).json({ success: false });
     }
 });
 
@@ -114,14 +98,12 @@ router.get('/friend_posts', authenticateCheck, async (req, res)=> {
             },
             attributes: ['user1_id', 'user2_id']
         });
-
         //Get friend IDs, since the user might be in either column
         const friendIds = friends.reduce((acc, friend) => {
             if (friend.user1_id !== user_id && !acc.includes(friend.user1_id)) acc.push(friend.user1_id);
             if (friend.user2_id !== user_id && !acc.includes(friend.user2_id)) acc.push(friend.user2_id);
             return acc;
         }, []);
-
         const posts = await ProfilePosts.findAll({
             where: {
                 poster_id: { [Op.in]: friendIds }
@@ -138,10 +120,9 @@ router.get('/friend_posts', authenticateCheck, async (req, res)=> {
             //Posts sorted chronilogically
             order: [['timestamp', 'DESC']]
         });
-
         res.json(posts);
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });   
+        res.status(500).json({ success: false });   
     }
 });
 
@@ -149,7 +130,6 @@ router.get('/friend_posts', authenticateCheck, async (req, res)=> {
 router.get('/following_posts', authenticateCheck, async (req, res) => {
     try {
         const userId = req.session.user_id;
-
         //Fetch followed profiles
         const followedProfiles = await Followers.findAll({
             where: { follower_id: userId },
@@ -159,7 +139,6 @@ router.get('/following_posts', authenticateCheck, async (req, res) => {
                 }],
             attributes: [],
         });
-
         //Fetch user groups
         const userGroups = await UserGroups.findAll({
             where: { user_id: userId },
@@ -169,11 +148,9 @@ router.get('/following_posts', authenticateCheck, async (req, res) => {
                 }],
             attributes: [],
         });
-
         //Get profile IDs and group IDs
         const profileIds = followedProfiles.map((follower) => follower.profile.profile_id);
         const groupIds = userGroups.map((userGroup) => userGroup.group.group_id);
-
         //Fetch posts from followed profiles
         const profilePosts = await ProfilePosts.findAll({
             where: { profile_id: { [Op.in]: profileIds } },
@@ -187,7 +164,6 @@ router.get('/following_posts', authenticateCheck, async (req, res) => {
                     }],
                 }],
         });
-
         //Fetch posts from user groups
         const groupPosts = await GroupPosts.findAll({
             where: { group_id: { [Op.in]: groupIds } },
@@ -201,7 +177,6 @@ router.get('/following_posts', authenticateCheck, async (req, res) => {
                     }],
                 }],
         });
-
         //Adds group true/false to posts
         const finalProfileResults = profilePosts.map((post) => ({
             ...post.dataValues, is_group: false,
@@ -209,15 +184,12 @@ router.get('/following_posts', authenticateCheck, async (req, res) => {
         const finalGroupResults = groupPosts.map((post) => ({
             ...post.dataValues, is_group: true,
         }));
-
         //Combine posts from profiles and groups
         const posts = [...finalProfileResults, ...finalGroupResults]
-
         const sortedPosts = await sortPostsByWeightedRatio(posts, userId);
-
         res.json(sortedPosts);
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        res.status(500).json({ success: false });
     }
 });
 
@@ -225,7 +197,6 @@ router.get('/following_posts', authenticateCheck, async (req, res) => {
 router.get('/feed_list/:userId', async (req, res) => {
     try {
         const { userId } = req.params;
-
         //Groups that the user is following
         const groups = await Groups.findAll({
             include: [{
@@ -242,13 +213,11 @@ router.get('/feed_list/:userId', async (req, res) => {
             //Returns groups alphabetically
             order: [['group_name', 'ASC']],
         })
-
         //Formats group list
         const formattedGroups = groups.map(group => ({
             ...group.dataValues,
             type: 'group',
         }));
-
         //User feeds that a user is following
         const userFeeds = await Followers.findAll({
             where: { follower_id: userId },
@@ -259,7 +228,6 @@ router.get('/feed_list/:userId', async (req, res) => {
             attributes: [],
             order: [[ {model: Profiles }, { model: Users, as: 'user' }, 'username', 'ASC']],
         });
-
         //Formats profile list
         const formattedProfiles = userFeeds.map(feed => ({
             feed_id: feed.profile.user.user_id,
@@ -267,16 +235,13 @@ router.get('/feed_list/:userId', async (req, res) => {
             photo: feed.profile.profile_photo,
             type: 'profile',
         }));
-
         //Combine group and profile follows
         const feedList = [...formattedGroups, ...formattedProfiles];
-
         //Sorts combined feed
         feedList.sort((a, b) => a.name.localeCompare(b.name));
-        
         res.json(feedList);
     } catch (error) {
-        res.status(500).send('Error getting feeds');
+        res.status(500).json({ success: false });
     }
 });
 
@@ -287,13 +252,9 @@ router.get('/get_filter_preference', async (req, res) => {
         const user = await Users.findByPk(userId, {
             attributes: ['collaborative_preference'],
         });
-        if (user) {
-            res.json({ preference: user.recommendation_preference });
-        } else {
-            res.status(404).json({ error: 'User not found' });
-        }
+        res.json({ preference: user.recommendation_preference });
     } catch (error) {
-        res.status(500).json({ error: 'Database error' });
+        res.status(500).json({ success: false });
     }
 });
 
@@ -304,13 +265,9 @@ router.get('/get_time_preference', async (req, res) => {
         const user = await Users.findByPk(userId, {
             attributes: ['time_preference'],
         });
-        if (user) {
-            res.json({ preference: user.time_preference });
-        } else {
-            res.status(404).json({ error: 'User not found' });
-        }
+        res.json({ preference: user.time_preference });
     } catch (error) {
-        res.status(500).json({ error: 'Database error' });
+        res.status(500).json({ success: false });
     }
 });
 
@@ -320,19 +277,16 @@ router.post('/increment_views', async (req, res) => {
         const { isGroup, postId } = req.body;
         const post = isGroup ? await GroupPosts.findByPk(postId) : await ProfilePosts.findByPk(postId);
         post.views += 1;
-
         //Update post points
         post.points = calculatePoints(post.upvotes, post.downvotes, post.views);
         await post.save();
-
         //Update user points
         const user = await Users.findByPk(post.poster_id);
         user.points = await ProfilePosts.sum('points', { where: { poster_id: post.poster_id } });
         await user.save();
-
         res.json({ success: true });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });   
+        res.status(500).json({ success: false });   
     }
 });
 
@@ -349,27 +303,6 @@ router.get('/recommended_posts', authenticateCheck, async (req, res) => {
         //});
         res.status(200).json({ success: true, recommendations: sortedPosts });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
-    }
-});
-
-//Allows post to be taken down either by the user or moderators
-router.delete('/remove_post', authenticateCheck, async (req, res) => {
-    try {
-        const { postData } = req.body;
-        const { isGroup, postId } = postData;
-        const repliesModel = isGroup ? GroupReplies : ProfileReplies;
-        const notesModel = isGroup ? GroupNotes : ProfileNotes;
-        const postModel = isGroup ? GroupPosts : ProfilePosts;  
-        const post = await postModel.findOne({
-            where: { post_id: postId }
-        });
-        deleteMedia(post.content);
-        await repliesModel.destroy({ where: { post_id: postId } });
-        await notesModel.destroy({ where: { post_id: postId } })
-        await postModel.destroy({ where: { post_id: postId } });
-        res.json({ success: true });
-    } catch (error) {
         res.status(500).json({ success: false });
     }
 });
@@ -379,7 +312,6 @@ router.get('/search/groups', authenticateCheck, async (req, res) => {
     try {
         const user_id = req.session.user_id;
         const keyword = req.query.keyword.toLowerCase();
-
         //Sees if a user has sent a join request to a private group
         const user = await Users.findOne({
             where: { user_id },
@@ -390,12 +322,10 @@ router.get('/search/groups', authenticateCheck, async (req, res) => {
                 required: false,
             }]
         });
-
         const groups = await Groups.findAll({
             where: { group_name: { [Op.like]: `%${keyword}%` } },
             attributes: ['group_id', 'group_name', 'description', 'group_photo', 'member_count', 'is_private'],
         });
-
         const groupData = await Promise.all(groups.map(async (group) => {
             const isMember = await checkIfUserIsMember(user_id, group.group_name);
             const isRequestSent = group.is_private && user.sent_group_requests.some((request) => request.group_id === group.group_id);
@@ -406,10 +336,9 @@ router.get('/search/groups', authenticateCheck, async (req, res) => {
                 isRequestSent
             };
         }));
-
         res.json(groupData);
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message }); 
+        res.status(500).json({ success: false }); 
     }
 });
 
@@ -434,7 +363,6 @@ router.get('/search/posts', authenticateCheck, async (req, res) => {
                 }]
             }],
         });
-
         const groupPostResults = await GroupPosts.findAll({
             where: {
                 [Op.or]: [{
@@ -453,7 +381,6 @@ router.get('/search/posts', authenticateCheck, async (req, res) => {
                 }]
             }],
         });
-
         //Adds group true/false to posts
         const finalProfileResults = profilePostResults.map((post) => ({
             ...post.dataValues, is_group: false,
@@ -461,15 +388,13 @@ router.get('/search/posts', authenticateCheck, async (req, res) => {
         const finalGroupResults = groupPostResults.map((post) => ({
             ...post.dataValues, is_group: true,
         }));
-
         //Combine posts from profiles and groups
         const posts = [...finalProfileResults, ...finalGroupResults]
-
         //Applies weighting algorithm to posts
         const sortedPosts = await sortPostsByWeightedRatio(posts, userId);
         res.json(sortedPosts);
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        res.status(500).json({ success: false });
     }
 });
 
@@ -478,7 +403,6 @@ router.get('/search/profiles', authenticateCheck, async (req, res) => {
     try {
         const loggedInUserId = req.session.user_id; 
         const keyword = req.query.keyword.toLowerCase(); 
-
         //Fetch profiles based on search keyword
         const profiles = await Profiles.findAll({
         where: {
@@ -492,7 +416,6 @@ router.get('/search/profiles', authenticateCheck, async (req, res) => {
                 attributes: ['username', 'user_id'], 
             }],
         });
-
         //Check friendship for each profile
         const formattedProfileData = await Promise.all(profiles.map(async (profile) => {
             const viewedUserId = profile.user.user_id;
@@ -504,16 +427,13 @@ router.get('/search/profiles', authenticateCheck, async (req, res) => {
                     ],
                 },
             });
-
             const isFollowing = await Followers.findOne({
                 where: { follower_id: loggedInUserId, profile_id: profile.profile_id },
             });
-
             const isFriend = !!friendship; 
             const isRequestSent = await FriendRequests.findOne({
                 where: { sender_id: loggedInUserId, receiver_id: viewedUserId },
             });
-
             return {
                 ...profile.toJSON(),
                 isFollowing: !!isFollowing,
@@ -523,8 +443,7 @@ router.get('/search/profiles', authenticateCheck, async (req, res) => {
         }));
         res.json(formattedProfileData);
     } catch (error) {
-        console.error("Error during profile search:", error);
-        res.status(500).json({ success: false, message: "An error occurred during profile search." });
+        res.status(500).json({ success: false });
     }
 });
 
@@ -538,7 +457,7 @@ router.post('/set_filter_preference', async (req, res) => {
         await user.save();
         res.status(200).json({ success: true });
     } catch (error) {
-        res.status(500).json({ error: 'Database error' });
+        res.status(500).json({ success: false });
     }
 });
 
@@ -552,7 +471,7 @@ router.post('/set_time_preference', async (req, res) => {
         await user.save();
         res.status(200).json({ success: true });
     } catch (error) {
-        res.status(500).json({ error: 'Database error' });
+        res.status(500).json({ success: false });
     }
 });
 

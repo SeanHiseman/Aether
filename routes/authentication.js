@@ -78,7 +78,6 @@ router.post('/join', async (req, res) => {
         if (existingUser) {
             return res.status(400).json({ message: 'Username already taken' });
         }
-
         //Add user info to database, including encrypted password
         const user_id = v4();
         const hashedPassword = await hash(req.body.password, 10);
@@ -86,7 +85,6 @@ router.post('/join', async (req, res) => {
         await Users.create({
             user_id, username, password: hashedPassword, UserSince
         });
-
         //Set up initial profile
         const default_photo = 'media/site_images/blank-profile.png';
         const profile_id = v4();
@@ -109,9 +107,7 @@ router.post('/login', async (req, res) => {
     try {
         const username = req.body.username;
         const password = req.body.password;
-
         const user = await Users.findOne({ where: { username }});
-
         if (user && await compare(password, user.password)) {
             req.session.user_id = user.user_id;
             req.session.username = user.username;

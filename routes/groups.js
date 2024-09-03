@@ -1,14 +1,13 @@
 import authenticateCheck from '../functions/authenticateCheck.js';
 import checkIfUserIsAdminOrMod from '../functions/adminModCheck.js';
 import checkIfUserIsMember from '../functions/memberCheck.js';
-import { ContentVotes, Groups, GroupChannels, GroupChannelMessages, GroupNotes, GroupRequests, GroupPosts, NestedGroupMembers, NestedGroupRequests, Profiles, Users, UserGroups } from '../models/models.js';
+import { Groups, GroupChannels, GroupChannelMessages, GroupRequests, GroupPosts, NestedGroupMembers, NestedGroupRequests, Profiles, Users, UserGroups } from '../models/models.js';
 import express from 'express';
 import fs from 'fs';
 import multer from 'multer';
 import { join } from 'path';
 import { Router } from 'express';
 import path from 'path';
-import sortPostsByWeightedRatio from '../functions/postSorting.js';
 import { v4 } from 'uuid';
 
 const app = express();
@@ -103,7 +102,7 @@ router.post('/add_group_channel', authenticateCheck, async (req, res) => {
 });
 
 //Cancel private group feed follow request
-router.delete('/cancel_join_request', authenticateCheck, async (req, res) => {
+router.delete('/cancel_follow_request', authenticateCheck, async (req, res) => {
     try {
         const { userId, groupId } = req.body;
         await GroupRequests.destroy({
@@ -120,15 +119,11 @@ router.post('/change_description', authenticateCheck, async (req, res) => {
     try {
         const { description, groupId } = req.body;
         const group = await Groups.findOne({ where: { group_id: groupId } });
-        if (group) {
-            group.description = description;
-            await group.save();
-            res.status(200).json({ message: "Description updated successfully" });
-        } else {
-            res.status(404).json({ message: "Group not found" });
-        }
+        group.description = description;
+        await group.save();
+        res.status(200).json({ success: true });
     } catch (error) {
-        res.status(500).json({ message: "Failed to update description" });
+        res.status(500).json({ success: false });
     }
 });
 
@@ -137,15 +132,11 @@ router.post('/change_group_name', authenticateCheck, async (req, res) => {
     try {
         const { groupName, groupId } = req.body;
         const group = await Groups.findOne({ where: { group_id: groupId } });
-        if (group) {
-            group.group_name = groupName;
-            await group.save();
-            res.status(200).json({ message: "Name updated successfully" });
-        } else {
-            res.status(404).json({ message: "Group not found" });
-        }
+        group.group_name = groupName;
+        await group.save();
+        res.status(200).json({ success: true });
     } catch (error) {
-        res.status(500).json({ message: "Failed to update name" });
+        res.status(500).json({ success: false });
     }
 });
 
@@ -161,21 +152,17 @@ router.post('/create_group', authenticateCheck, (req, res) => {
         } else if (err) {
             return res.status(400).json({ error: err.message });
         }
-
         try {
             const { group_name, is_private, group_id, user_id } = req.body;
-
             //Prevents duplicate group names
             const existingGroup = await Groups.findOne({ where: { group_name: group_name } });
             if (existingGroup) {
                 return res.status(400).json({ error: 'Name taken' });
             }
-
             let group_photo = "media/site_images/blank-group-icon.jpg";
             if (req.file) {
                 group_photo = req.file.path;
             }
-
             const newGroup = await Groups.create({
                 group_id,
                 group_name,
@@ -184,14 +171,12 @@ router.post('/create_group', authenticateCheck, (req, res) => {
                 is_private: is_private,
                 group_leader: user_id
             });
-
             //Adds main channel
             await GroupChannels.create({
                 channel_id: v4(),
                 channel_name: 'Main',
                 group_id: newGroup.group_id,
             });
-
             //Add creating user to the group, giving them permissions
             await UserGroups.create({
                 user_id: user_id,
@@ -199,7 +184,6 @@ router.post('/create_group', authenticateCheck, (req, res) => {
                 is_mod: true,
                 is_admin: true,
             });
-
             res.status(201).json(newGroup);
         } catch (error) {
             res.status(500).json({ error: 'Error, please try again' });
@@ -207,65 +191,10 @@ router.post('/create_group', authenticateCheck, (req, res) => {
     });
 });
 
-//Checks input for post uploads
-const postFilter = (req, file, cb) => {
-    if (file.mimetype.startsWith('/image') || file.mimetype.startsWith('/video')) {
-        cb(null, true);
-    } else {
-        cb(null, true);
-    }
-};
-//Multer setup for post uploads
-const post_storage = multer.diskStorage({
-    destination: function(req, file, cb) {
-        cb(null, 'media/content');
-    },
-    filename: function(req, file, cb) {
-        cb(null, Date.now() + path.extname(file.originalname));
-    }
-});
-//Uploads with file size limit
-const post_upload = multer({
-    storage: post_storage,
-    limits: {
-        fileSize: 1024 * 1024 * 100
-    },
-    fileFilter: postFilter
-});
-
-//Upload post to group
-router.post('/create_group_post', authenticateCheck, post_upload.array('files'), async (req, res) => {
-    try {
-        const { group_id, channel_id, title, content } = req.body;
-        const post_id = v4();
-        const user = await Users.findOne({ where: { username: req.session.username } });
-        let formattedContent = content;
-
-        req.files.forEach((file) => {
-            const fileType = file.mimetype.startsWith('image') ? 'img' : 'video';
-            const fileTag = fileType === 'img' ? `<img src="/media/content/${file.filename}">` : `<video src="/media/content/${file.filename}" controls></video>`;
-            formattedContent += ' ' + fileTag;
-        });
-
-        const post = await GroupPosts.create({
-            post_id,
-            group_id,
-            channel_id,
-            title,
-            content: formattedContent,
-            poster_id: user.user_id,
-        });
-        return res.json({ status: "success", "message": "Post created successfully.", post });
-    } catch (error) {
-        return res.status(404).json({ status: "error", "message": error.message });
-    }
-});
-
 //Deletes group (only available to group leaders)
 router.delete('/delete_group', authenticateCheck, async (req, res) => {
     try {
         const { group_id } = req.body;
-
         //await GroupReplies.destroy({
             //where: { group_id },
         //});
@@ -287,7 +216,6 @@ router.delete('/delete_group', authenticateCheck, async (req, res) => {
         await Groups.destroy({
             where: { group_id },
         });
-
         res.status(200).json({ success: true});
     } catch (error) {
         res.status(500).json({ error: 'Error deleting group' });
@@ -328,6 +256,25 @@ router.get('/get_group_channels/:groupId', authenticateCheck, async (req, res) =
             order: [['date_created', 'ASC']]
         });
         res.json(channels);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+//Allows users to join a group
+router.post('/follow_group', authenticateCheck, async (req, res) => {
+    try{
+        const { userId, groupId } = req.body;
+        await UserGroups.create({
+            user_id: userId,
+            group_id: groupId,
+            is_mod: false,
+            is_admin: false
+        });
+        //Increase group member count
+        const group = await Groups.findByPk(groupId);
+        await group.increment('member_count');
+        res.status(200).json();
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
@@ -412,53 +359,6 @@ router.get('/group_channel_messages/:channel_id', authenticateCheck, async (req,
     }
 });
 
-//Posts made to a group channel, including Main
-router.get('/group_channel_posts', authenticateCheck, async (req, res) => {
-    try {
-        const { channel_id, location_id } = req.query;
-        const userId = req.session.user_id;
-
-        //Determine the filter based on whether channel_id is provided or not
-        const whereChannel = {
-            group_id: location_id,
-            ...(channel_id ? { channel_id: channel_id } : {})
-        };
-
-        const posts = await GroupPosts.findAll({
-            where: whereChannel,
-            include: [{
-                model: Users,
-                as: 'GroupPoster',
-                attributes: ['username'],
-                include: [{
-                    model: Profiles,
-                    attributes: ['profile_photo']
-                }]
-            }, {
-                model: ContentVotes,
-                as: 'GroupPostVotes',
-                attributes: ['vote_count'],
-                required: false
-            }, {
-                model: GroupNotes,
-                as: 'note',
-                attributes: ['note_id', 'note_content', 'timestamp', 'is_misinfo'],
-                required: false
-            }],
-            attributes: ['post_id', 'title', 'content', 'replies', 'views', 'upvotes', 'downvotes', 'timestamp', 'poster_id', 'points'],
-        });
-
-        const finalResults = posts.map((post) => ({
-            ...post.dataValues, is_group: true,
-        }));
-
-        //const sortedPosts = sortPostsByWeightedRatio(finalResults, userId);
-        res.json(finalResults);
-    } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
-    }
-});
-
 //Private group join requests
 router.get('/group_requests/:groupId', authenticateCheck, async (req, res) => {
     try {
@@ -472,46 +372,7 @@ router.get('/group_requests/:groupId', authenticateCheck, async (req, res) => {
                 attributes: ['user_id', 'username']
             }],
         }); 
-
         res.json(requests);
-    } catch (error) {
-        res.status(500).json(error.message);
-    }
-});
-
-//Allows users to join a group
-router.post('/join_group', authenticateCheck, async (req, res) => {
-    try{
-        const { userId, groupId } = req.body;
-
-        await UserGroups.create({
-            user_id: userId,
-            group_id: groupId,
-            is_mod: false,
-            is_admin: false
-        });
-
-        //Increase group member count
-        const group = await Groups.findByPk(groupId);
-        await group.increment('member_count');
-
-        res.status(200).json();
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
-});
-
-//Allows user to leave/be removed from group
-router.post('/leave_group', authenticateCheck, async (req, res) => {
-    try {
-        const { userId, groupId } = req.body;
-
-        await UserGroups.destroy({
-            where: { user_id: userId, group_id: groupId }
-        });
-        //Lower member count
-        const group = await Groups.findByPk(groupId);
-        await group.decrement('member_count');
     } catch (error) {
         res.status(500).json(error.message);
     }
@@ -544,7 +405,7 @@ router.delete('/reject_nest_request', authenticateCheck, async (req, res) => {
 });
 
 //Send user private feed follow request
-router.post('/send_join_request', authenticateCheck, async (req, res) => {
+router.post('/send_follow_request', authenticateCheck, async (req, res) => {
     try {
         const { receiverId, senderId } = req.body;
         await GroupRequests.create({
@@ -611,20 +472,6 @@ router.post('/toggle_moderator', authenticateCheck, async (req, res) => {
     }
 });
 
-//Changes private status of profile
-router.post('/toggle_private_group', authenticateCheck, async (req, res) => {
-    try {
-        const { group_id } = req.body;
-        const group = await Groups.findOne({ where: { group_id } });
-        const updatedGroup = await group.update({
-            is_private: !group.is_private,
-        });
-        res.status(200).json(updatedGroup);
-    } catch (error) {
-        res.status(500).send(error.message);
-    }
-});
-
 router.put('/update_group_photo/:groupId', authenticateCheck, async (req, res) => {
     profile_upload(req, res, async function(err) {
         if (err instanceof multer.MulterError) {
@@ -632,11 +479,10 @@ router.put('/update_group_photo/:groupId', authenticateCheck, async (req, res) =
             if (err.code === 'LIMIT_FILE_SIZE') {
                 return res.status(413).json({ error: 'File cannot be more than 5MB' });
             }
-            return res.status(400).json({ error: 'Error uploading file' });
+            return res.status(400).json({ success: false });
         } else if (err) {
-            return res.status(400).json({ error: err.message });
+            return res.status(400).json({ success: false });
         }
-
         try {
             const defaultGroupPhotoPath = 'media/site_images/blank-group-icon.jpg';
             const groupId = req.params.groupId; 
@@ -644,27 +490,36 @@ router.put('/update_group_photo/:groupId', authenticateCheck, async (req, res) =
             const filename = file.filename;
             const newPhotoPath = `media/group_profiles/${filename}`;
             const group = await Groups.findOne({ where: { group_id: groupId } });
-            
-            if (group) {
-                //Deletes old photo
-                if (group.group_photo && group.group_photo !== defaultGroupPhotoPath) {
-                    const currentPhotoPath = path.join(group.group_photo);
-                    fs.unlink(currentPhotoPath, (error) => {
-                        if (error) {
-                            console.error(`Error deleting old photo: ${error}`);
-                        }
-                    });
-                }
-                group.group_photo = newPhotoPath;
-                await group.save();
-                return res.json({ newPhotoPath: newPhotoPath });
-            } else {
-                res.status(404).json({ message: "Group not found" });
+            //Deletes old photo
+            if (group.group_photo && group.group_photo !== defaultGroupPhotoPath) {
+                const currentPhotoPath = path.join(group.group_photo);
+                fs.unlink(currentPhotoPath, (error) => {
+                    if (error) {
+                        console.error(`Error deleting old photo: ${error}`);
+                    }
+                });
             }
+            group.group_photo = newPhotoPath;
+            await group.save();
+            return res.json({ newPhotoPath: newPhotoPath });
         } catch (error) {
-            res.status(500).json({ message: "An error occured while updating the group photo"});
+            res.status(500).json({ success: false });
         };
     });
+});
+
+router.post('/unfollow_group', authenticateCheck, async (req, res) => {
+    try {
+        const { userId, groupId } = req.body;
+        await UserGroups.destroy({
+            where: { user_id: userId, group_id: groupId }
+        });
+        //Lower member count
+        const group = await Groups.findByPk(groupId);
+        await group.decrement('member_count');
+    } catch (error) {
+        res.status(500).json({ success: false });
+    }
 });
 
 export const groupChatChannelSocket = (socket) => {

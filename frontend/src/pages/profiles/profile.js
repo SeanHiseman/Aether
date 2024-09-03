@@ -25,34 +25,43 @@ function Profile() {
     const isLoggedInUser = username === loggedInUsername;
 
     useEffect(() => {
-        axios.get(`/api/profile/${username}`)
-            .then(response => {
+        const fetchProfile = async () => {
+            try {
+                const response = await axios.get(`/api/profile/${username}`);
                 const fetchedProfile = response.data.profile;
                 setProfile(fetchedProfile);
-            })
-            .catch(error => {
+            } catch (error) {
                 console.error('Error:', error);
                 if (error.response && error.response.status === 401) {
                     navigate('/login');
                 }
-            });
+            }
+        };
+
+        fetchProfile();
     }, [username, navigate, channel_name]);
 
     //Fetch channels in user profile
     useEffect(() => {
-        axios.get(`/api/get_profile_channels/${profile.profileId}`)
-        .then(response => {
-            if (Array.isArray(response.data)) {
-                setChannels(response.data);
-            } else {
+        const fetchChannels = async () => {
+            try {
+                const response = await axios.get(`/api/get_profile_channels/${profile.profileId}`);
+                if (Array.isArray(response.data)) {
+                    setChannels(response.data);
+                } else {
+                    setChannels([]);
+                }
+            } catch (error) {
+                setErrorMessage('Error fetching channels data');
+                console.error('Error fetching channels data:', error);
                 setChannels([]);
             }
-        })
-        .catch(error => {
-            setErrorMessage('Error fetching channels data', error);
-            setChannels([]);
-        });
-    }, [profile.profileId]);    
+        };
+
+        if (profile && profile.profileId) {
+            fetchChannels();
+        }
+    }, [profile]);  
 
     //Adds channel to profile
     const AddChannel = async (event) => {
@@ -114,7 +123,7 @@ function Profile() {
         formData.append('profile_id', profile.profileId);
         formData.append('channel_id', channelRender.channel_id);
         try {
-            await axios.post('/api/create_profile_post', formData, {
+            await axios.post('/api/create_post', formData, {
                 headers: {
                     'Content-Type': 'multipart/form-data'
                 },

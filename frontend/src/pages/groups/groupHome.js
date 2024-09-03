@@ -163,7 +163,7 @@ function GroupHome() {
         formData.append('group_id', groupDetails.groupId);
         formData.append('channel_id', channelRender.channel_id);
         try {
-            await axios.post('/api/create_group_post', formData, {
+            await axios.post('/api/create_post', formData, {
                 headers: { 'Content-Type': 'multipart/form-data' },
             });
             setShowPostForm(false);
