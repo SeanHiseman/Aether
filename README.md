@@ -4,7 +4,7 @@ Each post has upvotes and downvotes as well as a reply section. Each user has a 
 
 Users can also chat in group feeds, either privately or publicly. Multiple chats can be made between the same users in direct messages.
 
-Edit databaseSetup.js with your local MySQL connection details to run. Requires Node.js and Express.js to be already installed.
+Edit databaseSetup.js with your local MySQL connection details to run. Requires Node.js and Express.js to be already installed
 
 
 
