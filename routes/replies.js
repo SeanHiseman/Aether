@@ -1,14 +1,15 @@
 import authenticateCheck from '../functions/authenticateCheck.js';
-import { GroupReplies, GroupReplyNotes, ProfileReplies, ProfileReplyNotes, Profiles, ReplyVotes, Users } from '../models/models.js';
+import { GroupReplies, GroupReplyNotes, GroupPosts, ProfileReplies, ProfileReplyNotes, ProfilePosts, Profiles, ReplyVotes, Users } from '../models/models.js';
 import multer from 'multer';
 import { Router } from 'express';
+import path from 'path';
 import { v4 } from 'uuid';
 
 const router = Router();
 
 const reply_storage = multer.diskStorage({
     destination: function(req, file, cb) {
-        cb(null, 'media/replies');
+        cb(null, 'media/content');
     },
     filename: function(req, file, cb) {
         cb(null, Date.now() + path.extname(file.originalname));
@@ -34,8 +35,9 @@ const reply_upload = multer({
 });
 
 router.post('/add_reply', authenticateCheck, reply_upload.array('files'), async (req, res) => {
-    try {
-        const { post_id, parent_id, content, isGroup } = req.body;
+    //try {
+        const { postId, parent_id, content, isGroup } = req.body;
+        console.log("req.body:", req.body);
         //Convert to boolean
         const isGroupBool = isGroup === 'true';
         //Convert parentId to correct type
@@ -44,29 +46,42 @@ router.post('/add_reply', authenticateCheck, reply_upload.array('files'), async 
         const reply_id = v4();
         const user = await Users.findOne({ where: { username: req.session.username } });
         let formattedContent = content;
-
         //Add media tags to content
         req.files.forEach((file) => {
             const fileType = file.mimetype.startsWith('image') ? 'img' : 'video';
-            const fileTag = fileType === 'img' ? `<img src="/media/replies/${file.filename}">` : `<video src="/media/replies/${file.filename}" controls></video>`;
+            const fileTag = fileType === 'img' ? `<img src="/media/content/${file.filename}">` : `<video src="/media/content/${file.filename}" controls></video>`;
             formattedContent += ' ' + fileTag;
         });
-
         //Create reply in database
         const reply = await ReplyModel.create({
             reply_id,
-            post_id,
+            post_id: postId,
             parent_id: parentId,
             content: formattedContent,
             replier_id: user.user_id,
             upvotes: 0,
             downvotes: 0,
         });
-
-        return res.json({ status: "success", message: "Reply added successfully", reply });
-    } catch (error) {
-        return res.status(500).json({ status: "error", message: error.message });
-    }
+        //Updates replies count
+        const PostModel = isGroupBool ? GroupPosts : ProfilePosts;
+        await PostModel.increment('replies', { where: { post_id: postId} });
+        //Get user information with reply
+        const replyWithUser = await ReplyModel.findOne({
+            where: { reply_id: reply.reply_id },
+            include: [{
+                model: Users,
+                as: isGroupBool ? 'GroupReplier' : 'ProfileReplier',
+                attributes: ['username'],
+                include: [{
+                    model: Profiles,
+                    attributes: ['profile_photo']
+                }]
+            }]
+        });
+        return res.json({ success: true, reply: replyWithUser });
+    //} catch (error) {
+        //return res.status(500).json({ status: "error", message: error.message });
+    //}
 });
 
 router.get('/get_replies/:postId', authenticateCheck, async (req, res) => {
@@ -102,11 +117,14 @@ router.get('/get_replies/:postId', authenticateCheck, async (req, res) => {
 //Allows reply to be taken down either by the user or moderators
 router.delete('/remove_reply', authenticateCheck, async (req, res) => {
     try {
-        const { isGroup, reply_id } = req.body;
+        const { isGroup, replyId, postId } = req.body;
         const replyModel = isGroup ? GroupReplies : ProfileReplies;
+        const postModel = isGroup ? GroupPosts : ProfilePosts;
         const noteModel = isGroup ? GroupReplyNotes : ProfileReplyNotes;
-        await noteModel.destroy({ where: { reply_id } });
-        await replyModel.destroy({ where: { reply_id } });
+        await noteModel.destroy({ where: { reply_id: replyId } });
+        await postModel.decrement('replies', { where: { post_id: postId} });
+        await replyModel.destroy({ where: { reply_id: replyId } });
+        res.json({ success: true });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
     }

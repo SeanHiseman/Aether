@@ -3,7 +3,7 @@ import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
 import '../css/contentForm.css';
 
-const ContentForm = ({ isGroup, isReply, onSubmit, postId, parentId, errorMessage }) => {
+const ContentForm = ({ isReply, onSubmit, errorMessage }) => {
     const [content, setContent] = useState('');
     const [files, setFiles] = useState([]);
     const [title, setTitle] = useState('');
@@ -36,9 +36,6 @@ const ContentForm = ({ isGroup, isReply, onSubmit, postId, parentId, errorMessag
         try {
             const formData = new FormData();
             formData.append('content', content);
-            formData.append('post_id', postId);
-            formData.append('parent_id', parentId); // Use an empty string if parentId is undefined
-            formData.append('isGroup', isGroup);
             if (!isReply) formData.append('title', title);
             files.forEach((file) => {
                 formData.append('files', file);
