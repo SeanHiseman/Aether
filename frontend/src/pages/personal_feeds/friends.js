@@ -7,15 +7,17 @@ function FriendsPage() {
 
     //Gets friend posts
     useEffect(() => {
-        axios.get('/api/friend_posts')
-        .then(response => {
-            setPosts(response.data);
-        })
-        .catch(error => {
-             console.error('Error getting posts:', error);
-        });
+        const fetchPosts = async () => {
+            try {
+                const response = await axios.get('/api/friend_posts');
+                setPosts(response.data);
+            } catch (error) {
+                console.error('Error getting posts:', error);
+            }
+        };
+        fetchPosts();
     }, []);
-
+    
     document.title = "Friends";
     return (
         <div className="home-container">

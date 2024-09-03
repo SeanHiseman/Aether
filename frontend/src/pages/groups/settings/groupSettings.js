@@ -13,29 +13,29 @@ function GroupSettings() {
 
     //Loads group info 
     useEffect(() => {
-        const fetchGroupData = () => {
-            axios.get(`/api/group/${group_name}`)
-                .then(response => {
-                    const groupData = response.data;
-                    setGroupDetails({
-                        isMember: groupData.isMember,
-                        isLeader: groupData.isLeader, 
-                        groupId: groupData.group_id,
-                        groupName: groupData.group_name,
-                        description: groupData.description,
-                        groupPhoto: groupData.group_photo,
-                        memberCount: groupData.member_count,
-                        isPrivate: groupData.is_private,
-                        isRequestSent: groupData.isRequestSent,
-                        userId: groupData.userId
-                    });
-                })
-                .catch(error => {
-                    console.log("Error fetching group details:", error);
+        const fetchGroupData = async () => {
+            try {
+                const response = await axios.get(`/api/group/${group_name}`);
+                const groupData = response.data;
+                setGroupDetails({
+                    isMember: groupData.isMember,
+                    isLeader: groupData.isLeader, 
+                    groupId: groupData.group_id,
+                    groupName: groupData.group_name,
+                    description: groupData.description,
+                    groupPhoto: groupData.group_photo,
+                    memberCount: groupData.member_count,
+                    isPrivate: groupData.is_private,
+                    isRequestSent: groupData.isRequestSent,
+                    userId: groupData.userId
                 });
-            };
+            } catch (error) {
+                console.log("Error fetching group details:", error);
+            }
+        };
         fetchGroupData();
     }, [group_name]);
+    
 
     //Switches between admin states
     const renderComponent = () => {

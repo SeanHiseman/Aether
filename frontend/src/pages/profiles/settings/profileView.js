@@ -81,8 +81,7 @@ const ProfileView = ({ profile, setProfile }) => {
     //Changes profile between public and private
     const togglePrivate = async () => {
         try {
-            const profile_id = profile.profileId;
-            const response = await axios.post('/api/toggle_private_profile', { profile_id} );
+            const response = await axios.post('/api/toggle_private', { locationId: profile.profileId, isGroup: false });
             setProfile(prevDetails => ({
                 ...prevDetails,
                 isPrivate: response.data.is_private

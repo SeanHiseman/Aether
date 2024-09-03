@@ -11,6 +11,7 @@ import session from 'express-session';
 import { urlencoded } from 'express';
 import ask from './routes/ask.js';
 import authentication from './routes/authentication.js';
+import combined from './routes/combined.js';
 import replies from './routes/replies.js';
 import directMessages, { directMessagesSocket } from './routes/directMessages.js';
 import groups, { groupChatChannelSocket } from './routes/groups.js';
@@ -41,6 +42,7 @@ app.use(session({
 //api prefix prevents clashes with React app
 app.use('/api/', ask);
 app.use('/api/', authentication);
+app.use('/api/', combined);
 app.use('/api/', directMessages);
 app.use('/api/', groups);
 app.use('/api/', replies);

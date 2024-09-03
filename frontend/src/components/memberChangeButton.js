@@ -12,38 +12,25 @@ const MemberChangeButton = ({ userId, groupId, isMember, isRequestSent, isPrivat
         setMember(isMember);
     }, [isRequestSent, isMember]);
 
-    const handleMemberChange = () => {
-        if (isPrivate && !member && !request) {
-            //Send join request for private group
-            axios.post('/api/send_join_request', { receiverId: groupId, senderId: userId })
-                .then(() => {
-                    setRequest(true);
-                })
-                .catch(error => {
-                    setErrorMessage("Error sending follow request", error);
-                });
-        } else if (isPrivate && request) {
-            //Cancel join request for private group
-            axios.delete('/api/cancel_join_request', { data: { userId, groupId } })
-                .then(() => {
-                    setRequest(false);
-                })
-                .catch(error => {
-                    setErrorMessage("Error cancelling follow request", error);
-                });
-        } else {
-            //Join or leave public group
-            const url = member ? 'leave_group' : 'join_group';
-            axios.post(`/api/${url}`, { userId, groupId })
-                .then(() => {
-                    setMember(!member);
-                })
-                .catch(error => {
-                    setErrorMessage("Error", error);
-                });
+    const handleMemberChange = async () => {
+        try {
+            if (isPrivate && !member && !request) {
+                await axios.post('/api/send_follow_request', { receiverId: groupId, senderId: userId });
+                setRequest(true);
+            } else if (isPrivate && request) {
+                await axios.delete('/api/cancel_follow_request', { data: { userId, groupId } });
+                setRequest(false);
+            } else {
+                //Public groups can be freely left/joined
+                const url = member ? 'unfollow_group' : 'follow_group';
+                await axios.post(`/api/${url}`, { userId, groupId });
+                setMember(!member);
+            }
+        } catch (error) {
+            setErrorMessage("Error", error);
         }
     };
-
+    
     const buttonText = member ? 'Unfollow' : request && isPrivate ? 'Cancel request' : 'Follow';
 
     return (

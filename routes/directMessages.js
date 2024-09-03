@@ -25,25 +25,18 @@ router.post('/change_chat_name', authenticateCheck, async (req, res) => {
 });
 
 router.post('/create_conversation', authenticateCheck, async (req, res) => {
-    const { participants, title } = req.body;
-
-    if (!participants || participants.length < 2) {
-        return res.status(400).json({ message: "Too few participants." });
-    }
-
     try {
+        const { participants, title } = req.body;
         const newConversation = await Conversations.create({
             conversation_id: v4(),
             title: title
         });
-
         const userConversations = participants.map(userId => ({
             user_id: userId,
             conversation_id: newConversation.conversation_id,
         }));
         await UserConversations.bulkCreate(userConversations);
         res.status(201).json(newConversation);
-
     } catch (error) {
         res.status(500).json({ message: 'Failed to create conversation' });
     }
@@ -66,10 +59,10 @@ router.delete('/delete_chat', authenticateCheck, async (req, res) => {
                     conversation_id: conversation_id
                 },
             });
-            res.status(200).json({ message: 'Chat deleted successfully '});
+            res.status(200).json({ success: true });
         }
     } catch (error) {
-        res.status(500).json({ error: 'Error deleting chat' });
+        res.status(500).json({ success: false });
     }
 });
 
@@ -102,7 +95,7 @@ router.get('/get_chat_messages/:conversation_id', authenticateCheck, async (req,
         }));
         res.json(messagesData);
     } catch (error) {
-        res.status(500).send('Error getting chat messages: ' + error);
+        res.status(500).json({ success: false });
     }
 });
 
@@ -115,9 +108,7 @@ router.get('/get_conversations', authenticateCheck, async (req, res) => {
             where: { user_id: userId },
             attributes: ['conversation_id'],
         });
-        
         const conversationIds = userConversationIds.map(uc => uc.conversation_id);
-
         const conversations = await Conversations.findAll({
             where: { conversation_id: conversationIds },
             include: [{
@@ -129,7 +120,6 @@ router.get('/get_conversations', authenticateCheck, async (req, res) => {
             }],
             order: [['updated_at', 'ASC']]
         });
-
         const conversationsData = conversations.map(conversation => {
             const participants = conversation.users.map(user => ({
                 userId: user.user_id,
@@ -145,7 +135,7 @@ router.get('/get_conversations', authenticateCheck, async (req, res) => {
         });
         res.json(conversationsData);
     } catch (error) {
-       res.status(500).json({ error: "Failed to fetch user conversations "});
+       res.status(500).json({ success: false });
     }
 });
 
@@ -153,7 +143,6 @@ router.get('/get_friends', authenticateCheck, async (req, res) => {
     try {
         const userId = req.session.user_id;
         const user = await Users.findOne({ where: { user_id: userId } });
-
         //Get friends for user
         const friendships = await Friends.findAll({
             where: {
@@ -165,7 +154,6 @@ router.get('/get_friends', authenticateCheck, async (req, res) => {
             //More recent friends are first
             order: [['FriendSince', 'ASC']]
         });
-
         //Get friend data
         const friendsData = await Promise.all(friendships.map(async (friendship) => {
             const friendId = (friendship.user1_id !== user.user_id) ? friendship.user1_id : friendship.user2_id;
@@ -176,7 +164,6 @@ router.get('/get_friends', authenticateCheck, async (req, res) => {
                     user_id: friendId
                 }
             });
-
             return {
                 friend_id: friend.user_id,
                 friend_profile_id: friendProfile.profile_id,
@@ -184,10 +171,9 @@ router.get('/get_friends', authenticateCheck, async (req, res) => {
                 friend_profile_photo: friendProfile.profile_photo,
             };
         }));
-
         res.json(friendsData);
     } catch (error) {
-        res.status(500).send('Error getting friends:' + error);  
+        res.status(500).json({ success: false });  
     }
 });
 
