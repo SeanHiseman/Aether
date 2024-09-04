@@ -114,7 +114,7 @@ const Reply = ({ addReply, reply, depth, isGroup, onReplyAdded, onReplyRemoved, 
                             <p className="ask-note-text">{note}</p>
                         </div>
                     )}
-                    <div className="reply-vote-container">
+                    <div className="message-buttons">
                         <button className={`vote-arrow-container ${upvoteClass}`} onClick={() => handleVote('upvote')} disabled={isReplier}>
                             <img className={`vote-arrow ${upvoteClass}`} src="/media/site_images/up.png" alt="upvote" />
                         </button>
@@ -122,15 +122,11 @@ const Reply = ({ addReply, reply, depth, isGroup, onReplyAdded, onReplyRemoved, 
                         <button className={`vote-arrow-container ${downvoteClass}`} onClick={() => handleVote('downvote')} disabled={isReplier}>
                             <img className={`vote-arrow ${downvoteClass}`} src="/media/site_images/down.png" alt="downvote" />
                         </button>
-                        <button className="button" onClick={toggleReplyForm}>Reply</button>
+                        <button className="button large" onClick={toggleReplyForm}>Reply</button>
                         {showReplyForm && <ContentForm isReply={true} onSubmit={handleReplySubmit} />}
+                        {isReplier && (<button className="button large" onClick={() => removeReply(reply.reply_id)}>Delete</button>)}
+                        {!reply.note?.is_misinfo && (<AskButton isGroup={isGroup} isReply={true} content={reply} showNote={showNote} setShowNote={setShowNote} note={note} setNote={setNote} />)}
                     </div>
-                    {isReplier ? (
-                        <button className="button" onClick={() => removeReply(reply.reply_id)}>Delete</button>
-                    ) : null}
-                    {!reply.note?.is_misinfo && (
-                        <AskButton isGroup={isGroup} isReply={true} content={reply} showNote={showNote} setShowNote={setShowNote} note={note} setNote={setNote} />
-                    )}
                 </div>
                 {reply.replies && reply.replies.map(reply => (
                     <Reply key={reply.reply_id} addReply={addReply} reply={reply} depth={depth + 1} isGroup={isGroup} onReplyAdded={onReplyAdded} onReplyRemoved={onReplyRemoved} postId={postId} />

@@ -1,4 +1,12 @@
 @import url('variables.css');
+.message-buttons {
+    align-items: center;
+    display: inline-flex;
+    margin-left: 10px;
+}
+.net-upvotes {
+    margin: 0 5px;
+}
 .reply-container {
     width: 100%;
 }
@@ -17,10 +25,8 @@
     align-items: center;
     display: flex;
 }
-.reply-vote-container {
-    margin-top: 10px;
-}
 .reply-section {
+    border-top: 1px solid var(--dark-line);
     display: block;
     width: 100%;
 }
@@ -49,14 +55,6 @@
 }
 .reply-text {
     margin-left: 10px;
-}
-.reply-vote-container {
-    display: inline-flex;
-    align-items: center;
-    margin-left: 10px;
-}
-.net-upvotes {
-    margin: 0 5px;
 }
 .post-list {
     margin: 0px;

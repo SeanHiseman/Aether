@@ -1,13 +1,19 @@
 @import url('variables.css');
+#content-form-buttons {
+    align-items: center;
+    display: flex;
+    justify-content: center;
+}
 #create-post-container {
     height: 60%;
+    margin: 10px;
     width: 55%;
 }
 .ql-container {
     border-bottom-left-radius: 10px;
     border-bottom-right-radius: 10px;
     color: var(--border); 
-    font-size: inherit;
+    font-size: large;
     height: 90%;
 }
 .ql-editor[data-placeholder]::before {
@@ -17,7 +23,7 @@
     display: block;
     height: auto;
     margin: 0 auto;
-    max-height: 600px;
+    max-height: 70vh;
     width: 75%;
 }
 .ql-snow .ql-picker{
@@ -57,7 +63,6 @@
     display: flex;
     flex-direction: column;
     height: 100%;
-    margin: 10px;
     padding: 10px;
 }
 #title-entry {
@@ -65,8 +70,9 @@
     background-color: var(--darkest);
     border-radius: 10px;
     color: var(--border);
+    font-size: medium;
     margin-bottom: 10px;
-    width: 90%;
+    width: 97%;
     padding: 10px;
 }
 #title-entry::placeholder {

@@ -16,15 +16,13 @@
     border-left: 1px solid var(--border);
     border-right: 1px solid var(--border);
     border-top: 1px solid var(--border);
-    font-size: x-large;
     padding: 15px;
     width: 100%;
 }
 .content-list {
     border-bottom: 1px solid var(--border);
     margin: 0;
-    max-width: 900px;
-    width: 60%;
+    width: 70%;
 }
 .content-item, .content-list {
     box-sizing: border-box;
@@ -32,6 +30,7 @@
 .content-metadata {
     align-items: center;
     display: flex;
+    font-size: x-large;
     justify-content: space-between;
     width: 100%;
 }

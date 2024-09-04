@@ -3,7 +3,7 @@ import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
 import '../css/contentForm.css';
 
-const ContentForm = ({ isReply, onSubmit, errorMessage }) => {
+const ContentForm = ({ closeForm, isReply, onSubmit, errorMessage }) => {
     const [content, setContent] = useState('');
     const [files, setFiles] = useState([]);
     const [title, setTitle] = useState('');
@@ -47,10 +47,11 @@ const ContentForm = ({ isReply, onSubmit, errorMessage }) => {
     };
 
     return (
-        <div id="create-post-container">
-            <form id="post-form" onSubmit={handleSubmit}>
-                {!isReply && (<input id="title-entry" type="text" placeholder="Add title (optional)..." value={title} onChange={(e) => setTitle(e.target.value)}/>)}
-                <ReactQuill placeholder={isReply ? "Type your reply..." : "Type your post..."} modules={modules} value={content} onChange={setContent} ref={quillRef} />
+        <form id="post-form" onSubmit={handleSubmit}>
+            {!isReply && (<input id="title-entry" type="text" placeholder="Add title (optional)..." value={title} onChange={(e) => setTitle(e.target.value)}/>)}
+            <ReactQuill placeholder={isReply ? "Start reply..." : "Start post..."} modules={modules} value={content} onChange={setContent} ref={quillRef} />
+            <div id="content-form-buttons">
+                {isReply && (<button className="button" type="button" onClick={closeForm}>Close</button>)}
                 <div id="post-file-input">
                     <label htmlFor="media-input" class="button">Add media</label>
                     <input type="file" id="media-input" accept="image/*,video/*" hidden multiple onChange={handleFilesChange} />
@@ -66,8 +67,8 @@ const ContentForm = ({ isReply, onSubmit, errorMessage }) => {
                     <button class="button" type="submit">{isReply ? "Reply" : "Post"}</button>
                     <div className="error-message">{errorMessage}</div>
                 </div>
-            </form>   
-        </div>
+            </div>
+        </form>   
     );
 };
 

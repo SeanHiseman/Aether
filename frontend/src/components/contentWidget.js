@@ -16,6 +16,7 @@ function ContentWidget({ canRemove: canRemoveProp , isGroup, onPostRemoved, post
     const [replies, setReplies] = useState([]);
     const [showNote, setShowNote] = useState(post.note && post.note.is_misinfo);
     const [showReplies, setShowReplies] = useState(false);
+    const [showReplyForm, setShowReplyForm] = useState(false);
     const [upvotes, setUpvotes] = useState(post.upvotes);
     const [upvoteLimit, setUpvoteLimit] = useState(false);
     const { user } = useContext(AuthContext);
@@ -131,10 +132,6 @@ function ContentWidget({ canRemove: canRemoveProp , isGroup, onPostRemoved, post
         }
     };
 
-    const handleToggleReplies = () => {
-        setShowReplies(!showReplies);
-    };
-
     //Sorts replies by parent and by net upvotes
     const nestReplies = (replies) => {
         const replyMap = {};
@@ -205,7 +202,9 @@ function ContentWidget({ canRemove: canRemoveProp , isGroup, onPostRemoved, post
             console.error('Error voting:', error);
         }
     };
-    
+
+    const toggleReplies = () => { setShowReplies(!showReplies) };
+    const toggleReplyForm = () => { setShowReplyForm(!showReplyForm) };
     const nestedReplies = nestReplies(replies);
     const downvoteClass = downvoteLimit || isViewingOwnPost ? 'vote-disabled' : 'vote-enabled';
     const upvoteClass = upvoteLimit || isViewingOwnPost ? 'vote-disabled' : 'vote-enabled';
@@ -232,7 +231,7 @@ function ContentWidget({ canRemove: canRemoveProp , isGroup, onPostRemoved, post
                         <p>Unknown user</p>
                     )}
                 </div>
-                <div className="reply-vote-container">
+                <div className="vote-container">
                     <button className={`vote-arrow-container ${upvoteClass}`} onClick={() => postVote(post.post_id, 'upvote')} disabled={isViewingOwnPost}>
                         <img className={`vote-arrow ${upvoteClass}`} src="/media/site_images/up.png" alt="upvote" />
                     </button>
@@ -241,13 +240,13 @@ function ContentWidget({ canRemove: canRemoveProp , isGroup, onPostRemoved, post
                         <img className={`vote-arrow ${downvoteClass}`} src="/media/site_images/down.png" alt="downvote" />
                     </button>
                 </div>
-                <button className="button" data-content-id={post.post_id} onClick={handleToggleReplies}>
+                <button className="button large" data-content-id={post.post_id} onClick={toggleReplies}>
                     Replies <span className="reply-count" id={`reply-count-${post.post_id}`}>{post.replies}</span>
                 </button>
                 <span className="view-count">{post.views} Views</span>
                 <p>{new Date(post.timestamp).toLocaleDateString()}</p>
                 {canRemove ? (
-                    <button className="button" onClick={() => removePost(isGroup, post.post_id)}>Delete</button>
+                    <button className="button large" onClick={() => removePost(isGroup, post.post_id)}>Delete</button>
                 ) : null}
                 {!post.note?.is_misinfo && (
                     <AskButton isGroup={isGroup} isReply={false} content={post} showNote={showNote} setShowNote={setShowNote} note={note} setNote={setNote} />
@@ -256,9 +255,12 @@ function ContentWidget({ canRemove: canRemoveProp , isGroup, onPostRemoved, post
             
             {showReplies && (
                 <div className="reply-section">
-                    <div className="add-reply">
-                        <ContentForm isReply={true} onSubmit={handleReplySubmit} />
-                    </div>
+                    {showReplyForm && (
+                        <div className="add-reply">
+                            <ContentForm closeForm={toggleReplyForm} isReply={true} onSubmit={handleReplySubmit} />
+                        </div>
+                    )}
+                    {!showReplyForm && (<button className="button large" onClick={toggleReplyForm}>Add reply</button>)}
                     {nestedReplies.map((reply) => (
                         <Reply key={reply.reply_id} reply={reply} depth={0} isGroup={isGroup} onReplyAdded={handleReplyAdded} onReplyRemoved={handleReplyRemoved} postId={post.post_id} />
                     ))}
