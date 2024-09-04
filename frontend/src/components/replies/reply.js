@@ -42,7 +42,6 @@ const Reply = ({ addReply, reply, depth, isGroup, onReplyAdded, onReplyRemoved, 
         try {
             formData.append('parent_id', reply.reply_id);
             formData.append('postId', postId);
-            // Send the form data to the server
             const response = await axios.post('/api/add_reply', formData, {
                 headers: { 'Content-Type': 'multipart/form-data' }
             });
@@ -56,7 +55,6 @@ const Reply = ({ addReply, reply, depth, isGroup, onReplyAdded, onReplyRemoved, 
         }
     };
 
-    //Updates up/downvotes
     const handleVote = async (voteType) => {
         try {
             if ((voteType === 'upvote' && upvoteLimit) || (voteType === 'downvote' && downvoteLimit)) {
@@ -84,7 +82,6 @@ const Reply = ({ addReply, reply, depth, isGroup, onReplyAdded, onReplyRemoved, 
         }
     };
 
-    //Deletes the reply
     const removeReply = async (replyId) => {
         try {
             const replyData = { isGroup, replyId, postId }
@@ -123,10 +120,10 @@ const Reply = ({ addReply, reply, depth, isGroup, onReplyAdded, onReplyRemoved, 
                             <img className={`vote-arrow ${downvoteClass}`} src="/media/site_images/down.png" alt="downvote" />
                         </button>
                         <button className="button large" onClick={toggleReplyForm}>Reply</button>
-                        {showReplyForm && <ContentForm isReply={true} onSubmit={handleReplySubmit} />}
                         {isReplier && (<button className="button large" onClick={() => removeReply(reply.reply_id)}>Delete</button>)}
                         {!reply.note?.is_misinfo && (<AskButton isGroup={isGroup} isReply={true} content={reply} showNote={showNote} setShowNote={setShowNote} note={note} setNote={setNote} />)}
                     </div>
+                    {showReplyForm && <ContentForm isReply={true} onSubmit={handleReplySubmit} />}
                 </div>
                 {reply.replies && reply.replies.map(reply => (
                     <Reply key={reply.reply_id} addReply={addReply} reply={reply} depth={depth + 1} isGroup={isGroup} onReplyAdded={onReplyAdded} onReplyRemoved={onReplyRemoved} postId={postId} />

@@ -470,7 +470,7 @@ main {
 #search-form {
     display: flex;
     flex-grow: 0;
-    margin-left: 150px;
+    margin-left: 10.5%;
     max-width: 35%;
     height: 80%;
     position: relative;
@@ -538,7 +538,7 @@ ul {
     background: none;
     border: none;
     border-radius: 5px;
-    margin: 5px;
+    margin: 5px 5px 5px 10px;
     padding: 5px;
 }
 .vote-enabled {
@@ -549,12 +549,7 @@ ul {
     background-color: var(--button-hover);
 }
 .vote-disabled {
-    background-color: var(--dark-line);
-}
-.xl-text {
-    font-size: 72px;
-    max-width: 400px;
-    text-decoration: none;
+    background-color: var(--dark);
 }
 ::-webkit-scrollbar {
     width: 10px;
