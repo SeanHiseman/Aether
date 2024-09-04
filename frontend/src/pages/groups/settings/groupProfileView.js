@@ -143,7 +143,7 @@ function GroupProfileView({ group, setGroup }) {
                         {isEditingDescription ? (
                             <div className="change-description">
                                 <button className='button' onClick={() => setIsEditingDescription(false)}>Close</button>
-                                <textarea className="change-text-area" value={newDescription} onChange={(e) => {
+                                <textarea className="change-text-area" value={newDescription} placeholder="Description..." onChange={(e) => {
                                     const input = e.target.value;
                                     const inputLength = input.length;
                                     if (inputLength <= 1000) {
@@ -158,7 +158,7 @@ function GroupProfileView({ group, setGroup }) {
                         ) : (
                             <div className="view-description">
                                 <p id="description">{group.description}</p>
-                                <button className="button" onClick={() => setIsEditingDescription(true)}>Edit</button>
+                                <button className="button" onClick={() => setIsEditingDescription(true)}>Edit description</button>
                             </div>
                         )}
                     </div>

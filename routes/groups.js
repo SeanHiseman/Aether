@@ -1,6 +1,7 @@
 import authenticateCheck from '../functions/authenticateCheck.js';
 import checkIfUserIsAdminOrMod from '../functions/adminModCheck.js';
 import checkIfUserIsMember from '../functions/memberCheck.js';
+import deleteMedia from '../functions/deleteMedia.js';
 import { Groups, GroupChannels, GroupChannelMessages, GroupRequests, GroupPosts, NestedGroupMembers, NestedGroupRequests, Profiles, Users, UserGroups } from '../models/models.js';
 import express from 'express';
 import fs from 'fs';
@@ -148,9 +149,9 @@ router.post('/create_group', authenticateCheck, (req, res) => {
             if (err.code === 'LIMIT_FILE_SIZE') {
                 return res.status(413).json({ error: 'File cannot be more than 5MB' });
             }
-            return res.status(400).json({ error: 'Error uploading file' });
+            return res.status(500).json({ success: false });
         } else if (err) {
-            return res.status(400).json({ error: err.message });
+            return res.status(500).json({ success: false });
         }
         try {
             const { group_name, is_private, group_id, user_id } = req.body;
@@ -161,7 +162,7 @@ router.post('/create_group', authenticateCheck, (req, res) => {
             }
             let group_photo = "media/site_images/blank-group-icon.jpg";
             if (req.file) {
-                group_photo = req.file.path;
+                group_photo = `media/group_profiles/${req.file.filename}`;
             }
             const newGroup = await Groups.create({
                 group_id,
@@ -184,7 +185,7 @@ router.post('/create_group', authenticateCheck, (req, res) => {
                 is_mod: true,
                 is_admin: true,
             });
-            res.status(201).json(newGroup);
+            res.status(201).json({ success: true, newGroup });
         } catch (error) {
             res.status(500).json({ success: false });
         }
@@ -195,30 +196,19 @@ router.post('/create_group', authenticateCheck, (req, res) => {
 router.delete('/delete_group', authenticateCheck, async (req, res) => {
     try {
         const { group_id } = req.body;
-        //await GroupReplies.destroy({
-            //where: { group_id },
-        //});
-        await GroupPosts.destroy({
-            where: { group_id },
-        });
-        await GroupRequests.destroy({
-            where: { group_id },
-        });
-        await UserGroups.destroy({
-            where: { group_id },
-        });
-        await GroupChannels.destroy({
-            where: { group_id },
-        });
-        await GroupChannelMessages.destroy({
-            where: { group_id },
-        });
-        await Groups.destroy({
-            where: { group_id },
-        });
-        res.status(200).json({ success: true});
+        const group = await Groups.findOne({ where: { group_id } });
+        const groupPhoto = group.group_photo;
+        deleteMedia(groupPhoto);
+        //await GroupReplies.destroy({ where: { group_id } });
+        await GroupPosts.destroy({ where: { group_id } });
+        await GroupRequests.destroy({  where: { group_id } });
+        await UserGroups.destroy({ where: { group_id } });
+        await GroupChannels.destroy({ where: { group_id } });
+        await GroupChannelMessages.destroy({ where: { group_id } });
+        await Groups.destroy({ where: { group_id } });
+        res.status(200).json({ success: true });
     } catch (error) {
-        res.status(500).json({ error: 'Error deleting group' });
+        res.status(500).json({ success: false });
     }
 });
 

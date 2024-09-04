@@ -67,33 +67,30 @@ const BaseLayout = () => {
 
     //Create group submit handler
     const createGroupSubmit = async (event) => {
-        event.preventDefault();
-        const formData = new FormData();
-        formData.append('group_id', v4());
-        formData.append('group_name', groupName);
-        formData.append('new_group_profile_photo', groupPhoto);
-        formData.append('is_private', privateGroup);
-        formData.append('user_id', profile.userId); //Adds user_id so user creating group can become an admin
-
         try {
+            event.preventDefault();
+            const formData = new FormData();
+            formData.append('group_id', v4());
+            formData.append('group_name', groupName);
+            formData.append('new_group_profile_photo', groupPhoto);
+            formData.append('is_private', privateGroup);
+            formData.append('user_id', profile.userId); //Adds user_id so user creating group can become an admin
             const response = await axios.post('/api/create_group', formData);
-            setFeeds([...feeds, response.data]);
-            //Redirect to new group
-            const newGroupName = response.data.group_name;
-            navigate(`/group/${newGroupName}`);
-            setGroupName('');
-            setShowForm(false);
+            if (response.data.success === true) {
+                setFeeds([...feeds, response.data]);
+                //Redirect to new group
+                const newGroupName = response.data.newGroup.group_name;
+                navigate(`/group/${newGroupName}`);
+                setGroupName('');
+                setShowForm(false);
+            }
         } catch (error) {
-            if (error.response) {
-                if (error.response.status === 413) {
-                    setErrorMessage("File cannot be more than 5MB");
-                } else if (error.response.status === 400) {
-                    setErrorMessage(error.response.data.error || "Error, please try again");
-                } else {
-                    setErrorMessage("Error, please try again");
-                }
+            if (error.response.status === 413) {
+                setErrorMessage("File cannot be more than 5MB");
+            } else if (error.response.status === 400 ) {
+                setErrorMessage("Name taken");
             } else {
-                setErrorMessage("Error, please try again");
+                setErrorMessage("Error creating feed"); 
             }
         }
     };
@@ -146,9 +143,7 @@ const BaseLayout = () => {
     }
 
     //Toggles display of create group form after button is pressed
-    const toggleForm = () => {
-        setShowForm(!showForm)
-    }
+    const toggleForm = () => { setShowForm(!showForm) }
 
     return (
         <div className="container">
