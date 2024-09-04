@@ -49,7 +49,7 @@ function ContentWidget({ canRemove: canRemoveProp , isGroup, onPostRemoved, post
         if (isViewingOwnPost) {
             setCanRemove(true);
         }
-    }, [post.poster_id, user.userId]);
+    }, [isViewingOwnPost, post.poster_id, user.userId]);
 
     //Opens replies
     useEffect(() => {
