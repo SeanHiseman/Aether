@@ -482,13 +482,8 @@ router.put('/update_group_photo/:groupId', authenticateCheck, async (req, res) =
             const group = await Groups.findOne({ where: { group_id: groupId } });
             //Deletes old photo
             if (group.group_photo && group.group_photo !== defaultGroupPhotoPath) {
-                const currentPhotoPath = path.join(group.group_photo);
-                fs.unlink(currentPhotoPath, (error) => {
-                    if (error) {
-                        console.error(`Error deleting old photo: ${error}`);
-                    }
-                });
-            }
+                deleteMedia(group.group_photo);
+            };
             group.group_photo = newPhotoPath;
             await group.save();
             return res.json({ newPhotoPath: newPhotoPath });

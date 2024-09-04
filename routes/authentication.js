@@ -1,4 +1,5 @@
 import authenticateCheck from '../functions/authenticateCheck.js';
+import deleteMedia from '../functions/deleteMedia.js';
 import { Router } from 'express';
 import { hash, compare } from 'bcrypt';
 import { Op } from 'sequelize';
@@ -48,6 +49,7 @@ router.delete('/delete_account', authenticateCheck, async (req, res) => {
     try {
         const { user_id } = req.body;
         const profile = await Profiles.findOne({ where: { user_id } });
+        deleteMedia(profile.profile_photo);
         await ProfileChannels.destroy({ where: { profile_id: profile.profile_id } });
         await ProfilePosts.destroy({ where: { poster_id: user_id } });
         await ProfileReplies.destroy({ where: { replier_id: user_id } });

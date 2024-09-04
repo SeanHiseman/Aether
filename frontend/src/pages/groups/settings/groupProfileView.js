@@ -3,8 +3,10 @@ import React, { useEffect, useState } from 'react';
 
 function GroupProfileView({ group, setGroup }) {
     const [errorMessage, setErrorMessage] = useState('');
+    const [groupPhotoFile, setGroupPhotoFile] = useState('No file chosen');
     const [isEditingDescription, setIsEditingDescription] = useState(false);
     const [isEditingName, setIsEditingName] = useState(false);
+    const [isFileSelected, setIsFileSelected] = useState(false);
     const [isPhotoFormVisible, setIsPhotoFormVisible] = useState(false);
     const [newDescription, setDescription] = useState('');
     const [newName, setName] = useState('');
@@ -56,6 +58,17 @@ function GroupProfileView({ group, setGroup }) {
         };
     };
 
+    const handleFileChange = (event) => {
+        const file = event.target.files[0];
+        if (file) {
+            setGroupPhotoFile(file.name);
+            setIsFileSelected(true);
+        } else {
+            setGroupPhotoFile('No file chosen');
+            setIsFileSelected(false);
+        }
+    };
+
     //Changes group description
     const handleUpdateDescription = async () => {
         try {
@@ -67,7 +80,7 @@ function GroupProfileView({ group, setGroup }) {
             setIsEditingDescription(false);
         }
         catch (error) {
-            setErrorMessage(`Error changing description: ${error}`);
+            setErrorMessage('Error changing description');
         }
     }; 
 
@@ -82,10 +95,19 @@ function GroupProfileView({ group, setGroup }) {
             setIsEditingName(false);
         }
         catch (error) {
-            setErrorMessage('Error changing name:', error);
+            setErrorMessage('Error changing name');
         }
     }; 
     
+    const togglePhotoForm = () => {
+        if (isPhotoFormVisible) {
+            setErrorMessage('');
+            setGroupPhotoFile('No file selected');
+            setIsFileSelected(false);
+        }
+        setIsPhotoFormVisible(!isPhotoFormVisible);
+    };
+
     //Changes group between public and private
     const togglePrivate = async () => {
         try {
@@ -95,7 +117,7 @@ function GroupProfileView({ group, setGroup }) {
                 isPrivate: response.data.is_private
             }));
         } catch (error) {
-            setErrorMessage('Error changing private status:', error);
+            setErrorMessage('Error changing status');
         }
     };
 
@@ -104,14 +126,17 @@ function GroupProfileView({ group, setGroup }) {
             <div id="name-photo-area">
                 <div id="profile-header-photo">
                     <img id="settings-profile-photo" src={`/${group.groupPhoto}`} alt={group.groupName} />
-                    <button className="button" onClick={() => setIsPhotoFormVisible(!isPhotoFormVisible)}>
+                    <button className="button" onClick={togglePhotoForm}>
                         {isPhotoFormVisible ? 'Close' : 'Change feed photo'}
                     </button>
                     {isPhotoFormVisible && (
-                        <form id="change-group-photo" action="/api/update_group_photo" method="post" enctype="multipart/form-data" onSubmit={ChangeGroupPhoto}>
-                            <label htmlFor="new_group_photo">Change feed photo:</label>
-                            <input type="file" id="new_group_photo" name="new_group_photo" accept="image/*" />
-                            <input className="button" type="submit" value="Update" />
+                        <form className="change-profile-photo" onSubmit={ChangeGroupPhoto}>
+                            <div className="file-input">
+                                <label htmlFor="new-group-photo" class="dark-button">Change feed photo</label>
+                                <input type="file" id="new-group-photo" name="new_group_photo" accept="image/*" onChange={handleFileChange} hidden/>
+                                <span className="file-name">{groupPhotoFile}</span> 
+                            </div>
+                            <input className={isFileSelected ? 'dark-button' : 'dark-button-disabled'} type="submit" value="Update" disabled={!isFileSelected}/>
                         </form>
                     )}
                 </div>
