@@ -5,9 +5,11 @@ const ProfileView = ({ profile, setProfile }) => {
     const [errorMessage, setErrorMessage] = useState('');
     const [isEditingBio, setIsEditingBio] = useState(false);
     const [isEditingName, setIsEditingName] = useState(false);
+    const [isFileSelected, setIsFileSelected] = useState(false);
     const [isPhotoFormVisible, setIsPhotoFormVisible] = useState(false);
     const [newBio, setBio] = useState('');
     const [newName, setName] = useState('');
+    const [profilePhotoFile, setProfilePhotoFile] = useState('No file chosen');
 
     //Set name in text area to current description
     useEffect(() => {
@@ -44,8 +46,19 @@ const ProfileView = ({ profile, setProfile }) => {
             }));
             setIsPhotoFormVisible(false);
         } catch(error) {
-            setErrorMessage('Error updating photo', error.response ? error.response.data : error);
+            setErrorMessage('Error updating photo');
         };
+    };
+
+    const handleFileChange = (event) => {
+        const file = event.target.files[0];
+        if (file) {
+            setProfilePhotoFile(file.name);
+            setIsFileSelected(true);
+        } else {
+            setProfilePhotoFile('No file chosen');
+            setIsFileSelected(false);
+        }
     };
 
     //Changes profile bio
@@ -59,7 +72,7 @@ const ProfileView = ({ profile, setProfile }) => {
             setIsEditingBio(false);
         }
         catch (error) {
-            setErrorMessage(`Error changing bio: ${error}`);
+            setErrorMessage('Error changing bio');
         }
     }; 
 
@@ -74,9 +87,18 @@ const ProfileView = ({ profile, setProfile }) => {
             setIsEditingName(false);
         }
         catch (error) {
-            setErrorMessage(`Error changing name: ${error}`);
+            setErrorMessage('Error changing name');
         }
     }; 
+
+    const togglePhotoForm = () => {
+        if (isPhotoFormVisible) {
+            setErrorMessage('');
+            setProfilePhotoFile('No file selected');
+            setIsFileSelected(false);
+        }
+        setIsPhotoFormVisible(!isPhotoFormVisible);
+    };
 
     //Changes profile between public and private
     const togglePrivate = async () => {
@@ -87,7 +109,7 @@ const ProfileView = ({ profile, setProfile }) => {
                 isPrivate: response.data.is_private
             }));
         } catch (error) {
-            setErrorMessage('Error changing private status:', error);
+            setErrorMessage('Error changing status');
         }
     };
 
@@ -96,15 +118,17 @@ const ProfileView = ({ profile, setProfile }) => {
             <div id="name-photo-area">
                 <div id="profile-header-photo">
                     <img id="settings-profile-photo" src={`/${profile.profilePhoto}`} alt="Profile" />
-                    <button className="button" onClick={() => setIsPhotoFormVisible(!isPhotoFormVisible)}>
+                    <button className="button" onClick={togglePhotoForm}>
                         {isPhotoFormVisible ? 'Close' : 'Change Profile Photo'}
                     </button>
                     {isPhotoFormVisible && (
-                        <form id="change-profile-photo" action="/api/update_profile_photo" method="post" enctype="multipart/form-data" onSubmit={ChangeProfilePhoto}>
-                            <label htmlFor="new_profile_photo">Change Profile photo:</label>
-                            <input type="file" id="new_profile_photo" name="new_profile_photo" accept="image/*" />
-                            {errorMessage && <div className="error-message">{errorMessage}</div>}
-                            <input className="button" type="submit" value="Update" />
+                        <form className="change-profile-photo" onSubmit={ChangeProfilePhoto}>
+                            <div className="file-input">
+                                <label htmlFor="new-profile-photo" class="dark-button">Change feed photo</label>
+                                <input type="file" id="new-profile-photo" name="Profile photo" accept="image/*" onChange={handleFileChange} hidden/>
+                                <span className="file-name">{profilePhotoFile}</span>
+                            </div>
+                            <input className={isFileSelected ? 'dark-button' : 'dark-button-disabled'} type="submit" value="Update" disabled={!isFileSelected}/>
                         </form>
                     )}
                 </div>

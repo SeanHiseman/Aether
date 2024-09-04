@@ -1,4 +1,6 @@
 import authenticateCheck from '../functions/authenticateCheck.js';
+import deleteMedia from '../functions/deleteMedia.js';
+import sortPostsByWeightedRatio from'../functions/postSorting.js';
 import { Conversations, Followers, Friends, FriendRequests, Messages, Profiles, ProfileChannels, Users, UserConversations } from '../models/models.js';
 import express from 'express';
 import fs from 'fs';
@@ -8,7 +10,6 @@ import { Op } from 'sequelize';
 import path, { extname } from 'path';
 import { Router } from 'express';
 import session from 'express-session';
-import sortPostsByWeightedRatio from'../functions/postSorting.js';
 import { v4 } from 'uuid';
 
 const app = express();
@@ -426,12 +427,7 @@ router.put('/update_profile_photo/:profileId', authenticateCheck, profile_upload
         const profile = await Profiles.findOne({ where: { profile_id: profileId } });
         //Deletes old photo
         if (profile.profile_photo && profile.profile_photo !== defaultProfilePhotoPath) {
-        const currentPhotoPath = path.join(profile.profile_photo);
-            fs.unlink(currentPhotoPath, (error) => {
-                if (error) {
-                    console.error(`Error deleting old photo: ${error}`);
-                }
-            });
+            deleteMedia(profile.profile_photo);
         }       
         profile.profile_photo = newPhotoPath;     
         await profile.save();

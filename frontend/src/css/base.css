@@ -10,7 +10,6 @@ a {
 #add-channel-form, #create-group-form {
     align-items: center;
     background-color: var(--dark);
-    border: 1px solid var(--border);
     display: flex;
     flex-direction: column;
     justify-content: flex-start;
@@ -55,8 +54,8 @@ body,html {
 .button {
     background-color: var(--dark);
 }
-.button-disabled {
-    border: 1px solid var(--border);
+.button-disabled, .dark-button-disabled {
+    border: none;
     border-radius: 10px;
     background-color: var(--dark-line);
     color: var(--border);
@@ -71,7 +70,7 @@ body,html {
     padding: 3px 6px;
     transition: background-color 0.3s;
 }
-.button, .button-disbaled, .dark-button {
+.button, .button-disbaled, .dark-button, .dark-button-disabled {
     font-size: large;
 }
 .button.large, .button-disabled.large {
@@ -85,14 +84,13 @@ body,html {
     display: flex;
     justify-content: center;
 }
-#change-group-photo, #change-profile-photo {
-    background-color: var(--darkest);
-    border: 1px solid var(--border);
+.change-profile-photo {
+    background-color: var(--dark);
     border-radius: 10px;
     display: flex;
     flex-direction: column;
     max-width: 200px;
-    margin-top: 250px;
+    margin-top: 340px;
     padding: 5px;
     position: absolute;
 }
