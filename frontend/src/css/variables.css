@@ -1,8 +1,8 @@
 :root {
     --border: #dddddd;
-    --button-hover: #4a4b55;
+    --button-hover: #737484;
     --darkest: #0f0f0f;
-    --dark: #1f2022;
+    --dark: #2c2e31;
     --dark-line: #444;
 }
 body.light {
@@ -16,7 +16,7 @@ body.blue {
     --border: #dddddd;
     --button-hover: #3d52a0;
     --darkest: #0b132b;
-    --dark: #1c2541;
+    --dark: #273049;
     --dark-line: #444;
 }
 body.green {

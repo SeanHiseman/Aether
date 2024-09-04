@@ -186,7 +186,9 @@ function GroupHome() {
             <div className="content-feed">
                 <div className="channel-feed">
                     {showPostForm ? (
-                        <ContentForm isReply={false} onSubmit={handlePostSubmit} errorMessage={errorMessage} />
+                        <div id="create-post-container">
+                            <ContentForm isReply={false} onSubmit={handlePostSubmit} errorMessage={errorMessage} />
+                        </div>
                     ) : channelRender && !isNotPrivateMember ? (
                         channelRender.is_posts && channelRender.is_chat ? (
                             channelMode === 'post' ? (
@@ -280,8 +282,8 @@ function GroupHome() {
                                     <input type="checkbox" checked={isChatChannel} onChange={handleChatClick}/>
                                     Chat Channel
                                 </label>
-                                <input className="light-button" type="submit" value="Add"/>
-                                {errorMessage && <div className="error-message">{errorMessage}</div>}
+                                <input className="dark-button" type="submit" value="Add"/>
+                                <div className="error-message">{errorMessage}</div>
                             </form>                            
                         )}
                     </div>

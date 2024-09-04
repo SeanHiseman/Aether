@@ -148,7 +148,9 @@ function Profile() {
             <div className="content-feed">
                 <div className="channel-feed">
                     {showPostForm ? (
-                        <ContentForm isReply={false} onSubmit={handlePostSubmit} errorMessage={errorMessage} />
+                        <div id="create-post-container">
+                            <ContentForm isReply={false} onSubmit={handlePostSubmit} errorMessage={errorMessage} />
+                        </div>
                     ) : (
                         channelRender && !isPrivateNotFriend ? (
                             <PostChannel canRemove={isLoggedInUser} channelId={channelRender.channel_id} channelName={channelRender.channel_name} isGroup={false} locationId={profile.profileId} />
@@ -206,7 +208,7 @@ function Profile() {
                                         setErrorMessage('Name too long');
                                     }
                                 }}/>
-                                <input className="light-button" type="submit" value="Add" disabled={!newChannelName}/>
+                                <input className="dark-button" type="submit" value="Add" disabled={!newChannelName}/>
                             </form>                            
                         )}
                     </div>

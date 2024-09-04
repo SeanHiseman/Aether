@@ -392,7 +392,7 @@ function MessagesPage() {
                                     }
                                 }} onSubmit={createNewChat}>
                                     <input className="channel-input" type="text" name="chat_name" placeholder="Chat name..." value={newChatName} onChange={(e) => setNewChatName(e.target.value)}/>
-                                    <input className="light-button" type="submit" value="Add" />
+                                    <input className="dark-button" type="submit" value="Add" />
                                 </form>                            
                             )}
                         </div>

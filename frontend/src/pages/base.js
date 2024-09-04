@@ -159,7 +159,7 @@ const BaseLayout = () => {
                         <p id="logged_in_username">{profile.username}</p>
                     </Link>
                 </div>
-                <nav>
+                <nav id="personal-feeds">
                     <ul>
                         <li className="feed-link"><Link to="/recommended">Recommended</Link></li>
                         <li className="feed-link"><Link to="/following">Following</Link></li>
@@ -174,15 +174,15 @@ const BaseLayout = () => {
                         <form id="create-group-form" onSubmit={createGroupSubmit}>
                             <input id="group-name-input" type="text" name="Name" placeholder="Feed name..." value={groupName} onChange={(e) => setGroupName(e.target.value)}/>
                             <div className="file-input">
-                                <label htmlFor="group-photo-input" class="light-button">Choose photo</label>
+                                <label htmlFor="group-photo-input" class="dark-button">Choose photo</label>
                                 <input type="file" id="group-photo-input" name="Group photo" onChange={handleFileChange} hidden/>
                                 <span className="file-name">{groupPhotoFile}</span>
                             </div>
                             <div id="public-private-section">
-                                <button type="button" class="light-button selected" onClick={handlePublicClick}>Public</button>
-                                <button type="button" class="light-button selected" onClick={handlePrivateClick}>Private</button>
+                                <button type="button" class="dark-button selected" onClick={handlePublicClick}>Public</button>
+                                <button type="button" class="dark-button selected" onClick={handlePrivateClick}>Private</button>
                             </div>
-                            <input className="light-button" type="submit" value="Create" disabled={!groupName}/>
+                            <input className="dark-button" type="submit" value="Create" disabled={!groupName}/>
                             <div className="error-message">{errorMessage}</div>
                         </form>
                     )}

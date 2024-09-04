@@ -53,30 +53,31 @@ body,html {
     word-wrap: break-word;
 }
 .button {
-    background-color: var(--darkest);
+    background-color: var(--dark);
 }
 .button-disabled {
     border: 1px solid var(--border);
     border-radius: 10px;
     background-color: var(--dark-line);
     color: var(--border);
-    font-size: large;
     margin: 10px;
     padding: 3px 6px;
 }
-.button, .background-button, .light-button {
-    border: 1px solid var(--border);
+.button, .dark-button {
     border-radius: 10px;
+    border: none;
     color: var(--border);
-    font-size: large;
     margin: 10px;
     padding: 3px 6px;
     transition: background-color 0.3s;
 }
-.background-button {
-    background-color: var(--dark);
+.button, .button-disbaled, .dark-button {
+    font-size: large;
 }
-.button.active, .button:hover, .button.selected:focus, .background-button:hover, .chat-channel-button:hover, .conversation-button:hover, .icon-button:hover, .light-button:hover, .light-button.selected:focus, #messages-button:hover, .posts-channel-button:hover {
+.button.large, .button-disabled.large {
+    font-size: x-large;
+}
+.button.active, .button:hover, .button.selected:focus, .chat-channel-button:hover, .conversation-button:hover, .dark-button:hover, .dark-button.selected:focus, .icon-button:hover, #messages-button:hover, .posts-channel-button:hover {
     background-color: var(--button-hover);
 }
 #cancel-save {
@@ -206,6 +207,9 @@ body,html {
 }
 .content-feed::-webkit-scrollbar, #left-aside::-webkit-scrollbar, #right-aside::-webkit-scrollbar {
     display: none; /*Hides scroll bar */
+}
+.dark-button {
+    background-color: var(--darkest);
 }
 #description-section .view-description, #bio-section .view-bio, #name-section .view-name {
     align-items: center;
@@ -372,9 +376,6 @@ label {
     color: var(--border);
     text-decoration: none;
 }
-.light-button {
-    background-color: var(--dark);
-}
 li {
     list-style-type: none;
 }
@@ -390,15 +391,15 @@ main {
     margin-top: 80px;
     width: 100%;
 }
+#personal-feeds {
+    margin-top: 20px;
+}
 .posts-channel-button {
     border-radius: 5px;
 }
 #profile-bio, #description {
     margin: 5px;
     max-width: 100%;
-}
-.profile-info {
-    margin-bottom: 20px;
 }
 .profile-link {
     align-items: center;
@@ -495,6 +496,9 @@ main {
     font-size: 36px;
     margin: 10px;
 }
+.total-votes {
+    font-size: x-large;
+}
 #upload-form {
     display: flex;
     flex-direction: column;
@@ -525,6 +529,10 @@ ul {
 }
 #user-count {
     margin: 5px;
+}
+.vote-container {
+    align-items: center;
+    display: flex;
 }
 .vote-arrow-container {
     background: none;
