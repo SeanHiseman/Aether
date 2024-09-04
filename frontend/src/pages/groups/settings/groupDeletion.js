@@ -19,7 +19,7 @@ const GroupDeletion = ({ group }) => {
 
     return (
         <div id="profile-settings">
-            <div id="deletion-area">
+            <div id="display-area">
                 <p className="text36">Are you sure you wish to delete this feed?</p>
                 <p className="text24">This action cannot be reversed</p>
                 <p className="text24">All posts, channels, followers and feed information will be lost</p>

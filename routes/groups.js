@@ -186,7 +186,7 @@ router.post('/create_group', authenticateCheck, (req, res) => {
             });
             res.status(201).json(newGroup);
         } catch (error) {
-            res.status(500).json({ error: 'Error, please try again' });
+            res.status(500).json({ success: false });
         }
     });
 });

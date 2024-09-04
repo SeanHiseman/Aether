@@ -27,7 +27,6 @@ const AskButton = ({ isReply, isGroup, content, showNote, setShowNote, note, set
                         postContent: normalisedContent,
                         id,
                     });
-
                     const { newNote } = response.data;
                     setNote(newNote.note_content);
                     setShowNote(true);

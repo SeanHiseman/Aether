@@ -24,10 +24,10 @@ const Welcome = () => {
                         </div>
                         <div id="join-login">
                             <Link to="/join">
-                                <button className="light-button join">Join</button>
+                                <button className="button join">Join</button>
                             </Link>
                             <Link to="/login">
-                                <button className="light-button join">Login</button>
+                                <button className="button join">Login</button>
                             </Link>
                         </div>
                     </div>
@@ -48,7 +48,7 @@ const Welcome = () => {
                             <p class="text24">-Members can create custom feeds</p>
                         </div>
                         <Link to="/join">
-                            <button className="light-button join">Join</button>
+                            <button className="button join">Join</button>
                         </Link>
                     </div>
                 );
@@ -63,7 +63,7 @@ const Welcome = () => {
                             <p class="text24">-Members can write longer posts</p>
                         </div>
                         <Link to="/join">
-                            <button className="light-button join">Join</button>
+                            <button className="button join">Join</button>
                         </Link>
                     </div>
                 );
@@ -80,7 +80,7 @@ const Welcome = () => {
                             <p class="text24">-Your algorithm can be adjusted. You are in control</p>
                         </div>
                         <Link to="/join">
-                            <button className="light-button join">Join</button>
+                            <button className="button join">Join</button>
                         </Link>
                     </div>
                 );
@@ -101,7 +101,7 @@ const Welcome = () => {
                             <p class="text24">-Voting for moderators, admins, leaders and features</p>
                             <p class="text24"></p>
                         </div>
-                        <button className="light-button join">Buy membership</button>
+                        <button className="button join">Buy membership</button>
                     </div>
                 );
             case 'privacy':
@@ -114,7 +114,7 @@ const Welcome = () => {
                             <p class="text24">-Your data is for you, not us</p>
                         </div>
                         <Link to="/join">
-                            <button className="light-button join">Join</button>
+                            <button className="button join">Join</button>
                         </Link>
                     </div>
                 );
