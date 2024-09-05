@@ -134,49 +134,75 @@ const ProfileView = ({ profile, setProfile }) => {
                     )}
                 </div>
                 <div id="viewed-profile-info">
-                    <div id="name-section">
+                    <div className="chat-change">
                         {isEditingName ? (
                             <div className="change-name">
-                                <button className="button" onClick={() => setIsEditingName(false)}>Close</button>
-                                <textarea className="change-name-area" value={newName} placeholder="New name" onChange={(e) => {
+                                <textarea className="change-name-area long" value={newName} placeholder="Username..." onChange={(e) => {
+                                    e.preventDefault();
                                     const input = e.target.value;
                                     const inputLength = input.length;
                                     if (inputLength <= 30) {
                                         setName(input)
                                     } else {
-                                        setErrorMessage('Name cannot exceed 30 characters');
+                                        setErrorMessage('Name too long');
                                     }
                                 }}
                                 />
-                                <button className="button" onClick={() => {setIsEditingName(false); handleUpdateName();}}>Save</button>
+                                <div className="cancel-save">
+                                    <button className="button" onClick={() => {
+                                        setIsEditingName(false);
+                                        setName('');
+                                        setErrorMessage('');
+                                    }}>Cancel</button>
+                                    <button className="button" onClick={(e) => {
+                                        e.preventDefault();
+                                        handleUpdateName()
+                                    }}>Save</button>
+                                </div>
                             </div>
                         ) : (
-                            <div className="view-name">
-                                <p className="large-text">{profile.username}</p>
-                                <button className="button edit" onClick={() => setIsEditingName(true)}>Change username</button>
+                            <div className="chat-name">
+                                <p className="text36">{profile.username}</p> 
+                                <button className="button" onClick={() => {
+                                    setIsEditingName(true);
+                                    setName(profile.username);
+                                }}>Change username</button>
                             </div>
                         )}
                     </div>
-                    <div id="bio-section">
+                    <div className="chat-change">
                         {isEditingBio ? (
-                            <div className="change-bio">
-                                <button className='button' onClick={() => setIsEditingBio(false)}>Close</button>
+                            <div className="change-name">
                                 <textarea className="change-text-area" value={newBio} placeholder="Bio..." onChange={(e) => {
+                                    e.preventDefault();
                                     const input = e.target.value;
                                     const inputLength = input.length;
                                     if (inputLength <= 1000) {
                                         setBio(input)
                                     } else {
-                                        setErrorMessage('Bio cannot exceed 1000 characters.');
+                                        setErrorMessage('Bio cannot exceed 1000 characters');
                                     }
                                 }}
                                 />
-                                <button className="button" onClick={() => {setIsEditingBio(false); handleUpdateBio();}}>Save</button>
+                                <div className="cancel-save">
+                                    <button className="button" onClick={() => {
+                                        setIsEditingBio(false);
+                                        setBio('');
+                                        setErrorMessage('');
+                                    }}>Cancel</button>
+                                    <button className="button" onClick={(e) => {
+                                        e.preventDefault();
+                                        handleUpdateBio()
+                                    }}>Save</button>
+                                </div>
                             </div>
                         ) : (
-                            <div className="view-bio">
-                                <p id="profile-bio-settings">{profile.bio}</p>
-                                <button className="button edit" onClick={() => setIsEditingBio(true)}>Edit bio</button>
+                            <div className="chat-name">
+                                <p className="text24">{profile.bio}</p> 
+                                <button className="button" onClick={() => {
+                                    setIsEditingBio(true);
+                                    setBio(profile.bio);
+                                }}>Change bio</button>
                             </div>
                         )}
                     </div>

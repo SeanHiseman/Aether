@@ -42,9 +42,9 @@ function ChannelName({ channelId, channelName, channelType, locationName, channe
     return (
         <div id="channel-name-section">
             {channelName !== 'Main' ? (
-                <div id="chat-change">
+                <div className="chat-change">
                     {isEditingChannelName ? (
-                        <div id="change-name">
+                        <div className="change-name">
                             <textarea className="change-name-area" value={newChannelName} placeholder="New name" onChange={(e) => {
                                 e.preventDefault();
                                 const input = e.target.value;
@@ -52,11 +52,11 @@ function ChannelName({ channelId, channelName, channelType, locationName, channe
                                 if (inputLength <= 30) {
                                     setNewChannelName(input)
                                 } else {
-                                    setErrorMessage('Name cannot exceed 30 characters');
+                                    setErrorMessage('Name too long');
                                 }
                             }}
                             />
-                            <div id="cancel-save">
+                            <div className="cancel-save">
                                 <button className="button" onClick={() => {
                                     setIsEditingChannelName(false);
                                     setNewChannelName('');
@@ -69,7 +69,7 @@ function ChannelName({ channelId, channelName, channelType, locationName, channe
                             </div>
                         </div>
                     ) : (
-                        <div id="chat-name">
+                        <div className="chat-name">
                             <p className="text36">{channelName}</p> 
                             <button className="button" onClick={() => {
                                 setIsEditingChannelName(true);

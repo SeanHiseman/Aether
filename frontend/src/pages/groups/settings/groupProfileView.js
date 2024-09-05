@@ -141,49 +141,75 @@ function GroupProfileView({ group, setGroup }) {
                     )}
                 </div>
                 <div id="viewed-profile-info">
-                    <div id="name-section">
+                    <div className="chat-change">
                         {isEditingName ? (
                             <div className="change-name">
-                                <button className='button' onClick={() => setIsEditingName(false)}>Close</button>
-                                <textarea className="change-name-area" value={newName} onChange={(e) => {
+                                <textarea className="change-name-area long" value={newName} placeholder="Group name..." onChange={(e) => {
+                                    e.preventDefault();
                                     const input = e.target.value;
                                     const inputLength = input.length;
                                     if (inputLength <= 30) {
                                         setName(input)
                                     } else {
-                                        setErrorMessage('Name cannot exceed 30 characters.');
+                                        setErrorMessage('Name too long');
                                     }
                                 }}
                                 />
-                                <button className="button" onClick={() => {setIsEditingName(false); handleUpdateName();}}>Save</button>
+                                <div className="cancel-save">
+                                    <button className="button" onClick={() => {
+                                        setIsEditingName(false);
+                                        setName('');
+                                        setErrorMessage('');
+                                    }}>Cancel</button>
+                                    <button className="button" onClick={(e) => {
+                                        e.preventDefault();
+                                        handleUpdateName()
+                                    }}>Save</button>
+                                </div>
                             </div>
                         ) : (
-                            <div className="view-name">
-                                <p className="large-text">{group.groupName}</p>
-                                <button className="button edit" onClick={() => setIsEditingName(true)}>Change feed name</button>
+                            <div className="chat-name">
+                                <p className="text36">{group.groupName}</p> 
+                                <button className="button" onClick={() => {
+                                    setIsEditingName(true);
+                                    setName(group.groupName);
+                                }}>Change username</button>
                             </div>
                         )}
                     </div>
-                    <div id="bio-section">
+                    <div className="chat-change">
                         {isEditingDescription ? (
-                            <div className="change-description">
-                                <button className='button' onClick={() => setIsEditingDescription(false)}>Close</button>
+                            <div className="change-name">
                                 <textarea className="change-text-area" value={newDescription} placeholder="Description..." onChange={(e) => {
+                                    e.preventDefault();
                                     const input = e.target.value;
                                     const inputLength = input.length;
                                     if (inputLength <= 1000) {
                                         setDescription(input)
                                     } else {
-                                        setErrorMessage('Description cannot exceed 1000 characters.');
+                                        setErrorMessage('Description cannot exceed 1000 characters');
                                     }
                                 }}
                                 />
-                                <button className="button" onClick={() => {setIsEditingDescription(false); handleUpdateDescription();}}>Save</button>
+                                <div className="cancel-save">
+                                    <button className="button" onClick={() => {
+                                        setIsEditingDescription(false);
+                                        setDescription('');
+                                        setErrorMessage('');
+                                    }}>Cancel</button>
+                                    <button className="button" onClick={(e) => {
+                                        e.preventDefault();
+                                        handleUpdateDescription()
+                                    }}>Save</button>
+                                </div>
                             </div>
                         ) : (
-                            <div className="view-description">
-                                <p id="description">{group.description}</p>
-                                <button className="button" onClick={() => setIsEditingDescription(true)}>Edit description</button>
+                            <div className="chat-name">
+                                <p className="text24">{group.description}</p> 
+                                <button className="button" onClick={() => {
+                                    setIsEditingDescription(true);
+                                    setDescription(group.description);
+                                }}>Change description</button>
                             </div>
                         )}
                     </div>

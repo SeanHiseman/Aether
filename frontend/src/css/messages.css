@@ -21,7 +21,7 @@
 .channel-content.messages {
     flex-direction: column-reverse;
 }
-#chat-change {
+.chat-change {
     display: flex;
     flex-direction: column;
 }
