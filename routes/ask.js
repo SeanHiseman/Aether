@@ -1,4 +1,4 @@
-import authenticateCheck from '../functions/authenticateCheck.js';
+import authenticateCheck from '../functions/checks/authenticateCheck.js';
 import dotenv from 'dotenv';
 import OpenAI from "openai";
 import { Router } from 'express';

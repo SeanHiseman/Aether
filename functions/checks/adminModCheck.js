@@ -1,4 +1,4 @@
-import { Groups, UserGroups } from '../models/models.js';
+import { Groups, UserGroups } from '../../models/models.js';
 
 async function checkIfUserIsAdminOrMod(userId, groupName) {
     try {

@@ -1,5 +1,5 @@
-import authenticateCheck from '../functions/authenticateCheck.js';
-import deleteMedia from '../functions/deleteMedia.js';
+import authenticateCheck from '../functions/checks/authenticateCheck.js';
+import deleteMedia from '../functions/media_handling/deleteMedia.js';
 import { GroupReplies, GroupReplyNotes, GroupPosts, ProfileReplies, ProfileReplyNotes, ProfilePosts, Profiles, ReplyVotes, Users } from '../models/models.js';
 import multer from 'multer';
 import { Router } from 'express';

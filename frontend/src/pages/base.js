@@ -79,6 +79,9 @@ const BaseLayout = () => {
                 formData.append('new_group_profile_photo', groupPhoto);
                 formData.append('is_private', privateGroup);
                 formData.append('user_id', profile.userId); //Adds user_id so user creating group can become an admin
+                formData.forEach((value, key) => {
+                    console.log(`${key}: ${value}`);
+                });
                 const response = await axios.post('/api/create_group', formData);
                 if (response.data.success === true) {
                     setFeeds([...feeds, response.data]);

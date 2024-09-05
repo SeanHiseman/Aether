@@ -5,7 +5,7 @@ import path from 'path';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename); 
-const rootDir = path.resolve(__dirname, '..');
+const rootDir = path.resolve(__dirname, '../../');
 
 //Deletes media files by accessing route from content
 function deleteMedia(content) {
