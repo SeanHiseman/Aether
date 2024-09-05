@@ -99,9 +99,20 @@ body,html {
     border: 1px solid var(--border);
     border-radius: 10px;
     color: var(--border);
-    font-size: 16px;
-    min-width: 200px;
-    min-height: 80px;
+    font-family: Arial, sans-serif;
+    padding: 3px 6px;
+}
+.change-name-area {
+    font-size: 36px;
+    height: 42px;
+    max-width: 180px;
+}
+.change-name-area.long {
+    max-width: 360px;
+}
+.change-text-area {
+    font-size: 24px;
+    height: 120px;
 }
 .channel-content {
     align-items: center;
@@ -173,7 +184,7 @@ body,html {
 .chat-channel-button, .conversation-button {
     border-radius: 1000px;
 }
-#chat-name, #change-name {
+.chat-name, .change-name {
     align-items: center;
     display: flex;
     flex-direction: column;
@@ -240,7 +251,7 @@ body,html {
     transition: background-color 0.3s;
 }
 .feed-list-item.profile {
-    border-right: 2px solid var(--dark-line);
+    border-left: 2px solid var(--dark-line);
 }
 .feed-list-item:hover {
     background-color: var(--dark);
