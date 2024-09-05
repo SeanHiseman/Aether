@@ -254,11 +254,11 @@ function GroupHome() {
                 )}
                 {showPostForm && channelMode === 'post' && (
                     <div>
-                        <button class="button" onClick={() => setShowPostForm(false)}>Close</button>
+                        <button className="button" onClick={() => setShowPostForm(false)}>Close</button>
                     </div>
                 )}
                 {!showPostForm && channelMode === 'post' && (
-                    <button class="button" onClick={() => setShowPostForm(true)}>Add Post</button>
+                    <button className="button" onClick={() => setShowPostForm(true)}>Add Post</button>
                 )}
                 {channelRender && channelRender.is_posts && channelRender.is_chat && (
                     <div className="option-toggle">
@@ -268,7 +268,7 @@ function GroupHome() {
                 )}
                 {isAdmin && (
                     <div id="add-channel-section">
-                        <button class="button" onClick={toggleChannelForm}>
+                        <button className="button" onClick={toggleChannelForm}>
                             {showChannelForm ? 'Close': 'Create channel'}
                         </button>
                         {showChannelForm && (
