@@ -1,6 +1,6 @@
-import authenticateCheck from '../functions/authenticateCheck.js';
+import authenticateCheck from '../functions/checks/authenticateCheck.js';
 import calculatePoints from '../functions/postPoints.js';
-import checkIfUserIsMember from '../functions/memberCheck.js';
+import checkIfUserIsMember from '../functions/checks/memberCheck.js';
 import { hybridRecommendations } from '../functions/recommendation/hybrid.js';
 import sortPostsByWeightedRatio from '../functions/postSorting.js';
 import { ContentVotes, Followers, Friends, FriendRequests, GroupChannels, Groups, GroupRequests, GroupPosts, ProfileChannels, ProfilePosts, Profiles, Users, UserGroups } from '../models/models.js'; 

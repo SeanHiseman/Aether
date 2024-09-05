@@ -28,7 +28,7 @@ const ProfileView = ({ profile, setProfile }) => {
     const ChangeProfilePhoto = async (event) => {
         try {
             event.preventDefault();
-            const fileInput = event.target.elements.new_profile_photo;
+            const fileInput = document.getElementById('new-profile-photo');
             if (!fileInput.files[0]) {
                 setErrorMessage('Please upload an image');
                 return;
@@ -40,13 +40,14 @@ const ProfileView = ({ profile, setProfile }) => {
                     'Content-Type': 'multipart/form-data',
                 }, 
             })
+            console.log("response:", response);
             setProfile(prevDetails => ({
                 ...prevDetails,
                 profilePhoto: response.data.newPhotoPath
             }));
             setIsPhotoFormVisible(false);
         } catch(error) {
-            setErrorMessage('Error updating photo');
+           setErrorMessage('Error updating photo');
         };
     };
 
@@ -124,7 +125,7 @@ const ProfileView = ({ profile, setProfile }) => {
                     {isPhotoFormVisible && (
                         <form className="change-profile-photo" onSubmit={ChangeProfilePhoto}>
                             <div className="file-input">
-                                <label htmlFor="new-profile-photo" class="dark-button">Change feed photo</label>
+                                <label htmlFor="new-profile-photo" className="dark-button">Change feed photo</label>
                                 <input type="file" id="new-profile-photo" name="Profile photo" accept="image/*" onChange={handleFileChange} hidden/>
                                 <span className="file-name">{profilePhotoFile}</span>
                             </div>
@@ -178,13 +179,13 @@ const ProfileView = ({ profile, setProfile }) => {
                                 <button className="button edit" onClick={() => setIsEditingBio(true)}>Edit bio</button>
                             </div>
                         )}
-                        <div className="error-message">{errorMessage}</div>
                     </div>
                 </div>  
             </div>
             <div id="private-toggle">
                 <button className="button" onClick={() => togglePrivate()}>{profile.isPrivate ? "Feed: private" : "Feed: public"}</button>  
             </div>
+            <div className="error-message">{errorMessage}</div>
         </div> 
     );
 };

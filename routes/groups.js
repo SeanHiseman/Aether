@@ -1,10 +1,10 @@
-import authenticateCheck from '../functions/authenticateCheck.js';
-import checkIfUserIsAdminOrMod from '../functions/adminModCheck.js';
-import checkIfUserIsMember from '../functions/memberCheck.js';
-import deleteMedia from '../functions/deleteMedia.js';
+import authenticateCheck from '../functions/checks/authenticateCheck.js';
+import checkIfUserIsAdminOrMod from '../functions/checks/adminModCheck.js';
+import checkIfUserIsMember from '../functions/checks/memberCheck.js';
+import deleteMedia from '../functions/media_handling/deleteMedia.js';
+import imageUpload from '../functions/media_handling/imageUpload.js';
 import { Groups, GroupChannels, GroupChannelMessages, GroupRequests, GroupPosts, NestedGroupMembers, NestedGroupRequests, Profiles, Users, UserGroups } from '../models/models.js';
 import express from 'express';
-import fs from 'fs';
 import multer from 'multer';
 import { join } from 'path';
 import { Router } from 'express';
@@ -15,32 +15,7 @@ const app = express();
 const router = Router();
 const __dirname = path.dirname(import.meta.url);
 app.use(express.static(join(__dirname, 'static')));
-
-//Multer setup for profile uploads
-const group_photo_storage = multer.diskStorage({
-    destination: function(req, file, cb) {
-        cb(null, 'media/group_profiles');
-    },
-    filename: function(req, file, cb) {
-        cb(null, Date.now() + path.extname(file.originalname));
-    }
-});
-//Check file input for group photo
-const profileFilter = (req, file, cb) => {
-    if (file.mimetype.startsWith('image/')) {
-        cb(null, true);
-    } else {
-        cb(new Error('Invalid file type'), false);
-    }
-}
-//Uploads with file size limit
-const profile_upload = multer({
-    storage: group_photo_storage,
-    limits: {
-        fileSize: 1024 * 1024 * 5
-    },
-    fileFilter: profileFilter
-}).single('new_group_profile_photo');
+const groupProfileUpload = imageUpload('/media/group_profiles', 'new_group_profile_photo');
 
 //Adds user to private group
 router.post('/accept_join_request', authenticateCheck, async (req, res) => {
@@ -142,15 +117,15 @@ router.post('/change_group_name', authenticateCheck, async (req, res) => {
 });
 
 //Create a new group feed
-router.post('/create_group', authenticateCheck, (req, res) => {
-    profile_upload(req, res, async function(err) {
-        if (err instanceof multer.MulterError) {
+router.post('/create_group', authenticateCheck, async (req, res) => {
+    groupProfileUpload(req, res, async function (error) {
+        if (error instanceof multer.MulterError) {
             //A Multer error occurred when uploading
-            if (err.code === 'LIMIT_FILE_SIZE') {
+            if (error.code === 'LIMIT_FILE_SIZE') {
                 return res.status(413).json({ error: 'File cannot be more than 5MB' });
             }
             return res.status(500).json({ success: false });
-        } else if (err) {
+        } else if (error) {
             return res.status(500).json({ success: false });
         }
         try {
@@ -158,7 +133,7 @@ router.post('/create_group', authenticateCheck, (req, res) => {
             //Prevents duplicate group names
             const existingGroup = await Groups.findOne({ where: { group_name: group_name } });
             if (existingGroup) {
-                return res.status(400).json({ error: 'Name taken' });
+                return res.status(400).json({ error: 'Name taken' });//Note: image will still be uploaded - NEEDS FIXING
             }
             let group_photo = "media/site_images/blank-group-icon.jpg";
             if (req.file) {
@@ -187,7 +162,7 @@ router.post('/create_group', authenticateCheck, (req, res) => {
             });
             res.status(201).json({ success: true, newGroup });
         } catch (error) {
-            res.status(500).json({ success: false });
+           res.status(500).json({ success: false });
         }
     });
 });
@@ -463,22 +438,21 @@ router.post('/toggle_moderator', authenticateCheck, async (req, res) => {
 });
 
 router.put('/update_group_photo/:groupId', authenticateCheck, async (req, res) => {
-    profile_upload(req, res, async function(err) {
-        if (err instanceof multer.MulterError) {
+    groupProfileUpload(req, res, async function (error) {
+        if (error instanceof multer.MulterError) {
             //A Multer error occurred when uploading
-            if (err.code === 'LIMIT_FILE_SIZE') {
+            if (error.code === 'LIMIT_FILE_SIZE') {
                 return res.status(413).json({ error: 'File cannot be more than 5MB' });
             }
             return res.status(400).json({ success: false });
-        } else if (err) {
+        } else if (error) {
             return res.status(400).json({ success: false });
         }
         try {
             const defaultGroupPhotoPath = 'media/site_images/blank-group-icon.jpg';
             const groupId = req.params.groupId; 
             const file = req.file; 
-            const filename = file.filename;
-            const newPhotoPath = `media/group_profiles/${filename}`;
+            const newPhotoPath = `media/group_profiles/${file.filename}`;
             const group = await Groups.findOne({ where: { group_id: groupId } });
             //Deletes old photo
             if (group.group_photo && group.group_photo !== defaultGroupPhotoPath) {

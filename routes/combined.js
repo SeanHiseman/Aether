@@ -1,6 +1,6 @@
 //Routes that combine profiles and groups
-import authenticateCheck from '../functions/authenticateCheck.js';
-import deleteMedia from '../functions/deleteMedia.js';
+import authenticateCheck from '../functions/checks/authenticateCheck.js';
+import deleteMedia from '../functions/media_handling/deleteMedia.js';
 import multer from 'multer';
 import path from 'path';
 import { Router } from 'express';

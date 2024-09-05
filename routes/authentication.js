@@ -1,5 +1,5 @@
-import authenticateCheck from '../functions/authenticateCheck.js';
-import deleteMedia from '../functions/deleteMedia.js';
+import authenticateCheck from '../functions/checks/authenticateCheck.js';
+import deleteMedia from '../functions/media_handling/deleteMedia.js';
 import { Router } from 'express';
 import { hash, compare } from 'bcrypt';
 import { Op } from 'sequelize';

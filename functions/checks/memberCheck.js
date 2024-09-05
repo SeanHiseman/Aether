@@ -1,4 +1,4 @@
-import { Groups, UserGroups } from '../models/models.js';
+import { Groups, UserGroups } from '../../models/models.js';
 
 async function checkIfUserIsMember(userId, groupName) {
     const group = await Groups.findOne({ where: { group_name: groupName }});

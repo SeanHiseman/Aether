@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { v4 } from 'uuid';
 import { Op } from 'sequelize';
 import { Conversations, Friends, Profiles, UserConversations, Users, Messages } from '../models/models.js';
-import authenticateCheck from '../functions/authenticateCheck.js';
+import authenticateCheck from '../functions/checks/authenticateCheck.js';
 
 const router = Router();
 

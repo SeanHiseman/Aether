@@ -1,13 +1,13 @@
-import authenticateCheck from '../functions/authenticateCheck.js';
-import deleteMedia from '../functions/deleteMedia.js';
+import authenticateCheck from '../functions/checks/authenticateCheck.js';
+import deleteMedia from '../functions/media_handling/deleteMedia.js';
+import imageUpload from '../functions/media_handling/imageUpload.js';
 import sortPostsByWeightedRatio from'../functions/postSorting.js';
 import { Conversations, Followers, Friends, FriendRequests, Messages, Profiles, ProfileChannels, Users, UserConversations } from '../models/models.js';
 import express from 'express';
-import fs from 'fs';
 import { join } from 'path';
-import multer, { diskStorage } from 'multer';
+import multer from 'multer';
 import { Op } from 'sequelize';
-import path, { extname } from 'path';
+import path from 'path';
 import { Router } from 'express';
 import session from 'express-session';
 import { v4 } from 'uuid';
@@ -20,30 +20,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(join(__dirname, 'static')));
 app.use(session({ secret: 'EDIT_ME', resave: true, saveUninitialized: true }));
-
-//Multer setup for profile uploads
-const profile_photo_storage = diskStorage({
-    destination: function (req, file, cb) {
-        cb(null, 'media/profile_images');
-    },
-    filename: function (req, file, cb) {
-        cb(null, v4() + extname(file.originalname));
-    }
-});
-//Check file input for profile photo
-const profileFilter = (req, file, cb) => {
-    if (file.mimetype.startsWith('/image')) {
-        cb(null, true);
-    } else {
-        cb(null, true);
-    }
-}
-//Uploads with file size limit
-const profile_upload = multer({
-    storage: profile_photo_storage,
-    limits: { fileSize: 1024 * 1024 * 5 },
-    fileFilter: profileFilter
-});
+const profileUpload = imageUpload('media/profile_images', 'new_profile_photo');
 
 router.post('/accept_friend_request', authenticateCheck, async (req, res) => {
     try {
@@ -414,27 +391,35 @@ router.post('/send_friend_request', authenticateCheck, async (req, res) => {
     }
 });
 
-router.put('/update_profile_photo/:profileId', authenticateCheck, profile_upload.single('new_profile_photo'), async (req, res) => {
-    try {
-        const defaultProfilePhotoPath = 'media/site_images/blank-profile.png'; //To prevent default photo from being deleted
-        const profileId = req.params.profileId; 
-        const file = req.file; 
-        if (!file) {
-            return res.status(400).json({ message: "Invalid file type. Please upload jpeg or png"});
+router.put('/update_profile_photo/:profileId', authenticateCheck, (req, res) => {
+    profileUpload(req, res, async function (error) {
+        if (error instanceof multer.MulterError) {
+            if (error.code === 'LIMIT_FILE_SIZE') {
+                return res.status(413).json({ error: 'File cannot be more than 5MB' });
+            }
+            return res.status(500).json({ success: false });
+        } else if (error) {
+            return res.status(500).json({ success: false });
         }
-        const filename = file.filename;
-        const newPhotoPath = `media/profile_images/${filename}`;
-        const profile = await Profiles.findOne({ where: { profile_id: profileId } });
-        //Deletes old photo
-        if (profile.profile_photo && profile.profile_photo !== defaultProfilePhotoPath) {
-            deleteMedia(profile.profile_photo);
-        }       
-        profile.profile_photo = newPhotoPath;     
-        await profile.save();
-        return res.json({ newPhotoPath: newPhotoPath });
-    } catch (error) {
-        res.status(500).json({ success: false });
-    }
+        try {
+            const defaultProfilePhotoPath = 'media/site_images/blank-profile.png';
+            const profileId = req.params.profileId; 
+            const file = req.file; 
+            if (!file) {
+                return res.status(400).json({ message: "Invalid file type. Please upload jpeg or png" });
+            }
+            const newPhotoPath = `media/profile_images/${file.filename}`; 
+            const profile = await Profiles.findOne({ where: { profile_id: profileId } });
+            if (profile.profile_photo && profile.profile_photo !== defaultProfilePhotoPath) {
+                deleteMedia(profile.profile_photo);
+            }
+            profile.profile_photo = newPhotoPath;     
+            await profile.save();
+            return res.json({ newPhotoPath: newPhotoPath });
+        } catch (error) {
+            res.status(500).json({ success: false });
+        }
+    });
 });
 
 export default router;
