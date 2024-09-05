@@ -53,7 +53,7 @@ const ContentForm = ({ closeForm, isReply, onSubmit, errorMessage }) => {
             <div id="content-form-buttons">
                 {isReply && (<button className="button" type="button" onClick={closeForm}>Close</button>)}
                 <div id="post-file-input">
-                    <label htmlFor="media-input" class="button">Add media</label>
+                    <label htmlFor="media-input" className="button">Add media</label>
                     <input type="file" id="media-input" accept="image/*,video/*" hidden multiple onChange={handleFilesChange} />
                     <div className="file-names">
                         {files.length > 0 && (
@@ -64,7 +64,7 @@ const ContentForm = ({ closeForm, isReply, onSubmit, errorMessage }) => {
                             </ul>
                         )}
                     </div>
-                    <button class="button" type="submit">{isReply ? "Reply" : "Post"}</button>
+                    <button className="button" type="submit">{isReply ? "Reply" : "Post"}</button>
                     <div className="error-message">{errorMessage}</div>
                 </div>
             </div>

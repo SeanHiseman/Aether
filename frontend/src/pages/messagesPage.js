@@ -382,7 +382,7 @@ function MessagesPage() {
                             ))}
                         </ul>
                         <div id="add-channel-section">
-                            <button class="button" onClick={toggleForm}>
+                            <button className="button" onClick={toggleForm}>
                                 {showForm ? 'Close': 'Add chat'}
                             </button>
                             {(showForm || animationClass === 'fade-out') && (

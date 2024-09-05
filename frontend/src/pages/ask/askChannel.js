@@ -179,8 +179,8 @@ function AskChannel() {
                                     <p className="text36">Ask anything...</p>
                                 </div>
                                 <div id="channel-input">
-                                    <input class="chat-message-bar" type="text" value={currentMessage} onChange={(e) => setCurrentMessage(e.target.value)} placeholder="Ask..." onKeyDown={(e) => e.key === 'Enter' && handleHomeSubmit(e)}/>
-                                    <button class="chat-send-button" onClick={handleHomeSubmit}>Send</button>
+                                    <input className="chat-message-bar" type="text" value={currentMessage} onChange={(e) => setCurrentMessage(e.target.value)} placeholder="Ask..." onKeyDown={(e) => e.key === 'Enter' && handleHomeSubmit(e)}/>
+                                    <button className="chat-send-button" onClick={handleHomeSubmit}>Send</button>
                                 </div>
                             </div>
                         ) : (
@@ -195,8 +195,8 @@ function AskChannel() {
                                     ))}
                                 </div>
                                 <div id="channel-input">
-                                    <input class="chat-message-bar" type="text" value={currentMessage} onChange={(e) => setCurrentMessage(e.target.value)} placeholder="Ask..." onKeyDown={(e) => e.key === 'Enter' && sendAskMessage(chatId, currentMessage)} disabled={isLoading}/>
-                                    <button class="chat-send-button" onClick={() => sendAskMessage(chatId, currentMessage)} disabled={isLoading}>{isLoading ? 'Loading...' : 'Send'}</button>
+                                    <input className="chat-message-bar" type="text" value={currentMessage} onChange={(e) => setCurrentMessage(e.target.value)} placeholder="Ask..." onKeyDown={(e) => e.key === 'Enter' && sendAskMessage(chatId, currentMessage)} disabled={isLoading}/>
+                                    <button className="chat-send-button" onClick={() => sendAskMessage(chatId, currentMessage)} disabled={isLoading}>{isLoading ? 'Loading...' : 'Send'}</button>
                                 </div>
                             </div>
                         )}
@@ -209,7 +209,7 @@ function AskChannel() {
                 </aside>
             ) : (
                 <aside id="right-aside">
-                    <div class="error-message">{errorMessage}</div>
+                    <div className="error-message">{errorMessage}</div>
                     {chatName !== 'Ask' ? (
                         <div id="chat-change">
                             {isEditingChatName ? (

@@ -81,9 +81,9 @@ function ChatChannel({ canRemove, channelId, isGroup, locationId }) {
                 ))}
             </div>
             <div id="channel-input">
-                <input class="chat-message-bar" type="text" value={currentMessage} onChange={(e) => setCurrentMessage(e.target.value)} placeholder="Type a message..." onKeyDown={(e) => e.key === 'Enter' && sendChannelMessage()}/>
-                <button class="chat-send-button" onClick={sendChannelMessage}>Send</button>
-                {errorMessage && <div class="error-message">{errorMessage}</div>}
+                <input className="chat-message-bar" type="text" value={currentMessage} onChange={(e) => setCurrentMessage(e.target.value)} placeholder="Type a message..." onKeyDown={(e) => e.key === 'Enter' && sendChannelMessage()}/>
+                <button className="chat-send-button" onClick={sendChannelMessage}>Send</button>
+                <div class="error-message">{errorMessage}</div>
             </div>
         </div>
     );
