@@ -250,6 +250,9 @@ body,html {
     display: flex;
     flex-direction: column;
 }
+.file-name {
+    margin: 10px;
+}
 .group-container, .home-container, .messages-container, .profile-container, .results-container {
     align-items: stretch;
     display: flex;

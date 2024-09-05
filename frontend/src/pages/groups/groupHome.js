@@ -261,7 +261,7 @@ function GroupHome() {
                     <button class="button" onClick={() => setShowPostForm(true)}>Add Post</button>
                 )}
                 {channelRender && channelRender.is_posts && channelRender.is_chat && (
-                    <div id="channel-toggle">
+                    <div className="option-toggle">
                         <button className={channelMode === 'post' ? 'active-mode' : 'passive-mode'} onClick={() => setChannelMode('post')}>Posts</button>
                         <button className={channelMode === 'chat' ? 'active-mode' : 'passive-mode'} onClick={() => setChannelMode('chat')}>Chat</button>
                     </div>

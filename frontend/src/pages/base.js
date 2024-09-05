@@ -69,20 +69,25 @@ const BaseLayout = () => {
     const createGroupSubmit = async (event) => {
         try {
             event.preventDefault();
-            const formData = new FormData();
-            formData.append('group_id', v4());
-            formData.append('group_name', groupName);
-            formData.append('new_group_profile_photo', groupPhoto);
-            formData.append('is_private', privateGroup);
-            formData.append('user_id', profile.userId); //Adds user_id so user creating group can become an admin
-            const response = await axios.post('/api/create_group', formData);
-            if (response.data.success === true) {
-                setFeeds([...feeds, response.data]);
-                //Redirect to new group
-                const newGroupName = response.data.newGroup.group_name;
-                navigate(`/group/${newGroupName}`);
-                setGroupName('');
-                setShowForm(false);
+            if (!groupName) {
+                setErrorMessage('Feed needs a name');
+                return;
+            } else {
+                const formData = new FormData();
+                formData.append('group_id', v4());
+                formData.append('group_name', groupName);
+                formData.append('new_group_profile_photo', groupPhoto);
+                formData.append('is_private', privateGroup);
+                formData.append('user_id', profile.userId); //Adds user_id so user creating group can become an admin
+                const response = await axios.post('/api/create_group', formData);
+                if (response.data.success === true) {
+                    setFeeds([...feeds, response.data]);
+                    //Redirect to new group
+                    const newGroupName = response.data.newGroup.group_name;
+                    navigate(`/group/${newGroupName}`);
+                    setGroupName('');
+                    setShowForm(false);
+                }
             }
         } catch (error) {
             if (error.response.status === 413) {
@@ -132,18 +137,16 @@ const BaseLayout = () => {
         navigate(`/search?keyword=${currentQuery}`);
     };
 
-    //Set groups to public or private
-    const handlePublicClick = (event) => {
-        event.preventDefault();
-        setPrivateGroup(false);
-    }
-    const handlePrivateClick = (event) => {
-        event.preventDefault();
-        setPrivateGroup(true);
-    }
-
     //Toggles display of create group form after button is pressed
-    const toggleForm = () => { setShowForm(!showForm) }
+    const toggleForm = () => { 
+        if (showForm) {
+            setErrorMessage('');
+            setGroupName('');
+            setGroupPhoto(null);
+            setGroupPhotoFile('No file chosen');
+        };
+        setShowForm(!showForm) 
+    }
 
     return (
         <div className="container">
@@ -173,12 +176,12 @@ const BaseLayout = () => {
                                 <input type="file" id="group-photo-input" name="Group photo" onChange={handleFileChange} hidden/>
                                 <span className="file-name">{groupPhotoFile}</span>
                             </div>
-                            <div id="public-private-section">
-                                <button type="button" class="dark-button selected" onClick={handlePublicClick}>Public</button>
-                                <button type="button" class="dark-button selected" onClick={handlePrivateClick}>Private</button>
+                            <div className="option-toggle">
+                                <button className={privateGroup === false ? 'active-mode' : 'passive-mode'} onClick={(event) => {event.preventDefault(); setPrivateGroup(false);}}>Public</button>
+                                <button className={privateGroup === true ? 'active-mode' : 'passive-mode'} onClick={(event) => {event.preventDefault(); setPrivateGroup(true);}}>Private</button>
                             </div>
-                            <input className="dark-button" type="submit" value="Create" disabled={!groupName}/>
                             <div className="error-message">{errorMessage}</div>
+                            <input className="dark-button" type="submit" value="Create" />
                         </form>
                     )}
                 </div>
