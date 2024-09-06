@@ -297,7 +297,7 @@ const MessagesPage = () => {
                             {friends.map(friend => (
                                 <li key={friend.friend_id}>
                                     <div className="result-widget">
-                                        <Link className="friend-link" to={`/profile/${friend.friend_name}`}>
+                                        <Link className="profile-link" to={`/profile/${friend.friend_name}`}>
                                             <img className="large-profile-photo" src={`/${friend.friend_profile_photo}`} alt="Profile" />
                                             <p className="large-text profile-name">{friend.friend_name}</p>
                                         </Link>

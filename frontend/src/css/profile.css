@@ -76,6 +76,10 @@
     display: flex;
     flex-direction: column;
 }
+.profile-link {
+    align-items: center;
+    display: flex;
+}
 #profile-options {
     align-items: center;
     display: flex;

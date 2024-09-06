@@ -20,18 +20,18 @@ const groupProfileUpload = imageUpload('/media/group_profiles', 'new_group_profi
 //Adds user to private group
 router.post('/accept_join_request', authenticateCheck, async (req, res) => {
     try {
-        const { groupId, requestId, senderId } = req.body;
+        const { request } = req.body;
+        console.log("request:", request);
+        const groupRequest = await GroupRequests.findByPk(request.request_id);
         await UserGroups.create({
-            user_id: senderId,
-            group_id: groupId
+            user_id: groupRequest.sender_id,
+            group_id: groupRequest.group_id
         });
-        await Groups.increment('member_count', { where: { group_id: groupId } });
-        await GroupRequests.destroy({
-            where: { request_id: requestId }
-        });
+        await Groups.increment('member_count', { where: { group_id: groupRequest.group_id } });
+        await groupRequest.destroy();
         res.status(200).json({ success: true });
     } catch (error) {
-        res.status.json({ success: false });
+        res.status(500).json({ success: false });
     }
 });
 
@@ -51,7 +51,7 @@ router.post('/accept_nest_request', authenticateCheck, async (req, res) => {
         });
         res.status(200).json({ success: true });
     } catch (error) {
-        res.status.json({ success: false });
+        res.status(500).json({ success: false });
     }
 });
 
@@ -73,7 +73,7 @@ router.post('/add_group_channel', authenticateCheck, async (req, res) => {
         });
         res.status(201).json(newChannel);
     } catch (error) {
-        res.status(400).json({ success: false });
+        res.status(500).json({ success: false });
     }
 });
 
@@ -208,24 +208,6 @@ router.delete('/delete_group_channel', authenticateCheck, async (req, res) => {
     }
 });
 
-//Get channels from a group
-router.get('/get_group_channels/:groupId', authenticateCheck, async (req, res) => {
-    try {
-        const groupId = req.params.groupId; 
-        const channels = await GroupChannels.findAll({
-            include: [{
-                model: Groups,
-                where: { group_id: groupId },
-                attributes: [],
-            }],
-            order: [['date_created', 'ASC']]
-        });
-        res.json(channels);
-    } catch (error) {
-        res.status(500).json({ success: false });
-    }
-});
-
 //Allows users to join a group
 router.post('/follow_group', authenticateCheck, async (req, res) => {
     try{
@@ -240,6 +222,24 @@ router.post('/follow_group', authenticateCheck, async (req, res) => {
         const group = await Groups.findByPk(groupId);
         await group.increment('member_count');
         res.status(200).json({ success: true });
+    } catch (error) {
+        res.status(500).json({ success: false });
+    }
+});
+
+//Get channels from a group
+router.get('/get_group_channels/:groupId', authenticateCheck, async (req, res) => {
+    try {
+        const groupId = req.params.groupId; 
+        const channels = await GroupChannels.findAll({
+            include: [{
+                model: Groups,
+                where: { group_id: groupId },
+                attributes: [],
+            }],
+            order: [['date_created', 'ASC']]
+        });
+        res.json(channels);
     } catch (error) {
         res.status(500).json({ success: false });
     }
@@ -334,7 +334,13 @@ router.get('/group_requests/:groupId', authenticateCheck, async (req, res) => {
                 model: Users, 
                 as: 'sender',
                 required: true,
-                attributes: ['user_id', 'username']
+                attributes: ['user_id', 'username'],
+                include: [{
+                    model: Profiles,
+                    as: 'profile',
+                    required: false,
+                    attributes: ['profile_photo', 'bio', 'follower_count', 'is_private']
+                }]
             }],
         }); 
         res.json(requests);
@@ -346,10 +352,9 @@ router.get('/group_requests/:groupId', authenticateCheck, async (req, res) => {
 //Rejects request to join private group 
 router.delete('/reject_group_request', authenticateCheck, async (req, res) => {
     try {
-        const { requestId } = req.body;
-        await GroupRequests.destroy({
-            where: { request_id: requestId }
-        });
+        const { request } = req.body;
+        const groupRequest = await GroupRequests.findByPk(request.request_id);
+        await groupRequest.destroy();
         res.status(200).json({ success: true });
     } catch (error) {
         res.status(500).json({ success: false });

@@ -47,7 +47,6 @@ const GroupHome = () => {
                 setErrorMessage("Error fetching feed details", error);
             }
         };
-        
         fetchGroupData();
     }, [group_name]);
     
