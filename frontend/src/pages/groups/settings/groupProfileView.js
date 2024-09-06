@@ -47,7 +47,6 @@ function GroupProfileView({ group, setGroup }) {
             setIsPhotoFormVisible(false);
             setErrorMessage('');
         } catch(error) {
-            console.log("error:", error);
             if (error.response.status === 413) {
                 setErrorMessage("File cannot be more than 5MB");
             } else if (error.response.status === 400) {
@@ -122,10 +121,10 @@ function GroupProfileView({ group, setGroup }) {
     };
 
     return (
-        <div id="profile-settings">  
-            <div id="name-photo-area">
-                <div id="profile-header-photo">
-                    <img id="settings-profile-photo" src={`/${group.groupPhoto}`} alt={group.groupName} />
+        <div className="profile-settings">  
+            <div className="name-photo-area">
+                <div className="profile-header-photo">
+                    <img className="settings-profile-photo" src={`/${group.groupPhoto}`} alt={group.groupName} />
                     <button className="button" onClick={togglePhotoForm}>
                         {isPhotoFormVisible ? 'Close' : 'Change feed photo'}
                     </button>
@@ -140,7 +139,7 @@ function GroupProfileView({ group, setGroup }) {
                         </form>
                     )}
                 </div>
-                <div id="viewed-profile-info">
+                <div className="viewed-profile-info">
                     <div className="chat-change">
                         {isEditingName ? (
                             <div className="change-name">
@@ -213,10 +212,11 @@ function GroupProfileView({ group, setGroup }) {
                             </div>
                         )}
                     </div>
+                    <div className="option-toggle">
+                        <button className={group.isPrivate === false ? 'active-mode' : 'passive-mode'} onClick={(event) => {event.preventDefault(); togglePrivate();}}>Public</button>
+                        <button className={group.isPrivate === true ? 'active-mode' : 'passive-mode'} onClick={(event) => {event.preventDefault(); togglePrivate();}}>Private</button>
+                    </div>
                 </div>
-            </div>
-            <div id="private-toggle">
-                <button className="button" onClick={() => togglePrivate()}>{group.isPrivate ? "Feed: private" : "Feed: public"}</button>
             </div>
             <div className="error-message">{errorMessage}</div>
         </div>
