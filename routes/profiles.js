@@ -149,11 +149,9 @@ router.post('/follow_profile', authenticateCheck, async (req, res) => {
             follower_id: userId,
             profile_id: profileId
         });
-
         //Increase group member count
         const followedProfile = await Profiles.findByPk(profileId);
         await followedProfile.increment('follower_count');
-
         res.status(200).json({ success: true });
     } catch (error) {
         res.status(500).json({ success: false });
@@ -178,7 +176,6 @@ router.get('/get_friend_requests', authenticateCheck, async (req, res) => {
                 }]
             }],
         });
-
         res.json(requests);
     } catch (error) {
         res.status(500).json({ success: false });
