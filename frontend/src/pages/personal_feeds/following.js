@@ -2,7 +2,7 @@ import axios from 'axios';
 import React, { useEffect, useState } from 'react';
 import ContentWidget from '../../components/contentWidget';
 
-function FollowingPage() {
+const FollowingPage = () => {
     const [posts, setPosts] = useState([]);
     const [timePreference, setTimePreference] = useState(0.001);
 

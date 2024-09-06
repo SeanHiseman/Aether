@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 
 const Points = ({ user, setCurrentView }) => {
-    const [errorMessage, setErrorMessage] = useState('');
 
     return (
         <div id="profile-settings">
@@ -20,7 +19,6 @@ const Points = ({ user, setCurrentView }) => {
                             <button className="button join" onClick={() => setCurrentView('membership-settings')}>Join</button>
                         </>
                     )}
-                    <div className="error-message">{errorMessage}</div>
                 </div>
             </div>
         </div>

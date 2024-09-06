@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Profile from './profile';
 
-function ProfileWrapper() {
+const ProfileWrapper = () => {
     const { username, channel_name } = useParams();
     const navigate = useNavigate();
 

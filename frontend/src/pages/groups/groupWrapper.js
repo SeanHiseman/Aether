@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import GroupHome from './groupHome';
 
-function GroupWrapper() {
+const GroupWrapper = () => {
     const { group_name, channel_name } = useParams();
     const navigate = useNavigate();
 

@@ -1,7 +1,7 @@
 import axios from "axios";
 import React, { useEffect, useState } from "react"
 
-function ManageFriendshipButton({ userId, receiverUserId, isRequestSent, isFriend }) {
+const ManageFriendshipButton = ({ userId, receiverUserId, isRequestSent, isFriend }) => {
     const [errorMessage, setErrorMessage] = useState('');
     const [friend, setFriend] = useState(isFriend);
     const [request, setRequest] = useState(isRequestSent);

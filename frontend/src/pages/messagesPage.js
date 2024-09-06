@@ -8,7 +8,7 @@ import ManageFriendshipButton from '../components/manageFriendship';
 import Message from '../components/message';
 
 //chats and conversations in variable names are used interchangeably, to be corrected
-function MessagesPage() {
+const MessagesPage = () => {
     const [animationClass, setAnimationClass] = useState('');
     const [changedChatName, setChangedChatName] = useState('');
     const [chat, setChat] = useState([]);

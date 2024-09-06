@@ -5,7 +5,7 @@ import { io } from "socket.io-client";
 import { v4 } from 'uuid';
 import Message from '../message';
 
-function ChatChannel({ canRemove, channelId, isGroup, locationId }) {
+const ChatChannel = ({ canRemove, channelId, isGroup, locationId }) => {
     const [channel, setChannel] = useState([]);
     const [currentMessage, setCurrentMessage] = useState('');
     const [errorMessage, setErrorMessage] = useState('');
