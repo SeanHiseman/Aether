@@ -347,7 +347,7 @@ router.get('/profile/:username', authenticateCheck, async (req, res) => {
 router.delete('/reject_friend_request', authenticateCheck, async (req, res) => {
     try {
         const { request } = req.body;
-        const friendRequest = await friendRequest.findByPk(request.request_id);
+        const friendRequest = await FriendRequests.findByPk(request.request_id);
         await friendRequest.destroy();
         res.status(200).json({ success: true });
     } catch (error) {

@@ -15,19 +15,18 @@ const FriendRequests = () => {
             const response = await axios.get('/api/get_friend_requests');
             setFriendRequests(response.data);
         } catch (error) {
-            setErrorMessage('Error fetching friend requests:', error);
+            setErrorMessage('Error getting requests');
         } 
     };
 
     const handleFriendRequest = async (request, result) => {
         try {
-            if (result === 'Accept') {
+            if (result === 'accept') {
                 await axios.post('/api/accept_friend_request', { request });
-                setFriendRequests(prevRequests => prevRequests.filter(req => req.request_id !== request.request_id));
-            } else if (result === 'Reject') {
+            } else if (result === 'reject') {
                 await axios.delete('/api/reject_friend_request', { data: { request } });
-                setFriendRequests(prevRequests => prevRequests.filter(req => req.request_id !== request.request_id));
             }
+            getFriendRequests();
         } catch (error) {
             setErrorMessage("Error handling request:", error);
         }
@@ -44,14 +43,14 @@ const FriendRequests = () => {
                     {friendRequests.map((request, index) => (
                         <li key={index}>
                             <div className="result-widget">
-                                <Link className="friend-link" to={`/profile/${request.sender.username}`}>
+                                <Link className="profile-link" to={`/profile/${request.sender.username}`}>
                                     <img className="large-profile-photo" src={`/${request.sender.profile.profile_photo}`} alt="Profile" />
                                     <p className="large-text profile-name">{request.sender.username}</p>
                                 </Link>
-                                <button className="button" onClick={() => handleFriendRequest(request, 'Accept')}>
+                                <button className="button" onClick={() => handleFriendRequest(request, 'accept')}>
                                     Accept friend request
                                 </button>
-                                <button className="button" onClick={() => handleFriendRequest(request, 'Reject')}>
+                                <button className="button" onClick={() => handleFriendRequest(request, 'reject')}>
                                     Reject friend request
                                 </button>
                             </div>

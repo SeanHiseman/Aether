@@ -81,10 +81,6 @@
     border-radius: 10px;
     cursor: pointer;
 }
-.friend-link{
-    align-items: center;
-    display: flex;
-}
 .input {
     width: 90%;
     padding: 10px;
