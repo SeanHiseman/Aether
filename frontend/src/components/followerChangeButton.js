@@ -13,7 +13,6 @@ const FollowerChangeButton = ({ userId, profileId, isFollowing }) => {
         const newStatus = !status;
         //Depends on if user is already following the profile
         const url = status ? 'remove_follower' : 'follow_profile';
-
         try {
             axios.post(`/api/${url}`, { userId, profileId }); 
             setStatus(newStatus);

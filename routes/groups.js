@@ -29,9 +29,9 @@ router.post('/accept_join_request', authenticateCheck, async (req, res) => {
         await GroupRequests.destroy({
             where: { request_id: requestId }
         });
-        res.status(200).json({ message: 'User added to group'});
+        res.status(200).json({ success: true });
     } catch (error) {
-        res.status.json({ error: error.message });
+        res.status.json({ success: false });
     }
 });
 
@@ -49,9 +49,9 @@ router.post('/accept_nest_request', authenticateCheck, async (req, res) => {
         await NestedGroupRequests.destroy({
             where: { request_id: requestId }
         });
-        res.status(200).json({ message: 'User added to group'});
+        res.status(200).json({ success: true });
     } catch (error) {
-        res.status.json({ error: error.message });
+        res.status.json({ success: false });
     }
 });
 
@@ -73,7 +73,7 @@ router.post('/add_group_channel', authenticateCheck, async (req, res) => {
         });
         res.status(201).json(newChannel);
     } catch (error) {
-        res.status(400).json({ error: error.message });
+        res.status(400).json({ success: false });
     }
 });
 
@@ -86,7 +86,7 @@ router.delete('/cancel_follow_request', authenticateCheck, async (req, res) => {
         });
         res.status(200).json("Join request rejected");
     } catch (error) {
-        res.status(500).json(error.message);
+        res.status(500).json({ success: false });
     }
 });
 
@@ -201,10 +201,10 @@ router.delete('/delete_group_channel', authenticateCheck, async (req, res) => {
                     group_id
                 },
             });
-            res.status(200).json({ message: 'Channel deleted successfully '});
+            res.status(200).json({ success: true });
         }
     } catch (error) {
-        res.status(500).json({ error: 'Error deleting channel' });
+        res.status(500).json({ success: false });
     }
 });
 
@@ -222,7 +222,7 @@ router.get('/get_group_channels/:groupId', authenticateCheck, async (req, res) =
         });
         res.json(channels);
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        res.status(500).json({ success: false });
     }
 });
 
@@ -239,9 +239,9 @@ router.post('/follow_group', authenticateCheck, async (req, res) => {
         //Increase group member count
         const group = await Groups.findByPk(groupId);
         await group.increment('member_count');
-        res.status(200).json();
+        res.status(200).json({ success: true });
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        res.status(500).json({ success: false });
     }
 });
 
@@ -260,7 +260,7 @@ router.get('/get_group_members', authenticateCheck, async (req, res) => {
         });
         res.json(members);
     } catch (error) {
-        res.status(500).json({error: 'Error getting group members' });
+        res.status(500).json({ success: false });
     }
 });
 
@@ -295,7 +295,7 @@ router.get('/group/:group_name', authenticateCheck, async (req, res) => {
 
         res.json(groupData);
     } catch (error) {
-        res.status(500).send('Error getting group.');
+        res.status(500).json({ success: false });
     }
 });
 
@@ -320,7 +320,7 @@ router.get('/group_channel_messages/:channel_id', authenticateCheck, async (req,
         });
         res.json(messages);
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });   
+        res.status(500).json({ success: false });   
     }
 });
 
@@ -339,7 +339,7 @@ router.get('/group_requests/:groupId', authenticateCheck, async (req, res) => {
         }); 
         res.json(requests);
     } catch (error) {
-        res.status(500).json(error.message);
+        res.status(500).json({ success: false });
     }
 });
 
@@ -350,9 +350,9 @@ router.delete('/reject_group_request', authenticateCheck, async (req, res) => {
         await GroupRequests.destroy({
             where: { request_id: requestId }
         });
-        res.status(200).json({ success: true, message: 'Request rejected.' });
+        res.status(200).json({ success: true });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        res.status(500).json({ success: false });
     }
 });
 
@@ -363,9 +363,9 @@ router.delete('/reject_nest_request', authenticateCheck, async (req, res) => {
         await NestedGroupRequests.destroy({
             where: { request_id: requestId }
         });
-        res.status(200).json({ success: true, message: 'Request rejected.' });
+        res.status(200).json({ success: true });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        res.status(500).json({ success: false });
     }
 });
 
@@ -378,9 +378,9 @@ router.post('/send_follow_request', authenticateCheck, async (req, res) => {
             sender_id: senderId,
             group_id: receiverId,
         });
-        res.json({ message: "Join request sent" });
+        res.json({ success: true });
     } catch (error) {
-        res.status(500).send(error.message);
+        res.status(500).send({ success: false });
     }
 });
 
@@ -396,8 +396,7 @@ router.post('/send_nest_request', authenticateCheck, async (req, res) => {
         });
         res.json({ message: "Join request sent" });
     } catch (error) {
-        console.log("Error:", error);
-        res.status(500).json(error.message);
+        res.status(500).json({ success: false });
     }
 });
 
@@ -418,8 +417,7 @@ router.get('/sub_groups/:group_id', authenticateCheck, async (req, res) => {
 
         res.json(subGroups);
     } catch (error) {
-        console.error("sub group error:", error);
-        res.status(500).json(error.message);  
+        res.status(500).json({ success: false });  
     }   
 });
 
@@ -427,13 +425,13 @@ router.get('/sub_groups/:group_id', authenticateCheck, async (req, res) => {
 router.post('/toggle_moderator', authenticateCheck, async (req, res) => {
     try {
         const { groupId, userId, isMod } = req.body;
-        
         await UserGroups.update(
             { is_mod: isMod },
             { where: { group_id: groupId, user_id: userId } }
         );
+        res.status(200).json({ success: true });
     } catch (error) {
-        res.status(500).json({ error: 'Failed to update moderator status.' });
+        res.status(500).json({ success: false });
     }
 });
 
@@ -476,6 +474,7 @@ router.post('/unfollow_group', authenticateCheck, async (req, res) => {
         //Lower member count
         const group = await Groups.findByPk(groupId);
         await group.decrement('member_count');
+        res.status(200).json({ success: true });
     } catch (error) {
         res.status(500).json({ success: false });
     }
