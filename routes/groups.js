@@ -254,7 +254,13 @@ router.get('/get_group_members', authenticateCheck, async (req, res) => {
             include: [{
                 model: Users,
                 required: true,
-                attributes: ['user_id', 'username']
+                attributes: ['user_id', 'username'],
+                include: [{
+                    model: Profiles,
+                    as: 'profile',
+                    required: false,
+                    attributes: ['profile_photo', 'bio', 'follower_count', 'is_private']
+                }]
             }],
             attributes: ['is_mod', 'is_admin']
         });

@@ -1,9 +1,12 @@
 import axios from 'axios';
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState, useContext } from 'react';
+import { Link } from 'react-router-dom';
+import { AuthContext } from '../../../components/authContext';
 
 const GroupMembers = ({ group }) => {
     const [errorMessage, setErrorMessage] = useState('');
     const [members, setMembers] = useState([]);
+    const { user } = useContext(AuthContext);
 
     const getGroupMembers = useCallback(async () => {
         try {
@@ -12,19 +15,19 @@ const GroupMembers = ({ group }) => {
             });
             setMembers(response.data);
         } catch (error) {
-            setErrorMessage('Error fetching feed members');
+            setErrorMessage('Error getting followers');
         }
     }, [group.groupId]);
     
     useEffect(() => {
         getGroupMembers();
-    }, [getGroupMembers]);
+    }, []);
 
     //Admins can remove members
-    const removeMember = async (userId) => {
+    const removeMember = async (member) => {
         try {
             const groupId = group.groupId;
-            await axios.post('/api/leave_group', { userId, groupId })
+            await axios.post('/api/unfollow_group', { userId: member.user.user_id, groupId })
             getGroupMembers();
         } catch (error) {
             setErrorMessage('Error removing member');
@@ -32,12 +35,12 @@ const GroupMembers = ({ group }) => {
     };
 
     //Allows adding/remvoing of moderators
-    const toggleModeratorStatus = async (userId, isMod) => {
+    const toggleModeratorStatus = async (member) => {
         try {
             const response = await axios.post('/api/toggle_moderator', {
                 groupId: group.groupId,
-                userId: userId,
-                isMod: !isMod, //Opposite to current state
+                userId: member.user.user_id,
+                isMod: !member.is_mod, //Opposite to current state
             });
             if (response.status === 200) {
                 getGroupMembers();
@@ -48,19 +51,27 @@ const GroupMembers = ({ group }) => {
     };
 
     return (
-        <div id="profile-settings">
-            <div>
+        <div className="channel-content">
+            <h2>Followers</h2>
+            <ul className="content-list">
                 <div className="error-message">{errorMessage}</div>
                 {members.map((member, index) => (
-                    <div className="group-member" key={index}>
-                        {member.user.username}
-                        <button className="button" onClick={() => toggleModeratorStatus(member.user.user_id, member.is_mod)}>
-                            {member.is_mod ? 'Remove moderator' : 'Make moderator'}
-                        </button>
-                        <button className="button" onClick={() => removeMember(member.user.user_id)}>Remove member</button>
-                    </div>
+                    <li key={index}>
+                        <div className="result-widget">
+                            <Link className="profile-link" to={`/profile/${member.user.username}`}>
+                                <img className="large-profile-photo" src={`/${member.user.profile.profile_photo}`} alt="Profile" />
+                                <p className="large-text profile-name">{member.user.username}</p>
+                            </Link>
+                            <button className="button" onClick={() => toggleModeratorStatus(member)}>
+                                {member.is_mod ? 'Remove as moderator' : 'Make moderator'}
+                            </button>
+                            {member.user.user_id !== user.userId &&
+                                <button className="button" onClick={() => removeMember(member)}>Remove follower
+                            </button>}
+                        </div>
+                    </li>
                 ))}
-            </div>
+            </ul>
         </div>
     );
 };
