@@ -25,8 +25,10 @@
 .option-toggle {
     border-radius: 10px;
     display: flex;
+    margin-top: 20px;
     min-height: 36px;
     overflow: hidden;
+    width: 180px;
 }
 .option-toggle button {
     background-color: var(--darkest);
@@ -58,10 +60,4 @@
 }
 #group-members {
     margin: 10px;
-}
-#profile-header-photo {
-    align-items: center;
-    display: flex;
-    flex-direction: column;
-    max-width: 350px;
 }

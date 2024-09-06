@@ -40,7 +40,6 @@ const ProfileView = ({ profile, setProfile }) => {
                     'Content-Type': 'multipart/form-data',
                 }, 
             })
-            console.log("response:", response);
             setProfile(prevDetails => ({
                 ...prevDetails,
                 profilePhoto: response.data.newPhotoPath
@@ -115,10 +114,10 @@ const ProfileView = ({ profile, setProfile }) => {
     };
 
     return (
-        <div id="profile-settings">
-            <div id="name-photo-area">
-                <div id="profile-header-photo">
-                    <img id="settings-profile-photo" src={`/${profile.profilePhoto}`} alt="Profile" />
+        <div className="profile-settings">
+            <div className="name-photo-area">
+                <div className="profile-header-photo">
+                    <img className="settings-profile-photo" src={`/${profile.profilePhoto}`} alt="Profile" />
                     <button className="button" onClick={togglePhotoForm}>
                         {isPhotoFormVisible ? 'Close' : 'Change Profile Photo'}
                     </button>
@@ -133,7 +132,7 @@ const ProfileView = ({ profile, setProfile }) => {
                         </form>
                     )}
                 </div>
-                <div id="viewed-profile-info">
+                <div className="viewed-profile-info">
                     <div className="chat-change">
                         {isEditingName ? (
                             <div className="change-name">
@@ -206,10 +205,11 @@ const ProfileView = ({ profile, setProfile }) => {
                             </div>
                         )}
                     </div>
+                    <div className="option-toggle">
+                        <button className={profile.isPrivate === false ? 'active-mode' : 'passive-mode'} onClick={(event) => {event.preventDefault(); togglePrivate();}}>Public</button>
+                        <button className={profile.isPrivate === true ? 'active-mode' : 'passive-mode'} onClick={(event) => {event.preventDefault(); togglePrivate();}}>Private</button>
+                    </div>
                 </div>  
-            </div>
-            <div id="private-toggle">
-                <button className="button" onClick={() => togglePrivate()}>{profile.isPrivate ? "Feed: private" : "Feed: public"}</button>  
             </div>
             <div className="error-message">{errorMessage}</div>
         </div> 
