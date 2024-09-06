@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import '../../css/authentication.css'; 
 
-function Login() {
+const Login = () => {
     const [error, setError] = useState('');
     const navigate = useNavigate();
 

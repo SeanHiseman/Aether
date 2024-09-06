@@ -6,7 +6,7 @@ import GroupMembers from './groupMembers';
 import GroupProfileView from './groupProfileView';
 import MemberJoinRequests from './memberJoinRequests';
 
-function GroupSettings() {
+const GroupSettings = () => {
     const { group_name } = useParams();
     const [currentView, setCurrentView] = useState('profile');
     const [groupDetails, setGroupDetails] = useState('');

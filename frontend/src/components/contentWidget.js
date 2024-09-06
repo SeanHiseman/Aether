@@ -7,7 +7,7 @@ import AskButton from './askButton';
 import ContentForm from './contentForm';
 import Reply from './replies/reply';
 
-function ContentWidget({ canRemove: canRemoveProp , isGroup, onPostRemoved, post }) {
+const ContentWidget = ({ canRemove: canRemoveProp , isGroup, onPostRemoved, post }) => {
     const [canRemove, setCanRemove] = useState(canRemoveProp);
     const [downvotes, setDownvotes] = useState(post.downvotes);
     const [downvoteLimit, setDownvoteLimit] = useState(false);

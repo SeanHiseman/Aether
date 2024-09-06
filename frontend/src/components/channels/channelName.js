@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 //Handles displaying and changing the name of chat, profile and group channels
-function ChannelName({ channelId, channelName, channelType, locationName, channelUpdate }) {
+const ChannelName = ({ channelId, channelName, channelType, locationName, channelUpdate }) => {
     const [newChannelName, setNewChannelName] = useState('');
     const [errorMessage, setErrorMessage] = useState('');
     const [isEditingChannelName, setIsEditingChannelName] = useState(false);

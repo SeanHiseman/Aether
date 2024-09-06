@@ -2,7 +2,7 @@ import axios from 'axios';
 import React, { useEffect, useState } from 'react';
 import ContentWidget from '../../components/contentWidget';
 
-function FriendsPage() {
+const FriendsPage = () => {
     const [posts, setPosts] = useState([]);
 
     //Gets friend posts

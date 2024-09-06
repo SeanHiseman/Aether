@@ -8,7 +8,7 @@ import PostChannel from '../../components/channels/postChannel';
 import ContentForm from '../../components/contentForm';
 import FollowerChangeButton from '../../components/followerChangeButton';
 
-function Profile() {
+const Profile = () => {
     const [channels, setChannels] = useState([]);
     const [errorMessage, setErrorMessage] = useState('');
     const [newChannelName, setNewChannelName] = useState('');

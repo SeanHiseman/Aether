@@ -7,7 +7,7 @@ import ContentForm from "../../components/contentForm";
 import MemberChangeButton from '../../components/memberChangeButton';
 import PostChannel from '../../components/channels/postChannel';
 
-function GroupHome() {
+const GroupHome = () => {
     const { group_name, channel_name } = useParams();
     const [canRemove, setCanRemove] = useState(false);
     const [channels, setChannels] = useState([]);

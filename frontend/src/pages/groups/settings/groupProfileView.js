@@ -1,7 +1,7 @@
 import axios from 'axios';
 import React, { useEffect, useState } from 'react';
 
-function GroupProfileView({ group, setGroup }) {
+const GroupProfileView = ({ group, setGroup }) => {
     const [errorMessage, setErrorMessage] = useState('');
     const [groupPhotoFile, setGroupPhotoFile] = useState('No file chosen');
     const [isEditingDescription, setIsEditingDescription] = useState(false);
