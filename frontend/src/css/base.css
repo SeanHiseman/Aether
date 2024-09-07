@@ -244,6 +244,7 @@ body,html {
 .feed-link {
     border-bottom: 1px solid var(--dark-line);
     padding: 10px;
+    transition: background-color 0.3s;
 }
 .feed-list-item {
     background-color: var(--darkest);
@@ -254,7 +255,7 @@ body,html {
 .feed-list-item.profile {
     border-left: 2px solid var(--dark-line);
 }
-.feed-list-item:hover {
+.feed-link:hover, .feed-list-item:hover {
     background-color: var(--dark);
 }
 .file-input {
