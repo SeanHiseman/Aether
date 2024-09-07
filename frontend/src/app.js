@@ -11,6 +11,7 @@ import GroupWrapper from './pages/groups/groupWrapper';
 import Welcome from './pages/welcome';
 import Login from './pages/site_entrance/login';
 import MessagesPage from './pages/messagesPage';
+import { QueryProvider } from './components/search/queryContext';
 import RecommendedPage from './pages/personal_feeds/recommended';
 import Join from './pages/site_entrance/join';
 import Profile from './pages/profiles/profile';
@@ -28,10 +29,10 @@ const App = () => {
                     <Route path="/welcome" element={<Welcome />} />
                     <Route path="/login" element={<Login />} />
                     <Route path="/join" element={<Join />} />
-                    <Route path="/" element={<AuthCheck><BaseLayout /></AuthCheck>}>
-                        <Route path="ask" element={<AuthCheck><AskChannel /></AuthCheck>} >
-                            <Route path=":chatId" element={<AuthCheck><AskChannel /></AuthCheck>} />
-                        </Route>
+                    <Route path="/" element={<QueryProvider><AuthCheck><BaseLayout /></AuthCheck></QueryProvider>}>
+                            <Route path="ask" element={<AuthCheck><AskChannel /></AuthCheck>} >
+                                <Route path=":chatId" element={<QueryProvider><AuthCheck><AskChannel /></AuthCheck></QueryProvider>} />
+                            </Route>
                         <Route path="recommended" element={<AuthCheck><RecommendedPage /></AuthCheck>} />
                         <Route path="following" element={<AuthCheck><FollowingPage /></AuthCheck>} />
                         <Route path="friends" element={<AuthCheck><FriendsPage /></AuthCheck>} />

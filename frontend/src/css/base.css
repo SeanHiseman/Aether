@@ -114,6 +114,9 @@ body,html {
     font-size: 24px;
     height: 120px;
 }
+.change-text-area.small {
+    max-width: 10vw;
+}
 .channel-content {
     align-items: center;
     display: flex;

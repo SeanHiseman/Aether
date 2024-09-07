@@ -3,8 +3,9 @@ import React, { useContext, useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { v4 } from 'uuid';
 import { AuthContext } from '../../components/authContext';
+import { useQueryContext } from '../../components/search/queryContext';
 
-function AskChannel() {
+const AskChannel = () => {
     const [changedChatName, setChangedChatName] = useState('');
     const [chats, setChats] = useState([]);
     const [currentMessage, setCurrentMessage] = useState('');
@@ -13,9 +14,10 @@ function AskChannel() {
     const [isLoading, setIsLoading] = useState(false);
     const [messages, setMessages] = useState([]);
     const location = useLocation();
-    const navigate = useNavigate();
     const { chatId } = useParams();
-    const { user } = useContext(AuthContext);
+    const { query, setQuery } = useQueryContext();
+    const { user } = useContext(AuthContext);    
+    const navigate = useNavigate();
 
     //Get user's previous Ask chats
     useEffect(() => {
@@ -36,15 +38,27 @@ function AskChannel() {
             try {
                 //Home chat doesn't have ID or messages
                 if (chatId) {
-                    const response = await axios.get('/api/get_ask_messages', { params: { chatId } });
-                    setMessages(response.data.messages);
+                    if (query.length !== 0) {
+                        setIsLoading(true);
+                        await axios.post('/api/send_ask_message', {
+                            chatId: chatId,
+                            messageContent: query,
+                            senderId: user.userId,
+                            timestamp: Date.now()
+                        });
+                        setIsLoading(false);
+                        setQuery('');
+                    } else {
+                        const response = await axios.get('/api/get_ask_messages', { params: { chatId } });
+                        setMessages(response.data.messages);
+                    }
                 }
             } catch (error) {
                 setErrorMessage('Error getting messages');
             }
         };
         fetchMessages();
-    }, [chatId]);
+    }, [chatId, query]);
 
     //Find current chat based on Id in url
     const currentChat = chats.find(chat => chat.chat_id === chatId);
@@ -214,7 +228,7 @@ function AskChannel() {
                         <div id="chat-change">
                             {isEditingChatName ? (
                                 <div id="change-name">
-                                    <textarea className="change-name-area" value={changedChatName} placeholder="New name" onChange={(e) => {
+                                    <textarea className="change-text-area small" value={changedChatName} placeholder="New name" onChange={(e) => {
                                         e.preventDefault();
                                         const input = e.target.value;
                                         const inputLength = input.length;

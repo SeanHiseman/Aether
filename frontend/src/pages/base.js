@@ -4,6 +4,7 @@ import { Link, Outlet, useNavigate } from 'react-router-dom';
 import { v4 } from 'uuid';
 import { AuthContext } from '../components/authContext';
 import { ThemeContext } from '../themeProvider';
+import { useQueryContext } from '../components/search/queryContext';
 import '../css/base.css';
 import '../css/contentFeed.css';
 import '../css/groups.css';
@@ -22,6 +23,7 @@ const BaseLayout = () => {
     const [groupPhotoFile, setGroupPhotoFile] = useState('No file chosen');
     const [privateGroup, setPrivateGroup] = useState(false);
     const [profile, setProfile] = useState([]);
+    const { query, setQuery } = useQueryContext();
     const [showForm, setShowForm] = useState(false);
     const navigate = useNavigate();
 
@@ -124,8 +126,10 @@ const BaseLayout = () => {
                     name: "New chat"
                 });
             };
+            console.log("currentQuery:", currentQuery);
+            setQuery(currentQuery);
+            setCurrentQuery('');
             navigate(`/ask/${newChatId}`);
-            setErrorMessage('');
         } catch (error) {
             setErrorMessage("Error sending Ask");
         }
