@@ -90,12 +90,10 @@ router.get('/friend_posts', authenticateCheck, async (req, res)=> {
     try {
         const user_id = req.session.user_id;
         const friends = await Friends.findAll({
-            where: {
-                [Op.or]: [
-                    { user1_id: user_id },
-                    { user2_id: user_id }
-                ]
-            },
+            where: {[Op.or]: [
+                { user1_id: user_id },
+                { user2_id: user_id }
+            ]},
             attributes: ['user1_id', 'user2_id']
         });
         //Get friend IDs, since the user might be in either column
@@ -105,9 +103,7 @@ router.get('/friend_posts', authenticateCheck, async (req, res)=> {
             return acc;
         }, []);
         const posts = await ProfilePosts.findAll({
-            where: {
-                poster_id: { [Op.in]: friendIds }
-            },
+            where: { poster_id: { [Op.in]: friendIds }},
             include: [{
                 model: Users,
                 as: 'ProfilePoster',
@@ -145,18 +141,18 @@ router.get('/following_posts', authenticateCheck, async (req, res) => {
         const followedProfiles = await Followers.findAll({
             where: { follower_id: userId },
             include: [{
-                    model: Profiles,
-                    attributes: ['profile_id'],
-                }],
+                model: Profiles,
+                attributes: ['profile_id'],
+            }],
             attributes: [],
         });
         //Fetch user groups
         const userGroups = await UserGroups.findAll({
             where: { user_id: userId },
             include: [{
-                    model: Groups,
-                    attributes: ['group_id'],
-                }],
+                model: Groups,
+                attributes: ['group_id'],
+            }],
             attributes: [],
         });
         //Get profile IDs and group IDs
@@ -207,6 +203,11 @@ router.get('/following_posts', authenticateCheck, async (req, res) => {
                 as: 'note',
                 attributes: ['note_id', 'note_content', 'timestamp', 'is_misinfo'],
                 required: false
+            }, {
+                model: Groups,
+                as: 'group',
+                attributes: ['group_name', 'group_photo'],
+                required: false,
             }],
             attributes: ['post_id', 'title', 'content', 'replies', 'views', 'upvotes', 'downvotes', 'timestamp', 'poster_id', 'points'],
         });
@@ -215,7 +216,7 @@ router.get('/following_posts', authenticateCheck, async (req, res) => {
             ...post.dataValues, is_group: false,
         }));
         const finalGroupResults = groupPosts.map((post) => ({
-            ...post.dataValues, is_group: true,
+            ...post.dataValues, displayGroupName: true, is_group: true, 
         }));
         //Combine posts from profiles and groups
         const posts = [...finalProfileResults, ...finalGroupResults]
@@ -433,6 +434,11 @@ router.get('/search/posts', authenticateCheck, async (req, res) => {
                 as: 'note',
                 attributes: ['note_id', 'note_content', 'timestamp', 'is_misinfo'],
                 required: false
+            }, {
+                model: Groups,
+                as: 'group',
+                attributes: ['group_name', 'group_photo'],
+                required: false,
             }],
             attributes: ['post_id', 'title', 'content', 'replies', 'views', 'upvotes', 'downvotes', 'timestamp', 'poster_id', 'points'],
         });
@@ -441,7 +447,7 @@ router.get('/search/posts', authenticateCheck, async (req, res) => {
             ...post.dataValues, is_group: false,
         }));
         const finalGroupResults = groupPostResults.map((post) => ({
-            ...post.dataValues, is_group: true,
+            ...post.dataValues, displayGroupName: true, is_group: true,
         }));
         //Combine posts from profiles and groups
         const posts = [...finalProfileResults, ...finalGroupResults]

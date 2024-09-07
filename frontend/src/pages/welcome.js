@@ -12,15 +12,15 @@ const Welcome = () => {
                 return (
                     <div className="channel-content">
                         <div className="left-aligned-text">
-                            <p class="text36">Welcome to Aether</p>
-                            <p class="text24">Better social media</p>
+                            <p className="text36">Welcome to Aether</p>
+                            <p className="text24">Better social media</p>
                             <div className="spacer20px"/>
-                            <p class="text24">-No ads, full privacy</p>
-                            <p class="text24">-Content focused on quality</p>
-                            <p class="text24">-Groups, large and small. Public or private</p>
-                            <p class="text24">-Premium features with membership. Get paid for posts</p>
+                            <p className="text24">-No ads, full privacy</p>
+                            <p className="text24">-Content focused on quality</p>
+                            <p className="text24">-Groups, large and small. Public or private</p>
+                            <p className="text24">-Premium features with membership. Get paid for posts</p>
                             <div className="spacer20px"/>
-                            <p class="text24">This is a prototype. Outlined here is a vision. Help make it a reality</p>
+                            <p className="text24">This is a prototype. Outlined here is a vision. Help make it a reality</p>
                         </div>
                         <div id="join-login">
                             <Link to="/join">
@@ -36,16 +36,16 @@ const Welcome = () => {
                 return (
                     <div className="channel-content">
                         <div className="left-aligned-text">
-                            <p class="text36">Feeds</p>
+                            <p className="text36">Feeds</p>
                             <div className="spacer20px"/>
-                            <p class="text24">-Aether is built around feeds for posts and chats. Each feed contains channels</p>
-                            <p class="text24">-Feeds can be for groups or individuals, and be public or private</p>
+                            <p className="text24">-Aether is built around feeds for posts and chats. Each feed contains channels</p>
+                            <p className="text24">-Feeds can be for groups or individuals, and be public or private</p>
                             <div className="spacer20px"/>
-                            <p class="text36">Personal feeds</p>
+                            <p className="text36">Personal feeds</p>
                             <div className="spacer20px"/>
-                            <p class="text24">-These are feeds only visible to you. They contain specific types of posts</p>
-                            <p class="text24">-You can view posts from friends, feeds you follow, and recommendations</p>
-                            <p class="text24">-Members can create custom feeds</p>
+                            <p className="text24">-These are feeds only visible to you. They contain specific types of posts</p>
+                            <p className="text24">-You can view posts from friends, feeds you follow, and recommendations</p>
+                            <p className="text24">-Members can create custom feeds</p>
                         </div>
                         <Link to="/join">
                             <button className="button join">Join</button>
@@ -56,11 +56,11 @@ const Welcome = () => {
                 return (
                     <div className="channel-content">
                         <div className="left-aligned-text">
-                            <p class="text36">Posts</p>
+                            <p className="text36">Posts</p>
                             <div className="spacer20px"/>
-                            <p class="text24">-Images, videos, text and more all in one</p>
-                            <p class="text24">-Posts can be made in reply to other posts</p>
-                            <p class="text24">-Members can write longer posts</p>
+                            <p className="text24">-Images, videos, text and more all in one</p>
+                            <p className="text24">-Posts can be made in reply to other posts</p>
+                            <p className="text24">-Members can write longer posts</p>
                         </div>
                         <Link to="/join">
                             <button className="button join">Join</button>
@@ -71,13 +71,13 @@ const Welcome = () => {
                 return (
                     <div className="channel-content">
                         <div className="left-aligned-text">
-                            <p class="text36">Algorithm</p>
+                            <p className="text36">Algorithm</p>
                             <div className="spacer20px"/>
-                            <p class="text24">-Focused on quality, not quantity</p>
-                            <p class="text24">-Posts with higher upvotes and lower downvotes per view are boosted</p>
-                            <p class="text24">-Multiple votes on content, so users can better expresss their view</p>
-                            <p class="text24">-Posts containing misinformation are weighted lower, so you only see what's true</p>
-                            <p class="text24">-Your algorithm can be adjusted. You are in control</p>
+                            <p className="text24">-Focused on quality, not quantity</p>
+                            <p className="text24">-Posts with higher upvotes and lower downvotes per view are boosted</p>
+                            <p className="text24">-Multiple votes on content, so users can better expresss their view</p>
+                            <p className="text24">-Posts containing misinformation are weighted lower, so you only see what's true</p>
+                            <p className="text24">-Your algorithm can be adjusted. You are in control</p>
                         </div>
                         <Link to="/join">
                             <button className="button join">Join</button>
@@ -88,18 +88,18 @@ const Welcome = () => {
                 return (
                     <div className="channel-content">
                         <div className="left-aligned-text">
-                            <p class="text36">Membership</p>
+                            <p className="text36">Membership</p>
                             <div className="spacer20px"/>
-                            <p class="text36">Ask</p>
-                            <p class="text24">-Ask is an assistant that aids throughout Aether</p>
-                            <p class="text24">-Need to check the accuracy of a post, find the perfect content or get help using the site? Just Ask</p>
+                            <p className="text36">Ask</p>
+                            <p className="text24">-Ask is an assistant that aids throughout Aether</p>
+                            <p className="text24">-Need to check the accuracy of a post, find the perfect content or get help using the site? Just Ask</p>
                             <div className="spacer20px"/>
-                            <p class="text36">Benefits</p>
-                            <p class="text24">-Earn money from posts. The more upvotes and fewer downvotes, the more you make per view</p>
-                            <p class="text24">-Custom personal feeds. Full control over how you sort your content</p>
-                            <p class="text24">-Dive in to detail by writing longer posts. Up to 100,000 characters</p>
-                            <p class="text24">-Voting for moderators, admins, leaders and features</p>
-                            <p class="text24"></p>
+                            <p className="text36">Benefits</p>
+                            <p className="text24">-Earn money from posts. The more upvotes and fewer downvotes, the more you make per view</p>
+                            <p className="text24">-Custom personal feeds. Full control over how you sort your content</p>
+                            <p className="text24">-Dive in to detail by writing longer posts. Up to 100,000 characters</p>
+                            <p className="text24">-Voting for moderators, admins, leaders and features</p>
+                            <p className="text24"></p>
                         </div>
                         <button className="button join">Buy membership</button>
                     </div>
@@ -108,10 +108,10 @@ const Welcome = () => {
                 return (
                     <div className="channel-content">
                         <div className="left-aligned-text">
-                            <p class="text36">Privacy</p>
+                            <p className="text36">Privacy</p>
                             <div className="spacer20px"/>
-                            <p class="text24">-All data is encrypted, never leaves Aether</p>
-                            <p class="text24">-Your data is for you, not us</p>
+                            <p className="text24">-All data is encrypted, never leaves Aether</p>
+                            <p className="text24">-Your data is for you, not us</p>
                         </div>
                         <Link to="/join">
                             <button className="button join">Join</button>

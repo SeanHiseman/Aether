@@ -102,6 +102,11 @@
     height: 30px;
     border-radius: 50%;
 }
+.title-container {
+    align-items: center;
+    display: flex;
+    justify-content: space-between;
+}
 .uploader-info{
     display: flex;
     align-items: center;
