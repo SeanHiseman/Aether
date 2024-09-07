@@ -14,6 +14,7 @@ const ChatChannel = ({ canRemove, channelId, isGroup, locationId }) => {
 
     //Update messages in the channel
     useEffect(() => {
+        socket.emit('join_channel', channelId);
         getChannelMessages(channelId);
         //Listens for new messages
         socket.on('new_message', (newMessage) => {
@@ -21,12 +22,11 @@ const ChatChannel = ({ canRemove, channelId, isGroup, locationId }) => {
                 setChannel((prevMessages) => [...prevMessages, newMessage]);
             }
         });
-
         return () => {
             socket.off('new_message');
             socket.emit('leave_channel', channelId);
         };
-    }, [channelId, socket]);
+    }, [channelId]);
 
     //Deletes the message
     const deleteMessage = (messageId) => {
@@ -37,7 +37,7 @@ const ChatChannel = ({ canRemove, channelId, isGroup, locationId }) => {
             });
             setChannel(prevChat => prevChat.filter(msg => msg.message_id !== messageId));
         } else {
-            console.error('Invalid messageId:', messageId);
+            setErrorMessage("Error deleting message");
         }
     };
 
@@ -48,7 +48,6 @@ const ChatChannel = ({ canRemove, channelId, isGroup, locationId }) => {
             setChannel(response.data);
         } catch (error) {
             setErrorMessage("Error getting messages");
-            console.log("error:", error);
         }
     };
 
