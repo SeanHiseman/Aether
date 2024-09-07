@@ -3,7 +3,7 @@ import calculatePoints from '../functions/postPoints.js';
 import checkIfUserIsMember from '../functions/checks/memberCheck.js';
 import { hybridRecommendations } from '../functions/recommendation/hybrid.js';
 import sortPostsByWeightedRatio from '../functions/postSorting.js';
-import { ContentVotes, Followers, Friends, FriendRequests, GroupChannels, Groups, GroupRequests, GroupPosts, ProfileChannels, ProfilePosts, Profiles, Users, UserGroups } from '../models/models.js'; 
+import { ContentVotes, Followers, Friends, FriendRequests, GroupChannels, GroupNotes, Groups, GroupRequests, GroupPosts, ProfileChannels, ProfileNotes, ProfilePosts, Profiles, Users, UserGroups } from '../models/models.js'; 
 import { Op } from 'sequelize';
 import { Router } from 'express';
 import { v4 } from 'uuid';
@@ -116,7 +116,18 @@ router.get('/friend_posts', authenticateCheck, async (req, res)=> {
                     model: Profiles,
                     attributes: ['profile_photo'],
                 }]
+            }, {
+                model: ContentVotes,
+                as: 'ProfilePostVotes',
+                attributes: ['vote_count'],
+                required: false
+            }, {
+                model: ProfileNotes,
+                as: 'note',
+                attributes: ['note_id', 'note_content', 'timestamp', 'is_misinfo'],
+                required: false
             }],
+            attributes: ['post_id', 'title', 'content', 'replies', 'views', 'upvotes', 'downvotes', 'timestamp', 'poster_id', 'points'],
             //Posts sorted chronilogically
             order: [['timestamp', 'DESC']]
         });
@@ -159,10 +170,21 @@ router.get('/following_posts', authenticateCheck, async (req, res) => {
                 as: 'ProfilePoster',
                 attributes: ['username'],
                 include: [{
-                        model: Profiles,
-                        attributes: ['profile_photo'],
-                    }],
+                     model: Profiles,
+                    attributes: ['profile_photo'],
                 }],
+            }, {
+                model: ContentVotes,
+                as: 'ProfilePostVotes',
+                attributes: ['vote_count'],
+                required: false
+            }, {
+                model: ProfileNotes,
+                as: 'note',
+                attributes: ['note_id', 'note_content', 'timestamp', 'is_misinfo'],
+                required: false
+            }],
+            attributes: ['post_id', 'title', 'content', 'replies', 'views', 'upvotes', 'downvotes', 'timestamp', 'poster_id', 'points'],
         });
         //Fetch posts from user groups
         const groupPosts = await GroupPosts.findAll({
@@ -172,10 +194,21 @@ router.get('/following_posts', authenticateCheck, async (req, res) => {
                 as: 'GroupPoster',
                 attributes: ['username'],
                 include: [{
-                        model: Profiles,
-                        attributes: ['profile_photo'],
-                    }],
+                    model: Profiles,
+                    attributes: ['profile_photo'],
                 }],
+            }, {
+                model: ContentVotes,
+                as: 'GroupPostVotes',
+                attributes: ['vote_count'],
+                required: false
+            }, {
+                model: GroupNotes,
+                as: 'note',
+                attributes: ['note_id', 'note_content', 'timestamp', 'is_misinfo'],
+                required: false
+            }],
+            attributes: ['post_id', 'title', 'content', 'replies', 'views', 'upvotes', 'downvotes', 'timestamp', 'poster_id', 'points'],
         });
         //Adds group true/false to posts
         const finalProfileResults = profilePosts.map((post) => ({
@@ -361,7 +394,18 @@ router.get('/search/posts', authenticateCheck, async (req, res) => {
                     model: Profiles,
                     attributes: ['profile_photo'],
                 }]
+            }, {
+                model: ContentVotes,
+                as: 'ProfilePostVotes',
+                attributes: ['vote_count'],
+                required: false
+            }, {
+                model: ProfileNotes,
+                as: 'note',
+                attributes: ['note_id', 'note_content', 'timestamp', 'is_misinfo'],
+                required: false
             }],
+            attributes: ['post_id', 'title', 'content', 'replies', 'views', 'upvotes', 'downvotes', 'timestamp', 'poster_id', 'points'],
         });
         const groupPostResults = await GroupPosts.findAll({
             where: {
@@ -379,7 +423,18 @@ router.get('/search/posts', authenticateCheck, async (req, res) => {
                     model: Profiles,
                     attributes: ['profile_photo'],
                 }]
+            }, {
+                model: ContentVotes,
+                as: 'GroupPostVotes',
+                attributes: ['vote_count'],
+                required: false
+            }, {
+                model: GroupNotes,
+                as: 'note',
+                attributes: ['note_id', 'note_content', 'timestamp', 'is_misinfo'],
+                required: false
             }],
+            attributes: ['post_id', 'title', 'content', 'replies', 'views', 'upvotes', 'downvotes', 'timestamp', 'poster_id', 'points'],
         });
         //Adds group true/false to posts
         const finalProfileResults = profilePostResults.map((post) => ({
