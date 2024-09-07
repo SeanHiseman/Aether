@@ -211,7 +211,15 @@ const ContentWidget = ({ canRemove: canRemoveProp , isGroup, onPostRemoved, post
 
     return (
         <div className="content-item">
-            <h1>{post.title}</h1>
+            <div className="title-container">
+                <p className="text36">{post.title}</p>
+                {post.displayGroupName && (
+                    <Link className="profile-link" to={`/group/${post.group.group_name}`}>
+                        <p className="text24">{post.group.group_name}</p>
+                        <img className="uploader-profile-image" src={`/${post.group.group_photo}`} alt="Profile" />
+                    </Link>
+                )}
+            </div>
             <div className="react-quill-container">
                 <ReactQuill value={post.content} readOnly={true} theme={"bubble"} />
             </div>
