@@ -6,7 +6,7 @@ import BaseLayout from './pages/base';
 import GroupHome from './pages/groups/groupHome';
 import GroupSettings from './pages/groups/settings/groupSettings';
 import GroupWrapper from './pages/groups/groupWrapper';
-import PersonalFeedPage from './pages/personalFeedPage';
+import PersonalFeed from './pages/personalFeed';
 import Welcome from './pages/welcome';
 import Login from './pages/site_entrance/login';
 import MessagesPage from './pages/messagesPage';
@@ -31,7 +31,7 @@ const App = () => {
                             <Route path="ask" element={<AuthCheck><AskChannel /></AuthCheck>} >
                                 <Route path=":chatId" element={<QueryProvider><AuthCheck><AskChannel /></AuthCheck></QueryProvider>} />
                             </Route>
-                        <Route path="p/:feed_name" element={<AuthCheck><PersonalFeedPage/></AuthCheck>} />
+                        <Route path="p/:feed_name" element={<AuthCheck><PersonalFeed/></AuthCheck>} />
                         <Route path="settings/:username" element={<AuthCheck><Settings /></AuthCheck>} />
                         <Route path="group_settings/:group_name" element={<AuthCheck><GroupSettings /></AuthCheck>} />
                         <Route path="search/:tab?" element={<AuthCheck><SearchResults /></AuthCheck>} />

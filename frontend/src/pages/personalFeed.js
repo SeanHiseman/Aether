@@ -1,8 +1,11 @@
 import axios from 'axios';
 import React, { useEffect, useState } from 'react';
-import ContentWidget from '../../components/contentWidget';
+import { useParams } from 'react-router-dom';
+import ContentWidget from '../components/contentWidget';
 
-const PersonalFeedPage = () => {
+const PersonalFeed = () => {
+    const [errorMessage, setErrorMessage] = useState('');
+    const { feed_name } = useParams();
     const [posts, setPosts] = useState([]);
     const [timePreference, setTimePreference] = useState(0.001);
 
@@ -10,14 +13,14 @@ const PersonalFeedPage = () => {
     useEffect(() => {
         const fetchPosts = async () => {
             try {
-                const response = await axios.get('/api/following_posts');
+                const response = await axios.get(`/api/${feed_name}_posts`);
                 setPosts(response.data);
             } catch (error) {
-                console.error('Error getting posts:', error);
+                setErrorMessage('Error getting posts');
             }
         };
         fetchPosts();
-    }, []);
+    }, [feed_name]);
     
     //Load user's time preference
     useEffect(() => {
@@ -26,12 +29,11 @@ const PersonalFeedPage = () => {
                 const response = await axios.get('/api/get_time_preference');
                 setTimePreference(response.data.preference);
             } catch (error) {
-                console.error('Error getting preference:', error);
+                setErrorMessage('Error getting preference');
             }
         };
         fetchTimePreference();
     }, []);
-    
 
     //Save time value to backend
     const handleTimeChange = (event) => {
@@ -41,11 +43,11 @@ const PersonalFeedPage = () => {
     
             axios.post('/api/set_time_preference', { preference: newValue })
         } catch (error) {
-            console.error(error);
+            setErrorMessage('Error changing preference');
         }
     };
 
-    document.title = "Following";
+    document.title = `${feed_name}`;
     return (
         <div className="home-container">
             <div className="content-feed">
@@ -66,9 +68,10 @@ const PersonalFeedPage = () => {
                 <h1>Following</h1>
                 <label>Posts are recent:</label>
                 <input type="range" min="0" max="0.001" step="0.00001" value={timePreference} onChange={handleTimeChange} />
+                <div className="error-message">{errorMessage}</div>
             </aside>
         </div>
     )
 }
 
-export default PersonalFeedPage;
+export default PersonalFeed;

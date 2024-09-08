@@ -57,7 +57,6 @@ const BaseLayout = () => {
                     setFeeds([]);
                 }
             } catch (error) {
-                console.error('Error fetching feed data');
                 setFeeds([]);
             }
         };
