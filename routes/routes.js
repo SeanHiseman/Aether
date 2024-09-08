@@ -86,7 +86,7 @@ router.post('/content_vote', authenticateCheck, async (req, res) => {
     }
 });
 
-router.get('/friend_posts', authenticateCheck, async (req, res)=> {
+router.get('/friends_posts', authenticateCheck, async (req, res)=> {
     try {
         const user_id = req.session.user_id;
         const friends = await Friends.findAll({
@@ -335,7 +335,7 @@ router.get('/recommended_posts', authenticateCheck, async (req, res) => {
         //sortedPosts.forEach((post) => {
             //console.log(post.title, post.score);
         //});
-        res.status(200).json({ success: true, recommendations: sortedPosts });
+        res.status(200).json(sortedPosts);
     } catch (error) {
         res.status(500).json({ success: false });
     }
