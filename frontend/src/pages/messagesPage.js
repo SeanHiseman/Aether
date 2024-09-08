@@ -171,7 +171,7 @@ const MessagesPage = () => {
                 setErrorMessage("Cannot be named Main");
                 return;
             } else {
-                const response = await axios.post('/api/create_conversation', {
+                const response = await axios.post('/api/create_chat', {
                     participants: participants,
                     title: chatName
                 });

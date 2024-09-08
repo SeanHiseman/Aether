@@ -24,7 +24,7 @@ router.post('/change_chat_name', authenticateCheck, async (req, res) => {
     }
 });
 
-router.post('/create_conversation', authenticateCheck, async (req, res) => {
+router.post('/create_chat', authenticateCheck, async (req, res) => {
     try {
         const { participants, title } = req.body;
         const newConversation = await Conversations.create({
@@ -38,7 +38,7 @@ router.post('/create_conversation', authenticateCheck, async (req, res) => {
         await UserConversations.bulkCreate(userConversations);
         res.status(201).json(newConversation);
     } catch (error) {
-        res.status(500).json({ message: 'Failed to create conversation' });
+        res.status(500).json({ success: false });
     }
 });
 

@@ -139,7 +139,7 @@ const GroupProfileView = ({ group, setGroup }) => {
                         </form>
                     )}
                 </div>
-                <div className="viewed-profile-info">
+                <div className="settings-profile-info">
                     <div className="chat-change">
                         {isEditingName ? (
                             <div className="change-name">
