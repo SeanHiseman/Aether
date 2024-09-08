@@ -18,27 +18,27 @@ const ProfileWidget = ({ profile }) => {
 
     return (
         <div className="result-widget">
-            <Link to={`/u/${profile.user.username}`}>
-                <div className="viewed-profile-info">
-                    <p className="large-text">{profile.user.username}</p>
-                    <p className="profile-bio">{profile.bio}</p>
-                </div>
-            </Link>
-            <p>{profile.is_private ? "Private" : "Public"}</p>
-            <ManageFriendshipButton userId={loggedInUserId} receiverUserId={profile.user.user_id} isRequestSent={profile.isRequestSent} isFriend={profile.isFriend} />
-            <div className="profile-header-side">
-            </div>
-                {profile.is_private ? (
-                    null
-                ) : (
-                    <div>
-                        <p>{followerCount} {followerCount === 1 ? 'follower' : 'followers'}</p>
-                        <FollowerChangeButton userId={loggedInUserId} receiverUserId={profile.user.user_id} profileId={profile.profile_id} isFollowing={isFollowing} isPrivate={profile.is_private} onFollowerChange={handleFollowerCountChange}/>
+            <div className="name-friend-box">
+                <Link to={`/u/${profile.user.username}`}>
+                    <div className="search-result-profile">
+                        <p className="large-widget-text">{profile.user.username}</p>
+                        <p className="profile-bio">{profile.bio}</p>
                     </div>
-                )}
-            <Link to={`/u/${profile.user.username}`}>
-                <img className="large-profile-photo" src={`/${profile.profile_photo}`} alt="Profile" />         
-            </Link>
+                </Link>
+            </div>
+            <ManageFriendshipButton userId={loggedInUserId} receiverUserId={profile.user.user_id} isRequestSent={profile.isRequestSent} isFriend={profile.isFriend} />
+            <div className="search-result-info-box">
+                    <div className="result-info-options">
+                        {!profile.is_private && (
+                            <><p>{followerCount} {followerCount === 1 ? 'follower' : 'followers'}</p>
+                            <FollowerChangeButton userId={loggedInUserId} receiverUserId={profile.user.user_id} profileId={profile.profile_id} isFollowing={isFollowing} isPrivate={profile.is_private} onFollowerChange={handleFollowerCountChange} /></>
+                        )}
+                        <p>{profile.is_private ? "Private" : "Public"}</p>
+                    </div>
+                <Link to={`/u/${profile.user.username}`}>
+                    <img className="large-profile-photo" src={`/${profile.profile_photo}`} alt="Profile" />         
+                </Link>
+            </div>
         </div>
     )
 }

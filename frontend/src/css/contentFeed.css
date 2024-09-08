@@ -43,6 +43,15 @@
     padding-left: 10px;
     position: relative;
 }
+.large-widget-text {
+    font-size: 36px;
+    margin: 10px 10px 10px 0;
+}
+.name-friend-box {
+    display: flex;
+    justify-content: space-between;
+    width: 30%;
+}
 .reply-section {
     display: block;
     width: 100%;
@@ -83,6 +92,12 @@
     margin-bottom: 5px;
     align-items: center;
 }
+.result-info-options {
+    align-items: center;
+    display: flex;
+    flex-direction: column;
+    margin: 10px;
+}
 .result-widget {
     align-items: center;
     background-color: var(--darkest);
@@ -101,6 +116,11 @@
     width: 30px;
     height: 30px;
     border-radius: 50%;
+}
+.search-result-info-box {
+    align-items: center;
+    display: flex;
+    justify-content: center;
 }
 .title-container {
     align-items: center;

@@ -27,7 +27,7 @@ const MemberChangeButton = ({ userId, groupId, isMember, isRequestSent, isPrivat
                 setMember(!member);
             }
         } catch (error) {
-            setErrorMessage("Error", error);
+            setErrorMessage("Error updating following");
         }
     };
     

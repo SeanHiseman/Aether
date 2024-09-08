@@ -71,11 +71,6 @@
     flex-direction: column;
     max-width: 350px;
 }
-#profile-header-side {
-    align-items: center;
-    display: flex;
-    flex-direction: column;
-}
 .profile-link {
     align-items: center;
     display: flex;
@@ -102,6 +97,9 @@
     flex-direction: column;
     width: 100%
 }
+.search-result-profile {
+    margin: 10px;
+}
 .settings-area {
     align-items: center;
     display: flex;
@@ -112,6 +110,13 @@
 .settings-item {
     border-bottom: 1px solid var(--dark-line);
     padding: 10px;
+}
+.settings-profile-info {
+    align-items: center;
+    display: flex;
+    flex-direction: column;
+    margin: 10px;
+    width: 60%;
 }
 .settings-profile-photo {
     border-radius: 54px;
@@ -141,11 +146,4 @@
     max-width: 200px; 
     margin: 10px;
     max-height: 200px;
-}
-.viewed-profile-info {
-    align-items: center;
-    display: flex;
-    flex-direction: column;
-    margin: 10px;
-    width: 60%;
 }
