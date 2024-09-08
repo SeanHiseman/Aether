@@ -73,13 +73,13 @@ const ChatChannel = ({ canRemove, channelId, isGroup, locationId }) => {
     };
 
     return (
-        <div id="channel">
+        <div className="channel">
             <div className="channel-content messages">
                 {channel.slice().reverse().map((msg, index) => (
                     <Message canRemove={canRemove} deleteMessage={deleteMessage} key={index} message={msg} isGroup={isGroup} isOutgoing={msg.sender_id === user.userId} socket={socket} channelId={channelId}/>
                 ))}
             </div>
-            <div id="channel-input">
+            <div className="messages-channel-footer">
                 <input className="chat-message-bar" type="text" value={currentMessage} onChange={(e) => setCurrentMessage(e.target.value)} placeholder="Type a message..." onKeyDown={(e) => e.key === 'Enter' && sendChannelMessage()}/>
                 <button className="chat-send-button" onClick={sendChannelMessage}>Send</button>
                 <div class="error-message">{errorMessage}</div>

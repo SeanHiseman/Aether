@@ -32,7 +32,7 @@ const PostChannel = ({ canRemove, channelId, channelName, isGroup, locationId })
     };
 
     return (
-        <div id="channel">
+        <div className="channel">
             <div className="channel-content">
                 {posts.length > 0 ? (
                     <ul className="content-list">

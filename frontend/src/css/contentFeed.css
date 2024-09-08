@@ -112,7 +112,7 @@
     align-items: center;
     position: relative;
 }
-#uploader-photo{
+.uploader-photo{
     height: 40px; 
     width: 40px; 
     border-radius: 50%;

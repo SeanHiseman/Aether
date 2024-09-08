@@ -174,7 +174,7 @@ const BaseLayout = () => {
                     </button>
                     {showForm && (
                         <form id="create-group-form" onSubmit={createGroupSubmit}>
-                            <input id="group-name-input" type="text" name="Name" placeholder="Feed name..." value={groupName} onChange={(e) => setGroupName(e.target.value)}/>
+                            <input className="name-input" type="text" name="Name" placeholder="Feed name..." value={groupName} onChange={(e) => setGroupName(e.target.value)}/>
                             <div className="file-input">
                                 <label htmlFor="group-photo-input" class="dark-button">Choose photo</label>
                                 <input type="file" id="group-photo-input" name="Group photo" onChange={handleFileChange} hidden/>
@@ -189,7 +189,7 @@ const BaseLayout = () => {
                         </form>
                     )}
                 </div>
-                <nav id="group-list">
+                <nav className="group-list">
                     <ul>
                         {feeds.length === 0 ? (
                             <p>Followed feeds show up here</p>

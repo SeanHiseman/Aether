@@ -16,8 +16,8 @@ const Theme = ({ user, setCurrentView }) => {
     const availableThemes = user.hasMembership ? themeColors : { light: themeColors.light, dark: themeColors.dark };
 
     return (
-        <div id="profile-settings">
-            <div id="display-area">
+        <div className="profile-settings">
+            <div className="display-area">
                 {Object.keys(availableThemes).map((theme) => (
                     <ThemeButton
                         key={theme}

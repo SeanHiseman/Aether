@@ -315,7 +315,7 @@ const MessagesPage = () => {
                     )}
                 </div>
                 {friend_name && (
-                    <div id="channel-input">
+                    <div className="messages-channel-footer">
                         <input className="chat-message-bar" type="text" value={message} onChange={(e) => setMessage(e.target.value)} placeholder="Type a message..." onKeyDown={(e) => e.key === 'Enter' && sendMessage()}/>
                         <button className="chat-send-button" onClick={sendMessage}>Send</button>
                     </div>
@@ -324,7 +324,7 @@ const MessagesPage = () => {
             <aside id="right-aside">
                 {friend_name ? (
                     <div id="add-chat-section">
-                        <Link id="chat-profile-link" to={`/profile/${friend_name}`}>
+                        <Link className="chat-profile-link" to={`/profile/${friend_name}`}>
                             <img className="profile-image2" src={`/${friendProfileImage}`} alt="Profile"/>
                             <h3>{friend_name}</h3>
                         </Link>
@@ -391,7 +391,7 @@ const MessagesPage = () => {
                                         setAnimationClass('');
                                     }
                                 }} onSubmit={createNewChat}>
-                                    <input className="channel-input" type="text" name="chat_name" placeholder="Chat name..." value={newChatName} onChange={(e) => setNewChatName(e.target.value)}/>
+                                    <input className="name-input" type="text" name="chat_name" placeholder="Chat name..." value={newChatName} onChange={(e) => setNewChatName(e.target.value)}/>
                                     <input className="dark-button" type="submit" value="Add" />
                                 </form>                            
                             )}

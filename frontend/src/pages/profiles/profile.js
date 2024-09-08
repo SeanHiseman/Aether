@@ -167,8 +167,8 @@ const Profile = () => {
                     )}
                     <img className="large-profile-photo" src={`/${profile.profilePhoto}`} alt="Profile" /> 
                     <p className="large-text">{profile.username}</p>
-                    <p id="profile-bio">{profile.bio}</p>
-                    <p id="user-count">{profile.followerCount} {profile.followerCount === 1 ? 'follower' : 'followers'}</p>
+                    <p className="profile-bio">{profile.bio}</p>
+                    <p className="user-count">{profile.followerCount} {profile.followerCount === 1 ? 'follower' : 'followers'}</p>
                     {!isLoggedInUser && !profile.isPrivate && (<FollowerChangeButton userId={loggedInUserId} profileId={profile.profileId} isFollowing={profile.isFollowing} />)}
                     <ManageFriendshipButton userId={loggedInUserId} receiverProfileId={profile.profileId} receiverUserId={profile.userId} isRequestSent={profile.isRequested} isFriend={profile.isFriend} />
                 </div>
@@ -199,7 +199,7 @@ const Profile = () => {
                         </button>
                         {showChannelForm && (
                             <form id="add-channel-form" onSubmit={AddChannel}>
-                                <input className="channel-input" type="text" name="channel_name" placeholder="Channel name..." value={newChannelName} onChange={(e) => {
+                                <input className="name-input" type="text" name="channel_name" placeholder="Channel name..." value={newChannelName} onChange={(e) => {
                                     const input = e.target.value;
                                     const inputLength = input.length;
                                     if (inputLength <= 30) {
@@ -213,7 +213,7 @@ const Profile = () => {
                         )}
                     </div>
                 )}
-                <nav id="channel-list">
+                <nav className="channel-list">
                     <ul>
                         {channels.map(channel => (
                             <li key={channel.channelId}>
