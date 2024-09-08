@@ -17,7 +17,7 @@ const Login = () => {
             const response = await axios.post('/api/login', { username, password });
             //successful login
             if (response.data.success) {
-                navigate(`/profile/${username}`);
+                navigate(`/u/${username}`);
             } else {
                 //If login unsuccessful
                 setError(response.data.message);

@@ -235,6 +235,10 @@ body,html {
     padding: 10px;
     transition: background-color 0.3s;
 }
+.feed-list-link {
+    align-items: center;
+    display: flex;
+}
 .feed-list-item {
     background-color: var(--darkest);
     margin: 6px;
@@ -246,6 +250,11 @@ body,html {
 }
 .feed-link:hover, .feed-list-item:hover {
     background-color: var(--dark);
+}
+.feed-list-text {
+    margin: 0;
+    margin-left: 5px;
+    max-width: 160px;
 }
 .file-input {
     align-items: center;
@@ -261,15 +270,6 @@ body,html {
     flex-direction: row;
     flex-grow: 1;
     height: calc(100vh - 80px);
-}
-.group-list-link {
-    align-items: center;
-    display: flex;
-}
-.group-list-text {
-    margin: 0;
-    margin-left: 5px;
-    max-width: 160px;
 }
 h2 {
     margin-top: 40px;
@@ -408,7 +408,7 @@ main {
 .profile-link:visited {
     color: inherit;
 }
-.profile-image, .small-group-photo {
+.profile-image, .small-feed-photo {
     height: 40px; 
     width: 40px; 
     border-radius: 6px;

@@ -297,7 +297,7 @@ const MessagesPage = () => {
                             {friends.map(friend => (
                                 <li key={friend.friend_id}>
                                     <div className="result-widget">
-                                        <Link className="profile-link" to={`/profile/${friend.friend_name}`}>
+                                        <Link className="profile-link" to={`/u/${friend.friend_name}`}>
                                             <img className="large-profile-photo" src={`/${friend.friend_profile_photo}`} alt="Profile" />
                                             <p className="large-text profile-name">{friend.friend_name}</p>
                                         </Link>
@@ -324,7 +324,7 @@ const MessagesPage = () => {
             <aside id="right-aside">
                 {friend_name ? (
                     <div id="add-chat-section">
-                        <Link className="chat-profile-link" to={`/profile/${friend_name}`}>
+                        <Link className="chat-profile-link" to={`/u/${friend_name}`}>
                             <img className="profile-image2" src={`/${friendProfileImage}`} alt="Profile"/>
                             <h3>{friend_name}</h3>
                         </Link>

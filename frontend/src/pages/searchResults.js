@@ -45,13 +45,15 @@ const SearchResults = () => {
 
     //Load user's time preference
     useEffect(() => {
-        axios.get('/api/get_time_preference')
-            .then(response => {
+        const getTimePreference = async () => {
+            try {
+                const response = axios.get('/api/get_time_preference');
                 setTimePreference(response.data.preference);
-            })
-            .catch(error => {
+            } catch (error) {
                 console.error('Error getting preference:', error);
-            });
+            }
+        }
+        getTimePreference();
     }, []);
 
     //Save time value to backend

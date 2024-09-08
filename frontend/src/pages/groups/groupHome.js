@@ -291,7 +291,7 @@ const GroupHome = () => {
                     <ul>
                         {channels.map(channel => (
                             <li key={channel.channelId} className="channel-item">
-                                <Link to={`/group/${groupDetails.groupName}/${channel.channel_name}`}>
+                                <Link to={`/g/${groupDetails.groupName}/${channel.channel_name}`}>
                                     <div className="channel-link">{channel.channel_name}</div>
                                 </Link>
                             </li>
@@ -309,7 +309,7 @@ const GroupHome = () => {
                             <ul>
                                 {subGroups.map((subGroup, index) => (
                                     <li className="feed-list-item group" key={index}>
-                                        <Link className="group-list-link" to={`/group/${subGroup.SubGroup.group_name}/Main`}>
+                                        <Link className="group-list-link" to={`/g/${subGroup.SubGroup.group_name}/Main`}>
                                             <img className="small-group-photo" src={`/${subGroup.SubGroup.group_photo}`} alt={subGroup.SubGroup.group_name} />
                                             <p className="group-list-text">{subGroup.SubGroup.group_name}</p>
                                         </Link>
