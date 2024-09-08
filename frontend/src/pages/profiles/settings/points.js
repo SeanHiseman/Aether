@@ -3,8 +3,8 @@ import React, { useState } from 'react';
 const Points = ({ user, setCurrentView }) => {
 
     return (
-        <div id="profile-settings">
-            <div id="display-area">
+        <div className="profile-settings">
+            <div className="display-area">
                 <div className="left-aligned-text">
                     <p className="text36">{user.points} {user.points === 1 ? 'point' : 'points'}</p>
                     <div className="spacer20px"/>

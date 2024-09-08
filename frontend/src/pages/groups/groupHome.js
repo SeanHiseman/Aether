@@ -104,7 +104,7 @@ const GroupHome = () => {
         event.preventDefault();
         try {
             if (newChannelName.length === 0) {
-                setErrorMessage("Feed needs a name");
+                setErrorMessage("Channel needs a name");
             } else {
                 const response = await axios.post('/api/add_group_channel', {
                     channel_name: newChannelName,
@@ -232,10 +232,10 @@ const GroupHome = () => {
                             <button className="button">Settings</button>
                         </Link>
                     )}
-                    <img id="large-group-photo" src={`/${groupDetails.groupPhoto}`} alt={groupDetails.groupName} />
+                    <img className="large-group-photo" src={`/${groupDetails.groupPhoto}`} alt={groupDetails.groupName} />
                     <p className="large-text">{groupDetails.groupName}</p>
-                    <p id="description" >{groupDetails.description}</p>
-                    <p id="user-count">{groupDetails.memberCount} {groupDetails.memberCount === 1 ? 'follower' : 'followers'}</p>
+                    <p className="description" >{groupDetails.description}</p>
+                    <p className="user-count">{groupDetails.memberCount} {groupDetails.memberCount === 1 ? 'follower' : 'followers'}</p>
                     <MemberChangeButton 
                         userId={groupDetails.userId} 
                         groupId={groupDetails.groupId} 
@@ -272,7 +272,7 @@ const GroupHome = () => {
                         </button>
                         {showChannelForm && (
                             <form id="add-channel-form" onSubmit={AddChannel}>
-                                <input className="channel-input" type="text" placeholder="Channel name..." value={newChannelName} onChange={(e) => setNewChannelName(e.target.value)}/>
+                                <input className="name-input" type="text" placeholder="Channel name..." value={newChannelName} onChange={(e) => setNewChannelName(e.target.value)}/>
                                 <label>
                                     <input type="checkbox" checked={isPostChannel} onChange={handlePostClick}/>
                                     Post Channel
@@ -287,7 +287,7 @@ const GroupHome = () => {
                         )}
                     </div>
                 )}
-                <nav id="channel-list">
+                <nav className="channel-list">
                     <ul>
                         {channels.map(channel => (
                             <li key={channel.channelId} className="channel-item">

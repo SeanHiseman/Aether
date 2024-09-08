@@ -6,9 +6,9 @@ const MembershipSettings = ({ user }) => {
     const navigate = useNavigate();
 
     return (
-        <div id="profile-settings">
+        <div className="profile-settings">
             {user.hasMembership ? (
-                <div id="display-area">
+                <div className="display-area">
                     <p className="text36">Thank you for joining</p>
                     <p className="text24">Your support helps us grow</p>
                     <p className="text24">If you wish to cancel, do it here</p>
@@ -16,7 +16,7 @@ const MembershipSettings = ({ user }) => {
                     <div className="error-message">{errorMessage}</div>
                 </div>
             ) : (
-                <div id="display-area">
+                <div className="display-area">
                     <div className="left-aligned-text">
                         <p className="text36">Membership</p>
                         <div className="spacer20px"/>

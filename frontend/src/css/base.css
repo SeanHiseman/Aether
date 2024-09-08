@@ -133,20 +133,6 @@ body,html {
     height: 100%;
     width: 100%
 }
-.channel-input, #group-name-input {
-    background-color: var(--dark);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    color: var(--border);
-    font-size: large;
-    margin: 10px;
-    padding: 5px;
-    transition: background-color 0.3s;
-    width: 80%;
-}
-.channel-input::placeholder, #group-name-input::placeholder, #search-bar::placeholder {
-    color: var(--border);
-}
 .channel-item {
     animation: fadeIn 0.3s ease-in-out;
 }
@@ -155,7 +141,7 @@ body,html {
     padding: 10px;
     text-decoration: none;
 }
-#channel-list {
+.channel-list {
     margin-bottom: 40px;
     margin-top: 10px;
     width: 80%;
@@ -172,7 +158,7 @@ body,html {
     text-decoration: none;
     width: 100%;
 }
-#channel-name-section {
+.channel-name-section {
     margin: 10px;
 }
 .chat-channel-button, .conversation-button, .posts-channel-button {
@@ -232,7 +218,7 @@ body,html {
     display: flex;
     flex-direction: column;
 }
-#display-area {
+.display-area {
     align-items: center;
     display: flex;
     flex-direction: column;
@@ -276,15 +262,6 @@ body,html {
     flex-grow: 1;
     height: calc(100vh - 80px);
 }
-#group-header, #messages-header, #profile-header {
-    align-items: center;
-    border-bottom: 1px solid var(--border);
-    background-color: var(--darkest);
-    display: flex;
-    justify-content: space-between;
-    width: 100%;
-    z-index: 2;
-}
 .group-list-link {
     align-items: center;
     display: flex;
@@ -299,15 +276,6 @@ h2 {
 }
 h3 {
     margin-left: 10px;
-}
-#home-header, #messages-header {
-    align-items: center;
-    background-color: var(--darkest);
-    border-bottom: 1px solid var(--border);
-    display: flex;
-    justify-content: center;
-    height: 70px;
-    width: 100%;
 }
 .icon-button {
     border: none;
@@ -356,7 +324,7 @@ input[type="text"] {
 label {
     margin: 10px;
 }
-#large-group-photo, .large-profile-photo {
+.large-group-photo, .large-profile-photo {
     border-radius: 27px;
     height: 120px; 
     margin: 10px;
@@ -399,7 +367,7 @@ li {
 #logged_in_username {
     font-weight: 700;
     margin-left: 10px;
-    margin-top: 36px;
+    margin-top: 40px;
     text-align: center;
 }
 main {
@@ -408,13 +376,27 @@ main {
     margin-top: 80px;
     width: 100%;
 }
+.name-input {
+    background-color: var(--dark);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    color: var(--border);
+    font-size: large;
+    margin: 10px;
+    padding: 5px;
+    transition: background-color 0.3s;
+    width: 80%;
+}
+.name-input::placeholder, #search-bar::placeholder {
+    color: var(--border);
+}
 #personal-feeds {
     margin-top: 20px;
 }
 .posts-channel-button {
     border-radius: 5px;
 }
-#profile-bio, #description {
+.profile-bio, .description {
     margin: 5px;
     max-width: 100%;
 }
@@ -452,7 +434,7 @@ main {
     align-items: center;
     margin-left: 140px;
 }
-#results {
+.results {
     display: flex;
     flex-wrap: wrap;
 }
@@ -544,7 +526,7 @@ ul {
     display: block;  
     width: 100%;    
 }
-#user-count {
+.user-count {
     margin: 5px;
 }
 .vote-container {

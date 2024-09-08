@@ -18,8 +18,8 @@ const AccountDeletion = ({ profile }) => {
     };
 
     return (
-        <div id="profile-settings">
-            <div id="display-area">
+        <div className="profile-settings">
+            <div className="display-area">
                 <p className="text36">Are you sure you wish to delete your account?</p>
                 <p className="text24">This action cannot be reversed</p>
                 <p className="text24">All posts, messages, friends and account information will be lost</p>

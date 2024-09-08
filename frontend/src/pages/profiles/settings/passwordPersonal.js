@@ -29,8 +29,8 @@ const PasswordPersonal = ({ user }) => {
     };
 
     return (
-        <div id="profile-settings">
-            <div id="display-area">
+        <div className="profile-settings">
+            <div className="display-area">
                 <p className="text36">Change password</p>
                 <form method="post" onSubmit={changePassword}>
                     <input 

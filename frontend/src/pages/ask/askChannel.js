@@ -188,17 +188,17 @@ const AskChannel = () => {
                 ) : (
                     <div className="channel-feed">
                         {isHome ? (
-                            <div id="channel">
+                            <div className="channel">
                                 <div className="channel-content">
                                     <p className="text36">Ask anything...</p>
                                 </div>
-                                <div id="channel-input">
+                                <div className="messages-channel-footer">
                                     <input className="chat-message-bar" type="text" value={currentMessage} onChange={(e) => setCurrentMessage(e.target.value)} placeholder="Ask..." onKeyDown={(e) => e.key === 'Enter' && handleHomeSubmit(e)}/>
                                     <button className="chat-send-button" onClick={handleHomeSubmit}>Send</button>
                                 </div>
                             </div>
                         ) : (
-                            <div id="channel">
+                            <div className="channel">
                                 <div className="channel-content messages">
                                     {messages.map((msg, index) => (
                                         <div key={index} className={`message-container ${msg.sender_id === user.userId ? 'outgoing' : 'incoming'}`}>
@@ -208,7 +208,7 @@ const AskChannel = () => {
                                         </div>  
                                     ))}
                                 </div>
-                                <div id="channel-input">
+                                <div className="messages-channel-footer">
                                     <input className="chat-message-bar" type="text" value={currentMessage} onChange={(e) => setCurrentMessage(e.target.value)} placeholder="Ask..." onKeyDown={(e) => e.key === 'Enter' && sendAskMessage(chatId, currentMessage)} disabled={isLoading}/>
                                     <button className="chat-send-button" onClick={() => sendAskMessage(chatId, currentMessage)} disabled={isLoading}>{isLoading ? 'Loading...' : 'Send'}</button>
                                 </div>

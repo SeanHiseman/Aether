@@ -19,14 +19,14 @@ const ProfileWidget = ({ profile }) => {
     return (
         <div className="result-widget">
             <Link to={`/profile/${profile.user.username}`}>
-                <div id="viewed-profile-info">
+                <div className="viewed-profile-info">
                     <p className="large-text">{profile.user.username}</p>
-                    <p id="profile-bio">{profile.bio}</p>
+                    <p className="profile-bio">{profile.bio}</p>
                 </div>
             </Link>
             <p>{profile.is_private ? "Private" : "Public"}</p>
             <ManageFriendshipButton userId={loggedInUserId} receiverUserId={profile.user.user_id} isRequestSent={profile.isRequestSent} isFriend={profile.isFriend} />
-            <div id="profile-header-side">
+            <div className="profile-header-side">
             </div>
                 {profile.is_private ? (
                     null
