@@ -9,7 +9,7 @@ const ProfileWrapper = () => {
     //Directs to profile main channel by default
     useEffect(() => {
         if (!channel_name) {
-            navigate(`/profile/${username}/Main`, { replace: true });
+            navigate(`/u/${username}/Main`, { replace: true });
         }
     }, [username, channel_name, navigate]);
 

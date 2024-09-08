@@ -214,7 +214,7 @@ const ContentWidget = ({ canRemove: canRemoveProp , isGroup, onPostRemoved, post
             <div className="title-container">
                 <p className="text36">{post.title}</p>
                 {post.displayGroupName && (
-                    <Link className="profile-link" to={`/group/${post.group.group_name}`}>
+                    <Link className="profile-link" to={`/g/${post.group.group_name}`}>
                         <p className="text24">{post.group.group_name}</p>
                         <img className="uploader-profile-image" src={`/${post.group.group_photo}`} alt="Profile" />
                     </Link>
@@ -231,7 +231,7 @@ const ContentWidget = ({ canRemove: canRemoveProp , isGroup, onPostRemoved, post
             <div className="content-metadata">
                 <div className="profile-info">
                     {post[Poster] && post[Poster].username && post[Poster].profile && post[Poster].profile.profile_photo ? (
-                        <Link className="profile-link" to={`/profile/${post[Poster].username}`} onClick={() => incrementViews(post.post_id)}>
+                        <Link className="profile-link" to={`/u/${post[Poster].username}`} onClick={() => incrementViews(post.post_id)}>
                             <img className="uploader-profile-image" src={`/${post[Poster].profile.profile_photo}`} alt="Profile" />
                             <p className="username">{post[Poster].username}</p>
                         </Link>

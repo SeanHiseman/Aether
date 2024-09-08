@@ -9,7 +9,7 @@ const GroupWrapper = () => {
     //Directs to group main channel by default
     useEffect(() => {
         if (!channel_name) {
-            navigate(`/group/${group_name}/Main`, { replace: true });
+            navigate(`/g/${group_name}/Main`, { replace: true });
         }
     }, [group_name, channel_name, navigate]);
 

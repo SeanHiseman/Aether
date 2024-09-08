@@ -250,7 +250,7 @@ router.get('/feed_list/:userId', async (req, res) => {
         //Formats group list
         const formattedGroups = groups.map(group => ({
             ...group.dataValues,
-            type: 'group',
+            type: 'g',
         }));
         //User feeds that a user is following
         const userFeeds = await Followers.findAll({
@@ -267,7 +267,7 @@ router.get('/feed_list/:userId', async (req, res) => {
             feed_id: feed.profile.user.user_id,
             name: feed.profile.user.username,
             photo: feed.profile.profile_photo,
-            type: 'profile',
+            type: 'u',
         }));
         //Combine group and profile follows
         const feedList = [...formattedGroups, ...formattedProfiles];

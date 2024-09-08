@@ -18,7 +18,7 @@ const ProfileWidget = ({ profile }) => {
 
     return (
         <div className="result-widget">
-            <Link to={`/profile/${profile.user.username}`}>
+            <Link to={`/u/${profile.user.username}`}>
                 <div className="viewed-profile-info">
                     <p className="large-text">{profile.user.username}</p>
                     <p className="profile-bio">{profile.bio}</p>
@@ -36,7 +36,7 @@ const ProfileWidget = ({ profile }) => {
                         <FollowerChangeButton userId={loggedInUserId} receiverUserId={profile.user.user_id} profileId={profile.profile_id} isFollowing={isFollowing} isPrivate={profile.is_private} onFollowerChange={handleFollowerCountChange}/>
                     </div>
                 )}
-            <Link to={`/profile/${profile.user.username}`}>
+            <Link to={`/u/${profile.user.username}`}>
                 <img className="large-profile-photo" src={`/${profile.profile_photo}`} alt="Profile" />         
             </Link>
         </div>

@@ -217,7 +217,7 @@ const Profile = () => {
                     <ul>
                         {channels.map(channel => (
                             <li key={channel.channelId}>
-                                <Link to={`/profile/${profile.username}/${channel.channel_name}`} className="channel-item">
+                                <Link to={`/u/${profile.username}/${channel.channel_name}`} className="channel-item">
                                     <div className="channel-link">{channel.channel_name}</div>
                                 </Link>
                             </li>

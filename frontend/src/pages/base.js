@@ -156,16 +156,16 @@ const BaseLayout = () => {
         <div className="container">
             <aside id="left-aside">
                 <div className="profile-info">
-                    <Link className="profile-link" to={`/profile/${profile.username}`}>
+                    <Link className="profile-link" to={`/u/${profile.username}`}>
                         <img className="profile-image" src={`/${profile.profilePhoto}`} alt="Profile" />
                         <p id="logged_in_username">{profile.username}</p>
                     </Link>
                 </div>
                 <nav id="personal-feeds">
                     <ul>
-                        <li className="feed-link"><Link to="/recommended">Recommended</Link></li>
-                        <li className="feed-link"><Link to="/following">Following</Link></li>
-                        <li className="feed-link"><Link to="/friends">Friends</Link></li>
+                        <li className="feed-link"><Link to="/p/recommended">Recommended</Link></li>
+                        <li className="feed-link"><Link to="/p/following">Following</Link></li>
+                        <li className="feed-link"><Link to="/p/friends">Friends</Link></li>
                     </ul>
                 </nav>
                 <div id="create-group-section">
@@ -189,16 +189,16 @@ const BaseLayout = () => {
                         </form>
                     )}
                 </div>
-                <nav className="group-list">
+                <nav className="feed-list">
                     <ul>
                         {feeds.length === 0 ? (
                             <p>Followed feeds show up here</p>
                         ) : (
                             feeds.map(feed => (
                                 <li className={`feed-list-item ${feed.type}`} key={feed.feed_id}>
-                                    <Link className="group-list-link" to={`/${feed.type}/${feed.name}/Main`}>
-                                        <img className="small-group-photo" src={`/${feed.photo}`} alt={feed.name} />
-                                        <p className="group-list-text">{feed.name}</p>
+                                    <Link className="feed-list-link" to={`/${feed.type}/${feed.name}/Main`}>
+                                        <img className="small-feed-photo" src={`/${feed.photo}`} alt={feed.name} />
+                                        <p className="feed-list-text">{feed.name}</p>
                                     </Link>
                                 </li>
                             ))
