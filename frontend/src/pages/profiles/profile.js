@@ -31,7 +31,6 @@ const Profile = () => {
                 const fetchedProfile = response.data.profile;
                 setProfile(fetchedProfile);
             } catch (error) {
-                console.error('Error:', error);
                 if (error.response && error.response.status === 401) {
                     navigate('/login');
                 }
@@ -53,7 +52,6 @@ const Profile = () => {
                 }
             } catch (error) {
                 setErrorMessage('Error fetching channels data');
-                console.error('Error fetching channels data:', error);
                 setChannels([]);
             }
         };
@@ -130,7 +128,7 @@ const Profile = () => {
             });
             setShowPostForm(false);
         } catch (error) {
-            setErrorMessage("Error creating post:", error);
+            setErrorMessage("Error creating post");
         }
     };
 
