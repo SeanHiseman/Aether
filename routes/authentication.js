@@ -4,7 +4,7 @@ import { Router } from 'express';
 import { hash, compare } from 'bcrypt';
 import { Op } from 'sequelize';
 import { v4 } from 'uuid';
-import { ContentVotes, Followers, Friends, FriendRequests, GroupReplies, GroupPosts, Messages, Profiles, ProfileChannels, ProfileReplies, ProfilePosts, ReplyVotes, Users, UserConversations, UserGroups } from '../models/models.js';
+import { ContentVotes, Followers, Friends, FriendRequests, GroupReplies, GroupPosts, Messages, Profiles, ProfileChannels, ProfileReplies, ProfilePosts, ReplyVotes, Users, UserChats, UserGroups } from '../models/models.js';
 
 const router = Router();
 
@@ -61,7 +61,7 @@ router.delete('/delete_account', authenticateCheck, async (req, res) => {
         await ReplyVotes.destroy({ where: { user_id } });
         await Friends.destroy({ where: { [Op.or]: [{ user1_id: user_id }, { user2_id: user_id }] } });
         await FriendRequests.destroy({ where: { [Op.or]: [{ sender_id: user_id }, { receiver_id: user_id }] } });
-        await UserConversations.destroy({ where: { user_id } });
+        await UserChats.destroy({ where: { user_id } });
         await Messages.destroy({ where: { sender_id: user_id } });
         await Profiles.destroy({ where: { user_id } });
         await Users.destroy({ where: { user_id } });

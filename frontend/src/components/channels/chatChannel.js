@@ -63,7 +63,6 @@ const ChatChannel = ({ canRemove, channelId, isGroup, locationId }) => {
                 sender_id: user.userId, 
                 timestamp: new Date()
             }
-
             socket.emit('send_group_message', newMessage);
             setChannel(prevChat => [...prevChat, newMessage]);
             setCurrentMessage('');

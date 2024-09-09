@@ -9,6 +9,9 @@ import { Router } from 'express';
 import { v4 } from 'uuid';
 
 const router = Router();
+//Common attributes
+const notesAttributes = ['note_id', 'note_content', 'timestamp', 'is_misinfo'];
+const postAttributes = ['post_id', 'title', 'content', 'replies', 'views', 'upvotes', 'downvotes', 'timestamp', 'poster_id', 'points'];
 
 //Changes name on profile, group or chat channel
 router.post('/change_channel_name', authenticateCheck, async (req, res) => {
@@ -120,10 +123,10 @@ router.get('/friends_posts', authenticateCheck, async (req, res)=> {
             }, {
                 model: ProfileNotes,
                 as: 'note',
-                attributes: ['note_id', 'note_content', 'timestamp', 'is_misinfo'],
+                attributes: notesAttributes,
                 required: false
             }],
-            attributes: ['post_id', 'title', 'content', 'replies', 'views', 'upvotes', 'downvotes', 'timestamp', 'poster_id', 'points'],
+            attributes: postAttributes,
             //Posts sorted chronilogically
             order: [['timestamp', 'DESC']]
         });
@@ -177,10 +180,10 @@ router.get('/following_posts', authenticateCheck, async (req, res) => {
             }, {
                 model: ProfileNotes,
                 as: 'note',
-                attributes: ['note_id', 'note_content', 'timestamp', 'is_misinfo'],
+                attributes: notesAttributes,
                 required: false
             }],
-            attributes: ['post_id', 'title', 'content', 'replies', 'views', 'upvotes', 'downvotes', 'timestamp', 'poster_id', 'points'],
+            attributes: postAttributes,
         });
         //Fetch posts from user groups
         const groupPosts = await GroupPosts.findAll({
@@ -201,7 +204,7 @@ router.get('/following_posts', authenticateCheck, async (req, res) => {
             }, {
                 model: GroupNotes,
                 as: 'note',
-                attributes: ['note_id', 'note_content', 'timestamp', 'is_misinfo'],
+                attributes: notesAttributes,
                 required: false
             }, {
                 model: Groups,
@@ -209,7 +212,7 @@ router.get('/following_posts', authenticateCheck, async (req, res) => {
                 attributes: ['group_name', 'group_photo'],
                 required: false,
             }],
-            attributes: ['post_id', 'title', 'content', 'replies', 'views', 'upvotes', 'downvotes', 'timestamp', 'poster_id', 'points'],
+            attributes: postAttributes,
         });
         //Adds group true/false to posts
         const finalProfileResults = profilePosts.map((post) => ({
@@ -403,10 +406,10 @@ router.get('/search/posts', authenticateCheck, async (req, res) => {
             }, {
                 model: ProfileNotes,
                 as: 'note',
-                attributes: ['note_id', 'note_content', 'timestamp', 'is_misinfo'],
+                attributes: notesAttributes,
                 required: false
             }],
-            attributes: ['post_id', 'title', 'content', 'replies', 'views', 'upvotes', 'downvotes', 'timestamp', 'poster_id', 'points'],
+            attributes: postAttributes,
         });
         const groupPostResults = await GroupPosts.findAll({
             where: {
@@ -432,7 +435,7 @@ router.get('/search/posts', authenticateCheck, async (req, res) => {
             }, {
                 model: GroupNotes,
                 as: 'note',
-                attributes: ['note_id', 'note_content', 'timestamp', 'is_misinfo'],
+                attributes: notesAttributes,
                 required: false
             }, {
                 model: Groups,
@@ -440,7 +443,7 @@ router.get('/search/posts', authenticateCheck, async (req, res) => {
                 attributes: ['group_name', 'group_photo'],
                 required: false,
             }],
-            attributes: ['post_id', 'title', 'content', 'replies', 'views', 'upvotes', 'downvotes', 'timestamp', 'poster_id', 'points'],
+            attributes: postAttributes,
         });
         //Adds group true/false to posts
         const finalProfileResults = profilePostResults.map((post) => ({
