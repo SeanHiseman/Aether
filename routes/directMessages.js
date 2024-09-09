@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { v4 } from 'uuid';
 import { Op } from 'sequelize';
-import { Conversations, Friends, Profiles, UserConversations, Users, Messages } from '../models/models.js';
+import { Chats, Friends, Profiles, UserChats, Users, Messages } from '../models/models.js';
 import authenticateCheck from '../functions/checks/authenticateCheck.js';
 
 const router = Router();
@@ -9,34 +9,34 @@ const router = Router();
 //Changes name of chat between users
 router.post('/change_chat_name', authenticateCheck, async (req, res) => {
     try {
-        const { conversationId, newTitle } = req.body;
+        const { chatId, newTitle } = req.body;
         if (newTitle === 'Main') {
-            res.status(401).json({ success: false, message: "Chat can't be called main"})
+            res.status(403).json({ success: false, message: "Chat can't be called main"})
         } else {
-            await Conversations.update(
+            await Chats.update(
                 { title: newTitle },
-                { where: { conversation_id: conversationId } }
+                { where: { chat_id: chatId } }
             );
             res.status(200).json({ success: true });
         }
     } catch (error) {
-        res.status(500).json({ error: "Error changing chat name"});
+        res.status(500).json({ success: false });
     }
 });
 
 router.post('/create_chat', authenticateCheck, async (req, res) => {
     try {
         const { participants, title } = req.body;
-        const newConversation = await Conversations.create({
-            conversation_id: v4(),
+        const newChat = await Chats.create({
+            chat_id: v4(),
             title: title
         });
-        const userConversations = participants.map(userId => ({
+        const userChats = participants.map(userId => ({
             user_id: userId,
-            conversation_id: newConversation.conversation_id,
+            chat_id: newChat.chat_id,
         }));
-        await UserConversations.bulkCreate(userConversations);
-        res.status(201).json(newConversation);
+        await UserChats.bulkCreate(userChats);
+        res.status(201).json(newChat);
     } catch (error) {
         res.status(500).json({ success: false });
     }
@@ -44,19 +44,19 @@ router.post('/create_chat', authenticateCheck, async (req, res) => {
 
 router.delete('/delete_chat', authenticateCheck, async (req, res) => {
     try {
-        const { conversation_id, title } = req.body;
+        const { chat_id, title } = req.body;
         //Main channels are default, so can't be deleted
         if (title === 'Main') {
-            res.status(500).json({ message: 'Main chats cannot be deleted' });
+            res.status(403).json({ message: 'Main chats cannot be deleted' });
         } else {
-            await UserConversations.destroy({
+            await UserChats.destroy({
                 where: { 
-                    conversation_id: conversation_id
+                    chat_id
                 },
             });
-            await Conversations.destroy({
+            await Chats.destroy({
                 where: { 
-                    conversation_id: conversation_id
+                    chat_id
                 },
             });
             res.status(200).json({ success: true });
@@ -66,12 +66,12 @@ router.delete('/delete_chat', authenticateCheck, async (req, res) => {
     }
 });
 
-//Get messages for specific user conversation
-router.get('/get_chat_messages/:conversation_id', authenticateCheck, async (req, res) => {
+//Get messages for specific user chat
+router.get('/get_chat_messages/:chat_id', authenticateCheck, async (req, res) => {
     try {
-        const conversationId = req.params.conversation_id;
+        const chatId = req.params.chat_id;
         const messages = await Messages.findAll({
-            where: { conversation_id: conversationId },
+            where: { chat_id: chatId },
             include: [{
                 model: Users,
                 attributes: ['user_id'],
@@ -99,18 +99,18 @@ router.get('/get_chat_messages/:conversation_id', authenticateCheck, async (req,
     }
 });
 
-//Get all conversations for logged in user
-router.get('/get_conversations', authenticateCheck, async (req, res) => {
+//Get all chats for logged in user
+router.get('/get_chats', authenticateCheck, async (req, res) => {
     try {
         const userId = req.session.user_id;
-        //Conversation ID's that user is a part of
-        const userConversationIds = await UserConversations.findAll({
+        //Chat ID's that user is a part of
+        const userChatIds = await UserChats.findAll({
             where: { user_id: userId },
-            attributes: ['conversation_id'],
+            attributes: ['chat_id'],
         });
-        const conversationIds = userConversationIds.map(uc => uc.conversation_id);
-        const conversations = await Conversations.findAll({
-            where: { conversation_id: conversationIds },
+        const chatIds = userChatIds.map(uc => uc.chat_id);
+        const chats = await Chats.findAll({
+            where: { chat_id: chatIds },
             include: [{
                 model: Users,
                 as: 'users',
@@ -120,20 +120,20 @@ router.get('/get_conversations', authenticateCheck, async (req, res) => {
             }],
             order: [['updated_at', 'ASC']]
         });
-        const conversationsData = conversations.map(conversation => {
-            const participants = conversation.users.map(user => ({
+        const chatsData = chats.map(chat => {
+            const participants = chat.users.map(user => ({
                 userId: user.user_id,
                 username: user.username
             }));
             return {
-                conversationId: conversation.conversation_id,
-                title: conversation.title,
+                chatId: chat.chat_id,
+                title: chat.title,
                 participants: participants,
-                createdAt: conversation.created_at,
-                updatedAt: conversation.updated_at
+                createdAt: chat.created_at,
+                updatedAt: chat.updated_at
             };
         });
-        res.json(conversationsData);
+        res.json(chatsData);
     } catch (error) {
        res.status(500).json({ success: false });
     }
@@ -158,7 +158,6 @@ router.get('/get_friends', authenticateCheck, async (req, res) => {
         const friendsData = await Promise.all(friendships.map(async (friendship) => {
             const friendId = (friendship.user1_id !== user.user_id) ? friendship.user1_id : friendship.user2_id;
             const friend = await Users.findByPk(friendId);
-
             const friendProfile = await Profiles.findOne({
                 where: {
                     user_id: friendId
@@ -180,20 +179,17 @@ router.get('/get_friends', authenticateCheck, async (req, res) => {
 //Socket.io event for sending message to an individual user
 export const directMessagesSocket = (socket) => {
     try {
-        socket.on('join_conversation', (conversationId) => {
-            socket.join(conversationId);
+        socket.on('join_chat', (chatId) => {
+            socket.join(chatId);
         });
-
-        socket.on('leave_conversation', (conversationId) => {
-            socket.leave(conversationId);
+        socket.on('leave_chat', (chatId) => {
+            socket.leave(chatId);
         });
-
         socket.on('delete_message', async (data) => {
             const { message_id, channel_id } = data;
             await Messages.destroy({ where: { message_id } });
             socket.to(channel_id).emit('delete_message', { message_id });
         });
-
         socket.on('send_direct_message', async (message) => {
             const messageLength = message.message_content.length;
             if (messageLength === 0) {
@@ -203,15 +199,14 @@ export const directMessagesSocket = (socket) => {
                 socket.emit('error_message', { error: "Message too long" });
                 return;
             }
-    
             const newMessage = await Messages.create({
                 message_id: message.message_id,
-                conversation_id: message.conversationId,
+                chat_id: message.chatId,
                 sender_id: message.senderId,
                 message_content: message.message_content,
                 timestamp: message.timestamp
             });
-            socket.to(message.conversationId).emit('message_confirmed', {
+            socket.to(message.chatId).emit('message_confirmed', {
                 ...message,
                 message_id: newMessage.message_id,
                 timestamp: newMessage.timestamp

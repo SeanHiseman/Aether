@@ -7,20 +7,19 @@ import { v4 } from 'uuid';
 import ManageFriendshipButton from '../components/manageFriendship';
 import Message from '../components/message';
 
-//chats and conversations in variable names are used interchangeably, to be corrected
 const MessagesPage = () => {
     const [animationClass, setAnimationClass] = useState('');
     const [changedChatName, setChangedChatName] = useState('');
     const [chat, setChat] = useState([]);
-    const [conversations, setConversations] = useState([]);
+    const [chats, setChats] = useState([]);
     const [errorMessage, setErrorMessage] = useState('');
     const [friends, setFriends] = useState([]);
     const { friend_name, username, title } = useParams();
     const [isEditingChatName, setIsEditingChatName] = useState(false);
     const [message, setMessage] = useState('');
     const [newChatName, setNewChatName] = useState('');
-    const [selectedConversations, setSelectedConversations] = useState([]);
-    const [selectedConversationId, setSelectedConversationId] = useState(null);
+    const [selectedChats, setSelectedChats] = useState([]);
+    const [selectedChatId, setSelectedChatId] = useState(null);
     const [showForm, setShowForm] = useState(false);
     const socketRef = useRef(null);
     const { user } = useContext(AuthContext)
@@ -32,19 +31,19 @@ const MessagesPage = () => {
                 const response = await axios.get('/api/get_friends');
                 setFriends(response.data);
             } catch (error) {
-                setErrorMessage("Error fetching friends", error);
+                setErrorMessage("Error getting friends");
             }
         };
-        const getConversations = async () => {
+        const getChats = async () => {
             try {
-                const response = await axios.get('/api/get_conversations');
-                setConversations(response.data);
+                const response = await axios.get('/api/get_chats');
+                setChats(response.data);
             } catch (error) {
-                setErrorMessage("Error fetching conversations", error);
+                setErrorMessage("Error getting chats");
             }
         };
         getFriends();
-        getConversations();
+        getChats();
         socketRef.current = io(`http://localhost:7000`);
         return () => {
             if (socketRef.current) {
@@ -53,36 +52,35 @@ const MessagesPage = () => {
         };
     }, []);
     
-    //Filters conversations to those with a specific friend 
+    //Filters chats to those with a specific friend 
     useEffect(() => {
-        if (conversations.length > 0 && friend_name) {
-            const filteredConversations = conversations.filter(conversation =>
-                conversation.participants.map(p => p.username).includes(friend_name));
-            setSelectedConversations(filteredConversations);
-
+        if (chats.length > 0 && friend_name) {
+            const filteredChats = chats.filter(chat =>
+                chat.participants.map(p => p.username).includes(friend_name));
+            setSelectedChats(filteredChats);
             if (title) {
-                const selected = filteredConversations.find(c => c.title === title);
+                const selected = filteredChats.find(c => c.title === title);
                 if (selected) {
-                    setSelectedConversationId(selected.conversationId);
+                    setSelectedChatId(selected.chatId);
                 }
             } else {
-                const mainChat = filteredConversations.find(c => c.title === 'Main');
-                setSelectedConversationId(mainChat.conversationId);
+                const mainChat = filteredChats.find(c => c.title === 'Main');
+                setSelectedChatId(mainChat.chatId);
             }
         }
-    }, [friend_name, conversations, user?.username, title]);
+    }, [friend_name, chats, user?.username, title]);
 
     useEffect(() => {
         //Get existing messages
-        if (selectedConversationId){
-            //Join conversation room 
-            socketRef.current.emit('join_conversation', selectedConversationId);
+        if (selectedChatId){
+            //Join chat room 
+            socketRef.current.emit('join_chat', selectedChatId);
             const handleReceiveMessage = (message) => {
                 setChat(prevChat => [...prevChat, message]);
             };
             const handleMessageConfirmed = (message) => {
                 setChat(prevChat => prevChat.map(msg => {
-                    if (msg.senderId === message.senderId && msg.message_content === message.message_content && msg.conversationId === message.conversationId) {
+                    if (msg.senderId === message.senderId && msg.message_content === message.message_content && msg.chatId === message.chatId) {
                         return { ...msg, message_id: message.message_id };
                     }
                     return msg;
@@ -91,21 +89,19 @@ const MessagesPage = () => {
             //Listen for incoming messages
             socketRef.current.on('receive_message', handleReceiveMessage);
             socketRef.current.on('message_confirmed', handleMessageConfirmed);
-
-            getChatMessages(selectedConversationId);
-
+            getChatMessages(selectedChatId);
             return () => {
-                socketRef.current.emit('leave_conversation', selectedConversationId);
+                socketRef.current.emit('leave_chat', selectedChatId);
                 socketRef.current.off('receive_message', handleReceiveMessage);
                 socketRef.current.off('message_confirmed', handleMessageConfirmed);
             };
         }
-    }, [selectedConversationId]);
+    }, [selectedChatId]);
 
     //Ensures header title is reset when returning to main messages page
     useEffect(() => {
         if (!friend_name) {
-            setSelectedConversationId(null);
+            setSelectedChatId(null);
         }
     }, [friend_name]);
 
@@ -122,21 +118,20 @@ const MessagesPage = () => {
                 return;
             } else {
                 const response = await axios.post('/api/change_chat_name', {
-                    conversationId: selectedConversationId,
+                    chatId: selectedChatId,
                     newTitle: changedChatName
                 });
-
                 if (response.status === 200) {
-                    setConversations(prevConversations => 
-                        prevConversations.map(chat =>
-                            chat.conversationId === selectedConversationId
+                    setChats(prevChats => 
+                        prevChats.map(chat =>
+                            chat.chatId === selectedChatId
                             ? {...chat, title: changedChatName}
                             : chat
                         )
                     );
-                    setSelectedConversations(prevSelected =>
+                    setSelectedChats(prevSelected =>
                         prevSelected.map(chat =>
-                            chat.conversationId === selectedConversationId
+                            chat.chatId === selectedChatId
                                 ? {...chat, title: changedChatName}
                                 : chat
                         )
@@ -153,7 +148,7 @@ const MessagesPage = () => {
     };
 
     //Currently viewed chat
-    const currentChat = selectedConversations.find(c => c.conversationId === selectedConversationId)
+    const currentChat = selectedChats.find(c => c.chatId === selectedChatId)
     const currentChatName = currentChat?.title
 
     const createNewChat = async (event) => {
@@ -163,7 +158,6 @@ const MessagesPage = () => {
             const friendId = friend.friend_id;
             const participants = [user.userId, friendId];
             const chatName = newChatName.length === 0 ? 'New chat' : newChatName;
-
             if (newChatName.length >= 30) {
                 setErrorMessage("Name too long"); 
                 return; 
@@ -176,18 +170,18 @@ const MessagesPage = () => {
                     title: chatName
                 });
                 if (response.data && response.status === 201) {
-                    const newConversation = {
+                    const newChat = {
                         ...response.data,
-                        conversationId: response.data.conversation_id,
+                        chatId: response.data.chat_id,
                         participants: [
                             { username: user.username },
                             { username: friend_name }
                         ]
                     };
                     //Updates chats and viewed chats
-                    setConversations(prevConversations => [...prevConversations, newConversation]);
-                    setSelectedConversations(prevSelected => [...prevSelected, newConversation]);
-                    setSelectedConversationId(newConversation.conversationId);
+                    setChats(prevChats => [...prevChats, newChat]);
+                    setSelectedChats(prevSelected => [...prevSelected, newChat]);
+                    setSelectedChatId(newChat.chatId);
                     navigate(`/messages/${username}/${friend_name}/${newChatName}`)
                     setErrorMessage('');
                     setNewChatName('');
@@ -207,19 +201,19 @@ const MessagesPage = () => {
                 setErrorMessage("Main chat cannot be deleted.");
                 return;
             }
-            await axios.delete(`/api/delete_chat`, { data: {conversation_id: selectedConversationId, title: title} });
+            await axios.delete(`/api/delete_chat`, { data: {chat_id: selectedChatId, title: title} });
             //Show chat list without deleted chat
-            setConversations(prevConversations => 
-                prevConversations.filter(conv => conv.conversationId !== selectedConversationId)
+            setChats(prevChats => 
+                prevChats.filter(c => c.chatId !== selectedChatId)
             );
-            setSelectedConversations(prevSelected => 
-                prevSelected.filter(conv => conv.conversationId !== selectedConversationId)
+            setSelectedChats(prevSelected => 
+                prevSelected.filter(c => c.chatId !== selectedChatId)
             );
-            setSelectedConversationId(null);
+            setSelectedChatId(null);
             setChat([]);
             navigate(`/messages/${username}/${friend_name}/Main`);
         } catch (error) {
-            setErrorMessage('Error deleting chat:', error);
+            setErrorMessage('Error deleting chat');
         }
     };
 
@@ -227,18 +221,18 @@ const MessagesPage = () => {
         if (messageId) {
             socketRef.current.emit('delete_message', {
                 message_id: messageId,
-                channel_id: selectedConversationId,
+                channel_id: selectedChatId,
             });
             setChat(prevChat => prevChat.filter(msg => msg.message_id !== messageId));
         } else {
-            console.error('Invalid messageId:', messageId);
+            setErrorMessage('Error deleting message');
         }
     };
 
-    //Get messages from a specific conversation
-    const getChatMessages = async (conversationId) => {
+    //Get messages from a specific chat
+    const getChatMessages = async (chatId) => {
         try {
-            const response = await axios.get(`/api/get_chat_messages/${conversationId}`);
+            const response = await axios.get(`/api/get_chat_messages/${chatId}`);
             setChat(response.data);
         } catch (error) {
             setErrorMessage("Error getting messages");
@@ -259,7 +253,7 @@ const MessagesPage = () => {
                 message_id: v4(),
                 message_content: message,
                 senderId: user.userId,
-                conversationId: selectedConversationId,
+                chatId: selectedChatId,
                 timestamp: Date.now()
             };
 
@@ -271,9 +265,7 @@ const MessagesPage = () => {
         }
     };
 
-    const toggleForm = () => {
-        setShowForm(!showForm)
-    }
+    const toggleForm = () => { setShowForm(!showForm) }
 
     //Sets form to fade in or out
     useEffect(() => {
@@ -373,10 +365,10 @@ const MessagesPage = () => {
                             <p className="large-text">Main</p>  
                         )}
                         <ul>
-                            {selectedConversations.map(conversation => (
-                                <li key={conversation.conversationId} className="channel-item">
-                                    <Link to={`/messages/${username}/${friend_name}/${conversation.title}`}>
-                                        <div className="channel-link">{conversation.title}</div>
+                            {selectedChats.map(chat => (
+                                <li key={chat.chatId} className="channel-item">
+                                    <Link to={`/messages/${username}/${friend_name}/${chat.title}`}>
+                                        <div className="channel-link">{chat.title}</div>
                                     </Link>
                                 </li>
                             ))}

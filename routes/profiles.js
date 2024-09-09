@@ -2,7 +2,7 @@ import authenticateCheck from '../functions/checks/authenticateCheck.js';
 import deleteMedia from '../functions/media_handling/deleteMedia.js';
 import imageUpload from '../functions/media_handling/imageUpload.js';
 import sortPostsByWeightedRatio from'../functions/postSorting.js';
-import { Conversations, Followers, Friends, FriendRequests, Messages, Profiles, ProfileChannels, Users, UserConversations } from '../models/models.js';
+import { Chats, Followers, Friends, FriendRequests, Messages, Profiles, ProfileChannels, Users, UserChats } from '../models/models.js';
 import express from 'express';
 import { join } from 'path';
 import multer from 'multer';
@@ -32,14 +32,14 @@ router.post('/accept_friend_request', authenticateCheck, async (req, res) => {
             user2_id: friendRequest.receiver_id,
             FriendSince: new Date()
         });
-        const conversation = await Conversations.create({ 
-            conversation_id: v4(),
+        const chat = await Chats.create({ 
+            chat_id: v4(),
             title: "Main"
         });
-        //Create new conversation between users
-        await UserConversations.bulkCreate([
-            { user_id: friendRequest.sender_id, conversation_id: conversation.conversation_id },
-            { user_id: friendRequest.receiver_id, conversation_id: conversation.conversation_id }
+        //Create new chat between users
+        await UserChats.bulkCreate([
+            { user_id: friendRequest.sender_id, chat_id: chat.chat_id },
+            { user_id: friendRequest.receiver_id, chat_id: chat.chat_id }
         ]);
         await friendRequest.destroy();
         res.status(200).json({ success: true });
@@ -245,10 +245,10 @@ router.delete('/remove_friend', authenticateCheck, async (req, res) => {
                 ]
             }
         });
-        //Find all conversations involving both users
-        const conversations = await Conversations.findAll({
+        //Find all chats involving both users
+        const chats = await Chats.findAll({
             include: [{
-                model: UserConversations,
+                model: UserChats,
                 where: { 
                     [Op.or]: [
                         { user_id: userId },
@@ -257,27 +257,27 @@ router.delete('/remove_friend', authenticateCheck, async (req, res) => {
                 }
             }]
         });
-        for (const conversation of conversations) {
-            //Deletes all messages in the conversation
+        for (const chat of chats) {
+            //Deletes all messages in the chat
             await Messages.destroy({
                 where: {
-                    conversation_id: conversation.conversation_id
+                    chat_id: chat.chat_id
                 }
             });
-            //Removes both users from the conversation
-            await UserConversations.destroy({
+            //Removes both users from the chat
+            await UserChats.destroy({
                 where: {
-                    conversation_id: conversation.conversation_id,
+                    chat_id: chat.chat_id,
                     [Op.or]: [
                         { user_id: userId },
                         { user_id: receiverUserId }
                     ]
                 }
             });
-            //Deletes the conversation
-            await Conversations.destroy({
+            //Deletes the chat
+            await Chats.destroy({
                 where: {
-                    conversation_id: conversation.conversation_id
+                    chat_id: chat.chat_id
                 }
             });
         }

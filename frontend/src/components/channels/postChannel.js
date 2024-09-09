@@ -20,7 +20,6 @@ const PostChannel = ({ canRemove, channelId, channelName, isGroup, locationId })
                     }
                 });
                 setPosts(response.data);
-                console.log("response.data", response.data);
             } catch (error) {
                 console.error('Error getting posts:', error);
             }
@@ -60,28 +59,12 @@ const PostChannel = ({ canRemove, channelId, channelName, isGroup, locationId })
             console.error('Error fetching YouTube videos:', error.message);
         }
     };
-    
+
     return (
         <div className="channel">
             <button className="button" onClick={youtubeButton}>Youtube</button>
             <div className="channel-content">
-                {!showYoutube ? (
-                    posts.length > 0 ? (
-                        <ul className="content-list">
-                            {posts.map(post => (
-                                <ContentWidget
-                                    key={post.post_id}
-                                    canRemove={canRemove}
-                                    isGroup={isGroup}
-                                    onPostRemoved={handlePostRemoved}
-                                    post={post}
-                                />
-                            ))}
-                        </ul>
-                    ) : (
-                        <p>No posts yet</p>
-                    )
-                ) : (
+                {showYoutube && (
                     <ul className="content-list">
                         {videos.map(video => (
                             <ContentWidget
@@ -92,6 +75,21 @@ const PostChannel = ({ canRemove, channelId, channelName, isGroup, locationId })
                             />
                         ))}
                     </ul>
+                )}
+                {posts.length > 0 ? (
+                    <ul className="content-list">
+                        {posts.map(post => (
+                            <ContentWidget
+                                key={post.post_id}
+                                canRemove={canRemove}
+                                isGroup={isGroup}
+                                onPostRemoved={handlePostRemoved}
+                                post={post}
+                            />
+                        ))}
+                    </ul>
+                ) : (
+                    <p>No posts yet</p>
                 )}
             </div>
         </div>

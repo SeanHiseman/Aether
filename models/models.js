@@ -30,7 +30,7 @@ const Users = sequelize.define('users', {
   time_preference: { type: FLOAT, allowNull: false, defaultValue: 0.0001 },
   has_membership: { type: BOOLEAN, defaultValue: false }, //If user has membership subscription
   theme: { type: STRING(120), allowNull: true },
-  points: { type: INTEGER, allowNull: false, defaultValue: 50 }, //Points for signing up
+  points: { type: INTEGER, allowNull: false, defaultValue: 0 }, 
 }, {tableName: 'users', timestamps: false});
 
 //Users relationships
@@ -270,39 +270,39 @@ FriendRequests.belongsTo(Users, { as: 'sender', foreignKey: 'sender_id' });
 FriendRequests.belongsTo(Users, { as: 'receiver', foreignKey: 'receiver_id' });
 
 
-const Conversations = sequelize.define('conversations', {
-  conversation_id: { type: STRING(36), primaryKey: true },
+const Chats = sequelize.define('chats', {
+  chat_id: { type: STRING(36), primaryKey: true },
   title: { type: STRING(256), allowNull: false, defaultValue: "New chat"},
   created_at: { type: DATE, defaultValue: NOW },
   updated_at: { type: DATE, defaultValue: NOW }
-}, { tableName: 'conversations', timestamps: false });  
+}, { tableName: 'chats', timestamps: false });  
 
 
-//Allows many-to-many relationship between users and conversations
-const UserConversations = sequelize.define('user_conversations', {
+//Allows many-to-many relationship between users and chats
+const UserChats = sequelize.define('user_chats', {
   user_id: { type: STRING(36), primaryKey: true, references: { model: 'Users', key: 'user_id' }},
-  conversation_id: { type: STRING(36), primaryKey: true, references: { model: 'Conversations', key: 'conversation_id' }}
-}, { tableName: 'user_conversations', timestamps: false });
+  chat_id: { type: STRING(36), primaryKey: true, references: { model: 'Chats', key: 'chat_id' }}
+}, { tableName: 'user_chats', timestamps: false });
 
-//Many to many relationship between Users and Conversations
-Users.belongsToMany(Conversations, { through: UserConversations, foreignKey: 'user_id', otherKey: 'conversation_id', as: 'users' });
-Conversations.belongsToMany(Users, { through: UserConversations, foreignKey: 'conversation_id', otherKey: 'user_id', as: 'users' });
-//Direct association between UserConversations and Conversations
-UserConversations.belongsTo(Conversations, { foreignKey: 'conversation_id'});
-Conversations.hasMany(UserConversations, { foreignKey: 'conversation_id'});
+//Many to many relationship between Users and Chats
+Users.belongsToMany(Chats, { through: UserChats, foreignKey: 'user_id', otherKey: 'chat_id', as: 'users' });
+Chats.belongsToMany(Users, { through: UserChats, foreignKey: 'chat_id', otherKey: 'user_id', as: 'users' });
+//Direct association between UserChats and Chats
+UserChats.belongsTo(Chats, { foreignKey: 'chat_id'});
+Chats.hasMany(UserChats, { foreignKey: 'chat_id'});
 
 
 const Messages = sequelize.define('messages', {
   message_id: { type: STRING(36), primaryKey: true },
-  conversation_id: { type: STRING(36), allowNull: false, references: { model: 'Conversations', key: 'conversation_id' }},
+  chat_id: { type: STRING(36), allowNull: false, references: { model: 'Chats', key: 'chat_id' }},
   sender_id: { type: STRING(36), allowNull: false, references: { model: 'Users', key: 'user_id' }},
   message_content: { type: STRING(1000), allowNull: false },
   timestamp: { type: DATE, defaultValue: NOW }
 }, { tableName: 'messages', timestamps: false });
 
 //Messages relationships
-Conversations.hasMany(Messages, { foreignKey: 'conversation_id' });
-Messages.belongsTo(Conversations, { foreignKey: 'conversation_id' });
+Chats.hasMany(Messages, { foreignKey: 'chat_id' });
+Messages.belongsTo(Chats, { foreignKey: 'chat_id' });
 Users.hasMany(Messages, { foreignKey: 'sender_id' });
 Messages.belongsTo(Users, { foreignKey: 'sender_id' });
 
@@ -400,8 +400,8 @@ export {
     ReplyVotes,
     Friends,
     FriendRequests,
-    UserConversations,
-    Conversations,
+    UserChats,
+    Chats,
     Messages,
     AskChats,
     AskMessages,
