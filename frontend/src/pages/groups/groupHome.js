@@ -44,7 +44,7 @@ const GroupHome = () => {
                     userId: groupData.userId
                 });
             } catch (error) {
-                setErrorMessage("Error fetching feed details", error);
+                setErrorMessage("Error fetching feed details");
             }
         };
         fetchGroupData();
@@ -78,7 +78,7 @@ const GroupHome = () => {
                     setChannels([]);
                 }
             } catch (error) {
-                console.error('Error fetching channel data:', error);
+                setErrorMessage('Error fetching channel data:', error);
                 setChannels([]);
             }
         };
@@ -93,7 +93,7 @@ const GroupHome = () => {
                 const response = await axios.get(`/api/sub_groups/${groupDetails.groupId}`);
                 setSubGroups(response.data);
             } catch (error) {
-                console.log("Error fetching feeds:", error);
+                setErrorMessage("Error fetching feeds");
             }
         };
         fetchSubGroups();
@@ -117,13 +117,13 @@ const GroupHome = () => {
                     setErrorMessage('');
                     setNewChannelName('');
                     setShowChannelForm(false);
-                    navigate(`/group/${group_name}/${newChannelName}`);
+                    navigate(`/g/${group_name}/${newChannelName}`);
                 } else {
                     setErrorMessage('Failed to add channel');
                 }
             }
         } catch (error) {
-            setErrorMessage(error.response ? error.response.data.error : 'Failed to add channel');
+            setErrorMessage('Failed to add channel');
         }
     };
 
@@ -146,7 +146,7 @@ const GroupHome = () => {
             } else {
                 await axios.delete(`/api/delete_group_channel`, { data: {channel_name: channel_name, group_id: groupDetails.groupId} });
                 setChannels(prevChannels => prevChannels.filter(channel => channel.channel_name !== channel_name));
-                navigate(`/group/${group_name}/Main`);
+                navigate(`/g/${group_name}/Main`);
             }
         } catch (error) {
             console.error('Error deleting channel', error);

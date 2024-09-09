@@ -7,9 +7,10 @@ import GroupProfileView from './groupProfileView';
 import MemberJoinRequests from './memberJoinRequests';
 
 const GroupSettings = () => {
-    const { group_name } = useParams();
     const [currentView, setCurrentView] = useState('profile');
+    const [errorMessage, setErrorMessage] = useState('');
     const [groupDetails, setGroupDetails] = useState('');
+    const { group_name } = useParams();
 
     //Loads group info 
     useEffect(() => {
@@ -30,7 +31,7 @@ const GroupSettings = () => {
                     userId: groupData.userId
                 });
             } catch (error) {
-                console.log("Error fetching group details:", error);
+                setErrorMessage("Error fetching group details");
             }
         };
         fetchGroupData();
@@ -62,9 +63,10 @@ const GroupSettings = () => {
             <div id="right-aside">
                 <nav id="channel-list">
                     <ul>
-                        <Link to={`/group/${group_name}`}>
+                        <Link to={`/g/${group_name}`}>
                             <h2>{group_name}</h2>
                         </Link>
+                        <div className="error-message">{errorMessage}</div>
                         <li className="settings-item" onClick={() => setCurrentView('profile')}>Feed profile</li>
                         <li className="settings-item" onClick={() => setCurrentView('members')}>Followers</li>
                         {groupDetails.isPrivate && (<li className="settings-item" onClick={() => setCurrentView('join-requests')}>Follow requests</li>)}

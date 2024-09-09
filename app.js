@@ -17,6 +17,7 @@ import directMessages, { directMessagesSocket } from './routes/directMessages.js
 import groups, { groupChatChannelSocket } from './routes/groups.js';
 import profiles from './routes/profiles.js';
 import routes from './routes/routes.js';
+import websites from './routes/websites.js';
 import sequelize  from './databaseSetup.js';
 
 const app = express();
@@ -48,6 +49,7 @@ app.use('/api/', groups);
 app.use('/api/', replies);
 app.use('/api/', routes);
 app.use('/api/', profiles);
+app.use('/api/', websites);
 
 app.use(history('index.html', { root }));
 

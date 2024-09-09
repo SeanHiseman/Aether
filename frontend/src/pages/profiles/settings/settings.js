@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { AuthContext } from '../../../components/authContext';
 import React, { useContext, useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import AccountDeletion from './accountDeletion';
 import FriendRequests from './friendRequests';
 import MembershipSettings from './membership';
@@ -12,11 +12,12 @@ import Theme from './theme';
 
 //Page for all settings related to a user
 const Settings = () => {
-    const { username } = useParams();
     const [currentView, setCurrentView] = useState('profile');
+    const [errorMessage, setErrorMessage] = useState('');
     const [profile, setProfile] = useState('');
     const navigate = useNavigate();
     const { user } = useContext(AuthContext);
+    const { username } = useParams();
 
     useEffect(() => {
         const fetchProfile = async () => {
@@ -41,10 +42,10 @@ const Settings = () => {
             if (response.data.success) {
                 navigate('/login');
             } else {
-                alert('Logout failed: ' + response.data.message);
+                setErrorMessage('Logout failed');
             }
         } catch (error) {
-            alert('Error during logout: ' + error);
+            setErrorMessage('Error during logout');
         }
     };
 
@@ -79,7 +80,10 @@ const Settings = () => {
             <div id="right-aside">
                 <nav id="channel-list">
                     <ul>
-                        <h2>Settings</h2>
+                        <Link to={`/u/${username}`}>
+                            <h2>{username}</h2>
+                        </Link>
+                        <div className="error-message">{errorMessage}</div>
                         <li className="settings-item" onClick={() => setCurrentView('profile')}>Profile</li>
                         <li className="settings-item" onClick={() => setCurrentView('points')}>Earnings</li>
                         <li className="settings-item" onClick={() => setCurrentView('membership-settings')}>Membership</li>

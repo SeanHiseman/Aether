@@ -85,7 +85,7 @@ const BaseLayout = () => {
                     setFeeds([...feeds, response.data]);
                     //Redirect to new group
                     const newGroupName = response.data.newGroup.group_name;
-                    navigate(`/group/${newGroupName}`);
+                    navigate(`/g/${newGroupName}`);
                     setGroupName('');
                     setShowForm(false);
                 }
