@@ -33,7 +33,6 @@ const ManageFriendshipButton = ({ userId, receiverUserId, isRequestSent, isFrien
                 url,
                 data: requestData,
             });
-
             if (response.status === 200) {
                 if (method === 'delete') {
                     if (url === 'remove_friend') {
@@ -51,12 +50,13 @@ const ManageFriendshipButton = ({ userId, receiverUserId, isRequestSent, isFrien
                     setFriend(false);
                 }
             } else {
-                console.error('Error:', response.data);
+                setErrorMessage("Friend request error");
             }
         } catch (error) {
-            setErrorMessage("Friend request error.", error);
+            setErrorMessage("Friend request error");
         }
     };
+    
     //If user is viewing themselves
     if (userId === receiverUserId) {
         return;

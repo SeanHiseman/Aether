@@ -72,7 +72,7 @@ router.delete('/cancel_friend_request', authenticateCheck, async (req, res) => {
         await FriendRequests.destroy({
             where: { sender_id: userId, receiver_id: receiverUserId } 
         });
-        res.status(200).json("Friend request cancelled");
+        res.status(200).json({ success: true });
     } catch (error) {
         res.status(500).json({ success: false });
     }
@@ -102,9 +102,9 @@ router.post('/change_theme', authenticateCheck, async (req, res) => {
             { theme: theme },
             { where: { user_id: userId } }
         );
-        res.status(200).json({ message: 'Theme updated successfully' });
+        res.status(200).json({ success: true });
     } catch (error) {
-        res.status(500).json({ error: 'Internal server error' });
+        res.status(500).json({ success: false });
     }
 });
 
@@ -321,7 +321,7 @@ router.get('/profile/:username', authenticateCheck, async (req, res) => {
                 })
             ]);
         } catch (error) {
-            return res.status(500).json("Error fetching friendship data.", error);
+            return res.status(500).json({ success: false });
         }
         //Changes to frontend format
         const responseData = {

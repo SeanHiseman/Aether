@@ -169,7 +169,7 @@ router.get('/following_posts', authenticateCheck, async (req, res) => {
                 as: 'ProfilePoster',
                 attributes: ['username'],
                 include: [{
-                     model: Profiles,
+                    model: Profiles,
                     attributes: ['profile_photo'],
                 }],
             }, {

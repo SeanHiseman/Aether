@@ -21,7 +21,6 @@ const groupProfileUpload = imageUpload('/media/group_profiles', 'new_group_profi
 router.post('/accept_join_request', authenticateCheck, async (req, res) => {
     try {
         const { request } = req.body;
-        console.log("request:", request);
         const groupRequest = await GroupRequests.findByPk(request.request_id);
         await UserGroups.create({
             user_id: groupRequest.sender_id,
@@ -66,7 +65,7 @@ router.post('/add_group_channel', authenticateCheck, async (req, res) => {
         };
         const newChannel = await GroupChannels.create({ 
             channel_id: v4(),
-            channel_name: channel_name,
+            channel_name,
             group_id: groupId,
             is_posts: isPosts,
             is_chat: isChat
@@ -275,7 +274,6 @@ router.get('/group/:group_name', authenticateCheck, async (req, res) => {
     try {
         const groupName = req.params.group_name;
         const userId = req.session.user_id;
-
         //Check if user is admin, moderator or member of group
         const { isAdmin, isMod } = await checkIfUserIsAdminOrMod(userId, groupName);
         const isMember = await checkIfUserIsMember(userId, groupName);
@@ -289,11 +287,8 @@ router.get('/group/:group_name', authenticateCheck, async (req, res) => {
         //Finds user join request if private group
         if (group.is_private) {
             const hasJoinRequest = await GroupRequests.findOne({
-                where: {
-                    sender_id: userId,
-                },
+                where: { sender_id: userId },
             });
-
             groupData.isRequestSent = !!hasJoinRequest;
         } else {
             groupData.isRequestSent = false;
@@ -425,7 +420,6 @@ router.get('/sub_groups/:group_id', authenticateCheck, async (req, res) => {
             //Returns grous alphabetically
             order: [[{ model: Groups, as: 'SubGroup' }, 'group_name', 'ASC']]
         });
-
         res.json(subGroups);
     } catch (error) {
         res.status(500).json({ success: false });  
@@ -496,13 +490,11 @@ export const groupChatChannelSocket = (socket) => {
         socket.on('join_channel', (channelId) => {
             socket.join(channelId);
         });
-
         socket.on('delete_message', async (data) => {
             const { message_id, channel_id } = data;
             await GroupChannelMessages.destroy({ where: { message_id } });
             socket.to(channel_id).emit('delete_message', { message_id });
         });
-
         socket.on('send_group_message', async (message) => {
             const messageLength = message.message_content.length;
             if (messageLength === 0) {
@@ -512,7 +504,6 @@ export const groupChatChannelSocket = (socket) => {
                 socket.emit('error_message', { error: "Message too long" });
                 return;
             }
-    
             const newMessage = await GroupChannelMessages.create({
                 message_id: message.message_id,
                 group_id: message.groupId,
@@ -523,7 +514,6 @@ export const groupChatChannelSocket = (socket) => {
             });
             socket.to(message.channelId).emit('new_message', newMessage);
         });
-    
         socket.on('leave_channel', (channelId) => {
             socket.leave(channelId);
         }) 
