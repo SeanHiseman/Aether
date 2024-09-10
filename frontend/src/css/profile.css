@@ -7,13 +7,16 @@
 .button.delete {
     color: red;
 }
-.button.delete, .button.join, .light-button.join {
+.button.delete, .button.join {
     font-size: 36px;
-    margin-bottom: 20px;
     padding: 20px;
 }
-.button.join, .light-button.join {
+.button.join {
+    background-color: var(--darkest);
     width: 200px;
+}
+.button.join:hover {
+    background-color: var(--button-hover);
 }
 .button.join-small {
     font-size: 18px;
@@ -40,10 +43,8 @@
 #friend-request-list {
     margin: 10px;
 }
-.results-wrapper {
-    grid-column: 1 / 2;
-    grid-row: 2;
-    overflow-y: auto;
+.light-button.join {
+    background-color: var(--dark);
 }
 #logout-form {
     margin: 10px;
@@ -96,6 +97,11 @@
     display: flex;
     flex-direction: column;
     width: 100%
+}
+.results-wrapper {
+    grid-column: 1 / 2;
+    grid-row: 2;
+    overflow-y: auto;
 }
 .search-result-profile {
     margin: 10px;

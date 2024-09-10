@@ -159,9 +159,7 @@ router.get('/get_friends', authenticateCheck, async (req, res) => {
             const friendId = (friendship.user1_id !== user.user_id) ? friendship.user1_id : friendship.user2_id;
             const friend = await Users.findByPk(friendId);
             const friendProfile = await Profiles.findOne({
-                where: {
-                    user_id: friendId
-                }
+                where: { user_id: friendId }
             });
             return {
                 friend_id: friend.user_id,

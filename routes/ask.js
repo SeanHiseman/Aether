@@ -78,7 +78,7 @@ router.post('/ask_button', authenticateCheck, async (req, res) => {
         });
         res.status(200).json({ newNote });
     } catch (error) {
-        res.status(500).json({ error: "Ask button error" });
+        res.status(500).json({ success: false });
     }
 });
 
@@ -91,7 +91,7 @@ router.post('/change_ask_chat_name', authenticateCheck, async (req, res) => {
         );
         res.status(200).json({ success: true });
     } catch (error) {
-        res.status(500).json({ error: "Error changing chat name"});
+        res.status(500).json({ esuccess: false });
     }
 });
 
@@ -106,7 +106,7 @@ router.post('/create_ask_chat', authenticateCheck, async (req, res) => {
         });
         res.status(201).json(newChat);
     } catch (error) {
-        res.status(500).json({ error: 'Error creating chat' });
+        res.status(500).json({ success: false });
     }
 });
 
@@ -114,18 +114,14 @@ router.delete('/delete_ask_chat', authenticateCheck, async (req, res) => {
     try {
         const { chat_id } = req.body;
         await AskMessages.destroy({
-            where: {
-                chat_id: chat_id
-            }
+            where: { chat_id }
         });
         await AskChats.destroy({
-            where: { 
-                chat_id: chat_id
-            },
+            where: { chat_id },
         });
-        res.status(200).json({ message: 'Chat deleted successfully '});
+        res.status(200).json({ success: true });
     } catch (error) {
-        res.status(500).json({ error: 'Error deleting chat' });
+        res.status(500).json({ success: false });
     }
 });
 
@@ -139,7 +135,7 @@ router.get('/get_ask_chats', authenticateCheck, async (req, res) => {
         });
         res.status(200).json({ chats });
     } catch (error) {
-        res.status(500).json({ error: 'Error getting Ask chats' });
+        res.status(500).json({ success: false });
     }
 });
 
@@ -153,7 +149,7 @@ router.get('/get_ask_messages', authenticateCheck, async (req, res) => {
         });
         res.status(200).json({ messages });
     } catch (error) {
-        res.status(500).json({ error: 'Error getting Ask chats' });
+        res.status(500).json({ success: false });
     }
 });
 
@@ -214,7 +210,7 @@ router.post('/send_ask_message', authenticateCheck, async (req, res) => {
         );
         res.status(201).json({ success: true, userMessage: newMessage, assistantMessage });
     } catch (error) {
-        res.status(500).json({ error: 'Error sending message' });
+        res.status(500).json({ success: false });
     }
 });
 
