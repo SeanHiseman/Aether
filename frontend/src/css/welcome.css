@@ -22,9 +22,18 @@
     background-color: var(--darkest);
     border-radius: 32px;
     color: white;
+    cursor: pointer;
     display: flex;
     font-size: 24px;
     transition: 0.3s;
+}
+.welcome-box.single {
+    cursor: default;
+    transition: none;
+    width: 45%;
+}
+.welcome-box.single:hover {
+    transform: none;
 }
 .welcome-box-header {
     font-size: 36px;
