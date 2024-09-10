@@ -4,28 +4,26 @@ import { Link, useNavigate } from 'react-router-dom';
 import '../../css/authentication.css'; 
 
 const Join = () => {
-    const [error, setError] = useState('');
+    const [errorMessage, setErrorMessage] = useState('');
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
     const navigate = useNavigate();
 
     const handleSubmit = async (event) => {
         event.preventDefault();
-        
         if (password !== confirmPassword) {
-            setError('Passwords do not match');
+            setErrorMessage('Passwords do not match');
             return;
         }
-        
         try {
             const response = await axios.post('/api/join', { username: event.target.username.value, password });
             if (response.data.success) {
                 navigate('/login');
             } else {
-                setError('Joining failed, please try again');
+                setErrorMessage('Joining failed, please try again');
             }
         } catch (error) {
-            setError(error.response ? error.response.data.message : 'Network error');
+            setErrorMessage('Joining failed, please try again');
         }
     };
 
@@ -38,9 +36,11 @@ const Join = () => {
             <div className="authentication-box">
                 <div className="login-register">
                     <h1>Join</h1>
-                    <a className="link" href="/login">Login</a>
+                    <Link to="/login">
+                        <p className="link">Login</p>
+                    </Link>
                 </div>
-                <p className="error-message">{error}</p>
+                <p className="error-message">{errorMessage}</p>
                 <form method="post" onSubmit={handleSubmit}>
                     <input className="authentication-input-box" name="username" placeholder="Username" required />
                     <input 
