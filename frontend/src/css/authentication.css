@@ -8,6 +8,7 @@
     background-color: var(--darkest);
     border-radius: 10px;
     padding: 20px;
+    box-shadow: rgba(0, 0, 0, 0.3) 0px 19px 38px, rgba(0, 0, 0, 0.22) 0px 15px 12px;
     text-align: center;
     width: 400px;
 }
@@ -22,11 +23,12 @@
     width: 100%;
 }
 .submit {
-    background-color: var(--darkest);
-    border: 1px solid var(--border);
-    color: var(--border);
+    background-color: var(--dark);
+    border: none;
     border-radius: 10px;
+    color: var(--border);
     cursor: pointer;
+    font-size: large;
     margin: 8px 0;
     padding: 14px 20px;
     transition: background-color 0.3s;
@@ -34,21 +36,20 @@
 }
 .link {
     align-self: center;
-    background-color: var(--darkest);
-    border: 1px solid var(--border);
+    background-color: var(--dark);
+    border: none;
     border-radius: 10px;
     color: var(--border);
     display: inline-block;
+    font-size: large;
     padding: 10px 20px;
     text-align: center;
     text-decoration: none;
     transition: background-color 0.3s;
 }
-
 .link:hover, .submit:hover{
     background-color: var(--button-hover);
 }
-
 .login-register{
     display: flex;
     justify-content: space-between;

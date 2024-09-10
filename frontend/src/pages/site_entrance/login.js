@@ -1,10 +1,10 @@
 import axios from 'axios';
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import '../../css/authentication.css'; 
 
 const Login = () => {
-    const [error, setError] = useState('');
+    const [errorMessage, setErrorMessage] = useState('');
     const navigate = useNavigate();
 
     const handleSubmit = async (event) => {
@@ -20,10 +20,10 @@ const Login = () => {
                 navigate(`/u/${username}`);
             } else {
                 //If login unsuccessful
-                setError(response.data.message);
+                setErrorMessage('Login error, please try again');
             }
         } catch (error) {
-            setError('Login error, please try again');
+            setErrorMessage('Login error, please try again');
         }
     };
 
@@ -34,9 +34,11 @@ const Login = () => {
             <div className="authentication-box">
                 <div className="login-register">
                     <h1>Login</h1>
-                    <a className="link" href="/join">Join</a>
+                    <Link to="/join">
+                        <p className="link">Join</p>
+                    </Link>
                 </div>
-                {error && <p className="error-message">{error}</p>}
+                <p className="error-message">{errorMessage}</p>
                 <form method="post" onSubmit={handleSubmit}>
                     <input className="authentication-input-box" name="username" placeholder="Username" required />
                     <input type="password" className="authentication-input-box" name="password" placeholder="Password" required />
