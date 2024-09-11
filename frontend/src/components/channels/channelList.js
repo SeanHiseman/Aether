@@ -1,25 +1,25 @@
 import axios from 'axios';
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 
 const ChannelList = ({ channels, feedId, feedName, isGroup, setChannels }) => {
-    const { channel_name } = useParams();
     const [errorMessage, setErrorMessage] = useState('');
     const urlLetter = isGroup ? 'g' : 'u';
 
+    const getFeedChannels = useCallback(async () => {
+        try {
+            const channelRoute = isGroup ? 'get_group_channels' : 'get_profile_channels';
+            const response = await axios.get(`/api/${channelRoute}/${feedId}`);
+            setChannels(response.data);
+        } catch (error) {
+            setErrorMessage('Error getting channels');
+            setChannels([]);
+        }
+    }, [feedId, isGroup]);
+
     useEffect(() => {
-        const getFeedChannels = async () => {
-            try {
-                const channelRoute = isGroup ? 'get_group_channels' : 'get_profile_channels';
-                const response = await axios.get(`/api/${channelRoute}/${feedId}`);
-                setChannels(response.data);
-            } catch (error) {
-                setErrorMessage('Error getting channels');
-                setChannels([]);
-            }
-        };
         getFeedChannels();
-    }, [channel_name, feedId, isGroup, setChannels]);
+    }, [getFeedChannels]);
 
     return (
         <nav className="channel-list">

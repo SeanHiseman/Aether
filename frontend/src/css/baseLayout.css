@@ -84,6 +84,11 @@
     overflow-y: auto;
     width: 100%;
 }
+.channel-dropdown {
+    color: var(--dark-line);
+    cursor: pointer;
+    margin-left: 12px;
+}
 .channel-feed {
     align-items: center;
     display: flex;
@@ -191,6 +196,7 @@
 }
 .feed-list-item {
     background-color: var(--darkest);
+    display: flex;
     margin: 6px;
     padding: 6px;
     transition: background-color 0.3s;

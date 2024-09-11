@@ -1,8 +1,9 @@
 import axios from 'axios';
-import React, { useContext, useEffect, useState } from 'react';
+import React, { useCallback, useContext, useEffect, useState } from 'react';
 import { Link, Outlet, useNavigate } from 'react-router-dom';
 import { v4 } from 'uuid';
 import { AuthContext } from '../components/authContext';
+import ChannelList from '../components/channels/channelList';
 import { ThemeContext } from '../themeProvider';
 import { useQueryContext } from '../components/search/queryContext';
 import '../css/baseLayout.css';
@@ -16,15 +17,17 @@ import '../css/replies.css';
 const BaseLayout = () => {
     const { isAuthenticated, user } = useContext(AuthContext);
     const [currentQuery, setCurrentQuery] = useState('');
+    const [dropdownStates, setDropdownStates] = useState({});
     const [errorMessage, setErrorMessage] = useState('');
-    const { setTheme } = useContext(ThemeContext);
     const [feeds, setFeeds] = useState([]);
+    const [feedChannels, setFeedChannels] = useState({});
     const [groupName, setGroupName] = useState('');
     const [groupPhoto, setGroupPhoto] = useState(null);
     const [groupPhotoFile, setGroupPhotoFile] = useState('No file chosen');
     const [privateGroup, setPrivateGroup] = useState(false);
     const [profile, setProfile] = useState([]);
-    const { query, setQuery } = useQueryContext();
+    const { setQuery } = useQueryContext();
+    const { setTheme } = useContext(ThemeContext);
     const [showForm, setShowForm] = useState(false);
     const navigate = useNavigate();
 
@@ -52,11 +55,7 @@ const BaseLayout = () => {
         const fetchFeeds = async () => {
             try {
                 const response = await axios.get(`/api/feed_list/${profile.userId}`);
-                if (Array.isArray(response.data)) {
-                    setFeeds(response.data);
-                } else {
-                    setFeeds([]);
-                }
+                setFeeds(response.data);
             } catch (error) {
                 setFeeds([]);
             }
@@ -102,6 +101,13 @@ const BaseLayout = () => {
         }
     };
 
+    const dropdownToggle = (feedId) => {
+        setDropdownStates((prevStates) => ({
+            ...prevStates,
+            [feedId] : !prevStates[feedId]
+        }));
+    };
+
     const handleFileChange = (event) => {
         const file = event.target.files[0];
         if (file) {
@@ -126,7 +132,6 @@ const BaseLayout = () => {
                     name: "New chat"
                 });
             };
-            console.log("currentQuery:", currentQuery);
             setQuery(currentQuery);
             setCurrentQuery('');
             navigate(`/ask/${newChatId}`);
@@ -151,6 +156,13 @@ const BaseLayout = () => {
         };
         setShowForm(!showForm) 
     }
+
+    const updateFeedChannels = useCallback((feedId, newChannels) => {
+        setFeedChannels((prevChannels) => ({
+            ...prevChannels,
+            [feedId]: newChannels
+        }));
+    }, []);
 
     return (
         <div className="container">
@@ -194,12 +206,16 @@ const BaseLayout = () => {
                         {feeds.length === 0 ? (
                             <p>Followed feeds show up here</p>
                         ) : (
-                            feeds.map(feed => (
+                            feeds.map((feed) => (
                                 <li className={`feed-list-item ${feed.type}`} key={feed.feed_id}>
                                     <Link className="feed-list-link" to={`/${feed.type}/${feed.name}/Main`}>
                                         <img className="small-feed-photo" src={`/${feed.photo}`} alt={feed.name} />
                                         <p className="feed-list-text">{feed.name}</p>
                                     </Link>
+                                    <p className="channel-dropdown" onClick={() => dropdownToggle(feed.feed_id)}>=</p>
+                                    {dropdownStates[feed.feed_id] && (
+                                        <ChannelList channels={feedChannels[feed.feed_id] || []} feedId={feed.feed_id} feedName={feed.name} isGroup={feed.type === 'g'} setChannels={(newChannels) => updateFeedChannels(feed.feed_id, newChannels)} />
+                                    )}
                                 </li>
                             ))
                         )}
