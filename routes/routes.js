@@ -267,7 +267,7 @@ router.get('/feed_list/:userId', async (req, res) => {
         });
         //Formats profile list
         const formattedProfiles = userFeeds.map(feed => ({
-            feed_id: feed.profile.user.user_id,
+            feed_id: feed.profile.profile_id,
             name: feed.profile.user.username,
             photo: feed.profile.profile_photo,
             type: 'u',
