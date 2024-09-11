@@ -81,7 +81,7 @@ const ChannelName = ({ channelId, channelName, channelType, locationName, channe
             ) : (
                 <p className="text36">Main</p>  
             )}
-            <div className="error-message">{errorMessage}</div> 
+            {errorMessage && <div className="error-message">{errorMessage}</div>}
         </div>
     );
 

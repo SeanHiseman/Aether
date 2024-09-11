@@ -70,7 +70,7 @@ const MemberJoinRequests = ({ group }) => {
                             <div className="result-widget">
                                 <Link className="profile-link" to={`/profile/${request.sender.username}`}>
                                     <img className="large-profile-photo" src={`/${request.sender.profile.profile_photo}`} alt="Profile" />
-                                    <p className="large-text profile-name">{request.sender.username}</p>
+                                    <p className="text36 profile-name">{request.sender.username}</p>
                                 </Link>
                                 <button className="button" onClick={() => handleRequestAction(request, 'accept')}>
                                     Accept follow request

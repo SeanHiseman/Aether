@@ -81,7 +81,7 @@ const ChatChannel = ({ canRemove, channelId, isGroup, locationId }) => {
             <div className="messages-channel-footer">
                 <input className="chat-message-bar" type="text" value={currentMessage} onChange={(e) => setCurrentMessage(e.target.value)} placeholder="Type a message..." onKeyDown={(e) => e.key === 'Enter' && sendChannelMessage()}/>
                 <button className="chat-send-button" onClick={sendChannelMessage}>Send</button>
-                <div class="error-message">{errorMessage}</div>
+                {errorMessage && <div className="error-message">{errorMessage}</div>}
             </div>
         </div>
     );

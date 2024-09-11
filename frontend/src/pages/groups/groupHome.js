@@ -182,31 +182,14 @@ const GroupHome = () => {
     document.title = groupDetails.groupName;
     return (    
         <div className="group-container">  
-            <div className="content-feed">
-                <div className="channel-feed">
-                    {showPostForm ? (
-                        <div id="create-post-container">
-                            <ContentForm isReply={false} onSubmit={handlePostSubmit} errorMessage={errorMessage} />
-                        </div>
-                    ) : channelRender && !isNotPrivateMember ? (
-                        channelRender.is_posts && channelRender.is_chat ? (
-                            channelMode === 'post' ? (
-                                <PostChannel
-                                    canRemove={canRemove}
-                                    channelId={channelRender.channel_id}
-                                    channelName={channelRender.channel_name}
-                                    isGroup={true}
-                                    locationId={groupDetails.groupId}
-                                />
-                            ) : (
-                                <ChatChannel
-                                    canRemove={canRemove}
-                                    channelId={channelRender.channel_id}
-                                    isGroup={true}
-                                    locationId={groupDetails.groupId}
-                                />
-                            )
-                        ) : channelRender.is_posts ? (
+            <div className="channel-feed">
+                {showPostForm ? (
+                    <div id="create-post-container">
+                        <ContentForm isReply={false} onSubmit={handlePostSubmit} errorMessage={errorMessage} />
+                    </div>
+                ) : channelRender && !isNotPrivateMember ? (
+                    channelRender.is_posts && channelRender.is_chat ? (
+                        channelMode === 'post' ? (
                             <PostChannel
                                 canRemove={canRemove}
                                 channelId={channelRender.channel_id}
@@ -222,18 +205,33 @@ const GroupHome = () => {
                                 locationId={groupDetails.groupId}
                             />
                         )
-                    ) : <p className="large-text">This feed is private</p>}
-                </div>
-            </div>         
+                    ) : channelRender.is_posts ? (
+                        <PostChannel
+                            canRemove={canRemove}
+                            channelId={channelRender.channel_id}
+                            channelName={channelRender.channel_name}
+                            isGroup={true}
+                            locationId={groupDetails.groupId}
+                        />
+                    ) : (
+                        <ChatChannel
+                            canRemove={canRemove}
+                            channelId={channelRender.channel_id}
+                            isGroup={true}
+                            locationId={groupDetails.groupId}
+                        />
+                    )
+                ) : <p className="text36">This feed is private</p>}
+            </div>    
             <aside id="right-aside">
                 <div id="profile-summary">
+                    <img className="large-group-photo" src={`/${groupDetails.groupPhoto}`} alt={groupDetails.groupName} />
                     {isAdmin && (
                         <Link to={`/group_settings/${group_name}`}>
                             <button className="button">Settings</button>
                         </Link>
                     )}
-                    <img className="large-group-photo" src={`/${groupDetails.groupPhoto}`} alt={groupDetails.groupName} />
-                    <p className="large-text">{groupDetails.groupName}</p>
+                    <p className="text36">{groupDetails.groupName}</p>
                     <p className="description" >{groupDetails.description}</p>
                     <p className="user-count">{groupDetails.memberCount} {groupDetails.memberCount === 1 ? 'follower' : 'followers'}</p>
                     <MemberChangeButton 
@@ -244,6 +242,7 @@ const GroupHome = () => {
                         isPrivate={groupDetails.isPrivate}
                     />
                 </div>
+                {errorMessage && <div className="error-message">{errorMessage}</div>}
                 {channelRender && (
                     isAdmin ? (
                     <ChannelName channelId={channelRender.channel_id} channelName={channel_name} channelType={'group'} locationName={group_name} channelUpdate={channelUpdate}/>
@@ -282,7 +281,6 @@ const GroupHome = () => {
                                     Chat Channel
                                 </label>
                                 <input className="dark-button" type="submit" value="Add"/>
-                                <div className="error-message">{errorMessage}</div>
                             </form>                            
                         )}
                     </div>
@@ -302,16 +300,14 @@ const GroupHome = () => {
                     <button className="button" onClick={() => deleteChannel()}>Delete channel</button> 
                 )}
                 {isAdmin && (
-                    subGroups.length === 0 ? (
-                        <div></div>
-                    ) : (
+                    subGroups.length === 0 && (
                         <div>
                             <ul>
                                 {subGroups.map((subGroup, index) => (
-                                    <li className="feed-list-item group" key={index}>
-                                        <Link className="group-list-link" to={`/g/${subGroup.SubGroup.group_name}/Main`}>
-                                            <img className="small-group-photo" src={`/${subGroup.SubGroup.group_photo}`} alt={subGroup.SubGroup.group_name} />
-                                            <p className="group-list-text">{subGroup.SubGroup.group_name}</p>
+                                    <li className="feed-list-item g" key={index}>
+                                        <Link className="feed-list-link" to={`/g/${subGroup.SubGroup.group_name}/Main`}>
+                                            <img className="small-feed-photo" src={`/${subGroup.SubGroup.group_photo}`} alt={subGroup.SubGroup.group_name} />
+                                            <p className="feed-list-text">{subGroup.SubGroup.group_name}</p>
                                         </Link>
                                     </li>
                                 ))}

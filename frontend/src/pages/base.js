@@ -5,7 +5,8 @@ import { v4 } from 'uuid';
 import { AuthContext } from '../components/authContext';
 import { ThemeContext } from '../themeProvider';
 import { useQueryContext } from '../components/search/queryContext';
-import '../css/base.css';
+import '../css/baseLayout.css';
+import '../css/basicStyles.css';
 import '../css/contentFeed.css';
 import '../css/groups.css';
 import '../css/messages.css';
@@ -157,7 +158,7 @@ const BaseLayout = () => {
                 <div className="profile-info">
                     <Link className="profile-link" to={`/u/${profile.username}`}>
                         <img className="profile-image" src={`/${profile.profilePhoto}`} alt="Profile" />
-                        <p id="logged_in_username">{profile.username}</p>
+                        <p id="logged-in-username">{profile.username}</p>
                     </Link>
                 </div>
                 <nav id="personal-feeds">
@@ -223,9 +224,7 @@ const BaseLayout = () => {
                             </div>
                         </form>
                 <div className="spacer"></div>
-                <Link to={`/messages/${profile.username}`}>
-                    <button id="messages-button">Messages</button>
-                </Link>
+                <Link id="messages-button" to={`/messages/${profile.username}`}>Messages</Link>
                 </header>
                 <div className="content">
                     <Outlet />

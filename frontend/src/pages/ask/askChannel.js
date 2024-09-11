@@ -219,7 +219,7 @@ const AskChannel = () => {
             </div>
             {!user.hasMembership ? (
                 <aside id="right-aside">
-                    <p className="large-text">Ask</p>
+                    <p className="text36">Ask</p>
                 </aside>
             ) : (
                 <aside id="right-aside">
@@ -254,7 +254,7 @@ const AskChannel = () => {
                                 </div>
                             ) : (
                                 <div id="chat-name">
-                                    <p className="large-text">{chatName}</p>
+                                    <p className="text36">{chatName}</p>
                                     <button className="button" onClick={() => {
                                         setIsEditingChatName(true);
                                         setChangedChatName(chatName);
@@ -264,7 +264,7 @@ const AskChannel = () => {
                             )}
                         </div>
                     ) : (
-                        <p className="large-text">{chatName}</p>
+                        <p className="text36">{chatName}</p>
                     )}
                     <div id="add-chat-section">
                         <div id="add-channel-section">

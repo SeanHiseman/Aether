@@ -87,9 +87,6 @@
     border: 1px solid var(--darkest);
     border-radius: 20px;
 }
-.large-text.profile-name {
-    margin: 0;
-}
 .messages-container {
     position: relative;
     flex-grow: 0;
@@ -101,9 +98,7 @@
     color: var(--border);
     cursor: pointer;
     font-size: large;
-    margin: 10px;
-    margin-right: 70px;
-    min-height: 50px;
+    margin-right: 4.8%;
     padding: 10px;
     transition: background-color 0.3s;
 }
