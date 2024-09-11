@@ -2,6 +2,7 @@ import axios from 'axios';
 import React, { useState, useEffect, useContext } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { AuthContext } from '../../components/authContext';
+import ChannelList from '../../components/channels/channelList';
 import ChannelName from '../../components/channels/channelName';
 import ManageFriendshipButton from '../../components/manageFriendship';
 import PostChannel from '../../components/channels/postChannel';
@@ -40,27 +41,6 @@ const Profile = () => {
         fetchProfile();
     }, [username, navigate, channel_name]);
 
-    //Fetch channels in user profile
-    useEffect(() => {
-        const fetchChannels = async () => {
-            try {
-                const response = await axios.get(`/api/get_profile_channels/${profile.profileId}`);
-                if (Array.isArray(response.data)) {
-                    setChannels(response.data);
-                } else {
-                    setChannels([]);
-                }
-            } catch (error) {
-                setErrorMessage('Error fetching channels data');
-                setChannels([]);
-            }
-        };
-
-        if (profile && profile.profileId) {
-            fetchChannels();
-        }
-    }, [profile]);  
-
     //Adds channel to profile
     const AddChannel = async (event) => {
         event.preventDefault();
@@ -79,7 +59,7 @@ const Profile = () => {
                     setNewChannelName('');
                     setErrorMessage('');
                     setShowChannelForm(false);
-                    navigate(`/profile/${username}/${newChannelName}`);
+                    navigate(`/u/${username}/${newChannelName}`);
                 } else {
                     setErrorMessage('Failed to add channel');
                 }
@@ -109,7 +89,7 @@ const Profile = () => {
             } else {
                 await axios.delete(`/api/delete_profile_channel`, { data: {channel_name: channel_name, profile_id: profile.profileId} });
                 setChannels(prevChannels => prevChannels.filter(channel => channel.channel_name !== channel_name));
-                navigate(`/profile/${username}/Main`);
+                navigate(`/u/${username}/Main`);
             }
         } catch (error) {
             setErrorMessage('Error deleting channel');
@@ -133,9 +113,7 @@ const Profile = () => {
     };
 
     //Toggles display of create channel form after button is pressed
-    const toggleChannelForm = () => {
-        setShowChannelForm(!showChannelForm)
-    }
+    const toggleChannelForm = () => { setShowChannelForm(!showChannelForm) }
 
     //Check if profile is private and user is not friends
     const isPrivateNotFriend = !profile.isFriend && profile.isPrivate && !isLoggedInUser;
@@ -204,22 +182,12 @@ const Profile = () => {
                                         setErrorMessage('Name too long');
                                     }
                                 }}/>
-                                <input className="dark-button" type="submit" value="Add" disabled={!newChannelName}/>
+                                <input className="dark-button" type="submit" value="Add" disabled={!newChannelName} />
                             </form>                            
                         )}
                     </div>
                 )}
-                <nav className="channel-list">
-                    <ul>
-                        {channels.map(channel => (
-                            <li key={channel.channelId}>
-                                <Link to={`/u/${profile.username}/${channel.channel_name}`} className="channel-item">
-                                    <div className="channel-link">{channel.channel_name}</div>
-                                </Link>
-                            </li>
-                        ))}
-                    </ul>
-                </nav>
+                <ChannelList channels={channels} isGroup={false} feedId={profile.profileId} feedName={username} setChannels={setChannels} />
             </div>
         </div>
     );
