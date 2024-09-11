@@ -1,6 +1,7 @@
 import axios from 'axios';
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
+import ChannelList from '../../components/channels/channelList';
 import ChannelName from '../../components/channels/channelName';
 import ChatChannel from '../../components/channels/chatChannel';
 import ContentForm from "../../components/contentForm";
@@ -10,8 +11,8 @@ import PostChannel from '../../components/channels/postChannel';
 const GroupHome = () => {
     const { group_name, channel_name } = useParams();
     const [canRemove, setCanRemove] = useState(false);
-    const [channels, setChannels] = useState([]);
     const [channelMode, setChannelMode] = useState('post');
+    const [channels, setChannels] = useState([]);
     const [errorMessage, setErrorMessage] = useState('');
     const [isAdmin, setIsAdmin] = useState(false);
     const [isChatChannel, setIsChatChannel] = useState(false);
@@ -44,12 +45,11 @@ const GroupHome = () => {
                     userId: groupData.userId
                 });
             } catch (error) {
-                setErrorMessage("Error fetching feed details");
+                setErrorMessage("Error getting feed details");
             }
         };
         fetchGroupData();
     }, [group_name]);
-    
 
     //Moderators and admins can remove content
     useEffect(() => {
@@ -57,34 +57,6 @@ const GroupHome = () => {
             setCanRemove(true);
         };
     }, [isAdmin, isModerator]);
-    
-    //Fetch channels in a group
-    useEffect(() => {
-        const fetchChannels = async () => {
-            try {
-                const response = await axios.get(`/api/get_group_channels/${groupDetails.groupId}`);
-                
-                if (Array.isArray(response.data)) {
-                    setChannels(response.data);
-                    const currentChannel = response.data.find(c => c.channel_name === channel_name);
-                    if (currentChannel) {
-                        if (currentChannel.is_chat && !currentChannel.is_posts) {
-                            setChannelMode('chat');
-                        } else {
-                            setChannelMode('post');
-                        }
-                    }
-                } else {
-                    setChannels([]);
-                }
-            } catch (error) {
-                setErrorMessage('Error fetching channel data:', error);
-                setChannels([]);
-            }
-        };
-    
-        fetchChannels();
-    }, [groupDetails.groupId, channel_name]);
 
     //Fetch subgroups
     useEffect(() => {
@@ -93,7 +65,7 @@ const GroupHome = () => {
                 const response = await axios.get(`/api/sub_groups/${groupDetails.groupId}`);
                 setSubGroups(response.data);
             } catch (error) {
-                setErrorMessage("Error fetching feeds");
+                setErrorMessage("Error getting feeds");
             }
         };
         fetchSubGroups();
@@ -149,7 +121,7 @@ const GroupHome = () => {
                 navigate(`/g/${group_name}/Main`);
             }
         } catch (error) {
-            console.error('Error deleting channel', error);
+            setErrorMessage('Error deleting channel');
         }
     };
 
@@ -172,9 +144,7 @@ const GroupHome = () => {
     };
 
     //Toggles display of create channel form after button is pressed
-    const toggleChannelForm = () => {
-        setShowChannelForm((prev) => !prev)
-    };
+    const toggleChannelForm = () => { setShowChannelForm((prev) => !prev) };
 
     //Checks membership if group is private
     const isNotPrivateMember = !groupDetails.isMember && groupDetails.isPrivate;
@@ -188,24 +158,7 @@ const GroupHome = () => {
                         <ContentForm isReply={false} onSubmit={handlePostSubmit} errorMessage={errorMessage} />
                     </div>
                 ) : channelRender && !isNotPrivateMember ? (
-                    channelRender.is_posts && channelRender.is_chat ? (
-                        channelMode === 'post' ? (
-                            <PostChannel
-                                canRemove={canRemove}
-                                channelId={channelRender.channel_id}
-                                channelName={channelRender.channel_name}
-                                isGroup={true}
-                                locationId={groupDetails.groupId}
-                            />
-                        ) : (
-                            <ChatChannel
-                                canRemove={canRemove}
-                                channelId={channelRender.channel_id}
-                                isGroup={true}
-                                locationId={groupDetails.groupId}
-                            />
-                        )
-                    ) : channelRender.is_posts ? (
+                        channelRender.is_posts && (channelMode === 'post' || !channelRender.is_chat) ? (
                         <PostChannel
                             canRemove={canRemove}
                             channelId={channelRender.channel_id}
@@ -221,7 +174,9 @@ const GroupHome = () => {
                             locationId={groupDetails.groupId}
                         />
                     )
-                ) : <p className="text36">This feed is private</p>}
+                ) : (
+                    <p className="text36">This feed is private</p>
+                )}
             </div>    
             <aside id="right-aside">
                 <div id="profile-summary">
@@ -285,17 +240,7 @@ const GroupHome = () => {
                         )}
                     </div>
                 )}
-                <nav className="channel-list">
-                    <ul>
-                        {channels.map(channel => (
-                            <li key={channel.channelId} className="channel-item">
-                                <Link to={`/g/${groupDetails.groupName}/${channel.channel_name}`}>
-                                    <div className="channel-link">{channel.channel_name}</div>
-                                </Link>
-                            </li>
-                        ))}
-                    </ul>
-                </nav>
+                <ChannelList channels={channels} feedId={groupDetails.groupId} feedName={group_name} isGroup={true} setChannels={setChannels}/>
                 {isAdmin && channel_name !== 'Main' && (
                     <button className="button" onClick={() => deleteChannel()}>Delete channel</button> 
                 )}
