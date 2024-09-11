@@ -60,7 +60,7 @@ const GroupMembers = ({ group }) => {
                         <div className="result-widget">
                             <Link className="profile-link" to={`/profile/${member.user.username}`}>
                                 <img className="large-profile-photo" src={`/${member.user.profile.profile_photo}`} alt="Profile" />
-                                <p className="large-text profile-name">{member.user.username}</p>
+                                <p className="text36 profile-name">{member.user.username}</p>
                             </Link>
                             <button className="button" onClick={() => toggleModeratorStatus(member)}>
                                 {member.is_mod ? 'Remove as moderator' : 'Make moderator'}

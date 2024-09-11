@@ -20,13 +20,11 @@ const Feeds = () => {
             <div className="welcome-box single">
                 <div className="left-aligned-text">
                     <p className="welcome-box-header">Feeds</p>
-                    <p>All posts are made to feeds</p>
+                    <p>All posts are made to feeds. Each feed has a topic and is divided into channels. Channels combine chats and posts, allowing real time discussions alongside content</p>
                     <div className="spacer20px"/>
-                    <p>Each feed has a topic and is divided into channels. Channels combine chats and posts, allowing real time discussions</p>
+                    <p>Users have their own feeds where only they can post content. Main channels display content from across each feed, so nothing is missed</p>
                     <div className="spacer20px"/>
-                    <p>Users have their own feeds where only they can post content</p>
-                    <div className="spacer20px"/>
-                    <p>Main channels display content from across the feed, so nothing is missed</p>
+                    <p>Larger feeds can contain smaller, nested feeds</p>
                 </div>
             </div>
         </div>

@@ -282,7 +282,7 @@ const MessagesPage = () => {
     document.title = "Messages";
     return (
         <div className="messages-container">
-            <div className="content-feed">
+            <div className="messages-feed">
                 <div className={`channel-content ${!friend_name ? '' : 'messages'}`}>
                     {!friend_name ? (
                         <ul className="content-list">
@@ -291,7 +291,7 @@ const MessagesPage = () => {
                                     <div className="result-widget">
                                         <Link className="profile-link" to={`/u/${friend.friend_name}`}>
                                             <img className="large-profile-photo" src={`/${friend.friend_profile_photo}`} alt="Profile" />
-                                            <p className="large-text profile-name">{friend.friend_name}</p>
+                                            <p className="text36 profile-name">{friend.friend_name}</p>
                                         </Link>
                                         <div className="remove-friend-box">
                                             <ManageFriendshipButton userId={user.userId} receiverProfileId={friend.friend_profile_id} receiverUserId={friend.friend_id} isRequestSent={false} isFriend={true} />
@@ -351,7 +351,7 @@ const MessagesPage = () => {
                                     </div>
                                 ) : (
                                     <div id="chat-name">
-                                        <p className="large-text">{currentChatName}</p> 
+                                        <p className="text36">{currentChatName}</p> 
                                         <button className="button" onClick={() => {
                                             setIsEditingChatName(true);
                                             setChangedChatName(currentChatName);
@@ -362,7 +362,7 @@ const MessagesPage = () => {
                                 )}
                             </div>
                         ) : (
-                            <p className="large-text">Main</p>  
+                            <p className="text36">Main</p>  
                         )}
                         <ul>
                             {selectedChats.map(chat => (

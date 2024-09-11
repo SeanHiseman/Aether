@@ -1,12 +1,5 @@
 /*This sheet is for styles that are used across the site*/
 @import url('variables.css');
-a {
-    color: inherit;
-    text-decoration: none;
-}
-.button, .background-button, .chat-channel-button, .conversation-button, .file-input, .light-button, .posts-channel-button, .submit-button, .settings-item, .vote-enabled, .vote-arrow-container {
-    cursor: pointer;
-}
 #add-channel-form, #create-group-form {
     align-items: center;
     background-color: var(--dark);
@@ -16,7 +9,6 @@ a {
     padding: 5px;
     border-radius: 10px;
     width: 90%;
-    max-width: 190px; 
     margin: 10px;
 }
 #add-channel-section, #add-chat-section, #create-group-section {
@@ -25,6 +17,11 @@ a {
     flex-direction: column;
     margin: 10px;
     width: 90%;
+}
+.ask:hover::after {
+    bottom: 7px;
+    margin-right: 10px;
+    right: 100%;
 }
 #base-header {
     align-items: center;
@@ -39,45 +36,6 @@ a {
     position: fixed;
     top: 0;
     z-index: 10;
-}
-body,html {
-    background-color: var(--dark);
-    color: var(--border);
-    font-family: Arial, sans-serif;
-    font-size: large;
-    height: 100%;
-    margin: 0;
-    padding: 0;
-    scrollbar-width: none;
-    word-wrap: break-word;
-}
-.button {
-    background-color: var(--dark);
-}
-.button-disabled, .dark-button-disabled {
-    border: none;
-    border-radius: 10px;
-    background-color: var(--dark-line);
-    color: var(--border);
-    margin: 10px;
-    padding: 3px 6px;
-}
-.button, .dark-button {
-    border-radius: 10px;
-    border: none;
-    color: var(--border);
-    margin: 10px;
-    padding: 3px 6px;
-    transition: background-color 0.3s;
-}
-.button, .button-disbaled, .dark-button, .dark-button-disabled {
-    font-size: large;
-}
-.button.large, .button-disabled.large {
-    font-size: x-large;
-}
-.button.active, .button:hover, .button.selected:focus, .chat-channel-button:hover, .conversation-button:hover, .dark-button:hover, .dark-button.selected:focus, .icon-button:hover, #messages-button:hover, .posts-channel-button:hover {
-    background-color: var(--button-hover);
 }
 #cancel-save {
     align-items: center;
@@ -108,7 +66,7 @@ body,html {
     max-width: 180px;
 }
 .change-name-area.long {
-    max-width: 360px;
+    max-width: 100%;
 }
 .change-text-area {
     font-size: 24px;
@@ -192,20 +150,16 @@ body,html {
     display: flex;
     flex-direction: column;
     flex-grow: 1; 
-    margin-left: 14%;
+    margin-left: 17%;
     overflow: auto; 
-    width: 86%;
     z-index: 0;
 }
-.content-feed {
+.content-feed, .messages-feed {
     display: flex;
     flex-direction: column; 
     flex-grow: 1;
     overflow: auto;
     width: 100%;
-}
-.content-feed::-webkit-scrollbar, #left-aside::-webkit-scrollbar, #right-aside::-webkit-scrollbar {
-    display: none; /*Hides scroll bar */
 }
 .dark-button {
     background-color: var(--darkest);
@@ -225,10 +179,6 @@ body,html {
     height: 100%;
     justify-content: space-between;
     width: 100%;
-}
-.error-message {
-    height: 16px;
-    margin: 4px;
 }
 .feed-link {
     border-bottom: 1px solid var(--dark-line);
@@ -254,7 +204,6 @@ body,html {
 .feed-list-text {
     margin: 0;
     margin-left: 5px;
-    max-width: 160px;
 }
 .file-input {
     align-items: center;
@@ -270,12 +219,6 @@ body,html {
     flex-direction: row;
     flex-grow: 1;
     height: calc(100vh - 80px);
-}
-h2 {
-    margin-top: 40px;
-}
-h3 {
-    margin-left: 10px;
 }
 .icon-button {
     border: none;
@@ -306,23 +249,7 @@ h3 {
     text-align: center;
     transition: opacity 0.3s ease;
     width: max-content;
-    z-index: 1000;
-}
-.ask:hover::after {
-    bottom: 7px;
-    margin-right: 10px;
-    right: 100%;
-}
-.search:hover::after {
-    bottom: 7px;
-    left: 100%;
-    margin-left: 10px;
-}
-input[type="text"] {
-    outline: none;
-}
-label {
-    margin: 10px;
+    z-index: 100;
 }
 .large-group-photo, .large-profile-photo {
     border-radius: 27px;
@@ -330,19 +257,13 @@ label {
     margin: 10px;
     width: 120px; 
 }
-.large-text {
-    font-size: 36px;
-    margin: 10px;
-    max-width: 100%;
-    text-decoration: none;
-}
 #left-aside, #right-aside {
     align-items: center;
     background-color: var(--darkest);
     display: flex;
     flex-direction: column;
     overflow-y: auto;
-    width: 14%;
+    width: 17%;
 }
 #left-aside {
     height: 100%;
@@ -361,10 +282,13 @@ label {
     color: var(--border);
     text-decoration: none;
 }
+#left-aside::-webkit-scrollbar, #right-aside::-webkit-scrollbar {
+    display: none; /*Hides scroll bar */
+}
 li {
     list-style-type: none;
 }
-#logged_in_username {
+#logged-in-username {
     font-weight: 700;
     margin-left: 10px;
     margin-top: 40px;
@@ -449,6 +373,11 @@ main {
     list-style-type: none;
     padding: 0;
 }
+.search:hover::after {
+    bottom: 7px;
+    left: 100%;
+    margin-left: 10px;
+}
 #search-bar {
     background-color: var(--darkest);
     border: none;
@@ -486,14 +415,6 @@ main {
     padding: 0;
     width: 30px;
     transition: background-color 0.3s;
-}
-.text24 {
-    font-size: 24px;
-    margin: 10px;
-}
-.text36 {
-    font-size: 36px;
-    margin: 10px;
 }
 .total-votes {
     font-size: x-large;

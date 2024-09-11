@@ -143,34 +143,32 @@ const Profile = () => {
 
     return (
         <div className="profile-container">
-            <div className="content-feed">
-                <div className="channel-feed">
-                    {showPostForm ? (
-                        <div id="create-post-container">
-                            <ContentForm isReply={false} onSubmit={handlePostSubmit} errorMessage={errorMessage} />
-                        </div>
-                    ) : (
-                        channelRender && !isPrivateNotFriend ? (
-                            <PostChannel canRemove={isLoggedInUser} channelId={channelRender.channel_id} channelName={channelRender.channel_name} isGroup={false} locationId={profile.profileId} />
-                        ) : <p className="large-text">This feed is private</p>
-                    )}
-                </div>
+            <div className="channel-feed">
+                {showPostForm ? (
+                    <div id="create-post-container">
+                        <ContentForm isReply={false} onSubmit={handlePostSubmit} errorMessage={errorMessage} />
+                    </div>
+                ) : (
+                    channelRender && !isPrivateNotFriend ? (
+                        <PostChannel canRemove={isLoggedInUser} channelId={channelRender.channel_id} channelName={channelRender.channel_name} isGroup={false} locationId={profile.profileId} />
+                    ) : <p className="text36">This feed is private</p>
+                )}
             </div>
             <div id="right-aside">
                 <div id="profile-summary">
+                    <img className="large-profile-photo" src={`/${profile.profilePhoto}`} alt="Profile" /> 
                     {isLoggedInUser && (
                         <Link to={`/settings/${username}`}>
                             <button className="button">Settings</button>
                         </Link>
                     )}
-                    <img className="large-profile-photo" src={`/${profile.profilePhoto}`} alt="Profile" /> 
-                    <p className="large-text">{profile.username}</p>
+                    <p className="text36">{profile.username}</p>
                     <p className="profile-bio">{profile.bio}</p>
                     <p className="user-count">{profile.followerCount} {profile.followerCount === 1 ? 'follower' : 'followers'}</p>
                     {!isLoggedInUser && !profile.isPrivate && (<FollowerChangeButton userId={loggedInUserId} profileId={profile.profileId} isFollowing={profile.isFollowing} />)}
                     <ManageFriendshipButton userId={loggedInUserId} receiverProfileId={profile.profileId} receiverUserId={profile.userId} isRequestSent={profile.isRequested} isFriend={profile.isFriend} />
                 </div>
-                <div className="error-message">{errorMessage}</div> 
+                {errorMessage && <div className="error-message">{errorMessage}</div>}
                 {channelRender && (
                     isLoggedInUser ? (
                         <ChannelName channelId={channelRender.channel_id} channelName={channel_name} channelType={'profile'} locationName={username} channelUpdate={channelUpdate}/>

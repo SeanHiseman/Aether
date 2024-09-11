@@ -18,66 +18,66 @@ const WelcomeHome = () => {
                 </Link>
             </div>
             <div id="welcome-center">
-                <Link to="/about">
-                    <div className="welcome-box">
+                <div className="welcome-box">
+                    <Link to="/about">
                         <div className="left-aligned-text">
                             <p className="welcome-box-header">About Aether</p>
                             <p>Content focused on quality</p>
                             <p>No ads, full privacy</p>
                             <p>Feeds, public and private</p>
                         </div>
-                    </div>
-                </Link>
-                <Link to="/content">
-                    <div className="welcome-box">
+                    </Link>
+                </div>
+                <div className="welcome-box">
+                    <Link to="/content">
                         <div className="left-aligned-text">
                             <p className="welcome-box-header">Content</p>
                             <p>Images, videos, text and more all in one</p>
                             <p>Posts can be made in reply to other posts</p>
                             <p>Members can write longer posts and view higher quality videos</p>
                         </div>
-                    </div>
-                </Link>
-                <Link to="/algorithm">
-                    <div className="welcome-box">
+                    </Link>
+                 </div>
+                <div className="welcome-box">
+                    <Link to="/algorithm">
                         <div className="left-aligned-text">
                             <p className="welcome-box-header">Algorithm</p>
                             <p>Your algorithm can be adjusted. You are in control</p>
                             <p>Multiple votes on content, so users can better expresss their view</p>
                             <p>Posts containing misinformation are weighted lower, so you only see what's true</p>
                         </div> 
-                    </div>
-                </Link>
-                <Link to="/feeds">
-                    <div className="welcome-box">
+                    </Link>
+                </div>
+                <div className="welcome-box">
+                    <Link to="/feeds">
                         <div className="left-aligned-text">
                             <p className="welcome-box-header">Feeds</p>
-                            <p>Built around feeds for posts and chats. Each feed contains channels</p>
+                            <p>Home for posts and chats. Each feed contains channels</p>
                             <p>Feeds can be for groups or individuals, and be public or private</p>
                             <p>You can view posts from friends, feeds you follow, and recommendations</p>
                         </div>
-                    </div>
-                </Link>
-                <Link to="/membership">
-                    <div className="welcome-box">
+                    </Link>
+                </div>
+                <div className="welcome-box">
+                    <Link to="/membership">
                         <div className="left-aligned-text">
                             <p className="welcome-box-header">Membership</p>                    
                             <p>Earn money from posts.</p>
                             <p>Need to check the accuracy of a post? Just Ask</p>
                             <p>Vote for moderators, admins, leaders and features</p>
                         </div>
-                    </div>
-                </Link>
-                <Link to="/privacy">
-                    <div className="welcome-box">
+                    </Link>
+                </div>
+                <div className="welcome-box">
+                    <Link to="/privacy">
                         <div className="left-aligned-text">
                             <p className="welcome-box-header">Privacy</p>
                             <p>All data is encrypted, never leaves Aether</p>
                             <p>Your data is for you, not us</p>
                             <p>Control how your data is used to personalise content</p>
                         </div>
-                    </div>
-                </Link>
+                    </Link>
+                </div>
             </div>
         </div>
     );
