@@ -208,11 +208,13 @@ const BaseLayout = () => {
                         ) : (
                             feeds.map((feed) => (
                                 <li className={`feed-list-item ${feed.type}`} key={feed.feed_id}>
-                                    <Link className="feed-list-link" to={`/${feed.type}/${feed.name}/Main`}>
-                                        <img className="small-feed-photo" src={`/${feed.photo}`} alt={feed.name} />
-                                        <p className="feed-list-text">{feed.name}</p>
-                                    </Link>
-                                    <p className="channel-dropdown" onClick={() => dropdownToggle(feed.feed_id)}>=</p>
+                                    <div className="feed-list-link-container">
+                                        <Link className="feed-list-link" to={`/${feed.type}/${feed.name}/Main`}>
+                                            <img className="small-feed-photo" src={`/${feed.photo}`} alt={feed.name} />
+                                            <p className="feed-list-text">{feed.name}</p>
+                                        </Link>
+                                        <p className="channel-dropdown" onClick={() => dropdownToggle(feed.feed_id)}>=</p>
+                                    </div>
                                     {dropdownStates[feed.feed_id] && (
                                         <ChannelList channels={feedChannels[feed.feed_id] || []} feedId={feed.feed_id} feedName={feed.name} isGroup={feed.type === 'g'} setChannels={(newChannels) => updateFeedChannels(feed.feed_id, newChannels)} />
                                     )}
