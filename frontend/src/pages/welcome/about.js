@@ -2,7 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import '../../css/welcome.css';
 
-const Welcome = () => {
+const About = () => {
 
     document.title="About";
     return (
@@ -34,4 +34,4 @@ const Welcome = () => {
     );
 };
 
-export default Welcome;
+export default About;

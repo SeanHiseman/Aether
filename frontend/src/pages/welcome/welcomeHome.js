@@ -23,8 +23,8 @@ const WelcomeHome = () => {
                         <div className="left-aligned-text">
                             <p className="welcome-box-header">About Aether</p>
                             <p>Content focused on quality</p>
+                            <p>Dynamic feeds</p>
                             <p>No ads, full privacy</p>
-                            <p>Feeds, public and private</p>
                         </div>
                     </Link>
                 </div>
@@ -42,18 +42,18 @@ const WelcomeHome = () => {
                     <Link to="/algorithm">
                         <div className="left-aligned-text">
                             <p className="welcome-box-header">Algorithm</p>
-                            <p>Your algorithm can be adjusted. You are in control</p>
-                            <p>Multiple votes on content, so users can better expresss their view</p>
-                            <p>Posts containing misinformation are weighted lower, so you only see what's true</p>
+                            <p>Talk to Ask to adjust your algorithm. You are in control</p>
+                            <p>How you are shown content is fully customisable</p>
+                            <p>Post are fact-checked, so you see what's true</p>
                         </div> 
                     </Link>
                 </div>
                 <div className="welcome-box">
                     <Link to="/feeds">
                         <div className="left-aligned-text">
-                            <p className="welcome-box-header">Feeds</p>
-                            <p>Home for posts and chats. Each feed contains channels</p>
-                            <p>Feeds can be for groups or individuals, and be public or private</p>
+                            <p className="welcome-box-header">Dynamic feeds</p>
+                            <p>Feeds have layers and channels</p>
+                            <p>Chat channels alongside posts</p>
                             <p>You can view posts from friends, feeds you follow, and recommendations</p>
                         </div>
                     </Link>
@@ -62,7 +62,7 @@ const WelcomeHome = () => {
                     <Link to="/membership">
                         <div className="left-aligned-text">
                             <p className="welcome-box-header">Membership</p>                    
-                            <p>Earn money from posts.</p>
+                            <p>Earn money from posts</p>
                             <p>Need to check the accuracy of a post? Just Ask</p>
                             <p>Vote for moderators, admins, leaders and features</p>
                         </div>

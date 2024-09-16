@@ -1,36 +1,46 @@
 import axios from "axios";
-import React, { useEffect, useState } from "react";
+import React from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import ContentWidget from "../contentWidget";
 
 //For viewing posts in both group and profile feeds
 const PostChannel = ({ canRemove, channelId, channelName, isGroup, locationId }) => {
-    const [posts, setPosts] = useState([]);
+    const queryClient = useQueryClient();
 
-    //Gets posts from channel
-    useEffect(() => {
-        const getPosts = async () => {
-            try {
-                const isMain = channelName === 'Main';
-                const response = await axios.get('/api/channel_posts', {
-                    params: {
-                        isGroup,
-                        location_id: locationId,
-                        ...(isMain ? {} : { channel_id: channelId }) //Only include channelId if not viewing Main
-                    }
-                });
-                setPosts(response.data);
-            } catch (error) {
-                console.error('Error getting posts:', error);
+    const getPosts = async () => {
+        const isMain = channelName === 'Main';
+        const response = await axios.get('/api/channel_posts', {
+            params: {
+                isGroup,
+                location_id: locationId,
+                ...(isMain ? {} : { channel_id: channelId }) //Only include channelId if not viewing Main
             }
-        };
-        getPosts();
-    }, [channelId, channelName, isGroup, locationId]);
-    
-    //Updates post list upon removal
-    const handlePostRemoved = (postId) => {
-        setPosts((prevPosts) => prevPosts.filter(post => post.post_id !== postId));
+        });
+        return response.data;
     };
 
+    //Gets posts from the channel
+    const { data: posts = [], error, isLoading } = useQuery({
+        queryKey: ['posts', channelId, channelName, isGroup, locationId],
+        queryFn: getPosts
+    });
+
+    //Updates post list upon removal
+    const handlePostRemoved = (postId) => {
+        queryClient.setQueryData(
+            ['posts', channelId, channelName, isGroup, locationId],
+            posts => posts.filter(post => post.post_id !== postId)
+        );
+    };
+
+    if (isLoading) {
+        return <p>Loading posts...</p>;
+    }
+
+    if (error) {
+        return <p>Error getting posts: {error.message}</p>;
+    }
+    
     return (
         <div className="channel">
             <div className="channel-content">

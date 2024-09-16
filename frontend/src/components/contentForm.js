@@ -33,17 +33,13 @@ const ContentForm = ({ closeForm, isReply, onSubmit, errorMessage }) => {
 
     const handleSubmit = async (event) => {
         event.preventDefault();
-        try {
-            const formData = new FormData();
-            formData.append('content', content);
-            if (!isReply) formData.append('title', title);
-            files.forEach((file) => {
-                formData.append('files', file);
-            }); 
-            await onSubmit(formData);
-        } catch (error) {
-            console.log("Upload error:", error);
-        }
+        const formData = new FormData();
+        formData.append('content', content);
+        if (!isReply) formData.append('title', title);
+        files.forEach((file) => {
+            formData.append('files', file);
+        }); 
+        await onSubmit(formData);
     };
 
     return (
