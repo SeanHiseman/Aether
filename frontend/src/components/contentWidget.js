@@ -71,7 +71,6 @@ const ContentWidget = ({ canRemove: canRemoveProp , isGroup, onPostRemoved, post
         const checkVoteLimit = async () => {
             try {
                 const response = await axios.post('/api/content_vote', { content_id: post.post_id, isGroup, vote_type: 'check_vote' });
-
                 if (response.data.message === 'upvote limit') {
                     setUpvoteLimit(true);
                 } else if (response.data.message === 'downvote limit') {
@@ -103,12 +102,11 @@ const ContentWidget = ({ canRemove: canRemoveProp , isGroup, onPostRemoved, post
     VideoBlot.tagName = 'video';
     Quill.register(VideoBlot);
 
-    //Updates replies after new one added
-    const handleReplyAdded = (newReply) => {
+    const replyAdded = (newReply) => {
         setReplies(currentReplies => [...currentReplies, newReply]);
     };
 
-    const handleReplyRemoved = (replyId) => {
+    const replyRemoved = (replyId) => {
         setReplies((prevReplies) => prevReplies.filter((reply) => reply.reply_id !== replyId));
     };
 
@@ -260,7 +258,6 @@ const ContentWidget = ({ canRemove: canRemoveProp , isGroup, onPostRemoved, post
                     <AskButton isGroup={isGroup} isReply={false} content={post} showNote={showNote} setShowNote={setShowNote} note={note} setNote={setNote} />
                 )}
             </div>
-            
             {showReplies && (
                 <div className="reply-section">
                     {showReplyForm && (
@@ -270,7 +267,7 @@ const ContentWidget = ({ canRemove: canRemoveProp , isGroup, onPostRemoved, post
                     )}
                     {!showReplyForm && (<button className="button large" onClick={toggleReplyForm}>Add reply</button>)}
                     {nestedReplies.map((reply) => (
-                        <Reply key={reply.reply_id} reply={reply} depth={0} isGroup={isGroup} onReplyAdded={handleReplyAdded} onReplyRemoved={handleReplyRemoved} postId={post.post_id} />
+                        <Reply key={reply.reply_id} reply={reply} depth={0} isGroup={isGroup} onReplyAdded={replyAdded} onReplyRemoved={replyRemoved} postId={post.post_id} />
                     ))}
                 </div>
             )}

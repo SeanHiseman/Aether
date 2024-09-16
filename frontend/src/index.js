@@ -5,7 +5,8 @@ import App from './app';
 const rootElement = document.getElementById('root');
 
 ReactDOM.render(
-    <React.StrictMode>
+    //Don't use StrictMode for production
+    <React.StrictMode> 
         <App />
     </React.StrictMode>,
     rootElement

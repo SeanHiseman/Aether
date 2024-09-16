@@ -4,6 +4,7 @@ import deleteMedia from '../functions/media_handling/deleteMedia.js';
 import multer from 'multer';
 import path from 'path';
 import { Router } from 'express';
+import { v4 } from 'uuid';
 import { ContentVotes, Groups, GroupNotes, GroupReplies, GroupPosts, ProfileNotes, ProfileReplies, ProfilePosts, Profiles, Users } from '../models/models.js'; 
 
 const router = Router();
