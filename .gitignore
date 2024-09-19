@@ -1,3 +1,5 @@
-/media
+/media/content
+/media/group_profiles
+/media/profile_images
 /node_modules
 .env
