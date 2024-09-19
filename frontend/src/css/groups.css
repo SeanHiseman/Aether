@@ -29,7 +29,7 @@
     font-weight: bold;
     outline: none;
     padding: 10px 20px;
-    transition: background-color 0.3s ease;
+    transition: var(--transition-regular);
 }
 .option-toggle button.active-mode {
     background-color: var(--button-hover);

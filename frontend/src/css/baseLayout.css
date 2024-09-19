@@ -98,7 +98,7 @@
 }
 .channel-item {
     animation: fadeIn 0.3s ease-in-out;
-    transition: background-color 0.3s;
+    transition: var(--transition-regular);
 }
 .channel-item:hover {
     background-color: var(--dark);
@@ -136,7 +136,7 @@
     margin: 10px;
     max-width: 200px;
     padding: 5px 10px;
-    transition: background-color 0.3s;
+    transition: var(--transition-regular);
 }
 .chat-channel-button, .conversation-button {
     border-radius: 1000px;
@@ -201,7 +201,7 @@
     align-items: center;
     display: flex;
     padding: 6px;
-    transition: background-color 0.3s;
+    transition: var(--transition-regular);
 }
 .feed-list-item {
     background-color: var(--darkest);
@@ -239,7 +239,7 @@
     background-color: var(--darkest);
     height: 100%;
     position: relative;
-    transition: background-color 0.3s;
+    transition: var(--transition-regular);
 }
 .icon-button.ask {
     border-top-left-radius: 20px;
@@ -322,7 +322,7 @@ main {
     font-size: large;
     margin: 10px;
     padding: 5px;
-    transition: background-color 0.3s;
+    transition: var(--transition-regular);
     width: 80%;
 }
 .name-input::placeholder, #search-bar::placeholder {
@@ -368,7 +368,7 @@ main {
     border-radius: 10px;
 }
 .results-wrapper {
-    display:flex;
+    display: flex;
     align-items: center;
     margin-left: 140px;
 }
@@ -428,7 +428,7 @@ main {
     height: 30px;
     padding: 0;
     width: 30px;
-    transition: background-color 0.3s;
+    transition: var(--transition-regular);
 }
 .total-votes {
     font-size: x-large;
@@ -477,7 +477,7 @@ ul {
 }
 .vote-enabled {
     background-color: var(--darkest);
-    transition: background-color 0.3s;
+    transition: var(--transition-regular);
 }
 .vote-enabled:hover {
     background-color: var(--button-hover);
