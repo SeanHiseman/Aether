@@ -31,7 +31,7 @@
     font-size: large;
     margin: 8px 0;
     padding: 14px 20px;
-    transition: background-color 0.3s;
+    transition: var(--transition-regular);
     width: 100%;
 }
 .link {
@@ -45,7 +45,7 @@
     padding: 10px 20px;
     text-align: center;
     text-decoration: none;
-    transition: background-color 0.3s;
+    transition: var(--transition-regular);
 }
 .link:hover, .submit:hover{
     background-color: var(--button-hover);

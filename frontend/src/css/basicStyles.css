@@ -34,7 +34,7 @@ body,html {
     color: var(--border);
     margin: 10px;
     padding: 3px 6px;
-    transition: background-color 0.3s;
+    transition: var(--transition-regular);
 }
 .button, .button-disbaled, .dark-button, .dark-button-disabled {
     font-size: large;

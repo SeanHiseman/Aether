@@ -4,6 +4,7 @@
     --darkest: #0f0f0f;
     --dark: #2c2e31;
     --dark-line: #444;
+    --transition-regular: background-color 0.3s;
 }
 body.light {
     --border: #616161;
