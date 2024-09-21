@@ -13,7 +13,6 @@ async function checkIfUserIsAdminOrMod(userId, groupName) {
                 group_id: groupId
             }
         });
-
         return { isAdmin: userGroup.is_admin, isMod: userGroup.is_mod };
     } catch (error) {
         return { isAdmin: false, isMod: false };

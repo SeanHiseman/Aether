@@ -1,6 +1,7 @@
 import { createServer } from 'http';
 import cors from 'cors';
 import { dirname } from 'path';
+import dotenv from 'dotenv';
 import express from 'express';
 import favicon from 'serve-favicon';
 import { fileURLToPath } from 'url';
@@ -19,27 +20,29 @@ import profiles from './routes/profiles.js';
 import routes from './routes/routes.js';
 import sequelize  from './databaseSetup.js';
 
+dotenv.config();
 const app = express();
 const http = createServer(app);
 const io = new Server(http);
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
-const root = path.join(__dirname, 'frontend', 'build');
 
-app.use('/media', express.static(path.join(__dirname, 'media')));
+const root = path.join(__dirname, process.env.FRONTEND_BUILD_DIR);
+const mediaPath = path.join(__dirname, process.env.MEDIA_DIR);
+const faviconPath = path.join(__dirname, process.env.FAVICON_PATH);
+
+app.use('/media', express.static(mediaPath));
 app.use(cors());
 app.use(express.json());
 app.use(express.static(root));
-app.use(favicon(path.join(process.cwd(), 'media', 'site_images', 'Logo.png')));
+app.use(favicon(faviconPath));
 app.use(urlencoded({ extended: true}));
-
 app.use(session({
-    secret: 'abc123', //Not too important for a prototype
+    secret: process.env.APP_SECRET, 
     resave: false,
     saveUninitialized: true,
 }));
 
-//api prefix prevents clashes with React app
 app.use('/api/', ask);
 app.use('/api/', authentication);
 app.use('/api/', combined);
@@ -48,14 +51,13 @@ app.use('/api/', groups);
 app.use('/api/', replies);
 app.use('/api/', routes);
 app.use('/api/', profiles);
-
 app.use(history('index.html', { root }));
 
 app.get('*', (req, res) => {
     if (req.headers.accept.includes('text/html')) {
-        res.sendFile(path.join(__dirname, './frontend/build', 'index.html'));
+        res.sendFile(path.join(root, 'index.html'));
     } else {
-        res.status(404).send('Not found');
+        res.status(404).json({ success: false });
     }
 });
 
@@ -65,12 +67,7 @@ io.on('connection', (socket) => {
 });
 
 sequelize.authenticate()
-    .then(() => console.log('Database connected...'))
-    .catch(err => console.log('Error: ' + err));
 
-//Start server
-const PORT = process.env.PORT || 7000;
-http.listen(PORT, () =>{
-    console.log(`Server running on port ${PORT}`);
-});
+const PORT = process.env.APP_PORT;
+http.listen(PORT, () => {});
 

@@ -18,7 +18,7 @@ function deleteMedia(content) {
     mediaFiles.forEach(file => {
         const absoluteFilePath = path.join(rootDir, file);
         fs.unlink(absoluteFilePath, (error) => {
-            if (error) console.error(`Failed to delete file: ${absoluteFilePath}`, error);
+            if (error) return;
         });
     });
 };

@@ -1,3 +1,4 @@
+(outdated)
 CREATE TABLE `users` (
    `user_id` varchar(255) NOT NULL,
    `username` text DEFAULT NULL,
