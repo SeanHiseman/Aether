@@ -61,7 +61,6 @@ router.get('/channel_posts', authenticateCheck, async (req, res) => {
     }
 });
 
-
 //Checks input for post uploads
 const postFilter = (req, file, cb) => {
     if (file.mimetype.startsWith('image') || file.mimetype.startsWith('video')) {

@@ -1,25 +1,20 @@
 {
   "name": "aether",
   "version": "1.0.0",
-  "description": "Community social media site",
+  "description": "Better social media",
   "main": "app.js",
   "type": "module",
   "scripts": {
     "start": "node app.js",
-    "authentication": "node authentication.js",
-    "comments": "node comments.js",
-    "directMessages": "node directMessages.js",
-    "models": "models.js",
-    "profiles": "profiles.js",
-    "routes": "routes.js",
-    "utils": "utils.js"
+    "dev": "nodemon app.js"
   },
   "keywords": [
-    "key",
-    "word"
+    "aether",
+    "feeds",
+    ""
   ],
   "author": "Sean Hiseman",
-  "license": "edit me",
+  "license": "ISC",
   "dependencies": {
     "axios": "^1.6.3",
     "bcrypt": "^5.1.1",

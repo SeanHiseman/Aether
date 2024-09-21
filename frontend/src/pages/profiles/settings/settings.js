@@ -31,7 +31,6 @@ const Settings = () => {
                 }
             }
         };
-    
         fetchProfile();
     }, [username, navigate]);
     

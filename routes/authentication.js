@@ -27,7 +27,7 @@ router.get('/check_authentication', async (req, res) => {
         try {
             const user = await Users.findByPk(req.session.user_id);
             if (!user) {
-                return res.status(401).json({ error: 'Not authenticated'});
+                return res.status(401).json({ success: false });
             }
             const userData = {
                 username: user.username,
@@ -37,10 +37,10 @@ router.get('/check_authentication', async (req, res) => {
             };
             res.json({ authenticated: true, user: userData });
         } catch (error) {
-            return res.status(500).json({ error: 'Internal server error' });
+            return res.status(500).json({ success: false });
         }
     } else {
-        res.status(401).json({ error: 'Not authenticated' });
+        res.status(401).json({ success: false });
     }
 });
 
@@ -68,7 +68,7 @@ router.delete('/delete_account', authenticateCheck, async (req, res) => {
         res.clearCookie('sid');
         return res.json({ success: true });
     } catch (error) {
-        return res.json({ success: false, message: 'Failed to delete account'});
+        return res.json({ success: false });
     }
 });
 
@@ -101,7 +101,7 @@ router.post('/join', async (req, res) => {
 
         res.json({ success: true });
     } catch (error) {
-        res.status(500).json({ message: 'Server error', error: error.message });
+        res.status(500).json({ success: false });
     }
 });
 
@@ -120,14 +120,14 @@ router.post('/login', async (req, res) => {
         }
     }
     catch (error) {
-        res.status(500).json({ success: false, message: 'Server error' });
+        res.status(500).json({ success: false });
     }
 });
 
 router.post('/logout', (req, res) => {
     req.session.destroy( error => {
         if (error) {
-            return res.json({ success: false, message: 'Failed to logout'});
+            return res.json({ success: false });
         }
         res.clearCookie('sid');
         return res.json({ success: true });

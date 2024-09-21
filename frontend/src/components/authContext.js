@@ -7,6 +7,7 @@ export const AuthCheck = ({ children }) => {
     const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [user, setUser] = useState({ username: '', userId: null });
     const navigate = useNavigate();
+
     useEffect(() => {
         const checkAuthentication = async () => {
             try {
@@ -16,8 +17,6 @@ export const AuthCheck = ({ children }) => {
             } catch (error) {
                 if (error.response && error.response.status === 401) {
                     navigate('/login');
-                } else {
-                    console.error('Error:', error);
                 }
             }
         };

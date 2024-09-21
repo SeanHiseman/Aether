@@ -211,7 +211,7 @@ export const directMessagesSocket = (socket) => {
             }); 
         });
     } catch (error) {
-        console.log("Socket error:", error);
+        console.error(error);
     }
 };
 
