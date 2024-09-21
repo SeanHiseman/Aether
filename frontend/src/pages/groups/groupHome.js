@@ -7,71 +7,55 @@ import ChatChannel from '../../components/channels/chatChannel';
 import ContentForm from "../../components/contentForm";
 import MemberChangeButton from '../../components/memberChangeButton';
 import PostChannel from '../../components/channels/postChannel';
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 const GroupHome = () => {
+    const navigate = useNavigate();
+    const queryClient = useQueryClient();
     const { group_name, channel_name } = useParams();
-    const [canRemove, setCanRemove] = useState(false);
     const [channelMode, setChannelMode] = useState('post');
     const [channels, setChannels] = useState([]);
     const [errorMessage, setErrorMessage] = useState('');
-    const [isAdmin, setIsAdmin] = useState(false);
-    const [isChatChannel, setIsChatChannel] = useState(false);
-    const [isPostChannel, setIsPostChannel] = useState(false);
-    const [isModerator, setIsModerator] = useState(false);
-    const [groupDetails, setGroupDetails] = useState('');
-    const navigate = useNavigate();
     const [newChannelName, setNewChannelName] = useState('');
-    const [showChannelForm, setShowChannelForm] = useState(false);
-    const [showPostForm, setShowPostForm] = useState(false);
-    const [subGroups, setSubGroups] = useState([]);
+    const [showForm, setShowForm] = useState({ channel: false, post: false });
+    const [subFeeds, setSubFeeds] = useState([]);
+    const [groupState, setGroupState] = useState({
+        isAdmin: false,
+        isMod: false,
+        canRemove: false,
+        isChatChannel: false,
+        isPostChannel: false,
+        groupDetails: '',
+    });
 
-    //Loads group info 
-    useEffect(() => {
-        const fetchGroupData = async () => {
-            try {
-                const response = await axios.get(`/api/group/${group_name}`);
-                const groupData = response.data;
-                setIsAdmin(groupData.isAdmin);
-                setIsModerator(groupData.isMod);
-                setGroupDetails({
-                    isMember: groupData.isMember,
-                    groupId: groupData.group_id,
-                    groupName: groupData.group_name,
-                    description: groupData.description,
-                    groupPhoto: groupData.group_photo,
-                    memberCount: groupData.member_count,
-                    isPrivate: groupData.is_private,
-                    isRequestSent: groupData.isRequestSent,
-                    userId: groupData.userId
-                });
-            } catch (error) {
-                setErrorMessage("Error getting feed details");
-            }
-        };
-        fetchGroupData();
-    }, [group_name]);
+    const { data: groupData, error, isLoading } = useQuery(['groupData', group_name], async () => {
+        const response = await axios.get(`/api/group/${group_name}`);
+        return response.data; 
+    }, {
+        onSuccess: (data) => {
+            setGroupState((prevState) => ({
+                ...prevState,
+                isAdmin: data.isAdmin,
+                isMod: data.isMod,
+                groupDetails: data,
+                canRemove: data.isAdmin || data.isMod,
+            }));
+        },
+    });
 
-    //Moderators and admins can remove content
-    useEffect(() => {
-        if (isAdmin || isModerator) {
-            setCanRemove(true);
-        };
-    }, [isAdmin, isModerator]);
+    //Gets sub feeds
+    const { data: subFeedData, isError: subFeedError } = useQuery(
+        ['subFeeds', groupState.groupDetails.groupId],
+        async () => {
+            const response = await axios.get(`/api/sub_feeds/${groupState.groupDetails.groupId}`);
+            return response.data;
+        }, {
+            enabled: !!groupState.groupDetails.groupId,
+            onSuccess: (data) => setSubFeeds(data),
+            onError: () => setErrorMessage('Error getting feeds'),
+        }
+    )
 
-    //Fetch subgroups
-    useEffect(() => {
-        const fetchSubGroups = async () => {
-            try {
-                const response = await axios.get(`/api/sub_groups/${groupDetails.groupId}`);
-                setSubGroups(response.data);
-            } catch (error) {
-                setErrorMessage("Error getting feeds");
-            }
-        };
-        fetchSubGroups();
-    }, [groupDetails.groupId]);
-
-    //Adds channel to group
     const AddChannel = async (event) => {
         event.preventDefault();
         try {
@@ -80,15 +64,15 @@ const GroupHome = () => {
             } else {
                 const response = await axios.post('/api/add_group_channel', {
                     channel_name: newChannelName,
-                    groupId: groupDetails.groupId,
-                    isPosts: isPostChannel,
-                    isChat: isChatChannel
+                    groupId: groupState.groupDetails.groupId,
+                    isPosts: groupState.isPostChannel,
+                    isChat: groupState.isChatChannel
                 });
                 if (response.data && response.status === 201) {
                     setChannels([...channels, response.data]);
                     setErrorMessage('');
                     setNewChannelName('');
-                    setShowChannelForm(false);
+                    setShowForm((prev) => ({ ...prev, channel: false }));
                     navigate(`/g/${group_name}/${newChannelName}`);
                 } else {
                     setErrorMessage('Failed to add channel');
@@ -131,13 +115,13 @@ const GroupHome = () => {
 
     //Uploads content 
     const handlePostSubmit = async (formData) => {
-        formData.append('group_id', groupDetails.groupId);
+        formData.append('group_id', groupState.groupDetails.groupId);
         formData.append('channel_id', channelRender.channel_id);
         try {
             await axios.post('/api/create_post', formData, {
                 headers: { 'Content-Type': 'multipart/form-data' },
             });
-            setShowPostForm(false);
+            setShowForm((prev) => ({ ...prev, post: false }));
         } catch (error) {
             setErrorMessage("Error creating post");
         }
@@ -147,9 +131,11 @@ const GroupHome = () => {
     const toggleChannelForm = () => { setShowChannelForm((prev) => !prev) };
 
     //Checks membership if group is private
-    const isNotPrivateMember = !groupDetails.isMember && groupDetails.isPrivate;
+    const isNotPrivateMember = !groupState.groupDetails.isMember && groupState.groupDetails.isPrivate;
 
     document.title = groupDetails.groupName;
+    if (isLoading) return <div>Loading feed...</div>; 
+    if (error) return <div>Error loading feed</div>; 
     return (    
         <div className="group-container">  
             <div className="channel-feed">
@@ -160,18 +146,18 @@ const GroupHome = () => {
                 ) : channelRender && !isNotPrivateMember ? (
                         channelRender.is_posts && (channelMode === 'post' || !channelRender.is_chat) ? (
                         <PostChannel
-                            canRemove={canRemove}
+                            canRemove={groupState.canRemove}
                             channelId={channelRender.channel_id}
                             channelName={channelRender.channel_name}
                             isGroup={true}
-                            locationId={groupDetails.groupId}
+                            locationId={groupState.groupDetails.groupId}
                         />
                     ) : (
                         <ChatChannel
-                            canRemove={canRemove}
+                            canRemove={groupState.canRemove}
                             channelId={channelRender.channel_id}
                             isGroup={true}
-                            locationId={groupDetails.groupId}
+                            locationId={groupState.groupDetails.groupId}
                         />
                     )
                 ) : (
@@ -180,21 +166,21 @@ const GroupHome = () => {
             </div>    
             <aside id="right-aside">
                 <div id="profile-summary">
-                    <img className="large-group-photo" src={`/${groupDetails.groupPhoto}`} alt={groupDetails.groupName} />
+                    <img className="large-group-photo" src={`/${groupState.groupDetails.groupPhoto}`} alt={groupDetails.groupName} />
                     {isAdmin && (
                         <Link to={`/group_settings/${group_name}`}>
                             <button className="button">Settings</button>
                         </Link>
                     )}
-                    <p className="text36">{groupDetails.groupName}</p>
-                    <p className="description" >{groupDetails.description}</p>
-                    <p className="user-count">{groupDetails.memberCount} {groupDetails.memberCount === 1 ? 'follower' : 'followers'}</p>
+                    <p className="text36">{groupState.groupDetails.groupName}</p>
+                    <p className="description" >{groupState.groupDetails.description}</p>
+                    <p className="user-count">{groupState.groupDetails.memberCount} {groupState.groupDetails.memberCount === 1 ? 'follower' : 'followers'}</p>
                     <MemberChangeButton 
-                        userId={groupDetails.userId} 
-                        groupId={groupDetails.groupId} 
-                        isMember={groupDetails.isMember} 
-                        isRequestSent={groupDetails.isRequestSent} 
-                        isPrivate={groupDetails.isPrivate}
+                        userId={groupState.groupDetails.userId} 
+                        groupId={groupState.groupDetails.groupId} 
+                        isMember={groupState.groupDetails.isMember} 
+                        isRequestSent={groupState.groupDetails.isRequestSent} 
+                        isPrivate={groupState.groupDetails.isPrivate}
                     />
                 </div>
                 {errorMessage && <div className="error-message">{errorMessage}</div>}
@@ -205,12 +191,12 @@ const GroupHome = () => {
                         <p className="text36">{channel_name}</p>
                     ) 
                 )}
-                {showPostForm && channelMode === 'post' && (
+                {showForm && channelMode === 'post' && (
                     <div>
                         <button className="button" onClick={() => setShowPostForm(false)}>Close</button>
                     </div>
                 )}
-                {!showPostForm && channelMode === 'post' && (
+                {!showForm && channelMode === 'post' && (
                     <button className="button" onClick={() => setShowPostForm(true)}>Add Post</button>
                 )}
                 {channelRender && channelRender.is_posts && channelRender.is_chat && (
@@ -228,11 +214,11 @@ const GroupHome = () => {
                             <form id="add-channel-form" onSubmit={AddChannel}>
                                 <input className="name-input" type="text" placeholder="Channel name..." value={newChannelName} onChange={(e) => setNewChannelName(e.target.value)}/>
                                 <label>
-                                    <input type="checkbox" checked={isPostChannel} onChange={handlePostClick}/>
+                                    <input type="checkbox" checked={groupState.isPostChannel} onChange={handlePostClick}/>
                                     Post Channel
                                 </label>
                                 <label>
-                                    <input type="checkbox" checked={isChatChannel} onChange={handleChatClick}/>
+                                    <input type="checkbox" checked={groupState.isChatChannel} onChange={handleChatClick}/>
                                     Chat Channel
                                 </label>
                                 <input className="dark-button" type="submit" value="Add"/>
@@ -240,30 +226,27 @@ const GroupHome = () => {
                         )}
                     </div>
                 )}
-                <ChannelList channels={channels} feedId={groupDetails.groupId} feedName={group_name} isGroup={true} setChannels={setChannels}/>
-                {isAdmin && channel_name !== 'Main' && (
+                <ChannelList channels={channels} feedId={groupState.groupDetails.groupId} feedName={group_name} isGroup={true} setChannels={setChannels}/>
+                {groupState.isAdmin && channel_name !== 'Main' && (
                     <button className="button" onClick={() => deleteChannel()}>Delete channel</button> 
                 )}
-                {isAdmin && (
-                    subGroups.length === 0 && (
-                        <div>
-                            <ul>
-                                {subGroups.map((subGroup, index) => (
-                                    <li className="feed-list-item g" key={index}>
-                                        <Link className="feed-list-link" to={`/g/${subGroup.SubGroup.group_name}/Main`}>
-                                            <img className="small-feed-photo" src={`/${subGroup.SubGroup.group_photo}`} alt={subGroup.SubGroup.group_name} />
-                                            <p className="feed-list-text">{subGroup.SubGroup.group_name}</p>
-                                        </Link>
-                                    </li>
-                                ))}
-                            </ul>
-                        </div>
-                    )
+                {subFeeds.length > 0 && (
+                    <div>
+                        <ul>
+                            {subFeeds.map((subFeed, index) => (
+                                <li className="feed-list-item g" key={index}>
+                                    <Link className="feed-list-link" to={`/g/${subFeed.SubFeed.group_name}/Main`}>
+                                        <img className="small-feed-photo" src={`/${subFeed.SubFeed.group_photo}`} alt={subGroup.SubGroup.group_name} />
+                                        <p className="feed-list-text">{subFeed.SubFeed.group_name}</p>
+                                    </Link>
+                                </li>
+                            ))}
+                        </ul>
+                    </div>
                 )}
             </aside>
         </div>
     );
 }
-
 
 export default GroupHome;

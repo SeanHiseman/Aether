@@ -274,26 +274,22 @@ router.get('/group/:group_name', authenticateCheck, async (req, res) => {
     try {
         const groupName = req.params.group_name;
         const userId = req.session.user_id;
-        //Check if user is admin, moderator or member of group
-        const { isAdmin, isMod } = await checkIfUserIsAdminOrMod(userId, groupName);
-        const isMember = await checkIfUserIsMember(userId, groupName);
-        const group = await Groups.findOne({where: {group_name: groupName}});
-        const groupData = group.toJSON(); 
-        groupData.isAdmin = isAdmin;
-        groupData.isMod = isMod;
-        groupData.isLeader = (userId === group.group_leader);
-        groupData.isMember = isMember;
-        groupData.userId = userId;
-        //Finds user join request if private group
-        if (group.is_private) {
-            const hasJoinRequest = await GroupRequests.findOne({
-                where: { sender_id: userId },
-            });
-            groupData.isRequestSent = !!hasJoinRequest;
-        } else {
-            groupData.isRequestSent = false;
-        }
-
+        const [group, isAdminMod, isMember, hasJoinRequest] = await Promise.all([
+            Groups.findOne({ where: { group_name: groupName } }),
+            checkIfUserIsAdminOrMod(userId, groupName),
+            checkIfUserIsMember(userId, groupName),
+            GroupRequests.findOne({ where: { sender_id: userId } })
+        ]);
+        const { isAdmin, isMod } = isAdminMod
+        const groupData = {
+            ...group.toJSON(),
+            isAdmin, 
+            isMod, 
+            isLeader: (userId === group.group_leader),
+            isMember,
+            isRequestSent: group.is_private ? !!hasJoinRequest : false,
+            userId
+        };
         res.json(groupData);
     } catch (error) {
         res.status(500).json({ success: false });
@@ -407,11 +403,11 @@ router.post('/send_nest_request', authenticateCheck, async (req, res) => {
 });
 
 //Gets sub groups for a parent group
-router.get('/sub_groups/:group_id', authenticateCheck, async (req, res) => {
+router.get('/sub_feeds/:feed_id', authenticateCheck, async (req, res) => {
     try {
-        const { group_id } = req.params; //parent group_id
-        const subGroups = await NestedGroupMembers.findAll({ 
-            where: { parent_group_id: group_id }, 
+        const { feed_id } = req.params; //parent feed_id
+        const subFeeds = await NestedGroupMembers.findAll({ 
+            where: { parent_group_id: feed_id }, 
             include: [{
                 model: Groups,
                 as: 'SubGroup',
@@ -420,7 +416,7 @@ router.get('/sub_groups/:group_id', authenticateCheck, async (req, res) => {
             //Returns grous alphabetically
             order: [[{ model: Groups, as: 'SubGroup' }, 'group_name', 'ASC']]
         });
-        res.json(subGroups);
+        res.json(subFeeds);
     } catch (error) {
         res.status(500).json({ success: false });  
     }   

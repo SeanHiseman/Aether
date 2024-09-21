@@ -33,14 +33,8 @@ const PostChannel = ({ canRemove, channelId, channelName, isGroup, locationId })
         );
     };
 
-    if (isLoading) {
-        return <p>Loading posts...</p>;
-    }
-
-    if (error) {
-        return <p>Error getting posts: {error.message}</p>;
-    }
-    
+    if (isLoading) return <p>Loading posts...</p>;
+    if (error) return <p>Error getting posts: {error.message}</p>;
     return (
         <div className="channel">
             <div className="channel-content">
