@@ -3,9 +3,7 @@ import React, { createContext, useState, useEffect } from 'react';
 export const ThemeContext = createContext();
 
 export const ThemeProvider = ({ children }) => {
-    const [isLoading, setIsLoading] = useState(true);
     const [theme, setTheme] = useState('dark');
-
     const themes = ['dark', 'light', 'blue', 'green', 'purple', 'red'];
 
     useEffect(() => {
@@ -25,8 +23,6 @@ export const ThemeProvider = ({ children }) => {
         } catch (error) {
             //Default theme 
             setTheme('dark');
-        } finally {
-            setIsLoading(false);
         }
     };
 
@@ -38,11 +34,6 @@ export const ThemeProvider = ({ children }) => {
             console.error('Error updating theme');
         }
     };
-
-    //Render nothing until the theme is fetched
-    if (isLoading) {
-        return null;  
-    }
 
     return (
         <ThemeContext.Provider value={{ theme, setTheme: updateTheme, themes }}>
