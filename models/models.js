@@ -149,8 +149,8 @@ Groups.hasMany(UserGroups, { foreignKey: 'group_id' });
 //Nested groups
 Groups.hasMany(NestedGroupMembers, { foreignKey: 'parent_group_id',as: 'NestedMembersAsParent' });
 Groups.hasMany(NestedGroupMembers, { foreignKey: 'sub_group_id', as: 'NestedMembersAsSub' });
-NestedGroupMembers.belongsTo(Groups, { foreignKey: 'parent_group_id', as: 'ParentGroup' });
-NestedGroupMembers.belongsTo(Groups, { foreignKey: 'sub_group_id', as: 'SubGroup' });
+NestedGroupMembers.belongsTo(Groups, { foreignKey: 'parent_group_id', as: 'ParentFeed' });
+NestedGroupMembers.belongsTo(Groups, { foreignKey: 'sub_group_id', as: 'SubFeed' });
 
 
 const GroupRequests = sequelize.define('group_requests', {

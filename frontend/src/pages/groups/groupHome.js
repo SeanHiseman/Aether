@@ -5,6 +5,7 @@ import ChannelList from '../../components/channels/channelList';
 import ChannelName from '../../components/channels/channelName';
 import ChatChannel from '../../components/channels/chatChannel';
 import ContentForm from "../../components/contentForm";
+import FeedItem from '../../components/channels/feedItem';
 import MemberChangeButton from '../../components/memberChangeButton';
 import PostChannel from '../../components/channels/postChannel';
 
@@ -65,10 +66,12 @@ const GroupHome = () => {
                 const response = await axios.get(`/api/sub_feeds/${groupDetails.groupId}`);
                 setSubFeeds(response.data);
             } catch (error) {
-                setErrorMessage("Error getting feeds");
+                setErrorMessage("Error getting subfeeds");
             }
         };
-        fetchSubFeeds();
+        if (groupDetails.groupId) {
+            fetchSubFeeds();
+        }
     }, [groupDetails.groupId]);
 
     //Adds channel to group
@@ -244,24 +247,16 @@ const GroupHome = () => {
                 {isAdmin && channel_name !== 'Main' && (
                     <button className="button" onClick={() => deleteChannel()}>Delete channel</button> 
                 )}
-                {subFeeds.length > 0 && (
-                    <div>
-                        <ul>
-                            {subFeeds.map((subFeed, index) => (
-                                <li className="feed-list-item g" key={index}>
-                                    <Link className="feed-list-link" to={`/g/${subFeed.SubFeed.group_name}/Main`}>
-                                        <img className="small-feed-photo" src={`/${subFeed.SubFeed.group_photo}`} alt={subFeed.SubFeed.group_name} />
-                                        <p className="feed-list-text">{subFeed.SubFeed.group_name}</p>
-                                    </Link>
-                                </li>
-                            ))}
-                        </ul>
-                    </div>
-                )}
+                <ul>
+                    {subFeeds.length > 0 && (
+                        subFeeds.map((subFeed) => (
+                            <FeedItem key={subFeed.feed_id} feedId={subFeed.feed_id} name={subFeed.name} photo={subFeed.photo} type="g" link={`/g/${subFeed.name}/Main`} />
+                        ))
+                    )}
+                </ul>
             </aside>
         </div>
     );
 }
-
 
 export default GroupHome;
