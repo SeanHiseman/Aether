@@ -410,13 +410,22 @@ router.get('/sub_feeds/:feed_id', authenticateCheck, async (req, res) => {
             where: { parent_group_id: feed_id }, 
             include: [{
                 model: Groups,
-                as: 'SubGroup',
+                as: 'SubFeed',
                 attributes: ['group_name', 'group_photo']
             }],
-            //Returns grous alphabetically
-            order: [[{ model: Groups, as: 'SubGroup' }, 'group_name', 'ASC']]
+            //Returns feeds alphabetically
+            order: [[{ model: Groups, as: 'SubFeed' }, 'group_name', 'ASC']]
         });
-        res.json(subFeeds);
+        console.log("subFeeds:", subFeeds);
+        //Format for frontend
+        const formattedSubFeeds = subFeeds.map(subFeed => ({
+            feed_id: subFeed.sub_group_id,  
+            name: subFeed.SubFeed.group_name,  
+            photo: subFeed.SubFeed.group_photo,
+            type: 'g',                          
+        }));
+        console.log("formattedSubFeeds:", formattedSubFeeds);
+        res.json(formattedSubFeeds);
     } catch (error) {
         res.status(500).json({ success: false });  
     }   
