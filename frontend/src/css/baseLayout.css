@@ -199,6 +199,7 @@
 }
 .feed-list-link-container {
     align-items: center;
+    border-radius: 12px;
     display: flex;
     padding: 6px;
     transition: var(--transition-regular);
