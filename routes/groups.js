@@ -416,7 +416,6 @@ router.get('/sub_feeds/:feed_id', authenticateCheck, async (req, res) => {
             //Returns feeds alphabetically
             order: [[{ model: Groups, as: 'SubFeed' }, 'group_name', 'ASC']]
         });
-        console.log("subFeeds:", subFeeds);
         //Format for frontend
         const formattedSubFeeds = subFeeds.map(subFeed => ({
             feed_id: subFeed.sub_group_id,  
@@ -424,7 +423,6 @@ router.get('/sub_feeds/:feed_id', authenticateCheck, async (req, res) => {
             photo: subFeed.SubFeed.group_photo,
             type: 'g',                          
         }));
-        console.log("formattedSubFeeds:", formattedSubFeeds);
         res.json(formattedSubFeeds);
     } catch (error) {
         res.status(500).json({ success: false });  

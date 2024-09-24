@@ -18,7 +18,7 @@ const FeedItem = ({ feedId, name, photo, type, link }) => {
         <li className={`feed-list-item ${type}`}>
             <div className="feed-list-link-container">
                 <Link className="feed-list-link" to={link}>
-                    <img className="small-feed-photo" src={`/${photo}`} alt={name} />
+                    <img className="small-feed-photo" src={`/${photo}`} alt={'/media/site_images/blank-group-icon.jpg'} />
                     <p className="feed-list-text">{name}</p>
                 </Link>
                     <p className="channel-dropdown" onClick={dropdownToggle}>
@@ -26,13 +26,7 @@ const FeedItem = ({ feedId, name, photo, type, link }) => {
                 </p>
             </div>
             {dropdownOpen && (
-                <ChannelList
-                    channels={feedChannels}
-                    feedId={feedId}
-                    feedName={name}
-                    isGroup={type === 'g'}
-                    setChannels={updateFeedChannels}
-                />
+                <ChannelList channels={feedChannels} feedId={feedId} feedName={name} isGroup={type === 'g'} setChannels={updateFeedChannels} />
             )}
         </li> 
     )

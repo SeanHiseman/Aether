@@ -172,7 +172,7 @@ const GroupProfileView = ({ group, setGroup }) => {
                                 <button className="button" onClick={() => {
                                     setIsEditingName(true);
                                     setName(group.groupName);
-                                }}>Change username</button>
+                                }}>Change name</button>
                             </div>
                         )}
                     </div>
