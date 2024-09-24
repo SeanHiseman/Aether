@@ -97,7 +97,6 @@
     width: 100%
 }
 .channel-item {
-    animation: fadeIn 0.3s ease-in-out;
     transition: var(--transition-regular);
 }
 .channel-item:hover {
@@ -109,8 +108,7 @@
     text-decoration: none;
 }
 .channel-list {
-    margin-top: 10px;
-    width: 80%;
+    margin: 10px;
 }
 .channel-list-link, .channel-list-link:visited {
     text-decoration: none;

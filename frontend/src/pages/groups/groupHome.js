@@ -24,7 +24,6 @@ const GroupHome = () => {
     const [newChannelName, setNewChannelName] = useState('');
     const [showChannelForm, setShowChannelForm] = useState(false);
     const [showPostForm, setShowPostForm] = useState(false);
-    const [subFeeds, setSubFeeds] = useState([]);
 
     //Loads group info 
     useEffect(() => {
@@ -58,21 +57,6 @@ const GroupHome = () => {
             setCanRemove(true);
         };
     }, [isAdmin, isModerator]);
-
-    //Fetch subgroups
-    useEffect(() => {
-        const fetchSubFeeds = async () => {
-            try {
-                const response = await axios.get(`/api/sub_feeds/${groupDetails.groupId}`);
-                setSubFeeds(response.data);
-            } catch (error) {
-                setErrorMessage("Error getting subfeeds");
-            }
-        };
-        if (groupDetails.groupId) {
-            fetchSubFeeds();
-        }
-    }, [groupDetails.groupId]);
 
     //Adds channel to group
     const AddChannel = async (event) => {
@@ -208,6 +192,9 @@ const GroupHome = () => {
                         <p className="text36">{channel_name}</p>
                     ) 
                 )}
+                {isAdmin && channel_name !== 'Main' && (
+                    <button className="button" onClick={() => deleteChannel()}>Delete channel</button> 
+                )}
                 {showPostForm && channelMode === 'post' && (
                     <div>
                         <button className="button" onClick={() => setShowPostForm(false)}>Close</button>
@@ -244,16 +231,6 @@ const GroupHome = () => {
                     </div>
                 )}
                 <ChannelList channels={channels} feedId={groupDetails.groupId} feedName={group_name} isGroup={true} setChannels={setChannels}/>
-                {isAdmin && channel_name !== 'Main' && (
-                    <button className="button" onClick={() => deleteChannel()}>Delete channel</button> 
-                )}
-                <ul>
-                    {subFeeds.length > 0 && (
-                        subFeeds.map((subFeed) => (
-                            <FeedItem key={subFeed.feed_id} feedId={subFeed.feed_id} name={subFeed.name} photo={subFeed.photo} type="g" link={`/g/${subFeed.name}/Main`} />
-                        ))
-                    )}
-                </ul>
             </aside>
         </div>
     );

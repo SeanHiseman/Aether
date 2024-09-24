@@ -45,7 +45,7 @@ const ContentForm = ({ closeForm, isReply, onSubmit, errorMessage }) => {
     return (
         <form id="post-form" onSubmit={handleSubmit}>
             {!isReply && (<input id="title-entry" type="text" placeholder="Add title (optional)..." value={title} onChange={(e) => setTitle(e.target.value)}/>)}
-            <ReactQuill placeholder={isReply ? "Start reply..." : "Start post..."} modules={modules} value={content} onChange={setContent} ref={quillRef} />
+            <ReactQuill placeholder={isReply ? "Reply..." : "Start post..."} modules={modules} value={content} onChange={setContent} ref={quillRef} />
             <div id="content-form-buttons">
                 {isReply && (<button className="button" type="button" onClick={closeForm}>Close</button>)}
                 <div id="post-file-input">
