@@ -7,6 +7,7 @@ import Algorithm from './pages/welcome/algorithm';
 import AskChannel from './pages/ask/askChannel';
 import BaseLayout from './pages/base';
 import Content from './pages/welcome/content';
+import ContentWidget from './components/contentWidget';
 import Feeds from './pages/welcome/feeds';
 import GroupHome from './pages/groups/groupHome';
 import GroupSettings from './pages/groups/settings/groupSettings';
@@ -44,28 +45,30 @@ const App = () => {
                         <Route path="/login" element={<Login />} />
                         <Route path="/join" element={<Join />} />
                         <Route path="/" element={<QueryProvider><AuthCheck><BaseLayout /></AuthCheck></QueryProvider>}>
-                            <Route path="ask" element={<AuthCheck><AskChannel /></AuthCheck>} >
-                                <Route path=":chatId" element={<QueryProvider><AuthCheck><AskChannel /></AuthCheck></QueryProvider>} />
+                            <Route path="ask" element={<AskChannel />} >
+                                <Route path=":chatId" element={<AskChannel />} />
                             </Route>
-                            <Route path="p/:feed_name" element={<AuthCheck><PersonalFeed/></AuthCheck>} />
-                            <Route path="settings/:username" element={<AuthCheck><Settings /></AuthCheck>} />
-                            <Route path="group_settings/:group_name" element={<AuthCheck><GroupSettings /></AuthCheck>} />
-                            <Route path="search/:tab?" element={<AuthCheck><SearchResults /></AuthCheck>} />
-                            <Route path="messages/:username" element={<AuthCheck><MessagesPage /></AuthCheck>} >
-                                <Route path=":friend_name" element={<AuthCheck><MessagesPage /></AuthCheck>} >
+                            <Route path="p/:feed_name" element={<PersonalFeed/>} />
+                            <Route path="settings/:username" element={<Settings />} />
+                            <Route path="group_settings/:group_name" element={<GroupSettings />} />
+                            <Route path="search/:tab?" element={<SearchResults />} />
+                            <Route path="messages" element={<MessagesPage />} >
+                                <Route path=":friend_name" element={<MessagesPage />} >
                                     <Route index element={<Navigate replace to="Main" />} />
-                                    <Route path=":title" element={<AuthCheck><MessagesPage /></AuthCheck>} />
+                                    <Route path=":title" element={<MessagesPage />} />
                                 </Route>
                             </Route>
-                            <Route path="g/:group_name" element={<AuthCheck><GroupWrapper /></AuthCheck>}>
-                                <Route path=":channel_name" element={<AuthCheck><GroupHome /></AuthCheck>}>
-                                    <Route index element={<Navigate replace to="Main" />} />
-                                    <Route path=":channel_name" element={<AuthCheck><GroupHome /></AuthCheck>} />
-                                </Route>
-                            </Route>
-                            <Route path="u/:username" element={<AuthCheck><ProfileWrapper /></AuthCheck>}>
+                            <Route path="g/:group_name" element={<GroupWrapper />}>
                                 <Route index element={<Navigate replace to="Main" />} />
-                                <Route path=":channel_name" element={<AuthCheck><Profile /></AuthCheck>} />
+                                <Route path=":channel_name" element={<GroupHome />}>
+                                    <Route path=":post_id" element={<ContentWidget />} />
+                                </Route>
+                            </Route>
+                            <Route path="u/:username" element={<ProfileWrapper />}>
+                                <Route index element={<Navigate replace to="Main" />} />
+                                <Route path=":channel_name" element={<Profile />} >
+                                    <Route path=":post_id" element={<ContentWidget />} />
+                                </Route>
                             </Route>
                         </Route>
                     </Routes>

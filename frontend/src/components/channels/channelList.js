@@ -1,6 +1,6 @@
 import axios from 'axios';
 import React, { useCallback, useEffect, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import FeedItem from './feedItem';
 
 const ChannelList = ({ channels, feedId, feedName, isGroup, setChannels }) => {

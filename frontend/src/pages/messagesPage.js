@@ -14,7 +14,7 @@ const MessagesPage = () => {
     const [chats, setChats] = useState([]);
     const [errorMessage, setErrorMessage] = useState('');
     const [friends, setFriends] = useState([]);
-    const { friend_name, username, title } = useParams();
+    const { friend_name, title } = useParams();
     const [isEditingChatName, setIsEditingChatName] = useState(false);
     const [message, setMessage] = useState('');
     const [newChatName, setNewChatName] = useState('');
@@ -139,7 +139,7 @@ const MessagesPage = () => {
                     setErrorMessage('');
                     setIsEditingChatName(false);
                     setChangedChatName('');
-                    navigate(`/messages/${username}/${friend_name}/${changedChatName}`);
+                    navigate(`/messages/${friend_name}/${changedChatName}`);
                 }
             }
         } catch {
@@ -182,7 +182,7 @@ const MessagesPage = () => {
                     setChats(prevChats => [...prevChats, newChat]);
                     setSelectedChats(prevSelected => [...prevSelected, newChat]);
                     setSelectedChatId(newChat.chatId);
-                    navigate(`/messages/${username}/${friend_name}/${newChatName}`)
+                    navigate(`/messages/${friend_name}/${newChatName}`)
                     setErrorMessage('');
                     setNewChatName('');
                     setShowForm(false);
@@ -211,7 +211,7 @@ const MessagesPage = () => {
             );
             setSelectedChatId(null);
             setChat([]);
-            navigate(`/messages/${username}/${friend_name}/Main`);
+            navigate(`/messages/${friend_name}/Main`);
         } catch (error) {
             setErrorMessage('Error deleting chat');
         }
@@ -367,7 +367,7 @@ const MessagesPage = () => {
                         <ul>
                             {selectedChats.map(chat => (
                                 <li key={chat.chatId} className="channel-item">
-                                    <Link to={`/messages/${username}/${friend_name}/${chat.title}`}>
+                                    <Link to={`/messages/${friend_name}/${chat.title}`}>
                                         <div className="channel-link">{chat.title}</div>
                                     </Link>
                                 </li>
@@ -395,7 +395,7 @@ const MessagesPage = () => {
                         <ul>
                             {friends.map(friend => (
                                 <li className="profile-info" key={friend.friend_id}>
-                                    <Link className="profile-link" to={`/messages/${username}/${friend.friend_name}`}>
+                                    <Link className="profile-link" to={`/messages/${friend.friend_name}`}>
                                     <img className="profile-image" src={`/${friend.friend_profile_photo}`} alt="Profile"/>
                                         <div className="chat-username">
                                             {friend.friend_name}

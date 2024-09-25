@@ -1,9 +1,8 @@
 import axios from 'axios';
-import React, { useCallback, useContext, useEffect, useState } from 'react';
+import React, { useContext, useEffect, useState } from 'react';
 import { Link, Outlet, useNavigate } from 'react-router-dom';
 import { v4 } from 'uuid';
 import { AuthContext } from '../components/authContext';
-import ChannelList from '../components/channels/channelList';
 import FeedItem from '../components/channels/feedItem';
 import { ThemeContext } from '../themeProvider';
 import { useQueryContext } from '../components/search/queryContext';
@@ -216,7 +215,7 @@ const BaseLayout = () => {
                             </div>
                         </form>
                 <div className="spacer"></div>
-                <Link id="messages-button" to={`/messages/${profile.username}`}>Messages</Link>
+                <Link id="messages-button" to={`/messages`}>Messages</Link>
                 </header>
                 <div className="content">
                     <Outlet />
