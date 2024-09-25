@@ -48,26 +48,26 @@ const App = () => {
                             <Route path="ask" element={<AskChannel />} >
                                 <Route path=":chatId" element={<AskChannel />} />
                             </Route>
-                            <Route path="p/:feed_name" element={<PersonalFeed/>} />
-                            <Route path="settings/:username" element={<Settings />} />
+                            <Route path="g/:group_name" element={<GroupWrapper />}>
+                                <Route index element={<Navigate replace to="Main" />} />
+                                <Route path=":channel_name" element={<GroupHome />} >
+                                    <Route path=":postId" element={<ContentWidget />} />
+                                </Route>
+                            </Route>
                             <Route path="group_settings/:group_name" element={<GroupSettings />} />
-                            <Route path="search/:tab?" element={<SearchResults />} />
                             <Route path="messages" element={<MessagesPage />} >
                                 <Route path=":friend_name" element={<MessagesPage />} >
                                     <Route index element={<Navigate replace to="Main" />} />
                                     <Route path=":title" element={<MessagesPage />} />
                                 </Route>
                             </Route>
-                            <Route path="g/:group_name" element={<GroupWrapper />}>
-                                <Route index element={<Navigate replace to="Main" />} />
-                                <Route path=":channel_name" element={<GroupHome />}>
-                                    <Route path=":post_id" element={<ContentWidget />} />
-                                </Route>
-                            </Route>
+                            <Route path="p/:feed_name" element={<PersonalFeed/>} />
+                            <Route path="search/:tab?" element={<SearchResults />} />
+                            <Route path="settings/:username" element={<Settings />} />
                             <Route path="u/:username" element={<ProfileWrapper />}>
                                 <Route index element={<Navigate replace to="Main" />} />
                                 <Route path=":channel_name" element={<Profile />} >
-                                    <Route path=":post_id" element={<ContentWidget />} />
+                                    <Route path=":postId" element={<ContentWidget />} />
                                 </Route>
                             </Route>
                         </Route>

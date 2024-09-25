@@ -5,7 +5,6 @@ import ChannelList from '../../components/channels/channelList';
 import ChannelName from '../../components/channels/channelName';
 import ChatChannel from '../../components/channels/chatChannel';
 import ContentForm from "../../components/contentForm";
-import FeedItem from '../../components/channels/feedItem';
 import MemberChangeButton from '../../components/memberChangeButton';
 import PostChannel from '../../components/channels/postChannel';
 

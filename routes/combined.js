@@ -15,12 +15,11 @@ router.get('/channel_posts', authenticateCheck, async (req, res) => {
         const { isGroup, location_id, channel_id } = req.query;
         const isGroupBool = isGroup === 'true'; //Convert from string to boolean
         const userId = req.session.user_id;
-        let PostModel, UserAlias, VotesAlias, NotesModel, NotesAlias, whereChannel;
+        let PostModel, UserAlias, VotesAlias, NotesModel, whereChannel;
         PostModel = isGroupBool ? GroupPosts : ProfilePosts;
         UserAlias = isGroupBool ? 'GroupPoster' : 'ProfilePoster';
         VotesAlias = isGroupBool ? 'GroupPostVotes' : 'ProfilePostVotes';
         NotesModel = isGroupBool ? GroupNotes : ProfileNotes;
-        NotesAlias = 'note';
         whereChannel = {
             [isGroupBool ? 'group_id' : 'profile_id']: location_id,
             ...(channel_id ? { channel_id: channel_id } : {})
@@ -42,7 +41,7 @@ router.get('/channel_posts', authenticateCheck, async (req, res) => {
                 required: false
             }, {
                 model: NotesModel,
-                as: NotesAlias,
+                as: 'note',
                 attributes: ['note_id', 'note_content', 'timestamp', 'is_misinfo'],
                 required: false
             }],
@@ -121,7 +120,6 @@ router.post('/create_post', authenticateCheck, post_upload.array('files'), async
         }
         const post = await postModel.create(postData);
         return res.json({ success: true, post });
-
     } catch (error) {
         return res.status(500).json({ success: false });
     }
@@ -132,19 +130,58 @@ router.delete('/remove_post', authenticateCheck, async (req, res) => {
     try {
         const { postData } = req.body;
         const { isGroup, postId } = postData;
-        const repliesModel = isGroup ? GroupReplies : ProfileReplies;
-        const notesModel = isGroup ? GroupNotes : ProfileNotes;
-        const postModel = isGroup ? GroupPosts : ProfilePosts;  
-        const post = await postModel.findOne({
+        const RepliesModel = isGroup ? GroupReplies : ProfileReplies;
+        const NotesModel = isGroup ? GroupNotes : ProfileNotes;
+        const PostModel = isGroup ? GroupPosts : ProfilePosts;  
+        const post = await PostModel.findOne({
             where: { post_id: postId }
         });
         deleteMedia(post.content);
-        await repliesModel.destroy({ where: { post_id: postId } });
-        await notesModel.destroy({ where: { post_id: postId } })
-        await postModel.destroy({ where: { post_id: postId } });
+        await RepliesModel.destroy({ where: { post_id: postId } });
+        await NotesModel.destroy({ where: { post_id: postId } })
+        await PostModel.destroy({ where: { post_id: postId } });
         res.json({ success: true });
     } catch (error) {
         res.status(500).json({ success: false });
+    }
+});
+
+//Fetches post on its own (could combine with /channel_posts to avoid repetition)
+router.get('/single_post', authenticateCheck, async (req, res) => {
+    try {
+        const { isGroup, postId } = req.query;
+        const isGroupBool = isGroup === 'true'; //Convert from string to boolean
+        let PostModel, UserAlias, VotesAlias, NotesModel, whereChannel;
+        PostModel = isGroupBool ? GroupPosts : ProfilePosts;
+        UserAlias = isGroupBool ? 'GroupPoster' : 'ProfilePoster';
+        VotesAlias = isGroupBool ? 'GroupPostVotes' : 'ProfilePostVotes';
+        NotesModel = isGroupBool ? GroupNotes : ProfileNotes;
+        const post = await PostModel.findOne({
+            where: { post_id: postId },
+            include: [{
+                model: Users,
+                as: UserAlias,
+                attributes: ['username'],
+                include: [{
+                    model: Profiles,
+                    attributes: ['profile_photo']
+                }]
+            }, {
+                model: ContentVotes,
+                as: VotesAlias,
+                attributes: ['vote_count'],
+                required: false
+            }, {
+                model: NotesModel,
+                as: 'note',
+                attributes: ['note_id', 'note_content', 'timestamp', 'is_misinfo'],
+                required: false
+            }],
+            attributes: ['post_id', 'title', 'content', 'replies', 'views', 'upvotes', 'downvotes', 'timestamp', 'poster_id', 'points'],
+        });
+        res.status(200).json({ success: true, post });
+    } catch {
+        res.status(500).json({ success: false }); 
     }
 });
 
