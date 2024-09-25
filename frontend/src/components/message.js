@@ -11,7 +11,7 @@ const Message = ({ canRemove, deleteMessage, message, isOutgoing }) => {
         <div className={`message-container ${isOutgoing ? 'outgoing' : 'incoming'}`}>
             <div className="message-content">
                 {!isOutgoing && message.user && (
-                    <Link to={`/profile/${message.user.username}`}>
+                    <Link to={`/u/${message.user.username}`}>
                         <img className="profile-image2" src={`/${message.user.profile.profile_photo}`} alt="Profile" />
                     </Link>
                 )}

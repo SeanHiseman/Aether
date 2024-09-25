@@ -28,7 +28,7 @@ const Users = sequelize.define('users', {
   user_since: { type: DATE, defaultValue: NOW },
   collaborative_preference: { type: FLOAT, allowNull: false, defaultValue: 0.5 },
   time_preference: { type: FLOAT, allowNull: false, defaultValue: 0.0001 },
-  has_membership: { type: BOOLEAN, defaultValue: false }, //If user has membership subscription
+  has_membership: { type: BOOLEAN, defaultValue: false }, 
   theme: { type: STRING(120), allowNull: true },
   points: { type: INTEGER, allowNull: false, defaultValue: 0 }, 
 }, {tableName: 'users', timestamps: false});
@@ -133,7 +133,7 @@ const UserGroups = sequelize.define('user_groups', {
   is_admin: { type: BOOLEAN, defaultValue: false },
 }, { tableName: 'user_groups', timestamps: false });
 
-//Groups can be members of other groups
+//Defines subfeed and parent feed relationship
 const NestedGroupMembers = sequelize.define('nested_group_members', {
   sub_group_id: { type: STRING(36), primaryKey: true, references: { model: 'Groups', key: 'group_id' }},
   parent_group_id: { type: STRING(36), primaryKey: true, references: { model: 'Groups', key: 'group_id' }},

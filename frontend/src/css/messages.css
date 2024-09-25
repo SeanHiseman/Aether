@@ -126,8 +126,7 @@
     background-color: var(--darkest);
 }
 .message.outgoing {
-    background-color: var(--dark);
-    border: 1px solid var(--border);
+    background-color: var(--button-hover);
 }
 .message-container {
     margin: 10px;
