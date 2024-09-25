@@ -12,53 +12,65 @@ const router = Router();
 //Posts from group or profile channels
 router.get('/channel_posts', authenticateCheck, async (req, res) => {
     try {
-        const { isGroup, location_id, channel_id } = req.query;
+        const { isGroup, postId, location_id, channel_id, isSingle } = req.query;
         const isGroupBool = isGroup === 'true'; //Convert from string to boolean
         const userId = req.session.user_id;
-        let PostModel, UserAlias, VotesAlias, NotesModel, whereChannel;
-        PostModel = isGroupBool ? GroupPosts : ProfilePosts;
-        UserAlias = isGroupBool ? 'GroupPoster' : 'ProfilePoster';
-        VotesAlias = isGroupBool ? 'GroupPostVotes' : 'ProfilePostVotes';
-        NotesModel = isGroupBool ? GroupNotes : ProfileNotes;
-        whereChannel = {
-            [isGroupBool ? 'group_id' : 'profile_id']: location_id,
-            ...(channel_id ? { channel_id: channel_id } : {})
-        };
-        const posts = await PostModel.findAll({
-            where: whereChannel,
+        const PostModel = isGroupBool ? GroupPosts : ProfilePosts;
+        const UserAlias = isGroupBool ? 'GroupPoster' : 'ProfilePoster';
+        const VotesAlias = isGroupBool ? 'GroupPostVotes' : 'ProfilePostVotes';
+        const NotesModel = isGroupBool ? GroupNotes : ProfileNotes;
+        const postAttributes = ['post_id', 'title', 'content', 'replies', 'views', 'upvotes', 'downvotes', 'timestamp', 'poster_id', 'points']
+        const includeOptions = [{
+            model: Users,
+            as: UserAlias,
+            attributes: ['username'],
             include: [{
-                model: Users,
-                as: UserAlias,
-                attributes: ['username'],
-                include: [{
-                    model: Profiles,
-                    attributes: ['profile_photo']
-                }]
-            }, {
-                model: ContentVotes,
-                as: VotesAlias,
-                attributes: ['vote_count'],
-                required: false
-            }, {
-                model: NotesModel,
-                as: 'note',
-                attributes: ['note_id', 'note_content', 'timestamp', 'is_misinfo'],
-                required: false
-            }],
-            attributes: ['post_id', 'title', 'content', 'replies', 'views', 'upvotes', 'downvotes', 'timestamp', 'poster_id', 'points'],
-        });
-        const finalResults = posts.map((post) => ({
-            ...post.dataValues,
-            is_group: isGroupBool
-        }));
-        //const sortedPosts = post_type === 'group' 
-            //? sortPostsByWeightedRatio(finalResults, userId)
-            //: finalResults.sort((a, b) => b.timestamp - a.timestamp);
-        res.json(finalResults);
+                model: Profiles,
+                attributes: ['profile_photo']
+            }]
+        }, {
+            model: ContentVotes,
+            as: VotesAlias,
+            attributes: ['vote_count'],
+            required: false
+        }, {
+            model: NotesModel,
+            as: 'note',
+            attributes: ['note_id', 'note_content', 'timestamp', 'is_misinfo'],
+            required: false
+        }];
+        if (isSingle === 'true') {
+            const post = await PostModel.findOne({
+                where: { post_id: postId },
+                include: includeOptions,
+                attributes: postAttributes,
+            });
+            return res.status(200).json({ success: true, post });
+        } 
+        else {
+            const whereChannel = {
+                [isGroupBool ? 'group_id' : 'profile_id']: location_id,
+                ...(channel_id ? { channel_id: channel_id } : {})
+            };
+            const posts = await PostModel.findAll({
+                where: whereChannel,
+                include: includeOptions,
+                attributes: postAttributes,
+            });
+            const finalResults = posts.map((post) => ({
+                ...post.dataValues,
+                is_group: isGroupBool
+            }));
+            //const sortedPosts = post_type === 'group' 
+            //    ? sortPostsByWeightedRatio(finalResults, userId)
+            //    : finalResults.sort((a, b) => b.timestamp - a.timestamp);
+            return res.json(finalResults);
+        }
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
     }
 });
+
 
 //Checks input for post uploads
 const postFilter = (req, file, cb) => {
@@ -143,45 +155,6 @@ router.delete('/remove_post', authenticateCheck, async (req, res) => {
         res.json({ success: true });
     } catch (error) {
         res.status(500).json({ success: false });
-    }
-});
-
-//Fetches post on its own (could combine with /channel_posts to avoid repetition)
-router.get('/single_post', authenticateCheck, async (req, res) => {
-    try {
-        const { isGroup, postId } = req.query;
-        const isGroupBool = isGroup === 'true'; //Convert from string to boolean
-        let PostModel, UserAlias, VotesAlias, NotesModel, whereChannel;
-        PostModel = isGroupBool ? GroupPosts : ProfilePosts;
-        UserAlias = isGroupBool ? 'GroupPoster' : 'ProfilePoster';
-        VotesAlias = isGroupBool ? 'GroupPostVotes' : 'ProfilePostVotes';
-        NotesModel = isGroupBool ? GroupNotes : ProfileNotes;
-        const post = await PostModel.findOne({
-            where: { post_id: postId },
-            include: [{
-                model: Users,
-                as: UserAlias,
-                attributes: ['username'],
-                include: [{
-                    model: Profiles,
-                    attributes: ['profile_photo']
-                }]
-            }, {
-                model: ContentVotes,
-                as: VotesAlias,
-                attributes: ['vote_count'],
-                required: false
-            }, {
-                model: NotesModel,
-                as: 'note',
-                attributes: ['note_id', 'note_content', 'timestamp', 'is_misinfo'],
-                required: false
-            }],
-            attributes: ['post_id', 'title', 'content', 'replies', 'views', 'upvotes', 'downvotes', 'timestamp', 'poster_id', 'points'],
-        });
-        res.status(200).json({ success: true, post });
-    } catch {
-        res.status(500).json({ success: false }); 
     }
 });
 

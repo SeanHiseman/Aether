@@ -10,8 +10,8 @@ const PostChannel = ({ canRemove, channelId, channelName, isGroup, locationId })
     const { postId } = useParams();
 
     const getSinglePost = async () => {
-        const response = await axios.get('/api/single_post', {
-            params: { isGroup, postId }
+        const response = await axios.get('/api/channel_posts', {
+            params: { isGroup, postId, isSingle: true }
         });
         return response.data.post;
     };
@@ -22,7 +22,8 @@ const PostChannel = ({ canRemove, channelId, channelName, isGroup, locationId })
             params: {
                 isGroup,
                 location_id: locationId,
-                ...(isMain ? {} : { channel_id: channelId }) //Only include channelId if not viewing Main
+                ...(isMain ? {} : { channel_id: channelId }), //Only include channelId if not viewing Main
+                isSingle: false
             }
         });
         return response.data;
