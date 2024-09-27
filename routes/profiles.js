@@ -295,8 +295,8 @@ router.get('/profile/:username', authenticateCheck, async (req, res) => {
         //Finds profile associated with user
         let profile = await Profiles.findOne({ where: { user_id: viewedUser.user_id } });
         if (!profile || !viewedUser) {
-            res.status(404).json({ success: false }); 
-        };
+            return res.status(404).json({ success: false }); 
+        }
         let follower, friendship, friendRequest = null;
         try {
             [follower, friendship, friendRequest] = await Promise.all([

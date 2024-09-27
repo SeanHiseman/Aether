@@ -188,7 +188,7 @@ const BaseLayout = () => {
                 <nav className="feed-list">
                     <ul>
                         {feeds.length === 0 ? (
-                            <p>Followed feeds show up here</p>
+                            <p>Followed feeds are shown here</p>
                         ) : (
                             feeds.map((feed) => (
                                 <FeedItem key={feed.feed_id} feedId={feed.feed_id} name={feed.name} photo={feed.photo} type={feed.type} link={`/${feed.type}/${feed.name}/Main`} />
