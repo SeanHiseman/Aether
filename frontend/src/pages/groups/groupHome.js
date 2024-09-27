@@ -150,7 +150,15 @@ const GroupHome = () => {
 
     document.title = groupDetails.groupName || 'Feed not found';
     if (groupNotFound) {
-        return <div className="error-message">Feed not found</div>;
+        return (
+            <div className="group-container"> 
+                <div className="channel-feed">            
+                    <div className="text36">Feed not found</div>
+                </div>
+                <aside id="right-aside">
+                </aside>
+            </div>
+        );
     } 
     return (    
         <div className="group-container">  
@@ -160,7 +168,7 @@ const GroupHome = () => {
                         <ContentForm isReply={false} onSubmit={handlePostSubmit} errorMessage={errorMessage} />
                     </div>
                 ) : feedErrorMessage ? (
-                    <div className="error-message">{feedErrorMessage}</div>
+                    <div className="text36">{feedErrorMessage}</div>
                 ) : channelRender && !isNotPrivateMember ? (
                         channelRender.is_posts && (channelMode === 'post' || !channelRender.is_chat) ? (
                         <PostChannel

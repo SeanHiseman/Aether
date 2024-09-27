@@ -140,7 +140,7 @@ const Profile = () => {
                         <ContentForm isReply={false} onSubmit={handlePostSubmit} errorMessage={errorMessage} />
                     </div>
                 ) : feedErrorMessage ? (
-                    <div className="error-message">{feedErrorMessage}</div>
+                    <div className="text36">{feedErrorMessage}</div>
                 ) : channelRender && !isPrivateNotFriend ? (
                         <PostChannel canRemove={isLoggedInUser} channelId={channelRender.channel_id} channelName={channelRender.channel_name} isGroup={false} locationId={profile.profileId} />
                     ) : (
