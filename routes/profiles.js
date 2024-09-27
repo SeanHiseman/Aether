@@ -287,13 +287,16 @@ router.delete('/remove_friend', authenticateCheck, async (req, res) => {
     }
 });
 
-//Load user profiles
+//Load user profile
 router.get('/profile/:username', authenticateCheck, async (req, res) => {
     try {
         const loggedInUserId = req.session.user_id;
         let viewedUser = await Users.findOne({ where: { username: req.params.username } });
         //Finds profile associated with user
         let profile = await Profiles.findOne({ where: { user_id: viewedUser.user_id } });
+        if (!profile || !viewedUser) {
+            res.status(404).json({ success: false }); 
+        };
         let follower, friendship, friendRequest = null;
         try {
             [follower, friendship, friendRequest] = await Promise.all([

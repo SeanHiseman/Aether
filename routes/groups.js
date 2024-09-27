@@ -280,6 +280,9 @@ router.get('/group/:group_name', authenticateCheck, async (req, res) => {
             checkIfUserIsMember(userId, groupName),
             GroupRequests.findOne({ where: { sender_id: userId } })
         ]);
+        if (!group) {
+            res.status(404).json({ success: false }); 
+        };
         const { isAdmin, isMod } = isAdminMod
         const groupData = {
             ...group.toJSON(),
