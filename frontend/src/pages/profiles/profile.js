@@ -12,6 +12,8 @@ import FollowerChangeButton from '../../components/followerChangeButton';
 const Profile = () => {
     const [channels, setChannels] = useState([]);
     const [errorMessage, setErrorMessage] = useState('');
+    const [feedErrorMessage, setFeedErrorMessage] = useState('');
+    const [feedNotFound, setFeedNotFound] = useState(true);
     const [newChannelName, setNewChannelName] = useState('');
     const [profile, setProfile] = useState('');
     const [showChannelForm, setShowChannelForm] = useState(false);
@@ -31,13 +33,13 @@ const Profile = () => {
                 const response = await axios.get(`/api/profile/${username}`);
                 const fetchedProfile = response.data.profile;
                 setProfile(fetchedProfile);
+                setFeedNotFound(false);
             } catch (error) {
-                if (error.response && error.response.status === 401) {
-                    navigate('/login');
+                if (error.response && error.response.status === 404) {
+                    setFeedNotFound(true);
                 }
             }
         };
-
         fetchProfile();
     }, [username, navigate, channel_name]);
 
@@ -71,6 +73,14 @@ const Profile = () => {
     
     //Accesses data about current channel
     const channelRender = channels.find(c => c.channel_name === channel_name);
+
+    useEffect(() => {
+        if (!channelRender && channels.length > 0) {
+            setFeedErrorMessage('Channel not found. Please check the url.');
+        } else {
+            setFeedErrorMessage('');
+        }
+    }, [channelRender, channels]);
 
     //Updates list of channels when channel name changed
     const channelUpdate = (channelId, newName) => {
@@ -117,8 +127,11 @@ const Profile = () => {
 
     //Check if profile is private and user is not friends
     const isPrivateNotFriend = !profile.isFriend && profile.isPrivate && !isLoggedInUser;
-    document.title = profile.username || "Profile";
 
+    document.title = profile.username || 'Feed not found';
+    if (feedNotFound) {
+        return <div className="error-message">Feed not found</div>;
+    }
     return (
         <div className="profile-container">
             <div className="channel-feed">
@@ -126,10 +139,12 @@ const Profile = () => {
                     <div id="create-post-container">
                         <ContentForm isReply={false} onSubmit={handlePostSubmit} errorMessage={errorMessage} />
                     </div>
-                ) : (
-                    channelRender && !isPrivateNotFriend ? (
+                ) : feedErrorMessage ? (
+                    <div className="error-message">{feedErrorMessage}</div>
+                ) : channelRender && !isPrivateNotFriend ? (
                         <PostChannel canRemove={isLoggedInUser} channelId={channelRender.channel_id} channelName={channelRender.channel_name} isGroup={false} locationId={profile.profileId} />
-                    ) : <p className="text36">This feed is private</p>
+                    ) : (
+                        <p className="text36">This feed is private</p>
                 )}
             </div>
             <div id="right-aside">

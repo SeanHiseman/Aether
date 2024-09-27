@@ -10,10 +10,17 @@ const PostChannel = ({ canRemove, channelId, channelName, isGroup, locationId })
     const { postId } = useParams();
 
     const getSinglePost = async () => {
-        const response = await axios.get('/api/channel_posts', {
-            params: { isGroup, postId, isSingle: true }
-        });
-        return response.data.post;
+        try{
+            console.log("getting post");
+            const response = await axios.get('/api/channel_posts', {
+                params: { isGroup, isSingle: true, locationId, postId }
+            });
+            console.log("response:", response);
+            return response.data.post; 
+        } catch (error) {
+            console.error("Error occurred during API call:", error); // Log full error for troubleshooting
+            throw error;
+        }
     };
 
     const getPosts = async () => {
@@ -21,9 +28,9 @@ const PostChannel = ({ canRemove, channelId, channelName, isGroup, locationId })
         const response = await axios.get('/api/channel_posts', {
             params: {
                 isGroup,
-                location_id: locationId,
+                isSingle: false,
+                locationId,
                 ...(isMain ? {} : { channel_id: channelId }), //Only include channelId if not viewing Main
-                isSingle: false
             }
         });
         return response.data;
@@ -33,7 +40,7 @@ const PostChannel = ({ canRemove, channelId, channelName, isGroup, locationId })
     const { data: singlePost, error: singlePostError, isLoading: singlePostLoading } = useQuery({
         queryKey: ['singlePost', postId],
         queryFn: getSinglePost,
-        enabled: !!postId
+        enabled: !!postId //postId only present in url for single posts
     });
 
     //Gets posts from the channel
@@ -50,14 +57,15 @@ const PostChannel = ({ canRemove, channelId, channelName, isGroup, locationId })
             posts => posts.filter(post => post.post_id !== postId)
         );
     };
-
-    if (postId && singlePostLoading) return <p>Loading post...</p>;
-    if (postId && singlePostError) return <p>Error getting post: {singlePostError.message}</p>;
-    if (postId && !singlePostLoading && !singlePost) {
-        return <p>Post not found. Please check the url.</p>;
+    if (singlePostError) {
+        console.log("Error object in useQuery:", singlePostError);
     }
+    if (postId && singlePostLoading) return <p>Loading post...</p>;
+    if (postId && singlePostError?.response?.status === 404) {console.log("Error fetching post:", singlePostError); 
+        return <p>Post not found. Please check the url.</p>;}
+    if (postId && singlePostError) return <p>Error getting post, please try again</p>;
+    if (!postId && postsError) return <p>Error getting posts, please try again</p>;
     if (!postId && postsLoading) return <p>Loading posts...</p>;
-    if (!postId && postsError) return <p>Error getting posts: {postsError.message}</p>;
     return (
         <div className="channel">
             <div className="channel-content">

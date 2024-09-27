@@ -9,10 +9,10 @@ import { ContentVotes, Groups, GroupNotes, GroupReplies, GroupPosts, ProfileNote
 
 const router = Router();
 
-//Posts from group or profile channels
+//Posts (many or individual) from group or profile channels
 router.get('/channel_posts', authenticateCheck, async (req, res) => {
     try {
-        const { isGroup, postId, location_id, channel_id, isSingle } = req.query;
+        const { channelId, isGroup, isSingle, locationId, postId } = req.query;
         const isGroupBool = isGroup === 'true'; //Convert from string to boolean
         const userId = req.session.user_id;
         const PostModel = isGroupBool ? GroupPosts : ProfilePosts;
@@ -41,16 +41,23 @@ router.get('/channel_posts', authenticateCheck, async (req, res) => {
         }];
         if (isSingle === 'true') {
             const post = await PostModel.findOne({
-                where: { post_id: postId },
+                where: { post_id: postId,  
+                    [isGroupBool ? 'group_id' : 'profile_id']: locationId,
+                    ...(channelId ? { channel_id: channelId } : {})
+                },
                 include: includeOptions,
                 attributes: postAttributes,
             });
+            if (!post) {
+                console.log("no post");
+                return res.status(404).json({ success: false });
+            }
             return res.status(200).json({ success: true, post });
         } 
         else {
             const whereChannel = {
-                [isGroupBool ? 'group_id' : 'profile_id']: location_id,
-                ...(channel_id ? { channel_id: channel_id } : {})
+                [isGroupBool ? 'group_id' : 'profile_id']: locationId,
+                ...(channelId ? { channel_id: channelId } : {})
             };
             const posts = await PostModel.findAll({
                 where: whereChannel,
@@ -67,7 +74,7 @@ router.get('/channel_posts', authenticateCheck, async (req, res) => {
             return res.json(finalResults);
         }
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        res.status(500).json({ success: false });
     }
 });
 

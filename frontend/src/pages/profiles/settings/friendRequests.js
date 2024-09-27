@@ -43,7 +43,7 @@ const FriendRequests = () => {
                     {friendRequests.map((request, index) => (
                         <li key={index}>
                             <div className="result-widget">
-                                <Link className="profile-link" to={`/profile/${request.sender.username}`}>
+                                <Link className="profile-link" to={`/u/${request.sender.username}`}>
                                     <img className="large-profile-photo" src={`/${request.sender.profile.profile_photo}`} alt="Profile" />
                                     <p className="text36 profile-name">{request.sender.username}</p>
                                 </Link>

@@ -14,11 +14,13 @@ const GroupHome = () => {
     const [channelMode, setChannelMode] = useState('post');
     const [channels, setChannels] = useState([]);
     const [errorMessage, setErrorMessage] = useState('');
+    const [feedErrorMessage, setFeedErrorMessage] = useState('');
     const [isAdmin, setIsAdmin] = useState(false);
     const [isChatChannel, setIsChatChannel] = useState(false);
     const [isPostChannel, setIsPostChannel] = useState(false);
     const [isModerator, setIsModerator] = useState(false);
     const [groupDetails, setGroupDetails] = useState('');
+    const [groupNotFound, setGroupNotFound] = useState(true);
     const navigate = useNavigate();
     const [newChannelName, setNewChannelName] = useState('');
     const [showChannelForm, setShowChannelForm] = useState(false);
@@ -43,8 +45,11 @@ const GroupHome = () => {
                     isRequestSent: groupData.isRequestSent,
                     userId: groupData.userId
                 });
+                setGroupNotFound(false);
             } catch (error) {
-                setErrorMessage("Error getting feed details");
+                if (error.response && error.response.status === 404) {
+                    setGroupNotFound(true);
+                }
             }
         };
         fetchGroupData();
@@ -86,6 +91,14 @@ const GroupHome = () => {
     };
 
     const channelRender = channels.find(c => c.channel_name === channel_name);
+    
+    useEffect(() => {
+        if (!channelRender && channels.length > 0) {
+            setFeedErrorMessage('Channel not found. Please check the url.');
+        } else {
+            setFeedErrorMessage('');
+        }
+    }, [channelRender, channels]);
 
     //Updates list of channels when channel name changed
     const channelUpdate = (channelId, newName) => {
@@ -135,7 +148,10 @@ const GroupHome = () => {
     //Checks membership if group is private
     const isNotPrivateMember = !groupDetails.isMember && groupDetails.isPrivate;
 
-    document.title = groupDetails.groupName;
+    document.title = groupDetails.groupName || 'Feed not found';
+    if (groupNotFound) {
+        return <div className="error-message">Feed not found</div>;
+    } 
     return (    
         <div className="group-container">  
             <div className="channel-feed">
@@ -143,6 +159,8 @@ const GroupHome = () => {
                     <div id="create-post-container">
                         <ContentForm isReply={false} onSubmit={handlePostSubmit} errorMessage={errorMessage} />
                     </div>
+                ) : feedErrorMessage ? (
+                    <div className="error-message">{feedErrorMessage}</div>
                 ) : channelRender && !isNotPrivateMember ? (
                         channelRender.is_posts && (channelMode === 'post' || !channelRender.is_chat) ? (
                         <PostChannel
