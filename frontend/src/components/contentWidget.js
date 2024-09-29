@@ -7,8 +7,10 @@ import AskButton from './askButton';
 import ContentForm from './contentForm';
 import Reply from './replies/reply';
 
-const ContentWidget = ({ canRemove: canRemoveProp , isGroup, onPostRemoved, post }) => {
+const ContentWidget = ({ canRemove: canRemoveProp, isGroup, onPostRemoved, post }) => {
+    console.log("post:", post);
     const [canRemove, setCanRemove] = useState(canRemoveProp);
+    const currentUrl = window.location.pathname;
     const [downvotes, setDownvotes] = useState(post.downvotes);
     const [downvoteLimit, setDownvoteLimit] = useState(false);
     const [hasViewed, setHasViewed] = useState(false);
@@ -208,70 +210,72 @@ const ContentWidget = ({ canRemove: canRemoveProp , isGroup, onPostRemoved, post
     const upvoteClass = upvoteLimit || isViewingOwnPost ? 'vote-disabled' : 'vote-enabled';
 
     return (
-        <div className="content-item">
-            <div className="title-container">
-                <p className="text36">{post.title}</p>
-                {post.displayGroupName && (
-                    <Link className="profile-link" to={`/g/${post.group.group_name}`}>
-                        <p className="text24">{post.group.group_name}</p>
-                        <img className="uploader-profile-image" src={`/${post.group.group_photo}`} alt="Profile" />
-                    </Link>
-                )}
-            </div>
-            <div className="react-quill-container">
-                <ReactQuill value={post.content} readOnly={true} theme={"bubble"} />
-            </div>
-            {showNote && (
-                <div className="ask-note">
-                    <p className="ask-note-text">{note}</p>
-                </div>
-            )}
-            <div className="content-metadata">
-                <div className="profile-info">
-                    {post[Poster] && post[Poster].username && post[Poster].profile && post[Poster].profile.profile_photo ? (
-                        <Link className="profile-link" to={`/u/${post[Poster].username}`} onClick={() => incrementViews(post.post_id)}>
-                            <img className="uploader-profile-image" src={`/${post[Poster].profile.profile_photo}`} alt="Profile" />
-                            <p className="username">{post[Poster].username}</p>
+        <Link to={`/${post.parentFeed}/${post.parentChannel}/${post.post_id}`}>
+            <div className="content-item">
+                <div className="title-container">
+                    <p className="text36">{post.title}</p>
+                    {post.displayGroupName && (
+                        <Link className="profile-link" to={`/g/${post.group.group_name}`}>
+                            <p className="text24">{post.group.group_name}</p>
+                            <img className="uploader-profile-image" src={`/${post.group.group_photo}`} alt="Profile" />
                         </Link>
-                    ) : (
-                        <p>Unknown user</p>
                     )}
                 </div>
-                <div className="vote-container">
-                    <button className={`vote-arrow-container ${upvoteClass}`} onClick={() => postVote(post.post_id, 'upvote')} disabled={isViewingOwnPost}>
-                        <img className={`vote-arrow ${upvoteClass}`} src="/media/site_images/up.png" alt="upvote" />
-                    </button>
-                    <span className="total-votes">{upvotes - downvotes}</span>
-                    <button className={`vote-arrow-container ${downvoteClass}`} onClick={() => postVote(post.post_id, 'downvote')} disabled={isViewingOwnPost}>
-                        <img className={`vote-arrow ${downvoteClass}`} src="/media/site_images/down.png" alt="downvote" />
-                    </button>
+                <div className="react-quill-container">
+                    <ReactQuill value={post.content} readOnly={true} theme={"bubble"} />
                 </div>
-                <button className="button large" data-content-id={post.post_id} onClick={toggleReplies}>
-                    Replies <span className="reply-count" id={`reply-count-${post.post_id}`}>{post.replies}</span>
-                </button>
-                <span className="view-count">{post.views} Views</span>
-                <p>{new Date(post.timestamp).toLocaleDateString()}</p>
-                {canRemove ? (
-                    <button className="button large" onClick={() => removePost(isGroup, post.post_id)}>Delete</button>
-                ) : null}
-                {!post.note?.is_misinfo && (
-                    <AskButton isGroup={isGroup} isReply={false} content={post} showNote={showNote} setShowNote={setShowNote} note={note} setNote={setNote} />
+                {showNote && (
+                    <div className="ask-note">
+                        <p className="ask-note-text">{note}</p>
+                    </div>
+                )}
+                <div className="content-metadata">
+                    <div className="profile-info">
+                        {post[Poster] && post[Poster].username && post[Poster].profile && post[Poster].profile.profile_photo ? (
+                            <Link className="profile-link" to={`/u/${post[Poster].username}`} onClick={() => incrementViews(post.post_id)}>
+                                <img className="uploader-profile-image" src={`/${post[Poster].profile.profile_photo}`} alt="Profile" />
+                                <p className="username">{post[Poster].username}</p>
+                            </Link>
+                        ) : (
+                            <p>Unknown user</p>
+                        )}
+                    </div>
+                    <div className="vote-container">
+                        <button className={`vote-arrow-container ${upvoteClass}`} onClick={() => postVote(post.post_id, 'upvote')} disabled={isViewingOwnPost}>
+                            <img className={`vote-arrow ${upvoteClass}`} src="/media/site_images/up.png" alt="upvote" />
+                        </button>
+                        <span className="total-votes">{upvotes - downvotes}</span>
+                        <button className={`vote-arrow-container ${downvoteClass}`} onClick={() => postVote(post.post_id, 'downvote')} disabled={isViewingOwnPost}>
+                            <img className={`vote-arrow ${downvoteClass}`} src="/media/site_images/down.png" alt="downvote" />
+                        </button>
+                    </div>
+                    <button className="button large" data-content-id={post.post_id} onClick={toggleReplies}>
+                        Replies <span className="reply-count" id={`reply-count-${post.post_id}`}>{post.replies}</span>
+                    </button>
+                    <span className="view-count">{post.views} Views</span>
+                    <p>{new Date(post.timestamp).toLocaleDateString()}</p>
+                    {canRemove ? (
+                        <button className="button large" onClick={() => removePost(isGroup, post.post_id)}>Delete</button>
+                    ) : null}
+                    {!post.note?.is_misinfo && (
+                        <AskButton isGroup={isGroup} isReply={false} content={post} showNote={showNote} setShowNote={setShowNote} note={note} setNote={setNote} />
+                    )}
+                </div>
+                {showReplies && (
+                    <div className="reply-section">
+                        {showReplyForm && (
+                            <div className="add-reply">
+                                <ContentForm closeForm={toggleReplyForm} isReply={true} onSubmit={handleReplySubmit} />
+                            </div>
+                        )}
+                        {!showReplyForm && (<button className="button large" onClick={toggleReplyForm}>Add reply</button>)}
+                        {nestedReplies.map((reply) => (
+                            <Reply key={reply.reply_id} reply={reply} depth={0} isGroup={isGroup} onReplyAdded={replyAdded} onReplyRemoved={replyRemoved} postId={post.post_id} />
+                        ))}
+                    </div>
                 )}
             </div>
-            {showReplies && (
-                <div className="reply-section">
-                    {showReplyForm && (
-                        <div className="add-reply">
-                            <ContentForm closeForm={toggleReplyForm} isReply={true} onSubmit={handleReplySubmit} />
-                        </div>
-                    )}
-                    {!showReplyForm && (<button className="button large" onClick={toggleReplyForm}>Add reply</button>)}
-                    {nestedReplies.map((reply) => (
-                        <Reply key={reply.reply_id} reply={reply} depth={0} isGroup={isGroup} onReplyAdded={replyAdded} onReplyRemoved={replyRemoved} postId={post.post_id} />
-                    ))}
-                </div>
-            )}
-        </div>
+        </Link>
     );
 }
 

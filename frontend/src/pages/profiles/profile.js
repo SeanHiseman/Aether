@@ -130,7 +130,12 @@ const Profile = () => {
 
     document.title = profile.username || 'Feed not found';
     if (feedNotFound) {
-        return <div className="error-message">Feed not found</div>;
+        <div className="group-container"> 
+            <div className="channel-feed">            
+                <div className="text36">Feed not found</div>
+            </div>
+            <aside id="right-aside"/>
+        </div>
     }
     return (
         <div className="profile-container">

@@ -5,7 +5,7 @@ import multer from 'multer';
 import path from 'path';
 import { Router } from 'express';
 import { v4 } from 'uuid';
-import { ContentVotes, Groups, GroupNotes, GroupReplies, GroupPosts, ProfileNotes, ProfileReplies, ProfilePosts, Profiles, Users } from '../models/models.js'; 
+import { ContentVotes, Groups, GroupChannels, GroupNotes, GroupReplies, GroupPosts, ProfileChannels, ProfileNotes, ProfileReplies, ProfilePosts, Profiles, Users } from '../models/models.js'; 
 
 const router = Router();
 
@@ -15,10 +15,13 @@ router.get('/channel_posts', authenticateCheck, async (req, res) => {
         const { channelId, isGroup, isSingle, locationId, postId } = req.query;
         const isGroupBool = isGroup === 'true'; //Convert from string to boolean
         const userId = req.session.user_id;
+        const ChannelModel = isGroupBool ? GroupChannels : ProfileChannels;
+        const FeedAttributes = isGroupBool ? 'group_name' : 'username';
+        const FeedModel = isGroupBool ? Groups : Users;
+        const NotesModel = isGroupBool ? GroupNotes : ProfileNotes;
         const PostModel = isGroupBool ? GroupPosts : ProfilePosts;
         const UserAlias = isGroupBool ? 'GroupPoster' : 'ProfilePoster';
         const VotesAlias = isGroupBool ? 'GroupPostVotes' : 'ProfilePostVotes';
-        const NotesModel = isGroupBool ? GroupNotes : ProfileNotes;
         const postAttributes = ['post_id', 'title', 'content', 'replies', 'views', 'upvotes', 'downvotes', 'timestamp', 'poster_id', 'points']
         const includeOptions = [{
             model: Users,
@@ -38,6 +41,16 @@ router.get('/channel_posts', authenticateCheck, async (req, res) => {
             as: 'note',
             attributes: ['note_id', 'note_content', 'timestamp', 'is_misinfo'],
             required: false
+        }, {
+            model: ChannelModel,
+            as: 'ParentChannel',
+            attributes: ['channel_name'],
+            required: false
+        }, {
+            model: FeedModel,
+            as: 'ParentFeed',
+            attributes: [FeedAttributes],
+            required: false
         }];
         if (isSingle === 'true') {
             const post = await PostModel.findOne({
@@ -49,7 +62,6 @@ router.get('/channel_posts', authenticateCheck, async (req, res) => {
                 attributes: postAttributes,
             });
             if (!post) {
-                console.log("no post");
                 return res.status(404).json({ success: false });
             }
             return res.status(200).json({ success: true, post });
@@ -74,6 +86,7 @@ router.get('/channel_posts', authenticateCheck, async (req, res) => {
             return res.json(finalResults);
         }
     } catch (error) {
+        console.log(error);
         res.status(500).json({ success: false });
     }
 });
