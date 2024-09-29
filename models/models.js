@@ -10,7 +10,6 @@ const Profiles = sequelize.define('profiles', {
   is_private: { type: BOOLEAN, defaultValue: true },
 }, {tableName: 'profiles', timestamps: false });
 
-
 const ProfileChannels = sequelize.define('profile_channels', { 
   channel_id: { type: STRING(36), primaryKey: true }, 
   channel_name: { type: STRING(100), allowNull: false }, 
@@ -33,10 +32,8 @@ const Users = sequelize.define('users', {
   points: { type: INTEGER, allowNull: false, defaultValue: 0 }, 
 }, {tableName: 'users', timestamps: false});
 
-//Users relationships
 Users.hasOne(Profiles, { foreignKey: 'user_id' });
 Profiles.belongsTo(Users, { foreignKey: 'user_id' });
-
 
 const Followers = sequelize.define('followers', {
   follow_id: { type: STRING(36), primaryKey: true },
@@ -44,7 +41,6 @@ const Followers = sequelize.define('followers', {
   profile_id: { type: STRING(36), allowNull: false },
 }, {tableName: 'followers', timestamps: false });
 
-//Followers relationships
 Profiles.belongsToMany(Users, { through: Followers, foreignKey: 'profile_id', otherKey: 'follower_id', as: 'followedProfiles' });
 Users.belongsToMany(Profiles, { through: Followers, foreignKey: 'follower_id', otherKey: 'profile_id', as: 'followingProfiles' });
 Followers.belongsTo(Profiles, { foreignKey: 'profile_id' });
@@ -65,13 +61,12 @@ const ProfilePosts = sequelize.define('profile_posts', {
   points: { type: INTEGER, allowNull: false, defaultValue: 0 },
 }, {tableName: 'profile_posts', timestamps: false });
 
-//Profile posts relationships
 Users.hasMany(ProfilePosts, { as: 'ProfilePoster', foreignKey: 'poster_id' });
-ProfilePosts.belongsTo(Users, {  as: 'ProfilePoster', foreignKey: 'poster_id' });
-//Profiles can have many posts
-Profiles.hasMany(ProfilePosts, { foreignKey: 'profile_id' });
-ProfilePosts.belongsTo(Profiles, { foreignKey: 'profile_id', allowNull: true });
-
+ProfilePosts.belongsTo(Users, { as: 'ProfilePoster', foreignKey: 'poster_id' });
+Profiles.hasMany(ProfilePosts, { as: 'ChildPost', foreignKey: 'profile_id' });
+ProfilePosts.belongsTo(Profiles, { as: 'ParentFeed', foreignKey: 'profile_id', allowNull: true });
+ProfilePosts.belongsTo(ProfileChannels, { as: 'ParentChannel', foreignKey: 'profile_id' }); 
+ProfileChannels.hasMany(ProfilePosts, { as: 'ChildPost', foreignKey: 'profile_id' }); 
 
 const ProfileReplies = sequelize.define('profile_replies', {
   reply_id: { type: STRING(36), primaryKey: true },
@@ -88,7 +83,6 @@ ProfilePosts.hasMany(ProfileReplies, { as: 'ProfilePostReplies', foreignKey: 'po
 ProfileReplies.belongsTo(ProfilePosts, { as: 'ProfilePost', foreignKey: 'post_id' });
 Users.hasMany(ProfileReplies, { as: 'UserProfileRepliers', foreignKey: 'replier_id' });
 ProfileReplies.belongsTo(Users, { as: 'ProfileReplier',foreignKey: 'replier_id' });
-
 
 const Groups = sequelize.define('groups', {
   group_id: { type: STRING(36), primaryKey: true },
@@ -117,13 +111,10 @@ const GroupPosts = sequelize.define('group_posts', {
   points: { type: INTEGER, allowNull: false, defaultValue: 0 },
 }, {tableName: 'group_posts', timestamps: false});
 
-//Group posts relationships
 Users.hasMany(GroupPosts, { as: 'GroupPoster', foreignKey: 'poster_id' });
 GroupPosts.belongsTo(Users, { as: 'GroupPoster', foreignKey: 'poster_id' });
-//Groups can have many posts
-Groups.hasMany(GroupPosts, { foreignKey: 'group_id' });
-GroupPosts.belongsTo(Groups, { foreignKey: 'group_id', allowNull: true });
-
+Groups.hasMany(GroupPosts, { as: 'ChildPost', foreignKey: 'group_id' });
+GroupPosts.belongsTo(Groups, { as: 'ParentFeed', foreignKey: 'group_id', allowNull: true });
 
 //Allows many-to-many relationship between users and groups
 const UserGroups = sequelize.define('user_groups', {
@@ -139,19 +130,16 @@ const NestedGroupMembers = sequelize.define('nested_group_members', {
   parent_group_id: { type: STRING(36), primaryKey: true, references: { model: 'Groups', key: 'group_id' }},
 }, { tableName: 'nested_group_members', timestamps: false });
 
-//Groups relationships
 Users.belongsToMany(Groups, { through: UserGroups, foreignKey: 'user_id', otherKey: 'group_id' });
 Groups.belongsToMany(Users, { through: UserGroups, foreignKey: 'group_id', otherKey: 'user_id' });
 UserGroups.belongsTo(Users, { foreignKey: 'user_id' });
 UserGroups.belongsTo(Groups, { foreignKey: 'group_id' });
 Groups.hasMany(UserGroups, { foreignKey: 'group_id' });
-
-//Nested groups
+//Nested feeds
 Groups.hasMany(NestedGroupMembers, { foreignKey: 'parent_group_id',as: 'NestedMembersAsParent' });
 Groups.hasMany(NestedGroupMembers, { foreignKey: 'sub_group_id', as: 'NestedMembersAsSub' });
 NestedGroupMembers.belongsTo(Groups, { foreignKey: 'parent_group_id', as: 'ParentFeed' });
 NestedGroupMembers.belongsTo(Groups, { foreignKey: 'sub_group_id', as: 'SubFeed' });
-
 
 const GroupRequests = sequelize.define('group_requests', {
   request_id: { type: STRING(36), primaryKey: true },
@@ -165,7 +153,6 @@ const NestedGroupRequests = sequelize.define('nested_group_requests', {
   parent_group_id: { type: STRING(36), allowNull: false, references: { model: 'Groups', key: 'group_id' }},
 }, { tableName: 'nested_group_requests', timestamps: false });
 
-//(Nested)GroupRequest relationships
 Users.hasMany(GroupRequests, { as: 'sent_group_requests', foreignKey: 'sender_id' });
 Groups.hasMany(GroupRequests, { as: 'received_group_requests', foreignKey: 'group_id'})
 GroupRequests.belongsTo(Users, { as: 'sender', foreignKey: 'sender_id' });
@@ -186,7 +173,8 @@ const GroupChannels = sequelize.define('group_channels', {
 
 GroupChannels.belongsTo(Groups, { foreignKey: 'group_id' }); 
 Groups.hasMany(GroupChannels, { foreignKey: 'group_id' }); 
-
+GroupPosts.belongsTo(GroupChannels, { as: 'ParentChannel', foreignKey: 'group_id' }); 
+GroupChannels.hasMany(GroupPosts, { as: 'ChildPost', foreignKey: 'group_id' }); 
 
 const GroupChannelMessages = sequelize.define('group_channel_messages', { 
   message_id: { type: STRING(36), primaryKey: true }, 
@@ -213,12 +201,10 @@ const GroupReplies = sequelize.define('group_replies', {
   parent_id: { type: STRING(36), allowNull: true }
 }, {tableName: 'group_replies', timestamps: false});
 
-//Replies relationships
 GroupPosts.hasMany(GroupReplies, { as: 'GroupPostReplies', foreignKey: 'post_id' });
 GroupReplies.belongsTo(GroupPosts, { as: 'GroupPost', foreignKey: 'post_id' });
 Users.hasMany(GroupReplies, { as: 'UserGroupReplies', foreignKey: 'replier_id' });
 GroupReplies.belongsTo(Users, { as: 'GroupReplier',foreignKey: 'replier_id' });
-
 
 const ContentVotes = sequelize.define('content_votes', {
   vote_id: { type: STRING(36), primaryKey: true },
@@ -234,7 +220,6 @@ const ReplyVotes = sequelize.define('reply_votes', {
   vote_count: {type: INTEGER, defaultValue: 0},
 }, {tableName: 'reply_votes', timestamps: false});
 
-//Each user can have many votes
 Users.hasMany(ContentVotes, { as: 'content_vote', foreignKey: 'user_id' });
 Users.hasMany(ReplyVotes, { as: 'reply_vote', foreignKey: 'user_id' });
 ProfilePosts.hasMany(ContentVotes, { as: 'ProfilePostVotes', foreignKey: 'content_id' });
@@ -246,7 +231,6 @@ ReplyVotes.belongsTo(ProfileReplies, { as: 'ProfileReply', foreignKey: 'reply_id
 GroupReplies.hasMany(ReplyVotes, { as: 'GroupReplyVotes', foreignKey: 'reply_id' });
 ReplyVotes.belongsTo(GroupReplies, { as: 'GroupReply', foreignKey: 'reply_id', constraints: false });
 
-
 const Friends = sequelize.define('friends', {
   friendship_id: { type: STRING(36), primaryKey: true },
   user1_id: { type: STRING(36), allowNull: false, references: { model: 'Users', key: 'user_id' }},
@@ -256,19 +240,16 @@ const Friends = sequelize.define('friends', {
 
 Users.belongsToMany(Users, { as: 'UserFriends', through: Friends, foreignKey: 'user1_id', otherKey: 'user2_id' });
  
-
 const FriendRequests = sequelize.define('friend_requests', {
   request_id: { type: STRING(36), primaryKey: true },
   sender_id: { type: STRING(36), allowNull: false, references: { model: 'Users', key: 'user_id' }},
   receiver_id: { type: STRING(36), allowNull: false, references: { model: 'Users', key: 'user_id' }}
 }, { tableName: 'friend_requests', timestamps: false });
 
-// FriendRequest relationships
 Users.hasMany(FriendRequests, { as: 'sent_friend_requests', foreignKey: 'sender_id' });
 Users.hasMany(FriendRequests, { as: 'received_requests', foreignKey: 'receiver_id' });
 FriendRequests.belongsTo(Users, { as: 'sender', foreignKey: 'sender_id' });
 FriendRequests.belongsTo(Users, { as: 'receiver', foreignKey: 'receiver_id' });
-
 
 const Chats = sequelize.define('chats', {
   chat_id: { type: STRING(36), primaryKey: true },
@@ -277,20 +258,15 @@ const Chats = sequelize.define('chats', {
   updated_at: { type: DATE, defaultValue: NOW }
 }, { tableName: 'chats', timestamps: false });  
 
-
-//Allows many-to-many relationship between users and chats
 const UserChats = sequelize.define('user_chats', {
   user_id: { type: STRING(36), primaryKey: true, references: { model: 'Users', key: 'user_id' }},
   chat_id: { type: STRING(36), primaryKey: true, references: { model: 'Chats', key: 'chat_id' }}
 }, { tableName: 'user_chats', timestamps: false });
 
-//Many to many relationship between Users and Chats
 Users.belongsToMany(Chats, { through: UserChats, foreignKey: 'user_id', otherKey: 'chat_id', as: 'users' });
 Chats.belongsToMany(Users, { through: UserChats, foreignKey: 'chat_id', otherKey: 'user_id', as: 'users' });
-//Direct association between UserChats and Chats
 UserChats.belongsTo(Chats, { foreignKey: 'chat_id'});
 Chats.hasMany(UserChats, { foreignKey: 'chat_id'});
-
 
 const Messages = sequelize.define('messages', {
   message_id: { type: STRING(36), primaryKey: true },
@@ -300,14 +276,11 @@ const Messages = sequelize.define('messages', {
   timestamp: { type: DATE, defaultValue: NOW }
 }, { tableName: 'messages', timestamps: false });
 
-//Messages relationships
 Chats.hasMany(Messages, { foreignKey: 'chat_id' });
 Messages.belongsTo(Chats, { foreignKey: 'chat_id' });
 Users.hasMany(Messages, { foreignKey: 'sender_id' });
 Messages.belongsTo(Users, { foreignKey: 'sender_id' });
 
-
-//Separate chats each user has with Ask
 const AskChats = sequelize.define('ask_chats', {
   chat_id: { type: STRING(36), primaryKey: true },
   name: { type: STRING(256), allowNull: true, defaultValue: 'New chat'},
@@ -316,12 +289,9 @@ const AskChats = sequelize.define('ask_chats', {
   updated_at: { type: DATE, defaultValue: NOW }
 }, { tableName: 'ask_chats', timestamps: false });  
 
-//AskChats relationships
 AskChats.belongsTo(Users, { foreignKey: 'user_id', as: 'user' });
 Users.belongsTo(AskChats, { foreignKey: 'user_id', as: 'askChats' });
 
-
-//Messages sent within Ask chats
 const AskMessages = sequelize.define('ask_messages', {
   message_id: { type: STRING(36), primaryKey: true },
   chat_id: { type: STRING(36), allowNull: false, references: { model: 'AskChats', key: 'chat_id' }},
@@ -330,12 +300,10 @@ const AskMessages = sequelize.define('ask_messages', {
   timestamp: { type: DATE, defaultValue: NOW }
 }, { tableName: 'ask_messages', timestamps: false });
 
-//AskMessages relationships
 AskChats.hasMany(AskMessages, { foreignKey: 'chat_id', as: 'messages' });
 AskMessages.belongsTo(AskChats, { foreignKey: 'chat_id', as: 'chat' });
 Users.hasMany(AskMessages, { foreignKey: 'sender_id', as: 'sentMessages' });
 AskMessages.belongsTo(Users, { foreignKey: 'sender_id', as: 'sender' });
-
 
 const GroupNotes = sequelize.define('group_notes', {
   note_id: { type: STRING(36), primaryKey: true },
@@ -378,7 +346,6 @@ GroupReplyNotes.belongsTo(GroupReplies, { foreignKey: 'reply_id', as: 'parentRep
 GroupReplies.hasOne(GroupReplyNotes, { foreignKey: 'reply_id', as: 'note'});
 ProfileReplyNotes.belongsTo(ProfileReplies, { foreignKey: 'reply_id', as: 'parentReply'});
 ProfileReplies.hasOne(ProfileReplyNotes, { foreignKey: 'reply_id', as: 'note'});
-
 
 export {
     Profiles,
