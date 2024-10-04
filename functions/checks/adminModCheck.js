@@ -1,22 +1,24 @@
-import { Groups, UserGroups } from '../../models/models.js';
+import { Feeds, Followers } from '../../models/feeds.js';
 
-async function checkIfUserIsAdminOrMod(userId, groupName) {
+async function checkIfAdminOrMod(follower_id, group_name) {
     try {
-        //Matches group name to group id
-        const group = await Groups.findOne({
-            where: { group_name: groupName}
+        const feed = await Feeds.findOne({
+            where: { group_name }
         });
-        const groupId = group.group_id;
-        const userGroup = await UserGroups.findOne({
+        if (!feed) {
+            return false;
+        }
+        const feed_id = feed.feed_id;
+        const following = await Followers.findOne({
             where: {
-                user_id: userId,
-                group_id: groupId
+                follower_id,
+                feed_id
             }
         });
-        return { isAdmin: userGroup.is_admin, isMod: userGroup.is_mod };
+        return { isAdmin: following.is_admin, isMod: following.is_mod };
     } catch (error) {
         return { isAdmin: false, isMod: false };
     }
 }
 
-export default checkIfUserIsAdminOrMod;
+export default checkIfAdminOrMod;

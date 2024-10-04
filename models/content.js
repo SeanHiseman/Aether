@@ -28,7 +28,7 @@ const PostNotes = sequelize.define('post_notes', {
 const PostVotes = sequelize.define('post_votes', {
     vote_id: { type: STRING(36), primaryKey: true },
     content_id: { type: STRING(36), allowNull: false },
-    user_id: { type: STRING(36), allowNull: false },
+    voter_id: { type: STRING(36), allowNull: false },
     vote_count: {type: INTEGER, defaultValue: 0},
 }, { tableName: 'post_votes', timestamps: false });
 

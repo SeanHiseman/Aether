@@ -1,10 +1,50 @@
 import { Router } from 'express';
 import { v4 } from 'uuid';
 import { Op } from 'sequelize';
-import { Chats, Friends, Profiles, UserChats, Users, Messages } from '../models/models.js';
+import { Feeds } from '../models/feeds.js';
+import { Chats, Connections, ConnectRequests, FeedChats, Messages } from '../models/messages.js';
 import authenticateCheck from '../functions/checks/authenticateCheck.js';
 
 const router = Router();
+
+const feedAttributes = ['feed_id', 'parent_id', 'feed_name', 'description', 'feed_photo', 'follower_count', 'date_created', 'type', 'is_group', 'feed_owner'];
+
+router.post('/accept_connect_request', authenticateCheck, async (req, res) => {
+    try {
+        const { request } = req.body;
+        const connectRequest = await ConnectRequests.findByPk(request.request_id);
+        await Connections.create({
+            conection_id: v4(),
+            feed1_id: friendRequest.sender_id,
+            feed2_id: friendRequest.receiver_id,
+            connected_date: new Date()
+        });
+        const chat = await Chats.create({ 
+            chat_id: v4(),
+            title: "Main"
+        });
+        await FeedChats.bulkCreate([
+            { feed_id: connectRequest.sender_id, chat_id: chat.chat_id },
+            { feed_id: connectRequest.receiver_id, chat_id: chat.chat_id }
+        ]);
+        await connectRequest.destroy();
+        res.status(200).json({ success: true });
+    } catch (error) {
+        res.status(500).json({ success: false });
+    }
+});
+
+router.delete('/delete_connect_request', authenticateCheck, async (req, res) => {
+    try {
+        const { senderId, receiverId } = req.body;
+        await ConnectRequests.destroy({
+            where: { sender_id: senderId, receiver_id: receiverId } 
+        });
+        res.status(200).json({ success: true });
+    } catch (error) {
+        res.status(500).json({ success: false });
+    }
+});
 
 //Changes name of chat between users
 router.post('/change_chat_name', authenticateCheck, async (req, res) => {
@@ -31,11 +71,11 @@ router.post('/create_chat', authenticateCheck, async (req, res) => {
             chat_id: v4(),
             title: title
         });
-        const userChats = participants.map(userId => ({
-            user_id: userId,
+        const feedChats = participants.map(feedId => ({
+            feed_id: feedId,
             chat_id: newChat.chat_id,
         }));
-        await UserChats.bulkCreate(userChats);
+        await FeedChats.bulkCreate(feedChats);
         res.status(201).json(newChat);
     } catch (error) {
         res.status(500).json({ success: false });
@@ -44,19 +84,19 @@ router.post('/create_chat', authenticateCheck, async (req, res) => {
 
 router.delete('/delete_chat', authenticateCheck, async (req, res) => {
     try {
-        const { chat_id, title } = req.body;
+        const { chatId, title } = req.body;
         //Main channels are default, so can't be deleted
         if (title === 'Main') {
             res.status(403).json({ message: 'Main chats cannot be deleted' });
         } else {
-            await UserChats.destroy({
+            await FeedChats.destroy({
                 where: { 
-                    chat_id
+                    chat_id: chatId
                 },
             });
             await Chats.destroy({
                 where: { 
-                    chat_id
+                    chat_id: chatId
                 },
             });
             res.status(200).json({ success: true });
@@ -66,32 +106,74 @@ router.delete('/delete_chat', authenticateCheck, async (req, res) => {
     }
 });
 
-//Get messages for specific user chat
-router.get('/get_chat_messages/:chat_id', authenticateCheck, async (req, res) => {
+router.delete('/delete_connection', authenticateCheck, async (req, res) => {
     try {
-        const chatId = req.params.chat_id;
+        const { deleterId, feedId } = req.body;
+        await Connections.destroy({
+            where: { 
+                [Op.or]: [
+                    { feed1_id: deleterId, user2_id: feedId },
+                    { feed2_id: feedId, user1_id: deleterId },
+                ]
+            }
+        });
+        const chats = await Chats.findAll({
+            include: [{
+                model: FeedChats,
+                where: { 
+                    [Op.or]: [
+                        { feed_id: deleterId },
+                        { feed_id: feedId }
+                    ]
+                }
+            }]
+        });
+        for (const chat of chats) {
+            //Deletes all messages in the chat
+            await Messages.destroy({
+                where: {
+                    chat_id: chat.chat_id
+                }
+            });
+            //Removes both users from the chat
+            await FeedChats.destroy({
+                where: {
+                    chat_id: chat.chat_id,
+                    [Op.or]: [
+                        { feed_id: deleterId },
+                        { feed_id: feedId }
+                    ]
+                }
+            });
+            //Deletes the chat
+            await Chats.destroy({
+                where: {
+                    chat_id: chat.chat_id
+                }
+            });
+        }
+        res.status(200).json({ success: true });
+    } catch (error) {
+        res.status(500).json({ success: false });
+    }
+});
+
+router.get('/get_chat_messages/:chatId', authenticateCheck, async (req, res) => {
+    try {
+        const chatId = req.params.chatId;
         const messages = await Messages.findAll({
             where: { chat_id: chatId },
             include: [{
-                model: Users,
-                attributes: ['user_id'],
-                include: [{
-                    model: Profiles,
-                    attributes: ['profile_photo']
-                }]
+                model: Feeds,
+                attributes: ['feed_id', 'feed_name', 'feed_photo'],
             }],
             order: [['timestamp', 'ASC']]
         });
         const messagesData = messages.map(m => ({
-            message_id: m.message_id, //not messageId since group messages use message_id
+            messageId: m.message_id, 
             senderId: m.sender_id,
-            message_content: m.message_content,
+            messageContent: m.message_content,
             timestamp: m.timestamp,
-            user: {
-                profile: {
-                    profile_photo: m.user.profile.profile_photo
-                }
-            }
         }));
         res.json(messagesData);
     } catch (error) {
@@ -99,29 +181,25 @@ router.get('/get_chat_messages/:chat_id', authenticateCheck, async (req, res) =>
     }
 });
 
-//Get all chats for logged in user
 router.get('/get_chats', authenticateCheck, async (req, res) => {
     try {
-        const userId = req.session.user_id;
-        //Chat ID's that user is a part of
-        const userChatIds = await UserChats.findAll({
-            where: { user_id: userId },
+        const feedId = req.params.feedId;
+        const feedChatIds = await FeedChats.findAll({
+            where: { feed_id: feedId },
             attributes: ['chat_id'],
         });
-        const chatIds = userChatIds.map(uc => uc.chat_id);
+        const chatIds = feedChatIds.map(c => c.chat_id);
         const chats = await Chats.findAll({
             where: { chat_id: chatIds },
             include: [{
-                model: Users,
-                as: 'users',
-                attributes: ['user_id', 'username'],
-                through: { attributes: [] },
+                model: Feeds,
+                attributes: ['feed_id', 'feed_name', 'feed_photo'],
                 required: false
             }],
             order: [['updated_at', 'ASC']]
         });
         const chatsData = chats.map(chat => {
-            const participants = chat.users.map(user => ({
+            const participants = chat.feeds.map(user => ({
                 userId: user.user_id,
                 username: user.username
             }));
@@ -139,42 +217,73 @@ router.get('/get_chats', authenticateCheck, async (req, res) => {
     }
 });
 
-router.get('/get_friends', authenticateCheck, async (req, res) => {
+router.get('/get_connections', authenticateCheck, async (req, res) => {
     try {
-        const userId = req.session.user_id;
-        const user = await Users.findOne({ where: { user_id: userId } });
-        //Get friends for user
-        const friendships = await Friends.findAll({
+        const feedId = req.params.feedId;
+        const feed = await Feeds.findOne({ where: { feed_id: feedId } });
+        if (!feed) { 
+            return res.status(404).json({ success: false, message: 'Feed not found' }) 
+        }
+        const connections = await Connections.findAll({
             where: {
                 [Op.or]: [
-                    { user1_id: user.user_id },
-                    { user2_id: user.user_id }
+                    { feed1_id: feed.feed_id },
+                    { feed2_id: feed.feed_id }
                 ]
             },
-            //More recent friends are first
-            order: [['FriendSince', 'ASC']]
+            //More recent connections are first
+            order: [['connection_date', 'ASC']]
         });
-        //Get friend data
-        const friendsData = await Promise.all(friendships.map(async (friendship) => {
-            const friendId = (friendship.user1_id !== user.user_id) ? friendship.user1_id : friendship.user2_id;
-            const friend = await Users.findByPk(friendId);
-            const friendProfile = await Profiles.findOne({
-                where: { user_id: friendId }
-            });
+        const connectData = await Promise.all(connections.map(async (connection) => {
+            const connectedFeedId = (connection.feed1_id !== feed.feed_id) ? connection.feed1_id : connection.feed2_id;
+            const connectedFeed = await Feeds.findByPk(connectedFeedId);
             return {
-                friend_id: friend.user_id,
-                friend_profile_id: friendProfile.profile_id,
-                friend_name: friend.username,
-                friend_profile_photo: friendProfile.profile_photo,
+                connection_id: connection.connection_id,
+                connection_date: connection.connection_date,
+                connectedFeed: {
+                    feed_id: connectedFeed.feed_id,
+                    feed_name: connectedFeed.feed_name
+                }
             };
         }));
-        res.json(friendsData);
+        res.json({ success: true, connections: connectData });
     } catch (error) {
         res.status(500).json({ success: false });  
     }
 });
 
-//Socket.io event for sending message to an individual user
+router.get('/get_connect_requests/:feedId', authenticateCheck, async (req, res) => {
+    try {
+        const feedId = req.params.feedId;
+        const requests = await ConnectRequests.findAll({ 
+            where: { receiver_id: feedId },
+            include: [{
+                model: Feeds, 
+                as: 'sender',
+                required: true,
+                attributes: feedAttributes,
+            }],
+        });
+        res.json(requests);
+    } catch (error) {
+        res.status(500).json({ success: false });
+    }
+});
+
+router.post('/send_connect_request', authenticateCheck, async (req, res) => {
+    try {
+        const { senderId, receiverId } = req.body;
+        await ConnectRequests.create({
+            request_id: v4(),
+            sender_id: senderId,
+            receiver_id: receiverId
+        });
+        res.status(200).json({ success: true });
+    } catch (error) {
+        res.status(500).json({ success: false });
+    }
+});
+
 export const directMessagesSocket = (socket) => {
     try {
         socket.on('join_chat', (chatId) => {
