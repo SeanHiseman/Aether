@@ -23,16 +23,27 @@ const FeedChannels = sequelize.define('feed_channels', {
     date_created: { type: DATE, defaultValue: NOW },
 }, { tableName: 'feed_channels', timestamps: false }); 
 
+const FeedChannelMessages = sequelize.define('feed_channel_messages', { 
+    message_id: { type: STRING(36), primaryKey: true }, 
+    message_content: { type: STRING(1000), allowNull: false }, 
+    feed_id: { type: STRING(36), allowNull: false},
+    channel_id: { type: STRING(36), allowNull: false }, 
+    timestamp: { type: DATE, defaultValue: NOW },
+    sender_id: { type: STRING(36), allowNull: false}
+}, { tableName: 'feed_channel_messages', timestamps: false }); 
+  
 const Followers = sequelize.define('followers', {
     follow_id: { type: STRING(36), primaryKey: true },
     follower_id: { type: STRING(36), allowNull: false },
     feed_id: { type: STRING(36), allowNull: false },
+    is_mod: { type: BOOLEAN, defaultValue: false },
+    is_admin: { type: BOOLEAN, defaultValue: false },
 }, { tableName: 'followers', timestamps: false });
 
 const FollowRequests = sequelize.define('follow_requests', {
     request_id: { type: STRING(36), primaryKey: true },
     sender_id: { type: STRING(36), allowNull: false, references: { model: 'Feeds', key: 'feed_id' }},
-    location_id: { type: STRING(36), allowNull: false, references: { model: 'Feeds', key: 'feed_id' }},
+    receiver_id: { type: STRING(36), allowNull: false, references: { model: 'Feeds', key: 'feed_id' }},
 }, { tableName: 'follow_requests', timestamps: false });
 
 const NestedFeeds = sequelize.define('nested_feeds', { //Many-to-many relationship between feeds
@@ -40,10 +51,10 @@ const NestedFeeds = sequelize.define('nested_feeds', { //Many-to-many relationsh
     parent_feed_id: { type: STRING(36), primaryKey: true, references: { model: 'Feeds', key: 'feed_id' }},
 }, { tableName: 'nested_feed', timestamps: false });
 
-
 export {
     Feeds, 
     FeedChannels,
+    FeedChannelMessages,
     Followers,
     FollowRequests,
     NestedFeeds

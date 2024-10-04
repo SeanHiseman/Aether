@@ -4,16 +4,19 @@ import { Router } from 'express';
 import { hash, compare } from 'bcrypt';
 import { Op } from 'sequelize';
 import { v4 } from 'uuid';
-import { ContentVotes, Followers, Friends, FriendRequests, GroupReplies, GroupPosts, Messages, Profiles, ProfileChannels, ProfileReplies, ProfilePosts, ReplyVotes, Users, UserChats, UserGroups } from '../models/models.js';
+import { Posts, PostVotes } from '../models/content.js'; 
+import { Feeds, FeedChannels, Followers } from '../models/feeds.js'; 
+import { Connections, ConnectRequests, FeedChats, Messages } from '../models/messages.js'; 
+import { Users } from '../models/users.js'; 
 
 const router = Router();
 
 //Changes user password
 router.post('/change_password', authenticateCheck, async (req, res) => {
     try {
-        const { password, user_id } = req.body;
+        const { password, userId } = req.body;
         const hashedPassword = await hash(password, 10);
-        const user = await Users.findOne({ where: {user_id} });
+        const user = await Users.findOne({ where: {user_id: userId} });
         await user.update({ password: hashedPassword });
         res.json({ success: true });
     } catch (error) {
@@ -47,24 +50,20 @@ router.get('/check_authentication', async (req, res) => {
 //Deletes user accont and all associated data
 router.delete('/delete_account', authenticateCheck, async (req, res) => {
     try {
-        const { user_id } = req.body;
-        const profile = await Profiles.findOne({ where: { user_id } });
-        deleteMedia(profile.profile_photo);
-        await ProfileChannels.destroy({ where: { profile_id: profile.profile_id } });
-        await ProfilePosts.destroy({ where: { poster_id: user_id } });
-        await ProfileReplies.destroy({ where: { replier_id: user_id } });
-        await UserGroups.destroy({ where: { user_id } });
-        await GroupPosts.destroy({ where: { poster_id: user_id } });
-        await GroupReplies.destroy({ where: { replier_id: user_id } });
-        await Followers.destroy({ where: { follower_id: user_id } });
-        await ContentVotes.destroy({ where: { user_id } });
-        await ReplyVotes.destroy({ where: { user_id } });
-        await Friends.destroy({ where: { [Op.or]: [{ user1_id: user_id }, { user2_id: user_id }] } });
-        await FriendRequests.destroy({ where: { [Op.or]: [{ sender_id: user_id }, { receiver_id: user_id }] } });
-        await UserChats.destroy({ where: { user_id } });
-        await Messages.destroy({ where: { sender_id: user_id } });
-        await Profiles.destroy({ where: { user_id } });
-        await Users.destroy({ where: { user_id } });
+        const { userId } = req.body;
+        const feed = await Feeds.findOne({ where: { userId } });
+        const id = feed.feed_id;
+        deleteMedia(feed.feed_photo);
+        await FeedChannels.destroy({ where: { feed_id: id } });
+        await Posts.destroy({ where: { poster_id: id } });
+        await Followers.destroy({ where: { follower_id: id } });
+        await PostVotes.destroy({ where: { voter_id: id } });
+        await Connections.destroy({ where: { [Op.or]: [{ feed1_id: id }, { feed2_id: id }] } });
+        await ConnectRequests.destroy({ where: { [Op.or]: [{ sender_id: userId }, { receiver_id: userId }] } });
+        await FeedChats.destroy({ where: { feed_id: id } });
+        await Messages.destroy({ where: { sender_id: userId } });
+        await Feeds.destroy({ where: { feed_owner: userId } });
+        await Users.destroy({ where: { userId } });
         res.clearCookie('sid');
         return res.json({ success: true });
     } catch (error) {
@@ -89,14 +88,14 @@ router.post('/join', async (req, res) => {
         });
         //Set up initial profile
         const default_photo = 'media/site_images/blank-profile.png';
-        const profile_id = v4();
-        await Profiles.create({
-            profile_id, user_id, profile_photo: default_photo, bio: ""
+        const feed_id = v4();
+        await Feeds.create({
+            feed_id, feed_name: username, description: "", feed_photo: default_photo, type: 'private', is_group: false, feed_owner: user_id
         });
         //Sets up main channel
         const channel_id = v4();
-        await ProfileChannels.create({
-            channel_id, channel_name: 'Main', profile_id
+        await FeedChannels.create({
+            channel_id, channel_name: 'Main', feed_id
         });
 
         res.json({ success: true });

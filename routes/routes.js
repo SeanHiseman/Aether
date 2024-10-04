@@ -1,127 +1,49 @@
 import authenticateCheck from '../functions/checks/authenticateCheck.js';
 import calculatePoints from '../functions/postPoints.js';
-import checkIfUserIsMember from '../functions/checks/memberCheck.js';
+import checkIfFollowing from '../functions/checks/followerCheck.js';
 import { hybridRecommendations } from '../functions/recommendation/hybrid.js';
 import sortPostsByWeightedRatio from '../functions/postSorting.js';
-import { ContentVotes, Followers, Friends, FriendRequests, GroupChannels, GroupNotes, Groups, GroupRequests, GroupPosts, ProfileChannels, ProfileNotes, ProfilePosts, Profiles, Users, UserGroups } from '../models/models.js'; 
+import { Posts, PostNotes, PostVotes } from '../models/content.js'; 
+import { Feeds, Followers, FollowRequests } from '../models/feeds.js'; 
+import { Connections } from '../models/messages.js'; 
+import { Users } from '../models/users.js'; 
 import { Op } from 'sequelize';
 import { Router } from 'express';
-import { v4 } from 'uuid';
 
 const router = Router();
-//Common attributes
+const feedAttributes = ['feed_id', 'parent_id', 'feed_name', 'description', 'feed_photo', 'follower_count', 'date_created', 'type', 'is_group', 'feed_owner'];
 const notesAttributes = ['note_id', 'note_content', 'timestamp', 'is_misinfo'];
-const postAttributes = ['post_id', 'title', 'content', 'replies', 'views', 'upvotes', 'downvotes', 'timestamp', 'poster_id', 'points'];
+const postAttributes = ['post_id', 'parent_id', 'feed_id', 'channel_id', 'title', 'content', 'replies', 'views', 'upvotes', 'downvotes', 'timestamp', 'poster_id', 'points'];
 
-//Changes name on profile, group or chat channel
-router.post('/change_channel_name', authenticateCheck, async (req, res) => {
+router.get('/connection_posts/:feedId', authenticateCheck, async (req, res)=> {
     try {
-        const { channelType, channelId, newChannelName } = req.body;
-        let dataModel = null;
-        if (newChannelName === 'Main') {
-            res.status(401).json({ success: false, message: "Channel can't be called main"})
-        } else { 
-            if (channelType === "profile") {
-                dataModel = ProfileChannels
-            } else if (channelType === 'group') {
-                dataModel = GroupChannels
-            }
-            await dataModel.update(
-                { channel_name: newChannelName },
-                { where: { channel_id: channelId } }
-            );
-            res.status(200).json({ success: true });
-        }
-    } catch (error) {
-        res.status(500).json({ success: false });
-    }
-});
-
-//Up or downvote content
-router.post('/content_vote', authenticateCheck, async (req, res) => {
-    try {
-        const { content_id, isGroup, vote_type } = req.body;
-        const userId = req.session.user_id;
-        const [vote] = await ContentVotes.findOrCreate({
-            where: { content_id: content_id, user_id: userId },
-            defaults: { vote_id: v4(), vote_count: 0 },
-        });
-        //Limits upvotes and downvotes on each post to 10
-        if (vote_type === 'check_vote') {
-            if (vote.vote_count >= 10) {
-                return res.json({ success: true, message: 'upvote limit' });
-            } else if (vote.vote_count <= -10) {
-                return res.json({ success: true, message: 'downvote limit' });
-            } else {
-                return res.json({ success: true, message: 'no limit' });
-            }
-        }
-        if (vote.vote_count >= 10 && vote_type === 'upvote') {
-            return res.json({ success: false, message: 'upvote limit'});
-        } else if (vote.vote_count <= -10 && vote_type === 'downvote') {
-            return res.json({ success: false, message: 'downvote limit '});
-        }
-        //Update contentVotes table
-        if (vote_type === 'upvote') {
-            vote.vote_count += 1;
-        } else if (vote_type === 'downvote') {
-            vote.vote_count -= 1;
-        }
-        await vote.save();
-        //Update individual posts
-        const PostModel = isGroup ? GroupPosts : ProfilePosts;
-        const content = await PostModel.findByPk(content_id);
-        if (vote_type === 'upvote') {
-            content.upvotes += 1;
-        } else if (vote_type === 'downvote') {
-            content.downvotes += 1;
-        }
-        //Recalculate content points
-        content.points = calculatePoints(content.upvotes, content.downvotes, content.views);
-        await content.save();
-        //Update user total points
-        const user = await Users.findByPk(content.poster_id);
-        user.points = await ProfilePosts.sum('points', { where: { poster_id: content.poster_id } });
-        await user.save();
-        return res.json({ success: true });
-    } catch (error) {
-        return res.status(404).json({ success: false });
-    }
-});
-
-router.get('/friends_posts', authenticateCheck, async (req, res)=> {
-    try {
-        const user_id = req.session.user_id;
-        const friends = await Friends.findAll({
+        const feedId = req.params.feedId;
+        const connections = await Connections.findAll({
             where: {[Op.or]: [
-                { user1_id: user_id },
-                { user2_id: user_id }
+                { feed1_id: feedId },
+                { feed2_id: feedId }
             ]},
-            attributes: ['user1_id', 'user2_id']
+            attributes: ['feed1_id', 'feed2_id']
         });
-        //Get friend IDs, since the user might be in either column
-        const friendIds = friends.reduce((acc, friend) => {
-            if (friend.user1_id !== user_id && !acc.includes(friend.user1_id)) acc.push(friend.user1_id);
-            if (friend.user2_id !== user_id && !acc.includes(friend.user2_id)) acc.push(friend.user2_id);
+        //Get connection IDs, since the feed might be in either column
+        const connectionIds = connections.reduce((acc, connection) => {
+            if (connection.feed1_id !== feedId && !acc.includes(connection.feed1_id)) acc.push(connection.feed1_id);
+            if (connection.feed2_id !== feedId && !acc.includes(connection.feed2_id)) acc.push(connection.feed2_id);
             return acc;
         }, []);
-        const posts = await ProfilePosts.findAll({
-            where: { poster_id: { [Op.in]: friendIds }},
+        const posts = await Posts.findAll({
+            where: { poster_id: { [Op.in]: connectionIds }},
             include: [{
-                model: Users,
-                as: 'ProfilePoster',
-                attributes: ['username'],
-                include: [{
-                    model: Profiles,
-                    attributes: ['profile_photo'],
-                }]
+                model: Feeds,
+                as: 'poster',
+                attributes: feedAttributes,
             }, {
-                model: ContentVotes,
-                as: 'ProfilePostVotes',
+                model: PostVotes,
+                as: 'postVotes',
                 attributes: ['vote_count'],
                 required: false
             }, {
-                model: ProfileNotes,
+                model: PostNotes,
                 as: 'note',
                 attributes: notesAttributes,
                 required: false
@@ -136,147 +58,35 @@ router.get('/friends_posts', authenticateCheck, async (req, res)=> {
     }
 });
 
-//Profiles and groups followed/joined by user
-router.get('/following_posts', authenticateCheck, async (req, res) => {
+router.get('/following_posts/:feedId', authenticateCheck, async (req, res) => {
     try {
-        const userId = req.session.user_id;
-        //Fetch followed profiles
-        const followedProfiles = await Followers.findAll({
-            where: { follower_id: userId },
+        const feedId = req.params.feedId;
+        const followedFeeds = await Followers.findAll({
+            where: { follower_id: feedId },
             include: [{
-                model: Profiles,
-                attributes: ['profile_id'],
+                model: Feeds,
+                attributes: feedAttributes,
             }],
             attributes: [],
         });
-        //Fetch user groups
-        const userGroups = await UserGroups.findAll({
-            where: { user_id: userId },
+        const feedIds = followedFeeds.map((f) => f.feed.feed_id);
+        const followedPosts = await Posts.findAll({
+            where: { feed_id: { [Op.in]: feedIds } },
             include: [{
-                model: Groups,
-                attributes: ['group_id'],
-            }],
-            attributes: [],
-        });
-        //Get profile IDs and group IDs
-        const profileIds = followedProfiles.map((follower) => follower.profile.profile_id);
-        const groupIds = userGroups.map((userGroup) => userGroup.group.group_id);
-        //Fetch posts from followed profiles
-        const profilePosts = await ProfilePosts.findAll({
-            where: { profile_id: { [Op.in]: profileIds } },
-            include: [{
-                model: Users,
-                as: 'ProfilePoster',
-                attributes: ['username'],
-                include: [{
-                    model: Profiles,
-                    attributes: ['profile_photo'],
-                }],
-            }, {
-                model: ContentVotes,
-                as: 'ProfilePostVotes',
+                model: PostVotes,
+                as: 'postVotes',
                 attributes: ['vote_count'],
                 required: false
             }, {
-                model: ProfileNotes,
+                model: PostNotes,
                 as: 'note',
                 attributes: notesAttributes,
                 required: false
             }],
             attributes: postAttributes,
         });
-        //Fetch posts from user groups
-        const groupPosts = await GroupPosts.findAll({
-            where: { group_id: { [Op.in]: groupIds } },
-            include: [{
-                model: Users,
-                as: 'GroupPoster',
-                attributes: ['username'],
-                include: [{
-                    model: Profiles,
-                    attributes: ['profile_photo'],
-                }],
-            }, {
-                model: ContentVotes,
-                as: 'GroupPostVotes',
-                attributes: ['vote_count'],
-                required: false
-            }, {
-                model: GroupNotes,
-                as: 'note',
-                attributes: notesAttributes,
-                required: false
-            }, {
-                model: Groups,
-                as: 'group',
-                attributes: ['group_name', 'group_photo'],
-                required: false,
-            }],
-            attributes: postAttributes,
-        });
-        //Adds group true/false to posts
-        const finalProfileResults = profilePosts.map((post) => ({
-            ...post.dataValues, is_group: false,
-        }));
-        const finalGroupResults = groupPosts.map((post) => ({
-            ...post.dataValues, displayGroupName: true, is_group: true, 
-        }));
-        //Combine posts from profiles and groups
-        const posts = [...finalProfileResults, ...finalGroupResults]
-        const sortedPosts = await sortPostsByWeightedRatio(posts, userId);
-        res.json(sortedPosts);
-    } catch (error) {
-        res.status(500).json({ success: false });
-    }
-});
-
-//Get all feeds that a user follows
-router.get('/feed_list/:userId', async (req, res) => {
-    try {
-        const { userId } = req.params;
-        //Groups that the user is following
-        const groups = await Groups.findAll({
-            include: [{
-                model: Users,
-                where: { user_id: userId },
-                attributes: [],
-            }],
-            attributes: [
-                //Converts to common format
-                ['group_id', 'feed_id'],
-                ['group_name', 'name'],
-                ['group_photo', 'photo'],
-            ],
-            //Returns groups alphabetically
-            order: [['group_name', 'ASC']],
-        })
-        //Formats group list
-        const formattedGroups = groups.map(group => ({
-            ...group.dataValues,
-            type: 'g',
-        }));
-        //User feeds that a user is following
-        const userFeeds = await Followers.findAll({
-            where: { follower_id: userId },
-            include: [{
-                model: Profiles,
-                include: [{ model: Users, attributes: ['user_id', 'username'] }],
-            }],
-            attributes: [],
-            order: [[ {model: Profiles }, { model: Users, as: 'user' }, 'username', 'ASC']],
-        });
-        //Formats profile list
-        const formattedProfiles = userFeeds.map(feed => ({
-            feed_id: feed.profile.profile_id,
-            name: feed.profile.user.username,
-            photo: feed.profile.profile_photo,
-            type: 'u',
-        }));
-        //Combine group and profile follows
-        const feedList = [...formattedGroups, ...formattedProfiles];
-        //Sorts combined feed
-        feedList.sort((a, b) => a.name.localeCompare(b.name));
-        res.json(feedList);
+        //const sortedPosts = await sortPostsByWeightedRatio(posts, userId);
+        res.json(followedPosts);
     } catch (error) {
         res.status(500).json({ success: false });
     }
@@ -308,25 +118,6 @@ router.get('/get_time_preference', async (req, res) => {
     }
 });
 
-//Adds one view to a piece of content
-router.post('/increment_views', async (req, res) => {
-    try {
-        const { isGroup, postId } = req.body;
-        const post = isGroup ? await GroupPosts.findByPk(postId) : await ProfilePosts.findByPk(postId);
-        post.views += 1;
-        //Update post points
-        post.points = calculatePoints(post.upvotes, post.downvotes, post.views);
-        await post.save();
-        //Update user points
-        const user = await Users.findByPk(post.poster_id);
-        user.points = await ProfilePosts.sum('points', { where: { poster_id: post.poster_id } });
-        await user.save();
-        res.json({ success: true });
-    } catch (error) {
-        res.status(500).json({ success: false });   
-    }
-});
-
 //Accesses recommendation algorithm to provide content
 router.get('/recommended_posts', authenticateCheck, async (req, res) => {
     try {
@@ -344,168 +135,64 @@ router.get('/recommended_posts', authenticateCheck, async (req, res) => {
     }
 });
 
-//Searches groups
-router.get('/search/groups', authenticateCheck, async (req, res) => {
+router.get('/search/feeds/:searcherId', authenticateCheck, async (req, res) => {
     try {
-        const user_id = req.session.user_id;
+        const searcherId = req.params.searcherId;
         const keyword = req.query.keyword.toLowerCase();
-        //Sees if a user has sent a join request to a private group
-        const user = await Users.findOne({
-            where: { user_id },
-            include: [{
-                model: GroupRequests,
-                as: 'sent_group_requests',
-                attributes: ['group_id'],
-                required: false,
-            }]
+        const feeds = await Feeds.findAll({
+            where: { feed_name: { [Op.like]: `%${keyword}%` } },
+            attributes: feedAttributes,
         });
-        const groups = await Groups.findAll({
-            where: { group_name: { [Op.like]: `%${keyword}%` } },
-            attributes: ['group_id', 'group_name', 'description', 'group_photo', 'member_count', 'is_private'],
-        });
-        const groupData = await Promise.all(groups.map(async (group) => {
-            const isMember = await checkIfUserIsMember(user_id, group.group_name);
-            const isRequestSent = group.is_private && user.sent_group_requests.some((request) => request.group_id === group.group_id);
+        const feedData = await Promise.all(feeds.map(async (feed) => {
+            const isFollowing = await checkIfFollowing(searcherId, feed.feed_id);
+            const isRequestSent = await FollowRequests.findOne({
+                where: {
+                    sender_id: searcherId,
+                    receiver_id: feed.feed_id
+                }
+            });
             return {
-                ...group.toJSON(),
-                userId: user_id,
-                isMember: isMember,
-                isRequestSent
+                ...feed.toJSON(),
+                isFollowing,
+                isRequestSent: !!isRequestSent
             };
         }));
-        res.json(groupData);
+        res.json(feedData);
     } catch (error) {
         res.status(500).json({ success: false }); 
     }
 });
 
 //Searches posts
-router.get('/search/posts', authenticateCheck, async (req, res) => {
+router.get('/search/posts/:searcherId', authenticateCheck, async (req, res) => {
     try {
         const keyword = req.query.keyword.toLowerCase();
-        const userId = req.session.user_id;
-        const profilePostResults = await ProfilePosts.findAll({
+        const searcherId = req.session.searcherId;
+        const postResults = await Posts.findAll({
             where: {
                 [Op.or]: [{
                     title: {[Op.like]: `%${keyword}%`},
                 }, {content: {[Op.like]: `%${keyword}%`,}}
             ]},
             include: [{
-                model: Users, 
-                as: 'ProfilePoster',
-                attributes: ['username'],
-                include: [{
-                    model: Profiles,
-                    attributes: ['profile_photo'],
-                }]
+                model: Feeds, 
+                as: 'poster',
+                attributes: postAttributes,
             }, {
-                model: ContentVotes,
-                as: 'ProfilePostVotes',
+                model: PostVotes,
+                as: 'postVotes',
                 attributes: ['vote_count'],
                 required: false
             }, {
-                model: ProfileNotes,
+                model: PostNotes,
                 as: 'note',
                 attributes: notesAttributes,
                 required: false
             }],
             attributes: postAttributes,
         });
-        const groupPostResults = await GroupPosts.findAll({
-            where: {
-                [Op.or]: [{
-                    title: {[Op.like]: `%${keyword}%`,},
-                }, {
-                    content: {[Op.like]: `%${keyword}%`,},
-                }],
-            },
-            include: [{
-                model: Users,
-                as: 'GroupPoster',
-                attributes: ['username'],
-                include: [{
-                    model: Profiles,
-                    attributes: ['profile_photo'],
-                }]
-            }, {
-                model: ContentVotes,
-                as: 'GroupPostVotes',
-                attributes: ['vote_count'],
-                required: false
-            }, {
-                model: GroupNotes,
-                as: 'note',
-                attributes: notesAttributes,
-                required: false
-            }, {
-                model: Groups,
-                as: 'group',
-                attributes: ['group_name', 'group_photo'],
-                required: false,
-            }],
-            attributes: postAttributes,
-        });
-        //Adds group true/false to posts
-        const finalProfileResults = profilePostResults.map((post) => ({
-            ...post.dataValues, is_group: false,
-        }));
-        const finalGroupResults = groupPostResults.map((post) => ({
-            ...post.dataValues, displayGroupName: true, is_group: true,
-        }));
-        //Combine posts from profiles and groups
-        const posts = [...finalProfileResults, ...finalGroupResults]
-        //Applies weighting algorithm to posts
-        const sortedPosts = await sortPostsByWeightedRatio(posts, userId);
-        res.json(sortedPosts);
-    } catch (error) {
-        res.status(500).json({ success: false });
-    }
-});
-
-//Searches profiles
-router.get('/search/profiles', authenticateCheck, async (req, res) => {
-    try {
-        const loggedInUserId = req.session.user_id; 
-        const keyword = req.query.keyword.toLowerCase(); 
-        //Fetch profiles based on search keyword
-        const profiles = await Profiles.findAll({
-        where: {
-            [Op.or]: [
-                { '$user.username$': { [Op.like]: `%${keyword}%` } },
-            ],
-        },
-        attributes: ['profile_id', 'bio', 'profile_photo', 'follower_count', 'is_private'],
-        include: [{
-                model: Users,
-                attributes: ['username', 'user_id'], 
-            }],
-        });
-        //Check friendship for each profile
-        const formattedProfileData = await Promise.all(profiles.map(async (profile) => {
-            const viewedUserId = profile.user.user_id;
-            const friendship = await Friends.findOne({
-                where: {
-                    [Op.or]: [
-                        { user1_id: loggedInUserId, user2_id: viewedUserId },
-                        { user1_id: viewedUserId, user2_id: loggedInUserId },
-                    ],
-                },
-            });
-            const isFollowing = await Followers.findOne({
-                where: { follower_id: loggedInUserId, profile_id: profile.profile_id },
-            });
-            const isFriend = !!friendship; 
-            const isRequestSent = await FriendRequests.findOne({
-                where: { sender_id: loggedInUserId, receiver_id: viewedUserId },
-            });
-            return {
-                ...profile.toJSON(),
-                isFollowing: !!isFollowing,
-                isFriend,
-                isRequestSent: !!isRequestSent, 
-            };
-        }));
-        res.json(formattedProfileData);
+        //const sortedPosts = await sortPostsByWeightedRatio(postResults, searcherId);
+        res.json(postResults);
     } catch (error) {
         res.status(500).json({ success: false });
     }
