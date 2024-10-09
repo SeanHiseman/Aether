@@ -12,12 +12,11 @@ const Login = () => {
         const formData = new FormData(event.target);
         const username = formData.get('username');
         const password = formData.get('password');
-        
         try {
             const response = await axios.post('/api/login', { username, password });
             //successful login
             if (response.data.success) {
-                navigate(`/u/${username}`);
+                navigate(`/u/${username}`);//Main feed name same as username (for now)
             } else {
                 //If login unsuccessful
                 setErrorMessage('Login error, please try again');

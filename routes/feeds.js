@@ -8,7 +8,7 @@ import path from 'path';
 import { Router } from 'express';
 import { v4 } from 'uuid';
 import { Posts } from '../models/content.js'; 
-import { Feeds, FeedChannels, Followers, FollowRequests, NestedFeeds } from '../models/feeds.js'; 
+import { Feeds, FeedChannels, FeedChannelMessages, Followers, FollowRequests, NestedFeeds } from '../models/feeds.js'; 
 
 const app = express();
 const router = Router();
@@ -224,30 +224,46 @@ router.delete('/delete_feed_channel', authenticateCheck, async (req, res) => {
 
 router.get('/feed/:feedName', authenticateCheck, async (req, res) => {
     try {
-        const feedName = req.params.groupName;
-        const viewer_id = req.params.viewerId;
-        const [feed, isAdminMod, isFollowing, hasFollowRequest] = await Promise.all([
+        const feedName = req.params.feedName;
+        const viewerId = req.params.viewerId;
+        const [feed, isAdminMod, isFollower, hasFollowRequest] = await Promise.all([
             Feeds.findOne({ where: { feed_name: feedName } }),
-            checkIfAdminOrMod(viewer_id, feedName),
-            checkIfFollowing(viewer_id, feedName),
+            checkIfAdminOrMod(viewerId, feedName),
+            checkIfFollowing(viewerId, feedName),
             FollowRequests.findOne({ where: { sender_id: userId } })
         ]);
         if (!feed) {
             return res.status(404).json({ success: false }); 
         }
         const { isAdmin, isMod } = isAdminMod
-        const feedData = {
+        const feedResult = {
             ...feed.toJSON(),
             isAdmin, 
             isMod, 
-            isOwner: (viewer_id === feed.feed_owner),
-            isFollowing,
+            isOwner: (viewerId === feed.feed_owner),
+            isFollower,
             isRequestSent: feed.is_private ? !!hasFollowRequest : false,
-            userId
         };
-        res.json(feedData);
+        res.status(200).json({ success: false, feedResult });
     } catch (error) {
         res.status(500).json({ success: false });
+    }
+});
+
+router.get('/feed_channel_messages/:channelId', authenticateCheck, async (req, res) => {
+    try {
+        const { channelId } = req.params;
+        const messages = await FeedChannelMessages.findAll({
+            where: { channelId },
+            include: [{
+                model: Feeds,
+                attributes: feedAttributes,
+            }],
+            order: [['timestamp', 'ASC']]
+        });
+        res.json({ success: true, messages });
+    } catch (error) {
+        res.status(500).json({ success: false });   
     }
 });
 
@@ -402,10 +418,9 @@ router.post('/toggle_private', authenticateCheck, async (req, res) => {
     try {
         const { feedId } = req.body;
         const feed = await Feeds.findOne({ where: { feed_id: feedId } });
-        const updatedFeed = await feed.update({
-            is_private: !feed.is_private,
-        });
-        res.status(200).json({ success: true, updatedFeed });
+        const newType = feed.type === 'public' ? 'private' : 'public';
+        await feed.update({ type: newType });
+        res.status(200).json({ success: true, updatedFeed: { ...feed, type: newType} });
     } catch (error) {
         res.status(500).json({ success: false });
     }

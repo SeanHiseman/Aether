@@ -34,19 +34,6 @@ router.post('/accept_connect_request', authenticateCheck, async (req, res) => {
     }
 });
 
-router.delete('/delete_connect_request', authenticateCheck, async (req, res) => {
-    try {
-        const { senderId, receiverId } = req.body;
-        await ConnectRequests.destroy({
-            where: { sender_id: senderId, receiver_id: receiverId } 
-        });
-        res.status(200).json({ success: true });
-    } catch (error) {
-        res.status(500).json({ success: false });
-    }
-});
-
-//Changes name of chat between users
 router.post('/change_chat_name', authenticateCheck, async (req, res) => {
     try {
         const { chatId, newTitle } = req.body;
@@ -106,6 +93,18 @@ router.delete('/delete_chat', authenticateCheck, async (req, res) => {
     }
 });
 
+router.delete('/delete_connect_request', authenticateCheck, async (req, res) => {
+    try {
+        const { senderId, receiverId } = req.body;
+        await ConnectRequests.destroy({
+            where: { sender_id: senderId, receiver_id: receiverId } 
+        });
+        res.status(200).json({ success: true });
+    } catch (error) {
+        res.status(500).json({ success: false });
+    }
+});
+
 router.delete('/delete_connection', authenticateCheck, async (req, res) => {
     try {
         const { deleterId, feedId } = req.body;
@@ -129,13 +128,9 @@ router.delete('/delete_connection', authenticateCheck, async (req, res) => {
             }]
         });
         for (const chat of chats) {
-            //Deletes all messages in the chat
             await Messages.destroy({
-                where: {
-                    chat_id: chat.chat_id
-                }
+                where: { chat_id: chat.chat_id }
             });
-            //Removes both users from the chat
             await FeedChats.destroy({
                 where: {
                     chat_id: chat.chat_id,
@@ -145,11 +140,8 @@ router.delete('/delete_connection', authenticateCheck, async (req, res) => {
                     ]
                 }
             });
-            //Deletes the chat
             await Chats.destroy({
-                where: {
-                    chat_id: chat.chat_id
-                }
+                where: { chat_id: chat.chat_id }
             });
         }
         res.status(200).json({ success: true });
@@ -240,10 +232,9 @@ router.get('/get_connections', authenticateCheck, async (req, res) => {
             return {
                 connection_id: connection.connection_id,
                 connection_date: connection.connection_date,
-                connectedFeed: {
-                    feed_id: connectedFeed.feed_id,
-                    feed_name: connectedFeed.feed_name
-                }
+                feed_id: connectedFeed.feed_id,
+                feed_name: connectedFeed.feed_name,
+                feed_photo: connectedFeed.feed_photo
             };
         }));
         res.json({ success: true, connections: connectData });

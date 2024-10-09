@@ -4,7 +4,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { AuthContext } from '../../components/authContext';
 import ChannelList from '../../components/channels/channelList';
 import ChannelName from '../../components/channels/channelName';
-import ManageFriendshipButton from '../../components/manageFriendship';
+import ManageConnection from '../../components/manageConnection';
 import PostChannel from '../../components/channels/postChannel';
 import ContentForm from '../../components/contentForm';
 import FollowerChangeButton from '../../components/followerChangeButton';
@@ -164,7 +164,7 @@ const Profile = () => {
                     <p className="profile-bio">{profile.bio}</p>
                     <p className="user-count">{profile.followerCount} {profile.followerCount === 1 ? 'follower' : 'followers'}</p>
                     {!isLoggedInUser && !profile.isPrivate && (<FollowerChangeButton userId={loggedInUserId} profileId={profile.profileId} isFollowing={profile.isFollowing} />)}
-                    <ManageFriendshipButton userId={loggedInUserId} receiverProfileId={profile.profileId} receiverUserId={profile.userId} isRequestSent={profile.isRequested} isFriend={profile.isFriend} />
+                    <ManageConnection userId={loggedInUserId} receiverProfileId={profile.profileId} receiverUserId={profile.userId} isRequestSent={profile.isRequested} isFriend={profile.isFriend} />
                 </div>
                 {errorMessage && <div className="error-message">{errorMessage}</div>}
                 {channelRender && (

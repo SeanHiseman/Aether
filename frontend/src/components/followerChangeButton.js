@@ -1,30 +1,42 @@
 import axios from "axios";
 import React, { useEffect, useState } from "react"
 
-const FollowerChangeButton = ({ userId, profileId, isFollowing }) => {
+const FollowerChangeButton = ({ feedId, followerId, isFollower, isRequestSent, type }) => {
     const [errorMessage, setErrorMessage] = useState('');
-    const [status, setStatus] = useState(isFollowing); //Initial following status
-    
+    const [follower, setFollower] = useState(isFollower);
+    const [request, setRequest] = useState(isRequestSent);
+
+    //Update follower state, including requests for private feeds
     useEffect(() => {
-        setStatus(isFollowing);
-    }, [isFollowing]);
+        setRequest(isRequestSent);
+        setFollower(isFollower);
+    }, [isRequestSent, isFollower]);
 
     const handleFollowerChange = async () => {
-        const newStatus = !status;
-        //Depends on if user is already following the profile
-        const url = status ? 'remove_follower' : 'follow_profile';
         try {
-            axios.post(`/api/${url}`, { userId, profileId }); 
-            setStatus(newStatus);
-        } catch {
-            setErrorMessage("Error changing following");
-        };
+            if (type === 'private' && !follower && !request) {
+                await axios.post('/api/send_follow_request', { receiverId: feedId, senderId: followerId });
+                setRequest(true);
+            } else if (type === 'Private' && request) {
+                await axios.delete('/api/cancel_follow_request', { data: { followerId, feedId } });
+                setRequest(false);
+            } else {
+                //Public feeds can be freely followed/unfollowed
+                const url = follower ? 'unfollow_feed' : 'follow_feed';
+                await axios.post(`/api/${url}`, { followerId, feedId });
+                setFollower(!follower);
+            }
+        } catch (error) {
+            setErrorMessage("Error updating following");
+        }
     };
+    
+    const buttonText = follower ? 'Unfollow' : request && type === 'Private' ? 'Cancel request' : 'Follow';
 
     return (
         <div>
             <button className="button" onClick={handleFollowerChange}>
-                {status ? 'Unfollow' : 'Follow'}
+                {buttonText}
             </button>
             {errorMessage && <div className="error-message">{errorMessage}</div>}
         </div>

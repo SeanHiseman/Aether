@@ -10,14 +10,13 @@ const ChannelList = ({ channels, feedId, feedName, isGroup, setChannels }) => {
 
     const getFeedChannels = useCallback(async () => {
         try {
-            const channelRoute = isGroup ? 'get_group_channels' : 'get_profile_channels';
-            const response = await axios.get(`/api/${channelRoute}/${feedId}`);
+            const response = await axios.get(`/api/get_feed_channels/${feedId}`);
             setChannels(response.data);
         } catch (error) {
             setErrorMessage('Error getting channels');
             setChannels([]);
         }
-    }, [feedId, isGroup]);
+    }, [feedId]);
 
     useEffect(() => {
         getFeedChannels();

@@ -173,8 +173,7 @@ router.post('/create_post', authenticateCheck, post_upload.array('files'), async
 
 router.delete('/remove_post', authenticateCheck, async (req, res) => {
     try {
-        const { postData } = req.body;
-        const { postId } = postData;
+        const { postId } = req.body;
         const post = await Posts.findOne({
             where: { post_id: postId }
         });

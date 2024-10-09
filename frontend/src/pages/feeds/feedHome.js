@@ -1,15 +1,16 @@
 import axios from 'axios';
-import React, { useEffect, useState } from 'react';
+import { AuthContext } from '../../components/authContext';
+import React, { useContext, useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import ChannelList from '../../components/channels/channelList';
 import ChannelName from '../../components/channels/channelName';
 import ChatChannel from '../../components/channels/chatChannel';
 import ContentForm from "../../components/contentForm";
-import MemberChangeButton from '../../components/memberChangeButton';
+import FollowerChangeButton from '../../components/followerChangeButton';
 import PostChannel from '../../components/channels/postChannel';
 
-const GroupHome = () => {
-    const { group_name, channel_name } = useParams();
+const FeedHome = () => {
+    const { feed_name, channel_name } = useParams();
     const [canRemove, setCanRemove] = useState(false);
     const [channelMode, setChannelMode] = useState('post');
     const [channels, setChannels] = useState([]);
@@ -19,41 +20,33 @@ const GroupHome = () => {
     const [isChatChannel, setIsChatChannel] = useState(false);
     const [isPostChannel, setIsPostChannel] = useState(false);
     const [isModerator, setIsModerator] = useState(false);
-    const [groupDetails, setGroupDetails] = useState('');
-    const [groupNotFound, setGroupNotFound] = useState(true);
+    const [feed, setFeed] = useState('');
+    const [feedNotFound, setFeedNotFound] = useState(true);
     const navigate = useNavigate();
     const [newChannelName, setNewChannelName] = useState('');
     const [showChannelForm, setShowChannelForm] = useState(false);
     const [showPostForm, setShowPostForm] = useState(false);
+    const { viewer } = useContext(AuthContext);
 
-    //Loads group info 
     useEffect(() => {
-        const fetchGroupData = async () => {
+        const fetchFeedData = async () => {
             try {
-                const response = await axios.get(`/api/group/${group_name}`);
-                const groupData = response.data;
-                setIsAdmin(groupData.isAdmin);
-                setIsModerator(groupData.isMod);
-                setGroupDetails({
-                    isMember: groupData.isMember,
-                    groupId: groupData.group_id,
-                    groupName: groupData.group_name,
-                    description: groupData.description,
-                    groupPhoto: groupData.group_photo,
-                    memberCount: groupData.member_count,
-                    isPrivate: groupData.is_private,
-                    isRequestSent: groupData.isRequestSent,
-                    userId: groupData.userId
-                });
-                setGroupNotFound(false);
+                const response = await axios.get(`/api/feed/${feed_name}`);
+                const feed = response.data.feedResult;
+                setIsAdmin(feed.isAdmin);
+                setIsModerator(feed.isMod);
+                setFeed({ feed });
+                setFeedNotFound(false);
             } catch (error) {
                 if (error.response && error.response.status === 404) {
-                    setGroupNotFound(true);
+                    setFeedNotFound(true);
                 }
             }
         };
-        fetchGroupData();
-    }, [group_name]);
+        fetchFeedData();
+    }, [feed_name]);
+
+    const urlLetter = feed.isGroup ? 'g' : 'u';
 
     //Moderators and admins can remove content
     useEffect(() => {
@@ -69,9 +62,9 @@ const GroupHome = () => {
             if (newChannelName.length === 0) {
                 setErrorMessage("Channel needs a name");
             } else {
-                const response = await axios.post('/api/add_group_channel', {
+                const response = await axios.post('/api/add_feed_channel', {
                     channel_name: newChannelName,
-                    groupId: groupDetails.groupId,
+                    feedId: feed.feedId,
                     isPosts: isPostChannel,
                     isChat: isChatChannel
                 });
@@ -80,7 +73,7 @@ const GroupHome = () => {
                     setErrorMessage('');
                     setNewChannelName('');
                     setShowChannelForm(false);
-                    navigate(`/g/${group_name}/${newChannelName}`);
+                    navigate(`/${urlLetter}/${feed_name}/${newChannelName}`);
                 } else {
                     setErrorMessage('Failed to add channel');
                 }
@@ -115,9 +108,9 @@ const GroupHome = () => {
             if (channel_name === 'Main') {
                 return;
             } else {
-                await axios.delete(`/api/delete_group_channel`, { data: {channel_name: channel_name, group_id: groupDetails.groupId} });
+                await axios.delete(`/api/delete_feed_channel`, { data: {channelName: channel_name, feedId: feed.feed_id} });
                 setChannels(prevChannels => prevChannels.filter(channel => channel.channel_name !== channel_name));
-                navigate(`/g/${group_name}/Main`);
+                navigate(`/${urlLetter}/${feed_name}/Main`);
             }
         } catch (error) {
             setErrorMessage('Error deleting channel');
@@ -130,7 +123,7 @@ const GroupHome = () => {
 
     //Uploads content 
     const handlePostSubmit = async (formData) => {
-        formData.append('group_id', groupDetails.groupId);
+        formData.append('feed_id', feed.feed_id);
         formData.append('channel_id', channelRender.channel_id);
         try {
             await axios.post('/api/create_post', formData, {
@@ -145,11 +138,11 @@ const GroupHome = () => {
     //Toggles display of create channel form after button is pressed
     const toggleChannelForm = () => { setShowChannelForm((prev) => !prev) };
 
-    //Checks membership if group is private
-    const isNotPrivateMember = !groupDetails.isMember && groupDetails.isPrivate;
+    //Checks following if group is private
+    const isNotPrivateFollower = !feed.isFollower && !feed.type === 'private';
 
-    document.title = groupDetails.groupName || 'Feed not found';
-    if (groupNotFound) {
+    document.title = feed.feed_name || 'Feed not found';
+    if (feedNotFound) {
         return (
             <div className="group-container"> 
                 <div className="channel-feed">            
@@ -168,21 +161,21 @@ const GroupHome = () => {
                     </div>
                 ) : feedErrorMessage ? (
                     <div className="text36">{feedErrorMessage}</div>
-                ) : channelRender && !isNotPrivateMember ? (
+                ) : channelRender && !isNotPrivateFollower ? (
                         channelRender.is_posts && (channelMode === 'post' || !channelRender.is_chat) ? (
                         <PostChannel
                             canRemove={canRemove}
                             channelId={channelRender.channel_id}
                             channelName={channelRender.channel_name}
+                            feedId={feed.feed_id}
                             isGroup={true}
-                            locationId={groupDetails.groupId}
                         />
                     ) : (
                         <ChatChannel
                             canRemove={canRemove}
                             channelId={channelRender.channel_id}
+                            feedId={feed.feed_id}
                             isGroup={true}
-                            locationId={groupDetails.groupId}
                         />
                     )
                 ) : (
@@ -191,27 +184,27 @@ const GroupHome = () => {
             </div>    
             <aside id="right-aside">
                 <div id="profile-summary">
-                    <img className="large-group-photo" src={`/${groupDetails.groupPhoto}`} alt={groupDetails.groupName} />
+                    <img className="large-group-photo" src={`/${feed.feed_photo}`} alt={feed.feed_name} />
                     {isAdmin && (
-                        <Link to={`/group_settings/${group_name}`}>
+                        <Link to={`/group_settings/${feed_name}`}>
                             <button className="button">Settings</button>
                         </Link>
                     )}
-                    <p className="text36">{groupDetails.groupName}</p>
-                    <p className="description" >{groupDetails.description}</p>
-                    <p className="user-count">{groupDetails.memberCount} {groupDetails.memberCount === 1 ? 'follower' : 'followers'}</p>
-                    <MemberChangeButton 
-                        userId={groupDetails.userId} 
-                        groupId={groupDetails.groupId} 
-                        isMember={groupDetails.isMember} 
-                        isRequestSent={groupDetails.isRequestSent} 
-                        isPrivate={groupDetails.isPrivate}
+                    <p className="text36">{feed.feed_name}</p>
+                    <p className="description" >{feed.description}</p>
+                    <p className="user-count">{feed.follower_count} {feed.follower_count === 1 ? 'follower' : 'followers'}</p>
+                    <FollowerChangeButton 
+                        feedId={feed.feed_id} 
+                        followerId={viewer.viewerId} 
+                        isFollower={feed.isFollower} 
+                        isRequestSent={feed.isRequestSent} 
+                        type={feed.type}
                     />
                 </div>
                 {errorMessage && <div className="error-message">{errorMessage}</div>}
                 {channelRender && (
                     isAdmin ? (
-                    <ChannelName channelId={channelRender.channel_id} channelName={channel_name} channelType={'group'} locationName={group_name} channelUpdate={channelUpdate}/>
+                    <ChannelName channelId={channelRender.channel_id} channelName={channel_name} channelType={'group'} locationName={feed_name} channelUpdate={channelUpdate}/>
                     ) : (
                         <p className="text36">{channel_name}</p>
                     ) 
@@ -254,10 +247,10 @@ const GroupHome = () => {
                         )}
                     </div>
                 )}
-                <ChannelList channels={channels} feedId={groupDetails.groupId} feedName={group_name} isGroup={true} setChannels={setChannels}/>
+                <ChannelList channels={channels} feedId={feed.feed_id} feedName={feed_name} isGroup={true} setChannels={setChannels}/>
             </aside>
         </div>
     );
 }
 
-export default GroupHome;
+export default FeedHome;
