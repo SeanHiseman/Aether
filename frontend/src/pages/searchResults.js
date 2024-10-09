@@ -2,8 +2,7 @@ import axios from 'axios';
 import React, { useEffect, useState } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
 import ContentWidget from '../components/contentWidget';
-import GroupWidget from '../components/search/groupWidget';
-import ProfileWidget from '../components/search/profileWidget';
+import FeedWidget from '../components/search/feedWidget';
 
 const SearchResults = () => {
     const [groupResults, setGroupResults] = useState([]);
@@ -83,7 +82,7 @@ const SearchResults = () => {
             case 'groups':
                 if (groupResults.length > 0) {
                     return groupResults.map((group) => (
-                        <GroupWidget key={group.group_id} group={group} />
+                        <FeedWidget key={group.group_id} group={group} />
                     ));
                 } else {
                     return <div>No results</div>;  
@@ -91,7 +90,7 @@ const SearchResults = () => {
             case 'profiles':
                 if (profileResults.length > 0) {
                     return profileResults.map((profile) => (
-                        <ProfileWidget key={profile.profile_id} profile={profile} />
+                        <FeedWidget key={profile.profile_id} profile={profile} />
                     ));
                 } else {
                     return <div>No results</div>;

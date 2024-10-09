@@ -1,32 +1,32 @@
 import axios from "axios";
 import React, { useEffect, useState } from "react"
 
-const ManageFriendshipButton = ({ userId, receiverUserId, isRequestSent, isFriend }) => {
+const ManageConnectionButton = ({ viewerId, receiverId, isRequestSent, isConnected }) => {
     const [errorMessage, setErrorMessage] = useState('');
-    const [friend, setFriend] = useState(isFriend);
+    const [connection, setConnection] = useState(isConnected);
     const [request, setRequest] = useState(isRequestSent);
 
     //Toggles friendship status
     useEffect(() => {
         setRequest(isRequestSent);
-        setFriend(isFriend);
-    }, [isRequestSent, isFriend]);
+        setConnection(isConnected);
+    }, [isRequestSent, isConnected]);
 
     const handleSendRequest = async () => {
         try {
             let method, requestData, url;
-            if (friend) {
+            if (connection) {
                 method = 'delete';
-                url = '/api/remove_friend';
-                requestData = { receiverUserId, userId };
+                url = '/api/delete_connection';
+                requestData = { receiverId, viewerId };
             } else if (request) {
                 method = 'delete';
-                requestData = { receiverUserId, userId };
-                url = '/api/cancel_friend_request';
+                requestData = { receiverId, viewerId };
+                url = '/api/delete_connect_request';
             } else {
                 method = 'post';
-                requestData = { receiverUserId, userId };
-                url = '/api/send_friend_request';
+                requestData = { receiverId, viewerId };
+                url = '/api/send_connect_request';
             }
             const response = await axios({
                 method,
@@ -35,19 +35,19 @@ const ManageFriendshipButton = ({ userId, receiverUserId, isRequestSent, isFrien
             });
             if (response.status === 200) {
                 if (method === 'delete') {
-                    if (url === 'remove_friend') {
+                    if (url === 'remove_connection') {
                     //Removing a friend
-                    setFriend(false);
+                    setConnection(false);
                     setRequest(false);
                     } else {
                         //Canceling a request
-                        setFriend(false);
+                        setConnection(false);
                         setRequest(false);
                     }
                 } else {
                     //Sending a friend request
                     setRequest(true);
-                    setFriend(false);
+                    setConnection(false);
                 }
             } else {
                 setErrorMessage("Friend request error");
@@ -57,14 +57,14 @@ const ManageFriendshipButton = ({ userId, receiverUserId, isRequestSent, isFrien
         }
     };
     
-    //If user is viewing themselves
-    if (userId === receiverUserId) {
+    //If viewing themselves
+    if (viewerId === receiverId) {
         return;
     } else {
     return (
         <div>
             <button className="button" onClick={handleSendRequest}>
-                {friend ? 'Remove friend' : request ? 'Cancel request' : 'Add friend'}
+                {connection ? 'Disconnect' : request ? 'Cancel request' : 'Connect'}
             </button>
             {errorMessage && <div className="error-message">{errorMessage}</div>}
         </div>
@@ -72,5 +72,5 @@ const ManageFriendshipButton = ({ userId, receiverUserId, isRequestSent, isFrien
     )};
 }
 
-export default ManageFriendshipButton;
+export default ManageConnectionButton;
 

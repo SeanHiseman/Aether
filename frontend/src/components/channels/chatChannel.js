@@ -44,7 +44,7 @@ const ChatChannel = ({ canRemove, channelId, isGroup, locationId }) => {
     //Get messages from the channel
     const getChannelMessages = async (channelId) => {
         try {
-            const response = await axios.get(`/api/group_channel_messages/${channelId}`);
+            const response = await axios.get(`/api/feed_channel_messages/${channelId}`);
             setChannel(response.data);
         } catch (error) {
             setErrorMessage("Error getting messages");
@@ -63,7 +63,7 @@ const ChatChannel = ({ canRemove, channelId, isGroup, locationId }) => {
                 sender_id: user.userId, 
                 timestamp: new Date()
             }
-            socket.emit('send_group_message', newMessage);
+            socket.emit('send_feed_message', newMessage);
             setChannel(prevChat => [...prevChat, newMessage]);
             setCurrentMessage('');
         } catch (error) {

@@ -23,19 +23,18 @@ const BaseLayout = () => {
     const [groupPhoto, setGroupPhoto] = useState(null);
     const [groupPhotoFile, setGroupPhotoFile] = useState('No file chosen');
     const [privateGroup, setPrivateGroup] = useState(false);
-    const [profile, setProfile] = useState([]);
+    const [feed, setFeed] = useState([]);
     const { setQuery } = useQueryContext();
     const { setTheme } = useContext(ThemeContext);
     const [showForm, setShowForm] = useState(false);
     const navigate = useNavigate();
 
-    //Fetch profile info
     useEffect(() => {
-        const fetchProfile = async () => {
+        const fetchUserFeed = async () => {
             if (isAuthenticated && user) {
                 try {
-                    const response = await axios.get(`/api/profile/${user.username}`);
-                    setProfile({ ...response.data.profile });
+                    const response = await axios.get(`/api/feed/${feed.feed_name}`);
+                    setFeed({ ...response.data.feed });
                     const themeResponse = await axios.get('/api/get_theme');
                     setTheme(themeResponse.data.theme);
                 } catch (error) {
@@ -45,24 +44,24 @@ const BaseLayout = () => {
                 }
             }
         };
-        fetchProfile();
+        fetchUserFeed();
     }, [isAuthenticated, user, navigate, setTheme]);
 
     //Fetch feeds that a user follows
     useEffect(() => {
         const fetchFeeds = async () => {
             try {
-                const response = await axios.get(`/api/feed_list/${profile.userId}`);
+                const response = await axios.get(`/api/feed_list/${feed.feed_id}`);
                 setFeeds(response.data);
             } catch (error) {
                 setFeeds([]);
             }
         };
-        //Only called when profile has loaded
-        if (profile.userId) {
+        //Only called when feed has loaded
+        if (feed.feed_id) {
             fetchFeeds();
         }
-    }, [profile.userId]);
+    }, [feed.feed_id]);
 
     //Create group submit handler
     const createGroupSubmit = async (event) => {
@@ -77,13 +76,13 @@ const BaseLayout = () => {
                 formData.append('group_name', groupName);
                 formData.append('new_group_profile_photo', groupPhoto);
                 formData.append('is_private', privateGroup);
-                formData.append('user_id', profile.userId); //Adds user_id so user creating group can become an admin
-                const response = await axios.post('/api/create_group', formData);
+                formData.append('feed_id', feed.feed_id); 
+                const response = await axios.post('/api/create_feed', formData);
                 if (response.data.success === true) {
                     setFeeds([...feeds, response.data]);
                     //Redirect to new group
-                    const newGroupName = response.data.newGroup.group_name;
-                    navigate(`/g/${newGroupName}`);
+                    const newFeedName = response.data.newFeed.feed_name;
+                    navigate(`/g/${newFeedName}`);
                     setGroupName('');
                     setShowForm(false);
                 }
@@ -152,9 +151,9 @@ const BaseLayout = () => {
         <div className="container">
             <aside id="left-aside">
                 <div className="profile-info">
-                    <Link className="profile-link" to={`/u/${profile.username}`}>
-                        <img className="profile-image" src={`/${profile.profilePhoto}`} alt="Profile" />
-                        <p id="logged-in-username">{profile.username}</p>
+                    <Link className="profile-link" to={`/u/${feed.feed_name}`}>
+                        <img className="profile-image" src={`/${feed.feed_photo}`} alt="Profile" />
+                        <p id="logged-in-username">{feed.feed_name}</p>
                     </Link>
                 </div>
                 <nav id="personal-feeds">

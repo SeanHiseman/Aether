@@ -1,9 +1,9 @@
 import axios from 'axios';
 import React, { useEffect, useState } from 'react';
 
-const GroupProfileView = ({ group, setGroup }) => {
+const FeedInfoView = ({ feed, setFeed }) => {
     const [errorMessage, setErrorMessage] = useState('');
-    const [groupPhotoFile, setGroupPhotoFile] = useState('No file chosen');
+    const [feedPhotoFile, setFeedPhotoFile] = useState('No file chosen');
     const [isEditingDescription, setIsEditingDescription] = useState(false);
     const [isEditingName, setIsEditingName] = useState(false);
     const [isFileSelected, setIsFileSelected] = useState(false);
@@ -11,38 +11,36 @@ const GroupProfileView = ({ group, setGroup }) => {
     const [newDescription, setDescription] = useState('');
     const [newName, setName] = useState('');
 
-    //Set name in text area to current description
     useEffect(() => {
         if (isEditingName) {
-            setName(group.groupName);
+            setName(feed.feed_name);
         }
-    }, [isEditingName, group.groupName]);
+    }, [isEditingName, feed.feed_name]);
 
-    //Set description in text area to current description
     useEffect(() => {
         if (isEditingDescription) {
-            setDescription(group.description);
+            setDescription(feed.description);
         }
-    }, [isEditingDescription, group.description]);
+    }, [isEditingDescription, feed.description]);
 
-    const ChangeGroupPhoto = async (event) => {
+    const ChangeFeedPhoto = async (event) => {
         try {
             event.preventDefault();
-            const fileInput = event.target.elements.new_group_photo;
+            const fileInput = event.target.elements.new_feed_photo;
             if (!fileInput.files[0]) {
                 setErrorMessage('Please upload an image');
                 return;
             }
             const formData = new FormData();
-            formData.append('new_group_profile_photo', fileInput.files[0]);
-            const response = await axios.put(`/api/update_group_photo/${group.groupId}`, formData, {
+            formData.append('new_feed_photo', fileInput.files[0]);
+            const response = await axios.put(`/api/update_feed_photo/${feed.feed_id}`, formData, {
                 headers: {
                     'Content-Type': 'multipart/form-data',
                 },    
             })
-            setGroup(prevDetails => ({
+            setFeed(prevDetails => ({
                 ...prevDetails,
-                groupPhoto: response.data.newPhotoPath
+                feedPhoto: response.data.newPhotoPath
             }))
             setIsPhotoFormVisible(false);
             setErrorMessage('');
@@ -60,22 +58,21 @@ const GroupProfileView = ({ group, setGroup }) => {
     const handleFileChange = (event) => {
         const file = event.target.files[0];
         if (file) {
-            setGroupPhotoFile(file.name);
+            setFeedPhotoFile(file.name);
             setIsFileSelected(true);
         } else {
-            setGroupPhotoFile('No file chosen');
+            setFeedPhotoFile('No file chosen');
             setIsFileSelected(false);
         }
     };
 
-    //Changes group description
     const handleUpdateDescription = async () => {
         try {
             await axios.post('/api/change_description', {
                 description: newDescription,
-                groupId: group.groupId
+                feedId: feed.feed_id
             });
-            setGroup({ ...group, description: newDescription });
+            setFeed({ ...feed, description: newDescription });
             setIsEditingDescription(false);
         }
         catch (error) {
@@ -83,14 +80,13 @@ const GroupProfileView = ({ group, setGroup }) => {
         }
     }; 
 
-    //Changes group name
     const handleUpdateName = async () => {
         try {
-            await axios.post('/api/change_group_name', {
-                groupName: newName,
-                groupId: group.groupId
+            await axios.post('/api/change_feed_name', {
+                feedName: newName,
+                feedId: feed.feed_id
             });
-            setGroup({ ...group, groupName: newName });
+            setFeed({ ...feed, feedName: newName });
             setIsEditingName(false);
         }
         catch (error) {
@@ -101,19 +97,18 @@ const GroupProfileView = ({ group, setGroup }) => {
     const togglePhotoForm = () => {
         if (isPhotoFormVisible) {
             setErrorMessage('');
-            setGroupPhotoFile('No file selected');
+            setFeedPhotoFile('No file selected');
             setIsFileSelected(false);
         }
         setIsPhotoFormVisible(!isPhotoFormVisible);
     };
 
-    //Changes group between public and private
     const togglePrivate = async () => {
         try {
-            const response = await axios.post('/api/toggle_private', { locationId: group.groupId, isGroup: true });
-            setGroup(prevDetails => ({
+            const response = await axios.post('/api/toggle_private', { feedId: feed.feed_id });
+            setFeed(prevDetails => ({
                 ...prevDetails, 
-                isPrivate: response.data.is_private
+                type: response.data.type
             }));
         } catch (error) {
             setErrorMessage('Error changing status');
@@ -124,16 +119,16 @@ const GroupProfileView = ({ group, setGroup }) => {
         <div className="profile-settings">  
             <div className="name-photo-area">
                 <div className="profile-header-photo">
-                    <img className="settings-profile-photo" src={`/${group.groupPhoto}`} alt={group.groupName} />
+                    <img className="settings-profile-photo" src={`/${feed.feed_photo}`} alt={feed.feed_name} />
                     <button className="button" onClick={togglePhotoForm}>
                         {isPhotoFormVisible ? 'Close' : 'Change feed photo'}
                     </button>
                     {isPhotoFormVisible && (
-                        <form className="change-profile-photo" onSubmit={ChangeGroupPhoto}>
+                        <form className="change-profile-photo" onSubmit={ChangeFeedPhoto}>
                             <div className="file-input">
                                 <label htmlFor="new-group-photo" class="dark-button">Change feed photo</label>
                                 <input type="file" id="new-group-photo" name="new_group_photo" accept="image/*" onChange={handleFileChange} hidden/>
-                                <span className="file-name">{groupPhotoFile}</span> 
+                                <span className="file-name">{feedPhotoFile}</span> 
                             </div>
                             <input className={isFileSelected ? 'dark-button' : 'dark-button-disabled'} type="submit" value="Update" disabled={!isFileSelected}/>
                         </form>
@@ -143,7 +138,7 @@ const GroupProfileView = ({ group, setGroup }) => {
                     <div className="chat-change">
                         {isEditingName ? (
                             <div className="change-name">
-                                <textarea className="change-name-area long" value={newName} placeholder="Group name..." onChange={(e) => {
+                                <textarea className="change-name-area long" value={newName} placeholder="Feed name..." onChange={(e) => {
                                     e.preventDefault();
                                     const input = e.target.value;
                                     const inputLength = input.length;
@@ -168,10 +163,10 @@ const GroupProfileView = ({ group, setGroup }) => {
                             </div>
                         ) : (
                             <div className="chat-name">
-                                <p className="text36">{group.groupName}</p> 
+                                <p className="text36">{feed.feed_name}</p> 
                                 <button className="button" onClick={() => {
                                     setIsEditingName(true);
-                                    setName(group.groupName);
+                                    setName(feed.feed_name);
                                 }}>Change name</button>
                             </div>
                         )}
@@ -204,17 +199,17 @@ const GroupProfileView = ({ group, setGroup }) => {
                             </div>
                         ) : (
                             <div className="chat-name">
-                                <p className="text24">{group.description}</p> 
+                                <p className="text24">{feed.description}</p> 
                                 <button className="button" onClick={() => {
                                     setIsEditingDescription(true);
-                                    setDescription(group.description);
+                                    setDescription(feed.description);
                                 }}>Change description</button>
                             </div>
                         )}
                     </div>
                     <div className="option-toggle">
-                        <button className={group.isPrivate === false ? 'active-mode' : 'passive-mode'} onClick={(event) => {event.preventDefault(); togglePrivate();}}>Public</button>
-                        <button className={group.isPrivate === true ? 'active-mode' : 'passive-mode'} onClick={(event) => {event.preventDefault(); togglePrivate();}}>Private</button>
+                        <button className={feed.type === 'private' ? 'active-mode' : 'passive-mode'} onClick={(event) => {event.preventDefault(); togglePrivate();}}>Public</button>
+                        <button className={feed.type === 'public' ? 'active-mode' : 'passive-mode'} onClick={(event) => {event.preventDefault(); togglePrivate();}}>Private</button>
                     </div>
                 </div>
             </div>
@@ -223,4 +218,4 @@ const GroupProfileView = ({ group, setGroup }) => {
     );
 }
 
-export default GroupProfileView;
+export default FeedInfoView;
