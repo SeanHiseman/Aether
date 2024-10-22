@@ -3,8 +3,7 @@ import dotenv from 'dotenv';
 import OpenAI from "openai";
 import { Router } from 'express';
 import { v4 } from 'uuid';
-import { PostNotes } from '../models/content.js';
-import { AskChats, AskMessages } from '../models/messages.js';
+import { AskChats, AskMessages, PostNotes } from '../models/relationships.js';
 
 dotenv.config();
 const openai = new OpenAI();

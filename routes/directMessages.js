@@ -1,8 +1,7 @@
 import { Router } from 'express';
 import { v4 } from 'uuid';
 import { Op } from 'sequelize';
-import { Feeds } from '../models/feeds.js';
-import { Chats, Connections, ConnectRequests, FeedChats, Messages } from '../models/messages.js';
+import { Chats, Connections, ConnectRequests, FeedChats, Feeds, Messages } from '../models/relationships.js';
 import authenticateCheck from '../functions/checks/authenticateCheck.js';
 
 const router = Router();

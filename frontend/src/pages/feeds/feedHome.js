@@ -35,7 +35,11 @@ const FeedHome = () => {
                 const feed = response.data.feedResult;
                 setIsAdmin(feed.isAdmin);
                 setIsModerator(feed.isMod);
-                setFeed({ feed });
+                if (viewer.feed_id === feed.feed_id){
+                    setIsAdmin(true);
+                    setIsModerator(true);
+                }
+                setFeed(feed);
                 setFeedNotFound(false);
             } catch (error) {
                 if (error.response && error.response.status === 404) {
@@ -44,7 +48,7 @@ const FeedHome = () => {
             }
         };
         fetchFeedData();
-    }, [feed_name]);
+    }, [feed_name, viewer]);
 
     const urlLetter = feed.isGroup ? 'g' : 'u';
 
@@ -55,7 +59,6 @@ const FeedHome = () => {
         };
     }, [isAdmin, isModerator]);
 
-    //Adds channel to group
     const AddChannel = async (event) => {
         event.preventDefault();
         try {
@@ -63,17 +66,21 @@ const FeedHome = () => {
                 setErrorMessage("Channel needs a name");
             } else {
                 const response = await axios.post('/api/add_feed_channel', {
-                    channel_name: newChannelName,
-                    feedId: feed.feedId,
+                    channelName: newChannelName,
+                    feedId: feed.feed_id,
                     isPosts: isPostChannel,
                     isChat: isChatChannel
                 });
                 if (response.data && response.status === 201) {
-                    setChannels([...channels, response.data]);
+                    const updatedChannels = [...channels, response.data];
+                    setChannels(updatedChannels);
                     setErrorMessage('');
                     setNewChannelName('');
                     setShowChannelForm(false);
-                    navigate(`/${urlLetter}/${feed_name}/${newChannelName}`);
+                    const newChannel = updatedChannels.find(c => c.channel_name === newChannelName);
+                    if (newChannel) {
+                        navigate(`/${urlLetter}/${feed_name}/${newChannelName}`);
+                    }
                 } else {
                     setErrorMessage('Failed to add channel');
                 }
@@ -84,7 +91,7 @@ const FeedHome = () => {
     };
 
     const channelRender = channels.find(c => c.channel_name === channel_name);
-    
+
     useEffect(() => {
         if (!channelRender && channels.length > 0) {
             setFeedErrorMessage('Channel not found. Please check the url.');
@@ -186,7 +193,7 @@ const FeedHome = () => {
                 <div id="profile-summary">
                     <img className="large-group-photo" src={`/${feed.feed_photo}`} alt={feed.feed_name} />
                     {isAdmin && (
-                        <Link to={`/group_settings/${feed_name}`}>
+                        <Link to={`/feed_settings/${feed_name}`}>
                             <button className="button">Settings</button>
                         </Link>
                     )}
@@ -234,20 +241,21 @@ const FeedHome = () => {
                         {showChannelForm && (
                             <form id="add-channel-form" onSubmit={AddChannel}>
                                 <input className="name-input" type="text" placeholder="Channel name..." value={newChannelName} onChange={(e) => setNewChannelName(e.target.value)}/>
-                                <label>
-                                    <input type="checkbox" checked={isPostChannel} onChange={handlePostClick}/>
-                                    Post Channel
-                                </label>
-                                <label>
-                                    <input type="checkbox" checked={isChatChannel} onChange={handleChatClick}/>
-                                    Chat Channel
-                                </label>
+                                {(feed.type === 'group') && (
+                                    <><label>
+                                        <input type="checkbox" checked={isPostChannel} onChange={handlePostClick} />
+                                        Post Channel
+                                    </label><label>
+                                            <input type="checkbox" checked={isChatChannel} onChange={handleChatClick} />
+                                            Chat Channel
+                                        </label></>
+                                )}
                                 <input className="dark-button" type="submit" value="Add"/>
                             </form>                            
                         )}
                     </div>
                 )}
-                <ChannelList channels={channels} feedId={feed.feed_id} feedName={feed_name} isGroup={true} setChannels={setChannels}/>
+                <ChannelList channels={channels} feedId={feed.feed_id} feedName={feed.feed_name} isGroup={feed.is_group} setChannels={setChannels}/>
             </aside>
         </div>
     );

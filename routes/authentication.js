@@ -4,14 +4,10 @@ import { Router } from 'express';
 import { hash, compare } from 'bcrypt';
 import { Op } from 'sequelize';
 import { v4 } from 'uuid';
-import { Posts, PostVotes } from '../models/content.js'; 
-import { Feeds, FeedChannels, Followers } from '../models/feeds.js'; 
-import { Connections, ConnectRequests, FeedChats, Messages } from '../models/messages.js'; 
-import { Users } from '../models/users.js'; 
+import { Connections, ConnectRequests, Feeds, FeedChannels, Followers, FeedChats, Messages, Posts, PostVotes, Users } from '../models/relationships.js'; 
 
 const router = Router();
 
-//Changes user password
 router.post('/change_password', authenticateCheck, async (req, res) => {
     try {
         const { password, userId } = req.body;
@@ -26,24 +22,28 @@ router.post('/change_password', authenticateCheck, async (req, res) => {
 
 //Checks if user is logged in
 router.get('/check_authentication', async (req, res) => {
-    if (req.session && req.session.user_id) {
-        try {
-            const user = await Users.findByPk(req.session.user_id);
-            if (!user) {
-                return res.status(401).json({ success: false });
-            }
-            const userData = {
-                username: user.username,
-                userId: user.user_id,
-                hasMembership: user.has_membership,
-                points: user.points
-            };
-            res.json({ authenticated: true, user: userData });
-        } catch (error) {
-            return res.status(500).json({ success: false });
+    try {
+        if (!req.session || !req.session.user_id) {
+            return res.status(401).json({ success: false, message: "User not authenticated" });
         }
-    } else {
-        res.status(401).json({ success: false });
+        const user = await Users.findByPk(req.session.user_id);
+        if (!user) {
+            return res.status(401).json({ success: false });
+        }
+        const feeds = await Feeds.findAll({ where: { feed_owner: req.session.user_id } });
+        if (!feeds || feeds.length === 0) {
+            return res.status(404).json({ success: false });
+        }
+        if (!req.session.feed_id) {
+            req.session.feed_id = feeds[0].feed_id; 
+        }
+        res.json({
+            authenticated: true,
+            feeds,
+            currentFeed: req.session.feed_id
+        });
+    } catch (error) {
+        res.status(500).json({ success: false });
     }
 });
 
@@ -86,18 +86,17 @@ router.post('/join', async (req, res) => {
         await Users.create({
             user_id, username, password: hashedPassword, UserSince
         });
-        //Set up initial profile
+        //Add initial user feed
         const default_photo = 'media/site_images/blank-profile.png';
         const feed_id = v4();
         await Feeds.create({
             feed_id, feed_name: username, description: "", feed_photo: default_photo, type: 'private', is_group: false, feed_owner: user_id
         });
-        //Sets up main channel
+        //Add main channel
         const channel_id = v4();
         await FeedChannels.create({
             channel_id, channel_name: 'Main', feed_id
         });
-
         res.json({ success: true });
     } catch (error) {
         res.status(500).json({ success: false });
@@ -106,16 +105,15 @@ router.post('/join', async (req, res) => {
 
 router.post('/login', async (req, res) => {
     try {
-        const username = req.body.username;
-        const password = req.body.password;
+        const { username, password } = req.body;
         const user = await Users.findOne({ where: { username }});
         if (user && await compare(password, user.password)) {
             req.session.user_id = user.user_id;
             req.session.username = user.username;
-            res.json({ success: true });
+            res.status(200).json({ success: true });
         }
         else {
-            res.json({ success: false, message: 'Invalid username or password' });
+            res.status(401).json({ success: false });
         }
     }
     catch (error) {

@@ -9,6 +9,7 @@ const Feeds = sequelize.define('feeds', {
     feed_photo: { type: TEXT, allowNull: true },
     follower_count: { type: INTEGER, defaultValue: 0 },
     date_created: { type: DATE, defaultValue: NOW },
+    updated_at: { type: DATE, defaultValue: NOW },
     type: { type: STRING(10), defaultValue: 'public' },
     is_group: { type: BOOLEAN, defaultValue: false },
     feed_owner: { type: STRING(36), allowNull: false },
@@ -21,6 +22,7 @@ const FeedChannels = sequelize.define('feed_channels', {
     is_posts: { type: BOOLEAN, defaultValue: true},
     is_chat: { type: BOOLEAN, defaultValue: true},
     date_created: { type: DATE, defaultValue: NOW },
+    updated_at: { type: DATE, defaultValue: NOW }
 }, { tableName: 'feed_channels', timestamps: false }); 
 
 const FeedChannelMessages = sequelize.define('feed_channel_messages', { 
@@ -38,17 +40,19 @@ const Followers = sequelize.define('followers', {
     feed_id: { type: STRING(36), allowNull: false },
     is_mod: { type: BOOLEAN, defaultValue: false },
     is_admin: { type: BOOLEAN, defaultValue: false },
+    follow_date: { type: DATE, defaultValue: NOW }
 }, { tableName: 'followers', timestamps: false });
 
 const FollowRequests = sequelize.define('follow_requests', {
     request_id: { type: STRING(36), primaryKey: true },
-    sender_id: { type: STRING(36), allowNull: false, references: { model: 'Feeds', key: 'feed_id' }},
-    receiver_id: { type: STRING(36), allowNull: false, references: { model: 'Feeds', key: 'feed_id' }},
+    sender_id: { type: STRING(36), allowNull: false, references: { model: 'feeds', key: 'feed_id' }},
+    receiver_id: { type: STRING(36), allowNull: false, references: { model: 'feeds', key: 'feed_id' }},
+    timestamp: { type: DATE, defaultValue: NOW }
 }, { tableName: 'follow_requests', timestamps: false });
 
 const NestedFeeds = sequelize.define('nested_feeds', { //Many-to-many relationship between feeds
-    sub_feed_id: { type: STRING(36), primaryKey: true, references: { model: 'Feeds', key: 'feed_id' }},
-    parent_feed_id: { type: STRING(36), primaryKey: true, references: { model: 'Feeds', key: 'feed_id' }},
+    sub_feed_id: { type: STRING(36), primaryKey: true, references: { model: 'feeds', key: 'feed_id' }},
+    parent_feed_id: { type: STRING(36), primaryKey: true, references: { model: 'feeds', key: 'feed_id' }},
 }, { tableName: 'nested_feed', timestamps: false });
 
 export {

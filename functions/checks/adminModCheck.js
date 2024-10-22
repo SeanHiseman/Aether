@@ -1,9 +1,9 @@
 import { Feeds, Followers } from '../../models/feeds.js';
 
-async function checkIfAdminOrMod(follower_id, group_name) {
+async function checkIfAdminOrMod(follower_id, feed_name) {
     try {
         const feed = await Feeds.findOne({
-            where: { group_name }
+            where: { feed_name }
         });
         if (!feed) {
             return false;

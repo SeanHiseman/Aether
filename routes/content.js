@@ -1,7 +1,6 @@
 import authenticateCheck from '../functions/checks/authenticateCheck.js';
 import deleteMedia from '../functions/media_handling/deleteMedia.js';
-import { Posts, PostNotes, PostVotes } from '../models/content.js';
-import { Feeds, FeedChannels } from '../models/feeds.js'; 
+import { Feeds, FeedChannels, Posts, PostNotes, PostVotes } from '../models/relationships.js';
 import multer from 'multer';
 import { Router } from 'express';
 import { v4 } from 'uuid';

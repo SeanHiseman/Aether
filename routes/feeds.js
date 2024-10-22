@@ -1,4 +1,6 @@
 import authenticateCheck from '../functions/checks/authenticateCheck.js';
+import checkIfAdminOrMod from '../functions/checks/adminModCheck.js'
+import checkIfFollowing from '../functions/checks/followerCheck.js'
 import deleteMedia from '../functions/media_handling/deleteMedia.js';
 import imageUpload from '../functions/media_handling/imageUpload.js';
 import express from 'express';
@@ -7,8 +9,7 @@ import { join } from 'path';
 import path from 'path';
 import { Router } from 'express';
 import { v4 } from 'uuid';
-import { Posts } from '../models/content.js'; 
-import { Feeds, FeedChannels, FeedChannelMessages, Followers, FollowRequests, NestedFeeds } from '../models/feeds.js'; 
+import { Feeds, FeedChannels, FeedChannelMessages, Followers, FollowRequests, NestedFeeds, Posts } from '../models/relationships.js';
 
 const app = express();
 const router = Router();
@@ -223,31 +224,33 @@ router.delete('/delete_feed_channel', authenticateCheck, async (req, res) => {
 });
 
 router.get('/feed/:feedName', authenticateCheck, async (req, res) => {
-    try {
+    //try {
         const feedName = req.params.feedName;
-        const viewerId = req.params.viewerId;
-        const [feed, isAdminMod, isFollower, hasFollowRequest] = await Promise.all([
+        const viewerId = req.session.user_id;
+        //const [feed, isAdminMod, isFollower, hasFollowRequest] = await Promise.all([
+        const [feed] = await Promise.all([
             Feeds.findOne({ where: { feed_name: feedName } }),
-            checkIfAdminOrMod(viewerId, feedName),
-            checkIfFollowing(viewerId, feedName),
-            FollowRequests.findOne({ where: { sender_id: userId } })
+            //checkIfAdminOrMod(viewerId, feedName),
+            //checkIfFollowing(viewerId, feedName),
+            //FollowRequests.findOne({ where: { sender_id: viewerId } })
         ]);
         if (!feed) {
             return res.status(404).json({ success: false }); 
         }
-        const { isAdmin, isMod } = isAdminMod
+        //const { isAdmin, isMod } = isAdminMod
         const feedResult = {
             ...feed.toJSON(),
-            isAdmin, 
-            isMod, 
+            //isAdmin, 
+            //isMod, 
             isOwner: (viewerId === feed.feed_owner),
-            isFollower,
-            isRequestSent: feed.is_private ? !!hasFollowRequest : false,
+            //isFollower,
+            //isRequestSent: feed.is_private ? !!hasFollowRequest : false,
         };
         res.status(200).json({ success: false, feedResult });
-    } catch (error) {
-        res.status(500).json({ success: false });
-    }
+    //} catch (error) {
+        //console.error(error);
+        //res.status(500).json({ success: false });
+    //}
 });
 
 router.get('/feed_channel_messages/:channelId', authenticateCheck, async (req, res) => {
@@ -330,15 +333,17 @@ router.get('/get_feed_channels/:feedId', authenticateCheck, async (req, res) => 
     try {
         const feedId = req.params.feedId; 
         const channels = await FeedChannels.findAll({
+            where: { feed_id: feedId },
             include: [{
                 model: Feeds,
-                where: { feed_id: feedId },
+                as: 'feed',
                 attributes: feedAttributes,
             }],
             order: [['date_created', 'ASC']]
         });
         res.json({ success: true, channels });
     } catch (error) {
+        console.log(error);
         res.status(500).json({ success: false });
     }
 });
@@ -464,6 +469,25 @@ router.post('/unfollow_feed', authenticateCheck, async (req, res) => {
         const feed = await Feeds.findByPk(feedId);
         await feed.decrement('follower_count');
         res.status(200).json({ success: true });
+    } catch (error) {
+        res.status(500).json({ success: false });
+    }
+});
+
+router.post('/update_current_feed', async (req, res) => {
+    try {
+        const { feed_id } = req.body;
+        if (!req.session || !req.session.user_id) {
+            return res.status(401).json({ success: false });
+        }
+        const feed = await Feeds.findOne({
+            where: { feed_id, feed_owner: req.session.user_id }
+        });
+        if (!feed) {
+            return res.status(404).json({ success: false });
+        }
+        req.session.feed_id = feed_id;
+        res.json({ success: true, currentFeed: req.session.feed_id });
     } catch (error) {
         res.status(500).json({ success: false });
     }
