@@ -9,7 +9,7 @@ const Join = () => {
     const [confirmPassword, setConfirmPassword] = useState('');
     const navigate = useNavigate();
 
-    const handleSubmit = async (event) => {
+    const handleJoin = async (event) => {
         event.preventDefault();
         if (password !== confirmPassword) {
             setErrorMessage('Passwords do not match');
@@ -41,7 +41,7 @@ const Join = () => {
                     </Link>
                 </div>
                 <p className="error-message">{errorMessage}</p>
-                <form method="post" onSubmit={handleSubmit}>
+                <form method="post" onSubmit={handleJoin}>
                     <input className="authentication-input-box" name="username" placeholder="Username" required />
                     <input 
                         type="password" 

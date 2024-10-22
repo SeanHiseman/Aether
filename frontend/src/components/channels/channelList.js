@@ -10,8 +10,10 @@ const ChannelList = ({ channels, feedId, feedName, isGroup, setChannels }) => {
 
     const getFeedChannels = useCallback(async () => {
         try {
-            const response = await axios.get(`/api/get_feed_channels/${feedId}`);
-            setChannels(response.data);
+            if (feedId) {
+                const response = await axios.get(`/api/get_feed_channels/${feedId}`);
+                setChannels(response.data.channels);
+            }
         } catch (error) {
             setErrorMessage('Error getting channels');
             setChannels([]);
@@ -22,7 +24,7 @@ const ChannelList = ({ channels, feedId, feedName, isGroup, setChannels }) => {
         getFeedChannels();
     }, [getFeedChannels]);
 
-    //Fetch subfeedss
+    //Fetch subfeeds
     useEffect(() => {
         if (isGroup) {
             const fetchSubFeeds = async () => {

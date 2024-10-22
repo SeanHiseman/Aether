@@ -64,9 +64,9 @@ const App = () => {
                             <Route path="p/:feed_name" element={<PersonalFeed/>} />
                             <Route path="search/:tab?" element={<SearchResults />} />
                             <Route path="settings/:username" element={<Settings />} />
-                            <Route path="u/:username" element={<ProfileWrapper />}>
+                            <Route path="u/:feed_name" element={<FeedWrapper />}>
                                 <Route index element={<Navigate replace to="Main" />} />
-                                <Route path=":channel_name" element={<Profile />} >
+                                <Route path=":channel_name" element={<FeedHome />} >
                                     <Route path=":postId" element={<ContentWidget />} />
                                 </Route>
                             </Route>

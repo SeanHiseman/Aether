@@ -1,13 +1,13 @@
-import { Posts, PostNotes, PostVotes } from "./content";
-import { Feeds, FeedChannels, FeedChannelMessages, Followers, FollowRequests, NestedFeeds } from "./feeds";
-import { AskChats, AskMessages, Chats, FeedChats, Messages } from "./messages";
-import { Connections, ConnectRequests, Users } from "./users";
+import { Posts, PostNotes, PostVotes } from "./content.js";
+import { Feeds, FeedChannels, FeedChannelMessages, Followers, FollowRequests, NestedFeeds } from "./feeds.js";
+import { AskChats, AskMessages, Chats, ConnectRequests, Connections, FeedChats, Messages } from "./messages.js";
+import { Users } from "./users.js";
 
 Users.hasMany(Feeds, { foreignKey: 'feed_owner' });
 Feeds.belongsTo(Users, { foreignKey: 'feed_owner' });
 
-Feeds.hasMany(FeedChannels, { foreignKey: 'feed_id' });
-FeedChannels.belongsTo(Feeds, { foreignKey: 'feed_id' });
+Feeds.hasMany(FeedChannels, { foreignKey: 'feed_id', as: 'channels' });
+FeedChannels.belongsTo(Feeds, { foreignKey: 'feed_id', as: 'feed' });
 
 FeedChannelMessages.belongsTo(FeedChannels, { foreignKey: 'channel_id' }); 
 FeedChannels.hasMany(FeedChannelMessages, { foreignKey: 'channel_id' });
@@ -49,6 +49,9 @@ Chats.belongsToMany(Feeds, { through: FeedChats, foreignKey: 'chat_id', otherKey
 FeedChats.belongsTo(Chats, { foreignKey: 'chat_id' });
 Chats.hasMany(FeedChats, { foreignKey: 'chat_id' });
 
+Feeds.hasMany(Connections, { foreignKey: 'feed_id' });
+Connections.hasMany(Feeds, { foreignKey: 'feed_id' });
+
 Chats.hasMany(Messages, { foreignKey: 'chat_id' });
 Messages.belongsTo(Chats, { foreignKey: 'chat_id' });
 Feeds.hasMany(Messages, { foreignKey: 'sender_id' });
@@ -64,3 +67,23 @@ AskMessages.belongsTo(Feeds, { foreignKey: 'sender_id', as: 'sender' });
 
 PostNotes.belongsTo(Posts, { foreignKey: 'post_id', as: 'parentPost'});
 Posts.hasOne(PostNotes, { foreignKey: 'post_id', as: 'note'});
+
+export {
+    AskChats, 
+    AskMessages, 
+    Chats, 
+    ConnectRequests, 
+    Connections, 
+    FeedChats, 
+    Feeds, 
+    FeedChannels, 
+    FeedChannelMessages, 
+    Followers, 
+    FollowRequests, 
+    Messages,
+    NestedFeeds,
+    Posts, 
+    PostNotes, 
+    PostVotes,
+    Users
+}

@@ -19,7 +19,7 @@ const Posts = sequelize.define('posts', {
 
 const PostNotes = sequelize.define('post_notes', {
     note_id: { type: STRING(36), primaryKey: true },
-    post_id: { type: STRING(36), allowNull: false, references: { model: 'Posts', key: 'post_id' }},
+    post_id: { type: STRING(36), allowNull: false, references: { model: 'posts', key: 'post_id' }},
     note_content: { type: STRING(1000), allowNull: false },
     timestamp: { type: DATE, defaultValue: NOW },
     is_misinfo: { type: BOOLEAN, defaultValue: false},

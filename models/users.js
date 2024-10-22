@@ -9,7 +9,7 @@ const Users = sequelize.define('users', {
     collaborative_preference: { type: FLOAT, allowNull: false, defaultValue: 0.5 },
     time_preference: { type: FLOAT, allowNull: false, defaultValue: 0.0001 },
     has_membership: { type: BOOLEAN, defaultValue: false }, 
-    theme: { type: STRING(120), allowNull: true },
+    theme: { type: STRING(120), allowNull: true, defaultValue: 'dark' },
     points: { type: INTEGER, allowNull: false, defaultValue: 0 }, 
 }, { tableName: 'users', timestamps: false });
 

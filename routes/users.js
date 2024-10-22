@@ -1,6 +1,6 @@
 import authenticateCheck from '../functions/checks/authenticateCheck.js';
 import sortPostsByWeightedRatio from'../functions/postSorting.js';
-import { Users } from '../models/users.js';
+import { Users } from '../models/relationships.js';
 import { Router } from 'express';
 
 const router = Router();

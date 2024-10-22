@@ -15,7 +15,7 @@ import '../css/profile.css';
 import '../css/replies.css';
 
 const BaseLayout = () => {
-    const { isAuthenticated, user } = useContext(AuthContext);
+    const { isAuthenticated, viewer } = useContext(AuthContext);
     const [currentQuery, setCurrentQuery] = useState('');
     const [errorMessage, setErrorMessage] = useState('');
     const [feeds, setFeeds] = useState([]);
@@ -30,11 +30,12 @@ const BaseLayout = () => {
     const navigate = useNavigate();
 
     useEffect(() => {
-        const fetchUserFeed = async () => {
-            if (isAuthenticated && user) {
+        const fetchViewerFeed = async () => {
+            if (isAuthenticated && viewer) {
                 try {
-                    const response = await axios.get(`/api/feed/${feed.feed_name}`);
-                    setFeed({ ...response.data.feed });
+                    const response = await axios.get(`/api/feed/${viewer.feed_name}`);
+                    const feed = response.data.feedResult;
+                    setFeed(feed);
                     const themeResponse = await axios.get('/api/get_theme');
                     setTheme(themeResponse.data.theme);
                 } catch (error) {
@@ -44,24 +45,24 @@ const BaseLayout = () => {
                 }
             }
         };
-        fetchUserFeed();
-    }, [isAuthenticated, user, navigate, setTheme]);
+        fetchViewerFeed();
+    }, [isAuthenticated, viewer, navigate, setTheme]);
 
     //Fetch feeds that a user follows
     useEffect(() => {
         const fetchFeeds = async () => {
             try {
-                const response = await axios.get(`/api/feed_list/${feed.feed_id}`);
+                const response = await axios.get(`/api/feed_list/${viewer.feed_id}`);
                 setFeeds(response.data);
             } catch (error) {
                 setFeeds([]);
             }
         };
         //Only called when feed has loaded
-        if (feed.feed_id) {
+        if (viewer.feed_id) {
             fetchFeeds();
         }
-    }, [feed.feed_id]);
+    }, [viewer.feed_id]);
 
     //Create group submit handler
     const createGroupSubmit = async (event) => {
@@ -116,7 +117,7 @@ const BaseLayout = () => {
                 return;
             }
             const newChatId = v4();
-            if (user.hasMembership) {
+            if (viewer.hasMembership) {
                 await axios.post('/api/create_ask_chat', {
                     chatId: newChatId,
                     name: "New chat"
