@@ -1,5 +1,6 @@
 import { BOOLEAN, STRING, DATE, INTEGER, TEXT, NOW } from 'sequelize';
 import sequelize from '../databaseSetup.js';
+import { Users } from "./users.js";
 
 const Feeds = sequelize.define('feeds', {
     feed_id: { type: STRING(36), primaryKey: true },
@@ -12,12 +13,13 @@ const Feeds = sequelize.define('feeds', {
     updated_at: { type: DATE, defaultValue: NOW },
     type: { type: STRING(10), defaultValue: 'public' },
     is_group: { type: BOOLEAN, defaultValue: false },
-    feed_owner: { type: STRING(36), allowNull: false },
+    feed_owner: { type: STRING(36), allowNull: false, references: { model: Users, key: 'user_id' } },
 }, { tableName: 'feeds', timestamps: false });
 
 const FeedChannels = sequelize.define('feed_channels', { 
     channel_id: { type: STRING(36), primaryKey: true }, 
-    channel_name: { type: STRING(100), allowNull: false }, 
+    channel_name: { type: STRING(100), allowNull: false },     
+    description: { type: STRING(1000), allowNull: true },
     feed_id: { type: STRING(36), allowNull: false }, 
     is_posts: { type: BOOLEAN, defaultValue: true},
     is_chat: { type: BOOLEAN, defaultValue: true},
