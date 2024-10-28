@@ -40,6 +40,7 @@ router.get('/check_authentication', async (req, res) => {
         res.json({
             authenticated: true,
             feeds,
+            user,
             currentFeed: req.session.feed_id
         });
     } catch (error) {

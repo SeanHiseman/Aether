@@ -109,7 +109,7 @@ router.post('/create_feed', authenticateCheck, async (req, res) => {
             return res.status(500).json({ success: false });
         }
         try {
-            const { feedName, isPrivate, creatorId } = req.body;
+            const { feedName, type, isGroup, feedOwner } = req.body;
             //Prevents duplicate group names
             const existingFeed = await Feeds.findOne({ where: { feed_name: feedName } });
             if (existingFeed) {
@@ -119,28 +119,30 @@ router.post('/create_feed', authenticateCheck, async (req, res) => {
             if (req.file) {
                 feed_photo = `media/feed_images/${req.file.filename}`;
             }
-            const newFeed = await Feeds.create({
+            const feed = await Feeds.create({
                 feed_id: v4(),
                 feed_name: feedName,
                 feed_photo,
-                member_count: 1,
-                is_private: isPrivate,
-                feed_owner: creatorId
+                follower_count: 1,
+                type: type,
+                is_group: isGroup,
+                feed_owner: feedOwner
             });
             await FeedChannels.create({
                 channel_id: v4(),
                 channel_name: 'Main',
-                feed_id: newFeed.feed_id,
+                feed_id: feed.feed_id,
             });
             await Followers.create({
                 follow_id: v4(),
-                follower_id: creatorId,
-                feed_id: newFeed.feed_id,
+                follower_id: feedOwner,
+                feed_id: feed.feed_id,
                 is_mod: true,
                 is_admin: true,
             });
-            res.status(201).json({ success: true, newFeed });
+            res.status(201).json({ success: true, feed });
         } catch (error) {
+            console.log("error:", error);
            res.status(500).json({ success: false });
         }
     });

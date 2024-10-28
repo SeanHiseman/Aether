@@ -29,7 +29,7 @@ const PostChannel = ({ canRemove, channelId, channelName, feedId, isGroup }) => 
                 ...(isMain ? {} : { channel_id: channelId }), //Only include channelId if not viewing Main
             }
         });
-        return response.data;
+        return response.data || [];
     };
     
     //Gets individual post 
@@ -50,7 +50,7 @@ const PostChannel = ({ canRemove, channelId, channelName, feedId, isGroup }) => 
     const handlePostRemoved = (postId) => {
         queryClient.setQueryData(
             ['posts', channelId, channelName, isGroup, feedId],
-            posts => posts.filter(post => post.post_id !== postId)
+            (posts = []) => posts.filter(post => post.post_id !== postId)
         );
     };
     if (singlePostError) {

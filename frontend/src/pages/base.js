@@ -15,14 +15,13 @@ import '../css/profile.css';
 import '../css/replies.css';
 
 const BaseLayout = () => {
-    const { isAuthenticated, viewer } = useContext(AuthContext);
+    const { isAuthenticated, user, viewer } = useContext(AuthContext);
     const [currentQuery, setCurrentQuery] = useState('');
     const [errorMessage, setErrorMessage] = useState('');
     const [feeds, setFeeds] = useState([]);
-    const [groupName, setGroupName] = useState('');
-    const [groupPhoto, setGroupPhoto] = useState(null);
-    const [groupPhotoFile, setGroupPhotoFile] = useState('No file chosen');
-    const [privateGroup, setPrivateGroup] = useState(false);
+    const [feedName, setFeedName] = useState('');
+    const [feedPhotoFile, setFeedPhotoFile] = useState('No file chosen');
+    const [feedType, setFeedType] = useState('public'); 
     const [feed, setFeed] = useState([]);
     const { setQuery } = useQueryContext();
     const { setTheme } = useContext(ThemeContext);
@@ -64,29 +63,25 @@ const BaseLayout = () => {
         }
     }, [viewer.feed_id]);
 
-    //Create group submit handler
-    const createGroupSubmit = async (event) => {
+    const createFeed = async (event) => {
         try {
             event.preventDefault();
-            if (!groupName) {
+            if (!feedName) {
                 setErrorMessage('Feed needs a name');
                 return;
-            } else {
-                const formData = new FormData();
-                formData.append('group_id', v4());
-                formData.append('group_name', groupName);
-                formData.append('new_group_profile_photo', groupPhoto);
-                formData.append('is_private', privateGroup);
-                formData.append('feed_id', feed.feed_id); 
-                const response = await axios.post('/api/create_feed', formData);
-                if (response.data.success === true) {
-                    setFeeds([...feeds, response.data]);
-                    //Redirect to new group
-                    const newFeedName = response.data.newFeed.feed_name;
-                    navigate(`/g/${newFeedName}`);
-                    setGroupName('');
-                    setShowForm(false);
-                }
+            } 
+            const newFeed = new FormData();
+            newFeed.append('feedName', feedName);
+            newFeed.append('type', feedType);
+            newFeed.append('isGroup', true);
+            newFeed.append('feedOwner', user.user_id);
+            const response = await axios.post('/api/create_feed', newFeed);
+            if (response.data.success === true) {
+                const createdFeed = response.data.feed;
+                setFeeds([...feeds, createdFeed]);
+                navigate(`/g/${createdFeed.feed_name}`);
+                setFeedName('');
+                setShowForm(false);
             }
         } catch (error) {
             if (error.response.status === 413) {
@@ -102,8 +97,7 @@ const BaseLayout = () => {
     const handleFileChange = (event) => {
         const file = event.target.files[0];
         if (file) {
-            setGroupPhoto(file);
-            setGroupPhotoFile(file.name);
+            setFeedPhotoFile(file.name);
         }
     };
 
@@ -137,13 +131,12 @@ const BaseLayout = () => {
         navigate(`/search?keyword=${currentQuery}`);
     };
 
-    //Toggles display of create group form after button is pressed
+    //Toggles display of create feed form after button is pressed
     const toggleForm = () => { 
         if (showForm) {
             setErrorMessage('');
-            setGroupName('');
-            setGroupPhoto(null);
-            setGroupPhotoFile('No file chosen');
+            setFeedName('');
+            setFeedPhotoFile('No file chosen');
         };
         setShowForm(!showForm) 
     }
@@ -169,16 +162,16 @@ const BaseLayout = () => {
                         {showForm ? 'Close': 'Create feed'}
                     </button>
                     {showForm && (
-                        <form id="create-group-form" onSubmit={createGroupSubmit}>
-                            <input className="name-input" type="text" name="Name" placeholder="Feed name..." value={groupName} onChange={(e) => setGroupName(e.target.value)}/>
+                        <form id="create-group-form" onSubmit={createFeed}>
+                            <input className="name-input" type="text" name="Name" placeholder="Feed name..." value={feedName} onChange={(e) => setFeedName(e.target.value)}/>
                             <div className="file-input">
                                 <label htmlFor="group-photo-input" class="dark-button">Choose photo</label>
                                 <input type="file" id="group-photo-input" name="Group photo" onChange={handleFileChange} hidden/>
-                                <span className="file-name">{groupPhotoFile}</span>
+                                <span className="file-name">{feedPhotoFile}</span>
                             </div>
                             <div className="option-toggle">
-                                <button className={privateGroup === false ? 'active-mode' : 'passive-mode'} onClick={(event) => {event.preventDefault(); setPrivateGroup(false);}}>Public</button>
-                                <button className={privateGroup === true ? 'active-mode' : 'passive-mode'} onClick={(event) => {event.preventDefault(); setPrivateGroup(true);}}>Private</button>
+                                <button className={feedType === 'public' ? 'active-mode' : 'passive-mode'} onClick={(event) => {event.preventDefault(); setFeedType('public');}}>Public</button>
+                                <button className={feedType === 'private' ? 'active-mode' : 'passive-mode'} onClick={(event) => {event.preventDefault(); setFeedType('private');}}>Private</button>
                             </div>
                             <div className="error-message">{errorMessage}</div>
                             <input className="dark-button" type="submit" value="Create" />
@@ -191,7 +184,7 @@ const BaseLayout = () => {
                             <p>Followed feeds are shown here</p>
                         ) : (
                             feeds.map((feed) => (
-                                <FeedItem key={feed.feed_id} feedId={feed.feed_id} name={feed.name} photo={feed.photo} type={feed.type} link={`/${feed.type}/${feed.name}/Main`} />
+                                <FeedItem key={feed.feed_id} feedId={feed.feed_id} name={feed.feed_name} photo={feed.feed_photo} type={feed.type} link={`/${feed.type}/${feed.feed_name}/Main`} />
                             ))
                         )}
                     </ul>

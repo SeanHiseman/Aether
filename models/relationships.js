@@ -14,10 +14,10 @@ FeedChannels.hasMany(FeedChannelMessages, { foreignKey: 'channel_id' });
 FeedChannelMessages.belongsTo(Feeds, { foreignKey: 'sender_id' });
 Feeds.hasMany(FeedChannelMessages, { foreignKey: 'sender_id' });
 
-Feeds.belongsToMany(Users, { through: Followers, foreignKey: 'feed_id', otherKey: 'follower_id', as: 'followedFeed' });
-Users.belongsToMany(Feeds, { through: Followers, foreignKey: 'follower_id', otherKey: 'feed_id', as: 'followingFeed' });
-Followers.belongsTo(Feeds, { foreignKey: 'feed_id' });
-Feeds.hasMany(Followers, { foreignKey: 'feed_id' });
+Feeds.belongsToMany(Feeds, { through: Followers, foreignKey: 'feed_id', otherKey: 'follower_id', as: 'followedFeed' });
+Feeds.belongsToMany(Feeds, { through: Followers, foreignKey: 'follower_id', otherKey: 'feed_id', as: 'followingFeed' });
+Followers.belongsTo(Feeds, { foreignKey: 'feed_id', as: 'followed' });
+Feeds.hasMany(Followers, { foreignKey: 'feed_id', as: 'followers' });
 
 Feeds.hasMany(Posts, { as: 'Poster', foreignKey: 'poster_id' });
 Posts.belongsTo(Feeds, { as: 'Poster', foreignKey: 'poster_id' });
