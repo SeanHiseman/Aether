@@ -30,7 +30,7 @@ router.get('/check_authentication', async (req, res) => {
         if (!user) {
             return res.status(401).json({ success: false });
         }
-        const feeds = await Feeds.findAll({ where: { feed_owner: req.session.user_id } });
+        const feeds = await Feeds.findAll({ where: { is_group: 0, feed_owner: req.session.user_id } });
         if (!feeds || feeds.length === 0) {
             return res.status(404).json({ success: false });
         }

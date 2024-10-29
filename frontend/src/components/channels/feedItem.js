@@ -2,7 +2,7 @@ import React, { useState, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import ChannelList from './channelList';
 
-const FeedItem = ({ feedId, name, photo, type, link }) => {
+const FeedItem = ({ feedId, name, photo, linkType }) => {
     const [dropdownOpen, setDropdownOpen] = useState(false);
     const [feedChannels, setFeedChannels] = useState([]);
 
@@ -15,9 +15,9 @@ const FeedItem = ({ feedId, name, photo, type, link }) => {
     }, []);
 
     return (
-        <li className={`feed-list-item ${type}`}>
+        <li className={`feed-list-item`}>
             <div className="feed-list-link-container">
-                <Link className="feed-list-link" to={link}>
+                <Link className="feed-list-link" to={`/${linkType}/${name}/Main`}>
                     <img className="small-feed-photo" src={`/${photo}`} alt={'/media/site_images/blank-group-icon.jpg'} />
                     <p className="feed-list-text">{name}</p>
                 </Link>
@@ -26,7 +26,7 @@ const FeedItem = ({ feedId, name, photo, type, link }) => {
                 </p>
             </div>
             {dropdownOpen && (
-                <ChannelList channels={feedChannels} feedId={feedId} feedName={name} isGroup={type === 'g'} setChannels={updateFeedChannels} />
+                <ChannelList channels={feedChannels} feedId={feedId} feedName={name} isGroup={linkType === 'g'} setChannels={updateFeedChannels} />
             )}
         </li> 
     )

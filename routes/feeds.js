@@ -109,7 +109,7 @@ router.post('/create_feed', authenticateCheck, async (req, res) => {
             return res.status(500).json({ success: false });
         }
         try {
-            const { feedName, type, isGroup, feedOwner } = req.body;
+            const { feedName, type, isGroup, feedOwner, viewer } = req.body;
             //Prevents duplicate group names
             const existingFeed = await Feeds.findOne({ where: { feed_name: feedName } });
             if (existingFeed) {
@@ -135,14 +135,13 @@ router.post('/create_feed', authenticateCheck, async (req, res) => {
             });
             await Followers.create({
                 follow_id: v4(),
-                follower_id: feedOwner,
+                follower_id: viewer.feed_id,
                 feed_id: feed.feed_id,
                 is_mod: true,
                 is_admin: true,
             });
             res.status(201).json({ success: true, feed });
         } catch (error) {
-            console.log("error:", error);
            res.status(500).json({ success: false });
         }
     });
@@ -274,23 +273,24 @@ router.get('/feed_channel_messages/:channelId', authenticateCheck, async (req, r
 
 router.get('/feed_list/:followerId', async (req, res) => {
     try {
-        const { followerId } = req.params.followerId;
+        const { followerId } = req.params;
         const feeds = await Followers.findAll({
             where: { follower_id: followerId },
             include: [{
                 model: Feeds,
-                where: { },
+                as: 'followed',
                 attributes: feedAttributes,
             }],
-            order: [['feed_name', 'ASC']],
-        });
+            //order: [[{ model: Feeds, as: 'followed' }, 'feed_name', 'ASC']],
+        });;
         const formattedFeeds = feeds.map(feed => ({
             ...feed.dataValues,
-            type: feed.is_group ? 'g' : 'u',
+            link_type: feed.followed.is_group ? 'g' : 'u', 
         }));
-        const feedList = formattedFeeds.sort((a, b) => a.feed_name.localeCompare(b.feed_name));
-        res.json(feedList);
+        //const feedList = formattedFeeds.sort((a, b) => a.feed_name.localeCompare(b.feed_name));
+        res.json(formattedFeeds);
     } catch (error) {
+        console.error(error);
         res.status(500).json({ success: false });
     }
 });

@@ -75,6 +75,7 @@ const BaseLayout = () => {
             newFeed.append('type', feedType);
             newFeed.append('isGroup', true);
             newFeed.append('feedOwner', user.user_id);
+            newFeed.append('creator', viewer);
             const response = await axios.post('/api/create_feed', newFeed);
             if (response.data.success === true) {
                 const createdFeed = response.data.feed;
@@ -184,7 +185,7 @@ const BaseLayout = () => {
                             <p>Followed feeds are shown here</p>
                         ) : (
                             feeds.map((feed) => (
-                                <FeedItem key={feed.feed_id} feedId={feed.feed_id} name={feed.feed_name} photo={feed.feed_photo} type={feed.type} link={`/${feed.type}/${feed.feed_name}/Main`} />
+                                <FeedItem key={feed.feed_id} feedId={feed.feed_id} name={feed.followed.feed_name} photo={feed.followed.feed_photo} linkType={feed.link_type} link={`/${feed.link_type}/${feed.followed.feed_name}/Main`} />
                             ))
                         )}
                     </ul>
