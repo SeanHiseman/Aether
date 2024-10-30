@@ -31,7 +31,7 @@ export const AuthCheck = ({ children }) => {
     }, [navigate]);
 
     return (
-        <AuthContext.Provider value={{ isAuthenticated, user, viewer}}>
+        <AuthContext.Provider value={{ isAuthenticated, user, viewer }}>
             {children}
         </AuthContext.Provider>
     );

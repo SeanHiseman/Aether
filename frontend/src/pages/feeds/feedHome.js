@@ -18,7 +18,7 @@ const FeedHome = () => {
     const [feedErrorMessage, setFeedErrorMessage] = useState('');
     const [isAdmin, setIsAdmin] = useState(false);
     const [isChatChannel, setIsChatChannel] = useState(false);
-    const [isPostChannel, setIsPostChannel] = useState(false);
+    const [isPostChannel, setIsPostChannel] = useState(true);
     const [isModerator, setIsModerator] = useState(false);
     const [feed, setFeed] = useState('');
     const [feedNotFound, setFeedNotFound] = useState(true);
@@ -26,7 +26,7 @@ const FeedHome = () => {
     const [newChannelName, setNewChannelName] = useState('');
     const [showChannelForm, setShowChannelForm] = useState(false);
     const [showPostForm, setShowPostForm] = useState(false);
-    const { viewer } = useContext(AuthContext);
+    const { user, viewer } = useContext(AuthContext);
 
     useEffect(() => {
         const fetchFeedData = async () => {
@@ -46,7 +46,7 @@ const FeedHome = () => {
                     setFeedNotFound(true);
                 }
             }
-        };
+        }; 
         fetchFeedData();
     }, [feed_name, viewer]);
 
@@ -68,19 +68,16 @@ const FeedHome = () => {
                 const response = await axios.post('/api/add_feed_channel', {
                     channelName: newChannelName,
                     feedId: feed.feed_id,
-                    isPosts: isPostChannel,
-                    isChat: isChatChannel
+                    isPosts: feed.is_group ? isPostChannel : true,
+                    isChat: feed.is_group ? isChatChannel : false
                 });
                 if (response.data && response.status === 201) {
-                    const updatedChannels = [...channels, response.data];
+                    const newChannel = response.data.newChannel;
+                    const updatedChannels = [...channels, newChannel];
                     setChannels(updatedChannels);
                     setErrorMessage('');
                     setNewChannelName('');
-                    setShowChannelForm(false);
-                    const newChannel = updatedChannels.find(c => c.channel_name === newChannelName);
-                    if (newChannel) {
-                        navigate(`/${urlLetter}/${feed_name}/${newChannelName}`);
-                    }
+                    navigate(`/${urlLetter}/${feed_name}/${newChannelName}`);
                 } else {
                     setErrorMessage('Failed to add channel');
                 }
@@ -200,18 +197,20 @@ const FeedHome = () => {
                     <p className="text36">{feed.feed_name}</p>
                     <p className="description" >{feed.description}</p>
                     <p className="user-count">{feed.follower_count} {feed.follower_count === 1 ? 'follower' : 'followers'}</p>
-                    <FollowerChangeButton 
-                        feedId={feed.feed_id} 
-                        followerId={viewer.viewerId} 
-                        isFollower={feed.isFollower} 
-                        isRequestSent={feed.isRequestSent} 
-                        type={feed.type}
-                    />
+                    {(feed.is_group || user.user_id !== feed.feed_owner) && (
+                        <FollowerChangeButton 
+                            feedId={feed.feed_id} 
+                            followerId={viewer.viewerId} 
+                            isFollower={feed.isFollower} 
+                            isRequestSent={feed.isRequestSent} 
+                            type={feed.type}
+                        />
+                    )}
                 </div>
                 {errorMessage && <div className="error-message">{errorMessage}</div>}
                 {channelRender && (
                     isAdmin ? (
-                    <ChannelName channelId={channelRender.channel_id} channelName={channel_name} channelType={'group'} locationName={feed_name} channelUpdate={channelUpdate}/>
+                    <ChannelName channelId={channelRender.channel_id} channelName={channel_name} isGroup={feed.is_group} locationName={feed_name} channelUpdate={channelUpdate}/>
                     ) : (
                         <p className="text36">{channel_name}</p>
                     ) 
@@ -241,7 +240,7 @@ const FeedHome = () => {
                         {showChannelForm && (
                             <form id="add-channel-form" onSubmit={AddChannel}>
                                 <input className="name-input" type="text" placeholder="Channel name..." value={newChannelName} onChange={(e) => setNewChannelName(e.target.value)}/>
-                                {(feed.type === 'group') && (
+                                {(feed.is_group) && (
                                     <><label>
                                         <input type="checkbox" checked={isPostChannel} onChange={handlePostClick} />
                                         Post Channel

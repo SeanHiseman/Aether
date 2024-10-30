@@ -32,6 +32,7 @@ const ChannelList = ({ channels, feedId, feedName, isGroup, setChannels }) => {
                     const response = await axios.get(`/api/sub_feeds/${feedId}`);
                     setSubFeeds(response.data);
                 } catch (error) {
+                    console.log("error:", error);
                     setErrorMessage("Error getting subfeeds");
                 }
             };
