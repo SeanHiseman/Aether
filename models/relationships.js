@@ -26,10 +26,10 @@ FeedChannels.hasMany(Posts, { as: 'ChildPost', foreignKey: 'feed_id' });
 Posts.hasMany(Posts, { as: 'ParentPost', foreignKey: 'post_id' });
 Posts.belongsTo(Posts, { as: 'Reply', foreignKey: 'post_id' });
 
-Feeds.hasMany(NestedFeeds, { as: 'Parent', foreignKey: 'parent_feed_id' });
-Feeds.hasMany(NestedFeeds, { as: 'Sub', foreignKey: 'sub_feed_id' });
-NestedFeeds.belongsTo(Feeds, { as: 'Parent', foreignKey: 'parent_feed_id' });
-NestedFeeds.belongsTo(Feeds, { as: 'Sub', foreignKey: 'sub_feed_id' });
+Feeds.hasMany(NestedFeeds, { as: 'ParentFeeds', foreignKey: 'parent_feed_id' });
+Feeds.hasMany(NestedFeeds, { as: 'SubFeeds', foreignKey: 'sub_feed_id' });
+NestedFeeds.belongsTo(Feeds, { as: 'ParentFeed', foreignKey: 'parent_feed_id' });
+NestedFeeds.belongsTo(Feeds, { as: 'SubFeed', foreignKey: 'sub_feed_id' });
 
 Feeds.hasMany(FollowRequests, { as: 'Receiver', foreignKey: 'feed_id' });
 FollowRequests.belongsTo(Feeds, { as: 'Sender', foreignKey: 'sender_id' });

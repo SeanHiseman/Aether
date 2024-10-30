@@ -225,33 +225,42 @@ router.delete('/delete_feed_channel', authenticateCheck, async (req, res) => {
 });
 
 router.get('/feed/:feedName', authenticateCheck, async (req, res) => {
-    //try {
+    try {
         const feedName = req.params.feedName;
         const viewerId = req.session.user_id;
-        //const [feed, isAdminMod, isFollower, hasFollowRequest] = await Promise.all([
-        const [feed] = await Promise.all([
-            Feeds.findOne({ where: { feed_name: feedName } }),
-            //checkIfAdminOrMod(viewerId, feedName),
-            //checkIfFollowing(viewerId, feedName),
-            //FollowRequests.findOne({ where: { sender_id: viewerId } })
-        ]);
+        let isAdmin = false, isMod = false, isFollower = false, hasFollowRequest = false;
+        const feed = await Feeds.findOne({ where: { feed_name: feedName } });
         if (!feed) {
             return res.status(404).json({ success: false }); 
         }
-        //const { isAdmin, isMod } = isAdminMod
+        if (viewerId === feed.feed_owner) {
+            isAdmin = true;
+            isMod = true;
+            isFollower = true;
+            hasFollowRequest = false;
+        } else {
+            const [adminOrMod, followerStatus, followRequest] = await Promise.all([
+                checkIfAdminOrMod(viewerId, feedName),
+                checkIfFollowing(viewerId, feedName),
+                FollowRequests.findOne({ where: { sender_id: viewerId } })
+            ]);
+            isAdmin = adminOrMod.isAdmin;
+            isMod = adminOrMod.isMod;
+            isFollower = followerStatus;
+            hasFollowRequest = !!followRequest;
+        }
         const feedResult = {
             ...feed.toJSON(),
-            //isAdmin, 
-            //isMod, 
+            isAdmin, 
+            isMod, 
             isOwner: (viewerId === feed.feed_owner),
-            //isFollower,
-            //isRequestSent: feed.is_private ? !!hasFollowRequest : false,
+            isFollower,
+            isRequestSent: feed.is_private ? hasFollowRequest : false,
         };
         res.status(200).json({ success: false, feedResult });
-    //} catch (error) {
-        //console.error(error);
-        //res.status(500).json({ success: false });
-    //}
+    } catch (error) {
+        res.status(500).json({ success: false });
+    }
 });
 
 router.get('/feed_channel_messages/:channelId', authenticateCheck, async (req, res) => {
@@ -384,25 +393,18 @@ router.post('/send_follow_request', authenticateCheck, async (req, res) => {
 
 router.get('/sub_feeds/:feedId', authenticateCheck, async (req, res) => {
     try {
-        const { feedId } = req.params.feedId;
+        const feedId = req.params.feedId;
         const subFeeds = await NestedFeeds.findAll({ 
-            where: { parent_group_id: feedId }, 
+            where: { parent_feed_id: feedId }, 
             include: [{
                 model: Feeds,
-                as: 'subFeed',
+                as: 'SubFeed',
                 attributes: feedAttributes
             }],
             //Returns feeds alphabetically
-            order: [[{ model: Groups, as: 'SubFeed' }, 'group_name', 'ASC']]
+            order: [[{ model: Feeds, as: 'SubFeed' }, 'feed_name', 'ASC']]
         });
-        //Format for frontend
-        const formattedSubFeeds = subFeeds.map(subFeed => ({
-            feed_id: subFeed.sub_feed_id,  
-            name: subFeed.SubFeed.feed_name,  
-            photo: subFeed.SubFeed.feed_photo,
-            type: 'g',                          
-        }));
-        res.json(formattedSubFeeds);
+        res.json(subFeeds);
     } catch (error) {
         res.status(500).json({ success: false });  
     }   
