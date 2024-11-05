@@ -2,7 +2,7 @@ import axios from 'axios';
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 
-const FriendRequests = () => {
+const ConnectRequests = () => {
     const [errorMessage, setErrorMessage] = useState('');
     const [friendRequests, setFriendRequests] = useState([]);
 
@@ -62,4 +62,4 @@ const FriendRequests = () => {
     );
 };
 
-export default FriendRequests;
+export default ConnectRequests;

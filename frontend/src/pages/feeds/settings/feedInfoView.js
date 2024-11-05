@@ -1,5 +1,6 @@
 import axios from 'axios';
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 const FeedInfoView = ({ feed, setFeed }) => {
     const [errorMessage, setErrorMessage] = useState('');
@@ -8,6 +9,7 @@ const FeedInfoView = ({ feed, setFeed }) => {
     const [isEditingName, setIsEditingName] = useState(false);
     const [isFileSelected, setIsFileSelected] = useState(false);
     const [isPhotoFormVisible, setIsPhotoFormVisible] = useState(false);
+    const navigate = useNavigate();
     const [newDescription, setDescription] = useState('');
     const [newName, setName] = useState('');
 
@@ -65,34 +67,6 @@ const FeedInfoView = ({ feed, setFeed }) => {
             setIsFileSelected(false);
         }
     };
-
-    const handleUpdateDescription = async () => {
-        try {
-            await axios.post('/api/change_description', {
-                description: newDescription,
-                feedId: feed.feed_id
-            });
-            setFeed({ ...feed, description: newDescription });
-            setIsEditingDescription(false);
-        }
-        catch (error) {
-            setErrorMessage('Error changing description');
-        }
-    }; 
-
-    const handleUpdateName = async () => {
-        try {
-            await axios.post('/api/change_feed_name', {
-                feedName: newName,
-                feedId: feed.feed_id
-            });
-            setFeed({ ...feed, feedName: newName });
-            setIsEditingName(false);
-        }
-        catch (error) {
-            setErrorMessage('Error changing name');
-        }
-    }; 
     
     const togglePhotoForm = () => {
         if (isPhotoFormVisible) {
@@ -114,6 +88,35 @@ const FeedInfoView = ({ feed, setFeed }) => {
             setErrorMessage('Error changing status');
         }
     };
+
+    const updateDescription = async () => {
+        try {
+            await axios.post('/api/change_description', {
+                description: newDescription,
+                feedId: feed.feed_id
+            });
+            setFeed({ ...feed, description: newDescription });
+            setIsEditingDescription(false);
+        }
+        catch (error) {
+            setErrorMessage('Error changing description');
+        }
+    };
+
+    const updateFeedName = async () => {
+        try {
+            await axios.post('/api/change_feed_name', {
+                feedName: newName,
+                feedId: feed.feed_id
+            });
+            setFeed({ ...feed, feedName: newName });
+            setIsEditingName(false);
+            navigate(`/feed_settings/${newName}`);
+        }
+        catch (error) {
+            setErrorMessage('Error changing name');
+        }
+    }; 
 
     return (
         <div className="profile-settings">  
@@ -157,7 +160,7 @@ const FeedInfoView = ({ feed, setFeed }) => {
                                     }}>Cancel</button>
                                     <button className="button" onClick={(e) => {
                                         e.preventDefault();
-                                        handleUpdateName()
+                                        updateFeedName()
                                     }}>Save</button>
                                 </div>
                             </div>
@@ -193,7 +196,7 @@ const FeedInfoView = ({ feed, setFeed }) => {
                                     }}>Cancel</button>
                                     <button className="button" onClick={(e) => {
                                         e.preventDefault();
-                                        handleUpdateDescription()
+                                        updateDescription()
                                     }}>Save</button>
                                 </div>
                             </div>

@@ -18,11 +18,8 @@ import Membership from './pages/welcome/membership';
 import MessagesPage from './pages/messagesPage';
 import PersonalFeed from './pages/personalFeed';
 import Privacy from './pages/welcome/privacy';
-import Profile from './pages/profiles/profile';
-import ProfileWrapper from './pages/profiles/profileWrapper';
 import { QueryProvider } from './components/search/queryContext';
 import SearchResults from './pages/searchResults';
-import Settings from './pages/profiles/settings/settings';
 import { ThemeProvider } from './themeProvider';
 import WelcomeHome from './pages/welcome/welcomeHome';
 
@@ -63,7 +60,6 @@ const App = () => {
                             </Route>
                             <Route path="p/:feed_name" element={<PersonalFeed/>} />
                             <Route path="search/:tab?" element={<SearchResults />} />
-                            <Route path="settings/:username" element={<Settings />} />
                             <Route path="u/:feed_name" element={<FeedWrapper />}>
                                 <Route index element={<Navigate replace to="Main" />} />
                                 <Route path=":channel_name" element={<FeedHome />} >
