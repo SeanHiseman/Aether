@@ -96,16 +96,17 @@
     height: 100%;
     width: 100%
 }
-.channel-item {
-    transition: var(--transition-regular);
-}
-.channel-item:hover {
-    background-color: var(--dark);
-}
 .channel-link {
     border-bottom: 1px solid var(--dark-line);
     padding: 10px;
     text-decoration: none;
+}
+.channel-item, .channel-link {
+    cursor: pointer;
+    transition: var(--transition-regular);
+}
+.channel-link:hover, .channel-item:hover {
+    background-color: var(--dark);
 }
 .channel-list {
     margin: 10px;
@@ -113,14 +114,6 @@
 .channel-list-link, .channel-list-link:visited {
     text-decoration: none;
     color: var(--border);
-}
-.channel-list-item {
-    align-items: center;
-    border-bottom: 1px solid var(--dark-line);
-    display: flex;
-    text-align: center;
-    text-decoration: none;
-    width: 100%;
 }
 .channel-name-section {
     margin: 10px;
