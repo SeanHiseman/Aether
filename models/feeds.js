@@ -47,14 +47,14 @@ const Followers = sequelize.define('followers', {
 
 const FollowRequests = sequelize.define('follow_requests', {
     request_id: { type: STRING(36), primaryKey: true },
-    sender_id: { type: STRING(36), allowNull: false, references: { model: 'feeds', key: 'feed_id' }},
-    receiver_id: { type: STRING(36), allowNull: false, references: { model: 'feeds', key: 'feed_id' }},
+    sender_id: { type: STRING(36), allowNull: false},
+    receiver_id: { type: STRING(36), allowNull: false},
     timestamp: { type: DATE, defaultValue: NOW }
 }, { tableName: 'follow_requests', timestamps: false });
 
 const NestedFeeds = sequelize.define('nested_feeds', { //Many-to-many relationship between feeds
-    sub_feed_id: { type: STRING(36), primaryKey: true, references: { model: 'feeds', key: 'feed_id' }},
-    parent_feed_id: { type: STRING(36), primaryKey: true, references: { model: 'feeds', key: 'feed_id' }},
+    sub_feed_id: { type: STRING(36), primaryKey: true},
+    parent_feed_id: { type: STRING(36), primaryKey: true},
 }, { tableName: 'nested_feed', timestamps: false });
 
 export {

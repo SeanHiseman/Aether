@@ -148,7 +148,7 @@ const FeedHome = () => {
     document.title = feed.feed_name || 'Feed not found';
     if (feedNotFound) {
         return (
-            <div className="group-container"> 
+            <div className="feed-container"> 
                 <div className="channel-feed">            
                     <div className="text36">Feed not found</div>
                 </div>
@@ -157,7 +157,7 @@ const FeedHome = () => {
         );
     } 
     return (    
-        <div className="group-container">  
+        <div className="feed-container">  
             <div className="channel-feed">
                 {showPostForm ? (
                     <div id="create-post-container">
@@ -187,8 +187,8 @@ const FeedHome = () => {
                 )}
             </div>    
             <aside id="right-aside">
-                <div id="profile-summary">
-                    <img className="large-group-photo" src={`/${feed.feed_photo}`} alt={feed.feed_name} />
+                <div id="feed-summary">
+                    <img className="large-feed-photo" src={`/${feed.feed_photo}`} alt={feed.feed_name} />
                     {isAdmin && (
                         <Link to={`/feed_settings/${feed_name}`}>
                             <button className="button">Settings</button>
@@ -196,15 +196,8 @@ const FeedHome = () => {
                     )}
                     <p className="text36">{feed.feed_name}</p>
                     <p className="description" >{feed.description}</p>
-                    <p className="user-count">{feed.follower_count} {feed.follower_count === 1 ? 'follower' : 'followers'}</p>
                     {(feed.is_group || user.user_id !== feed.feed_owner) && (
-                        <FollowerChangeButton 
-                            feedId={feed.feed_id} 
-                            followerId={viewer.viewerId} 
-                            isFollower={feed.isFollower} 
-                            isRequestSent={feed.isRequestSent} 
-                            type={feed.type}
-                        />
+                        <FollowerChangeButton feed={feed} viewerId={viewer.feed_id} />
                     )}
                 </div>
                 {errorMessage && <div className="error-message">{errorMessage}</div>}
@@ -233,12 +226,12 @@ const FeedHome = () => {
                     </div>
                 )}
                 {isAdmin && (
-                    <div id="add-channel-section">
+                    <div className="add-channel-section">
                         <button className="button" onClick={toggleChannelForm}>
                             {showChannelForm ? 'Close': 'Create channel'}
                         </button>
                         {showChannelForm && (
-                            <form id="add-channel-form" onSubmit={AddChannel}>
+                            <form className="add-channel-form" onSubmit={AddChannel}>
                                 <input className="name-input" type="text" placeholder="Channel name..." value={newChannelName} onChange={(e) => setNewChannelName(e.target.value)}/>
                                 {(feed.is_group) && (
                                     <><label>

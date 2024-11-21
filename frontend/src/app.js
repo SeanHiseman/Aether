@@ -53,13 +53,13 @@ const App = () => {
                             </Route>
                             <Route path="feed_settings/:feed_name" element={<FeedSettings />} />
                             <Route path="messages" element={<MessagesPage />} >
-                                <Route path=":friend_name" element={<MessagesPage />} >
+                                <Route path=":connection_name" element={<MessagesPage />} >
                                     <Route index element={<Navigate replace to="Main" />} />
                                     <Route path=":title" element={<MessagesPage />} />
                                 </Route>
                             </Route>
                             <Route path="p/:feed_name" element={<PersonalFeed/>} />
-                            <Route path="search/:tab?" element={<SearchResults />} />
+                            <Route path="search" element={<SearchResults />} />
                             <Route path="u/:feed_name" element={<FeedWrapper />}>
                                 <Route index element={<Navigate replace to="Main" />} />
                                 <Route path=":channel_name" element={<FeedHome />} >

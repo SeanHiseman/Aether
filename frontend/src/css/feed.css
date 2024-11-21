@@ -1,9 +1,93 @@
 @import url('variables.css');
-#add-channel-section {
+.channel {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    margin-left: auto;
+    margin-right: 0;
+    width: 100%;
+}
+#create-feed-section {
     align-items: center;
     display: flex;
     flex-direction: column;
+    margin: 10px;
+    width: 90%;
 }
+.feed-header-photo {
+    align-items: center;
+    display: flex;
+    flex-direction: column;
+    max-width: 350px;
+}
+.feed-info {
+    align-items: center;
+    display: flex;
+    margin-top: 20px;
+}
+.feed-link {
+    align-items: center;
+    display: flex;
+}
+.feed-member {
+    margin: 10px;
+}
+.feed-settings {
+    align-items: center;
+    background-color: var(--darkest);
+    border-radius: 20px;
+    display: flex;
+    flex-direction: column;
+    margin-top: -140px;
+    height: 60%;
+    width: 60%;
+}
+#feed-summary {
+    align-items: center;
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 20px;
+    text-align: center;
+    width: 100%
+}
+.option-toggle {
+    border-radius: 10px;
+    display: flex;
+    margin-top: 20px;
+    min-height: 36px;
+    overflow: hidden;
+    width: 180px;
+}
+.option-toggle button {
+    background-color: var(--darkest);
+    border: none;
+    color: var(--border);
+    cursor: pointer;
+    flex: 1;
+    font-weight: bold;
+    outline: none;
+    padding: 10px 20px;
+    transition: var(--transition-regular);
+}
+.option-toggle button.active-mode {
+    background-color: var(--button-hover);
+}
+.option-toggle button:first-child {
+    border-top-left-radius: 10px;
+    border-bottom-left-radius: 10px;
+}
+.option-toggle button:last-child {
+    border-top-right-radius: 10px;
+    border-bottom-right-radius: 10px;
+}
+.option-toggle button.passive-mode:hover {
+    background-color: var(--dark-line);
+}
+
+
+
+
+
 .button.delete {
     color: red;
 }
@@ -37,12 +121,6 @@
 #follow-info {
     margin-left: 10px;
 }
-.friend-requests {
-    margin-top: 20px;
-}
-#friend-request-list {
-    margin: 10px;
-}
 .light-button.join {
     background-color: var(--dark);
 }
@@ -62,44 +140,6 @@
     justify-content: space-between;
     width: 100%;
 }
-#profile-bio-settings {
-    font-size: 24px;
-    max-width: 400px;
-}
-.profile-header-photo {
-    align-items: center;
-    display: flex;
-    flex-direction: column;
-    max-width: 350px;
-}
-.profile-link {
-    align-items: center;
-    display: flex;
-}
-#profile-options {
-    align-items: center;
-    display: flex;
-    flex-direction: column;
-    margin-left: 10px;
-}
-.profile-settings {
-    align-items: center;
-    background-color: var(--darkest);
-    border-radius: 20px;
-    display: flex;
-    flex-direction: column;
-    margin-top: -140px;
-    height: 60%;
-    width: 60%;
-}
-#profile-summary {
-    align-items: center;
-    display: flex;
-    flex-direction: column;
-    margin-bottom: 20px;
-    text-align: center;
-    width: 100%
-}
 .results-wrapper {
     grid-column: 1 / 2;
     grid-row: 2;
@@ -115,14 +155,14 @@
     height: calc(100vh - 80px);
     width: 100%;
 }
-.settings-profile-info {
+.settings-feed-info {
     align-items: center;
     display: flex;
     flex-direction: column;
     margin: 10px;
     width: 60%;
 }
-.settings-profile-photo {
+.settings-feed-photo {
     border-radius: 54px;
     height: 240px; 
     margin: 20px;

@@ -108,9 +108,11 @@ router.post('/login', async (req, res) => {
     try {
         const { username, password } = req.body;
         const user = await Users.findOne({ where: { username }});
+        const feed = await Feeds.findOne({ where: { feed_owner: user.user_id, is_group: false }})
         if (user && await compare(password, user.password)) {
             req.session.user_id = user.user_id;
             req.session.username = user.username;
+            req.session.viewer_id = feed.feed_id;
             res.status(200).json({ success: true });
         }
         else {

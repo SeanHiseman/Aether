@@ -4,7 +4,7 @@ import { AuthContext } from '../components/authContext';
 import { io } from "socket.io-client";
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { v4 } from 'uuid';
-import ManageConnection from '../components/manageConnection';
+import ManageConnectionButton from '../components/manageConnectionButton';
 import Message from '../components/message';
 
 const MessagesPage = () => {
@@ -21,13 +21,13 @@ const MessagesPage = () => {
     const [selectedChatId, setSelectedChatId] = useState(null);
     const [showForm, setShowForm] = useState(false);
     const socketRef = useRef(null);
-    const { user } = useContext(AuthContext)
+    const { user, viewer } = useContext(AuthContext)
     const navigate = useNavigate();
 
     useEffect(() => {
         const getConnections = async () => {
             try {
-                const response = await axios.get('/api/get_connections');
+                const response = await axios.get(`/api/get_connections/${viewer.feed_id}`);
                 setConnections(response.data);
             } catch (error) {
                 setErrorMessage("Error getting connections");
@@ -35,7 +35,7 @@ const MessagesPage = () => {
         };
         const getChats = async () => {
             try {
-                const response = await axios.get('/api/get_chats');
+                const response = await axios.get(`/api/get_chats/${viewer.feed_id}`);
                 setChats(response.data);
             } catch (error) {
                 setErrorMessage("Error getting chats");
@@ -54,46 +54,53 @@ const MessagesPage = () => {
     //Filters chats to those with a specific connection
     useEffect(() => {
         if (chats.length > 0 && connection_name) {
-            const filteredChats = chats.filter(chat =>
-                chat.participants.map(p => p.username).includes(connection_name));
+            const filteredChats = chats.filter(chat => {
+                const feedNames = chat.feeds?.map(feed => feed.feed_name);
+                return feedNames.includes(connection_name);
+            });
             setSelectedChats(filteredChats);
             if (title) {
                 const selected = filteredChats.find(c => c.title === title);
                 if (selected) {
-                    setSelectedChatId(selected.chatId);
+                    setSelectedChatId(selected.chat_id);
                 }
             } else {
                 const mainChat = filteredChats.find(c => c.title === 'Main');
-                setSelectedChatId(mainChat.chatId);
+                setSelectedChatId(mainChat ? mainChat.chat_id : null);
             }
+        } else {
+            setSelectedChats([]);
+            setSelectedChatId(null);
         }
-    }, [connection_name, chats, user?.username, title]);
+    }, [connection_name, chats, title]);
 
     useEffect(() => {
-        //Get existing messages
         if (selectedChatId) {
-            //Join chat room 
+            getChatMessages(selectedChatId); 
             socketRef.current.emit('join_chat', selectedChatId);
             const handleReceiveMessage = (message) => {
                 setChat(prevChat => [...prevChat, message]);
             };
             const handleMessageConfirmed = (message) => {
-                setChat(prevChat => prevChat.map(msg => {
-                    if (msg.senderId === message.senderId && msg.message_content === message.message_content && msg.chatId === message.chatId) {
-                        return { ...msg, message_id: message.message_id };
-                    }
-                    return msg;
-                }));
+                setChat(prevChat =>
+                    prevChat.map(msg => 
+                        msg.message_id === undefined &&
+                        msg.senderId === message.senderId &&
+                        msg.message_content === message.message_content
+                            ? { ...msg, message_id: message.message_id }
+                            : msg
+                    )
+                );
             };
-            //Listen for incoming messages
             socketRef.current.on('receive_message', handleReceiveMessage);
             socketRef.current.on('message_confirmed', handleMessageConfirmed);
-            getChatMessages(selectedChatId);
             return () => {
                 socketRef.current.emit('leave_chat', selectedChatId);
                 socketRef.current.off('receive_message', handleReceiveMessage);
                 socketRef.current.off('message_confirmed', handleMessageConfirmed);
             };
+        } else {
+            setChat([]);
         }
     }, [selectedChatId]);
 
@@ -101,7 +108,7 @@ const MessagesPage = () => {
     useEffect(() => {
         if (!connection_name) {
             setSelectedChatId(null);
-        }
+        } 
     }, [connection_name]);
 
     //Either user can change chat name
@@ -147,15 +154,14 @@ const MessagesPage = () => {
     };
 
     //Currently viewed chat
-    const currentChat = selectedChats.find(c => c.chatId === selectedChatId)
-    const currentChatName = currentChat?.title
+    const currentChat = selectedChats.find(c => c.chat_id === selectedChatId);
+    const currentChatName = currentChat?.title;
 
     const createNewChat = async (event) => {
         event.preventDefault();
         try {
-            const connection = connections.find(c => c.connection_name === connection_name);
-            const connectionId = connection.connection_id;
-            const participants = [user.userId, connectionId];
+            const connection = connections.find(c => c.feed_name === connection_name);
+            const participants = [{ feed_id: viewer.feed_id }, {feed_id: connection.feed_id}];
             const chatName = newChatName.length === 0 ? 'New chat' : newChatName;
             if (newChatName.length >= 30) {
                 setErrorMessage("Name too long"); 
@@ -168,14 +174,12 @@ const MessagesPage = () => {
                     participants: participants,
                     title: chatName
                 });
+                console.log("response:", response);
                 if (response.data && response.status === 201) {
                     const newChat = {
-                        ...response.data,
-                        chatId: response.data.chat_id,
-                        participants: [
-                            { username: user.username },
-                            { username: connection_name }
-                        ]
+                        ...response.data.newChat,
+                        title: chatName,
+                        feeds: connection ? [connection] : [],
                     };
                     setChats(prevChats => [...prevChats, newChat]);
                     setSelectedChats(prevSelected => [...prevSelected, newChat]);
@@ -189,6 +193,7 @@ const MessagesPage = () => {
                 }
             }
         } catch (error) {
+            console.log("creating chat error:", error);
             setErrorMessage("Failed to create chat.");
         }
     };
@@ -266,7 +271,7 @@ const MessagesPage = () => {
     const toggleForm = () => { setShowForm(!showForm) }
 
     //Gets feed photo of viewed connection
-    const connectionProfileImage = connections.find(c => c.feed_name === connection_name)?.c.feed_photo || '';
+    const connectionProfileImage = connections.find(c => c.feed_name === connection_name)?.feed_photo || '';
 
     document.title = "Messages";
     return (
@@ -278,36 +283,38 @@ const MessagesPage = () => {
                             {connections.map(c => (
                                 <li key={c.connection_id}>
                                     <div className="result-widget">
-                                        <Link className="profile-link" to={`/u/${c.feed_name}`}>
-                                            <img className="large-profile-photo" src={`/${c.feed_photo}`} alt="Profile" />
-                                            <p className="text36 profile-name">{c.feed_name}</p>
+                                        <Link className="feed-link" to={`/u/${c.feed_name}`}>
+                                            <img className="large-feed-photo" src={`/${c.feed_photo}`} alt="Feed" />
+                                            <p className="text36 feed-name">{c.feed_name}</p>
                                         </Link>
-                                        <div className="remove-friend-box">
-                                            <ManageConnection viewerId={user.userId} receiverId={c.feed_id} isRequestSent={false} isConnected={true} />
+                                        <div className="remove-connection-box">
+                                            <ManageConnectionButton connectRequest={false} feed={c} isConnected={true} viewerId={viewer.feed_id} />
                                         </div>
                                     </div>
                                 </li>
                             ))}
                         </ul>
                     ) : (
-                        chat.slice().reverse().map((msg, index) => (
-                            <Message key={index} canRemove={false} deleteMessage={deleteMessage} message={msg} isOutgoing={msg.senderId === user.userId} />
-                        ))
+                        <>
+                            {connection_name && selectedChatId && (
+                                chat.slice().reverse().map((msg, index) => (
+                                    <Message key={index} canRemove={false} deleteMessage={deleteMessage} message={msg} isOutgoing={msg.senderId === user.userId} />
+                                ))
+                            )}
+                            <div className="messages-channel-footer">
+                                <input className="chat-message-bar" type="text" value={message} onChange={(e) => setMessage(e.target.value)} placeholder="Type a message..." onKeyDown={(e) => e.key === 'Enter' && sendMessage()}/>
+                                <button className="chat-send-button" onClick={sendMessage}>Send</button>
+                            </div>
+                        </>
                     )}
                 </div>
-                {connection_name && (
-                    <div className="messages-channel-footer">
-                        <input className="chat-message-bar" type="text" value={message} onChange={(e) => setMessage(e.target.value)} placeholder="Type a message..." onKeyDown={(e) => e.key === 'Enter' && sendMessage()}/>
-                        <button className="chat-send-button" onClick={sendMessage}>Send</button>
-                    </div>
-                )}
             </div>
             <aside id="right-aside">
                 {connection_name ? (
-                    <div id="add-chat-section">
-                        <Link className="chat-profile-link" to={`/u/${connection_name}`}>
-                            <img className="profile-image2" src={`/${connectionProfileImage}`} alt="Profile"/>
-                            <h3>{connection_name}</h3>
+                    <div id="feed-summary">
+                        <Link className="chat-feed-link" to={`/u/${connection_name}`}>
+                            <img className="small-feed-photo" src={`/${connectionProfileImage}`} alt="Feed"/>
+                            <p className="feed-list-text">{connection_name}</p>
                         </Link>
                         <div className="error-message">{errorMessage}</div>
                         {!isMainChat() ? (
@@ -355,32 +362,34 @@ const MessagesPage = () => {
                         )}
                         <ul>
                             {selectedChats.map(chat => (
-                                <li key={chat.chatId} className="channel-item">
+                                <li key={chat.chat_id} className="channel-item">
                                     <Link to={`/messages/${connection_name}/${chat.title}`}>
                                         <div className="channel-link">{chat.title}</div>
                                     </Link>
                                 </li>
                             ))}
                         </ul>
-                        <div id="add-channel-section">
+                        <div className="add-channel-section">
                             <button className="button" onClick={toggleForm}>
                                 {showForm ? 'Close': 'Add chat'}
                             </button>
-                                <form id="add-chat-form" onSubmit={createNewChat}>
+                            {showForm && (
+                                <form className="add-channel-form" onSubmit={createNewChat}>
                                     <input className="name-input" type="text" name="chat_name" placeholder="Chat name..." value={newChatName} onChange={(e) => setNewChatName(e.target.value)}/>
                                     <input className="dark-button" type="submit" value="Add" />
-                                </form>                            
+                                </form>  
+                            )}                          
                         </div>
                     </div>
                 ) : (
-                    <nav id="friend-list">
+                    <nav className="feed-list">
                         <h2>Messages</h2>
                         <ul>
                             {connections.map(c => (
-                                <li className="profile-info" key={c.connection_id}>
-                                    <Link className="profile-link" to={`/messages/${c.feed_name}`}>
-                                    <img className="profile-image" src={`/${c.feed_photo}`} alt="Profile"/>
-                                        <div className="chat-username">
+                                <li className="feed-list-item" key={c.connection_id}>
+                                    <Link className="feed-list-link-container" to={`/messages/${c.feed_name}`}>
+                                    <img className="small-feed-photo" src={`/${c.feed_photo}`} alt="Feed"/>
+                                        <div className="feed-list-text">
                                             {c.feed_name}
                                         </div>
                                     </Link>

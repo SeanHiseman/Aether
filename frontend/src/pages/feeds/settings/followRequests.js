@@ -2,20 +2,20 @@ import axios from 'axios';
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 
-const MemberJoinRequests = ({ group }) => {
+const FollowRequests = ({ feed }) => {
     const [errorMessage, setErrorMessage] = useState('');
     //const [nestRequests, setNestRequests] = useState(null);
     const [requests, setRequests] = useState([]);
 
     useEffect(() => {
-        getJoinRequests();
+        getFollowRequests();
     }, []);
 
-    //Gets requests to join a group if it is a private group
-    const getJoinRequests = async () => {
+    const getFollowRequests = async () => {
         try {
-            const response = await axios.get(`/api/group_requests/${group.groupId}`);
-            setRequests(response.data);
+            const response = await axios.get(`/api/follow_requests/${feed.feed_id}`);
+            console.log("response.data.requests:", response.data.requests);
+            setRequests(response.data.requests);
             //const nestResponse = await axios.get(`/api/group_nest_requests/${groupDetails.groupId}`);
             //setNestRequests(nestResponse.data);
         } catch (error) {
@@ -23,15 +23,14 @@ const MemberJoinRequests = ({ group }) => {
         }
     };
 
-    //Accepts or rejects join request
     const handleRequestAction = async (request, result) => {
         try {
             if (result === 'accept') {
-                await axios.post('/api/accept_join_request', { request });
+                await axios.post('/api/accept_follow_request', { request });
             } else if (result === 'reject') {
-                await axios.delete('/api/reject_group_request', { data: { request } });
+                await axios.delete('/api/delete_follow_request', { data: { senderId: request.sender_id, receiverId: feed.feed_id } });
             }
-            getJoinRequests();
+            setRequests((prevRequests) => prevRequests.filter((prevRequest) => prevRequest.request_id !== request.request_id));
         } catch (error) {
             setErrorMessage('Error handling request');
         }
@@ -42,16 +41,16 @@ const MemberJoinRequests = ({ group }) => {
         try {
             if (action === 'accept') {
                 await axios.post('/api/accept_nest_request', {
-                    groupId: group.groupId, 
+                    feedId: feed.feed_id, 
                     requestId,
                     senderId,
                 });
             } else if (action === 'reject') {
                 await axios.delete('/api/reject_nest_request', { 
-                    data: { requestId: requestId }
+                    data: { requestId }
                 });
             }
-            getJoinRequests();
+            getFollowRequests();
         } catch (error) {
             setErrorMessage('Error handling request');
         }
@@ -68,15 +67,15 @@ const MemberJoinRequests = ({ group }) => {
                     {requests.map((request, index) => (
                         <li key={index}>
                             <div className="result-widget">
-                                <Link className="profile-link" to={`/profile/${request.sender.username}`}>
-                                    <img className="large-profile-photo" src={`/${request.sender.profile.profile_photo}`} alt="Profile" />
-                                    <p className="text36 profile-name">{request.sender.username}</p>
+                                <Link className="feed-link" to={`/u/${request.sender.feed_name}`}>
+                                    <img className="large-feed-photo" src={`/${request.sender.feed_photo}`} alt="Profile" />
+                                    <p className="text36 feed-name">{request.sender.feed_name}</p>
                                 </Link>
                                 <button className="button" onClick={() => handleRequestAction(request, 'accept')}>
-                                    Accept follow request
+                                    Accept
                                 </button>
                                 <button className="button" onClick={() => handleRequestAction(request, 'reject')}>
-                                    Reject follow request
+                                    Reject
                                 </button>
                             </div>
                         </li>
@@ -101,4 +100,4 @@ const MemberJoinRequests = ({ group }) => {
     );
 };
 
-export default MemberJoinRequests;
+export default FollowRequests;

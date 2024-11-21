@@ -6,7 +6,7 @@ const MembershipSettings = ({ user }) => {
     const navigate = useNavigate();
 
     return (
-        <div className="profile-settings">
+        <div className="feed-settings">
             {user.hasMembership ? (
                 <div className="display-area">
                     <p className="text36">Thank you for joining</p>
@@ -31,10 +31,10 @@ const MembershipSettings = ({ user }) => {
                         <p className="text24">-Voting for moderators, admins, leaders and features</p>
                         <p clasNames="text24"></p>
                     </div>
-                    <button className="button join">Join</button>
                     <div className="error-message">{errorMessage}</div>
                 </div>
             )}
+            <button className="button join">Join</button>
         </div>
     );
 };
