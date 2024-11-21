@@ -1,6 +1,6 @@
 /*This sheet is for styles that are used across the site*/
 @import url('variables.css');
-#add-channel-form, #create-group-form {
+.add-channel-form, #create-feed-form {
     align-items: center;
     background-color: var(--dark);
     display: flex;
@@ -11,12 +11,10 @@
     width: 90%;
     margin: 10px;
 }
-#add-channel-section, #add-chat-section, #create-group-section {
+.add-channel-section {
     align-items: center;
     display: flex;
     flex-direction: column;
-    margin: 10px;
-    width: 90%;
 }
 .ask:hover::after {
     bottom: 7px;
@@ -42,7 +40,7 @@
     display: flex;
     justify-content: center;
 }
-.change-profile-photo {
+.change-feed-photo {
     background-color: var(--dark);
     border-radius: 10px;
     display: flex;
@@ -87,6 +85,7 @@
 .channel-dropdown {
     color: var(--dark-line);
     cursor: pointer;
+    font-size: x-large;
     margin-left: 12px;
 }
 .channel-feed {
@@ -99,6 +98,7 @@
 .channel-link {
     border-bottom: 1px solid var(--dark-line);
     padding: 10px;
+    text-align: left;
     text-decoration: none;
 }
 .channel-item, .channel-link {
@@ -163,11 +163,15 @@
 .dark-button {
     background-color: var(--darkest);
 }
-#description-section .view-description, #bio-section .view-bio, #name-section .view-name {
+.description {
+    margin: 5px;
+    max-width: 100%;
+}
+#description-section .view-description, #name-section .view-name {
     align-items: center;
     display: flex;
 }
-#description-section .change-description, #bio-section .change-bio, #name-section .change-name {
+#description-section .change-description, #name-section .change-name {
     display: flex;
     flex-direction: column;
 }
@@ -178,10 +182,6 @@
     height: 100%;
     justify-content: space-between;
     width: 100%;
-}
-.feed-link {
-    border-bottom: 1px solid var(--dark-line);
-    padding: 10px;
 }
 .feed-list-link {
     align-items: center;
@@ -200,9 +200,6 @@
     flex-direction: column;
     margin: 6px;
 }
-.feed-list-item.profile {
-    border-left: 2px solid var(--dark-line);
-}
 .feed-list-link-container:hover {
     background-color: var(--dark);
 }
@@ -218,7 +215,7 @@
 .file-name {
     margin: 10px;
 }
-.group-container, .home-container, .messages-container, .profile-container, .results-container {
+.feed-container, .home-container, .messages-container, .results-container {
     align-items: stretch;
     display: flex;
     flex-direction: row;
@@ -256,7 +253,7 @@
     width: max-content;
     z-index: 100;
 }
-.large-group-photo, .large-profile-photo {
+.large-feed-photo {
     border-radius: 27px;
     height: 120px; 
     margin: 10px;
@@ -293,12 +290,6 @@
 li {
     list-style-type: none;
 }
-#logged-in-username {
-    font-weight: 700;
-    margin-left: 10px;
-    margin-top: 40px;
-    text-align: center;
-}
 main {
     display: flex;
     flex-direction: column;
@@ -324,32 +315,6 @@ main {
 }
 .posts-channel-button {
     border-radius: 5px;
-}
-.profile-bio, .description {
-    margin: 5px;
-    max-width: 100%;
-}
-.profile-link {
-    align-items: center;
-    display: flex;
-    text-decoration: none;
-}
-.profile-link:visited {
-    color: inherit;
-}
-.profile-image, .small-feed-photo {
-    height: 40px; 
-    width: 40px; 
-    border-radius: 6px;
-}
-.profile-image {
-    margin-top: 20px;
-}
-/*some images need 20px margin, others don't*/
-.profile-image2 {
-    height: 40px; 
-    width: 40px; 
-    border-radius: 6px;
 }
 #public-private-section, #post-chat-section {
     display: flex;
@@ -409,6 +374,11 @@ main {
     position: relative;
     width: 100%;
 }
+.small-feed-photo {
+    height: 40px; 
+    width: 40px; 
+    border-radius: 6px;
+}
 .spacer {
     flex-grow: 1;
 }
@@ -440,7 +410,7 @@ main {
     margin-top: 10px;
     margin-bottom: 10px;
 }
-.uploader-profile-image {
+.uploader-feed-image {
     border-radius: 6px;
     height: 40px;
     width: 40px;

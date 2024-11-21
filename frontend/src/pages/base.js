@@ -9,9 +9,8 @@ import { useQueryContext } from '../components/search/queryContext';
 import '../css/baseLayout.css';
 import '../css/basicStyles.css';
 import '../css/contentFeed.css';
-import '../css/groups.css';
+import '../css/feed.css';
 import '../css/messages.css';
-import '../css/profile.css';
 import '../css/replies.css';
 
 const BaseLayout = () => {
@@ -47,7 +46,7 @@ const BaseLayout = () => {
         fetchViewerFeed();
     }, [isAuthenticated, viewer, navigate, setTheme]);
 
-    //Fetch feeds that a user follows
+    //Fetch feeds that are followed
     useEffect(() => {
         const fetchFeeds = async () => {
             try {
@@ -75,14 +74,24 @@ const BaseLayout = () => {
             newFeed.append('type', feedType);
             newFeed.append('isGroup', true);
             newFeed.append('feedOwner', user.user_id);
-            newFeed.append('creator', viewer);
+            newFeed.append('viewerFeedId', viewer.feed_id);
             const response = await axios.post('/api/create_feed', newFeed);
             if (response.data.success === true) {
                 const createdFeed = response.data.feed;
-                setFeeds([...feeds, createdFeed]);
-                navigate(`/g/${createdFeed.feed_name}`);
+                setFeeds((prevFeeds) => [ //Get into correct format
+                    ...prevFeeds,
+                    {
+                        feed_id: createdFeed.feed_id,
+                        followedFeed: {
+                            feed_name: createdFeed.feed_name,
+                            feed_photo: createdFeed.feed_photo,
+                        },
+                        link_type: 'g',
+                    },
+                ]);
                 setFeedName('');
                 setShowForm(false);
+                navigate(`/g/${createdFeed.feed_name}`);
             }
         } catch (error) {
             if (error.response.status === 413) {
@@ -145,29 +154,29 @@ const BaseLayout = () => {
     return (
         <div className="container">
             <aside id="left-aside">
-                <div className="profile-info">
-                    <Link className="profile-link" to={`/u/${feed.feed_name}`}>
-                        <img className="profile-image" src={`/${feed.feed_photo}`} alt="Profile" />
-                        <p id="logged-in-username">{feed.feed_name}</p>
+                <div className="feed-info">
+                    <Link className="feed-link" to={`/u/${feed.feed_name}`}>
+                        <img className="small-feed-photo" src={`/${feed.feed_photo}`} alt="Feed" />
+                        <p className="feed-list-text">{feed.feed_name}</p>
                     </Link>
                 </div>
                 <nav id="personal-feeds">
                     <ul>
-                        <li className="feed-link"><Link to="/p/recommended">Recommended</Link></li>
-                        <li className="feed-link"><Link to="/p/following">Following</Link></li>
-                        <li className="feed-link"><Link to="/p/friends">Friends</Link></li>
+                        <li className="channel-link"><Link to="/p/recommended">Recommended</Link></li>
+                        <li className="channel-link"><Link to="/p/following">Following</Link></li>
+                        <li className="channel-link"><Link to="/p/friends">Friends</Link></li>
                     </ul>
                 </nav>
-                <div id="create-group-section">
+                <div id="create-feed-section">
                     <button className="button" onClick={toggleForm}>
                         {showForm ? 'Close': 'Create feed'}
                     </button>
                     {showForm && (
-                        <form id="create-group-form" onSubmit={createFeed}>
+                        <form id="create-feed-form" onSubmit={createFeed}>
                             <input className="name-input" type="text" name="Name" placeholder="Feed name..." value={feedName} onChange={(e) => setFeedName(e.target.value)}/>
                             <div className="file-input">
-                                <label htmlFor="group-photo-input" class="dark-button">Choose photo</label>
-                                <input type="file" id="group-photo-input" name="Group photo" onChange={handleFileChange} hidden/>
+                                <label htmlFor="feed-photo-input" class="dark-button">Choose photo</label>
+                                <input type="file" id="feed-photo-input" name="Feed photo" onChange={handleFileChange} hidden/>
                                 <span className="file-name">{feedPhotoFile}</span>
                             </div>
                             <div className="option-toggle">
@@ -185,7 +194,7 @@ const BaseLayout = () => {
                             <p>Followed feeds are shown here</p>
                         ) : (
                             feeds.map((feed) => (
-                                <FeedItem key={feed.feed_id} feedId={feed.feed_id} name={feed.followed.feed_name} photo={feed.followed.feed_photo} linkType={feed.link_type} link={`/${feed.link_type}/${feed.followed.feed_name}/Main`} />
+                                <FeedItem key={feed.feed_id} feedId={feed.feed_id} name={feed.followedFeed.feed_name} photo={feed.followedFeed.feed_photo} linkType={feed.link_type} link={`/${feed.link_type}/${feed.followedFeed.feed_name}/Main`} />
                             ))
                         )}
                     </ul>

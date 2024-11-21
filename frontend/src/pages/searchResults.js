@@ -1,66 +1,55 @@
+import { AuthContext } from '../components/authContext';
 import axios from 'axios';
-import React, { useEffect, useState } from 'react';
-import { Link, useParams, useSearchParams } from 'react-router-dom';
+import React, { useContext, useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import ContentWidget from '../components/contentWidget';
 import FeedWidget from '../components/search/feedWidget';
 
 const SearchResults = () => {
-    const [groupResults, setGroupResults] = useState([]);
-    const [postResults, setPostResults] = useState([]);
-    const [profileResults, setProfileResults] = useState([]);
-    const { tab = 'posts' } = useParams(); 
-    const [timePreference, setTimePreference] = useState(0.001);
-    //Gets search term
+    const [errorMessage, setErrorMessage] = useState('');
+    const [feeds, setFeeds] = useState([]);
+    const [posts, setPosts] = useState([]);
+    const [selectedView, setSelectedView] = useState('combined');
     const [searchParams] = useSearchParams();
     const keyword = (searchParams.get('keyword') || '').trim();
+    const [timePreference, setTimePreference] = useState(0.001);
+    const { user, viewer } = useContext(AuthContext);
 
     //Gets results depending on which type is being viewed
     useEffect(() => {
         const fetchResults = async () => {
+            const searcherId = viewer.feed_id;
             try {
-                const response = await axios.get(`/api/search/${tab}?keyword=${keyword}`);
-                switch (tab) {
-                    case 'groups':
-                        setGroupResults(response.data);
-                        break;
-                    case 'posts':
-                        setPostResults(response.data);
-                        break;
-                    case 'profiles':
-                        setProfileResults(response.data);
-                        break;
-                    default:
-                        break;
-                }   
+                const response = await axios.get(`/api/search/${searcherId}?keyword=${keyword}`);
+                setFeeds(response.data.feeds);
+                //setPosts(response.data.posts);
             } catch (error) {
-                console.error(error);
+                setErrorMessage('Error getting search results');
             }
         };
-
         if (keyword) {
             fetchResults();
         }
-    }, [keyword, tab]);
+    }, [keyword]);
 
     //Load user's time preference
-    useEffect(() => {
-        const getTimePreference = async () => {
-            try {
-                const response = axios.get('/api/get_time_preference');
-                setTimePreference(response.data.preference);
-            } catch (error) {
-                console.error('Error getting preference:', error);
-            }
-        }
-        getTimePreference();
-    }, []);
+    //useEffect(() => {
+        //const getTimePreference = async () => {
+            //try {
+                //const response = axios.get('/api/get_time_preference');
+                //setTimePreference(response.data.preference);
+            //} catch (error) {
+                //console.error('Error getting preference:', error);
+            //}
+        //}
+        //getTimePreference();
+    //}, []);
 
     //Save time value to backend
     const handleTimeChange = (event) => {
         try {
             const newValue = parseFloat(event.target.value);
             setTimePreference(newValue);
-    
             axios.post('/api/set_time_preference', { preference: newValue })
             //setTimePreference(response.data);
         } catch (error) {
@@ -68,38 +57,40 @@ const SearchResults = () => {
         }
     };
 
-    //Determines widget based on result type
     const renderResults = () => {
-        switch (tab) {
+        switch (selectedView) {
             case 'posts':
-                if (postResults.length > 0) {
-                    return postResults.map((post) => (
+                return posts.length > 0 ? (
+                    posts.map((post) => (
                         <ContentWidget key={post.post_id} post={post} isGroup={post.is_group} />
-                    ));
-                } else {
-                    return <div>No results</div>;  
-                }
-            case 'groups':
-                if (groupResults.length > 0) {
-                    return groupResults.map((group) => (
-                        <FeedWidget key={group.group_id} group={group} />
-                    ));
-                } else {
-                    return <div>No results</div>;  
-                }
-            case 'profiles':
-                if (profileResults.length > 0) {
-                    return profileResults.map((profile) => (
-                        <FeedWidget key={profile.profile_id} profile={profile} />
-                    ));
-                } else {
-                    return <div>No results</div>;
-                }
+                    ))
+                ) : (
+                    <div>No posts found.</div>
+                );
+            case 'feeds':
+                return feeds.length > 0 ? (
+                    feeds.map((feed) => (
+                        <FeedWidget key={feed.feed_id} feed={feed} viewerId={viewer.feed_id} />
+                    ))
+                ) : (
+                    <div>No feeds found.</div>
+                );
+            case 'combined':
             default:
-                return null;
+                return (
+                    <>
+                        {feeds.length > 0 && feeds.map((feed) => (
+                            <FeedWidget key={feed.feed_id} feed={feed} viewerId={viewer.feed_id} />
+                        ))}
+                        {posts.length > 0 && posts.map((post) => (
+                            <ContentWidget key={post.post_id} post={post} isGroup={post.is_group} />
+                        ))}
+                    </>
+                );
         }
     };
-    document.title = "Search";
+
+    document.title = 'Search';
     return (
         <div className="results-container">
             <div className="content-feed">
@@ -111,17 +102,12 @@ const SearchResults = () => {
             </div>
             <div id="right-aside">
                 <h1>Results</h1>
+                <div className="error-message">{errorMessage}</div>
                 <nav id="channel-list">
                     <ul>
-                        <Link to={`/search/posts?keyword=${keyword}`}>
-                            <li className="channel-link">Posts</li>
-                        </Link>
-                        <Link to={`/search/groups?keyword=${keyword}`}>
-                            <li className="channel-link">Groups</li>
-                        </Link>
-                        <Link to={`/search/profiles?keyword=${keyword}`}>
-                            <li className="channel-link">Profiles</li>
-                        </Link>
+                        <li className="channel-link" onClick={() => setSelectedView('combined')}>All</li>
+                        <li className="channel-link" onClick={() => setSelectedView('posts')}>Posts</li>
+                        <li className="channel-link" onClick={() => setSelectedView('feeds')}>Feeds</li>
                         <label>Posts are recent:</label>
                         <input type="range" min="0" max="0.01" step="0.00001" value={timePreference} onChange={handleTimeChange} />
                     </ul>

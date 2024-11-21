@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { v4 } from 'uuid';
-import { Op } from 'sequelize';
+import { Op, Sequelize } from 'sequelize';
 import { Chats, Connections, ConnectRequests, FeedChats, Feeds, Messages } from '../models/relationships.js';
 import authenticateCheck from '../functions/checks/authenticateCheck.js';
 
@@ -10,26 +10,28 @@ const feedAttributes = ['feed_id', 'parent_id', 'feed_name', 'description', 'fee
 
 router.post('/accept_connect_request', authenticateCheck, async (req, res) => {
     try {
-        const { request } = req.body;
-        const connectRequest = await ConnectRequests.findByPk(request.request_id);
-        await Connections.create({
-            conection_id: v4(),
-            feed1_id: friendRequest.sender_id,
-            feed2_id: friendRequest.receiver_id,
-            connected_date: new Date()
+        const { receiverId, senderId } = req.body;
+        const connectRequest = await ConnectRequests.findOne({
+            where: { receiver_id: receiverId, sender_id: senderId }
         });
+        await Connections.create({
+            connection_id: v4(),
+            feed1_id: senderId,
+            feed2_id: receiverId,
+            connection_date: new Date()
+        });;
         const chat = await Chats.create({ 
             chat_id: v4(),
             title: "Main"
         });
         await FeedChats.bulkCreate([
-            { feed_id: connectRequest.sender_id, chat_id: chat.chat_id },
-            { feed_id: connectRequest.receiver_id, chat_id: chat.chat_id }
+            { feed_id: senderId, chat_id: chat.chat_id },
+            { feed_id: receiverId, chat_id: chat.chat_id }
         ]);
         await connectRequest.destroy();
-        res.status(200).json({ success: true });
+        res.status(200).json({ isConnected: true, success: true });
     } catch (error) {
-        res.status(500).json({ success: false });
+        res.status(500).json({ isConnected: false, success: false });
     }
 });
 
@@ -51,19 +53,21 @@ router.post('/change_chat_name', authenticateCheck, async (req, res) => {
 });
 
 router.post('/create_chat', authenticateCheck, async (req, res) => {
+    console.log("req.body:", req.body);
     try {
         const { participants, title } = req.body;
         const newChat = await Chats.create({
             chat_id: v4(),
             title: title
         });
-        const feedChats = participants.map(feedId => ({
-            feed_id: feedId,
+        const feedChats = participants.map(feed_id => ({
+            feed_id,
             chat_id: newChat.chat_id,
         }));
         await FeedChats.bulkCreate(feedChats);
         res.status(201).json(newChat);
     } catch (error) {
+        console.log(error);
         res.status(500).json({ success: false });
     }
 });
@@ -94,13 +98,14 @@ router.delete('/delete_chat', authenticateCheck, async (req, res) => {
 
 router.delete('/delete_connect_request', authenticateCheck, async (req, res) => {
     try {
-        const { senderId, receiverId } = req.body;
+        const { receiverId, senderId } = req.body;
         await ConnectRequests.destroy({
             where: { sender_id: senderId, receiver_id: receiverId } 
         });
-        res.status(200).json({ success: true });
+        res.status(200).json({ isConnected: false, success: true });
     } catch (error) {
-        res.status(500).json({ success: false });
+        console.log(error);
+        res.status(500).json({ isConnected: false,  success: false });
     }
 });
 
@@ -172,43 +177,33 @@ router.get('/get_chat_messages/:chatId', authenticateCheck, async (req, res) => 
     }
 });
 
-router.get('/get_chats', authenticateCheck, async (req, res) => {
+router.get('/get_chats/:feedId', authenticateCheck, async (req, res) => {
     try {
         const feedId = req.params.feedId;
-        const feedChatIds = await FeedChats.findAll({
-            where: { feed_id: feedId },
-            attributes: ['chat_id'],
-        });
-        const chatIds = feedChatIds.map(c => c.chat_id);
-        const chats = await Chats.findAll({
-            where: { chat_id: chatIds },
+        const feedChats = await Chats.findAll({
             include: [{
-                model: Feeds,
-                attributes: ['feed_id', 'feed_name', 'feed_photo'],
-                required: false
+                model: Feeds, 
+                as: 'feeds',
+                attributes: feedAttributes,
+                through: { attributes: [] },
             }],
             order: [['updated_at', 'ASC']]
         });
-        const chatsData = chats.map(chat => {
-            const participants = chat.feeds.map(user => ({
-                userId: user.user_id,
-                username: user.username
-            }));
+        const result = feedChats.map(chat => {
+            const otherFeeds = chat.feeds.filter(feed => feed.feed_id !== feedId);
             return {
-                chatId: chat.chat_id,
-                title: chat.title,
-                participants: participants,
-                createdAt: chat.created_at,
-                updatedAt: chat.updated_at
-            };
+                ...chat.toJSON(),
+                feeds: otherFeeds,
+            }
         });
-        res.json(chatsData);
+        res.status(200).json(result);
     } catch (error) {
-       res.status(500).json({ success: false });
+        console.log("chats error:", error);
+        res.status(500).json({ success: false });
     }
 });
 
-router.get('/get_connections', authenticateCheck, async (req, res) => {
+router.get('/get_connections/:feedId', authenticateCheck, async (req, res) => {
     try {
         const feedId = req.params.feedId;
         const feed = await Feeds.findOne({ where: { feed_id: feedId } });
@@ -218,35 +213,47 @@ router.get('/get_connections', authenticateCheck, async (req, res) => {
         const connections = await Connections.findAll({
             where: {
                 [Op.or]: [
-                    { feed1_id: feed.feed_id },
-                    { feed2_id: feed.feed_id }
+                    { feed1_id: feedId },
+                    { feed2_id: feedId }
                 ]
             },
             //More recent connections are first
-            order: [['connection_date', 'ASC']]
+            order: [['connection_date', 'ASC']],
+            include: [{
+                model: Feeds,
+                as: 'Feed1',
+                attributes: feedAttributes
+            }, {
+                model: Feeds,
+                as: 'Feed2',
+                attributes: feedAttributes
+            }]
         });
-        const connectData = await Promise.all(connections.map(async (connection) => {
-            const connectedFeedId = (connection.feed1_id !== feed.feed_id) ? connection.feed1_id : connection.feed2_id;
-            const connectedFeed = await Feeds.findByPk(connectedFeedId);
+        const filteredConnections = connections.map(connection => {
+            const otherFeed = connection.feed1_id === feedId ? connection.Feed2 : connection.Feed1;
             return {
+                ...otherFeed.toJSON(),   // Return other feed's details
                 connection_id: connection.connection_id,
-                connection_date: connection.connection_date,
-                feed_id: connectedFeed.feed_id,
-                feed_name: connectedFeed.feed_name,
-                feed_photo: connectedFeed.feed_photo
+                connection_date: connection.connection_date
             };
-        }));
-        res.json({ success: true, connections: connectData });
+        });
+        //console.log("connections:", connections);
+        //res.status(200).json(connections);
+        res.status(200).json(filteredConnections);
     } catch (error) {
+        console.log("connections error:", error);
         res.status(500).json({ success: false });  
     }
 });
 
 router.get('/get_connect_requests/:feedId', authenticateCheck, async (req, res) => {
+    const feedId = req.params.feedId;
     try {
-        const feedId = req.params.feedId;
         const requests = await ConnectRequests.findAll({ 
             where: { receiver_id: feedId },
+            attributes: {
+                include: [[Sequelize.col('sender.feed_id'), 'feed_id']], //So matches connect button data format
+            },
             include: [{
                 model: Feeds, 
                 as: 'sender',
@@ -262,7 +269,7 @@ router.get('/get_connect_requests/:feedId', authenticateCheck, async (req, res) 
 
 router.post('/send_connect_request', authenticateCheck, async (req, res) => {
     try {
-        const { senderId, receiverId } = req.body;
+        const { receiverId, senderId } = req.body;
         await ConnectRequests.create({
             request_id: v4(),
             sender_id: senderId,
@@ -270,6 +277,7 @@ router.post('/send_connect_request', authenticateCheck, async (req, res) => {
         });
         res.status(200).json({ success: true });
     } catch (error) {
+        console.log(error);
         res.status(500).json({ success: false });
     }
 });

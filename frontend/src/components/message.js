@@ -12,7 +12,7 @@ const Message = ({ canRemove, deleteMessage, message, isOutgoing }) => {
             <div className="message-content">
                 {!isOutgoing && message.feed && (
                     <Link to={`/u/${message.feed.feed_name}`}>
-                        <img className="profile-image2" src={`/${message.feed.feed_photo}`} alt="Profile" />
+                        <img className="small-feed-photo" src={`/${message.feed.feed_photo}`} alt="Feed" />
                     </Link>
                 )}
                 {canRemove ? (

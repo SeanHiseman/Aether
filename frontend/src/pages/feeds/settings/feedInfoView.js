@@ -119,25 +119,25 @@ const FeedInfoView = ({ feed, setFeed }) => {
     }; 
 
     return (
-        <div className="profile-settings">  
+        <div className="feed-settings">  
             <div className="name-photo-area">
-                <div className="profile-header-photo">
-                    <img className="settings-profile-photo" src={`/${feed.feed_photo}`} alt={feed.feed_name} />
+                <div className="feed-header-photo">
+                    <img className="settings-feed-photo" src={`/${feed.feed_photo}`} alt={feed.feed_name} />
                     <button className="button" onClick={togglePhotoForm}>
                         {isPhotoFormVisible ? 'Close' : 'Change feed photo'}
                     </button>
                     {isPhotoFormVisible && (
-                        <form className="change-profile-photo" onSubmit={ChangeFeedPhoto}>
+                        <form className="change-feed-photo" onSubmit={ChangeFeedPhoto}>
                             <div className="file-input">
-                                <label htmlFor="new-group-photo" class="dark-button">Change feed photo</label>
-                                <input type="file" id="new-group-photo" name="new_group_photo" accept="image/*" onChange={handleFileChange} hidden/>
+                                <label htmlFor="new-feed-photo" class="dark-button">Change feed photo</label>
+                                <input type="file" id="new-feed-photo" name="new_feed_photo" accept="image/*" onChange={handleFileChange} hidden/>
                                 <span className="file-name">{feedPhotoFile}</span> 
                             </div>
                             <input className={isFileSelected ? 'dark-button' : 'dark-button-disabled'} type="submit" value="Update" disabled={!isFileSelected}/>
                         </form>
                     )}
                 </div>
-                <div className="settings-profile-info">
+                <div className="settings-feed-info">
                     <div className="chat-change">
                         {isEditingName ? (
                             <div className="change-name">

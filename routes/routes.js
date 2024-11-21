@@ -1,9 +1,10 @@
 import authenticateCheck from '../functions/checks/authenticateCheck.js';
 import calculatePoints from '../functions/postPoints.js';
-import checkIfFollowing from '../functions/checks/followerCheck.js';
+import ConnectCheck from '../functions/checks/connectCheck.js';
+import FollowerCheck from '../functions/checks/followerCheck.js';
 import { hybridRecommendations } from '../functions/recommendation/hybrid.js';
 import sortPostsByWeightedRatio from '../functions/postSorting.js';
-import { Connections, Feeds, Followers, FollowRequests, Posts, PostNotes, PostVotes } from '../models/relationships.js'; 
+import { Connections, ConnectRequests, Feeds, Followers, FollowRequests, Posts, PostNotes, PostVotes } from '../models/relationships.js'; 
 import { Users } from '../models/users.js'; 
 import { Op } from 'sequelize';
 import { Router } from 'express';
@@ -133,7 +134,8 @@ router.get('/recommended_posts', authenticateCheck, async (req, res) => {
     }
 });
 
-router.get('/search/feeds/:searcherId', authenticateCheck, async (req, res) => {
+//Searches posts and feeds together
+router.get('/search/:searcherId', authenticateCheck, async (req, res) => { 
     try {
         const searcherId = req.params.searcherId;
         const keyword = req.query.keyword.toLowerCase();
@@ -142,56 +144,68 @@ router.get('/search/feeds/:searcherId', authenticateCheck, async (req, res) => {
             attributes: feedAttributes,
         });
         const feedData = await Promise.all(feeds.map(async (feed) => {
-            const isFollowing = await checkIfFollowing(searcherId, feed.feed_id);
-            const isRequestSent = await FollowRequests.findOne({
-                where: {
-                    sender_id: searcherId,
-                    receiver_id: feed.feed_id
-                }
-            });
+            let isConnected = false, hasConnectRequest = false, receiver_id = null, isAdmin = false, isMod = false, isFollower = false, hasFollowRequest = false;
+            const [connectStatus, connectRequest, followStatus, followRequest] = await Promise.all([
+                ConnectCheck(searcherId, feed.feed_id),
+                ConnectRequests.findOne({
+                    where: {
+                      [Op.or]: [
+                        { sender_id: searcherId },
+                        { receiver_id: searcherId }
+                      ]
+                    }
+                  }),
+                FollowerCheck(searcherId, feed.feed_id),
+                FollowRequests.findOne({ where: { sender_id: searcherId } })
+            ]);
+            isConnected = connectStatus?.connected || false;
+            hasConnectRequest = !!connectRequest
+            receiver_id = connectRequest ? connectRequest.receiver_id : feed.feed_id;
+            isAdmin = followStatus?.isAdmin || false;
+            isMod = followStatus?.isMod || false;
+            isFollower = followStatus?.following || false;
+            hasFollowRequest = !!followRequest;
             return {
                 ...feed.toJSON(),
-                isFollowing,
-                isRequestSent: !!isRequestSent
+                isConnected,
+                hasConnectRequest,
+                receiver_id,
+                isAdmin,
+                isMod,
+                isFollower,
+                hasFollowRequest
             };
         }));
-        res.json(feedData);
+        //const postResults = await Posts.findAll({
+            //where: {
+                //[Op.or]: [
+                    //{ title: { [Op.like]: `%${keyword}%` } },
+                    //{ content: { [Op.like]: `%${keyword}%` } }
+                //]
+            //},
+            //include: [{
+                    //model: Feeds, 
+                    //as: 'poster',
+                    //attributes: postAttributes,
+                //},{
+                    //model: PostVotes,
+                    //as: 'postVotes',
+                    //attributes: ['vote_count'],
+                    //required: false
+                //},{
+                    //model: PostNotes,
+                    //as: 'note',
+                    //attributes: notesAttributes,
+                    //required: false
+                //}],
+            //attributes: postAttributes,
+        //});
+        //console.log("feedData:", feedData);
+        //console.log("postResults:", postResults);
+        //res.json({ feeds: feedData, posts: postResults, success: true });
+        res.json({ feeds: feedData, success: true });
     } catch (error) {
-        res.status(500).json({ success: false }); 
-    }
-});
-
-//Searches posts
-router.get('/search/posts/:searcherId', authenticateCheck, async (req, res) => {
-    try {
-        const keyword = req.query.keyword.toLowerCase();
-        const searcherId = req.session.searcherId;
-        const postResults = await Posts.findAll({
-            where: {
-                [Op.or]: [{
-                    title: {[Op.like]: `%${keyword}%`},
-                }, {content: {[Op.like]: `%${keyword}%`,}}
-            ]},
-            include: [{
-                model: Feeds, 
-                as: 'poster',
-                attributes: postAttributes,
-            }, {
-                model: PostVotes,
-                as: 'postVotes',
-                attributes: ['vote_count'],
-                required: false
-            }, {
-                model: PostNotes,
-                as: 'note',
-                attributes: notesAttributes,
-                required: false
-            }],
-            attributes: postAttributes,
-        });
-        //const sortedPosts = await sortPostsByWeightedRatio(postResults, searcherId);
-        res.json(postResults);
-    } catch (error) {
+        console.log(error);
         res.status(500).json({ success: false });
     }
 });

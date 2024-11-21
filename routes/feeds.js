@@ -1,10 +1,11 @@
 import authenticateCheck from '../functions/checks/authenticateCheck.js';
-import checkIfAdminOrMod from '../functions/checks/adminModCheck.js'
-import checkIfFollowing from '../functions/checks/followerCheck.js'
+import FollowerCheck from '../functions/checks/followerCheck.js'
 import deleteMedia from '../functions/media_handling/deleteMedia.js';
+import dotenv from 'dotenv';
 import imageUpload from '../functions/media_handling/imageUpload.js';
 import express from 'express';
 import multer from 'multer';
+import { Op } from 'sequelize';
 import { join } from 'path';
 import path from 'path';
 import { Router } from 'express';
@@ -12,11 +13,13 @@ import { v4 } from 'uuid';
 import { Feeds, FeedChannels, FeedChannelMessages, Followers, FollowRequests, NestedFeeds, Posts } from '../models/relationships.js';
 
 const app = express();
+dotenv.config();
 const router = Router();
 const __dirname = path.dirname(import.meta.url);
 app.use(express.static(join(__dirname, 'static')));
 const feedProfileUpload = imageUpload('/media/feed_profiles', 'new_feed_photo');
 
+const defaultImages = [process.env.DEFAULT_USER_IMAGE, process.env.DEFAULT_GROUP_IMAGE];
 const feedAttributes = ['feed_id', 'parent_id', 'feed_name', 'description', 'feed_photo', 'follower_count', 'date_created', 'type', 'is_group', 'feed_owner'];
 
 router.post('/add_feed_channel', authenticateCheck, async (req, res) => {
@@ -45,11 +48,12 @@ router.post('/accept_follow_request', authenticateCheck, async (req, res) => {
         const { request } = req.body;
         const follow_request = await FollowRequests.findByPk(request.request_id);
         await Followers.create({
+            follow_id: v4(),
             follower_id: follow_request.sender_id,
-            feed_id: follow_request.feed_id
+            feed_id: follow_request.receiver_id
         });
-        await Feeds.increment('member_count', { where: { feed_id: follow_request.feed_id } });
-        await follow-request.destroy();
+        await Feeds.increment('follower_count', { where: { feed_id: follow_request.receiver_id } });
+        await follow_request.destroy();
         res.status(200).json({ success: true });
     } catch (error) {
         res.status(500).json({ success: false });
@@ -109,7 +113,7 @@ router.post('/create_feed', authenticateCheck, async (req, res) => {
             return res.status(500).json({ success: false });
         }
         try {
-            const { feedName, type, isGroup, feedOwner, viewer } = req.body;
+            const { feedName, type, isGroup, feedOwner, viewerFeedId } = req.body;
             //Prevents duplicate group names
             const existingFeed = await Feeds.findOne({ where: { feed_name: feedName } });
             if (existingFeed) {
@@ -135,13 +139,14 @@ router.post('/create_feed', authenticateCheck, async (req, res) => {
             });
             await Followers.create({
                 follow_id: v4(),
-                follower_id: viewer.feed_id,
+                follower_id: viewerFeedId,
                 feed_id: feed.feed_id,
                 is_mod: true,
                 is_admin: true,
             });
             res.status(201).json({ success: true, feed });
         } catch (error) {
+            console.error(error);
            res.status(500).json({ success: false });
         }
     });
@@ -149,9 +154,9 @@ router.post('/create_feed', authenticateCheck, async (req, res) => {
 
 router.delete('/delete_follow_request', authenticateCheck, async (req, res) => {
     try {
-        const { senderId, receiverId } = req.body;
+        const { receiverId, senderId } = req.body;
         await FollowRequests.destroy({
-            where: { sender_id: senderId, receiver_id: receiverId } 
+            where: { receiver_id: receiverId, sender_id: senderId } 
         });
         res.status(200).json({ success: false });
     } catch (error) {
@@ -191,15 +196,28 @@ router.delete('/delete_feed', authenticateCheck, async (req, res) => {
     try {
         const { feedId } = req.body;
         const feed = await Feeds.findOne({ where: { feed_id: feedId } });
+        if (!feed) {
+            return res.status(404).json({ success: false });
+        }
         const feedPhoto = feed.feed_photo;
-        deleteMedia(feedPhoto);
+        if (feedPhoto && !defaultImages.includes(feedPhoto)) {
+            deleteMedia(feedPhoto);
+        }
         await Posts.destroy({ where: { feed_id: feedId  } });
-        await FollowRequests.destroy({  where: { feed_id: feedId  } });
+        await FollowRequests.destroy({
+            where: {
+                [Op.or]: [
+                    { receiver_id: feedId },
+                    { sender_id: feedId }
+                ]
+            }
+        });
         await Followers.destroy({ where: { feed_id: feedId  } });
         await FeedChannels.destroy({ where: { feed_id: feedId  } });
         await Feeds.destroy({ where: { feed_id: feedId  } });
         res.status(200).json({ success: true });
     } catch (error) {
+        console.log(error);
         res.status(500).json({ success: false });
     }
 });
@@ -239,14 +257,13 @@ router.get('/feed/:feedName', authenticateCheck, async (req, res) => {
             isFollower = true;
             hasFollowRequest = false;
         } else {
-            const [adminOrMod, followerStatus, followRequest] = await Promise.all([
-                checkIfAdminOrMod(viewerId, feedName),
-                checkIfFollowing(viewerId, feedName),
+            const [followStatus, followRequest] = await Promise.all([
+                FollowerCheck(viewerId, feed.feed_id),
                 FollowRequests.findOne({ where: { sender_id: viewerId } })
             ]);
-            isAdmin = adminOrMod.isAdmin;
-            isMod = adminOrMod.isMod;
-            isFollower = followerStatus;
+            isAdmin = followStatus.isAdmin;
+            isMod = followStatus.isMod;
+            isFollower = followStatus.following;
             hasFollowRequest = !!followRequest;
         }
         const feedResult = {
@@ -287,25 +304,23 @@ router.get('/feed_list/:followerId', async (req, res) => {
             where: { follower_id: followerId },
             include: [{
                 model: Feeds,
-                as: 'followed',
+                as: 'followedFeed',
                 attributes: feedAttributes,
             }],
-            //order: [[{ model: Feeds, as: 'followed' }, 'feed_name', 'ASC']],
+            order: [['followedFeed', 'feed_name', 'ASC']],
         });;
         const formattedFeeds = feeds.map(feed => ({
             ...feed.dataValues,
-            link_type: feed.followed.is_group ? 'g' : 'u', 
+            link_type: feed.followedFeed.is_group ? 'g' : 'u', 
         }));
-        //const feedList = formattedFeeds.sort((a, b) => a.feed_name.localeCompare(b.feed_name));
         res.json(formattedFeeds);
     } catch (error) {
-        console.error(error);
         res.status(500).json({ success: false });
     }
 });
 
 router.post('/follow_feed', authenticateCheck, async (req, res) => {
-    try{
+    try {
         const { followerId, feedId } = req.body;
         await Followers.create({
             follow_id: v4(),
@@ -326,7 +341,7 @@ router.get('/follow_requests/:feedId', authenticateCheck, async (req, res) => {
     try {
         const feedId = req.params.feedId;
         const requests = await FollowRequests.findAll({ 
-            where: { feed_id: feedId },
+            where: { receiver_id: feedId },
             include: [{
                 model: Feeds, 
                 as: 'sender',
@@ -354,22 +369,22 @@ router.get('/get_feed_channels/:feedId', authenticateCheck, async (req, res) => 
         });
         res.json({ success: true, channels });
     } catch (error) {
-        console.log(error);
         res.status(500).json({ success: false });
     }
 });
 
-router.get('/get_feed_followers', authenticateCheck, async (req, res) => {
-    const { feedId } = req.query;
+router.get('/get_feed_followers/:feedId', authenticateCheck, async (req, res) => {
     try {
+        const feedId = req.params.feedId;
         const followers = await Followers.findAll({
             where: { feed_id: feedId },
             include: [{
                 model: Feeds,
+                as: 'followerFeed',
                 required: true,
                 attributes: feedAttributes,
             }],
-            attributes: ['is_mod', 'is_admin']
+            attributes: ['follow_id', 'follower_id', 'is_mod', 'is_admin', 'follow_date']
         });
         res.json({ success: true, followers });
     } catch (error) {
@@ -383,7 +398,7 @@ router.post('/send_follow_request', authenticateCheck, async (req, res) => {
         await FollowRequests.create({
             request_id: v4(),
             sender_id: senderId,
-            group_id: receiverId,
+            receiver_id: receiverId,
         });
         res.json({ success: true });
     } catch (error) {
@@ -447,12 +462,11 @@ router.put('/update_feed_photo/:feedId', authenticateCheck, async (req, res) => 
             return res.status(400).json({ success: false });
         }
         try {
-            const defaultFeedPhotoPath = 'media/site_images/blank-group-icon.jpg';
             const feed_id = req.params.feedId; 
             const file = req.file; 
             const newPhotoPath = `media/feed_profiles/${file.filename}`;
             const feed = await Feeds.findOne({ where: { feed_id } });
-            if (feed.feed_photo && feed.feed_photo !== defaultFeedPhotoPath) {
+            if (feed.feed_photo && !defaultImages.includes(feed.feed_photo)) {
                 deleteMedia(feed.feed_photo);
             };
             feed.feed_photo = newPhotoPath;

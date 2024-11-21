@@ -25,22 +25,21 @@ const ChannelList = ({ channels, feedId, feedName, isGroup, setChannels }) => {
     }, [getFeedChannels]);
 
     //Fetch subfeeds
-    useEffect(() => {
-        if (isGroup) {
-            const fetchSubFeeds = async () => {
-                try {
-                    const response = await axios.get(`/api/sub_feeds/${feedId}`);
-                    setSubFeeds(response.data);
-                } catch (error) {
-                    console.log("error:", error);
-                    setErrorMessage("Error getting subfeeds");
-                }
-            };
-            if (feedId) {
-                fetchSubFeeds();
-            }
-        }
-    }, [feedId]);
+    //useEffect(() => {
+        //if (isGroup) {
+            //const fetchSubFeeds = async () => {
+                //try {
+                    //const response = await axios.get(`/api/sub_feeds/${feedId}`);
+                    //setSubFeeds(response.data);
+                //} catch (error) {
+                    //setErrorMessage("Error getting subfeeds");
+                //}
+            //};
+            //if (feedId) {
+                //fetchSubFeeds();
+            //}
+        //}
+    //}, [feedId]);
 
     return (
         <nav className="channel-list">

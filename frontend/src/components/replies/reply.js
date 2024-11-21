@@ -99,8 +99,8 @@ const Reply = ({ addReply, reply, depth, isGroup, onReplyAdded, onReplyRemoved, 
     
     return (
         <div className="reply-container" style={{ marginLeft: `${depth * 20}px` }}>
-            <Link className="reply-profile-container" to={`/u/${reply[Replier].username}`}>
-                <img className="uploader-profile-image" src={`/${reply[Replier].profile.profile_photo}` || '/media/site_images/blank-profile.png'} alt="Profile" />
+            <Link className="reply-feed-container" to={`/u/${reply[Replier].username}`}>
+                <img className="uploader-feed-image" src={`/${reply[Replier].profile.profile_photo}` || '/media/site_images/blank-profile.png'} alt="Feed" />
                 <p className="username">{reply[Replier].username || 'Anonymous'}</p>
             </Link>
             <div className="horizontal-container">

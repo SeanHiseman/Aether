@@ -209,9 +209,9 @@ const ContentWidget = ({ canRemove: canRemoveProp, feed, isGroup, onPostRemoved,
                 <div className="title-container">
                     <p className="text36">{post.title}</p>
                     {post.displayGroupName && (
-                        <Link className="profile-link" to={`/g/${post.feed.feed_name}`}>
+                        <Link className="feed-link" to={`/g/${post.feed.feed_name}`}>
                             <p className="text24">{post.feed.feed_name}</p>
-                            <img className="uploader-profile-image" src={`/${post.feed.feed_photo}`} alt="Profile" />
+                            <img className="uploader-feed-image" src={`/${post.feed.feed_photo}`} alt="Feed" />
                         </Link>
                     )}
                 </div>
@@ -224,9 +224,9 @@ const ContentWidget = ({ canRemove: canRemoveProp, feed, isGroup, onPostRemoved,
                     </div>
                 )}
                 <div className="content-metadata">
-                    <div className="profile-info">
+                    <div className="feed-info">
                         <Link className="profile-link" to={`/u/${post.feed.feed_name}`} onClick={() => incrementViews(post.post_id)}>
-                            <img className="uploader-profile-image" src={`/${post.feed.feed_photo}`} alt="Feed" />
+                            <img className="uploader-feed-image" src={`/${post.feed.feed_photo}`} alt="Feed" />
                             <p className="username">{post.feed.feed_name} </p>
                         </Link>
                     </div>

@@ -10,7 +10,7 @@
 .reply-container {
     width: 100%;
 }
-.reply-profile-container {
+.reply-feed-container {
     align-items: center;
     display: flex;
     text-decoration: none;
@@ -47,7 +47,7 @@
     align-items: center;
     margin-top: 10px;
 }
-.reply-profile-container{
+.reply-feed-container {
     position: relative;
     display: flex;
     margin-bottom: 5px;
@@ -59,17 +59,12 @@
 .post-list {
     margin: 0px;
 }
-.profile-photo{
-    width: 30px;
-    height: 30px;
-    border-radius: 50%;
-}
-.uploader-info{
+.uploader-info {
     display: flex;
     align-items: center;
     position: relative;
 }
-.uploader-photo{
+.uploader-photo {
     height: 40px; 
     width: 40px; 
     border-radius: 50%;

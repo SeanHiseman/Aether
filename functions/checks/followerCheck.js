@@ -1,21 +1,21 @@
-import { Feeds, Followers } from '../../models/feeds.js';
+import { Followers } from '../../models/feeds.js';
 
-async function checkIfFollowing(follower_id, feed_name) {
+async function FollowerCheck(follower_id, feed_id) {
     try {
-        const feed = await Feeds.findOne({ where: { feed_name }});
-        if (!feed) {
-            return false;
-        }
         const following = await Followers.findOne({
             where: {
                 follower_id,
-                feed_id: feed.feed_id
-            },
+                feed_id
+            }
         });
-        return !!following;
-    } catch {
-        return { following: false };
+        return {
+            following: !!following,
+            isAdmin: following?.is_admin || false,
+            isMod: following?.is_mod || false
+        };
+    } catch (error) {
+        return { following: false, isAdmin: false, isMod: false };
     }
 }
 
-export default checkIfFollowing;
+export default FollowerCheck;

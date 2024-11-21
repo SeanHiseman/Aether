@@ -1,17 +1,10 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Link } from 'react-router-dom';
 import FollowerChangeButton from '../followerChangeButton';
-import ManageConnectionButton from '../manageConnection';
+import ManageConnectionButton from '../manageConnectionButton';
 
 const FeedWidget = ({ feed, viewerId }) => {
-    const [followerCount, setFollowerCount] = useState(feed.follower_count);
-    const [isFollowing, setIsFollowing] = useState(feed.isFollowing);
-
-    //Updates follower count number
-    const handleFollowerCountChange = (newIsFollowing) => {
-        setFollowerCount(prevCount => newIsFollowing ? prevCount + 1 : prevCount - 1);
-        setIsFollowing(newIsFollowing);
-    };
+    const isViewingSelf = feed.feed_id === viewerId;
 
     return (
         <div className="result-widget">
@@ -21,22 +14,22 @@ const FeedWidget = ({ feed, viewerId }) => {
                     <p className="description" >{feed.description}</p>
                 </div>
             </Link>
-            {!feed.is_group &&(
-                <ManageConnectionButton viewerId={viewerId} receiverId={feed.feed_id} isRequestSent={feed.isConnectRequestSent} isConnected={feed.isConnected} />
+            {!isViewingSelf && !feed.is_group && (
+                <ManageConnectionButton feed={feed} viewerId={viewerId} />
             )}
             <div className="search-result-info-box">
                 <div className="result-info-options">
-                    <p>{feed.follower_count} {feed.follower_count === 1 ? 'follower' : 'followers'}</p>
-                    <p>{feed.type ? "private" : "public"}</p>
-                    <FollowerChangeButton feedId={feed.feed_id} followerId={viewerId} isFollowing={feed.isFollowing} isRequestSent={feed.isRequestSent} type={feed.type}/>
-                    <p>{feed.type ? "private" : "public"}</p>
+                    <p>{feed.type === 'private' ? "Private" : "Public"}</p>
+                    {!isViewingSelf && !(feed.type === 'private' && !feed.is_group) && (
+                        <FollowerChangeButton feed={feed} viewerId={viewerId} />
+                    )}
                 </div>
                 <Link to={`/${feed.is_group ? 'g' : 'u'}/${feed.feed_name}/Main`}>
-                    <img className="large-group-photo" src={`/${feed.feed_photo}`} alt={feed.feed_name} />
+                    <img className="large-feed-photo" src={`/${feed.feed_photo}`} alt={feed.feed_name} />
                 </Link>
             </div>
         </div>
     )
 }
 
-export default FeedWidget
+export default FeedWidget;

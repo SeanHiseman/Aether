@@ -1,58 +1,47 @@
 import axios from 'axios';
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import ManageConnectionButton from '../../../components/manageConnectionButton';
 
-const ConnectRequests = () => {
+const ConnectRequests = ({ feed }) => {
     const [errorMessage, setErrorMessage] = useState('');
-    const [friendRequests, setFriendRequests] = useState([]);
+    const [connectRequests, setConnectRequests] = useState([]);
 
     useEffect(() => {
-        getFriendRequests();
-    }, []);
+        getConnectRequests();
+    }, []); 
 
-    const getFriendRequests = async () => {
+    const getConnectRequests = async () => {
         try {
-            const response = await axios.get('/api/get_friend_requests');
-            setFriendRequests(response.data);
+            const response = await axios.get(`/api/get_connect_requests/${feed.feed_id}`);
+            setConnectRequests(response.data);
         } catch (error) {
             setErrorMessage('Error getting requests');
         } 
     };
 
-    const handleFriendRequest = async (request, result) => {
-        try {
-            if (result === 'accept') {
-                await axios.post('/api/accept_friend_request', { request });
-            } else if (result === 'reject') {
-                await axios.delete('/api/reject_friend_request', { data: { request } });
-            }
-            getFriendRequests();
-        } catch (error) {
-            setErrorMessage("Error handling request:", error);
-        }
+    const handleRequestUpdate = (senderId) => {
+        setConnectRequests(prevRequests => 
+            prevRequests.filter(request => request.sender_id !== senderId)
+        );
     };
 
     return (
         <div className="channel-content">
-            <h2>Friend Requests</h2>
-            {friendRequests.length === 0 ? (
+            <h2>Connect Requests</h2>
+            {connectRequests.length === 0 ? (
                 <p>No pending requests</p>
             ) : (
                 <ul className="content-list">
                     <div className="error-message">{errorMessage}</div>
-                    {friendRequests.map((request, index) => (
+                    {connectRequests.map((request, index) => (
                         <li key={index}>
                             <div className="result-widget">
-                                <Link className="profile-link" to={`/u/${request.sender.username}`}>
-                                    <img className="large-profile-photo" src={`/${request.sender.profile.profile_photo}`} alt="Profile" />
-                                    <p className="text36 profile-name">{request.sender.username}</p>
+                                <Link className="feed-link" to={`/u/${request.sender.feed_name}`}>
+                                    <img className="large-feed-photo" src={`/${request.sender.feed_photo}`} alt="Profile" />
+                                    <p className="text36 feed-name">{request.sender.feed_name}</p>
                                 </Link>
-                                <button className="button" onClick={() => handleFriendRequest(request, 'accept')}>
-                                    Accept friend request
-                                </button>
-                                <button className="button" onClick={() => handleFriendRequest(request, 'reject')}>
-                                    Reject friend request
-                                </button>
+                                <ManageConnectionButton feed={request} connectRequest={request} viewerId={feed.feed_id} onRequestUpdate={handleRequestUpdate} />
                             </div>
                         </li>
                     ))}
