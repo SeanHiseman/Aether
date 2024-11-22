@@ -39,7 +39,7 @@ router.post('/change_chat_name', authenticateCheck, async (req, res) => {
     try {
         const { chatId, newTitle } = req.body;
         if (newTitle === 'Main') {
-            res.status(403).json({ success: false, message: "Chat can't be called main"})
+            res.status(403).json({ success: false });
         } else {
             await Chats.update(
                 { title: newTitle },
@@ -53,15 +53,14 @@ router.post('/change_chat_name', authenticateCheck, async (req, res) => {
 });
 
 router.post('/create_chat', authenticateCheck, async (req, res) => {
-    console.log("req.body:", req.body);
     try {
         const { participants, title } = req.body;
         const newChat = await Chats.create({
             chat_id: v4(),
             title: title
         });
-        const feedChats = participants.map(feed_id => ({
-            feed_id,
+        const feedChats = participants.map(participant => ({
+            feed_id: participant.feed_id,
             chat_id: newChat.chat_id,
         }));
         await FeedChats.bulkCreate(feedChats);
@@ -74,19 +73,19 @@ router.post('/create_chat', authenticateCheck, async (req, res) => {
 
 router.delete('/delete_chat', authenticateCheck, async (req, res) => {
     try {
-        const { chatId, title } = req.body;
+        const { chat_id, title } = req.body;
         //Main channels are default, so can't be deleted
         if (title === 'Main') {
             res.status(403).json({ message: 'Main chats cannot be deleted' });
         } else {
             await FeedChats.destroy({
                 where: { 
-                    chat_id: chatId
+                    chat_id
                 },
             });
             await Chats.destroy({
                 where: { 
-                    chat_id: chatId
+                    chat_id
                 },
             });
             res.status(200).json({ success: true });
@@ -179,12 +178,15 @@ router.get('/get_chat_messages/:chatId', authenticateCheck, async (req, res) => 
 
 router.get('/get_chats/:feedId', authenticateCheck, async (req, res) => {
     try {
-        const feedId = req.params.feedId;
+        const feedId = req.params;
+        const { connectionName } = req.query;
+        const whereName = connectionName ? { feed_name: connectionName } : {};
         const feedChats = await Chats.findAll({
             include: [{
                 model: Feeds, 
                 as: 'feeds',
                 attributes: feedAttributes,
+                where: whereName,
                 through: { attributes: [] },
             }],
             order: [['updated_at', 'ASC']]
@@ -198,7 +200,6 @@ router.get('/get_chats/:feedId', authenticateCheck, async (req, res) => {
         });
         res.status(200).json(result);
     } catch (error) {
-        console.log("chats error:", error);
         res.status(500).json({ success: false });
     }
 });
