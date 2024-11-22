@@ -17,7 +17,6 @@ const MessagesPage = () => {
     const [isEditingChatName, setIsEditingChatName] = useState(false);
     const [message, setMessage] = useState('');
     const [newChatName, setNewChatName] = useState('');
-    const [selectedChats, setSelectedChats] = useState([]);
     const [selectedChatId, setSelectedChatId] = useState(null);
     const [showForm, setShowForm] = useState(false);
     const socketRef = useRef(null);
@@ -35,7 +34,8 @@ const MessagesPage = () => {
         };
         const getChats = async () => {
             try {
-                const response = await axios.get(`/api/get_chats/${viewer.feed_id}`);
+                const queryParams = connection_name ? `?connectionName=${connection_name}` : '';
+                const response = await axios.get(`/api/get_chats/${viewer.feed_id}${queryParams}`);
                 setChats(response.data);
             } catch (error) {
                 setErrorMessage("Error getting chats");
@@ -49,30 +49,16 @@ const MessagesPage = () => {
                 socketRef.current.disconnect();
             }
         };
-    }, []);
-    
-    //Filters chats to those with a specific connection
+    }, [viewer.feed_id, connection_name]);
+
     useEffect(() => {
-        if (chats.length > 0 && connection_name) {
-            const filteredChats = chats.filter(chat => {
-                const feedNames = chat.feeds?.map(feed => feed.feed_name);
-                return feedNames.includes(connection_name);
-            });
-            setSelectedChats(filteredChats);
-            if (title) {
-                const selected = filteredChats.find(c => c.title === title);
-                if (selected) {
-                    setSelectedChatId(selected.chat_id);
-                }
-            } else {
-                const mainChat = filteredChats.find(c => c.title === 'Main');
-                setSelectedChatId(mainChat ? mainChat.chat_id : null);
-            }
-        } else {
-            setSelectedChats([]);
-            setSelectedChatId(null);
+        if (title && chats.length > 0) {
+            const matchingChat = chats.find(
+                chat => chat.title === title
+            );
+            setSelectedChatId(matchingChat ? matchingChat.chat_id : null);
         }
-    }, [connection_name, chats, title]);
+    }, [connection_name, title, chats]);
 
     useEffect(() => {
         if (selectedChatId) {
@@ -130,16 +116,9 @@ const MessagesPage = () => {
                 if (response.status === 200) {
                     setChats(prevChats => 
                         prevChats.map(chat =>
-                            chat.chatId === selectedChatId
+                            chat.chat_id === selectedChatId
                             ? {...chat, title: changedChatName}
                             : chat
-                        )
-                    );
-                    setSelectedChats(prevSelected =>
-                        prevSelected.map(chat =>
-                            chat.chatId === selectedChatId
-                                ? {...chat, title: changedChatName}
-                                : chat
                         )
                     );
                     setErrorMessage('');
@@ -148,13 +127,13 @@ const MessagesPage = () => {
                     navigate(`/messages/${connection_name}/${changedChatName}`);
                 }
             }
-        } catch {
+        } catch (error) {
             setErrorMessage("Error changing chat name");
         }
     };
 
     //Currently viewed chat
-    const currentChat = selectedChats.find(c => c.chat_id === selectedChatId);
+    const currentChat = chats.find(chat => chat.chat_id === selectedChatId);
     const currentChatName = currentChat?.title;
 
     const createNewChat = async (event) => {
@@ -174,15 +153,13 @@ const MessagesPage = () => {
                     participants: participants,
                     title: chatName
                 });
-                console.log("response:", response);
                 if (response.data && response.status === 201) {
-                    const newChat = {
+                    const newChat = { //Gets in correct format
                         ...response.data.newChat,
                         title: chatName,
                         feeds: connection ? [connection] : [],
                     };
                     setChats(prevChats => [...prevChats, newChat]);
-                    setSelectedChats(prevSelected => [...prevSelected, newChat]);
                     setSelectedChatId(newChat.chatId);
                     navigate(`/messages/${connection_name}/${newChatName}`)
                     setErrorMessage('');
@@ -207,10 +184,7 @@ const MessagesPage = () => {
             await axios.delete(`/api/delete_chat`, { data: {chat_id: selectedChatId, title: title} });
             //Show chat list without deleted chat
             setChats(prevChats => 
-                prevChats.filter(c => c.chatId !== selectedChatId)
-            );
-            setSelectedChats(prevSelected => 
-                prevSelected.filter(c => c.chatId !== selectedChatId)
+                prevChats.filter(c => c.chat_id !== selectedChatId)
             );
             setSelectedChatId(null);
             setChat([]);
@@ -259,7 +233,6 @@ const MessagesPage = () => {
                 chatId: selectedChatId,
                 timestamp: Date.now()
             };
-
             socketRef.current.emit('send_direct_message', newMessage);
             setChat(prevChat => [...prevChat, newMessage]);
             setMessage('');
@@ -361,7 +334,7 @@ const MessagesPage = () => {
                             <p className="text36">Main</p>  
                         )}
                         <ul>
-                            {selectedChats.map(chat => (
+                            {chats.map(chat => (
                                 <li key={chat.chat_id} className="channel-item">
                                     <Link to={`/messages/${connection_name}/${chat.title}`}>
                                         <div className="channel-link">{chat.title}</div>
@@ -387,7 +360,7 @@ const MessagesPage = () => {
                         <ul>
                             {connections.map(c => (
                                 <li className="feed-list-item" key={c.connection_id}>
-                                    <Link className="feed-list-link-container" to={`/messages/${c.feed_name}`}>
+                                    <Link className="feed-list-link-container" to={`/messages/${c.feed_name}/Main`}>
                                     <img className="small-feed-photo" src={`/${c.feed_photo}`} alt="Feed"/>
                                         <div className="feed-list-text">
                                             {c.feed_name}
