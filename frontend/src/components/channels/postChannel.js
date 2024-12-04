@@ -26,7 +26,8 @@ const PostChannel = ({ canRemove, channelId, channelName, feedId, isGroup }) => 
             params: {
                 isSingle: false,
                 feedId,
-                ...(isMain ? {} : { channel_id: channelId }), //Only include channelId if not viewing Main
+                //...(isMain ? {} : { channelId }), //Only include channelId if not viewing Main
+                channelId
             }
         });
         return response.data || [];

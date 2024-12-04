@@ -22,7 +22,8 @@ Feeds.hasMany(Followers, { foreignKey: 'feed_id', as: 'followersList' });
 
 Feeds.hasMany(Posts, { as: 'poster', foreignKey: 'poster_id' });
 Posts.belongsTo(Feeds, { as: 'poster', foreignKey: 'poster_id' });
-FeedChannels.hasMany(Posts, { as: 'childPost', foreignKey: 'feed_id' });
+Posts.belongsTo(FeedChannels, { as: 'parentChannel', foreignKey: 'channel_id' });
+FeedChannels.hasMany(Posts, { as: 'posts', foreignKey: 'channel_id' });
 
 Posts.hasMany(Posts, { as: 'parentPost', foreignKey: 'post_id' });
 Posts.belongsTo(Posts, { as: 'reply', foreignKey: 'post_id' });
@@ -36,9 +37,9 @@ Feeds.hasMany(FollowRequests, { as: 'receivedFollowRequests', foreignKey: 'recei
 FollowRequests.belongsTo(Feeds, { as: 'sender', foreignKey: 'sender_id' });
 FollowRequests.belongsTo(Feeds, { as: 'receiver', foreignKey: 'receiver_id' });
 
-Feeds.hasMany(PostVotes, { as: 'postVotes', foreignKey: 'feed_id' });
-Posts.hasMany(PostVotes, { as: 'postVotes', foreignKey: 'post_id' });
-PostVotes.belongsTo(Posts, { as: 'post', foreignKey: 'post_id', constraints: false });
+//Feeds.hasMany(PostVotes, { as: 'postVotes', foreignKey: 'feed_id' });
+Posts.hasMany(PostVotes, { as: 'votes', foreignKey: 'content_id' });
+PostVotes.belongsTo(Posts, { as: 'parentPost', foreignKey: 'content_id' });
 
 Feeds.belongsToMany(Feeds, { as: 'feedConnections', through: Connections, foreignKey: 'feed1_id', otherKey: 'feed2_id' });
 Feeds.hasMany(ConnectRequests, { as: 'sentRequests', foreignKey: 'sender_id' });
@@ -55,7 +56,6 @@ Feeds.hasMany(Connections, { foreignKey: 'feed1_id', as: 'ConnectionsAsFeed1' })
 Feeds.hasMany(Connections, { foreignKey: 'feed2_id', as: 'ConnectionsAsFeed2' });
 Connections.belongsTo(Feeds, { foreignKey: 'feed1_id', as: 'Feed1' });
 Connections.belongsTo(Feeds, { foreignKey: 'feed2_id', as: 'Feed2' });
-
 
 Chats.hasMany(Messages, { foreignKey: 'chat_id' });
 Messages.belongsTo(Chats, { foreignKey: 'chat_id' });

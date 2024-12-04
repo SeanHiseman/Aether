@@ -5,20 +5,20 @@ import multer from 'multer';
 import { Router } from 'express';
 import { v4 } from 'uuid';
 
+const feedAttributes = ['feed_id', 'parent_id', 'feed_name', 'description', 'feed_photo', 'follower_count', 'date_created', 'type', 'is_group', 'feed_owner'];
+const postAttributes = ['post_id', 'parent_id', 'feed_id', 'channel_id', 'title', 'content', 'replies', 'views', 'upvotes', 'downvotes', 'timestamp', 'poster_id', 'points']
 const router = Router();
 
 router.get('/channel_posts', authenticateCheck, async (req, res) => {
     try {
         const { channelId, isSingle, feedId, postId } = req.query;
-        const userId = req.session.user_id;
-        const postAttributes = ['post_id', 'parent_id', 'feed_id', 'channel_id', 'title', 'content', 'replies', 'views', 'upvotes', 'downvotes', 'timestamp', 'poster_id', 'points']
         const includeOptions = [{
             model: Feeds,
-            as: 'feed',
-            attributes: ['feed_id', 'feed_name', 'feed_photo'],
+            as: 'poster',
+            attributes: feedAttributes,
         }, {
             model: PostVotes,
-            as: 'postVotes',
+            as: 'votes',
             attributes: ['vote_count'],
             required: false
         }, {
@@ -62,7 +62,7 @@ router.get('/channel_posts', authenticateCheck, async (req, res) => {
             //const sortedPosts = post_type === 'group' 
             //    ? sortPostsByWeightedRatio(finalResults, userId)
             //    : finalResults.sort((a, b) => b.timestamp - a.timestamp);
-            return res.json(finalResults);
+            return res.status(200).json(finalResults);
         }
     } catch (error) {
         res.status(500).json({ success: false });
