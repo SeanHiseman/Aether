@@ -55,7 +55,7 @@
     font-size: 36px;
     margin: 10px 10px 10px 0;
 }
-.name-friend-box {
+.name-connection-box {
     display: flex;
     justify-content: space-between;
     width: 30%;
@@ -94,7 +94,7 @@
     align-items: center;
     margin-top: 10px;
 }
-.reply-profile-container {
+.reply-feed-container {
     position: relative;
     display: flex;
     margin-bottom: 5px;
@@ -115,12 +115,11 @@
     display: flex;
     justify-content: space-between;
     width: 100%;
-    z-index: 2;
 }
 .post-list {
     margin: 0px;
 }
-.profile-photo{
+.feed-photo {
     width: 30px;
     height: 30px;
     border-radius: 50%;
@@ -135,12 +134,12 @@
     display: flex;
     justify-content: space-between;
 }
-.uploader-info{
+.uploader-info {
     display: flex;
     align-items: center;
     position: relative;
 }
-.uploader-photo{
+.uploader-photo {
     height: 40px; 
     width: 40px; 
     border-radius: 50%;

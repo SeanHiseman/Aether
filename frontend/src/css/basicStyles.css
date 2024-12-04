@@ -3,7 +3,7 @@ a {
     color: inherit;
     text-decoration: none;
 }
-.button, .background-button, .chat-channel-button, .conversation-button, .file-input, .light-button, .posts-channel-button, .submit-button, .settings-item, .vote-enabled, .vote-arrow-container {
+.button, .background-button, .chat-channel-button, .conversation-button, .dark-button, .light-button, .posts-channel-button, .submit-button, .settings-item, .vote-enabled, .vote-arrow-container {
     cursor: pointer;
 }
 body,html {
@@ -51,9 +51,6 @@ body,html {
 }
 h2 {
     margin-top: 40px;
-}
-h3 {
-    margin-left: 10px;
 }
 input[type="text"] {
     outline: none;

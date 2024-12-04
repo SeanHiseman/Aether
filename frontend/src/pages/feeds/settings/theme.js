@@ -13,10 +13,10 @@ const Theme = ({ user, setCurrentView }) => {
         red: { darkest: '#210303', dark: '#312626', buttonHover: '#873333' }
     };
 
-    const availableThemes = user.hasMembership ? themeColors : { light: themeColors.light, dark: themeColors.dark };
+    const availableThemes = user.has_membership ? themeColors : { light: themeColors.light, dark: themeColors.dark };
 
     return (
-        <div className="profile-settings">
+        <div className="feed-settings">
             <div className="display-area">
                 {Object.keys(availableThemes).map((theme) => (
                     <ThemeButton

@@ -10,35 +10,36 @@ const ChannelList = ({ channels, feedId, feedName, isGroup, setChannels }) => {
 
     const getFeedChannels = useCallback(async () => {
         try {
-            const channelRoute = isGroup ? 'get_group_channels' : 'get_profile_channels';
-            const response = await axios.get(`/api/${channelRoute}/${feedId}`);
-            setChannels(response.data);
+            if (feedId) {
+                const response = await axios.get(`/api/get_feed_channels/${feedId}`);
+                setChannels(response.data.channels);
+            }
         } catch (error) {
             setErrorMessage('Error getting channels');
             setChannels([]);
         }
-    }, [feedId, isGroup]);
+    }, [feedId]);
 
     useEffect(() => {
         getFeedChannels();
     }, [getFeedChannels]);
 
-    //Fetch subfeedss
-    useEffect(() => {
-        if (isGroup) {
-            const fetchSubFeeds = async () => {
-                try {
-                    const response = await axios.get(`/api/sub_feeds/${feedId}`);
-                    setSubFeeds(response.data);
-                } catch (error) {
-                    setErrorMessage("Error getting subfeeds");
-                }
-            };
-            if (feedId) {
-                fetchSubFeeds();
-            }
-        }
-    }, [feedId]);
+    //Fetch subfeeds
+    //useEffect(() => {
+        //if (isGroup) {
+            //const fetchSubFeeds = async () => {
+                //try {
+                    //const response = await axios.get(`/api/sub_feeds/${feedId}`);
+                    //setSubFeeds(response.data);
+                //} catch (error) {
+                    //setErrorMessage("Error getting subfeeds");
+                //}
+            //};
+            //if (feedId) {
+                //fetchSubFeeds();
+            //}
+        //}
+    //}, [feedId]);
 
     return (
         <nav className="channel-list">

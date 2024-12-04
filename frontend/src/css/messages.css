@@ -20,9 +20,15 @@
 .channel-content.messages {
     flex-direction: column-reverse;
 }
-.chat-change {
+#chat-change, #chat-name {
     display: flex;
     flex-direction: column;
+}
+.chat-feed-link {
+    align-items: center;
+    display: flex;
+    justify-content: center;
+    text-decoration: none;
 }
 .chat-message-bar {
     background-color: var(--darkest);
@@ -37,12 +43,6 @@
 }
 .chat-message-bar::placeholder {
     color: var(--border);
-}
-.chat-profile-link {
-    align-items: center;
-    display: flex;
-    justify-content: center;
-    text-decoration: none;
 }
 .chat-send-button {
     background-color: var(--dark);
@@ -64,21 +64,21 @@
     background-color: var(--border);
     border-top: 1px solid var(--darkest);
 }
-.chat-username {
+.chat-feedname {
     margin-left: 10px;
     margin-top: 20px;
     text-align: center;
 }
-.dropdown-container{
-    position: relative;
-}
-.friend-chat-box{
+.connection-chat-box{
     border-color: var(--darkest);
     border-width: 2px;
     width: 100%;
     margin: 10px;
     border-radius: 10px;
     cursor: pointer;
+}
+.dropdown-container{
+    position: relative;
 }
 .input {
     width: 90%;

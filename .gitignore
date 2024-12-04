@@ -1,5 +1,4 @@
 /media/content
-/media/group_profiles
-/media/profile_images
+/media/feed_profiles
 /node_modules
 .env

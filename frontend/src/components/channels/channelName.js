@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 //Handles displaying and changing the name of chat, profile and group channels
-const ChannelName = ({ channelId, channelName, channelType, locationName, channelUpdate }) => {
+const ChannelName = ({ channelId, channelName, isGroup, locationName, channelUpdate }) => {
     const [newChannelName, setNewChannelName] = useState('');
     const [errorMessage, setErrorMessage] = useState('');
     const [isEditingChannelName, setIsEditingChannelName] = useState(false);
@@ -23,15 +23,15 @@ const ChannelName = ({ channelId, channelName, channelType, locationName, channe
             } else {
                 const response = await axios.post('/api/change_channel_name', {
                     channelId,
-                    channelType,
                     newChannelName,
                 });
                 if (response.status === 200) {
+                    const urlLetter = isGroup ? 'g' : 'u';
                     setErrorMessage('');
                     setIsEditingChannelName(false);
                     setNewChannelName('');
                     channelUpdate(channelId, newChannelName); //Updates parent page
-                    navigate(`/${channelType}/${locationName}/${newChannelName}`);
+                    navigate(`/${urlLetter}/${locationName}/${newChannelName}`);
                 }
             }
         } catch {

@@ -3,7 +3,7 @@ import dotenv from 'dotenv';
 import OpenAI from "openai";
 import { Router } from 'express';
 import { v4 } from 'uuid';
-import { AskChats, AskMessages, GroupNotes, GroupReplyNotes, ProfileNotes, ProfileReplyNotes } from '../models/models.js';
+import { AskChats, AskMessages, PostNotes } from '../models/relationships.js';
 
 dotenv.config();
 const openai = new OpenAI();
@@ -11,7 +11,7 @@ const router = Router();
 
 router.post('/ask_button', authenticateCheck, async (req, res) => {
     try {
-        const { isGroup, isReply, postTitle, postContent, id } = req.body;
+        const { postTitle, postContent, id } = req.body;
         const combinedContent = `Title: ${postTitle}, Content: ${postContent}`;
         //Creates API assistant
         const assistant = await openai.beta.assistants.create({
@@ -49,29 +49,10 @@ router.post('/ask_button', authenticateCheck, async (req, res) => {
             //Remove 'MISINFO:' from beginning of message
             aiReply = aiReply.replace(/^MISINFO:\s*/, '');
         }
-        let noteModel;
-        let foreignKey;
-        if (isGroup) {
-            if (isReply) {
-                noteModel = GroupReplyNotes;
-                foreignKey = 'reply_id';
-            } else {
-                noteModel = GroupNotes;
-                foreignKey = 'post_id';
-            }
-        } else {
-            if (isReply) {
-                noteModel = ProfileReplyNotes;
-                foreignKey = 'reply_id';
-            } else {
-                noteModel = ProfileNotes;
-                foreignKey = 'post_id';
-            }
-        }
         //Save note to correct table
-        const newNote = await noteModel.create({
+        const newNote = await PostNotes.create({
             note_id: v4(),
-            [foreignKey]: id,
+            post_id: id,
             note_content: aiReply,
             timestamp: Date.now(),
             is_misinfo: isMisinfo
