@@ -1,17 +1,45 @@
 import { Router } from 'express';
 import { v4 } from 'uuid';
-import { Op } from 'sequelize';
-import { Chats, Friends, Profiles, UserChats, Users, Messages } from '../models/models.js';
+import { Op, Sequelize } from 'sequelize';
+import { Chats, Connections, ConnectRequests, FeedChats, Feeds, Messages } from '../models/relationships.js';
 import authenticateCheck from '../functions/checks/authenticateCheck.js';
 
 const router = Router();
 
-//Changes name of chat between users
+const feedAttributes = ['feed_id', 'parent_id', 'feed_name', 'description', 'feed_photo', 'follower_count', 'date_created', 'type', 'is_group', 'feed_owner'];
+
+router.post('/accept_connect_request', authenticateCheck, async (req, res) => {
+    try {
+        const { receiverId, senderId } = req.body;
+        const connectRequest = await ConnectRequests.findOne({
+            where: { receiver_id: receiverId, sender_id: senderId }
+        });
+        await Connections.create({
+            connection_id: v4(),
+            feed1_id: senderId,
+            feed2_id: receiverId,
+            connection_date: new Date()
+        });;
+        const chat = await Chats.create({ 
+            chat_id: v4(),
+            title: "Main"
+        });
+        await FeedChats.bulkCreate([
+            { feed_id: senderId, chat_id: chat.chat_id },
+            { feed_id: receiverId, chat_id: chat.chat_id }
+        ]);
+        await connectRequest.destroy();
+        res.status(200).json({ isConnected: true, success: true });
+    } catch (error) {
+        res.status(500).json({ isConnected: false, success: false });
+    }
+});
+
 router.post('/change_chat_name', authenticateCheck, async (req, res) => {
     try {
         const { chatId, newTitle } = req.body;
         if (newTitle === 'Main') {
-            res.status(403).json({ success: false, message: "Chat can't be called main"})
+            res.status(403).json({ success: false });
         } else {
             await Chats.update(
                 { title: newTitle },
@@ -31,13 +59,14 @@ router.post('/create_chat', authenticateCheck, async (req, res) => {
             chat_id: v4(),
             title: title
         });
-        const userChats = participants.map(userId => ({
-            user_id: userId,
+        const feedChats = participants.map(participant => ({
+            feed_id: participant.feed_id,
             chat_id: newChat.chat_id,
         }));
-        await UserChats.bulkCreate(userChats);
+        await FeedChats.bulkCreate(feedChats);
         res.status(201).json(newChat);
     } catch (error) {
+        console.log(error);
         res.status(500).json({ success: false });
     }
 });
@@ -49,7 +78,7 @@ router.delete('/delete_chat', authenticateCheck, async (req, res) => {
         if (title === 'Main') {
             res.status(403).json({ message: 'Main chats cannot be deleted' });
         } else {
-            await UserChats.destroy({
+            await FeedChats.destroy({
                 where: { 
                     chat_id
                 },
@@ -66,32 +95,80 @@ router.delete('/delete_chat', authenticateCheck, async (req, res) => {
     }
 });
 
-//Get messages for specific user chat
-router.get('/get_chat_messages/:chat_id', authenticateCheck, async (req, res) => {
+router.delete('/delete_connect_request', authenticateCheck, async (req, res) => {
     try {
-        const chatId = req.params.chat_id;
+        const { receiverId, senderId } = req.body;
+        await ConnectRequests.destroy({
+            where: { sender_id: senderId, receiver_id: receiverId } 
+        });
+        res.status(200).json({ isConnected: false, success: true });
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({ isConnected: false,  success: false });
+    }
+});
+
+router.delete('/delete_connection', authenticateCheck, async (req, res) => {
+    try {
+        const { deleterId, feedId } = req.body;
+        await Connections.destroy({
+            where: { 
+                [Op.or]: [
+                    { feed1_id: deleterId, user2_id: feedId },
+                    { feed2_id: feedId, user1_id: deleterId },
+                ]
+            }
+        });
+        const chats = await Chats.findAll({
+            include: [{
+                model: FeedChats,
+                where: { 
+                    [Op.or]: [
+                        { feed_id: deleterId },
+                        { feed_id: feedId }
+                    ]
+                }
+            }]
+        });
+        for (const chat of chats) {
+            await Messages.destroy({
+                where: { chat_id: chat.chat_id }
+            });
+            await FeedChats.destroy({
+                where: {
+                    chat_id: chat.chat_id,
+                    [Op.or]: [
+                        { feed_id: deleterId },
+                        { feed_id: feedId }
+                    ]
+                }
+            });
+            await Chats.destroy({
+                where: { chat_id: chat.chat_id }
+            });
+        }
+        res.status(200).json({ success: true });
+    } catch (error) {
+        res.status(500).json({ success: false });
+    }
+});
+
+router.get('/get_chat_messages/:chatId', authenticateCheck, async (req, res) => {
+    try {
+        const chatId = req.params.chatId;
         const messages = await Messages.findAll({
             where: { chat_id: chatId },
             include: [{
-                model: Users,
-                attributes: ['user_id'],
-                include: [{
-                    model: Profiles,
-                    attributes: ['profile_photo']
-                }]
+                model: Feeds,
+                attributes: ['feed_id', 'feed_name', 'feed_photo'],
             }],
             order: [['timestamp', 'ASC']]
         });
         const messagesData = messages.map(m => ({
-            message_id: m.message_id, //not messageId since group messages use message_id
+            messageId: m.message_id, 
             senderId: m.sender_id,
-            message_content: m.message_content,
+            messageContent: m.message_content,
             timestamp: m.timestamp,
-            user: {
-                profile: {
-                    profile_photo: m.user.profile.profile_photo
-                }
-            }
         }));
         res.json(messagesData);
     } catch (error) {
@@ -99,82 +176,113 @@ router.get('/get_chat_messages/:chat_id', authenticateCheck, async (req, res) =>
     }
 });
 
-//Get all chats for logged in user
-router.get('/get_chats', authenticateCheck, async (req, res) => {
+router.get('/get_chats/:feedId', authenticateCheck, async (req, res) => {
     try {
-        const userId = req.session.user_id;
-        //Chat ID's that user is a part of
-        const userChatIds = await UserChats.findAll({
-            where: { user_id: userId },
-            attributes: ['chat_id'],
-        });
-        const chatIds = userChatIds.map(uc => uc.chat_id);
-        const chats = await Chats.findAll({
-            where: { chat_id: chatIds },
+        const feedId = req.params;
+        const { connectionName } = req.query;
+        const whereName = connectionName ? { feed_name: connectionName } : {};
+        const feedChats = await Chats.findAll({
             include: [{
-                model: Users,
-                as: 'users',
-                attributes: ['user_id', 'username'],
+                model: Feeds, 
+                as: 'feeds',
+                attributes: feedAttributes,
+                where: whereName,
                 through: { attributes: [] },
-                required: false
             }],
             order: [['updated_at', 'ASC']]
         });
-        const chatsData = chats.map(chat => {
-            const participants = chat.users.map(user => ({
-                userId: user.user_id,
-                username: user.username
-            }));
+        const result = feedChats.map(chat => {
+            const otherFeeds = chat.feeds.filter(feed => feed.feed_id !== feedId);
             return {
-                chatId: chat.chat_id,
-                title: chat.title,
-                participants: participants,
-                createdAt: chat.created_at,
-                updatedAt: chat.updated_at
-            };
+                ...chat.toJSON(),
+                feeds: otherFeeds,
+            }
         });
-        res.json(chatsData);
+        res.status(200).json(result);
     } catch (error) {
-       res.status(500).json({ success: false });
+        res.status(500).json({ success: false });
     }
 });
 
-router.get('/get_friends', authenticateCheck, async (req, res) => {
+router.get('/get_connections/:feedId', authenticateCheck, async (req, res) => {
     try {
-        const userId = req.session.user_id;
-        const user = await Users.findOne({ where: { user_id: userId } });
-        //Get friends for user
-        const friendships = await Friends.findAll({
+        const feedId = req.params.feedId;
+        const feed = await Feeds.findOne({ where: { feed_id: feedId } });
+        if (!feed) { 
+            return res.status(404).json({ success: false, message: 'Feed not found' }) 
+        }
+        const connections = await Connections.findAll({
             where: {
                 [Op.or]: [
-                    { user1_id: user.user_id },
-                    { user2_id: user.user_id }
+                    { feed1_id: feedId },
+                    { feed2_id: feedId }
                 ]
             },
-            //More recent friends are first
-            order: [['FriendSince', 'ASC']]
+            //More recent connections are first
+            order: [['connection_date', 'ASC']],
+            include: [{
+                model: Feeds,
+                as: 'Feed1',
+                attributes: feedAttributes
+            }, {
+                model: Feeds,
+                as: 'Feed2',
+                attributes: feedAttributes
+            }]
         });
-        //Get friend data
-        const friendsData = await Promise.all(friendships.map(async (friendship) => {
-            const friendId = (friendship.user1_id !== user.user_id) ? friendship.user1_id : friendship.user2_id;
-            const friend = await Users.findByPk(friendId);
-            const friendProfile = await Profiles.findOne({
-                where: { user_id: friendId }
-            });
+        const filteredConnections = connections.map(connection => {
+            const otherFeed = connection.feed1_id === feedId ? connection.Feed2 : connection.Feed1;
             return {
-                friend_id: friend.user_id,
-                friend_profile_id: friendProfile.profile_id,
-                friend_name: friend.username,
-                friend_profile_photo: friendProfile.profile_photo,
+                ...otherFeed.toJSON(),   // Return other feed's details
+                connection_id: connection.connection_id,
+                connection_date: connection.connection_date
             };
-        }));
-        res.json(friendsData);
+        });
+        //console.log("connections:", connections);
+        //res.status(200).json(connections);
+        res.status(200).json(filteredConnections);
     } catch (error) {
+        console.log("connections error:", error);
         res.status(500).json({ success: false });  
     }
 });
 
-//Socket.io event for sending message to an individual user
+router.get('/get_connect_requests/:feedId', authenticateCheck, async (req, res) => {
+    const feedId = req.params.feedId;
+    try {
+        const requests = await ConnectRequests.findAll({ 
+            where: { receiver_id: feedId },
+            attributes: {
+                include: [[Sequelize.col('sender.feed_id'), 'feed_id']], //So matches connect button data format
+            },
+            include: [{
+                model: Feeds, 
+                as: 'sender',
+                required: true,
+                attributes: feedAttributes,
+            }],
+        });
+        res.json(requests);
+    } catch (error) {
+        res.status(500).json({ success: false });
+    }
+});
+
+router.post('/send_connect_request', authenticateCheck, async (req, res) => {
+    try {
+        const { receiverId, senderId } = req.body;
+        await ConnectRequests.create({
+            request_id: v4(),
+            sender_id: senderId,
+            receiver_id: receiverId
+        });
+        res.status(200).json({ success: true });
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({ success: false });
+    }
+});
+
 export const directMessagesSocket = (socket) => {
     try {
         socket.on('join_chat', (chatId) => {

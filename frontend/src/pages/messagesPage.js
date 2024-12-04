@@ -4,45 +4,44 @@ import { AuthContext } from '../components/authContext';
 import { io } from "socket.io-client";
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { v4 } from 'uuid';
-import ManageFriendshipButton from '../components/manageFriendship';
+import ManageConnectionButton from '../components/manageConnectionButton';
 import Message from '../components/message';
 
 const MessagesPage = () => {
-    const [animationClass, setAnimationClass] = useState('');
     const [changedChatName, setChangedChatName] = useState('');
     const [chat, setChat] = useState([]);
     const [chats, setChats] = useState([]);
     const [errorMessage, setErrorMessage] = useState('');
-    const [friends, setFriends] = useState([]);
-    const { friend_name, title } = useParams();
+    const [connections, setConnections] = useState([]);
+    const { connection_name, title } = useParams();
     const [isEditingChatName, setIsEditingChatName] = useState(false);
     const [message, setMessage] = useState('');
     const [newChatName, setNewChatName] = useState('');
-    const [selectedChats, setSelectedChats] = useState([]);
     const [selectedChatId, setSelectedChatId] = useState(null);
     const [showForm, setShowForm] = useState(false);
     const socketRef = useRef(null);
-    const { user } = useContext(AuthContext)
+    const { user, viewer } = useContext(AuthContext)
     const navigate = useNavigate();
 
     useEffect(() => {
-        const getFriends = async () => {
+        const getConnections = async () => {
             try {
-                const response = await axios.get('/api/get_friends');
-                setFriends(response.data);
+                const response = await axios.get(`/api/get_connections/${viewer.feed_id}`);
+                setConnections(response.data);
             } catch (error) {
-                setErrorMessage("Error getting friends");
+                setErrorMessage("Error getting connections");
             }
         };
         const getChats = async () => {
             try {
-                const response = await axios.get('/api/get_chats');
+                const queryParams = connection_name ? `?connectionName=${connection_name}` : '';
+                const response = await axios.get(`/api/get_chats/${viewer.feed_id}${queryParams}`);
                 setChats(response.data);
             } catch (error) {
                 setErrorMessage("Error getting chats");
             }
         };
-        getFriends();
+        getConnections();
         getChats();
         socketRef.current = io(`http://localhost:7000`);
         return () => {
@@ -50,60 +49,53 @@ const MessagesPage = () => {
                 socketRef.current.disconnect();
             }
         };
-    }, []);
-    
-    //Filters chats to those with a specific friend 
-    useEffect(() => {
-        if (chats.length > 0 && friend_name) {
-            const filteredChats = chats.filter(chat =>
-                chat.participants.map(p => p.username).includes(friend_name));
-            setSelectedChats(filteredChats);
-            if (title) {
-                const selected = filteredChats.find(c => c.title === title);
-                if (selected) {
-                    setSelectedChatId(selected.chatId);
-                }
-            } else {
-                const mainChat = filteredChats.find(c => c.title === 'Main');
-                setSelectedChatId(mainChat.chatId);
-            }
-        }
-    }, [friend_name, chats, user?.username, title]);
+    }, [viewer.feed_id, connection_name]);
 
     useEffect(() => {
-        //Get existing messages
-        if (selectedChatId){
-            //Join chat room 
+        if (title && chats.length > 0) {
+            const matchingChat = chats.find(
+                chat => chat.title === title
+            );
+            setSelectedChatId(matchingChat ? matchingChat.chat_id : null);
+        }
+    }, [connection_name, title, chats]);
+
+    useEffect(() => {
+        if (selectedChatId) {
+            getChatMessages(selectedChatId); 
             socketRef.current.emit('join_chat', selectedChatId);
             const handleReceiveMessage = (message) => {
                 setChat(prevChat => [...prevChat, message]);
             };
             const handleMessageConfirmed = (message) => {
-                setChat(prevChat => prevChat.map(msg => {
-                    if (msg.senderId === message.senderId && msg.message_content === message.message_content && msg.chatId === message.chatId) {
-                        return { ...msg, message_id: message.message_id };
-                    }
-                    return msg;
-                }));
+                setChat(prevChat =>
+                    prevChat.map(msg => 
+                        msg.message_id === undefined &&
+                        msg.senderId === message.senderId &&
+                        msg.message_content === message.message_content
+                            ? { ...msg, message_id: message.message_id }
+                            : msg
+                    )
+                );
             };
-            //Listen for incoming messages
             socketRef.current.on('receive_message', handleReceiveMessage);
             socketRef.current.on('message_confirmed', handleMessageConfirmed);
-            getChatMessages(selectedChatId);
             return () => {
                 socketRef.current.emit('leave_chat', selectedChatId);
                 socketRef.current.off('receive_message', handleReceiveMessage);
                 socketRef.current.off('message_confirmed', handleMessageConfirmed);
             };
+        } else {
+            setChat([]);
         }
     }, [selectedChatId]);
 
     //Ensures header title is reset when returning to main messages page
     useEffect(() => {
-        if (!friend_name) {
+        if (!connection_name) {
             setSelectedChatId(null);
-        }
-    }, [friend_name]);
+        } 
+    }, [connection_name]);
 
     //Either user can change chat name
     const changeChatName = async (event) => {
@@ -124,39 +116,31 @@ const MessagesPage = () => {
                 if (response.status === 200) {
                     setChats(prevChats => 
                         prevChats.map(chat =>
-                            chat.chatId === selectedChatId
+                            chat.chat_id === selectedChatId
                             ? {...chat, title: changedChatName}
                             : chat
-                        )
-                    );
-                    setSelectedChats(prevSelected =>
-                        prevSelected.map(chat =>
-                            chat.chatId === selectedChatId
-                                ? {...chat, title: changedChatName}
-                                : chat
                         )
                     );
                     setErrorMessage('');
                     setIsEditingChatName(false);
                     setChangedChatName('');
-                    navigate(`/messages/${friend_name}/${changedChatName}`);
+                    navigate(`/messages/${connection_name}/${changedChatName}`);
                 }
             }
-        } catch {
+        } catch (error) {
             setErrorMessage("Error changing chat name");
         }
     };
 
     //Currently viewed chat
-    const currentChat = selectedChats.find(c => c.chatId === selectedChatId)
-    const currentChatName = currentChat?.title
+    const currentChat = chats.find(chat => chat.chat_id === selectedChatId);
+    const currentChatName = currentChat?.title;
 
     const createNewChat = async (event) => {
         event.preventDefault();
         try {
-            const friend = friends.find(f => f.friend_name === friend_name);
-            const friendId = friend.friend_id;
-            const participants = [user.userId, friendId];
+            const connection = connections.find(c => c.feed_name === connection_name);
+            const participants = [{ feed_id: viewer.feed_id }, {feed_id: connection.feed_id}];
             const chatName = newChatName.length === 0 ? 'New chat' : newChatName;
             if (newChatName.length >= 30) {
                 setErrorMessage("Name too long"); 
@@ -170,19 +154,14 @@ const MessagesPage = () => {
                     title: chatName
                 });
                 if (response.data && response.status === 201) {
-                    const newChat = {
-                        ...response.data,
-                        chatId: response.data.chat_id,
-                        participants: [
-                            { username: user.username },
-                            { username: friend_name }
-                        ]
+                    const newChat = { //Gets in correct format
+                        ...response.data.newChat,
+                        title: chatName,
+                        feeds: connection ? [connection] : [],
                     };
-                    //Updates chats and viewed chats
                     setChats(prevChats => [...prevChats, newChat]);
-                    setSelectedChats(prevSelected => [...prevSelected, newChat]);
                     setSelectedChatId(newChat.chatId);
-                    navigate(`/messages/${friend_name}/${newChatName}`)
+                    navigate(`/messages/${connection_name}/${newChatName}`)
                     setErrorMessage('');
                     setNewChatName('');
                     setShowForm(false);
@@ -191,6 +170,7 @@ const MessagesPage = () => {
                 }
             }
         } catch (error) {
+            console.log("creating chat error:", error);
             setErrorMessage("Failed to create chat.");
         }
     };
@@ -204,14 +184,11 @@ const MessagesPage = () => {
             await axios.delete(`/api/delete_chat`, { data: {chat_id: selectedChatId, title: title} });
             //Show chat list without deleted chat
             setChats(prevChats => 
-                prevChats.filter(c => c.chatId !== selectedChatId)
-            );
-            setSelectedChats(prevSelected => 
-                prevSelected.filter(c => c.chatId !== selectedChatId)
+                prevChats.filter(c => c.chat_id !== selectedChatId)
             );
             setSelectedChatId(null);
             setChat([]);
-            navigate(`/messages/${friend_name}/Main`);
+            navigate(`/messages/${connection_name}/Main`);
         } catch (error) {
             setErrorMessage('Error deleting chat');
         }
@@ -256,7 +233,6 @@ const MessagesPage = () => {
                 chatId: selectedChatId,
                 timestamp: Date.now()
             };
-
             socketRef.current.emit('send_direct_message', newMessage);
             setChat(prevChat => [...prevChat, newMessage]);
             setMessage('');
@@ -267,58 +243,51 @@ const MessagesPage = () => {
 
     const toggleForm = () => { setShowForm(!showForm) }
 
-    //Sets form to fade in or out
-    useEffect(() => {
-        if (showForm) {
-            setAnimationClass('fade-in');
-        } else {
-            setAnimationClass('fade-out');
-        }
-    }, [showForm]);
-
-    //Gets profile photo of viewed friend
-    const friendProfileImage = friends.find(friend => friend.friend_name === friend_name)?.friend_profile_photo || '';
+    //Gets feed photo of viewed connection
+    const connectionProfileImage = connections.find(c => c.feed_name === connection_name)?.feed_photo || '';
 
     document.title = "Messages";
     return (
         <div className="messages-container">
             <div className="messages-feed">
-                <div className={`channel-content ${!friend_name ? '' : 'messages'}`}>
-                    {!friend_name ? (
+                <div className={`channel-content ${!connection_name ? '' : 'messages'}`}>
+                    {!connection_name ? (
                         <ul className="content-list">
-                            {friends.map(friend => (
-                                <li key={friend.friend_id}>
+                            {connections.map(c => (
+                                <li key={c.connection_id}>
                                     <div className="result-widget">
-                                        <Link className="profile-link" to={`/u/${friend.friend_name}`}>
-                                            <img className="large-profile-photo" src={`/${friend.friend_profile_photo}`} alt="Profile" />
-                                            <p className="text36 profile-name">{friend.friend_name}</p>
+                                        <Link className="feed-link" to={`/u/${c.feed_name}`}>
+                                            <img className="large-feed-photo" src={`/${c.feed_photo}`} alt="Feed" />
+                                            <p className="text36 feed-name">{c.feed_name}</p>
                                         </Link>
-                                        <div className="remove-friend-box">
-                                            <ManageFriendshipButton userId={user.userId} receiverProfileId={friend.friend_profile_id} receiverUserId={friend.friend_id} isRequestSent={false} isFriend={true} />
+                                        <div className="remove-connection-box">
+                                            <ManageConnectionButton connectRequest={false} feed={c} isConnected={true} viewerId={viewer.feed_id} />
                                         </div>
                                     </div>
                                 </li>
                             ))}
                         </ul>
                     ) : (
-                        chat.slice().reverse().map((msg, index) => (
-                            <Message key={index} canRemove={false} deleteMessage={deleteMessage} message={msg} isOutgoing={msg.senderId === user.userId} />
-                        ))
+                        <>
+                            {connection_name && selectedChatId && (
+                                chat.slice().reverse().map((msg, index) => (
+                                    <Message key={index} canRemove={false} deleteMessage={deleteMessage} message={msg} isOutgoing={msg.senderId === user.userId} />
+                                ))
+                            )}
+                            <div className="messages-channel-footer">
+                                <input className="chat-message-bar" type="text" value={message} onChange={(e) => setMessage(e.target.value)} placeholder="Type a message..." onKeyDown={(e) => e.key === 'Enter' && sendMessage()}/>
+                                <button className="chat-send-button" onClick={sendMessage}>Send</button>
+                            </div>
+                        </>
                     )}
                 </div>
-                {friend_name && (
-                    <div className="messages-channel-footer">
-                        <input className="chat-message-bar" type="text" value={message} onChange={(e) => setMessage(e.target.value)} placeholder="Type a message..." onKeyDown={(e) => e.key === 'Enter' && sendMessage()}/>
-                        <button className="chat-send-button" onClick={sendMessage}>Send</button>
-                    </div>
-                )}
             </div>
             <aside id="right-aside">
-                {friend_name ? (
-                    <div id="add-chat-section">
-                        <Link className="chat-profile-link" to={`/u/${friend_name}`}>
-                            <img className="profile-image2" src={`/${friendProfileImage}`} alt="Profile"/>
-                            <h3>{friend_name}</h3>
+                {connection_name ? (
+                    <div id="feed-summary">
+                        <Link className="chat-feed-link" to={`/u/${connection_name}`}>
+                            <img className="small-feed-photo" src={`/${connectionProfileImage}`} alt="Feed"/>
+                            <p className="feed-list-text">{connection_name}</p>
                         </Link>
                         <div className="error-message">{errorMessage}</div>
                         {!isMainChat() ? (
@@ -365,40 +334,36 @@ const MessagesPage = () => {
                             <p className="text36">Main</p>  
                         )}
                         <ul>
-                            {selectedChats.map(chat => (
-                                <li key={chat.chatId} className="channel-item">
-                                    <Link to={`/messages/${friend_name}/${chat.title}`}>
+                            {chats.map(chat => (
+                                <li key={chat.chat_id} className="channel-item">
+                                    <Link to={`/messages/${connection_name}/${chat.title}`}>
                                         <div className="channel-link">{chat.title}</div>
                                     </Link>
                                 </li>
                             ))}
                         </ul>
-                        <div id="add-channel-section">
+                        <div className="add-channel-section">
                             <button className="button" onClick={toggleForm}>
                                 {showForm ? 'Close': 'Add chat'}
                             </button>
-                            {(showForm || animationClass === 'fade-out') && (
-                                <form id="add-chat-form" className={animationClass} onAnimationEnd={() => {
-                                    if (animationClass === 'fade-out') {
-                                        setAnimationClass('');
-                                    }
-                                }} onSubmit={createNewChat}>
+                            {showForm && (
+                                <form className="add-channel-form" onSubmit={createNewChat}>
                                     <input className="name-input" type="text" name="chat_name" placeholder="Chat name..." value={newChatName} onChange={(e) => setNewChatName(e.target.value)}/>
                                     <input className="dark-button" type="submit" value="Add" />
-                                </form>                            
-                            )}
+                                </form>  
+                            )}                          
                         </div>
                     </div>
                 ) : (
-                    <nav id="friend-list">
+                    <nav className="feed-list">
                         <h2>Messages</h2>
                         <ul>
-                            {friends.map(friend => (
-                                <li className="profile-info" key={friend.friend_id}>
-                                    <Link className="profile-link" to={`/messages/${friend.friend_name}`}>
-                                    <img className="profile-image" src={`/${friend.friend_profile_photo}`} alt="Profile"/>
-                                        <div className="chat-username">
-                                            {friend.friend_name}
+                            {connections.map(c => (
+                                <li className="feed-list-item" key={c.connection_id}>
+                                    <Link className="feed-list-link-container" to={`/messages/${c.feed_name}/Main`}>
+                                    <img className="small-feed-photo" src={`/${c.feed_photo}`} alt="Feed"/>
+                                        <div className="feed-list-text">
+                                            {c.feed_name}
                                         </div>
                                     </Link>
                                 </li>

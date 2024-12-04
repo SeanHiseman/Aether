@@ -7,10 +7,8 @@ import AskButton from './askButton';
 import ContentForm from './contentForm';
 import Reply from './replies/reply';
 
-const ContentWidget = ({ canRemove: canRemoveProp, isGroup, onPostRemoved, post }) => {
-    console.log("post:", post);
+const ContentWidget = ({ canRemove: canRemoveProp, feed, isGroup, onPostRemoved, post }) => {
     const [canRemove, setCanRemove] = useState(canRemoveProp);
-    const currentUrl = window.location.pathname;
     const [downvotes, setDownvotes] = useState(post.downvotes);
     const [downvoteLimit, setDownvoteLimit] = useState(false);
     const [hasViewed, setHasViewed] = useState(false);
@@ -21,9 +19,8 @@ const ContentWidget = ({ canRemove: canRemoveProp, isGroup, onPostRemoved, post 
     const [showReplyForm, setShowReplyForm] = useState(false);
     const [upvotes, setUpvotes] = useState(post.upvotes);
     const [upvoteLimit, setUpvoteLimit] = useState(false);
+    const isViewingOwnPost = post.poster_id === feed.feedId; 
     const { user } = useContext(AuthContext);
-    const isViewingOwnPost = post.poster_id === user.userId; //If user is viewing a post they made
-    const Poster = isGroup ? 'GroupPoster' : 'ProfilePoster'; //Associations used by database
 
     const getReplies = useCallback(async (postId) => {
         try {
@@ -38,15 +35,15 @@ const ContentWidget = ({ canRemove: canRemoveProp, isGroup, onPostRemoved, post 
     const incrementViews = useCallback(async (postId) => {
         try {
             if (hasViewed === false) {
-                await axios.post('/api/increment_views', { postId, isGroup });
+                await axios.post('/api/increment_views', { postId });
                 setHasViewed(true);
             }
         } catch (error) {
             console.error("Error incrementing views:", error);
         }
-    }, [hasViewed, isGroup]);
+    }, [hasViewed]);
     
-    //Allows users to remove their own posts
+    //Allows removal of own posts
     useEffect(() => {
         if (isViewingOwnPost) {
             setCanRemove(true);
@@ -72,7 +69,7 @@ const ContentWidget = ({ canRemove: canRemoveProp, isGroup, onPostRemoved, post 
     useEffect(() => {
         const checkVoteLimit = async () => {
             try {
-                const response = await axios.post('/api/content_vote', { content_id: post.post_id, isGroup, vote_type: 'check_vote' });
+                const response = await axios.post('/api/content_vote', { contentId: post.post_id, feedId: feed.feedId, voteType: 'check_vote' });
                 if (response.data.message === 'upvote limit') {
                     setUpvoteLimit(true);
                 } else if (response.data.message === 'downvote limit') {
@@ -136,7 +133,6 @@ const ContentWidget = ({ canRemove: canRemoveProp, isGroup, onPostRemoved, post 
     const nestReplies = (replies) => {
         const replyMap = {};
         replies.forEach(reply => replyMap[reply.reply_id] = { ...reply, replies: [] });
-    
         const nestedReplies = [];
         Object.values(replyMap).forEach(reply => {
             if (reply.parent_id === null) {
@@ -156,8 +152,7 @@ const ContentWidget = ({ canRemove: canRemoveProp, isGroup, onPostRemoved, post 
     //Deletes the post
     const removePost = async () => {
         try {
-            const postData = { isGroup, postId: post.post_id };
-            const response = await axios.delete('/api/remove_post', { data: { postData } } );
+            const response = await axios.delete('/api/remove_post', { postId: post.post_id } );
             if (response.data.success) {
                 onPostRemoved(post.post_id);
             }
@@ -175,8 +170,7 @@ const ContentWidget = ({ canRemove: canRemoveProp, isGroup, onPostRemoved, post 
             setDownvoteLimit(false);
             setUpvoteLimit(false);
             try {
-                const response = await axios.post('/api/content_vote', { content_id: postId, isGroup, vote_type: voteType });
-    
+                const response = await axios.post('/api/content_vote', { contentId: postId, feedId: feed.feed_id, vote_type: voteType });
                 if (response.data.success) {
                     if (voteType === 'upvote') {
                         setUpvotes(upvotes + 1);
@@ -215,9 +209,9 @@ const ContentWidget = ({ canRemove: canRemoveProp, isGroup, onPostRemoved, post 
                 <div className="title-container">
                     <p className="text36">{post.title}</p>
                     {post.displayGroupName && (
-                        <Link className="profile-link" to={`/g/${post.group.group_name}`}>
-                            <p className="text24">{post.group.group_name}</p>
-                            <img className="uploader-profile-image" src={`/${post.group.group_photo}`} alt="Profile" />
+                        <Link className="feed-link" to={`/g/${post.feed.feed_name}`}>
+                            <p className="text24">{post.feed.feed_name}</p>
+                            <img className="uploader-feed-image" src={`/${post.feed.feed_photo}`} alt="Feed" />
                         </Link>
                     )}
                 </div>
@@ -230,15 +224,11 @@ const ContentWidget = ({ canRemove: canRemoveProp, isGroup, onPostRemoved, post 
                     </div>
                 )}
                 <div className="content-metadata">
-                    <div className="profile-info">
-                        {post[Poster] && post[Poster].username && post[Poster].profile && post[Poster].profile.profile_photo ? (
-                            <Link className="profile-link" to={`/u/${post[Poster].username}`} onClick={() => incrementViews(post.post_id)}>
-                                <img className="uploader-profile-image" src={`/${post[Poster].profile.profile_photo}`} alt="Profile" />
-                                <p className="username">{post[Poster].username}</p>
-                            </Link>
-                        ) : (
-                            <p>Unknown user</p>
-                        )}
+                    <div className="feed-info">
+                        <Link className="profile-link" to={`/u/${post.feed.feed_name}`} onClick={() => incrementViews(post.post_id)}>
+                            <img className="uploader-feed-image" src={`/${post.feed.feed_photo}`} alt="Feed" />
+                            <p className="username">{post.feed.feed_name} </p>
+                        </Link>
                     </div>
                     <div className="vote-container">
                         <button className={`vote-arrow-container ${upvoteClass}`} onClick={() => postVote(post.post_id, 'upvote')} disabled={isViewingOwnPost}>

@@ -1,142 +1,147 @@
 import axios from 'axios';
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
-const ProfileView = ({ profile, setProfile }) => {
+const FeedInfoView = ({ feed, setFeed }) => {
     const [errorMessage, setErrorMessage] = useState('');
-    const [isEditingBio, setIsEditingBio] = useState(false);
+    const [feedPhotoFile, setFeedPhotoFile] = useState('No file chosen');
+    const [isEditingDescription, setIsEditingDescription] = useState(false);
     const [isEditingName, setIsEditingName] = useState(false);
     const [isFileSelected, setIsFileSelected] = useState(false);
     const [isPhotoFormVisible, setIsPhotoFormVisible] = useState(false);
-    const [newBio, setBio] = useState('');
+    const navigate = useNavigate();
+    const [newDescription, setDescription] = useState('');
     const [newName, setName] = useState('');
-    const [profilePhotoFile, setProfilePhotoFile] = useState('No file chosen');
 
-    //Set name in text area to current description
     useEffect(() => {
         if (isEditingName) {
-            setName(profile.username);
+            setName(feed.feed_name);
         }
-    }, [isEditingName, profile.username]);
+    }, [isEditingName, feed.feed_name]);
 
-    //Set bio in text area to current bio
     useEffect(() => {
-        if (isEditingBio) {
-            setBio(profile.bio);
+        if (isEditingDescription) {
+            setDescription(feed.description);
         }
-    }, [isEditingBio, profile.bio]);
+    }, [isEditingDescription, feed.description]);
 
-    const ChangeProfilePhoto = async (event) => {
+    const ChangeFeedPhoto = async (event) => {
         try {
             event.preventDefault();
-            const fileInput = document.getElementById('new-profile-photo');
+            const fileInput = event.target.elements.new_feed_photo;
             if (!fileInput.files[0]) {
                 setErrorMessage('Please upload an image');
                 return;
             }
             const formData = new FormData();
-            formData.append('new_profile_photo', fileInput.files[0]);
-            const response = await axios.put(`/api/update_profile_photo/${profile.profileId}`, formData, {
+            formData.append('new_feed_photo', fileInput.files[0]);
+            const response = await axios.put(`/api/update_feed_photo/${feed.feed_id}`, formData, {
                 headers: {
                     'Content-Type': 'multipart/form-data',
-                }, 
+                },    
             })
-            setProfile(prevDetails => ({
+            setFeed(prevDetails => ({
                 ...prevDetails,
-                profilePhoto: response.data.newPhotoPath
-            }));
+                feedPhoto: response.data.newPhotoPath
+            }))
             setIsPhotoFormVisible(false);
+            setErrorMessage('');
         } catch(error) {
-           setErrorMessage('Error updating photo');
+            if (error.response.status === 413) {
+                setErrorMessage("File cannot be more than 5MB");
+            } else if (error.response.status === 400) {
+                setErrorMessage(error.response.data.error || "Error, please try again");
+            } else {
+                setErrorMessage("Error, please try again");
+            }
         };
     };
 
     const handleFileChange = (event) => {
         const file = event.target.files[0];
         if (file) {
-            setProfilePhotoFile(file.name);
+            setFeedPhotoFile(file.name);
             setIsFileSelected(true);
         } else {
-            setProfilePhotoFile('No file chosen');
+            setFeedPhotoFile('No file chosen');
             setIsFileSelected(false);
         }
     };
-
-    //Changes profile bio
-    const handleUpdateBio = async () => {
-        try {
-            await axios.post('/api/change_bio', {
-                bio: newBio,
-                profileId: profile.profileId
-            });
-            setProfile({ ...profile, bio: newBio});
-            setIsEditingBio(false);
-        }
-        catch (error) {
-            setErrorMessage('Error changing bio');
-        }
-    }; 
-
-    //Changes username
-    const handleUpdateName = async () => {
-        try {
-            await axios.post('/api/change_username', {
-                username: newName,
-                userId: profile.userId
-            });
-            setProfile({ ...profile, username: newName });
-            setIsEditingName(false);
-        }
-        catch (error) {
-            setErrorMessage('Error changing name');
-        }
-    }; 
-
+    
     const togglePhotoForm = () => {
         if (isPhotoFormVisible) {
             setErrorMessage('');
-            setProfilePhotoFile('No file selected');
+            setFeedPhotoFile('No file selected');
             setIsFileSelected(false);
         }
         setIsPhotoFormVisible(!isPhotoFormVisible);
     };
 
-    //Changes profile between public and private
     const togglePrivate = async () => {
         try {
-            const response = await axios.post('/api/toggle_private', { locationId: profile.profileId, isGroup: false });
-            setProfile(prevDetails => ({
-                ...prevDetails,
-                isPrivate: response.data.is_private
+            const response = await axios.post('/api/toggle_private', { feedId: feed.feed_id });
+            setFeed(prevDetails => ({
+                ...prevDetails, 
+                type: response.data.type
             }));
         } catch (error) {
             setErrorMessage('Error changing status');
         }
     };
 
+    const updateDescription = async () => {
+        try {
+            await axios.post('/api/change_description', {
+                description: newDescription,
+                feedId: feed.feed_id
+            });
+            setFeed({ ...feed, description: newDescription });
+            setIsEditingDescription(false);
+        }
+        catch (error) {
+            setErrorMessage('Error changing description');
+        }
+    };
+
+    const updateFeedName = async () => {
+        try {
+            await axios.post('/api/change_feed_name', {
+                feedName: newName,
+                feedId: feed.feed_id
+            });
+            setFeed({ ...feed, feedName: newName });
+            setIsEditingName(false);
+            navigate(`/feed_settings/${newName}`);
+        }
+        catch (error) {
+            setErrorMessage('Error changing name');
+        }
+    }; 
+
     return (
-        <div className="profile-settings">
+        <div className="feed-settings">  
             <div className="name-photo-area">
-                <div className="profile-header-photo">
-                    <img className="settings-profile-photo" src={`/${profile.profilePhoto}`} alt="Profile" />
+                <div className="feed-header-photo">
+                    <img className="settings-feed-photo" src={`/${feed.feed_photo}`} alt={feed.feed_name} />
                     <button className="button" onClick={togglePhotoForm}>
-                        {isPhotoFormVisible ? 'Close' : 'Change Profile Photo'}
+                        {isPhotoFormVisible ? 'Close' : 'Change feed photo'}
                     </button>
                     {isPhotoFormVisible && (
-                        <form className="change-profile-photo" onSubmit={ChangeProfilePhoto}>
+                        <form className="change-feed-photo" onSubmit={ChangeFeedPhoto}>
                             <div className="file-input">
-                                <label htmlFor="new-profile-photo" className="dark-button">Change feed photo</label>
-                                <input type="file" id="new-profile-photo" name="Profile photo" accept="image/*" onChange={handleFileChange} hidden/>
-                                <span className="file-name">{profilePhotoFile}</span>
+                                <label htmlFor="new-feed-photo" class="dark-button">Change feed photo</label>
+                                <input type="file" id="new-feed-photo" name="new_feed_photo" accept="image/*" onChange={handleFileChange} hidden/>
+                                <span className="file-name">{feedPhotoFile}</span> 
                             </div>
                             <input className={isFileSelected ? 'dark-button' : 'dark-button-disabled'} type="submit" value="Update" disabled={!isFileSelected}/>
                         </form>
                     )}
                 </div>
-                <div className="settings-profile-info">
+                <div className="settings-feed-info">
                     <div className="chat-change">
                         {isEditingName ? (
                             <div className="change-name">
-                                <textarea className="change-name-area long" value={newName} placeholder="Username..." onChange={(e) => {
+                                <textarea className="change-name-area long" value={newName} placeholder="Feed name..." onChange={(e) => {
                                     e.preventDefault();
                                     const input = e.target.value;
                                     const inputLength = input.length;
@@ -155,65 +160,65 @@ const ProfileView = ({ profile, setProfile }) => {
                                     }}>Cancel</button>
                                     <button className="button" onClick={(e) => {
                                         e.preventDefault();
-                                        handleUpdateName()
+                                        updateFeedName()
                                     }}>Save</button>
                                 </div>
                             </div>
                         ) : (
                             <div className="chat-name">
-                                <p className="text36">{profile.username}</p> 
+                                <p className="text36">{feed.feed_name}</p> 
                                 <button className="button" onClick={() => {
                                     setIsEditingName(true);
-                                    setName(profile.username);
-                                }}>Change username</button>
+                                    setName(feed.feed_name);
+                                }}>Change name</button>
                             </div>
                         )}
                     </div>
                     <div className="chat-change">
-                        {isEditingBio ? (
+                        {isEditingDescription ? (
                             <div className="change-name">
-                                <textarea className="change-text-area" value={newBio} placeholder="Bio..." onChange={(e) => {
+                                <textarea className="change-text-area" value={newDescription} placeholder="Description..." onChange={(e) => {
                                     e.preventDefault();
                                     const input = e.target.value;
                                     const inputLength = input.length;
                                     if (inputLength <= 1000) {
-                                        setBio(input)
+                                        setDescription(input)
                                     } else {
-                                        setErrorMessage('Bio cannot exceed 1000 characters');
+                                        setErrorMessage('Description cannot exceed 1000 characters');
                                     }
                                 }}
                                 />
                                 <div className="cancel-save">
                                     <button className="button" onClick={() => {
-                                        setIsEditingBio(false);
-                                        setBio('');
+                                        setIsEditingDescription(false);
+                                        setDescription('');
                                         setErrorMessage('');
                                     }}>Cancel</button>
                                     <button className="button" onClick={(e) => {
                                         e.preventDefault();
-                                        handleUpdateBio()
+                                        updateDescription()
                                     }}>Save</button>
                                 </div>
                             </div>
                         ) : (
                             <div className="chat-name">
-                                <p className="text24">{profile.bio}</p> 
+                                <p className="text24">{feed.description}</p> 
                                 <button className="button" onClick={() => {
-                                    setIsEditingBio(true);
-                                    setBio(profile.bio);
-                                }}>Change bio</button>
+                                    setIsEditingDescription(true);
+                                    setDescription(feed.description);
+                                }}>Change description</button>
                             </div>
                         )}
                     </div>
                     <div className="option-toggle">
-                        <button className={profile.isPrivate === false ? 'active-mode' : 'passive-mode'} onClick={(event) => {event.preventDefault(); togglePrivate();}}>Public</button>
-                        <button className={profile.isPrivate === true ? 'active-mode' : 'passive-mode'} onClick={(event) => {event.preventDefault(); togglePrivate();}}>Private</button>
+                        <button className={feed.type === 'private' ? 'active-mode' : 'passive-mode'} onClick={(event) => {event.preventDefault(); togglePrivate();}}>Public</button>
+                        <button className={feed.type === 'public' ? 'active-mode' : 'passive-mode'} onClick={(event) => {event.preventDefault(); togglePrivate();}}>Private</button>
                     </div>
-                </div>  
+                </div>
             </div>
             <div className="error-message">{errorMessage}</div>
-        </div> 
+        </div>
     );
-};
+}
 
-export default ProfileView;
+export default FeedInfoView;

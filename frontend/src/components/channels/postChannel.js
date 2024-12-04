@@ -5,20 +5,17 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import ContentWidget from "../contentWidget";
 
 //For viewing posts in both group and profile feeds
-const PostChannel = ({ canRemove, channelId, channelName, isGroup, locationId }) => {
+const PostChannel = ({ canRemove, channelId, channelName, feedId, isGroup }) => {
     const queryClient = useQueryClient();
     const { postId } = useParams();
 
     const getSinglePost = async () => {
         try{
-            console.log("getting post");
             const response = await axios.get('/api/channel_posts', {
-                params: { isGroup, isSingle: true, locationId, postId }
+                params: { isSingle: true, feedId, postId }
             });
-            console.log("response:", response);
             return response.data.post; 
         } catch (error) {
-            console.error("Error occurred during API call:", error); // Log full error for troubleshooting
             throw error;
         }
     };
@@ -27,13 +24,13 @@ const PostChannel = ({ canRemove, channelId, channelName, isGroup, locationId })
         const isMain = channelName === 'Main';
         const response = await axios.get('/api/channel_posts', {
             params: {
-                isGroup,
                 isSingle: false,
-                locationId,
-                ...(isMain ? {} : { channel_id: channelId }), //Only include channelId if not viewing Main
+                feedId,
+                //...(isMain ? {} : { channelId }), //Only include channelId if not viewing Main
+                channelId
             }
         });
-        return response.data;
+        return response.data || [];
     };
     
     //Gets individual post 
@@ -45,7 +42,7 @@ const PostChannel = ({ canRemove, channelId, channelName, isGroup, locationId })
 
     //Gets posts from the channel
     const { data: posts = [], error: postsError, isLoading: postsLoading } = useQuery({
-        queryKey: ['posts', channelId, channelName, isGroup, locationId],
+        queryKey: ['posts', channelId, channelName, isGroup, feedId],
         queryFn: getPosts,
         enabled: !postId
     });
@@ -53,8 +50,8 @@ const PostChannel = ({ canRemove, channelId, channelName, isGroup, locationId })
     //Updates post list upon removal
     const handlePostRemoved = (postId) => {
         queryClient.setQueryData(
-            ['posts', channelId, channelName, isGroup, locationId],
-            posts => posts.filter(post => post.post_id !== postId)
+            ['posts', channelId, channelName, isGroup, feedId],
+            (posts = []) => posts.filter(post => post.post_id !== postId)
         );
     };
     if (singlePostError) {

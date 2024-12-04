@@ -1,0 +1,205 @@
+import authenticateCheck from '../functions/checks/authenticateCheck.js';
+import deleteMedia from '../functions/media_handling/deleteMedia.js';
+import { Feeds, FeedChannels, Posts, PostNotes, PostVotes } from '../models/relationships.js';
+import multer from 'multer';
+import { Router } from 'express';
+import { v4 } from 'uuid';
+
+const feedAttributes = ['feed_id', 'parent_id', 'feed_name', 'description', 'feed_photo', 'follower_count', 'date_created', 'type', 'is_group', 'feed_owner'];
+const postAttributes = ['post_id', 'parent_id', 'feed_id', 'channel_id', 'title', 'content', 'replies', 'views', 'upvotes', 'downvotes', 'timestamp', 'poster_id', 'points']
+const router = Router();
+
+router.get('/channel_posts', authenticateCheck, async (req, res) => {
+    try {
+        const { channelId, isSingle, feedId, postId } = req.query;
+        const includeOptions = [{
+            model: Feeds,
+            as: 'poster',
+            attributes: feedAttributes,
+        }, {
+            model: PostVotes,
+            as: 'votes',
+            attributes: ['vote_count'],
+            required: false
+        }, {
+            model: PostNotes,
+            as: 'note',
+            attributes: ['note_id', 'note_content', 'timestamp', 'is_misinfo'],
+            required: false
+        }, {
+            model: FeedChannels,
+            as: 'parentChannel',
+            attributes: ['channel_name'],
+            required: false
+        }];
+        if (isSingle === 'true') {
+            const post = await Posts.findOne({
+                where: { post_id: postId,  
+                    feed_id: feedId,
+                    ...(channelId ? { channel_id: channelId } : {})
+                },
+                include: includeOptions,
+                attributes: postAttributes,
+            });
+            if (!post) {
+                return res.status(404).json({ success: false });
+            }
+            return res.status(200).json({ success: true, post });
+        } 
+        else {
+            const whereChannel = {
+                feed_id: feedId,
+                ...(channelId ? { channel_id: channelId } : {})
+            };
+            const posts = await Posts.findAll({
+                where: whereChannel,
+                include: includeOptions,
+                attributes: postAttributes,
+            });
+            const finalResults = posts.map((post) => ({
+                ...post.dataValues,
+            }));
+            //const sortedPosts = post_type === 'group' 
+            //    ? sortPostsByWeightedRatio(finalResults, userId)
+            //    : finalResults.sort((a, b) => b.timestamp - a.timestamp);
+            return res.status(200).json(finalResults);
+        }
+    } catch (error) {
+        res.status(500).json({ success: false });
+    }
+});
+
+router.post('/content_vote', authenticateCheck, async (req, res) => {
+    try {
+        const { contentId, feedId, voteType } = req.body;
+        const [vote] = await PostVotes.findOrCreate({
+            where: { content_id: contentId, voter_id: feedId },
+        });
+        //Limits upvotes and downvotes on each post to 10
+        if (voteType === 'check_vote') {
+            if (vote.vote_count >= 10) {
+                return res.json({ success: true, message: 'upvote limit' });
+            } else if (vote.vote_count <= -10) {
+                return res.json({ success: true, message: 'downvote limit' });
+            } else {
+                return res.json({ success: true, message: 'no limit' });
+            }
+        }
+        if (vote.vote_count >= 10 && voteType === 'upvote') {
+            return res.json({ success: false, message: 'upvote limit'});
+        } else if (vote.vote_count <= -10 && voteType === 'downvote') {
+            return res.json({ success: false, message: 'downvote limit '});
+        }
+        //Update contentVotes table
+        if (voteType === 'upvote') {
+            vote.vote_count += 1;
+        } else if (voteType === 'downvote') {
+            vote.vote_count -= 1;
+        }
+        await vote.save();
+        //Update individual posts
+        const content = await Posts.findByPk(contentId);
+        if (voteType === 'upvote') {
+            content.upvotes += 1;
+        } else if (voteType === 'downvote') {
+            content.downvotes += 1;
+        }
+        //Recalculate content points
+        //content.points = calculatePoints(content.upvotes, content.downvotes, content.views);
+        await content.save();
+        //Update user total points
+        //const user = await Users.findByPk(content.poster_id);
+        //user.points = await ProfilePosts.sum('points', { where: { poster_id: content.poster_id } });
+        //await user.save();
+        return res.json({ success: true });
+    } catch (error) {
+        return res.status(404).json({ success: false });
+    }
+});
+//Checks input for post uploads
+const postFilter = (req, file, cb) => {
+    if (file.mimetype.startsWith('image') || file.mimetype.startsWith('video')) {
+        cb(null, true);
+    } else {
+        cb(null, false);
+    }
+};
+
+//Multer setup for post uploads
+const post_storage = multer.diskStorage({
+    destination: function (req, file, cb) {
+        cb(null, 'media/content');
+    },
+    filename: function (req, file, cb) {
+        cb(null, Date.now() + path.extname(file.originalname));
+    }
+});
+
+//Uploads with file size limit
+const post_upload = multer({
+    storage: post_storage,
+    limits: {
+        fileSize: 1024 * 1024 * 100 // 100 MB limit
+    },
+    fileFilter: postFilter
+});
+
+router.post('/create_post', authenticateCheck, post_upload.array('files'), async (req, res) => {
+    try {
+        const { feedId, parentId, channelId, title, content, posterId } = req.body;
+        const post_id = v4();
+        let formattedContent = content;
+        //Process uploaded files and format content
+        req.files.forEach((file) => {
+            const fileType = file.mimetype.startsWith('image') ? 'img' : 'video';
+            const fileTag = fileType === 'img' ? `<img src="/media/content/${file.filename}">` : `<video src="/media/content/${file.filename}" controls></video>`;
+            formattedContent += ' ' + fileTag;
+        });
+        const post = await Posts.create({
+            post_id, 
+            parent_id: parentId,
+            feed_id: feedId,
+            channel_id: channelId, 
+            title, 
+            content: formattedContent, 
+            poster_id: posterId
+        });
+        return res.json({ success: true, post });
+    } catch (error) {
+        return res.status(500).json({ success: false });
+    }
+});
+
+router.delete('/remove_post', authenticateCheck, async (req, res) => {
+    try {
+        const { postId } = req.body;
+        const post = await Posts.findOne({
+            where: { post_id: postId }
+        });
+        deleteMedia(post.content);
+        await PostNotes.destroy({ where: { post_id: postId } })
+        res.json({ success: true });
+    } catch (error) {
+        res.status(500).json({ success: false });
+    }
+});
+
+router.post('/increment_views', async (req, res) => {
+    try {
+        const { postId } = req.body;
+        const post = await Posts.findByPk(postId);
+        post.views += 1;
+        //Update post points
+        //post.points = calculatePoints(post.upvotes, post.downvotes, post.views);
+        await post.save();
+        //Update user points
+        //const user = await Users.findByPk(post.poster_id);
+        //user.points = await ProfilePosts.sum('points', { where: { poster_id: post.poster_id } });
+        //await user.save();
+        res.json({ success: true });
+    } catch (error) {
+        res.status(500).json({ success: false });   
+    }
+});
+
+export default router;

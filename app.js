@@ -12,12 +12,11 @@ import session from 'express-session';
 import { urlencoded } from 'express';
 import ask from './routes/ask.js';
 import authentication from './routes/authentication.js';
-import combined from './routes/combined.js';
-import replies from './routes/replies.js';
+import content from './routes/content.js';
 import directMessages, { directMessagesSocket } from './routes/directMessages.js';
-import groups, { groupChatChannelSocket } from './routes/groups.js';
-import profiles from './routes/profiles.js';
+import feeds, { feedChatChannelSocket } from './routes/feeds.js';
 import routes from './routes/routes.js';
+import users from './routes/users.js';
 import sequelize  from './databaseSetup.js';
 
 dotenv.config();
@@ -45,12 +44,11 @@ app.use(session({
 
 app.use('/api/', ask);
 app.use('/api/', authentication);
-app.use('/api/', combined);
+app.use('/api/', content);
 app.use('/api/', directMessages);
-app.use('/api/', groups);
-app.use('/api/', replies);
+app.use('/api/', feeds);
 app.use('/api/', routes);
-app.use('/api/', profiles);
+app.use('/api/', users);
 app.use(history('index.html', { root }));
 
 app.get('*', (req, res) => {
@@ -63,11 +61,13 @@ app.get('*', (req, res) => {
 
 io.on('connection', (socket) => {
     directMessagesSocket(socket);
-    groupChatChannelSocket(socket);
+    feedChatChannelSocket(socket);
 });
 
 sequelize.authenticate()
 
 const PORT = process.env.APP_PORT;
-http.listen(PORT, () => {});
+http.listen(PORT, () => {
+    console.log(`Running on ${PORT}`)
+});
 

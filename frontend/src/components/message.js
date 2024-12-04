@@ -10,9 +10,9 @@ const Message = ({ canRemove, deleteMessage, message, isOutgoing }) => {
     return (
         <div className={`message-container ${isOutgoing ? 'outgoing' : 'incoming'}`}>
             <div className="message-content">
-                {!isOutgoing && message.user && (
-                    <Link to={`/u/${message.user.username}`}>
-                        <img className="profile-image2" src={`/${message.user.profile.profile_photo}`} alt="Profile" />
+                {!isOutgoing && message.feed && (
+                    <Link to={`/u/${message.feed.feed_name}`}>
+                        <img className="small-feed-photo" src={`/${message.feed.feed_photo}`} alt="Feed" />
                     </Link>
                 )}
                 {canRemove ? (

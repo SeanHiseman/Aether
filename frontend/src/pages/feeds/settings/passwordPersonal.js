@@ -15,7 +15,7 @@ const PasswordPersonal = ({ user }) => {
         }
         
         try {
-            const response = await axios.post('/api/change_password', { password, user_id: user.userId });
+            const response = await axios.post('/api/change_password', { password, user_id: user.user_id });
             if (response.data.success) {
                 setPassword('');
                 setConfirmPassword('');
@@ -29,7 +29,7 @@ const PasswordPersonal = ({ user }) => {
     };
 
     return (
-        <div className="profile-settings">
+        <div className="feed-settings">
             <div className="display-area">
                 <p className="text36">Change password</p>
                 <form method="post" onSubmit={changePassword}>

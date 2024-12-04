@@ -1,4 +1,5 @@
-import { ContentVotes, GroupPosts, Profiles, ProfilePosts, Users } from "../../models/models.js";
+import { Posts, PostVotes } from "../../models/content.js";
+import { Feeds } from "../../models/feeds.js";
 import natural from 'natural';
 const { TfIdf } = natural;
 
@@ -15,23 +16,18 @@ const cosineSimilarity = (vector1, vector2) => {
     let dotProduct = 0;
     let vector1Magnitude = 0;
     let vector2Magnitude = 0;
-  
     for (const term of terms) {
         const value1 = vector1.get(term) || 0;
         const value2 = vector2.get(term) || 0;
-    
         dotProduct += value1 * value2;
         vector1Magnitude += value1 ** 2;
         vector2Magnitude += value2 ** 2;
     }
-  
     vector1Magnitude = Math.sqrt(vector1Magnitude);
     vector2Magnitude = Math.sqrt(vector2Magnitude);
-  
     if (vector1Magnitude === 0 || vector2Magnitude === 0) {
         return 0;
     }
-  
     return dotProduct / (vector1Magnitude * vector2Magnitude);
 };
 
@@ -50,86 +46,41 @@ const userInteractionVector = (upvotedPosts, tfidf) => {
             const docText = normalizeText(Object.keys(doc).filter(key => key !== '__key').join(' '));
             return docText === normalizedUpvotedPostText;
         });
-
         if (index < 0) return; //Skip if not found
         const terms = tfidf.listTerms(index);
-
         terms.forEach(({ term, tfidf: termTfidf }) => {
             interactionVector.set(term, (interactionVector.get(term) || 0) + termTfidf);
         });
     });
-
     return interactionVector;
 };
 
 const userInteractionRecommendations = async (user) => {
-    const userUpvotedPosts = await ContentVotes.findAll({
+    const userUpvotedPosts = await PostVotes.findAll({
         where: { user_id: user.user_id },
         include: [
-            { model: ProfilePosts, as: 'ProfilePost' },
-            { model: GroupPosts, as: 'GroupPost' },
+            { model: Posts, as: 'Post' },
         ],
     });
-
     const userUpvotedPostContents = userUpvotedPosts.flatMap((vote) => [
-        ...(vote.ProfilePost ? [processPostText(vote.ProfilePost.title, vote.ProfilePost.content)] : []),
-        ...(vote.GroupPost ? [processPostText(vote.GroupPost.title, vote.GroupPost.content)] : []),
+        ...(vote.Post ? [processPostText(vote.Post.title, vote.Post.content)] : []),
     ]);
-
-    const profilePosts = await ProfilePosts.findAll({
+    const posts = await Posts.findAll({
         include: [{
-            model: Users,
-            as: 'ProfilePoster',
-            attributes: ['username'],
-            include: [{
-                model: Profiles,
-                attributes: ['profile_photo'],
-            }]
+            model: Feeds,
+            as: 'Poster',
+            attributes: ['post_id', 'parent_id', 'feed_id', 'channel_id', 'title', 'content', 'replies', 'views', 'upvotes', 'downvotes', 'timestamp', 'poster_id', 'points'],
         }],
     });
-    
-    const groupPosts = await GroupPosts.findAll({
-        include: [{
-            model: Users,
-            as: 'GroupPoster',
-            attributes: ['username'],
-            include: [{
-                model: Profiles,
-                   attributes: ['profile_photo'],
-            }]
-        }],
-    });
-
-    const allPosts = [
-        ...profilePosts.map(post => ({
-            ...post.get({ plain: true }),
-            is_group: false, 
-            ProfilePoster: {
-                username: post.ProfilePoster.username,
-                profile: post.ProfilePoster.profile 
-            },
-        })),
-        ...groupPosts.map(post => ({
-            ...post.get({ plain: true }), 
-            is_group: true, 
-            GroupPoster: {
-                username: post.GroupPoster.username,
-                profile: post.GroupPoster.profile 
-            },
-        }))
-    ];
-
     const tfidf = new TfIdf();
-    allPosts.forEach((post) => {
+    posts.forEach((post) => {
         const postText = processPostText(post.title, post.content);
         tfidf.addDocument(postText);
     });
-
     //Creates interaction vector from upvoted posts
     const interactionVector = userInteractionVector(userUpvotedPostContents, tfidf);
-
     //Finds similarity scores
-    const recommendations = allPosts
+    const recommendations = posts
         .map((post, index) => {
             const postVector = new Map();
             tfidf.listTerms(index).forEach(({ term, tfidf }) => {
@@ -139,7 +90,6 @@ const userInteractionRecommendations = async (user) => {
             return { ...post, score };
         })
         .sort((a, b) => b.score - a.score)
-
     return recommendations;
 };
 
