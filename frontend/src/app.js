@@ -7,7 +7,7 @@ import Algorithm from './pages/welcome/algorithm';
 import AskChannel from './pages/ask/askChannel';
 import BaseLayout from './pages/base';
 import Content from './pages/welcome/content';
-import ContentWidget from './components/contentWidget';
+import ContentWidget from './components/content/contentWidget';
 import Feeds from './pages/welcome/feeds';
 import FeedHome from './pages/feeds/feedHome';
 import FeedSettings from './pages/feeds/settings/feedSettings';

@@ -23,6 +23,8 @@
 .feed-info {
     align-items: center;
     display: flex;
+}
+.feed-info.main {
     margin-top: 20px;
 }
 .feed-link {
@@ -83,11 +85,6 @@
 .option-toggle button.passive-mode:hover {
     background-color: var(--dark-line);
 }
-
-
-
-
-
 .button.delete {
     color: red;
 }

@@ -410,11 +410,6 @@ main {
     margin-top: 10px;
     margin-bottom: 10px;
 }
-.uploader-feed-image {
-    border-radius: 6px;
-    height: 40px;
-    width: 40px;
-}
 ul {
     padding-inline-start: 0;
 }

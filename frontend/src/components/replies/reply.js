@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 import { AuthContext } from '../authContext';
 import ReactQuill from 'react-quill';
 import AskButton from '../askButton';
-import ContentForm from '../contentForm';
+import ContentForm from '../content/contentForm';
 
 const Reply = ({ addReply, reply, depth, isGroup, onReplyAdded, onReplyRemoved, postId }) => {
     const [downvotes, setDownvotes] = useState(reply.downvotes);

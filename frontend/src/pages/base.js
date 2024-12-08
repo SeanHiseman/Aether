@@ -9,6 +9,7 @@ import { useQueryContext } from '../components/search/queryContext';
 import '../css/baseLayout.css';
 import '../css/basicStyles.css';
 import '../css/contentFeed.css';
+import '../css/contentForm.css';
 import '../css/feed.css';
 import '../css/messages.css';
 import '../css/replies.css';
@@ -154,7 +155,7 @@ const BaseLayout = () => {
     return (
         <div className="container">
             <aside id="left-aside">
-                <div className="feed-info">
+                <div className="feed-info main">
                     <Link className="feed-link" to={`/u/${feed.feed_name}`}>
                         <img className="small-feed-photo" src={`/${feed.feed_photo}`} alt="Feed" />
                         <p className="feed-list-text">{feed.feed_name}</p>
@@ -164,7 +165,7 @@ const BaseLayout = () => {
                     <ul>
                         <li className="channel-link"><Link to="/p/recommended">Recommended</Link></li>
                         <li className="channel-link"><Link to="/p/following">Following</Link></li>
-                        <li className="channel-link"><Link to="/p/friends">Friends</Link></li>
+                        <li className="channel-link"><Link to="/p/connections">Connections</Link></li>
                     </ul>
                 </nav>
                 <div id="create-feed-section">

@@ -2,7 +2,7 @@ import { AuthContext } from '../components/authContext';
 import axios from 'axios';
 import React, { useContext, useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import ContentWidget from '../components/contentWidget';
+import ContentWidget from '../components/content/contentWidget';
 import FeedWidget from '../components/search/feedWidget';
 
 const SearchResults = () => {

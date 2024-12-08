@@ -2,12 +2,18 @@
 #content-form-buttons {
     align-items: center;
     display: flex;
-    justify-content: center;
+    gap: 8px;
 }
-#create-post-container {
+.create-post-container {
     height: 60%;
     margin: 10px;
-    width: 55%;
+}
+.create-post-container.narrow {
+    width: 70%;
+}
+.create-post-container.wide {
+    height: 80%;
+    width: 96%;
 }
 .ql-container {
     border-bottom-left-radius: 10px;
@@ -47,8 +53,33 @@
     height: 0;
 }
 .quill {
-    height: 100%;
+    height: 70%;
     width: 100%;
+}
+.raw-input-form {
+    background-color: var(--darkest);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    color: var(--border);
+    height: 100%;
+    padding: 10px;
+    width: 48%;
+}
+.raw-editor {
+    display: flex;
+    flex: 1;
+    gap: 10px;
+    max-height: 70%;
+    width: 98%;
+}
+.raw-preview {
+    background-color: var(--darkest);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    color: var(--border);
+    height: 100%;
+    padding: 10px;
+    width: 48%;
 }
 #post-file-input {
     align-items: center;

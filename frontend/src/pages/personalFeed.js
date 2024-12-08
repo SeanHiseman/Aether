@@ -1,7 +1,7 @@
 import axios from 'axios';
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import ContentWidget from '../components/contentWidget';
+import ContentWidget from '../components/content/contentWidget';
 
 const PersonalFeed = () => {
     const [errorMessage, setErrorMessage] = useState('');

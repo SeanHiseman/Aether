@@ -5,7 +5,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import ChannelList from '../../components/channels/channelList';
 import ChannelName from '../../components/channels/channelName';
 import ChatChannel from '../../components/channels/chatChannel';
-import ContentForm from "../../components/contentForm";
+import ContentForm from "../../components/content/contentForm";
 import FollowerChangeButton from '../../components/followerChangeButton';
 import PostChannel from '../../components/channels/postChannel';
 
@@ -14,7 +14,6 @@ const FeedHome = () => {
     const [canRemove, setCanRemove] = useState(false);
     const [channelMode, setChannelMode] = useState('post');
     const [channels, setChannels] = useState([]);
-    const [errorMessage, setErrorMessage] = useState('');
     const [feedErrorMessage, setFeedErrorMessage] = useState('');
     const [isAdmin, setIsAdmin] = useState(false);
     const [isChatChannel, setIsChatChannel] = useState(false);
@@ -24,6 +23,7 @@ const FeedHome = () => {
     const [feedNotFound, setFeedNotFound] = useState(true);
     const navigate = useNavigate();
     const [newChannelName, setNewChannelName] = useState('');
+    const [postErrorMessage, setPostErrorMessage] = useState('');
     const [showChannelForm, setShowChannelForm] = useState(false);
     const [showPostForm, setShowPostForm] = useState(false);
     const { user, viewer } = useContext(AuthContext);
@@ -63,7 +63,7 @@ const FeedHome = () => {
         event.preventDefault();
         try {
             if (newChannelName.length === 0) {
-                setErrorMessage("Channel needs a name");
+                setFeedErrorMessage("Channel needs a name");
             } else {
                 const response = await axios.post('/api/add_feed_channel', {
                     channelName: newChannelName,
@@ -75,15 +75,15 @@ const FeedHome = () => {
                     const newChannel = response.data.newChannel;
                     const updatedChannels = [...channels, newChannel];
                     setChannels(updatedChannels);
-                    setErrorMessage('');
+                    setFeedErrorMessage('');
                     setNewChannelName('');
                     navigate(`/${urlLetter}/${feed_name}/${newChannelName}`);
                 } else {
-                    setErrorMessage('Failed to add channel');
+                    setFeedErrorMessage('Failed to add channel');
                 }
             }
         } catch (error) {
-            setErrorMessage('Failed to add channel');
+            setFeedErrorMessage('Failed to add channel');
         }
     };
 
@@ -117,7 +117,7 @@ const FeedHome = () => {
                 navigate(`/${urlLetter}/${feed_name}/Main`);
             }
         } catch (error) {
-            setErrorMessage('Error deleting channel');
+            setFeedErrorMessage('Error deleting channel');
         }
     };
 
@@ -127,15 +127,20 @@ const FeedHome = () => {
 
     //Uploads content 
     const handlePostSubmit = async (formData) => {
+        if (!formData) {
+            setPostErrorMessage("Post cannot be empty");
+            return;
+        }
         formData.append('feed_id', feed.feed_id);
         formData.append('channel_id', channelRender.channel_id);
+        formData.append('poster_id', viewer.feed_id);
         try {
             await axios.post('/api/create_post', formData, {
                 headers: { 'Content-Type': 'multipart/form-data' },
             });
             setShowPostForm(false);
         } catch (error) {
-            setErrorMessage("Error creating post");
+            setPostErrorMessage("Error creating post");
         }
     };
 
@@ -160,9 +165,7 @@ const FeedHome = () => {
         <div className="feed-container">  
             <div className="channel-feed">
                 {showPostForm ? (
-                    <div id="create-post-container">
-                        <ContentForm isReply={false} onSubmit={handlePostSubmit} errorMessage={errorMessage} />
-                    </div>
+                    <ContentForm isReply={false} onSubmit={handlePostSubmit} postErrorMessage={postErrorMessage} setPostErrorMessage={setPostErrorMessage} />
                 ) : feedErrorMessage ? (
                     <div className="text36">{feedErrorMessage}</div>
                 ) : channelRender && !isNotPrivateFollower ? (
@@ -171,7 +174,7 @@ const FeedHome = () => {
                             canRemove={canRemove}
                             channelId={channelRender.channel_id}
                             channelName={channelRender.channel_name}
-                            feedId={feed.feed_id}
+                            feed={feed}
                             isGroup={true}
                         />
                     ) : (
@@ -200,7 +203,7 @@ const FeedHome = () => {
                         <FollowerChangeButton feed={feed} viewerId={viewer.feed_id} />
                     )}
                 </div>
-                {errorMessage && <div className="error-message">{errorMessage}</div>}
+                {feedErrorMessage && <div className="error-message">{feedErrorMessage}</div>}
                 {channelRender && (
                     isAdmin ? (
                     <ChannelName channelId={channelRender.channel_id} channelName={channel_name} isGroup={feed.is_group} locationName={feed_name} channelUpdate={channelUpdate}/>

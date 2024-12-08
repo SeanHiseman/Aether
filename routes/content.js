@@ -55,6 +55,7 @@ router.get('/channel_posts', authenticateCheck, async (req, res) => {
                 where: whereChannel,
                 include: includeOptions,
                 attributes: postAttributes,
+                order: [['timestamp', 'DESC']],
             });
             const finalResults = posts.map((post) => ({
                 ...post.dataValues,
@@ -145,27 +146,30 @@ const post_upload = multer({
 });
 
 router.post('/create_post', authenticateCheck, post_upload.array('files'), async (req, res) => {
+    console.log("req.body:", req.body);
     try {
-        const { feedId, parentId, channelId, title, content, posterId } = req.body;
+        const { channel_id, content, feed_id, is_raw, parentId, poster_id, title } = req.body;
         const post_id = v4();
-        let formattedContent = content;
-        //Process uploaded files and format content
-        req.files.forEach((file) => {
-            const fileType = file.mimetype.startsWith('image') ? 'img' : 'video';
-            const fileTag = fileType === 'img' ? `<img src="/media/content/${file.filename}">` : `<video src="/media/content/${file.filename}" controls></video>`;
-            formattedContent += ' ' + fileTag;
-        });
+        if (!is_raw) {
+            //Process uploaded files and format content
+            req.files.forEach((file) => {
+                const fileType = file.mimetype.startsWith('image') ? 'img' : 'video';
+                const fileTag = fileType === 'img' ? `<img src="/media/content/${file.filename}">` : `<video src="/media/content/${file.filename}" controls></video>`;
+                content += ' ' + fileTag;
+            });
+        };
         const post = await Posts.create({
             post_id, 
             parent_id: parentId,
-            feed_id: feedId,
-            channel_id: channelId, 
+            feed_id,
+            channel_id, 
             title, 
-            content: formattedContent, 
-            poster_id: posterId
+            content, 
+            poster_id
         });
         return res.json({ success: true, post });
     } catch (error) {
+        console.log(error);
         return res.status(500).json({ success: false });
     }
 });
