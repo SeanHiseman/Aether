@@ -2,17 +2,18 @@ import axios from "axios";
 import React from "react";
 import { useParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import ContentWidget from "../contentWidget";
+import ContentWidget from "../content/contentWidget";
 
 //For viewing posts in both group and profile feeds
-const PostChannel = ({ canRemove, channelId, channelName, feedId, isGroup }) => {
+const PostChannel = ({ canRemove, channelId, channelName, feed, isGroup }) => {
     const queryClient = useQueryClient();
     const { postId } = useParams();
+    const feedId = feed.feed_id;
 
     const getSinglePost = async () => {
         try{
             const response = await axios.get('/api/channel_posts', {
-                params: { isSingle: true, feedId, postId }
+                params: { isSingle: true, feedId: feed.feed_id, postId }
             });
             return response.data.post; 
         } catch (error) {
@@ -71,6 +72,7 @@ const PostChannel = ({ canRemove, channelId, channelName, feedId, isGroup }) => 
                         <ContentWidget 
                             post={singlePost} 
                             canRemove={canRemove}
+                            feed={feed}
                             isGroup={isGroup}
                             onPostRemoved={handlePostRemoved}
                         />
@@ -82,6 +84,7 @@ const PostChannel = ({ canRemove, channelId, channelName, feedId, isGroup }) => 
                                 <ContentWidget
                                     key={post.post_id}
                                     canRemove={canRemove}
+                                    feed={feed}
                                     isGroup={isGroup}
                                     onPostRemoved={handlePostRemoved}
                                     post={post}

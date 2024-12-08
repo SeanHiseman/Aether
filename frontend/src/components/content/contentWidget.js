@@ -2,10 +2,11 @@ import axios from 'axios';
 import { Link } from 'react-router-dom';
 import React, { useCallback, useContext, useEffect, useState } from 'react';
 import ReactQuill, { Quill } from 'react-quill';
-import { AuthContext } from './authContext';
-import AskButton from './askButton';
+import { AuthContext } from '../authContext';
+import AskButton from '../askButton';
+import ContentDisplay from './contentDisplay';
 import ContentForm from './contentForm';
-import Reply from './replies/reply';
+import Reply from '../replies/reply';
 
 const ContentWidget = ({ canRemove: canRemoveProp, feed, isGroup, onPostRemoved, post }) => {
     const [canRemove, setCanRemove] = useState(canRemoveProp);
@@ -19,17 +20,17 @@ const ContentWidget = ({ canRemove: canRemoveProp, feed, isGroup, onPostRemoved,
     const [showReplyForm, setShowReplyForm] = useState(false);
     const [upvotes, setUpvotes] = useState(post.upvotes);
     const [upvoteLimit, setUpvoteLimit] = useState(false);
-    const isViewingOwnPost = post.poster_id === feed.feedId; 
-    const { user } = useContext(AuthContext);
+    const isViewingOwnPost = post.poster_id === feed.feed_id; 
+    const { user, viewer } = useContext(AuthContext);
 
-    const getReplies = useCallback(async (postId) => {
-        try {
-            const response = await axios.get(`/api/get_replies/${postId}?isGroup=${isGroup}`);
-            setReplies(response.data); 
-        } catch (error) {
-            console.error("Error getting replies:", error);
-        }
-    }, [isGroup]);
+    //const getReplies = useCallback(async (postId) => {
+        //try {
+            //const response = await axios.get(`/api/get_replies/${postId}?isGroup=${isGroup}`);
+            //setReplies(response.data); 
+        //} catch (error) {
+            //console.error("Error getting replies:", error);
+        //}
+    //}, [isGroup]);
 
     //Adds a view to the post
     const incrementViews = useCallback(async (postId) => {
@@ -51,19 +52,19 @@ const ContentWidget = ({ canRemove: canRemoveProp, feed, isGroup, onPostRemoved,
     }, [isViewingOwnPost, post.poster_id, user.userId]);
 
     //Opens replies
-    useEffect(() => {
-        if (showReplies) {
-            getReplies(post.post_id);
-        }
-    }, [getReplies, post.post_id, showReplies]);
+    //useEffect(() => {
+        //if (showReplies) {
+            //getReplies(post.post_id);
+        //}
+    //}, [getReplies, post.post_id, showReplies]);
     
     //Adds a view if replies are opened
-    useEffect(() => {
-        if (showReplies && !hasViewed) {
-            incrementViews(post.post_id);
-            setHasViewed(true);
-        }
-    }, [hasViewed, incrementViews, post.post_id, showReplies]);
+    //useEffect(() => {
+        //if (showReplies && !hasViewed) {
+            //incrementViews(post.post_id);
+            //setHasViewed(true);
+        //}
+    //}, [hasViewed, incrementViews, post.post_id, showReplies]);
  
     //Sets the upvote/downvote limits upon rendering
     useEffect(() => {
@@ -204,20 +205,20 @@ const ContentWidget = ({ canRemove: canRemoveProp, feed, isGroup, onPostRemoved,
     const upvoteClass = upvoteLimit || isViewingOwnPost ? 'vote-disabled' : 'vote-enabled';
 
     return (
-        <Link to={`/${post.parentFeed}/${post.parentChannel}/${post.post_id}`}>
+        <div>
+            {/**<Link to={`/${feed.feed_name}/${post.parentChannel.channel_name}/${post.post_id}`}>**/}
             <div className="content-item">
                 <div className="title-container">
                     <p className="text36">{post.title}</p>
                     {post.displayGroupName && (
-                        <Link className="feed-link" to={`/g/${post.feed.feed_name}`}>
-                            <p className="text24">{post.feed.feed_name}</p>
-                            <img className="uploader-feed-image" src={`/${post.feed.feed_photo}`} alt="Feed" />
+                        <Link className="feed-link" to={`/g/${feed.feed_name}`}>
+                            <p className="feed-list-text">{feed.feed_name}</p>
+                            <img className="small-feed-photo" src={`/${feed.feed_photo}`} alt="Feed" />
                         </Link>
                     )}
                 </div>
-                <div className="react-quill-container">
-                    <ReactQuill value={post.content} readOnly={true} theme={"bubble"} />
-                </div>
+                {/**<ReactQuill value={post.content} readOnly={true} theme={"bubble"} />**/}
+                <ContentDisplay content={post.content} />
                 {showNote && (
                     <div className="ask-note">
                         <p className="ask-note-text">{note}</p>
@@ -225,9 +226,9 @@ const ContentWidget = ({ canRemove: canRemoveProp, feed, isGroup, onPostRemoved,
                 )}
                 <div className="content-metadata">
                     <div className="feed-info">
-                        <Link className="profile-link" to={`/u/${post.feed.feed_name}`} onClick={() => incrementViews(post.post_id)}>
-                            <img className="uploader-feed-image" src={`/${post.feed.feed_photo}`} alt="Feed" />
-                            <p className="username">{post.feed.feed_name} </p>
+                        <Link className="feed-link" to={`/u/${post.poster.feed_name}`} onClick={() => incrementViews(post.post_id)}>
+                            <img className="small-feed-photo" src={`/${post.poster.feed_photo}`} alt="Feed" />
+                            <p className="feed-list-text">{post.poster.feed_name} </p>
                         </Link>
                     </div>
                     <div className="vote-container">
@@ -265,7 +266,7 @@ const ContentWidget = ({ canRemove: canRemoveProp, feed, isGroup, onPostRemoved,
                     </div>
                 )}
             </div>
-        </Link>
+        </div>
     );
 }
 
