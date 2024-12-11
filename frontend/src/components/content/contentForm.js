@@ -4,9 +4,10 @@ import 'react-quill/dist/quill.snow.css';
 import ContentDisplay from './contentDisplay';
 
 const ContentForm = ({ closeForm, isReply, onSubmit, postErrorMessage, setPostErrorMessage }) => {
-    const [content, setContent] = useState('');
     const [files, setFiles] = useState([]);
     const [isRaw, setIsRaw] = useState(false)
+    const [rawContent, setRawContent] = useState('');
+    const [textContent, setTextContent] = useState('');
     const [title, setTitle] = useState('');
     const quillRef = useRef(null);
 
@@ -32,6 +33,8 @@ const ContentForm = ({ closeForm, isReply, onSubmit, postErrorMessage, setPostEr
         setFiles((prevFiles) => [...prevFiles, ...newFiles]);
     };
 
+    const content = isRaw ? rawContent : textContent;
+
     const handleSubmit = async (event) => {
         event.preventDefault();
         if (isRaw) {
@@ -48,7 +51,15 @@ const ContentForm = ({ closeForm, isReply, onSubmit, postErrorMessage, setPostEr
         files.forEach((file) => {
             formData.append('files', file);
         }); 
-        await onSubmit(formData);
+        try {
+            await onSubmit(formData);
+            setRawContent('');
+            setTextContent('');
+            setTitle([]);
+            setIsRaw(false);
+        } catch (error) {
+            setPostErrorMessage('An error occured while submitting the form')
+        }
     };
 
     return (
@@ -85,12 +96,12 @@ const ContentForm = ({ closeForm, isReply, onSubmit, postErrorMessage, setPostEr
                     <input id="title-entry" type="text" placeholder="Add title (optional)..." value={title} onChange={(e) => setTitle(e.target.value)} />
                 )}
                 {!isRaw ? (
-                    <ReactQuill placeholder={isReply ? "Reply..." : "Start post..."} modules={modules} value={content} onChange={setContent} ref={quillRef} />
+                    <ReactQuill placeholder={isReply ? "Reply..." : "Start post..."} modules={modules} value={textContent} onChange={setTextContent} ref={quillRef} />
                 ) : (
                     <div className="raw-editor">
-                        <textarea className="raw-input-form" placeholder="Enter code..." value={content} onChange={(e) => setContent(e.target.value)} />
+                        <textarea className="raw-input-form" placeholder="Enter code..." value={content} onChange={(e) => setRawContent(e.target.value)} />
                         <div className="raw-preview">
-                            <ContentDisplay content={content} />
+                            <ContentDisplay content={rawContent} />
                         </div>
                     </div>
                 )}

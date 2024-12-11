@@ -146,7 +146,6 @@ const post_upload = multer({
 });
 
 router.post('/create_post', authenticateCheck, post_upload.array('files'), async (req, res) => {
-    console.log("req.body:", req.body);
     try {
         const { channel_id, content, feed_id, is_raw, parentId, poster_id, title } = req.body;
         const post_id = v4();
@@ -169,7 +168,6 @@ router.post('/create_post', authenticateCheck, post_upload.array('files'), async
         });
         return res.json({ success: true, post });
     } catch (error) {
-        console.log(error);
         return res.status(500).json({ success: false });
     }
 });
@@ -181,7 +179,7 @@ router.delete('/remove_post', authenticateCheck, async (req, res) => {
             where: { post_id: postId }
         });
         deleteMedia(post.content);
-        await PostNotes.destroy({ where: { post_id: postId } })
+        await Posts.destroy({ where: { post_id: postId } })
         res.json({ success: true });
     } catch (error) {
         res.status(500).json({ success: false });
