@@ -22,6 +22,7 @@ const ContentWidget = ({ canRemove: canRemoveProp, feed, isGroup, onPostRemoved,
     const [upvoteLimit, setUpvoteLimit] = useState(false);
     const isViewingOwnPost = post.poster_id === feed.feed_id; 
     const { user, viewer } = useContext(AuthContext);
+    const urlLetter = isGroup ? 'g' : 'u';
 
     //const getReplies = useCallback(async (postId) => {
         //try {
@@ -150,10 +151,11 @@ const ContentWidget = ({ canRemove: canRemoveProp, feed, isGroup, onPostRemoved,
         return sortedReplies.sort(sortByNetUpvotes);
     };
 
-    //Deletes the post
     const removePost = async () => {
         try {
-            const response = await axios.delete('/api/remove_post', { postId: post.post_id } );
+            const response = await axios.delete('/api/remove_post', { 
+                data: { postId: post.post_id } 
+            });
             if (response.data.success) {
                 onPostRemoved(post.post_id);
             }
@@ -188,7 +190,6 @@ const ContentWidget = ({ canRemove: canRemoveProp, feed, isGroup, onPostRemoved,
             } catch (error) {
                 console.error('Error:', error);
             }
-    
             if (!hasViewed) {
                 incrementViews(postId);
                 setHasViewed(true);
@@ -206,10 +207,9 @@ const ContentWidget = ({ canRemove: canRemoveProp, feed, isGroup, onPostRemoved,
 
     return (
         <div>
-            {/**<Link to={`/${feed.feed_name}/${post.parentChannel.channel_name}/${post.post_id}`}>**/}
             <div className="content-item">
                 <div className="title-container">
-                    <p className="text36">{post.title}</p>
+                    <Link to={`/${urlLetter}/${feed.feed_name}/${post.parentChannel.channel_name}/${post.post_id}`}className="text36">{post.title}</Link>
                     {post.displayGroupName && (
                         <Link className="feed-link" to={`/g/${feed.feed_name}`}>
                             <p className="feed-list-text">{feed.feed_name}</p>
