@@ -4,32 +4,21 @@ import { useParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import ContentWidget from "../content/contentWidget";
 
-//For viewing posts in both group and profile feeds
 const PostChannel = ({ canRemove, channelId, channelName, feed, isGroup }) => {
     const queryClient = useQueryClient();
     const { postId } = useParams();
     const feedId = feed.feed_id;
 
     const getSinglePost = async () => {
-        try{
-            const response = await axios.get('/api/channel_posts', {
-                params: { isSingle: true, feedId: feed.feed_id, postId }
-            });
-            return response.data.post; 
-        } catch (error) {
-            throw error;
-        }
+        const response = await axios.get('/api/channel_posts', {
+            params: { isSingle: true, feedId: feed.feed_id, postId }
+        });
+        return response.data.post; 
     };
 
     const getPosts = async () => {
-        const isMain = channelName === 'Main';
         const response = await axios.get('/api/channel_posts', {
-            params: {
-                isSingle: false,
-                feedId,
-                //...(isMain ? {} : { channelId }), //Only include channelId if not viewing Main
-                channelId
-            }
+            params: { isSingle: false, feedId, channelId }
         });
         return response.data || [];
     };
@@ -52,31 +41,33 @@ const PostChannel = ({ canRemove, channelId, channelName, feed, isGroup }) => {
     const handlePostRemoved = (postId) => {
         queryClient.setQueryData(
             ['posts', channelId, channelName, isGroup, feedId],
-            (posts = []) => posts.filter(post => post.post_id !== postId)
+            (oldPosts = []) => oldPosts.filter(post => post.post_id !== postId)
         );
     };
-    if (singlePostError) {
-        console.log("Error object in useQuery:", singlePostError);
+    if (postId && singlePostError) {
+        if (singlePostError.response?.status === 404) {return <p className="text36">Post not found. Please check the URL.</p>;}
+        return <p className="text36">Error fetching the post. Please try again later.</p>;
     }
-    if (postId && singlePostLoading) return <p>Loading post...</p>;
-    if (postId && singlePostError?.response?.status === 404) {console.log("Error fetching post:", singlePostError); 
-        return <p>Post not found. Please check the url.</p>;}
-    if (postId && singlePostError) return <p>Error getting post, please try again</p>;
-    if (!postId && postsError) return <p>Error getting posts, please try again</p>;
-    if (!postId && postsLoading) return <p>Loading posts...</p>;
+    if (!postId && postsError) {return <p className="text36">Error fetching posts. Please try again later.</p>;}
+    if (postId && singlePostLoading) {return <p className="text36">Loading post...</p>;}
+    if (!postId && postsLoading) {return <p className="text36">Loading posts...</p>;}
     return (
         <div className="channel">
             <div className="channel-content">
                 {postId ? (
-                    <ul className="content-list">
-                        <ContentWidget 
-                            post={singlePost} 
-                            canRemove={canRemove}
-                            feed={feed}
-                            isGroup={isGroup}
-                            onPostRemoved={handlePostRemoved}
-                        />
-                    </ul> 
+                    singlePost ? (
+                        <ul className="content-list">
+                            <ContentWidget 
+                                post={singlePost} 
+                                canRemove={canRemove}
+                                feed={feed}
+                                isGroup={isGroup}
+                                onPostRemoved={handlePostRemoved}
+                            />
+                        </ul> 
+                    ) : (
+                        <p className="text36">No post available.</p>
+                    )
                 ) : (
                     posts.length > 0 ? (
                         <ul className="content-list">
@@ -92,7 +83,7 @@ const PostChannel = ({ canRemove, channelId, channelName, feed, isGroup }) => {
                             ))}
                         </ul>
                     ) : (
-                        <p>No posts yet</p>
+                        <p className="text36">No posts yet</p>
                     )
                 )}
             </div>

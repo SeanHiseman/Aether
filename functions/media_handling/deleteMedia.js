@@ -9,7 +9,6 @@ const rootDir = path.resolve(__dirname, '../../');
 
 //Deletes media files by accessing route from content
 function deleteMedia(content) {
-    console.log("content:", content);
     const mediaFiles = [];
     const mediaRegex = /(media\/(?:[^\/\s]+\/)*[^\/\s]+\.[a-zA-Z0-9]+)/g; //Matches any valid file path
     let match;

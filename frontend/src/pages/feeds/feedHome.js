@@ -15,12 +15,13 @@ const FeedHome = () => {
     const [channelMode, setChannelMode] = useState('post');
     const [channels, setChannels] = useState([]);
     const [feedErrorMessage, setFeedErrorMessage] = useState('');
+    const [loading, setLoading] = useState(true);
     const [isAdmin, setIsAdmin] = useState(false);
     const [isChatChannel, setIsChatChannel] = useState(false);
     const [isPostChannel, setIsPostChannel] = useState(true);
     const [isModerator, setIsModerator] = useState(false);
     const [feed, setFeed] = useState('');
-    const [feedNotFound, setFeedNotFound] = useState(true);
+    const [feedNotFound, setFeedNotFound] = useState(false);
     const navigate = useNavigate();
     const [newChannelName, setNewChannelName] = useState('');
     const [postErrorMessage, setPostErrorMessage] = useState('');
@@ -30,6 +31,7 @@ const FeedHome = () => {
 
     useEffect(() => {
         const fetchFeedData = async () => {
+            setLoading(true);
             try {
                 const response = await axios.get(`/api/feed/${feed_name}`);
                 const feed = response.data.feedResult;
@@ -44,7 +46,11 @@ const FeedHome = () => {
             } catch (error) {
                 if (error.response && error.response.status === 404) {
                     setFeedNotFound(true);
+                } else {
+                    setFeedErrorMessage('Failed to load feed');
                 }
+            } finally {
+                setLoading(false);
             }
         }; 
         fetchFeedData();
@@ -148,9 +154,20 @@ const FeedHome = () => {
     const toggleChannelForm = () => { setShowChannelForm((prev) => !prev) };
 
     //Checks following if group is private
-    const isNotPrivateFollower = !feed.isFollower && !feed.type === 'private';
+    const isNotPrivateFollower = feed?.type === 'private' && !feed?.isFollower;
 
-    document.title = feed.feed_name || 'Feed not found';
+    document.title = feed?.feed_name || 'Feed not found';
+
+    if (loading) {
+        return (
+            <div className="feed-container">
+                <div className="channel-feed">
+                    <div className="text36">Loading...</div>
+                </div>
+                <aside id="right-aside"/>
+            </div>
+        );
+    }
     if (feedNotFound) {
         return (
             <div className="feed-container"> 
@@ -161,14 +178,29 @@ const FeedHome = () => {
             </div>
         );
     } 
+    if (isNotPrivateFollower) {
+        return (
+            <div className="feed-container">
+                <div className="channel-feed">
+                    <p className="text36">This feed is private</p>
+                </div>
+                <aside id="right-aside"/>
+            </div>
+        );
+    }
     return (    
         <div className="feed-container">  
             <div className="channel-feed">
                 {showPostForm ? (
-                    <ContentForm isReply={false} onSubmit={handlePostSubmit} postErrorMessage={postErrorMessage} setPostErrorMessage={setPostErrorMessage} />
+                    <ContentForm 
+                        isReply={false} 
+                        onSubmit={handlePostSubmit} 
+                        postErrorMessage={postErrorMessage} 
+                        setPostErrorMessage={setPostErrorMessage} 
+                    />
                 ) : feedErrorMessage ? (
                     <div className="text36">{feedErrorMessage}</div>
-                ) : channelRender && !isNotPrivateFollower ? (
+                ) : channelRender ? (
                         channelRender.is_posts && (channelMode === 'post' || !channelRender.is_chat) ? (
                         <PostChannel
                             canRemove={canRemove}
@@ -186,9 +218,9 @@ const FeedHome = () => {
                         />
                     )
                 ) : (
-                    <p className="text36">This feed is private</p>
+                    <p className="text36"></p>
                 )}
-            </div>    
+            </div> 
             <aside id="right-aside">
                 <div id="feed-summary">
                     <img className="large-feed-photo" src={`/${feed.feed_photo}`} alt={feed.feed_name} />
