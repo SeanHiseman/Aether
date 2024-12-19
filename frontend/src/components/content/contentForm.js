@@ -1,3 +1,4 @@
+import axios from 'axios';
 import React, { useRef, useState } from 'react';
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
@@ -5,10 +6,13 @@ import ContentDisplay from './contentDisplay';
 
 const ContentForm = ({ closeForm, isReply, onSubmit, postErrorMessage, setPostErrorMessage }) => {
     const [files, setFiles] = useState([]);
-    const [isRaw, setIsRaw] = useState(false)
+    const [generationRequest, setGenerationRequest] = useState('');
+    const [isRaw, setIsRaw] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
     const [rawContent, setRawContent] = useState('');
     const [textContent, setTextContent] = useState('');
     const [title, setTitle] = useState('');
+    const [useRequest, setUseRequest] = useState(false);
     const quillRef = useRef(null);
 
     //Customises tool bar
@@ -25,6 +29,36 @@ const ContentForm = ({ closeForm, isReply, onSubmit, postErrorMessage, setPostEr
             ],
             ['clean'],
         ]
+    };
+
+    const generateContent = async (content) => {
+        try {
+            if (content.trim() === '') {
+                setPostErrorMessage('Please enter a request');
+                return;
+            } else {
+                setIsLoading(true);
+                setGenerationRequest('');
+                const response = await axios.post('/api/generate_content', {
+                    requestContent: content,
+                });
+                if (response.data && response.status === 201) {
+                    const { generatedContent } = response.data;
+                    setRawContent(generatedContent);
+                    setPostErrorMessage('');
+                } else {
+                    setPostErrorMessage("Generation error");
+                    setIsLoading(false);
+                }
+            }
+        } catch (error) {
+            setPostErrorMessage("Generation error");
+            setIsLoading(false);
+        }
+    };
+
+    const generateModeToggle = () => {
+        setUseRequest((prev) => !prev);
     };
 
     //Handles attached files
@@ -90,6 +124,11 @@ const ContentForm = ({ closeForm, isReply, onSubmit, postErrorMessage, setPostEr
                     <button className="button" type="button" onClick={() => setIsRaw(!isRaw)}>
                         {isRaw ? "Text Editor" : "Raw Editor"}
                     </button>
+                    {isRaw && (
+                        <button className="button" type="button" onClick={generateModeToggle}>
+                            {useRequest ? 'Code Mode' : 'Generate Mode'}
+                        </button>
+                    )}
                     {postErrorMessage && (<div className="error-message">{postErrorMessage}</div>)}
                 </div>
                 {!isReply && (
@@ -99,9 +138,20 @@ const ContentForm = ({ closeForm, isReply, onSubmit, postErrorMessage, setPostEr
                     <ReactQuill placeholder={isReply ? "Reply..." : "Start post..."} modules={modules} value={textContent} onChange={setTextContent} ref={quillRef} />
                 ) : (
                     <div className="raw-editor">
-                        <textarea className="raw-input-form" placeholder="Enter code..." value={content} onChange={(e) => setRawContent(e.target.value)} />
+                        {useRequest ? (
+                            <>
+                                <textarea className="raw-input-form" placeholder="Describe your post..." value={generationRequest} onChange={(e) => setGenerationRequest(e.target.value)} />
+                                <button className="button" type="button" onClick={generateContent} />
+                            </>
+                        ) : (
+                            <textarea className="raw-input-form" placeholder="Enter code..." value={content} onChange={(e) => setRawContent(e.target.value)} />
+                        )}
                         <div className="raw-preview">
-                            <ContentDisplay content={rawContent} />
+                            {isLoading ? (
+                                <div>Loading...</div>
+                            ) : (
+                                <ContentDisplay content={rawContent} />
+                            )}
                         </div>
                     </div>
                 )}

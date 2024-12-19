@@ -37,7 +37,6 @@ Feeds.hasMany(FollowRequests, { as: 'receivedFollowRequests', foreignKey: 'recei
 FollowRequests.belongsTo(Feeds, { as: 'sender', foreignKey: 'sender_id' });
 FollowRequests.belongsTo(Feeds, { as: 'receiver', foreignKey: 'receiver_id' });
 
-//Feeds.hasMany(PostVotes, { as: 'postVotes', foreignKey: 'feed_id' });
 Posts.hasMany(PostVotes, { as: 'votes', foreignKey: 'content_id' });
 PostVotes.belongsTo(Posts, { as: 'parentPost', foreignKey: 'content_id' });
 

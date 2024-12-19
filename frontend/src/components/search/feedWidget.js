@@ -5,7 +5,7 @@ import ManageConnectionButton from '../manageConnectionButton';
 
 const FeedWidget = ({ feed, viewerId }) => {
     const isViewingSelf = feed.feed_id === viewerId;
-
+    console.log("feed:", feed);
     return (
         <div className="result-widget">
             <Link to={`/${feed.is_group ? 'g' : 'u'}/${feed.feed_name}/Main`}>
@@ -15,7 +15,7 @@ const FeedWidget = ({ feed, viewerId }) => {
                 </div>
             </Link>
             {!isViewingSelf && !feed.is_group && (
-                <ManageConnectionButton feed={feed} viewerId={viewerId} />
+                <ManageConnectionButton connectRequest={feed.connectRequest} feed={feed} isConnected={feed.isConnected} viewerId={viewerId} />
             )}
             <div className="search-result-info-box">
                 <div className="result-info-options">
