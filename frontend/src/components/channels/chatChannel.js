@@ -26,7 +26,7 @@ const ChatChannel = ({ canRemove, channelId, isGroup, locationId }) => {
             socket.off('new_message');
             socket.emit('leave_channel', channelId);
         };
-    }, [channelId]);
+    }, [channelId, socket]);
 
     //Deletes the message
     const deleteMessage = (messageId) => {

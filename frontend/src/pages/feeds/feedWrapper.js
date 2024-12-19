@@ -17,7 +17,7 @@ const FeedWrapper = () => {
         if (!channel_name) {
             navigate(defaultPath, { replace: true });
         }
-    }, [feed_name, channel_name, navigate]);
+    }, [defaultPath, feed_name, channel_name, navigate]);
 
     return <FeedHome />;
 }

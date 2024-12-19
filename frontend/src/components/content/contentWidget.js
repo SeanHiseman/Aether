@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { Link } from 'react-router-dom';
 import React, { useCallback, useContext, useEffect, useState } from 'react';
-import ReactQuill, { Quill } from 'react-quill';
+import { Quill } from 'react-quill';
 import { AuthContext } from '../authContext';
 import AskButton from '../askButton';
 import ContentDisplay from './contentDisplay';
@@ -21,7 +21,7 @@ const ContentWidget = ({ canRemove: canRemoveProp, feed, isGroup, onPostRemoved,
     const [upvotes, setUpvotes] = useState(post.upvotes);
     const [upvoteLimit, setUpvoteLimit] = useState(false);
     const isViewingOwnPost = post.poster_id === feed.feed_id; 
-    const { user, viewer } = useContext(AuthContext);
+    const { user } = useContext(AuthContext);
     const urlLetter = isGroup ? 'g' : 'u';
 
     //const getReplies = useCallback(async (postId) => {
@@ -83,7 +83,7 @@ const ContentWidget = ({ canRemove: canRemoveProp, feed, isGroup, onPostRemoved,
         };
 
         checkVoteLimit();
-    }, [post.post_id, isGroup]);
+    }, [feed.feedId, post.post_id, isGroup]);
 
     //Allows React Quill to display videos
     const BlockEmbed = Quill.import('blots/block/embed');
@@ -217,7 +217,6 @@ const ContentWidget = ({ canRemove: canRemoveProp, feed, isGroup, onPostRemoved,
                         </Link>
                     )}
                 </div>
-                {/**<ReactQuill value={post.content} readOnly={true} theme={"bubble"} />**/}
                 <ContentDisplay content={post.content} />
                 {showNote && (
                     <div className="ask-note">

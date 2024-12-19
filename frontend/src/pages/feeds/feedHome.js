@@ -1,5 +1,7 @@
 import axios from 'axios';
 import { AuthContext } from '../../components/authContext';
+import { FaTrash, FaPlus } from 'react-icons/fa';
+import { Tooltip } from 'react-tooltip';
 import React, { useContext, useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import ChannelList from '../../components/channels/channelList';
@@ -244,7 +246,11 @@ const FeedHome = () => {
                     ) 
                 )}
                 {isAdmin && channel_name !== 'Main' && (
-                    <button className="button" onClick={() => deleteChannel()}>Delete channel</button> 
+                    <FaTrash
+                        data-tip="Delete Channel"
+                        className="icon-button"
+                        onClick={deleteChannel}
+                    />
                 )}
                 {showPostForm && channelMode === 'post' && (
                     <div>
@@ -262,23 +268,43 @@ const FeedHome = () => {
                 )}
                 {isAdmin && (
                     <div className="add-channel-section">
-                        <button className="button" onClick={toggleChannelForm}>
-                            {showChannelForm ? 'Close': 'Create channel'}
-                        </button>
+                        <FaPlus
+                            data-tip={showChannelForm ? 'Close' : 'Create Channel'}
+                            className="add-icon"
+                            onClick={toggleChannelForm}
+                        />
+                        <Tooltip place="top" type="dark" effect="solid" />
                         {showChannelForm && (
                             <form className="add-channel-form" onSubmit={AddChannel}>
-                                <input className="name-input" type="text" placeholder="Channel name..." value={newChannelName} onChange={(e) => setNewChannelName(e.target.value)}/>
-                                {(feed.is_group) && (
-                                    <><label>
-                                        <input type="checkbox" checked={isPostChannel} onChange={handlePostClick} />
-                                        Post Channel
-                                    </label><label>
-                                            <input type="checkbox" checked={isChatChannel} onChange={handleChatClick} />
+                                <input
+                                    className="name-input"
+                                    type="text"
+                                    placeholder="Channel name..."
+                                    value={newChannelName}
+                                    onChange={(e) => setNewChannelName(e.target.value)}
+                                />
+                                {feed.is_group && (
+                                    <div className="channel-options">
+                                        <label>
+                                            <input
+                                                type="checkbox"
+                                                checked={isPostChannel}
+                                                onChange={handlePostClick}
+                                            />
+                                            Post Channel
+                                        </label>
+                                        <label>
+                                            <input
+                                                type="checkbox"
+                                                checked={isChatChannel}
+                                                onChange={handleChatClick}
+                                            />
                                             Chat Channel
-                                        </label></>
+                                        </label>
+                                    </div>
                                 )}
-                                <input className="dark-button" type="submit" value="Add"/>
-                            </form>                            
+                                <input className="dark-button" type="submit" value="Add" />
+                            </form>
                         )}
                     </div>
                 )}

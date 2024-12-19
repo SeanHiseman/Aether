@@ -1,5 +1,5 @@
 import axios from 'axios';
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 
 const FollowRequests = ({ feed }) => {
@@ -7,21 +7,18 @@ const FollowRequests = ({ feed }) => {
     //const [nestRequests, setNestRequests] = useState(null);
     const [requests, setRequests] = useState([]);
 
-    useEffect(() => {
-        getFollowRequests();
-    }, []);
-
-    const getFollowRequests = async () => {
+    const getFollowRequests = useCallback(async () => {
         try {
-            const response = await axios.get(`/api/follow_requests/${feed.feed_id}`);
-            console.log("response.data.requests:", response.data.requests);
-            setRequests(response.data.requests);
-            //const nestResponse = await axios.get(`/api/group_nest_requests/${groupDetails.groupId}`);
-            //setNestRequests(nestResponse.data);
+            const response = await axios.get(`/api/get_follow_requests/${feed.feed_id}`);
+            setRequests(response.data);
         } catch (error) {
             setErrorMessage('Error getting requests');
         }
-    };
+    }, [feed.feed_id]); 
+    
+    useEffect(() => {
+        getFollowRequests();
+    }, [getFollowRequests]);
 
     const handleRequestAction = async (request, result) => {
         try {

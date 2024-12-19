@@ -18,7 +18,7 @@ const ChannelList = ({ channels, feedId, feedName, isGroup, setChannels }) => {
             setErrorMessage('Error getting channels');
             setChannels([]);
         }
-    }, [feedId]);
+    }, [feedId, setChannels]);
 
     useEffect(() => {
         getFeedChannels();

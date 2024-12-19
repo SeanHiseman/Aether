@@ -30,7 +30,7 @@ const SearchResults = () => {
         if (keyword) {
             fetchResults();
         }
-    }, [keyword]);
+    }, [keyword, viewer.feed_id]);
 
     //Load user's time preference
     //useEffect(() => {

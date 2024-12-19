@@ -58,7 +58,7 @@ const AskChannel = () => {
             }
         };
         fetchMessages();
-    }, [chatId, query]);
+    }, [chatId, query, setQuery, user.userId]);
 
     //Find current chat based on Id in url
     const currentChat = chats.find(chat => chat.chat_id === chatId);
