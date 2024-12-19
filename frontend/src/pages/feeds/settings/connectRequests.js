@@ -8,17 +8,16 @@ const ConnectRequests = ({ feed }) => {
     const [connectRequests, setConnectRequests] = useState([]);
 
     useEffect(() => {
+        const getConnectRequests = async () => {
+            try {
+                const response = await axios.get(`/api/get_connect_requests/${feed.feed_id}`);
+                setConnectRequests(response.data);
+            } catch (error) {
+                setErrorMessage('Error getting requests');
+            } 
+        };
         getConnectRequests();
-    }, []); 
-
-    const getConnectRequests = async () => {
-        try {
-            const response = await axios.get(`/api/get_connect_requests/${feed.feed_id}`);
-            setConnectRequests(response.data);
-        } catch (error) {
-            setErrorMessage('Error getting requests');
-        } 
-    };
+    }, [feed.feed_id]); 
 
     const handleRequestUpdate = (senderId) => {
         setConnectRequests(prevRequests => 

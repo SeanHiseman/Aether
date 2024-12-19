@@ -54,6 +54,7 @@ const ContentDisplay = ({ content }) => {
     return (
         <iframe
             ref={iframeRef}
+            title="Content iframe"
             style={{
                 //alignItems: "center",
                 border: "none",

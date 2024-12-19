@@ -50,7 +50,7 @@ const Messages = sequelize.define('messages', {
     message_id: { type: STRING(36), primaryKey: true },
     chat_id: { type: STRING(36), allowNull: false, references: { model: Chats, key: 'chat_id' }},
     sender_id: { type: STRING(36), allowNull: false, references: { model: Feeds, key: 'feed_id' }},
-    message_content: { type: STRING(1000), allowNull: false },
+    content: { type: STRING(1000), allowNull: false },
     timestamp: { type: DATE, defaultValue: NOW }
 }, { tableName: 'messages', timestamps: false });
   
