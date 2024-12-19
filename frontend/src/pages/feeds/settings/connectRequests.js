@@ -11,7 +11,8 @@ const ConnectRequests = ({ feed }) => {
         const getConnectRequests = async () => {
             try {
                 const response = await axios.get(`/api/get_connect_requests/${feed.feed_id}`);
-                setConnectRequests(response.data);
+                console.log("response.data:", response.data);
+                setConnectRequests(response.data.requests || []);
             } catch (error) {
                 setErrorMessage('Error getting requests');
             } 
@@ -40,7 +41,7 @@ const ConnectRequests = ({ feed }) => {
                                     <img className="large-feed-photo" src={`/${request.sender.feed_photo}`} alt="Profile" />
                                     <p className="text36 feed-name">{request.sender.feed_name}</p>
                                 </Link>
-                                <ManageConnectionButton feed={request} connectRequest={request} viewerId={feed.feed_id} onRequestUpdate={handleRequestUpdate} />
+                                <ManageConnectionButton connectRequest={request} feed={feed} isConnected={false} viewerId={feed.feed_id} onRequestUpdate={handleRequestUpdate} />
                             </div>
                         </li>
                     ))}

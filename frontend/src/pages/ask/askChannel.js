@@ -158,7 +158,6 @@ const AskChannel = () => {
                 senderId: user.userId, 
                 timestamp: Date.now() //Set timestamp now so reply has different
             });
-
             if (response.data && response.status === 201) {
                 const { userMessage, assistantMessage } = response.data;
                 setMessages(prevMessages => [assistantMessage, userMessage, ...prevMessages]);

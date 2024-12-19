@@ -8,7 +8,7 @@ import { AskChats, AskMessages, PostNotes } from '../models/relationships.js';
 dotenv.config();
 const openai = new OpenAI();
 const router = Router();
-
+ 
 router.post('/ask_button', authenticateCheck, async (req, res) => {
     try {
         const { postTitle, postContent, id } = req.body;
@@ -120,6 +120,48 @@ router.get('/get_ask_chats', authenticateCheck, async (req, res) => {
     }
 });
 
+router.post('/generate_content', authenticateCheck, async (req, res) => {
+    try {
+        const { requestContent } = req.body;
+        console.log("requestContent:", requestContent);
+        //Creates API assistant
+        const assistant = await openai.beta.assistants.create({
+            name: "Ask",
+            instructions: "Generate html content",
+            model: "gpt-4o-mini",
+        });
+        //Send user message to OpenAI
+        const thread = await openai.beta.threads.create();
+        const userMessage = await openai.beta.threads.messages.create(
+            thread.id,
+            {
+                role: "user",
+                content: requestContent
+            }
+        );
+        //Run OpenAI assistant
+        const run = await openai.beta.threads.runs.create(
+            thread.id,
+            {
+                assistant_id: assistant.id, 
+                instructions: "Only reply with html code, containing JavaScript if necessary. If request cannot be made into html code, response with nothing"
+            }
+        ); 
+        //Wait for OpenAI response
+        let runStatus = await openai.beta.threads.runs.retrieve(thread.id, run.id);
+        while (runStatus.status !== "completed") {
+            runStatus = await openai.beta.threads.runs.retrieve(thread.id, run.id);
+        }
+        //Get OpenAI response
+        const messages = await openai.beta.threads.messages.list(thread.id);
+        const aiReply = messages.data.find(msg => msg.role === 'assistant').content[0].text.value;
+        console.log("aiReply:", aiReply);
+        res.status(201).json({ success: true, generatedContent: aiReply });
+    } catch (error) {
+        res.status(500).json({ success: false });
+    }
+});
+
 //Get messages within a specific chat
 router.get('/get_ask_messages', authenticateCheck, async (req, res) => {
     try {
@@ -157,7 +199,7 @@ router.post('/send_ask_message', authenticateCheck, async (req, res) => {
             thread.id,
             {
                 assistant_id: assistant.id, 
-                instructions: "Your info:( Name: Ask, Site name: Aether) rules: (reply length < 3 sentences if possible) "
+                instructions: "Your info:( Name: Ask, Site name: Aether) rules: (reply length =< 3 sentences if possible) "
             }
         );
         //Wait for OpenAI response

@@ -1,5 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import ContentDisplay from './content/contentDisplay';
 
 const Message = ({ canRemove, deleteMessage, message, isOutgoing }) => {
     //Users can delete their own messages
@@ -19,7 +20,7 @@ const Message = ({ canRemove, deleteMessage, message, isOutgoing }) => {
                     <button className="button" onClick={() => deleteMessage(message.message_id)}>-</button>
                 ) : null}
                 <div className={`message ${isOutgoing ? 'outgoing' : 'incoming'}`}>
-                    {message.message_content}
+                    <ContentDisplay content={message.content}/>
                 </div>
             </div>
             <p className={`message-date ${isOutgoing ? 'outgoing' : 'incoming'}`}>{new Date(message.timestamp).toLocaleDateString()}</p>

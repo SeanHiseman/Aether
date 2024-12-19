@@ -66,7 +66,6 @@ router.post('/create_chat', authenticateCheck, async (req, res) => {
         await FeedChats.bulkCreate(feedChats);
         res.status(201).json(newChat);
     } catch (error) {
-        console.log(error);
         res.status(500).json({ success: false });
     }
 });
@@ -98,12 +97,15 @@ router.delete('/delete_chat', authenticateCheck, async (req, res) => {
 router.delete('/delete_connect_request', authenticateCheck, async (req, res) => {
     try {
         const { receiverId, senderId } = req.body;
-        await ConnectRequests.destroy({
+        const deleteCount = await ConnectRequests.destroy({
             where: { sender_id: senderId, receiver_id: receiverId } 
         });
-        res.status(200).json({ isConnected: false, success: true });
+        if (deleteCount > 0) {
+            res.status(200).json({ isConnected: false, success: true });
+        } else {
+            res.status(500).json({ isConnected: false,  success: false });
+        }
     } catch (error) {
-        console.log(error);
         res.status(500).json({ isConnected: false,  success: false });
     }
 });
@@ -262,7 +264,7 @@ router.get('/get_connect_requests/:feedId', authenticateCheck, async (req, res) 
                 attributes: feedAttributes,
             }],
         });
-        res.json(requests);
+        res.status(200).json({ success: true, requests });
     } catch (error) {
         res.status(500).json({ success: false });
     }
@@ -278,7 +280,6 @@ router.post('/send_connect_request', authenticateCheck, async (req, res) => {
         });
         res.status(200).json({ success: true });
     } catch (error) {
-        console.log(error);
         res.status(500).json({ success: false });
     }
 });

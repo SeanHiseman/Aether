@@ -144,36 +144,30 @@ router.get('/search/:searcherId', authenticateCheck, async (req, res) => {
             attributes: feedAttributes,
         });
         const feedData = await Promise.all(feeds.map(async (feed) => {
-            let isConnected = false, hasConnectRequest = false, receiver_id = null, isAdmin = false, isMod = false, isFollower = false, hasFollowRequest = false;
             const [connectStatus, connectRequest, followStatus, followRequest] = await Promise.all([
                 ConnectCheck(searcherId, feed.feed_id),
                 ConnectRequests.findOne({
                     where: {
-                      [Op.or]: [
-                        { sender_id: searcherId },
-                        { receiver_id: searcherId }
-                      ]
+                        [Op.or]: [
+                            { sender_id: searcherId, receiver_id: feed.feed_id },
+                            { sender_id: feed.feed_id, receiver_id: searcherId }
+                        ]
                     }
-                  }),
+                }),
                 FollowerCheck(searcherId, feed.feed_id),
-                FollowRequests.findOne({ where: { sender_id: searcherId } })
+                FollowRequests.findOne({
+                    where: { sender_id: searcherId, receiver_id: feed.feed_id }
+                })
             ]);
-            isConnected = connectStatus?.connected || false;
-            hasConnectRequest = !!connectRequest
-            receiver_id = connectRequest ? connectRequest.receiver_id : feed.feed_id;
-            isAdmin = followStatus?.isAdmin || false;
-            isMod = followStatus?.isMod || false;
-            isFollower = followStatus?.following || false;
-            hasFollowRequest = !!followRequest;
             return {
                 ...feed.toJSON(),
-                isConnected,
-                hasConnectRequest,
-                receiver_id,
-                isAdmin,
-                isMod,
-                isFollower,
-                hasFollowRequest
+                isConnected: connectStatus?.connected || false,
+                connectRequest: connectRequest || null, 
+                //receiver_id: connectRequest ? connectRequest.receiver_id : feed.feed_id,
+                isAdmin: followStatus?.isAdmin || false,
+                isMod: followStatus?.isMod || false,
+                isFollower: followStatus?.following || false,
+                followRequest: followRequest || null 
             };
         }));
         //const postResults = await Posts.findAll({

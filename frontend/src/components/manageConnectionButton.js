@@ -2,50 +2,59 @@ import axios from "axios";
 import React, { useEffect, useState } from "react"
 
 const ManageConnectionButton = ({ connectRequest, feed, isConnected, viewerId, onRequestUpdate }) => {
-    //console.log(connectRequest, feed, isConnected, viewerId);
+    console.log("connectRequest:", connectRequest);
+    console.log("feed:", feed);
+    console.log("isConnnected:", isConnected);
+    console.log("viewerId:", viewerId);
     const [errorMessage, setErrorMessage] = useState('');
-    const [connection, setConnection] = useState(isConnected || feed?.isConnected);
-    const [request, setRequest] = useState(connectRequest || feed?.hasConnectRequest);
-    const receiverId = feed?.feed_id || feed?.receiver_id;
+    const [hasConnection, setHasConnection] = useState(isConnected || feed?.isConnected);
+    const [request, setRequest] = useState(connectRequest || feed?.connectRequest);
+    const senderId = connectRequest?.sender_id || viewerId;
+    const receiverId = connectRequest?.receiver_id || feed?.feed_id;
 
     useEffect(() => {
-        setRequest(connectRequest || feed?.hasConnectRequest);
-        setConnection(isConnected || feed?.isConnected);
-    }, [connectRequest, feed?.hasConnectRequest, isConnected, feed?.isConnected]);
+        setRequest(connectRequest || feed?.connectRequest);
+        setHasConnection(isConnected || feed?.isConnected);
+    }, [connectRequest, feed?.connectRequest, isConnected, feed?.isConnected]);
 
     const handleSendRequest = async () => {
         try {
             let method, requestData, url;
-            if (connection) {
+            if (hasConnection) {
                 method = 'delete';
                 url = '/api/delete_connection';
-                requestData = { deleterId: viewerId, feedId: receiverId };
-            } else if (request) {
-                method = 'delete';
-                url = '/api/delete_connect_request';
-                requestData = { receiverId, senderId: viewerId };
-            } else {
+                requestData = { deleterId: viewerId, feedId: (viewerId === senderId ? receiverId : senderId) };
+            } 
+            else if (request) {
+                if (viewerId === senderId) {
+                    method = 'delete';
+                    url = '/api/delete_connect_request';
+                    requestData = { receiverId, senderId: viewerId };
+                } else {
+                    method = 'delete';
+                    url = '/api/delete_connect_request';
+                    requestData = { receiverId: viewerId, senderId };
+                }
+            } 
+            else {
                 method = 'post';
-                requestData = { receiverId, senderId: viewerId };
                 url = '/api/send_connect_request';
+                requestData = { receiverId, senderId: viewerId };
             }
-            const response = await axios({
-                method,
-                url,
-                data: requestData,
-            });
+            const response = await axios({ method, url, data: requestData });
             if (response.status === 200) {
                 if (method === 'delete') {
-                    setConnection(false);
+                    setHasConnection(false);
                     setRequest(false);
                 } else {
                     setRequest(true);
-                    setConnection(false);
+                    setHasConnection(false);
                 }
             } else {
                 setErrorMessage("Connect request error");
             }
         } catch (error) {
+            console.log("error:", error);
             setErrorMessage("Connect request error");
         }
     };
@@ -54,16 +63,17 @@ const ManageConnectionButton = ({ connectRequest, feed, isConnected, viewerId, o
         try {
             let response;
             if (result === 'accept') {
-                response = await axios.post('/api/accept_connect_request', { receiverId: viewerId, senderId: feed.feed_id });
+                response = await axios.post('/api/accept_connect_request', { receiverId: viewerId, senderId });
             } else if (result === 'reject') {
-                response = await axios.delete('/api/delete_connect_request', { data: { receiverId: viewerId, senderId: feed.feed_id } });
+                response = await axios.delete('/api/delete_connect_request', { data: { receiverId: viewerId, senderId } });
             }
+            console.log("response.status:", response.status);
             if (response.status === 200) {
-                if (connectRequest) {
+                if (connectRequest && typeof onRequestUpdate === 'function') {
                     onRequestUpdate(request.sender_id);
                 } else {
                     setRequest(false);
-                    setConnection(result === 'accept');
+                    setHasConnection(result === 'accept');
                 }
             }
         } catch (error) {
@@ -71,7 +81,7 @@ const ManageConnectionButton = ({ connectRequest, feed, isConnected, viewerId, o
         }
     };    
 
-    if (viewerId === receiverId && request && !connection) {
+    if ((viewerId === receiverId) && request && !hasConnection) {
         return (
             <div>
                 <button className="button" onClick={() => handleConnectRequest('accept')}>Accept connect</button>
@@ -83,7 +93,7 @@ const ManageConnectionButton = ({ connectRequest, feed, isConnected, viewerId, o
     return (
         <div>
             <button className="button" onClick={handleSendRequest}>
-                {connection ? 'Disconnect' : request ? 'Cancel request' : 'Connect'}
+                {hasConnection ? 'Disconnect' : request ? 'Cancel request' : 'Connect'}
             </button>
             {errorMessage && <div className="error-message">{errorMessage}</div>}
         </div>
