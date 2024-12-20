@@ -1,5 +1,6 @@
 import authenticateCheck from '../functions/checks/authenticateCheck.js';
-import FollowerCheck from '../functions/checks/followerCheck.js'
+import ConnectCheck from '../functions/checks/connectCheck.js';
+import FollowerCheck from '../functions/checks/followerCheck.js';
 import deleteMedia from '../functions/media_handling/deleteMedia.js';
 import dotenv from 'dotenv';
 import imageUpload from '../functions/media_handling/imageUpload.js';
@@ -245,24 +246,28 @@ router.delete('/delete_feed_channel', authenticateCheck, async (req, res) => {
 router.get('/feed/:feedName', authenticateCheck, async (req, res) => {
     try {
         const feedName = req.params.feedName;
-        const viewerId = req.session.user_id;
-        let isAdmin = false, isMod = false, isFollower = false, hasFollowRequest = false;
+        const userId = req.session.user_id
+        const viewerId = req.session.feed_id;
+        let isAdmin = false, isMod = false, isConnected = false, isFollower = false, hasFollowRequest = false;
         const feed = await Feeds.findOne({ where: { feed_name: feedName } });
         if (!feed) {
             return res.status(404).json({ success: false }); 
         }
-        if (viewerId === feed.feed_owner) {
+        if (userId === feed.feed_owner) {
             isAdmin = true;
             isMod = true;
+            isConnected = true;
             isFollower = true;
             hasFollowRequest = false;
         } else {
-            const [followStatus, followRequest] = await Promise.all([
+            const [connectStatus, followStatus, followRequest] = await Promise.all([
+                ConnectCheck(viewerId, feed.feed_id),
                 FollowerCheck(viewerId, feed.feed_id),
                 FollowRequests.findOne({ where: { sender_id: viewerId } })
             ]);
             isAdmin = followStatus.isAdmin;
             isMod = followStatus.isMod;
+            isConnected = connectStatus.connected;
             isFollower = followStatus.following;
             hasFollowRequest = !!followRequest;
         }
@@ -271,6 +276,7 @@ router.get('/feed/:feedName', authenticateCheck, async (req, res) => {
             isAdmin, 
             isMod, 
             isOwner: (viewerId === feed.feed_owner),
+            isConnected,
             isFollower,
             isRequestSent: feed.is_private ? hasFollowRequest : false,
         };

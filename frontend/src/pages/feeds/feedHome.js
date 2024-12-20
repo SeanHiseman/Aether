@@ -155,9 +155,8 @@ const FeedHome = () => {
     //Toggles display of create channel form after button is pressed
     const toggleChannelForm = () => { setShowChannelForm((prev) => !prev) };
 
-    //Checks following if group is private
-    const isNotPrivateFollower = feed?.type === 'private' && !feed?.isFollower;
-
+    //Checks following if feed is private
+    const privateNoView = feed?.type === 'private' && !feed?.isFollower && !feed?.isConnected;
     document.title = feed?.feed_name || 'Feed not found';
 
     if (loading) {
@@ -180,13 +179,22 @@ const FeedHome = () => {
             </div>
         );
     } 
-    if (isNotPrivateFollower) {
+    if (privateNoView) {
         return (
             <div className="feed-container">
                 <div className="channel-feed">
                     <p className="text36">This feed is private</p>
                 </div>
-                <aside id="right-aside"/>
+                <aside id="right-aside">
+                    <div id="feed-summary">
+                        <img className="large-feed-photo" src={`/${feed.feed_photo}`} alt={feed.feed_name} />
+                        <p className="text36">{feed.feed_name}</p>
+                        <p className="description" >{feed.description}</p>
+                        {feed.is_group && (
+                            <FollowerChangeButton feed={feed} viewerId={viewer.feed_id} />
+                        )}
+                    </div>
+                </aside>
             </div>
         );
     }

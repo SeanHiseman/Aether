@@ -3,7 +3,7 @@ import { Op } from 'sequelize';
 
 async function ConnectCheck(feed1_id, feed2_id) {
     try {
-        const following = await Connections.findOne({
+        const connected = await Connections.findOne({
             where: {
                 [Op.or]: [
                     { feed1_id, feed2_id },
@@ -12,7 +12,7 @@ async function ConnectCheck(feed1_id, feed2_id) {
             },
         });
         return {
-            connected: !!following,
+            connected: !!connected,
         };
     } catch (error) {
         return { connected: false };

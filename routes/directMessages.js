@@ -116,8 +116,8 @@ router.delete('/delete_connection', authenticateCheck, async (req, res) => {
         await Connections.destroy({
             where: { 
                 [Op.or]: [
-                    { feed1_id: deleterId, user2_id: feedId },
-                    { feed2_id: feedId, user1_id: deleterId },
+                    { feed1_id: deleterId, feed2_id: feedId },
+                    { feed1_id: feedId, feed2_id: deleterId },
                 ]
             }
         });

@@ -22,13 +22,14 @@ const MessagesPage = () => {
     const socketRef = useRef(null);
     const { user, viewer } = useContext(AuthContext)
     const navigate = useNavigate();
-
+    console.log("viewer:", viewer);
     useEffect(() => {
         const getConnections = async () => {
             try {
                 const response = await axios.get(`/api/get_connections/${viewer.feed_id}`);
                 setConnections(response.data);
             } catch (error) {
+                console.log("connections error:", error);
                 setErrorMessage("Error getting connections");
             }
         };
