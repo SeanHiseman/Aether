@@ -7,13 +7,14 @@ import ContentDisplay from './contentDisplay';
 const ContentForm = ({ closeForm, isReply, onSubmit, postErrorMessage, setPostErrorMessage }) => {
     const [files, setFiles] = useState([]);
     const [generationRequest, setGenerationRequest] = useState('');
-    const [isRaw, setIsRaw] = useState(false);
+    const [isCode, setIsCode] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
-    const [rawContent, setRawContent] = useState('');
+    const [codeContent, setCodeContent] = useState('');
     const [textContent, setTextContent] = useState('');
     const [title, setTitle] = useState('');
     const [useRequest, setUseRequest] = useState(false);
     const quillRef = useRef(null);
+    const loadingText = "<p>Loading... (Can take up to 30 seconds)</p>";
 
     //Customises tool bar
     const modules = {
@@ -31,28 +32,34 @@ const ContentForm = ({ closeForm, isReply, onSubmit, postErrorMessage, setPostEr
         ]
     };
 
-    const generateContent = async (content) => {
+    const generateContent = async () => {
         try {
-            if (content.trim() === '') {
-                setPostErrorMessage('Please enter a request');
+            if (generationRequest.trim() === "") {
+                setPostErrorMessage("Cannot be empty.");
                 return;
+            }
+            if (generationRequest.length > 1000) {
+                setPostErrorMessage("Cannot exceed 1000 characters.");
+                return;
+            }
+            setIsLoading(true);
+            const currentRequest = generationRequest
+            setGenerationRequest('');
+            const response = await axios.post('/api/generate_content', {
+                currentCode: content,
+                request: currentRequest,
+            });
+            if (response.data && response.status === 201) {
+                const { generatedContent } = response.data;
+                setCodeContent(generatedContent);
+                setPostErrorMessage('');
             } else {
-                setIsLoading(true);
-                setGenerationRequest('');
-                const response = await axios.post('/api/generate_content', {
-                    requestContent: content,
-                });
-                if (response.data && response.status === 201) {
-                    const { generatedContent } = response.data;
-                    setRawContent(generatedContent);
-                    setPostErrorMessage('');
-                } else {
-                    setPostErrorMessage("Generation error");
-                    setIsLoading(false);
-                }
+                setPostErrorMessage("Generation error");
             }
         } catch (error) {
+            console.log("generation error:", error);
             setPostErrorMessage("Generation error");
+        } finally {
             setIsLoading(false);
         }
     };
@@ -67,11 +74,11 @@ const ContentForm = ({ closeForm, isReply, onSubmit, postErrorMessage, setPostEr
         setFiles((prevFiles) => [...prevFiles, ...newFiles]);
     };
 
-    const content = isRaw ? rawContent : textContent;
+    const content = isCode ? codeContent : textContent;
 
     const handleSubmit = async (event) => {
         event.preventDefault();
-        if (isRaw) {
+        if (isCode) {
             if (content.trim() === "") {
                 setPostErrorMessage("Content cannot be empty.");
                 return;  
@@ -80,30 +87,31 @@ const ContentForm = ({ closeForm, isReply, onSubmit, postErrorMessage, setPostEr
         setPostErrorMessage("");
         const formData = new FormData();
         formData.append('content', content);
-        formData.append('is_raw', isRaw);
+        formData.append('is_code', isCode);
         if (!isReply) formData.append('title', title);
         files.forEach((file) => {
             formData.append('files', file);
         }); 
         try {
             await onSubmit(formData);
-            setRawContent('');
+            setCodeContent('');
             setTextContent('');
-            setTitle([]);
-            setIsRaw(false);
+            setTitle('');
+            setIsCode(false);
+            setFiles([])
         } catch (error) {
             setPostErrorMessage('An error occured while submitting the form')
         }
     };
 
     return (
-        <div className={`create-post-container ${isRaw ? 'wide' : 'narrow'}`}>
+        <div className={`create-post-container ${isCode ? 'wide' : 'narrow'}`}>
             <form id="post-form" onSubmit={handleSubmit}>
                 <div id="content-form-buttons">
                     {isReply && (
                         <button className="button" type="button" onClick={closeForm}>Close</button>
                     )}
-                    {!isRaw && (
+                    {!isCode && (
                         <>
                             <label htmlFor="media-input" className="button">Add media</label>
                             <input type="file" id="media-input" accept="image/*,video/*" hidden multiple onChange={handleFilesChange} />
@@ -121,10 +129,10 @@ const ContentForm = ({ closeForm, isReply, onSubmit, postErrorMessage, setPostEr
                     <button className="button" type="submit">
                         {isReply ? "Reply" : "Post"}
                     </button>
-                    <button className="button" type="button" onClick={() => setIsRaw(!isRaw)}>
-                        {isRaw ? "Text Editor" : "Raw Editor"}
+                    <button className="button" type="button" onClick={() => setIsCode(!isCode)}>
+                        {isCode ? "Text Editor" : "Code Editor"}
                     </button>
-                    {isRaw && (
+                    {isCode && (
                         <button className="button" type="button" onClick={generateModeToggle}>
                             {useRequest ? 'Code Mode' : 'Generate Mode'}
                         </button>
@@ -134,23 +142,23 @@ const ContentForm = ({ closeForm, isReply, onSubmit, postErrorMessage, setPostEr
                 {!isReply && (
                     <input id="title-entry" type="text" placeholder="Add title (optional)..." value={title} onChange={(e) => setTitle(e.target.value)} />
                 )}
-                {!isRaw ? (
+                {!isCode ? (
                     <ReactQuill placeholder={isReply ? "Reply..." : "Start post..."} modules={modules} value={textContent} onChange={setTextContent} ref={quillRef} />
                 ) : (
-                    <div className="raw-editor">
+                    <div className="code-editor">
                         {useRequest ? (
-                            <>
-                                <textarea className="raw-input-form" placeholder="Describe your post..." value={generationRequest} onChange={(e) => setGenerationRequest(e.target.value)} />
-                                <button className="button" type="button" onClick={generateContent} />
-                            </>
+                            <div id="generate-query-container">
+                                <textarea className="content-input-form generate" placeholder="Describe your post..." value={generationRequest} onChange={(e) => setGenerationRequest(e.target.value)} />
+                                <button className="button" type="button" onClick={generateContent}>Create</button>
+                            </div>
                         ) : (
-                            <textarea className="raw-input-form" placeholder="Enter code..." value={content} onChange={(e) => setRawContent(e.target.value)} />
+                            <textarea className="content-input-form code" placeholder="Enter code..." value={codeContent} onChange={(e) => setCodeContent(e.target.value)} />
                         )}
-                        <div className="raw-preview">
+                        <div className="code-preview">
                             {isLoading ? (
-                                <div>Loading...</div>
+                                <p>{loadingText}</p>
                             ) : (
-                                <ContentDisplay content={rawContent} />
+                                <ContentDisplay content={codeContent} />
                             )}
                         </div>
                     </div>

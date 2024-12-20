@@ -469,7 +469,7 @@ router.put('/update_feed_photo/:feedId', authenticateCheck, async (req, res) => 
         try {
             const feed_id = req.params.feedId; 
             const file = req.file; 
-            const newPhotoPath = `media/feed_profiles/${file.filename}`;
+            const newPhotoPath = `media/feed_images/${file.filename}`;
             const feed = await Feeds.findOne({ where: { feed_id } });
             if (feed.feed_photo && !defaultImages.includes(feed.feed_photo)) {
                 deleteMedia(feed.feed_photo);
