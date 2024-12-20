@@ -10,7 +10,7 @@ const FeedDeletion = ({ feed }) => {
         try {
             const response = await axios.delete('/api/delete_feed', { data: { feedId: feed.feed_id } });
                 if (response.data.success) {
-                    navigate('/recommended');
+                    navigate('/p/recommended');
                 }
         } catch (error) {
             setErrorMessage('Error deleting feed');

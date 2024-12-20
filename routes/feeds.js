@@ -18,7 +18,7 @@ dotenv.config();
 const router = Router();
 const __dirname = path.dirname(import.meta.url);
 app.use(express.static(join(__dirname, 'static')));
-const feedProfileUpload = imageUpload('/media/feed_profiles', 'new_feed_photo');
+const feedProfileUpload = imageUpload('/media/feed_images', 'new_feed_photo');
 
 const defaultImages = [process.env.DEFAULT_USER_IMAGE, process.env.DEFAULT_GROUP_IMAGE];
 const feedAttributes = ['feed_id', 'parent_id', 'feed_name', 'description', 'feed_photo', 'follower_count', 'date_created', 'type', 'is_group', 'feed_owner'];
@@ -147,7 +147,6 @@ router.post('/create_feed', authenticateCheck, async (req, res) => {
             });
             res.status(201).json({ success: true, feed });
         } catch (error) {
-            console.error(error);
            res.status(500).json({ success: false });
         }
     });
@@ -275,7 +274,7 @@ router.get('/feed/:feedName', authenticateCheck, async (req, res) => {
             ...feed.toJSON(),
             isAdmin, 
             isMod, 
-            isOwner: (viewerId === feed.feed_owner),
+            isOwner: (userId === feed.feed_owner),
             isConnected,
             isFollower,
             isRequestSent: feed.is_private ? hasFollowRequest : false,

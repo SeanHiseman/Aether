@@ -3,6 +3,8 @@ import path from 'path';
 import { v4 } from 'uuid';
 
 function imageUpload(destinationPath, fieldName) {
+    console.log("destinationPath:", destinationPath);
+    console.log("fieldName:", fieldName);
     const storage = multer.diskStorage({
         destination: (req, file, cb) => {
             const absolutePath = path.join(process.cwd(), destinationPath);

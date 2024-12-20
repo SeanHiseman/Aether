@@ -2,20 +2,16 @@ import axios from "axios";
 import React, { useEffect, useState } from "react"
 
 const ManageConnectionButton = ({ connectRequest, feed, isConnected, viewerId, onRequestUpdate }) => {
-    console.log("connectRequest:", connectRequest);
-    console.log("feed:", feed);
-    console.log("isConnnected:", isConnected);
-    console.log("viewerId:", viewerId);
     const [errorMessage, setErrorMessage] = useState('');
-    const [hasConnection, setHasConnection] = useState(isConnected || feed?.isConnected);
-    const [request, setRequest] = useState(connectRequest || feed?.connectRequest);
+    const [hasConnection, setHasConnection] = useState(isConnected);
+    const [request, setRequest] = useState(connectRequest);
     const senderId = connectRequest?.sender_id || viewerId;
     const receiverId = connectRequest?.receiver_id || feed?.feed_id;
 
     useEffect(() => {
-        setRequest(connectRequest || feed?.connectRequest);
-        setHasConnection(isConnected || feed?.isConnected);
-    }, [connectRequest, feed?.connectRequest, isConnected, feed?.isConnected]);
+        setRequest(connectRequest);
+        setHasConnection(isConnected);
+    }, [connectRequest, isConnected]);
 
     const handleSendRequest = async () => {
         try {

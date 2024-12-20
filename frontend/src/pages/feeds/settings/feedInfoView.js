@@ -42,7 +42,7 @@ const FeedInfoView = ({ feed, setFeed }) => {
             })
             setFeed(prevDetails => ({
                 ...prevDetails,
-                feedPhoto: response.data.newPhotoPath
+                feed_photo: response.data.newPhotoPath
             }))
             setIsPhotoFormVisible(false);
             setErrorMessage('');
@@ -129,7 +129,7 @@ const FeedInfoView = ({ feed, setFeed }) => {
                     {isPhotoFormVisible && (
                         <form className="change-feed-photo" onSubmit={ChangeFeedPhoto}>
                             <div className="file-input">
-                                <label htmlFor="new-feed-photo" class="dark-button">Change feed photo</label>
+                                <label htmlFor="new-feed-photo" class="dark-button">Choose feed photo</label>
                                 <input type="file" id="new-feed-photo" name="new_feed_photo" accept="image/*" onChange={handleFileChange} hidden/>
                                 <span className="file-name">{feedPhotoFile}</span> 
                             </div>

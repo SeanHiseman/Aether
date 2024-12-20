@@ -10,13 +10,13 @@ const router = Router();
 
 router.post('/change_password', authenticateCheck, async (req, res) => {
     try {
-        const { password, userId } = req.body;
+        const { password, user_id } = req.body;
         const hashedPassword = await hash(password, 10);
-        const user = await Users.findOne({ where: {user_id: userId} });
+        const user = await Users.findOne({ where: {user_id} });
         await user.update({ password: hashedPassword });
-        res.json({ success: true });
+        res.status(200).json({ success: true });
     } catch (error) {
-        res.status(500).json({ error: 'Error changing password'});
+        res.status(500).json({ success: false });
     }
 });
 
