@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { AuthContext } from '../../components/authContext';
 import { FaTrash, FaPlus } from 'react-icons/fa';
-import { Tooltip } from 'react-tooltip';
+import { Tooltip } from 'react-tooltip'
 import React, { useContext, useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import ChannelList from '../../components/channels/channelList';
@@ -254,11 +254,13 @@ const FeedHome = () => {
                     ) 
                 )}
                 {isAdmin && channel_name !== 'Main' && (
-                    <FaTrash
-                        data-tip="Delete Channel"
-                        className="icon-button"
-                        onClick={deleteChannel}
-                    />
+                    <><FaTrash
+                            data-tip="Delete Channel"
+                            className="aside-icon"
+                            onClick={deleteChannel} 
+                        />
+                        <Tooltip place="top" type="dark" effect="solid" />
+                    </>
                 )}
                 {showPostForm && channelMode === 'post' && (
                     <div>
@@ -278,7 +280,7 @@ const FeedHome = () => {
                     <div className="add-channel-section">
                         <FaPlus
                             data-tip={showChannelForm ? 'Close' : 'Create Channel'}
-                            className="add-icon"
+                            className="aside-icon"
                             onClick={toggleChannelForm}
                         />
                         <Tooltip place="top" type="dark" effect="solid" />

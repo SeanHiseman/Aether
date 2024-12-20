@@ -5,7 +5,6 @@ import ManageConnectionButton from '../manageConnectionButton';
 
 const FeedWidget = ({ feed, viewerId }) => {
     const isViewingSelf = feed.feed_id === viewerId;
-    console.log("feed:", feed);
     return (
         <div className="result-widget">
             <Link to={`/${feed.is_group ? 'g' : 'u'}/${feed.feed_name}/Main`}>

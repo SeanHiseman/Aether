@@ -4,21 +4,20 @@ import { Link } from 'react-router-dom';
 
 const FollowRequests = ({ feed }) => {
     const [errorMessage, setErrorMessage] = useState('');
-    //const [nestRequests, setNestRequests] = useState(null);
-    const [requests, setRequests] = useState([]);
+    const [followRequests, setFollowRequests] = useState([]);
 
-    const getFollowRequests = useCallback(async () => {
-        try {
-            const response = await axios.get(`/api/get_follow_requests/${feed.feed_id}`);
-            setRequests(response.data);
-        } catch (error) {
-            setErrorMessage('Error getting requests');
-        }
-    }, [feed.feed_id]); 
-    
     useEffect(() => {
+        const getFollowRequests = async () => {
+            try {
+                const response = await axios.get(`/api/get_follow_requests/${feed.feed_id}`);
+                console.log("response.data:", response.data);
+                setFollowRequests(response.data.requests || []);
+            } catch (error) {
+                setErrorMessage('Error getting requests');
+            } 
+        };
         getFollowRequests();
-    }, [getFollowRequests]);
+    }, [feed.feed_id]); 
 
     const handleRequestAction = async (request, result) => {
         try {
@@ -27,41 +26,21 @@ const FollowRequests = ({ feed }) => {
             } else if (result === 'reject') {
                 await axios.delete('/api/delete_follow_request', { data: { senderId: request.sender_id, receiverId: feed.feed_id } });
             }
-            setRequests((prevRequests) => prevRequests.filter((prevRequest) => prevRequest.request_id !== request.request_id));
+            setFollowRequests((prevRequests) => prevRequests.filter((prevRequest) => prevRequest.request_id !== request.request_id));
         } catch (error) {
             setErrorMessage('Error handling request');
         }
     };
 
-    //Accepts or rejects join request
-    const handleNestRequest = async (action, requestId, senderId) => {
-        try {
-            if (action === 'accept') {
-                await axios.post('/api/accept_nest_request', {
-                    feedId: feed.feed_id, 
-                    requestId,
-                    senderId,
-                });
-            } else if (action === 'reject') {
-                await axios.delete('/api/reject_nest_request', { 
-                    data: { requestId }
-                });
-            }
-            getFollowRequests();
-        } catch (error) {
-            setErrorMessage('Error handling request');
-        }
-    }; 
-
     return (
         <div className="channel-content">
             <h2>Follow Requests</h2>
-            {requests.length === 0 ? (
+            {followRequests.length === 0 ? (
                 <p>No pending requests</p>
             ) : (
                 <ul className="content-list">
                     <div className="error-message">{errorMessage}</div>
-                    {requests.map((request, index) => (
+                    {followRequests.map((request, index) => (
                         <li key={index}>
                             <div className="result-widget">
                                 <Link className="feed-link" to={`/u/${request.sender.feed_name}`}>

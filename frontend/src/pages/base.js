@@ -20,7 +20,7 @@ const BaseLayout = () => {
     const [errorMessage, setErrorMessage] = useState('');
     const [feeds, setFeeds] = useState([]);
     const [feedName, setFeedName] = useState('');
-    const [feedPhotoFile, setFeedPhotoFile] = useState('No file chosen');
+    const [feedPhotoFile, setFeedPhotoFile] = useState(null);
     const [feedType, setFeedType] = useState('public'); 
     const [feed, setFeed] = useState([]);
     const { setQuery } = useQueryContext();
@@ -76,7 +76,14 @@ const BaseLayout = () => {
             newFeed.append('isGroup', true);
             newFeed.append('feedOwner', user.user_id);
             newFeed.append('viewerFeedId', viewer.feed_id);
-            const response = await axios.post('/api/create_feed', newFeed);
+            if (feedPhotoFile) {
+                newFeed.append('new_feed_photo', feedPhotoFile);
+            }
+            const response = await axios.post('/api/create_feed', newFeed, {
+                headers: {
+                    'Content-Type': 'multipart/form-data',
+                },
+            });
             if (response.data.success === true) {
                 const createdFeed = response.data.feed;
                 setFeeds((prevFeeds) => [ //Get into correct format
@@ -92,6 +99,7 @@ const BaseLayout = () => {
                 ]);
                 setFeedName('');
                 setShowForm(false);
+                setFeedPhotoFile(null);
                 navigate(`/g/${createdFeed.feed_name}`);
             }
         } catch (error) {
@@ -108,7 +116,7 @@ const BaseLayout = () => {
     const handleFileChange = (event) => {
         const file = event.target.files[0];
         if (file) {
-            setFeedPhotoFile(file.name);
+            setFeedPhotoFile(file);
         }
     };
 
@@ -178,7 +186,7 @@ const BaseLayout = () => {
                             <div className="file-input">
                                 <label htmlFor="feed-photo-input" class="dark-button">Choose photo</label>
                                 <input type="file" id="feed-photo-input" name="Feed photo" onChange={handleFileChange} hidden/>
-                                <span className="file-name">{feedPhotoFile}</span>
+                                <span className="file-name">{feedPhotoFile ? feedPhotoFile.name : 'No file chosen'}</span>
                             </div>
                             <div className="option-toggle">
                                 <button className={feedType === 'public' ? 'active-mode' : 'passive-mode'} onClick={(event) => {event.preventDefault(); setFeedType('public');}}>Public</button>

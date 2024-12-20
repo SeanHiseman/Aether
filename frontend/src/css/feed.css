@@ -1,4 +1,11 @@
 @import url('variables.css');
+.aside-icon {
+    color: var(--border);
+    cursor: pointer;
+    height: 20px;
+    margin: 5px;
+    width: 20px;
+}
 .channel {
     display: flex;
     flex-direction: column;

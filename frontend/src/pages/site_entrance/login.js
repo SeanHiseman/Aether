@@ -21,7 +21,7 @@ const Login = () => {
             if (error.response && error.response.status === 401) {
                 setErrorMessage('Invalid username or password');
             } else {
-                setErrorMessage('Login error, please try again');
+                setErrorMessage('Failed to login, please try again');
             }
         }
     };
