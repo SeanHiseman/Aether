@@ -121,13 +121,14 @@ router.get('/get_ask_chats', authenticateCheck, async (req, res) => {
 });
 
 router.post('/generate_content', authenticateCheck, async (req, res) => {
+    console.log("request received");
     try {
-        const { requestContent } = req.body;
-        console.log("requestContent:", requestContent);
+        const { currentCode, request } = req.body;
+        console.log("req.body:", req.body);
         //Creates API assistant
         const assistant = await openai.beta.assistants.create({
             name: "Ask",
-            instructions: "Generate html content",
+            instructions: "Generate or improve html content",
             model: "gpt-4o-mini",
         });
         //Send user message to OpenAI
@@ -136,7 +137,7 @@ router.post('/generate_content', authenticateCheck, async (req, res) => {
             thread.id,
             {
                 role: "user",
-                content: requestContent
+                content: request
             }
         );
         //Run OpenAI assistant
@@ -144,7 +145,7 @@ router.post('/generate_content', authenticateCheck, async (req, res) => {
             thread.id,
             {
                 assistant_id: assistant.id, 
-                instructions: "Only reply with html code, containing JavaScript if necessary. If request cannot be made into html code, response with nothing"
+                instructions: `Answer only with new or improved html code, containing JavaScript if necessary. Nothing else. If request cannot be made into html code, response with nothing. The current code is: ${currentCode}`
             }
         ); 
         //Wait for OpenAI response
@@ -154,10 +155,12 @@ router.post('/generate_content', authenticateCheck, async (req, res) => {
         }
         //Get OpenAI response
         const messages = await openai.beta.threads.messages.list(thread.id);
-        const aiReply = messages.data.find(msg => msg.role === 'assistant').content[0].text.value;
+        let aiReply = messages.data.find(msg => msg.role === 'assistant').content[0].text.value;
+        aiReply = aiReply.replace(/^```[a-zA-Z]+\s*|```$/g, '').trim(); //Trims response
         console.log("aiReply:", aiReply);
         res.status(201).json({ success: true, generatedContent: aiReply });
     } catch (error) {
+        console.log(error);
         res.status(500).json({ success: false });
     }
 });
