@@ -8,7 +8,7 @@ import ContentDisplay from './contentDisplay';
 import ContentForm from './contentForm';
 import Reply from '../replies/reply';
 
-const ContentWidget = ({ canRemove: canRemoveProp, feed, isGroup, onPostRemoved, post }) => {
+const ContentWidget = ({ canRemove: canRemoveProp, feed, isGroup, onPostRemoved, post, onEditClick }) => {
     const [canRemove, setCanRemove] = useState(canRemoveProp);
     const [downvotes, setDownvotes] = useState(post.downvotes);
     const [downvoteLimit, setDownvoteLimit] = useState(false);
@@ -21,7 +21,7 @@ const ContentWidget = ({ canRemove: canRemoveProp, feed, isGroup, onPostRemoved,
     const [upvotes, setUpvotes] = useState(post.upvotes);
     const [upvoteLimit, setUpvoteLimit] = useState(false);
     const isViewingOwnPost = post.poster_id === feed.feed_id; 
-    const { user } = useContext(AuthContext);
+    const { user, viewer } = useContext(AuthContext);
     const urlLetter = isGroup ? 'g' : 'u';
 
     //const getReplies = useCallback(async (postId) => {
@@ -239,13 +239,16 @@ const ContentWidget = ({ canRemove: canRemoveProp, feed, isGroup, onPostRemoved,
                             <img className={`vote-arrow ${downvoteClass}`} src="/media/site_images/down.png" alt="downvote" />
                         </button>
                     </div>
-                    <button className="button large" data-content-id={post.post_id} onClick={toggleReplies}>
+                    <button className="button" data-content-id={post.post_id} onClick={toggleReplies}>
                         Replies <span className="reply-count" id={`reply-count-${post.post_id}`}>{post.replies}</span>
                     </button>
                     <span className="view-count">{post.views} Views</span>
                     <p>{new Date(post.timestamp).toLocaleDateString()}</p>
+                    {post.poster_id === viewer.feed_id && (
+                        <button className="button" onClick={() => onEditClick(post)}>Edit</button>
+                    )}
                     {canRemove ? (
-                        <button className="button large" onClick={() => removePost(isGroup, post.post_id)}>Delete</button>
+                        <button className="button" onClick={() => removePost(isGroup, post.post_id)}>Delete</button>
                     ) : null}
                     {!post.note?.is_misinfo && (
                         <AskButton isGroup={isGroup} isReply={false} content={post} showNote={showNote} setShowNote={setShowNote} note={note} setNote={setNote} />
