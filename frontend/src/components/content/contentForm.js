@@ -1,10 +1,10 @@
 import axios from 'axios';
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
 import ContentDisplay from './contentDisplay';
 
-const ContentForm = ({ closeForm, isReply, onSubmit, postErrorMessage, setPostErrorMessage }) => {
+const ContentForm = ({ closeForm, isEdit = false, isReply, onSubmit, postErrorMessage, postToEdit = null, setPostErrorMessage }) => {
     const [files, setFiles] = useState([]);
     const [generationRequest, setGenerationRequest] = useState('');
     const [isCode, setIsCode] = useState(false);
@@ -15,6 +15,20 @@ const ContentForm = ({ closeForm, isReply, onSubmit, postErrorMessage, setPostEr
     const [useRequest, setUseRequest] = useState(false);
     const quillRef = useRef(null);
     const loadingText = "<p>Loading... (Can take up to 30 seconds)</p>";
+
+    //Populates form if editing
+    useEffect(() => {
+        if (isEdit && postToEdit) {
+            setTitle(postToEdit.title || '');
+            //if (postToEdit.is_code) {
+                setIsCode(true);
+                setCodeContent(postToEdit.content);
+            //} else {
+                //setIsCode(false);
+                //setTextContent(postToEdit.content);
+            //}
+        }
+    }, [isEdit, postToEdit]);
 
     //Customises tool bar
     const modules = {
@@ -57,7 +71,6 @@ const ContentForm = ({ closeForm, isReply, onSubmit, postErrorMessage, setPostEr
                 setPostErrorMessage("Generation error");
             }
         } catch (error) {
-            console.log("generation error:", error);
             setPostErrorMessage("Generation error");
         } finally {
             setIsLoading(false);
@@ -77,6 +90,7 @@ const ContentForm = ({ closeForm, isReply, onSubmit, postErrorMessage, setPostEr
     const content = isCode ? codeContent : textContent;
 
     const handleSubmit = async (event) => {
+        console.log("submitting");
         event.preventDefault();
         if (isCode) {
             if (content.trim() === "") {
@@ -87,7 +101,7 @@ const ContentForm = ({ closeForm, isReply, onSubmit, postErrorMessage, setPostEr
         setPostErrorMessage("");
         const formData = new FormData();
         formData.append('content', content);
-        formData.append('is_code', isCode);
+        //formData.append('is_code', isCode);
         if (!isReply) formData.append('title', title);
         files.forEach((file) => {
             formData.append('files', file);
@@ -127,7 +141,7 @@ const ContentForm = ({ closeForm, isReply, onSubmit, postErrorMessage, setPostEr
                         </>
                     )}
                     <button className="button" type="submit">
-                        {isReply ? "Reply" : "Post"}
+                        {isEdit ? "Save Edit" : isReply ? "Reply" : "Post"}
                     </button>
                     <button className="button" type="button" onClick={() => setIsCode(!isCode)}>
                         {isCode ? "Text Editor" : "Code Editor"}

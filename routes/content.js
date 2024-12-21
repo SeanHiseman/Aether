@@ -166,27 +166,42 @@ router.post('/create_post', authenticateCheck, post_upload.array('files'), async
             content, 
             poster_id
         });
-        return res.json({ success: true, post });
+        return res.status(200).json({ success: true, post });
     } catch (error) {
         return res.status(500).json({ success: false });
     }
 });
 
+router.post('/edit_post', authenticateCheck, post_upload.array('files'), async (req, res) => {
+    try {
+        const { post_id } = req.body;
+        let { content, title } = req.body;
+        const foundPost = await Posts.findByPk(post_id);
+        if (!foundPost) {
+            return res.status(404).json({ success: false, message: 'Post not found' });
+        }
+        foundPost.content = content;
+        foundPost.title = title || foundPost.title;
+        await foundPost.save();
+        return res.status(201).json({ success: true });
+    } catch (error) {
+        return res.status(500).json({ success: false });
+    }
+}); 
+
 router.delete('/remove_post', authenticateCheck, async (req, res) => {
     try {
         const { postId } = req.body;
-        const post = await Posts.findOne({
-            where: { post_id: postId }
-        });
+        const post = await Posts.findByPk(postId);
         deleteMedia(post.content);
         await Posts.destroy({ where: { post_id: postId } })
-        res.json({ success: true });
+        res.status(200).json({ success: true });
     } catch (error) {
         res.status(500).json({ success: false });
     }
 });
 
-router.post('/increment_views', async (req, res) => {
+router.post('/increment_views', authenticateCheck, async (req, res) => {
     try {
         const { postId } = req.body;
         const post = await Posts.findByPk(postId);
@@ -198,7 +213,7 @@ router.post('/increment_views', async (req, res) => {
         //const user = await Users.findByPk(post.poster_id);
         //user.points = await ProfilePosts.sum('points', { where: { poster_id: post.poster_id } });
         //await user.save();
-        res.json({ success: true });
+        res.status(200).json({ success: true });
     } catch (error) {
         res.status(500).json({ success: false });   
     }

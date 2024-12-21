@@ -16,17 +16,19 @@ const FeedHome = () => {
     const [canRemove, setCanRemove] = useState(false);
     const [channelMode, setChannelMode] = useState('post');
     const [channels, setChannels] = useState([]);
+    const [feed, setFeed] = useState('');
     const [feedErrorMessage, setFeedErrorMessage] = useState('');
+    const [feedNotFound, setFeedNotFound] = useState(false);
     const [loading, setLoading] = useState(true);
     const [isAdmin, setIsAdmin] = useState(false);
     const [isChatChannel, setIsChatChannel] = useState(false);
+    const [isEdit, setIsEdit] = useState(false);
     const [isPostChannel, setIsPostChannel] = useState(true);
     const [isModerator, setIsModerator] = useState(false);
-    const [feed, setFeed] = useState('');
-    const [feedNotFound, setFeedNotFound] = useState(false);
     const navigate = useNavigate();
     const [newChannelName, setNewChannelName] = useState('');
     const [postErrorMessage, setPostErrorMessage] = useState('');
+    const [postToEdit, setPostToEdit] = useState(null);
     const [showChannelForm, setShowChannelForm] = useState(false);
     const [showPostForm, setShowPostForm] = useState(false);
     const { user, viewer } = useContext(AuthContext);
@@ -129,6 +131,20 @@ const FeedHome = () => {
         }
     };
 
+    const handleEditSubmit = async (formData) => {
+        formData.append('post_id', postToEdit.post_id);
+        try {
+            await axios.post('/api/edit_post', formData, {
+                header: { 'Content-Type': 'multipart/form-data' },
+            });
+            setShowPostForm(false);
+            setIsEdit(false);
+            setPostToEdit(null);
+        } catch (error) {
+            setPostErrorMessage("Error editing post");
+        }
+    };
+
     //Set channels to contain either posts or chats, or both
     const handleChatClick = () => setIsChatChannel((prev) => !prev);
     const handlePostClick = () => setIsPostChannel((prev) => !prev);
@@ -203,9 +219,11 @@ const FeedHome = () => {
             <div className="channel-feed">
                 {showPostForm ? (
                     <ContentForm 
+                        isEdit={isEdit}
                         isReply={false} 
-                        onSubmit={handlePostSubmit} 
+                        onSubmit={isEdit ? handleEditSubmit : handlePostSubmit} 
                         postErrorMessage={postErrorMessage} 
+                        postToEdit={postToEdit}
                         setPostErrorMessage={setPostErrorMessage} 
                     />
                 ) : feedErrorMessage ? (
@@ -218,6 +236,11 @@ const FeedHome = () => {
                             channelName={channelRender.channel_name}
                             feed={feed}
                             isGroup={true}
+                            onEditClick={(post) => {
+                                setShowPostForm(true);
+                                setIsEdit(true);
+                                setPostToEdit(post);
+                            }}
                         />
                     ) : (
                         <ChatChannel
@@ -227,9 +250,7 @@ const FeedHome = () => {
                             isGroup={true}
                         />
                     )
-                ) : (
-                    <p className="text36"></p>
-                )}
+                ) : null}
             </div> 
             <aside id="right-aside">
                 <div id="feed-summary">
