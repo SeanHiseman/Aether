@@ -3,6 +3,7 @@ import deleteMedia from '../functions/media_handling/deleteMedia.js';
 import { Feeds, FeedChannels, Posts, PostNotes, PostVotes } from '../models/relationships.js';
 import multer from 'multer';
 import { Router } from 'express';
+import path from 'path';
 import { v4 } from 'uuid';
 
 const feedAttributes = ['feed_id', 'parent_id', 'feed_name', 'description', 'feed_photo', 'follower_count', 'date_created', 'type', 'is_group', 'feed_owner'];
@@ -119,20 +120,22 @@ router.post('/content_vote', authenticateCheck, async (req, res) => {
 });
 //Checks input for post uploads
 const postFilter = (req, file, cb) => {
-    if (file.mimetype.startsWith('image') || file.mimetype.startsWith('video')) {
-        cb(null, true);
+    const allowedTypes = /jpeg|jpg|png|gif|mp4|mov|avi/;
+    const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
+    const mimetype = allowedTypes.test(file.mimetype);
+    if (mimetype && extname) {
+      return cb(null, true);
     } else {
-        cb(null, false);
+      cb(new Error('Only images and videos are allowed'));
     }
-};
-
+  };
 //Multer setup for post uploads
 const post_storage = multer.diskStorage({
     destination: function (req, file, cb) {
         cb(null, 'media/content');
     },
     filename: function (req, file, cb) {
-        cb(null, Date.now() + path.extname(file.originalname));
+        cb(null, file.originalname);
     }
 });
 
@@ -146,6 +149,7 @@ const post_upload = multer({
 });
 
 router.post('/create_post', authenticateCheck, post_upload.array('files'), async (req, res) => {
+    console.log("req.body:", req.body);
     try {
         const { channel_id, content, feed_id, is_code, parentId, poster_id, title } = req.body;
         const post_id = v4();
@@ -168,6 +172,7 @@ router.post('/create_post', authenticateCheck, post_upload.array('files'), async
         });
         return res.status(200).json({ success: true, post });
     } catch (error) {
+        console.log(error);
         return res.status(500).json({ success: false });
     }
 });
