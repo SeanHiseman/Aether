@@ -3,11 +3,12 @@ import React, { useEffect, useRef, useState } from 'react';
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
 import ContentDisplay from './contentDisplay';
+import { v4 } from 'uuid';
 
 const ContentForm = ({ closeForm, isEdit = false, isReply, onSubmit, postErrorMessage, postToEdit = null, setPostErrorMessage }) => {
     const [files, setFiles] = useState([]);
     const [generationRequest, setGenerationRequest] = useState('');
-    const [isCode, setIsCode] = useState(false);
+    const [isCode, setIsCode] = useState(true);
     const [isLoading, setIsLoading] = useState(false);
     const [codeContent, setCodeContent] = useState('');
     const [textContent, setTextContent] = useState('');
@@ -44,6 +45,11 @@ const ContentForm = ({ closeForm, isEdit = false, isReply, onSubmit, postErrorMe
             ],
             ['clean'],
         ]
+    };
+
+    const createUniqueFilename = (originalName) => {
+        const ext = originalName.substring(originalName.lastIndexOf('.'));
+        return `${Date.now()}-${v4()}${ext}`;
     };
 
     const generateContent = async () => {
@@ -84,13 +90,36 @@ const ContentForm = ({ closeForm, isEdit = false, isReply, onSubmit, postErrorMe
     //Handles attached files
     const handleFilesChange = (event) => {
         const newFiles = Array.from(event.target.files);
-        setFiles((prevFiles) => [...prevFiles, ...newFiles]);
+        const uniqueFiles = newFiles.map(file => {
+            const uniqueFilename = createUniqueFilename(file.name);
+            const newFile = new File([file], uniqueFilename, { type: file.type });
+            return { originalFile: file, uniqueFile: newFile, uniqueFilename };
+        });
+        //Update files state with uniqueFile
+        setFiles((prevFiles) => [...prevFiles, ...uniqueFiles.map(f => f.uniqueFile)]);
+        if (isCode) {
+            let updatedCodeContent = codeContent;
+            uniqueFiles.forEach(({ uniqueFilename, uniqueFile }) => {
+                const filePath = `/media/content/${uniqueFilename}`; 
+                if (uniqueFile.type.startsWith('image/')) {
+                    updatedCodeContent += `<img src="${filePath}" alt="${uniqueFile.name}" />`;
+                } else if (uniqueFile.type.startsWith('video/')) {
+                    updatedCodeContent += 
+                    `<video controls>
+                        <source src="${filePath}" type="${uniqueFile.type}" />
+                        Your browser does not support the video tag
+                    </video>`;
+                } else {
+                    updatedCodeContent += `<a href="${filePath}" download="${uniqueFile.name}">${uniqueFile.name}</a>`;
+                }
+            });
+        setCodeContent(updatedCodeContent);
+        }
     };
 
     const content = isCode ? codeContent : textContent;
 
     const handleSubmit = async (event) => {
-        console.log("submitting");
         event.preventDefault();
         if (isCode) {
             if (content.trim() === "") {
@@ -101,7 +130,7 @@ const ContentForm = ({ closeForm, isEdit = false, isReply, onSubmit, postErrorMe
         setPostErrorMessage("");
         const formData = new FormData();
         formData.append('content', content);
-        //formData.append('is_code', isCode);
+        formData.append('is_code', isCode);
         if (!isReply) formData.append('title', title);
         files.forEach((file) => {
             formData.append('files', file);
@@ -125,20 +154,16 @@ const ContentForm = ({ closeForm, isEdit = false, isReply, onSubmit, postErrorMe
                     {isReply && (
                         <button className="button" type="button" onClick={closeForm}>Close</button>
                     )}
-                    {!isCode && (
-                        <>
-                            <label htmlFor="media-input" className="button">Add media</label>
-                            <input type="file" id="media-input" accept="image/*,video/*" hidden multiple onChange={handleFilesChange} />
-                            {files.length > 0 && (
-                                <div className="file-names">
-                                    <ul>
-                                        {files.map((file, index) => (
-                                            <li key={index}>{file.name}</li>
-                                        ))}
-                                    </ul>
-                                </div>
-                            )}
-                        </>
+                    <label htmlFor="media-input" className="button">Add media</label>
+                    <input type="file" id="media-input" accept="image/*,video/*" hidden multiple onChange={handleFilesChange} />
+                    {files.length > 0 && (
+                        <div className="file-names">
+                            <ul>
+                                {files.map((file, index) => (
+                                    <li key={index}>{file.name}</li>
+                                ))}
+                            </ul>
+                        </div>
                     )}
                     <button className="button" type="submit">
                         {isEdit ? "Save Edit" : isReply ? "Reply" : "Post"}
