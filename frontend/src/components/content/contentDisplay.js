@@ -1,12 +1,13 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 
-const ContentDisplay = ({ content }) => {
+const ContentDisplay = ({ content, showFullContent }) => {
     const iframeRef = useRef(null);
+    const [iframeHeight, setIframeHeight] = useState('50vh');
 
     useEffect(() => {
         if (iframeRef.current) {
             const iframeDocument = iframeRef.current.contentDocument || iframeRef.current.contentWindow.document;
-            // Write the dynamic content into the iframe
+            //Write the dynamic content into the iframe
             iframeDocument.open();
             iframeDocument.write(`
                 <!DOCTYPE html>
@@ -14,16 +15,20 @@ const ContentDisplay = ({ content }) => {
                 <head>
                     <style>
                         body {
-                            margin: 0;
-                            padding: 0;
-                            height: auto;
-                            overflow: hidden;
-                            box-sizing: border-box;
+                            background-color: transparent;
                             display: flex;
-                            justify-content: center;
-                            align-items: center;
                             color: white; 
                             font-family: Arial, sans-serif;
+                            margin: 0;
+                            max-width: 100%;
+                            justify-content: center;
+                            padding: 0;
+                        }
+                        img, video, iframe, embed, object {
+                            max-width: 90%;
+                            height: auto;
+                            display: block;
+                            margin: 10px 0;
                         }
                     </style>
                 </head>
@@ -33,32 +38,33 @@ const ContentDisplay = ({ content }) => {
                 </html>
             `);
             iframeDocument.close();
-            // Adjust iframe height to match content
-            const adjustHeight = () => {
-                const contentHeight = iframeDocument.body.scrollHeight;
-                iframeRef.current.style.height = `${contentHeight}px`;
+            const measureHeight = () => {
+                const fullHeight = iframeDocument.body.scrollHeight;
+                if (showFullContent) {
+                    setIframeHeight(`${fullHeight}px`);
+                } else {
+                    setIframeHeight('50vh');
+                }
             };
-            iframeDocument.body.onload = adjustHeight;
-            const observer = new MutationObserver(() => {
-                adjustHeight();
-            });
+            measureHeight();
+            const observer = new MutationObserver(measureHeight);
             observer.observe(iframeDocument.body, {
                 childList: true,
                 subtree: true,
                 characterData: true,
             });
             return () => observer.disconnect();
-        } 
-    }, [content]);
+        }
+    }, [content, showFullContent]);
 
     return (
         <iframe
             ref={iframeRef}
             title="Content iframe"
             style={{
-                //alignItems: "center",
                 border: "none",
-                //display: "flex",
+                height: iframeHeight,
+                transition: "height 0.3s ease",
                 width: "100%",
             }}
         />

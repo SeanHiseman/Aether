@@ -15,7 +15,7 @@ const ContentForm = ({ closeForm, isEdit = false, isReply, onSubmit, postErrorMe
     const [title, setTitle] = useState('');
     const [useRequest, setUseRequest] = useState(false);
     const quillRef = useRef(null);
-    const loadingText = "<p>Loading... (Can take up to 30 seconds)</p>";
+    const loadingText = "Loading... (Can take up to 30 seconds)";
 
     //Populates form if editing
     useEffect(() => {
@@ -197,7 +197,7 @@ const ContentForm = ({ closeForm, isEdit = false, isReply, onSubmit, postErrorMe
                             {isLoading ? (
                                 <p>{loadingText}</p>
                             ) : (
-                                <ContentDisplay content={codeContent} />
+                                <ContentDisplay content={codeContent} showFullContent={true}/>
                             )}
                         </div>
                     </div>

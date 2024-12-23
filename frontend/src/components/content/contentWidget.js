@@ -15,6 +15,7 @@ const ContentWidget = ({ canRemove: canRemoveProp, feed, isGroup, onPostRemoved,
     const [hasViewed, setHasViewed] = useState(false);
     const [note, setNote] = useState(post.note ? post.note.note_content : '');
     const [replies, setReplies] = useState([]);
+    const [showFullContent, setShowFullContent] = useState(false);
     const [showNote, setShowNote] = useState(post.note && post.note.is_misinfo);
     const [showReplies, setShowReplies] = useState(false);
     const [showReplyForm, setShowReplyForm] = useState(false);
@@ -32,18 +33,6 @@ const ContentWidget = ({ canRemove: canRemoveProp, feed, isGroup, onPostRemoved,
             //console.error("Error getting replies:", error);
         //}
     //}, [isGroup]);
-
-    //Adds a view to the post
-    const incrementViews = useCallback(async (postId) => {
-        try {
-            if (hasViewed === false) {
-                await axios.post('/api/increment_views', { postId });
-                setHasViewed(true);
-            }
-        } catch (error) {
-            console.error("Error incrementing views:", error);
-        }
-    }, [hasViewed]);
     
     //Allows removal of own posts
     useEffect(() => {
@@ -84,6 +73,18 @@ const ContentWidget = ({ canRemove: canRemoveProp, feed, isGroup, onPostRemoved,
 
         checkVoteLimit();
     }, [feed.feedId, post.post_id, isGroup]);
+
+    //Adds a view to the post
+    const incrementViews = useCallback(async (postId) => {
+        try {
+            if (hasViewed === false) {
+                await axios.post('/api/increment_views', { postId });
+                setHasViewed(true);
+            }
+        } catch (error) {
+            console.error("Error incrementing views:", error);
+        }
+    }, [hasViewed]);
 
     //Allows React Quill to display videos
     const BlockEmbed = Quill.import('blots/block/embed');
@@ -206,68 +207,69 @@ const ContentWidget = ({ canRemove: canRemoveProp, feed, isGroup, onPostRemoved,
     const upvoteClass = upvoteLimit || isViewingOwnPost ? 'vote-disabled' : 'vote-enabled';
 
     return (
-        <div>
-            <div className="content-item">
-                <div className="title-container">
-                    <Link to={`/${urlLetter}/${feed.feed_name}/${post.parentChannel.channel_name}/${post.post_id}`}className="text36">{post.title}</Link>
-                    {post.displayGroupName && (
-                        <Link className="feed-link" to={`/g/${feed.feed_name}`}>
-                            <p className="feed-list-text">{feed.feed_name}</p>
-                            <img className="small-feed-photo" src={`/${feed.feed_photo}`} alt="Feed" />
-                        </Link>
-                    )}
-                </div>
-                <ContentDisplay content={post.content} />
-                {showNote && (
-                    <div className="ask-note">
-                        <p className="ask-note-text">{note}</p>
-                    </div>
-                )}
-                <div className="content-metadata">
-                    <div className="feed-info">
-                        <Link className="feed-link" to={`/u/${post.poster.feed_name}`} onClick={() => incrementViews(post.post_id)}>
-                            <img className="small-feed-photo" src={`/${post.poster.feed_photo}`} alt="Feed" />
-                            <p className="feed-list-text">{post.poster.feed_name} </p>
-                        </Link>
-                    </div>
-                    <div className="vote-container">
-                        <button className={`vote-arrow-container ${upvoteClass}`} onClick={() => postVote(post.post_id, 'upvote')} disabled={isViewingOwnPost}>
-                            <img className={`vote-arrow ${upvoteClass}`} src="/media/site_images/up.png" alt="upvote" />
-                        </button>
-                        <span className="total-votes">{upvotes - downvotes}</span>
-                        <button className={`vote-arrow-container ${downvoteClass}`} onClick={() => postVote(post.post_id, 'downvote')} disabled={isViewingOwnPost}>
-                            <img className={`vote-arrow ${downvoteClass}`} src="/media/site_images/down.png" alt="downvote" />
-                        </button>
-                    </div>
-                    <button className="button" data-content-id={post.post_id} onClick={toggleReplies}>
-                        Replies <span className="reply-count" id={`reply-count-${post.post_id}`}>{post.replies}</span>
-                    </button>
-                    <span className="view-count">{post.views} Views</span>
-                    <p>{new Date(post.timestamp).toLocaleDateString()}</p>
-                    {post.poster_id === viewer.feed_id && (
-                        <button className="button" onClick={() => onEditClick(post)}>Edit</button>
-                    )}
-                    {canRemove ? (
-                        <button className="button" onClick={() => removePost(isGroup, post.post_id)}>Delete</button>
-                    ) : null}
-                    {!post.note?.is_misinfo && (
-                        <AskButton isGroup={isGroup} isReply={false} content={post} showNote={showNote} setShowNote={setShowNote} note={note} setNote={setNote} />
-                    )}
-                </div>
-                {showReplies && (
-                    <div className="reply-section">
-                        {showReplyForm && (
-                            <div className="add-reply">
-                                <ContentForm closeForm={toggleReplyForm} isReply={true} onSubmit={handleReplySubmit} />
-                            </div>
-                        )}
-                        {!showReplyForm && (<button className="button large" onClick={toggleReplyForm}>Add reply</button>)}
-                        {nestedReplies.map((reply) => (
-                            <Reply key={reply.reply_id} reply={reply} depth={0} isGroup={isGroup} onReplyAdded={replyAdded} onReplyRemoved={replyRemoved} postId={post.post_id} />
-                        ))}
-                    </div>
+        <div className="content-item">
+            <div className="title-container">
+                <Link to={`/${urlLetter}/${feed.feed_name}/${post.parentChannel.channel_name}/${post.post_id}`}className="text36">{post.title}</Link>
+                {post.displayGroupName && (
+                    <Link className="feed-link" to={`/g/${feed.feed_name}`}>
+                        <p className="feed-list-text">{feed.feed_name}</p>
+                        <img className="small-feed-photo" src={`/${feed.feed_photo}`} alt="Feed" />
+                    </Link>
                 )}
             </div>
+            <ContentDisplay content={post.content} showFullContent={showFullContent} />
+            <button className="button" onClick={() => setShowFullContent(!showFullContent)}>
+                {showFullContent ? 'Show less' : 'Show more'}
+            </button>
+            {showNote && (
+                <div className="ask-note">
+                    <p className="ask-note-text">{note}</p>
+                </div>
+            )}
+            <div className="content-metadata">
+                <div className="feed-info">
+                    <Link className="feed-link" to={`/u/${post.poster.feed_name}`} onClick={() => incrementViews(post.post_id)}>
+                        <img className="small-feed-photo" src={`/${post.poster.feed_photo}`} alt="Feed" />
+                        <p className="feed-list-text">{post.poster.feed_name} </p>
+                    </Link>
+                </div>
+                <div className="vote-container">
+                    <button className={`vote-arrow-container ${upvoteClass}`} onClick={() => postVote(post.post_id, 'upvote')} disabled={isViewingOwnPost}>
+                        <img className={`vote-arrow ${upvoteClass}`} src="/media/site_images/up.png" alt="upvote" />
+                    </button>
+                    <span className="total-votes">{upvotes - downvotes}</span>
+                    <button className={`vote-arrow-container ${downvoteClass}`} onClick={() => postVote(post.post_id, 'downvote')} disabled={isViewingOwnPost}>
+                        <img className={`vote-arrow ${downvoteClass}`} src="/media/site_images/down.png" alt="downvote" />
+                    </button>
+                </div>
+                <button className="button" data-content-id={post.post_id} onClick={toggleReplies}>
+                    Replies <span className="reply-count" id={`reply-count-${post.post_id}`}>{post.replies}</span>
+                </button>
+                <span className="view-count">{post.views} Views</span>
+                <p>{new Date(post.timestamp).toLocaleDateString()}</p>
+                {post.poster_id === viewer.feed_id && (
+                    <button className="button" onClick={() => onEditClick(post)}>Edit</button>
+                )}
+                {canRemove ? (
+                    <button className="button" onClick={() => removePost(isGroup, post.post_id)}>Delete</button>
+                ) : null}
+                {!post.note?.is_misinfo && (
+                    <AskButton isGroup={isGroup} isReply={false} content={post} showNote={showNote} setShowNote={setShowNote} note={note} setNote={setNote} />
+                )}
+            </div>
+            {showReplies && (
+                <div className="reply-section">
+                    {showReplyForm && (
+                        <div className="add-reply">
+                            <ContentForm closeForm={toggleReplyForm} isReply={true} onSubmit={handleReplySubmit} />
+                        </div>
+                    )}
+                    {!showReplyForm && (<button className="button large" onClick={toggleReplyForm}>Add reply</button>)}
+                    {nestedReplies.map((reply) => (
+                        <Reply key={reply.reply_id} reply={reply} depth={0} isGroup={isGroup} onReplyAdded={replyAdded} onReplyRemoved={replyRemoved} postId={post.post_id} />
+                    ))}
+                </div>
+            )}
         </div>
     );
 }
