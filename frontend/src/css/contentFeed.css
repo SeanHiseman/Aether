@@ -144,10 +144,6 @@
     width: 40px; 
     border-radius: 50%;
 }
-.username {
-    font-weight: bold;
-    margin-left: 5px;
-}
 .vote-arrows {
     background-color: transparent;
     border: none;

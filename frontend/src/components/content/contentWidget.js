@@ -13,6 +13,7 @@ const ContentWidget = ({ canRemove: canRemoveProp, feed, isGroup, onPostRemoved,
     const [downvotes, setDownvotes] = useState(post.downvotes);
     const [downvoteLimit, setDownvoteLimit] = useState(false);
     const [hasViewed, setHasViewed] = useState(false);
+    const [isOverflowing, setIsOverflowing] = useState(false);
     const [note, setNote] = useState(post.note ? post.note.note_content : '');
     const [replies, setReplies] = useState([]);
     const [showFullContent, setShowFullContent] = useState(false);
@@ -199,7 +200,7 @@ const ContentWidget = ({ canRemove: canRemoveProp, feed, isGroup, onPostRemoved,
             console.error('Error voting:', error);
         }
     };
-
+ 
     const toggleReplies = () => { setShowReplies(!showReplies) };
     const toggleReplyForm = () => { setShowReplyForm(!showReplyForm) };
     const nestedReplies = nestReplies(replies);
@@ -217,10 +218,12 @@ const ContentWidget = ({ canRemove: canRemoveProp, feed, isGroup, onPostRemoved,
                     </Link>
                 )}
             </div>
-            <ContentDisplay content={post.content} showFullContent={showFullContent} />
-            <button className="button" onClick={() => setShowFullContent(!showFullContent)}>
-                {showFullContent ? 'Show less' : 'Show more'}
-            </button>
+            <ContentDisplay content={post.content} onOverflowChange={setIsOverflowing} showFullContent={showFullContent} showScrollBar={false}/>
+            {isOverflowing && (
+                <button className="button" onClick={() => setShowFullContent(!showFullContent)}>
+                    {showFullContent ? 'Show less' : 'Show more'}
+                </button>
+            )}
             {showNote && (
                 <div className="ask-note">
                     <p className="ask-note-text">{note}</p>
@@ -243,10 +246,10 @@ const ContentWidget = ({ canRemove: canRemoveProp, feed, isGroup, onPostRemoved,
                     </button>
                 </div>
                 <button className="button" data-content-id={post.post_id} onClick={toggleReplies}>
-                    Replies <span className="reply-count" id={`reply-count-${post.post_id}`}>{post.replies}</span>
+                    <p className="text16" id={`reply-count-${post.post_id}`}>{post.replies} Replies</p>
                 </button>
-                <span className="view-count">{post.views} Views</span>
-                <p>{new Date(post.timestamp).toLocaleDateString()}</p>
+                <p className="text16">{post.views} Views</p>
+                <p className="text16">{new Date(post.timestamp).toLocaleDateString()}</p>
                 {post.poster_id === viewer.feed_id && (
                     <button className="button" onClick={() => onEditClick(post)}>Edit</button>
                 )}

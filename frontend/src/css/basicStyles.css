@@ -25,14 +25,12 @@ body,html {
     border-radius: 10px;
     background-color: var(--dark-line);
     color: var(--border);
-    margin: 10px;
     padding: 3px 6px;
 }
 .button, .dark-button {
     border-radius: 10px;
     border: none;
     color: var(--border);
-    margin: 10px;
     padding: 3px 6px;
     transition: var(--transition-regular);
 }
@@ -56,6 +54,10 @@ input[type="text"] {
     outline: none;
 }
 label {
+    margin: 10px;
+}
+.text16 {
+    font-size: 16px;
     margin: 10px;
 }
 .text24 {
