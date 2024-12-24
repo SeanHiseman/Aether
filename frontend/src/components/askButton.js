@@ -41,7 +41,7 @@ const AskButton = ({ isReply, isGroup, content, showNote, setShowNote, note, set
 
     return (
         <button
-            className={`${isLoading ? 'button-disabled large' : 'button large'}`}
+            className={`${isLoading ? 'button-disabled' : 'button'}`}
             onClick={askPost}
             disabled={isLoading}
         >

@@ -197,7 +197,7 @@ const ContentForm = ({ closeForm, isEdit = false, isReply, onSubmit, postErrorMe
                             {isLoading ? (
                                 <p>{loadingText}</p>
                             ) : (
-                                <ContentDisplay content={codeContent} showFullContent={true}/>
+                                <ContentDisplay content={codeContent} showFullContent={true} showScrollBar={true}/>
                             )}
                         </div>
                     </div>

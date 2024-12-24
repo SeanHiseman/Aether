@@ -1,8 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react';
 
-const ContentDisplay = ({ content, showFullContent }) => {
+const ContentDisplay = ({ content, currentTheme, onOverflowChange, showFullContent, showScrollBar }) => {
     const iframeRef = useRef(null);
     const [iframeHeight, setIframeHeight] = useState('50vh');
+    const overflowStyle = showScrollBar ? 'auto' : 'hidden';
 
     useEffect(() => {
         if (iframeRef.current) {
@@ -13,22 +14,24 @@ const ContentDisplay = ({ content, showFullContent }) => {
                 <!DOCTYPE html>
                 <html>
                 <head>
+                    <link rel="stylesheet" href="../../css/variables.css">
                     <style>
                         body {
                             background-color: transparent;
-                            display: flex;
                             color: white; 
+                            display: flex;
                             font-family: Arial, sans-serif;
+                            justify-content: center;
                             margin: 0;
                             max-width: 100%;
-                            justify-content: center;
+                            overflow: ${overflowStyle};
                             padding: 0;
                         }
                         img, video, iframe, embed, object {
                             max-width: 90%;
                             height: auto;
                             display: block;
-                            margin: 10px 0;
+                            margin: 10px auto;
                         }
                     </style>
                 </head>
@@ -40,10 +43,17 @@ const ContentDisplay = ({ content, showFullContent }) => {
             iframeDocument.close();
             const measureHeight = () => {
                 const fullHeight = iframeDocument.body.scrollHeight;
-                if (showFullContent) {
-                    setIframeHeight(`${fullHeight}px`);
+                const threshold = window.innerHeight * 0.5;
+                if (fullHeight > threshold) {
+                    if (showFullContent) {
+                        setIframeHeight(`${fullHeight}px`);
+                    } else {
+                        setIframeHeight('50vh');
+                    }
+                    onOverflowChange(true); //Causes error when editing form gets too long
                 } else {
-                    setIframeHeight('50vh');
+                    setIframeHeight(`${fullHeight}px`);
+                    //onOverflowChange(false); this line causes an error
                 }
             };
             measureHeight();
@@ -53,9 +63,19 @@ const ContentDisplay = ({ content, showFullContent }) => {
                 subtree: true,
                 characterData: true,
             });
-            return () => observer.disconnect();
+            Array.from(iframeDocument.querySelectorAll('img, video')).forEach((media) => {
+                media.addEventListener('load', measureHeight);
+                media.addEventListener('loadedmetadata', measureHeight);
+            });
+            return () => {
+                observer.disconnect();
+                Array.from(iframeDocument.querySelectorAll('img, video')).forEach((media) => {
+                    media.removeEventListener('load', measureHeight);
+                    media.removeEventListener('loadedmetadata', measureHeight);
+                });
+            };
         }
-    }, [content, showFullContent]);
+    }, [content, currentTheme, onOverflowChange, overflowStyle, showFullContent]);
 
     return (
         <iframe

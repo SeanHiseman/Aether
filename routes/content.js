@@ -149,7 +149,6 @@ const post_upload = multer({
 });
 
 router.post('/create_post', authenticateCheck, post_upload.array('files'), async (req, res) => {
-    console.log("req.body:", req.body);
     try {
         const { channel_id, content, feed_id, is_code, parentId, poster_id, title } = req.body;
         const post_id = v4();
@@ -172,7 +171,6 @@ router.post('/create_post', authenticateCheck, post_upload.array('files'), async
         });
         return res.status(200).json({ success: true, post });
     } catch (error) {
-        console.log(error);
         return res.status(500).json({ success: false });
     }
 });
