@@ -225,6 +225,7 @@ const FeedHome = () => {
                         postErrorMessage={postErrorMessage} 
                         postToEdit={postToEdit}
                         setPostErrorMessage={setPostErrorMessage} 
+                        setShowForm={setShowPostForm}
                     />
                 ) : feedErrorMessage ? (
                     <div className="text36">{feedErrorMessage}</div>
@@ -283,13 +284,8 @@ const FeedHome = () => {
                         <Tooltip place="top" type="dark" effect="solid" />
                     </>
                 )}
-                {showPostForm && channelMode === 'post' && (
-                    <div>
-                        <button className="button" onClick={() => setShowPostForm(false)}>Close</button>
-                    </div>
-                )}
                 {!showPostForm && channelMode === 'post' && (
-                    <button className="button" onClick={() => setShowPostForm(true)}>Add Post</button>
+                    <button className="button" onClick={() => {setIsEdit(false); setPostToEdit(null); setShowPostForm(true);}}>Add Post</button>
                 )}
                 {channelRender && channelRender.is_posts && channelRender.is_chat && (
                     <div className="option-toggle">

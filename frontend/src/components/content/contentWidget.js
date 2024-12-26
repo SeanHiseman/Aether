@@ -125,6 +125,7 @@ const ContentWidget = ({ canRemove: canRemoveProp, feed, isGroup, onPostRemoved,
             if (response.data.success === true) {
                 //Add the new reply to the local state
                 setReplies(currentReplies => [...currentReplies, response.data.reply]);
+                setShowReplyForm(false);
             } else {
                 console.error("Failed to add reply:", response.data.message);
             }
@@ -201,8 +202,8 @@ const ContentWidget = ({ canRemove: canRemoveProp, feed, isGroup, onPostRemoved,
         }
     };
  
-    const toggleReplies = () => { setShowReplies(!showReplies) };
-    const toggleReplyForm = () => { setShowReplyForm(!showReplyForm) };
+    const toggleReplies = () => { setShowReplies(prev => !prev) };
+    const toggleReplyForm = () => { setShowReplyForm(prev => !prev) };
     const nestedReplies = nestReplies(replies);
     const downvoteClass = downvoteLimit || isViewingOwnPost ? 'vote-disabled' : 'vote-enabled';
     const upvoteClass = upvoteLimit || isViewingOwnPost ? 'vote-disabled' : 'vote-enabled';
@@ -262,12 +263,13 @@ const ContentWidget = ({ canRemove: canRemoveProp, feed, isGroup, onPostRemoved,
             </div>
             {showReplies && (
                 <div className="reply-section">
-                    {showReplyForm && (
+                    {showReplyForm ? (
                         <div className="add-reply">
-                            <ContentForm closeForm={toggleReplyForm} isReply={true} onSubmit={handleReplySubmit} />
+                            <ContentForm isReply={true} onSubmit={handleReplySubmit} setShowForm={setShowReplyForm}/>
                         </div>
+                    ) : (
+                        <button className="button" onClick={() => setShowReplyForm(true)}>Add reply</button>
                     )}
-                    {!showReplyForm && (<button className="button large" onClick={toggleReplyForm}>Add reply</button>)}
                     {nestedReplies.map((reply) => (
                         <Reply key={reply.reply_id} reply={reply} depth={0} isGroup={isGroup} onReplyAdded={replyAdded} onReplyRemoved={replyRemoved} postId={post.post_id} />
                     ))}

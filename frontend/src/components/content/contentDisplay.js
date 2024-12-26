@@ -28,10 +28,9 @@ const ContentDisplay = ({ content, currentTheme, onOverflowChange, showFullConte
                             padding: 0;
                         }
                         img, video, iframe, embed, object {
-                            max-width: 90%;
+                            max-width: 97%;
                             height: auto;
                             display: block;
-                            margin: 10px auto;
                         }
                     </style>
                 </head>
@@ -84,6 +83,7 @@ const ContentDisplay = ({ content, currentTheme, onOverflowChange, showFullConte
             style={{
                 border: "none",
                 height: iframeHeight,
+                margin: "10px",
                 transition: "height 0.3s ease",
                 width: "100%",
             }}
