@@ -6,9 +6,8 @@ import { AuthContext } from '../authContext';
 import AskButton from '../askButton';
 import ContentDisplay from './contentDisplay';
 import ContentForm from './contentForm';
-import Reply from '../replies/reply';
 
-const ContentWidget = ({ canRemove: canRemoveProp, feed, isGroup, onPostRemoved, post, onEditClick }) => {
+const ContentWidget = ({ canRemove: canRemoveProp, feed, isGroup, onEditClick, onPostRemoved, post, postErrorMessage, setPostErrorMessage }) => {
     const [canRemove, setCanRemove] = useState(canRemoveProp);
     const [downvotes, setDownvotes] = useState(post.downvotes);
     const [downvoteLimit, setDownvoteLimit] = useState(false);
@@ -26,14 +25,14 @@ const ContentWidget = ({ canRemove: canRemoveProp, feed, isGroup, onPostRemoved,
     const { user, viewer } = useContext(AuthContext);
     const urlLetter = isGroup ? 'g' : 'u';
 
-    //const getReplies = useCallback(async (postId) => {
-        //try {
-            //const response = await axios.get(`/api/get_replies/${postId}?isGroup=${isGroup}`);
-            //setReplies(response.data); 
-        //} catch (error) {
-            //console.error("Error getting replies:", error);
-        //}
-    //}, [isGroup]);
+    const getReplies = useCallback(async (postId) => {
+        try {
+            const response = await axios.get(`/api/post_replies/${postId}`);
+            setReplies(response.data); 
+        } catch (error) {
+            setPostErrorMessage("Error getting replies");
+        }
+    });
     
     //Allows removal of own posts
     useEffect(() => {
@@ -42,12 +41,11 @@ const ContentWidget = ({ canRemove: canRemoveProp, feed, isGroup, onPostRemoved,
         }
     }, [isViewingOwnPost, post.poster_id, user.userId]);
 
-    //Opens replies
-    //useEffect(() => {
-        //if (showReplies) {
-            //getReplies(post.post_id);
-        //}
-    //}, [getReplies, post.post_id, showReplies]);
+    useEffect(() => {
+        if (showReplies) {
+            getReplies(post.post_id);
+        }
+    }, [getReplies, post.post_id, showReplies]);
     
     //Adds a view if replies are opened
     //useEffect(() => {
@@ -61,17 +59,16 @@ const ContentWidget = ({ canRemove: canRemoveProp, feed, isGroup, onPostRemoved,
     useEffect(() => {
         const checkVoteLimit = async () => {
             try {
-                const response = await axios.post('/api/content_vote', { contentId: post.post_id, feedId: feed.feedId, voteType: 'check_vote' });
+                const response = await axios.post('/api/content_vote', { contentId: post.post_id, feedId: feed.feed_id, voteType: 'check_vote' });
                 if (response.data.message === 'upvote limit') {
                     setUpvoteLimit(true);
                 } else if (response.data.message === 'downvote limit') {
                     setDownvoteLimit(true);
                 }
             } catch (error) {
-                console.error('Error checking vote limit:', error);
+                setPostErrorMessage('Error checking vote limit');
             }
         };
-
         checkVoteLimit();
     }, [feed.feedId, post.post_id, isGroup]);
 
@@ -83,7 +80,7 @@ const ContentWidget = ({ canRemove: canRemoveProp, feed, isGroup, onPostRemoved,
                 setHasViewed(true);
             }
         } catch (error) {
-            console.error("Error incrementing views:", error);
+            setPostErrorMessage("Error incrementing views");
         }
     }, [hasViewed]);
 
@@ -114,45 +111,48 @@ const ContentWidget = ({ canRemove: canRemoveProp, feed, isGroup, onPostRemoved,
     };
 
     const handleReplySubmit = async (formData) => {
+        if (!formData) {
+            setPostErrorMessage("Reply cannot be empty");
+            return;
+        }
         try {
-            formData.append('postId', post.post_id);
-            formData.append('isGroup', isGroup);
-            //Send the form data to the server
-            const response = await axios.post('/api/add_reply', formData, {
+            formData.append('feed_id', post.feed_id);
+            formData.append('channel_id', post.channel_id);
+            formData.append('poster_id', viewer.feed_id);
+            const response = await axios.post('/api/create_post', formData, {
                 headers: { 'Content-Type': 'multipart/form-data' }
             });
-
             if (response.data.success === true) {
                 //Add the new reply to the local state
                 setReplies(currentReplies => [...currentReplies, response.data.reply]);
                 setShowReplyForm(false);
             } else {
-                console.error("Failed to add reply:", response.data.message);
+                setPostErrorMessage("Error adding reply");
             }
         } catch (error) {
-            console.error("Error adding reply:", error);
+            setPostErrorMessage("Error adding reply");
         }
     };
 
     //Sorts replies by parent and by net upvotes
-    const nestReplies = (replies) => {
-        const replyMap = {};
-        replies.forEach(reply => replyMap[reply.reply_id] = { ...reply, replies: [] });
-        const nestedReplies = [];
-        Object.values(replyMap).forEach(reply => {
-            if (reply.parent_id === null) {
-                nestedReplies.push(reply);
-            } else if (replyMap[reply.parent_id]) {
-                replyMap[reply.parent_id].replies.push(reply);
-            }
-        });
-        const sortByNetUpvotes = (a, b) => (b.upvotes - b.downvotes) - (a.upvotes - a.downvotes);
-        const sortedReplies = nestedReplies.map(reply => {
-            const sortedChildReplies = [...reply.replies].sort(sortByNetUpvotes);
-            return { ...reply, replies: sortedChildReplies };
-        })
-        return sortedReplies.sort(sortByNetUpvotes);
-    };
+    //const nestReplies = (replies) => {
+        //const replyMap = {};
+        //replies.forEach(reply => replyMap[reply.post_id] = { ...reply, replies: [] });
+        //const nestedReplies = [];
+        //Object.values(replyMap).forEach(reply => {
+            //if (reply.parent_id === null) {
+                //nestedReplies.push(reply);
+            //} else if (replyMap[reply.parent_id]) {
+                //replyMap[reply.parent_id].replies.push(reply);
+            //}
+        //});
+        //const sortByNetUpvotes = (a, b) => (b.upvotes - b.downvotes) - (a.upvotes - a.downvotes);
+        //const sortedReplies = nestedReplies.map(reply => {
+            //const sortedChildReplies = [...reply.replies].sort(sortByNetUpvotes);
+            //return { ...reply, replies: sortedChildReplies };
+        //})
+        //return sortedReplies.sort(sortByNetUpvotes);
+    //};
 
     const removePost = async () => {
         try {
@@ -163,7 +163,7 @@ const ContentWidget = ({ canRemove: canRemoveProp, feed, isGroup, onPostRemoved,
                 onPostRemoved(post.post_id);
             }
         } catch (error) {
-            console.error("Error removing post:", error); 
+            setPostErrorMessage("Error removing post"); 
         }
     };
 
@@ -191,25 +191,25 @@ const ContentWidget = ({ canRemove: canRemoveProp, feed, isGroup, onPostRemoved,
                     }
                 }
             } catch (error) {
-                console.error('Error:', error);
+                setPostErrorMessage('Error voting');
             }
             if (!hasViewed) {
                 incrementViews(postId);
                 setHasViewed(true);
             }
         } catch (error) {
-            console.error('Error voting:', error);
+            setPostErrorMessage('Error voting');
         }
     };
  
     const toggleReplies = () => { setShowReplies(prev => !prev) };
-    const toggleReplyForm = () => { setShowReplyForm(prev => !prev) };
-    const nestedReplies = nestReplies(replies);
+    //const nestedReplies = nestReplies(replies);
     const downvoteClass = downvoteLimit || isViewingOwnPost ? 'vote-disabled' : 'vote-enabled';
     const upvoteClass = upvoteLimit || isViewingOwnPost ? 'vote-disabled' : 'vote-enabled';
 
     return (
         <div className="content-item">
+            {postErrorMessage && (<div className="error-message">{postErrorMessage}</div>)}
             <div className="title-container">
                 <Link to={`/${urlLetter}/${feed.feed_name}/${post.parentChannel.channel_name}/${post.post_id}`}className="text36">{post.title}</Link>
                 {post.displayGroupName && (
@@ -265,13 +265,13 @@ const ContentWidget = ({ canRemove: canRemoveProp, feed, isGroup, onPostRemoved,
                 <div className="reply-section">
                     {showReplyForm ? (
                         <div className="add-reply">
-                            <ContentForm isReply={true} onSubmit={handleReplySubmit} setShowForm={setShowReplyForm}/>
+                            <ContentForm isReply={true} onSubmit={handleReplySubmit} post={post} postErrorMessage={postErrorMessage} setPostErrorMessage={setPostErrorMessage} setShowForm={setShowReplyForm}/>
                         </div>
                     ) : (
                         <button className="button" onClick={() => setShowReplyForm(true)}>Add reply</button>
                     )}
-                    {nestedReplies.map((reply) => (
-                        <Reply key={reply.reply_id} reply={reply} depth={0} isGroup={isGroup} onReplyAdded={replyAdded} onReplyRemoved={replyRemoved} postId={post.post_id} />
+                    {replies.map((reply) => (
+                        <ContentWidget key={reply.post_id} canRemove={canRemove} feed={feed} isGroup={isGroup} onEditClick={onEditClick} onPostRemoved={replyRemoved} post={reply} postErrorMessage={postErrorMessage} setPostErrorMessage={setPostErrorMessage}/>
                     ))}
                 </div>
             )}

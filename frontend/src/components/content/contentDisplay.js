@@ -22,13 +22,13 @@ const ContentDisplay = ({ content, currentTheme, onOverflowChange, showFullConte
                             display: flex;
                             font-family: Arial, sans-serif;
                             justify-content: center;
-                            margin: 0;
+                            margin: 10px;
                             max-width: 100%;
                             overflow: ${overflowStyle};
                             padding: 0;
                         }
                         img, video, iframe, embed, object {
-                            max-width: 97%;
+                            max-width: 100%;
                             height: auto;
                             display: block;
                         }
@@ -83,7 +83,6 @@ const ContentDisplay = ({ content, currentTheme, onOverflowChange, showFullConte
             style={{
                 border: "none",
                 height: iframeHeight,
-                margin: "10px",
                 transition: "height 0.3s ease",
                 width: "100%",
             }}

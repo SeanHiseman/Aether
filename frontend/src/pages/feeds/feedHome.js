@@ -155,10 +155,10 @@ const FeedHome = () => {
             setPostErrorMessage("Post cannot be empty");
             return;
         }
-        formData.append('feed_id', feed.feed_id);
-        formData.append('channel_id', channelRender.channel_id);
-        formData.append('poster_id', viewer.feed_id);
         try {
+            formData.append('feed_id', feed.feed_id);
+            formData.append('channel_id', channelRender.channel_id);
+            formData.append('poster_id', viewer.feed_id);
             await axios.post('/api/create_post', formData, {
                 headers: { 'Content-Type': 'multipart/form-data' },
             });
@@ -223,7 +223,7 @@ const FeedHome = () => {
                         isReply={false} 
                         onSubmit={isEdit ? handleEditSubmit : handlePostSubmit} 
                         postErrorMessage={postErrorMessage} 
-                        postToEdit={postToEdit}
+                        post={postToEdit}
                         setPostErrorMessage={setPostErrorMessage} 
                         setShowForm={setShowPostForm}
                     />
@@ -242,6 +242,8 @@ const FeedHome = () => {
                                 setIsEdit(true);
                                 setPostToEdit(post);
                             }}
+                            postErrorMessage={postErrorMessage}
+                            setPostErrorMessage={setPostErrorMessage}
                         />
                     ) : (
                         <ChatChannel

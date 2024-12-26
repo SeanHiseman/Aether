@@ -7,6 +7,7 @@ import path from 'path';
 import { v4 } from 'uuid';
 
 const feedAttributes = ['feed_id', 'parent_id', 'feed_name', 'description', 'feed_photo', 'follower_count', 'date_created', 'type', 'is_group', 'feed_owner'];
+const noteAttributes = ['note_id', 'note_content', 'timestamp', 'is_misinfo']
 const postAttributes = ['post_id', 'parent_id', 'feed_id', 'channel_id', 'title', 'content', 'replies', 'views', 'upvotes', 'downvotes', 'timestamp', 'poster_id', 'points']
 const router = Router();
 
@@ -25,7 +26,7 @@ router.get('/channel_posts', authenticateCheck, async (req, res) => {
         }, {
             model: PostNotes,
             as: 'note',
-            attributes: ['note_id', 'note_content', 'timestamp', 'is_misinfo'],
+            attributes: noteAttributes,
             required: false
         }, {
             model: FeedChannels,
@@ -50,7 +51,8 @@ router.get('/channel_posts', authenticateCheck, async (req, res) => {
         else {
             const whereChannel = {
                 feed_id: feedId,
-                ...(channelId ? { channel_id: channelId } : {})
+                ...(channelId ? { channel_id: channelId } : {}),
+                parent_id: null
             };
             const posts = await Posts.findAll({
                 where: whereChannel,
@@ -150,7 +152,7 @@ const post_upload = multer({
 
 router.post('/create_post', authenticateCheck, post_upload.array('files'), async (req, res) => {
     try {
-        const { channel_id, content, feed_id, is_code, parentId, poster_id, title } = req.body;
+        const { channel_id, content, feed_id, is_code, parent_id, poster_id, title } = req.body;
         const post_id = v4();
         if (!is_code) {
             //Process uploaded files and format content
@@ -162,13 +164,18 @@ router.post('/create_post', authenticateCheck, post_upload.array('files'), async
         };
         const post = await Posts.create({
             post_id, 
-            parent_id: parentId,
+            parent_id,
             feed_id,
             channel_id, 
             title, 
             content, 
             poster_id
         });
+        if (parent_id) {
+            const parentPost = await Posts.findOne({ where: { post_id: parent_id } });
+            parentPost.replies += 1;
+            await parentPost.save();
+        };
         return res.status(200).json({ success: true, post });
     } catch (error) {
         return res.status(500).json({ success: false });
@@ -219,6 +226,56 @@ router.post('/increment_views', authenticateCheck, async (req, res) => {
         res.status(200).json({ success: true });
     } catch (error) {
         res.status(500).json({ success: false });   
+    }
+});
+
+router.get('/post_replies/:postId', authenticateCheck, async (req, res) => {
+    try {
+        const { postId } = req.params;
+        const parentPost = await Posts.findOne({ where: { post_id: postId } });
+        if (!parentPost) {
+            return res.status(404).json({ success: false, message: 'Parent post not found.' });
+        }
+        const includeOptions = [{
+                model: Feeds,
+                as: 'poster',
+                attributes: feedAttributes,
+            },{
+                model: PostVotes,
+                as: 'votes',
+                attributes: ['vote_count'],
+                required: false
+            },{
+                model: PostNotes,
+                as: 'note',
+                attributes: noteAttributes,
+                required: false
+            },{
+                model: FeedChannels,
+                as: 'parentChannel',
+                attributes: ['channel_name'],
+                required: false
+            }
+        ];
+        const parentFeedId = parentPost.feed_id;
+        const parentChannelId = parentPost.channel_id;
+        const whereClause = {
+            parent_id: postId,
+            ...(parentFeedId ? { feed_id: parentFeedId } : {}),
+            ...(parentChannelId ? { channel_id: parentChannelId} : {})
+        };
+        const replies = await Posts.findAll({
+            where: whereClause,
+            include: includeOptions,
+            attributes: postAttributes,
+            order: [['timestamp', 'DESC']],
+        });
+        const formattedReplies = replies.map(reply => ({
+            ...reply.dataValues,
+        }));
+        return res.status(200).json(formattedReplies);
+    } catch (error) {
+        return res.status(500).json({ success: false });
     }
 });
 

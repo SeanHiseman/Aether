@@ -1,4 +1,7 @@
 @import url('variables.css');
+.add-reply {
+    height: 50vh;
+}
 .ask-note {
     background-color: var(--dark);
     border: 1px solid var(--dark-line);
@@ -30,7 +33,7 @@
 .content-list {
     border-bottom: 1px solid var(--border);
     margin: 0;
-    width: 70%;
+    width: 80%;
 }
 .content-item, .content-list {
     box-sizing: border-box;
@@ -42,6 +45,11 @@
     justify-content: space-between;
     margin: 10px;
     width: 98%;
+}
+.feed-photo {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
 }
 .horizontal-container {
     align-items: flex-start;
@@ -61,45 +69,30 @@
     justify-content: space-between;
     width: 30%;
 }
+.reply-container {
+    width: 100%;
+}
 .reply-section {
+    border-top: 1px solid var(--dark-line);
     display: block;
     width: 100%;
 }
-.reply-input {
-    background-color: var(--darkest);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    color: var(--border);
-    height: 50px;
-    margin: 10px;
-    outline: none;
-    padding: 10px;
-    width: 80%;
-}
-.reply-item {
-    background-color: var(--darkest);
-    border-left: 1px solid var(--border);
-    border-right: 1px solid var(--border);
-    border-top: 1px solid var(--border);
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    padding: 15px;
-    width: 800px;
-}
-.reply-list {
-    border-bottom: 1px solid var(--border);
-    padding: 0;
-}
-.reply-metadata {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-top: 10px;
-}
 .reply-feed-container {
+    align-items: center;
+    display: flex;
+    text-decoration: none;
     position: relative;
     display: flex;
     margin-bottom: 5px;
     align-items: center;
+}
+.reply-section {
+    display: block;
+    width: 100%;
+}
+.reply-list {
+    border-bottom: 1px solid var(--border);
+    padding: 0;
 }
 .result-info-options {
     align-items: center;
@@ -120,11 +113,6 @@
 .post-list {
     margin: 0px;
 }
-.feed-photo {
-    width: 30px;
-    height: 30px;
-    border-radius: 50%;
-}
 .search-result-info-box {
     align-items: center;
     display: flex;
@@ -134,7 +122,6 @@
     align-items: center;
     display: flex;
     justify-content: space-between;
-    margin: 10px;
 }
 .uploader-info {
     display: flex;
