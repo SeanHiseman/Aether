@@ -25,6 +25,7 @@ body,html {
     border-radius: 10px;
     background-color: var(--dark-line);
     color: var(--border);
+    margin: 5px;
     padding: 3px 6px;
 }
 .button, .dark-button {
@@ -32,6 +33,7 @@ body,html {
     border: none;
     color: var(--border);
     padding: 3px 6px;
+    margin: 5px;
     transition: var(--transition-regular);
 }
 .button, .button-disbaled, .dark-button, .dark-button-disabled {

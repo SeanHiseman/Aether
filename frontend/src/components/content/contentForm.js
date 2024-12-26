@@ -5,7 +5,7 @@ import 'react-quill/dist/quill.snow.css';
 import ContentDisplay from './contentDisplay';
 import { v4 } from 'uuid';
 
-const ContentForm = ({ closeForm, isEdit = false, isReply, onSubmit, postErrorMessage, postToEdit = null, setPostErrorMessage }) => {
+const ContentForm = ({ isEdit = false, isReply, onSubmit, postErrorMessage, postToEdit = null, setPostErrorMessage, setShowForm }) => {
     const [files, setFiles] = useState([]);
     const [generationRequest, setGenerationRequest] = useState('');
     const [isCode, setIsCode] = useState(true);
@@ -151,9 +151,7 @@ const ContentForm = ({ closeForm, isEdit = false, isReply, onSubmit, postErrorMe
         <div className={`create-post-container ${isCode ? 'wide' : 'narrow'}`}>
             <form id="post-form" onSubmit={handleSubmit}>
                 <div id="content-form-buttons">
-                    {isReply && (
-                        <button className="button" type="button" onClick={closeForm}>Close</button>
-                    )}
+                    <button className="button" type="button" onClick={() => setShowForm(false)}>Close</button>
                     <label htmlFor="media-input" className="button">Add media</label>
                     <input type="file" id="media-input" accept="image/*,video/*" hidden multiple onChange={handleFilesChange} />
                     {files.length > 0 && (

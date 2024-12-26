@@ -17,7 +17,7 @@
     border-right: 1px solid var(--border);
     border-top: 1px solid var(--border);
     cursor: pointer;
-    padding: 15px;
+    padding: 1px;
     transition: background-color;
     width: 100%;
 }
@@ -40,7 +40,8 @@
     display: flex;
     font-size: x-large;
     justify-content: space-between;
-    width: 100%;
+    margin: 10px;
+    width: 98%;
 }
 .horizontal-container {
     align-items: flex-start;
@@ -133,6 +134,7 @@
     align-items: center;
     display: flex;
     justify-content: space-between;
+    margin: 10px;
 }
 .uploader-info {
     display: flex;
