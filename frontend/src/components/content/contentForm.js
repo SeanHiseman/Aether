@@ -5,7 +5,8 @@ import 'react-quill/dist/quill.snow.css';
 import ContentDisplay from './contentDisplay';
 import { v4 } from 'uuid';
 
-const ContentForm = ({ isEdit = false, isReply, onSubmit, postErrorMessage, postToEdit = null, setPostErrorMessage, setShowForm }) => {
+const ContentForm = ({ isEdit = false, isReply, onSubmit, post = null, postErrorMessage, setPostErrorMessage, setShowForm }) => {
+    console.log("post:", post);
     const [files, setFiles] = useState([]);
     const [generationRequest, setGenerationRequest] = useState('');
     const [isCode, setIsCode] = useState(true);
@@ -19,17 +20,17 @@ const ContentForm = ({ isEdit = false, isReply, onSubmit, postErrorMessage, post
 
     //Populates form if editing
     useEffect(() => {
-        if (isEdit && postToEdit) {
-            setTitle(postToEdit.title || '');
-            //if (postToEdit.is_code) {
+        if (isEdit && post) {
+            setTitle(post.title || '');
+            //if (post.is_code) {
                 setIsCode(true);
-                setCodeContent(postToEdit.content);
+                setCodeContent(post.content);
             //} else {
                 //setIsCode(false);
-                //setTextContent(postToEdit.content);
+                //setTextContent(post.content);
             //}
         }
-    }, [isEdit, postToEdit]);
+    }, [isEdit, post]);
 
     //Customises tool bar
     const modules = {
@@ -127,15 +128,16 @@ const ContentForm = ({ isEdit = false, isReply, onSubmit, postErrorMessage, post
                 return;  
             }
         }
-        setPostErrorMessage("");
-        const formData = new FormData();
-        formData.append('content', content);
-        formData.append('is_code', isCode);
-        if (!isReply) formData.append('title', title);
-        files.forEach((file) => {
-            formData.append('files', file);
-        }); 
         try {
+            //setPostErrorMessage("");
+            const formData = new FormData();
+            formData.append('content', content);
+            formData.append('is_code', isCode);
+            if (isReply) formData.append("parent_id", post.post_id);
+            if (!isReply) formData.append('title', title);
+            files.forEach((file) => {
+                formData.append('files', file);
+            }); 
             await onSubmit(formData);
             setCodeContent('');
             setTextContent('');
@@ -152,6 +154,9 @@ const ContentForm = ({ isEdit = false, isReply, onSubmit, postErrorMessage, post
             <form id="post-form" onSubmit={handleSubmit}>
                 <div id="content-form-buttons">
                     <button className="button" type="button" onClick={() => setShowForm(false)}>Close</button>
+                    <button className="button" type="submit">
+                        {isEdit ? "Save Edit" : isReply ? "Reply" : "Post"}
+                    </button>
                     <label htmlFor="media-input" className="button">Add media</label>
                     <input type="file" id="media-input" accept="image/*,video/*" hidden multiple onChange={handleFilesChange} />
                     {files.length > 0 && (
@@ -163,9 +168,6 @@ const ContentForm = ({ isEdit = false, isReply, onSubmit, postErrorMessage, post
                             </ul>
                         </div>
                     )}
-                    <button className="button" type="submit">
-                        {isEdit ? "Save Edit" : isReply ? "Reply" : "Post"}
-                    </button>
                     <button className="button" type="button" onClick={() => setIsCode(!isCode)}>
                         {isCode ? "Text Editor" : "Code Editor"}
                     </button>
