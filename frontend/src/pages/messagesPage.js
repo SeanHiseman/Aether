@@ -1,9 +1,10 @@
 import axios from 'axios';
-import React, { useContext, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { AuthContext } from '../components/authContext';
 import { io } from "socket.io-client";
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { v4 } from 'uuid';
+import ChannelList from '../components/channels/channelList';
 import ManageConnectionButton from '../components/manageConnectionButton';
 import Message from '../components/message';
 
@@ -11,9 +12,11 @@ const MessagesPage = () => {
     const [changedChatName, setChangedChatName] = useState('');
     const [chat, setChat] = useState([]);
     const [chats, setChats] = useState([]);
-    const [errorMessage, setErrorMessage] = useState('');
     const [connections, setConnections] = useState([]);
+    const [connectionChats, setConnectionChats] = useState([]);
     const { connection_name, title } = useParams();
+    const [dropdownOpen, setDropdownOpen] = useState(false);
+    const [errorMessage, setErrorMessage] = useState('');
     const [isEditingChatName, setIsEditingChatName] = useState(false);
     const [message, setMessage] = useState('');
     const [newChatName, setNewChatName] = useState('');
@@ -22,14 +25,13 @@ const MessagesPage = () => {
     const socketRef = useRef(null);
     const { user, viewer } = useContext(AuthContext)
     const navigate = useNavigate();
-    console.log("viewer:", viewer);
+
     useEffect(() => {
         const getConnections = async () => {
             try {
                 const response = await axios.get(`/api/get_connections/${viewer.feed_id}`);
                 setConnections(response.data);
             } catch (error) {
-                console.log("connections error:", error);
                 setErrorMessage("Error getting connections");
             }
         };
@@ -207,6 +209,11 @@ const MessagesPage = () => {
         }
     };
 
+    //Dropdown for chats
+    const dropdownToggle = () => {
+        setDropdownOpen((prevOpen) => !prevOpen);
+    };
+
     //Get messages from a specific chat
     const getChatMessages = async (chatId) => {
         try {
@@ -243,6 +250,10 @@ const MessagesPage = () => {
     };
 
     const toggleForm = () => { setShowForm(!showForm) }
+
+    const updateConnectionChats = useCallback((newChats) => {
+        setConnectionChats(newChats);
+    }, []);
 
     //Gets feed photo of viewed connection
     const connectionProfileImage = connections.find(c => c.feed_name === connection_name)?.feed_photo || '';
@@ -361,12 +372,18 @@ const MessagesPage = () => {
                         <ul>
                             {connections.map(c => (
                                 <li className="feed-list-item" key={c.connection_id}>
-                                    <Link className="feed-list-link-container" to={`/messages/${c.feed_name}/Main`}>
-                                    <img className="small-feed-photo" src={`/${c.feed_photo}`} alt="Feed"/>
-                                        <div className="feed-list-text">
-                                            {c.feed_name}
-                                        </div>
-                                    </Link>
+                                    <div className="feed-list-link-container">
+                                        <Link className="feed-list-link" to={`/messages/${c.feed_name}/Main`}>
+                                            <img className="small-feed-photo" src={`/${c.feed_photo}`} alt="Feed"/>
+                                            <p className="feed-list-text">{c.feed_name}</p>
+                                        </Link>
+                                        <p className="channel-dropdown" onClick={dropdownToggle}>
+                                            =
+                                        </p>
+                                    </div>
+                                    {dropdownOpen && (
+                                        <ChannelList channels={connectionChats} feedId={c.feed_id} feedName={c.feed_name} isChat={true} isGroup={false} setChannels={updateConnectionChats} />
+                                    )}
                                 </li>
                             ))}
                         </ul>

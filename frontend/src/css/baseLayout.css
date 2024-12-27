@@ -85,7 +85,6 @@
 .channel-dropdown {
     color: var(--dark-line);
     cursor: pointer;
-    font-size: x-large;
     margin-left: 12px;
 }
 .channel-feed {
@@ -189,16 +188,10 @@
 }
 .feed-list-link-container {
     align-items: center;
-    border-radius: 12px;
+    border-radius: 10px;
     display: flex;
-    padding: 6px;
+    padding: 0 8px;
     transition: var(--transition-regular);
-}
-.feed-list-item {
-    background-color: var(--darkest);
-    display: flex;
-    flex-direction: column;
-    margin: 6px;
 }
 .feed-list-link-container:hover {
     background-color: var(--dark);
