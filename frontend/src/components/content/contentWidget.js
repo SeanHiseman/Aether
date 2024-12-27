@@ -21,8 +21,8 @@ const ContentWidget = ({ canRemove: canRemoveProp, feed, isGroup, onEditClick, o
     const [showReplyForm, setShowReplyForm] = useState(false);
     const [upvotes, setUpvotes] = useState(post.upvotes);
     const [upvoteLimit, setUpvoteLimit] = useState(false);
-    const isViewingOwnPost = post.poster_id === feed.feed_id; 
     const { user, viewer } = useContext(AuthContext);
+    const isViewingOwnPost = post.poster_id === viewer.feed_id; 
     const urlLetter = isGroup ? 'g' : 'u';
 
     const getReplies = useCallback(async (postId) => {
@@ -59,7 +59,7 @@ const ContentWidget = ({ canRemove: canRemoveProp, feed, isGroup, onEditClick, o
     useEffect(() => {
         const checkVoteLimit = async () => {
             try {
-                const response = await axios.post('/api/content_vote', { contentId: post.post_id, feedId: feed.feed_id, voteType: 'check_vote' });
+                const response = await axios.post('/api/content_vote', { contentId: post.post_id, feedId: viewer.feed_id, voteType: 'check_vote' });
                 if (response.data.message === 'upvote limit') {
                     setUpvoteLimit(true);
                 } else if (response.data.message === 'downvote limit') {
@@ -70,7 +70,7 @@ const ContentWidget = ({ canRemove: canRemoveProp, feed, isGroup, onEditClick, o
             }
         };
         checkVoteLimit();
-    }, [feed.feedId, post.post_id, isGroup]);
+    }, [viewer.feed_id, post.post_id]);
 
     //Adds a view to the post
     const incrementViews = useCallback(async (postId) => {
@@ -85,22 +85,21 @@ const ContentWidget = ({ canRemove: canRemoveProp, feed, isGroup, onEditClick, o
     }, [hasViewed]);
 
     //Allows React Quill to display videos
-    const BlockEmbed = Quill.import('blots/block/embed');
-    class VideoBlot extends BlockEmbed {
-        static create(value) {
-            let node = super.create();
-            node.setAttribute('src', value.url);
-            node.setAttribute('controls', true);
-            return node;
-        }
-
-        static value(node) {
-            return { url: node.getAttribute('src') };
-        }
-    }
-    VideoBlot.blotName = 'video';
-    VideoBlot.tagName = 'video';
-    Quill.register(VideoBlot);
+    //const BlockEmbed = Quill.import('blots/block/embed');
+    //class VideoBlot extends BlockEmbed {
+        //static create(value) {
+            //let node = super.create();
+            //node.setAttribute('src', value.url);
+            //node.setAttribute('controls', true);
+            //return node;
+        //}
+        //static value(node) {
+            //return { url: node.getAttribute('src') };
+        //}
+    //}
+    //VideoBlot.blotName = 'video';
+    //VideoBlot.tagName = 'video';
+    //Quill.register(VideoBlot);
 
     const replyAdded = (newReply) => {
         setReplies(currentReplies => [...currentReplies, newReply]);
@@ -176,7 +175,7 @@ const ContentWidget = ({ canRemove: canRemoveProp, feed, isGroup, onEditClick, o
             setDownvoteLimit(false);
             setUpvoteLimit(false);
             try {
-                const response = await axios.post('/api/content_vote', { contentId: postId, feedId: feed.feed_id, vote_type: voteType });
+                const response = await axios.post('/api/content_vote', { contentId: postId, feedId: feed.feed_id, voteType: voteType });
                 if (response.data.success) {
                     if (voteType === 'upvote') {
                         setUpvotes(upvotes + 1);
@@ -247,9 +246,9 @@ const ContentWidget = ({ canRemove: canRemoveProp, feed, isGroup, onEditClick, o
                     </button>
                 </div>
                 <button className="button" data-content-id={post.post_id} onClick={toggleReplies}>
-                    <p className="text16" id={`reply-count-${post.post_id}`}>{post.replies} Replies</p>
+                    <p className="text16" id={`reply-count-${post.post_id}`}>{post.replies} {post.replies === 1 ? 'reply' : 'replies'}</p>
                 </button>
-                <p className="text16">{post.views} Views</p>
+                <p className="text16">{post.views} {post.views === 1 ? 'view' : 'views'}</p>
                 <p className="text16">{new Date(post.timestamp).toLocaleDateString()}</p>
                 {post.poster_id === viewer.feed_id && (
                     <button className="button" onClick={() => onEditClick(post)}>Edit</button>

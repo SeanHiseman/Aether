@@ -76,11 +76,14 @@ router.get('/channel_posts', authenticateCheck, async (req, res) => {
 router.post('/content_vote', authenticateCheck, async (req, res) => {
     try {
         const { contentId, feedId, voteType } = req.body;
-        const [vote] = await PostVotes.findOrCreate({
-            where: { content_id: contentId, voter_id: feedId },
-        });
         //Limits upvotes and downvotes on each post to 10
         if (voteType === 'check_vote') {
+            const vote = await PostVotes.findOne({
+                where: { content_id: contentId, voter_id: feedId },
+            });
+            if (!vote) { 
+                return res.json({ success: true, message: 'no limit' });
+            };
             if (vote.vote_count >= 10) {
                 return res.json({ success: true, message: 'upvote limit' });
             } else if (vote.vote_count <= -10) {
@@ -88,38 +91,47 @@ router.post('/content_vote', authenticateCheck, async (req, res) => {
             } else {
                 return res.json({ success: true, message: 'no limit' });
             }
-        }
-        if (vote.vote_count >= 10 && voteType === 'upvote') {
-            return res.json({ success: false, message: 'upvote limit'});
-        } else if (vote.vote_count <= -10 && voteType === 'downvote') {
-            return res.json({ success: false, message: 'downvote limit '});
-        }
-        //Update contentVotes table
-        if (voteType === 'upvote') {
-            vote.vote_count += 1;
-        } else if (voteType === 'downvote') {
-            vote.vote_count -= 1;
-        }
-        await vote.save();
-        //Update individual posts
-        const content = await Posts.findByPk(contentId);
-        if (voteType === 'upvote') {
-            content.upvotes += 1;
-        } else if (voteType === 'downvote') {
-            content.downvotes += 1;
+        } else {
+            const [vote, created] = await PostVotes.findOrCreate({
+                where: { content_id: contentId, voter_id: feedId },
+                defaults: { vote_id: v4() }
+            });
+            if (vote.vote_count >= 10 && voteType === 'upvote') {
+                return res.json({ success: false, message: 'upvote limit'});
+            } else if (vote.vote_count <= -10 && voteType === 'downvote') {
+                return res.json({ success: false, message: 'downvote limit '});
+            }
+            //Update contentVotes table
+            if (voteType === 'upvote') {
+                vote.vote_count += 1;
+            } else if (voteType === 'downvote') {
+                vote.vote_count -= 1;
+            }
+            await vote.save();
+            //Update individual posts
+            const content = await Posts.findByPk(contentId);
+            if (!content) {
+                return res.status(404).json({ success: false, message: 'Content not found' });
+            }
+            if (voteType === 'upvote') {
+                content.upvotes += 1;
+            } else if (voteType === 'downvote') {
+                content.downvotes += 1;
+            }
+            await content.save();
         }
         //Recalculate content points
         //content.points = calculatePoints(content.upvotes, content.downvotes, content.views);
-        await content.save();
         //Update user total points
         //const user = await Users.findByPk(content.poster_id);
         //user.points = await ProfilePosts.sum('points', { where: { poster_id: content.poster_id } });
         //await user.save();
-        return res.json({ success: true });
+        return res.status(200).json({ success: true });
     } catch (error) {
         return res.status(404).json({ success: false });
     }
 });
+
 //Checks input for post uploads
 const postFilter = (req, file, cb) => {
     const allowedTypes = /jpeg|jpg|png|gif|mp4|mov|avi/;
