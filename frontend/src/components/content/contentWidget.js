@@ -48,12 +48,12 @@ const ContentWidget = ({ canRemove: canRemoveProp, feed, isGroup, onEditClick, o
     }, [getReplies, post.post_id, showReplies]);
     
     //Adds a view if replies are opened
-    //useEffect(() => {
-        //if (showReplies && !hasViewed) {
-            //incrementViews(post.post_id);
-            //setHasViewed(true);
-        //}
-    //}, [hasViewed, incrementViews, post.post_id, showReplies]);
+    useEffect(() => {
+        if (showReplies && !hasViewed) {
+            incrementViews(post.post_id);
+            setHasViewed(true);
+        }
+    }, [hasViewed, incrementViews, post.post_id, showReplies]);
  
     //Sets the upvote/downvote limits upon rendering
     useEffect(() => {
