@@ -121,7 +121,7 @@ router.get('/get_ask_chats', authenticateCheck, async (req, res) => {
 });
 
 router.post('/generate_content', authenticateCheck, async (req, res) => {
-    console.log("request received");
+    //console.log("request received");
     try {
         const { currentCode, request } = req.body;
         console.log("req.body:", req.body);
@@ -157,7 +157,7 @@ router.post('/generate_content', authenticateCheck, async (req, res) => {
         const messages = await openai.beta.threads.messages.list(thread.id);
         let aiReply = messages.data.find(msg => msg.role === 'assistant').content[0].text.value;
         aiReply = aiReply.replace(/^```[a-zA-Z]+\s*|```$/g, '').trim(); //Trims response
-        console.log("aiReply:", aiReply);
+        //console.log("aiReply:", aiReply);
         res.status(201).json({ success: true, generatedContent: aiReply });
     } catch (error) {
         console.log(error);

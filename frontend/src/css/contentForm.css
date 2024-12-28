@@ -27,11 +27,13 @@
     color: var(--border);
     height: 100%;
     resize: none;
+    padding: 10px;
 }
 .content-input-form.code {
     width: 60%;
 }
 .content-input-form.generate {
+    padding: 10px;
     width: 100%;
 }
 .create-post-container {

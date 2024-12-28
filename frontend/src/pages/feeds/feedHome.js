@@ -164,6 +164,10 @@ const FeedHome = () => {
             });
             setShowPostForm(false);
         } catch (error) {
+            console.log("error:", error);
+            if (error.response && error.response.data && error.response.data.message) {
+                setPostErrorMessage(error.response.data.message);
+            }
             setPostErrorMessage("Error creating post");
         }
     };
