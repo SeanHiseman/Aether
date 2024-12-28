@@ -141,7 +141,7 @@ const FeedHome = () => {
             setIsEdit(false);
             setPostToEdit(null);
         } catch (error) {
-            setPostErrorMessage("Error editing post");
+            setFeedErrorMessage("Error creating post");
         }
     };
 
@@ -164,11 +164,7 @@ const FeedHome = () => {
             });
             setShowPostForm(false);
         } catch (error) {
-            console.log("error:", error);
-            if (error.response && error.response.data && error.response.data.message) {
-                setPostErrorMessage(error.response.data.message);
-            }
-            setPostErrorMessage("Error creating post");
+            setFeedErrorMessage("Error creating post");
         }
     };
 

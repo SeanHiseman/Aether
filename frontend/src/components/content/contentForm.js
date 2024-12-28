@@ -16,6 +16,7 @@ const ContentForm = ({ isEdit = false, isReply, onSubmit, post = null, postError
     const [useRequest, setUseRequest] = useState(false);
     const quillRef = useRef(null);
     const loadingText = "Loading... (Can take up to 30 seconds)";
+    const MAX_FILE_SIZE = 1000 * 1024 * 1024; //1gb;
 
     //Populates form if editing
     useEffect(() => {
@@ -90,6 +91,13 @@ const ContentForm = ({ isEdit = false, isReply, onSubmit, post = null, postError
     //Handles attached files
     const handleFilesChange = (event) => {
         const newFiles = Array.from(event.target.files);
+        const oversizedFiles = newFiles.filter(file => file.size > MAX_FILE_SIZE);
+        if (oversizedFiles.length > 0) {
+            const oversizedNames = oversizedFiles.map(file => file.name).join(', ');
+            setPostErrorMessage(`The following file(s) exceed the maximum size of 1GB: ${oversizedNames}`);
+            return;
+        }
+        setPostErrorMessage('');
         const uniqueFiles = newFiles.map(file => {
             const uniqueFilename = createUniqueFilename(file.name);
             const newFile = new File([file], uniqueFilename, { type: file.type });
@@ -128,7 +136,7 @@ const ContentForm = ({ isEdit = false, isReply, onSubmit, post = null, postError
             }
         }
         try {
-            //setPostErrorMessage("");
+            setPostErrorMessage("");
             const formData = new FormData();
             formData.append('content', content);
             formData.append('is_code', isCode);
