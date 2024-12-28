@@ -6,7 +6,6 @@ import ContentDisplay from './contentDisplay';
 import { v4 } from 'uuid';
 
 const ContentForm = ({ isEdit = false, isReply, onSubmit, post = null, postErrorMessage, setPostErrorMessage, setShowForm }) => {
-    console.log("post:", post);
     const [files, setFiles] = useState([]);
     const [generationRequest, setGenerationRequest] = useState('');
     const [isCode, setIsCode] = useState(true);
@@ -197,7 +196,7 @@ const ContentForm = ({ isEdit = false, isReply, onSubmit, post = null, postError
                             {isLoading ? (
                                 <p>{loadingText}</p>
                             ) : (
-                                <ContentDisplay content={codeContent} showFullContent={true} showScrollBar={true}/>
+                                <ContentDisplay content={codeContent} onOverflowChange={() => {}} showFullContent={true} showScrollBar={true}/>
                             )}
                         </div>
                     </div>
