@@ -7,7 +7,7 @@ import AskButton from '../askButton';
 import ContentDisplay from './contentDisplay';
 import ContentForm from './contentForm';
 
-const ContentWidget = ({ canRemove: canRemoveProp, feed, isGroup, onEditClick, onPostRemoved, post, postErrorMessage, setPostErrorMessage }) => {
+const ContentWidget = ({ canRemove: canRemoveProp, feed, isGroup, onEditClick, onPostRemoved, post }) => {
     const [canRemove, setCanRemove] = useState(canRemoveProp);
     const [downvotes, setDownvotes] = useState(post.downvotes);
     const [downvoteLimit, setDownvoteLimit] = useState(false);
@@ -15,6 +15,7 @@ const ContentWidget = ({ canRemove: canRemoveProp, feed, isGroup, onEditClick, o
     const [isOverflowing, setIsOverflowing] = useState(false);
     const [note, setNote] = useState(post.note ? post.note.note_content : '');
     const [replies, setReplies] = useState([]);
+    const [postErrorMessage, setPostErrorMessage] = useState('');
     const [showFullContent, setShowFullContent] = useState(false);
     const [showNote, setShowNote] = useState(post.note && post.note.is_misinfo);
     const [showReplies, setShowReplies] = useState(false);
@@ -264,13 +265,13 @@ const ContentWidget = ({ canRemove: canRemoveProp, feed, isGroup, onEditClick, o
                 <div className="reply-section">
                     {showReplyForm ? (
                         <div className="add-reply">
-                            <ContentForm isReply={true} onSubmit={handleReplySubmit} post={post} postErrorMessage={postErrorMessage} setPostErrorMessage={setPostErrorMessage} setShowForm={setShowReplyForm}/>
+                            <ContentForm isReply={true} onSubmit={handleReplySubmit} post={post} setShowForm={setShowReplyForm}/>
                         </div>
                     ) : (
                         <button className="button" onClick={() => setShowReplyForm(true)}>Add reply</button>
                     )}
                     {replies.map((reply) => (
-                        <ContentWidget key={reply.post_id} canRemove={canRemove} feed={feed} isGroup={isGroup} onEditClick={onEditClick} onPostRemoved={replyRemoved} post={reply} postErrorMessage={postErrorMessage} setPostErrorMessage={setPostErrorMessage}/>
+                        <ContentWidget key={reply.post_id} canRemove={canRemove} feed={feed} isGroup={isGroup} onEditClick={onEditClick} onPostRemoved={replyRemoved} post={reply} />
                     ))}
                 </div>
             )}

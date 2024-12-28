@@ -242,8 +242,6 @@ const FeedHome = () => {
                                 setIsEdit(true);
                                 setPostToEdit(post);
                             }}
-                            postErrorMessage={postErrorMessage}
-                            setPostErrorMessage={setPostErrorMessage}
                         />
                     ) : (
                         <ChatChannel
