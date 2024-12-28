@@ -5,12 +5,13 @@ import 'react-quill/dist/quill.snow.css';
 import ContentDisplay from './contentDisplay';
 import { v4 } from 'uuid';
 
-const ContentForm = ({ isEdit = false, isReply, onSubmit, post = null, postErrorMessage, setPostErrorMessage, setShowForm }) => {
+const ContentForm = ({ isEdit = false, isReply, onSubmit, post = null, setShowForm }) => {
     const [files, setFiles] = useState([]);
     const [generationRequest, setGenerationRequest] = useState('');
     const [isCode, setIsCode] = useState(true);
     const [isLoading, setIsLoading] = useState(false);
     const [codeContent, setCodeContent] = useState('');
+    const [formErrorMessage, setFormErrorMessage] = useState('');
     const [textContent, setTextContent] = useState('');
     const [title, setTitle] = useState('');
     const [useRequest, setUseRequest] = useState(false);
@@ -56,11 +57,11 @@ const ContentForm = ({ isEdit = false, isReply, onSubmit, post = null, postError
     const generateContent = async () => {
         try {
             if (generationRequest.trim() === "") {
-                setPostErrorMessage("Cannot be empty.");
+                setFormErrorMessage("Cannot be empty.");
                 return;
             }
             if (generationRequest.length > 1000) {
-                setPostErrorMessage("Cannot exceed 1000 characters.");
+                setFormErrorMessage("Cannot exceed 1000 characters.");
                 return;
             }
             setIsLoading(true);
@@ -73,12 +74,12 @@ const ContentForm = ({ isEdit = false, isReply, onSubmit, post = null, postError
             if (response.data && response.status === 201) {
                 const { generatedContent } = response.data;
                 setCodeContent(generatedContent);
-                setPostErrorMessage('');
+                setFormErrorMessage('');
             } else {
-                setPostErrorMessage("Generation error");
+                setFormErrorMessage("Generation error");
             }
         } catch (error) {
-            setPostErrorMessage("Generation error");
+            setFormErrorMessage("Generation error");
         } finally {
             setIsLoading(false);
         }
@@ -94,10 +95,10 @@ const ContentForm = ({ isEdit = false, isReply, onSubmit, post = null, postError
         const oversizedFiles = newFiles.filter(file => file.size > MAX_FILE_SIZE);
         if (oversizedFiles.length > 0) {
             const oversizedNames = oversizedFiles.map(file => file.name).join(', ');
-            setPostErrorMessage(`The following file(s) exceed the maximum size of 1GB: ${oversizedNames}`);
+            setFormErrorMessage(`The following file(s) exceed the maximum size of 1GB: ${oversizedNames}`);
             return;
         }
-        setPostErrorMessage('');
+        setFormErrorMessage('');
         const uniqueFiles = newFiles.map(file => {
             const uniqueFilename = createUniqueFilename(file.name);
             const newFile = new File([file], uniqueFilename, { type: file.type });
@@ -131,12 +132,12 @@ const ContentForm = ({ isEdit = false, isReply, onSubmit, post = null, postError
         event.preventDefault();
         if (isCode) {
             if (content.trim() === "") {
-                setPostErrorMessage("Content cannot be empty.");
+                setFormErrorMessage("Content cannot be empty.");
                 return;  
             }
         }
         try {
-            setPostErrorMessage("");
+            setFormErrorMessage("");
             const formData = new FormData();
             formData.append('content', content);
             formData.append('is_code', isCode);
@@ -152,7 +153,7 @@ const ContentForm = ({ isEdit = false, isReply, onSubmit, post = null, postError
             setIsCode(false);
             setFiles([])
         } catch (error) {
-            setPostErrorMessage('An error occured while submitting the form')
+            setFormErrorMessage('An error occured while submitting the form')
         }
     };
 
@@ -183,7 +184,7 @@ const ContentForm = ({ isEdit = false, isReply, onSubmit, post = null, postError
                             {useRequest ? 'Code Mode' : 'Generate Mode'}
                         </button>
                     )}
-                    {postErrorMessage && (<div className="error-message">{postErrorMessage}</div>)}
+                    {formErrorMessage && (<div className="error-message">{formErrorMessage}</div>)}
                 </div>
                 {!isReply && (
                     <input id="title-entry" type="text" placeholder="Add title (optional)..." value={title} onChange={(e) => setTitle(e.target.value)} />

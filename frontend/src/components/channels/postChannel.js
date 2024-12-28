@@ -4,7 +4,7 @@ import { useParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import ContentWidget from "../content/contentWidget";
 
-const PostChannel = ({ canRemove, channelId, channelName, feed, isGroup, onEditClick, postErrorMessage, setPostErrorMessage }) => {
+const PostChannel = ({ canRemove, channelId, channelName, feed, isGroup, onEditClick }) => {
     const queryClient = useQueryClient();
     const { postId } = useParams();
     const feedId = feed.feed_id;
@@ -64,8 +64,6 @@ const PostChannel = ({ canRemove, channelId, channelName, feed, isGroup, onEditC
                                 onEditClick={onEditClick}
                                 onPostRemoved={handlePostRemoved}
                                 post={singlePost} 
-                                postErrorMessage={postErrorMessage}
-                                setPostErrorMessage={setPostErrorMessage}
                             />
                         </ul> 
                     ) : (
@@ -83,8 +81,6 @@ const PostChannel = ({ canRemove, channelId, channelName, feed, isGroup, onEditC
                                     onEditClick={onEditClick}
                                     onPostRemoved={handlePostRemoved}
                                     post={post}
-                                    postErrorMessage={postErrorMessage}
-                                    setPostErrorMessage={setPostErrorMessage}
                                 />
                             ))}
                         </ul>
