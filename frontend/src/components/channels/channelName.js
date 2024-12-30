@@ -1,9 +1,10 @@
 import axios from 'axios';
+import { FaTrash, FaEdit } from 'react-icons/fa';
 import React, { useState } from 'react';
+import { Tooltip } from 'react-tooltip';
 import { useNavigate } from 'react-router-dom';
 
-//Handles displaying and changing the name of chat, profile and group channels
-const ChannelName = ({ channelId, channelName, isGroup, locationName, channelUpdate }) => {
+const ChannelName = ({ channelId, channelName, channelUpdate, deleteChannel, isGroup, locationName }) => {
     const [newChannelName, setNewChannelName] = useState('');
     const [errorMessage, setErrorMessage] = useState('');
     const [isEditingChannelName, setIsEditingChannelName] = useState(false);
@@ -39,6 +40,18 @@ const ChannelName = ({ channelId, channelName, isGroup, locationName, channelUpd
         }
     };
 
+    const handleDelete = async () => {
+        if (window.confirm(`Are you sure you want to delete the channel ${channelName}?`)) {
+            try {
+                await axios.delete(`/api/delete_feed_channel`, { data: { channelId } });
+                deleteChannel(channelId); 
+                navigate(`/${isGroup ? 'g' : 'u'}/${locationName}/Main`);
+            } catch (error) {
+                setErrorMessage('Error deleting channel');
+            }
+        }
+    };
+
     return (
         <div id="channel-name-section">
             {channelName !== 'Main' ? (
@@ -71,10 +84,19 @@ const ChannelName = ({ channelId, channelName, isGroup, locationName, channelUpd
                     ) : (
                         <div className="chat-name">
                             <p className="text36">{channelName}</p> 
-                            <button className="button" onClick={() => {
-                                setIsEditingChannelName(true);
-                                setNewChannelName(channelName);
-                            }}>Rename</button>
+                            <div className="button-group">
+                                <button className="small-icon" onClick={() => {
+                                    setIsEditingChannelName(true);
+                                    setNewChannelName(channelName);
+                                }}>
+                                    <FaEdit />
+                                    <p className="icon-text">Rename</p>
+                                </button>
+                                <button className="small-icon" onClick={handleDelete}>
+                                    <FaTrash />
+                                    <p className="icon-text">Delete</p>
+                                </button>
+                            </div>
                         </div>
                     )}
                 </div>
@@ -82,6 +104,7 @@ const ChannelName = ({ channelId, channelName, isGroup, locationName, channelUpd
                 <p className="text36">Main</p>  
             )}
             {errorMessage && <div className="error-message">{errorMessage}</div>}
+            <Tooltip place="top" type="dark" effect="solid" />
         </div>
     );
 
