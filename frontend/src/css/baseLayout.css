@@ -108,14 +108,15 @@
     background-color: var(--dark);
 }
 .channel-list {
-    margin: 10px;
+    margin-bottom: 50px;
+    width: 100%;
 }
 .channel-list-link, .channel-list-link:visited {
     text-decoration: none;
     color: var(--border);
 }
-.channel-name-section {
-    margin: 10px;
+#channel-name-section {
+    width: 100%;
 }
 .chat-channel-button, .conversation-button, .posts-channel-button {
     background-color: var(--darkest);

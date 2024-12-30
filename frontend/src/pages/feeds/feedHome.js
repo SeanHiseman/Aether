@@ -1,6 +1,6 @@
 import axios from 'axios';
 import { AuthContext } from '../../components/authContext';
-import { FaTrash, FaPlus } from 'react-icons/fa';
+import { FaFeatherAlt, FaPlus } from 'react-icons/fa';
 import { Tooltip } from 'react-tooltip'
 import React, { useContext, useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
@@ -116,19 +116,8 @@ const FeedHome = () => {
         );
     };
 
-    const deleteChannel = async () => {
-        try {
-            //Main channels are default, so can't be deleted
-            if (channel_name === 'Main') {
-                return;
-            } else {
-                await axios.delete(`/api/delete_feed_channel`, { data: {channelName: channel_name, feedId: feed.feed_id} });
-                setChannels(prevChannels => prevChannels.filter(channel => channel.channel_name !== channel_name));
-                navigate(`/${urlLetter}/${feed_name}/Main`);
-            }
-        } catch (error) {
-            setFeedErrorMessage('Error deleting channel');
-        }
+    const deleteChannel = (channelId) => {
+        setChannels(prevChannels => prevChannels.filter(channel => channel.channel_id !== channelId));
     };
 
     const handleEditSubmit = async (formData) => {
@@ -270,36 +259,17 @@ const FeedHome = () => {
                 {feedErrorMessage && <div className="error-message">{feedErrorMessage}</div>}
                 {channelRender && (
                     isAdmin ? (
-                    <ChannelName channelId={channelRender.channel_id} channelName={channel_name} isGroup={feed.is_group} locationName={feed_name} channelUpdate={channelUpdate}/>
+                    <ChannelName channelId={channelRender.channel_id} channelName={channel_name} deleteChannel={deleteChannel} isGroup={feed.is_group} locationName={feed_name} channelUpdate={channelUpdate}/>
                     ) : (
                         <p className="text36">{channel_name}</p>
                     ) 
                 )}
-                {isAdmin && channel_name !== 'Main' && (
-                    <><FaTrash
-                            data-tip="Delete Channel"
-                            className="aside-icon"
-                            onClick={deleteChannel} 
-                        />
-                        <Tooltip place="top" type="dark" effect="solid" />
-                    </>
-                )}
-                {!showPostForm && channelMode === 'post' && (
-                    <button className="button" onClick={() => {setIsEdit(false); setPostToEdit(null); setShowPostForm(true);}}>Add Post</button>
-                )}
-                {channelRender && channelRender.is_posts && channelRender.is_chat && (
-                    <div className="option-toggle">
-                        <button className={channelMode === 'post' ? 'active-mode' : 'passive-mode'} onClick={() => setChannelMode('post')}>Posts</button>
-                        <button className={channelMode === 'chat' ? 'active-mode' : 'passive-mode'} onClick={() => setChannelMode('chat')}>Chat</button>
-                    </div>
-                )}
                 {isAdmin && (
                     <div className="add-channel-section">
-                        <FaPlus
-                            data-tip={showChannelForm ? 'Close' : 'Create Channel'}
-                            className="aside-icon"
-                            onClick={toggleChannelForm}
-                        />
+                        <button className="small-icon" onClick={toggleChannelForm}>
+                            <FaPlus />
+                            <p className="icon-text">{showChannelForm ? 'Close' : 'Create Channel'}</p>
+                        </button>
                         <Tooltip place="top" type="dark" effect="solid" />
                         {showChannelForm && (
                             <form className="add-channel-form" onSubmit={AddChannel}>
@@ -333,6 +303,23 @@ const FeedHome = () => {
                                 <input className="dark-button" type="submit" value="Add" />
                             </form>
                         )}
+                    </div>
+                )}
+                {!showPostForm && channelMode === 'post' && (
+                    <button className="small-icon" 
+                        onClick={() => {
+                            setIsEdit(false); 
+                            setPostToEdit(null); 
+                            setShowPostForm(true);
+                        }}>
+                            <FaFeatherAlt />
+                            <p className="icon-text">Add Post</p>
+                    </button>
+                )}
+                {channelRender && channelRender.is_posts && channelRender.is_chat && (
+                    <div className="option-toggle">
+                        <button className={channelMode === 'post' ? 'active-mode' : 'passive-mode'} onClick={() => setChannelMode('post')}>Posts</button>
+                        <button className={channelMode === 'chat' ? 'active-mode' : 'passive-mode'} onClick={() => setChannelMode('chat')}>Chat</button>
                     </div>
                 )}
                 <ChannelList channels={channels} feedId={feed.feed_id} feedName={feed.feed_name} isGroup={feed.is_group} setChannels={setChannels}/>

@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { FaPlusCircle } from 'react-icons/fa';
 import React, { useContext, useEffect, useState } from 'react';
 import { Link, Outlet, useNavigate } from 'react-router-dom';
 import { v4 } from 'uuid';
@@ -176,8 +177,9 @@ const BaseLayout = () => {
                     </ul>
                 </nav>
                 <div id="create-feed-section">
-                    <button className="button" onClick={toggleForm}>
-                        {showForm ? 'Close': 'Create feed'}
+                    <button className="small-icon" onClick={toggleForm}>
+                        <FaPlusCircle />
+                        <p className="icon-text">{showForm ? 'Close': 'Create feed'}</p>
                     </button>
                     {showForm && (
                         <form id="create-feed-form" onSubmit={createFeed}>
