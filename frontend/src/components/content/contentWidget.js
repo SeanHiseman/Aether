@@ -157,7 +157,7 @@ const ContentWidget = ({ canRemove: canRemoveProp, feed, isGroup, onEditClick, o
     const removePost = async () => {
         try {
             const response = await axios.delete('/api/remove_post', { 
-                data: { postId: post.post_id } 
+                data: { post: post } 
             });
             if (response.data.success) {
                 onPostRemoved(post.post_id);

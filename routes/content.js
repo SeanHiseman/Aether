@@ -213,10 +213,15 @@ router.post('/edit_post', authenticateCheck, post_upload.array('files'), async (
 
 router.delete('/remove_post', authenticateCheck, async (req, res) => {
     try {
-        const { postId } = req.body;
-        const post = await Posts.findByPk(postId);
-        deleteMedia(post.content);
-        await Posts.destroy({ where: { post_id: postId } })
+        const { post } = req.body;
+        const foundPost = await Posts.findByPk(post.post_id);
+        deleteMedia(foundPost.content);
+        if (post.parent_id) {
+            const parentPost = await Posts.findByPk(post.parent_id);
+            parentPost.replies -= 1;
+            await parentPost.save();
+        }
+        await Posts.destroy({ where: { post_id: post.post_id } })
         res.status(200).json({ success: true });
     } catch (error) {
         res.status(500).json({ success: false });
