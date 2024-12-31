@@ -1,6 +1,6 @@
 import axios from 'axios';
 import { AuthContext } from '../../components/authContext';
-import { FaFeatherAlt, FaPlus } from 'react-icons/fa';
+import { FaCog, FaFeatherAlt, FaMinus, FaPlus } from 'react-icons/fa';
 import { Tooltip } from 'react-tooltip'
 import React, { useContext, useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
@@ -247,7 +247,9 @@ const FeedHome = () => {
                     <img className="large-feed-photo" src={`/${feed.feed_photo}`} alt={feed.feed_name} />
                     {isAdmin && (
                         <Link to={`/feed_settings/${feed_name}`}>
-                            <button className="button">Settings</button>
+                            <button className="small-icon">
+                                <FaCog />
+                            </button>
                         </Link>
                     )}
                     <p className="text36">{feed.feed_name}</p>
@@ -267,10 +269,18 @@ const FeedHome = () => {
                 {isAdmin && (
                     <div className="add-channel-section">
                         <button className="small-icon" onClick={toggleChannelForm}>
-                            <FaPlus />
-                            <p className="icon-text">{showChannelForm ? 'Close' : 'Create Channel'}</p>
+                            {showChannelForm ? (
+                                <>
+                                    <FaMinus />
+                                    <p className="icon-text">Close</p>
+                                </>
+                            ) : (
+                                <>
+                                    <FaPlus />
+                                    <p className="icon-text">Create Channel</p>
+                                </>
+                            )}
                         </button>
-                        <Tooltip place="top" type="dark" effect="solid" />
                         {showChannelForm && (
                             <form className="add-channel-form" onSubmit={AddChannel}>
                                 <input
@@ -300,7 +310,9 @@ const FeedHome = () => {
                                         </label>
                                     </div>
                                 )}
-                                <input className="dark-button" type="submit" value="Add" />
+                                <button className="small-icon" type="submit" value="Add" >
+                                    <FaPlus />
+                                </button>
                             </form>
                         )}
                     </div>

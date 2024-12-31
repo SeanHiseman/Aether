@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { FaArrowDown, FaArrowUp, FaComments, FaEdit, FaReply, FaTimesCircle } from 'react-icons/fa';
 import { Link } from 'react-router-dom';
 import React, { useCallback, useContext, useEffect, useState } from 'react';
 import { Quill } from 'react-quill';
@@ -155,15 +156,17 @@ const ContentWidget = ({ canRemove: canRemoveProp, feed, isGroup, onEditClick, o
     //};
 
     const removePost = async () => {
-        try {
-            const response = await axios.delete('/api/remove_post', { 
-                data: { post: post } 
-            });
-            if (response.data.success) {
-                onPostRemoved(post.post_id);
+        if (window.confirm('Are you sure you want to delete this post?')) {
+            try {
+                const response = await axios.delete('/api/remove_post', { 
+                    data: { post: post } 
+                });
+                if (response.data.success) {
+                    onPostRemoved(post.post_id);
+                }
+            } catch (error) {
+                setPostErrorMessage("Error removing post"); 
             }
-        } catch (error) {
-            setPostErrorMessage("Error removing post"); 
         }
     };
 
@@ -238,24 +241,29 @@ const ContentWidget = ({ canRemove: canRemoveProp, feed, isGroup, onEditClick, o
                     </Link>
                 </div>
                 <div className="vote-container">
-                    <button className={`vote-arrow-container ${upvoteClass}`} onClick={() => postVote(post.post_id, 'upvote')} disabled={isViewingOwnPost}>
-                        <img className={`vote-arrow ${upvoteClass}`} src="/media/site_images/up.png" alt="upvote" />
+                    <button className={`large-icon ${upvoteClass}`} onClick={() => postVote(post.post_id, 'upvote')} disabled={isViewingOwnPost}>
+                        <FaArrowUp />
                     </button>
                     <span className="total-votes">{upvotes - downvotes}</span>
-                    <button className={`vote-arrow-container ${downvoteClass}`} onClick={() => postVote(post.post_id, 'downvote')} disabled={isViewingOwnPost}>
-                        <img className={`vote-arrow ${downvoteClass}`} src="/media/site_images/down.png" alt="downvote" />
+                    <button className={`large-icon ${downvoteClass}`} onClick={() => postVote(post.post_id, 'downvote')} disabled={isViewingOwnPost}>
+                        <FaArrowDown />
                     </button>
                 </div>
-                <button className="button" data-content-id={post.post_id} onClick={toggleReplies}>
-                    <p className="text16" id={`reply-count-${post.post_id}`}>{post.replies} {post.replies === 1 ? 'reply' : 'replies'}</p>
+                <button className="large-icon" data-content-id={post.post_id} onClick={toggleReplies}>
+                    <FaComments />
+                    <p className="text16" id={`reply-count-${post.post_id}`}>{post.replies}</p>
                 </button>
                 <p className="text16">{post.views} {post.views === 1 ? 'view' : 'views'}</p>
                 <p className="text16">{new Date(post.timestamp).toLocaleDateString()}</p>
                 {post.poster_id === viewer.feed_id && (
-                    <button className="button" onClick={() => onEditClick(post)}>Edit</button>
+                    <button className="large-icon" onClick={() => onEditClick(post)}>
+                        <FaEdit />
+                    </button>
                 )}
                 {canRemove ? (
-                    <button className="button" onClick={() => removePost(isGroup, post.post_id)}>Delete</button>
+                    <button className="large-icon" onClick={() => removePost(isGroup, post.post_id)}>
+                        <FaTimesCircle />
+                    </button>
                 ) : null}
                 {!post.note?.is_misinfo && (
                     <AskButton isGroup={isGroup} isReply={false} content={post} showNote={showNote} setShowNote={setShowNote} note={note} setNote={setNote} />
@@ -268,7 +276,10 @@ const ContentWidget = ({ canRemove: canRemoveProp, feed, isGroup, onEditClick, o
                             <ContentForm isReply={true} onSubmit={handleReplySubmit} post={post} setShowForm={setShowReplyForm}/>
                         </div>
                     ) : (
-                        <button className="button" onClick={() => setShowReplyForm(true)}>Add reply</button>
+                        <button className="small-icon" onClick={() => setShowReplyForm(true)}>
+                            <FaReply />
+                            Add reply
+                        </button>
                     )}
                     {replies.map((reply) => (
                         <ContentWidget key={reply.post_id} canRemove={canRemove} feed={feed} isGroup={isGroup} onEditClick={onEditClick} onPostRemoved={replyRemoved} post={reply} />

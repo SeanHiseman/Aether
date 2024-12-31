@@ -1,5 +1,5 @@
-import axios from "axios";
-import React, { useEffect, useState } from "react"
+import axios from 'axios';
+import React, { useEffect, useState } from 'react';
 
 const FollowerChangeButton = ({ feed, viewerId }) => {
     const [errorMessage, setErrorMessage] = useState('');

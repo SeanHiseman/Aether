@@ -1,5 +1,6 @@
-import axios from "axios";
-import React, { useEffect, useState } from "react"
+import axios from 'axios';
+import { FaUserMinus, FaUserPlus } from 'react-icons/fa';
+import React, { useEffect, useState } from 'react';
 
 const ManageConnectionButton = ({ connectRequest, feed, isConnected, viewerId, onRequestUpdate }) => {
     const [errorMessage, setErrorMessage] = useState('');
@@ -47,11 +48,10 @@ const ManageConnectionButton = ({ connectRequest, feed, isConnected, viewerId, o
                     setHasConnection(false);
                 }
             } else {
-                setErrorMessage("Connect request error");
+                setErrorMessage("Connection handling error");
             }
         } catch (error) {
-            console.log("error:", error);
-            setErrorMessage("Connect request error");
+            setErrorMessage("Connection handling error");
         }
     };
 
@@ -63,7 +63,6 @@ const ManageConnectionButton = ({ connectRequest, feed, isConnected, viewerId, o
             } else if (result === 'reject') {
                 response = await axios.delete('/api/delete_connect_request', { data: { receiverId: viewerId, senderId } });
             }
-            console.log("response.status:", response.status);
             if (response.status === 200) {
                 if (connectRequest && typeof onRequestUpdate === 'function') {
                     onRequestUpdate(request.sender_id);
@@ -80,16 +79,32 @@ const ManageConnectionButton = ({ connectRequest, feed, isConnected, viewerId, o
     if ((viewerId === receiverId) && request && !hasConnection) {
         return (
             <div>
-                <button className="button" onClick={() => handleConnectRequest('accept')}>Accept connect</button>
-                <button className="button" onClick={() => handleConnectRequest('reject')}>Reject connect</button>
+                <button className="small-icon" onClick={() => handleConnectRequest('accept')}>
+                    <FaUserPlus /><p className="icon-text">Accept</p>
+                </button>
+                <button className="small-icon" onClick={() => handleConnectRequest('reject')}>
+                    <FaUserMinus /><p className="icon-text">Reject</p>
+                </button>
                 {errorMessage && <div className="error-message">{errorMessage}</div>}
             </div>
         );
     }
     return (
         <div>
-            <button className="button" onClick={handleSendRequest}>
-                {hasConnection ? 'Disconnect' : request ? 'Cancel request' : 'Connect'}
+            <button className="small-icon" onClick={handleSendRequest}>
+            {hasConnection ? (
+                <>
+                    <FaUserMinus /><p className="icon-text">Disconnect</p>
+                </>
+            ) : request ? (
+                <>
+                    <FaUserMinus /><p className="icon-text">Cancel request</p>
+                </>
+            ) : (
+                <>
+                    <FaUserPlus /><p className="icon-text">Connect</p>
+                </>
+            )}
             </button>
             {errorMessage && <div className="error-message">{errorMessage}</div>}
         </div>

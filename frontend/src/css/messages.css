@@ -92,14 +92,13 @@
     flex-grow: 0;
 }
 #messages-button {
-    background-color: var(--dark);
     border: none;
-    border-radius: 10px;
+    border-radius: 16px;
     color: var(--border);
-    cursor: pointer;
-    font-size: large;
-    margin-right: 4.8%;
-    padding: 10px;
+    font-size: xxx-large;
+    height: 70%;
+    margin-right: 5%;
+    padding: 8px;
     transition: var(--transition-regular);
 }
 .message {

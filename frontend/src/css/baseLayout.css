@@ -109,6 +109,7 @@
 }
 .channel-list {
     margin-bottom: 50px;
+    margin-top: 10px;
     width: 100%;
 }
 .channel-list-link, .channel-list-link:visited {
@@ -116,6 +117,7 @@
     color: var(--border);
 }
 #channel-name-section {
+    text-align: center;
     width: 100%;
 }
 .chat-channel-button, .conversation-button, .posts-channel-button {
@@ -379,7 +381,7 @@ main {
 .spacer20px {
     height: 20px;
 }
-.standard-icon, .vote-arrow {
+.standard-icon {
     height: 30px;
     padding: 0;
     width: 30px;
@@ -387,6 +389,7 @@ main {
 }
 .total-votes {
     font-size: x-large;
+    margin: 4px;
 }
 #upload-form {
     display: flex;
@@ -411,18 +414,9 @@ ul {
     display: block;  
     width: 100%;    
 }
-.user-count {
-    margin: 5px;
-}
 .vote-container {
     align-items: center;
     display: flex;
-}
-.vote-arrow-container {
-    background: none;
-    border: none;
-    border-radius: 5px;
-    padding: 5px;
 }
 .vote-enabled {
     background-color: var(--darkest);
@@ -432,5 +426,5 @@ ul {
     background-color: var(--button-hover);
 }
 .vote-disabled {
-    background-color: var(--dark);
+    background-color: var(--dark) !important;
 }
