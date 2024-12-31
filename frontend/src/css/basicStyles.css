@@ -3,10 +3,10 @@ a {
     color: inherit;
     text-decoration: none;
 }
-.button.active, .button:hover, .button.selected:focus, .chat-channel-button:hover, .conversation-button:hover, .dark-button:hover, .dark-button.selected:focus, .icon-button:hover, #messages-button:hover, .posts-channel-button:hover, .small-icon:hover {
+.button.active, .button:hover, .button.selected:focus, .chat-channel-button:hover, .conversation-button:hover, .dark-button:hover, .dark-button.selected:focus, .icon-button:hover, .large-icon:hover, #messages-button:hover, .posts-channel-button:hover, .small-icon:hover {
     background-color: var(--button-hover);
 }
-.button, .background-button, .chat-channel-button, .conversation-button, .dark-button, .light-button, .posts-channel-button, .small-icon, .submit-button, .settings-item, .vote-enabled, .vote-arrow-container {
+.button, .background-button, .chat-channel-button, .conversation-button, .dark-button, .large-icon, .light-button, #messages-button, .posts-channel-button, .small-icon, .submit-button, .settings-item, .vote-enabled, .vote-arrow-container {
     cursor: pointer;
 }
 body,html {
@@ -58,16 +58,22 @@ input[type="text"] {
 label {
     margin: 10px;
 }
-.small-icon {
+.large-icon, .small-icon {
     align-items: center;
     background: none;
     border: none;
     border-radius: 8px;
     color: var(--border);
     display: flex;
-    font-size: large;
     justify-content: center;
-    padding: 4px;
+    margin: 4px;
+    padding: 4px; 
+}
+.large-icon {
+    font-size: xx-large;
+}
+.small-icon {
+    font-size: large;
 }
 .text16 {
     font-size: 16px;
@@ -80,5 +86,5 @@ label {
 }
 .text16, .text24, .text36 {
     margin: 8px;
-    width: 90%;
+    max-width: 90%;
 }

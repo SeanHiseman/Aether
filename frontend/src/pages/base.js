@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { FaPlusCircle } from 'react-icons/fa';
+import { FaCommentDots, FaFileUpload, FaMinus, FaPlus, FaPlusCircle } from 'react-icons/fa';
 import React, { useContext, useEffect, useState } from 'react';
 import { Link, Outlet, useNavigate } from 'react-router-dom';
 import { v4 } from 'uuid';
@@ -13,6 +13,7 @@ import '../css/contentFeed.css';
 import '../css/contentForm.css';
 import '../css/feed.css';
 import '../css/messages.css';
+import { Tooltip } from 'react-tooltip';
 
 const BaseLayout = () => {
     const { isAuthenticated, user, viewer } = useContext(AuthContext);
@@ -178,14 +179,24 @@ const BaseLayout = () => {
                 </nav>
                 <div id="create-feed-section">
                     <button className="small-icon" onClick={toggleForm}>
-                        <FaPlusCircle />
-                        <p className="icon-text">{showForm ? 'Close': 'Create feed'}</p>
+                        {showForm ? (
+                            <>
+                                <FaMinus />
+                                <p className="icon-text">Close</p>
+                            </>
+                        ) : (
+                            <>
+                                <FaPlusCircle />
+                                <p className="icon-text">Create Feed</p>
+                            </>
+                        )}
                     </button>
+                    <Tooltip place="top" effect="solid" delayShow={0}>{showForm ? 'Close' : 'Create feed'}</Tooltip>
                     {showForm && (
                         <form id="create-feed-form" onSubmit={createFeed}>
                             <input className="name-input" type="text" name="Name" placeholder="Feed name..." value={feedName} onChange={(e) => setFeedName(e.target.value)}/>
                             <div className="file-input">
-                                <label htmlFor="feed-photo-input" class="dark-button">Choose photo</label>
+                                <label htmlFor="feed-photo-input" className="small-icon"><FaFileUpload /><p className="icon-text">Choose photo</p></label>
                                 <input type="file" id="feed-photo-input" name="Feed photo" onChange={handleFileChange} hidden/>
                                 <span className="file-name">{feedPhotoFile ? feedPhotoFile.name : 'No file chosen'}</span>
                             </div>
@@ -194,7 +205,9 @@ const BaseLayout = () => {
                                 <button className={feedType === 'private' ? 'active-mode' : 'passive-mode'} onClick={(event) => {event.preventDefault(); setFeedType('private');}}>Private</button>
                             </div>
                             <div className="error-message">{errorMessage}</div>
-                            <input className="dark-button" type="submit" value="Create" />
+                            <button className="small-icon" type="submit" value="Create">
+                                <FaPlus />
+                            </button>
                         </form>
                     )}
                 </div>
@@ -228,7 +241,9 @@ const BaseLayout = () => {
                             </div>
                         </form>
                 <div className="spacer"></div>
-                <Link id="messages-button" to={`/messages`}>Messages</Link>
+                <Link id="messages-button" to={`/messages`}>
+                    <FaCommentDots />
+                </Link>
                 </header>
                 <div className="content">
                     <Outlet />

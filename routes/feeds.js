@@ -224,19 +224,13 @@ router.delete('/delete_feed', authenticateCheck, async (req, res) => {
 
 router.delete('/delete_feed_channel', authenticateCheck, async (req, res) => {
     try {
-        const { channelName, feedId } = req.body;
-        //Main channels are default, so can't be deleted
-        if (channelName === 'Main') {
-            res.status(500).json({ message: 'Main channels cannot be deleted' });
-        } else {
-            await FeedChannels.destroy({
-                where: { 
-                    channel_name: channelName,
-                    feed_id: feedId
-                },
-            });
-            res.status(200).json({ success: true });
-        }
+        const { channelId } = req.body;
+        await FeedChannels.destroy({
+            where: { 
+                channel_id: channelId,
+            },
+        });
+        res.status(200).json({ success: true });
     } catch (error) {
         res.status(500).json({ success: false });
     }

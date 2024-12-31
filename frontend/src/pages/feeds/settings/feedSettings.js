@@ -1,5 +1,6 @@
 import { AuthContext } from '../../../components/authContext';
 import axios from 'axios';
+import { FaSignOutAlt } from 'react-icons/fa';
 import React, { useContext, useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import ConnectRequests from './connectRequests';
@@ -88,7 +89,10 @@ const FeedSettings = () => {
                         </Link>
                         <div className="error-message">{errorMessage}</div>
                         {!feed.is_group &&(<form id="logout-form" action="/api/logout" method="post" onSubmit={handleLogout}>
-                            <button className="button" type="submit">Logout</button>
+                            <button className="small-icon" type="submit">
+                                <FaSignOutAlt />
+                                <p className="icon-text">Logout</p>
+                            </button>
                         </form>)}
                         <li className="channel-link" onClick={() => setCurrentView('info')}>Feed info</li>
                         <li className="channel-link" onClick={() => setCurrentView('followers')}>Followers</li>

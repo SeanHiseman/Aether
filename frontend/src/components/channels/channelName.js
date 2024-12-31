@@ -41,7 +41,7 @@ const ChannelName = ({ channelId, channelName, channelUpdate, deleteChannel, isG
     };
 
     const handleDelete = async () => {
-        if (window.confirm(`Are you sure you want to delete the channel ${channelName}?`)) {
+        if (window.confirm(`Are you sure you want to delete ${channelName}?`)) {
             try {
                 await axios.delete(`/api/delete_feed_channel`, { data: { channelId } });
                 deleteChannel(channelId); 
@@ -104,7 +104,6 @@ const ChannelName = ({ channelId, channelName, channelUpdate, deleteChannel, isG
                 <p className="text36">Main</p>  
             )}
             {errorMessage && <div className="error-message">{errorMessage}</div>}
-            <Tooltip place="top" type="dark" effect="solid" />
         </div>
     );
 

@@ -73,7 +73,6 @@
     width: 100%;
 }
 .reply-section {
-    border-top: 1px solid var(--dark-line);
     display: block;
     width: 100%;
 }
@@ -132,13 +131,5 @@
     height: 40px; 
     width: 40px; 
     border-radius: 50%;
-}
-.vote-arrows {
-    background-color: transparent;
-    border: none;
-    padding: 0;
-    cursor: pointer;
-    background-size: contain;
-    background-repeat: no-repeat;
 }
 
