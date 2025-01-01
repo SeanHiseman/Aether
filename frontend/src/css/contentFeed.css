@@ -1,6 +1,8 @@
 @import url('variables.css');
 .add-reply {
+    display: flex;
     height: 50vh;
+    justify-content: center;
 }
 .ask-note {
     background-color: var(--dark);
@@ -23,6 +25,21 @@
     padding: 1px;
     transition: background-color;
     width: 100%;
+}
+.content-item.reply {
+    border-left: none;
+    border-right: none;
+    margin-left: 20px;
+}
+.content-item.reply::before {
+    background-color: var(--dark-line);
+    bottom: 10%;
+    content: '';
+    display: block;
+    position: relative;
+    left: 0;
+    top: 10%;
+    width: 2px; 
 }
 .content-item * {
     cursor: inherit;
@@ -69,24 +86,8 @@
     justify-content: space-between;
     width: 30%;
 }
-.reply-container {
-    width: 100%;
-}
 .reply-section {
-    display: block;
-    width: 100%;
-}
-.reply-feed-container {
-    align-items: center;
-    display: flex;
-    text-decoration: none;
-    position: relative;
-    display: flex;
-    margin-bottom: 5px;
-    align-items: center;
-}
-.reply-section {
-    display: block;
+    border-bottom: 1px solid var(--border);
     width: 100%;
 }
 .reply-list {

@@ -164,8 +164,10 @@ const post_upload = multer({
 
 router.post('/create_post', authenticateCheck, post_upload.array('files'), async (req, res) => {
     try {
-        const { channel_id, content, feed_id, is_code, parent_id, poster_id, title } = req.body;
-        const post_id = v4();
+        let { channel_id, content, feed_id, is_code, parent_id, post_id, poster_id, title } = req.body;
+        if (!post_id) {
+            post_id = v4();
+        }
         if (!is_code) {
             //Process uploaded files and format content
             req.files.forEach((file) => {

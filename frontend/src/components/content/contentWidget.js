@@ -24,6 +24,8 @@ const ContentWidget = ({ canRemove: canRemoveProp, feed, isGroup, onEditClick, o
     const [upvotes, setUpvotes] = useState(post.upvotes);
     const [upvoteLimit, setUpvoteLimit] = useState(false);
     const { user, viewer } = useContext(AuthContext);
+    const [views, setViews] = useState(post.views);
+    const isReply = post.parent_id !== null;
     const isViewingOwnPost = post.poster_id === viewer.feed_id; 
     const urlLetter = isGroup ? 'g' : 'u';
 
@@ -34,14 +36,16 @@ const ContentWidget = ({ canRemove: canRemoveProp, feed, isGroup, onEditClick, o
         } catch (error) {
             setPostErrorMessage("Error getting replies");
         }
-    });
+    }, []);
     
     //Allows removal of own posts
     useEffect(() => {
-        if (isViewingOwnPost) {
+        if (isViewingOwnPost || feed.isAdmin || feed.isModerator) {
             setCanRemove(true);
+        } else {
+            setCanRemove(false)
         }
-    }, [isViewingOwnPost, post.poster_id, user.userId]);
+    }, [isViewingOwnPost, feed.isAdmin, feed.isModerator]);
 
     useEffect(() => {
         if (showReplies) {
@@ -78,13 +82,16 @@ const ContentWidget = ({ canRemove: canRemoveProp, feed, isGroup, onEditClick, o
     const incrementViews = useCallback(async (postId) => {
         try {
             if (hasViewed === false) {
-                await axios.post('/api/increment_views', { postId });
+                const response = await axios.post('/api/increment_views', { postId });
+                if (response.data.success) {
+                    setViews((prev) => prev + 1);
+                }
                 setHasViewed(true);
             }
         } catch (error) {
             setPostErrorMessage("Error incrementing views");
         }
-    }, [hasViewed]);
+    }, [hasViewed, views]);
 
     //Allows React Quill to display videos
     //const BlockEmbed = Quill.import('blots/block/embed');
@@ -103,12 +110,8 @@ const ContentWidget = ({ canRemove: canRemoveProp, feed, isGroup, onEditClick, o
     //VideoBlot.tagName = 'video';
     //Quill.register(VideoBlot);
 
-    const replyAdded = (newReply) => {
-        setReplies(currentReplies => [...currentReplies, newReply]);
-    };
-
     const replyRemoved = (replyId) => {
-        setReplies((prevReplies) => prevReplies.filter((reply) => reply.reply_id !== replyId));
+        setReplies((prevReplies) => prevReplies.filter((reply) => reply.post_id !== replyId));
     };
 
     const handleReplySubmit = async (formData) => {
@@ -123,9 +126,21 @@ const ContentWidget = ({ canRemove: canRemoveProp, feed, isGroup, onEditClick, o
             const response = await axios.post('/api/create_post', formData, {
                 headers: { 'Content-Type': 'multipart/form-data' }
             });
-            if (response.data.success === true) {
-                //Add the new reply to the local state
-                setReplies(currentReplies => [...currentReplies, response.data.reply]);
+            if (response.data.success === true && response.data.post) {
+                const newReply = response.data.post;
+                newReply.parentChannel = {
+                    channel_name: post.parentChannel?.channel_name ?? ''
+                };
+                newReply.poster = {
+                    feed_name: viewer.feed_name,
+                    feed_photo: viewer.feed_photo,
+                };
+                newReply.upvotes = newReply.upvotes || 0;
+                newReply.downvotes = newReply.downvotes || 0;
+                newReply.views = newReply.views || 0;
+                newReply.replies = newReply.replies || 0;
+                newReply.timestamp = newReply.timestamp || new Date().toISOString();
+                setReplies(currentReplies => [...currentReplies, newReply]);
                 setShowReplyForm(false);
             } else {
                 setPostErrorMessage("Error adding reply");
@@ -211,7 +226,7 @@ const ContentWidget = ({ canRemove: canRemoveProp, feed, isGroup, onEditClick, o
     const upvoteClass = upvoteLimit || isViewingOwnPost ? 'vote-disabled' : 'vote-enabled';
 
     return (
-        <div className="content-item">
+        <div className={`content-item ${isReply ? 'reply' : ''}`}>
             {postErrorMessage && (<div className="error-message">{postErrorMessage}</div>)}
             <div className="title-container">
                 <Link to={`/${urlLetter}/${feed.feed_name}/${post.parentChannel.channel_name}/${post.post_id}`}className="text36">{post.title}</Link>
@@ -253,7 +268,7 @@ const ContentWidget = ({ canRemove: canRemoveProp, feed, isGroup, onEditClick, o
                     <FaComments />
                     <p className="text16" id={`reply-count-${post.post_id}`}>{post.replies}</p>
                 </button>
-                <p className="text16">{post.views} {post.views === 1 ? 'view' : 'views'}</p>
+                <p className="text16">{views} {views === 1 ? 'view' : 'views'}</p>
                 <p className="text16">{new Date(post.timestamp).toLocaleDateString()}</p>
                 {post.poster_id === viewer.feed_id && (
                     <button className="large-icon" onClick={() => onEditClick(post)}>
@@ -266,7 +281,7 @@ const ContentWidget = ({ canRemove: canRemoveProp, feed, isGroup, onEditClick, o
                     </button>
                 ) : null}
                 {!post.note?.is_misinfo && (
-                    <AskButton isGroup={isGroup} isReply={false} content={post} showNote={showNote} setShowNote={setShowNote} note={note} setNote={setNote} />
+                    <AskButton isGroup={isGroup} isReply={false} content={post} showNote={showNote} setShowNote={setShowNote} note={note} setNote={setNote} setPostErrorMessage={setPostErrorMessage} />
                 )}
             </div>
             {showReplies && (
