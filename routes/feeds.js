@@ -217,7 +217,6 @@ router.delete('/delete_feed', authenticateCheck, async (req, res) => {
         await Feeds.destroy({ where: { feed_id: feedId  } });
         res.status(200).json({ success: true });
     } catch (error) {
-        console.log(error);
         res.status(500).json({ success: false });
     }
 });
@@ -290,7 +289,7 @@ router.get('/feed_channel_messages/:channelId', authenticateCheck, async (req, r
             }],
             order: [['timestamp', 'ASC']]
         });
-        res.json({ success: true, messages });
+        res.status(200).json({ success: true, messages });
     } catch (error) {
         res.status(500).json({ success: false });   
     }

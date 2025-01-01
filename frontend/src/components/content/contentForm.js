@@ -139,6 +139,8 @@ const ContentForm = ({ isEdit = false, isReply, onSubmit, post = null, setShowFo
         try {
             setFormErrorMessage("");
             const formData = new FormData();
+            const postId = v4();
+            formData.append('post_id:', postId);
             formData.append('content', content);
             formData.append('is_code', isCode);
             if (isReply) formData.append("parent_id", post.post_id);
@@ -153,7 +155,7 @@ const ContentForm = ({ isEdit = false, isReply, onSubmit, post = null, setShowFo
             setIsCode(false);
             setFiles([])
         } catch (error) {
-            setFormErrorMessage('An error occured while submitting the form')
+            setFormErrorMessage('Error submitting the form')
         }
     };
 

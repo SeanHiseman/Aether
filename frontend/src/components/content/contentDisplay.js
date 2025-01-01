@@ -23,8 +23,6 @@ const ContentDisplay = ({ content, currentTheme, onOverflowChange, showFullConte
                 color: white;
                 display: flex;
                 font-family: Arial, sans-serif;
-                justify-content: center;
-                margin: 10px;
                 max-width: 100%;
                 overflow: ${overflowStyle};
                 padding: 0;

@@ -1,7 +1,7 @@
 import axios from 'axios';
 import React, { useState } from 'react';
 
-const AskButton = ({ isReply, isGroup, content, showNote, setShowNote, note, setNote }) => {
+const AskButton = ({ isReply, isGroup, content, showNote, setShowNote, note, setNote, setPostErrorMessage }) => {
     const [isLoading, setIsLoading] = useState(false);
 
     //Extracts posts content from raw format
@@ -33,19 +33,15 @@ const AskButton = ({ isReply, isGroup, content, showNote, setShowNote, note, set
                 }
             }
         } catch (error) {
-            console.error(error);
+            setPostErrorMessage("Error using Ask.");
         } finally {
             setIsLoading(false);
         }
     };
 
     return (
-        <button
-            className={`${isLoading ? 'button-disabled' : 'button'}`}
-            onClick={askPost}
-            disabled={isLoading}
-        >
-            {showNote ? 'Close' : (isLoading ? 'Loading...' : 'Ask')}
+        <button className={`small-icon ${isLoading ? 'button-disabled' : 'button'}`} disabled={isLoading} onClick={askPost}>
+            {showNote ? 'Close' : (isLoading ? 'Loading...' : <img className="standard-icon" src="/media/site_images/icons/ask.png" alt="Ask"/>)}
         </button>
     );
 };
