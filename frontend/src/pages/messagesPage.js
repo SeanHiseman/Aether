@@ -1,6 +1,7 @@
 import axios from 'axios';
 import React, { useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { AuthContext } from '../components/authContext';
+import { FaEdit, FaMinus, FaPlus, FaTrash } from 'react-icons/fa';
 import { io } from "socket.io-client";
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { v4 } from 'uuid';
@@ -29,8 +30,10 @@ const MessagesPage = () => {
     useEffect(() => {
         const getConnections = async () => {
             try {
-                const response = await axios.get(`/api/get_connections/${viewer.feed_id}`);
-                setConnections(response.data);
+                if (viewer.feed_id) {
+                    const response = await axios.get(`/api/get_connections/${viewer.feed_id}`);
+                    setConnections(response.data);
+                };
             } catch (error) {
                 setErrorMessage("Error getting connections");
             }
@@ -163,7 +166,7 @@ const MessagesPage = () => {
                         feeds: connection ? [connection] : [],
                     };
                     setChats(prevChats => [...prevChats, newChat]);
-                    setSelectedChatId(newChat.chatId);
+                    setSelectedChatId(newChat.chat_id);
                     navigate(`/messages/${connection_name}/${newChatName}`)
                     setErrorMessage('');
                     setNewChatName('');
@@ -173,27 +176,28 @@ const MessagesPage = () => {
                 }
             }
         } catch (error) {
-            console.log("creating chat error:", error);
             setErrorMessage("Failed to create chat.");
         }
     };
 
     const deleteChat = async () => {
-        try {
-            if (title === 'Main') {
-                setErrorMessage("Main chat cannot be deleted.");
-                return;
+        if (window.confirm(`Are you sure you want to delete ${title}?`)) {
+            try {
+                if (title === 'Main') {
+                    setErrorMessage("Main chat cannot be deleted.");
+                    return;
+                }
+                await axios.delete(`/api/delete_chat`, { data: {chatId: selectedChatId, title: title} });
+                //Show chat list without deleted chat
+                setChats(prevChats => 
+                    prevChats.filter(c => c.chat_id !== selectedChatId)
+                );
+                setSelectedChatId(null);
+                setChat([]);
+                navigate(`/messages/${connection_name}/Main`);
+            } catch (error) {
+                setErrorMessage('Error deleting chat');
             }
-            await axios.delete(`/api/delete_chat`, { data: {chat_id: selectedChatId, title: title} });
-            //Show chat list without deleted chat
-            setChats(prevChats => 
-                prevChats.filter(c => c.chat_id !== selectedChatId)
-            );
-            setSelectedChatId(null);
-            setChat([]);
-            navigate(`/messages/${connection_name}/Main`);
-        } catch (error) {
-            setErrorMessage('Error deleting chat');
         }
     };
 
@@ -318,26 +322,25 @@ const MessagesPage = () => {
                                         }}
                                         />
                                         <div id="cancel-save">
-                                            <button className="button" onClick={() => {
-                                                setIsEditingChatName(false);
-                                                setChangedChatName('');
-                                                setErrorMessage('');
-                                            }}>Cancel</button>
-                                            <button className="button" onClick={(e) => {
-                                                e.preventDefault();
-                                                changeChatName(e)
-                                            }}>Save</button>
+                                            <button className="button" onClick={() => {setIsEditingChatName(false); setChangedChatName(''); setErrorMessage('');}}>
+                                                Cancel
+                                            </button>
+                                            <button className="button" onClick={(e) => {e.preventDefault();changeChatName(e)}}>
+                                                Save
+                                            </button>
                                         </div>
-                                        <button className="button" onClick={() => deleteChat()}>Delete chat</button> 
                                     </div>
                                 ) : (
                                     <div id="chat-name">
                                         <p className="text36">{currentChatName}</p> 
-                                        <button className="button" onClick={() => {
-                                            setIsEditingChatName(true);
-                                            setChangedChatName(currentChatName);
-                                        }}>Rename</button>
-                                        <button className="button" onClick={() => deleteChat()}>Delete chat</button> 
+                                        <div className="button-group">
+                                            <button className="small-icon" onClick={() => {setIsEditingChatName(true); setChangedChatName(currentChatName);}}>
+                                                <FaEdit />
+                                            </button>
+                                            <button className="small-icon" onClick={() => deleteChat()}>
+                                                <FaTrash />
+                                            </button> 
+                                        </div>
                                     </div>
                                     
                                 )}
@@ -345,6 +348,17 @@ const MessagesPage = () => {
                         ) : (
                             <p className="text36">Main</p>  
                         )}
+                        <div className="add-channel-section">
+                            <button className="small-icon" onClick={toggleForm}>
+                                {showForm ? <FaMinus /> : <FaPlus />}
+                            </button>
+                            {showForm && (
+                                <form className="add-channel-form" onSubmit={createNewChat}>
+                                    <input className="name-input" type="text" name="chat_name" placeholder="Chat name..." value={newChatName} onChange={(e) => setNewChatName(e.target.value)}/>
+                                    <button className="small-icon" type="submit" value="Add" ><FaPlus /></button>
+                                </form>  
+                            )}                          
+                        </div>
                         <ul>
                             {chats.map(chat => (
                                 <li key={chat.chat_id} className="channel-item">
@@ -354,17 +368,6 @@ const MessagesPage = () => {
                                 </li>
                             ))}
                         </ul>
-                        <div className="add-channel-section">
-                            <button className="button" onClick={toggleForm}>
-                                {showForm ? 'Close': 'Add chat'}
-                            </button>
-                            {showForm && (
-                                <form className="add-channel-form" onSubmit={createNewChat}>
-                                    <input className="name-input" type="text" name="chat_name" placeholder="Chat name..." value={newChatName} onChange={(e) => setNewChatName(e.target.value)}/>
-                                    <input className="dark-button" type="submit" value="Add" />
-                                </form>  
-                            )}                          
-                        </div>
                     </div>
                 ) : (
                     <nav className="feed-list">
