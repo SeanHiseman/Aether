@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { FaArrowDown, FaArrowUp, FaComments, FaEdit, FaReply, FaTimesCircle } from 'react-icons/fa';
+import { FaArrowDown, FaArrowUp, FaChevronDown, FaChevronUp, FaComments, FaEdit, FaReply, FaTimesCircle } from 'react-icons/fa';
 import { Link } from 'react-router-dom';
 import React, { useCallback, useContext, useEffect, useState } from 'react';
 import { Quill } from 'react-quill';
@@ -228,7 +228,7 @@ const ContentWidget = ({ canRemove: canRemoveProp, feed, isGroup, onEditClick, o
     return (
         <div className={`content-item ${isReply ? 'reply' : ''}`}>
             {postErrorMessage && (<div className="error-message">{postErrorMessage}</div>)}
-            <div className="title-container">
+            {post.title && (<div className="title-container">
                 <Link to={`/${urlLetter}/${feed.feed_name}/${post.parentChannel.channel_name}/${post.post_id}`}className="text36">{post.title}</Link>
                 {post.displayGroupName && (
                     <Link className="feed-link" to={`/g/${feed.feed_name}`}>
@@ -236,11 +236,11 @@ const ContentWidget = ({ canRemove: canRemoveProp, feed, isGroup, onEditClick, o
                         <img className="small-feed-photo" src={`/${feed.feed_photo}`} alt="Feed" />
                     </Link>
                 )}
-            </div>
+            </div>)}
             <ContentDisplay content={post.content} onOverflowChange={setIsOverflowing} showFullContent={showFullContent} showScrollBar={false}/>
             {isOverflowing && (
-                <button className="button" onClick={() => setShowFullContent(!showFullContent)}>
-                    {showFullContent ? 'Show less' : 'Show more'}
+                <button className="small-icon" onClick={() => setShowFullContent(!showFullContent)}>
+                    {showFullContent ? <FaChevronUp /> : <FaChevronDown />}
                 </button>
             )}
             {showNote && (
