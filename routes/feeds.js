@@ -137,6 +137,8 @@ router.post('/create_feed', authenticateCheck, async (req, res) => {
                 channel_id: v4(),
                 channel_name: 'Main',
                 feed_id: feed.feed_id,
+                is_posts: true,
+                is_chat: isGroup ? true : false,
             });
             await Followers.create({
                 follow_id: v4(),
@@ -442,7 +444,7 @@ router.post('/toggle_private', authenticateCheck, async (req, res) => {
         const feed = await Feeds.findOne({ where: { feed_id: feedId } });
         const newType = feed.type === 'public' ? 'private' : 'public';
         await feed.update({ type: newType });
-        res.status(200).json({ success: true, updatedFeed: { ...feed, type: newType} });
+        res.status(200).json({ success: true, type: newType });
     } catch (error) {
         res.status(500).json({ success: false });
     }

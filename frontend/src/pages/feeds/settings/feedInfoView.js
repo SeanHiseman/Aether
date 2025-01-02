@@ -12,7 +12,7 @@ const FeedInfoView = ({ feed, setFeed }) => {
     const navigate = useNavigate();
     const [newDescription, setDescription] = useState('');
     const [newName, setName] = useState('');
-
+    console.log("feed.type:", feed.type);
     useEffect(() => {
         if (isEditingName) {
             setName(feed.feed_name);
@@ -211,8 +211,26 @@ const FeedInfoView = ({ feed, setFeed }) => {
                         )}
                     </div>
                     <div className="option-toggle">
-                        <button className={feed.type === 'private' ? 'active-mode' : 'passive-mode'} onClick={(event) => {event.preventDefault(); togglePrivate();}}>Public</button>
-                        <button className={feed.type === 'public' ? 'active-mode' : 'passive-mode'} onClick={(event) => {event.preventDefault(); togglePrivate();}}>Private</button>
+                        <button 
+                            className={feed.type === 'public' ? 'active-mode' : 'passive-mode'} 
+                            onClick={(event) => { 
+                                event.preventDefault(); 
+                                togglePrivate();
+                            }}
+                            disabled={feed.type === 'public'}
+                        >
+                            Public
+                        </button>
+                        <button 
+                            className={feed.type === 'private' ? 'active-mode' : 'passive-mode'} 
+                            onClick={(event) => { 
+                                event.preventDefault(); 
+                                togglePrivate();
+                            }}
+                            disabled={feed.type === 'private'}
+                        >
+                            Private
+                        </button>
                     </div>
                 </div>
             </div>

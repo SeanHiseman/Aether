@@ -164,10 +164,10 @@
     width: 60%;
 }
 .settings-feed-photo {
-    border-radius: 54px;
-    height: 240px; 
+    border-radius: 43px;
+    height: 200px; 
     margin: 20px;
-    width: 240px; 
+    width: 200px; 
 }
 .theme-box {
     border: 1px solid var(--border);
