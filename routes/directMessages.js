@@ -48,7 +48,6 @@ router.post('/change_chat_name', authenticateCheck, async (req, res) => {
             res.status(200).json({ success: true });
         }
     } catch (error) {
-        console.log(error);
         res.status(500).json({ success: false });
     }
 });
@@ -73,19 +72,19 @@ router.post('/create_chat', authenticateCheck, async (req, res) => {
 
 router.delete('/delete_chat', authenticateCheck, async (req, res) => {
     try {
-        const { chat_id, title } = req.body;
+        const { chatId, title } = req.body;
         //Main channels are default, so can't be deleted
         if (title === 'Main') {
             res.status(403).json({ message: 'Main chats cannot be deleted' });
         } else {
             await FeedChats.destroy({
                 where: { 
-                    chat_id
+                    chat_id: chatId
                 },
             });
             await Chats.destroy({
                 where: { 
-                    chat_id
+                    chat_id: chatId
                 },
             });
             res.status(200).json({ success: true });
@@ -245,7 +244,6 @@ router.get('/get_connections/:feedId', authenticateCheck, async (req, res) => {
         //res.status(200).json(connections);
         res.status(200).json(filteredConnections);
     } catch (error) {
-        console.log("connections error:", error);
         res.status(500).json({ success: false });  
     }
 });
