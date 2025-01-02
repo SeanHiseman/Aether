@@ -96,7 +96,7 @@ const FeedSettings = () => {
                         </form>)}
                         <li className="channel-link" onClick={() => setCurrentView('info')}>Feed info</li>
                         <li className="channel-link" onClick={() => setCurrentView('followers')}>Followers</li>
-                        {feed.type === 'private' && (<li className="channel-link" onClick={() => setCurrentView('follow-requests')}>Follow requests</li>)}
+                        {feed.type === 'private' && feed.isOwner && feed.is_group && (<li className="channel-link" onClick={() => setCurrentView('follow-requests')}>Follow requests</li>)}
                         {!feed.is_group && (<li className="channel-link" onClick={() => setCurrentView('connect-requests')}>Connect requests</li>)}
                         {!feed.is_group && (<li className="channel-link" onClick={() => setCurrentView('membership-settings')}>Membership</li>)}
                         {!feed.is_group && (<li className="channel-link" onClick={() => setCurrentView('password-personal')}>Password</li>)}

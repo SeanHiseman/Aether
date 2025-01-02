@@ -1,5 +1,7 @@
 import axios from 'axios';
+import { FaHeart, FaHeartBroken, FaMinusCircle } from 'react-icons/fa';
 import React, { useEffect, useState } from 'react';
+//import Tooltip from '@mui/material/Tooltip';
 
 const FollowerChangeButton = ({ feed, viewerId }) => {
     const [errorMessage, setErrorMessage] = useState('');
@@ -17,6 +19,14 @@ const FollowerChangeButton = ({ feed, viewerId }) => {
 
     const handleFollowerChange = async () => {
         try {
+            if (follower && (feed.isAdmin || feed.isMod)) {
+                const confirmUnfollow = window.confirm(
+                    "You are about to unfollow this feed. You will lose your admin/mod status. Are you sure you want to proceed?"
+                );
+                if (!confirmUnfollow) {
+                    return;
+                }
+            }
             if (isPrivate && !follower && !request) {
                 await axios.post('/api/send_follow_request', { receiverId: feed.feed_id, senderId: viewerId });
                 setRequest(true);
@@ -36,14 +46,16 @@ const FollowerChangeButton = ({ feed, viewerId }) => {
         }
     };
     
-    const buttonText = follower ? 'Unfollow' : request && isPrivate ? 'Cancel request' : 'Follow';
+    //const toolTipText = follower ? 'Unfollow' : request && isPrivate ? 'Cancel request' : 'Follow';
 
     return (
         <div>
-            <button className="button" onClick={handleFollowerChange}>
-                {buttonText}
-            </button>
-            <p>{followerCount} {followerCount === 1 ? 'follower' : 'followers'}</p>
+            {/*<Tooltip placement="bottom" title={toolTipText}>*/}
+                <button className="small-icon" onClick={handleFollowerChange}>
+                    {follower ? <FaHeartBroken /> : request && isPrivate ? <FaMinusCircle /> : <FaHeart />}
+                    <p className="icon-text">{followerCount} {followerCount === 1 ? 'follower' : 'followers'}</p>
+                </button>
+            {/*</Tooltip>*/}
             {errorMessage && <div className="error-message">{errorMessage}</div>}
         </div>
     )
