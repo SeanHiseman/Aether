@@ -315,7 +315,6 @@ router.get('/feed_list/:followerId', async (req, res) => {
         }));
         res.status(200).json(formattedFeeds);
     } catch (error) {
-        console.log("feed_list error:", error);
         res.status(500).json({ success: false });
     }
 });
@@ -370,7 +369,6 @@ router.get('/get_feed_channels/:feedId', authenticateCheck, async (req, res) => 
         });
         res.status(200).json({ success: true, channels });
     } catch (error) {
-        console.log("feed channel error:", error);
         res.status(500).json({ success: false });
     }
 });

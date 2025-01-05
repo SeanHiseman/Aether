@@ -72,25 +72,35 @@ const FeedHome = () => {
     const AddChannel = async (event) => {
         event.preventDefault();
         try {
-            if (newChannelName.length === 0) {
-                setFeedErrorMessage("Channel needs a name");
+            const channelName = newChannelName.length === 0 ? 'New channel' : newChannelName; //New channel doesn't have to have a name set
+            if (channelName === "Main") {
+                setFeedErrorMessage("Cannot be named Main");
+                return;
+            }
+            if (channelName.length >= 30) {
+                setFeedErrorMessage("Name too long"); 
+                return; 
+            } 
+            const channelExists = channels.some(channel => channel.channel_name === channelName);
+            if (channelExists) {
+                setFeedErrorMessage("Name already used");
+                return;
+            }
+            const response = await axios.post('/api/add_feed_channel', {
+                channelName: channelName,
+                feedId: feed.feed_id,
+                isPosts: feed.is_group ? isPostChannel : true,
+                isChat: feed.is_group ? isChatChannel : false
+            });
+            if (response.data && response.status === 201) {
+                const newChannel = response.data.newChannel;
+                const updatedChannels = [...channels, newChannel];
+                setChannels(updatedChannels);
+                setFeedErrorMessage('');
+                setNewChannelName('');
+                navigate(`/${urlLetter}/${feed_name}/${channelName}`);
             } else {
-                const response = await axios.post('/api/add_feed_channel', {
-                    channelName: newChannelName,
-                    feedId: feed.feed_id,
-                    isPosts: feed.is_group ? isPostChannel : true,
-                    isChat: feed.is_group ? isChatChannel : false
-                });
-                if (response.data && response.status === 201) {
-                    const newChannel = response.data.newChannel;
-                    const updatedChannels = [...channels, newChannel];
-                    setChannels(updatedChannels);
-                    setFeedErrorMessage('');
-                    setNewChannelName('');
-                    navigate(`/${urlLetter}/${feed_name}/${newChannelName}`);
-                } else {
-                    setFeedErrorMessage('Failed to add channel');
-                }
+                setFeedErrorMessage('Failed to add channel');
             }
         } catch (error) {
             setFeedErrorMessage('Failed to add channel');
