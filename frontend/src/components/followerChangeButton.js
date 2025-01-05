@@ -7,12 +7,12 @@ const FollowerChangeButton = ({ feed, viewerId }) => {
     const [errorMessage, setErrorMessage] = useState('');
     const [follower, setFollower] = useState(feed.isFollower);
     const [followerCount, setFollowerCount] = useState(feed.follower_count);
-    const [request, setRequest] = useState(feed.hasFollowRequest);
+    const [request, setRequest] = useState(feed.followRequest);
     const isPrivate = feed.type === 'private';
 
     //Update follower state, including requests for private feeds
     useEffect(() => {
-        setRequest(feed.hasFollowRequest);
+        setRequest(feed.followRequest);
         setFollower(feed.isFollower);
         setFollowerCount(feed.follower_count);
     }, [feed.hasFollowRequest, feed.isFollower, feed.follower_count]);

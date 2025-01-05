@@ -11,7 +11,7 @@ import { join } from 'path';
 import path from 'path';
 import { Router } from 'express';
 import { v4 } from 'uuid';
-import { Feeds, FeedChannels, FeedChannelMessages, Followers, FollowRequests, NestedFeeds, Posts } from '../models/relationships.js';
+import { ConnectRequests, Feeds, FeedChannels, FeedChannelMessages, Followers, FollowRequests, NestedFeeds, Posts } from '../models/relationships.js';
 
 const app = express();
 dotenv.config();
@@ -240,30 +240,45 @@ router.delete('/delete_feed_channel', authenticateCheck, async (req, res) => {
 router.get('/feed/:feedName', authenticateCheck, async (req, res) => {
     try {
         const feedName = req.params.feedName;
-        const userId = req.session.user_id
+        const userId = req.session.user_id;
         const viewerId = req.session.feed_id;
-        let isAdmin = false, isMod = false, isConnected = false, isFollower = false, hasFollowRequest = false;
+        let isAdmin = false,
+            isMod = false,
+            isConnected = false,
+            isFollower = false;
+        let connectRequest = null; 
+        let followRequest = null;  
         const feed = await Feeds.findOne({ where: { feed_name: feedName } });
         if (!feed) {
-            return res.status(404).json({ success: false }); 
+            return res.status(404).json({ success: false, message: "Feed not found." }); 
         }
         if (userId === feed.feed_owner) {
             isAdmin = true;
             isMod = true;
             isConnected = true;
             isFollower = true;
-            hasFollowRequest = false;
         } else {
-            const [connectStatus, followStatus, followRequest] = await Promise.all([
-                ConnectCheck(viewerId, feed.feed_id),
-                FollowerCheck(viewerId, feed.feed_id),
-                FollowRequests.findOne({ where: { sender_id: viewerId } })
-            ]);
-            isAdmin = followStatus.isAdmin;
-            isMod = followStatus.isMod;
-            isConnected = connectStatus.connected;
-            isFollower = followStatus.following;
-            hasFollowRequest = !!followRequest;
+            if (!feed.is_group) {
+                connectRequest = await ConnectRequests.findOne({ 
+                    where: {
+                        [Op.or]: [
+                            { sender_id: viewerId, receiver_id: feed.feed_id },
+                            { sender_id: feed.feed_id, receiver_id: viewerId } 
+                        ]
+                    }
+                });
+                const connectStatus = await ConnectCheck(viewerId, feed.feed_id);
+                isConnected = connectStatus.connected;
+            }
+            if (feed.type === 'private') {
+                followRequest = await FollowRequests.findOne({ 
+                    where: { sender_id: viewerId, receiver_id: feed.feed_id } 
+                });
+                const followStatus = await FollowerCheck(viewerId, feed.feed_id);
+                isAdmin = followStatus.isAdmin;
+                isMod = followStatus.isMod;
+                isFollower = followStatus.following;
+            }
         }
         const feedResult = {
             ...feed.toJSON(),
@@ -272,9 +287,14 @@ router.get('/feed/:feedName', authenticateCheck, async (req, res) => {
             isOwner: (userId === feed.feed_owner),
             isConnected,
             isFollower,
-            isRequestSent: feed.is_private ? hasFollowRequest : false,
         };
-        res.status(200).json({ success: false, feedResult });
+        if (!feed.is_group) {
+            feedResult.connectRequest = connectRequest; 
+        }
+        if (feed.type === 'private') {
+            feedResult.followRequest = followRequest; 
+        }
+        res.status(200).json({ success: true, feedResult });
     } catch (error) {
         res.status(500).json({ success: false });
     }
@@ -392,7 +412,7 @@ router.get('/get_feed_followers/:feedId', authenticateCheck, async (req, res) =>
     }
 });
 
-router.post('/send_follow_request', authenticateCheck, async (req, res) => {
+router.post('/send_follow_request', authenticateCheck, async (req, res) => {``
     try {
         const { receiverId, senderId } = req.body;
         await FollowRequests.create({

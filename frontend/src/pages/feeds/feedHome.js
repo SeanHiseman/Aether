@@ -9,6 +9,7 @@ import ChannelName from '../../components/channels/channelName';
 import ChatChannel from '../../components/channels/chatChannel';
 import ContentForm from "../../components/content/contentForm";
 import FollowerChangeButton from '../../components/followerChangeButton';
+import ManageConnectionButton from '../../components/manageConnectionButton';
 import PostChannel from '../../components/channels/postChannel';
 
 const FeedHome = () => {
@@ -32,6 +33,7 @@ const FeedHome = () => {
     const [showChannelForm, setShowChannelForm] = useState(false);
     const [showPostForm, setShowPostForm] = useState(false);
     const { user, viewer } = useContext(AuthContext);
+    const isViewingSelf = feed.feed_id === viewer.feed_id;
 
     useEffect(() => {
         const fetchFeedData = async () => {
@@ -208,6 +210,9 @@ const FeedHome = () => {
                         {feed.is_group && (
                             <FollowerChangeButton feed={feed} viewerId={viewer.feed_id} />
                         )}
+                        {!isViewingSelf && !feed.is_group && (
+                            <ManageConnectionButton feed={feed} viewerId={viewer.feed_id} />
+                        )}
                     </div>
                 </aside>
             </div>
@@ -266,6 +271,9 @@ const FeedHome = () => {
                     <p className="description" >{feed.description}</p>
                     {(feed.is_group || user.user_id !== feed.feed_owner) && (
                         <FollowerChangeButton feed={feed} viewerId={viewer.feed_id} />
+                    )}
+                    {!isViewingSelf && !feed.is_group && (
+                        <ManageConnectionButton feed={feed} viewerId={viewer.feed_id} />
                     )}
                 </div>
                 {feedErrorMessage && <div className="error-message">{feedErrorMessage}</div>}

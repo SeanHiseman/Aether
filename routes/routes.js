@@ -138,37 +138,45 @@ router.get('/recommended_posts', authenticateCheck, async (req, res) => {
 router.get('/search/:searcherId', authenticateCheck, async (req, res) => { 
     try {
         const searcherId = req.params.searcherId;
-        const keyword = req.query.keyword.toLowerCase();
+        const keyword = req.query.keyword ? req.query.keyword.toLowerCase() : '';
         const feeds = await Feeds.findAll({
             where: { feed_name: { [Op.like]: `%${keyword}%` } },
-            attributes: feedAttributes,
+            attributes: feedAttributes, 
         });
         const feedData = await Promise.all(feeds.map(async (feed) => {
-            const [connectStatus, connectRequest, followStatus, followRequest] = await Promise.all([
-                ConnectCheck(searcherId, feed.feed_id),
-                ConnectRequests.findOne({
-                    where: {
-                        [Op.or]: [
-                            { sender_id: searcherId, receiver_id: feed.feed_id },
-                            { sender_id: feed.feed_id, receiver_id: searcherId }
-                        ]
-                    }
-                }),
-                FollowerCheck(searcherId, feed.feed_id),
-                FollowRequests.findOne({
-                    where: { sender_id: searcherId, receiver_id: feed.feed_id }
-                })
-            ]);
-            return {
-                ...feed.toJSON(),
-                isConnected: connectStatus?.connected || false,
-                connectRequest: connectRequest || null, 
-                //receiver_id: connectRequest ? connectRequest.receiver_id : feed.feed_id,
-                isAdmin: followStatus?.isAdmin || false,
-                isMod: followStatus?.isMod || false,
-                isFollower: followStatus?.following || false,
-                followRequest: followRequest || null 
+            const feedJSON = feed.toJSON();
+            const response = {
+                ...feedJSON,
+                isAdmin: false,
+                isMod: false,
+                isFollower: false,
             };
+            const followStatus = await FollowerCheck(searcherId, feed.feed_id);
+            response.isAdmin = followStatus?.isAdmin || false;
+            response.isMod = followStatus?.isMod || false;
+            response.isFollower = followStatus?.following || false;
+            if (!feed.is_group) {
+                const [connectStatus, connectRequest] = await Promise.all([
+                    ConnectCheck(searcherId, feed.feed_id),
+                    ConnectRequests.findOne({
+                        where: {
+                            [Op.or]: [
+                                { sender_id: searcherId, receiver_id: feed.feed_id },
+                                { sender_id: feed.feed_id, receiver_id: searcherId }
+                            ]
+                        }
+                    })
+                ]);
+                response.isConnected = connectStatus?.connected || false;
+                response.connectRequest = connectRequest || null;
+            }
+            if (feed.type === 'private') {
+                const followRequest = await FollowRequests.findOne({
+                    where: { sender_id: searcherId, receiver_id: feed.feed_id }
+                });
+                response.followRequest = followRequest || null;
+            }
+            return response;
         }));
         //const postResults = await Posts.findAll({
             //where: {

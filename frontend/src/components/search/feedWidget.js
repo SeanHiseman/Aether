@@ -14,7 +14,7 @@ const FeedWidget = ({ feed, viewerId }) => {
                 </div>
             </Link>
             {!isViewingSelf && !feed.is_group && (
-                <ManageConnectionButton connectRequest={feed.connectRequest} feed={feed} isConnected={feed.isConnected} viewerId={viewerId} />
+                <ManageConnectionButton feed={feed} viewerId={viewerId} />
             )}
             <div className="search-result-info-box">
                 <div className="result-info-options">

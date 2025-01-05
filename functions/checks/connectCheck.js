@@ -1,6 +1,7 @@
 import { Connections } from '../../models/messages.js';
 import { Op } from 'sequelize';
 
+//Could add checking requests as well
 async function ConnectCheck(feed1_id, feed2_id) {
     try {
         const connected = await Connections.findOne({
