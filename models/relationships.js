@@ -46,10 +46,10 @@ Feeds.hasMany(ConnectRequests, { as: 'receivedConnectRequests', foreignKey: 'rec
 ConnectRequests.belongsTo(Feeds, { as: 'sender', foreignKey: 'sender_id' });
 ConnectRequests.belongsTo(Feeds, { as: 'receiver', foreignKey: 'receiver_id' });
 
-Feeds.belongsToMany(Chats, { through: FeedChats, foreignKey: 'feed_id', otherKey: 'chat_id', as: 'chats' });
-Chats.belongsToMany(Feeds, { through: FeedChats, foreignKey: 'chat_id', otherKey: 'feed_id', as: 'feeds' });
-FeedChats.belongsTo(Chats, { foreignKey: 'chat_id' });
+Chats.belongsToMany(Feeds, { through: FeedChats, foreignKey: 'chat_id',  as: 'feeds' });
+Feeds.belongsToMany(Chats, { through: FeedChats, foreignKey: 'feed_id',  as: 'chats' });
 Chats.hasMany(FeedChats, { foreignKey: 'chat_id' });
+FeedChats.belongsTo(Chats, { foreignKey: 'chat_id' });
 
 Feeds.hasMany(Connections, { foreignKey: 'feed1_id', as: 'ConnectionsAsFeed1' });
 Feeds.hasMany(Connections, { foreignKey: 'feed2_id', as: 'ConnectionsAsFeed2' });

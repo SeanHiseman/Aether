@@ -162,7 +162,7 @@ router.get('/get_chat_messages/:chatId', authenticateCheck, async (req, res) => 
             where: { chat_id: chatId },
             include: [{
                 model: Feeds,
-                attributes: ['feed_id', 'feed_name', 'feed_photo'],
+                attributes: feedAttributes,
             }],
             order: [['timestamp', 'ASC']]
         });;
@@ -185,7 +185,11 @@ router.get('/get_chats/:feedId', authenticateCheck, async (req, res) => {
                 where: whereName,
                 through: { attributes: [] },
             }],
-            order: [['updated_at', 'ASC']]
+            where: {
+                '$feeds.feed_id$': feedId
+            },
+            order: [['updated_at', 'ASC']],
+            distinct: true
         });
         const result = feedChats.map(chat => {
             const otherFeeds = chat.feeds.filter(feed => feed.feed_id !== feedId);
@@ -238,7 +242,6 @@ router.get('/get_connections/:feedId', authenticateCheck, async (req, res) => {
         //res.status(200).json(connections);
         res.status(200).json(filteredConnections);
     } catch (error) {
-        console.log("getting connections error:", error);
         res.status(500).json({ success: false });  
     }
 });

@@ -159,33 +159,38 @@ const MessagesPage = () => {
         try {
             const connection = connections.find(c => c.feed_name === connection_name);
             const participants = [{ feed_id: viewer.feed_id }, {feed_id: connection.feed_id}];
-            const chatName = newChatName.length === 0 ? 'New chat' : newChatName;
-            if (newChatName.length >= 30) {
+            const chatName = newChatName.length === 0 ? 'New chat' : newChatName; //New chat doesn't have to have a name set
+            if (chatName.length >= 30) {
                 setErrorMessage("Name too long"); 
                 return; 
-            } else if (newChatName === 'Main') {
+            } 
+            if (chatName === 'Main') {
                 setErrorMessage("Cannot be named Main");
                 return;
+            } 
+            const chatExists = chats.some(chat => chat.title === chatName);
+            if (chatExists) {
+                setErrorMessage("Name already used");
+                return;
+            }
+            const response = await axios.post('/api/create_chat', {
+                participants: participants,
+                title: chatName
+            });
+            if (response.data && response.status === 201) {
+                const newChat = { //Gets in correct format
+                    ...response.data.newChat,
+                    title: chatName,
+                    feeds: connection ? [connection] : [],
+                };
+                setChats(prevChats => [...prevChats, newChat]);
+                setSelectedChatId(newChat.chat_id);
+                navigate(`/messages/${connection_name}/${chatName}`)
+                setErrorMessage('');
+                setNewChatName('');
+                setShowForm(false);
             } else {
-                const response = await axios.post('/api/create_chat', {
-                    participants: participants,
-                    title: chatName
-                });
-                if (response.data && response.status === 201) {
-                    const newChat = { //Gets in correct format
-                        ...response.data.newChat,
-                        title: chatName,
-                        feeds: connection ? [connection] : [],
-                    };
-                    setChats(prevChats => [...prevChats, newChat]);
-                    setSelectedChatId(newChat.chat_id);
-                    navigate(`/messages/${connection_name}/${newChatName}`)
-                    setErrorMessage('');
-                    setNewChatName('');
-                    setShowForm(false);
-                } else {
-                    setErrorMessage("Failed to add chat.");
-                }
+                setErrorMessage("Failed to add chat.");
             }
         } catch (error) {
             setErrorMessage("Failed to create chat.");
@@ -341,7 +346,6 @@ const MessagesPage = () => {
                                 {isEditingChatName ? (
                                     <div id="change-name">
                                         <textarea className="change-name-area" value={changedChatName} placeholder="New name" onChange={(e) => {
-                                            e.preventDefault();
                                             const input = e.target.value;
                                             const inputLength = input.length;
                                             if (inputLength <= 30) {
@@ -355,7 +359,7 @@ const MessagesPage = () => {
                                             <button className="button" onClick={() => {setIsEditingChatName(false); setChangedChatName(''); setErrorMessage('');}}>
                                                 Cancel
                                             </button>
-                                            <button className="button" onClick={(e) => {e.preventDefault();changeChatName(e)}}>
+                                            <button className="button" onClick={(e) => {changeChatName(e)}}>
                                                 Save
                                             </button>
                                         </div>
