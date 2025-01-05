@@ -1,18 +1,13 @@
 import axios from 'axios';
 import { FaUserMinus, FaUserPlus } from 'react-icons/fa';
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 
-const ManageConnectionButton = ({ connectRequest, feed, isConnected, viewerId, onRequestUpdate }) => {
+const ManageConnectionButton = ({ feed, viewerId, onRequestUpdate }) => {
     const [errorMessage, setErrorMessage] = useState('');
-    const [hasConnection, setHasConnection] = useState(isConnected);
-    const [request, setRequest] = useState(connectRequest);
-    const senderId = connectRequest?.sender_id || viewerId;
-    const receiverId = connectRequest?.receiver_id || feed?.feed_id;
-
-    useEffect(() => {
-        setRequest(connectRequest);
-        setHasConnection(isConnected);
-    }, [connectRequest, isConnected]);
+    const [hasConnection, setHasConnection] = useState(feed.isConnected);
+    const [request, setRequest] = useState(feed.connectRequest);
+    const senderId = request?.sender_id || viewerId;
+    const receiverId = request?.receiver_id || feed?.feed_id;
 
     const handleSendRequest = async () => {
         try {
@@ -64,7 +59,7 @@ const ManageConnectionButton = ({ connectRequest, feed, isConnected, viewerId, o
                 response = await axios.delete('/api/delete_connect_request', { data: { receiverId: viewerId, senderId } });
             }
             if (response.status === 200) {
-                if (connectRequest && typeof onRequestUpdate === 'function') {
+                if (request && typeof onRequestUpdate === 'function') {
                     onRequestUpdate(request.sender_id);
                 } else {
                     setRequest(false);

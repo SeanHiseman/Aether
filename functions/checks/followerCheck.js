@@ -1,5 +1,6 @@
 import { Followers } from '../../models/feeds.js';
 
+//Could add checking requests as well
 async function FollowerCheck(follower_id, feed_id) {
     try {
         const following = await Followers.findOne({
