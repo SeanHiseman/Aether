@@ -10,7 +10,7 @@ import { Op } from 'sequelize';
 import { Router } from 'express';
 
 const router = Router();
-const feedAttributes = ['feed_id', 'parent_id', 'feed_name', 'description', 'feed_photo', 'follower_count', 'date_created', 'type', 'is_group', 'feed_owner'];
+const feedAttributes = ['feed_id', 'parent_id', 'feed_name', 'description', 'feed_photo', 'follower_count', 'created_at', 'updated_at', 'type', 'is_group', 'feed_owner'];
 const notesAttributes = ['note_id', 'note_content', 'timestamp', 'is_misinfo'];
 const postAttributes = ['post_id', 'parent_id', 'feed_id', 'channel_id', 'title', 'content', 'replies', 'views', 'upvotes', 'downvotes', 'timestamp', 'poster_id', 'points'];
 
@@ -197,9 +197,8 @@ router.get('/search/:searcherId', authenticateCheck, async (req, res) => {
         //console.log("feedData:", feedData);
         //console.log("postResults:", postResults);
         //res.json({ feeds: feedData, posts: postResults, success: true });
-        res.json({ feeds: feedData, success: true });
+        res.status(200).json({ feeds: feedData, success: true });
     } catch (error) {
-        console.log(error);
         res.status(500).json({ success: false });
     }
 });

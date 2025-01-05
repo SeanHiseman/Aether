@@ -6,7 +6,7 @@ import authenticateCheck from '../functions/checks/authenticateCheck.js';
 
 const router = Router();
 
-const feedAttributes = ['feed_id', 'parent_id', 'feed_name', 'description', 'feed_photo', 'follower_count', 'date_created', 'type', 'is_group', 'feed_owner'];
+const feedAttributes = ['feed_id', 'parent_id', 'feed_name', 'description', 'feed_photo', 'follower_count', 'created_at', 'updated_at', 'type', 'is_group', 'feed_owner'];
 
 router.post('/accept_connect_request', authenticateCheck, async (req, res) => {
     try {
@@ -165,14 +165,8 @@ router.get('/get_chat_messages/:chatId', authenticateCheck, async (req, res) => 
                 attributes: ['feed_id', 'feed_name', 'feed_photo'],
             }],
             order: [['timestamp', 'ASC']]
-        });
-        const messagesData = messages.map(m => ({
-            messageId: m.message_id, 
-            senderId: m.sender_id,
-            messageContent: m.message_content,
-            timestamp: m.timestamp,
-        }));
-        res.json(messagesData);
+        });;
+        res.status(200).json(messages);
     } catch (error) {
         res.status(500).json({ success: false });
     }
@@ -221,7 +215,7 @@ router.get('/get_connections/:feedId', authenticateCheck, async (req, res) => {
                 ]
             },
             //More recent connections are first
-            order: [['connection_date', 'ASC']],
+            order: [['created_at', 'ASC']],
             include: [{
                 model: Feeds,
                 as: 'Feed1',
@@ -244,6 +238,7 @@ router.get('/get_connections/:feedId', authenticateCheck, async (req, res) => {
         //res.status(200).json(connections);
         res.status(200).json(filteredConnections);
     } catch (error) {
+        console.log("getting connections error:", error);
         res.status(500).json({ success: false });  
     }
 });
@@ -291,13 +286,13 @@ export const directMessagesSocket = (socket) => {
         socket.on('leave_chat', (chatId) => {
             socket.leave(chatId);
         });
-        socket.on('delete_message', async (data) => {
+        socket.on('delete_direct_message', async (data) => {
             const { message_id, channel_id } = data;
             await Messages.destroy({ where: { message_id } });
-            socket.to(channel_id).emit('delete_message', { message_id });
+            socket.to(channel_id).emit('delete_direct_message', { message_id });
         });
         socket.on('send_direct_message', async (message) => {
-            const messageLength = message.message_content.length;
+            const messageLength = message.content.length;
             if (messageLength === 0) {
                 socket.emit('error_message', { error: "Message too short" });
                 return;
@@ -307,9 +302,9 @@ export const directMessagesSocket = (socket) => {
             }
             const newMessage = await Messages.create({
                 message_id: message.message_id,
-                chat_id: message.chatId,
-                sender_id: message.senderId,
-                message_content: message.message_content,
+                chat_id: message.chat_id,
+                sender_id: message.sender_id,
+                content: message.content,
                 timestamp: message.timestamp
             });
             socket.to(message.chatId).emit('message_confirmed', {

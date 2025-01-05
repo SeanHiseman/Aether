@@ -21,7 +21,7 @@ app.use(express.static(join(__dirname, 'static')));
 const feedProfileUpload = imageUpload('/media/feed_images', 'new_feed_photo');
 
 const defaultImages = [process.env.DEFAULT_USER_IMAGE, process.env.DEFAULT_GROUP_IMAGE];
-const feedAttributes = ['feed_id', 'parent_id', 'feed_name', 'description', 'feed_photo', 'follower_count', 'date_created', 'type', 'is_group', 'feed_owner'];
+const feedAttributes = ['feed_id', 'parent_id', 'feed_name', 'description', 'feed_photo', 'follower_count', 'created_at', 'updated_at', 'type', 'is_group', 'feed_owner'];
 
 router.post('/add_feed_channel', authenticateCheck, async (req, res) => {
     try {
@@ -313,8 +313,9 @@ router.get('/feed_list/:followerId', async (req, res) => {
             ...feed.dataValues,
             link_type: feed.followedFeed.is_group ? 'g' : 'u', 
         }));
-        res.json(formattedFeeds);
+        res.status(200).json(formattedFeeds);
     } catch (error) {
+        console.log("feed_list error:", error);
         res.status(500).json({ success: false });
     }
 });
@@ -365,10 +366,11 @@ router.get('/get_feed_channels/:feedId', authenticateCheck, async (req, res) => 
                 as: 'feed',
                 attributes: feedAttributes,
             }],
-            order: [['date_created', 'ASC']]
+            order: [['created_at', 'ASC']]
         });
-        res.json({ success: true, channels });
+        res.status(200).json({ success: true, channels });
     } catch (error) {
+        console.log("feed channel error:", error);
         res.status(500).json({ success: false });
     }
 });
@@ -384,9 +386,9 @@ router.get('/get_feed_followers/:feedId', authenticateCheck, async (req, res) =>
                 required: true,
                 attributes: feedAttributes,
             }],
-            attributes: ['follow_id', 'follower_id', 'is_mod', 'is_admin', 'follow_date']
+            attributes: ['follow_id', 'follower_id', 'is_mod', 'is_admin', 'created_at']
         });
-        res.json({ success: true, followers });
+        res.status(200).json({ success: true, followers });
     } catch (error) {
         res.status(500).json({ success: false });
     }
@@ -400,7 +402,7 @@ router.post('/send_follow_request', authenticateCheck, async (req, res) => {
             sender_id: senderId,
             receiver_id: receiverId,
         });
-        res.json({ success: true });
+        res.status(200).json({ success: true });
     } catch (error) {
         res.status(500).send({ success: false });
     }
@@ -471,7 +473,7 @@ router.put('/update_feed_photo/:feedId', authenticateCheck, async (req, res) => 
             };
             feed.feed_photo = newPhotoPath;
             await feed.save();
-            return res.json({ newPhotoPath: newPhotoPath });
+            return res.status(200).json({ newPhotoPath: newPhotoPath });
         } catch (error) {
             res.status(500).json({ success: false });
         };
@@ -505,7 +507,7 @@ router.post('/update_current_feed', async (req, res) => {
             return res.status(404).json({ success: false });
         }
         req.session.feed_id = feed_id;
-        res.json({ success: true, currentFeed: req.session.feed_id });
+        res.status(200).json({ success: true, currentFeed: req.session.feed_id });
     } catch (error) {
         res.status(500).json({ success: false });
     }
@@ -516,10 +518,10 @@ export const feedChatChannelSocket = (socket) => {
         socket.on('join_channel', (channelId) => {
             socket.join(channelId);
         });
-        socket.on('delete_message', async (data) => {
+        socket.on('delete_feed_message', async (data) => {
             const { message_id, channel_id } = data;
-            await FeedMessages.destroy({ where: { message_id } });
-            socket.to(channel_id).emit('delete_message', { message_id });
+            await FeedChannelMessages.destroy({ where: { message_id } });
+            socket.to(channel_id).emit('delete_feed_message', { message_id });
         });
         socket.on('send_feed_message', async (message) => {
             const messageLength = message.message_content.length;
@@ -530,7 +532,7 @@ export const feedChatChannelSocket = (socket) => {
                 socket.emit('error_message', { error: "Message too long" });
                 return;
             }
-            const newMessage = await FeedMessages.create({
+            const newMessage = await FeedChannelMessages.create({
                 message_id: message.message_id,
                 feed_id: message.feedId,
                 channel_id: message.channelId,

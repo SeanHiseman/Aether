@@ -1,24 +1,9 @@
 @import url('variables.css');
-.fade-in {
-    animation: fadeIn 0s ease-in-out forwards;
-}
-.fade-out {
-    animation: fadeOut 0s ease-in-out forwards;
-}
-#add-chat-form {
-    align-items: center;
-    background-color: var(--dark);
-    border-radius: 10px;
+.channel-content.messages, .messages-section {
     display: flex;
     flex-direction: column;
-    justify-content: flex-start;
-    margin: 10px;
-    opacity: 0;
-    padding: 5px;
+    height: 100%;
     width: 100%;
-}
-.channel-content.messages {
-    flex-direction: column-reverse;
 }
 #chat-change, #chat-name {
     display: flex;
@@ -35,6 +20,7 @@
     border: 1px solid var(--border);
     border-radius: 20px;
     color: var(--border);
+    flex: 1;
     font-size: large;
     margin: 10px;
     min-height: 40px;
@@ -64,20 +50,7 @@
     background-color: var(--border);
     border-top: 1px solid var(--darkest);
 }
-.chat-feedname {
-    margin-left: 10px;
-    margin-top: 20px;
-    text-align: center;
-}
-.connection-chat-box{
-    border-color: var(--darkest);
-    border-width: 2px;
-    width: 100%;
-    margin: 10px;
-    border-radius: 10px;
-    cursor: pointer;
-}
-.dropdown-container{
+.dropdown-container {
     position: relative;
 }
 .input {
@@ -86,10 +59,6 @@
     margin-right: 5px;
     border: 1px solid var(--darkest);
     border-radius: 20px;
-}
-.messages-container {
-    position: relative;
-    flex-grow: 0;
 }
 #messages-button {
     border: none;
@@ -101,6 +70,14 @@
     padding: 8px;
     transition: var(--transition-regular);
 }
+.messages-container {
+    position: relative;
+    flex-grow: 0;
+}
+.messages-feed {
+    flex: 1;
+    overflow-y: auto;
+}
 .message {
     border-radius: 10px;
     margin: 5px;
@@ -109,16 +86,15 @@
 .message-content {
     align-items: center;
     display: flex;
-    justify-content: space-between;
 }
 .messages-channel-footer {
     align-items: center;
     background-color: var(--darkest);
-    bottom: 0;
+    box-sizing: border-box;
     display: flex;
+    flex-shrink: 0;
     height: 80px;
     justify-content: center;
-    position: sticky;
     width: 100%;
 }
 .message.incoming {
@@ -128,7 +104,7 @@
     background-color: var(--button-hover);
 }
 .message-container {
-    margin: 10px;
+    margin: 5px;
     max-width: 70%;
 }
 .message-container.incoming {
@@ -139,14 +115,14 @@
 }
 .message-date {
     font-size: small;  
-}
-.message-date.incoming {
     margin: 0;
 }
-.message-date.outgoing {
-    margin: 0 10px
+.messages-feed {
+    display: flex;
+    flex-direction: column;
 }
-.right-aside-list {
-    justify-content: center;
-    width: 80%;
+.messages-list-container {
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
 }

@@ -1,4 +1,4 @@
-import { BOOLEAN, STRING, DATE, INTEGER, TEXT, NOW } from 'sequelize';
+import { BOOLEAN, STRING, DataTypes, INTEGER, TEXT } from 'sequelize';
 import sequelize from '../databaseSetup.js';
 
 const Posts = sequelize.define('posts', {
@@ -12,7 +12,7 @@ const Posts = sequelize.define('posts', {
     views: { type: INTEGER, allowNull: false, defaultValue: 0 },
     upvotes: { type: INTEGER, allowNull: false, defaultValue: 0 },
     downvotes: { type: INTEGER, allowNull: false, defaultValue: 0 },
-    timestamp: { type: DATE, defaultValue: NOW },
+    timestamp: { type: DataTypes.DATE(3), defaultValue: sequelize.literal('CURRENT_TIMESTAMP(3)') },
     poster_id: { type: STRING(36), allowNull: false },
     points: { type: INTEGER, allowNull: false, defaultValue: 0 },
 }, { tableName: 'posts', timestamps: false });
@@ -21,7 +21,7 @@ const PostNotes = sequelize.define('post_notes', {
     note_id: { type: STRING(36), primaryKey: true },
     post_id: { type: STRING(36), allowNull: false, references: { model: 'posts', key: 'post_id' }},
     note_content: { type: STRING(1000), allowNull: false },
-    timestamp: { type: DATE, defaultValue: NOW },
+    timestamp: { type: DataTypes.DATE(3), defaultValue: sequelize.literal('CURRENT_TIMESTAMP(3)') },
     is_misinfo: { type: BOOLEAN, defaultValue: false},
 }, { tableName: 'post_notes', timestamps: false });
 
@@ -30,6 +30,8 @@ const PostVotes = sequelize.define('post_votes', {
     content_id: { type: STRING(36), allowNull: false },
     voter_id: { type: STRING(36), allowNull: false },
     vote_count: {type: INTEGER, defaultValue: 0},
+    created_at: { type: DataTypes.DATE(3), defaultValue: sequelize.literal('CURRENT_TIMESTAMP(3)') },
+    updated_at: { type: DataTypes.DATE(3), allowNull: false, defaultValue: sequelize.literal('CURRENT_TIMESTAMP(3)') },
 }, { tableName: 'post_votes', timestamps: false });
 
 export {

@@ -160,7 +160,6 @@ router.post('/generate_content', authenticateCheck, async (req, res) => {
         //console.log("aiReply:", aiReply);
         res.status(201).json({ success: true, generatedContent: aiReply });
     } catch (error) {
-        console.log(error);
         res.status(500).json({ success: false });
     }
 });
