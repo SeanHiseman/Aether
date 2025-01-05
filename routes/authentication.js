@@ -37,7 +37,7 @@ router.get('/check_authentication', async (req, res) => {
         if (!req.session.feed_id) {
             req.session.feed_id = feeds[0].feed_id; 
         }
-        res.json({
+        res.status(200).json({
             authenticated: true,
             feeds,
             user,
@@ -66,9 +66,9 @@ router.delete('/delete_account', authenticateCheck, async (req, res) => {
         await Feeds.destroy({ where: { feed_owner: userId } });
         await Users.destroy({ where: { userId } });
         res.clearCookie('sid');
-        return res.json({ success: true });
+        return res.status(200).json({ success: true });
     } catch (error) {
-        return res.json({ success: false });
+        return res.status(500).json({ success: false });
     }
 });
 
@@ -98,7 +98,7 @@ router.post('/join', async (req, res) => {
         await FeedChannels.create({
             channel_id, channel_name: 'Main', feed_id
         });
-        res.json({ success: true });
+        res.status(200).json({ success: true });
     } catch (error) {
         res.status(500).json({ success: false });
     }

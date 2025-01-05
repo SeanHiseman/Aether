@@ -1,4 +1,4 @@
-import { BOOLEAN, STRING, DATE, INTEGER, TEXT, NOW } from 'sequelize';
+import { BOOLEAN, DataTypes, STRING, INTEGER, TEXT } from 'sequelize';
 import sequelize from '../databaseSetup.js';
 import { Users } from "./users.js";
 
@@ -9,8 +9,8 @@ const Feeds = sequelize.define('feeds', {
     description: { type: STRING(1000), allowNull: true },
     feed_photo: { type: TEXT, allowNull: true },
     follower_count: { type: INTEGER, defaultValue: 0 },
-    date_created: { type: DATE, defaultValue: NOW },
-    updated_at: { type: DATE, defaultValue: NOW },
+    created_at: { type: DataTypes.DATE(3), defaultValue: sequelize.literal('CURRENT_TIMESTAMP(3)') },
+    updated_at: { type: DataTypes.DATE(3), defaultValue: sequelize.literal('CURRENT_TIMESTAMP(3)') },
     type: { type: STRING(10), defaultValue: 'public' },
     is_group: { type: BOOLEAN, defaultValue: false },
     feed_owner: { type: STRING(36), allowNull: false, references: { model: Users, key: 'user_id' } },
@@ -23,8 +23,8 @@ const FeedChannels = sequelize.define('feed_channels', {
     feed_id: { type: STRING(36), allowNull: false }, 
     is_posts: { type: BOOLEAN, defaultValue: true},
     is_chat: { type: BOOLEAN, defaultValue: true},
-    date_created: { type: DATE, defaultValue: NOW },
-    updated_at: { type: DATE, defaultValue: NOW }
+    created_at: { type: DataTypes.DATE(3), defaultValue: sequelize.literal('CURRENT_TIMESTAMP(3)') },
+    updated_at: { type: DataTypes.DATE(3), defaultValue: sequelize.literal('CURRENT_TIMESTAMP(3)') }
 }, { tableName: 'feed_channels', timestamps: false }); 
 
 const FeedChannelMessages = sequelize.define('feed_channel_messages', { 
@@ -32,7 +32,7 @@ const FeedChannelMessages = sequelize.define('feed_channel_messages', {
     message_content: { type: STRING(1000), allowNull: false }, 
     feed_id: { type: STRING(36), allowNull: false},
     channel_id: { type: STRING(36), allowNull: false }, 
-    timestamp: { type: DATE, defaultValue: NOW },
+    timestamp: { type: DataTypes.DATE(3), defaultValue: sequelize.literal('CURRENT_TIMESTAMP(3)') },
     sender_id: { type: STRING(36), allowNull: false}
 }, { tableName: 'feed_channel_messages', timestamps: false }); 
   
@@ -42,14 +42,15 @@ const Followers = sequelize.define('followers', {
     feed_id: { type: STRING(36), allowNull: false },
     is_mod: { type: BOOLEAN, defaultValue: false },
     is_admin: { type: BOOLEAN, defaultValue: false },
-    follow_date: { type: DATE, defaultValue: NOW }
+    created_at: { type: DataTypes.DATE(3), defaultValue: sequelize.literal('CURRENT_TIMESTAMP(3)') },
+    updated_at: { type: DataTypes.DATE(3), defaultValue: sequelize.literal('CURRENT_TIMESTAMP(3)') }
 }, { tableName: 'followers', timestamps: false });
 
 const FollowRequests = sequelize.define('follow_requests', {
     request_id: { type: STRING(36), primaryKey: true },
     sender_id: { type: STRING(36), allowNull: false},
     receiver_id: { type: STRING(36), allowNull: false},
-    timestamp: { type: DATE, defaultValue: NOW }
+    timestamp: { type: DataTypes.DATE(3), defaultValue: sequelize.literal('CURRENT_TIMESTAMP(3)') }
 }, { tableName: 'follow_requests', timestamps: false });
 
 const NestedFeeds = sequelize.define('nested_feeds', { //Many-to-many relationship between feeds

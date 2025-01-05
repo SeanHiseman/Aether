@@ -8,6 +8,27 @@ const Message = ({ canRemove, deleteMessage, message, isOutgoing }) => {
         canRemove = true;
     };
 
+    const isToday = (timestamp) => {
+        const messageDate = new Date(timestamp);
+        const today = new Date();
+        return (
+            messageDate.getDate() === today.getDate() &&
+            messageDate.getMonth() === today.getMonth() && 
+            messageDate.getFullYear() === today.getFullYear()
+        );
+    };
+
+    const formatTimestamp = (timestamp) => {
+        const date = new Date(timestamp);
+        if (isToday(timestamp)) {
+            //Format as hour and minute e.g. 22:36
+            return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        } else {
+            //Format as date: e.g., 13/10/2024
+            return date.toLocaleDateString();
+        }
+    };
+
     return (
         <div className={`message-container ${isOutgoing ? 'outgoing' : 'incoming'}`}>
             <div className="message-content">
@@ -20,10 +41,13 @@ const Message = ({ canRemove, deleteMessage, message, isOutgoing }) => {
                     <button className="button" onClick={() => deleteMessage(message.message_id)}>-</button>
                 ) : null}
                 <div className={`message ${isOutgoing ? 'outgoing' : 'incoming'}`}>
-                    <ContentDisplay content={message.content}/>
+                    {message.content}
+                    {/*<ContentDisplay content={message.content}/>*/}
                 </div>
             </div>
-            <p className={`message-date ${isOutgoing ? 'outgoing' : 'incoming'}`}>{new Date(message.timestamp).toLocaleDateString()}</p>
+            <p className={`message-date ${isOutgoing ? 'outgoing' : 'incoming'}`}>
+                {formatTimestamp(message.timestamp)}
+            </p>
         </div>
     );
 };

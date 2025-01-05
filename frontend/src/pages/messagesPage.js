@@ -20,11 +20,13 @@ const MessagesPage = () => {
     const [errorMessage, setErrorMessage] = useState('');
     const [isEditingChatName, setIsEditingChatName] = useState(false);
     const [message, setMessage] = useState('');
+    const messagesContainerRef = useRef(null);
+    const messagesEndRef = useRef(null);
     const [newChatName, setNewChatName] = useState('');
     const [selectedChatId, setSelectedChatId] = useState(null);
     const [showForm, setShowForm] = useState(false);
     const socketRef = useRef(null);
-    const { user, viewer } = useContext(AuthContext)
+    const { viewer } = useContext(AuthContext)
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -77,8 +79,8 @@ const MessagesPage = () => {
                 setChat(prevChat =>
                     prevChat.map(msg => 
                         msg.message_id === undefined &&
-                        msg.senderId === message.senderId &&
-                        msg.message_content === message.message_content
+                        msg.sender_id === message.sender_id &&
+                        msg.content === message.content
                             ? { ...msg, message_id: message.message_id }
                             : msg
                     )
@@ -103,7 +105,17 @@ const MessagesPage = () => {
         } 
     }, [connection_name]);
 
-    //Either user can change chat name
+    //Auto-scroll to bottom when chat updates
+    useEffect(() => {
+        if (messagesContainerRef.current) {
+            messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
+        }
+        if (messagesEndRef.current) {
+            messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+        }
+    }, [chat]);
+
+    //Either participant can change chat name
     const changeChatName = async (event) => {
         event.preventDefault();
         try {
@@ -203,7 +215,7 @@ const MessagesPage = () => {
 
     const deleteMessage = (messageId) => {
         if (messageId) {
-            socketRef.current.emit('delete_message', {
+            socketRef.current.emit('delete_direct_message', {
                 message_id: messageId,
                 channel_id: selectedChatId,
             });
@@ -240,9 +252,9 @@ const MessagesPage = () => {
             //Emits new message to server
             const newMessage = {
                 message_id: v4(),
-                message_content: message,
-                senderId: user.userId,
-                chatId: selectedChatId,
+                content: message,
+                sender_id: viewer.feed_id,
+                chat_id: selectedChatId,
                 timestamp: Date.now()
             };
             socketRef.current.emit('send_direct_message', newMessage);
@@ -284,17 +296,35 @@ const MessagesPage = () => {
                             ))}
                         </ul>
                     ) : (
-                        <>
-                            {connection_name && selectedChatId && (
-                                chat.slice().reverse().map((msg, index) => (
-                                    <Message key={index} canRemove={false} deleteMessage={deleteMessage} message={msg} isOutgoing={msg.senderId === user.userId} />
-                                ))
-                            )}
+                        <div className="messages-section">
+                            <div className="messages-list-container" ref={messagesContainerRef}>
+                                {connection_name && selectedChatId && (
+                                    <>
+                                        {chat.map((msg, index) => (
+                                            <Message
+                                                key={msg.message_id || index}
+                                                canRemove={false}
+                                                deleteMessage={deleteMessage}
+                                                message={msg}
+                                                isOutgoing={msg.sender_id === viewer.feed_id}
+                                            />
+                                        ))}
+                                        <div ref={messagesEndRef} />
+                                    </>
+                                )}
+                            </div>
                             <div className="messages-channel-footer">
-                                <input className="chat-message-bar" type="text" value={message} onChange={(e) => setMessage(e.target.value)} placeholder="Type a message..." onKeyDown={(e) => e.key === 'Enter' && sendMessage()}/>
+                                <input
+                                    className="chat-message-bar"
+                                    type="text"
+                                    value={message}
+                                    onChange={(e) => setMessage(e.target.value)}
+                                    placeholder="Type a message..."
+                                    onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
+                                />
                                 <button className="chat-send-button" onClick={sendMessage}>Send</button>
                             </div>
-                        </>
+                        </div>
                     )}
                 </div>
             </div>
