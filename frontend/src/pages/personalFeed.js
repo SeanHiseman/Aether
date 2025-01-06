@@ -49,7 +49,7 @@ const PersonalFeed = () => {
 
     document.title = `${feed_name}`;
     return (
-        <div className="home-container">
+        <div className="standard-container">
             <div className="content-feed">
                 <div className="channel-content">
                     {posts.length > 0 ? (

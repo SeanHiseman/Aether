@@ -219,7 +219,7 @@ const FeedHome = () => {
         );
     }
     return (    
-        <div className="feed-container">  
+        <div className="standard-container">  
             <div className="channel-feed">
                 {showPostForm ? (
                     <ContentForm 

@@ -2,9 +2,9 @@ import axios from 'axios';
 import { FaUserMinus, FaUserPlus } from 'react-icons/fa';
 import React, { useState } from 'react';
 
-const ManageConnectionButton = ({ feed, viewerId, onRequestUpdate }) => {
+const ManageConnectionButton = ({ feed, isConnected, viewerId, onRequestUpdate }) => {
     const [errorMessage, setErrorMessage] = useState('');
-    const [hasConnection, setHasConnection] = useState(feed.isConnected);
+    const [hasConnection, setHasConnection] = useState(isConnected || feed.isConnected);
     const [request, setRequest] = useState(feed.connectRequest);
     const senderId = request?.sender_id || viewerId;
     const receiverId = request?.receiver_id || feed?.feed_id;

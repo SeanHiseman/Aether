@@ -174,31 +174,46 @@ router.get('/get_chat_messages/:chatId', authenticateCheck, async (req, res) => 
 
 router.get('/get_chats/:feedId', authenticateCheck, async (req, res) => {
     try {
-        const feedId = req.params;
+        const viewerFeedId = req.params.feedId;
         const { connectionName } = req.query;
-        const whereName = connectionName ? { feed_name: connectionName } : {};
-        const feedChats = await Chats.findAll({
-            include: [{
-                model: Feeds, 
-                as: 'feeds',
-                attributes: feedAttributes,
-                where: whereName,
-                through: { attributes: [] },
-            }],
+        const connectionFeed = await Feeds.findOne({
+            where: { feed_name: connectionName },
+            attributes: feedAttributes
+        });
+        if (!connectionFeed) {
+            return res.status(404).json({ success: false, message: 'Connection not found' });
+        }
+        const connectionFeedId = connectionFeed.feed_id;
+        const chatsWithViewerFeed = await FeedChats.findAll({
             where: {
-                '$feeds.feed_id$': feedId
+                feed_id: viewerFeedId
             },
-            order: [['updated_at', 'ASC']],
-            distinct: true
+            attributes: ['chat_id']
         });
-        const result = feedChats.map(chat => {
-            const otherFeeds = chat.feeds.filter(feed => feed.feed_id !== feedId);
-            return {
-                ...chat.toJSON(),
-                feeds: otherFeeds,
-            }
+        const chatIdsWithViewerFeed = chatsWithViewerFeed.map(chat => chat.chat_id);
+        const chatsWithConectionFeed = await FeedChats.findAll({
+            where: {
+                feed_id: connectionFeedId
+            },
+            attributes: ['chat_id']
         });
-        res.status(200).json(result);
+        const chatIdsWithConnectionFeed = chatsWithConectionFeed.map(chat => chat.chat_id);
+        const chatIds = chatIdsWithViewerFeed.filter(chatId => 
+            chatIdsWithConnectionFeed.includes(chatId)
+        );
+        if (chatIds.length === 0) {
+            return res.json({ success: true, chats: [], connection: connectionFeed });
+        }
+        const chatDetails = await Chats.findAll({
+            where: { chat_id: { [Op.in]: chatIds } },
+            attributes: ['chat_id', 'title', 'created_at', 'updated_at'],
+            order: [['updated_at', 'DESC']] 
+        });
+        return res.status(200).json({
+            success: true,
+            chats: chatDetails,
+            connection: connectionFeed
+        });
     } catch (error) {
         res.status(500).json({ success: false });
     }
@@ -310,6 +325,10 @@ export const directMessagesSocket = (socket) => {
                 content: message.content,
                 timestamp: message.timestamp
             });
+            await Chats.update(
+                { updated_at: message.timestamp || new Date() },  
+                { where: { chat_id: message.chat_id } }
+            );
             socket.to(message.chatId).emit('message_confirmed', {
                 ...message,
                 message_id: newMessage.message_id,

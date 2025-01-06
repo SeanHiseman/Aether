@@ -76,7 +76,7 @@ const FeedSettings = () => {
 
     document.title = "Settings";
     return (
-        <div className="feed-container">  
+        <div className="standard-container">  
             <div className="settings-area">
                 {renderComponent()}
             </div>  

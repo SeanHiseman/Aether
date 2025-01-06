@@ -92,7 +92,7 @@ const SearchResults = () => {
 
     document.title = 'Search';
     return (
-        <div className="results-container">
+        <div className="standard-container">
             <div className="content-feed">
                 <div className="channel-content">
                     <ul className="content-list">

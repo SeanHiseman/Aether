@@ -15,7 +15,8 @@ import FeedWrapper from './pages/feeds/feedWrapper';
 import Join from './pages/site_entrance/join';
 import Login from './pages/site_entrance/login';
 import Membership from './pages/welcome/membership';
-import MessagesPage from './pages/messagesPage';
+import ChatPage from './pages/connections/chatPage';
+import ConnectionsPage from './pages/connections/connectionsPage';
 import PersonalFeed from './pages/personalFeed';
 import Privacy from './pages/welcome/privacy';
 import { QueryProvider } from './components/search/queryContext';
@@ -55,12 +56,9 @@ const App = () => {
                                     </Route>
                                 </Route>
                                 <Route path="feed_settings/:feed_name" element={<FeedSettings />} />
-                                <Route path="messages" element={<MessagesPage />} >
-                                    <Route path=":connection_name" element={<MessagesPage />} >
-                                        <Route index element={<Navigate replace to="Main" />} />
-                                        <Route path=":title" element={<MessagesPage />} />
-                                    </Route>
-                                </Route>
+                                <Route path="connections" element={<ConnectionsPage />} />
+                                <Route path="connections/:connection_name" element={<ChatPage />} />
+                                <Route path="connections/:connection_name/:title" element={<ChatPage />} />
                                 <Route path="p/:feed_name" element={<PersonalFeed/>} />
                                 <Route path="search" element={<SearchResults />} />
                                 <Route path="u/:feed_name" element={<FeedWrapper />}>

@@ -210,13 +210,6 @@
 .file-name {
     margin: 10px;
 }
-.feed-container, .home-container, .messages-container, .results-container {
-    align-items: stretch;
-    display: flex;
-    flex-direction: row;
-    flex-grow: 1;
-    height: calc(100vh - 80px);
-}
 .icon-button {
     border: none;
     background-color: var(--darkest);
@@ -379,6 +372,13 @@ main {
 }
 .spacer20px {
     height: 20px;
+}
+.standard-container {
+    align-items: stretch;
+    display: flex;
+    flex-direction: row;
+    flex-grow: 1;
+    height: calc(100vh - 80px);
 }
 .standard-icon {
     height: 30px;

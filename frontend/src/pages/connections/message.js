@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import ContentDisplay from './content/contentDisplay';
+//import ContentDisplay from './content/contentDisplay';
 
 const Message = ({ canRemove, deleteMessage, message, isOutgoing }) => {
     //Users can delete their own messages

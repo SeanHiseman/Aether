@@ -13,6 +13,7 @@
     align-items: center;
     display: flex;
     justify-content: center;
+    margin-bottom: 6px;
     text-decoration: none;
 }
 .chat-message-bar {
@@ -50,6 +51,12 @@
     background-color: var(--border);
     border-top: 1px solid var(--darkest);
 }
+.connections-feed {
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    width: 100%
+}
 .dropdown-container {
     position: relative;
 }
@@ -69,14 +76,6 @@
     margin-right: 5%;
     padding: 8px;
     transition: var(--transition-regular);
-}
-.messages-container {
-    position: relative;
-    flex-grow: 0;
-}
-.messages-feed {
-    flex: 1;
-    overflow-y: auto;
 }
 .message {
     border-radius: 10px;
@@ -116,10 +115,6 @@
 .message-date {
     font-size: small;  
     margin: 0;
-}
-.messages-feed {
-    display: flex;
-    flex-direction: column;
 }
 .messages-list-container {
     display: flex;
