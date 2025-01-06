@@ -100,6 +100,7 @@ const FeedHome = () => {
                 setChannels(updatedChannels);
                 setFeedErrorMessage('');
                 setNewChannelName('');
+                setShowChannelForm(false);
                 navigate(`/${urlLetter}/${feed_name}/${channelName}`);
             } else {
                 setFeedErrorMessage('Failed to add channel');
@@ -335,16 +336,18 @@ const FeedHome = () => {
                         )}
                     </div>
                 )}
-                {!showPostForm && channelMode === 'post' && (
-                    <button className="small-icon" 
-                        onClick={() => {
-                            setIsEdit(false); 
-                            setPostToEdit(null); 
-                            setShowPostForm(true);
-                        }}>
-                            <FaFeatherAlt />
-                            <p className="icon-text">Add Post</p>
-                    </button>
+                {(feed.is_group || user.user_id === feed.feed_owner) && (
+                    !showPostForm && channelMode === 'post' && (
+                        <button className="small-icon" 
+                            onClick={() => {
+                                setIsEdit(false); 
+                                setPostToEdit(null); 
+                                setShowPostForm(true);
+                            }}>
+                                <FaFeatherAlt />
+                                <p className="icon-text">Add Post</p>
+                        </button>
+                    )
                 )}
                 {channelRender && channelRender.is_posts && channelRender.is_chat && (
                     <div className="option-toggle">
