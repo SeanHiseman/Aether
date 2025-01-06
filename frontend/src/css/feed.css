@@ -2,6 +2,7 @@
 .button-group {
     display: flex;
     gap: 8px; 
+    justify-content: center;
     margin-left: 10px;
 }
 .channel {

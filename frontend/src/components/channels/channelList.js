@@ -1,27 +1,33 @@
 import axios from 'axios';
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useContext, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { AuthContext } from '../../components/authContext';
 import FeedItem from './feedItem';
 
 const ChannelList = ({ channels, feedId, feedName, isChat, isGroup, setChannels }) => {
     const [errorMessage, setErrorMessage] = useState('');
     const [subFeeds, setSubFeeds] = useState([]);
     const urlLetter = isGroup ? 'g' : 'u';
+    const { viewer } = useContext(AuthContext);
 
     const getFeedChannels = useCallback(async () => {
         try {
-            if (!isChat) {
-                const response = await axios.get(`/api/get_feed_channels/${feedId}`);
-                setChannels(response.data.channels);
-            } else {
-                const response = await axios.get(`/api/get_chats/${feedId}`);
-                setChannels(response.data);
+            if (!channels || channels.length === 0) {
+                if (!isChat) {
+                    const response = await axios.get(`/api/get_feed_channels/${feedId}`);
+                    setChannels(response.data.channels);
+                } else {
+                    const response = await axios.get(`/api/get_chats/${viewer.feed_id}`, {
+                        params: { connectionName: feedName }
+                    });
+                    setChannels(response.data.chats);
+                }
             }
         } catch (error) {
             setErrorMessage('Error getting channels');
             setChannels([]);
         }
-    }, [feedId, setChannels]);
+    }, [feedId, setChannels, viewer]);
 
     useEffect(() => {
         getFeedChannels();
@@ -71,7 +77,7 @@ const ChannelList = ({ channels, feedId, feedName, isChat, isGroup, setChannels 
                 <ul>
                     {channels.map(channel => (
                         <li key={channel.chat_id} className="channel-item">
-                            <Link to={`/messages/${feedName}/${channel.title}`}>
+                            <Link to={`/connections/${feedName}/${channel.title}`}>
                                 <div className="channel-link">{channel.title}</div>
                             </Link>
                         </li>

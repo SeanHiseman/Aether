@@ -3,7 +3,7 @@ import React, { useContext, useEffect, useState } from 'react';
 import { AuthContext } from '../authContext';
 import { io } from "socket.io-client";
 import { v4 } from 'uuid';
-import Message from '../message';
+import Message from '../../pages/connections/message';
 
 const ChatChannel = ({ canRemove, channelId, isGroup, locationId }) => {
     const [channel, setChannel] = useState([]);

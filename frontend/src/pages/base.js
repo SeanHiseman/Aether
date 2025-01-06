@@ -217,7 +217,7 @@ const BaseLayout = () => {
                             <p>Followed feeds are shown here</p>
                         ) : (
                             feeds.map((feed) => (
-                                <FeedItem key={feed.feed_id} feedId={feed.feed_id} name={feed.followedFeed.feed_name} photo={feed.followedFeed.feed_photo} linkType={feed.link_type} link={`/${feed.link_type}/${feed.followedFeed.feed_name}/Main`} />
+                                <FeedItem key={feed.feed_id} feedId={feed.feed_id} isChat={false} linkType={feed.link_type} name={feed.followedFeed.feed_name} photo={feed.followedFeed.feed_photo} />
                             ))
                         )}
                     </ul>
@@ -226,8 +226,8 @@ const BaseLayout = () => {
             <main>
                 <header id="base-header">
                     <div className="spacer"></div>
-                        <form id="search-form" onSubmit={(e) => {
-                            e.preventDefault();
+                        <form id="search-form" onSubmit={(event) => {
+                            event.preventDefault();
                             handleSearchClick();
                         }}>
                             <div className="search-container">
@@ -241,7 +241,7 @@ const BaseLayout = () => {
                             </div>
                         </form>
                 <div className="spacer"></div>
-                <Link id="messages-button" to={`/messages`}>
+                <Link id="messages-button" to={`/connections`}>
                     <FaCommentDots />
                 </Link>
                 </header>
