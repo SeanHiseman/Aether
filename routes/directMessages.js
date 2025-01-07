@@ -121,24 +121,24 @@ router.delete('/delete_connection', authenticateCheck, async (req, res) => {
                 ]
             }
         });
-        const chats = await Chats.findAll({
-            include: [{
-                model: FeedChats,
-                where: { 
-                    [Op.or]: [
-                        { feed_id: deleterId },
-                        { feed_id: feedId }
-                    ]
-                }
-            }]
+        const feedChats = await FeedChats.findAll({
+            where: {
+                [Op.or]: [
+                    { feed_id: deleterId },
+                    { feed_id: feedId }
+                ]
+            }
         });
-        for (const chat of chats) {
+        const chatIds = feedChats.map(fc => fc.chat_id);
+        if (chatIds.length > 0) {
             await Messages.destroy({
-                where: { chat_id: chat.chat_id }
+                where: {
+                    chat_id: chatIds
+                }
             });
             await FeedChats.destroy({
                 where: {
-                    chat_id: chat.chat_id,
+                    chat_id: chatIds,
                     [Op.or]: [
                         { feed_id: deleterId },
                         { feed_id: feedId }
@@ -146,7 +146,9 @@ router.delete('/delete_connection', authenticateCheck, async (req, res) => {
                 }
             });
             await Chats.destroy({
-                where: { chat_id: chat.chat_id }
+                where: {
+                    chat_id: chatIds
+                }
             });
         }
         res.status(200).json({ success: true });

@@ -41,7 +41,7 @@ const ConnectRequests = ({ feed }) => {
                                     <img className="large-feed-photo" src={`/${request.sender.feed_photo}`} alt="Profile" />
                                     <p className="text36 feed-name">{request.sender.feed_name}</p>
                                 </Link>
-                                <ManageConnectionButton connectRequest={request} feed={feed} isConnected={false} viewerId={feed.feed_id} onRequestUpdate={handleRequestUpdate} />
+                                <ManageConnectionButton connectRequest={request} feed={request.sender} isConnected={false} viewerId={feed.feed_id} onRequestUpdate={handleRequestUpdate} />
                             </div>
                         </li>
                     ))}
