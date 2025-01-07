@@ -78,10 +78,10 @@ const ContentWidget = ({ canRemove: canRemoveProp, feed, isGroup, onEditClick, o
         checkVoteLimit();
     }, [viewer.feed_id, post.post_id]);
 
-    //Adds a view to the post
+    //Adds a view to the post if not viewing own post and haven't already viewed
     const incrementViews = useCallback(async (postId) => {
         try {
-            if (hasViewed === false) {
+            if (hasViewed === false && viewer.feed_id !== post.poster_id) {
                 const response = await axios.post('/api/increment_views', { postId });
                 if (response.data.success) {
                     setViews((prev) => prev + 1);
@@ -91,7 +91,7 @@ const ContentWidget = ({ canRemove: canRemoveProp, feed, isGroup, onEditClick, o
         } catch (error) {
             setPostErrorMessage("Error incrementing views");
         }
-    }, [hasViewed, views]);
+    }, [hasViewed, views, viewer.feed_id, post.poster_id]);
 
     //Allows React Quill to display videos
     //const BlockEmbed = Quill.import('blots/block/embed');
