@@ -2,10 +2,10 @@ import axios from 'axios';
 import { FaUserMinus, FaUserPlus } from 'react-icons/fa';
 import React, { useState } from 'react';
 
-const ManageConnectionButton = ({ feed, isConnected, viewerId, onRequestUpdate }) => {
+const ManageConnectionButton = ({ connectRequest, feed, isConnected, viewerId, onRequestUpdate }) => {
     const [errorMessage, setErrorMessage] = useState('');
     const [hasConnection, setHasConnection] = useState(isConnected || feed.isConnected);
-    const [request, setRequest] = useState(feed.connectRequest);
+    const [request, setRequest] = useState(connectRequest || feed.connectRequest);
     const senderId = request?.sender_id || viewerId;
     const receiverId = request?.receiver_id || feed?.feed_id;
 
@@ -38,6 +38,7 @@ const ManageConnectionButton = ({ feed, isConnected, viewerId, onRequestUpdate }
                 if (method === 'delete') {
                     setHasConnection(false);
                     setRequest(false);
+                    onRequestUpdate(feed.feed_id);
                 } else {
                     setRequest(true);
                     setHasConnection(false);

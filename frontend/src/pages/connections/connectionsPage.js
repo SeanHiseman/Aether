@@ -24,6 +24,12 @@ const ConnectionsPage = () => {
         getConnections();
     }, [viewer.feed_id]);
 
+    const handleConnectionRemoval = (feedId) => {
+        setConnections((prevConnections) => 
+            prevConnections.filter((connection) => connection.feed_id !== feedId)
+        );
+    };
+
     document.title = "Connections";
     return (
         <div className="standard-container">
@@ -39,7 +45,7 @@ const ConnectionsPage = () => {
                                         <p className="text36 feed-name">{c.feed_name}</p>
                                     </Link>
                                     <div className="remove-connection-box">
-                                        <ManageConnectionButton connectRequest={false} feed={c} isConnected={true} viewerId={viewer.feed_id} />
+                                        <ManageConnectionButton connectRequest={false} feed={c} isConnected={true} viewerId={viewer.feed_id} onRequestUpdate={handleConnectionRemoval} />
                                     </div>
                                 </div>
                             </li>
