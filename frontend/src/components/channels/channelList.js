@@ -12,16 +12,15 @@ const ChannelList = ({ channels, feedId, feedName, isChat, isGroup, setChannels 
 
     const getFeedChannels = useCallback(async () => {
         try {
-            if (!channels || channels.length === 0) {
-                if (!isChat) {
-                    const response = await axios.get(`/api/get_feed_channels/${feedId}`);
-                    setChannels(response.data.channels);
-                } else {
-                    const response = await axios.get(`/api/get_chats/${viewer.feed_id}`, {
-                        params: { connectionName: feedName }
-                    });
-                    setChannels(response.data.chats);
-                }
+            if (!isChat) {
+                const response = await axios.get(`/api/get_feed_channels/${feedId}`);
+                console.log("response.data.channels:", response.data.channels);
+                setChannels(response.data.channels);
+            } else {
+                const response = await axios.get(`/api/get_chats/${viewer.feed_id}`, {
+                    params: { connectionName: feedName }
+                });
+                setChannels(response.data.chats);
             }
         } catch (error) {
             setErrorMessage('Error getting channels');
@@ -30,8 +29,9 @@ const ChannelList = ({ channels, feedId, feedName, isChat, isGroup, setChannels 
     }, [feedId, setChannels, viewer]);
 
     useEffect(() => {
+        setChannels([]);
         getFeedChannels();
-    }, [getFeedChannels]);
+    }, [feedId, getFeedChannels]);
 
     //Fetch subfeeds
     //useEffect(() => {
