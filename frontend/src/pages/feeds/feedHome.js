@@ -270,7 +270,7 @@ const FeedHome = () => {
                     )}
                     <p className="text36">{feed.feed_name}</p>
                     <p className="description" >{feed.description}</p>
-                    {(feed.is_group || user.user_id !== feed.feed_owner) && (
+                    {(feed.is_group || (user.user_id !== feed.feed_owner && feed.type === 'public')) && (
                         <FollowerChangeButton feed={feed} viewerId={viewer.feed_id} />
                     )}
                     {!isViewingSelf && !feed.is_group && (
