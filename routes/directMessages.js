@@ -1,10 +1,14 @@
+import CryptoJS from 'crypto-js';
+import dotenv from 'dotenv';
 import { Router } from 'express';
 import { v4 } from 'uuid';
 import { Op, Sequelize } from 'sequelize';
 import { Chats, Connections, ConnectRequests, FeedChats, Feeds, Messages } from '../models/relationships.js';
 import authenticateCheck from '../functions/checks/authenticateCheck.js';
 
+dotenv.config();
 const router = Router();
+const SECRET_KEY = process.env.ENCRYPTION_SECRET_KEY;
 
 const feedAttributes = ['feed_id', 'parent_id', 'feed_name', 'description', 'feed_photo', 'follower_count', 'created_at', 'updated_at', 'type', 'is_group', 'feed_owner'];
 
@@ -20,9 +24,10 @@ router.post('/accept_connect_request', authenticateCheck, async (req, res) => {
             feed2_id: receiverId,
             connection_date: new Date()
         });;
+        const encryptedTitle = CryptoJS.AES.encrypt("Main", SECRET_KEY).toString();
         const chat = await Chats.create({ 
             chat_id: v4(),
-            title: "Main"
+            title: encryptedTitle
         });
         await FeedChats.bulkCreate([
             { feed_id: senderId, chat_id: chat.chat_id },
@@ -37,16 +42,12 @@ router.post('/accept_connect_request', authenticateCheck, async (req, res) => {
 
 router.post('/change_chat_name', authenticateCheck, async (req, res) => {
     try {
-        const { chatId, newTitle } = req.body;
-        if (newTitle === 'Main') {
-            res.status(403).json({ success: false });
-        } else {
-            await Chats.update(
-                { title: newTitle },
-                { where: { chat_id: chatId } }
-            );
-            res.status(200).json({ success: true });
-        }
+        const { channelId, newChannelName } = req.body;
+        await Chats.update(
+            { title: newChannelName },
+            { where: { chat_id: channelId } }
+        );
+        res.status(200).json({ success: true });
     } catch (error) {
         res.status(500).json({ success: false });
     }
@@ -54,7 +55,10 @@ router.post('/change_chat_name', authenticateCheck, async (req, res) => {
 
 router.post('/create_chat', authenticateCheck, async (req, res) => {
     try {
-        const { participants, title } = req.body;
+        const { participants, title } = req.body; 
+        if (title.length === 0) {
+            res.status(403).json({ success: false, message: 'Title cannot be empty' });
+        }
         const newChat = await Chats.create({
             chat_id: v4(),
             title: title
@@ -64,7 +68,7 @@ router.post('/create_chat', authenticateCheck, async (req, res) => {
             chat_id: newChat.chat_id,
         }));
         await FeedChats.bulkCreate(feedChats);
-        res.status(201).json(newChat);
+        res.status(201).json({ success: true, newChat });
     } catch (error) {
         res.status(500).json({ success: false });
     }
@@ -72,23 +76,18 @@ router.post('/create_chat', authenticateCheck, async (req, res) => {
 
 router.delete('/delete_chat', authenticateCheck, async (req, res) => {
     try {
-        const { chatId, title } = req.body;
-        //Main channels are default, so can't be deleted
-        if (title === 'Main') {
-            res.status(403).json({ message: 'Main chats cannot be deleted' });
-        } else {
-            await FeedChats.destroy({
-                where: { 
-                    chat_id: chatId
-                },
-            });
-            await Chats.destroy({
-                where: { 
-                    chat_id: chatId
-                },
-            });
-            res.status(200).json({ success: true });
-        }
+        const { channelId } = req.body;
+        await FeedChats.destroy({
+            where: { 
+                chat_id: channelId
+            },
+        });
+        await Chats.destroy({
+            where: { 
+                chat_id: channelId
+            },
+        });
+        res.status(200).json({ success: true });
     } catch (error) {
         res.status(500).json({ success: false });
     }
@@ -204,24 +203,38 @@ router.get('/get_chats/:feedId', authenticateCheck, async (req, res) => {
             chatIdsWithConnectionFeed.includes(chatId)
         );
         if (chatIds.length === 0) {
-            return res.json({ success: true, chats: [], connection: connectionFeed });
+            return res.json({ success: true, chats: [] });
         }
         const chatDetails = await Chats.findAll({
             where: { chat_id: { [Op.in]: chatIds } },
             attributes: ['chat_id', 'title', 'created_at', 'updated_at'],
             order: [['updated_at', 'DESC']] 
         });
-        return res.status(200).json({
-            success: true,
-            chats: chatDetails,
-            connection: connectionFeed
+        return res.status(200).json({ success: true, chats: chatDetails });
+    } catch (error) {
+        res.status(500).json({ success: false });
+    }
+});
+
+router.get('/get_connection/:connectionName', authenticateCheck, async (req, res) => {
+    //Finds individual connection based on name from url
+    try {
+        const connectionName = req.params.connectionName;
+        const connectionFeed = await Feeds.findOne({
+            where: { feed_name: connectionName },
+            attributes: feedAttributes
         });
+        if (!connectionFeed) {
+            return res.status(404).json({ success: false, message: 'Connection not found' });
+        }
+        return res.status(200).json({ success: true, connection: connectionFeed });
     } catch (error) {
         res.status(500).json({ success: false });
     }
 });
 
 router.get('/get_connections/:feedId', authenticateCheck, async (req, res) => {
+    //Full list of connections for connection page
     try {
         const feedId = req.params.feedId;
         const feed = await Feeds.findOne({ where: { feed_id: feedId } });

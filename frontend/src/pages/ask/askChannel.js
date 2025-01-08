@@ -175,7 +175,7 @@ const AskChannel = () => {
 
     document.title="Ask";
     return (
-        <div className="results-container">  
+        <div className="standard-container">  
             <div className="content-feed">
                 {!user.hasMembership ? (
                     <div className="message-container incoming">

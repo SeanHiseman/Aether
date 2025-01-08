@@ -3,11 +3,13 @@ import { FaTrash, FaEdit } from 'react-icons/fa';
 import React, { useState } from 'react';
 import { Tooltip } from 'react-tooltip';
 import { useNavigate } from 'react-router-dom';
+import { encrypt } from '../../encryptionUtil';
 
-const ChannelName = ({ channelId, channelName, channelUpdate, deleteChannel, isGroup, locationName }) => {
+const ChannelName = ({ channelId, channelName, channelUpdate, deleteChannel, isChat, isGroup, locationName }) => {
     const [newChannelName, setNewChannelName] = useState('');
     const [errorMessage, setErrorMessage] = useState('');
     const [isEditingChannelName, setIsEditingChannelName] = useState(false);
+    const urlPrefix = isChat ? 'connections' : isGroup ? 'g' : 'u';
     const navigate = useNavigate();
 
     //Updates channel name. Must be between 0 and 30 characters, can't be called 'Main'
@@ -15,37 +17,49 @@ const ChannelName = ({ channelId, channelName, channelUpdate, deleteChannel, isG
         event.preventDefault();
         try {
             if (newChannelName.length === 0) {
-                setErrorMessage("Feed needs a name");
+                setErrorMessage("Channel needs a name");
                 return;
             //Names over 30 characters already prevented
-            } else if (newChannelName === 'Main') {
-                setErrorMessage("Feeds cannot be named Main");
+            }
+            if (newChannelName === 'Main') {
+                setErrorMessage("Channel cannot be named Main");
                 return;
-            } else {
-                const response = await axios.post('/api/change_channel_name', {
-                    channelId,
-                    newChannelName,
-                });
-                if (response.status === 200) {
-                    const urlLetter = isGroup ? 'g' : 'u';
-                    setErrorMessage('');
-                    setIsEditingChannelName(false);
-                    setNewChannelName('');
-                    channelUpdate(channelId, newChannelName); //Updates parent page
-                    navigate(`/${urlLetter}/${locationName}/${newChannelName}`);
-                }
+            } 
+            let finalChannelName = newChannelName;
+            if (isChat) {
+                const encryptedChannelName = encrypt(newChannelName);
+                finalChannelName = encryptedChannelName;
+            }
+            const route = isChat ? '/api/change_chat_name' : '/api/change_channel_name';
+            const response = await axios.post(route, {
+                channelId,
+                newChannelName: finalChannelName,
+            });
+            if (response.status === 200) {
+                setErrorMessage('');
+                setIsEditingChannelName(false);
+                setNewChannelName('');
+                channelUpdate(channelId, newChannelName); //Updates parent page
+                navigate(`/${urlPrefix}/${locationName}/${newChannelName}`);
             }
         } catch {
-            setErrorMessage("Error changing feed name");
+            setErrorMessage("Error changing channel name");
         }
     };
 
     const handleDelete = async () => {
         if (window.confirm(`Are you sure you want to delete ${channelName}?`)) {
             try {
-                await axios.delete(`/api/delete_feed_channel`, { data: { channelId } });
-                deleteChannel(channelId); 
-                navigate(`/${isGroup ? 'g' : 'u'}/${locationName}/Main`);
+                if (channelName === 'Main') {
+                    setErrorMessage("Main chat cannot be deleted.");
+                    return;
+                }
+                const route = isChat ? '/api/delete_chat' : '/api/delete_feed_channel';
+                const response = await axios.delete(route, { data: { channelId } });
+                if (response.data.success) {
+                    deleteChannel(channelId); 
+                    navigate(`/${urlPrefix}/${locationName}/Main`);
+                }
             } catch (error) {
                 setErrorMessage('Error deleting channel');
             }
@@ -90,11 +104,9 @@ const ChannelName = ({ channelId, channelName, channelUpdate, deleteChannel, isG
                                     setNewChannelName(channelName);
                                 }}>
                                     <FaEdit />
-                                    <p className="icon-text">Rename</p>
                                 </button>
                                 <button className="small-icon" onClick={handleDelete}>
                                     <FaTrash />
-                                    <p className="icon-text">Delete</p>
                                 </button>
                             </div>
                         </div>

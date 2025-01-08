@@ -1,51 +1,43 @@
-import React, { useCallback, useContext, useEffect, useRef, useState } from 'react';
-import { AuthContext } from '../../components/authContext';
 import axios from 'axios';
+import React, { useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { io } from 'socket.io-client';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { v4 } from 'uuid';
-import { FaEdit, FaMinus, FaPlus, FaTrash } from 'react-icons/fa';
+import { FaMinus, FaPlus } from 'react-icons/fa';
+import { AuthContext } from '../../components/authContext';
 import ChannelList from '../../components/channels/channelList';
+import ChannelName from '../../components/channels/channelName';
+import { decrypt, encrypt } from '../../encryptionUtil';
 import Message from './message';
 
 const ChatPage = () => {
     const { connection_name, title } = useParams();
-    const { viewer } = useContext(AuthContext);
     const [connection, setConnection] = useState(null);
-    const [chats, setChats] = useState([]);
-    const [selectedChatId, setSelectedChatId] = useState(null);
     const [chat, setChat] = useState([]);
-    const [message, setMessage] = useState('');
+    const [chats, setChats] = useState([]);
     const [errorMessage, setErrorMessage] = useState('');
-    const [showForm, setShowForm] = useState(false);
+    const [message, setMessage] = useState('');
     const [newChatName, setNewChatName] = useState('');
-    const [isEditingChatName, setIsEditingChatName] = useState(false);
-    const [changedChatName, setChangedChatName] = useState('');
+    const [selectedChatId, setSelectedChatId] = useState(null);
+    const [showForm, setShowForm] = useState(false);
+    const { viewer } = useContext(AuthContext);
     const socketRef = useRef(null);
     const messagesContainerRef = useRef(null);
     const messagesEndRef = useRef(null);
     const navigate = useNavigate();
 
-    const fetchChats = useCallback(async () => {
+    const fetchConnection = async () => {
         try {
-            const response = await axios.get(`/api/get_chats/${viewer.feed_id}`, {
-                params: { connectionName: connection_name }
-            });
-            if (response.data.success) {
-                setChats(response.data.chats);
-                setConnection(response.data.connection);
-            } else {
-                setErrorMessage('Failed to fetch chats');
-            }
+            const response = await axios.get(`/api/get_connection/${connection_name}`);
+            setConnection(response.data.connection); 
         } catch (error) {
-            console.error(error);
-            setErrorMessage('Error getting chats');
+            setErrorMessage('Error getting connection');
         }
-    }, [connection_name, viewer.feed_id]);
+    };
     
     useEffect(() => {
-        fetchChats();
-    }, [fetchChats]);
+        fetchConnection();
+    }, []);
 
     useEffect(() => {
         if (title && chats.length > 0) {
@@ -102,8 +94,14 @@ const ChatPage = () => {
         }
     }, [chat]);
 
-    const currentChat = chats.find(c => c.chat_id === selectedChatId);
-    const currentChatName = currentChat?.title;
+    //Updates list of chats when chat name changed
+    const chatUpdate = (chatId, newName) => {
+        setChats(prevChats => 
+            prevChats.map(chat =>
+                chat.chat_id === chatId ? {...chat, title: newName} : chat
+            )
+        );
+    };
 
     const createNewChat = async (event) => {
         event.preventDefault();
@@ -130,15 +128,20 @@ const ChatPage = () => {
                 setErrorMessage("Name already used");
                 return;
             }
+            const encryptedChatName = encrypt(chatName);
             const response = await axios.post('/api/create_chat', {
                 participants,
-                title: chatName
+                title: encryptedChatName
             });
             if (response.data && response.status === 201) {
+                const newChat = response.data.newChat;
+                const decryptedTitle = decrypt(newChat.title);
+                const updatedChats = [...chats, { ...newChat, title: decryptedTitle }];
+                setChats(updatedChats);
+                setErrorMessage('');
                 setNewChatName('');
                 setShowForm(false);
                 navigate(`/connections/${connection_name}/${chatName}`);
-                fetchChats();  
             } else {
                 setErrorMessage("Failed to create chat");
             }
@@ -147,55 +150,11 @@ const ChatPage = () => {
         }
     };
 
-    const changeChatName = async (event) => {
-        event.preventDefault();
-        if (!selectedChatId) return;
-        try {
-            if (changedChatName.length === 0) {
-                setErrorMessage("Chat needs a name");
-                return;
-            }
-            if (changedChatName === 'Main') {
-                setErrorMessage("Cannot be named Main");
-                return;
-            }
-            const response = await axios.post('/api/change_chat_name', {
-                chatId: selectedChatId,
-                newTitle: changedChatName
-            });
-            if (response.status === 200) {
-                setChangedChatName('');
-                setIsEditingChatName(false);
-                navigate(`/connections/${connection_name}/${changedChatName}`);
-                fetchChats();
-            }
-        } catch (error) {
-            setErrorMessage("Error changing chat name");
-        }
-    };
-
-    const deleteChat = async () => {
-        if (!selectedChatId) return;
-        if (!window.confirm(`Are you sure you want to delete ${title}?`)) return;
-        try {
-            if (title === 'Main') {
-                setErrorMessage("Main chat cannot be deleted.");
-                return;
-            }
-            await axios.delete(`/api/delete_chat`, {
-                data: { chatId: selectedChatId, title }
-            });
-            setSelectedChatId(null);
-            setChat([]);
-            navigate(`/connections/${connection_name}/Main`);
-            fetchChats();  
-        } catch (error) {
-            setErrorMessage("Error deleting chat");
-        }
+    const deleteChat = (chatId) => {
+        setChats(prevChats => prevChats.filter(chat => chat.chat_id !== chatId));
     };
 
     const deleteMessage = (messageId) => {
-        console.log("deleting chat");
         try {
             if (!messageId) return;
             socketRef.current.emit('delete_direct_message', {
@@ -212,32 +171,35 @@ const ChatPage = () => {
     const getChatMessages = async (chatId) => {
         try {
             const response = await axios.get(`/api/get_chat_messages/${chatId}`);
-            setChat(response.data);
+            const ciphertextMessages = response.data;
+            const decryptedMsgs = ciphertextMessages.map((m) => ({
+                ...m,
+                content: decrypt(m.content),
+            }));
+            setChat(decryptedMsgs);
         } catch (error) {
             setErrorMessage('Error getting messages');
         }
     };
 
-    const isMainChat = () => {
-        return currentChatName === 'Main' || title === 'Main';
-    };
-
     const sendMessage = () => {
         try {
             if (!message.trim()) return;
+            const encryptedContent = encrypt(message);
             const newMessage = {
                 message_id: v4(),
-                content: message,
+                content: encryptedContent,
                 sender_id: viewer.feed_id,
                 chat_id: selectedChatId,
                 timestamp: Date.now()
             };
             socketRef.current.emit('send_direct_message', newMessage);
-            setChat(prev => [...prev, newMessage]);
+            const displayedMessage = { ...newMessage, content: message }; //Prevents displaying ciphertext
+            setChat(prev => [...prev, displayedMessage]);
             setChats(prevChats => { //Moves current chat to top of chat list
                 const updatedChats = prevChats.map(chat => {
                     if (chat.chat_id === selectedChatId) {
-                        return { ...chat, updated_at: new Date().toISOString() };
+                        return { ...chat, updated_at: new Date().toISOString() }; //Change to use local time
                     }
                     return chat;
                 });
@@ -300,47 +262,7 @@ const ChatPage = () => {
                         <p className="feed-list-text">{connection_name}</p>
                     </Link>
                     <div className="error-message">{errorMessage}</div>
-                    {!isMainChat() ? (
-                        <div id="chat-change">
-                            {isEditingChatName ? (
-                                <div id="change-name">
-                                    <textarea className="change-name-area" value={changedChatName} placeholder="New name" onChange={(e) => {
-                                        const input = e.target.value;
-                                        const inputLength = input.length;
-                                        if (inputLength <= 30) {
-                                            setChangedChatName(input)
-                                        } else {
-                                            setErrorMessage('Name too long');
-                                        }
-                                    }}
-                                    />
-                                    <div id="cancel-save">
-                                        <button className="button" onClick={() => {setIsEditingChatName(false); setChangedChatName(''); setErrorMessage('');}}>
-                                            Cancel
-                                        </button>
-                                        <button className="button" onClick={(e) => {changeChatName(e)}}>
-                                            Save
-                                        </button>
-                                    </div>
-                                </div>
-                            ) : (
-                                <div id="chat-name">
-                                    <p className="text36">{currentChatName}</p> 
-                                    <div className="button-group">
-                                        <button className="small-icon" onClick={() => {setIsEditingChatName(true); setChangedChatName(currentChatName);}}>
-                                            <FaEdit />
-                                        </button>
-                                        <button className="small-icon" onClick={() => deleteChat()}>
-                                            <FaTrash />
-                                        </button> 
-                                    </div>
-                                </div>
-                                
-                            )}
-                        </div>
-                    ) : (
-                        <p className="text36">Main</p>  
-                    )}
+                    <ChannelName channelId={selectedChatId} channelName={title} deleteChannel={deleteChat} isChat={true} isGroup={false} locationName={connection_name} channelUpdate={chatUpdate}/>
                     <div className="add-channel-section">
                         <button className="small-icon" onClick={toggleForm}>
                             {showForm ? <FaMinus /> : <FaPlus />}

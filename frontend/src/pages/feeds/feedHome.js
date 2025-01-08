@@ -179,7 +179,7 @@ const FeedHome = () => {
 
     if (loading) {
         return (
-            <div className="feed-container">
+            <div className="standard-container">
                 <div className="channel-feed">
                     <div className="text36">Loading...</div>
                 </div>
@@ -189,7 +189,7 @@ const FeedHome = () => {
     }
     if (feedNotFound) {
         return (
-            <div className="feed-container"> 
+            <div className="standard-container"> 
                 <div className="channel-feed">            
                     <div className="text36">Feed not found</div>
                 </div>
@@ -199,7 +199,7 @@ const FeedHome = () => {
     } 
     if (privateNoView) {
         return (
-            <div className="feed-container">
+            <div className="standard-container">
                 <div className="channel-feed">
                     <p className="text36">This feed is private</p>
                 </div>
@@ -280,7 +280,7 @@ const FeedHome = () => {
                 {feedErrorMessage && <div className="error-message">{feedErrorMessage}</div>}
                 {channelRender && (
                     isAdmin ? (
-                    <ChannelName channelId={channelRender.channel_id} channelName={channel_name} deleteChannel={deleteChannel} isGroup={feed.is_group} locationName={feed_name} channelUpdate={channelUpdate}/>
+                    <ChannelName channelId={channelRender.channel_id} channelName={channel_name} deleteChannel={deleteChannel} isChat={false} isGroup={feed.is_group} locationName={feed_name} channelUpdate={channelUpdate}/>
                     ) : (
                         <p className="text36">{channel_name}</p>
                     ) 
@@ -291,12 +291,10 @@ const FeedHome = () => {
                             {showChannelForm ? (
                                 <>
                                     <FaMinus />
-                                    <p className="icon-text">Close</p>
                                 </>
                             ) : (
                                 <>
                                     <FaPlus />
-                                    <p className="icon-text">Create Channel</p>
                                 </>
                             )}
                         </button>

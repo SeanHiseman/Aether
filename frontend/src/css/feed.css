@@ -37,6 +37,9 @@
     align-items: center;
     display: flex;
 }
+.feed-list {
+    max-width: 100%;
+}
 .feed-member {
     margin: 10px;
 }

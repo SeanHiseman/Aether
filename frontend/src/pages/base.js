@@ -182,12 +182,10 @@ const BaseLayout = () => {
                         {showForm ? (
                             <>
                                 <FaMinus />
-                                <p className="icon-text">Close</p>
                             </>
                         ) : (
                             <>
                                 <FaPlusCircle />
-                                <p className="icon-text">Create Feed</p>
                             </>
                         )}
                     </button>

@@ -101,7 +101,7 @@ const SearchResults = () => {
                 </div>
             </div>
             <div id="right-aside">
-                <h1>Results</h1>
+                <p className="text36">Results</p>
                 <div className="error-message">{errorMessage}</div>
                 <nav id="channel-list">
                     <ul>

@@ -1,6 +1,6 @@
 import axios from 'axios';
 import { FaUserMinus, FaUserPlus } from 'react-icons/fa';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 
 const ManageConnectionButton = ({ connectRequest, feed, isConnected, viewerId, onRequestUpdate }) => {
     const [errorMessage, setErrorMessage] = useState('');
@@ -8,6 +8,12 @@ const ManageConnectionButton = ({ connectRequest, feed, isConnected, viewerId, o
     const [request, setRequest] = useState(connectRequest || feed.connectRequest);
     const senderId = request?.sender_id || viewerId;
     const receiverId = request?.receiver_id || feed?.feed_id;
+
+    //Ensures state is correctly set
+    useEffect(() => {
+        setHasConnection(isConnected || feed.isConnected)
+        setRequest(connectRequest || feed.connectRequest);
+    }, [connectRequest, feed.connectRequest, isConnected, feed.isConnected]);
 
     const handleSendRequest = async () => {
         try {
@@ -38,7 +44,9 @@ const ManageConnectionButton = ({ connectRequest, feed, isConnected, viewerId, o
                 if (method === 'delete') {
                     setHasConnection(false);
                     setRequest(false);
-                    onRequestUpdate(feed.feed_id);
+                    if (onRequestUpdate) {
+                        onRequestUpdate(feed.feed_id);
+                    }
                 } else {
                     setRequest(true);
                     setHasConnection(false);
@@ -85,6 +93,7 @@ const ManageConnectionButton = ({ connectRequest, feed, isConnected, viewerId, o
             </div>
         );
     }
+
     return (
         <div>
             <button className="small-icon" onClick={handleSendRequest}>
