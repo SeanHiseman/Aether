@@ -1,5 +1,6 @@
 import axios from 'axios';
-import React, { useCallback, useEffect, useState } from 'react';
+import { FaPlusCircle, FaMinusCircle } from 'react-icons/fa';
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 
 const FollowRequests = ({ feed }) => {
@@ -9,7 +10,7 @@ const FollowRequests = ({ feed }) => {
     useEffect(() => {
         const getFollowRequests = async () => {
             try {
-                const response = await axios.get(`/api/get_follow_requests/${feed.feed_id}`);
+                const response = await axios.get(`/api/follow_requests/${feed.feed_id}`);
                 console.log("response.data:", response.data);
                 setFollowRequests(response.data.requests || []);
             } catch (error) {
@@ -47,12 +48,15 @@ const FollowRequests = ({ feed }) => {
                                     <img className="large-feed-photo" src={`/${request.sender.feed_photo}`} alt="Profile" />
                                     <p className="text36 feed-name">{request.sender.feed_name}</p>
                                 </Link>
-                                <button className="button" onClick={() => handleRequestAction(request, 'accept')}>
-                                    Accept
-                                </button>
-                                <button className="button" onClick={() => handleRequestAction(request, 'reject')}>
-                                    Reject
-                                </button>
+                                <div>
+                                    <button className="small-icon" onClick={() => handleRequestAction(request, 'accept')}>
+                                        <FaPlusCircle /><p className="icon-text">Accept</p>
+                                    </button>
+                                    <button className="small-icon" onClick={() => handleRequestAction(request, 'reject')}>
+                                        <FaMinusCircle /><p className="icon-text">Reject</p>
+                                    </button>
+                                    {errorMessage && <div className="error-message">{errorMessage}</div>}
+                                </div>
                             </div>
                         </li>
                     ))}

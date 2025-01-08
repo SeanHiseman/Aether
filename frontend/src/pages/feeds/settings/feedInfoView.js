@@ -12,7 +12,7 @@ const FeedInfoView = ({ feed, setFeed }) => {
     const navigate = useNavigate();
     const [newDescription, setDescription] = useState('');
     const [newName, setName] = useState('');
-    console.log("feed.type:", feed.type);
+
     useEffect(() => {
         if (isEditingName) {
             setName(feed.feed_name);

@@ -369,7 +369,7 @@ router.get('/follow_requests/:feedId', authenticateCheck, async (req, res) => {
                 attributes: feedAttributes,
             }],
         }); 
-        res.json({ success: true, requests });
+        res.status(200).json({ success: true, requests });
     } catch (error) {
         res.status(500).json({ success: false });
     }
