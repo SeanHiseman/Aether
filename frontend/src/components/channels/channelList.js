@@ -2,9 +2,15 @@ import axios from 'axios';
 import React, { useCallback, useContext, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { AuthContext } from '../../components/authContext';
+import { decrypt, encrypt } from '../../encryptionUtil';
 import FeedItem from './feedItem';
 
 const ChannelList = ({ channels, feedId, feedName, isChat, isGroup, setChannels }) => {
+    //console.log("channels:", channels);
+    //console.log("feedId:", feedId);
+    //console.log("feedName:", feedName);
+    //console.log("isChat:", isChat);
+    //console.log("isGroup:", isGroup);
     const [errorMessage, setErrorMessage] = useState('');
     const [subFeeds, setSubFeeds] = useState([]);
     const urlLetter = isGroup ? 'g' : 'u';
@@ -14,13 +20,21 @@ const ChannelList = ({ channels, feedId, feedName, isChat, isGroup, setChannels 
         try {
             if (!isChat) {
                 const response = await axios.get(`/api/get_feed_channels/${feedId}`);
-                console.log("response.data.channels:", response.data.channels);
                 setChannels(response.data.channels);
             } else {
                 const response = await axios.get(`/api/get_chats/${viewer.feed_id}`, {
                     params: { connectionName: feedName }
                 });
-                setChannels(response.data.chats);
+                if (response.data.success) {
+                    const decryptedChats = response.data.chats.map((chat) => {
+                        return {
+                            ...chat,
+                            title: decrypt(chat.title)
+                        };
+                    });
+                    //console.log("decryptedChats:", decryptedChats);
+                    setChannels(decryptedChats);
+                }
             }
         } catch (error) {
             setErrorMessage('Error getting channels');
@@ -31,7 +45,7 @@ const ChannelList = ({ channels, feedId, feedName, isChat, isGroup, setChannels 
     useEffect(() => {
         setChannels([]);
         getFeedChannels();
-    }, [feedId, getFeedChannels]);
+    }, []);
 
     //Fetch subfeeds
     //useEffect(() => {

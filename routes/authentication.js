@@ -1,11 +1,13 @@
 import authenticateCheck from '../functions/checks/authenticateCheck.js';
 import deleteMedia from '../functions/media_handling/deleteMedia.js';
+import dotenv from 'dotenv';
 import { Router } from 'express';
 import { hash, compare } from 'bcrypt';
 import { Op } from 'sequelize';
 import { v4 } from 'uuid';
 import { Connections, ConnectRequests, Feeds, FeedChannels, Followers, FeedChats, Messages, Posts, PostVotes, Users } from '../models/relationships.js'; 
 
+dotenv.config();
 const router = Router();
 
 router.post('/change_password', authenticateCheck, async (req, res) => {
@@ -88,7 +90,7 @@ router.post('/join', async (req, res) => {
             user_id, username, password: hashedPassword, UserSince
         });
         //Add initial user feed
-        const default_photo = 'media/site_images/blank-profile.png';
+        const default_photo = process.env.DEFAULT_USER_IMAGE;
         const feed_id = v4();
         await Feeds.create({
             feed_id, feed_name: username, description: "", feed_photo: default_photo, type: 'private', is_group: false, feed_owner: user_id

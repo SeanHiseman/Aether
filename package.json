@@ -22,6 +22,7 @@
     "axios": "^1.6.3",
     "bcrypt": "^5.1.1",
     "cheerio": "^1.0.0-rc.12",
+    "crypto-js": "^4.2.0",
     "debug": "^4.3.4",
     "dompurify": "^3.2.2",
     "dotenv": "^16.4.5",
