@@ -40,6 +40,7 @@ const ManageConnectionButton = ({ connectRequest, feed, isConnected, viewerId, o
                 requestData = { receiverId, senderId: viewerId };
             }
             const response = await axios({ method, url, data: requestData });
+            console.log("response:", response);
             if (response.status === 200) {
                 if (method === 'delete') {
                     setHasConnection(false);

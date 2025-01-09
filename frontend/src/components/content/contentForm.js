@@ -8,7 +8,7 @@ import { v4 } from 'uuid';
 const ContentForm = ({ isEdit = false, isReply, onSubmit, post = null, setShowForm }) => {
     const [files, setFiles] = useState([]);
     const [generationRequest, setGenerationRequest] = useState('');
-    const [isCode, setIsCode] = useState(true);
+    const [isCode, setIsCode] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [codeContent, setCodeContent] = useState('');
     const [formErrorMessage, setFormErrorMessage] = useState('');

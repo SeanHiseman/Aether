@@ -2,15 +2,10 @@ import axios from 'axios';
 import React, { useCallback, useContext, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { AuthContext } from '../../components/authContext';
-import { decrypt, encrypt } from '../../encryptionUtil';
+import { decrypt } from '../../encryptionUtil';
 import FeedItem from './feedItem';
 
 const ChannelList = ({ channels, feedId, feedName, isChat, isGroup, setChannels }) => {
-    //console.log("channels:", channels);
-    //console.log("feedId:", feedId);
-    //console.log("feedName:", feedName);
-    //console.log("isChat:", isChat);
-    //console.log("isGroup:", isGroup);
     const [errorMessage, setErrorMessage] = useState('');
     const [subFeeds, setSubFeeds] = useState([]);
     const urlLetter = isGroup ? 'g' : 'u';
@@ -43,9 +38,10 @@ const ChannelList = ({ channels, feedId, feedName, isChat, isGroup, setChannels 
     }, [feedId, setChannels, viewer]);
 
     useEffect(() => {
-        setChannels([]);
-        getFeedChannels();
-    }, []);
+        if (channels.length === 0) {
+            getFeedChannels();
+        }
+    }, [channels, getFeedChannels]);
 
     //Fetch subfeeds
     //useEffect(() => {

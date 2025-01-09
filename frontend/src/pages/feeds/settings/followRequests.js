@@ -35,7 +35,7 @@ const FollowRequests = ({ feed }) => {
 
     return (
         <div className="channel-content">
-            <h2>Follow Requests</h2>
+            <p className="text36">Follow Requests</p>
             {followRequests.length === 0 ? (
                 <p>No pending requests</p>
             ) : (

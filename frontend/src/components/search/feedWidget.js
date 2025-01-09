@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import FollowerChangeButton from '../followerChangeButton';
-import ManageConnectionButton from '../manageConnectionButton';
+import ManageConnectionButton from '../connections/manageConnectionButton';
 
 const FeedWidget = ({ feed, viewerId }) => {
     const isViewingSelf = feed.feed_id === viewerId;
