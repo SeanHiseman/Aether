@@ -1,11 +1,13 @@
-import React, { useCallback, useContext, useEffect, useState } from 'react';
+import React, { useContext, useEffect, useState } from 'react';
 import axios from 'axios';
 import { Link } from 'react-router-dom';
 import { AuthContext } from '../../components/authContext';
+import ConnectRequests from '../../components/connections/connectRequests';
 import FeedItem from '../../components/channels/feedItem';
-import ManageConnectionButton from '../../components/manageConnectionButton';
+import ManageConnectionButton from '../../components/connections/manageConnectionButton';
 
 const ConnectionsPage = () => {
+    const [activeTab, setActiveTab] = useState('connections');
     const [connections, setConnections] = useState([]);
     const [errorMessage, setErrorMessage] = useState('');
     const { viewer } = useContext(AuthContext);
@@ -35,22 +37,46 @@ const ConnectionsPage = () => {
         <div className="standard-container">
             <div className="connections-feed">
                 <div className="channel-content">
+                    <div className="tab-titles">
+                        <span 
+                            className={`tab-title ${activeTab === 'connections' ? 'active' : ''}`} 
+                            onClick={() => setActiveTab('connections')}
+                        >
+                            Connections
+                        </span>
+                        <span 
+                            className={`tab-title ${activeTab === 'requests' ? 'active' : ''}`} 
+                            onClick={() => setActiveTab('requests')}
+                        >
+                            Connection Requests
+                        </span>
+                    </div>
                     {errorMessage && <div className="error-message">{errorMessage}</div>}
-                    <ul className="content-list">
-                        {connections.map(c => (
-                            <li key={c.connection_id}>
-                                <div className="result-widget">
-                                    <Link className="feed-link" to={`/u/${c.feed_name}`}>
-                                        <img className="large-feed-photo" src={`/${c.feed_photo}`} alt="Feed" />
-                                        <p className="text36 feed-name">{c.feed_name}</p>
-                                    </Link>
-                                    <div className="remove-connection-box">
-                                        <ManageConnectionButton connectRequest={false} feed={c} isConnected={true} viewerId={viewer.feed_id} onRequestUpdate={handleConnectionRemoval} />
+                    {activeTab === 'connections' ? (
+                        <ul className="content-list">
+                            {connections.map(c => (
+                                <li key={c.connection_id}>
+                                    <div className="result-widget">
+                                        <Link className="feed-link" to={`/u/${c.feed_name}`}>
+                                            <img className="large-feed-photo" src={`/${c.feed_photo}`} alt="Feed" />
+                                            <p className="text36 feed-name">{c.feed_name}</p>
+                                        </Link>
+                                        <div className="remove-connection-box">
+                                            <ManageConnectionButton 
+                                                connectRequest={false} 
+                                                feed={c} 
+                                                isConnected={true} 
+                                                viewerId={viewer.feed_id} 
+                                                onRequestUpdate={handleConnectionRemoval} 
+                                            />
+                                        </div>
                                     </div>
-                                </div>
-                            </li>
-                        ))}
-                    </ul>
+                                </li>
+                            ))}
+                        </ul>
+                    ) : (
+                        <ConnectRequests feed={viewer} />
+                    )}
                 </div>
             </div>
             <aside id="right-aside">
@@ -58,10 +84,17 @@ const ConnectionsPage = () => {
                     <p className="text36">Messages</p>
                     <ul>
                         {connections.map(c => (
-                            <FeedItem key={c.feed_id} feedId={c.feed_id} isChat={true} linkType={'u'} name={c.feed_name} photo={c.feed_photo} />
+                            <FeedItem 
+                                key={c.feed_id} 
+                                feedId={c.feed_id} 
+                                isChat={true} 
+                                linkType={'u'} 
+                                name={c.feed_name} 
+                                photo={c.feed_photo} 
+                            />
                         ))}
                     </ul>
-                </nav> 
+                </nav>
             </aside>
         </div>
     );

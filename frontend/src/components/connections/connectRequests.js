@@ -1,7 +1,7 @@
 import axios from 'axios';
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import ManageConnectionButton from '../../../components/manageConnectionButton';
+import ManageConnectionButton from './manageConnectionButton';
 
 const ConnectRequests = ({ feed }) => {
     const [errorMessage, setErrorMessage] = useState('');
@@ -11,7 +11,6 @@ const ConnectRequests = ({ feed }) => {
         const getConnectRequests = async () => {
             try {
                 const response = await axios.get(`/api/get_connect_requests/${feed.feed_id}`);
-                console.log("response.data:", response.data);
                 setConnectRequests(response.data.requests || []);
             } catch (error) {
                 setErrorMessage('Error getting requests');
@@ -28,9 +27,8 @@ const ConnectRequests = ({ feed }) => {
 
     return (
         <div className="channel-content">
-            <h2>Connect Requests</h2>
             {connectRequests.length === 0 ? (
-                <p>No pending requests</p>
+                <p>No pending connect requests</p>
             ) : (
                 <ul className="content-list">
                     <div className="error-message">{errorMessage}</div>

@@ -3,7 +3,7 @@ import axios from 'axios';
 import { FaSignOutAlt } from 'react-icons/fa';
 import React, { useContext, useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import ConnectRequests from './connectRequests';
+import ConnectRequests from '../../../components/connections/connectRequests';
 import FeedDeletion from './feedDeletion';
 import FeedFollowers from './feedFollowers';
 import FeedInfoView from './feedInfoView';

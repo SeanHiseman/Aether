@@ -55,9 +55,9 @@ const FeedFollowers = ({ feed }) => {
 
     return (
         <div className="channel-content">
-            <h2>Followers</h2>
+            <p className="text36">Followers</p>
             {followers.length === 0 ? (
-                <p>No followers</p>
+                <p className="text24">No followers</p>
             ) : (
                 <ul className="content-list">
                     <div className="error-message">{errorMessage}</div>

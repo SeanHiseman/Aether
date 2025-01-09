@@ -124,7 +124,7 @@ router.post('/generate_content', authenticateCheck, async (req, res) => {
     //console.log("request received");
     try {
         const { currentCode, request } = req.body;
-        console.log("req.body:", req.body);
+        //console.log("req.body:", req.body);
         //Creates API assistant
         const assistant = await openai.beta.assistants.create({
             name: "Ask",

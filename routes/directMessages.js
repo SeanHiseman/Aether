@@ -110,6 +110,7 @@ router.delete('/delete_connect_request', authenticateCheck, async (req, res) => 
 });
 
 router.delete('/delete_connection', authenticateCheck, async (req, res) => {
+    console.log("req.body:", req.body);
     try {
         const { deleterId, feedId } = req.body;
         await Connections.destroy({
@@ -152,6 +153,7 @@ router.delete('/delete_connection', authenticateCheck, async (req, res) => {
         }
         res.status(200).json({ success: true });
     } catch (error) {
+        console.log(error);
         res.status(500).json({ success: false });
     }
 });
@@ -325,6 +327,7 @@ export const directMessagesSocket = (socket) => {
             socket.to(channel_id).emit('delete_direct_message', { message_id });
         });
         socket.on('send_direct_message', async (message) => {
+            console.log("message to send:", message);
             const messageLength = message.content.length;
             if (messageLength === 0) {
                 socket.emit('error_message', { error: "Message too short" });

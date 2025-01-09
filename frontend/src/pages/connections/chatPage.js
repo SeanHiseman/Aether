@@ -8,7 +8,7 @@ import { AuthContext } from '../../components/authContext';
 import ChannelList from '../../components/channels/channelList';
 import ChannelName from '../../components/channels/channelName';
 import { decrypt, encrypt } from '../../encryptionUtil';
-import Message from './message';
+import Message from '../../components/connections/message';
 
 const ChatPage = () => {
     const { connection_name, title } = useParams();
@@ -193,13 +193,14 @@ const ChatPage = () => {
                 chat_id: selectedChatId,
                 timestamp: Date.now()
             };
+            console.log("newMessage:", newMessage);
             socketRef.current.emit('send_direct_message', newMessage);
             const displayedMessage = { ...newMessage, content: message }; //Prevents displaying ciphertext
             setChat(prev => [...prev, displayedMessage]);
             setChats(prevChats => { //Moves current chat to top of chat list
                 const updatedChats = prevChats.map(chat => {
                     if (chat.chat_id === selectedChatId) {
-                        return { ...chat, updated_at: new Date().toISOString() }; //Change to use local time
+                        return { ...chat, updated_at: new Date().toISOString() }; //TO DO: Change to use local time
                     }
                     return chat;
                 });
@@ -207,6 +208,7 @@ const ChatPage = () => {
             });
             setMessage('');
         } catch (error) {
+            console.log("error sending message:", error);
             setErrorMessage("Error sending message");
         }
     };
