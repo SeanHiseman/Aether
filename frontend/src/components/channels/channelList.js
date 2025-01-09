@@ -27,7 +27,6 @@ const ChannelList = ({ channels, feedId, feedName, isChat, isGroup, setChannels 
                             title: decrypt(chat.title)
                         };
                     });
-                    //console.log("decryptedChats:", decryptedChats);
                     setChannels(decryptedChats);
                 }
             }
@@ -38,9 +37,7 @@ const ChannelList = ({ channels, feedId, feedName, isChat, isGroup, setChannels 
     }, [feedId, setChannels, viewer]);
 
     useEffect(() => {
-        if (channels.length === 0) {
-            getFeedChannels();
-        }
+        getFeedChannels();
     }, [channels, getFeedChannels]);
 
     //Fetch subfeeds

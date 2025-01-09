@@ -327,7 +327,6 @@ export const directMessagesSocket = (socket) => {
             socket.to(channel_id).emit('delete_direct_message', { message_id });
         });
         socket.on('send_direct_message', async (message) => {
-            console.log("message to send:", message);
             const messageLength = message.content.length;
             if (messageLength === 0) {
                 socket.emit('error_message', { error: "Message too short" });

@@ -48,12 +48,11 @@ const ConnectionsPage = () => {
                             className={`tab-title ${activeTab === 'requests' ? 'active' : ''}`} 
                             onClick={() => setActiveTab('requests')}
                         >
-                            Connection Requests
+                            Connect Requests
                         </span>
                     </div>
-                    {errorMessage && <div className="error-message">{errorMessage}</div>}
                     {activeTab === 'connections' ? (
-                        <ul className="content-list">
+                        <><div className="error-message">{errorMessage}</div><ul className="content-list">
                             {connections.map(c => (
                                 <li key={c.connection_id}>
                                     <div className="result-widget">
@@ -62,18 +61,17 @@ const ConnectionsPage = () => {
                                             <p className="text36 feed-name">{c.feed_name}</p>
                                         </Link>
                                         <div className="remove-connection-box">
-                                            <ManageConnectionButton 
-                                                connectRequest={false} 
-                                                feed={c} 
-                                                isConnected={true} 
-                                                viewerId={viewer.feed_id} 
-                                                onRequestUpdate={handleConnectionRemoval} 
-                                            />
+                                            <ManageConnectionButton
+                                                connectRequest={false}
+                                                feed={c}
+                                                isConnected={true}
+                                                viewerId={viewer.feed_id}
+                                                onRequestUpdate={handleConnectionRemoval} />
                                         </div>
                                     </div>
                                 </li>
                             ))}
-                        </ul>
+                        </ul></>
                     ) : (
                         <ConnectRequests feed={viewer} />
                     )}

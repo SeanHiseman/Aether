@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { FaFileUpload } from 'react-icons/fa';
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
@@ -129,7 +130,7 @@ const FeedInfoView = ({ feed, setFeed }) => {
                     {isPhotoFormVisible && (
                         <form className="change-feed-photo" onSubmit={ChangeFeedPhoto}>
                             <div className="file-input">
-                                <label htmlFor="new-feed-photo" class="dark-button">Choose feed photo</label>
+                                <label htmlFor="new-feed-photo" class="small-icon"><FaFileUpload /><p className="icon-text">Choose photo</p></label>
                                 <input type="file" id="new-feed-photo" name="new_feed_photo" accept="image/*" onChange={handleFileChange} hidden/>
                                 <span className="file-name">{feedPhotoFile}</span> 
                             </div>

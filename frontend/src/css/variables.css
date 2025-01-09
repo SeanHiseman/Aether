@@ -5,6 +5,8 @@
     --darkest-hover:#151515;
     --dark: #2c2e31;
     --dark-line: #444;
+    --large-gap: 20px;
+    --medium-gap: 10px;
     --transition-regular: background-color 0.3s;
 }
 body.light {

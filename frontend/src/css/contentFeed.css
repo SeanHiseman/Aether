@@ -7,28 +7,32 @@
 .ask-note {
     background-color: var(--dark);
     border: 1px solid var(--dark-line);
-    border-radius: 10px;
-    margin: 10px;
+    border-radius: var(--medium-gap);
+    margin: var(--medium-gap);
     padding: 1px;
     width: 97%;
 }
 .ask-note-text {
     font-size: medium;
-    margin: 10px;
+    margin: var(--medium-gap);
 }
-.content-item {
+.content-item, .result-widget {
     background-color: var(--darkest);
-    border-left: 1px solid var(--border);
-    border-right: 1px solid var(--border);
-    border-top: 1px solid var(--border);
+    border-radius: var(--large-gap);
     cursor: pointer;
-    padding: 1px;
-    transition: background-color;
+    margin: var(--large-gap);
+    padding: var(--large-gap);
+    box-shadow: rgba(0, 0, 0, 0.3) 0px 19px 38px, rgba(0, 0, 0, 0.22) 0px 15px 12px;
 }
 .content-item.reply {
-    border-left: none;
-    border-right: none;
-    margin-left: 20px;
+    box-shadow: none;
+    margin-bottom: 0;
+    margin-left: var(--large-gap);
+    margin-right: 0;
+    margin-top: 0;
+    padding-bottom: 0;
+    padding-right: 0;
+    padding-top: 0;
     position: relative;
 }
 .content-item.reply::before {
@@ -44,13 +48,9 @@
 .content-item * {
     cursor: inherit;
 }
-.content-item:hover {
-    background-color: var(--darkest-hover);
-}
 .content-list {
-    border-bottom: 1px solid var(--border);
     margin: 0;
-    width: 80%;
+    width: 90%;
 }
 .content-item, .content-list {
     box-sizing: border-box;
@@ -73,8 +73,8 @@
     border-left: 1px solid var(--dark-line);
     display: flex;
     flex-direction: column;
-    margin-bottom: 10px;
-    padding-left: 10px;
+    margin-bottom: var(--medium-gap);
+    padding-left: var(--medium-gap);
     position: relative;
 }
 .large-widget-text {
@@ -93,17 +93,17 @@
     align-items: center;
     display: flex;
     flex-direction: column;
-    margin: 10px;
+    margin: var(--medium-gap);
 }
 .result-widget {
     align-items: center;
-    background-color: var(--darkest);
-    border-left: 1px solid var(--border);
-    border-right: 1px solid var(--border);
-    border-top: 1px solid var(--border);
     display: flex;
     justify-content: space-between;
-    width: 100%;
+    padding: 0;
+    transition: 0.3s;
+}
+.result-widget:hover {
+    transform: translate(5px, -5px);
 }
 .post-list {
     margin: 0px;

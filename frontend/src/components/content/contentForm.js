@@ -8,16 +8,16 @@ import { v4 } from 'uuid';
 const ContentForm = ({ isEdit = false, isReply, onSubmit, post = null, setShowForm }) => {
     const [files, setFiles] = useState([]);
     const [generationRequest, setGenerationRequest] = useState('');
-    const [isCode, setIsCode] = useState(false);
+    const [isCode, setIsCode] = useState(true);
     const [isLoading, setIsLoading] = useState(false);
     const [codeContent, setCodeContent] = useState('');
     const [formErrorMessage, setFormErrorMessage] = useState('');
     const [textContent, setTextContent] = useState('');
     const [title, setTitle] = useState('');
-    const [useRequest, setUseRequest] = useState(false);
+    const [useRequest, setUseRequest] = useState(true);
     const quillRef = useRef(null);
     const loadingText = "Loading... (Can take up to 30 seconds)";
-    const MAX_FILE_SIZE = 1000 * 1024 * 1024; //1gb;
+    const MAX_FILE_SIZE = 10 * 1024 * 1024; //10mb;
 
     //Populates form if editing
     useEffect(() => {
@@ -197,7 +197,7 @@ const ContentForm = ({ isEdit = false, isReply, onSubmit, post = null, setShowFo
                     <div className="code-editor">
                         {useRequest ? (
                             <div id="generate-query-container">
-                                <textarea className="content-input-form generate" placeholder="Describe your post..." value={generationRequest} onChange={(e) => setGenerationRequest(e.target.value)} />
+                                <textarea className="content-input-form generate" placeholder={isReply ? "Describe your reply..." : "Describe your post..."} value={generationRequest} onChange={(e) => setGenerationRequest(e.target.value)} />
                                 <button className="button" type="button" onClick={generateContent}>Create</button>
                             </div>
                         ) : (
