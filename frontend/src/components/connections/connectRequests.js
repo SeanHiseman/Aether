@@ -26,26 +26,24 @@ const ConnectRequests = ({ feed }) => {
     };
 
     return (
-        <div className="channel-content">
-            {connectRequests.length === 0 ? (
-                <p>No pending connect requests</p>
-            ) : (
-                <ul className="content-list">
-                    <div className="error-message">{errorMessage}</div>
-                    {connectRequests.map((request, index) => (
-                        <li key={index}>
-                            <div className="result-widget">
-                                <Link className="feed-link" to={`/u/${request.sender.feed_name}`}>
-                                    <img className="large-feed-photo" src={`/${request.sender.feed_photo}`} alt="Profile" />
-                                    <p className="text36 feed-name">{request.sender.feed_name}</p>
-                                </Link>
-                                <ManageConnectionButton connectRequest={request} feed={request.sender} isConnected={false} viewerId={feed.feed_id} onRequestUpdate={handleRequestUpdate} />
-                            </div>
-                        </li>
-                    ))}
-                </ul>
-            )}
-        </div> 
+        <><div className="error-message">{errorMessage}</div>
+        {connectRequests.length === 0 ? (
+            <p>No pending connect requests</p>
+        ) : (
+            <ul className="content-list">
+                {connectRequests.map((request, index) => (
+                    <li key={index}>
+                        <div className="result-widget">
+                            <Link className="feed-link" to={`/u/${request.sender.feed_name}`}>
+                                <img className="large-feed-photo" src={`/${request.sender.feed_photo}`} alt="Profile" />
+                                <p className="text36 feed-name">{request.sender.feed_name}</p>
+                            </Link>
+                            <ManageConnectionButton connectRequest={request} feed={request.sender} isConnected={false} viewerId={feed.feed_id} onRequestUpdate={handleRequestUpdate} />
+                        </div>
+                    </li>
+                ))}
+            </ul>
+        )}</>
     );
 };
 

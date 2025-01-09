@@ -163,7 +163,6 @@ const ChatPage = () => {
             });
             setChat(prev => prev.filter(m => m.message_id !== messageId));  
         } catch (error) {
-            console.log("deleting error:", error);
             setErrorMessage("Error deleting message");
         }
     };
@@ -193,7 +192,6 @@ const ChatPage = () => {
                 chat_id: selectedChatId,
                 timestamp: Date.now()
             };
-            console.log("newMessage:", newMessage);
             socketRef.current.emit('send_direct_message', newMessage);
             const displayedMessage = { ...newMessage, content: message }; //Prevents displaying ciphertext
             setChat(prev => [...prev, displayedMessage]);
@@ -208,7 +206,6 @@ const ChatPage = () => {
             });
             setMessage('');
         } catch (error) {
-            console.log("error sending message:", error);
             setErrorMessage("Error sending message");
         }
     };

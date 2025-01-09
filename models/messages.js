@@ -1,4 +1,4 @@
-import { STRING, DataTypes } from 'sequelize';
+import { BOOLEAN, STRING, DataTypes } from 'sequelize';
 import sequelize from '../databaseSetup.js';
 import { Feeds } from './feeds.js'
 
@@ -50,6 +50,7 @@ const Messages = sequelize.define('messages', {
     chat_id: { type: STRING(36), allowNull: false, references: { model: Chats, key: 'chat_id' }},
     sender_id: { type: STRING(36), allowNull: false, references: { model: Feeds, key: 'feed_id' }},
     content: { type: STRING(1000), allowNull: false },
+    is_read: { type: BOOLEAN, defaultValue: false },
     timestamp: { type: DataTypes.DATE(3), defaultValue: sequelize.literal('CURRENT_TIMESTAMP(3)') }
 }, { tableName: 'messages', timestamps: false });
   
