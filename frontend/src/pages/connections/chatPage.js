@@ -1,29 +1,22 @@
 import axios from 'axios';
-import React, { useCallback, useContext, useEffect, useRef, useState } from 'react';
-import { io } from 'socket.io-client';
+import React, { useCallback, useContext, useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { v4 } from 'uuid';
 import { FaMinus, FaPlus } from 'react-icons/fa';
 import { AuthContext } from '../../components/authContext';
 import ChannelList from '../../components/channels/channelList';
 import ChannelName from '../../components/channels/channelName';
+import ChatChannel from '../../components/channels/chatChannel';
 import { decrypt, encrypt } from '../../encryptionUtil';
-import Message from '../../components/connections/message';
 
 const ChatPage = () => {
     const { connection_name, title } = useParams();
     const [connection, setConnection] = useState(null);
-    const [chat, setChat] = useState([]);
     const [chats, setChats] = useState([]);
     const [errorMessage, setErrorMessage] = useState('');
-    const [message, setMessage] = useState('');
     const [newChatName, setNewChatName] = useState('');
     const [selectedChatId, setSelectedChatId] = useState(null);
     const [showForm, setShowForm] = useState(false);
     const { viewer } = useContext(AuthContext);
-    const socketRef = useRef(null);
-    const messagesContainerRef = useRef(null);
-    const messagesEndRef = useRef(null);
     const navigate = useNavigate();
 
     const fetchConnection = async () => {
@@ -45,54 +38,6 @@ const ChatPage = () => {
             setSelectedChatId(found ? found.chat_id : null);
         } 
     }, [title, chats]);
-
-    useEffect(() => {
-        socketRef.current = io(`http://localhost:7000`);
-        return () => {
-            if (socketRef.current) {
-                socketRef.current.disconnect();
-            }
-        };
-    }, []);
-
-    useEffect(() => {
-        if (!selectedChatId) {
-            setChat([]);
-            return;
-        }
-        getChatMessages(selectedChatId);
-        socketRef.current.emit('join_chat', selectedChatId);
-        const handleReceiveMessage = (msg) => {
-            setChat(prev => [...prev, msg]);
-        };
-        const handleMessageConfirmed = (msg) => {
-            setChat(prev =>
-                prev.map(oldMsg =>
-                    !oldMsg.message_id &&
-                    oldMsg.sender_id === msg.sender_id &&
-                    oldMsg.content === msg.content
-                        ? { ...oldMsg, message_id: msg.message_id }
-                        : oldMsg
-                )
-            );
-        };
-        socketRef.current.on('receive_message', handleReceiveMessage);
-        socketRef.current.on('message_confirmed', handleMessageConfirmed);
-        return () => {
-            socketRef.current.emit('leave_chat', selectedChatId);
-            socketRef.current.off('receive_message', handleReceiveMessage);
-            socketRef.current.off('message_confirmed', handleMessageConfirmed);
-        };
-    }, [selectedChatId]);
-
-    useEffect(() => {
-        if (messagesContainerRef.current) {
-            messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
-        }
-        if (messagesEndRef.current) {
-            messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
-        }
-    }, [chat]);
 
     //Updates list of chats when chat name changed
     const chatUpdate = (chatId, newName) => {
@@ -153,106 +98,17 @@ const ChatPage = () => {
     const deleteChat = (chatId) => {
         setChats(prevChats => prevChats.filter(chat => chat.chat_id !== chatId));
     };
-
-    const deleteMessage = (messageId) => {
-        try {
-            if (!messageId) return;
-            socketRef.current.emit('delete_direct_message', {
-                message_id: messageId,
-                channel_id: selectedChatId,
-            });
-            setChat(prev => prev.filter(m => m.message_id !== messageId));  
-        } catch (error) {
-            setErrorMessage("Error deleting message");
-        }
-    };
-
-    const getChatMessages = async (chatId) => {
-        try {
-            const response = await axios.get(`/api/get_chat_messages/${chatId}`);
-            const ciphertextMessages = response.data;
-            const decryptedMsgs = ciphertextMessages.map((m) => ({
-                ...m,
-                content: decrypt(m.content),
-            }));
-            setChat(decryptedMsgs);
-        } catch (error) {
-            setErrorMessage('Error getting messages');
-        }
-    };
-
-    const sendMessage = () => {
-        try {
-            if (!message.trim()) return;
-            const encryptedContent = encrypt(message);
-            const newMessage = {
-                message_id: v4(),
-                content: encryptedContent,
-                sender_id: viewer.feed_id,
-                chat_id: selectedChatId,
-                timestamp: Date.now()
-            };
-            socketRef.current.emit('send_direct_message', newMessage);
-            const displayedMessage = { ...newMessage, content: message }; //Prevents displaying ciphertext
-            setChat(prev => [...prev, displayedMessage]);
-            setChats(prevChats => { //Moves current chat to top of chat list
-                const updatedChats = prevChats.map(chat => {
-                    if (chat.chat_id === selectedChatId) {
-                        return { ...chat, updated_at: new Date().toISOString() }; //TO DO: Change to use local time
-                    }
-                    return chat;
-                });
-                return updatedChats.sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at));
-            });
-            setMessage('');
-        } catch (error) {
-            setErrorMessage("Error sending message");
-        }
-    };
     
     const toggleForm = () => { setShowForm(!showForm) }
 
     const updateChats = useCallback((newChats) => {
         setChats(newChats);
     }, []);
-
+ 
     document.title = connection_name;
     return (
         <div className="standard-container">
-            <div className="messages-section">
-                <div className="messages-list-container" ref={messagesContainerRef}>
-                    {chat.map((msg, index) => (
-                        <Message
-                            key={msg.message_id || index}
-                            message={msg}
-                            isOutgoing={msg.sender_id === viewer.feed_id}
-                            canRemove={false}
-                            deleteMessage={deleteMessage}
-                        />
-                    ))}
-                    <div ref={messagesEndRef} />
-                </div>
-                <div className="messages-channel-footer">
-                <input
-                    className="chat-message-bar"
-                    type="text"
-                    value={message}
-                    placeholder="Type a message..."
-                    onChange={(e) => {
-                        if (e.target.value.length > 1000) {
-                            setErrorMessage("Message cannot exceed 1000 characters.");
-                            return;
-                        }
-                        setErrorMessage('');
-                        setMessage(e.target.value);
-                    }}
-                    onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
-                />
-                <button className="chat-send-button" onClick={sendMessage}>
-                    Send
-                </button>
-                </div>
-            </div>
+            <ChatChannel channelId={selectedChatId} isGroup={false} setChats={setChats} />
             <aside id="right-aside">
                 {connection && (
                     <div id="feed-summary">

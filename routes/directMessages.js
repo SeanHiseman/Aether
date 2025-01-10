@@ -5,6 +5,7 @@ import { v4 } from 'uuid';
 import { Op, Sequelize } from 'sequelize';
 import { Chats, Connections, ConnectRequests, FeedChats, Feeds, Messages } from '../models/relationships.js';
 import authenticateCheck from '../functions/checks/authenticateCheck.js';
+import sequelize from '../databaseSetup.js';
 
 dotenv.config();
 const router = Router();
@@ -77,6 +78,11 @@ router.post('/create_chat', authenticateCheck, async (req, res) => {
 router.delete('/delete_chat', authenticateCheck, async (req, res) => {
     try {
         const { channelId } = req.body;
+        await Messages.destroy({
+            where: {
+                chat_id: channelId
+            }
+        })
         await FeedChats.destroy({
             where: { 
                 chat_id: channelId
@@ -110,7 +116,7 @@ router.delete('/delete_connect_request', authenticateCheck, async (req, res) => 
 });
 
 router.delete('/delete_connection', authenticateCheck, async (req, res) => {
-    console.log("req.body:", req.body);
+    const transaction = await sequelize.transaction(); 
     try {
         const { deleterId, feedId } = req.body;
         await Connections.destroy({
@@ -119,7 +125,8 @@ router.delete('/delete_connection', authenticateCheck, async (req, res) => {
                     { feed1_id: deleterId, feed2_id: feedId },
                     { feed1_id: feedId, feed2_id: deleterId },
                 ]
-            }
+            },
+            transaction
         });
         const feedChats = await FeedChats.findAll({
             where: {
@@ -127,49 +134,51 @@ router.delete('/delete_connection', authenticateCheck, async (req, res) => {
                     { feed_id: deleterId },
                     { feed_id: feedId }
                 ]
-            }
+            },
+            transaction
         });
         const chatIds = feedChats.map(fc => fc.chat_id);
         if (chatIds.length > 0) {
+            await FeedChats.destroy({
+                where: {
+                    chat_id: chatIds
+                },
+                transaction
+            });
             await Messages.destroy({
                 where: {
                     chat_id: chatIds
-                }
-            });
-            await FeedChats.destroy({
-                where: {
-                    chat_id: chatIds,
-                    [Op.or]: [
-                        { feed_id: deleterId },
-                        { feed_id: feedId }
-                    ]
-                }
+                },
+                transaction
             });
             await Chats.destroy({
                 where: {
                     chat_id: chatIds
-                }
+                },
+                transaction
             });
         }
+        await transaction.commit();
         res.status(200).json({ success: true });
     } catch (error) {
-        console.log(error);
+        await transaction.rollback();
         res.status(500).json({ success: false });
     }
 });
 
-router.get('/get_chat_messages/:chatId', authenticateCheck, async (req, res) => {
+
+router.get('/get_chat_messages/:channelId', authenticateCheck, async (req, res) => {
     try {
-        const chatId = req.params.chatId;
+        const { channelId } = req.params;
         const messages = await Messages.findAll({
-            where: { chat_id: chatId },
+            where: { chat_id: channelId },
             include: [{
                 model: Feeds,
                 attributes: feedAttributes,
             }],
             order: [['timestamp', 'ASC']]
         });;
-        res.status(200).json(messages);
+        res.status(200).json({ success: true, messages });
     } catch (error) {
         res.status(500).json({ success: false });
     }
@@ -270,8 +279,6 @@ router.get('/get_connections/:feedId', authenticateCheck, async (req, res) => {
                 connection_date: connection.connection_date
             };
         });
-        //console.log("connections:", connections);
-        //res.status(200).json(connections);
         res.status(200).json(filteredConnections);
     } catch (error) {
         res.status(500).json({ success: false });  
@@ -315,11 +322,11 @@ router.post('/send_connect_request', authenticateCheck, async (req, res) => {
 
 export const directMessagesSocket = (socket) => {
     try {
-        socket.on('join_chat', (chatId) => {
-            socket.join(chatId);
+        socket.on('join_chat', (chat_id) => {
+            socket.join(chat_id);
         });
-        socket.on('leave_chat', (chatId) => {
-            socket.leave(chatId);
+        socket.on('leave_chat', (chat_id) => {
+            socket.leave(chat_id);
         });
         socket.on('delete_direct_message', async (data) => {
             const { message_id, channel_id } = data;
@@ -335,25 +342,22 @@ export const directMessagesSocket = (socket) => {
                 socket.emit('error_message', { error: "Message too long" });
                 return;
             }
+            console.log("message:", message);
             const newMessage = await Messages.create({
                 message_id: message.message_id,
-                chat_id: message.chat_id,
-                sender_id: message.sender_id,
                 content: message.content,
+                chat_id: message.channel_id,
+                sender_id: message.sender_id,
                 timestamp: message.timestamp
             });
             await Chats.update(
                 { updated_at: message.timestamp || new Date() },  
-                { where: { chat_id: message.chat_id } }
+                { where: { chat_id: message.channel_id } }
             );
-            socket.to(message.chatId).emit('message_confirmed', {
-                ...message,
-                message_id: newMessage.message_id,
-                timestamp: newMessage.timestamp
-            }); 
+            socket.to(message.chat_id).emit('chat_message_confirmed', newMessage); 
         });
     } catch (error) {
-        console.error(error);
+        console.log("Socket error:", error);
     }
 };
 

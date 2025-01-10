@@ -26,10 +26,18 @@ const ConnectionsPage = () => {
         getConnections();
     }, [viewer.feed_id]);
 
+    const handleConnectionAddition = (newConnection) => {
+        if (newConnection) {
+            setConnections(prevConnections => [...prevConnections, newConnection]);
+        }
+    };
+
     const handleConnectionRemoval = (feedId) => {
-        setConnections((prevConnections) => 
-            prevConnections.filter((connection) => connection.feed_id !== feedId)
-        );
+        if (feedId) {
+            setConnections(prevConnections => 
+                prevConnections.filter(connection => connection.feed_id !== feedId)
+            );
+        }
     };
 
     document.title = "Connections";
@@ -52,28 +60,32 @@ const ConnectionsPage = () => {
                         </span>
                     </div>
                     {activeTab === 'connections' ? (
-                        <><div className="error-message">{errorMessage}</div><ul className="content-list">
-                            {connections.map(c => (
-                                <li key={c.connection_id}>
-                                    <div className="result-widget">
-                                        <Link className="feed-link" to={`/u/${c.feed_name}`}>
-                                            <img className="large-feed-photo" src={`/${c.feed_photo}`} alt="Feed" />
-                                            <p className="text36 feed-name">{c.feed_name}</p>
-                                        </Link>
-                                        <div className="remove-connection-box">
-                                            <ManageConnectionButton
-                                                connectRequest={false}
-                                                feed={c}
-                                                isConnected={true}
-                                                viewerId={viewer.feed_id}
-                                                onRequestUpdate={handleConnectionRemoval} />
-                                        </div>
-                                    </div>
-                                </li>
-                            ))}
-                        </ul></>
+                        connections.length === 0 ? (
+                            <p>No connections</p>
+                        ) : (
+                            <><div className="error-message">{errorMessage}</div><ul className="content-list">
+                                    {connections.map(c => (
+                                        <li key={c.connection_id}>
+                                            <div className="result-widget">
+                                                <Link className="feed-link" to={`/u/${c.feed_name}`}>
+                                                    <img className="large-feed-photo" src={`/${c.feed_photo}`} alt="Feed" />
+                                                    <p className="text36 feed-name">{c.feed_name}</p>
+                                                </Link>
+                                                <div className="remove-connection-box">
+                                                    <ManageConnectionButton
+                                                        connectRequest={false}
+                                                        feed={c}
+                                                        isConnected={true}
+                                                        viewerId={viewer.feed_id}
+                                                        onRequestUpdate={handleConnectionRemoval} />
+                                                </div>
+                                            </div>
+                                        </li>
+                                    ))}
+                            </ul></>                            
+                        )
                     ) : (
-                        <ConnectRequests feed={viewer} />
+                        <ConnectRequests feed={viewer} onConnectionAdded={handleConnectionAddition} />
                     )}
                 </div>
             </div>
