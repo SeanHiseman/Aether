@@ -15,71 +15,86 @@ const ManageConnectionButton = ({ connectRequest, feed, isConnected, viewerId, o
         setRequest(connectRequest || feed.connectRequest);
     }, [connectRequest, feed.connectRequest, isConnected, feed.isConnected]);
 
+    const handleConnectRequest = async (result) => {
+        try {
+            let response;
+            if (result === 'accept') {
+                response = await axios.post('/api/accept_connect_request', {
+                    receiverId: viewerId,
+                    senderId
+                });
+                if (response.status === 200) {
+                    const newConnection = {
+                        feed_id: senderId,
+                        feed_name: feed.feed_name,
+                        feed_photo: feed.feed_photo,
+                    };
+                    setHasConnection(true);
+                    setRequest(null);
+                    if (onRequestUpdate) {
+                        onRequestUpdate(newConnection, senderId);
+                    }
+                }
+            } else if (result === 'reject') {
+                response = await axios.delete('/api/delete_connect_request', {
+                    data: { receiverId: viewerId, senderId }
+                });
+                if (response.status === 200) {
+                    setRequest(null);
+                    if (onRequestUpdate) {
+                        onRequestUpdate(null, senderId);
+                    }
+                }
+            }
+        } catch (error) {
+            console.error("Request handle error:", error);
+            setErrorMessage("Error handling request");
+        }
+    }; 
+
     const handleSendRequest = async () => {
         try {
             let method, requestData, url;
+            const targetFeedId = viewerId === senderId ? receiverId : senderId;
             if (hasConnection) {
                 method = 'delete';
                 url = '/api/delete_connection';
-                requestData = { deleterId: viewerId, feedId: (viewerId === senderId ? receiverId : senderId) };
+                requestData = { deleterId: viewerId, feedId: targetFeedId };
             } 
             else if (request) {
-                if (viewerId === senderId) {
-                    method = 'delete';
-                    url = '/api/delete_connect_request';
-                    requestData = { receiverId, senderId: viewerId };
-                } else {
-                    method = 'delete';
-                    url = '/api/delete_connect_request';
-                    requestData = { receiverId: viewerId, senderId };
-                }
+                method = 'delete';
+                url = '/api/delete_connect_request';
+                requestData = { 
+                    receiverId: viewerId === senderId ? receiverId : viewerId, 
+                    senderId: viewerId === senderId ? viewerId : senderId 
+                };
             } 
             else {
                 method = 'post';
                 url = '/api/send_connect_request';
                 requestData = { receiverId, senderId: viewerId };
             }
-            const response = await axios({ method, url, data: requestData });
-            console.log("response:", response);
+            const response = await axios({ 
+                method, 
+                url, 
+                data: requestData 
+            });
             if (response.status === 200) {
                 if (method === 'delete') {
                     setHasConnection(false);
-                    setRequest(false);
+                    setRequest(null);
                     if (onRequestUpdate) {
-                        onRequestUpdate(feed.feed_id);
+                        onRequestUpdate(targetFeedId);
                     }
                 } else {
                     setRequest(true);
                     setHasConnection(false);
                 }
-            } else {
-                setErrorMessage("Connection handling error");
             }
         } catch (error) {
             setErrorMessage("Connection handling error");
         }
-    };
-
-    const handleConnectRequest = async (result) => {
-        try {
-            let response;
-            if (result === 'accept') {
-                response = await axios.post('/api/accept_connect_request', { receiverId: viewerId, senderId });
-            } else if (result === 'reject') {
-                response = await axios.delete('/api/delete_connect_request', { data: { receiverId: viewerId, senderId } });
-            }
-            if (response.status === 200) {
-                if (request && typeof onRequestUpdate === 'function') {
-                    onRequestUpdate(request.sender_id);
-                } else {
-                    setRequest(false);
-                    setHasConnection(result === 'accept');
-                }
-            }
-        } catch (error) {
-            setErrorMessage("Error handling request");
-        }
-    };    
+    };   
 
     if ((viewerId === receiverId) && request && !hasConnection) {
         return (

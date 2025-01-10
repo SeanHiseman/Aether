@@ -29,11 +29,10 @@ const FeedChannels = sequelize.define('feed_channels', {
 
 const FeedChannelMessages = sequelize.define('feed_channel_messages', { 
     message_id: { type: STRING(36), primaryKey: true }, 
-    message_content: { type: STRING(1000), allowNull: false }, 
-    feed_id: { type: STRING(36), allowNull: false},
+    content: { type: STRING(1000), allowNull: false }, 
     channel_id: { type: STRING(36), allowNull: false }, 
+    sender_id: { type: STRING(36), allowNull: false},
     timestamp: { type: DataTypes.DATE(3), defaultValue: sequelize.literal('CURRENT_TIMESTAMP(3)') },
-    sender_id: { type: STRING(36), allowNull: false}
 }, { tableName: 'feed_channel_messages', timestamps: false }); 
   
 const Followers = sequelize.define('followers', {

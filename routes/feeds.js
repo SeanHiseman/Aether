@@ -302,9 +302,9 @@ router.get('/feed/:feedName', authenticateCheck, async (req, res) => {
 
 router.get('/feed_channel_messages/:channelId', authenticateCheck, async (req, res) => {
     try {
-        const { channelId } = req.params;
+        const { channelId } = req.params
         const messages = await FeedChannelMessages.findAll({
-            where: { channelId },
+            where: { channel_id: channelId },
             include: [{
                 model: Feeds,
                 attributes: feedAttributes,
@@ -533,8 +533,11 @@ router.post('/update_current_feed', async (req, res) => {
 
 export const feedChatChannelSocket = (socket) => {
     try {
-        socket.on('join_channel', (channelId) => {
-            socket.join(channelId);
+        socket.on('join_channel', (channel_id) => {
+            socket.join(channel_id);
+        });
+        socket.on('leave_channel', (channel_id) => {
+            socket.leave(channel_id);
         });
         socket.on('delete_feed_message', async (data) => {
             const { message_id, channel_id } = data;
@@ -542,7 +545,7 @@ export const feedChatChannelSocket = (socket) => {
             socket.to(channel_id).emit('delete_feed_message', { message_id });
         });
         socket.on('send_feed_message', async (message) => {
-            const messageLength = message.message_content.length;
+            const messageLength = message.content.length;
             if (messageLength === 0) {
                 socket.emit('error_message', { error: "Message too short" });
                 return;
@@ -552,13 +555,16 @@ export const feedChatChannelSocket = (socket) => {
             }
             const newMessage = await FeedChannelMessages.create({
                 message_id: message.message_id,
-                feed_id: message.feedId,
-                channel_id: message.channelId,
-                message_content: message.messageContent,
-                sender_id: message.senderId,
+                content: message.content,
+                channel_id: message.channel_id,
+                sender_id: message.sender_id,
                 timestamp: message.timestamp,
             });
-            socket.to(message.channelId).emit('new_message', newMessage);
+            await FeedChannels.update(
+                { updated_at: message.timestamp || new Date() },  
+                { where: { channel_id: message.channel_id } }
+            );
+            socket.to(message.channel_id).emit('channel_message_confirmed', newMessage);
         });
         socket.on('leave_channel', (channelId) => {
             socket.leave(channelId);

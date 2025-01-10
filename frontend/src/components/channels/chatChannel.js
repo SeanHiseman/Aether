@@ -1,87 +1,166 @@
 import axios from 'axios';
-import React, { useContext, useEffect, useState } from 'react';
+import React, { useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { AuthContext } from '../authContext';
 import { io } from "socket.io-client";
 import { v4 } from 'uuid';
+import { decrypt, encrypt } from '../../encryptionUtil';
 import Message from '../connections/message';
 
-const ChatChannel = ({ canRemove, channelId, isGroup, locationId }) => {
+const ChatChannel = ({ canRemove, channelId, isGroup, setChats }) => {
     const [channel, setChannel] = useState([]);
-    const [currentMessage, setCurrentMessage] = useState('');
     const [errorMessage, setErrorMessage] = useState('');
-    const { user } = useContext(AuthContext)
-    const socket = io(`http://localhost:7000`);
+    const [message, setMessage] = useState('');
+    const { viewer } = useContext(AuthContext)
+    const messagesContainerRef = useRef(null);
+    const messagesEndRef = useRef(null);
+    const socketRef = useRef(null);
 
-    //Update messages in the channel
+    //Fetch and listen for messages
     useEffect(() => {
-        socket.emit('join_channel', channelId);
-        getChannelMessages(channelId);
-        //Listens for new messages
-        socket.on('new_message', (newMessage) => {
-            if (newMessage.channel_id === channelId) {
-                setChannel((prevMessages) => [...prevMessages, newMessage]);
-            }
-        });
-        return () => {
-            socket.off('new_message');
-            socket.emit('leave_channel', channelId);
-        };
-    }, [channelId, socket]);
+        const socket = io('http://localhost:7000');
+        socketRef.current = socket;
+        const channelRoute = isGroup ? 'join_channel' : 'join_chat';
+        const leaveRoute = isGroup ? 'leave_channel' : 'leave_chat';
+        const confirmedRoute = isGroup ? 'channel_message_confirmed' : 'chat_message_confirmed';
+        const deleteRoute = isGroup ? 'delete_feed_message' : 'delete_direct_message';
+        if (channelId) {
+            socket.emit(channelRoute, channelId);
+            getChannelMessages(channelId);
+            const handleNewMessage = (newMessage) => {
+                if (newMessage.channel_id === channelId) {
+                    const processedMessage = {
+                        ...newMessage,
+                        content: isGroup ? newMessage.content : decrypt(newMessage.content),
+                    };
+                    setChannel((prevMessages) => [...prevMessages, processedMessage]);
+                }
+            };
+            const handleConfirmedMessage = (confirmedMessage) => {
+                const processedMessage = {
+                    ...confirmedMessage,
+                    content: isGroup ? confirmedMessage.content : decrypt(confirmedMessage.content),
+                };
+                setChannel((prevMessages) => [...prevMessages, processedMessage]);
+            };
+            const handleDeleteMessage = ({ message_id }) => {
+                setChannel((prevMessages) => prevMessages.filter((m) => m.message_id !== message_id));
+            };
+            socket.on('new_message', handleNewMessage);
+            socket.on(confirmedRoute, handleConfirmedMessage);
+            socket.on(deleteRoute, handleDeleteMessage);
+            socket.on('error_message', (error) => setErrorMessage(error?.error || 'An error occurred'));
+            socket.on('connect_error', (err) => console.log('Connection Error:', err));
+            return () => {
+                socket.emit(leaveRoute, channelId);
+                socket.off('new_message', handleNewMessage);
+                socket.off(confirmedRoute, handleConfirmedMessage);
+                socket.off(deleteRoute, handleDeleteMessage);
+                socket.off('error_message');
+                socket.disconnect(); 
+            };
+        }
+    }, [channelId, isGroup]);
+    
+    useEffect(() => {
+        if (messagesContainerRef.current) {
+            messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
+        }
+        if (messagesEndRef.current) {
+            messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+        }
+    }, [channel]);
 
-    //Deletes the message
-    const deleteMessage = (messageId) => {
-        if (messageId) {
-            socket.emit('delete_message', {
+    const deleteMessage = useCallback((messageId) => {
+        try {
+            if (!messageId) return;
+            const route = isGroup ? 'delete_feed_message' : 'delete_direct_message';
+            socketRef.current.emit(route, {
                 message_id: messageId,
                 channel_id: channelId,
             });
-            setChannel(prevChat => prevChat.filter(msg => msg.message_id !== messageId));
-        } else {
+            setChannel(prev => prev.filter(m => m.message_id !== messageId));  
+        } catch (error) {
             setErrorMessage("Error deleting message");
         }
-    };
+    }, [channelId, isGroup]);
 
-    //Get messages from the channel
-    const getChannelMessages = async (channelId) => {
+    const getChannelMessages = useCallback(async (channelId) => {
         try {
-            const response = await axios.get(`/api/feed_channel_messages/${channelId}`);
-            setChannel(response.data);
+            const route = isGroup ? 'feed_channel_messages' : 'get_chat_messages';
+            const response = await axios.get(`/api/${route}/${channelId}`);
+            const messages = response.data.messages.map((m) => ({
+                ...m,
+                content: isGroup ? m.content : decrypt(m.content),
+            }));
+            setChannel(messages);
         } catch (error) {
-            setErrorMessage("Error getting messages");
+            setErrorMessage('Error fetching messages');
         }
-    };
+    }, [isGroup]);
 
-    const sendChannelMessage = () => {
+    const sendMessage = useCallback(() => {
         try {
-            //Prevents sending empty messages
-            if (!currentMessage.trim()) return;
+            if (!message.trim()) return;
             const newMessage = {
                 message_id: v4(),
-                message_content: currentMessage,
-                channelId, 
-                groupId: locationId,
-                sender_id: user.userId, 
-                timestamp: new Date()
+                content: isGroup ? message : encrypt(message),
+                sender_id: viewer.feed_id,
+                channel_id: channelId,
+                timestamp: Date.now(),
+            };
+            const route = isGroup ? 'send_feed_message' : 'send_direct_message';
+            socketRef.current.emit(route, newMessage);
+            const displayedMessage = { ...newMessage, content: message }; //Prevents displaying ciphertext
+            setChannel((prev) => [...prev, displayedMessage]);
+            if (!isGroup) {
+                setChats((prevChats) => { //Moves current chat to top of chat list
+                    const updatedChats = prevChats.map((chat) => 
+                        chat.chat_id === channelId
+                            ? {...chat, updated_at: new Date().toISOString() }
+                            : chat
+                    );
+                    return updatedChats.sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at));
+                });
             }
-            socket.emit('send_feed_message', newMessage);
-            setChannel(prevChat => [...prevChat, newMessage]);
-            setCurrentMessage('');
+            setMessage('');
         } catch (error) {
             setErrorMessage("Error sending message");
         }
-    };
+    }, [channelId, isGroup, message, viewer.feed_id, setChats]);
 
     return (
-        <div className="channel">
-            <div className="channel-content messages">
-                {channel.slice().reverse().map((msg, index) => (
-                    <Message canRemove={canRemove} deleteMessage={deleteMessage} key={index} message={msg} isGroup={isGroup} isOutgoing={msg.sender_id === user.userId} socket={socket} channelId={channelId}/>
+        <div className="messages-section">
+            <div className="messages-list-container" ref={messagesContainerRef}>
+                {channel.map((msg, index) => (
+                    <Message
+                        key={msg.message_id || index}
+                        canRemove={canRemove}
+                        deleteMessage={deleteMessage}
+                        isOutgoing={msg.sender_id === viewer.feed_id}
+                        message={msg}
+                    />
                 ))}
+                <div ref={messagesEndRef} />
             </div>
             <div className="messages-channel-footer">
-                <input className="chat-message-bar" type="text" value={currentMessage} onChange={(e) => setCurrentMessage(e.target.value)} placeholder="Type a message..." onKeyDown={(e) => e.key === 'Enter' && sendChannelMessage()}/>
-                <button className="chat-send-button" onClick={sendChannelMessage}>Send</button>
-                {errorMessage && <div className="error-message">{errorMessage}</div>}
+                <input
+                    className="chat-message-bar"
+                    type="text"
+                    value={message}
+                    placeholder="Type a message..."
+                    onChange={(e) => {
+                        if (e.target.value.length > 1000) {
+                            setErrorMessage("Message cannot exceed 1000 characters.");
+                            return;
+                        }
+                        setErrorMessage('');
+                        setMessage(e.target.value);
+                    }}
+                    onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
+                />
+                <button className="chat-send-button" onClick={sendMessage}>
+                    Send
+                </button>
             </div>
         </div>
     );
