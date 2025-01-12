@@ -1,33 +1,24 @@
 import axios from 'axios';
 import { FaPlusCircle, FaMinusCircle } from 'react-icons/fa';
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 
-const FollowRequests = ({ feed }) => {
+const FollowRequests = ({ feed, followRequests, setFeed, setFollowRequests, setRequestCount }) => {
     const [errorMessage, setErrorMessage] = useState('');
-    const [followRequests, setFollowRequests] = useState([]);
-
-    useEffect(() => {
-        const getFollowRequests = async () => {
-            try {
-                const response = await axios.get(`/api/follow_requests/${feed.feed_id}`);
-                console.log("response.data:", response.data);
-                setFollowRequests(response.data.requests || []);
-            } catch (error) {
-                setErrorMessage('Error getting requests');
-            } 
-        };
-        getFollowRequests();
-    }, [feed.feed_id]); 
 
     const handleRequestAction = async (request, result) => {
         try {
             if (result === 'accept') {
                 await axios.post('/api/accept_follow_request', { request });
+                setFeed((prevFeed) => ({ ...prevFeed, follower_count: prevFeed.follower_count + 1 }));
             } else if (result === 'reject') {
                 await axios.delete('/api/delete_follow_request', { data: { senderId: request.sender_id, receiverId: feed.feed_id } });
             }
-            setFollowRequests((prevRequests) => prevRequests.filter((prevRequest) => prevRequest.request_id !== request.request_id));
+            setFollowRequests((prevRequests) => {
+                const updatedRequests = prevRequests.filter((prevRequest) => prevRequest.request_id !== request.request_id);
+                setRequestCount(updatedRequests.length); 
+                return updatedRequests;
+            });
         } catch (error) {
             setErrorMessage('Error handling request');
         }
@@ -36,7 +27,7 @@ const FollowRequests = ({ feed }) => {
     return (
         <div className="channel-content">
             <p className="text36">Follow Requests</p>
-            {followRequests.length === 0 ? (
+            {!followRequests || followRequests.length === 0 ? (
                 <p>No pending requests</p>
             ) : (
                 <ul className="content-list">
