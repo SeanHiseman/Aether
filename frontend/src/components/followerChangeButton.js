@@ -15,7 +15,7 @@ const FollowerChangeButton = ({ feed, viewerId }) => {
         setRequest(feed.followRequest);
         setFollower(feed.isFollower);
         setFollowerCount(feed.follower_count);
-    }, [feed.hasFollowRequest, feed.isFollower, feed.follower_count]);
+    }, [feed, feed.hasFollowRequest, feed.isFollower, feed.follower_count]);
 
     const handleFollowerChange = async () => {
         try {
@@ -36,7 +36,7 @@ const FollowerChangeButton = ({ feed, viewerId }) => {
             } else {
                 //Public feeds can be freely followed/unfollowed
                 const url = follower ? 'unfollow_feed' : 'follow_feed';
-                await axios.post(`/api/${url}`, { followerId: viewerId, feedId: feed.feed_id });
+                await axios.post(`/api/${url}`, { followerId: viewerId, followedFeedId: feed.feed_id });
                 const newFollowerState = !follower;
                 setFollower(newFollowerState);
                 setFollowerCount(prevCount => newFollowerState ? prevCount + 1 : prevCount - 1);

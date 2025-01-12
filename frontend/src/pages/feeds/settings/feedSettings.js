@@ -17,6 +17,8 @@ const FeedSettings = () => {
     const [feedNotFound, setFeedNotFound] = useState(true);
     const [feed, setFeed] = useState('');
     const { feed_name } = useParams();
+    const [followRequests, setFollowRequests] = useState([]);
+    const [followRequestCount, setFollowRequestCount] = useState(0);
     const navigate = useNavigate();
     const { user } = useContext(AuthContext);
 
@@ -35,6 +37,20 @@ const FeedSettings = () => {
         };
         fetchFeedData();
     }, [feed_name]);
+
+    useEffect(() => {
+        const getFollowRequests = async () => {
+            try {
+                const response = await axios.get(`/api/follow_requests/${feed.feed_id}`);
+                const requests = response.data.requests || [];
+                setFollowRequests(requests);
+                setFollowRequestCount(requests.length);
+            } catch (error) {
+                setErrorMessage('Error getting requests');
+            } 
+        };
+        getFollowRequests();
+    }, [feed.feed_id]); 
 
     const handleLogout = async (event) => {
         event.preventDefault();
@@ -57,9 +73,9 @@ const FeedSettings = () => {
             case 'feed-deletion':
                 return <FeedDeletion feed={feed} />;
             case 'followers':
-                return <FeedFollowers feed={feed} />;
+                return <FeedFollowers feed={feed} setFeed={setFeed} />;
             case 'follow-requests':
-                return <FollowRequests feed={feed} />;
+                return <FollowRequests feed={feed} followRequests={followRequests} setFeed={setFeed} setFollowRequests={setFollowRequests} setRequestCount={setFollowRequestCount} />;
             case 'membership-settings':
                 return <MembershipSettings user={user} />;
             case 'password-personal':
@@ -92,8 +108,10 @@ const FeedSettings = () => {
                             </button>
                         </form>)}
                         <li className="channel-link" onClick={() => setCurrentView('info')}>Feed info</li>
-                        <li className="channel-link" onClick={() => setCurrentView('followers')}>Followers</li>
-                        {feed.type === 'private' && feed.isOwner && feed.is_group && (<li className="channel-link" onClick={() => setCurrentView('follow-requests')}>Follow requests</li>)}
+                        <li className="channel-link" onClick={() => setCurrentView('followers')}>{feed.follower_count} {feed.follower_count === 1 ? 'Follower' : 'Followers'}</li>
+                        {feed.type === 'private' && feed.isOwner && feed.is_group && (
+                            <li className="channel-link" onClick={() => setCurrentView('follow-requests')}>{followRequestCount} {followRequestCount === 1 ? 'Follow request' : 'Follow requests'}</li>
+                            )}
                         {!feed.is_group && (<li className="channel-link" onClick={() => setCurrentView('membership-settings')}>Membership</li>)}
                         {!feed.is_group && (<li className="channel-link" onClick={() => setCurrentView('password-personal')}>Password</li>)}
                         {!feed.is_group && (<li className="channel-link" onClick={() => setCurrentView('theme')}>Theme</li>)}

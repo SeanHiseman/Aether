@@ -258,6 +258,10 @@ router.get('/feed/:feedName', authenticateCheck, async (req, res) => {
             isConnected = true;
             isFollower = true;
         } else {
+            const followStatus = await FollowerCheck(viewerId, feed.feed_id);
+            isAdmin = followStatus.isAdmin;
+            isMod = followStatus.isMod;
+            isFollower = followStatus.following;
             if (!feed.is_group) {
                 connectRequest = await ConnectRequests.findOne({ 
                     where: {
@@ -274,10 +278,6 @@ router.get('/feed/:feedName', authenticateCheck, async (req, res) => {
                 followRequest = await FollowRequests.findOne({ 
                     where: { sender_id: viewerId, receiver_id: feed.feed_id } 
                 });
-                const followStatus = await FollowerCheck(viewerId, feed.feed_id);
-                isAdmin = followStatus.isAdmin;
-                isMod = followStatus.isMod;
-                isFollower = followStatus.following;
             }
         }
         const feedResult = {
@@ -341,15 +341,15 @@ router.get('/feed_list/:followerId', async (req, res) => {
 
 router.post('/follow_feed', authenticateCheck, async (req, res) => {
     try {
-        const { followerId, feedId } = req.body;
+        const { followerId, followedFeedId } = req.body;
         await Followers.create({
             follow_id: v4(),
             follower_id: followerId,
-            feed_id: feedId,
+            feed_id: followedFeedId,
             is_mod: false,
             is_admin: false
         });
-        const feed = await Feeds.findByPk(feedId);
+        const feed = await Feeds.findByPk(followedFeedId);
         await feed.increment('follower_count');
         res.status(200).json({ success: true });
     } catch (error) {
@@ -500,11 +500,11 @@ router.put('/update_feed_photo/:feedId', authenticateCheck, async (req, res) => 
 
 router.post('/unfollow_feed', authenticateCheck, async (req, res) => {
     try {
-        const { followerId, feedId } = req.body;
+        const { followerId, followedFeedId } = req.body;
         await Followers.destroy({
-            where: { follower_id: followerId, feed_id: feedId }
+            where: { follower_id: followerId, feed_id: followedFeedId }
         });
-        const feed = await Feeds.findByPk(feedId);
+        const feed = await Feeds.findByPk(followedFeedId);
         await feed.decrement('follower_count');
         res.status(200).json({ success: true });
     } catch (error) {

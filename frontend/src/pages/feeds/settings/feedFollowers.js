@@ -2,8 +2,9 @@ import axios from 'axios';
 import React, { useCallback, useEffect, useState, useContext } from 'react';
 import { Link } from 'react-router-dom';
 import { AuthContext } from '../../../components/authContext';
+import { FaMinusCircle } from 'react-icons/fa';
 
-const FeedFollowers = ({ feed }) => {
+const FeedFollowers = ({ feed, setFeed }) => {
     const [errorMessage, setErrorMessage] = useState('');
     const [followers, setFollowers] = useState([]);
     const { user } = useContext(AuthContext);
@@ -25,7 +26,8 @@ const FeedFollowers = ({ feed }) => {
     const removeFollower = async (follower) => {
         try {
             await axios.post('/api/unfollow_feed', { followerId: follower.followerFeed.feed_id, followedFeedId: feed.feed_id })
-            getFeedFollowers();
+            setFollowers((prevFollowers) => prevFollowers.filter((f) => f.follower_id !== follower.follower_id));
+            setFeed((prevFeed) => ({ ...prevFeed, follower_count: prevFeed.follower_count - 1 }));
         } catch (error) {
             setErrorMessage('Error removing follower');
         }
@@ -74,8 +76,10 @@ const FeedFollowers = ({ feed }) => {
                                     </button>
                                 )}
                                 {follower.followerFeed.feed_id !== user.userId &&
-                                    <button className="button" onClick={() => removeFollower(follower)}>Remove follower
-                                </button>}
+                                    <button className="small-icon" onClick={() => removeFollower(follower)}>
+                                        <FaMinusCircle />
+                                        <p className="icon-text">Remove follower</p>
+                                    </button>}
                             </div>
                         </li>
                     ))}
