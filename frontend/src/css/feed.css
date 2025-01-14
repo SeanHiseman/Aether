@@ -1,9 +1,39 @@
 @import url('variables.css');
+.button.delete {
+    color: red;
+}
+.button.delete, .button.join {
+    font-size: 36px;
+    padding: 20px;
+}
+.button.join {
+    background-color: var(--darkest);
+    width: 200px;
+}
+.button.join:hover {
+    background-color: var(--button-hover);
+}
+.button.join-small {
+    font-size: 18px;
+    padding: 10px;
+    width: 100px;
+}
+.button.edit {
+    margin-left: 30px;
+}
 .button-group {
     display: flex;
     gap: 8px; 
     justify-content: center;
     margin-left: 10px;
+}
+.button.theme {
+    align-items: center;
+    box-sizing: border-box;
+    display: flex;
+    justify-content: space-between;
+    min-width: 200px;
+    padding-right: 10px;
 }
 .channel {
     display: flex;
@@ -60,6 +90,22 @@
     text-align: center;
     width: 100%
 }
+.light-button.join {
+    background-color: var(--dark);
+}
+.membership-join {
+    align-items: center;
+    display: flex;
+    flex-direction: column;
+    margin-top: 40px;
+}
+.name-photo-area {
+    align-items: center; 
+    display: flex;
+    height: 70%;
+    justify-content: space-between;
+    width: 100%;
+}
 .option-toggle {
     border-radius: 10px;
     display: flex;
@@ -92,58 +138,6 @@
 }
 .option-toggle button.passive-mode:hover {
     background-color: var(--dark-line);
-}
-.button.delete {
-    color: red;
-}
-.button.delete, .button.join {
-    font-size: 36px;
-    padding: 20px;
-}
-.button.join {
-    background-color: var(--darkest);
-    width: 200px;
-}
-.button.join:hover {
-    background-color: var(--button-hover);
-}
-.button.join-small {
-    font-size: 18px;
-    padding: 10px;
-    width: 100px;
-}
-.button.edit {
-    margin-left: 30px;
-}
-.button.theme {
-    align-items: center;
-    box-sizing: border-box;
-    display: flex;
-    justify-content: space-between;
-    min-width: 200px;
-    padding-right: 10px;
-}
-#follow-info {
-    margin-left: 10px;
-}
-.light-button.join {
-    background-color: var(--dark);
-}
-#logout-form {
-    margin: 10px;
-}
-.membership-join {
-    align-items: center;
-    display: flex;
-    flex-direction: column;
-    margin-top: 40px;
-}
-.name-photo-area {
-    align-items: center; 
-    display: flex;
-    height: 70%;
-    justify-content: space-between;
-    width: 100%;
 }
 .results-wrapper {
     grid-column: 1 / 2;

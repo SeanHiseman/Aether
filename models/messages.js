@@ -50,6 +50,7 @@ const Messages = sequelize.define('messages', {
     content: { type: STRING(1000), allowNull: false },
     chat_id: { type: STRING(36), allowNull: false, references: { model: Chats, key: 'chat_id' }},
     sender_id: { type: STRING(36), allowNull: false, references: { model: Feeds, key: 'feed_id' }},
+    receiver_id: { type: STRING(36), allowNull: false, references: { model: Feeds, key: 'feed_id' }},
     is_read: { type: BOOLEAN, defaultValue: false },
     timestamp: { type: DataTypes.DATE(3), defaultValue: sequelize.literal('CURRENT_TIMESTAMP(3)') }
 }, { tableName: 'messages', timestamps: false });

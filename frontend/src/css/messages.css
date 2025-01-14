@@ -122,6 +122,11 @@
     height: 100%;
     overflow-y: auto;
 }
+.read-status {
+    color: var(--dark-line);
+    font-size: small;
+    margin: 4px;
+}
 .tab-titles {
     display: flex;
     gap: 20px;
@@ -135,4 +140,15 @@
     font-weight: bold;
     text-decoration: underline;
 }
-
+.unread-badge {
+    font-size: large;
+    position: relative;
+    top: -30px;
+}
+.unread-count {
+    color: var(--dark-line);
+    font-size: medium;
+    margin: 4px;
+    position: relative;
+    top: -4px;
+}

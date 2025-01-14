@@ -14,6 +14,7 @@ import '../css/contentForm.css';
 import '../css/feed.css';
 import '../css/messages.css';
 import { Tooltip } from 'react-tooltip';
+import { UnreadContext } from '../components/connections/unreadContext';
 
 const BaseLayout = () => {
     const { isAuthenticated, user, viewer } = useContext(AuthContext);
@@ -27,6 +28,7 @@ const BaseLayout = () => {
     const { setQuery } = useQueryContext();
     const { setTheme } = useContext(ThemeContext);
     const [showForm, setShowForm] = useState(false);
+    const { state } = useContext(UnreadContext);
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -240,7 +242,12 @@ const BaseLayout = () => {
                         </form>
                 <div className="spacer"></div>
                 <Link id="messages-button" to={`/connections`}>
-                    <FaCommentDots />
+                    <div className="message-icon-container">
+                        <FaCommentDots />
+                        {state.total > 0 && (
+                            <span className="unread-badge">{state.total}</span>
+                        )}
+                    </div>
                 </Link>
                 </header>
                 <div className="content">
