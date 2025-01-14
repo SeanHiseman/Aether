@@ -320,6 +320,59 @@ router.post('/send_connect_request', authenticateCheck, async (req, res) => {
     }
 });
 
+router.get('/unread_messages_count/:feed_id', async (req, res) => {
+    try {
+        const { feed_id } = req.params;
+        const feedChats = await FeedChats.findAll({
+            where: { feed_id },
+            attributes: ['chat_id']
+        });
+        const chatIds = feedChats.map(fc => fc.chat_id);
+        const totalCount = await Messages.count({
+            where: {
+                is_read: false,
+                receiver_id: feed_id,
+                chat_id: chatIds
+            }
+        });
+        const chatCounts = await Messages.findAll({
+            attributes: [
+                'chat_id',
+                [sequelize.fn('COUNT', sequelize.col('message_id')), 'unread_count']
+            ],
+            where: {
+                is_read: false,
+                receiver_id: feed_id,
+                chat_id: chatIds
+            },
+            group: ['chat_id']
+        });
+        const feedChatMappings = await FeedChats.findAll({
+            where: { chat_id: chatIds },
+            attributes: ['chat_id', 'feed_id']
+        });
+        const chatIdToUnreadCount = chatCounts.reduce((acc, curr) => {
+            acc[curr.chat_id] = parseInt(curr.get('unread_count'));
+            return acc;
+        }, {});
+        const feedIdToUnreadCount = feedChatMappings.reduce((acc, mapping) => {
+            const { feed_id, chat_id } = mapping;
+            if (!acc[feed_id]) acc[feed_id] = 0;
+            acc[feed_id] += chatIdToUnreadCount[chat_id] || 0;
+            return acc;
+        }, {});
+        res.status(200).json({
+            success: true,
+            total: totalCount,
+            feedCounts: feedIdToUnreadCount,
+            chatCounts: chatIdToUnreadCount 
+        });
+    } catch (error) {
+        console.error("Error:", error);
+        res.status(500).json({ success: false, error: 'Failed to get unread counts' });
+    }
+});
+
 export const directMessagesSocket = (socket) => {
     try {
         socket.on('join_chat', (chat_id) => {
@@ -342,12 +395,13 @@ export const directMessagesSocket = (socket) => {
                 socket.emit('error_message', { error: "Message too long" });
                 return;
             }
-            console.log("message:", message);
             const newMessage = await Messages.create({
                 message_id: message.message_id,
                 content: message.content,
                 chat_id: message.channel_id,
                 sender_id: message.sender_id,
+                receiver_id: message.receiver_id,
+                is_read: false,
                 timestamp: message.timestamp
             });
             await Chats.update(
@@ -355,6 +409,22 @@ export const directMessagesSocket = (socket) => {
                 { where: { chat_id: message.channel_id } }
             );
             socket.to(message.chat_id).emit('chat_message_confirmed', newMessage); 
+        });
+        socket.on('mark_messages_read', async (data) => {
+            const { chat_id, reader_id } = data;
+            await Messages.update(
+                { is_read: true },
+                { 
+                    where: { 
+                        chat_id,
+                        receiver_id: reader_id, 
+                        is_read: false 
+                    } 
+                }
+            ).then(([affectedRows]) => {
+                console.log(`${affectedRows} messages marked as read`);
+            });
+            socket.to(chat_id).emit('messages_marked_read', { chat_id, reader_id });
         });
     } catch (error) {
         console.log("Socket error:", error);

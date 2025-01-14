@@ -190,7 +190,7 @@
 }
 .feed-list-link-container {
     align-items: center;
-    border-radius: 10px;
+    border-radius: 14px;
     display: flex;
     padding: 0 8px;
     transition: var(--transition-regular);
@@ -242,7 +242,7 @@
     z-index: 100;
 }
 .large-feed-photo {
-    border-radius: 27px;
+    border-radius: 18px;
     height: 120px; 
     margin: 10px;
     width: 120px; 

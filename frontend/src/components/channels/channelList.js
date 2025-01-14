@@ -4,10 +4,12 @@ import { Link } from 'react-router-dom';
 import { AuthContext } from '../../components/authContext';
 import { decrypt } from '../../encryptionUtil';
 import FeedItem from './feedItem';
+import { UnreadContext } from '../connections/unreadContext';
 
 const ChannelList = ({ channels, feedId, feedName, isChat, isGroup, setChannels }) => {
     const [errorMessage, setErrorMessage] = useState('');
     const [subFeeds, setSubFeeds] = useState([]);
+    const { state } = useContext(UnreadContext);
     const urlLetter = isGroup ? 'g' : 'u';
     const { viewer } = useContext(AuthContext);
 
@@ -62,7 +64,7 @@ const ChannelList = ({ channels, feedId, feedName, isChat, isGroup, setChannels 
             <nav className="channel-list">
                 {errorMessage && <div className="error-message">{errorMessage}</div>}
                 <ul>
-                    {channels.map(channel => (
+                    {channels?.map(channel => (
                         <li key={channel.channelId} className="channel-item">
                             <Link to={`/${urlLetter}/${feedName}/${channel.channel_name}`}>
                                 <div className="channel-link">{channel.channel_name}</div>
@@ -82,10 +84,17 @@ const ChannelList = ({ channels, feedId, feedName, isChat, isGroup, setChannels 
             <nav className="channel-list">
                 {errorMessage && <div className="error-message">{errorMessage}</div>}
                 <ul>
-                    {channels.map(channel => (
+                    {channels?.map(channel => (
                         <li key={channel.chat_id} className="channel-item">
                             <Link to={`/connections/${feedName}/${channel.title}`}>
-                                <div className="channel-link">{channel.title}</div>
+                                <div className="channel-link">
+                                    {channel.title}
+                                    {state.chatCounts[channel.chat_id] > 0 && ( 
+                                        <span className="unread-count">
+                                            {state.chatCounts[channel.chat_id]}
+                                        </span>
+                                    )}
+                                </div>
                             </Link>
                         </li>
                     ))}

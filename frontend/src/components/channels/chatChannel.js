@@ -5,15 +5,31 @@ import { io } from "socket.io-client";
 import { v4 } from 'uuid';
 import { decrypt, encrypt } from '../../encryptionUtil';
 import Message from '../connections/message';
+import { UnreadContext } from '../connections/unreadContext';
 
-const ChatChannel = ({ canRemove, channelId, isGroup, setChats }) => {
+const ChatChannel = ({ canRemove, channelId, connection, isGroup, setChats, setErrorMessage }) => {
     const [channel, setChannel] = useState([]);
-    const [errorMessage, setErrorMessage] = useState('');
+    const { dispatch } = useContext(UnreadContext);
     const [message, setMessage] = useState('');
     const { viewer } = useContext(AuthContext)
     const messagesContainerRef = useRef(null);
     const messagesEndRef = useRef(null);
     const socketRef = useRef(null);
+
+    useEffect(() => {
+        if (channelId && !isGroup && viewer.feed_id) {
+            try {
+                socketRef.current.emit('mark_messages_read', {
+                    chat_id: channelId,
+                    reader_id: viewer.feed_id,
+                });
+                dispatch({ type: 'MARK_AS_READ', chatId: channelId });
+            } catch (error) {
+                console.error('Error marking messages as read via WebSocket:', error);
+            }
+        }
+    }, [channelId, isGroup, viewer.feed_id, dispatch]);
+    
 
     //Fetch and listen for messages
     useEffect(() => {
@@ -42,24 +58,34 @@ const ChatChannel = ({ canRemove, channelId, isGroup, setChats }) => {
                 };
                 setChannel((prevMessages) => [...prevMessages, processedMessage]);
             };
-            const handleDeleteMessage = ({ message_id }) => {
-                setChannel((prevMessages) => prevMessages.filter((m) => m.message_id !== message_id));
-            };
+            const handleMessagesRead = ({ chat_id, reader_id }) => {
+                if (chat_id === channelId) {
+                    setChannel((prevMessages) =>
+                        prevMessages.map(msg =>
+                            (msg.sender_id !== reader_id && !msg.is_read)
+                                ? { ...msg, is_read: true }
+                                : msg
+                        )
+                    );
+                }
+            };            
             socket.on('new_message', handleNewMessage);
             socket.on(confirmedRoute, handleConfirmedMessage);
-            socket.on(deleteRoute, handleDeleteMessage);
+            socket.on(deleteRoute, deleteMessage);
+            socket.on('messages_marked_read', handleMessagesRead);
             socket.on('error_message', (error) => setErrorMessage(error?.error || 'An error occurred'));
             socket.on('connect_error', (err) => console.log('Connection Error:', err));
             return () => {
                 socket.emit(leaveRoute, channelId);
                 socket.off('new_message', handleNewMessage);
                 socket.off(confirmedRoute, handleConfirmedMessage);
-                socket.off(deleteRoute, handleDeleteMessage);
+                socket.off(deleteRoute, deleteMessage);
+                socket.off('messages_marked_read', handleMessagesRead);
                 socket.off('error_message');
-                socket.disconnect(); 
+                socket.disconnect();
             };
         }
-    }, [channelId, isGroup]);
+    }, [channelId, isGroup, viewer.feed_id]);
     
     useEffect(() => {
         if (messagesContainerRef.current) {
@@ -101,10 +127,15 @@ const ChatChannel = ({ canRemove, channelId, isGroup, setChats }) => {
     const sendMessage = useCallback(() => {
         try {
             if (!message.trim()) return;
+            if (message.length > 1000) {
+                setErrorMessage("Message cannot exceed 1000 characters.");
+                return;
+            };
             const newMessage = {
                 message_id: v4(),
                 content: isGroup ? message : encrypt(message),
                 sender_id: viewer.feed_id,
+                receiver_id: isGroup ? null: connection.feed_id,
                 channel_id: channelId,
                 timestamp: Date.now(),
             };
@@ -136,7 +167,9 @@ const ChatChannel = ({ canRemove, channelId, isGroup, setChats }) => {
                         key={msg.message_id || index}
                         canRemove={canRemove}
                         deleteMessage={deleteMessage}
+                        isGroup={isGroup}
                         isOutgoing={msg.sender_id === viewer.feed_id}
+                        isRead={msg.is_read}
                         message={msg}
                     />
                 ))}

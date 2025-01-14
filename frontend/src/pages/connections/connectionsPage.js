@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import { AuthContext } from '../../components/authContext';
 import FeedItem from '../../components/channels/feedItem';
 import ManageConnectionButton from '../../components/connections/manageConnectionButton';
+import { UnreadContext } from '../../components/connections/unreadContext';
 
 const ConnectionsPage = () => {
     const [activeTab, setActiveTab] = useState('connections');
@@ -11,6 +12,7 @@ const ConnectionsPage = () => {
     const [connectRequests, setConnectRequests] = useState([]); 
     const [errorMessage, setErrorMessage] = useState('');
     const [requestCount, setRequestCount] = useState(0);
+    const { state } = useContext(UnreadContext);
     const { viewer } = useContext(AuthContext);
 
     useEffect(() => {
@@ -104,7 +106,8 @@ const ConnectionsPage = () => {
                                                     feed={c}
                                                     isConnected={true}
                                                     viewerId={viewer.feed_id}
-                                                    onRequestUpdate={handleConnectionRemoval} />
+                                                    onRequestUpdate={handleConnectionRemoval} 
+                                                />
                                             </div>
                                         </div>
                                     </li>
@@ -150,6 +153,7 @@ const ConnectionsPage = () => {
                                 linkType={'u'} 
                                 name={c.feed_name} 
                                 photo={c.feed_photo} 
+                                unreadCount={state.feedCounts?.[c.feed_id] || 0}
                             />
                         ))}
                     </ul>

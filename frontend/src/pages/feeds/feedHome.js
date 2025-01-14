@@ -353,7 +353,7 @@ const FeedHome = () => {
                         <button className={channelMode === 'chat' ? 'active-mode' : 'passive-mode'} onClick={() => setChannelMode('chat')}>Chat</button>
                     </div>
                 )}
-                <ChannelList channels={channels} feedId={feed.feed_id} feedName={feed.feed_name} isChat={false} isGroup={feed.is_group} setChannels={setChannels}/>
+                <ChannelList channels={channels} feedId={feed.feed_id} feedName={feed.feed_name} isChat={false} isGroup={feed.is_group} setChannels={setChannels} setErrorMessage={setFeedErrorMessage} />
             </aside>
         </div>
     );
