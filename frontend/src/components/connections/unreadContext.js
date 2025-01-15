@@ -37,7 +37,7 @@ const unreadReducer = (state, action) => {
 };
 
 export const UnreadProvider = ({ children }) => {
-    const [state, dispatch] = useReducer(unreadReducer, { total: 0, counts: {} });
+    const [state, dispatch] = useReducer(unreadReducer, { total: 0, chatCounts: {}, feedCounts: {} });
     const { viewer } = useContext(AuthContext);
 
     useEffect(() => {

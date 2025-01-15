@@ -261,14 +261,16 @@ const FeedHome = () => {
             <aside id="right-aside">
                 <div id="feed-summary">
                     <img className="large-feed-photo" src={`/${feed.feed_photo}`} alt={feed.feed_name} />
-                    {isAdmin && (
-                        <Link to={`/feed_settings/${feed_name}`}>
-                            <button className="small-icon">
-                                <FaCog />
-                            </button>
-                        </Link>
-                    )}
-                    <p className="text36">{feed.feed_name}</p>
+                    <div className="feed-name">
+                        <p className="text36">{feed.feed_name}</p>
+                        {isAdmin && (
+                            <Link to={`/feed_settings/${feed_name}`}>
+                                <button className="small-icon">
+                                    <FaCog />
+                                </button>
+                            </Link>
+                        )}
+                    </div>
                     <p className="description" >{feed.description}</p>
                     {(feed.is_group || (user.user_id !== feed.feed_owner && feed.type === 'public')) && (
                         <FollowerChangeButton feed={feed} viewerId={viewer.feed_id} />

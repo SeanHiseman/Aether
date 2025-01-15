@@ -42,17 +42,19 @@ const Message = ({ canRemove, deleteMessage, isGroup, isOutgoing, isRead, messag
                 ) : null}
                 <div className={`message ${isOutgoing ? 'outgoing' : 'incoming'}`}>
                     {message.content}
-                    {isOutgoing && !isGroup && (
-                        <span className="read-status">
-                            {isRead ? "✓✓" : "✓"}
-                        </span>
-                    )}
                     {/*<ContentDisplay content={message.content}/>*/}
                 </div>
             </div>
-            <p className={`message-date ${isOutgoing ? 'outgoing' : 'incoming'}`}>
-                {formatTimestamp(message.timestamp)}
-            </p>
+            <div className={`message-info ${isOutgoing ? 'outgoing' : 'incoming'}`}>
+                <p className={`message-date ${isOutgoing ? 'outgoing' : 'incoming'}`}>
+                    {formatTimestamp(message.timestamp)}
+                </p>
+                {isOutgoing && !isGroup && (
+                    <span className="read-status">
+                        {isRead ? "✓✓" : "✓"}
+                    </span>
+                )}
+            </div>
         </div>
     );
 };
