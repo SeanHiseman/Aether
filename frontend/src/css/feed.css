@@ -25,7 +25,6 @@
     display: flex;
     gap: 8px; 
     justify-content: center;
-    margin-left: 10px;
 }
 .button.theme {
     align-items: center;
@@ -42,6 +41,11 @@
     margin-left: auto;
     margin-right: 0;
     width: 100%;
+}
+.channel-section {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
 }
 #create-feed-section {
     align-items: center;
@@ -70,8 +74,9 @@
 .feed-list {
     max-width: 100%;
 }
-.feed-member {
-    margin: 10px;
+.feed-name {
+    align-items: center;
+    display: flex;
 }
 .feed-settings {
     align-items: center;

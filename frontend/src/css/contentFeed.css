@@ -7,27 +7,27 @@
 .ask-note {
     background-color: var(--dark);
     border: 1px solid var(--dark-line);
-    border-radius: var(--medium-gap);
-    margin: var(--medium-gap);
+    border-radius: var(--medium-margin);
+    margin: var(--medium-margin);
     padding: 1px;
     width: 97%;
 }
 .ask-note-text {
     font-size: medium;
-    margin: var(--medium-gap);
+    margin: var(--medium-margin);
 }
 .content-item, .result-widget {
     background-color: var(--darkest);
     border-radius: 28px;
     box-shadow: rgba(0, 0, 0, 0.3) 0px 19px 38px, rgba(0, 0, 0, 0.22) 0px 15px 12px;
     cursor: pointer;
-    margin: var(--large-gap);
-    padding: var(--small-gap);
+    margin: var(--large-margin);
+    padding: var(--small-margin);
 }
 .content-item.reply {
     box-shadow: none;
     margin-bottom: 0;
-    margin-left: var(--large-gap);
+    margin-left: var(--large-margin);
     margin-right: 0;
     margin-top: 0;
     padding-bottom: 0;
