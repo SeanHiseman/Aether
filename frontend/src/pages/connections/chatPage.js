@@ -1,18 +1,18 @@
 import axios from 'axios';
 import React, { useCallback, useContext, useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { FaMinus, FaPlus } from 'react-icons/fa';
+import { FaEdit, FaMinus, FaPlus, FaTrash } from 'react-icons/fa';
 import { AuthContext } from '../../components/authContext';
 import ChannelList from '../../components/channels/channelList';
-import ChannelName from '../../components/channels/channelName';
 import ChatChannel from '../../components/channels/chatChannel';
 import { decrypt, encrypt } from '../../encryptionUtil';
 
 const ChatPage = () => {
-    const { connection_name, title } = useParams();
+    const { connection_name, title } = useParams(); //The chat name is referred to as 'title' in the database, but 'chatName' in the frontend. May fix later.
     const [connection, setConnection] = useState(null);
     const [chats, setChats] = useState([]);
     const [errorMessage, setErrorMessage] = useState('');
+    const [isEditingChatName, setIsEditingChatName] = useState(false);
     const [newChatName, setNewChatName] = useState('');
     const [selectedChatId, setSelectedChatId] = useState(null);
     const [showForm, setShowForm] = useState(false);
@@ -38,14 +38,40 @@ const ChatPage = () => {
             setSelectedChatId(found ? found.chat_id : null);
         } 
     }, [title, chats]);
-
-    //Updates list of chats when chat name changed
-    const chatUpdate = (chatId, newName) => {
-        setChats(prevChats => 
-            prevChats.map(chat =>
-                chat.chat_id === chatId ? {...chat, title: newName} : chat
-            )
-        );
+    
+    const changeChannelName = async (event) => {
+        event.preventDefault();
+        try {
+            if (newChatName.length === 0) {
+                setErrorMessage("Channel needs a name");
+                return;
+            //Names over 30 characters already prevented
+            }
+            if (newChatName === 'Main') {
+                setErrorMessage("Channel cannot be named Main");
+                return;
+            } 
+            let finalChannelName = newChatName;
+            const encryptedChannelName = encrypt(newChatName);
+            finalChannelName = encryptedChannelName;
+            const response = await axios.post('/api/change_chat_name', {
+                channelId: selectedChatId,
+                newChannelName: finalChannelName,
+            });
+            if (response.status === 200) {
+                setErrorMessage('');
+                setIsEditingChatName(false);
+                setNewChatName('');
+                setChats(prevChats => 
+                    prevChats.map(chat =>
+                        chat.chat_id === selectedChatId ? {...chat, title: newChatName} : chat
+                    )
+                );
+                navigate(`/connections/${connection_name}/${newChatName}`);
+            }
+        } catch {
+            setErrorMessage("Error changing channel name");
+        }
     };
 
     const createNewChat = async (event) => {
@@ -95,10 +121,24 @@ const ChatPage = () => {
         }
     };
 
-    const deleteChat = (chatId) => {
-        setChats(prevChats => prevChats.filter(chat => chat.chat_id !== chatId));
+    const handleDelete = async () => {
+        if (window.confirm(`Are you sure you want to delete ${title}?`)) {
+            try {
+                if (title === 'Main') {
+                    setErrorMessage("Main chat cannot be deleted.");
+                    return;
+                }
+                const response = await axios.delete('/api/delete_chat', { data: { channelId: selectedChatId } });
+                if (response.data.success) {
+                    setChats(prevChats => prevChats.filter(chat => chat.chat_id !== selectedChatId));
+                    navigate(`/connections/${connection_name}/Main`);
+                }
+            } catch (error) {
+                setErrorMessage('Error deleting channel');
+            }
+        }
     };
-    
+
     const toggleForm = () => { setShowForm(!showForm) }
 
     const updateChats = useCallback((newChats) => {
@@ -108,33 +148,125 @@ const ChatPage = () => {
     document.title = connection_name;
     return (
         <div className="standard-container">
-            <ChatChannel channelId={selectedChatId} connection={connection} isGroup={false} setChats={setChats} setErrorMessage={setErrorMessage} />
+            <ChatChannel 
+                channelId={selectedChatId} 
+                connection={connection} 
+                isGroup={false} 
+                setChats={setChats} 
+                setErrorMessage={setErrorMessage} 
+            />
             <aside id="right-aside">
                 {connection && (
                     <div id="feed-summary">
-                    <Link className="chat-feed-link" to={`/u/${connection_name}`}>
-                        <img className="small-feed-photo" src={`/${connection.feed_photo}`} alt="Feed"/>
-                        <p className="feed-list-text">{connection_name}</p>
-                    </Link>
-                    <div className="error-message">{errorMessage}</div>
-                    <ChannelName channelId={selectedChatId} channelName={title} deleteChannel={deleteChat} isChat={true} isGroup={false} locationName={connection_name} channelUpdate={chatUpdate}/>
-                    <div className="add-channel-section">
-                        <button className="small-icon" onClick={toggleForm}>
-                            {showForm ? <FaMinus /> : <FaPlus />}
-                        </button>
-                        {showForm && (
-                            <form className="add-channel-form" onSubmit={createNewChat}>
-                                <input className="name-input" type="text" name="chat_name" placeholder="Chat name..." value={newChatName} onChange={(e) => setNewChatName(e.target.value)}/>
-                                <button className="small-icon" type="submit" value="Add" ><FaPlus /></button>
-                            </form>  
-                        )}                          
+                        <Link className="chat-feed-link" to={`/u/${connection_name}`}>
+                            <img className="small-feed-photo" src={`/${connection.feed_photo}`} alt="Feed" />
+                            <p className="feed-list-text">{connection_name}</p>
+                        </Link>
+                        <div className="error-message">{errorMessage}</div>
+                        <div id="channel-name-section">
+                            {title !== "Main" ? (
+                                <>
+                                    <p className="text36">{title}</p>
+                                    <div className="chat-change">
+                                        {isEditingChatName ? (
+                                            <div className="change-name">
+                                                <textarea
+                                                    className="change-name-area"
+                                                    value={newChatName}
+                                                    placeholder="New name"
+                                                    onChange={(e) => {
+                                                        e.preventDefault();
+                                                        const input = e.target.value;
+                                                        if (input.length <= 30) {
+                                                            setNewChatName(input);
+                                                        } else {
+                                                            setErrorMessage("Name too long");
+                                                        }
+                                                    }}
+                                                />
+                                                <div className="cancel-save">
+                                                    <button
+                                                        className="button"
+                                                        onClick={() => {
+                                                            setIsEditingChatName(false);
+                                                            setNewChatName("");
+                                                            setErrorMessage("");
+                                                        }}
+                                                    >
+                                                        Cancel
+                                                    </button>
+                                                    <button
+                                                        className="button"
+                                                        onClick={(e) => {
+                                                            e.preventDefault();
+                                                            changeChannelName(e);
+                                                        }}
+                                                    >
+                                                        Save
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <div className="button-group">
+                                                <button
+                                                    className="small-icon"
+                                                    onClick={() => {
+                                                        setIsEditingChatName(true);
+                                                        setNewChatName(title);
+                                                    }}
+                                                >
+                                                    <FaEdit />
+                                                </button>
+                                                <button className="small-icon" onClick={handleDelete}>
+                                                    <FaTrash />
+                                                </button>
+                                                <button className="small-icon" onClick={toggleForm}>
+                                                    {showForm ? <FaMinus /> : <FaPlus />}
+                                                </button>
+                                            </div>
+                                        )}
+                                    </div>
+                                </>
+                            ) : (
+                                <>
+                                    <p className="text36">Main</p>
+                                    <div className="button-group">
+                                        <button className="small-icon" onClick={toggleForm}>
+                                            {showForm ? <FaMinus /> : <FaPlus />}
+                                        </button>
+                                    </div>
+                                </>
+                            )}
+                            {showForm && (
+                                <form className="add-channel-form" onSubmit={createNewChat}>
+                                    <input
+                                        className="name-input"
+                                        type="text"
+                                        name="chat_name"
+                                        placeholder="Chat name..."
+                                        value={newChatName}
+                                        onChange={(e) => setNewChatName(e.target.value)}
+                                    />
+                                    <button className="small-icon" type="submit">
+                                        <FaPlus />
+                                    </button>
+                                </form>
+                            )}
+                            {errorMessage && <div className="error-message">{errorMessage}</div>}
+                        </div>
+                        <ChannelList
+                            channels={chats}
+                            feedId={viewer.feed_id}
+                            feedName={connection.feed_name}
+                            isChat={true}
+                            isGroup={false}
+                            setChannels={updateChats}
+                        />
                     </div>
-                    <ChannelList channels={chats} feedId={viewer.feed_id} feedName={connection.feed_name} isChat={true} isGroup={false} setChannels={updateChats} />
-                </div>
                 )}
             </aside>
         </div>
-    );
+    );       
 };
 
 export default ChatPage;
