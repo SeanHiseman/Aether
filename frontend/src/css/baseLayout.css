@@ -116,7 +116,6 @@
     color: var(--border);
 }
 #channel-name-section {
-    text-align: center;
     width: 100%;
 }
 .chat-channel-button, .conversation-button, .posts-channel-button {
