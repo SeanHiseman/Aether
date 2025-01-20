@@ -8,7 +8,7 @@ import AskButton from '../askButton';
 import ContentDisplay from './contentDisplay';
 import ContentForm from './contentForm';
 
-const ContentWidget = ({ canRemove: canRemoveProp, feed, isGroup, onEditClick, onPostRemoved, post }) => {
+const ContentWidget = ({ canRemove: canRemoveProp, feed, isGroup, onEditClick, onPostRemoved, parent, post }) => {
     const [canRemove, setCanRemove] = useState(canRemoveProp);
     const [downvotes, setDownvotes] = useState(post.downvotes);
     const [downvoteLimit, setDownvoteLimit] = useState(false);
@@ -297,7 +297,7 @@ const ContentWidget = ({ canRemove: canRemoveProp, feed, isGroup, onEditClick, o
                         </button>
                     )}
                     {replies.map((reply) => (
-                        <ContentWidget key={reply.post_id} canRemove={canRemove} feed={feed} isGroup={isGroup} onEditClick={onEditClick} onPostRemoved={replyRemoved} post={reply} />
+                        <ContentWidget key={reply.post_id} canRemove={canRemove} feed={feed} isGroup={isGroup} onEditClick={onEditClick} onPostRemoved={replyRemoved} parent={post} post={reply} />
                     ))}
                 </div>
             )}

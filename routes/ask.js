@@ -123,7 +123,7 @@ router.get('/get_ask_chats', authenticateCheck, async (req, res) => {
 router.post('/generate_content', authenticateCheck, async (req, res) => {
     //console.log("request received");
     try {
-        const { currentCode, request } = req.body;
+        const { currentCode, request, parentCode } = req.body;
         //console.log("req.body:", req.body);
         //Creates API assistant
         const assistant = await openai.beta.assistants.create({
@@ -140,12 +140,14 @@ router.post('/generate_content', authenticateCheck, async (req, res) => {
                 content: request
             }
         );
+        const assistantInstructions = parentCode ? `Request and current code are for a reply to parent code. Answer only with new or improved html code, containing JavaScript if necessary. Nothing else. If request cannot be made into code, response with nothing. Current code: ${currentCode}, parent code: ${parentCode}` : `Answer only with new or improved html code, containing JavaScript if necessary. Nothing else. If request cannot be made into code, response with nothing. Current code: ${currentCode}`;
+        //console.log("assistantInstructions:", assistantInstructions);
         //Run OpenAI assistant
         const run = await openai.beta.threads.runs.create(
             thread.id,
             {
                 assistant_id: assistant.id, 
-                instructions: `Answer only with new or improved html code, containing JavaScript if necessary. Nothing else. If request cannot be made into html code, response with nothing. The current code is: ${currentCode}`
+                instructions: assistantInstructions
             }
         ); 
         //Wait for OpenAI response

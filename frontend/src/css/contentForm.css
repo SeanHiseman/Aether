@@ -96,6 +96,10 @@
     height: 70%;
     width: 100%;
 }
+.loading-text {
+    color: var(--dark-line);
+    font-size: medium;
+}
 #post-file-input {
     align-items: center;
     display: flex;
