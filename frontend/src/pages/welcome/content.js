@@ -20,11 +20,11 @@ const Content = () => {
             <div className="welcome-box single">
                 <div className="left-aligned-text">
                     <p className="welcome-box-header">Content</p>
-                    <p>Posts can combine text with multiple images and videos, creating richer and more engaging content</p>
+                    <p>Create dynamic, two-way posts that the user can interact with. </p>
                     <div className="spacer20px"/>
-                    <p>Replies are nested and have the same format as posts, enabling dynamic and detailed discussions</p>
+                    <p>Combine text, image, video and interaction to build engaging and unique posts</p>
                     <div className="spacer20px"/>
-                    <p>Members can write longer posts, up to 100,000 characters, as well as view and upload higher definition media</p>
+                    <p>Reply to or quote other posts</p>
                 </div>
             </div>
         </div>

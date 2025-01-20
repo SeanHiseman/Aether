@@ -22,8 +22,8 @@ const WelcomeHome = () => {
                     <Link to="/about">
                         <div className="left-aligned-text">
                             <p className="welcome-box-header">About Aether</p>
-                            <p>Content focused on quality</p>
-                            <p>Dynamic feeds</p>
+                            <p>Quality content</p>
+                            <p>User control</p>
                             <p>No ads, full privacy</p>
                         </div>
                     </Link>
@@ -32,9 +32,9 @@ const WelcomeHome = () => {
                     <Link to="/content">
                         <div className="left-aligned-text">
                             <p className="welcome-box-header">Content</p>
-                            <p>Images, videos, text and more all in one</p>
-                            <p>Posts can be made in reply to other posts</p>
-                            <p>Members can write longer posts and view higher quality videos</p>
+                            <p>Dynamic posts</p>
+                            <p>Infinite customisation</p>
+                            <p>Creator help with Membership</p>
                         </div>
                     </Link>
                  </div>
@@ -42,7 +42,7 @@ const WelcomeHome = () => {
                     <Link to="/algorithm">
                         <div className="left-aligned-text">
                             <p className="welcome-box-header">Algorithm</p>
-                            <p>Talk to Ask to adjust your algorithm. You are in control</p>
+                            <p>Adjust your algorithm. You are in control</p>
                             <p>How you are shown content is fully customisable</p>
                             <p>Post are fact-checked, so you see what's true</p>
                         </div> 
@@ -51,10 +51,10 @@ const WelcomeHome = () => {
                 <div className="welcome-box">
                     <Link to="/feeds">
                         <div className="left-aligned-text">
-                            <p className="welcome-box-header">Dynamic feeds</p>
-                            <p>Feeds have layers and channels</p>
-                            <p>Chat channels alongside posts</p>
-                            <p>You can view posts from friends, feeds you follow, and recommendations</p>
+                            <p className="welcome-box-header">Feeds</p>
+                            <p>Create and follow feeds for any topic</p>
+                            <p>Divided into channels for posts and chats</p>
+                            <p>Custom feeds for connections, follows, recommendations and more</p>
                         </div>
                     </Link>
                 </div>
@@ -63,7 +63,7 @@ const WelcomeHome = () => {
                         <div className="left-aligned-text">
                             <p className="welcome-box-header">Membership</p>                    
                             <p>Earn money from posts</p>
-                            <p>Need to check the accuracy of a post? Just Ask</p>
+                            <p>Get help from Ask</p>
                             <p>Vote for moderators, admins, leaders and features</p>
                         </div>
                     </Link>

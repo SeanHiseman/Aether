@@ -321,115 +321,113 @@ const FeedHome = () => {
                 </div>
                 {feedErrorMessage && <div className="error-message">{feedErrorMessage}</div>}
                 {channelRender && (
-                    <div id="channel-name-section">
-                        <div className="chat-change">
-                            {isEditingChannelName ? (
-                                <div className="change-name">
-                                    <textarea
-                                        className="change-name-area"
-                                        value={newChannelName}
-                                        placeholder="New name"
-                                        onChange={(e) => {
-                                            e.preventDefault();
-                                            const input = e.target.value;
-                                            if (input.length <= 30) {
-                                                setNewChannelName(input);
-                                            } else {
-                                                setFeedErrorMessage("Name too long");
-                                            }
+                    <div className="channel-name-section">
+                        {isEditingChannelName ? (
+                            <div className="change-name">
+                                <textarea
+                                    className="change-name-area"
+                                    value={newChannelName}
+                                    placeholder="New name"
+                                    onChange={(e) => {
+                                        e.preventDefault();
+                                        const input = e.target.value;
+                                        if (input.length <= 30) {
+                                            setNewChannelName(input);
+                                        } else {
+                                            setFeedErrorMessage("Name too long");
+                                        }
+                                    }}
+                                />
+                                <div className="cancel-save">
+                                    <button
+                                        className="button"
+                                        onClick={() => {
+                                            setIsEditingChannelName(false);
+                                            setNewChannelName("");
+                                            setFeedErrorMessage("");
                                         }}
-                                    />
-                                    <div className="cancel-save">
-                                        <button
-                                            className="button"
-                                            onClick={() => {
-                                                setIsEditingChannelName(false);
-                                                setNewChannelName("");
-                                                setFeedErrorMessage("");
-                                            }}
-                                        >
-                                            Cancel
-                                        </button>
-                                        <button className="button" onClick={changeChannelName}>
-                                            Save
-                                        </button>
-                                    </div>
+                                    >
+                                        Cancel
+                                    </button>
+                                    <button className="button" onClick={changeChannelName}>
+                                        Save
+                                    </button>
                                 </div>
-                            ) : (
-                                <div className="chat-name">
-                                    <p className="text36">{channel_name}</p>
-                                    <div className="button-group">
-                                        {channel_name !== "Main" && ( 
-                                            <>
-                                                <button
-                                                    className="small-icon"
-                                                    onClick={() => {
-                                                        setIsEditingChannelName(true);
-                                                        setNewChannelName(channel_name);
-                                                    }}
-                                                >
-                                                    <FaEdit />
-                                                </button>
-                                                <button className="small-icon" onClick={handleDelete}>
-                                                    <FaTrash />
-                                                </button>
-                                            </>
-                                        )}
-                                        {isAdmin && (
-                                            <button className="small-icon" onClick={toggleChannelForm}>
-                                                {showChannelForm ? <FaMinus /> : <FaPlus />}
-                                            </button>
-                                        )}
-                                        {channelMode === "post" && !showPostForm && (
+                            </div>
+                        ) : (
+                            <div className="chat-name">
+                                <p className="text36">{channel_name}</p>
+                                <div className="button-group">
+                                    {channel_name !== "Main" && ( 
+                                        <>
                                             <button
                                                 className="small-icon"
                                                 onClick={() => {
-                                                    setIsEdit(false);
-                                                    setPostToEdit(null);
-                                                    setShowPostForm(true);
+                                                    setIsEditingChannelName(true);
+                                                    setNewChannelName(channel_name);
                                                 }}
                                             >
-                                                <FaFeatherAlt />
+                                                <FaEdit />
                                             </button>
-                                        )}
-                                    </div>
-                                    {showChannelForm && (
-                                        <form className="add-channel-form" onSubmit={AddChannel}>
-                                            <input
-                                                className="name-input"
-                                                type="text"
-                                                placeholder="Channel name..."
-                                                value={newChannelName}
-                                                onChange={(e) => setNewChannelName(e.target.value)}
-                                            />
-                                            {feed.is_group && (
-                                                <div className="channel-options">
-                                                    <label>
-                                                        <input
-                                                            type="checkbox"
-                                                            checked={isPostChannel}
-                                                            onChange={handlePostClick}
-                                                        />
-                                                        Post Channel
-                                                    </label>
-                                                    <label>
-                                                        <input
-                                                            type="checkbox"
-                                                            checked={isChatChannel}
-                                                            onChange={handleChatClick}
-                                                        />
-                                                        Chat Channel
-                                                    </label>
-                                                </div>
-                                            )}
-                                            <button className="small-icon" type="submit">
-                                                <FaPlus />
+                                            <button className="small-icon" onClick={handleDelete}>
+                                                <FaTrash />
                                             </button>
-                                        </form>
+                                        </>
                                     )}
-                                </div>
-                            )}
+                                    {isAdmin && (
+                                        <button className="small-icon" onClick={toggleChannelForm}>
+                                            {showChannelForm ? <FaMinus /> : <FaPlus />}
+                                        </button>
+                                    )}
+                                    {channelMode === "post" && !showPostForm && (
+                                        <button
+                                            className="small-icon"
+                                            onClick={() => {
+                                                setIsEdit(false);
+                                                setPostToEdit(null);
+                                                setShowPostForm(true);
+                                            }}
+                                        >
+                                            <FaFeatherAlt />
+                                        </button>
+                                    )}
+                                {showChannelForm && (
+                                    <form className="add-channel-form" onSubmit={AddChannel}>
+                                        <input
+                                            className="name-input"
+                                            type="text"
+                                            placeholder="Channel name..."
+                                            value={newChannelName}
+                                            onChange={(e) => setNewChannelName(e.target.value)}
+                                        />
+                                        {feed.is_group && (
+                                            <div className="channel-options">
+                                                <label>
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={isPostChannel}
+                                                        onChange={handlePostClick}
+                                                    />
+                                                    Post Channel
+                                                </label>
+                                                <label>
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={isChatChannel}
+                                                        onChange={handleChatClick}
+                                                    />
+                                                    Chat Channel
+                                                </label>
+                                            </div>
+                                        )}
+                                        <button className="small-icon" type="submit">
+                                            <FaPlus />
+                                        </button>
+                                    </form>
+                                )}
+                            </div>
                         </div>
+                        )}
                     </div>
                 )}
                 {channelRender && channelRender.is_posts && channelRender.is_chat && (

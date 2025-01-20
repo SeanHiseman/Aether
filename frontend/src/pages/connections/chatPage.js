@@ -163,69 +163,67 @@ const ChatPage = () => {
                             <p className="feed-list-text">{connection_name}</p>
                         </Link>
                         <div className="error-message">{errorMessage}</div>
-                        <div id="channel-name-section">
+                        <div className="channel-name-section">
                             {title !== "Main" ? (
                                 <>
                                     <p className="text36">{title}</p>
-                                    <div className="chat-change">
-                                        {isEditingChatName ? (
-                                            <div className="change-name">
-                                                <textarea
-                                                    className="change-name-area"
-                                                    value={newChatName}
-                                                    placeholder="New name"
-                                                    onChange={(e) => {
-                                                        e.preventDefault();
-                                                        const input = e.target.value;
-                                                        if (input.length <= 30) {
-                                                            setNewChatName(input);
-                                                        } else {
-                                                            setErrorMessage("Name too long");
-                                                        }
-                                                    }}
-                                                />
-                                                <div className="cancel-save">
-                                                    <button
-                                                        className="button"
-                                                        onClick={() => {
-                                                            setIsEditingChatName(false);
-                                                            setNewChatName("");
-                                                            setErrorMessage("");
-                                                        }}
-                                                    >
-                                                        Cancel
-                                                    </button>
-                                                    <button
-                                                        className="button"
-                                                        onClick={(e) => {
-                                                            e.preventDefault();
-                                                            changeChannelName(e);
-                                                        }}
-                                                    >
-                                                        Save
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        ) : (
-                                            <div className="button-group">
+                                    {isEditingChatName ? (
+                                        <div className="change-name">
+                                            <textarea
+                                                className="change-name-area"
+                                                value={newChatName}
+                                                placeholder="New name"
+                                                onChange={(e) => {
+                                                    e.preventDefault();
+                                                    const input = e.target.value;
+                                                    if (input.length <= 30) {
+                                                        setNewChatName(input);
+                                                    } else {
+                                                        setErrorMessage("Name too long");
+                                                    }
+                                                }}
+                                            />
+                                            <div className="cancel-save">
                                                 <button
-                                                    className="small-icon"
+                                                    className="button"
                                                     onClick={() => {
-                                                        setIsEditingChatName(true);
-                                                        setNewChatName(title);
+                                                        setIsEditingChatName(false);
+                                                        setNewChatName("");
+                                                        setErrorMessage("");
                                                     }}
                                                 >
-                                                    <FaEdit />
+                                                    Cancel
                                                 </button>
-                                                <button className="small-icon" onClick={handleDelete}>
-                                                    <FaTrash />
-                                                </button>
-                                                <button className="small-icon" onClick={toggleForm}>
-                                                    {showForm ? <FaMinus /> : <FaPlus />}
+                                                <button
+                                                    className="button"
+                                                    onClick={(e) => {
+                                                        e.preventDefault();
+                                                        changeChannelName(e);
+                                                    }}
+                                                >
+                                                    Save
                                                 </button>
                                             </div>
-                                        )}
-                                    </div>
+                                        </div>
+                                    ) : (
+                                        <div className="button-group">
+                                            <button
+                                                className="small-icon"
+                                                onClick={() => {
+                                                    setIsEditingChatName(true);
+                                                    setNewChatName(title);
+                                                }}
+                                            >
+                                                <FaEdit />
+                                            </button>
+                                            <button className="small-icon" onClick={handleDelete}>
+                                                <FaTrash />
+                                            </button>
+                                            <button className="small-icon" onClick={toggleForm}>
+                                                {showForm ? <FaMinus /> : <FaPlus />}
+                                            </button>
+                                        </div>
+                                    )}
                                 </>
                             ) : (
                                 <>

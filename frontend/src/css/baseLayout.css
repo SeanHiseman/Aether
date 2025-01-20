@@ -115,7 +115,10 @@
     text-decoration: none;
     color: var(--border);
 }
-#channel-name-section {
+.channel-name-section {
+    align-items: center;
+    display: flex;
+    flex-direction: column;
     width: 100%;
 }
 .chat-channel-button, .conversation-button, .posts-channel-button {
