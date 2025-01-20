@@ -42,7 +42,7 @@ const ContentDisplay = ({ content, currentTheme, onOverflowChange, showFullConte
         iframeDocument.close();
         //Measure height right after writing
         const measureHeight = () => {
-            const fullHeight = iframeDocument.body.scrollHeight;
+            const fullHeight = iframeDocument.body.scrollHeight + 10; //+10 prevents bottom from being cut off;
             const threshold = window.innerHeight * 0.5;
             if (fullHeight > threshold) {
                 setIframeHeight('50vh');

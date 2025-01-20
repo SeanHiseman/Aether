@@ -358,7 +358,7 @@ const FeedHome = () => {
                             <div className="chat-name">
                                 <p className="text36">{channel_name}</p>
                                 <div className="button-group">
-                                    {channel_name !== "Main" && ( 
+                                    {channel_name !== "Main" && isAdmin && ( 
                                         <>
                                             <button
                                                 className="small-icon"

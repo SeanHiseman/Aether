@@ -61,7 +61,7 @@ const ContentForm = ({ isEdit = false, isReply, onSubmit, post = null, setShowFo
                 return;
             }
             if (generationRequest.length > 1000) {
-                setFormErrorMessage("Cannot exceed 1000 characters.");
+                setFormErrorMessage("Cannot exceed 1000 characters."); //Temporary limit, can be increased
                 return;
             }
             setIsLoading(true);
@@ -69,6 +69,7 @@ const ContentForm = ({ isEdit = false, isReply, onSubmit, post = null, setShowFo
             setGenerationRequest('');
             const response = await axios.post('/api/generate_content', {
                 currentCode: content,
+                parentCode: post ? (content ? null : post.content) : null,
                 request: currentRequest,
             });
             if (response.data && response.status === 201) {
@@ -205,7 +206,7 @@ const ContentForm = ({ isEdit = false, isReply, onSubmit, post = null, setShowFo
                         )}
                         <div className="code-preview">
                             {isLoading ? (
-                                <p>{loadingText}</p>
+                                <p className="loading-text">{loadingText}</p>
                             ) : (
                                 <ContentDisplay content={codeContent} onOverflowChange={() => {}} showFullContent={true} showScrollBar={true}/>
                             )}
