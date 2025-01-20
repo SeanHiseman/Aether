@@ -19,10 +19,10 @@ const Feeds = () => {
             </div>
             <div className="welcome-box single">
                 <div className="left-aligned-text">
-                    <p className="welcome-box-header">Dynamic feeds</p>
-                    <p>All posts are made to feeds. Each feed is divided into channels. Main channels display content from across the feed, so nothing is missed</p>
+                    <p className="welcome-box-header">Feeds</p>
+                    <p>Posts are made to feeds. Each feed has channels. Main channels display content from across the feed, so nothing is missed</p>
                     <div className="spacer20px"/>
-                    <p>Feeds are dynamic. They can join together into larger feeds, or split in to smaller feeds. Alongside posts, each channel has chats</p>
+                    <p>See posts just from your connections, follows, recommendations or create your own custom feed</p>
                     <div className="spacer20px"/>
                     <p>Users have their own feeds where only they can post content</p>
                 </div>
