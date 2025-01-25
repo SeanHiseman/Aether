@@ -127,21 +127,21 @@ const BaseLayout = () => {
     const handleAskClick = async (event) => {
         try {
             event.preventDefault();
-            //Check if input bar is empty
-            if (!currentQuery.trim()) {
-                navigate('/ask/home');
-                return;
-            }
+            const trimmedQuery = currentQuery.trim();
             const newChatId = v4();
-            if (viewer.hasMembership) {
-                await axios.post('/api/create_ask_chat', {
-                    chatId: newChatId,
-                    name: "New chat"
-                });
-            };
-            setQuery(currentQuery);
-            setCurrentQuery('');
-            navigate(`/ask/${newChatId}`);
+            if (trimmedQuery) {
+                if (user.has_membership) {
+                    await axios.post('/api/create_ask_chat', {
+                        chatId: newChatId,
+                        chatName: "New chat"
+                    });
+                    //Navigate immediately and pass the initial message via state
+                    navigate(`/ask/${newChatId}`, { state: { initialMessage: trimmedQuery } });
+                }
+                setCurrentQuery('');
+            } else {
+                navigate('/ask/home');
+            }
         } catch (error) {
             setErrorMessage("Error sending Ask");
         }

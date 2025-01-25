@@ -23,27 +23,32 @@ body,html {
 .button {
     background-color: var(--dark);
 }
-.button-disabled, .dark-button-disabled {
+.button.disabled {
+    background-color: var(--dark-line);
+    color: var(--border);
+    cursor: auto;
+}
+.button, .dark-button {
+    border-radius: var(--small-margin);
+    border: none;
+    color: var(--border);
+    padding: 3px 6px;
+    margin:  var(--small-margin);
+    transition: var(--transition-regular);
+}
+.button, .dark-button, .dark-button-disabled {
+    font-size: large;
+}
+.button.large {
+    font-size: x-large;
+}
+.dark-button-disabled {
     border: none;
     border-radius: 10px;
     background-color: var(--dark-line);
     color: var(--border);
     margin: 5px;
     padding: 3px 6px;
-}
-.button, .dark-button {
-    border-radius: 10px;
-    border: none;
-    color: var(--border);
-    padding: 3px 6px;
-    margin: 5px;
-    transition: var(--transition-regular);
-}
-.button, .button-disbaled, .dark-button, .dark-button-disabled {
-    font-size: large;
-}
-.button.large, .button-disabled.large {
-    font-size: x-large;
 }
 .error-message {
     height: 16px;

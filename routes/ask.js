@@ -3,7 +3,7 @@ import dotenv from 'dotenv';
 import OpenAI from "openai";
 import { Router } from 'express';
 import { v4 } from 'uuid';
-import { AskChats, AskMessages, PostNotes } from '../models/relationships.js';
+import { AskChats, AskMessages, PostNotes, Users } from '../models/relationships.js';
 
 dotenv.config();
 const openai = new OpenAI();
@@ -87,6 +87,7 @@ router.post('/create_ask_chat', authenticateCheck, async (req, res) => {
         });
         res.status(201).json(newChat);
     } catch (error) {
+        console.log(error);
         res.status(500).json({ success: false });
     }
 });
@@ -168,12 +169,14 @@ router.post('/generate_content', authenticateCheck, async (req, res) => {
 
 //Get messages within a specific chat
 router.get('/get_ask_messages', authenticateCheck, async (req, res) => {
+    //console.log("get_ask_messages request received");
     try {
         const chatId = req.query.chatId;
         const messages = await AskMessages.findAll({
             where: { chat_id: chatId },
             order: [['timestamp', 'DESC']]
         });
+        //console.log("messages:", messages);
         res.status(200).json({ messages });
     } catch (error) {
         res.status(500).json({ success: false });
@@ -181,64 +184,75 @@ router.get('/get_ask_messages', authenticateCheck, async (req, res) => {
 });
 
 router.post('/send_ask_message', authenticateCheck, async (req, res) => {
+    //console.log("req.body:", req.body);
     try {
         const { chatId, messageContent, senderId, timestamp } = req.body;
-        //Creates API assistant
-        const assistant = await openai.beta.assistants.create({
-            name: "Ask",
-            instructions: "Assist users",
-            model: "gpt-4o-mini",
-        });
-        //Send user message to OpenAI
-        const thread = await openai.beta.threads.create();
+        const chat = await AskChats.findOne({ where: { chat_id: chatId } });
+        if (!chat) {
+            return res.status(404).json({ success: false, message: 'Chat not found' });
+        }
+        let { assistant_id, thread_id } = chat;
+        if (!assistant_id || !thread_id) {
+            const assistant = await openai.beta.assistants.create({
+                name: "Ask",
+                instructions: "Assist users",
+                model: "gpt-4o-mini",
+            });
+            assistant_id = assistant.id;
+            const thread = await openai.beta.threads.create();
+            thread_id = thread.id;
+            await AskChats.update(
+                { assistant_id, thread_id },
+                { where: { chat_id: chatId } }
+            );
+        }
         const userMessage = await openai.beta.threads.messages.create(
-            thread.id,
+            thread_id,
             {
                 role: "user",
                 content: messageContent
             }
         );
-        //Run OpenAI assistant
         const run = await openai.beta.threads.runs.create(
-            thread.id,
+            thread_id,
             {
-                assistant_id: assistant.id, 
+                assistant_id: assistant_id, 
                 instructions: "Your info:( Name: Ask, Site name: Aether) rules: (reply length =< 3 sentences if possible) "
             }
         );
-        //Wait for OpenAI response
-        let runStatus = await openai.beta.threads.runs.retrieve(thread.id, run.id);
+        let runStatus = await openai.beta.threads.runs.retrieve(thread_id, run.id);
         while (runStatus.status !== "completed") {
-            runStatus = await openai.beta.threads.runs.retrieve(thread.id, run.id);
+            await new Promise(resolve => setTimeout(resolve, 1000)); 
+            runStatus = await openai.beta.threads.runs.retrieve(thread_id, run.id);
         }
-        //Get OpenAI response
-        const messages = await openai.beta.threads.messages.list(thread.id);
-        const aiReply = messages.data.find(msg => msg.role === 'assistant').content[0].text.value;
-        //Save user message 
+        const messages = await openai.beta.threads.messages.list(thread_id);
+        const aiReplyMessage = messages.data.find(msg => msg.role === 'assistant');
+        const aiReply = aiReplyMessage ? aiReplyMessage.content[0].text.value : "I'm sorry, I couldn't process that.";
+        //console.log("aiReply:", aiReply);
         const newMessage = await AskMessages.create({
             message_id: v4(),
             chat_id: chatId,
-            sender_id: senderId,
-            message_content: messageContent,
+            sender_id: senderId, 
+            content: messageContent,
             timestamp: timestamp
         });
-        //Save reply
         const assistantMessage = await AskMessages.create({
             message_id: v4(),
             chat_id: chatId,
-            sender_id: 'ask', //distinguishes from human messages
-            message_content: aiReply,
+            sender_id: '00000000-0000-0000-0000-000000000000', 
+            content: aiReply,
             timestamp: Date.now()
         });
-        //Update chat timestamp
         await AskChats.update(
             { updated_at: Date.now() },
             { where: { chat_id: chatId } }
         );
-        res.status(201).json({ success: true, userMessage: newMessage, assistantMessage });
+        res.status(201).json({ success: true, newMessage, assistantMessage });
     } catch (error) {
-        res.status(500).json({ success: false });
+        console.log(error);
+        res.status(500).json({ success: false, message: 'Internal Server Error' });
     }
 });
+
 
 export default router;

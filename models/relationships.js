@@ -61,13 +61,13 @@ Messages.belongsTo(Chats, { foreignKey: 'chat_id' });
 Feeds.hasMany(Messages, { foreignKey: 'sender_id' });
 Messages.belongsTo(Feeds, { foreignKey: 'sender_id' });
 
-AskChats.belongsTo(Feeds, { foreignKey: 'feed_id', as: 'feed' });
-Feeds.belongsTo(AskChats, { foreignKey: 'feed_id', as: 'askChats' });
+AskChats.belongsTo(Users, { foreignKey: 'user_id', as: 'user' });
+Users.belongsTo(AskChats, { foreignKey: 'user_id', as: 'askChats' });
 
 AskChats.hasMany(AskMessages, { foreignKey: 'chat_id', as: 'messages' });
 AskMessages.belongsTo(AskChats, { foreignKey: 'chat_id', as: 'chat' });
-Feeds.hasMany(AskMessages, { foreignKey: 'sender_id', as: 'sentMessages' });
-AskMessages.belongsTo(Feeds, { foreignKey: 'sender_id', as: 'sender' });
+Users.hasMany(AskMessages, { foreignKey: 'sender_id', as: 'sentMessages' });
+AskMessages.belongsTo(Users, { foreignKey: 'sender_id', as: 'sender' });
 
 PostNotes.belongsTo(Posts, { foreignKey: 'post_id', as: 'parentPost'});
 Posts.hasOne(PostNotes, { foreignKey: 'post_id', as: 'note'});

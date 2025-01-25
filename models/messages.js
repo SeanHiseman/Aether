@@ -1,20 +1,21 @@
 import { BOOLEAN, STRING, DataTypes } from 'sequelize';
 import sequelize from '../databaseSetup.js';
 import { Feeds } from './feeds.js'
+import { Users } from './users.js'
 
 const AskChats = sequelize.define('ask_chats', {
     chat_id: { type: STRING(36), primaryKey: true },
-    name: { type: STRING(256), allowNull: true, defaultValue: 'New chat'},
-    user_id: { type: STRING(36), allowNull: false, references: { model: Feeds, key: 'feed_id' }},
+    name: { type: STRING(256), allowNull: true, defaultValue: 'New chat' },
+    user_id: { type: STRING(36), allowNull: false, references: { model: Users, key: 'user_id' } },
     created_at: { type: DataTypes.DATE(3), defaultValue: sequelize.literal('CURRENT_TIMESTAMP(3)') },
     updated_at: { type: DataTypes.DATE(3), defaultValue: sequelize.literal('CURRENT_TIMESTAMP(3)') }
-}, { tableName: 'ask_chats', timestamps: false });  
+}, { tableName: 'ask_chats', timestamps: false });
 
 const AskMessages = sequelize.define('ask_messages', {
     message_id: { type: STRING(36), primaryKey: true },
     chat_id: { type: STRING(36), allowNull: false, references: { model: AskChats, key: 'chat_id' }},
-    sender_id: { type: STRING(36), allowNull: false, references: { model: Feeds, key: 'feed_id' }},
-    message_content: { type: STRING(1000), allowNull: false },
+    sender_id: { type: STRING(36), allowNull: false, references: { model: Users, key: 'user_id' }},
+    content: { type: STRING(1000), allowNull: false },
     timestamp: { type: DataTypes.DATE(3), defaultValue: sequelize.literal('CURRENT_TIMESTAMP(3)') }
 }, { tableName: 'ask_messages', timestamps: false });
 

@@ -421,9 +421,10 @@ export const directMessagesSocket = (socket) => {
                         is_read: false 
                     } 
                 }
-            ).then(([affectedRows]) => {
-                console.log(`${affectedRows} messages marked as read`);
-            });
+            );
+            //).then(([affectedRows]) => {
+                //console.log(`${affectedRows} messages marked as read`);
+            //});
             socket.to(chat_id).emit('messages_marked_read', { chat_id, reader_id });
         });
     } catch (error) {
