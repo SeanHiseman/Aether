@@ -1,9 +1,10 @@
 import axios from 'axios';
-import React, { useContext, useEffect, useState } from 'react';
+import React, { useContext, useEffect, useState, useCallback, useRef } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { v4 } from 'uuid';
 import { AuthContext } from '../../components/authContext';
 import { useQueryContext } from '../../components/search/queryContext';
+import { FaEdit, FaTrash, FaPlus, FaMinus } from 'react-icons/fa';
 
 const AskChannel = () => {
     const [changedChatName, setChangedChatName] = useState('');
@@ -13,13 +14,15 @@ const AskChannel = () => {
     const [isEditingChatName, setIsEditingChatName] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [messages, setMessages] = useState([]);
+    const [showNewChatForm, setShowNewChatForm] = useState(false);
+    const [newChatName, setNewChatName] = useState('');
     const location = useLocation();
     const { chatId } = useParams();
     const { query, setQuery } = useQueryContext();
     const { user } = useContext(AuthContext);    
     const navigate = useNavigate();
+    const initialMessageRef = useRef(false); //Ref to prevent multiple sends
 
-    //Get user's previous Ask chats
     useEffect(() => {
         const fetchChats = async () => {
             try {
@@ -32,25 +35,27 @@ const AskChannel = () => {
         fetchChats();
     }, []);
 
-    //Get messages from current chat
     useEffect(() => {
         const fetchMessages = async () => {
             try {
-                //Home chat doesn't have ID or messages
                 if (chatId) {
-                    if (query.length !== 0) {
+                    //Check for initialMessage in location.state
+                    if (location.state?.initialMessage && !initialMessageRef.current) {
+                        initialMessageRef.current = true; 
+                        await sendAskMessage(chatId, location.state.initialMessage);
+                    } else if (query.length !== 0) {
                         setIsLoading(true);
                         await axios.post('/api/send_ask_message', {
                             chatId: chatId,
                             messageContent: query,
-                            senderId: user.userId,
+                            senderId: user.user_id,
                             timestamp: Date.now()
                         });
                         setIsLoading(false);
                         setQuery('');
                     } else {
                         const response = await axios.get('/api/get_ask_messages', { params: { chatId } });
-                        setMessages(response.data.messages);
+                        setMessages(response.data.messages.reverse());
                     }
                 }
             } catch (error) {
@@ -58,32 +63,32 @@ const AskChannel = () => {
             }
         };
         fetchMessages();
-    }, [chatId, query, setQuery, user.userId]);
+    }, [chatId, query, setQuery, user.user_id, location.state]);
 
-    //Find current chat based on Id in url
+    // Find current chat based on ID in URL
     const currentChat = chats.find(chat => chat.chat_id === chatId);
     const chatName = currentChat ? currentChat.name : 'Ask';
 
     const changeChatName = async (event) => {
         event.preventDefault();
         try {
-            if (changedChatName.length === 0) {
+            if (changedChatName.trim().length === 0) {
                 setErrorMessage("Chat needs a name");
                 return;
             }
             const response = await axios.post('/api/change_ask_chat_name', {
                 chatId: chatId,
-                newName: changedChatName
+                newName: changedChatName.trim()
             });
             if (response.status === 200) {
                 setChats(prevChats => prevChats.map(chat => 
-                    chat.chat_id === chatId ? { ...chat, name: changedChatName } : chat
+                    chat.chat_id === chatId ? { ...chat, name: changedChatName.trim() } : chat
                 ));
                 setIsEditingChatName(false);
                 setChangedChatName('');
+                setErrorMessage('');
             }
-
-        } catch {
+        } catch (error) {
             setErrorMessage("Error changing chat name");
         }
     };
@@ -93,20 +98,18 @@ const AskChannel = () => {
             const newChatId = v4();
             const response = await axios.post('/api/create_ask_chat', {
                 chatId: newChatId,
-                name: "New chat"
+                chatName: newChatName.trim() || "New chat"
             });
             if (response.data && response.status === 201) {
                 const newChat = {
                     ...response.data,
                     chatId: response.data.chat_id,
                 };
-                //Updates chats and viewed chats
                 setChats(prevChats => [newChat, ...prevChats]);
-                navigate(`/ask/${newChat.chatId}`)
+                navigate(`/ask/${newChat.chatId}`, { state: { initialMessage: messageContent } });
                 setErrorMessage('');
-                if (messageContent) {
-                    await sendAskMessage(newChat.chatId, messageContent);
-                }
+                setNewChatName('');
+                setShowNewChatForm(false);
             } else {
                 setErrorMessage("Error creating chat");
             }
@@ -117,18 +120,17 @@ const AskChannel = () => {
 
     const deleteChat = async () => {
         try {
-            await axios.delete('/api/delete_ask_chat', { data: {chat_id: chatId } });
-            //Show chat list without deleted chat
+            await axios.delete('/api/delete_ask_chat', { data: { chat_id: chatId } });
             setChats(prevChats => 
                 prevChats.filter(chat => chat.chat_id !== chatId)
             );
             navigate('/ask/home');
         } catch (error) {
-            setErrorMessage('Error deleting chat:', error);
+            setErrorMessage('Error deleting chat');
         }
     };
 
-    //If user is submitting a query through the home chat
+    // Handle submitting a query through the home chat
     const handleHomeSubmit = async (event) => {
         event.preventDefault();
         try {
@@ -139,29 +141,27 @@ const AskChannel = () => {
         }
     };
 
-    //Checks if viewing home chat
     const isHome = location.pathname === '/ask/home';
 
     const sendAskMessage = async (chatId, messageContent = currentMessage) => {
         try {
             setIsLoading(true);
             setCurrentMessage('');
-            //Move current chat to top of chat list
             setChats(prevChats => {
                 const currentChat = prevChats.find(chat => chat.chat_id === chatId);
                 const otherChats = prevChats.filter(chat => chat.chat_id !== chatId);
                 return currentChat ? [currentChat, ...otherChats] : prevChats;
             });
+            setMessages(prevMessages => [...prevMessages, { content: messageContent, sender_id: user.user_id }]);
             const response = await axios.post('/api/send_ask_message', {
                 chatId: chatId,
                 messageContent: messageContent,
-                senderId: user.userId, 
-                timestamp: Date.now() //Set timestamp now so reply has different
+                senderId: user.user_id, 
+                timestamp: Date.now()
             });
             if (response.data && response.status === 201) {
-                const { userMessage, assistantMessage } = response.data;
-                setMessages(prevMessages => [assistantMessage, userMessage, ...prevMessages]);
-                setCurrentMessage('');
+                const { assistantMessage } = response.data;
+                setMessages(prevMessages => [...prevMessages, assistantMessage]);
                 setErrorMessage('');
             } else {
                 setErrorMessage("Error sending message");
@@ -173,16 +173,35 @@ const AskChannel = () => {
         }
     };
 
-    document.title="Ask";
+    const handleCreateChat = async (event) => {
+        event.preventDefault();
+        if (newChatName.trim().length === 0) {
+            setErrorMessage("Chat name cannot be empty");
+            return;
+        }
+        if (newChatName.trim().length > 30) {
+            setErrorMessage("Chat name too long");
+            return;
+        }
+        await createNewAskChat();
+    };
+
+    const toggleNewChatForm = () => {
+        setShowNewChatForm(!showNewChatForm);
+        setNewChatName('');
+        setErrorMessage('');
+    };
+
+    document.title = "Ask";
     return (
         <div className="standard-container">  
             <div className="content-feed">
-                {!user.hasMembership ? (
+                {!user.has_membership ? (
                     <div className="message-container incoming">
                         <div className="message incoming">
                             Only members can use Ask. Get membership here:
                         </div>
-                        <button className="button join-small">Join</button>
+                        <button className="button join">Join</button>
                     </div>
                 ) : (
                     <div className="channel-feed">
@@ -192,31 +211,68 @@ const AskChannel = () => {
                                     <p className="text36">Ask anything...</p>
                                 </div>
                                 <div className="messages-channel-footer">
-                                    <input className="chat-message-bar" type="text" value={currentMessage} onChange={(e) => setCurrentMessage(e.target.value)} placeholder="Ask..." onKeyDown={(e) => e.key === 'Enter' && handleHomeSubmit(e)}/>
-                                    <button className="chat-send-button" onClick={handleHomeSubmit}>Send</button>
+                                    <input 
+                                        className="chat-message-bar" 
+                                        type="text" 
+                                        value={currentMessage} 
+                                        onChange={(e) => setCurrentMessage(e.target.value)} 
+                                        placeholder="Ask..." 
+                                        onKeyDown={(e) => e.key === 'Enter' && handleHomeSubmit(e)}
+                                    />
+                                    <button 
+                                        className="chat-send-button" 
+                                        onClick={handleHomeSubmit}
+                                        disabled={isLoading}
+                                    >
+                                        {isLoading ? 'Loading...' : 'Send'}
+                                    </button>
                                 </div>
                             </div>
                         ) : (
                             <div className="channel">
                                 <div className="channel-content messages">
                                     {messages.map((msg, index) => (
-                                        <div key={index} className={`message-container ${msg.sender_id === user.userId ? 'outgoing' : 'incoming'}`}>
-                                            <div className={`message ${msg.sender_id === user.userId ? 'outgoing' : 'incoming'}`}>
-                                                {msg.message_content}
+                                        <div 
+                                            key={index} 
+                                            className={`message-container ${msg.sender_id === user.user_id ? 'outgoing' : 'incoming'}`}
+                                        >
+                                            <div className={`message ${msg.sender_id === user.user_id ? 'outgoing' : 'incoming'}`}>
+                                                {msg.content}
                                             </div>
                                         </div>  
                                     ))}
+                                    {isLoading && (
+                                        <div className="message-container incoming">
+                                            <div className="message incoming">
+                                                Typing...
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
                                 <div className="messages-channel-footer">
-                                    <input className="chat-message-bar" type="text" value={currentMessage} onChange={(e) => setCurrentMessage(e.target.value)} placeholder="Ask..." onKeyDown={(e) => e.key === 'Enter' && sendAskMessage(chatId, currentMessage)} disabled={isLoading}/>
-                                    <button className="chat-send-button" onClick={() => sendAskMessage(chatId, currentMessage)} disabled={isLoading}>{isLoading ? 'Loading...' : 'Send'}</button>
+                                    <input 
+                                        className="chat-message-bar" 
+                                        type="text" 
+                                        value={currentMessage} 
+                                        onChange={(e) => setCurrentMessage(e.target.value)} 
+                                        placeholder="Ask..." 
+                                        onKeyDown={(e) => e.key === 'Enter' && sendAskMessage(chatId, currentMessage)} 
+                                        disabled={isLoading}
+                                    />
+                                    <button 
+                                        className={isLoading ? "chat-send-button disabled" : "chat-send-button"}
+                                        onClick={() => sendAskMessage(chatId, currentMessage)} 
+                                        disabled={isLoading}
+                                    >
+                                        {isLoading ? 'Loading...' : 'Send'}
+                                    </button>
                                 </div>
                             </div>
                         )}
                     </div>
                 )}
             </div>
-            {!user.hasMembership ? (
+            {!user.has_membership ? (
                 <aside id="right-aside">
                     <p className="text36">Ask</p>
                 </aside>
@@ -226,65 +282,118 @@ const AskChannel = () => {
                     {chatName !== 'Ask' ? (
                         <div id="chat-change">
                             {isEditingChatName ? (
-                                <div id="change-name">
-                                    <textarea className="change-text-area small" value={changedChatName} placeholder="New name" onChange={(e) => {
-                                        e.preventDefault();
-                                        const input = e.target.value;
-                                        const inputLength = input.length;
-                                        if (inputLength <= 30) {
-                                            setChangedChatName(input)
-                                        } else {
-                                            setErrorMessage('Name too long');
-                                        }
-                                    }}
-                                    />
-                                    <div id="cancel-save">
-                                        <button className="button" onClick={() => {
-                                            setIsEditingChatName(false);
-                                            setChangedChatName('');
-                                            setErrorMessage('');
-                                        }}>Cancel</button>
-                                        <button className="button" onClick={(e) => {
-                                            e.preventDefault();
-                                            changeChatName(e)
-                                        }}>Save</button>
-                                    </div>
-                                    <button className="button" onClick={() => deleteChat()}>Delete chat</button> 
+                                <div className="change-name">
+                                    <form onSubmit={changeChatName}>
+                                        <textarea 
+                                            className="change-text-area small" 
+                                            value={changedChatName} 
+                                            placeholder="New name" 
+                                            onChange={(e) => {
+                                                const input = e.target.value;
+                                                if (input.length <= 30) {
+                                                    setChangedChatName(input);
+                                                    setErrorMessage('');
+                                                } else {
+                                                    setErrorMessage('Name too long');
+                                                }
+                                            }}
+                                        />
+                                        <div className="button-group">
+                                            <button 
+                                                className="button" 
+                                                type="button" 
+                                                onClick={() => {
+                                                    setIsEditingChatName(false);
+                                                    setChangedChatName('');
+                                                    setErrorMessage('');
+                                                }}
+                                            >
+                                                Cancel
+                                            </button>
+                                            <button 
+                                                className="button" 
+                                                type="submit"
+                                            >
+                                                Save
+                                            </button>
+                                        </div>
+                                    </form>
                                 </div>
                             ) : (
                                 <div id="chat-name">
                                     <p className="text36">{chatName}</p>
-                                    <button className="button" onClick={() => {
-                                        setIsEditingChatName(true);
-                                        setChangedChatName(chatName);
-                                    }}>Rename</button>
-                                    <button className="button" onClick={() => deleteChat()}>Delete chat</button> 
+                                    <div className="button-group">
+                                        <button 
+                                            className="small-icon button" 
+                                            onClick={() => {
+                                                setIsEditingChatName(true);
+                                                setChangedChatName(chatName);
+                                            }}
+                                        >
+                                            <FaEdit />
+                                        </button>
+                                        <button 
+                                            className="small-icon button" 
+                                            onClick={deleteChat}
+                                        >
+                                            <FaTrash />
+                                        </button>
+                                        <button 
+                                            className="small-icon button" 
+                                            onClick={toggleNewChatForm}
+                                        >
+                                            {showNewChatForm ? <FaMinus /> : <FaPlus />}
+                                        </button>
+                                    </div>
                                 </div>
                             )}
                         </div>
                     ) : (
                         <p className="text36">{chatName}</p>
                     )}
-                    <div id="add-chat-section">
-                        <div id="add-channel-section">
-                            <Link to={"/ask/home"}>
-                                <button class="button">New chat</button>
-                            </Link>
-                        </div>
-                    </div>
-                    <ul>
-                        {chats.map(chat => (
-                            <li key={chat.chat_id} className="channel-item">
-                                <Link to={`/ask/${chat.chat_id}`}>
-                                    <div className="channel-link">{chat.name || "New chat"}</div>
-                                </Link>
-                            </li>
-                        ))}
-                    </ul>
+                    {showNewChatForm && (
+                        <form className="add-channel-form" onSubmit={handleCreateChat}>
+                            <input
+                                className="name-input"
+                                type="text"
+                                name="chat_name"
+                                placeholder="Chat name..."
+                                value={newChatName}
+                                onChange={(e) => {
+                                    const input = e.target.value;
+                                    if (input.length <= 30) {
+                                        setNewChatName(input);
+                                        setErrorMessage('');
+                                    } else {
+                                        setErrorMessage("Name too long");
+                                    }
+                                }}
+                                required
+                            />
+                            <button className="button" type="submit">
+                                <FaPlus /> 
+                            </button>
+                        </form>
+                    )}
+                    <nav className="channel-list">
+                        <ul>
+                            {chats.map(chat => (
+                                <li key={chat.chat_id} className="channel-item">
+                                    <Link to={`/ask/${chat.chat_id}`}>
+                                        <div className="channel-link">
+                                            {chat.name || "New chat"}
+                                        </div>
+                                    </Link>
+                                </li>
+                            ))}
+                        </ul>
+                    </nav>
                 </aside>
+
             )}
         </div>
     );
-}
+};
 
 export default AskChannel;
+

@@ -1,221 +1,450 @@
 import axios from 'axios';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
+import { v4 as uuidv4 } from 'uuid';
 import ContentDisplay from './contentDisplay';
-import { v4 } from 'uuid';
+import PropTypes from 'prop-types';
+
+const BLOCK_TYPES = {
+  TEXT: 'TEXT',
+  CODE: 'CODE',
+  MEDIA: 'MEDIA',
+};
+
+//Convert array of blocks into one HTML string for final preview/submission
+const compileBlocksToHTML = (blocks) => {
+  return blocks
+    .map((block) => {
+      if (block.type === BLOCK_TYPES.TEXT) {
+        return block.data.html || '';
+      } else if (block.type === BLOCK_TYPES.CODE) {
+        return `<pre><code>${block.data.code || ''}</code></pre>`;
+      } else if (block.type === BLOCK_TYPES.MEDIA) {
+        const fileType = block.data?.file?.type || '';
+        if (fileType.startsWith('image/')) {
+          return `<img src="${block.data.url}" alt="Uploaded image" />`;
+        } else if (fileType.startsWith('video/')) {
+          return `<video controls><source src="${block.data.url}" type="${fileType}"></video>`;
+        }
+      }
+      return '';
+    })
+    .join('\n');
+};
 
 const ContentForm = ({ isEdit = false, isReply, onSubmit, post = null, setShowForm }) => {
-    const [files, setFiles] = useState([]);
-    const [generationRequest, setGenerationRequest] = useState('');
-    const [isCode, setIsCode] = useState(true);
-    const [isLoading, setIsLoading] = useState(false);
-    const [codeContent, setCodeContent] = useState('');
-    const [formErrorMessage, setFormErrorMessage] = useState('');
-    const [textContent, setTextContent] = useState('');
-    const [title, setTitle] = useState('');
-    const [useRequest, setUseRequest] = useState(true);
-    const quillRef = useRef(null);
-    const loadingText = "Loading... (Can take up to 30 seconds)";
-    const MAX_FILE_SIZE = 10 * 1024 * 1024; //10mb;
+  const [title, setTitle] = useState('');
+  const [blocks, setBlocks] = useState([]);
+  const [formErrorMessage, setFormErrorMessage] = useState('');
+  const [isLoadingAI, setIsLoadingAI] = useState(false);
+  const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
 
-    //Populates form if editing
-    useEffect(() => {
-        if (isEdit && post) {
-            setTitle(post.title || '');
-            //if (post.is_code) {
-                setIsCode(true);
-                setCodeContent(post.content);
-            //} else {
-                //setIsCode(false);
-                //setTextContent(post.content);
-            //}
+  //Initialize form if editing
+  useEffect(() => {
+    if (isEdit && post) {
+      setTitle(post.title || '');
+      if (post.is_code) {
+        setBlocks([
+          {
+            id: uuidv4(),
+            type: BLOCK_TYPES.CODE,
+            data: { code: post.content },
+            isEditing: true,
+          },
+        ]);
+      } else {
+        setBlocks([
+          {
+            id: uuidv4(),
+            type: BLOCK_TYPES.TEXT,
+            data: { html: post.content },
+            isEditing: true,
+          },
+        ]);
+      }
+    }
+  }, [isEdit, post]);
+
+  const handleAddBlock = useCallback(
+    (type) => {
+      const newBlock = {
+        id: uuidv4(),
+        type,
+        data:
+          type === BLOCK_TYPES.TEXT
+            ? { html: '' }
+            : type === BLOCK_TYPES.CODE
+            ? { code: '' }
+            : { file: null, url: '' },
+        isEditing: type !== BLOCK_TYPES.MEDIA, //Media blocks don't require editing
+      };
+      setBlocks((prev) => [...prev, newBlock]);
+    },
+    [setBlocks]
+  );
+
+  const moveBlockUp = useCallback(
+    (index) => {
+      if (index === 0) return;
+      setBlocks((prev) => {
+        const newBlocks = [...prev];
+        [newBlocks[index - 1], newBlocks[index]] = [newBlocks[index], newBlocks[index - 1]];
+        return newBlocks;
+      });
+    },
+    [setBlocks]
+  );
+
+  const moveBlockDown = useCallback(
+    (index) => {
+      if (index === blocks.length - 1) return;
+      setBlocks((prev) => {
+        const newBlocks = [...prev];
+        [newBlocks[index + 1], newBlocks[index]] = [newBlocks[index], newBlocks[index + 1]];
+        return newBlocks;
+      });
+    },
+    [blocks.length, setBlocks]
+  );
+
+  const removeBlock = useCallback(
+    (blockId) => {
+      setBlocks((prev) => prev.filter((block) => block.id !== blockId));
+    },
+    [setBlocks]
+  );
+
+  const updateBlock = useCallback(
+    (updatedBlock) => {
+      setBlocks((prevBlocks) =>
+        prevBlocks.map((b) => (b.id === updatedBlock.id ? updatedBlock : b))
+      );
+    },
+    [setBlocks]
+  );
+
+  const handleGenerateCodeBlock = useCallback(
+    async (block) => {
+      try {
+        const prompt = block.data._tempAiPrompt || '';
+        if (!prompt.trim()) {
+          setFormErrorMessage('Prompt cannot be empty.');
+          return;
         }
-    }, [isEdit, post]);
-
-    //Customises tool bar
-    const modules = {
-        toolbar: [
-            ['link'],
-            [{ size: []}],
-            ['bold', 'italic', 'underline', 'strike', 'blockquote'],
-            [
-                { list: 'ordered' },
-                { list: 'bullet '},
-                { indent: '-1' },
-                { indent: '+1' }, 
-            ],
-            ['clean'],
-        ]
-    };
-
-    const createUniqueFilename = (originalName) => {
-        const ext = originalName.substring(originalName.lastIndexOf('.'));
-        return `${Date.now()}-${v4()}${ext}`;
-    };
-
-    const generateContent = async () => {
-        try {
-            if (generationRequest.trim() === "") {
-                setFormErrorMessage("Cannot be empty.");
-                return;
-            }
-            if (generationRequest.length > 1000) {
-                setFormErrorMessage("Cannot exceed 1000 characters."); //Temporary limit, can be increased
-                return;
-            }
-            setIsLoading(true);
-            const currentRequest = generationRequest
-            setGenerationRequest('');
-            const response = await axios.post('/api/generate_content', {
-                currentCode: content,
-                parentCode: post ? (content ? null : post.content) : null,
-                request: currentRequest,
-            });
-            if (response.data && response.status === 201) {
-                const { generatedContent } = response.data;
-                setCodeContent(generatedContent);
-                setFormErrorMessage('');
-            } else {
-                setFormErrorMessage("Generation error");
-            }
-        } catch (error) {
-            setFormErrorMessage("Generation error");
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
-    const generateModeToggle = () => {
-        setUseRequest((prev) => !prev);
-    };
-
-    //Handles attached files
-    const handleFilesChange = (event) => {
-        const newFiles = Array.from(event.target.files);
-        const oversizedFiles = newFiles.filter(file => file.size > MAX_FILE_SIZE);
-        if (oversizedFiles.length > 0) {
-            const oversizedNames = oversizedFiles.map(file => file.name).join(', ');
-            setFormErrorMessage(`The following file(s) exceed the maximum size of 1GB: ${oversizedNames}`);
-            return;
-        }
+        setIsLoadingAI(true);
         setFormErrorMessage('');
-        const uniqueFiles = newFiles.map(file => {
-            const uniqueFilename = createUniqueFilename(file.name);
-            const newFile = new File([file], uniqueFilename, { type: file.type });
-            return { originalFile: file, uniqueFile: newFile, uniqueFilename };
+        const response = await axios.post('/api/generate_content', {
+          currentCode: block.data.code,
+          parentCode: isEdit && post ? post.content : null,
+          request: prompt,
         });
-        //Update files state with uniqueFile
-        setFiles((prevFiles) => [...prevFiles, ...uniqueFiles.map(f => f.uniqueFile)]);
-        if (isCode) {
-            let updatedCodeContent = codeContent;
-            uniqueFiles.forEach(({ uniqueFilename, uniqueFile }) => {
-                const filePath = `/media/content/${uniqueFilename}`; 
-                if (uniqueFile.type.startsWith('image/')) {
-                    updatedCodeContent += `<img src="${filePath}" alt="${uniqueFile.name}" />`;
-                } else if (uniqueFile.type.startsWith('video/')) {
-                    updatedCodeContent += 
-                    `<video controls>
-                        <source src="${filePath}" type="${uniqueFile.type}" />
-                        Your browser does not support the video tag
-                    </video>`;
-                } else {
-                    updatedCodeContent += `<a href="${filePath}" download="${uniqueFile.name}">${uniqueFile.name}</a>`;
-                }
-            });
-        setCodeContent(updatedCodeContent);
+        if (response.data && response.status === 201) {
+          const { generatedContent } = response.data;
+          const updated = {
+            ...block,
+            data: { ...block.data, code: generatedContent },
+          };
+          updateBlock(updated);
+        } else {
+          setFormErrorMessage('Generation error.');
         }
-    };
+      } catch (error) {
+        setFormErrorMessage('Error generating code via AI.');
+      } finally {
+        setIsLoadingAI(false);
+      }
+    },
+    [isEdit, post, updateBlock]
+  );
 
-    const content = isCode ? codeContent : textContent;
+  const createUniqueFilename = (originalName) => {
+    const ext = originalName.substring(originalName.lastIndexOf('.'));
+    return `${Date.now()}-${uuidv4()}${ext}`;
+  };
 
-    const handleSubmit = async (event) => {
-        event.preventDefault();
-        if (isCode) {
-            if (content.trim() === "") {
-                setFormErrorMessage("Content cannot be empty.");
-                return;  
-            }
+  const handleFilesChange = useCallback(
+    (event) => {
+      const newFiles = Array.from(event.target.files);
+      const oversizedFiles = newFiles.filter((file) => file.size > MAX_FILE_SIZE);
+      if (oversizedFiles.length > 0) {
+        const oversizedNames = oversizedFiles.map((file) => file.name).join(', ');
+        setFormErrorMessage(`These files exceed 10MB: ${oversizedNames}`);
+        return;
+      }
+      setFormErrorMessage('');
+
+      const uniqueFiles = newFiles.map((file) => {
+        const uniqueFilename = createUniqueFilename(file.name);
+        return new File([file], uniqueFilename, { type: file.type });
+      });
+
+      const newMediaBlocks = uniqueFiles.map((file) => ({
+        id: uuidv4(),
+        type: BLOCK_TYPES.MEDIA,
+        data: {
+          file,
+          url: URL.createObjectURL(file), //For immediate preview
+        },
+        isEditing: false, //Media blocks don't require editing
+      }));
+
+      setBlocks((prev) => [...prev, ...newMediaBlocks]);
+    },
+    [setBlocks]
+  );
+
+  // Memoized onOverflowChange handler
+  const handleOverflowChange = useCallback((isOverflowing) => {
+    // Handle overflow change if needed
+    // For example, you can set a state or perform other actions
+    // Currently left empty as per original implementation
+  }, []);
+
+  // Handle form submission
+  const handleSubmit = useCallback(
+    async (e) => {
+      e.preventDefault();
+      if (!blocks.length) {
+        setFormErrorMessage('At least one block is required.');
+        return;
+      }
+      const finalHTML = compileBlocksToHTML(blocks);
+      if (!finalHTML.trim()) {
+        setFormErrorMessage('Content cannot be empty.');
+        return;
+      }
+
+      try {
+        setFormErrorMessage('');
+        const formData = new FormData();
+        const postId = uuidv4();
+        formData.append('post_id', postId);
+        formData.append('content', finalHTML);
+        const isAnyCode = blocks.some((b) => b.type === BLOCK_TYPES.CODE);
+        formData.append('is_code', isAnyCode);
+        if (isReply && post) {
+          formData.append('parent_id', post.post_id);
         }
-        try {
-            setFormErrorMessage("");
-            const formData = new FormData();
-            const postId = v4();
-            formData.append('post_id:', postId);
-            formData.append('content', content);
-            formData.append('is_code', isCode);
-            if (isReply) formData.append("parent_id", post.post_id);
-            if (!isReply) formData.append('title', title);
-            files.forEach((file) => {
-                formData.append('files', file);
-            }); 
-            await onSubmit(formData);
-            setCodeContent('');
-            setTextContent('');
-            setTitle('');
-            setIsCode(false);
-            setFiles([])
-        } catch (error) {
-            setFormErrorMessage('Error submitting the form')
+        if (!isReply) {
+          formData.append('title', title);
         }
-    };
+        blocks
+          .filter((b) => b.type === BLOCK_TYPES.MEDIA && b.data.file)
+          .forEach((mediaBlock) => {
+            formData.append('files', mediaBlock.data.file);
+          });
+        await onSubmit(formData);
+        setTitle('');
+        setBlocks([]);
+      } catch (error) {
+        setFormErrorMessage('Error submitting the form.');
+      }
+    },
+    [blocks, isReply, onSubmit, post, title]
+  );
 
-    return (
-        <div className={`create-post-container ${isCode ? 'wide' : 'narrow'}`}>
-            <form id="post-form" onSubmit={handleSubmit}>
-                <div id="content-form-buttons">
-                    <button className="button" type="button" onClick={() => setShowForm(false)}>Close</button>
-                    <button className="button" type="submit">
-                        {isEdit ? "Save Edit" : isReply ? "Reply" : "Post"}
-                    </button>
-                    <label htmlFor="media-input" className="button">Add media</label>
-                    <input type="file" id="media-input" accept="image/*,video/*" hidden multiple onChange={handleFilesChange} />
-                    {files.length > 0 && (
-                        <div className="file-names">
-                            <ul>
-                                {files.map((file, index) => (
-                                    <li key={index}>{file.name}</li>
-                                ))}
-                            </ul>
-                        </div>
-                    )}
-                    <button className="button" type="button" onClick={() => setIsCode(!isCode)}>
-                        {isCode ? "Text Editor" : "Code Editor"}
-                    </button>
-                    {isCode && (
-                        <button className="button" type="button" onClick={generateModeToggle}>
-                            {useRequest ? 'Code Mode' : 'Generate Mode'}
-                        </button>
-                    )}
-                    {formErrorMessage && (<div className="error-message">{formErrorMessage}</div>)}
-                </div>
-                {!isReply && (
-                    <input id="title-entry" type="text" placeholder="Add title (optional)..." value={title} onChange={(e) => setTitle(e.target.value)} />
-                )}
-                {!isCode ? (
-                    <ReactQuill placeholder={isReply ? "Reply..." : "Start post..."} modules={modules} value={textContent} onChange={setTextContent} ref={quillRef} />
-                ) : (
-                    <div className="code-editor">
-                        {useRequest ? (
-                            <div id="generate-query-container">
-                                <textarea className="content-input-form generate" placeholder={isReply ? "Describe your reply..." : "Describe your post..."} value={generationRequest} onChange={(e) => setGenerationRequest(e.target.value)} />
-                                <button className="button" type="button" onClick={generateContent}>Create</button>
-                            </div>
-                        ) : (
-                            <textarea className="content-input-form code" placeholder="Enter code..." value={codeContent} onChange={(e) => setCodeContent(e.target.value)} />
-                        )}
-                        <div className="code-preview">
-                            {isLoading ? (
-                                <p className="loading-text">{loadingText}</p>
-                            ) : (
-                                <ContentDisplay content={codeContent} onOverflowChange={() => {}} showFullContent={true} showScrollBar={true}/>
-                            )}
-                        </div>
-                    </div>
-                )}
-            </form>
+  return (
+    <div className="create-post-container">
+      <form id="post-form" onSubmit={handleSubmit} className="post-form">
+        {!isReply && (
+          <input
+            id="title-entry"
+            type="text"
+            placeholder="Add title (optional)..."
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            className="title-input"
+          />
+        )}
+        <div className="action-buttons">
+          <button
+            className="button"
+            type="button"
+            onClick={() => setShowForm(false)}
+          >
+            Close
+          </button>
+          <button className="button" type="submit">
+            {isEdit ? 'Save Edit' : isReply ? 'Reply' : 'Post'}
+          </button>
+          <button
+            type="button"
+            className="button"
+            onClick={() => handleAddBlock(BLOCK_TYPES.TEXT)}
+          >
+            + Text
+          </button>
+          <button
+            type="button"
+            className="button"
+            onClick={() => handleAddBlock(BLOCK_TYPES.CODE)}
+          >
+            + Custom content
+          </button>
+          <label htmlFor="media-input" className="button media-button">
+            + Media
+          </label>
+          <input
+            type="file"
+            id="media-input"
+            accept="image/*,video/*"
+            hidden
+            multiple
+            onChange={handleFilesChange}
+          />
         </div>
-    );
+        {formErrorMessage && (
+          <div className="error-message">{formErrorMessage}</div>
+        )}
+
+        <div className="main-content">
+          <div className="blocks-container">
+            {blocks.map((block, index) => {
+              const { id, type, data, isEditing } = block;
+
+              const toggleEdit = () => {
+                updateBlock({ ...block, isEditing: !isEditing });
+              };
+              return (
+                <div key={id} className="block">
+                  <div className="block-controls">
+                    <button
+                      type="button"
+                      onClick={() => moveBlockUp(index)}
+                      className="control-button"
+                      title="Move Up"
+                    >
+                      ↑
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => moveBlockDown(index)}
+                      className="control-button"
+                      title="Move Down"
+                    >
+                      ↓
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => removeBlock(id)}
+                      className="control-button remove-button"
+                      title="Remove"
+                    >
+                      ✕
+                    </button>
+                    {type !== BLOCK_TYPES.MEDIA && (
+                      <button
+                        type="button"
+                        onClick={toggleEdit}
+                        className="control-button edit-button"
+                        title={isEditing ? 'Close Editor' : 'Edit'}
+                      >
+                        {isEditing ? '🔒' : '✎'}
+                      </button>
+                    )}
+                  </div>
+                  <div className="block-content">
+                    {type === BLOCK_TYPES.TEXT && (
+                      isEditing ? (
+                        <ReactQuill
+                          theme="snow"
+                          value={data.html}
+                          onChange={(val) => {
+                            updateBlock({ ...block, data: { ...data, html: val } });
+                          }}
+                          className="text-editor"
+                        />
+                      ) : (
+                        <div
+                          className="text-preview"
+                          dangerouslySetInnerHTML={{ __html: data.html }}
+                        />
+                      )
+                    )}
+
+                    {type === BLOCK_TYPES.CODE && (
+                      isEditing ? (
+                        <div className="code-editor-container">
+                          <div className="ai-generator">
+                            <textarea
+                              placeholder="Describe your content..."
+                              className="ai-prompt"
+                              onChange={(e) => {
+                                updateBlock({
+                                  ...block,
+                                  data: { ...data, _tempAiPrompt: e.target.value },
+                                });
+                              }}
+                            />
+                            <button
+                              type="button"
+                              onClick={() => handleGenerateCodeBlock(block)}
+                              className="dark-button generate"
+                              disabled={isLoadingAI}
+                            >
+                              {isLoadingAI ? 'Generating...' : 'Generate'}
+                            </button>
+                          </div>
+                          <textarea
+                            className="code-input"
+                            value={data.code}
+                            onChange={(e) => {
+                              updateBlock({
+                                ...block,
+                                data: { ...data, code: e.target.value },
+                              });
+                            }}
+                          />
+                        </div>
+                      ) : (
+                        <pre className="code-preview">
+                          {data.code}
+                        </pre>
+                      )
+                    )}
+
+                    {type === BLOCK_TYPES.MEDIA && (
+                      <div className="media-preview">
+                        {data.file.type.startsWith('image/') ? (
+                          <img src={data.url} alt="Uploaded Media" />
+                        ) : data.file.type.startsWith('video/') ? (
+                          <video src={data.url} controls />
+                        ) : (
+                          <p>Unsupported media type</p>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          <div className="live-preview-container">
+            <h3>Preview</h3>
+            <ContentDisplay
+              content={compileBlocksToHTML(blocks)}
+              onOverflowChange={handleOverflowChange} 
+              showFullContent={true}
+              showScrollBar={false}
+            />
+          </div>
+        </div>
+      </form>
+    </div>
+  );
+};
+
+ContentForm.propTypes = {
+  isEdit: PropTypes.bool,
+  isReply: PropTypes.bool,
+  onSubmit: PropTypes.func.isRequired,
+  post: PropTypes.object,
+  setShowForm: PropTypes.func.isRequired,
 };
 
 export default ContentForm;
+
+
+
+

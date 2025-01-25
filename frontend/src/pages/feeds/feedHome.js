@@ -391,6 +391,7 @@ const FeedHome = () => {
                                             <FaFeatherAlt />
                                         </button>
                                     )}
+                                </div>
                                 {showChannelForm && (
                                     <form className="add-channel-form" onSubmit={AddChannel}>
                                         <input
@@ -425,7 +426,6 @@ const FeedHome = () => {
                                         </button>
                                     </form>
                                 )}
-                            </div>
                         </div>
                         )}
                     </div>

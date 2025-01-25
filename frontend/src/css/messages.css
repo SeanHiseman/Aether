@@ -43,8 +43,15 @@
     padding: var(--small-margin);
     transition: var(--transition-regular);
 }
+.chat-send-button.disabled {
+    cursor: not-allowed;
+    transition: none;
+}
 .chat-send-button:hover {
     background-color: var(--button-hover);
+}
+.chat-send-button.disabled:hover {
+    background-color: var(--dark);
 }
 .chat-input {
     padding: 10px;
