@@ -26,7 +26,7 @@ const Theme = ({ user, setCurrentView }) => {
                         setTheme={setTheme}
                     />
                 ))}
-                {!user.hasMembership && (
+                {!user.has_membership && (
                     <div className="membership-join">
                         <p className="text24">More themes available with membership</p>
                         <button className="button join" onClick={() => setCurrentView('membership-settings')}>Join</button>

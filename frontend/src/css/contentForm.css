@@ -96,6 +96,7 @@
   }
   
   .ai-prompt {
+    color: var(--border);
     width: 90%;
     padding: 8px;
     border: 1px solid var(--border);
@@ -110,6 +111,7 @@
     min-height: 100px;
     border: 1px solid var(--border);
     border-radius: 5px;
+    color: var(--border);
     resize: vertical;
     background-color: var(--darkest);
     color: var(--border);

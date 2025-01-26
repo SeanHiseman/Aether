@@ -1,5 +1,8 @@
 import authenticateCheck from '../functions/checks/authenticateCheck.js';
 import deleteMedia from '../functions/media_handling/deleteMedia.js';
+import cheerio from 'cheerio';
+import { fileURLToPath } from 'url';
+import fs from 'fs';
 import { Feeds, FeedChannels, Posts, PostNotes, PostVotes } from '../models/relationships.js';
 import multer from 'multer';
 import { Router } from 'express';
@@ -132,24 +135,33 @@ router.post('/content_vote', authenticateCheck, async (req, res) => {
     }
 });
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+const mediaDir = path.join(__dirname, '..', 'media', 'content');
+if (!fs.existsSync(mediaDir)) {
+    fs.mkdirSync(mediaDir, { recursive: true });
+}
 //Checks input for post uploads
 const postFilter = (req, file, cb) => {
     const allowedTypes = /jpeg|jpg|png|gif|mp4|mov|avi/;
     const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
     const mimetype = allowedTypes.test(file.mimetype);
     if (mimetype && extname) {
-      return cb(null, true);
+        return cb(null, true);
     } else {
-      cb(new Error('Only images and videos are allowed'));
+        cb(new Error('Only images and videos are allowed'));
     }
-  };
+};
+
 //Multer setup for post uploads
 const post_storage = multer.diskStorage({
     destination: function (req, file, cb) {
-        cb(null, 'media/content');
+        cb(null, mediaDir);
     },
     filename: function (req, file, cb) {
-        cb(null, file.originalname);
+        const uniqueFilename = `${v4()}${path.extname(file.originalname).toLowerCase()}`;
+        cb(null, uniqueFilename);
     }
 });
 
@@ -157,44 +169,57 @@ const post_storage = multer.diskStorage({
 const post_upload = multer({
     storage: post_storage,
     limits: {
-        fileSize: 1024 * 1024 * 1000 // 1GB limit
+        fileSize: 1024 * 1024 * 1000 // 10MB limit
     },
     fileFilter: postFilter
-});
+})
 
 router.post('/create_post', authenticateCheck, post_upload.array('files'), async (req, res) => {
     try {
-        let { channel_id, content, feed_id, is_code, parent_id, post_id, poster_id, title } = req.body;
+        let { channel_id, content, feed_id, parent_id, post_id, poster_id, title } = req.body;
         if (!post_id) {
             post_id = v4();
         }
-        if (!is_code) {
-            //Process uploaded files and format content
+        content = content || '';
+        const $ = cheerio.load(content, { decodeEntities: false });
+        // Remove all img and video tags with blob URLs
+        $('img[src^="blob:"], video[src^="blob:"]').remove();
+        if (req.files && req.files.length > 0) {
             req.files.forEach((file) => {
-                const fileType = file.mimetype.startsWith('image') ? 'img' : 'video';
-                const fileTag = fileType === 'img' ? `<img src="/media/content/${file.filename}">` : `<video src="/media/content/${file.filename}" controls></video>`;
-                content += ' ' + fileTag;
+                const fileType = file.mimetype.startsWith('image/') ? 'img' : 'video';
+                let fileTag = '';
+                if (fileType === 'img') {
+                    fileTag = `<img src="/media/content/${file.filename}" alt="Uploaded Image">`;
+                } else if (fileType === 'video') {
+                    fileTag = `<video controls><source src="/media/content/${file.filename}" type="${file.mimetype}"></video>`;
+                }
+                $('body').append(fileTag);
             });
-        };
+        }
+        const modifiedContent = $.html();
         const post = await Posts.create({
-            post_id, 
+            post_id,
             parent_id,
             feed_id,
-            channel_id, 
-            title, 
-            content, 
+            channel_id,
+            title,
+            content: modifiedContent,
             poster_id
         });
         if (parent_id) {
             const parentPost = await Posts.findOne({ where: { post_id: parent_id } });
-            parentPost.replies += 1;
-            await parentPost.save();
-        };
+            if (parentPost) {
+                parentPost.replies += 1;
+                await parentPost.save();
+            }
+        }
         return res.status(200).json({ success: true, post });
     } catch (error) {
-        return res.status(500).json({ success: false });
+        console.error("Error creating post:", error);
+        return res.status(500).json({ success: false, error: error.message });
     }
 });
+
 
 router.post('/edit_post', authenticateCheck, post_upload.array('files'), async (req, res) => {
     try {

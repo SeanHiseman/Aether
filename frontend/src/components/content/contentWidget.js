@@ -2,7 +2,6 @@ import axios from 'axios';
 import { FaArrowDown, FaArrowUp, FaChevronDown, FaChevronUp, FaComments, FaEdit, FaReply, FaTimesCircle } from 'react-icons/fa';
 import { Link } from 'react-router-dom';
 import React, { useCallback, useContext, useEffect, useState } from 'react';
-import { Quill } from 'react-quill';
 import { AuthContext } from '../authContext';
 import AskButton from '../askButton';
 import ContentDisplay from './contentDisplay';
