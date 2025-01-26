@@ -98,7 +98,7 @@ router.post('/join', async (req, res) => {
         //Add main channel
         const channel_id = v4();
         await FeedChannels.create({
-            channel_id, channel_name: 'Main', feed_id
+            channel_id, channel_name: 'Main', feed_id, is_chat: false
         });
         res.status(200).json({ success: true });
     } catch (error) {

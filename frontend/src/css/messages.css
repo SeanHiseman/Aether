@@ -44,6 +44,7 @@
     transition: var(--transition-regular);
 }
 .chat-send-button.disabled {
+    background-color: var(--dark-line);
     cursor: not-allowed;
     transition: none;
 }
@@ -51,7 +52,7 @@
     background-color: var(--button-hover);
 }
 .chat-send-button.disabled:hover {
-    background-color: var(--dark);
+    background-color: var(--dark-line);
 }
 .chat-input {
     padding: 10px;

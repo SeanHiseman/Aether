@@ -23,11 +23,6 @@ body,html {
 .button {
     background-color: var(--dark);
 }
-.button.disabled {
-    background-color: var(--dark-line);
-    color: var(--border);
-    cursor: auto;
-}
 .button, .dark-button {
     border-radius: var(--small-margin);
     border: none;
@@ -41,6 +36,15 @@ body,html {
 }
 .button.large {
     font-size: x-large;
+}
+.button.disabled, .dark-button.generate.disabled {
+    background-color: var(--dark-line);
+    color: var(--border);
+    cursor: not-allowed;
+    transition: none;
+}
+.button.disabled:hover, .dark-button.generate.disabled:hover {
+    background-color: var(--dark-line);
 }
 .dark-button-disabled {
     border: none;

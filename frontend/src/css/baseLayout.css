@@ -108,7 +108,6 @@
     background-color: var(--dark);
 }
 .channel-list {
-    margin-top: 10px;
     width: 90%;
 }
 .channel-list-link, .channel-list-link:visited {
