@@ -1,16 +1,15 @@
 import axios from 'axios'
-import React, { useEffect, useState, useCallback } from 'react'
+import PropTypes from 'prop-types'
+import React, { useCallback, useEffect, useState } from 'react'
 import ReactQuill from 'react-quill'
 import 'react-quill/dist/quill.snow.css'
-import { v4 } from 'uuid'
-import ContentDisplay from './contentDisplay'
-import PropTypes from 'prop-types'
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd'
+import { v4 as uuidv4 } from 'uuid'
 
 const BLOCK_TYPES = {
   CODE: 'CODE',
   MEDIA: 'MEDIA',
-  TEXT: 'TEXT',
+  TEXT: 'TEXT'
 }
 
 const reorder = (list, startIndex, endIndex) => {
@@ -20,33 +19,12 @@ const reorder = (list, startIndex, endIndex) => {
   return result
 }
 
-const compileBlocksToHTML = (blocks) => {
-  return blocks
-    .map((block) => {
-      if (block.type === BLOCK_TYPES.TEXT) {
-        return block.data.html || ''
-      } else if (block.type === BLOCK_TYPES.CODE) {
-        return `<div class="code-block">${block.data.code}</div>`
-      } else if (block.type === BLOCK_TYPES.MEDIA) {
-        const fileType = block.data?.file?.type || ''
-        const mediaUrl = block.data.url || `/media/${block.data.file.filename}`
-        if (fileType.startsWith('image/')) {
-          return `<img src="${mediaUrl}" alt="Uploaded image" />`
-        } else if (fileType.startsWith('video/')) {
-          return `<video controls><source src="${mediaUrl}" type="${fileType}"></video>`
-        }
-      }
-      return ''
-    })
-    .join('\n')
-}
-
 const ContentForm = ({ isEdit = false, isReply, onSubmit, post = null, setShowForm }) => {
   const [blocks, setBlocks] = useState([])
   const [formErrorMessage, setFormErrorMessage] = useState('')
   const [isLoadingAI, setIsLoadingAI] = useState(false)
-  const MAX_FILE_SIZE = 10 * 1024 * 1024
   const [title, setTitle] = useState('')
+  const MAX_FILE_SIZE = 10 * 1024 * 1024
 
   useEffect(() => {
     if (isEdit && post) {
@@ -54,82 +32,75 @@ const ContentForm = ({ isEdit = false, isReply, onSubmit, post = null, setShowFo
       if (post.is_code) {
         setBlocks([
           {
-            id: v4(),
-            type: BLOCK_TYPES.CODE,
             data: { code: post.content },
+            id: uuidv4(),
             isEditing: true,
-          },
+            type: BLOCK_TYPES.CODE
+          }
         ])
       } else {
         setBlocks([
           {
-            id: v4(),
-            type: BLOCK_TYPES.TEXT,
             data: { html: post.content },
+            id: uuidv4(),
             isEditing: true,
-          },
+            type: BLOCK_TYPES.TEXT
+          }
         ])
       }
     }
   }, [isEdit, post])
 
-  const handleAddBlock = useCallback(
-    (type) => {
-      const newBlock = {
-        id: v4(),
-        type,
-        data:
-          type === BLOCK_TYPES.TEXT
-            ? { html: '' }
-            : type === BLOCK_TYPES.CODE
-            ? { code: '' }
-            : { file: null, url: '' },
-        isEditing: type !== BLOCK_TYPES.MEDIA,
-      }
-      setBlocks((prev) => [...prev, newBlock])
-    },
-    [setBlocks]
-  )
+  const handleAddBlock = useCallback((type) => {
+    const newBlock = {
+      data:
+        type === BLOCK_TYPES.TEXT
+          ? { html: '' }
+          : type === BLOCK_TYPES.CODE
+          ? { code: '' }
+          : { file: null, url: '' },
+      id: uuidv4(),
+      isEditing: type !== BLOCK_TYPES.MEDIA,
+      type
+    }
+    setBlocks((prev) => [...prev, newBlock])
+  }, [])
 
-  const moveBlockUp = useCallback(
-    (index) => {
-      if (index === 0) return
-      setBlocks((prev) => {
-        const newBlocks = [...prev]
-        ;[newBlocks[index - 1], newBlocks[index]] = [newBlocks[index], newBlocks[index - 1]]
-        return newBlocks
-      })
-    },
-    [setBlocks]
-  )
+  const moveBlockUp = useCallback((index) => {
+    if (index === 0) return
+    setBlocks((prev) => {
+      const newBlocks = [...prev]
+      ;[newBlocks[index - 1], newBlocks[index]] = [newBlocks[index], newBlocks[index - 1]]
+      return newBlocks
+    })
+  }, [])
 
-  const moveBlockDown = useCallback(
-    (index) => {
-      if (index === blocks.length - 1) return
-      setBlocks((prev) => {
-        const newBlocks = [...prev]
-        ;[newBlocks[index + 1], newBlocks[index]] = [newBlocks[index], newBlocks[index + 1]]
-        return newBlocks
-      })
-    },
-    [blocks.length, setBlocks]
-  )
+  const moveBlockDown = useCallback((index) => {
+    if (index === blocks.length - 1) return
+    setBlocks((prev) => {
+      const newBlocks = [...prev]
+      ;[newBlocks[index + 1], newBlocks[index]] = [newBlocks[index], newBlocks[index + 1]]
+      return newBlocks
+    })
+  }, [blocks.length])
 
-  const removeBlock = useCallback(
-    (blockId) => {
-      setBlocks((prev) => prev.filter((block) => block.id !== blockId))
-    },
-    [setBlocks]
-  )
+  const removeBlock = useCallback((blockId) => {
+    setBlocks((prev) => prev.filter((block) => block.id !== blockId))
+  }, [])
 
-  const updateBlock = useCallback(
-    (updatedBlock) => {
-      setBlocks((prevBlocks) =>
-        prevBlocks.map((b) => (b.id === updatedBlock.id ? updatedBlock : b))
-      )
-    },
-    [setBlocks]
-  )
+  const updateBlock = useCallback((updatedBlock) => {
+    setBlocks((prevBlocks) =>
+      prevBlocks.map((b) => (b.id === updatedBlock.id ? updatedBlock : b))
+    )
+  }, [])
+
+  const onDragEnd = useCallback((result) => {
+    const { destination, source } = result
+    if (!destination) return
+    if (destination.index === source.index) return
+    const reordered = reorder(blocks, source.index, destination.index)
+    setBlocks(reordered)
+  }, [blocks])
 
   const handleGenerateCodeBlock = useCallback(
     async (block) => {
@@ -144,19 +115,18 @@ const ContentForm = ({ isEdit = false, isReply, onSubmit, post = null, setShowFo
         const response = await axios.post('/api/generate_content', {
           currentCode: block.data.code,
           parentCode: isEdit && post ? post.content : null,
-          request: prompt,
+          request: prompt
         })
         if (response.data && response.status === 201) {
           const { generatedContent } = response.data
-          const updated = {
+          updateBlock({
             ...block,
-            data: { ...block.data, code: generatedContent },
-          }
-          updateBlock(updated)
+            data: { ...block.data, code: generatedContent }
+          })
         } else {
           setFormErrorMessage('Creation error.')
         }
-      } catch (error) {
+      } catch {
         setFormErrorMessage('Error creating content.')
       } finally {
         setIsLoadingAI(false)
@@ -167,53 +137,30 @@ const ContentForm = ({ isEdit = false, isReply, onSubmit, post = null, setShowFo
 
   const createUniqueFilename = (originalName) => {
     const ext = originalName.substring(originalName.lastIndexOf('.'))
-    return `${Date.now()}-${v4()}${ext}`
+    return `${Date.now()}-${uuidv4()}${ext}`
   }
 
-  const handleFilesChange = useCallback(
-    (event) => {
-      const newFiles = Array.from(event.target.files)
-      const oversizedFiles = newFiles.filter((file) => file.size > MAX_FILE_SIZE)
-      if (oversizedFiles.length > 0) {
-        const oversizedNames = oversizedFiles.map((file) => file.name).join(', ')
-        setFormErrorMessage(`These files exceed 10MB: ${oversizedNames}`)
-        return
-      }
-      setFormErrorMessage('')
-      const uniqueFiles = newFiles.map((file) => {
-        const uniqueFilename = createUniqueFilename(file.name)
-        return new File([file], uniqueFilename, { type: file.type })
-      })
-      const newMediaBlocks = uniqueFiles.map((file) => ({
-        id: v4(),
-        type: BLOCK_TYPES.MEDIA,
-        data: {
-          file,
-          url: URL.createObjectURL(file),
-        },
-        isEditing: false,
-      }))
-      setBlocks((prev) => [...prev, ...newMediaBlocks])
-    },
-    [setBlocks]
-  )
-
-  const handleOverflowChange = useCallback(() => {}, [])
-
-  const onDragEnd = (result) => {
-    const { destination, source } = result
-    if (!destination) {
+  const handleFilesChange = useCallback((event) => {
+    const newFiles = Array.from(event.target.files)
+    const oversizedFiles = newFiles.filter((f) => f.size > MAX_FILE_SIZE)
+    if (oversizedFiles.length > 0) {
+      const names = oversizedFiles.map((f) => f.name).join(', ')
+      setFormErrorMessage(`These files exceed 10MB: ${names}`)
       return
     }
-    if (
-      destination.droppableId === source.droppableId &&
-      destination.index === source.index
-    ) {
-      return
-    }
-    const reorderedBlocks = reorder(blocks, source.index, destination.index)
-    setBlocks(reorderedBlocks)
-  }
+    setFormErrorMessage('')
+    const uniqueFiles = newFiles.map((file) => {
+      const uniqueFilename = createUniqueFilename(file.name)
+      return new File([file], uniqueFilename, { type: file.type })
+    })
+    const newMediaBlocks = uniqueFiles.map((file) => ({
+      data: { file, url: URL.createObjectURL(file) },
+      id: uuidv4(),
+      isEditing: false,
+      type: BLOCK_TYPES.MEDIA
+    }))
+    setBlocks((prev) => [...prev, ...newMediaBlocks])
+  }, [])
 
   const handleSubmit = useCallback(
     async (e) => {
@@ -222,15 +169,37 @@ const ContentForm = ({ isEdit = false, isReply, onSubmit, post = null, setShowFo
         setFormErrorMessage('At least one block is required.')
         return
       }
-      const finalHTML = compileBlocksToHTML(blocks)
-      if (!finalHTML.trim()) {
-        setFormErrorMessage('Content cannot be empty.')
-        return
-      }
+      let finalHTML = ''
+      blocks.forEach((block) => {
+        if (block.type === BLOCK_TYPES.TEXT) {
+          finalHTML += `<div class="content-block">${block.data.html || ''}</div>`
+        } else if (block.type === BLOCK_TYPES.CODE) {
+          finalHTML += `<div class="content-block">${block.data.code}</div>`
+        } else if (block.type === BLOCK_TYPES.MEDIA) {
+          const fileType = block.data.file?.type || ''
+          if (fileType.startsWith('image/')) {
+            finalHTML += `
+              <div class="content-block">
+                <img
+                  src="${block.data.url}"
+                  alt="Uploaded image"
+                  style="max-width:100%;height:auto;"
+                />
+              </div>`
+          } else if (fileType.startsWith('video/')) {
+            finalHTML += `
+              <div class="content-block">
+                <video controls style="max-width:100%;height:auto;">
+                  <source src="${block.data.url}" type="${fileType}" />
+                </video>
+              </div>`
+          }
+        }
+      })
       try {
         setFormErrorMessage('')
         const formData = new FormData()
-        const postId = v4()
+        const postId = uuidv4()
         formData.append('post_id', postId)
         formData.append('content', finalHTML)
         if (isReply && post) {
@@ -247,7 +216,7 @@ const ContentForm = ({ isEdit = false, isReply, onSubmit, post = null, setShowFo
         await onSubmit(formData)
         setTitle('')
         setBlocks([])
-      } catch (error) {
+      } catch {
         setFormErrorMessage('Error submitting the form.')
       }
     },
@@ -259,36 +228,32 @@ const ContentForm = ({ isEdit = false, isReply, onSubmit, post = null, setShowFo
       <form id="post-form" onSubmit={handleSubmit} className="post-form">
         {!isReply && (
           <input
-            id="title-entry"
             type="text"
-            placeholder="Add title (optional)..."
             value={title}
             onChange={(e) => setTitle(e.target.value)}
+            id="title-entry"
             className="title-input"
+            placeholder="Add title (optional)..."
           />
         )}
         <div className="action-buttons">
-          <button
-            className="button"
-            type="button"
-            onClick={() => setShowForm(false)}
-          >
+          <button type="button" onClick={() => setShowForm(false)} className="button">
             Close
           </button>
-          <button className="button" type="submit">
+          <button type="submit" className="button">
             {isEdit ? 'Save Edit' : isReply ? 'Reply' : 'Post'}
           </button>
           <button
             type="button"
-            className="button"
             onClick={() => handleAddBlock(BLOCK_TYPES.TEXT)}
+            className="button"
           >
             + Text
           </button>
           <button
             type="button"
-            className="button"
             onClick={() => handleAddBlock(BLOCK_TYPES.CODE)}
+            className="button"
           >
             + Custom content
           </button>
@@ -304,9 +269,7 @@ const ContentForm = ({ isEdit = false, isReply, onSubmit, post = null, setShowFo
             onChange={handleFilesChange}
           />
         </div>
-        {formErrorMessage && (
-          <div className="error-message">{formErrorMessage}</div>
-        )}
+        {formErrorMessage && <div className="error-message">{formErrorMessage}</div>}
         <div className="main-content">
           <DragDropContext onDragEnd={onDragEnd}>
             <Droppable droppableId="blocks-droppable">
@@ -317,50 +280,50 @@ const ContentForm = ({ isEdit = false, isReply, onSubmit, post = null, setShowFo
                   {...provided.droppableProps}
                 >
                   {blocks.map((block, index) => {
-                    const { id, type, data, isEditing } = block
+                    const { data, id, isEditing, type } = block
                     const toggleEdit = () => {
                       updateBlock({ ...block, isEditing: !isEditing })
                     }
                     return (
                       <Draggable key={id} draggableId={id} index={index}>
-                        {(provided, snapshot) => (
+                        {(provided2, snapshot) => (
                           <div
+                            ref={provided2.innerRef}
+                            {...provided2.draggableProps}
+                            {...provided2.dragHandleProps}
                             className={`block ${snapshot.isDragging ? 'dragging' : ''}`}
-                            ref={provided.innerRef}
-                            {...provided.draggableProps}
-                            {...provided.dragHandleProps}
                           >
                             <div className="block-controls">
                               <button
                                 type="button"
+                                title="Move Up"
                                 onClick={() => moveBlockUp(index)}
                                 className="control-button"
-                                title="Move Up"
                               >
                                 ↑
                               </button>
                               <button
                                 type="button"
+                                title="Move Down"
                                 onClick={() => moveBlockDown(index)}
                                 className="control-button"
-                                title="Move Down"
                               >
                                 ↓
                               </button>
                               <button
                                 type="button"
+                                title="Remove"
                                 onClick={() => removeBlock(id)}
                                 className="control-button remove-button"
-                                title="Remove"
                               >
                                 ✕
                               </button>
                               {type !== BLOCK_TYPES.MEDIA && (
                                 <button
                                   type="button"
+                                  title={isEditing ? 'Close Editor' : 'Edit'}
                                   onClick={toggleEdit}
                                   className="control-button edit-button"
-                                  title={isEditing ? 'Close Editor' : 'Edit'}
                                 >
                                   {isEditing ? '🔒' : '✎'}
                                 </button>
@@ -370,12 +333,12 @@ const ContentForm = ({ isEdit = false, isReply, onSubmit, post = null, setShowFo
                               {type === BLOCK_TYPES.TEXT && (
                                 isEditing ? (
                                   <ReactQuill
+                                    className="text-editor"
                                     theme="snow"
                                     value={data.html}
-                                    onChange={(val) => {
+                                    onChange={(val) =>
                                       updateBlock({ ...block, data: { ...data, html: val } })
-                                    }}
-                                    className="text-editor"
+                                    }
                                   />
                                 ) : (
                                   <div
@@ -391,22 +354,22 @@ const ContentForm = ({ isEdit = false, isReply, onSubmit, post = null, setShowFo
                                       <textarea
                                         placeholder="Describe your content..."
                                         className="ai-prompt"
-                                        onChange={(e) => {
+                                        onChange={(e) =>
                                           updateBlock({
                                             ...block,
-                                            data: { ...data, _tempAiPrompt: e.target.value },
+                                            data: { ...data, _tempAiPrompt: e.target.value }
                                           })
-                                        }}
+                                        }
                                       />
                                       <button
                                         type="button"
-                                        onClick={() => handleGenerateCodeBlock(block)}
                                         className={
                                           isLoadingAI
                                             ? 'dark-button generate disabled'
                                             : 'dark-button generate'
                                         }
                                         disabled={isLoadingAI}
+                                        onClick={() => handleGenerateCodeBlock(block)}
                                       >
                                         {isLoadingAI ? 'Creating...' : 'Create'}
                                       </button>
@@ -414,18 +377,21 @@ const ContentForm = ({ isEdit = false, isReply, onSubmit, post = null, setShowFo
                                     <textarea
                                       className="code-input"
                                       value={data.code}
-                                      onChange={(e) => {
-                                        updateBlock({
-                                          ...block,
-                                          data: { ...data, code: e.target.value },
-                                        })
-                                      }}
+                                      onChange={(e) =>
+                                        updateBlock({ ...block, data: { ...data, code: e.target.value } })
+                                      }
                                     />
                                   </div>
                                 ) : (
-                                  <pre className="code-preview">
-                                    {data.code}
-                                  </pre>
+                                  <iframe
+                                    sandbox="allow-scripts allow-same-origin"
+                                    style={{
+                                      border: 'none',
+                                      width: '100%'
+                                    }}
+                                    srcDoc={data.code}
+                                    title={`code-preview-${id}`}
+                                  />
                                 )
                               )}
                               {type === BLOCK_TYPES.MEDIA && (
@@ -451,13 +417,53 @@ const ContentForm = ({ isEdit = false, isReply, onSubmit, post = null, setShowFo
             </Droppable>
           </DragDropContext>
           <div className="live-preview-container">
-            <h3>Preview</h3>
-            <ContentDisplay
-              content={compileBlocksToHTML(blocks)}
-              onOverflowChange={handleOverflowChange}
-              showFullContent
-              showScrollBar={false}
-            />
+            <p className="text24" style={{marginLeft: 0}}>Preview</p>
+            {blocks.map((block, i) => {
+              if (block.type === BLOCK_TYPES.TEXT) {
+                return (
+                  <div
+                    key={i}
+                    dangerouslySetInnerHTML={{ __html: block.data.html }}
+                  />
+                )
+              } else if (block.type === BLOCK_TYPES.CODE) {
+                return (
+                  <div key={i}>
+                    <iframe
+                      sandbox="allow-scripts allow-same-origin"
+                      style={{
+                        border: 'none',
+                        width: '100%'
+                      }}
+                      srcDoc={block.data.code}
+                      title={`live-preview-${i}`}
+                    />
+                  </div>
+                )
+              } else if (block.type === BLOCK_TYPES.MEDIA) {
+                const fileType = block.data.file?.type || ''
+                if (fileType.startsWith('image/')) {
+                  return (
+                    <div key={i}>
+                      <img
+                        src={block.data.url}
+                        alt="Uploaded Media"
+                        style={{ maxWidth: '100%', height: 'auto' }}
+                      />
+                    </div>
+                  )
+                } else if (fileType.startsWith('video/')) {
+                  return (
+                    <div key={i}>
+                      <video controls style={{ maxWidth: '100%', height: 'auto' }}>
+                        <source src={block.data.url} type={fileType} />
+                      </video>
+                    </div>
+                  )
+                }
+              }
+              return null
+            })}
           </div>
         </div>
       </form>
@@ -470,10 +476,18 @@ ContentForm.propTypes = {
   isReply: PropTypes.bool,
   onSubmit: PropTypes.func.isRequired,
   post: PropTypes.object,
-  setShowForm: PropTypes.func.isRequired,
+  setShowForm: PropTypes.func.isRequired
 }
 
-export default ContentForm
+export default ContentForm;
+
+
+
+
+
+
+
+
 
 
 
