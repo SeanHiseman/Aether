@@ -132,16 +132,9 @@
     border: 1px solid var(--border);
     border-radius: var(--small-margin);
     flex: 1;
-    min-width: 300px;
+    min-width: 50%;
+    padding: 10px;
   }
-  
-  .live-preview-container h3 {
-    text-align: center;
-    color: #fff;
-    margin-bottom: 10px;
-  }
-  
-  /* Responsive adjustments */
   @media (max-width: 768px) {
     .main-content {
       flex-direction: column;

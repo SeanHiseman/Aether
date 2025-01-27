@@ -92,23 +92,6 @@ const ContentWidget = ({ canRemove: canRemoveProp, feed, isGroup, onEditClick, o
         }
     }, [hasViewed, views, viewer.feed_id, post.poster_id]);
 
-    //Allows React Quill to display videos
-    //const BlockEmbed = Quill.import('blots/block/embed');
-    //class VideoBlot extends BlockEmbed {
-        //static create(value) {
-            //let node = super.create();
-            //node.setAttribute('src', value.url);
-            //node.setAttribute('controls', true);
-            //return node;
-        //}
-        //static value(node) {
-            //return { url: node.getAttribute('src') };
-        //}
-    //}
-    //VideoBlot.blotName = 'video';
-    //VideoBlot.tagName = 'video';
-    //Quill.register(VideoBlot);
-
     const replyRemoved = (replyId) => {
         setReplies((prevReplies) => prevReplies.filter((reply) => reply.post_id !== replyId));
     };
@@ -148,26 +131,6 @@ const ContentWidget = ({ canRemove: canRemoveProp, feed, isGroup, onEditClick, o
             setPostErrorMessage("Error adding reply");
         }
     };
-
-    //Sorts replies by parent and by net upvotes
-    //const nestReplies = (replies) => {
-        //const replyMap = {};
-        //replies.forEach(reply => replyMap[reply.post_id] = { ...reply, replies: [] });
-        //const nestedReplies = [];
-        //Object.values(replyMap).forEach(reply => {
-            //if (reply.parent_id === null) {
-                //nestedReplies.push(reply);
-            //} else if (replyMap[reply.parent_id]) {
-                //replyMap[reply.parent_id].replies.push(reply);
-            //}
-        //});
-        //const sortByNetUpvotes = (a, b) => (b.upvotes - b.downvotes) - (a.upvotes - a.downvotes);
-        //const sortedReplies = nestedReplies.map(reply => {
-            //const sortedChildReplies = [...reply.replies].sort(sortByNetUpvotes);
-            //return { ...reply, replies: sortedChildReplies };
-        //})
-        //return sortedReplies.sort(sortByNetUpvotes);
-    //};
 
     const removePost = async () => {
         if (window.confirm('Are you sure you want to delete this post?')) {
@@ -220,7 +183,6 @@ const ContentWidget = ({ canRemove: canRemoveProp, feed, isGroup, onEditClick, o
     };
  
     const toggleReplies = () => { setShowReplies(prev => !prev) };
-    //const nestedReplies = nestReplies(replies);
     const downvoteClass = downvoteLimit || isViewingOwnPost ? 'vote-disabled' : 'vote-enabled';
     const upvoteClass = upvoteLimit || isViewingOwnPost ? 'vote-disabled' : 'vote-enabled';
 
