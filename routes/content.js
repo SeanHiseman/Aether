@@ -220,11 +220,9 @@ router.post('/create_post', authenticateCheck, post_upload.array('files'), async
     }
 });
 
-
 router.post('/edit_post', authenticateCheck, post_upload.array('files'), async (req, res) => {
     try {
-        const { post_id } = req.body;
-        let { content, title } = req.body;
+        let { content, post_id, title } = req.body;
         const foundPost = await Posts.findByPk(post_id);
         if (!foundPost) {
             return res.status(404).json({ success: false, message: 'Post not found' });

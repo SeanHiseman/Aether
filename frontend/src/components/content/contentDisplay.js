@@ -23,7 +23,7 @@ const ContentDisplay = ({ content, onOverflowChange = () => {}, showFullContent,
             color: #fff;
             font-family: Arial, sans-serif;
             margin: 0;
-            padding: 10px;
+            padding: 0;
             overflow: ${overflowStyle};
           }
           img, video, iframe, embed, object {
@@ -33,15 +33,20 @@ const ContentDisplay = ({ content, onOverflowChange = () => {}, showFullContent,
             margin: 10px 0;
           }
           pre, code, .code-block {
+            border-radius: 0;
+            border-sizing: border-box;
             color: #ccc;
-            padding: 10px;
-            border-radius: 5px;
             overflow-x: auto;
+            padding: 0;
+            width: 100%;
           }
           .content-block {
+            border-sizing: border-box;
             display: block;
+            width: 100%;
           }
           .code-iframe {
+            height: auto;
             width: 100%;
           }
         </style>
@@ -50,7 +55,7 @@ const ContentDisplay = ({ content, onOverflowChange = () => {}, showFullContent,
         ${content}
       </body>
       </html>
-    `)
+    `);
     iframeDoc.close()
     const adjustHeight = debounce(() => {
       const newHeight = iframeDoc.body.scrollHeight
@@ -90,7 +95,6 @@ const ContentDisplay = ({ content, onOverflowChange = () => {}, showFullContent,
       sandbox="allow-scripts allow-same-origin"
       style={{
         border: 'none',
-        borderRadius: '10px',
         width: '100%',
         height: iframeHeight,
         transition: 'height 0.3s ease'
