@@ -125,7 +125,7 @@ router.post('/generate_content', authenticateCheck, async (req, res) => {
     console.log("request received");
     try {
         const { currentCode, request, parentCode } = req.body;
-        console.log("req.body:", req.body);
+        //console.log("req.body:", req.body);
         //Creates API assistant
         const assistant = await openai.beta.assistants.create({
             name: "Ask",
@@ -141,8 +141,8 @@ router.post('/generate_content', authenticateCheck, async (req, res) => {
                 content: request
             }
         );
-        const assistantInstructions = parentCode ? `Request and current code are for a reply to parent code. Answer only with new or improved html code, containing JavaScript if necessary. Nothing else. Do not set body background colors or text alignments. If request cannot be made into code, response with nothing. Current code: ${currentCode}, parent code: ${parentCode}` 
-        : `Answer only with new or improved html code, containing JavaScript if necessary. Nothing else. Do not set body background colors or text alignments. If request cannot be made into code, response with nothing. Current code: ${currentCode}`;
+        const assistantInstructions = parentCode ? `Request and current code are for a reply to parent code. Answer only with new or improved html code, containing JavaScript if necessary. Nothing else. Do not set body background colors or text alignments. Use white text by default. If request cannot be made into code, response with nothing. Current code: ${currentCode}, parent code: ${parentCode}` 
+        : `Answer only with new or improved html code, containing JavaScript if necessary. Nothing else. Do not set body background colors or text alignments. Use white text by default. If request cannot be made into code, response with nothing. Current code: ${currentCode}`;
         //console.log("assistantInstructions:", assistantInstructions);
         //Run OpenAI assistant
         const run = await openai.beta.threads.runs.create(
@@ -161,7 +161,7 @@ router.post('/generate_content', authenticateCheck, async (req, res) => {
         const messages = await openai.beta.threads.messages.list(thread.id);
         let aiReply = messages.data.find(msg => msg.role === 'assistant').content[0].text.value;
         aiReply = aiReply.replace(/^```[a-zA-Z]+\s*|```$/g, '').trim(); //Trims response
-        console.log("aiReply:", aiReply);
+        //console.log("aiReply:", aiReply);
         res.status(201).json({ success: true, generatedContent: aiReply });
     } catch (error) {
         console.log(error);
