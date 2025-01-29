@@ -59,11 +59,9 @@
   gap: 20px;
 }
 .block iframe, .live-preview-container iframe {
-  width: 100%;
-  height: auto;
-  min-height: 100px; 
   border: none;
-  transition: height 0.3s ease;
+  height: auto;
+  width: 100%;
 }
 .button.generate, .dark-button.generate {
   margin-left: 0;
@@ -130,25 +128,14 @@
   cursor: pointer;
   transition: background-color 0.3s ease;
 }
-.global-ai-prompt-container textarea {
-  background-color: var(--darkest);
-  border: 1px solid var(--border);
-  border-radius: 5px;
-  color: var(--border);
-  flex: 1;
-  min-height: 60px;
-  padding: 8px;
-  resize: vertical;
-}
 .live-preview-container {
   border: 1px solid var(--border);
   border-radius: 8px;
+  box-sizing: border-box;
   flex: 1;
   min-width: 50%;
-  padding: 10px;
   overflow: hidden;
-  background-color: var(--dark);
-  box-sizing: border-box;
+  padding: 10px;
 }
 .live-preview-container iframe {
   width: 100%;

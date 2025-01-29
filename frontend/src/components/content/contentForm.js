@@ -1,3 +1,4 @@
+// ContentForm.js
 import axios from 'axios';
 import PropTypes from 'prop-types';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
@@ -16,22 +17,21 @@ const parseContentBlocks = (htmlString) => {
   const parser = new DOMParser();
   const doc = parser.parseFromString(htmlString, 'text/html');
   const divs = doc.querySelectorAll('div.content-block');
-  const blocks = [];
+  const result = [];
   divs.forEach((div) => {
     const blockClass = div.className;
     const blockId = div.getAttribute('data-blockid');
     const content = div.innerHTML.trim();
     if (blockClass.includes('code-block')) {
-      const iframe = div.querySelector('iframe');
-      const srcDoc = iframe ? iframe.getAttribute('srcdoc') : '';
-      blocks.push({
-        data: { code: srcDoc || '' },
+      const code = div.getAttribute('data-code') || '';
+      result.push({
+        data: { code },
         id: blockId,
         isEditing: false,
         type: BLOCK_TYPES.CODE,
       });
     } else if (blockClass.includes('text-block')) {
-      blocks.push({
+      result.push({
         data: { html: content },
         id: blockId,
         isEditing: false,
@@ -41,7 +41,7 @@ const parseContentBlocks = (htmlString) => {
       const img = div.querySelector('img');
       const video = div.querySelector('video');
       if (img) {
-        blocks.push({
+        result.push({
           data: {
             file: null,
             fileType: 'image/*',
@@ -55,7 +55,7 @@ const parseContentBlocks = (htmlString) => {
         });
       } else if (video) {
         const source = video.querySelector('source');
-        blocks.push({
+        result.push({
           data: {
             file: null,
             fileType: source ? source.getAttribute('type') : '',
@@ -68,7 +68,7 @@ const parseContentBlocks = (htmlString) => {
           type: BLOCK_TYPES.MEDIA,
         });
       } else {
-        blocks.push({
+        result.push({
           data: {
             file: null,
             fileType: '',
@@ -83,7 +83,7 @@ const parseContentBlocks = (htmlString) => {
       }
     }
   });
-  return blocks;
+  return result;
 };
 
 const reorder = (list, startIndex, endIndex) => {
@@ -91,32 +91,6 @@ const reorder = (list, startIndex, endIndex) => {
   const [removed] = result.splice(startIndex, 1);
   result.splice(endIndex, 0, removed);
   return result;
-};
-
-const getIframeSrcDoc = (code, blockId) => {
-  return `
-    <!DOCTYPE html>
-    <html>
-      <head>
-        <style>
-          body { margin: 0; padding: 0; }}
-        </style>
-      </head>
-      <body>
-        ${code}
-        <script>
-          function sendHeight() {
-            const height = document.body.scrollHeight;
-            parent.postMessage({ blockId: '${blockId}', height: height }, '*');
-          }
-          window.addEventListener('load', sendHeight);
-          window.addEventListener('resize', sendHeight);
-          const observer = new MutationObserver(sendHeight);
-          observer.observe(document.body, { childList: true, subtree: true, characterData: true });
-        </script>
-      </body>
-    </html>
-  `;
 };
 
 const escapeHtml = (html) => {
@@ -129,48 +103,49 @@ const escapeHtml = (html) => {
 };
 
 const ContentForm = ({ isEdit = false, isReply, onSubmit, post = null, setShowForm }) => {
-  const MAX_FILE_SIZE = 10 * 1024 * 1024;
   const [blocks, setBlocks] = useState([]);
   const [formErrorMessage, setFormErrorMessage] = useState('');
-  const iframeRefs = useRef({});
+  const [globalAiPrompt, setGlobalAiPrompt] = useState('');
   const [isLoadingAI, setIsLoadingAI] = useState(false);
   const [title, setTitle] = useState('');
-  const [globalAiPrompt, setGlobalAiPrompt] = useState('');
+  const iframeRefs = useRef({});
+  const MAX_FILE_SIZE = 10 * 1024 * 1024;
 
   useEffect(() => {
     if (isEdit && post) {
       setTitle(post.title || '');
       const existingBlocks = parseContentBlocks(post.content || '');
-      setBlocks(
-        existingBlocks.length
-          ? existingBlocks
-          : [
-              {
-                data: { html: post.content },
-                id: uuidv4(),
-                isEditing: true,
-                type: BLOCK_TYPES.TEXT,
-              },
-            ]
-      );
+      if (existingBlocks.length) {
+        setBlocks(existingBlocks);
+      } else {
+        setBlocks([
+          {
+            data: { html: post.content },
+            id: uuidv4(),
+            isEditing: true,
+            type: BLOCK_TYPES.TEXT,
+          },
+        ]);
+      }
     }
   }, [isEdit, post]);
 
-  useEffect(() => {
-    const handleIframeMessage = (event) => {
-      const { blockId, height } = event.data;
-      if (blockId && height) {
-        const iframe = iframeRefs.current[blockId];
-        if (iframe) {
-          iframe.style.height = `${height}px`;
-        }
+  const handleIframeMessage = useCallback((event) => {
+    const { blockId, height } = event.data;
+    if (blockId && height) {
+      const iframe = iframeRefs.current[blockId];
+      if (iframe) {
+        iframe.style.height = `${height}px`;
       }
-    };
+    }
+  }, []);
+
+  useEffect(() => {
     window.addEventListener('message', handleIframeMessage);
     return () => {
       window.removeEventListener('message', handleIframeMessage);
     };
-  }, []);
+  }, [handleIframeMessage]);
 
   const handleAddBlock = useCallback((type) => {
     const newBlock = {
@@ -193,45 +168,48 @@ const ContentForm = ({ isEdit = false, isReply, onSubmit, post = null, setShowFo
     setBlocks((prev) => [...prev, newBlock]);
   }, []);
 
-  const handleFilesChange = useCallback((event) => {
-    const newFiles = Array.from(event.target.files);
-    const oversizedFiles = newFiles.filter((f) => f.size > MAX_FILE_SIZE);
-    if (oversizedFiles.length > 0) {
-      const names = oversizedFiles.map((f) => f.name).join(', ');
-      setFormErrorMessage(`These files exceed 10MB: ${names}`);
-      return;
-    }
-    setFormErrorMessage('');
-    const uniqueFiles = newFiles.map((file) => {
-      const ext = file.name.substring(file.name.lastIndexOf('.'));
-      const uniqueName = `${Date.now()}-${uuidv4()}${ext}`;
-      return new File([file], uniqueName, { type: file.type });
-    });
-    const newMediaBlocks = uniqueFiles.map((file) => {
-      const fileType = file.type;
-      return {
-        data: {
-          file,
-          fileType,
-          isImage: fileType.startsWith('image/'),
-          isVideo: fileType.startsWith('video/'),
-          url: URL.createObjectURL(file),
-        },
-        id: uuidv4(),
-        isEditing: false,
-        type: BLOCK_TYPES.MEDIA,
-      };
-    });
-    setBlocks((prev) => [...prev, ...newMediaBlocks]);
-  }, []);
+  const handleFilesChange = useCallback(
+    (event) => {
+      const files = Array.from(event.target.files);
+      const oversized = files.filter((f) => f.size > MAX_FILE_SIZE);
+      if (oversized.length) {
+        const names = oversized.map((f) => f.name).join(', ');
+        setFormErrorMessage(`These files exceed 10MB: ${names}`);
+        return;
+      }
+      setFormErrorMessage('');
+      const uniqueFiles = files.map((file) => {
+        const ext = file.name.substring(file.name.lastIndexOf('.'));
+        const uniqueName = `${Date.now()}-${uuidv4()}${ext}`;
+        return new File([file], uniqueName, { type: file.type });
+      });
+      const mediaBlocks = uniqueFiles.map((file) => {
+        const fileType = file.type;
+        return {
+          data: {
+            file,
+            fileType,
+            isImage: fileType.startsWith('image/'),
+            isVideo: fileType.startsWith('video/'),
+            url: URL.createObjectURL(file),
+          },
+          id: uuidv4(),
+          isEditing: false,
+          type: BLOCK_TYPES.MEDIA,
+        };
+      });
+      setBlocks((prev) => [...prev, ...mediaBlocks]);
+    },
+    [MAX_FILE_SIZE]
+  );
 
   const moveBlockDown = useCallback(
     (index) => {
       if (index === blocks.length - 1) return;
       setBlocks((prev) => {
-        const newBlocks = [...prev];
-        [newBlocks[index + 1], newBlocks[index]] = [newBlocks[index], newBlocks[index + 1]];
-        return newBlocks;
+        const updated = [...prev];
+        [updated[index + 1], updated[index]] = [updated[index], updated[index + 1]];
+        return updated;
       });
     },
     [blocks.length]
@@ -240,9 +218,9 @@ const ContentForm = ({ isEdit = false, isReply, onSubmit, post = null, setShowFo
   const moveBlockUp = useCallback((index) => {
     if (index === 0) return;
     setBlocks((prev) => {
-      const newBlocks = [...prev];
-      [newBlocks[index - 1], newBlocks[index]] = [newBlocks[index], newBlocks[index - 1]];
-      return newBlocks;
+      const updated = [...prev];
+      [updated[index - 1], updated[index]] = [updated[index], updated[index - 1]];
+      return updated;
     });
   }, []);
 
@@ -262,10 +240,9 @@ const ContentForm = ({ isEdit = false, isReply, onSubmit, post = null, setShowFo
       const { destination, source } = result;
       if (!destination) return;
       if (destination.index === source.index) return;
-      const reordered = reorder(blocks, source.index, destination.index);
-      setBlocks(reordered);
+      setBlocks((prev) => reorder(prev, source.index, destination.index));
     },
-    [blocks]
+    []
   );
 
   const handleGenerateCodeBlock = useCallback(
@@ -302,27 +279,29 @@ const ContentForm = ({ isEdit = false, isReply, onSubmit, post = null, setShowFo
     [isEdit, post, updateBlock]
   );
 
-  const compileFinalHTML = useCallback((allBlocks) => {
-    let finalHTML = '';
-    allBlocks.forEach((block) => {
-      if (block.type === BLOCK_TYPES.TEXT) {
-        finalHTML += `<div class="content-block text-block" data-blockid="${block.id}">${block.data.html || ''}</div>`;
-      } else if (block.type === BLOCK_TYPES.CODE) {
-        const srcDocContent = getIframeSrcDoc(block.data.code, block.id);
-        const escapedSrcDoc = escapeHtml(srcDocContent);
-        finalHTML += `<div class="content-block code-block" data-blockid="${block.id}"><iframe sandbox="allow-scripts allow-same-origin" srcdoc="${escapedSrcDoc}" style="border: none; width: 100%; height: 0px;" title="code-preview-${block.id}"></iframe></div>`;
-      } else if (block.type === BLOCK_TYPES.MEDIA) {
-        if (block.data.isImage) {
-          finalHTML += `<div class="content-block media-block" data-blockid="${block.id}"><img src="${block.data.url}" alt="Uploaded image" style="max-width:100%;height:auto;" /></div>`;
-        } else if (block.data.isVideo) {
-          finalHTML += `<div class="content-block media-block" data-blockid="${block.id}"><video controls style="max-width:100%;height:auto;"><source src="${block.data.url}" type="${block.data.fileType}" /></video></div>`;
-        } else {
-          finalHTML += `<div class="content-block media-block" data-blockid="${block.id}">Unsupported</div>`;
+  const compileFinalHTML = useCallback(
+    (allBlocks) => {
+      let finalHTML = '';
+      allBlocks.forEach((block) => {
+        if (block.type === BLOCK_TYPES.TEXT) {
+          finalHTML += `<div class="content-block text-block" data-blockid="${block.id}">${block.data.html || ''}</div>`;
+        } else if (block.type === BLOCK_TYPES.CODE) {
+          const escapedCode = escapeHtml(block.data.code);
+          finalHTML += `<div class="content-block code-block" data-blockid="${block.id}" data-code="${escapedCode}"></div>`;
+        } else if (block.type === BLOCK_TYPES.MEDIA) {
+          if (block.data.isImage) {
+            finalHTML += `<div class="content-block media-block" data-blockid="${block.id}"><img src="${block.data.url}" alt="Uploaded image" style="max-width:100%;height:auto;" /></div>`;
+          } else if (block.data.isVideo) {
+            finalHTML += `<div class="content-block media-block" data-blockid="${block.id}"><video controls style="max-width:100%;height:auto;"><source src="${block.data.url}" type="${block.data.fileType}" /></video></div>`;
+          } else {
+            finalHTML += `<div class="content-block media-block" data-blockid="${block.id}">Unsupported</div>`;
+          }
         }
-      }
-    });
-    return finalHTML;
-  }, []);
+      });
+      return finalHTML;
+    },
+    []
+  );
 
   const handleGenerateFullContent = useCallback(async () => {
     try {
@@ -434,6 +413,7 @@ const ContentForm = ({ isEdit = false, isReply, onSubmit, post = null, setShowFo
           <div className="shared-container">
             <div className="global-ai-prompt-container">
               <textarea
+                className="ai-prompt"
                 onChange={(e) => setGlobalAiPrompt(e.target.value)}
                 placeholder="Describe changes for entire post..."
                 value={globalAiPrompt}
@@ -544,7 +524,29 @@ const ContentForm = ({ isEdit = false, isReply, onSubmit, post = null, setShowFo
                                         iframeRefs.current[id] = el;
                                       }}
                                       sandbox="allow-scripts allow-same-origin"
-                                      srcDoc={getIframeSrcDoc(data.code, id)}
+                                      srcDoc={`
+                                        <!DOCTYPE html>
+                                        <html>
+                                          <head>
+                                            <style>
+                                              body { margin:0; padding:0; }
+                                            </style>
+                                          </head>
+                                          <body>
+                                            ${data.code}
+                                            <script>
+                                              function sendHeight() {
+                                                const height = document.body.scrollHeight;
+                                                parent.postMessage({ blockId: '${id}', height }, '*');
+                                              }
+                                              window.addEventListener('load', sendHeight);
+                                              window.addEventListener('resize', sendHeight);
+                                              const obs = new MutationObserver(sendHeight);
+                                              obs.observe(document.body, { childList: true, subtree: true, characterData: true });
+                                            </script>
+                                          </body>
+                                        </html>
+                                      `}
                                       style={{ border: 'none', width: '100%', height: '0px' }}
                                       title={`code-preview-${id}`}
                                     />
@@ -572,8 +574,6 @@ const ContentForm = ({ isEdit = false, isReply, onSubmit, post = null, setShowFo
               </Droppable>
             </DragDropContext>
           </div>
-
-          {/* Live Preview Container */}
           <div className="live-preview-container">
             <p className="text24" style={{ marginLeft: 0, marginTop: 0 }}>
               Preview
@@ -589,7 +589,29 @@ const ContentForm = ({ isEdit = false, isReply, onSubmit, post = null, setShowFo
                         iframeRefs.current[block.id] = el;
                       }}
                       sandbox="allow-scripts allow-same-origin"
-                      srcDoc={getIframeSrcDoc(block.data.code, block.id)}
+                      srcDoc={`
+                        <!DOCTYPE html>
+                        <html>
+                          <head>
+                            <style>
+                              body { margin:0; padding:0; }
+                            </style>
+                          </head>
+                          <body>
+                            ${block.data.code}
+                            <script>
+                              function sendHeight() {
+                                const height = document.body.scrollHeight;
+                                parent.postMessage({ blockId: '${block.id}', height }, '*');
+                              }
+                              window.addEventListener('load', sendHeight);
+                              window.addEventListener('resize', sendHeight);
+                              const obs = new MutationObserver(sendHeight);
+                              obs.observe(document.body, { childList: true, subtree: true, characterData: true });
+                            </script>
+                          </body>
+                        </html>
+                      `}
                       style={{ border: 'none', width: '100%', height: '0px' }}
                       title={`live-preview-${i}`}
                     />

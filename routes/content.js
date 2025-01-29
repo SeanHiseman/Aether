@@ -142,7 +142,7 @@ const mediaDir = path.join(__dirname, '..', 'media', 'content');
 if (!fs.existsSync(mediaDir)) {
     fs.mkdirSync(mediaDir, { recursive: true });
 }
-//Checks input for post uploads
+
 const postFilter = (req, file, cb) => {
     const allowedTypes = /jpeg|jpg|png|gif|mp4|mov|avi/;
     const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
@@ -154,25 +154,23 @@ const postFilter = (req, file, cb) => {
     }
 };
 
-//Multer setup for post uploads
 const post_storage = multer.diskStorage({
-    destination: function (req, file, cb) {
+    destination: (req, file, cb) => {
         cb(null, mediaDir);
     },
-    filename: function (req, file, cb) {
+    filename: (req, file, cb) => {
         const uniqueFilename = `${v4()}${path.extname(file.originalname).toLowerCase()}`;
         cb(null, uniqueFilename);
     }
 });
 
-//Uploads with file size limit
 const post_upload = multer({
-    storage: post_storage,
+    fileFilter: postFilter,
     limits: {
-        fileSize: 1024 * 1024 * 1000 // 10MB limit
+        fileSize: 1024 * 1024 * 1000
     },
-    fileFilter: postFilter
-})
+    storage: post_storage
+});
 
 router.post('/create_post', authenticateCheck, post_upload.array('files'), async (req, res) => {
     try {
@@ -182,29 +180,33 @@ router.post('/create_post', authenticateCheck, post_upload.array('files'), async
         }
         content = content || '';
         const $ = cheerio.load(content, { decodeEntities: false });
-        // Remove all img and video tags with blob URLs
-        $('img[src^="blob:"], video[src^="blob:"]').remove();
         if (req.files && req.files.length > 0) {
-            req.files.forEach((file) => {
-                const fileType = file.mimetype.startsWith('image/') ? 'img' : 'video';
-                let fileTag = '';
-                if (fileType === 'img') {
-                    fileTag = `<img src="/media/content/${file.filename}" alt="Uploaded Image">`;
-                } else if (fileType === 'video') {
-                    fileTag = `<video controls><source src="/media/content/${file.filename}" type="${file.mimetype}"></video>`;
+            let index = 0;
+            $('img[src^="blob:"], video[src^="blob:"]').each((i, el) => {
+                if (index < req.files.length) {
+                    const file = req.files[index];
+                    const fileType = file.mimetype.startsWith('image/') ? 'img' : 'video';
+                    if (fileType === 'img') {
+                        $(el).attr('src', `/media/content/${file.filename}`);
+                        $(el).removeAttr('blob:');
+                        $(el).attr('alt', 'Uploaded Image');
+                    } else {
+                        $(el).empty();
+                        $(el).append(`<source src="/media/content/${file.filename}" type="${file.mimetype}">`);
+                    }
+                    index++;
                 }
-                $('body').append(fileTag);
             });
         }
         const modifiedContent = $.html();
         const post = await Posts.create({
-            post_id,
-            parent_id,
-            feed_id,
             channel_id,
-            title,
             content: modifiedContent,
-            poster_id
+            feed_id,
+            parent_id,
+            post_id,
+            poster_id,
+            title
         });
         if (parent_id) {
             const parentPost = await Posts.findOne({ where: { post_id: parent_id } });
@@ -215,7 +217,6 @@ router.post('/create_post', authenticateCheck, post_upload.array('files'), async
         }
         return res.status(200).json({ success: true, post });
     } catch (error) {
-        console.error("Error creating post:", error);
         return res.status(500).json({ success: false, error: error.message });
     }
 });
@@ -227,14 +228,35 @@ router.post('/edit_post', authenticateCheck, post_upload.array('files'), async (
         if (!foundPost) {
             return res.status(404).json({ success: false, message: 'Post not found' });
         }
-        foundPost.content = content;
-        foundPost.title = title || foundPost.title;
+        const $ = cheerio.load(content, { decodeEntities: false });
+        if (req.files && req.files.length > 0) {
+            let index = 0;
+            $('img[src^="blob:"], video[src^="blob:"]').each((i, el) => {
+                if (index < req.files.length) {
+                    const file = req.files[index];
+                    const fileType = file.mimetype.startsWith('image/') ? 'img' : 'video';
+                    if (fileType === 'img') {
+                        $(el).attr('src', `/media/content/${file.filename}`);
+                        $(el).removeAttr('blob:');
+                        $(el).attr('alt', 'Uploaded Image');
+                    } else {
+                        $(el).empty();
+                        $(el).append(`<source src="/media/content/${file.filename}" type="${file.mimetype}">`);
+                    }
+                    index++;
+                }
+            });
+        }
+        foundPost.content = $.html();
+        if (title) {
+            foundPost.title = title;
+        }
         await foundPost.save();
         return res.status(201).json({ success: true });
     } catch (error) {
-        return res.status(500).json({ success: false });
+        return res.status(500).json({ success: false, error: error.message });
     }
-}); 
+});
 
 router.delete('/remove_post', authenticateCheck, async (req, res) => {
     try {
