@@ -1,111 +1,114 @@
-import debounce from 'lodash.debounce';
+// ContentDisplay.js
 import PropTypes from 'prop-types';
 import React, { useEffect, useRef, useState } from 'react';
 
-const ContentDisplay = ({
-  content,
-  onOverflowChange = () => {},
-  showFullContent,
-  showScrollBar
-}) => {
-  const [iframeHeight, setIframeHeight] = useState('auto');
-  const iframeRef = useRef(null);
+const ContentDisplay = ({ content, onOverflowChange = () => {}, showFullContent, showScrollBar }) => {
+  const [blocks, setBlocks] = useState([]);
+  const iframeRefs = useRef({});
   const overflowStyle = showScrollBar ? 'auto' : 'visible';
 
   useEffect(() => {
-    if (!iframeRef.current) return;
-    const iframeWindow = iframeRef.current.contentWindow;
-    const iframeDoc = iframeRef.current.contentDocument || iframeWindow.document;
-    if (!iframeDoc) return;
-    iframeDoc.open();
-    iframeDoc.write(`
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <style>
-          body {
-            color: #fff;
-            font-family: Arial, sans-serif;
-            margin: 0;
-            overflow: ${overflowStyle};
-            padding: 0;
-          }
-          img, video, iframe, embed, object {
-            display: block;
-            height: auto;
-            margin: 10px 0;
-            max-width: 100%;
-          }
-          pre, code, .code-block {
-            border-radius: 0;
-            box-sizing: border-box;
-            color: #ccc;
-            padding: 0;
-            white-space: pre-wrap;
-            word-wrap: break-word;
-            width: 100%;
-          }
-          .content-block {
-            box-sizing: border-box;
-            display: block;
-            width: 100%;
-          }
-          iframe {
-            display: block;
-            min-height: 100px;
-            width: 100%;
-          }
-          .code-iframe {
-            height: auto;
-            width: 100%;
-          }
-        </style>
-      </head>
-      <body>
-        ${content}
-      </body>
-      </html>
-    `);
-    iframeDoc.close();
-    const adjustHeight = debounce(() => {
-      const newHeight = iframeDoc.body.scrollHeight;
-      setIframeHeight(`${newHeight}px`);
-      onOverflowChange(false);
-    }, 100);
-    adjustHeight();
-    const observer = new MutationObserver(adjustHeight);
-    observer.observe(iframeDoc.body, {
-      childList: true,
-      subtree: true,
-      characterData: true
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(content || '', 'text/html');
+    const divs = doc.querySelectorAll('.content-block');
+    const parsed = [];
+    divs.forEach((div) => {
+      if (div.classList.contains('text-block')) {
+        parsed.push({ html: div.innerHTML.trim(), type: 'text' });
+      } else if (div.classList.contains('code-block')) {
+        const code = div.getAttribute('data-code') || '';
+        parsed.push({ code, id: div.getAttribute('data-blockid'), type: 'code' });
+      } else if (div.classList.contains('media-block')) {
+        const img = div.querySelector('img');
+        const video = div.querySelector('video');
+        if (img) {
+          parsed.push({ type: 'media', url: img.src, isImage: true, isVideo: false });
+        } else if (video) {
+          const source = video.querySelector('source');
+          parsed.push({ type: 'media', url: source ? source.src : '', isImage: false, isVideo: true, fileType: source ? source.type : '' });
+        } else {
+          parsed.push({ type: 'media', isImage: false, isVideo: false, url: '' });
+        }
+      }
     });
-    const mediaElements = iframeDoc.querySelectorAll('img, video, iframe');
-    mediaElements.forEach((media) => {
-      media.addEventListener('load', adjustHeight);
-      media.addEventListener('loadedmetadata', adjustHeight);
-    });
+    setBlocks(parsed);
+  }, [content]);
+
+  useEffect(() => {
+    function handleMessage(e) {
+      if (!e.data || !e.data.height || !e.data.blockId) return;
+      if (iframeRefs.current[e.data.blockId]) {
+        iframeRefs.current[e.data.blockId].style.height = `${e.data.height}px`;
+      }
+    }
+    window.addEventListener('message', handleMessage);
     return () => {
-      observer.disconnect();
-      mediaElements.forEach((media) => {
-        media.removeEventListener('load', adjustHeight);
-        media.removeEventListener('loadedmetadata', adjustHeight);
-      });
-      adjustHeight.cancel();
+      window.removeEventListener('message', handleMessage);
     };
-  }, [content, onOverflowChange, overflowStyle, showScrollBar]);
+  }, []);
+
+  useEffect(() => {
+    onOverflowChange(false);
+  }, [onOverflowChange]);
 
   return (
-    <iframe
-      ref={iframeRef}
-      sandbox="allow-scripts allow-same-origin"
-      style={{
-        border: 'none',
-        height: iframeHeight,
-        transition: 'height 0.3s ease',
-        width: '100%'
-      }}
-      title="Content Preview"
-    />
+    <div style={{ overflow: overflowStyle }}>
+      {blocks.map((block, i) => {
+        if (block.type === 'text') {
+          return <div dangerouslySetInnerHTML={{ __html: block.html }} key={i} />;
+        }
+        if (block.type === 'code') {
+          return (
+            <iframe
+              key={i}
+              ref={(el) => {
+                iframeRefs.current[block.id] = el;
+              }}
+              sandbox="allow-scripts allow-same-origin"
+              srcDoc={`
+                <!DOCTYPE html>
+                <html>
+                <head>
+                  <style>
+                    body { margin: 0; padding: 0; }
+                  </style>
+                </head>
+                <body>
+                  ${block.code}
+                  <script>
+                    function sendHeight() {
+                      const height = document.body.scrollHeight;
+                      parent.postMessage({ blockId: '${block.id}', height }, '*');
+                    }
+                    window.addEventListener('load', sendHeight);
+                    window.addEventListener('resize', sendHeight);
+                    const obs = new MutationObserver(sendHeight);
+                    obs.observe(document.body, { childList: true, subtree: true, characterData: true });
+                  </script>
+                </body>
+                </html>
+              `}
+              style={{ border: 'none', height: '0px', width: '100%' }}
+              title={`code-block-${block.id}`}
+            />
+          );
+        }
+        if (block.type === 'media') {
+          if (block.isImage) {
+            return <img alt="Uploaded Media" key={i} src={block.url} style={{ maxWidth: '100%', height: 'auto' }} />;
+          }
+          if (block.isVideo) {
+            return (
+              <video controls key={i} style={{ maxWidth: '100%', height: 'auto' }}>
+                <source src={block.url} type={block.fileType || 'video/*'} />
+              </video>
+            );
+          }
+          return <div key={i}>Unsupported</div>;
+        }
+        return null;
+      })}
+    </div>
   );
 };
 
@@ -113,7 +116,8 @@ ContentDisplay.propTypes = {
   content: PropTypes.string.isRequired,
   onOverflowChange: PropTypes.func,
   showFullContent: PropTypes.bool.isRequired,
-  showScrollBar: PropTypes.bool.isRequired
+  showScrollBar: PropTypes.bool.isRequired,
 };
 
 export default ContentDisplay;
+
