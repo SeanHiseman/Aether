@@ -1,11 +1,12 @@
-// ContentDisplay.js
 import PropTypes from 'prop-types';
 import React, { useEffect, useRef, useState } from 'react';
 
 const ContentDisplay = ({ content, onOverflowChange = () => {}, showFullContent, showScrollBar }) => {
   const [blocks, setBlocks] = useState([]);
   const iframeRefs = useRef({});
-  const overflowStyle = showScrollBar ? 'auto' : 'visible';
+  const contentRef = useRef(null);
+  const overflowStyle = showScrollBar ? 'auto' : 'hidden';
+  const maxHeightStyle = showFullContent ? 'none' : '50vh';
 
   useEffect(() => {
     const parser = new DOMParser();
@@ -39,6 +40,8 @@ const ContentDisplay = ({ content, onOverflowChange = () => {}, showFullContent,
       if (!e.data || !e.data.height || !e.data.blockId) return;
       if (iframeRefs.current[e.data.blockId]) {
         iframeRefs.current[e.data.blockId].style.height = `${e.data.height}px`;
+        //Trigger overflow check after iframe height adjustment
+        debounceCheckOverflow();
       }
     }
     window.addEventListener('message', handleMessage);
@@ -48,11 +51,58 @@ const ContentDisplay = ({ content, onOverflowChange = () => {}, showFullContent,
   }, []);
 
   useEffect(() => {
-    onOverflowChange(false);
-  }, [onOverflowChange]);
+    debounceCheckOverflow();
+  }, [blocks]);
+
+  useEffect(() => {
+    const observer = new ResizeObserver(() => {
+      debounceCheckOverflow();
+    });
+    if (contentRef.current) {
+      observer.observe(contentRef.current);
+    }
+    return () => {
+      if (contentRef.current) {
+        observer.unobserve(contentRef.current);
+      }
+      observer.disconnect();
+    };
+  }, [blocks]);
+
+  //Debounce function to limit the rate of overflow checks
+  const debounce = (func, delay) => {
+    let timer;
+    return () => {
+      clearTimeout(timer);
+      timer = setTimeout(() => {
+        func();
+      }, delay);
+    };
+  };
+
+  const checkOverflow = () => {
+    if (contentRef.current) {
+      const currentHeight = contentRef.current.scrollHeight;
+      const maxAllowedHeight = window.innerHeight * 0.5; //50vh
+      if (currentHeight > maxAllowedHeight) {
+        onOverflowChange(true);
+      } else {
+        onOverflowChange(false);
+      }
+    }
+  };
+
+  const debounceCheckOverflow = debounce(checkOverflow, 100);
 
   return (
-    <div style={{ overflow: overflowStyle }}>
+    <div
+      ref={contentRef}
+      style={{
+        overflow: overflowStyle,
+        maxHeight: maxHeightStyle,
+        transition: 'max-height 0.3s ease',
+      }}
+    >
       {blocks.map((block, i) => {
         if (block.type === 'text') {
           return <div dangerouslySetInnerHTML={{ __html: block.html }} key={i} />;
@@ -120,4 +170,3 @@ ContentDisplay.propTypes = {
 };
 
 export default ContentDisplay;
-

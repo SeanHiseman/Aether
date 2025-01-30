@@ -186,11 +186,18 @@ const ContentWidget = ({ canRemove: canRemoveProp, feed, isGroup, onEditClick, o
     const downvoteClass = downvoteLimit || isViewingOwnPost ? 'vote-disabled' : 'vote-enabled';
     const upvoteClass = upvoteLimit || isViewingOwnPost ? 'vote-disabled' : 'vote-enabled';
 
+    const handleOverflowChange = (overflowing) => {
+        setIsOverflowing(overflowing);
+        if (!overflowing) {
+            setShowFullContent(false);
+        }
+    };
+
     return (
         <div className={`content-item ${isReply ? 'reply' : ''}`}>
             {postErrorMessage && (<div className="error-message">{postErrorMessage}</div>)}
             {post.title && (<div className="title-container">
-                <Link to={`/${urlLetter}/${feed.feed_name}/${post.parentChannel.channel_name}/${post.post_id}`}className="text36">{post.title}</Link>
+                <Link to={`/${urlLetter}/${feed.feed_name}/${post.parentChannel.channel_name}/${post.post_id}`} className="text36" style={{ marginLeft: 0 }}>{post.title}</Link>
                 {post.displayGroupName && (
                     <Link className="feed-link" to={`/g/${feed.feed_name}`}>
                         <p className="feed-list-text">{feed.feed_name}</p>
@@ -198,7 +205,12 @@ const ContentWidget = ({ canRemove: canRemoveProp, feed, isGroup, onEditClick, o
                     </Link>
                 )}
             </div>)}
-            <ContentDisplay content={post.content} onOverflowChange={setIsOverflowing} showFullContent={showFullContent} showScrollBar={false}/>
+            <ContentDisplay 
+                content={post.content} 
+                onOverflowChange={handleOverflowChange} 
+                showFullContent={showFullContent} 
+                showScrollBar={false}
+            />
             {isOverflowing && (
                 <button className="small-icon" onClick={() => setShowFullContent(!showFullContent)}>
                     {showFullContent ? <FaChevronUp /> : <FaChevronDown />}
@@ -237,7 +249,7 @@ const ContentWidget = ({ canRemove: canRemoveProp, feed, isGroup, onEditClick, o
                     </button>
                 )}
                 {canRemove ? (
-                    <button className="large-icon" onClick={() => removePost(isGroup, post.post_id)}>
+                    <button className="large-icon" onClick={() => removePost()}>
                         <FaTimesCircle />
                     </button>
                 ) : null}

@@ -1,4 +1,3 @@
-// ContentForm.js
 import axios from 'axios';
 import PropTypes from 'prop-types';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
@@ -594,7 +593,7 @@ const ContentForm = ({ isEdit = false, isReply, onSubmit, post = null, setShowFo
                         <html>
                           <head>
                             <style>
-                              body { margin:0; padding:0; }
+                              body { margin:0; padding: 10px; }
                             </style>
                           </head>
                           <body>

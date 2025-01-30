@@ -109,7 +109,7 @@
 .option-toggle {
     border-radius: 10px;
     display: flex;
-    margin-top: 20px;
+    margin: 10px;
     min-height: 36px;
     overflow: hidden;
     width: 180px;
