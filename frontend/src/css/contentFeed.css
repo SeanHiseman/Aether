@@ -22,7 +22,8 @@
     box-shadow: rgba(0, 0, 0, 0.3) 0px 19px 38px, rgba(0, 0, 0, 0.22) 0px 15px 12px;
     cursor: pointer;
     margin: var(--large-margin);
-    padding: var(--small-margin);
+    padding: var(--large-margin);
+    padding-bottom: var(--medium-margin);
 }
 .content-item.reply {
     box-shadow: none;
@@ -60,7 +61,6 @@
     display: flex;
     font-size: x-large;
     justify-content: space-between;
-    margin: 10px;
     width: 98%;
 }
 .feed-photo {
