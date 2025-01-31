@@ -180,7 +180,7 @@ const BaseLayout = () => {
                     </ul>
                 </nav>
                 <div id="create-feed-section">
-                    <button className="small-icon" onClick={toggleForm}>
+                    <button className="small-icon" title={showForm ? 'Close' : 'Create Feed'} onClick={toggleForm}>
                         {showForm ? (
                             <>
                                 <FaMinus />
@@ -205,7 +205,7 @@ const BaseLayout = () => {
                                 <button className={feedType === 'private' ? 'active-mode' : 'passive-mode'} onClick={(event) => {event.preventDefault(); setFeedType('private');}}>Private</button>
                             </div>
                             <div className="error-message">{errorMessage}</div>
-                            <button className="small-icon" type="submit" value="Create">
+                            <button className="small-icon" title="Create" type="submit" value="Create">
                                 <FaPlus />
                             </button>
                         </form>

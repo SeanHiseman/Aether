@@ -81,7 +81,7 @@
     color: var(--border);
     font-size: xxx-large;
     height: 70%;
-    margin-right: 5%;
+    margin-right: 6%;
     padding: 8px;
     transition: var(--transition-regular);
 }

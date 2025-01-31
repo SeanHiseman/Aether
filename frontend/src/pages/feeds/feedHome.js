@@ -1,14 +1,14 @@
 import axios from 'axios';
 import { AuthContext } from '../../components/authContext';
 import { FaCog, FaEdit, FaFeatherAlt, FaMinus, FaPlus, FaTrash } from 'react-icons/fa';
-import { Tooltip } from 'react-tooltip'
+import { Tooltip } from 'react-tooltip';
 import React, { useContext, useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import ChannelList from '../../components/channels/channelList';
-import ChatChannel from '../../components/channels/chatChannel';
+import ChannelList from '../../components/channels/ChannelList';
+import ChatChannel from '../../components/channels/ChatChannel';
 import ContentForm from "../../components/content/contentForm";
 import FollowerChangeButton from '../../components/followerChangeButton';
-import ManageConnectionButton from '../../components/connections/manageConnectionButton';
+import ManageConnectionButton from '../../components/connections/ManageConnectionButton';
 import PostChannel from '../../components/channels/postChannel';
 
 const FeedHome = () => {
@@ -30,6 +30,7 @@ const FeedHome = () => {
     const [newChannelName, setNewChannelName] = useState('');
     const [postErrorMessage, setPostErrorMessage] = useState('');
     const [postToEdit, setPostToEdit] = useState(null);
+    const [replyingToPost, setReplyingToPost] = useState(null); 
     const [showChannelForm, setShowChannelForm] = useState(false);
     const [showPostForm, setShowPostForm] = useState(false);
     const { user, viewer } = useContext(AuthContext);
@@ -41,14 +42,14 @@ const FeedHome = () => {
             setLoading(true);
             try {
                 const response = await axios.get(`/api/feed/${feed_name}`);
-                const feed = response.data.feedResult;
-                setIsAdmin(feed.isAdmin);
-                setIsModerator(feed.isMod);
-                if (viewer.feed_id === feed.feed_id){
+                const fetchedFeed = response.data.feedResult;
+                setIsAdmin(fetchedFeed.isAdmin);
+                setIsModerator(fetchedFeed.isMod);
+                if (viewer.feed_id === fetchedFeed.feed_id){
                     setIsAdmin(true);
                     setIsModerator(true);
                 }
-                setFeed(feed);
+                setFeed(fetchedFeed);
                 setFeedNotFound(false);
             } catch (error) {
                 if (error.response && error.response.status === 404) {
@@ -177,13 +178,13 @@ const FeedHome = () => {
         formData.append('post_id', postToEdit.post_id);
         try {
             await axios.post('/api/edit_post', formData, {
-                header: { 'Content-Type': 'multipart/form-data' },
+                headers: { 'Content-Type': 'multipart/form-data' },
             });
             setShowPostForm(false);
             setIsEdit(false);
             setPostToEdit(null);
         } catch (error) {
-            setFeedErrorMessage("Error creating post");
+            setFeedErrorMessage("Error editing post");
         }
     };
 
@@ -191,7 +192,6 @@ const FeedHome = () => {
     const handleChatClick = () => setIsChatChannel((prev) => !prev);
     const handlePostClick = () => setIsPostChannel((prev) => !prev);
 
-    //Uploads content 
     const handlePostSubmit = async (formData) => {
         if (!formData) {
             setPostErrorMessage("Post cannot be empty");
@@ -272,6 +272,16 @@ const FeedHome = () => {
                         setPostErrorMessage={setPostErrorMessage} 
                         setShowForm={setShowPostForm}
                     />
+                ) : replyingToPost ? (
+                    <ContentForm
+                        feed={feed}
+                        isEdit={false}
+                        isGroup={feed.is_group}
+                        isReply={true}
+                        onSubmit={handlePostSubmit}
+                        post={replyingToPost}
+                        setShowForm={() => setReplyingToPost(null)}
+                    />
                 ) : feedErrorMessage ? (
                     <div className="text36">{feedErrorMessage}</div>
                 ) : channelRender ? (
@@ -287,6 +297,9 @@ const FeedHome = () => {
                                 setIsEdit(true);
                                 setPostToEdit(post);
                             }}
+                            onReplyClick={(post) => {
+                                setReplyingToPost(post);
+                            }}
                         />
                     ) : (
                         <ChatChannel
@@ -300,12 +313,14 @@ const FeedHome = () => {
             </div> 
             <aside id="right-aside">
                 <div id="feed-summary">
-                    <img className="large-feed-photo" src={`/${feed.feed_photo}`} alt={feed.feed_name} />
+                    <Link to={`/${urlLetter}/${feed_name}/Main`}>
+                        <img className="large-feed-photo" src={`/${feed.feed_photo}`} alt={feed.feed_name} />
+                    </Link>
                     <div className="feed-name">
                         <p className="text36">{feed.feed_name}</p>
                         {isAdmin && (
                             <Link to={`/feed_settings/${feed_name}`}>
-                                <button className="small-icon">
+                                <button className="small-icon" title="Settings">
                                     <FaCog />
                                 </button>
                             </Link>
@@ -356,7 +371,9 @@ const FeedHome = () => {
                             </div>
                         ) : (
                             <div className="chat-name">
-                                <p className="text36">{channel_name}</p>
+                                <Link to={`/${urlLetter}/${feed_name}/${channel_name}`}>
+                                    <p className="text24">{channel_name}</p>
+                                </Link>
                                 <div className="button-group">
                                     {channel_name !== "Main" && isAdmin && ( 
                                         <>
@@ -366,20 +383,21 @@ const FeedHome = () => {
                                                     setIsEditingChannelName(true);
                                                     setNewChannelName(channel_name);
                                                 }}
+                                                title="Edit name"
                                             >
                                                 <FaEdit />
                                             </button>
-                                            <button className="small-icon" onClick={handleDelete}>
+                                            <button className="small-icon" onClick={handleDelete} title="Delete channel">
                                                 <FaTrash />
                                             </button>
                                         </>
                                     )}
                                     {isAdmin && (
-                                        <button className="small-icon" onClick={toggleChannelForm}>
+                                        <button className="small-icon" onClick={toggleChannelForm} title={showChannelForm ? 'Close' : 'Create Channel'} >
                                             {showChannelForm ? <FaMinus /> : <FaPlus />}
                                         </button>
                                     )}
-                                    {channelMode === "post" && !showPostForm && (
+                                    {channelMode === "post" && !showPostForm && (feed.is_group || feed.feed_owner === user.user_id) && (
                                         <button
                                             className="small-icon"
                                             onClick={() => {
@@ -387,6 +405,7 @@ const FeedHome = () => {
                                                 setPostToEdit(null);
                                                 setShowPostForm(true);
                                             }}
+                                            title="Create Post"
                                         >
                                             <FaFeatherAlt />
                                         </button>
@@ -421,7 +440,7 @@ const FeedHome = () => {
                                                 </label>
                                             </div>
                                         )}
-                                        <button className="small-icon" type="submit">
+                                        <button className="small-icon" title="Create" type="submit">
                                             <FaPlus />
                                         </button>
                                     </form>
