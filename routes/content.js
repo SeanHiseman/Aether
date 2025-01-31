@@ -268,7 +268,8 @@ router.delete('/remove_post', authenticateCheck, async (req, res) => {
             parentPost.replies -= 1;
             await parentPost.save();
         }
-        await Posts.destroy({ where: { post_id: post.post_id } })
+        await PostVotes.destroy({ where: { post_id: post.post_id } });
+        await Posts.destroy({ where: { post_id: post.post_id } });
         res.status(200).json({ success: true });
     } catch (error) {
         res.status(500).json({ success: false });

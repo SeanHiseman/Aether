@@ -1,10 +1,12 @@
 import axios from 'axios';
+import { useNavigate, useParams } from 'react-router-dom';
 import PropTypes from 'prop-types';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 import { v4 as uuidv4 } from 'uuid';
+import ContentWidget from './contentWidget'; 
 
 const BLOCK_TYPES = {
   CODE: 'CODE',
@@ -101,14 +103,17 @@ const escapeHtml = (html) => {
     .replace(/>/g, '&gt;');
 };
 
-const ContentForm = ({ isEdit = false, isReply, onSubmit, post = null, setShowForm }) => {
+const ContentForm = ({ feed, isEdit = false, isGroup, isReply, onSubmit, post = null, setShowForm }) => {
   const [blocks, setBlocks] = useState([]);
+  const { feed_name, channel_name } = useParams();
   const [formErrorMessage, setFormErrorMessage] = useState('');
   const [globalAiPrompt, setGlobalAiPrompt] = useState('');
-  const [isLoadingAI, setIsLoadingAI] = useState(false);
-  const [title, setTitle] = useState('');
   const iframeRefs = useRef({});
+  const [isLoadingAI, setIsLoadingAI] = useState(false);
   const MAX_FILE_SIZE = 10 * 1024 * 1024;
+  const navigate = useNavigate();
+  const [title, setTitle] = useState('');
+  const urlPrefix = isGroup ? 'g' : 'u';
 
   useEffect(() => {
     if (isEdit && post) {
@@ -342,8 +347,9 @@ const ContentForm = ({ isEdit = false, isReply, onSubmit, post = null, setShowFo
       try {
         setFormErrorMessage('');
         const formData = new FormData();
+        let postId;
         if (!isEdit) {
-          const postId = uuidv4();
+          postId = uuidv4();
           formData.append('post_id', postId);
         }
         formData.append('content', finalHTML);
@@ -362,6 +368,7 @@ const ContentForm = ({ isEdit = false, isReply, onSubmit, post = null, setShowFo
         setTitle('');
         setBlocks([]);
         setGlobalAiPrompt('');
+        navigate(`/${urlPrefix}/${feed_name}/${channel_name}/${postId}`);
       } catch {
         setFormErrorMessage('Error submitting the form.');
       }
@@ -370,7 +377,22 @@ const ContentForm = ({ isEdit = false, isReply, onSubmit, post = null, setShowFo
   );
 
   return (
-    <div className="create-post-container">
+    <div className="create-post-container" style={{ paddingTop: `${isReply ? '0px' : '20px'}` }}>
+      {isReply && <p className="text24">Reply</p>}
+      {isReply && post && (
+        <div className="post-reply-preview">
+          <ContentWidget
+            canRemove={false} 
+            feed={feed}
+            isGroup={isGroup}
+            onEditClick={() => {}} 
+            onPostRemoved={() => {}} 
+            onReplyClick={() => {}} 
+            post={post}
+            readOnly={true} 
+          />
+        </div>
+      )}
       <form className="post-form" id="post-form" onSubmit={handleSubmit}>
         {!isReply && (
           <input
@@ -410,6 +432,158 @@ const ContentForm = ({ isEdit = false, isReply, onSubmit, post = null, setShowFo
         {formErrorMessage && <div className="error-message">{formErrorMessage}</div>}
         <div className="main-content">
           <div className="shared-container">
+            <DragDropContext onDragEnd={onDragEnd}>
+              <Droppable droppableId="blocks-droppable">
+                {(provided) => (
+                  <div className="blocks-container" ref={provided.innerRef} {...provided.droppableProps}>
+                    {blocks.length === 0 ? (
+                      <p className="text24">Add content using the buttons above</p>
+                    ) : (
+                      blocks.map((block, index) => {
+                        const { data, id, isEditing, type } = block;
+                        const toggleEdit = () => {
+                          updateBlock({ ...block, isEditing: !isEditing });
+                        };
+                        return (
+                          <Draggable key={id} draggableId={id} index={index}>
+                            {(provided2) => (
+                              <div
+                                className="block"
+                                ref={provided2.innerRef}
+                                {...provided2.draggableProps}
+                                {...provided2.dragHandleProps}
+                              >
+                                <div className="block-controls">
+                                  <button className="control-button" onClick={() => moveBlockUp(index)} type="button">
+                                    ↑
+                                  </button>
+                                  <button className="control-button" onClick={() => moveBlockDown(index)} type="button">
+                                    ↓
+                                  </button>
+                                  <button
+                                    className="control-button remove-button"
+                                    onClick={() => removeBlock(id)}
+                                    type="button"
+                                  >
+                                    ✕
+                                  </button>
+                                  {type !== BLOCK_TYPES.MEDIA && (
+                                    <button className="control-button edit-button" onClick={toggleEdit} type="button">
+                                      {isEditing ? '🔒' : '✎'}
+                                    </button>
+                                  )}
+                                </div>
+                                <div className="block-content">
+                                  {type === BLOCK_TYPES.TEXT &&
+                                    (isEditing ? (
+                                      <ReactQuill
+                                        className="text-editor"
+                                        onChange={(val) =>
+                                          updateBlock({
+                                            ...block,
+                                            data: { ...data, html: val },
+                                          })
+                                        }
+                                        theme="snow"
+                                        value={data.html}
+                                      />
+                                    ) : (
+                                      <div className="text-preview" dangerouslySetInnerHTML={{ __html: data.html }} />
+                                    ))}
+                                  {type === BLOCK_TYPES.CODE &&
+                                    (isEditing ? (
+                                      <div className="code-editor-container">
+                                        <div className="ai-generator">
+                                          <textarea
+                                            className="ai-prompt"
+                                            onChange={(e) =>
+                                              updateBlock({
+                                                ...block,
+                                                data: { ...data, _tempAiPrompt: e.target.value },
+                                              })
+                                            }
+                                            placeholder="Describe your content..."
+                                          />
+                                          <button
+                                            className={
+                                              isLoadingAI ? 'dark-button generate disabled' : 'dark-button generate'
+                                            }
+                                            disabled={isLoadingAI}
+                                            onClick={() => handleGenerateCodeBlock(block)}
+                                            type="button"
+                                          >
+                                            {isLoadingAI ? 'Creating...' : 'Create'}
+                                          </button>
+                                        </div>
+                                        <textarea
+                                          className="code-input"
+                                          onChange={(e) =>
+                                            updateBlock({
+                                              ...block,
+                                              data: { ...data, code: e.target.value },
+                                            })
+                                          }
+                                          value={data.code}
+                                        />
+                                      </div>
+                                    ) : (
+                                      <iframe
+                                        ref={(el) => {
+                                          iframeRefs.current[id] = el;
+                                        }}
+                                        sandbox="allow-scripts allow-same-origin"
+                                        srcDoc={
+                                          `<!DOCTYPE html>
+                                          <html>
+                                            <head>
+                                              <style>
+                                                body { margin:0; padding:0; }
+                                              </style>
+                                            </head>
+                                            <body>
+                                              ${data.code}
+                                              <script>
+                                                function sendHeight() {
+                                                  const height = document.body.scrollHeight;
+                                                  parent.postMessage({ blockId: '${id}', height }, '*');
+                                                }
+                                                window.addEventListener('load', sendHeight);
+                                                window.addEventListener('resize', sendHeight);
+                                                const obs = new MutationObserver(sendHeight);
+                                                obs.observe(document.body, { childList: true, subtree: true, characterData: true });
+                                              </script>
+                                            </body>
+                                          </html>`
+                                        }
+                                        style={{ border: 'none', width: '100%', height: '0px' }}
+                                        title={`code-preview-${id}`}
+                                      />
+                                    ))}
+                                  {type === BLOCK_TYPES.MEDIA && (
+                                    <div className="media-preview">
+                                      {data.isImage ? (
+                                        <img alt="Uploaded Media" src={data.url} />
+                                      ) : data.isVideo ? (
+                                        <video controls src={data.url} />
+                                      ) : (
+                                        <p>Unsupported</p>
+                                      )}
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            )}
+                          </Draggable>
+                        );
+                      })
+                    )}
+                    {provided.placeholder}
+                  </div>
+                )}
+              </Droppable>
+            </DragDropContext>
+          </div>
+          <div className="preview-prompt-container">
             <div className="global-ai-prompt-container">
               <textarea
                 className="ai-prompt"
@@ -426,216 +600,70 @@ const ContentForm = ({ isEdit = false, isReply, onSubmit, post = null, setShowFo
                 {isLoadingAI ? 'Creating...' : 'Create'}
               </button>
             </div>
-            <DragDropContext onDragEnd={onDragEnd}>
-              <Droppable droppableId="blocks-droppable">
-                {(provided) => (
-                  <div className="blocks-container" ref={provided.innerRef} {...provided.droppableProps}>
-                    {blocks.map((block, index) => {
-                      const { data, id, isEditing, type } = block;
-                      const toggleEdit = () => {
-                        updateBlock({ ...block, isEditing: !isEditing });
-                      };
-                      return (
-                        <Draggable key={id} draggableId={id} index={index}>
-                          {(provided2) => (
-                            <div
-                              className="block"
-                              ref={provided2.innerRef}
-                              {...provided2.draggableProps}
-                              {...provided2.dragHandleProps}
-                            >
-                              <div className="block-controls">
-                                <button className="control-button" onClick={() => moveBlockUp(index)} type="button">
-                                  ↑
-                                </button>
-                                <button className="control-button" onClick={() => moveBlockDown(index)} type="button">
-                                  ↓
-                                </button>
-                                <button
-                                  className="control-button remove-button"
-                                  onClick={() => removeBlock(id)}
-                                  type="button"
-                                >
-                                  ✕
-                                </button>
-                                {type !== BLOCK_TYPES.MEDIA && (
-                                  <button className="control-button edit-button" onClick={toggleEdit} type="button">
-                                    {isEditing ? '🔒' : '✎'}
-                                  </button>
-                                )}
-                              </div>
-                              <div className="block-content">
-                                {type === BLOCK_TYPES.TEXT &&
-                                  (isEditing ? (
-                                    <ReactQuill
-                                      className="text-editor"
-                                      onChange={(val) =>
-                                        updateBlock({
-                                          ...block,
-                                          data: { ...data, html: val },
-                                        })
-                                      }
-                                      theme="snow"
-                                      value={data.html}
-                                    />
-                                  ) : (
-                                    <div className="text-preview" dangerouslySetInnerHTML={{ __html: data.html }} />
-                                  ))}
-                                {type === BLOCK_TYPES.CODE &&
-                                  (isEditing ? (
-                                    <div className="code-editor-container">
-                                      <div className="ai-generator">
-                                        <textarea
-                                          className="ai-prompt"
-                                          onChange={(e) =>
-                                            updateBlock({
-                                              ...block,
-                                              data: { ...data, _tempAiPrompt: e.target.value },
-                                            })
-                                          }
-                                          placeholder="Describe your content..."
-                                        />
-                                        <button
-                                          className={
-                                            isLoadingAI ? 'dark-button generate disabled' : 'dark-button generate'
-                                          }
-                                          disabled={isLoadingAI}
-                                          onClick={() => handleGenerateCodeBlock(block)}
-                                          type="button"
-                                        >
-                                          {isLoadingAI ? 'Creating...' : 'Create'}
-                                        </button>
-                                      </div>
-                                      <textarea
-                                        className="code-input"
-                                        onChange={(e) =>
-                                          updateBlock({
-                                            ...block,
-                                            data: { ...data, code: e.target.value },
-                                          })
-                                        }
-                                        value={data.code}
-                                      />
-                                    </div>
-                                  ) : (
-                                    <iframe
-                                      ref={(el) => {
-                                        iframeRefs.current[id] = el;
-                                      }}
-                                      sandbox="allow-scripts allow-same-origin"
-                                      srcDoc={`
-                                        <!DOCTYPE html>
-                                        <html>
-                                          <head>
-                                            <style>
-                                              body { margin:0; padding:0; }
-                                            </style>
-                                          </head>
-                                          <body>
-                                            ${data.code}
-                                            <script>
-                                              function sendHeight() {
-                                                const height = document.body.scrollHeight;
-                                                parent.postMessage({ blockId: '${id}', height }, '*');
-                                              }
-                                              window.addEventListener('load', sendHeight);
-                                              window.addEventListener('resize', sendHeight);
-                                              const obs = new MutationObserver(sendHeight);
-                                              obs.observe(document.body, { childList: true, subtree: true, characterData: true });
-                                            </script>
-                                          </body>
-                                        </html>
-                                      `}
-                                      style={{ border: 'none', width: '100%', height: '0px' }}
-                                      title={`code-preview-${id}`}
-                                    />
-                                  ))}
-                                {type === BLOCK_TYPES.MEDIA && (
-                                  <div className="media-preview">
-                                    {data.isImage ? (
-                                      <img alt="Uploaded Media" src={data.url} />
-                                    ) : data.isVideo ? (
-                                      <video controls src={data.url} />
-                                    ) : (
-                                      <p>Unsupported</p>
-                                    )}
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-                          )}
-                        </Draggable>
-                      );
-                    })}
-                    {provided.placeholder}
-                  </div>
-                )}
-              </Droppable>
-            </DragDropContext>
-          </div>
-          <div className="live-preview-container">
-            <p className="text24" style={{ marginLeft: 0, marginTop: 0 }}>
-              Preview
-            </p>
-            {blocks.map((block, i) => {
-              if (block.type === BLOCK_TYPES.TEXT) {
-                return <div dangerouslySetInnerHTML={{ __html: block.data.html }} key={i} />;
-              } else if (block.type === BLOCK_TYPES.CODE) {
-                return (
-                  <div key={i}>
-                    <iframe
-                      ref={(el) => {
-                        iframeRefs.current[block.id] = el;
-                      }}
-                      sandbox="allow-scripts allow-same-origin"
-                      srcDoc={`
-                        <!DOCTYPE html>
-                        <html>
-                          <head>
-                            <style>
-                              body { margin:0; padding: 10px; }
-                            </style>
-                          </head>
-                          <body>
-                            ${block.data.code}
-                            <script>
-                              function sendHeight() {
-                                const height = document.body.scrollHeight;
-                                parent.postMessage({ blockId: '${block.id}', height }, '*');
-                              }
-                              window.addEventListener('load', sendHeight);
-                              window.addEventListener('resize', sendHeight);
-                              const obs = new MutationObserver(sendHeight);
-                              obs.observe(document.body, { childList: true, subtree: true, characterData: true });
-                            </script>
-                          </body>
-                        </html>
-                      `}
-                      style={{ border: 'none', width: '100%', height: '0px' }}
-                      title={`live-preview-${i}`}
-                    />
-                  </div>
-                );
-              } else if (block.type === BLOCK_TYPES.MEDIA) {
-                if (block.data.isImage) {
+            <div className="live-preview-container">
+              <p className="text24" style={{ marginLeft: 0, marginTop: 0 }}>
+                Preview
+              </p>
+              {blocks.map((block, i) => {
+                if (block.type === BLOCK_TYPES.TEXT) {
+                  return <div dangerouslySetInnerHTML={{ __html: block.data.html }} key={i} />;
+                } else if (block.type === BLOCK_TYPES.CODE) {
                   return (
                     <div key={i}>
-                      <img alt="Uploaded Media" src={block.data.url} style={{ maxWidth: '100%', height: 'auto' }} />
+                      <iframe
+                        ref={(el) => {
+                          iframeRefs.current[block.id] = el;
+                        }}
+                        sandbox="allow-scripts allow-same-origin"
+                        srcDoc={
+                          `<!DOCTYPE html>
+                          <html>
+                            <head>
+                              <style>
+                                body { margin:0; padding: 10px; }
+                              </style>
+                            </head>
+                            <body>
+                              ${block.data.code}
+                              <script>
+                                function sendHeight() {
+                                  const height = document.body.scrollHeight;
+                                  parent.postMessage({ blockId: '${block.id}', height }, '*');
+                                }
+                                window.addEventListener('load', sendHeight);
+                                window.addEventListener('resize', sendHeight);
+                                const obs = new MutationObserver(sendHeight);
+                                obs.observe(document.body, { childList: true, subtree: true, characterData: true });
+                              </script>
+                            </body>
+                          </html>`
+                        }
+                        style={{ border: 'none', width: '100%', height: '0px' }}
+                        title={`live-preview-${i}`}
+                      />
                     </div>
                   );
-                } else if (block.data.isVideo) {
-                  return (
-                    <div key={i}>
-                      <video controls style={{ maxWidth: '100%', height: 'auto' }}>
-                        <source src={block.data.url} type={block.data.fileType} />
-                      </video>
-                    </div>
-                  );
+                } else if (block.type === BLOCK_TYPES.MEDIA) {
+                  if (block.data.isImage) {
+                    return (
+                      <div key={i}>
+                        <img alt="Uploaded Media" src={block.data.url} style={{ maxWidth: '100%', height: 'auto' }} />
+                      </div>
+                    );
+                  } else if (block.data.isVideo) {
+                    return (
+                      <div key={i}>
+                        <video controls style={{ maxWidth: '100%', height: 'auto' }}>
+                          <source src={block.data.url} type={block.data.fileType} />
+                        </video>
+                      </div>
+                    );
+                  }
+                  return <p key={i}>Unsupported</p>;
                 }
-                return <p key={i}>Unsupported</p>;
-              }
-              return null;
-            })}
+                return null;
+              })}
+            </div>
           </div>
         </div>
       </form>
@@ -652,6 +680,7 @@ ContentForm.propTypes = {
 };
 
 export default ContentForm;
+
 
 
 
