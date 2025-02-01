@@ -10,7 +10,7 @@ import PropTypes from 'prop-types';
 const ContentWidget = ({ canRemove, feed, isGroup, onEditClick, onPostRemoved, onReplyClick, parent, post, readOnly = false }) => {
   const [downvoteLimit, setDownvoteLimit] = useState(false);
   const [downvotes, setDownvotes] = useState(post.downvotes);
-  const { feed_name, channel_name } = useParams();
+  const { feed_name, channel_name, post_id } = useParams();
   const [hasViewed, setHasViewed] = useState(false);
   const [isOverflowing, setIsOverflowing] = useState(false);
   const navigate = useNavigate();
@@ -91,7 +91,7 @@ const ContentWidget = ({ canRemove, feed, isGroup, onEditClick, onPostRemoved, o
   };
 
   const removePost = async () => {
-    if (window.confirm('Are you sure you want to delete this post?')) {
+    if (window.confirm(`Are you sure you want to delete this ${isReply ? 'Relpy' : 'Post'}?`)) {
       try {
         const response = await axios.delete('/api/remove_post', { data: { post } });
         if (response.data.success) {
@@ -99,7 +99,7 @@ const ContentWidget = ({ canRemove, feed, isGroup, onEditClick, onPostRemoved, o
           navigate(`/${urlPrefix}/${feed_name}/${channel_name}`);
         }
       } catch {
-        setPostErrorMessage('Error removing post');
+        setPostErrorMessage(`Error removing ${isReply ? 'Relpy' : 'Post'}`);
       }
     }
   };
@@ -154,8 +154,8 @@ const ContentWidget = ({ canRemove, feed, isGroup, onEditClick, onPostRemoved, o
     }
   };
 
-  const downvoteClass = downvoteLimit || isViewingOwnPost ? 'vote-disabled' : 'vote-enabled';
-  const upvoteClass = upvoteLimit || isViewingOwnPost ? 'vote-disabled' : 'vote-enabled';
+  const downvoteClass = downvoteLimit ? 'vote-disabled' : 'vote-enabled';
+  const upvoteClass = upvoteLimit ? 'vote-disabled' : 'vote-enabled';
 
   return (
     <div className={`content-item ${isReply ? 'reply' : ''}`}>
@@ -205,34 +205,23 @@ const ContentWidget = ({ canRemove, feed, isGroup, onEditClick, onPostRemoved, o
           </Link>
         </div>
         <div className="vote-container">
-          <button
-            className={`large-icon ${upvoteClass}`}
-            disabled={isViewingOwnPost}
-            onClick={() => postVote(post.post_id, 'upvote')}
-          >
-            <FaArrowUp />
-          </button>
-          <span className="total-votes">{upvotes - downvotes}</span>
-          <button
-            className={`large-icon ${downvoteClass}`}
-            disabled={isViewingOwnPost}
-            onClick={() => postVote(post.post_id, 'downvote')}
-          >
-            <FaArrowDown />
-          </button>
+          {!isViewingOwnPost &&   
+            <button className={`large-icon ${upvoteClass}`} disabled={downvoteLimit || upvoteLimit} onClick={() => postVote(post.post_id, 'upvote')}>
+              <FaArrowUp />
+            </button>}
+          <span className="total-votes">{upvotes - downvotes} {isViewingOwnPost && 'votes'}</span>
+          {!isViewingOwnPost &&           
+            <button className={`large-icon ${downvoteClass}`} disabled={downvoteLimit || upvoteLimit} onClick={() => postVote(post.post_id, 'downvote')} >
+              <FaArrowDown />
+            </button>}
         </div>
         {!readOnly && (
           <>
-            <button className="large-icon" data-content-id={post.post_id} onClick={toggleReplies} title="Replies">
+            <button className="large-icon" data-content-id={post.post_id} onClick={toggleReplies} title={showReplies ? "Hide Replies" : "Show Replies"}>
               <FaComments />
               <p className="text16" id={`reply-count-${post.post_id}`}>{post.replies}</p>
             </button>
-            <button
-              className="large-icon"
-              onClick={() => onReplyClick(post)} 
-              disabled={readOnly}
-              title="Reply"
-            >
+            <button className="large-icon" onClick={() => onReplyClick(post)} disabled={readOnly} title="Reply">
               <FaReply />
             </button>
           </>
@@ -240,12 +229,12 @@ const ContentWidget = ({ canRemove, feed, isGroup, onEditClick, onPostRemoved, o
         <p className="text16">{views} {views === 1 ? 'view' : 'views'}</p>
         <p className="text16">{new Date(post.timestamp).toLocaleDateString()}</p>
         {post.poster_id === viewer.feed_id && !readOnly && (
-          <button className="large-icon" onClick={() => onEditClick(post)} title="Edit Post">
+          <button className="large-icon" onClick={() => onEditClick(post)} title={isReply ? "Edit Reply" : "Edit Post"}>
             <FaEdit />
           </button>
         )}
         {canRemove && !readOnly && (
-          <button className="large-icon" onClick={removePost} title="Delete Post">
+          <button className="large-icon" onClick={removePost} title={isReply ? "Delete Reply" : "Delete Post"}>
             <FaTimesCircle />
           </button>
         )}
@@ -262,21 +251,25 @@ const ContentWidget = ({ canRemove, feed, isGroup, onEditClick, onPostRemoved, o
           />
         )}
       </div>
-      {showReplies && (
+      {showReplies || post_id && (
         <div className="reply-section">
-          {replies.map((reply) => (
-            <ContentWidget
-              canRemove={canRemove}
-              feed={feed}
-              isGroup={isGroup}
-              key={reply.post_id}
-              onEditClick={onEditClick}
-              onPostRemoved={replyRemoved}
-              onReplyClick={onReplyClick} 
-              post={reply}
-              readOnly={readOnly} 
-            />
-          ))}
+          {replies.length !== 0 ? (
+            replies.map((reply) => (
+              <ContentWidget
+                canRemove={canRemove}
+                feed={feed}
+                isGroup={isGroup}
+                key={reply.post_id}
+                onEditClick={onEditClick}
+                onPostRemoved={replyRemoved}
+                onReplyClick={onReplyClick} 
+                post={reply}
+                readOnly={readOnly} 
+              />
+            ))
+          ) : (
+            <p className="text24">No replies</p>
+          )}
         </div>
       )}
     </div>

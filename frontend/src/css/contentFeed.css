@@ -88,6 +88,9 @@
     width: 30%;
 }
 .reply-section {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
     width: 100%;
 }
 .result-info-options {
