@@ -6,12 +6,12 @@ import ContentWidget from '../content/contentWidget';
 
 const PostChannel = ({ canRemove, channelId, channelName, feed, isGroup, onEditClick, onReplyClick }) => {
     const queryClient = useQueryClient();
-    const { postId } = useParams();
+    const { post_id } = useParams();
     const feedId = feed.feed_id;
 
     const getSinglePost = async () => {
         const response = await axios.get('/api/channel_posts', {
-            params: { isSingle: true, feedId: feed.feed_id, postId }
+            params: { isSingle: true, feedId: feed.feed_id, postId: post_id }
         });
         return response.data.post; 
     };
@@ -25,16 +25,16 @@ const PostChannel = ({ canRemove, channelId, channelName, feed, isGroup, onEditC
     
     //Gets individual post 
     const { data: singlePost, error: singlePostError, isLoading: singlePostLoading } = useQuery({
-        queryKey: ['singlePost', postId],
+        queryKey: ['singlePost', post_id],
         queryFn: getSinglePost,
-        enabled: !!postId //postId only present in url for single posts
+        enabled: !!post_id //post_id only present in url for single posts
     });
 
     //Gets posts from the channel
     const { data: posts = [], error: postsError, isLoading: postsLoading } = useQuery({
         queryKey: ['posts', channelId, channelName, isGroup, feedId],
         queryFn: getPosts,
-        enabled: !postId
+        enabled: !post_id
     });
 
     //Updates post list upon removal
@@ -45,25 +45,25 @@ const PostChannel = ({ canRemove, channelId, channelName, feed, isGroup, onEditC
         );
     };
 
-    if (postId && singlePostError) {
+    if (post_id && singlePostError) {
         if (singlePostError.response?.status === 404) {
             return <p className="text36">Post not found. Please check the URL.</p>;
         }
         return <p className="text36">Error fetching the post. Please try again later.</p>;
     }
-    if (!postId && postsError) {
+    if (!post_id && postsError) {
         return <p className="text36">Error fetching posts. Please try again later.</p>;
     }
-    if (postId && singlePostLoading) {
+    if (post_id && singlePostLoading) {
         return <p className="text36">Loading post...</p>;
     }
-    if (!postId && postsLoading) {
+    if (!post_id && postsLoading) {
         return <p className="text36">Loading posts...</p>;
     }
     return (
         <div className="channel">
             <div className="channel-content">
-                {postId ? (
+                {post_id ? (
                     singlePost ? (
                         <ul className="content-list">
                             <ContentWidget 

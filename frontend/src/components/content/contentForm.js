@@ -105,7 +105,7 @@ const escapeHtml = (html) => {
 
 const ContentForm = ({ feed, isEdit = false, isGroup, isReply, onSubmit, post = null, setShowForm }) => {
   const [blocks, setBlocks] = useState([]);
-  const { feed_name, channel_name } = useParams();
+  const { feed_name, channel_name, post_id } = useParams();
   const [formErrorMessage, setFormErrorMessage] = useState('');
   const [globalAiPrompt, setGlobalAiPrompt] = useState('');
   const iframeRefs = useRef({});
@@ -349,8 +349,10 @@ const ContentForm = ({ feed, isEdit = false, isGroup, isReply, onSubmit, post = 
         const formData = new FormData();
         let postId;
         if (!isEdit) {
-          postId = uuidv4();
+          postId = uuidv4(); //Not editing means new post is being made
           formData.append('post_id', postId);
+        } else {
+          postId = post.post_id; //When editing post or reply, redirect is always to parent post
         }
         formData.append('content', finalHTML);
         if (isReply && post) {
@@ -368,7 +370,8 @@ const ContentForm = ({ feed, isEdit = false, isGroup, isReply, onSubmit, post = 
         setTitle('');
         setBlocks([]);
         setGlobalAiPrompt('');
-        navigate(`/${urlPrefix}/${feed_name}/${channel_name}/${postId}`);
+        setShowForm(false);
+        navigate(`/${urlPrefix}/${feed_name}/${channel_name}/${isReply ? post.post_id : postId}`); //Since post is given only for replies
       } catch {
         setFormErrorMessage('Error submitting the form.');
       }
