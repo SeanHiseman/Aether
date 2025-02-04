@@ -19,7 +19,7 @@ const ContentWidget = ({ canRemove, feed, isGroup, onEditClick, onPostRemoved, o
   const [replies, setReplies] = useState([]);
   const [showFullContent, setShowFullContent] = useState(false);
   const [showNote, setShowNote] = useState(post.note && post.note.is_misinfo);
-  const [showReplies, setShowReplies] = useState(false);
+  const [showReplies, setShowReplies] = useState(post_id ? (post.replies > 0) : false);
   const [upvoteLimit, setUpvoteLimit] = useState(false);
   const [upvotes, setUpvotes] = useState(post.upvotes);
   const [views, setViews] = useState(post.views);
@@ -188,6 +188,7 @@ const ContentWidget = ({ canRemove, feed, isGroup, onEditClick, onPostRemoved, o
         <button
           className="small-icon"
           onClick={() => setShowFullContent(!showFullContent)}
+          title={showFullContent ? 'Show less' : 'Show more'}
         >
           {showFullContent ? <FaChevronUp /> : <FaChevronDown />}
         </button>
@@ -217,7 +218,7 @@ const ContentWidget = ({ canRemove, feed, isGroup, onEditClick, onPostRemoved, o
         </div>
         {!readOnly && (
           <>
-            <button className="large-icon" data-content-id={post.post_id} onClick={toggleReplies} title={showReplies ? "Hide Replies" : "Show Replies"}>
+            <button className="large-icon" data-content-id={post.post_id} onClick={toggleReplies} title={showReplies ? "Close Replies" : "Show Replies"}>
               <FaComments />
               <p className="text16" id={`reply-count-${post.post_id}`}>{post.replies}</p>
             </button>
@@ -251,7 +252,7 @@ const ContentWidget = ({ canRemove, feed, isGroup, onEditClick, onPostRemoved, o
           />
         )}
       </div>
-      {showReplies || post_id && (
+      {showReplies && (
         <div className="reply-section">
           {replies.length !== 0 ? (
             replies.map((reply) => (
@@ -269,6 +270,13 @@ const ContentWidget = ({ canRemove, feed, isGroup, onEditClick, onPostRemoved, o
             ))
           ) : (
             <p className="text24">No replies</p>
+          )}
+          {replies.length > 0 && (
+            <div className="replies-footer">
+              <button className="small-icon" onClick={toggleReplies} title="Close Replies">
+                <FaChevronUp />
+              </button>
+            </div>
           )}
         </div>
       )}
