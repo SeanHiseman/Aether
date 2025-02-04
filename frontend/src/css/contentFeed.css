@@ -87,6 +87,11 @@
     justify-content: space-between;
     width: 30%;
 }
+.replies-footer {
+    align-items: center;
+    display: flex;
+    justify-content: center;
+}
 .reply-section {
     display: flex;
     flex-direction: column;
