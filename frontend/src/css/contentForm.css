@@ -40,9 +40,9 @@
 }
 .block {
   background-color: var(--dark);
-  border: 1px solid var(--borders);
   border-radius: 8px;
   box-sizing: border-box;
+  margin-bottom: var(--medium-margin);
   padding: 15px;
   width: 100%;
 }

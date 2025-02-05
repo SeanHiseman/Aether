@@ -1,46 +1,46 @@
-import axios from 'axios';
-import { useNavigate, useParams } from 'react-router-dom';
-import PropTypes from 'prop-types';
-import React, { useCallback, useEffect, useRef, useState } from 'react';
-import ReactQuill from 'react-quill';
-import 'react-quill/dist/quill.snow.css';
-import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
-import { v4 as uuidv4 } from 'uuid';
-import ContentWidget from './contentWidget'; 
+import axios from 'axios'
+import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd'
+import { useNavigate, useParams } from 'react-router-dom'
+import PropTypes from 'prop-types'
+import React, { useCallback, useEffect, useRef, useState } from 'react'
+import ReactQuill from 'react-quill'
+import 'react-quill/dist/quill.snow.css'
+import { v4 as uuidv4 } from 'uuid'
+import ContentWidget from './contentWidget'
 
 const BLOCK_TYPES = {
   CODE: 'CODE',
   MEDIA: 'MEDIA',
   TEXT: 'TEXT',
-};
+}
 
 const parseContentBlocks = (htmlString) => {
-  const parser = new DOMParser();
-  const doc = parser.parseFromString(htmlString, 'text/html');
-  const divs = doc.querySelectorAll('div.content-block');
-  const result = [];
+  const parser = new DOMParser()
+  const doc = parser.parseFromString(htmlString, 'text/html')
+  const divs = doc.querySelectorAll('div.content-block')
+  const result = []
   divs.forEach((div) => {
-    const blockClass = div.className;
-    const blockId = div.getAttribute('data-blockid');
-    const content = div.innerHTML.trim();
+    const blockClass = div.className
+    const blockId = div.getAttribute('data-blockid')
+    const content = div.innerHTML.trim()
     if (blockClass.includes('code-block')) {
-      const code = div.getAttribute('data-code') || '';
+      const code = div.getAttribute('data-code') || ''
       result.push({
-        data: { code },
+        data: { code, isBlockLoading: false, showPrompt: true },
         id: blockId,
         isEditing: false,
         type: BLOCK_TYPES.CODE,
-      });
+      })
     } else if (blockClass.includes('text-block')) {
       result.push({
         data: { html: content },
         id: blockId,
         isEditing: false,
         type: BLOCK_TYPES.TEXT,
-      });
+      })
     } else if (blockClass.includes('media-block')) {
-      const img = div.querySelector('img');
-      const video = div.querySelector('video');
+      const img = div.querySelector('img')
+      const video = div.querySelector('video')
       if (img) {
         result.push({
           data: {
@@ -53,9 +53,9 @@ const parseContentBlocks = (htmlString) => {
           id: blockId,
           isEditing: false,
           type: BLOCK_TYPES.MEDIA,
-        });
+        })
       } else if (video) {
-        const source = video.querySelector('source');
+        const source = video.querySelector('source')
         result.push({
           data: {
             file: null,
@@ -67,7 +67,7 @@ const parseContentBlocks = (htmlString) => {
           id: blockId,
           isEditing: false,
           type: BLOCK_TYPES.MEDIA,
-        });
+        })
       } else {
         result.push({
           data: {
@@ -80,76 +80,91 @@ const parseContentBlocks = (htmlString) => {
           id: blockId,
           isEditing: false,
           type: BLOCK_TYPES.MEDIA,
-        });
+        })
       }
     }
-  });
-  return result;
-};
+  })
+  return result
+}
 
 const reorder = (list, startIndex, endIndex) => {
-  const result = Array.from(list);
-  const [removed] = result.splice(startIndex, 1);
-  result.splice(endIndex, 0, removed);
-  return result;
-};
+  const result = Array.from(list)
+  const [removed] = result.splice(startIndex, 1)
+  result.splice(endIndex, 0, removed)
+  return result
+}
 
-const escapeHtml = (html) => {
-  return html
+const escapeHtml = (html) =>
+  html
     .replace(/&/g, '&amp;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;')
     .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;');
-};
+    .replace(/>/g, '&gt;')
 
-const ContentForm = ({ feed, isEdit = false, isGroup, isReply, onSubmit, post = null, setShowForm }) => {
-  const [blocks, setBlocks] = useState([]);
-  const { feed_name, channel_name, post_id } = useParams();
-  const [formErrorMessage, setFormErrorMessage] = useState('');
-  const [globalAiPrompt, setGlobalAiPrompt] = useState('');
-  const iframeRefs = useRef({});
-  const [isLoadingAI, setIsLoadingAI] = useState(false);
-  const MAX_FILE_SIZE = 10 * 1024 * 1024;
-  const navigate = useNavigate();
-  const [title, setTitle] = useState('');
-  const urlPrefix = isGroup ? 'g' : 'u';
+const ContentForm = ({
+  feed,
+  isEdit = false,
+  isGroup,
+  isReply,
+  onSubmit,
+  post = null,
+  setShowForm,
+}) => {
+  const [blocks, setBlocks] = useState([])
+  const [editMode, setEditMode] = useState(true)
+  const [formErrorMessage, setFormErrorMessage] = useState('')
+  const [globalAiPrompt, setGlobalAiPrompt] = useState('')
+  const [isGlobalLoading, setIsGlobalLoading] = useState(false)
+  const [title, setTitle] = useState('')
+  const iframeRefs = useRef({})
+  const { channel_name, feed_name } = useParams()
+  const navigate = useNavigate()
+  const urlPrefix = isGroup ? 'g' : 'u'
+  const MAX_FILE_SIZE = 10 * 1024 * 1024
 
   useEffect(() => {
     if (isEdit && post) {
-      setTitle(post.title || '');
-      const existingBlocks = parseContentBlocks(post.content || '');
+      setTitle(post.title || '')
+      const existingBlocks = parseContentBlocks(post.content || '')
       if (existingBlocks.length) {
-        setBlocks(existingBlocks);
+        setBlocks(existingBlocks)
       } else {
-        setBlocks([
-          {
-            data: { html: post.content },
-            id: uuidv4(),
-            isEditing: true,
-            type: BLOCK_TYPES.TEXT,
-          },
-        ]);
+        setBlocks([{
+          data: { html: post.content },
+          id: uuidv4(),
+          isEditing: true,
+          type: BLOCK_TYPES.TEXT,
+        }])
       }
     }
-  }, [isEdit, post]);
-
-  const handleIframeMessage = useCallback((event) => {
-    const { blockId, height } = event.data;
-    if (blockId && height) {
-      const iframe = iframeRefs.current[blockId];
-      if (iframe) {
-        iframe.style.height = `${height}px`;
-      }
-    }
-  }, []);
+  }, [isEdit, post])
 
   useEffect(() => {
-    window.addEventListener('message', handleIframeMessage);
-    return () => {
-      window.removeEventListener('message', handleIframeMessage);
-    };
-  }, [handleIframeMessage]);
+    if (!isEdit) {
+      setBlocks([{
+        data: { html: '' },
+        id: uuidv4(),
+        isEditing: true,
+        type: BLOCK_TYPES.TEXT,
+      }])
+    }
+  }, [isEdit])
+
+  const handleIframeMessage = useCallback((event) => {
+    const { blockId, height } = event.data
+    if (blockId && height) {
+      const iframe = iframeRefs.current[blockId]
+      if (iframe) {
+        iframe.style.height = `${height}px`
+      }
+    }
+  }, [])
+
+  useEffect(() => {
+    window.addEventListener('message', handleIframeMessage)
+    return () => window.removeEventListener('message', handleIframeMessage)
+  }, [handleIframeMessage])
 
   const handleAddBlock = useCallback((type) => {
     const newBlock = {
@@ -157,7 +172,7 @@ const ContentForm = ({ feed, isEdit = false, isGroup, isReply, onSubmit, post = 
         type === BLOCK_TYPES.TEXT
           ? { html: '' }
           : type === BLOCK_TYPES.CODE
-          ? { code: '' }
+          ? { code: '', isBlockLoading: false, showPrompt: true }
           : {
               file: null,
               fileType: '',
@@ -168,231 +183,222 @@ const ContentForm = ({ feed, isEdit = false, isGroup, isReply, onSubmit, post = 
       id: uuidv4(),
       isEditing: type !== BLOCK_TYPES.MEDIA,
       type,
-    };
-    setBlocks((prev) => [...prev, newBlock]);
-  }, []);
+    }
+    setBlocks((prev) => [...prev, newBlock])
+  }, [])
 
   const handleFilesChange = useCallback(
     (event) => {
-      const files = Array.from(event.target.files);
-      const oversized = files.filter((f) => f.size > MAX_FILE_SIZE);
+      const files = Array.from(event.target.files)
+      const oversized = files.filter((f) => f.size > MAX_FILE_SIZE)
       if (oversized.length) {
-        const names = oversized.map((f) => f.name).join(', ');
-        setFormErrorMessage(`These files exceed 10MB: ${names}`);
-        return;
+        const names = oversized.map((f) => f.name).join(', ')
+        setFormErrorMessage(`These files exceed 10MB: ${names}`)
+        return
       }
-      setFormErrorMessage('');
+      setFormErrorMessage('')
       const uniqueFiles = files.map((file) => {
-        const ext = file.name.substring(file.name.lastIndexOf('.'));
-        const uniqueName = `${Date.now()}-${uuidv4()}${ext}`;
-        return new File([file], uniqueName, { type: file.type });
-      });
-      const mediaBlocks = uniqueFiles.map((file) => {
-        const fileType = file.type;
-        return {
-          data: {
-            file,
-            fileType,
-            isImage: fileType.startsWith('image/'),
-            isVideo: fileType.startsWith('video/'),
-            url: URL.createObjectURL(file),
-          },
-          id: uuidv4(),
-          isEditing: false,
-          type: BLOCK_TYPES.MEDIA,
-        };
-      });
-      setBlocks((prev) => [...prev, ...mediaBlocks]);
+        const ext = file.name.substring(file.name.lastIndexOf('.'))
+        const uniqueName = `${Date.now()}-${uuidv4()}${ext}`
+        return new File([file], uniqueName, { type: file.type })
+      })
+      const mediaBlocks = uniqueFiles.map((file) => ({
+        data: {
+          file,
+          fileType: file.type,
+          isImage: file.type.startsWith('image/'),
+          isVideo: file.type.startsWith('video/'),
+          url: URL.createObjectURL(file),
+        },
+        id: uuidv4(),
+        isEditing: false,
+        type: BLOCK_TYPES.MEDIA,
+      }))
+      setBlocks((prev) => [...prev, ...mediaBlocks])
     },
     [MAX_FILE_SIZE]
-  );
+  )
 
   const moveBlockDown = useCallback(
     (index) => {
-      if (index === blocks.length - 1) return;
+      if (index === blocks.length - 1) return
       setBlocks((prev) => {
-        const updated = [...prev];
-        [updated[index + 1], updated[index]] = [updated[index], updated[index + 1]];
-        return updated;
-      });
+        const updated = [...prev]
+        ;[updated[index + 1], updated[index]] = [updated[index], updated[index + 1]]
+        return updated
+      })
     },
     [blocks.length]
-  );
+  )
 
   const moveBlockUp = useCallback((index) => {
-    if (index === 0) return;
+    if (index === 0) return
     setBlocks((prev) => {
-      const updated = [...prev];
-      [updated[index - 1], updated[index]] = [updated[index], updated[index - 1]];
-      return updated;
-    });
-  }, []);
+      const updated = [...prev]
+      ;[updated[index - 1], updated[index]] = [updated[index], updated[index - 1]]
+      return updated
+    })
+  }, [])
 
   const removeBlock = useCallback((blockId) => {
-    setBlocks((prev) => prev.filter((block) => block.id !== blockId));
+    setBlocks((prev) => prev.filter((block) => block.id !== blockId))
     if (iframeRefs.current[blockId]) {
-      delete iframeRefs.current[blockId];
+      delete iframeRefs.current[blockId]
     }
-  }, []);
+  }, [])
 
   const updateBlock = useCallback((updatedBlock) => {
-    setBlocks((prev) => prev.map((b) => (b.id === updatedBlock.id ? updatedBlock : b)));
-  }, []);
+    setBlocks((prev) => prev.map((b) => (b.id === updatedBlock.id ? updatedBlock : b)))
+  }, [])
 
-  const onDragEnd = useCallback(
-    (result) => {
-      const { destination, source } = result;
-      if (!destination) return;
-      if (destination.index === source.index) return;
-      setBlocks((prev) => reorder(prev, source.index, destination.index));
-    },
-    []
-  );
+  const onDragEnd = useCallback((result) => {
+    const { destination, source } = result
+    if (!destination) return
+    if (destination.index === source.index) return
+    setBlocks((prev) => reorder(prev, source.index, destination.index))
+  }, [])
 
   const handleGenerateCodeBlock = useCallback(
     async (block) => {
       try {
-        const prompt = block.data._tempAiPrompt || '';
+        const prompt = block.data._tempAiPrompt || ''
         if (!prompt.trim()) {
-          setFormErrorMessage('Prompt cannot be empty.');
-          return;
+          setFormErrorMessage('Prompt cannot be empty.')
+          return
         }
-        setIsLoadingAI(true);
-        setFormErrorMessage('');
+        updateBlock({ ...block, data: { ...block.data, isBlockLoading: true } })
+        setFormErrorMessage('')
         const response = await axios.post('/api/generate_content', {
           currentCode: block.data.code,
           parentCode: isEdit && post ? post.content : null,
           request: prompt,
-        });
+        })
         if (response.data && response.status === 201) {
-          const { generatedContent } = response.data;
+          const { generatedContent } = response.data
           updateBlock({
             ...block,
-            data: { ...block.data, code: generatedContent },
+            data: { ...block.data, code: generatedContent, isBlockLoading: false },
             isEditing: false,
-          });
+          })
         } else {
-          setFormErrorMessage('Creation error.');
+          updateBlock({ ...block, data: { ...block.data, isBlockLoading: false } })
+          setFormErrorMessage('Creation error.')
         }
       } catch {
-        setFormErrorMessage('Error creating content.');
-      } finally {
-        setIsLoadingAI(false);
+        updateBlock({ ...block, data: { ...block.data, isBlockLoading: false } })
+        setFormErrorMessage('Error creating content.')
       }
     },
     [isEdit, post, updateBlock]
-  );
+  )
 
-  const compileFinalHTML = useCallback(
-    (allBlocks) => {
-      let finalHTML = '';
-      allBlocks.forEach((block) => {
-        if (block.type === BLOCK_TYPES.TEXT) {
-          finalHTML += `<div class="content-block text-block" data-blockid="${block.id}">${block.data.html || ''}</div>`;
-        } else if (block.type === BLOCK_TYPES.CODE) {
-          const escapedCode = escapeHtml(block.data.code);
-          finalHTML += `<div class="content-block code-block" data-blockid="${block.id}" data-code="${escapedCode}"></div>`;
-        } else if (block.type === BLOCK_TYPES.MEDIA) {
-          if (block.data.isImage) {
-            finalHTML += `<div class="content-block media-block" data-blockid="${block.id}"><img src="${block.data.url}" alt="Uploaded image" style="max-width:100%;height:auto;" /></div>`;
-          } else if (block.data.isVideo) {
-            finalHTML += `<div class="content-block media-block" data-blockid="${block.id}"><video controls style="max-width:100%;height:auto;"><source src="${block.data.url}" type="${block.data.fileType}" /></video></div>`;
-          } else {
-            finalHTML += `<div class="content-block media-block" data-blockid="${block.id}">Unsupported</div>`;
-          }
+  const compileFinalHTML = useCallback((allBlocks) => {
+    let finalHTML = ''
+    allBlocks.forEach((block) => {
+      if (block.type === BLOCK_TYPES.TEXT) {
+        finalHTML += `<div class="content-block text-block" data-blockid="${block.id}">${block.data.html || ''}</div>`
+      } else if (block.type === BLOCK_TYPES.CODE) {
+        const escapedCode = escapeHtml(block.data.code)
+        finalHTML += `<div class="content-block code-block" data-blockid="${block.id}" data-code="${escapedCode}"></div>`
+      } else if (block.type === BLOCK_TYPES.MEDIA) {
+        if (block.data.isImage) {
+          finalHTML += `<div class="content-block media-block" data-blockid="${block.id}"><img src="${block.data.url}" alt="Uploaded image" style="max-width:100%;height:auto;" /></div>`
+        } else if (block.data.isVideo) {
+          finalHTML += `<div class="content-block media-block" data-blockid="${block.id}"><video controls style="max-width:100%;height:auto;"><source src="${block.data.url}" type="${block.data.fileType}" /></video></div>`
+        } else {
+          finalHTML += `<div class="content-block media-block" data-blockid="${block.id}">Unsupported</div>`
         }
-      });
-      return finalHTML;
-    },
-    []
-  );
+      }
+    })
+    return finalHTML
+  }, [])
 
   const handleGenerateFullContent = useCallback(async () => {
     try {
-      const prompt = globalAiPrompt.trim();
+      const prompt = globalAiPrompt.trim()
       if (!prompt) {
-        setFormErrorMessage('Prompt cannot be empty.');
-        return;
+        setFormErrorMessage('Prompt cannot be empty.')
+        return
       }
-      setIsLoadingAI(true);
-      setFormErrorMessage('');
-      const fullHTML = compileFinalHTML(blocks);
+      setIsGlobalLoading(true)
+      setFormErrorMessage('')
+      const fullHTML = compileFinalHTML(blocks)
       const response = await axios.post('/api/generate_content', {
         currentCode: fullHTML,
         parentCode: isEdit && post ? post.content : null,
         request: prompt,
-      });
+      })
       if (response.data && response.status === 201) {
-        const { generatedContent } = response.data;
-        const newBlocks = parseContentBlocks(generatedContent || '');
-        setBlocks(newBlocks.length ? newBlocks : blocks);
+        const { generatedContent } = response.data
+        const newBlocks = parseContentBlocks(generatedContent || '')
+        setBlocks(newBlocks.length ? newBlocks : blocks)
       } else {
-        setFormErrorMessage('Creation error.');
+        setFormErrorMessage('Creation error.')
       }
     } catch {
-      setFormErrorMessage('Error creating content.');
+      setFormErrorMessage('Error creating content.')
     } finally {
-      setIsLoadingAI(false);
+      setIsGlobalLoading(false)
     }
-  }, [blocks, compileFinalHTML, globalAiPrompt, isEdit, post]);
+  }, [blocks, compileFinalHTML, globalAiPrompt, isEdit, post])
 
   const handleSubmit = useCallback(
     async (e) => {
-      e.preventDefault();
+      e.preventDefault()
       if (!blocks.length) {
-        setFormErrorMessage('At least one block is required.');
-        return;
+        setFormErrorMessage('At least one block is required.')
+        return
       }
-      const finalHTML = compileFinalHTML(blocks);
+      const finalHTML = compileFinalHTML(blocks)
       try {
-        setFormErrorMessage('');
-        const formData = new FormData();
-        let postId;
+        setFormErrorMessage('')
+        const formData = new FormData()
+        let postId
         if (!isEdit) {
-          postId = uuidv4(); //Not editing means new post is being made
-          formData.append('post_id', postId);
+          postId = uuidv4()
+          formData.append('post_id', postId)
         } else {
-          postId = post.post_id; //When editing post or reply, redirect is always to parent post
+          postId = post.post_id
         }
-        formData.append('content', finalHTML);
+        formData.append('content', finalHTML)
         if (isReply && post) {
-          formData.append('parent_id', post.post_id);
+          formData.append('parent_id', post.post_id)
         }
         if (!isReply) {
-          formData.append('title', title);
+          formData.append('title', title)
         }
         blocks
           .filter((b) => b.type === BLOCK_TYPES.MEDIA && b.data.file)
           .forEach((mediaBlock) => {
-            formData.append('files', mediaBlock.data.file);
-          });
-        await onSubmit(formData);
-        setTitle('');
-        setBlocks([]);
-        setGlobalAiPrompt('');
-        setShowForm(false);
-        navigate(`/${urlPrefix}/${feed_name}/${channel_name}/${isReply ? post.post_id : postId}`); //Since post is given only for replies
+            formData.append('files', mediaBlock.data.file)
+          })
+        await onSubmit(formData)
+        setTitle('')
+        setBlocks([])
+        setGlobalAiPrompt('')
+        setShowForm(false)
+        navigate(`/${urlPrefix}/${feed_name}/${channel_name}/${isReply ? post.post_id : postId}`)
       } catch {
-        setFormErrorMessage('Error submitting the form.');
+        setFormErrorMessage('Error submitting the form.')
       }
     },
     [blocks, compileFinalHTML, isEdit, isReply, onSubmit, post, title]
-  );
+  )
 
   return (
-    <div className="create-post-container" style={{ paddingTop: `${isReply ? '0px' : '20px'}` }}>
+    <div className="create-post-container" style={{ paddingTop: isReply ? '0px' : '20px' }}>
       {isReply && <p className="text24">Reply</p>}
       {isReply && post && (
         <div className="post-reply-preview">
           <ContentWidget
-            canRemove={false} 
+            canRemove={false}
             feed={feed}
             isGroup={isGroup}
-            onEditClick={() => {}} 
-            onPostRemoved={() => {}} 
-            onReplyClick={() => {}} 
+            onEditClick={() => {}}
+            onPostRemoved={() => {}}
+            onReplyClick={() => {}}
             post={post}
-            readOnly={true} 
+            readOnly
           />
         </div>
       )}
@@ -433,226 +439,258 @@ const ContentForm = ({ feed, isEdit = false, isGroup, isReply, onSubmit, post = 
           />
         </div>
         {formErrorMessage && <div className="error-message">{formErrorMessage}</div>}
-        <div className="main-content">
-          <div className="shared-container">
+        <div className="global-ai-prompt-container">
+          <textarea
+            className="ai-prompt"
+            onChange={(e) => setGlobalAiPrompt(e.target.value)}
+            placeholder="Describe changes for entire post..."
+            value={globalAiPrompt}
+          />
+          <button
+            className={isGlobalLoading ? 'button generate disabled' : 'button generate'}
+            disabled={isGlobalLoading}
+            onClick={handleGenerateFullContent}
+            type="button"
+          >
+            {isGlobalLoading ? 'Creating...' : 'Create'}
+          </button>
+          <button
+            className="button generate"
+            onClick={() => setEditMode(!editMode)}
+            style={{ marginLeft: 'auto' }}
+            type="button"
+          >
+            {editMode ? 'Preview' : 'Edit'}
+          </button>
+        </div>
+        <div className="single-container" style={{ marginTop: '20px' }}>
+          {editMode ? (
             <DragDropContext onDragEnd={onDragEnd}>
               <Droppable droppableId="blocks-droppable">
                 {(provided) => (
-                  <div className="blocks-container" ref={provided.innerRef} {...provided.droppableProps}>
-                    {blocks.length === 0 ? (
-                      <p className="text24">Add content using the buttons above</p>
-                    ) : (
-                      blocks.map((block, index) => {
-                        const { data, id, isEditing, type } = block;
-                        const toggleEdit = () => {
-                          updateBlock({ ...block, isEditing: !isEditing });
-                        };
-                        return (
-                          <Draggable key={id} draggableId={id} index={index}>
-                            {(provided2) => (
-                              <div
-                                className="block"
-                                ref={provided2.innerRef}
-                                {...provided2.draggableProps}
-                                {...provided2.dragHandleProps}
-                              >
-                                <div className="block-controls">
-                                  <button className="control-button" onClick={() => moveBlockUp(index)} type="button">
-                                    ↑
-                                  </button>
-                                  <button className="control-button" onClick={() => moveBlockDown(index)} type="button">
-                                    ↓
-                                  </button>
+                  <div ref={provided.innerRef} {...provided.droppableProps}>
+                    {!blocks.length && <p className="text24">Add content using the buttons above</p>}
+                    {blocks.map((block, index) => {
+                      const { data, id, isEditing, type } = block
+                      const toggleEdit = () => updateBlock({ ...block, isEditing: !isEditing })
+                      return (
+                        <Draggable key={id} draggableId={id} index={index}>
+                          {(provided2) => (
+                            <div
+                              className="block"
+                              ref={provided2.innerRef}
+                              style={{ marginBottom: '20px' }}
+                              {...provided2.draggableProps}
+                              {...provided2.dragHandleProps}
+                            >
+                              <div className="block-controls">
+                                {type === BLOCK_TYPES.CODE && isEditing && (
                                   <button
-                                    className="control-button remove-button"
-                                    onClick={() => removeBlock(id)}
+                                    className="dark-button"
+                                    onClick={() =>
+                                      updateBlock({ ...block, data: { ...data, showPrompt: !data.showPrompt } })
+                                    }
                                     type="button"
                                   >
-                                    ✕
+                                    {data.showPrompt ? 'Direct input' : 'Prompt'}
                                   </button>
-                                  {type !== BLOCK_TYPES.MEDIA && (
-                                    <button className="control-button edit-button" onClick={toggleEdit} type="button">
-                                      {isEditing ? '🔒' : '✎'}
-                                    </button>
+                                )}
+                                <button
+                                  className="control-button"
+                                  onClick={() => moveBlockUp(index)}
+                                  type="button"
+                                >
+                                  ↑
+                                </button>
+                                <button
+                                  className="control-button"
+                                  onClick={() => moveBlockDown(index)}
+                                  type="button"
+                                >
+                                  ↓
+                                </button>
+                                <button
+                                  className="control-button remove-button"
+                                  onClick={() => removeBlock(id)}
+                                  type="button"
+                                >
+                                  ✕
+                                </button>
+                                {type !== BLOCK_TYPES.MEDIA && (
+                                  <button
+                                    className="control-button edit-button"
+                                    onClick={toggleEdit}
+                                    type="button"
+                                  >
+                                    {isEditing ? '🔒' : '✎'}
+                                  </button>
+                                )}
+                              </div>
+                              {type === BLOCK_TYPES.TEXT && (
+                                <div className="block-content">
+                                  {isEditing ? (
+                                    <ReactQuill
+                                      className="text-editor"
+                                      onChange={(val) => updateBlock({ ...block, data: { ...data, html: val } })}
+                                      theme="snow"
+                                      value={data.html}
+                                    />
+                                  ) : (
+                                    <div
+                                      className="text-preview"
+                                      dangerouslySetInnerHTML={{ __html: data.html }}
+                                    />
                                   )}
                                 </div>
+                              )}
+                              {type === BLOCK_TYPES.CODE && (
                                 <div className="block-content">
-                                  {type === BLOCK_TYPES.TEXT &&
-                                    (isEditing ? (
-                                      <ReactQuill
-                                        className="text-editor"
-                                        onChange={(val) =>
-                                          updateBlock({
-                                            ...block,
-                                            data: { ...data, html: val },
-                                          })
-                                        }
-                                        theme="snow"
-                                        value={data.html}
-                                      />
-                                    ) : (
-                                      <div className="text-preview" dangerouslySetInnerHTML={{ __html: data.html }} />
-                                    ))}
-                                  {type === BLOCK_TYPES.CODE &&
-                                    (isEditing ? (
-                                      <div className="code-editor-container">
+                                  {isEditing && (
+                                    <>
+                                      {data.showPrompt ? (
                                         <div className="ai-generator">
                                           <textarea
                                             className="ai-prompt"
                                             onChange={(e) =>
-                                              updateBlock({
-                                                ...block,
-                                                data: { ...data, _tempAiPrompt: e.target.value },
-                                              })
+                                              updateBlock({ ...block, data: { ...data, _tempAiPrompt: e.target.value } })
                                             }
                                             placeholder="Describe your content..."
                                           />
                                           <button
                                             className={
-                                              isLoadingAI ? 'dark-button generate disabled' : 'dark-button generate'
+                                              data.isBlockLoading
+                                                ? 'dark-button generate disabled'
+                                                : 'dark-button generate'
                                             }
-                                            disabled={isLoadingAI}
+                                            disabled={data.isBlockLoading}
                                             onClick={() => handleGenerateCodeBlock(block)}
                                             type="button"
                                           >
-                                            {isLoadingAI ? 'Creating...' : 'Create'}
+                                            {data.isBlockLoading ? 'Creating...' : 'Create'}
                                           </button>
                                         </div>
+                                      ) : (
                                         <textarea
                                           className="code-input"
                                           onChange={(e) =>
-                                            updateBlock({
-                                              ...block,
-                                              data: { ...data, code: e.target.value },
-                                            })
+                                            updateBlock({ ...block, data: { ...data, code: e.target.value } })
                                           }
                                           value={data.code}
                                         />
-                                      </div>
-                                    ) : (
-                                      <iframe
-                                        ref={(el) => {
-                                          iframeRefs.current[id] = el;
-                                        }}
-                                        sandbox="allow-scripts allow-same-origin"
-                                        srcDoc={
-                                          `<!DOCTYPE html>
-                                          <html>
-                                            <head>
-                                              <style>
-                                                body { margin:0; padding:0; }
-                                              </style>
-                                            </head>
-                                            <body>
-                                              ${data.code}
-                                              <script>
-                                                function sendHeight() {
-                                                  const height = document.body.scrollHeight;
-                                                  parent.postMessage({ blockId: '${id}', height }, '*');
-                                                }
-                                                window.addEventListener('load', sendHeight);
-                                                window.addEventListener('resize', sendHeight);
-                                                const obs = new MutationObserver(sendHeight);
-                                                obs.observe(document.body, { childList: true, subtree: true, characterData: true });
-                                              </script>
-                                            </body>
-                                          </html>`
-                                        }
-                                        style={{ border: 'none', width: '100%', height: '0px' }}
-                                        title={`code-preview-${id}`}
-                                      />
-                                    ))}
-                                  {type === BLOCK_TYPES.MEDIA && (
-                                    <div className="media-preview">
-                                      {data.isImage ? (
-                                        <img alt="Uploaded Media" src={data.url} />
-                                      ) : data.isVideo ? (
-                                        <video controls src={data.url} />
-                                      ) : (
-                                        <p>Unsupported</p>
                                       )}
-                                    </div>
+                                    </>
+                                  )}
+                                  <div className="code-preview">
+                                    <iframe
+                                      ref={(el) => {
+                                        iframeRefs.current[id] = el
+                                      }}
+                                      sandbox="allow-scripts allow-same-origin"
+                                      srcDoc={`<!DOCTYPE html>
+                                        <html>
+                                        <head>
+                                        <style>
+                                        html,body { margin:0; padding:0; height:auto !important; }
+                                        </style>
+                                        </head>
+                                        <body>
+                                        ${data.code}
+                                        <script>
+                                        function sendHeight() {
+                                          const newHeight = document.body.scrollHeight
+                                          if (newHeight > 0) {
+                                            parent.postMessage({ blockId: '${id}', height: newHeight }, '*')
+                                          }
+                                        }
+                                        window.addEventListener('load', sendHeight)
+                                        const obs = new MutationObserver(sendHeight)
+                                        obs.observe(document.body, { childList: true, subtree: true, characterData: true })
+                                        </script>
+                                        </body>
+                                        </html>`}
+                                      style={{ border: 'none', width: '100%', height: '0px' }}
+                                      title={`code-preview-${id}`}
+                                    />
+                                  </div>
+                                </div>
+                              )}
+                              {type === BLOCK_TYPES.MEDIA && (
+                                <div className="media-preview">
+                                  {data.isImage ? (
+                                    <img alt="Uploaded Media" src={data.url} />
+                                  ) : data.isVideo ? (
+                                    <video controls src={data.url} />
+                                  ) : (
+                                    <p>Unsupported</p>
                                   )}
                                 </div>
-                              </div>
-                            )}
-                          </Draggable>
-                        );
-                      })
-                    )}
+                              )}
+                            </div>
+                          )}
+                        </Draggable>
+                      )
+                    })}
                     {provided.placeholder}
                   </div>
                 )}
               </Droppable>
             </DragDropContext>
-          </div>
-          <div className="preview-prompt-container">
-            <div className="global-ai-prompt-container">
-              <textarea
-                className="ai-prompt"
-                onChange={(e) => setGlobalAiPrompt(e.target.value)}
-                placeholder="Describe changes for entire post..."
-                value={globalAiPrompt}
-              />
-              <button
-                className={isLoadingAI ? 'button generate disabled' : 'button generate'}
-                disabled={isLoadingAI}
-                onClick={handleGenerateFullContent}
-                type="button"
-              >
-                {isLoadingAI ? 'Creating...' : 'Create'}
-              </button>
-            </div>
+          ) : (
             <div className="live-preview-container">
               <p className="text24" style={{ marginLeft: 0, marginTop: 0 }}>
                 Preview
               </p>
               {blocks.map((block, i) => {
                 if (block.type === BLOCK_TYPES.TEXT) {
-                  return <div dangerouslySetInnerHTML={{ __html: block.data.html }} key={i} />;
-                } else if (block.type === BLOCK_TYPES.CODE) {
+                  return <div key={i} dangerouslySetInnerHTML={{ __html: block.data.html }} />
+                }
+                if (block.type === BLOCK_TYPES.CODE) {
                   return (
                     <div key={i}>
                       <iframe
                         ref={(el) => {
-                          iframeRefs.current[block.id] = el;
+                          iframeRefs.current[block.id] = el
                         }}
                         sandbox="allow-scripts allow-same-origin"
-                        srcDoc={
-                          `<!DOCTYPE html>
+                        srcDoc={`<!DOCTYPE html>
                           <html>
-                            <head>
-                              <style>
-                                body { margin:0; padding: 10px; }
-                              </style>
-                            </head>
-                            <body>
-                              ${block.data.code}
-                              <script>
-                                function sendHeight() {
-                                  const height = document.body.scrollHeight;
-                                  parent.postMessage({ blockId: '${block.id}', height }, '*');
-                                }
-                                window.addEventListener('load', sendHeight);
-                                window.addEventListener('resize', sendHeight);
-                                const obs = new MutationObserver(sendHeight);
-                                obs.observe(document.body, { childList: true, subtree: true, characterData: true });
-                              </script>
-                            </body>
-                          </html>`
-                        }
+                          <head>
+                          <style>
+                          html,body { margin:0; padding:10px; height:auto !important; }
+                          </style>
+                          </head>
+                          <body>
+                          ${block.data.code}
+                          <script>
+                          function sendHeight() {
+                            const newHeight = document.body.scrollHeight
+                            if (newHeight > 0) {
+                              parent.postMessage({ blockId: '${block.id}', height: newHeight }, '*')
+                            }
+                          }
+                          window.addEventListener('load', sendHeight)
+                          const obs = new MutationObserver(sendHeight)
+                          obs.observe(document.body, { childList: true, subtree: true, characterData: true })
+                          </script>
+                          </body>
+                          </html>`}
                         style={{ border: 'none', width: '100%', height: '0px' }}
                         title={`live-preview-${i}`}
                       />
                     </div>
-                  );
-                } else if (block.type === BLOCK_TYPES.MEDIA) {
+                  )
+                }
+                if (block.type === BLOCK_TYPES.MEDIA) {
                   if (block.data.isImage) {
                     return (
                       <div key={i}>
-                        <img alt="Uploaded Media" src={block.data.url} style={{ maxWidth: '100%', height: 'auto' }} />
+                        <img
+                          alt="Uploaded Media"
+                          src={block.data.url}
+                          style={{ maxWidth: '100%', height: 'auto' }}
+                        />
                       </div>
-                    );
+                    )
                   } else if (block.data.isVideo) {
                     return (
                       <div key={i}>
@@ -660,32 +698,28 @@ const ContentForm = ({ feed, isEdit = false, isGroup, isReply, onSubmit, post = 
                           <source src={block.data.url} type={block.data.fileType} />
                         </video>
                       </div>
-                    );
+                    )
                   }
-                  return <p key={i}>Unsupported</p>;
+                  return <p key={i}>Unsupported</p>
                 }
-                return null;
+                return null
               })}
             </div>
-          </div>
+          )}
         </div>
       </form>
     </div>
-  );
-};
+  )
+}
 
 ContentForm.propTypes = {
+  feed: PropTypes.object,
   isEdit: PropTypes.bool,
+  isGroup: PropTypes.bool,
   isReply: PropTypes.bool,
   onSubmit: PropTypes.func.isRequired,
   post: PropTypes.object,
   setShowForm: PropTypes.func.isRequired,
-};
+}
 
-export default ContentForm;
-
-
-
-
-
-
+export default ContentForm
