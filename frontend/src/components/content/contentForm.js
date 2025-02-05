@@ -14,6 +14,14 @@ const BLOCK_TYPES = {
   TEXT: 'TEXT',
 }
 
+const escapeHtml = (html) =>
+  html
+    .replace(/&/g, '&amp;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+
 const parseContentBlocks = (htmlString) => {
   const parser = new DOMParser()
   const doc = parser.parseFromString(htmlString, 'text/html')
@@ -94,14 +102,6 @@ const reorder = (list, startIndex, endIndex) => {
   return result
 }
 
-const escapeHtml = (html) =>
-  html
-    .replace(/&/g, '&amp;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-
 const ContentForm = ({
   feed,
   isEdit = false,
@@ -123,6 +123,23 @@ const ContentForm = ({
   const urlPrefix = isGroup ? 'g' : 'u'
   const MAX_FILE_SIZE = 10 * 1024 * 1024
 
+  const isContentEmpty = useCallback(
+    (blocksArray) =>
+      !blocksArray.some((block) => {
+        if (block.type === BLOCK_TYPES.TEXT) {
+          return block.data.html && block.data.html.trim() !== ''
+        }
+        if (block.type === BLOCK_TYPES.CODE) {
+          return block.data.code && block.data.code.trim() !== ''
+        }
+        if (block.type === BLOCK_TYPES.MEDIA) {
+          return block.data.url && block.data.url.trim() !== ''
+        }
+        return false
+      }),
+    []
+  )
+
   useEffect(() => {
     if (isEdit && post) {
       setTitle(post.title || '')
@@ -130,24 +147,28 @@ const ContentForm = ({
       if (existingBlocks.length) {
         setBlocks(existingBlocks)
       } else {
-        setBlocks([{
-          data: { html: post.content },
-          id: uuidv4(),
-          isEditing: true,
-          type: BLOCK_TYPES.TEXT,
-        }])
+        setBlocks([
+          {
+            data: { html: post.content },
+            id: uuidv4(),
+            isEditing: true,
+            type: BLOCK_TYPES.TEXT,
+          },
+        ])
       }
     }
   }, [isEdit, post])
 
   useEffect(() => {
     if (!isEdit) {
-      setBlocks([{
-        data: { html: '' },
-        id: uuidv4(),
-        isEditing: true,
-        type: BLOCK_TYPES.TEXT,
-      }])
+      setBlocks([
+        {
+          data: { html: '' },
+          id: uuidv4(),
+          isEditing: true,
+          type: BLOCK_TYPES.TEXT,
+        },
+      ])
     }
   }, [isEdit])
 
@@ -258,6 +279,29 @@ const ContentForm = ({
     setBlocks((prev) => reorder(prev, source.index, destination.index))
   }, [])
 
+  const compileFinalHTML = useCallback((allBlocks) => {
+    let finalHTML = ''
+    allBlocks.forEach((block) => {
+      if (block.type === BLOCK_TYPES.TEXT) {
+        finalHTML += `<div class="content-block text-block" data-blockid="${block.id}">${
+          block.data.html || ''
+        }</div>`
+      } else if (block.type === BLOCK_TYPES.CODE) {
+        const escapedCode = escapeHtml(block.data.code)
+        finalHTML += `<div class="content-block code-block" data-blockid="${block.id}" data-code="${escapedCode}"></div>`
+      } else if (block.type === BLOCK_TYPES.MEDIA) {
+        if (block.data.isImage) {
+          finalHTML += `<div class="content-block media-block" data-blockid="${block.id}"><img src="${block.data.url}" alt="Uploaded image" style="max-width:100%;height:auto;" /></div>`
+        } else if (block.data.isVideo) {
+          finalHTML += `<div class="content-block media-block" data-blockid="${block.id}"><video controls style="max-width:100%;height:auto;"><source src="${block.data.url}" type="${block.data.fileType}" /></video></div>`
+        } else {
+          finalHTML += `<div class="content-block media-block" data-blockid="${block.id}">Unsupported</div>`
+        }
+      }
+    })
+    return finalHTML
+  }, [])
+
   const handleGenerateCodeBlock = useCallback(
     async (block) => {
       try {
@@ -270,9 +314,9 @@ const ContentForm = ({
         setFormErrorMessage('')
         const response = await axios.post('/api/generate_content', {
           currentCode: block.data.code,
-          parentCode: isEdit && post ? post.content : null,
+          parentCode: post ? post.content : null,
           request: prompt,
-        })
+        });
         if (response.data && response.status === 201) {
           const { generatedContent } = response.data
           updateBlock({
@@ -292,27 +336,6 @@ const ContentForm = ({
     [isEdit, post, updateBlock]
   )
 
-  const compileFinalHTML = useCallback((allBlocks) => {
-    let finalHTML = ''
-    allBlocks.forEach((block) => {
-      if (block.type === BLOCK_TYPES.TEXT) {
-        finalHTML += `<div class="content-block text-block" data-blockid="${block.id}">${block.data.html || ''}</div>`
-      } else if (block.type === BLOCK_TYPES.CODE) {
-        const escapedCode = escapeHtml(block.data.code)
-        finalHTML += `<div class="content-block code-block" data-blockid="${block.id}" data-code="${escapedCode}"></div>`
-      } else if (block.type === BLOCK_TYPES.MEDIA) {
-        if (block.data.isImage) {
-          finalHTML += `<div class="content-block media-block" data-blockid="${block.id}"><img src="${block.data.url}" alt="Uploaded image" style="max-width:100%;height:auto;" /></div>`
-        } else if (block.data.isVideo) {
-          finalHTML += `<div class="content-block media-block" data-blockid="${block.id}"><video controls style="max-width:100%;height:auto;"><source src="${block.data.url}" type="${block.data.fileType}" /></video></div>`
-        } else {
-          finalHTML += `<div class="content-block media-block" data-blockid="${block.id}">Unsupported</div>`
-        }
-      }
-    })
-    return finalHTML
-  }, [])
-
   const handleGenerateFullContent = useCallback(async () => {
     try {
       const prompt = globalAiPrompt.trim()
@@ -325,13 +348,21 @@ const ContentForm = ({
       const fullHTML = compileFinalHTML(blocks)
       const response = await axios.post('/api/generate_content', {
         currentCode: fullHTML,
-        parentCode: isEdit && post ? post.content : null,
+        parentCode: post ? post.content : null,
         request: prompt,
       })
       if (response.data && response.status === 201) {
         const { generatedContent } = response.data
-        const newBlocks = parseContentBlocks(generatedContent || '')
-        setBlocks(newBlocks.length ? newBlocks : blocks)
+        console.log("generatedContent:", generatedContent)
+        setBlocks([
+          {
+            data: { code: generatedContent, isBlockLoading: false, showPrompt: true },
+            id: uuidv4(),
+            isEditing: false,
+            type: BLOCK_TYPES.CODE,
+          },
+        ])
+        console.log("blocks:", blocks)
       } else {
         setFormErrorMessage('Creation error.')
       }
@@ -345,8 +376,8 @@ const ContentForm = ({
   const handleSubmit = useCallback(
     async (e) => {
       e.preventDefault()
-      if (!blocks.length) {
-        setFormErrorMessage('At least one block is required.')
+      if (isContentEmpty(blocks)) {
+        setFormErrorMessage('Post cannot be empty.')
         return
       }
       const finalHTML = compileFinalHTML(blocks)
@@ -382,7 +413,7 @@ const ContentForm = ({
         setFormErrorMessage('Error submitting the form.')
       }
     },
-    [blocks, compileFinalHTML, isEdit, isReply, onSubmit, post, title]
+    [blocks, compileFinalHTML, isContentEmpty, isEdit, isReply, navigate, onSubmit, post, title, channel_name, feed_name, setShowForm, urlPrefix]
   )
 
   return (
@@ -722,4 +753,4 @@ ContentForm.propTypes = {
   setShowForm: PropTypes.func.isRequired,
 }
 
-export default ContentForm
+export default ContentForm;

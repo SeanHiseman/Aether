@@ -140,9 +140,9 @@ router.post('/generate_content', authenticateCheck, async (req, res) => {
                 content: request
             }
         );
-        const assistantInstructions = parentCode ? `Request and current code are for a reply to parent code. Answer with new or improved html code, containing JavaScript if necessary. Nothing else. Do not set body background colors, container borders, or text alignments. Overflow hidden in body. White text default. If cannot be made into code, no response. Current code: ${currentCode}, parent code: ${parentCode}` 
-        : `Answer with new or improved html code, containing JavaScript if necessary. Nothing else. Do not set body background colors, container borders, or text alignments. Overflow hidden in body. White text default. If cannot be made into code, no response. Current code: ${currentCode}`;
-        //console.log("assistantInstructions:", assistantInstructions);
+        const assistantInstructions = parentCode ? `Request and current code are for a reply to parent code. Answer with new or improved html code, containing JavaScript if necessary. Nothing else. Do not set body background colors, container borders, or text alignments. Do not use vh. Overflow hidden in body. White text default. If cannot be made into code, no response. Current code: ${currentCode}, parent code: ${parentCode}` 
+        : `Answer with new or improved html code, containing JavaScript if necessary. Nothing else. Do not set body background colors, container borders, or text alignments. Do not use vh. Overflow hidden in body. White text default. If cannot be made into code, no response. Current code: ${currentCode}`;
+        console.log("assistantInstructions:", assistantInstructions);
         //Run OpenAI assistant
         const run = await openai.beta.threads.runs.create(
             thread.id,

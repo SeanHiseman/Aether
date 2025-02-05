@@ -27,7 +27,7 @@
 }
 .button.generate.disabled, .dark-button.generate.disabled {
   background-color: var(--secondary);
-  cursor: not-allowed;
+  cursor: default;
 }
 .ai-prompt {
   background-color: var(--darkest);
