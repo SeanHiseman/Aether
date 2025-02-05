@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { FaArrowDown, FaArrowUp, FaChevronDown, FaChevronUp, FaComments, FaEdit, FaReply, FaTimesCircle } from 'react-icons/fa';
+import { FaArrowDown, FaArrowUp, FaChevronDown, FaChevronUp, FaComments, FaCommentSlash, FaEdit, FaReply, FaTimesCircle } from 'react-icons/fa';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import React, { useCallback, useContext, useEffect, useState } from 'react';
 import { AuthContext } from '../authContext';
@@ -65,7 +65,7 @@ const ContentWidget = ({ canRemove, feed, isGroup, onEditClick, onPostRemoved, o
       setDownvoteLimit(false);
       setUpvoteLimit(false);
       const response = await axios.post('/api/content_vote', {
-        contentId: postId,
+        postId: postId,
         feedId: feed.feed_id,
         voteType,
       });
@@ -118,7 +118,7 @@ const ContentWidget = ({ canRemove, feed, isGroup, onEditClick, onPostRemoved, o
     const checkVoteLimit = async () => {
       try {
         const response = await axios.post('/api/content_vote', {
-          contentId: post.post_id,
+          postId: post.post_id,
           feedId: viewer.feed_id,
           voteType: 'check_vote',
         });
@@ -219,7 +219,7 @@ const ContentWidget = ({ canRemove, feed, isGroup, onEditClick, onPostRemoved, o
         {!readOnly && (
           <>
             <button className="large-icon" data-content-id={post.post_id} onClick={toggleReplies} title={showReplies ? "Close Replies" : "Show Replies"}>
-              <FaComments />
+              {showReplies ? <FaCommentSlash /> : <FaComments />}
               <p className="text16" id={`reply-count-${post.post_id}`}>{post.replies}</p>
             </button>
             <button className="large-icon" onClick={() => onReplyClick(post)} disabled={readOnly} title="Reply">

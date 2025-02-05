@@ -78,11 +78,11 @@ router.get('/channel_posts', authenticateCheck, async (req, res) => {
 
 router.post('/content_vote', authenticateCheck, async (req, res) => {
     try {
-        const { contentId, feedId, voteType } = req.body;
+        const { postId, feedId, voteType } = req.body;
         //Limits upvotes and downvotes on each post to 10
         if (voteType === 'check_vote') {
             const vote = await PostVotes.findOne({
-                where: { content_id: contentId, voter_id: feedId },
+                where: { post_id: postId, voter_id: feedId },
             });
             if (!vote) { 
                 return res.json({ success: true, message: 'no limit' });
@@ -96,7 +96,7 @@ router.post('/content_vote', authenticateCheck, async (req, res) => {
             }
         } else {
             const [vote, created] = await PostVotes.findOrCreate({
-                where: { content_id: contentId, voter_id: feedId },
+                where: { post_id: postId, voter_id: feedId },
                 defaults: { vote_id: v4() }
             });
             if (vote.vote_count >= 10 && voteType === 'upvote') {
@@ -112,7 +112,7 @@ router.post('/content_vote', authenticateCheck, async (req, res) => {
             }
             await vote.save();
             //Update individual posts
-            const content = await Posts.findByPk(contentId);
+            const content = await Posts.findByPk(postId);
             if (!content) {
                 return res.status(404).json({ success: false, message: 'Content not found' });
             }
@@ -131,7 +131,7 @@ router.post('/content_vote', authenticateCheck, async (req, res) => {
         //await user.save();
         return res.status(200).json({ success: true });
     } catch (error) {
-        return res.status(404).json({ success: false });
+        return res.status(500).json({ success: false });
     }
 });
 

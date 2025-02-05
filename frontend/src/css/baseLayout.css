@@ -428,4 +428,5 @@ ul {
 }
 .vote-disabled {
     background-color: var(--dark) !important;
+    cursor: default !important;
 }
