@@ -7,7 +7,6 @@
   display: flex;
   gap: 10px;
   justify-content: center;
-  margin-bottom: 20px;
 }
 .ai-generator {
   align-items: center;
@@ -24,10 +23,6 @@
   resize: vertical;
   min-height: 40px;
   box-sizing: border-box;
-}
-.button.generate.disabled, .dark-button.generate.disabled {
-  background-color: var(--secondary);
-  cursor: default;
 }
 .ai-prompt {
   background-color: var(--darkest);
@@ -62,10 +57,6 @@
   border: none;
   height: auto;
   width: 100%;
-}
-.button.generate, .dark-button.generate {
-  margin-left: 0;
-  padding: 12px;
 }
 .code-editor-container {
   display: flex;
