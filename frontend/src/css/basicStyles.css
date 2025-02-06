@@ -37,22 +37,11 @@ body,html {
 .button.large {
     font-size: x-large;
 }
-.button.disabled, .dark-button.generate.disabled {
-    background-color: var(--dark-line);
-    color: var(--border);
-    cursor: not-allowed;
-    transition: none;
+.disabled {
+    cursor: default;
 }
-.button.disabled:hover, .dark-button.generate.disabled:hover {
-    background-color: var(--dark-line);
-}
-.dark-button-disabled {
-    border: none;
-    border-radius: 10px;
-    background-color: var(--dark-line);
-    color: var(--border);
-    margin: 5px;
-    padding: 3px 6px;
+.disabled:hover {
+    background: none;
 }
 .error-message {
     height: 16px;

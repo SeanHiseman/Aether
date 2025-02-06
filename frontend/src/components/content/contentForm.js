@@ -3,6 +3,7 @@ import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd'
 import { useNavigate, useParams } from 'react-router-dom'
 import PropTypes from 'prop-types'
 import React, { useCallback, useEffect, useRef, useState } from 'react'
+import { FaArrowDown, FaArrowUp, FaCircleNotch, FaCommentAlt, FaEdit, FaEye, FaFeatherAlt, FaFont, FaPhotoVideo, FaPlus, FaReply, FaSave, FaTerminal, FaTimes, FaToolbox, FaWindowClose } from 'react-icons/fa';
 import ReactQuill from 'react-quill'
 import 'react-quill/dist/quill.snow.css'
 import { v4 as uuidv4 } from 'uuid'
@@ -187,6 +188,40 @@ const ContentForm = ({
     return () => window.removeEventListener('message', handleIframeMessage)
   }, [handleIframeMessage])
 
+  const getIframeSrcDoc = useCallback((id, code) => {
+    const trimmedCode = code.trim()
+    const scriptToInject = `<script>
+      function sendHeight() {
+        var newHeight = document.documentElement.scrollHeight;
+        parent.postMessage({ blockId: '${id}', height: newHeight }, '*');
+      }
+      window.addEventListener('load', sendHeight);
+      var observer = new MutationObserver(sendHeight);
+      observer.observe(document.body, {childList:true, subtree:true, characterData:true});
+      sendHeight();
+      </script>`
+    let srcDoc = ''
+    if (/<html[\s>]/i.test(trimmedCode)) {
+      if (/<\/body>/i.test(trimmedCode)) {
+        srcDoc = trimmedCode.replace(/<\/body>/i, scriptToInject + '</body>')
+      } else {
+        srcDoc = trimmedCode + scriptToInject
+      }
+    } else {
+      srcDoc = `<!DOCTYPE html>
+        <html>
+        <head>
+        <style>html,body { margin:0; padding:0; }</style>
+        </head>
+        <body>
+        <div id="content">${code}</div>
+        ${scriptToInject}
+        </body>
+        </html>`
+    }
+    return srcDoc
+  }, [])
+
   const handleAddBlock = useCallback((type) => {
     const newBlock = {
       data:
@@ -194,13 +229,7 @@ const ContentForm = ({
           ? { html: '' }
           : type === BLOCK_TYPES.CODE
           ? { code: '', isBlockLoading: false, showPrompt: true }
-          : {
-              file: null,
-              fileType: '',
-              isImage: false,
-              isVideo: false,
-              url: '',
-            },
+          : { file: null, fileType: '', isImage: false, isVideo: false, url: '' },
       id: uuidv4(),
       isEditing: type !== BLOCK_TYPES.MEDIA,
       type,
@@ -281,24 +310,35 @@ const ContentForm = ({
 
   const compileFinalHTML = useCallback((allBlocks) => {
     let finalHTML = ''
-    allBlocks.forEach((block) => {
-      if (block.type === BLOCK_TYPES.TEXT) {
-        finalHTML += `<div class="content-block text-block" data-blockid="${block.id}">${
-          block.data.html || ''
-        }</div>`
-      } else if (block.type === BLOCK_TYPES.CODE) {
-        const escapedCode = escapeHtml(block.data.code)
-        finalHTML += `<div class="content-block code-block" data-blockid="${block.id}" data-code="${escapedCode}"></div>`
-      } else if (block.type === BLOCK_TYPES.MEDIA) {
-        if (block.data.isImage) {
-          finalHTML += `<div class="content-block media-block" data-blockid="${block.id}"><img src="${block.data.url}" alt="Uploaded image" style="max-width:100%;height:auto;" /></div>`
-        } else if (block.data.isVideo) {
-          finalHTML += `<div class="content-block media-block" data-blockid="${block.id}"><video controls style="max-width:100%;height:auto;"><source src="${block.data.url}" type="${block.data.fileType}" /></video></div>`
-        } else {
-          finalHTML += `<div class="content-block media-block" data-blockid="${block.id}">Unsupported</div>`
+    allBlocks
+      .filter((block) => {
+        if (block.type === BLOCK_TYPES.TEXT) {
+          return block.data.html && block.data.html.trim() !== ''
         }
-      }
-    })
+        if (block.type === BLOCK_TYPES.CODE) {
+          return block.data.code && block.data.code.trim() !== ''
+        }
+        if (block.type === BLOCK_TYPES.MEDIA) {
+          return block.data.url && block.data.url.trim() !== ''
+        }
+        return false
+      })
+      .forEach((block) => {
+        if (block.type === BLOCK_TYPES.TEXT) {
+          finalHTML += `<div class="content-block text-block" data-blockid="${block.id}">${block.data.html}</div>`
+        } else if (block.type === BLOCK_TYPES.CODE) {
+          const escapedCode = escapeHtml(block.data.code)
+          finalHTML += `<div class="content-block code-block" data-blockid="${block.id}" data-code="${escapedCode}"></div>`
+        } else if (block.type === BLOCK_TYPES.MEDIA) {
+          if (block.data.isImage) {
+            finalHTML += `<div class="content-block media-block" data-blockid="${block.id}"><img src="${block.data.url}" alt="Uploaded image" style="max-width:100%;height:auto;" /></div>`
+          } else if (block.data.isVideo) {
+            finalHTML += `<div class="content-block media-block" data-blockid="${block.id}"><video controls style="max-width:100%;height:auto;"><source src="${block.data.url}" type="${block.data.fileType}" /></video></div>`
+          } else {
+            finalHTML += `<div class="content-block media-block" data-blockid="${block.id}">Unsupported</div>`
+          }
+        }
+      })
     return finalHTML
   }, [])
 
@@ -316,7 +356,7 @@ const ContentForm = ({
           currentCode: block.data.code,
           parentCode: post ? post.content : null,
           request: prompt,
-        });
+        })
         if (response.data && response.status === 201) {
           const { generatedContent } = response.data
           updateBlock({
@@ -353,7 +393,6 @@ const ContentForm = ({
       })
       if (response.data && response.status === 201) {
         const { generatedContent } = response.data
-        console.log("generatedContent:", generatedContent)
         setBlocks([
           {
             data: { code: generatedContent, isBlockLoading: false, showPrompt: true },
@@ -362,7 +401,6 @@ const ContentForm = ({
             type: BLOCK_TYPES.CODE,
           },
         ])
-        console.log("blocks:", blocks)
       } else {
         setFormErrorMessage('Creation error.')
       }
@@ -413,7 +451,7 @@ const ContentForm = ({
         setFormErrorMessage('Error submitting the form.')
       }
     },
-    [blocks, compileFinalHTML, isContentEmpty, isEdit, isReply, navigate, onSubmit, post, title, channel_name, feed_name, setShowForm, urlPrefix]
+    [blocks, compileFinalHTML, isContentEmpty, isEdit, isReply, channel_name, feed_name, navigate, onSubmit, post, setShowForm, title, urlPrefix]
   )
 
   return (
@@ -444,33 +482,36 @@ const ContentForm = ({
             value={title}
           />
         )}
-        <div className="action-buttons">
-          <button className="button" onClick={() => setShowForm(false)} type="button">
-            Close
-          </button>
-          <button className="button" type="submit">
-            {isEdit ? 'Save Edit' : isReply ? 'Reply' : 'Post'}
-          </button>
-          <button className="button" onClick={() => handleAddBlock(BLOCK_TYPES.TEXT)} type="button">
-            + Text
-          </button>
-          <label className="button media-button" htmlFor="media-input">
-            + Media
-          </label>
-          <button className="button" onClick={() => handleAddBlock(BLOCK_TYPES.CODE)} type="button">
-            + Custom
-          </button>
-          <input
-            accept="image/*,video/*"
-            hidden
-            id="media-input"
-            multiple
-            onChange={handleFilesChange}
-            type="file"
-          />
+        <div
+          className="action-buttons"
+          style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
+        >
+          <div className="left-buttons" style={{ display: 'flex', gap: '10px' }}>
+            <button className="small-icon" onClick={() => setShowForm(false)} title="Close" type="button">
+              <FaWindowClose />
+            </button>
+            <button className="small-icon" type="submit" title={isEdit ? 'Save Edit' : isReply ? 'Reply' : 'Post'} >
+              {isEdit ? <FaSave /> : isReply ? <FaReply /> : <FaFeatherAlt />}
+            </button>
+            <button className="small-icon" onClick={() => setEditMode(!editMode)} title={editMode ? 'Preview' : 'Edit'} type="button">
+              {editMode ? <FaEye /> : <FaEdit />}
+            </button>
+          </div>
+          {editMode && (
+            <div className="right-buttons" style={{ display: 'flex', gap: '10px' }}>
+              <button className="small-icon" onClick={() => handleAddBlock(BLOCK_TYPES.TEXT)} title="Add text" type="button">
+                <FaFont />
+              </button>
+              <label className="small-icon" htmlFor="media-input" title="Add media">
+                <FaPhotoVideo />
+              </label>
+              <button className="small-icon" onClick={() => handleAddBlock(BLOCK_TYPES.CODE)} title="Add custom" type="button">
+                <FaToolbox />
+              </button>
+            </div>
+          )}
         </div>
-        {formErrorMessage && <div className="error-message">{formErrorMessage}</div>}
-        <div className="global-ai-prompt-container">
+        <div className="global-ai-prompt-container" style={{ marginTop: '10px' }}>
           <textarea
             className="ai-prompt"
             onChange={(e) => setGlobalAiPrompt(e.target.value)}
@@ -478,21 +519,15 @@ const ContentForm = ({
             value={globalAiPrompt}
           />
           <button
-            className={isGlobalLoading ? 'button generate disabled' : 'button generate'}
-            disabled={isGlobalLoading}
+            className={isGlobalLoading || !globalAiPrompt.trim() ? 'large-icon disabled' : 'large-icon'}
+            disabled={isGlobalLoading || !globalAiPrompt.trim()}
             onClick={handleGenerateFullContent}
+            title={isGlobalLoading ? 'Creating...' : !globalAiPrompt.trim() ? 'Enter a prompt' : 'Create'}
             type="button"
           >
-            {isGlobalLoading ? 'Creating...' : 'Create'}
+            {isGlobalLoading ? <FaCircleNotch /> : <FaPlus />}
           </button>
-          <button
-            className="button generate"
-            onClick={() => setEditMode(!editMode)}
-            style={{ marginLeft: 'auto' }}
-            type="button"
-          >
-            {editMode ? 'Preview' : 'Edit'}
-          </button>
+          <input accept="image/*,video/*" hidden id="media-input" multiple onChange={handleFilesChange} type="file" />
         </div>
         <div className="single-container" style={{ marginTop: '20px' }}>
           {editMode ? (
@@ -517,43 +552,26 @@ const ContentForm = ({
                               <div className="block-controls">
                                 {type === BLOCK_TYPES.CODE && isEditing && (
                                   <button
-                                    className="dark-button"
-                                    onClick={() =>
-                                      updateBlock({ ...block, data: { ...data, showPrompt: !data.showPrompt } })
-                                    }
+                                    className="small-icon"
+                                    onClick={() => updateBlock({ ...block, data: { ...data, showPrompt: !data.showPrompt } })}
+                                    title={data.showPrompt ? 'Direct input' : 'Prompt'}
                                     type="button"
                                   >
-                                    {data.showPrompt ? 'Direct input' : 'Prompt'}
+                                    {data.showPrompt ? <FaTerminal /> : <FaCommentAlt />}
                                   </button>
                                 )}
-                                <button
-                                  className="control-button"
-                                  onClick={() => moveBlockUp(index)}
-                                  type="button"
-                                >
-                                  ↑
+                                <button className="small-icon" onClick={() => moveBlockUp(index)} title="Move up" type="button">
+                                  <FaArrowUp />
                                 </button>
-                                <button
-                                  className="control-button"
-                                  onClick={() => moveBlockDown(index)}
-                                  type="button"
-                                >
-                                  ↓
+                                <button className="small-icon" onClick={() => moveBlockDown(index)} title="Move down" type="button">
+                                  <FaArrowDown />
                                 </button>
-                                <button
-                                  className="control-button remove-button"
-                                  onClick={() => removeBlock(id)}
-                                  type="button"
-                                >
-                                  ✕
+                                <button className="small-icon" onClick={() => removeBlock(id)} title="Delete" type="button">
+                                  <FaTimes />
                                 </button>
                                 {type !== BLOCK_TYPES.MEDIA && (
-                                  <button
-                                    className="control-button edit-button"
-                                    onClick={toggleEdit}
-                                    type="button"
-                                  >
-                                    {isEditing ? '🔒' : '✎'}
+                                  <button className="small-icon" onClick={toggleEdit} title={isEditing ? 'Preview' : 'Edit'} type="button">
+                                    {isEditing ? <FaEye /> : <FaEdit />}
                                   </button>
                                 )}
                               </div>
@@ -567,10 +585,7 @@ const ContentForm = ({
                                       value={data.html}
                                     />
                                   ) : (
-                                    <div
-                                      className="text-preview"
-                                      dangerouslySetInnerHTML={{ __html: data.html }}
-                                    />
+                                    <div className="text-preview" dangerouslySetInnerHTML={{ __html: data.html }} />
                                   )}
                                 </div>
                               )}
@@ -588,16 +603,13 @@ const ContentForm = ({
                                             placeholder="Describe your content..."
                                           />
                                           <button
-                                            className={
-                                              data.isBlockLoading
-                                                ? 'dark-button generate disabled'
-                                                : 'dark-button generate'
-                                            }
-                                            disabled={data.isBlockLoading}
+                                            className={data.isBlockLoading || !data._tempAiPrompt?.trim() ? 'small-icon disabled' : 'small-icon'}
+                                            disabled={data.isBlockLoading || !data._tempAiPrompt?.trim()}
                                             onClick={() => handleGenerateCodeBlock(block)}
+                                            title={data.isBlockLoading ? 'Creating...' : !data._tempAiPrompt?.trim() ? 'Enter a prompt' : 'Create'}
                                             type="button"
                                           >
-                                            {data.isBlockLoading ? 'Creating...' : 'Create'}
+                                            {data.isBlockLoading ? <FaCircleNotch /> : <FaPlus />}
                                           </button>
                                         </div>
                                       ) : (
@@ -606,6 +618,7 @@ const ContentForm = ({
                                           onChange={(e) =>
                                             updateBlock({ ...block, data: { ...data, code: e.target.value } })
                                           }
+                                          placeholder="Enter code..."
                                           value={data.code}
                                         />
                                       )}
@@ -617,28 +630,7 @@ const ContentForm = ({
                                         iframeRefs.current[id] = el
                                       }}
                                       sandbox="allow-scripts allow-same-origin"
-                                      srcDoc={`<!DOCTYPE html>
-                                        <html>
-                                        <head>
-                                        <style>
-                                        html,body { margin:0; padding:0; height:auto !important; }
-                                        </style>
-                                        </head>
-                                        <body>
-                                        ${data.code}
-                                        <script>
-                                        function sendHeight() {
-                                          const newHeight = document.body.scrollHeight
-                                          if (newHeight > 0) {
-                                            parent.postMessage({ blockId: '${id}', height: newHeight }, '*')
-                                          }
-                                        }
-                                        window.addEventListener('load', sendHeight)
-                                        const obs = new MutationObserver(sendHeight)
-                                        obs.observe(document.body, { childList: true, subtree: true, characterData: true })
-                                        </script>
-                                        </body>
-                                        </html>`}
+                                      srcDoc={getIframeSrcDoc(id, data.code)}
                                       style={{ border: 'none', width: '100%', height: '0px' }}
                                       title={`code-preview-${id}`}
                                     />
@@ -667,75 +659,52 @@ const ContentForm = ({
               </Droppable>
             </DragDropContext>
           ) : (
-            <div className="live-preview-container">
+            <>
               <p className="text24" style={{ marginLeft: 0, marginTop: 0 }}>
                 Preview
               </p>
-              {blocks.map((block, i) => {
-                if (block.type === BLOCK_TYPES.TEXT) {
-                  return <div key={i} dangerouslySetInnerHTML={{ __html: block.data.html }} />
-                }
-                if (block.type === BLOCK_TYPES.CODE) {
-                  return (
-                    <div key={i}>
-                      <iframe
-                        ref={(el) => {
-                          iframeRefs.current[block.id] = el
-                        }}
-                        sandbox="allow-scripts allow-same-origin"
-                        srcDoc={`<!DOCTYPE html>
-                          <html>
-                          <head>
-                          <style>
-                          html,body { margin:0; padding:10px; height:auto !important; }
-                          </style>
-                          </head>
-                          <body>
-                          ${block.data.code}
-                          <script>
-                          function sendHeight() {
-                            const newHeight = document.body.scrollHeight
-                            if (newHeight > 0) {
-                              parent.postMessage({ blockId: '${block.id}', height: newHeight }, '*')
-                            }
-                          }
-                          window.addEventListener('load', sendHeight)
-                          const obs = new MutationObserver(sendHeight)
-                          obs.observe(document.body, { childList: true, subtree: true, characterData: true })
-                          </script>
-                          </body>
-                          </html>`}
-                        style={{ border: 'none', width: '100%', height: '0px' }}
-                        title={`live-preview-${i}`}
-                      />
-                    </div>
-                  )
-                }
-                if (block.type === BLOCK_TYPES.MEDIA) {
-                  if (block.data.isImage) {
+              <div className="live-preview-container">
+                {blocks.map((block, i) => {
+                  if (block.type === BLOCK_TYPES.TEXT) {
+                    return <div key={i} dangerouslySetInnerHTML={{ __html: block.data.html }} />
+                  }
+                  if (block.type === BLOCK_TYPES.CODE) {
                     return (
                       <div key={i}>
-                        <img
-                          alt="Uploaded Media"
-                          src={block.data.url}
-                          style={{ maxWidth: '100%', height: 'auto' }}
+                        <iframe
+                          ref={(el) => {
+                            iframeRefs.current[block.id] = el
+                          }}
+                          sandbox="allow-scripts allow-same-origin"
+                          srcDoc={getIframeSrcDoc(block.id, block.data.code)}
+                          style={{ border: 'none', width: '100%', height: '0px' }}
+                          title={`live-preview-${i}`}
                         />
                       </div>
                     )
-                  } else if (block.data.isVideo) {
-                    return (
-                      <div key={i}>
-                        <video controls style={{ maxWidth: '100%', height: 'auto' }}>
-                          <source src={block.data.url} type={block.data.fileType} />
-                        </video>
-                      </div>
-                    )
                   }
-                  return <p key={i}>Unsupported</p>
-                }
-                return null
-              })}
-            </div>
+                  if (block.type === BLOCK_TYPES.MEDIA) {
+                    if (block.data.isImage) {
+                      return (
+                        <div key={i}>
+                          <img alt="Uploaded Media" src={block.data.url} style={{ maxWidth: '100%', height: 'auto' }} />
+                        </div>
+                      )
+                    } else if (block.data.isVideo) {
+                      return (
+                        <div key={i}>
+                          <video controls style={{ maxWidth: '100%', height: 'auto' }}>
+                            <source src={block.data.url} type={block.data.fileType} />
+                          </video>
+                        </div>
+                      )
+                    }
+                    return <p key={i}>Unsupported</p>
+                  }
+                  return null
+                })}
+              </div>
+            </>
           )}
         </div>
       </form>
