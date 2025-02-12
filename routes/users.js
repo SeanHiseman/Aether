@@ -5,6 +5,18 @@ import { Router } from 'express';
 
 const router = Router();
 
+router.post('/change_email', authenticateCheck, async (req, res) => {
+    try {
+        const { email, userId } = req.body;
+        const user = await Users.findOne({ where: { user_id: userId } });
+        user.email = email;
+        await user.save();
+        res.status(200).json({ success: true });
+    } catch (error) {
+        res.status(500).json({ success: false });
+    }
+});
+
 //Changes user colour theme
 router.post('/change_theme', authenticateCheck, async (req, res) => {
     try {

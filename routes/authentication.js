@@ -76,6 +76,7 @@ router.delete('/delete_account', authenticateCheck, async (req, res) => {
 
 router.post('/join', async (req, res) => {
     try {
+        const email = req.body.email;
         const username = req.body.username;
         //Check for existing username
         const existingUser = await Users.findOne({ where: { username } });
@@ -87,7 +88,7 @@ router.post('/join', async (req, res) => {
         const hashedPassword = await hash(req.body.password, 10);
         const UserSince = new Date();
         await Users.create({
-            user_id, username, password: hashedPassword, UserSince
+            email, user_id, username, password: hashedPassword, UserSince
         });
         //Add initial user feed
         const default_photo = process.env.DEFAULT_USER_IMAGE;
@@ -108,14 +109,14 @@ router.post('/join', async (req, res) => {
 
 router.post('/login', async (req, res) => {
     try {
-        const { username, password } = req.body;
-        const user = await Users.findOne({ where: { username }});
+        const { password, username } = req.body;
+        const user = await Users.findOne({ where: { [Op.or]: [{ email: username }, { username }] } });
         const feed = await Feeds.findOne({ where: { feed_owner: user.user_id, is_group: false }})
         if (user && await compare(password, user.password)) {
             req.session.user_id = user.user_id;
             req.session.username = user.username;
             req.session.viewer_id = feed.feed_id;
-            res.status(200).json({ success: true });
+            res.status(200).json({ success: true, username: user.username });
         }
         else {
             res.status(401).json({ success: false });

@@ -10,12 +10,14 @@ const Login = () => {
     const handleLogin = async (event) => {
         event.preventDefault();
         const formData = new FormData(event.target);
-        const username = formData.get('username');
         const password = formData.get('password');
+        const username = formData.get('username');
         try {
-            const response = await axios.post('/api/login', { username, password });
+            const response = await axios.post('/api/login', { password, username }); //username can also be email
             if (response.status === 200) {
-                navigate(`/u/${username}`);//Main feed name same as username (for now)
+                console.log("response:", response);
+                const responseUsername = response.data.username;
+                navigate(`/u/${responseUsername}`);//Main feed name same as username (for now)
             } 
         } catch (error) {
             if (error.response && error.response.status === 401) {
@@ -39,7 +41,7 @@ const Login = () => {
                 </div>
                 <p className="error-message">{errorMessage}</p>
                 <form method="post" onSubmit={handleLogin}>
-                    <input className="authentication-input-box" name="username" placeholder="Username" required />
+                    <input className="authentication-input-box" name="username" placeholder="Username or email" required />
                     <input type="password" className="authentication-input-box" name="password" placeholder="Password" required />
                     <input className="submit" type="submit" value="Login" />
                 </form>
