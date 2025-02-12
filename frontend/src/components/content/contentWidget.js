@@ -98,7 +98,8 @@ const ContentWidget = ({ canRemove, feed, isGroup, onEditClick, onPostRemoved, o
           onPostRemoved(post.post_id);
           navigate(`/${urlPrefix}/${feed_name}/${channel_name}`);
         }
-      } catch {
+      } catch (error) {
+        console.log("error:", error);
         setPostErrorMessage(`Error removing ${isReply ? 'Relpy' : 'Post'}`);
       }
     }

@@ -180,14 +180,16 @@ const BaseLayout = () => {
                     </ul>
                 </nav>
                 <div id="create-feed-section">
-                    <button className="small-icon" title={showForm ? 'Close' : 'Create Feed'} onClick={toggleForm}>
+                    <button className="small-icon" onClick={toggleForm}>
                         {showForm ? (
                             <>
-                                <FaMinus />
+                                <FaMinus /> 
+                                <p className="icon-text">Close</p>
                             </>
                         ) : (
                             <>
                                 <FaPlusCircle />
+                                <p className="icon-text">Create Feed</p>
                             </>
                         )}
                     </button>

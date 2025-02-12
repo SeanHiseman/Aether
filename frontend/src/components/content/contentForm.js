@@ -3,7 +3,7 @@ import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd'
 import { useNavigate, useParams } from 'react-router-dom'
 import PropTypes from 'prop-types'
 import React, { useCallback, useEffect, useRef, useState } from 'react'
-import { FaArrowDown, FaArrowRight, FaArrowUp, FaCircleNotch, FaCommentAlt, FaEdit, FaEye, FaFont, FaPhotoVideo, FaPlus, FaReply, FaSave, FaTerminal, FaTimes, FaToolbox, FaWindowClose, FaAlignCenter } from 'react-icons/fa'
+import { FaAlignCenter, FaArrowCircleUp, FaArrowDown, FaArrowRight, FaArrowUp, FaCircleNotch, FaCommentAlt, FaEdit, FaEye, FaFont, FaPhotoVideo, FaPlus, FaReply, FaSave, FaTerminal, FaTimes, FaToolbox, FaWindowClose } from 'react-icons/fa'
 import ReactQuill from 'react-quill'
 import 'react-quill/dist/quill.snow.css'
 import { v4 as uuidv4 } from 'uuid'
@@ -535,7 +535,7 @@ const ContentForm = ({
             title={isGlobalLoading ? 'Creating...' : !globalAiPrompt.trim() ? 'Enter a prompt' : 'Create'}
             type="button"
           >
-            {isGlobalLoading ? <FaCircleNotch /> : <FaPlus />}
+            {isGlobalLoading ? <FaCircleNotch /> : <FaArrowCircleUp />}
           </button>
           <input accept="image/*,video/*" hidden id="media-input" multiple onChange={handleFilesChange} type="file" />
         </div>
@@ -631,7 +631,7 @@ const ContentForm = ({
                                             title={data.isBlockLoading ? 'Creating...' : !data._tempAiPrompt?.trim() ? 'Enter a prompt' : 'Create'}
                                             type="button"
                                           >
-                                            {data.isBlockLoading ? <FaCircleNotch /> : <FaPlus />}
+                                            {data.isBlockLoading ? <FaCircleNotch /> : <FaArrowCircleUp />}
                                           </button>
                                         </div>
                                       ) : (
@@ -691,10 +691,10 @@ const ContentForm = ({
               </p>
               <div className="live-preview-container">
                 {blocks.map((block, i) => {
-                  if (block.type === 'text') {
+                  if (block.type === BLOCK_TYPES.TEXT) {
                     return block.data.html.trim() ? <div key={i} dangerouslySetInnerHTML={{ __html: block.data.html }} /> : null
                   }
-                  if (block.type === 'code') {
+                  if (block.type === BLOCK_TYPES.CODE) {
                     return block.data.code.trim() ? (
                       <div key={i}>
                         <iframe
@@ -709,7 +709,7 @@ const ContentForm = ({
                       </div>
                     ) : null
                   }
-                  if (block.type === 'media') {
+                  if (block.type === BLOCK_TYPES.MEDIA) {
                     if (block.data.isImage) {
                       return (
                         <div key={i}>
@@ -748,4 +748,4 @@ ContentForm.propTypes = {
   setShowForm: PropTypes.func.isRequired,
 }
 
-export default ContentForm;
+export default ContentForm

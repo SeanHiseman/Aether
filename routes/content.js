@@ -16,7 +16,8 @@ const router = Router();
 
 router.get('/channel_posts', authenticateCheck, async (req, res) => {
     try {
-        const { channelId, isSingle, feedId, postId } = req.query;
+        const { channelId, feedId, isSingle, limit, offset, postId } = req.query;
+        console.log("req.query:", req.query);
         const includeOptions = [{
             model: Feeds,
             as: 'poster',
@@ -39,39 +40,36 @@ router.get('/channel_posts', authenticateCheck, async (req, res) => {
         }];
         if (isSingle === 'true') {
             const post = await Posts.findOne({
-                where: { post_id: postId,  
-                    feed_id: feedId,
-                    ...(channelId ? { channel_id: channelId } : {})
-                },
-                include: includeOptions,
                 attributes: postAttributes,
+                include: includeOptions,
+                where: { feed_id: feedId, post_id: postId, ...(channelId ? { channel_id: channelId } : {}) },
             });
-            if (!post) {
-                return res.status(404).json({ success: false });
-            }
+            if (!post) return res.status(404).json({ success: false });
             return res.status(200).json({ success: true, post });
         } 
         else {
             const whereChannel = {
                 feed_id: feedId,
+                parent_id: null,
                 ...(channelId ? { channel_id: channelId } : {}),
-                parent_id: null
             };
             const posts = await Posts.findAll({
-                where: whereChannel,
-                include: includeOptions,
                 attributes: postAttributes,
+                include: includeOptions,
+                limit: limit ? parseInt(limit, 10) : 10,
+                offset: offset ? parseInt(offset, 10) : 0,
                 order: [['timestamp', 'DESC']],
+                where: whereChannel,
             });
-            const finalResults = posts.map((post) => ({
-                ...post.dataValues,
-            }));
+            const finalResults = posts.map((post) => ({ ...post.dataValues }));
+            console.log("finalResults:", finalResults);
             //const sortedPosts = post_type === 'group' 
             //    ? sortPostsByWeightedRatio(finalResults, userId)
             //    : finalResults.sort((a, b) => b.timestamp - a.timestamp);
             return res.status(200).json(finalResults);
         }
     } catch (error) {
+        console.log("error:", error);
         res.status(500).json({ success: false });
     }
 });
