@@ -4,9 +4,9 @@ import { Link, useNavigate } from 'react-router-dom';
 import '../../css/authentication.css'; 
 
 const Join = () => {
+    const [confirmPassword, setConfirmPassword] = useState('');
     const [errorMessage, setErrorMessage] = useState('');
     const [password, setPassword] = useState('');
-    const [confirmPassword, setConfirmPassword] = useState('');
     const navigate = useNavigate();
 
     const handleJoin = async (event) => {
@@ -16,7 +16,7 @@ const Join = () => {
             return;
         }
         try {
-            const response = await axios.post('/api/join', { username: event.target.username.value, password });
+            const response = await axios.post('/api/join', { email: event.target.email.value, password, username: event.target.username.value });
             if (response.data.success) {
                 navigate('/login');
             } else {
@@ -43,6 +43,7 @@ const Join = () => {
                 <p className="error-message">{errorMessage}</p>
                 <form method="post" onSubmit={handleJoin}>
                     <input className="authentication-input-box" name="username" placeholder="Username" required />
+                    <input className="authentication-input-box" name="email" placeholder="Email" required />
                     <input 
                         type="password" 
                         className="authentication-input-box" 
