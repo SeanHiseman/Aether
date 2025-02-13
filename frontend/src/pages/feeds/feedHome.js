@@ -4,8 +4,8 @@ import { FaCog, FaEdit, FaFeatherAlt, FaMinus, FaPlus, FaTrash } from 'react-ico
 import { Tooltip } from 'react-tooltip';
 import React, { useContext, useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import ChannelList from '../../components/channels/ChannelList';
-import ChatChannel from '../../components/channels/ChatChannel';
+import ChannelList from '../../components/channels/channelList';
+import ChatChannel from '../../components/channels/chatChannel';
 import ContentForm from "../../components/content/contentForm";
 import FollowerChangeButton from '../../components/followerChangeButton';
 import ManageConnectionButton from '../../components/connections/ManageConnectionButton';
@@ -26,7 +26,6 @@ const FeedHome = () => {
     const [isEditingChannelName, setIsEditingChannelName] = useState(false);
     const [isPostChannel, setIsPostChannel] = useState(true);
     const [isModerator, setIsModerator] = useState(false);
-    const navigate = useNavigate();
     const [newChannelName, setNewChannelName] = useState('');
     const [postErrorMessage, setPostErrorMessage] = useState('');
     const [postToEdit, setPostToEdit] = useState(null);
@@ -35,6 +34,7 @@ const FeedHome = () => {
     const [showPostForm, setShowPostForm] = useState(false);
     const { user, viewer } = useContext(AuthContext);
     const isViewingSelf = feed.feed_id === viewer.feed_id;
+    const navigate = useNavigate();
     const urlPrefix = feed.is_group ? 'g' : 'u';
 
     useEffect(() => {
@@ -76,34 +76,47 @@ const FeedHome = () => {
     const AddChannel = async (event) => {
         event.preventDefault();
         try {
-            const channelName = newChannelName.length === 0 ? 'New channel' : newChannelName; //New channel doesn't have to have a name set
-            if (channelName === "Main") {
+            const baseName = "New channel";
+            let finalChannelName = "";
+            if (newChannelName.length === 0) {
+                if (!channels.some(channel => channel.channel_name === baseName)) {
+                    finalChannelName = baseName;
+                } else {
+                    let counter = 2;
+                while (channels.some(channel => channel.channel_name === `${baseName} ${counter}`)) {
+                    counter++;
+                }
+                finalChannelName = `${baseName} ${counter}`;
+                }
+            } else {
+                finalChannelName = newChannelName;
+                if (channels.some(channel => channel.channel_name === finalChannelName)) {
+                    setFeedErrorMessage("Name already used");
+                    return;
+                }
+            }
+            if (finalChannelName === "Main") {
                 setFeedErrorMessage("Cannot be named Main");
                 return;
             }
-            if (channelName.length >= 30) {
-                setFeedErrorMessage("Name too long"); 
-                return; 
-            } 
-            const channelExists = channels.some(channel => channel.channel_name === channelName);
-            if (channelExists) {
-                setFeedErrorMessage("Name already used");
+            if (finalChannelName.length >= 30) {
+                setFeedErrorMessage("Name too long");
                 return;
             }
             const response = await axios.post('/api/add_feed_channel', {
-                channelName: channelName,
+                channelName: finalChannelName,
                 feedId: feed.feed_id,
-                isPosts: feed.is_group ? isPostChannel : true,
-                isChat: feed.is_group ? isChatChannel : false
+                isChat: feed.is_group ? isChatChannel : false,
+                isPosts: feed.is_group ? isPostChannel : true
             });
             if (response.data && response.status === 201) {
                 const newChannel = response.data.newChannel;
-                const updatedChannels = [...channels, newChannel];
+                const updatedChannels = [newChannel, ...channels];
                 setChannels(updatedChannels);
                 setFeedErrorMessage('');
                 setNewChannelName('');
                 setShowChannelForm(false);
-                navigate(`/${urlLetter}/${feed_name}/${channelName}`);
+                navigate(`/${urlLetter}/${feed_name}/${finalChannelName}`);
             } else {
                 setFeedErrorMessage('Failed to add channel');
             }
@@ -111,7 +124,7 @@ const FeedHome = () => {
             setFeedErrorMessage('Failed to add channel');
         }
     };
-
+    
     const channelRender = channels.find(c => c.channel_name === channel_name);
 
     useEffect(() => {

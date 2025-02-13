@@ -57,6 +57,7 @@ router.post('/change_chat_name', authenticateCheck, async (req, res) => {
 router.post('/create_chat', authenticateCheck, async (req, res) => {
     try {
         const { participants, title } = req.body; 
+        console.log("req.body:", req.body);
         if (title.length === 0) {
             res.status(403).json({ success: false, message: 'Title cannot be empty' });
         }
@@ -71,6 +72,7 @@ router.post('/create_chat', authenticateCheck, async (req, res) => {
         await FeedChats.bulkCreate(feedChats);
         res.status(201).json({ success: true, newChat });
     } catch (error) {
+        console.log(error);
         res.status(500).json({ success: false });
     }
 });

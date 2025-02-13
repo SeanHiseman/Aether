@@ -65,7 +65,7 @@ const SearchResults = () => {
                         <ContentWidget key={post.post_id} post={post} isGroup={post.is_group} />
                     ))
                 ) : (
-                    <div>No posts found.</div>
+                    <div>Post search coming soon!</div>
                 );
             case 'feeds':
                 return feeds.length > 0 ? (
@@ -108,8 +108,8 @@ const SearchResults = () => {
                         <li className="channel-link" onClick={() => setSelectedView('combined')}>All</li>
                         <li className="channel-link" onClick={() => setSelectedView('posts')}>Posts</li>
                         <li className="channel-link" onClick={() => setSelectedView('feeds')}>Feeds</li>
-                        <label>Posts are recent:</label>
-                        <input type="range" min="0" max="0.01" step="0.00001" value={timePreference} onChange={handleTimeChange} />
+                        {/*<label>Posts are recent:</label>
+                        <input type="range" min="0" max="0.01" step="0.00001" value={timePreference} onChange={handleTimeChange} />*/}
                     </ul>
                 </nav>
             </div>

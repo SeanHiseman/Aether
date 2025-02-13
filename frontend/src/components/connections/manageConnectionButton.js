@@ -57,9 +57,11 @@ const ManageConnectionButton = ({ connectRequest, feed, isConnected, viewerId, o
             let method, requestData, url;
             const targetFeedId = viewerId === senderId ? receiverId : senderId;
             if (hasConnection) {
-                method = 'delete';
-                url = '/api/delete_connection';
-                requestData = { deleterId: viewerId, feedId: targetFeedId };
+                if (window.confirm(`Are you sure you want to delete your connection with ${feed.feed_name}`)) {
+                    method = 'delete';
+                    url = '/api/delete_connection';
+                    requestData = { deleterId: viewerId, feedId: targetFeedId };
+                }
             } 
             else if (request) {
                 method = 'delete';

@@ -52,7 +52,7 @@ const PersonalFeed = () => {
         <div className="standard-container">
             <div className="content-feed">
                 <div className="channel-content">
-                    {posts.length > 0 ? (
+                    {/*{posts.length > 0 ? (
                         <ul className="content-list">
                             {posts.map(post => (
                                 <ContentWidget key={post.post_id} isGroup={post.is_group} post={post}/>
@@ -61,14 +61,15 @@ const PersonalFeed = () => {
                         ) : (
                             <p>No posts yet</p>
                         )
-                    }
+                    }*/}
                 </div>
             </div>
             <aside id="right-aside">
-                <h1>Following</h1>
+                <h1>Coming soon!</h1>
+                {/*<h1>Following</h1>
                 <label>Posts are recent:</label>
                 <input type="range" min="0" max="0.001" step="0.00001" value={timePreference} onChange={handleTimeChange} />
-                <div className="error-message">{errorMessage}</div>
+                <div className="error-message">{errorMessage}</div>*/}
             </aside>
         </div>
     )

@@ -176,7 +176,7 @@ const BaseLayout = () => {
                     <ul>
                         <li className="channel-link"><Link to="/p/recommended">Recommended</Link></li>
                         <li className="channel-link"><Link to="/p/following">Following</Link></li>
-                        <li className="channel-link"><Link to="/p/connections">Connections</Link></li>
+                        <li className="channel-link"><Link to="/p/connection_posts">Connections</Link></li>
                     </ul>
                 </nav>
                 <div id="create-feed-section">
@@ -206,8 +206,8 @@ const BaseLayout = () => {
                                 <button className={feedType === 'public' ? 'active-mode' : 'passive-mode'} onClick={(event) => {event.preventDefault(); setFeedType('public');}}>Public</button>
                                 <button className={feedType === 'private' ? 'active-mode' : 'passive-mode'} onClick={(event) => {event.preventDefault(); setFeedType('private');}}>Private</button>
                             </div>
-                            <div className="error-message">{errorMessage}</div>
-                            <button className="small-icon" title="Create" type="submit" value="Create">
+                            {errorMessage && <div className="error-message">{errorMessage}</div>}
+                            <button className={feedName.length === 0 ? "small-icon disabled" : "small-icon"} disabled={feedName.length === 0} title={feedName.length === 0 ? "Enter a name" : "Create"} type="submit" value="Create">
                                 <FaPlus />
                             </button>
                         </form>

@@ -17,7 +17,6 @@ const router = Router();
 router.get('/channel_posts', authenticateCheck, async (req, res) => {
     try {
         const { channelId, feedId, isSingle, limit, offset, postId } = req.query;
-        console.log("req.query:", req.query);
         const includeOptions = [{
             model: Feeds,
             as: 'poster',
@@ -62,14 +61,12 @@ router.get('/channel_posts', authenticateCheck, async (req, res) => {
                 where: whereChannel,
             });
             const finalResults = posts.map((post) => ({ ...post.dataValues }));
-            console.log("finalResults:", finalResults);
             //const sortedPosts = post_type === 'group' 
             //    ? sortPostsByWeightedRatio(finalResults, userId)
             //    : finalResults.sort((a, b) => b.timestamp - a.timestamp);
             return res.status(200).json(finalResults);
         }
     } catch (error) {
-        console.log("error:", error);
         res.status(500).json({ success: false });
     }
 });
