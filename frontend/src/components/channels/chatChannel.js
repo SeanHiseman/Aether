@@ -11,7 +11,8 @@ const ChatChannel = ({ canRemove, channelId, connection, isGroup, setChats, setE
     const [channel, setChannel] = useState([]);
     const { dispatch } = useContext(UnreadContext);
     const [message, setMessage] = useState('');
-    const { viewer } = useContext(AuthContext)
+    const { user, viewer } = useContext(AuthContext);
+    const maxLength = user.has_membership ? 100000 : 1000;
     const messagesContainerRef = useRef(null);
     const messagesEndRef = useRef(null);
     const socketRef = useRef(null);
@@ -127,8 +128,8 @@ const ChatChannel = ({ canRemove, channelId, connection, isGroup, setChats, setE
     const sendMessage = useCallback(() => {
         try {
             if (!message.trim()) return;
-            if (message.length > 1000) {
-                setErrorMessage("Message cannot exceed 1000 characters.");
+            if (message.length > maxLength) {
+                setErrorMessage(`Message cannot exceed ${maxLength} characters.`);
                 return;
             };
             const newMessage = {
@@ -182,8 +183,8 @@ const ChatChannel = ({ canRemove, channelId, connection, isGroup, setChats, setE
                     value={message}
                     placeholder="Type a message..."
                     onChange={(e) => {
-                        if (e.target.value.length > 1000) {
-                            setErrorMessage("Message cannot exceed 1000 characters.");
+                        if (e.target.value.length > maxLength) {
+                            setErrorMessage(`Message cannot exceed ${maxLength} characters.`);
                             return;
                         }
                         setErrorMessage('');

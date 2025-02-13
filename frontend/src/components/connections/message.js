@@ -38,7 +38,7 @@ const Message = ({ canRemove, deleteMessage, isGroup, isOutgoing, isRead, messag
                     </Link>
                 )}
                 {canRemove ? (
-                    <button className="button" onClick={() => deleteMessage(message.message_id)}>-</button>
+                    <button className="button" onClick={() => deleteMessage(message.message_id)} title="Delete message">-</button>
                 ) : null}
                 <div className={`message ${isOutgoing ? 'outgoing' : 'incoming'}`}>
                     {message.content}

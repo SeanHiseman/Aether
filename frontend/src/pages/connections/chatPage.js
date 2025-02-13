@@ -16,7 +16,9 @@ const ChatPage = () => {
     const [newChatName, setNewChatName] = useState('');
     const [selectedChatId, setSelectedChatId] = useState(null);
     const [showForm, setShowForm] = useState(false);
-    const { viewer } = useContext(AuthContext);
+    const { user, viewer } = useContext(AuthContext);
+    const chatLimit = user && user.has_membership ? 10000 : 100;
+    const chatLimitReached = chats.length >= chatLimit;
     const navigate = useNavigate();
 
     const fetchConnection = async () => {
@@ -76,6 +78,10 @@ const ChatPage = () => {
 
     const createNewChat = async (event) => {
         event.preventDefault();
+        if (chats.length >= chatLimit) {
+            setErrorMessage("Chat limit reached");
+            return;
+        }
         try {
             if (!connection) {
                 setErrorMessage("No matching connection found");
@@ -85,21 +91,34 @@ const ChatPage = () => {
                 { feed_id: viewer.feed_id },
                 { feed_id: connection.feed_id }
             ];
-            const chatName = newChatName.length === 0 ? 'New chat' : newChatName;
-            if (chatName.length >= 30) {
+            let finalChatName = "";
+            const baseName = "New chat";
+            if (newChatName.length === 0) {
+                if (!chats.some(c => c.title === baseName)) { //If no chats have the default name
+                    finalChatName = baseName;
+                } else {
+                    let counter = 2; //Allows for 'New chat 2', 'New chat 3' etc
+                    while (chats.some(c => c.title === `${baseName} ${counter}`)) {
+                        counter++;
+                    }
+                    finalChatName = `${baseName} ${counter}`;
+                }
+            } else {
+                finalChatName = newChatName;
+                if (chats.some(c => c.title === finalChatName)) {
+                setErrorMessage("Name already used");
+                return;
+                }
+            }
+            if (finalChatName.length >= 30) {
                 setErrorMessage("Name too long");
                 return;
             }
-            if (chatName === 'Main') {
+            if (finalChatName === 'Main') {
                 setErrorMessage("Cannot be named Main");
                 return;
             }
-            const chatExists = chats.some(c => c.title === chatName);
-            if (chatExists) {
-                setErrorMessage("Name already used");
-                return;
-            }
-            const encryptedChatName = encrypt(chatName);
+            const encryptedChatName = encrypt(finalChatName);
             const response = await axios.post('/api/create_chat', {
                 participants,
                 title: encryptedChatName
@@ -107,12 +126,12 @@ const ChatPage = () => {
             if (response.data && response.status === 201) {
                 const newChat = response.data.newChat;
                 const decryptedTitle = decrypt(newChat.title);
-                const updatedChats = [...chats, { ...newChat, title: decryptedTitle }];
+                const updatedChats = [{ ...newChat, title: decryptedTitle }, ...chats];
                 setChats(updatedChats);
                 setErrorMessage('');
                 setNewChatName('');
                 setShowForm(false);
-                navigate(`/connections/${connection_name}/${chatName}`);
+                navigate(`/connections/${connection_name}/${finalChatName}`);
             } else {
                 setErrorMessage("Failed to create chat");
             }
@@ -236,6 +255,8 @@ const ChatPage = () => {
                                 </>
                             )}
                             {showForm && (
+                                <>
+                                {chatLimitReached && <div className="error-message">Chat limit reached</div>}
                                 <form className="add-channel-form" onSubmit={createNewChat}>
                                     <input
                                         className="name-input"
@@ -245,10 +266,11 @@ const ChatPage = () => {
                                         value={newChatName}
                                         onChange={(e) => setNewChatName(e.target.value)}
                                     />
-                                    <button className="small-icon" type="submit">
+                                    <button className={`small-icon ${chatLimitReached ? 'disabled' : ''}`} type="submit" disabled={chatLimitReached}>
                                         <FaPlus />
                                     </button>
                                 </form>
+                                </>
                             )}
                             {errorMessage && <div className="error-message">{errorMessage}</div>}
                         </div>
