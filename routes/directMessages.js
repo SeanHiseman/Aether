@@ -57,7 +57,6 @@ router.post('/change_chat_name', authenticateCheck, async (req, res) => {
 router.post('/create_chat', authenticateCheck, async (req, res) => {
     try {
         const { participants, title } = req.body; 
-        console.log("req.body:", req.body);
         if (title.length === 0) {
             res.status(403).json({ success: false, message: 'Title cannot be empty' });
         }
@@ -72,7 +71,6 @@ router.post('/create_chat', authenticateCheck, async (req, res) => {
         await FeedChats.bulkCreate(feedChats);
         res.status(201).json({ success: true, newChat });
     } catch (error) {
-        console.log(error);
         res.status(500).json({ success: false });
     }
 });
@@ -168,19 +166,17 @@ router.delete('/delete_connection', authenticateCheck, async (req, res) => {
     }
 });
 
-
-router.get('/get_chat_messages/:channelId', authenticateCheck, async (req, res) => {
+router.get('/get_chat_messages', authenticateCheck, async (req, res) => {
     try {
-        const { channelId } = req.params;
+        const { channelId, limit, offset } = req.query;
         const messages = await Messages.findAll({
             where: { chat_id: channelId },
-            include: [{
-                model: Feeds,
-                attributes: feedAttributes,
-            }],
-            order: [['timestamp', 'ASC']]
-        });;
-        res.status(200).json({ success: true, messages });
+            include: [{ attributes: feedAttributes, model: Feeds }],
+            order: [['timestamp', 'ASC']],
+            limit: parseInt(limit) || 20,
+            offset: parseInt(offset) || 0,
+        });
+        res.status(200).json({ messages, success: true });
     } catch (error) {
         res.status(500).json({ success: false });
     }
@@ -370,7 +366,6 @@ router.get('/unread_messages_count/:feed_id', async (req, res) => {
             chatCounts: chatIdToUnreadCount 
         });
     } catch (error) {
-        console.error("Error:", error);
         res.status(500).json({ success: false, error: 'Failed to get unread counts' });
     }
 });

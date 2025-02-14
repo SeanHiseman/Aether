@@ -10,7 +10,9 @@ import { UnreadContext } from '../connections/unreadContext';
 const ChatChannel = ({ canRemove, channelId, connection, isGroup, setChats, setErrorMessage }) => {
     const [channel, setChannel] = useState([]);
     const { dispatch } = useContext(UnreadContext);
+    const [hasMore, setHasMore] = useState(true);
     const [message, setMessage] = useState('');
+    const [offset, setOffset] = useState(0);
     const { user, viewer } = useContext(AuthContext);
     const maxLength = user.has_membership ? 100000 : 1000;
     const messagesContainerRef = useRef(null);
@@ -24,14 +26,13 @@ const ChatChannel = ({ canRemove, channelId, connection, isGroup, setChats, setE
                     chat_id: channelId,
                     reader_id: viewer.feed_id,
                 });
-                dispatch({ type: 'MARK_AS_READ', chatId: channelId });
+                dispatch({ chatId: channelId, type: 'MARK_AS_READ' });
             } catch (error) {
-                console.error('Error marking messages as read via WebSocket:', error);
+                setErrorMessage('Error marking messages as read');
             }
         }
     }, [channelId, isGroup, viewer.feed_id, dispatch]);
     
-
     //Fetch and listen for messages
     useEffect(() => {
         const socket = io('http://localhost:7000');
@@ -86,7 +87,7 @@ const ChatChannel = ({ canRemove, channelId, connection, isGroup, setChats, setE
                 socket.disconnect();
             };
         }
-    }, [channelId, isGroup, viewer.feed_id]);
+    }, [channelId, deleteMessage, isGroup, setErrorMessage, viewer.feed_id]);
     
     useEffect(() => {
         if (messagesContainerRef.current) {
@@ -109,21 +110,45 @@ const ChatChannel = ({ canRemove, channelId, connection, isGroup, setChats, setE
         } catch (error) {
             setErrorMessage("Error deleting message");
         }
-    }, [channelId, isGroup]);
+    }, [channelId, dispatch, isGroup, viewer.feed_id]);
 
-    const getChannelMessages = useCallback(async (channelId) => {
+    const getChannelMessages = useCallback(async (channelId, currentOffset = 0) => {
         try {
             const route = isGroup ? 'feed_channel_messages' : 'get_chat_messages';
-            const response = await axios.get(`/api/${route}/${channelId}`);
+            const response = await axios.get(`/api/${route}`, { params: { channelId, limit: 20, offset: currentOffset } });
             const messages = response.data.messages.map((m) => ({
                 ...m,
                 content: isGroup ? m.content : decrypt(m.content),
             }));
-            setChannel(messages);
+            if (messages.length < 20) setHasMore(false);
+            if (currentOffset === 0) setChannel(messages);
+            else setChannel(prev => [...messages, ...prev]);
+            setOffset(currentOffset + messages.length);
         } catch (error) {
             setErrorMessage('Error fetching messages');
         }
-    }, [isGroup]);
+    }, [isGroup, setErrorMessage]);
+
+    useEffect(() => {
+        if (channelId) {
+            setChannel([]);
+            setOffset(0);
+            setHasMore(true);
+            getChannelMessages(channelId, 0);
+        }
+    }, [channelId, getChannelMessages]);
+
+    useEffect(() => {
+        const container = messagesContainerRef.current;
+        if (!container) return;
+        const handleScroll = () => {
+            if (container.scrollTop === 0 && hasMore) {
+                getChannelMessages(channelId, offset);
+            }
+        };
+        container.addEventListener('scroll', handleScroll);
+        return () => container.removeEventListener('scroll', handleScroll);
+    }, [channelId, getChannelMessages, hasMore, offset]);
 
     const sendMessage = useCallback(() => {
         try {
@@ -158,7 +183,8 @@ const ChatChannel = ({ canRemove, channelId, connection, isGroup, setChats, setE
         } catch (error) {
             setErrorMessage("Error sending message");
         }
-    }, [channelId, isGroup, message, viewer.feed_id, setChats]);
+    }, [channelId, isGroup, maxLength, message, setChats, setErrorMessage, viewer.feed_id]);
+    //}, [channelId, connection.feed_id, isGroup, maxLength, message, setChats, setErrorMessage, viewer.feed_id]);
 
     return (
         <div className="messages-section">
@@ -199,4 +225,5 @@ const ChatChannel = ({ canRemove, channelId, connection, isGroup, setChats, setE
         </div>
     );
 }
+
 export default ChatChannel;
