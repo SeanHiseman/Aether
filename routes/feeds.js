@@ -302,16 +302,15 @@ router.get('/feed/:feedName', authenticateCheck, async (req, res) => {
 
 router.get('/feed_channel_messages/:channelId', authenticateCheck, async (req, res) => {
     try {
-        const { channelId } = req.params
+        const { channelId, limit, offset } = req.query;
         const messages = await FeedChannelMessages.findAll({
             where: { channel_id: channelId },
-            include: [{
-                model: Feeds,
-                attributes: feedAttributes,
-            }],
-            order: [['timestamp', 'ASC']]
+            include: [{ attributes: feedAttributes, model: Feeds }],
+            order: [['timestamp', 'ASC']],
+            limit: parseInt(limit) || 20,
+            offset: parseInt(offset) || 0,
         });
-        res.status(200).json({ success: true, messages });
+        res.status(200).json({ messages, success: true });
     } catch (error) {
         res.status(500).json({ success: false });   
     }

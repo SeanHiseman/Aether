@@ -90,7 +90,9 @@
 .channel-feed {
     align-items: center;
     display: flex;
+    flex: 1;
     flex-direction: column;
+    overflow-y: auto;
     height: 100%;
     width: 100%
 }
@@ -325,6 +327,7 @@ main {
 #right-aside {
     flex-shrink: 0;
     height: 100%;
+    overflow-y: auto;
 }
 #right-aside ul {
     align-self: center;
@@ -376,10 +379,10 @@ main {
     height: 20px;
 }
 .standard-container {
-    align-items: stretch;
     display: flex;
-    flex-direction: row;
-    flex-grow: 1;
+    overflow: hidden;
+    height: 100%;
+    width: 100%;
 }
 .standard-icon {
     cursor: pointer;
