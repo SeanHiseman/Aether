@@ -242,23 +242,16 @@ router.get('/get_connection/:connectionName', authenticateCheck, async (req, res
     }
 });
 
-router.get('/get_connections/:feedId', authenticateCheck, async (req, res) => {
+router.get('/get_connections', authenticateCheck, async (req, res) => {
     //Full list of connections for connection page
     try {
-        const feedId = req.params.feedId;
+        const { feedId, offset } = req.query;
+        const parsedOffset = parseInt(offset) || 0;
         const feed = await Feeds.findOne({ where: { feed_id: feedId } });
         if (!feed) { 
             return res.status(404).json({ success: false, message: 'Feed not found' }) 
         }
         const connections = await Connections.findAll({
-            where: {
-                [Op.or]: [
-                    { feed1_id: feedId },
-                    { feed2_id: feedId }
-                ]
-            },
-            //More recent connections are first
-            order: [['created_at', 'ASC']],
             include: [{
                 model: Feeds,
                 as: 'Feed1',
@@ -267,7 +260,17 @@ router.get('/get_connections/:feedId', authenticateCheck, async (req, res) => {
                 model: Feeds,
                 as: 'Feed2',
                 attributes: feedAttributes
-            }]
+            }],
+            where: {
+                [Op.or]: [
+                    { feed1_id: feedId },
+                    { feed2_id: feedId }
+                ]
+            },
+            limit: 10,
+            offset: parsedOffset,
+            //More recent connections are first
+            order: [['created_at', 'ASC']],
         });
         const filteredConnections = connections.map(connection => {
             const otherFeed = connection.feed1_id === feedId ? connection.Feed2 : connection.Feed1;
@@ -283,9 +286,10 @@ router.get('/get_connections/:feedId', authenticateCheck, async (req, res) => {
     }
 });
 
-router.get('/get_connect_requests/:feedId', authenticateCheck, async (req, res) => {
-    const feedId = req.params.feedId;
+router.get('/get_connect_requests', authenticateCheck, async (req, res) => {
     try {
+        const { feedId, offset } = req.query;
+        const parsedOffset = parseInt(offset) || 0;
         const requests = await ConnectRequests.findAll({ 
             where: { receiver_id: feedId },
             attributes: {
@@ -297,6 +301,8 @@ router.get('/get_connect_requests/:feedId', authenticateCheck, async (req, res) 
                 required: true,
                 attributes: feedAttributes,
             }],
+            limit: 10,
+            offset: parsedOffset
         });
         res.status(200).json({ success: true, requests });
     } catch (error) {

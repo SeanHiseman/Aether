@@ -316,9 +316,10 @@ router.get('/feed_channel_messages/:channelId', authenticateCheck, async (req, r
     }
 });
 
-router.get('/feed_list/:followerId', async (req, res) => {
+router.get('/feed_list', async (req, res) => {
     try {
-        const { followerId } = req.params;
+        const { followerId, offset } = req.query;
+        const parsedOffset = parseInt(offset) || 0;
         const feeds = await Followers.findAll({
             where: { follower_id: followerId },
             include: [{
@@ -327,12 +328,14 @@ router.get('/feed_list/:followerId', async (req, res) => {
                 attributes: feedAttributes,
             }],
             order: [['followedFeed', 'feed_name', 'ASC']],
+            limit: 30,
+            offset: parsedOffset
         });;
         const formattedFeeds = feeds.map(feed => ({
             ...feed.dataValues,
             link_type: feed.followedFeed.is_group ? 'g' : 'u', 
         }));
-        res.status(200).json(formattedFeeds);
+        res.status(200).json({ success: true, formattedFeeds });
     } catch (error) {
         res.status(500).json({ success: false });
     }

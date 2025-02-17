@@ -1,6 +1,6 @@
 import axios from 'axios';
 import { FaCommentDots, FaFileUpload, FaMinus, FaPlus, FaPlusCircle } from 'react-icons/fa';
-import React, { useContext, useEffect, useState } from 'react';
+import React, { useContext, useEffect, useRef, useState } from 'react';
 import { Link, Outlet, useNavigate } from 'react-router-dom';
 import { v4 } from 'uuid';
 import { AuthContext } from '../components/authContext';
@@ -21,14 +21,17 @@ const BaseLayout = () => {
     const [currentQuery, setCurrentQuery] = useState('');
     const [errorMessage, setErrorMessage] = useState('');
     const [feeds, setFeeds] = useState([]);
+    const [feedsOffset, setFeedsOffset] = useState(0);
     const [feedName, setFeedName] = useState('');
     const [feedPhotoFile, setFeedPhotoFile] = useState(null);
     const [feedType, setFeedType] = useState('public'); 
     const [feed, setFeed] = useState([]);
+    const [hasMoreFeeds, setHasMoreFeeds] = useState(true);
     const { setQuery } = useQueryContext();
     const { setTheme } = useContext(ThemeContext);
     const [showForm, setShowForm] = useState(false);
     const { state } = useContext(UnreadContext);
+    const feedContainerRef = useRef(null);
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -53,18 +56,61 @@ const BaseLayout = () => {
     //Fetch feeds that are followed
     useEffect(() => {
         const fetchFeeds = async () => {
+            if (!hasMoreFeeds) return; //Stop fetching if no more feeds
             try {
-                const response = await axios.get(`/api/feed_list/${viewer.feed_id}`);
-                setFeeds(response.data);
+                //Request 30 feeds at a time using offset and limit
+                const response = await axios.get('/api/feed_list', { 
+                    params: { followerId: viewer.feed_id, offset: feedsOffset, limit: 30 } 
+                });
+                let newFeeds = response.data.formattedFeeds;
+                if (newFeeds.length < 30) {
+                    setHasMoreFeeds(false);
+                }
+                // Normalize each feed so there always is a followedFeed object.
+                const normalizedFeeds = newFeeds.map(feed => {
+                    //If the API already sends a nested followedFeed, use it.
+                    if (feed.followedFeed) {
+                        return feed;
+                    }
+                    //Otherwise, create it from the top-level properties.
+                    return {
+                        feed_id: feed.feed_id,
+                        followedFeed: {
+                            feed_name: feed.feed_name,
+                            feed_photo: feed.feed_photo,
+                        },
+                        link_type: feed.link_type,
+                    };
+                });
+                setFeeds(prevFeeds => [...prevFeeds, ...normalizedFeeds]);
             } catch (error) {
                 setFeeds([]);
             }
         };
-        //Only called when feed has loaded
         if (viewer.feed_id) {
             fetchFeeds();
         }
-    }, [viewer.feed_id]);
+    }, [viewer.feed_id, feedsOffset, hasMoreFeeds]);
+
+    useEffect(() => {
+        const handleScroll = () => {
+            if (!feedContainerRef.current || !hasMoreFeeds) return;
+            const { scrollTop, scrollHeight, clientHeight } = feedContainerRef.current;
+            if (scrollHeight - scrollTop <= clientHeight + 50) { //Load more when near bottom
+                //Increase offset by 30 to load the next page.
+                setFeedsOffset(prevOffset => prevOffset + 30);
+            }
+        };
+        const container = feedContainerRef.current;
+        if (container) {
+            container.addEventListener('scroll', handleScroll);
+        }
+        return () => {
+            if (container) {
+                container.removeEventListener('scroll', handleScroll);
+            }
+        };
+    }, [hasMoreFeeds]);
 
     const createFeed = async (event) => {
         try {
@@ -89,7 +135,7 @@ const BaseLayout = () => {
             });
             if (response.data.success === true) {
                 const createdFeed = response.data.feed;
-                setFeeds((prevFeeds) => [ //Get into correct format
+                setFeeds((prevFeeds) => [ //Format the new feed to match the expected structure
                     ...prevFeeds,
                     {
                         feed_id: createdFeed.feed_id,
@@ -123,7 +169,6 @@ const BaseLayout = () => {
         }
     };
 
-    //Sends to ask page
     const handleAskClick = async (event) => {
         try {
             event.preventDefault();
@@ -135,7 +180,6 @@ const BaseLayout = () => {
                         chatId: newChatId,
                         chatName: "New chat"
                     });
-                    //Navigate immediately and pass the initial message via state
                     navigate(`/ask/${newChatId}`, { state: { initialMessage: trimmedQuery } });
                 }
                 setCurrentQuery('');
@@ -147,25 +191,23 @@ const BaseLayout = () => {
         }
     };
 
-    //Sends to search page
     const handleSearchClick = (event) => {
         event.preventDefault();
         navigate(`/search?keyword=${currentQuery}`);
     };
 
-    //Toggles display of create feed form after button is pressed
     const toggleForm = () => { 
         if (showForm) {
-            setErrorMessage('');
             setFeedName('');
             setFeedPhotoFile('No file chosen');
         };
-        setShowForm(!showForm) 
-    }
+        setShowForm(!showForm);
+        setErrorMessage('');
+    };
 
     return (
         <div className="container">
-            <aside id="left-aside">
+            <aside id="left-aside" ref={feedContainerRef}>
                 <div className="feed-info main">
                     <Link className="feed-link" to={`/u/${feed.feed_name}`}>
                         <img className="small-feed-photo" src={`/${feed.feed_photo}`} alt="Feed" />
@@ -193,21 +235,48 @@ const BaseLayout = () => {
                             </>
                         )}
                     </button>
-                    <Tooltip place="top" effect="solid" delayShow={0}>{showForm ? 'Close' : 'Create feed'}</Tooltip>
+                    <Tooltip place="top" effect="solid" delayShow={0}>
+                        {showForm ? 'Close' : 'Create feed'}
+                    </Tooltip>
                     {showForm && (
                         <form id="create-feed-form" onSubmit={createFeed}>
-                            <input className="name-input" type="text" name="Name" placeholder="Feed name..." value={feedName} onChange={(e) => setFeedName(e.target.value)}/>
+                            <input
+                                className="name-input"
+                                type="text"
+                                name="Name"
+                                placeholder="Feed name..."
+                                value={feedName}
+                                onChange={(e) => setFeedName(e.target.value)}
+                            />
                             <div className="file-input">
-                                <label htmlFor="feed-photo-input" className="small-icon"><FaFileUpload /><p className="icon-text">Choose photo</p></label>
+                                <label htmlFor="feed-photo-input" className="small-icon">
+                                    <FaFileUpload /><p className="icon-text">Choose photo</p>
+                                </label>
                                 <input type="file" id="feed-photo-input" name="Feed photo" onChange={handleFileChange} hidden/>
                                 <span className="file-name">{feedPhotoFile ? feedPhotoFile.name : 'No file chosen'}</span>
                             </div>
                             <div className="option-toggle">
-                                <button className={feedType === 'public' ? 'active-mode' : 'passive-mode'} onClick={(event) => {event.preventDefault(); setFeedType('public');}}>Public</button>
-                                <button className={feedType === 'private' ? 'active-mode' : 'passive-mode'} onClick={(event) => {event.preventDefault(); setFeedType('private');}}>Private</button>
+                                <button
+                                    className={feedType === 'public' ? 'active-mode' : 'passive-mode'}
+                                    onClick={(event) => {event.preventDefault(); setFeedType('public');}}
+                                >
+                                    Public
+                                </button>
+                                <button
+                                    className={feedType === 'private' ? 'active-mode' : 'passive-mode'}
+                                    onClick={(event) => {event.preventDefault(); setFeedType('private');}}
+                                >
+                                    Private
+                                </button>
                             </div>
                             {errorMessage && <div className="error-message">{errorMessage}</div>}
-                            <button className={feedName.length === 0 ? "small-icon disabled" : "small-icon"} disabled={feedName.length === 0} title={feedName.length === 0 ? "Enter a name" : "Create"} type="submit" value="Create">
+                            <button
+                                className={feedName.length === 0 ? "small-icon disabled" : "small-icon"}
+                                disabled={feedName.length === 0}
+                                title={feedName.length === 0 ? "Enter a name" : "Create"}
+                                type="submit"
+                                value="Create"
+                            >
                                 <FaPlus />
                             </button>
                         </form>
@@ -219,7 +288,14 @@ const BaseLayout = () => {
                             <p>Followed feeds are shown here</p>
                         ) : (
                             feeds.map((feed) => (
-                                <FeedItem key={feed.feed_id} feedId={feed.feed_id} isChat={false} linkType={feed.link_type} name={feed.followedFeed.feed_name} photo={feed.followedFeed.feed_photo} />
+                                <FeedItem
+                                    key={feed.feed_id}
+                                    feedId={feed.feed_id}
+                                    isChat={false}
+                                    linkType={feed.link_type}
+                                    name={feed.followedFeed?.feed_name || feed.feed_name}
+                                    photo={feed.followedFeed?.feed_photo || feed.feed_photo}
+                                />
                             ))
                         )}
                     </ul>
@@ -228,29 +304,49 @@ const BaseLayout = () => {
             <main>
                 <header id="base-header">
                     <div className="spacer"></div>
-                        <form id="search-form" onSubmit={(event) => {
+                    <form
+                        id="search-form"
+                        onSubmit={(event) => {
                             event.preventDefault();
                             handleSearchClick();
-                        }}>
-                            <div className="search-container">
-                                <button className="icon-button ask" data-tooltip="Ask" type="button" onClick={handleAskClick}>
-                                    <img className="standard-icon" src="/media/site_images/icons/ask.png" alt="Ask"/>
-                                </button>
-                                <input id="search-bar" type="text" name="keyword" placeholder="Type..." value={currentQuery} onChange={(e) => setCurrentQuery(e.target.value)}/>
-                                <button className="icon-button search" data-tooltip="Search" type="submit" onClick={handleSearchClick}>
-                                    <img className="standard-icon" src="/media/site_images/icons/search.png" alt="Search"/>
-                                </button>
-                            </div>
-                        </form>
-                <div className="spacer"></div>
-                <Link id="messages-button" to={`/connections`}>
-                    <div className="message-icon-container">
-                        <FaCommentDots />
-                        {state.total > 0 && (
-                            <span className="unread-badge">{state.total}</span>
-                        )}
-                    </div>
-                </Link>
+                        }}
+                    >
+                        <div className="search-container">
+                            <button
+                                className="icon-button ask"
+                                data-tooltip="Ask"
+                                type="button"
+                                onClick={handleAskClick}
+                            >
+                                <img className="standard-icon" src="/media/site_images/icons/ask.png" alt="Ask"/>
+                            </button>
+                            <input
+                                id="search-bar"
+                                type="text"
+                                name="keyword"
+                                placeholder="Type..."
+                                value={currentQuery}
+                                onChange={(e) => setCurrentQuery(e.target.value)}
+                            />
+                            <button
+                                className="icon-button search"
+                                data-tooltip="Search"
+                                type="submit"
+                                onClick={handleSearchClick}
+                            >
+                                <img className="standard-icon" src="/media/site_images/icons/search.png" alt="Search"/>
+                            </button>
+                        </div>
+                    </form>
+                    <div className="spacer"></div>
+                    <Link id="messages-button" to={`/connections`}>
+                        <div className="message-icon-container">
+                            <FaCommentDots />
+                            {state.total > 0 && (
+                                <span className="unread-badge">{state.total}</span>
+                            )}
+                        </div>
+                    </Link>
                 </header>
                 <div className="content">
                     <Outlet />
