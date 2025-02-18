@@ -30,7 +30,7 @@
     height: 70px;
     max-width: calc(100vw - 235px);
     min-width: 100%;
-    padding: 5px;
+    padding: var(--small-margin);
     position: fixed;
     top: 0;
     z-index: 10;
@@ -179,14 +179,6 @@
 #description-section .change-description, #name-section .change-name {
     display: flex;
     flex-direction: column;
-}
-.display-area {
-    align-items: center;
-    display: flex;
-    flex-direction: column;
-    height: 100%;
-    justify-content: space-between;
-    width: 100%;
 }
 .feed-list-link {
     align-items: center;

@@ -19,7 +19,7 @@
 .content-item, .result-widget {
     background-color: var(--darkest);
     border-radius: 28px;
-    box-shadow: rgba(0, 0, 0, 0.3) 0px 19px 38px, rgba(0, 0, 0, 0.22) 0px 15px 12px;
+    box-shadow: var(--shadow);
     cursor: pointer;
     margin-bottom: var(--large-margin);
     padding: var(--large-margin);
@@ -63,6 +63,21 @@
     font-size: x-large;
     justify-content: space-between;
     width: 98%;
+}
+.custom-theme-container {
+    align-items: center;
+    display: flex;
+    flex-direction: column;
+    width: 50%;
+}
+.custom-theme-input {
+    height: 60px;
+    width: 60px;
+}
+.custom-theme-preview {
+    display: flex;
+    justify-content: space-around;
+    width: 100%;
 }
 .feed-photo {
     width: 30px;

@@ -81,7 +81,7 @@ const FeedSettings = () => {
             case 'password-personal':
                 return <PasswordPersonal user={user} />;
             case 'theme':
-                return <Theme user={user} />;
+                return <Theme />;
             default:
                 return null;
         }

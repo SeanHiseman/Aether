@@ -21,11 +21,7 @@ const AskButton = ({ isReply, isGroup, content, showNote, setShowNote, note, set
                     const normalisedContent = stripHtmlTags(content);
                     const id = isReply ? content.reply_id : content.post_id;
                     const response = await axios.post('/api/ask_button', {
-                        isGroup,
-                        isReply,
-                        postTitle: content.title,
-                        postContent: normalisedContent,
-                        id,
+                        isGroup, isReply, postTitle: content.title, postContent: normalisedContent, id,
                     });
                     const { newNote } = response.data;
                     setNote(newNote.note_content);
@@ -40,7 +36,7 @@ const AskButton = ({ isReply, isGroup, content, showNote, setShowNote, note, set
     };
 
     return (
-        <button className={`small-icon ${isLoading ? 'button-disabled' : 'button'}`} disabled={isLoading} onClick={askPost} title="Ask">
+        <button className={`small-icon ${isLoading ? 'button disabled' : 'button'}`} disabled={isLoading} onClick={askPost} title="Ask">
             {showNote ? 'Close' : (isLoading ? 'Loading...' : <img className="standard-icon" src="/media/site_images/icons/ask.png" alt="Ask"/>)}
         </button>
     );
