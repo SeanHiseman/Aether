@@ -1,10 +1,12 @@
 import axios from 'axios';
-import React, { useState } from 'react';
+import React, { useContext, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { ThemeContext } from '../../themeProvider';
 import '../../css/authentication.css'; 
 
 const Login = () => {
     const [errorMessage, setErrorMessage] = useState('');
+    const { refreshTheme } = useContext(ThemeContext);
     const navigate = useNavigate();
 
     const handleLogin = async (event) => {
@@ -15,7 +17,7 @@ const Login = () => {
         try {
             const response = await axios.post('/api/login', { password, username }); //username can also be email
             if (response.status === 200) {
-                console.log("response:", response);
+                await refreshTheme();
                 const responseUsername = response.data.username;
                 navigate(`/u/${responseUsername}`);//Main feed name same as username (for now)
             } 

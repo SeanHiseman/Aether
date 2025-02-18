@@ -11,7 +11,7 @@ const Users = sequelize.define('users', {
     collaborative_preference: { type: FLOAT, allowNull: false, defaultValue: 0.5 },
     time_preference: { type: FLOAT, allowNull: false, defaultValue: 0.0001 },
     has_membership: { type: BOOLEAN, defaultValue: false }, 
-    theme: { type: STRING(120), allowNull: true, defaultValue: 'dark' },
+    theme: { type: STRING(1000), allowNull: true, defaultValue: '{"buttonHover":"#737484","dark":"#2c2e31","darkest":"#0f0f0f"}' },
     points: { type: INTEGER, allowNull: false, defaultValue: 0 }, 
 }, { tableName: 'users', timestamps: false });
 

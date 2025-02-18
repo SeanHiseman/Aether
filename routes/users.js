@@ -19,20 +19,17 @@ router.post('/change_email', authenticateCheck, async (req, res) => {
 
 //Changes user colour theme
 router.post('/change_theme', authenticateCheck, async (req, res) => {
-    try {
-        const { theme } = req.body;
+	try {
         const userId = req.session.user_id;
-        if (!userId) {
-            return res.status(401).json({ error: 'User not authenticated' });
+        let { theme } = req.body;
+        if (typeof theme === 'object') {
+            theme = JSON.stringify(theme);
         }
-        await Users.update(
-            { theme: theme },
-            { where: { user_id: userId } }
-        );
-        res.status(200).json({ success: true });
-    } catch (error) {
-        res.status(500).json({ success: false });
-    }
+		await Users.update({ theme: theme }, { where: { user_id: userId } });
+		res.status(200).json({ success: true });
+	} catch (error) {
+		res.status(500).json({ success: false });
+	}
 });
 
 router.post('/change_username', authenticateCheck, async (req, res) => {
