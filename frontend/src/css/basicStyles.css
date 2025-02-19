@@ -4,7 +4,7 @@ a {
     text-decoration: none;
 }
 .button.active, .button:hover, .button.selected:focus, .chat-channel-button:hover, .conversation-button:hover, .dark-button:hover, .dark-button.selected:focus, .icon-button:hover, .large-icon:hover, #messages-button:hover, .posts-channel-button:hover, .small-icon:hover {
-    background-color: var(--button-hover);
+    background-color: var(--light);
 }
 .button, .background-button, .chat-channel-button, .conversation-button, .dark-button, .large-icon, .light-button, #messages-button, .posts-channel-button, .small-icon, .submit-button, .settings-item, .vote-enabled, .vote-arrow-container {
     cursor: pointer;

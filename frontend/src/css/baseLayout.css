@@ -83,7 +83,7 @@
     width: 100%;
 }
 .channel-dropdown {
-    color: var(--dark-line);
+    color: var(--dark);
     cursor: pointer;
     margin-left: 12px;
 }
@@ -97,7 +97,7 @@
     width: 100%
 }
 .channel-link {
-    border-bottom: 1px solid var(--dark-line);
+    border-bottom: 1px solid var(--dark);
     padding: 10px;
     text-align: left;
     text-decoration: none;
@@ -224,7 +224,7 @@
     border-left: 1px solid var(--border);
 }
 .icon-button:hover::after {
-    background-color: var(--button-hover);
+    background-color: var(--light);
     border-radius: .3rem;
     color: var(--border);
     content: attr(data-tooltip);
@@ -419,7 +419,7 @@ ul {
     transition: var(--transition-regular);
 }
 .vote-enabled:hover {
-    background-color: var(--button-hover);
+    background-color: var(--light);
 }
 .vote-disabled {
     background-color: var(--dark) !important;
