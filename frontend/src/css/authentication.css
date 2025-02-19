@@ -48,7 +48,7 @@
     transition: var(--transition-regular);
 }
 .link:hover, .submit:hover{
-    background-color: var(--button-hover);
+    background-color: var(--light);
 }
 .login-register{
     display: flex;

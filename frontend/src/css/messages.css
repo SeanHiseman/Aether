@@ -44,15 +44,15 @@
     transition: var(--transition-regular);
 }
 .chat-send-button.disabled {
-    background-color: var(--dark-line);
+    background-color: var(--dark);
     cursor: not-allowed;
     transition: none;
 }
 .chat-send-button:hover {
-    background-color: var(--button-hover);
+    background-color: var(--light);
 }
 .chat-send-button.disabled:hover {
-    background-color: var(--dark-line);
+    background-color: var(--dark);
 }
 .chat-input {
     padding: 10px;
@@ -114,7 +114,7 @@
     background-color: var(--darkest);
 }
 .message.outgoing {
-    background-color: var(--button-hover);
+    background-color: var(--light);
 }
 .message-container {
     margin: var(--small-margin);
@@ -172,7 +172,7 @@
     top: -30px;
 }
 .unread-count {
-    color: var(--dark-line);
+    color: var(--dark);
     font-size: medium;
     margin: var(--small-margin);
     position: relative;
