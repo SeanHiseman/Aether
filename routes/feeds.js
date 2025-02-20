@@ -92,9 +92,9 @@ router.post('/change_description', authenticateCheck, async (req, res) => {
 
 router.post('/change_feed_name', authenticateCheck, async (req, res) => {
     try {
-        const { feedName, feedId } = req.body;
-        const feed = await Feeds.findOne({ where: { feed_id: feedId } });
-        feed.feed_name = feedName;
+        const { feed_id, newName } = req.body;
+        const feed = await Feeds.findOne({ where: { feed_id } });
+        feed.feed_name = newName;
         await feed.save();
         res.status(200).json({ success: true });
     } catch (error) {
