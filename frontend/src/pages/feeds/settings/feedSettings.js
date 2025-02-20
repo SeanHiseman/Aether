@@ -69,7 +69,7 @@ const FeedSettings = () => {
     const renderComponent = () => {
         switch (currentView) {
             case 'info':
-                return <FeedInfoView feed={feed} setFeed={setFeed} />;
+                return <FeedInfoView feed={feed} setFeed={setFeed} user={user} />;
             case 'feed-deletion':
                 return <FeedDeletion feed={feed} />;
             case 'followers':

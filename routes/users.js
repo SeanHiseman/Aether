@@ -1,6 +1,6 @@
 import authenticateCheck from '../functions/checks/authenticateCheck.js';
 import sortPostsByWeightedRatio from'../functions/postSorting.js';
-import { Users } from '../models/relationships.js';
+import { Feeds, Users } from '../models/relationships.js';
 import { Router } from 'express';
 
 const router = Router();
@@ -34,9 +34,12 @@ router.post('/change_theme', authenticateCheck, async (req, res) => {
 
 router.post('/change_username', authenticateCheck, async (req, res) => {
     try {
-        const { username, userId } = req.body;
-        const user = await Users.findOne({ where: { user_id: userId } });
-        user.username = username;
+        const { feed_id, newName, user_id } = req.body;
+        const feed = await Feeds.findOne({ where: { feed_id } });
+        const user = await Users.findOne({ where: { user_id } });
+        feed.feed_name = newName;
+        user.username = newName;
+        await feed.save();
         await user.save();
         res.status(200).json({ success: true });
     } catch (error) {

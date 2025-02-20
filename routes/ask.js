@@ -248,7 +248,7 @@ router.post('/send_ask_message', authenticateCheck, async (req, res) => {
             timestamp: Date.now()
         });
         const chacaterCount = messageContent.length + aiReply.length;
-        console.log("characterCount:", chacaterCount);
+        //console.log("characterCount:", chacaterCount);
         await AskChats.update(
             { updated_at: Date.now() },
             { where: { chat_id: chatId } }

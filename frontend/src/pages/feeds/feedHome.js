@@ -330,7 +330,9 @@ const FeedHome = () => {
                         <img className="large-feed-photo" src={`/${feed.feed_photo}`} alt={feed.feed_name} />
                     </Link>
                     <div className="feed-name">
-                        <p className="text36">{feed.feed_name}</p>
+                        <Link to={`/${urlLetter}/${feed_name}/Main`}>
+                            <p className="text36">{feed.feed_name}</p>
+                        </Link>
                         {isAdmin && (
                             <Link to={`/feed_settings/${feed_name}`}>
                                 <button className="small-icon" title="Settings">

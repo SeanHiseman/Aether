@@ -3,7 +3,7 @@ import { FaFileUpload } from 'react-icons/fa';
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-const FeedInfoView = ({ feed, setFeed }) => {
+const FeedInfoView = ({ feed, setFeed, user }) => {
     const [errorMessage, setErrorMessage] = useState('');
     const [feedPhotoFile, setFeedPhotoFile] = useState('No file chosen');
     const [isEditingDescription, setIsEditingDescription] = useState(false);
@@ -104,11 +104,13 @@ const FeedInfoView = ({ feed, setFeed }) => {
         }
     };
 
-    const updateFeedName = async () => {
+    const updateName = async () => {
         try {
-            await axios.post('/api/change_feed_name', {
-                feedName: newName,
-                feedId: feed.feed_id
+            const route = feed.is_group ? 'change_feed_name' : 'change_username';
+            await axios.post(`/api/${route}`, {
+                feed_id: feed.feed_id,
+                newName: newName,
+                user_id: user.user_id
             });
             setFeed({ ...feed, feedName: newName });
             setIsEditingName(false);
@@ -161,7 +163,7 @@ const FeedInfoView = ({ feed, setFeed }) => {
                                     }}>Cancel</button>
                                     <button className="button" onClick={(e) => {
                                         e.preventDefault();
-                                        updateFeedName()
+                                        updateName()
                                     }}>Save</button>
                                 </div>
                             </div>
