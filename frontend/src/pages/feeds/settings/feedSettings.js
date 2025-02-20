@@ -113,7 +113,7 @@ const FeedSettings = () => {
                             <li className="channel-link" onClick={() => setCurrentView('follow-requests')}>{followRequestCount} {followRequestCount === 1 ? 'Follow request' : 'Follow requests'}</li>
                             )}
                         {!feed.is_group && (<li className="channel-link" onClick={() => setCurrentView('membership-settings')}>Membership</li>)}
-                        {!feed.is_group && (<li className="channel-link" onClick={() => setCurrentView('password-personal')}>Password</li>)}
+                        {!feed.is_group && (<li className="channel-link" onClick={() => setCurrentView('password-personal')}>Password/Email</li>)}
                         {!feed.is_group && (<li className="channel-link" onClick={() => setCurrentView('theme')}>Theme</li>)}
                         {feed.isOwner && (
                             <li 

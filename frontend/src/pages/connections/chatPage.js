@@ -167,13 +167,7 @@ const ChatPage = () => {
     document.title = connection_name;
     return (
         <div className="standard-container">
-            <ChatChannel 
-                channelId={selectedChatId} 
-                connection={connection} 
-                isGroup={false} 
-                setChats={setChats} 
-                setErrorMessage={setErrorMessage} 
-            />
+            <ChatChannel channelId={selectedChatId} connection={connection} isGroup={false} setChats={setChats} setErrorMessage={setErrorMessage} />
             <aside id="right-aside">
                 {connection && (
                     <div id="feed-summary">
@@ -203,36 +197,17 @@ const ChatPage = () => {
                                                 }}
                                             />
                                             <div className="cancel-save">
-                                                <button
-                                                    className="button"
-                                                    onClick={() => {
-                                                        setIsEditingChatName(false);
-                                                        setNewChatName("");
-                                                        setErrorMessage("");
-                                                    }}
-                                                >
+                                                <button className="button" onClick={() => {setIsEditingChatName(false); setNewChatName(""); setErrorMessage("");}}>
                                                     Cancel
                                                 </button>
-                                                <button
-                                                    className="button"
-                                                    onClick={(e) => {
-                                                        e.preventDefault();
-                                                        changeChannelName(e);
-                                                    }}
-                                                >
+                                                <button className="button" onClick={(e) => {e.preventDefault(); changeChannelName(e);}}>
                                                     Save
                                                 </button>
                                             </div>
                                         </div>
                                     ) : (
                                         <div className="button-group">
-                                            <button
-                                                className="small-icon"
-                                                onClick={() => {
-                                                    setIsEditingChatName(true);
-                                                    setNewChatName(title);
-                                                }}
-                                            >
+                                            <button className="small-icon" onClick={() => {setIsEditingChatName(true); setNewChatName(title);}}>
                                                 <FaEdit />
                                             </button>
                                             <button className="small-icon" onClick={handleDelete}>
@@ -274,14 +249,7 @@ const ChatPage = () => {
                             )}
                             {errorMessage && <div className="error-message">{errorMessage}</div>}
                         </div>
-                        <ChannelList
-                            channels={chats}
-                            feedId={viewer.feed_id}
-                            feedName={connection.feed_name}
-                            isChat={true}
-                            isGroup={false}
-                            setChannels={updateChats}
-                        />
+                        <ChannelList channels={chats} feedId={viewer.feed_id} feedName={connection.feed_name} isChat={true} isGroup={false} setChannels={updateChats} />
                     </div>
                 )}
             </aside>

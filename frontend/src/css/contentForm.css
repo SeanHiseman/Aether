@@ -161,7 +161,7 @@
   background-color: var(--darkest); 
 }
 .ql-editor.ql-blank::before { 
-  color: var(--light) !important; 
+  color: var(--border) !important; 
 }
 .shared-container { 
   display: flex;

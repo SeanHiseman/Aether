@@ -123,7 +123,7 @@ router.get('/get_ask_chats', authenticateCheck, async (req, res) => {
 
 router.post('/generate_content', authenticateCheck, async (req, res) => {
     try {
-        const { currentCode, request, parentCode } = req.body;
+        const { currentCode, request, parentCode, senderId } = req.body;
         console.log("req.body:", req.body);
         //Creates API assistant
         const assistant = await openai.beta.assistants.create({
@@ -142,7 +142,7 @@ router.post('/generate_content', authenticateCheck, async (req, res) => {
         );
         const assistantInstructions = parentCode ? `Request and current code are for a reply to parent code. Answer with new or improved html code, containing JavaScript if necessary. Nothing else. Do not set body background colors, container borders, or text alignments. Do not use vh. Overflow hidden in body. White text default. If cannot be made into code, no response. Current code: ${currentCode}, parent code: ${parentCode}` 
         : `Answer with new or improved html code, containing JavaScript if necessary. Nothing else. Do not set body background colors, container borders, or text alignments. Do not use vh. Overflow hidden in body. White text default. If cannot be made into code, no response. Current code: ${currentCode}`;
-        console.log("assistantInstructions:", assistantInstructions);
+        //console.log("assistantInstructions:", assistantInstructions);
         //Run OpenAI assistant
         const run = await openai.beta.threads.runs.create(
             thread.id,
@@ -159,8 +159,11 @@ router.post('/generate_content', authenticateCheck, async (req, res) => {
         //Get OpenAI response
         const messages = await openai.beta.threads.messages.list(thread.id);
         let aiReply = messages.data.find(msg => msg.role === 'assistant').content[0].text.value;
+        const chacaterCount = currentCode.length + (parentCode?.length ?? 0) + aiReply.length; //Parent code can be null
+        console.log("characterCount:", chacaterCount);
+        await Users.increment('usage_count', { by: chacaterCount, where: { user_id: senderId } });
         aiReply = aiReply.replace(/^```[a-zA-Z]+\s*|```$/g, '').trim(); //Trims response
-        console.log("aiReply:", aiReply);
+        //console.log("aiReply:", aiReply);
         res.status(201).json({ success: true, generatedContent: aiReply });
     } catch (error) {
         console.log(error);
@@ -185,9 +188,9 @@ router.get('/get_ask_messages', authenticateCheck, async (req, res) => {
 });
 
 router.post('/send_ask_message', authenticateCheck, async (req, res) => {
-    //console.log("req.body:", req.body);
     try {
         const { chatId, messageContent, senderId, timestamp } = req.body;
+        //console.log("req.body:", req.body);
         const chat = await AskChats.findOne({ where: { chat_id: chatId } });
         if (!chat) {
             return res.status(404).json({ success: false, message: 'Chat not found' });
@@ -218,7 +221,7 @@ router.post('/send_ask_message', authenticateCheck, async (req, res) => {
             thread_id,
             {
                 assistant_id: assistant_id, 
-                instructions: "Your info:( Name: Ask, Site name: Aether) rules: (reply length =< 3 sentences if possible)."
+                instructions: "Your info:( Name: Ask, Site name: Aether) rules: (reply length < 5 sentences unless asked for more detail). Your abilities will be expanded soon."
             }
         );
         let runStatus = await openai.beta.threads.runs.retrieve(thread_id, run.id);
@@ -244,13 +247,16 @@ router.post('/send_ask_message', authenticateCheck, async (req, res) => {
             content: aiReply,
             timestamp: Date.now()
         });
+        const chacaterCount = messageContent.length + aiReply.length;
+        console.log("characterCount:", chacaterCount);
         await AskChats.update(
             { updated_at: Date.now() },
             { where: { chat_id: chatId } }
         );
+        await Users.increment('usage_count', { by: chacaterCount, where: { user_id: senderId } });
         res.status(201).json({ success: true, newMessage, assistantMessage });
     } catch (error) {
-        console.log(error);
+        //console.log(error);
         res.status(500).json({ success: false, message: 'Internal Server Error' });
     }
 });

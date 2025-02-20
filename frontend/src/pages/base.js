@@ -240,14 +240,7 @@ const BaseLayout = () => {
                     </Tooltip>
                     {showForm && (
                         <form id="create-feed-form" onSubmit={createFeed}>
-                            <input
-                                className="name-input"
-                                type="text"
-                                name="Name"
-                                placeholder="Feed name..."
-                                value={feedName}
-                                onChange={(e) => setFeedName(e.target.value)}
-                            />
+                            <input className="name-input" type="text" name="Name" placeholder="Feed name..." value={feedName} onChange={(e) => setFeedName(e.target.value)}/>
                             <div className="file-input">
                                 <label htmlFor="feed-photo-input" className="small-icon">
                                     <FaFileUpload /><p className="icon-text">Choose photo</p>
@@ -256,27 +249,15 @@ const BaseLayout = () => {
                                 <span className="file-name">{feedPhotoFile ? feedPhotoFile.name : 'No file chosen'}</span>
                             </div>
                             <div className="option-toggle">
-                                <button
-                                    className={feedType === 'public' ? 'active-mode' : 'passive-mode'}
-                                    onClick={(event) => {event.preventDefault(); setFeedType('public');}}
-                                >
+                                <button className={feedType === 'public' ? 'active-mode' : 'passive-mode'} onClick={(event) => {event.preventDefault(); setFeedType('public');}}>
                                     Public
                                 </button>
-                                <button
-                                    className={feedType === 'private' ? 'active-mode' : 'passive-mode'}
-                                    onClick={(event) => {event.preventDefault(); setFeedType('private');}}
-                                >
+                                <button className={feedType === 'private' ? 'active-mode' : 'passive-mode'} onClick={(event) => {event.preventDefault(); setFeedType('private');}}>
                                     Private
                                 </button>
                             </div>
                             {errorMessage && <div className="error-message">{errorMessage}</div>}
-                            <button
-                                className={feedName.length === 0 ? "small-icon disabled" : "small-icon"}
-                                disabled={feedName.length === 0}
-                                title={feedName.length === 0 ? "Enter a name" : "Create"}
-                                type="submit"
-                                value="Create"
-                            >
+                            <button className={feedName.length === 0 ? "small-icon disabled" : "small-icon"} disabled={feedName.length === 0} title={feedName.length === 0 ? "Enter a name" : "Create"} type="submit" value="Create">
                                 <FaPlus />
                             </button>
                         </form>
@@ -304,36 +285,14 @@ const BaseLayout = () => {
             <main>
                 <header id="base-header">
                     <div className="spacer"></div>
-                    <form
-                        id="search-form"
-                        onSubmit={(event) => {
-                            event.preventDefault();
-                            handleSearchClick();
-                        }}
+                    <form id="search-form" onSubmit={(e) => {e.preventDefault(); handleSearchClick();}}
                     >
                         <div className="search-container">
-                            <button
-                                className="icon-button ask"
-                                data-tooltip="Ask"
-                                type="button"
-                                onClick={handleAskClick}
-                            >
+                            <button className="icon-button ask" data-tooltip="Ask" type="button" onClick={handleAskClick}>
                                 <img className="standard-icon" src="/media/site_images/icons/ask.png" alt="Ask"/>
                             </button>
-                            <input
-                                id="search-bar"
-                                type="text"
-                                name="keyword"
-                                placeholder="Type..."
-                                value={currentQuery}
-                                onChange={(e) => setCurrentQuery(e.target.value)}
-                            />
-                            <button
-                                className="icon-button search"
-                                data-tooltip="Search"
-                                type="submit"
-                                onClick={handleSearchClick}
-                            >
+                            <input id="search-bar" type="text" name="keyword" placeholder="Type..." value={currentQuery} onChange={(e) => setCurrentQuery(e.target.value)}/>
+                            <button className="icon-button search" data-tooltip="Search" type="submit" onClick={handleSearchClick}>
                                 <img className="standard-icon" src="/media/site_images/icons/search.png" alt="Search"/>
                             </button>
                         </div>

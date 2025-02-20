@@ -1,4 +1,5 @@
 import { BOOLEAN, FLOAT, STRING, DataTypes, INTEGER } from 'sequelize';
+import cron from 'node-cron';
 import sequelize from '../databaseSetup.js';
 
 const Users = sequelize.define('users', {
@@ -13,7 +14,12 @@ const Users = sequelize.define('users', {
     has_membership: { type: BOOLEAN, defaultValue: false }, 
     theme: { type: STRING(1000), allowNull: true, defaultValue: '{"buttonHover":"#737484","dark":"#2c2e31","darkest":"#0f0f0f"}' },
     points: { type: INTEGER, allowNull: false, defaultValue: 0 }, 
+    usage_count: { type: INTEGER, allowNull: false, defaultValue: 0 }, 
 }, { tableName: 'users', timestamps: false });
+
+cron.schedule('0 0 * * 0', async () => { //Resets usage count every Sunday night
+    await Users.update({ usage_count: 0 }, { where: {} });
+});
 
 export {
     Users,
