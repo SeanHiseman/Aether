@@ -35,18 +35,12 @@
     background-color: var(--dark);
     border: none;
     border-radius: var(--large-margin);
-    cursor: pointer;
     color: var(--border);
     font-size: large;
     min-height: 50px;
     min-width: 90px;
     padding: var(--small-margin);
     transition: var(--transition-regular);
-}
-.chat-send-button.disabled {
-    background-color: var(--dark);
-    cursor: not-allowed;
-    transition: none;
 }
 .chat-send-button:hover {
     background-color: var(--light);

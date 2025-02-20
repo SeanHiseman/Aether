@@ -58,6 +58,7 @@ const reorder = (list, startIndex, endIndex) => {
 	return result
 }
 
+//Post is either the post being edited or replied to
 const ContentForm = ({ feed, isEdit = false, isGroup, isReply, onSubmit, post = null, setShowForm }) => {
 	const [blocks, setBlocks] = useState([])
 	const [editMode, setEditMode] = useState(true)
@@ -67,13 +68,13 @@ const ContentForm = ({ feed, isEdit = false, isGroup, isReply, onSubmit, post = 
 	const [isGlobalLoading, setIsGlobalLoading] = useState(false)
 	const [title, setTitle] = useState('')
 	const [showGlobalAiPrompt, setShowGlobalAiPrompt] = useState(false)
-
 	const iframeRefs = useRef({})
 	const { channel_name, feed_name } = useParams()
 	const navigate = useNavigate()
 	const urlPrefix = isGroup ? 'g' : 'u'
 	const { user } = useContext(AuthContext)
-
+	const usageLimit = user.has_membership ? 10000000 : 100000;
+	const limitReached = user.usage_count >= usageLimit;
 	const hasMembership = user?.has_membership
 	const BLOCK_LIMIT = hasMembership ? 10000 : 10
 	const TEXT_CHAR_LIMIT = hasMembership ? 100000 : 1000
@@ -242,6 +243,10 @@ const ContentForm = ({ feed, isEdit = false, isGroup, isReply, onSubmit, post = 
 	}, [])
 
 	const handleGenerateCodeBlock = useCallback(async block => {
+		if (limitReached) {
+			setFormErrorMessage(user.has_membership ? "Usage limit reached" : "Usage limit reached. Get membership for more.");
+			return;
+		}
 		try {
 			const prompt = block.data._tempAiPrompt || ''
 			if (!prompt.trim()) {
@@ -250,7 +255,7 @@ const ContentForm = ({ feed, isEdit = false, isGroup, isReply, onSubmit, post = 
 			}
 			updateBlock({ ...block, data: { ...block.data, isBlockLoading: true } })
 			setFormErrorMessage('')
-			const response = await axios.post('/api/generate_content', { currentCode: block.data.code, parentCode: post ? post.content : null, request: prompt })
+			const response = await axios.post('/api/generate_content', { currentCode: block.data.code, parentCode: isReply ? post.content : null, request: prompt, senderId: user.user_id })
 			if (response.data && response.status === 201) {
 				const { generatedContent } = response.data
 				updateBlock({ ...block, data: { ...block.data, code: generatedContent, isBlockLoading: false }, isEditing: false })
@@ -265,6 +270,10 @@ const ContentForm = ({ feed, isEdit = false, isGroup, isReply, onSubmit, post = 
 	}, [post, updateBlock])
 
 	const handleGenerateFullContent = useCallback(async () => {
+		if (limitReached) {
+			setFormErrorMessage(user.has_membership ? "Usage limit reached" : "Usage limit reached. Get membership for more.");
+			return;
+		}
 		try {
 			const prompt = globalAiPrompt.trim()
 			if (!prompt) {
@@ -274,7 +283,7 @@ const ContentForm = ({ feed, isEdit = false, isGroup, isReply, onSubmit, post = 
 			setIsGlobalLoading(true)
 			setFormErrorMessage('')
 			const fullHTML = compileFinalHTML(blocks)
-			const response = await axios.post('/api/generate_content', { currentCode: fullHTML, parentCode: post ? post.content : null, request: prompt })
+			const response = await axios.post('/api/generate_content', { currentCode: fullHTML, parentCode: isReply ? post.content : null, request: prompt, senderId: user.user_id })
 			if (response.data && response.status === 201) {
 				const { generatedContent } = response.data
 				setBlocks([{ data: { code: generatedContent, isBlockLoading: false, showPrompt: true }, id: uuidv4(), isEditing: false, type: BLOCK_TYPES.CODE }])
@@ -354,7 +363,7 @@ const ContentForm = ({ feed, isEdit = false, isGroup, isReply, onSubmit, post = 
 							</div>
 						)}
 					</div>
-        </div>
+        		</div>
 				{(blockLimitError || formErrorMessage) && (
 					<p className="text16" style={{ display: 'flex', alignItems: 'center', margin: '0' }}>
 						{blockLimitError || formErrorMessage}
@@ -370,8 +379,16 @@ const ContentForm = ({ feed, isEdit = false, isGroup, isReply, onSubmit, post = 
 				)}
 				{showGlobalAiPrompt && (
 					<div className="global-ai-prompt-container">
-						<textarea className="ai-prompt" onChange={e => setGlobalAiPrompt(e.target.value)} placeholder="Describe changes for post..." value={globalAiPrompt} />
-						<button className={isGlobalLoading || !globalAiPrompt.trim() ? 'large-icon disabled' : 'large-icon'} disabled={isGlobalLoading || !globalAiPrompt.trim()} onClick={handleGenerateFullContent} title={isGlobalLoading ? 'Creating...' : !globalAiPrompt.trim() ? 'Enter a prompt' : 'Create'} type="button">
+						<textarea className="ai-prompt" 
+							disabled={limitReached} 
+							onChange={e => setGlobalAiPrompt(e.target.value)} 
+							placeholder={limitReached ? user.has_membership ? "Usage limit reached" : "Usage limit reached. Get membership for more." : "Describe changes for post..."} 
+							value={globalAiPrompt}/>
+						<button className={isGlobalLoading || !globalAiPrompt.trim() || limitReached ? 'large-icon disabled' : 'large-icon'} 
+							disabled={isGlobalLoading || !globalAiPrompt.trim() || limitReached} 
+							onClick={handleGenerateFullContent} 
+							title={limitReached ? "Usage limit reached" : isGlobalLoading ? 'Creating...' : !globalAiPrompt.trim() ? 'Enter a prompt' : 'Create'} 
+							type="button">
 							{isGlobalLoading ? <FaCircleNotch /> : <FaArrowCircleUp />}
 						</button>
 					</div>
@@ -448,8 +465,16 @@ const ContentForm = ({ feed, isEdit = false, isGroup, isReply, onSubmit, post = 
 																		<>
 																			{data.showPrompt ? (
 																				<div className="ai-generator">
-																					<textarea className="ai-prompt" onChange={e => updateBlock({ ...block, data: { ...data, _tempAiPrompt: e.target.value } })} placeholder="Describe your content..." />
-																					<button className={data.isBlockLoading || !data._tempAiPrompt?.trim() ? 'small-icon disabled' : 'small-icon'} disabled={data.isBlockLoading || !data._tempAiPrompt?.trim()} onClick={() => handleGenerateCodeBlock(block)} title={data.isBlockLoading ? 'Creating...' : !data._tempAiPrompt?.trim() ? 'Enter a prompt' : 'Create'} type="button">
+																					<textarea className="ai-prompt" 
+																						disabled={limitReached} 
+																						onChange={e => updateBlock({ ...block, data: { ...data, _tempAiPrompt: e.target.value } })} 
+																						placeholder={limitReached ? user.has_membership ? "Usage limit reached" : "Usage limit reached. Get membership for more." : "Describe your content..."} 
+																						value={data._tempAiPrompt || ''}/>
+																					<button className={data.isBlockLoading || !data._tempAiPrompt?.trim() || limitReached ? 'small-icon disabled' : 'small-icon'} 
+																						disabled={data.isBlockLoading || !data._tempAiPrompt?.trim() || limitReached} 
+																						onClick={() => handleGenerateCodeBlock(block)} 
+																						title={limitReached ? user.has_membership ? "Usage limit reached" : "Usage limit reached. Get membership for more." : data.isBlockLoading ? 'Creating...' : !data._tempAiPrompt?.trim() ? 'Enter a prompt' : 'Create'}
+																						type="button">
 																						{data.isBlockLoading ? <FaCircleNotch /> : <FaArrowCircleUp />}
 																					</button>
 																				</div>

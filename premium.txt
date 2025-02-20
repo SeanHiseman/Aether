@@ -6,3 +6,4 @@ Premium features
 10,000 channels on user feed vs 100 
 100,000 character blocks vs 1000
 100,000 character messages vs 1000
+10,000,000 chacater AI usage vs 100,000
