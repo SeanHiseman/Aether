@@ -161,8 +161,19 @@
   background-color: var(--darkest); 
 }
 .ql-editor.ql-blank::before { 
-  color: var(--border) !important; 
+  color: #7b7b7b !important; 
 }
+.ql-toolbar button svg,
+.ql-toolbar button svg * {
+	fill: #7b7b7b!important;
+	stroke: #7b7b7b !important;
+}
+.ql-toolbar .ql-fill,
+.ql-toolbar .ql-stroke {
+	fill: #7b7b7b !important;
+	stroke: #7b7b7b !important;
+}
+
 .shared-container { 
   display: flex;
   flex: 1; 

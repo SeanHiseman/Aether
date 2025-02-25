@@ -461,6 +461,7 @@ const ContentForm = ({ feed, isEdit = false, isGroup, isReply, onSubmit, post = 
 															)}
 															{type === BLOCK_TYPES.CODE && (
 																<div className="block-content">
+																	{!data.showPrompt && <p className="text16" style={{color: '#7b7b7b', marginLeft: '0px'}}>For now, only one HTML file with inline JavaScript and CSS can be created.</p>}
 																	{isEditing && (
 																		<>
 																			{data.showPrompt ? (

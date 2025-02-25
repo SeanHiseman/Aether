@@ -135,6 +135,14 @@ const FeedHome = () => {
         }
     }, [channelRender, channels]);
 
+    //Resets channel states when switching channels
+    useEffect(() => {
+		setShowPostForm(false);
+		setReplyingToPost(null);
+		setIsEdit(false);
+		setPostToEdit(null);
+	}, [channel_name]);
+
     const changeChannelName = async (event) => {
         event.preventDefault();
         try {
@@ -276,25 +284,9 @@ const FeedHome = () => {
         <div className="standard-container">  
             <div className="channel-feed">
                 {showPostForm ? (
-                    <ContentForm 
-                        isEdit={isEdit}
-                        isReply={false} 
-                        onSubmit={isEdit ? handleEditSubmit : handlePostSubmit} 
-                        postErrorMessage={postErrorMessage} 
-                        post={postToEdit}
-                        setPostErrorMessage={setPostErrorMessage} 
-                        setShowForm={setShowPostForm}
-                    />
+                    <ContentForm isEdit={isEdit} isReply={false} onSubmit={isEdit ? handleEditSubmit : handlePostSubmit} postErrorMessage={postErrorMessage} post={postToEdit} setPostErrorMessage={setPostErrorMessage} setShowForm={setShowPostForm}/>
                 ) : replyingToPost ? (
-                    <ContentForm
-                        feed={feed}
-                        isEdit={false}
-                        isGroup={feed.is_group}
-                        isReply={true}
-                        onSubmit={handlePostSubmit}
-                        post={replyingToPost}
-                        setShowForm={() => setReplyingToPost(null)}
-                    />
+                    <ContentForm feed={feed} isEdit={false} isGroup={feed.is_group} isReply={true} onSubmit={handlePostSubmit} post={replyingToPost} setShowForm={() => setReplyingToPost(null)}/>
                 ) : feedErrorMessage ? (
                     <div className="text36">{feedErrorMessage}</div>
                 ) : channelRender ? (
@@ -315,12 +307,7 @@ const FeedHome = () => {
                             }}
                         />
                     ) : (
-                        <ChatChannel
-                            canRemove={canRemove}
-                            channelId={channelRender.channel_id}
-                            feedId={feed.feed_id}
-                            isGroup={true}
-                        />
+                        <ChatChannel canRemove={canRemove} channelId={channelRender.channel_id} feedId={feed.feed_id} isGroup={true}/>
                     )
                 ) : null}
             </div> 
@@ -428,29 +415,15 @@ const FeedHome = () => {
                                 </div>
                                 {showChannelForm && (
                                     <form className="add-channel-form" onSubmit={AddChannel}>
-                                        <input
-                                            className="name-input"
-                                            type="text"
-                                            placeholder="Channel name..."
-                                            value={newChannelName}
-                                            onChange={(e) => setNewChannelName(e.target.value)}
-                                        />
+                                        <input className="name-input" onChange={(e) => setNewChannelName(e.target.value)} placeholder="Channel name..." type="text" value={newChannelName}/>
                                         {feed.is_group && (
                                             <div className="channel-options">
                                                 <label>
-                                                    <input
-                                                        type="checkbox"
-                                                        checked={isPostChannel}
-                                                        onChange={handlePostClick}
-                                                    />
+                                                    <input checked={isPostChannel} onChange={handlePostClick} type="checkbox"/>
                                                     Post Channel
                                                 </label>
                                                 <label>
-                                                    <input
-                                                        type="checkbox"
-                                                        checked={isChatChannel}
-                                                        onChange={handleChatClick}
-                                                    />
+                                                    <input checked={isChatChannel} onChange={handleChatClick} type="checkbox"/>
                                                     Chat Channel
                                                 </label>
                                             </div>
@@ -460,7 +433,7 @@ const FeedHome = () => {
                                         </button>
                                     </form>
                                 )}
-                        </div>
+                            </div>
                         )}
                     </div>
                 )}
