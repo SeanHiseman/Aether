@@ -291,8 +291,8 @@ main {
     transition: var(--transition-regular);
     width: 80%;
 }
-.name-input::placeholder, #search-bar::placeholder {
-    color: var(--border);
+.name-input::placeholder, #search-bar::placeholder, textarea::placeholder, .title-input::placeholder {
+    color: #7b7b7b;
 }
 #personal-feeds {
     margin-top: 20px;
