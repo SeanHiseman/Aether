@@ -13,6 +13,8 @@ const FeedInfoView = ({ feed, setFeed, user }) => {
     const navigate = useNavigate();
     const [newDescription, setDescription] = useState('');
     const [newName, setName] = useState('');
+    const hasMembership = user?.has_membership;
+	const MAX_FILE_SIZE = hasMembership ? 100 * 1024 * 1024 : 1 * 1024 * 1024;
 
     useEffect(() => {
         if (isEditingName) {
@@ -29,6 +31,13 @@ const FeedInfoView = ({ feed, setFeed, user }) => {
     const ChangeFeedPhoto = async (event) => {
         try {
             event.preventDefault();
+            const files = Array.from(event.target.files)
+            const oversized = files.filter(f => f.size > MAX_FILE_SIZE)
+            if (oversized.length) {
+                const names = oversized.map(f => f.name).join(', ')
+                setErrorMessage(hasMembership ? `These files exceed your max size limit: ${names}.` : `These files exceed your max size limit: ${names}. Get membership for more.`);
+                return
+            }
             const fileInput = event.target.elements.new_feed_photo;
             if (!fileInput.files[0]) {
                 setErrorMessage('Please upload an image');
@@ -49,7 +58,7 @@ const FeedInfoView = ({ feed, setFeed, user }) => {
             setErrorMessage('');
         } catch(error) {
             if (error.response.status === 413) {
-                setErrorMessage("File cannot be more than 5MB");
+                setErrorMessage(hasMembership ? "File cannot be more than 100MB": "File cannot be more than 1MB, get membership for more.");
             } else if (error.response.status === 400) {
                 setErrorMessage(error.response.data.error || "Error, please try again");
             } else {

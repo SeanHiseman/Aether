@@ -33,6 +33,8 @@ const BaseLayout = () => {
     const { state } = useContext(UnreadContext);
     const feedContainerRef = useRef(null);
     const navigate = useNavigate();
+    const hasMembership = user?.has_membership;
+	const MAX_FILE_SIZE = hasMembership ? 100 * 1024 * 1024 : 1 * 1024 * 1024;
 
     useEffect(() => {
         const fetchViewerFeed = async () => {
@@ -119,6 +121,13 @@ const BaseLayout = () => {
                 setErrorMessage('Feed needs a name');
                 return;
             } 
+            const files = Array.from(event.target.files)
+            const oversized = files.filter(f => f.size > MAX_FILE_SIZE)
+            if (oversized.length) {
+                const names = oversized.map(f => f.name).join(', ')
+                setErrorMessage(hasMembership ? `These files exceed your max size limit: ${names}.` : `These files exceed your max size limit: ${names}. Get membership for more.`);
+                return
+            }
             const newFeed = new FormData();
             newFeed.append('feedName', feedName);
             newFeed.append('type', feedType);
@@ -153,7 +162,7 @@ const BaseLayout = () => {
             }
         } catch (error) {
             if (error.response.status === 413) {
-                setErrorMessage("File cannot be more than 5MB");
+                setErrorMessage(hasMembership ? "File cannot be more than 100MB": "File cannot be more than 1MB, get membership for more.");
             } else if (error.response.status === 400 ) {
                 setErrorMessage("Name taken");
             } else {
