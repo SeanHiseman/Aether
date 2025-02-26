@@ -13,6 +13,7 @@ const feedAttributes = ['feed_id', 'parent_id', 'feed_name', 'description', 'fee
 const noteAttributes = ['note_id', 'note_content', 'timestamp', 'is_misinfo']
 const postAttributes = ['post_id', 'parent_id', 'feed_id', 'channel_id', 'title', 'content', 'replies', 'views', 'upvotes', 'downvotes', 'timestamp', 'poster_id', 'points']
 const router = Router();
+const user = req.session.user;
 
 router.get('/channel_posts', authenticateCheck, async (req, res) => {
     try {
@@ -162,7 +163,7 @@ const post_storage = multer.diskStorage({
 const post_upload = multer({
     fileFilter: postFilter,
     limits: {
-        fileSize: 1024 * 1024 * 1000 //Update for premium/free check
+        fileSize: user.has_membership ? 1024 * 1024 * 100 : 1024 * 1024 * 1
     },
     storage: post_storage
 });

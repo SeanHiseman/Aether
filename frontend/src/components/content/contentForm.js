@@ -78,7 +78,7 @@ const ContentForm = ({ feed, isEdit = false, isGroup, isReply, onSubmit, post = 
 	const hasMembership = user?.has_membership
 	const BLOCK_LIMIT = hasMembership ? 10000 : 10
 	const TEXT_CHAR_LIMIT = hasMembership ? 100000 : 1000
-	const MAX_FILE_SIZE = hasMembership ? 1000 * 1024 * 1024 : 10 * 1024 * 1024
+	const MAX_FILE_SIZE = hasMembership ? 100 * 1024 * 1024 : 1 * 1024 * 1024
 
 	const isContentEmpty = useCallback(blocksArray => !blocksArray.some(block => {
 		if (block.type === BLOCK_TYPES.TEXT) return block.data.html && block.data.html.trim() !== ''
@@ -139,8 +139,8 @@ const ContentForm = ({ feed, isEdit = false, isGroup, isReply, onSubmit, post = 
 
 	const handleAddBlock = useCallback(type => {
 		setBlockLimitError('')
-		if (!hasMembership && blocks.length >= BLOCK_LIMIT) {
-			setBlockLimitError(`Free block limit (${BLOCK_LIMIT}) reached. Get membership to add more:`)
+		if (blocks.length >= BLOCK_LIMIT) {
+			setBlockLimitError(hasMembership ? `Block limit (${BLOCK_LIMIT}) reached.` : `Free block limit (${BLOCK_LIMIT}) reached. Get membership to add more:`)
 			return
 		}
 		const newBlock = {
@@ -154,15 +154,15 @@ const ContentForm = ({ feed, isEdit = false, isGroup, isReply, onSubmit, post = 
 
 	const handleFilesChange = useCallback(event => {
 		setBlockLimitError('')
-		if (!hasMembership && blocks.length >= BLOCK_LIMIT) {
-			setBlockLimitError(`Free block limit (${BLOCK_LIMIT}) reached. Get membership to add more:`)
+		if (blocks.length >= BLOCK_LIMIT) {
+			setBlockLimitError(hasMembership ? `Block limit (${BLOCK_LIMIT}) reached.` : `Free block limit (${BLOCK_LIMIT}) reached. Get membership to add more:`)
 			return
 		}
 		const files = Array.from(event.target.files)
 		const oversized = files.filter(f => f.size > MAX_FILE_SIZE)
 		if (oversized.length) {
 			const names = oversized.map(f => f.name).join(', ')
-			setFormErrorMessage(`These files exceed your max size limit: ${names}`)
+			setFormErrorMessage(hasMembership ? `These files exceed your max size limit: ${names}.` : `These files exceed your max size limit: ${names}. Get membership for more.`);
 			return
 		}
 		setFormErrorMessage('')
@@ -244,7 +244,7 @@ const ContentForm = ({ feed, isEdit = false, isGroup, isReply, onSubmit, post = 
 
 	const handleGenerateCodeBlock = useCallback(async block => {
 		if (limitReached) {
-			setFormErrorMessage(user.has_membership ? "Usage limit reached" : "Usage limit reached. Get membership for more.");
+			setFormErrorMessage(hasMembership ? "Usage limit reached" : "Usage limit reached. Get membership for more.");
 			return;
 		}
 		try {
@@ -267,11 +267,11 @@ const ContentForm = ({ feed, isEdit = false, isGroup, isReply, onSubmit, post = 
 			updateBlock({ ...block, data: { ...block.data, isBlockLoading: false } })
 			setFormErrorMessage('Error creating content.')
 		}
-	}, [post, updateBlock])
+	}, [hasMembership, post, updateBlock])
 
 	const handleGenerateFullContent = useCallback(async () => {
 		if (limitReached) {
-			setFormErrorMessage(user.has_membership ? "Usage limit reached" : "Usage limit reached. Get membership for more.");
+			setFormErrorMessage(hasMembership ? "Usage limit reached" : "Usage limit reached. Get membership for more.");
 			return;
 		}
 		try {
@@ -293,7 +293,7 @@ const ContentForm = ({ feed, isEdit = false, isGroup, isReply, onSubmit, post = 
 		} finally {
 			setIsGlobalLoading(false)
 		}
-	}, [blocks, compileFinalHTML, globalAiPrompt, post])
+	}, [blocks, compileFinalHTML, globalAiPrompt, hasMembership, post])
 
 	const handleSubmit = useCallback(async e => {
 		e.preventDefault()
