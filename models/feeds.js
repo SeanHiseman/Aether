@@ -55,7 +55,7 @@ const FollowRequests = sequelize.define('follow_requests', {
 const NestedFeeds = sequelize.define('nested_feeds', { //Many-to-many relationship between feeds
     sub_feed_id: { type: STRING(36), primaryKey: true},
     parent_feed_id: { type: STRING(36), primaryKey: true},
-}, { tableName: 'nested_feed', timestamps: false });
+}, { tableName: 'nested_feeds', timestamps: false });
 
 export {
     Feeds, 
