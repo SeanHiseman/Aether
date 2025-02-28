@@ -4,7 +4,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import React, { useCallback, useContext, useEffect, useState } from 'react';
 import { AuthContext } from '../authContext';
 import AskButton from '../askButton';
-import ContentDisplay from './ContentDisplay';
+import ContentDisplay from './contentDisplay';
 import PropTypes from 'prop-types';
 
 const ContentWidget = ({ canRemove, feed, isGroup, onEditClick, onPostRemoved, onReplyClick, parent, post, readOnly = false }) => {
