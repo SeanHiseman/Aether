@@ -13,7 +13,6 @@ const feedAttributes = ['feed_id', 'parent_id', 'feed_name', 'description', 'fee
 const noteAttributes = ['note_id', 'note_content', 'timestamp', 'is_misinfo']
 const postAttributes = ['post_id', 'parent_id', 'feed_id', 'channel_id', 'title', 'content', 'replies', 'views', 'upvotes', 'downvotes', 'timestamp', 'poster_id', 'points']
 const router = Router();
-const user = req.session.user;
 
 router.get('/channel_posts', authenticateCheck, async (req, res) => {
     try {
