@@ -19,7 +19,6 @@ const router = Router();
 const __dirname = path.dirname(import.meta.url);
 app.use(express.static(join(__dirname, 'static')));
 const feedProfileUpload = imageUpload('/media/feed_images', 'new_feed_photo');
-const user = req.session.user;
 
 const defaultImages = [process.env.DEFAULT_USER_IMAGE, process.env.DEFAULT_GROUP_IMAGE];
 const feedAttributes = ['feed_id', 'parent_id', 'feed_name', 'description', 'feed_photo', 'follower_count', 'created_at', 'updated_at', 'type', 'is_group', 'feed_owner'];
@@ -188,11 +187,11 @@ const post_storage = multer.diskStorage({
 
 //Uploads with file size limit
 const post_upload = multer({
-    storage: post_storage,
-    limits: {
-        fileSize: user.has_membership ? 1024 * 1024 * 100 : 1024 * 1024 * 1
+    fileFilter: postFilter,
+    limits: (req, file, cb) => {
+        cb(null, { fileSize: req.session?.user?.has_membership ? 1024 * 1024 * 100 : 1024 * 1024 * 1 });
     },
-    fileFilter: postFilter
+    storage: post_storage
 });
 
 router.delete('/delete_feed', authenticateCheck, async (req, res) => {
