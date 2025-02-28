@@ -162,8 +162,8 @@ const post_storage = multer.diskStorage({
 
 const post_upload = multer({
     fileFilter: postFilter,
-    limits: {
-        fileSize: user.has_membership ? 1024 * 1024 * 100 : 1024 * 1024 * 1
+    limits: (req, file, cb) => {
+        cb(null, { fileSize: req.session?.user?.has_membership ? 1024 * 1024 * 100 : 1024 * 1024 * 1 });
     },
     storage: post_storage
 });
