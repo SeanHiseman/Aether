@@ -8,7 +8,7 @@ import ChannelList from '../../components/channels/channelList';
 import ChatChannel from '../../components/channels/chatChannel';
 import ContentForm from "../../components/content/contentForm";
 import FollowerChangeButton from '../../components/followerChangeButton';
-import ManageConnectionButton from '../../components/connections/ManageConnectionButton';
+import ManageConnectionButton from '../../components/connections/manageConnectionButton';
 import PostChannel from '../../components/channels/postChannel';
 
 const FeedHome = () => {
