@@ -163,12 +163,7 @@ const ContentWidget = ({ canRemove, feed, isGroup, onEditClick, onPostRemoved, o
       {postErrorMessage && <div className="error-message">{postErrorMessage}</div>}
       {post.title && (
         <div className="title-container">
-          <Link
-            className="text36"
-            style={{ marginLeft: 0 }}
-            to={`/${urlPrefix}/${feed.feed_name}/${post.parentChannel.channel_name}/${post.post_id}`}
-            onClick={() => incrementViews(post.post_id)}
-          >
+          <Link className="text36" style={{ marginLeft: 0 }} to={`/${urlPrefix}/${feed.feed_name}/${post.parentChannel.channel_name}/${post.post_id}`} onClick={() => incrementViews(post.post_id)}>
             {post.title}
           </Link>
           {post.displayGroupName && (
@@ -179,29 +174,16 @@ const ContentWidget = ({ canRemove, feed, isGroup, onEditClick, onPostRemoved, o
           )}
         </div>
       )}
-      <ContentDisplay
-        content={post.content}
-        onOverflowChange={handleOverflowChange}
-        showFullContent={showFullContent}
-        showScrollBar={false}
-      />
+      <ContentDisplay content={post.content} onOverflowChange={handleOverflowChange} showFullContent={showFullContent} showScrollBar={false} />
       {isOverflowing && (
-        <button
-          className="small-icon"
-          onClick={() => setShowFullContent(!showFullContent)}
-          title={showFullContent ? 'Show less' : 'Show more'}
-        >
+        <button className="small-icon" onClick={() => setShowFullContent(!showFullContent)} title={showFullContent ? 'Show less' : 'Show more'}>
           {showFullContent ? <FaChevronUp /> : <FaChevronDown />}
         </button>
       )}
       {showNote && <div className="ask-note"><p className="ask-note-text">{note}</p></div>}
       <div className="content-metadata">
         <div className="feed-info">
-          <Link
-            className="feed-link"
-            onClick={() => incrementViews(post.post_id)}
-            to={`/u/${post.poster.feed_name}`}
-          >
+          <Link className="feed-link" onClick={() => incrementViews(post.post_id)} to={`/u/${post.poster.feed_name}`}>
             <img className="small-feed-photo" src={`/${post.poster.feed_photo}`} alt="Feed" />
             <p className="feed-list-text">{post.poster.feed_name}</p>
           </Link>
@@ -211,7 +193,9 @@ const ContentWidget = ({ canRemove, feed, isGroup, onEditClick, onPostRemoved, o
             <button className={`large-icon ${upvoteClass}`} disabled={downvoteLimit || upvoteLimit} onClick={() => postVote(post.post_id, 'upvote')}>
               <FaArrowUp />
             </button>}
-          <span className="total-votes">{upvotes - downvotes} {isViewingOwnPost && 'votes'}</span>
+            <span className="total-votes">
+              {upvotes - downvotes} {Math.abs(upvotes - downvotes) === 1 ? 'vote' : 'votes'}{isViewingOwnPost && ' (your post)'}
+            </span>
           {!isViewingOwnPost &&           
             <button className={`large-icon ${downvoteClass}`} disabled={downvoteLimit || upvoteLimit} onClick={() => postVote(post.post_id, 'downvote')} >
               <FaArrowDown />
@@ -241,33 +225,14 @@ const ContentWidget = ({ canRemove, feed, isGroup, onEditClick, onPostRemoved, o
           </button>
         )}
         {!post.note?.is_misinfo && (
-          <AskButton
-            content={post}
-            isGroup={isGroup}
-            isReply={false}
-            note={note}
-            setNote={setNote}
-            setPostErrorMessage={setPostErrorMessage}
-            setShowNote={setShowNote}
-            showNote={showNote}
-          />
+          <AskButton content={post} isGroup={isGroup} isReply={false} note={note} setNote={setNote} setPostErrorMessage={setPostErrorMessage} setShowNote={setShowNote} showNote={showNote} />
         )}
       </div>
       {showReplies && (
         <div className="reply-section">
           {replies.length !== 0 ? (
             replies.map((reply) => (
-              <ContentWidget
-                canRemove={canRemove}
-                feed={feed}
-                isGroup={isGroup}
-                key={reply.post_id}
-                onEditClick={onEditClick}
-                onPostRemoved={replyRemoved}
-                onReplyClick={onReplyClick} 
-                post={reply}
-                readOnly={readOnly} 
-              />
+              <ContentWidget canRemove={canRemove} feed={feed} isGroup={isGroup} key={reply.post_id} onEditClick={onEditClick} onPostRemoved={replyRemoved} onReplyClick={onReplyClick} post={reply} readOnly={readOnly} />
             ))
           ) : (
             <p className="text24">No replies</p>
