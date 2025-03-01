@@ -83,7 +83,7 @@
     width: 100%;
 }
 .channel-dropdown {
-    color: var(--dark);
+    color: var(--light);
     cursor: pointer;
     margin-left: 12px;
 }
