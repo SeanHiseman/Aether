@@ -194,8 +194,7 @@ const ContentWidget = ({ canRemove, feed, isGroup, onEditClick, onPostRemoved, o
               <button className={`large-icon ${upvoteClass}`} disabled={downvoteLimit || upvoteLimit} onClick={() => postVote(post.post_id, 'upvote')}>
                 <FaArrowUp />
               </button>
-              <span className="total-votes">{upvotes - downvotes}</span>
-            isViewingOwnPost          
+              <span className="total-votes">{upvotes - downvotes}</span>      
               <button className={`large-icon ${downvoteClass}`} disabled={downvoteLimit || upvoteLimit} onClick={() => postVote(post.post_id, 'downvote')} >
                 <FaArrowDown />
               </button>
