@@ -121,13 +121,6 @@ const BaseLayout = () => {
                 setErrorMessage('Feed needs a name');
                 return;
             } 
-            const files = Array.from(event.target.files)
-            const oversized = files.filter(f => f.size > MAX_FILE_SIZE)
-            if (oversized.length) {
-                const names = oversized.map(f => f.name).join(', ')
-                setErrorMessage(hasMembership ? `These files exceed your max size limit: ${names}.` : `These files exceed your max size limit: ${names}. Get membership for more.`);
-                return
-            }
             const newFeed = new FormData();
             newFeed.append('feedName', feedName);
             newFeed.append('type', feedType);
@@ -142,6 +135,7 @@ const BaseLayout = () => {
                     'Content-Type': 'multipart/form-data',
                 },
             });
+            console.log("response:", response);
             if (response.data.success === true) {
                 const createdFeed = response.data.feed;
                 setFeeds((prevFeeds) => [ //Format the new feed to match the expected structure
@@ -161,7 +155,8 @@ const BaseLayout = () => {
                 navigate(`/g/${createdFeed.feed_name}`);
             }
         } catch (error) {
-            if (error.response.status === 413) {
+            console.log(error);
+            if (error.response && error.response.status === 413) {
                 setErrorMessage(hasMembership ? "File cannot be more than 100MB": "File cannot be more than 1MB, get membership for more.");
             } else if (error.response.status === 400 ) {
                 setErrorMessage("Name taken");
@@ -174,7 +169,14 @@ const BaseLayout = () => {
     const handleFileChange = (event) => {
         const file = event.target.files[0];
         if (file) {
+            if (file.size > MAX_FILE_SIZE) {
+                setErrorMessage(hasMembership ? 
+                    `File exceeds your max size limit of 100MB.` : 
+                    `File exceeds your max size limit of 1MB. Get membership for more.`);
+                return;
+            }
             setFeedPhotoFile(file);
+            setErrorMessage('');
         }
     };
 
@@ -294,8 +296,7 @@ const BaseLayout = () => {
             <main>
                 <header id="base-header">
                     <div className="spacer"></div>
-                    <form id="search-form" onSubmit={(e) => {e.preventDefault(); handleSearchClick();}}
-                    >
+                    <form id="search-form" onSubmit={(e) => {e.preventDefault(); handleSearchClick(e);}}>
                         <div className="search-container">
                             <button className="icon-button ask" data-tooltip="Ask" type="button" onClick={handleAskClick}>
                                 <img className="standard-icon" src="/media/site_images/icons/ask.png" alt="Ask"/>

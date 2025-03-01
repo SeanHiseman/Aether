@@ -149,7 +149,7 @@ router.post('/create_feed', authenticateCheck, async (req, res) => {
             });
             res.status(201).json({ success: true, feed });
         } catch (error) {
-           res.status(500).json({ success: false });
+            res.status(500).json({ success: false });
         }
     });
 });
