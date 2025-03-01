@@ -14,7 +14,7 @@ const FeedInfoView = ({ feed, setFeed, user }) => {
     const [newDescription, setDescription] = useState('');
     const [newName, setName] = useState('');
     const hasMembership = user?.has_membership;
-	const MAX_FILE_SIZE = hasMembership ? 100 * 1024 * 1024 : 1 * 1024 * 1024;
+    const MAX_FILE_SIZE = hasMembership ? 100 * 1024 * 1024 : 1 * 1024 * 1024;
 
     useEffect(() => {
         if (isEditingName) {
@@ -31,40 +31,40 @@ const FeedInfoView = ({ feed, setFeed, user }) => {
     const ChangeFeedPhoto = async (event) => {
         try {
             event.preventDefault();
-            const files = Array.from(event.target.files)
-            const oversized = files.filter(f => f.size > MAX_FILE_SIZE)
-            if (oversized.length) {
-                const names = oversized.map(f => f.name).join(', ')
-                setErrorMessage(hasMembership ? `These files exceed your max size limit: ${names}.` : `These files exceed your max size limit: ${names}. Get membership for more.`);
-                return
-            }
             const fileInput = event.target.elements.new_feed_photo;
             if (!fileInput.files[0]) {
                 setErrorMessage('Please upload an image');
                 return;
             }
+            const file = fileInput.files[0];
+            if (file.size > MAX_FILE_SIZE) {
+                setErrorMessage(hasMembership 
+                    ? `File exceeds your max size limit.` 
+                    : `File exceeds your max size limit. Get membership for more.`);
+                return;
+            }
             const formData = new FormData();
-            formData.append('new_feed_photo', fileInput.files[0]);
+            formData.append('new_feed_photo', file);
             const response = await axios.put(`/api/update_feed_photo/${feed.feed_id}`, formData, {
                 headers: {
                     'Content-Type': 'multipart/form-data',
                 },    
-            })
+            });
             setFeed(prevDetails => ({
                 ...prevDetails,
                 feed_photo: response.data.newPhotoPath
-            }))
+            }));
             setIsPhotoFormVisible(false);
             setErrorMessage('');
         } catch(error) {
-            if (error.response.status === 413) {
-                setErrorMessage(hasMembership ? "File cannot be more than 100MB": "File cannot be more than 1MB, get membership for more.");
-            } else if (error.response.status === 400) {
+            if (error.response && error.response.status === 413) {
+                setErrorMessage(hasMembership ? "File cannot be more than 100MB" : "File cannot be more than 1MB, get membership for more.");
+            } else if (error.response && error.response.status === 400) {
                 setErrorMessage(error.response.data.error || "Error, please try again");
             } else {
                 setErrorMessage("Error, please try again");
             }
-        };
+        }
     };
 
     const handleFileChange = (event) => {
@@ -81,7 +81,7 @@ const FeedInfoView = ({ feed, setFeed, user }) => {
     const togglePhotoForm = () => {
         if (isPhotoFormVisible) {
             setErrorMessage('');
-            setFeedPhotoFile('No file selected');
+            setFeedPhotoFile('No file chosen');
             setIsFileSelected(false);
         }
         setIsPhotoFormVisible(!isPhotoFormVisible);
@@ -121,7 +121,7 @@ const FeedInfoView = ({ feed, setFeed, user }) => {
                 newName: newName,
                 user_id: user.user_id
             });
-            setFeed({ ...feed, feedName: newName });
+            setFeed({ ...feed, feed_name: newName });
             setIsEditingName(false);
             navigate(`/feed_settings/${newName}`);
         }
@@ -141,7 +141,7 @@ const FeedInfoView = ({ feed, setFeed, user }) => {
                     {isPhotoFormVisible && (
                         <form className="change-feed-photo" onSubmit={ChangeFeedPhoto}>
                             <div className="file-input">
-                                <label htmlFor="new-feed-photo" class="small-icon"><FaFileUpload /><p className="icon-text">Choose photo</p></label>
+                                <label htmlFor="new-feed-photo" className="small-icon"><FaFileUpload /><p className="icon-text">Choose photo</p></label>
                                 <input type="file" id="new-feed-photo" name="new_feed_photo" accept="image/*" onChange={handleFileChange} hidden/>
                                 <span className="file-name">{feedPhotoFile}</span> 
                             </div>
@@ -158,7 +158,7 @@ const FeedInfoView = ({ feed, setFeed, user }) => {
                                     const input = e.target.value;
                                     const inputLength = input.length;
                                     if (inputLength <= 30) {
-                                        setName(input)
+                                        setName(input);
                                     } else {
                                         setErrorMessage('Name too long');
                                     }
@@ -172,7 +172,7 @@ const FeedInfoView = ({ feed, setFeed, user }) => {
                                     }}>Cancel</button>
                                     <button className="button" onClick={(e) => {
                                         e.preventDefault();
-                                        updateName()
+                                        updateName();
                                     }}>Save</button>
                                 </div>
                             </div>
@@ -194,7 +194,7 @@ const FeedInfoView = ({ feed, setFeed, user }) => {
                                     const input = e.target.value;
                                     const inputLength = input.length;
                                     if (inputLength <= 1000) {
-                                        setDescription(input)
+                                        setDescription(input);
                                     } else {
                                         setErrorMessage('Description cannot exceed 1000 characters');
                                     }
@@ -208,7 +208,7 @@ const FeedInfoView = ({ feed, setFeed, user }) => {
                                     }}>Cancel</button>
                                     <button className="button" onClick={(e) => {
                                         e.preventDefault();
-                                        updateDescription()
+                                        updateDescription();
                                     }}>Save</button>
                                 </div>
                             </div>
@@ -249,6 +249,6 @@ const FeedInfoView = ({ feed, setFeed, user }) => {
             <div className="error-message">{errorMessage}</div>
         </div>
     );
-}
+};
 
 export default FeedInfoView;
