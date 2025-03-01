@@ -189,15 +189,20 @@ const ContentWidget = ({ canRemove, feed, isGroup, onEditClick, onPostRemoved, o
           </Link>
         </div>
         <div className="vote-container">
-          {!isViewingOwnPost &&   
-            <button className={`large-icon ${upvoteClass}`} disabled={downvoteLimit || upvoteLimit} onClick={() => postVote(post.post_id, 'upvote')}>
-              <FaArrowUp />
-            </button>}
-            <span className="total-votes">{upvotes - downvotes} {Math.abs(upvotes - downvotes) === 1 && 'vote'}</span>
-          {!isViewingOwnPost &&           
-            <button className={`large-icon ${downvoteClass}`} disabled={downvoteLimit || upvoteLimit} onClick={() => postVote(post.post_id, 'downvote')} >
-              <FaArrowDown />
-            </button>}
+          {!isViewingOwnPost ? (   
+            <>
+              <button className={`large-icon ${upvoteClass}`} disabled={downvoteLimit || upvoteLimit} onClick={() => postVote(post.post_id, 'upvote')}>
+                <FaArrowUp />
+              </button>
+              <span className="total-votes">{upvotes - downvotes}</span>
+            isViewingOwnPost          
+              <button className={`large-icon ${downvoteClass}`} disabled={downvoteLimit || upvoteLimit} onClick={() => postVote(post.post_id, 'downvote')} >
+                <FaArrowDown />
+              </button>
+            </>
+          ) : (
+            <span className="total-votes">{upvotes - downvotes} {Math.abs(upvotes - downvotes) === 1 ? 'vote' : 'votes'}</span>
+          )}
         </div>
         {!readOnly && (
           <>
