@@ -139,13 +139,7 @@ const ConnectionsPage = () => {
 												<p className="text36 feed-name">{c.feed_name}</p>
 											</Link>
 											<div className="remove-connection-box">
-												<ManageConnectionButton
-													connectRequest={false}
-													feed={c}
-													isConnected={true}
-													onRequestUpdate={handleConnectionRemoval}
-													viewerId={viewer.feed_id}
-												/>
+												<ManageConnectionButton connectRequest={false} feed={c} isConnected={true} onRequestUpdate={handleConnectionRemoval} viewerId={viewer.feed_id} />
 											</div>
 										</div>
 									</li>
@@ -163,13 +157,7 @@ const ConnectionsPage = () => {
 											<img className="large-feed-photo" src={`/${request.sender.feed_photo}`} alt="Profile" />
 											<p className="text36 feed-name">{request.sender.feed_name}</p>
 										</Link>
-										<ManageConnectionButton
-											connectRequest={request}
-											feed={request.sender}
-											isConnected={false}
-											onRequestUpdate={handleRequestUpdate}
-											viewerId={viewer.feed_id}
-										/>
+										<ManageConnectionButton connectRequest={request} feed={request.sender} isConnected={false} onRequestUpdate={handleRequestUpdate} viewerId={viewer.feed_id} />
 									</div>
 								</li>
 							))}
@@ -182,15 +170,7 @@ const ConnectionsPage = () => {
 					<p className="text36">Messages</p>
 					<ul>
 						{connections.map(c => (
-							<FeedItem
-								key={c.feed_id}
-								feedId={c.feed_id}
-								isChat={true}
-								linkType={'u'}
-								name={c.feed_name}
-								photo={c.feed_photo}
-								unreadCount={state.feedCounts?.[c.feed_id] || 0}
-							/>
+							<FeedItem key={c.feed_id} feedId={c.feed_id} isChat={true} linkType={'u'} name={c.feed_name} photo={c.feed_photo} unreadCount={state.feedCounts?.[c.feed_id] || 0} />
 						))}
 					</ul>
 				</nav>

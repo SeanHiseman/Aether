@@ -3,8 +3,9 @@ import calculatePoints from '../functions/postPoints.js';
 import ConnectCheck from '../functions/checks/connectCheck.js';
 import FollowerCheck from '../functions/checks/followerCheck.js';
 import { hybridRecommendations } from '../functions/recommendation/hybrid.js';
+import sequelize from '../databaseSetup.js';
 import sortPostsByWeightedRatio from '../functions/postSorting.js';
-import { Connections, ConnectRequests, Feeds, Followers, FollowRequests, Posts, PostNotes, PostVotes } from '../models/relationships.js'; 
+import { Connections, ConnectRequests, Feeds, FeedChannels, Followers, FollowRequests, Posts, PostNotes, PostVotes } from '../models/relationships.js'; 
 import { Users } from '../models/users.js'; 
 import { Op } from 'sequelize';
 import { Router } from 'express';
@@ -13,6 +14,7 @@ const router = Router();
 const feedAttributes = ['feed_id', 'parent_id', 'feed_name', 'description', 'feed_photo', 'follower_count', 'created_at', 'updated_at', 'type', 'is_group', 'feed_owner'];
 const notesAttributes = ['note_id', 'note_content', 'timestamp', 'is_misinfo'];
 const postAttributes = ['post_id', 'parent_id', 'feed_id', 'channel_id', 'title', 'content', 'replies', 'views', 'upvotes', 'downvotes', 'timestamp', 'poster_id', 'points'];
+const posterAttributes = ['feed_id', 'feed_name', 'description', 'feed_photo', 'type', 'is_group'];
 
 router.get('/connection_posts/:feedId', authenticateCheck, async (req, res)=> {
     try {
@@ -139,9 +141,17 @@ router.get('/search/:searcherId', authenticateCheck, async (req, res) => {
     try {
         const searcherId = req.params.searcherId;
         const keyword = req.query.keyword ? req.query.keyword.toLowerCase() : '';
+        const limit = req.query.limit ? parseInt(req.query.limit, 10) : 10;
+        const offset = req.query.offset ? parseInt(req.query.offset, 10) : 0;
+        //console.log("Search keyword:", keyword);
+        //console.log("Searcher ID:", searcherId);
+        //console.log("Limit:", limit);
+        //console.log("Offset:", offset);
         const feeds = await Feeds.findAll({
             where: { feed_name: { [Op.like]: `%${keyword}%` } },
             attributes: feedAttributes, 
+            limit,
+            offset
         });
         const feedData = await Promise.all(feeds.map(async (feed) => {
             const feedJSON = feed.toJSON();
@@ -178,35 +188,75 @@ router.get('/search/:searcherId', authenticateCheck, async (req, res) => {
             }
             return response;
         }));
-        //const postResults = await Posts.findAll({
-            //where: {
-                //[Op.or]: [
-                    //{ title: { [Op.like]: `%${keyword}%` } },
-                    //{ content: { [Op.like]: `%${keyword}%` } }
-                //]
-            //},
-            //include: [{
-                    //model: Feeds, 
-                    //as: 'poster',
-                    //attributes: postAttributes,
-                //},{
-                    //model: PostVotes,
-                    //as: 'postVotes',
-                    //attributes: ['vote_count'],
-                    //required: false
-                //},{
-                    //model: PostNotes,
-                    //as: 'note',
-                    //attributes: notesAttributes,
-                    //required: false
-                //}],
-            //attributes: postAttributes,
-        //});
-        //console.log("feedData:", feedData);
-        //console.log("postResults:", postResults);
-        //res.json({ feeds: feedData, posts: postResults, success: true });
-        res.status(200).json({ feeds: feedData, success: true });
+        //Doesn't include HTML and JavaScript directly when searching (needs fixing)
+        const postResults = await sequelize.query(`
+            SELECT p.*, 
+                REGEXP_REPLACE(
+                    REGEXP_REPLACE(
+                        REGEXP_REPLACE(
+                            REGEXP_REPLACE(p.content, '<head>.*?</head>', ''),
+                            '<title>.*?</title>', ''
+                        ), 
+                        '<script.*?</script>', ''
+                    ), 
+                    '<[^>]*>', ''
+                ) AS clean_content
+            FROM posts p
+            WHERE 
+                p.title LIKE :keyword
+                OR REGEXP_REPLACE(
+                    REGEXP_REPLACE(
+                        REGEXP_REPLACE(p.content, '<title>.*?</title>', ''), 
+                        '<script.*?</script>', ''
+                    ), 
+                    '<[^>]*>', ''
+                ) LIKE :keyword
+            ORDER BY p.timestamp DESC
+            LIMIT :limit OFFSET :offset
+        `, {
+            replacements: { 
+                keyword: `%${keyword}%`,
+                limit: limit,
+                offset: offset
+            },
+            type: sequelize.QueryTypes.SELECT
+        });       
+        const processedPosts = await Promise.all(postResults.map(async (post) => {
+            const feed = await Feeds.findByPk(post.feed_id, {
+                attributes: feedAttributes
+            });
+            const note = await PostNotes.findOne({
+                where: { post_id: post.post_id },
+                attributes: notesAttributes
+            });
+            const parentChannel = await FeedChannels.findByPk(post.channel_id, {
+                attributes: ['channel_id', 'channel_name']
+            });
+            const poster = await Feeds.findByPk(post.feed_id, {
+                attributes: posterAttributes
+            });
+            const postVotes = await PostVotes.findAll({
+                where: { post_id: post.post_id },
+                attributes: ['vote_count']
+            });
+            return {
+                ...post,
+                feed,
+                note,
+                parentChannel,
+                poster,
+                postVotes,
+            };
+        }));
+        //console.log("Post results:", postResults);
+        //console.log("Processed posts:", processedPosts);
+        res.status(200).json({ 
+            feeds: feedData, 
+            posts: processedPosts,
+            success: true 
+        });
     } catch (error) {
+        console.log("Error in search:", error);
         res.status(500).json({ success: false });
     }
 });

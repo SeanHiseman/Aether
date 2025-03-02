@@ -1,36 +1,56 @@
 import { AuthContext } from '../components/authContext';
 import axios from 'axios';
-import React, { useContext, useEffect, useState } from 'react';
+import React, { useContext, useEffect, useRef, useState } from 'react';
+import { useInfiniteQuery } from '@tanstack/react-query';
 import { useSearchParams } from 'react-router-dom';
 import ContentWidget from '../components/content/contentWidget';
 import FeedWidget from '../components/search/feedWidget';
 
 const SearchResults = () => {
     const [errorMessage, setErrorMessage] = useState('');
-    const [feeds, setFeeds] = useState([]);
-    const [posts, setPosts] = useState([]);
     const [selectedView, setSelectedView] = useState('combined');
     const [searchParams] = useSearchParams();
     const keyword = (searchParams.get('keyword') || '').trim();
     const [timePreference, setTimePreference] = useState(0.001);
     const { user, viewer } = useContext(AuthContext);
+    const loaderRef = useRef(null);
 
     //Gets results depending on which type is being viewed
+    const fetchSearchResults = async ({ pageParam = 0 }) => {
+        const searcherId = viewer.feed_id;
+        const response = await axios.get(
+            `/api/search/${searcherId}?keyword=${keyword}&limit=10&offset=${pageParam}`
+        );
+        return response.data;
+    };
+
+    //Infinite query to handle pagination
+    const { data, error, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading, isError } = useInfiniteQuery({
+        queryKey: ['searchResults', keyword, viewer.feed_id],
+        queryFn: fetchSearchResults,
+        getNextPageParam: (lastPage, allPages) => {
+            const combinedLength = lastPage.feeds.length + lastPage.posts.length;
+            return combinedLength === 10 ? allPages.length * 10 : undefined;
+        },
+        enabled: !!keyword && !!viewer.feed_id
+    });
+
+    //Intersection observer for infinite scrolling
     useEffect(() => {
-        const fetchResults = async () => {
-            const searcherId = viewer.feed_id;
-            try {
-                const response = await axios.get(`/api/search/${searcherId}?keyword=${keyword}`);
-                setFeeds(response.data.feeds);
-                //setPosts(response.data.posts);
-            } catch (error) {
-                setErrorMessage('Error getting search results');
+        const observer = new IntersectionObserver((entries) => {
+            if (entries[0].isIntersecting && hasNextPage && !isFetchingNextPage) {
+                fetchNextPage();
+            }
+        });
+        if (loaderRef.current) {
+            observer.observe(loaderRef.current);
+        }
+        return () => {
+            if (loaderRef.current) {
+                observer.unobserve(loaderRef.current);
             }
         };
-        if (keyword) {
-            fetchResults();
-        }
-    }, [keyword, viewer.feed_id]);
+    }, [fetchNextPage, hasNextPage, isFetchingNextPage]);
 
     //Load user's time preference
     //useEffect(() => {
@@ -57,37 +77,50 @@ const SearchResults = () => {
         }
     };
 
-    const renderResults = () => {
+    const getFilteredResults = () => {
+        if (!data) return { feeds: [], posts: [] };
+        let allFeeds = [];
+        let allPosts = [];
+        data.pages.forEach(page => {
+            if (page.feeds) allFeeds = [...allFeeds, ...page.feeds];
+            if (page.posts) allPosts = [...allPosts, ...page.posts];
+        });
         switch (selectedView) {
             case 'posts':
-                return posts.length > 0 ? (
-                    posts.map((post) => (
-                        <ContentWidget key={post.post_id} post={post} isGroup={post.is_group} />
-                    ))
-                ) : (
-                    <div>Post search coming soon!</div>
-                );
+                return { feeds: [], posts: allPosts };
             case 'feeds':
-                return feeds.length > 0 ? (
-                    feeds.map((feed) => (
-                        <FeedWidget key={feed.feed_id} feed={feed} viewerId={viewer.feed_id} />
-                    ))
-                ) : (
-                    <div>No feeds found.</div>
-                );
+                return { feeds: allFeeds, posts: [] };
             case 'combined':
             default:
-                return (
-                    <>
-                        {feeds.length > 0 && feeds.map((feed) => (
-                            <FeedWidget key={feed.feed_id} feed={feed} viewerId={viewer.feed_id} />
-                        ))}
-                        {posts.length > 0 && posts.map((post) => (
-                            <ContentWidget key={post.post_id} post={post} isGroup={post.is_group} />
-                        ))}
-                    </>
-                );
+                return { feeds: allFeeds, posts: allPosts };
         }
+    };
+
+    const filteredResults = getFilteredResults();
+    
+    const renderResults = () => {
+        if (isLoading) {
+            return <div className="loading-indicator">Loading results...</div>;
+        }
+        if (isError) {
+            setErrorMessage('Error loading search results');
+            return <div className="error-message">Failed to load results. Please try again.</div>;
+        }
+        const { feeds, posts } = filteredResults;
+        if (feeds.length === 0 && posts.length === 0) {
+            return <p className="text35">No results found</p>;
+        }
+        return (
+            <>
+                {feeds.length > 0 && feeds.map((feed) => (
+                    <FeedWidget key={feed.feed_id} feed={feed} viewerId={viewer.feed_id} />
+                ))}
+                
+                {posts.length > 0 && posts.map((post) => (
+                    <ContentWidget key={post.post_id} feed={post.feed} post={post} isGroup={post.is_group} />
+                ))}
+            </>
+        );
     };
 
     document.title = 'Search';
@@ -97,13 +130,18 @@ const SearchResults = () => {
                 <div className="channel-content">
                     <ul className="content-list">
                         {renderResults()}
+                        <div ref={loaderRef}>
+                            {isFetchingNextPage && (
+                                <p className="text36">Loading more results...</p>
+                            )}
+                        </div>
                     </ul>
                 </div>
             </div>
             <div id="right-aside">
                 <p className="text36">Results</p>
                 <div className="error-message">{errorMessage}</div>
-                <nav id="channel-list">
+                <nav className="channel-list">
                     <ul>
                         <li className="channel-link" onClick={() => setSelectedView('combined')}>All</li>
                         <li className="channel-link" onClick={() => setSelectedView('posts')}>Posts</li>
@@ -115,6 +153,6 @@ const SearchResults = () => {
             </div>
         </div>
     );
-}
+};
 
 export default SearchResults;
