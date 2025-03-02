@@ -16,14 +16,22 @@ const Join = () => {
             return;
         }
         try {
-            const response = await axios.post('/api/join', { email: event.target.email.value, password, username: event.target.username.value });
+            const response = await axios.post('/api/join', { 
+                email: event.target.email.value, 
+                password, 
+                username: event.target.username.value 
+            });
             if (response.data.success) {
-                navigate('/login');
+                navigate('/g/Welcome');
             } else {
                 setErrorMessage('Joining failed, please try again');
             }
         } catch (error) {
-            setErrorMessage('Joining failed, please try again');
+            if (error.response && error.response.status === 409) {
+                setErrorMessage('Name already taken');
+            } else {
+                setErrorMessage('Joining failed, please try again');
+            }
         }
     };
 
@@ -43,19 +51,9 @@ const Join = () => {
                 <p className="error-message">{errorMessage}</p>
                 <form method="post" onSubmit={handleJoin}>
                     <input className="authentication-input-box" name="username" placeholder="Username" required />
-                    <input className="authentication-input-box" name="email" placeholder="Email" required />
-                    <input 
-                        type="password" 
-                        className="authentication-input-box" 
-                        name="password" placeholder="Password" 
-                        required onChange={(e) => setPassword(e.target.value)}
-                        />
-                    <input 
-                        type="password" 
-                        className="authentication-input-box" 
-                        name="password" placeholder="Re-enter password" 
-                        required onChange={(e) => setConfirmPassword(e.target.value)}
-                        />
+                    <input type="email" className="authentication-input-box" name="email" placeholder="Email" required />
+                    <input type="password" className="authentication-input-box" name="password" placeholder="Password" required onChange={(e) => setPassword(e.target.value)} />
+                    <input type="password" className="authentication-input-box" name="password" placeholder="Re-enter password" required onChange={(e) => setConfirmPassword(e.target.value)} />
                     <input className="submit" type="submit" value="Join" />
                 </form>
             </div>

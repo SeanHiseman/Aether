@@ -121,7 +121,7 @@ const FeedSettings = () => {
                                 onClick={() => setCurrentView('feed-deletion')} 
                                 style={{color: 'red'}}
                             >
-                                Delete feed
+                                {feed.is_group ? 'Delete feed' : 'Delete account'}
                             </li>
                         )}
                     </ul>
