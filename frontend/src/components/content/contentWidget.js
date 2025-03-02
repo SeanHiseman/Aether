@@ -27,7 +27,7 @@ const ContentWidget = ({ canRemove, feed, isGroup, onEditClick, onPostRemoved, o
   const isReply = readOnly ? false : post.parent_id !== null; //Read only means not displaying widget as a reply
   const isViewingOwnPost = post.poster_id === viewer.feed_id;
   const urlPrefix = isGroup ? 'g' : 'u';
-
+  console.log("post:", post);
   const getReplies = useCallback(async (postId) => {
     try {
       const response = await axios.get(`/api/post_replies/${postId}`);

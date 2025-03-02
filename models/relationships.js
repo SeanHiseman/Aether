@@ -21,7 +21,7 @@ Followers.belongsTo(Feeds, { foreignKey: 'follower_id', as: 'followerFeed' });
 Feeds.hasMany(Followers, { foreignKey: 'feed_id', as: 'followersList' });
 
 Feeds.hasMany(Posts, { as: 'poster', foreignKey: 'poster_id' });
-Posts.belongsTo(Feeds, { as: 'poster', foreignKey: 'poster_id' });
+Posts.belongsTo(Feeds, { as: 'poster', foreignKey: 'poster_id', targetKey: 'feed_id' });
 Posts.belongsTo(FeedChannels, { as: 'parentChannel', foreignKey: 'channel_id' });
 FeedChannels.hasMany(Posts, { as: 'posts', foreignKey: 'channel_id' });
 

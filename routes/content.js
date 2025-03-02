@@ -34,7 +34,7 @@ router.get('/channel_posts', authenticateCheck, async (req, res) => {
         }, {
             model: FeedChannels,
             as: 'parentChannel',
-            attributes: ['channel_name'],
+            attributes: ['channel_id', 'channel_name'],
             required: false
         }];
         if (isSingle === 'true') {
