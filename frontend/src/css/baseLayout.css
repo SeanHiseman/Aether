@@ -83,7 +83,7 @@
     width: 100%;
 }
 .channel-dropdown {
-    color: var(--light);
+    color: var(--border);
     cursor: pointer;
     margin-left: 12px;
 }
@@ -97,7 +97,9 @@
     width: 100%
 }
 .channel-link {
+    align-items: center;
     border-bottom: 1px solid var(--dark);
+    display: flex;
     padding: 10px;
     text-align: left;
     text-decoration: none;
@@ -188,7 +190,7 @@
     align-items: center;
     border-radius: 14px;
     display: flex;
-    padding: 0 8px;
+    padding: 8px;
     transition: var(--transition-regular);
 }
 .feed-list-link-container:hover {

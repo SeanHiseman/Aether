@@ -77,7 +77,7 @@
     display: flex;
 }
 .feed-list {
-    max-width: 100%;
+    width: 90%;
 }
 .feed-name {
     align-items: center;
