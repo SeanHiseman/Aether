@@ -112,6 +112,7 @@
     background-color: var(--dark);
 }
 .channel-list {
+    margin-left: var(--medium-margin);
     width: 90%;
 }
 .channel-list-link, .channel-list-link:visited {
@@ -298,6 +299,7 @@ main {
 }
 #personal-feeds {
     margin-top: 20px;
+    width: 90%;
 }
 .posts-channel-button {
     border-radius: 5px;
