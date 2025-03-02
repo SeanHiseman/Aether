@@ -1,3 +1,4 @@
+import { FaChevronDown, FaChevronUp } from 'react-icons/fa';
 import React, { useState, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import ChannelList from './channelList';
@@ -24,9 +25,7 @@ const FeedItem = ({ feedId, isChat, linkType, name, photo, unreadCount }) => {
                         <div className="unread-count">{unreadCount}</div>
                     )}
                 </Link>
-                <p className="channel-dropdown" onClick={dropdownToggle}>
-                    =
-                </p>
+                <div className="channel-dropdown" onClick={dropdownToggle}>{dropdownOpen ? <FaChevronUp /> : <FaChevronDown />}</div>
             </div>
             {dropdownOpen && (
                 <ChannelList channels={feedChannels} feedId={feedId} feedName={name} isChat={isChat} isGroup={linkType === 'g'} setChannels={updateFeedChannels} />

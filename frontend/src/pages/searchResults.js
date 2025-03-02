@@ -1,13 +1,16 @@
 import { AuthContext } from '../components/authContext';
 import axios from 'axios';
 import React, { useContext, useEffect, useRef, useState } from 'react';
+import { FaChevronDown, FaChevronUp } from 'react-icons/fa';
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { useSearchParams } from 'react-router-dom';
 import ContentWidget from '../components/content/contentWidget';
 import FeedWidget from '../components/search/feedWidget';
 
 const SearchResults = () => {
+    const [dropdownOpen, setDropdownOpen] = useState(false);
     const [errorMessage, setErrorMessage] = useState('');
+    const [feedTypeFilter, setFeedTypeFilter] = useState('all');
     const [selectedView, setSelectedView] = useState('combined');
     const [searchParams] = useSearchParams();
     const keyword = (searchParams.get('keyword') || '').trim();
@@ -29,8 +32,7 @@ const SearchResults = () => {
         queryKey: ['searchResults', keyword, viewer.feed_id],
         queryFn: fetchSearchResults,
         getNextPageParam: (lastPage, allPages) => {
-            const combinedLength = lastPage.feeds.length + lastPage.posts.length;
-            return combinedLength === 10 ? allPages.length * 10 : undefined;
+            return lastPage.feeds.length + lastPage.posts.length >= 10 ? allPages.length * 10 : undefined;
         },
         enabled: !!keyword && !!viewer.feed_id
     });
@@ -42,15 +44,15 @@ const SearchResults = () => {
                 fetchNextPage();
             }
         });
-        if (loaderRef.current) {
-            observer.observe(loaderRef.current);
-        }
+        if (loaderRef.current) observer.observe(loaderRef.current);
         return () => {
-            if (loaderRef.current) {
-                observer.unobserve(loaderRef.current);
-            }
+            if (loaderRef.current) observer.unobserve(loaderRef.current);
         };
     }, [fetchNextPage, hasNextPage, isFetchingNextPage]);
+
+    const dropdownToggle = () => {
+        setDropdownOpen((prevOpen) => !prevOpen);
+    };
 
     //Load user's time preference
     //useEffect(() => {
@@ -73,7 +75,7 @@ const SearchResults = () => {
             axios.post('/api/set_time_preference', { preference: newValue })
             //setTimePreference(response.data);
         } catch (error) {
-            console.error(error);
+            setErrorMessage('Error saving time preference');
         }
     };
 
@@ -85,6 +87,9 @@ const SearchResults = () => {
             if (page.feeds) allFeeds = [...allFeeds, ...page.feeds];
             if (page.posts) allPosts = [...allPosts, ...page.posts];
         });
+        if (feedTypeFilter !== 'all') {
+            allFeeds = allFeeds.filter(feed => (feedTypeFilter === 'group' ? feed.is_group : !feed.is_group));
+        }
         switch (selectedView) {
             case 'posts':
                 return { feeds: [], posts: allPosts };
@@ -131,9 +136,7 @@ const SearchResults = () => {
                     <ul className="content-list">
                         {renderResults()}
                         <div ref={loaderRef}>
-                            {isFetchingNextPage && (
-                                <p className="text36">Loading more results...</p>
-                            )}
+                            {isFetchingNextPage && <p className="text36">Loading more results...</p>}
                         </div>
                     </ul>
                 </div>
@@ -143,9 +146,18 @@ const SearchResults = () => {
                 <div className="error-message">{errorMessage}</div>
                 <nav className="channel-list">
                     <ul>
-                        <li className="channel-link" onClick={() => setSelectedView('combined')}>All</li>
+                        <li className="channel-link" onClick={() => setSelectedView('combined')}>All results</li>
                         <li className="channel-link" onClick={() => setSelectedView('posts')}>Posts</li>
-                        <li className="channel-link" onClick={() => setSelectedView('feeds')}>Feeds</li>
+                        <li className="channel-link" onClick={() => setSelectedView('feeds')}>Feeds
+                            <div className="channel-dropdown" onClick={dropdownToggle}>{dropdownOpen ? <FaChevronUp /> : <FaChevronDown />}</div> 
+                        </li>
+                        {dropdownOpen && (
+                            <ul>
+                                <li className="channel-link" onClick={() => setFeedTypeFilter('all')}>All feeds</li>
+                                <li className="channel-link" onClick={() => setFeedTypeFilter('group')}>Groups</li>
+                                <li className="channel-link" onClick={() => setFeedTypeFilter('user')}>Users</li>
+                            </ul>
+                        )}
                         {/*<label>Posts are recent:</label>
                         <input type="range" min="0" max="0.01" step="0.00001" value={timePreference} onChange={handleTimeChange} />*/}
                     </ul>
