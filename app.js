@@ -1,5 +1,5 @@
-import { createServer } from 'http';
 import cors from 'cors';
+import { createServer } from 'http';
 import { dirname } from 'path';
 import dotenv from 'dotenv';
 import express from 'express';
@@ -27,7 +27,8 @@ const io = new Server(http, {
         origin: process.env.FRONTEND_URL,
         methods: ['GET', 'POST'],
         credentials: true,
-    }
+    },
+    path: '/socket.io'
 });
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);

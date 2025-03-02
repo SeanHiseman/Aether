@@ -35,12 +35,12 @@ const ChatChannel = ({ canRemove, channelId, connection, isGroup, setChats, setE
     
     //Fetch and listen for messages
     useEffect(() => {
+        console.log("Socket URL from env:", process.env.REACT_APP_SOCKET_URL);
         const socket = io(process.env.REACT_APP_SOCKET_URL, {
+            path: '/socket.io',
             transports: ['websocket', 'polling'],
             withCredentials: true
         });
-        console.log(process.env.REACT_APP_SOCKET_URL);
-        console.log("socket:", socket);
         socket.on('connect', () => console.log('Socket connected successfully'));
         socket.on('connect_error', (err) => {
             console.error('Connection Error details:', err);
