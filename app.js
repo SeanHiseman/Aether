@@ -73,7 +73,7 @@ io.on('connection', (socket) => {
 sequelize.authenticate()
 
 const PORT = process.env.APP_PORT;
-http.listen(PORT, () => {
+http.listen(PORT, '0.0.0.0', () => {
     console.log(`Running on ${PORT}`)
 });
 
