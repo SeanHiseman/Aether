@@ -54,9 +54,11 @@ router.get('/check_authentication', async (req, res) => {
 router.delete('/delete_account', authenticateCheck, async (req, res) => {
     try {
         const { userId } = req.body;
-        const feed = await Feeds.findOne({ where: { userId } });
+        const feed = await Feeds.findOne({ where: { feed_owner: userId } });
         const id = feed.feed_id;
-        deleteMedia(feed.feed_photo);
+        if (feed.feed_photo !== process.env.DEFAULT_USER_IMAGE) {
+            deleteMedia(feed.feed_photo)
+        }
         await FeedChannels.destroy({ where: { feed_id: id } });
         await Posts.destroy({ where: { poster_id: id } });
         await Followers.destroy({ where: { follower_id: id } });
@@ -66,10 +68,11 @@ router.delete('/delete_account', authenticateCheck, async (req, res) => {
         await FeedChats.destroy({ where: { feed_id: id } });
         await Messages.destroy({ where: { sender_id: userId } });
         await Feeds.destroy({ where: { feed_owner: userId } });
-        await Users.destroy({ where: { userId } });
+        await Users.destroy({ where: { user_id: userId } });
         res.clearCookie('sid');
         return res.status(200).json({ success: true });
     } catch (error) {
+        console.log(error);
         return res.status(500).json({ success: false });
     }
 });
@@ -81,7 +84,7 @@ router.post('/join', async (req, res) => {
         //Check for existing username
         const existingUser = await Users.findOne({ where: { username } });
         if (existingUser) {
-            return res.status(400).json({ message: 'Username already taken' });
+            return res.status(409).json({ message: 'Username already taken' });
         }
         //Add user info to database, including encrypted password
         const user_id = v4();
@@ -101,6 +104,17 @@ router.post('/join', async (req, res) => {
         await FeedChannels.create({
             channel_id, channel_name: 'Main', feed_id, is_chat: false
         });
+        //Automatically add to the Feedback feed 
+        await Followers.create({
+            follow_id: v4(), follower_id: feed_id, feed_id: process.env.FEEDBACK_FEED_ID
+        });
+        //Add to the Welcome feed
+        await Followers.create({
+            follow_id: v4(), follower_id: feed_id, feed_id: process.env.WELCOME_FEED_ID
+        });
+        req.session.user_id = user_id;
+        req.session.username = username;
+        req.session.viewer_id = feed_id;
         res.status(200).json({ success: true });
     } catch (error) {
         res.status(500).json({ success: false });

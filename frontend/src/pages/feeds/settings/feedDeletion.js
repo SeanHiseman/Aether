@@ -8,9 +8,10 @@ const FeedDeletion = ({ feed }) => {
 
     const deleteFeed = async () => {
         try {
-            const response = await axios.delete('/api/delete_feed', { data: { feedId: feed.feed_id } });
+            const response = feed.is_group ? await axios.delete('/api/delete_feed', { data: { feedId: feed.feed_id } }) : await axios.delete('/api/delete_account', { data: { userId: feed.feed_owner } });
                 if (response.data.success) {
-                    navigate('/p/recommended');
+                    const route = feed.is_group ? '/p/recommended' : '/login';
+                    navigate(route);
                 }
         } catch (error) {
             setErrorMessage('Error deleting feed');
@@ -20,10 +21,10 @@ const FeedDeletion = ({ feed }) => {
     return (
         <div className="feed-settings">
             <div className="display-area">
-                <p className="text36">Are you sure you wish to delete this feed?</p>
+                <p className="text36">{feed.is_group ? 'Are you sure you wish to delete this feed?' : 'Are you sure you wish to delete your account?'}</p>
                 <p className="text24">This action cannot be reversed</p>
                 <p className="text24">All posts, channels, followers and feed information will be lost</p>
-                <button className="button delete" onClick={deleteFeed}>Delete feed</button>
+                <button className="button delete" onClick={deleteFeed}>{feed.is_group ? 'Delete Feed' : 'Delete Account'}</button>
                 <div className="error-message">{errorMessage}</div>
             </div>
         </div>
