@@ -425,9 +425,6 @@ export const directMessagesSocket = (socket) => {
                     } 
                 }
             );
-            //).then(([affectedRows]) => {
-                //console.log(`${affectedRows} messages marked as read`);
-            //});
             socket.to(chat_id).emit('messages_marked_read', { chat_id, reader_id });
         });
     } catch (error) {

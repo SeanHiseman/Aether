@@ -152,7 +152,7 @@ const SearchResults = () => {
                             <div className="channel-dropdown" onClick={dropdownToggle}>{dropdownOpen ? <FaChevronUp /> : <FaChevronDown />}</div> 
                         </li>
                         {dropdownOpen && (
-                            <ul>
+                            <ul style={{ marginLeft: '10px' }}>
                                 <li className="channel-link" onClick={() => setFeedTypeFilter('all')}>All feeds</li>
                                 <li className="channel-link" onClick={() => setFeedTypeFilter('group')}>Groups</li>
                                 <li className="channel-link" onClick={() => setFeedTypeFilter('user')}>Users</li>

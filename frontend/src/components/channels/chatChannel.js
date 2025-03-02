@@ -35,7 +35,7 @@ const ChatChannel = ({ canRemove, channelId, connection, isGroup, setChats, setE
     
     //Fetch and listen for messages
     useEffect(() => {
-        const socket = io('http://localhost:7000');
+        const socket = io(process.env.REACT_APP_SOCKET_URL);
         socketRef.current = socket;
         const channelRoute = isGroup ? 'join_channel' : 'join_chat';
         const leaveRoute = isGroup ? 'leave_channel' : 'leave_chat';
