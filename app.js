@@ -22,7 +22,13 @@ import sequelize  from './databaseSetup.js';
 dotenv.config();
 const app = express();
 const http = createServer(app);
-const io = new Server(http);
+const io = new Server(http, {
+    cors: {
+        origin: process.env.FRONTEND_URL,
+        methods: ['GET', 'POST'],
+        credentials: true,
+    }
+});
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 

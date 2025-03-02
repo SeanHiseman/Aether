@@ -135,7 +135,6 @@ const BaseLayout = () => {
                     'Content-Type': 'multipart/form-data',
                 },
             });
-            console.log("response:", response);
             if (response.data.success === true) {
                 const createdFeed = response.data.feed;
                 setFeeds((prevFeeds) => [ //Format the new feed to match the expected structure
@@ -155,7 +154,6 @@ const BaseLayout = () => {
                 navigate(`/g/${createdFeed.feed_name}`);
             }
         } catch (error) {
-            console.log(error);
             if (error.response && error.response.status === 413) {
                 setErrorMessage(hasMembership ? "File cannot be more than 100MB": "File cannot be more than 1MB, get membership for more.");
             } else if (error.response.status === 400 ) {
@@ -219,7 +217,7 @@ const BaseLayout = () => {
     return (
         <div className="container">
             <aside id="left-aside" ref={feedContainerRef}>
-                <div className="feed-info main">
+                <div className="feed-info main" style={{alignSelf: 'flex-start', marginLeft: 'calc(5% + 10px)'}}>
                     <Link className="feed-link" to={`/u/${feed.feed_name}`}>
                         <img className="small-feed-photo" src={`/${feed.feed_photo}`} alt="Feed" />
                         <p className="feed-list-text">{feed.feed_name}</p>
@@ -233,7 +231,7 @@ const BaseLayout = () => {
                     </ul>
                 </nav>
                 <div id="create-feed-section">
-                    <button className="small-icon" onClick={toggleForm}>
+                    <button className="small-icon" onClick={toggleForm} style={{alignSelf: 'flex-start', marginLeft: 'calc(5% + 10px)'}}>
                         {showForm ? (
                             <>
                                 <FaMinus /> 
