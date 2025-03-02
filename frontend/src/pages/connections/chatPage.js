@@ -175,7 +175,6 @@ const ChatPage = () => {
                             <img className="small-feed-photo" src={`/${connection.feed_photo}`} alt="Feed" />
                             <p className="feed-list-text">{connection_name}</p>
                         </Link>
-                        <div className="error-message">{errorMessage}</div>
                         <div className="channel-name-section">
                             {title !== "Main" ? (
                                 <>

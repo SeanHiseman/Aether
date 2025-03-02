@@ -226,9 +226,7 @@ const ChatChannel = ({ canRemove, channelId, connection, isGroup, setChats, setE
                     }}
                     onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
                 />
-                <button className="chat-send-button" onClick={sendMessage}>
-                    Send
-                </button>
+                <button className="chat-send-button" onClick={sendMessage}>Send</button>
             </div>
         </div>
     );
