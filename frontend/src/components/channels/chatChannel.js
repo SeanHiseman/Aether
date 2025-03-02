@@ -39,10 +39,12 @@ const ChatChannel = ({ canRemove, channelId, connection, isGroup, setChats, setE
             transports: ['websocket', 'polling'],
             withCredentials: true
         });
+        console.log(process.env.REACT_APP_SOCKET_URL);
+        console.log("socket:", socket);
         socket.on('connect', () => console.log('Socket connected successfully'));
         socket.on('connect_error', (err) => {
             console.error('Connection Error details:', err);
-        setErrorMessage(`Unable to connect to chat server: ${err.message}`);
+            setErrorMessage(`Connection failed`);
         });
         socketRef.current = socket;
         const channelRoute = isGroup ? 'join_channel' : 'join_chat';
@@ -192,7 +194,6 @@ const ChatChannel = ({ canRemove, channelId, connection, isGroup, setChats, setE
             setErrorMessage("Error sending message");
         }
     }, [channelId, isGroup, maxLength, message, setChats, setErrorMessage, viewer.feed_id]);
-    //}, [channelId, connection.feed_id, isGroup, maxLength, message, setChats, setErrorMessage, viewer.feed_id]);
 
     return (
         <div className="messages-section">
