@@ -35,7 +35,15 @@ const ChatChannel = ({ canRemove, channelId, connection, isGroup, setChats, setE
     
     //Fetch and listen for messages
     useEffect(() => {
-        const socket = io(process.env.REACT_APP_SOCKET_URL);
+        const socket = io(process.env.REACT_APP_SOCKET_URL, {
+            transports: ['websocket', 'polling'],
+            withCredentials: true
+        });
+        socket.on('connect', () => console.log('Socket connected successfully'));
+        socket.on('connect_error', (err) => {
+            console.error('Connection Error details:', err);
+        setErrorMessage(`Unable to connect to chat server: ${err.message}`);
+        });
         socketRef.current = socket;
         const channelRoute = isGroup ? 'join_channel' : 'join_chat';
         const leaveRoute = isGroup ? 'leave_channel' : 'leave_chat';
