@@ -191,11 +191,11 @@ const ContentWidget = ({ canRemove, feed, isGroup, onEditClick, onPostRemoved, o
         <div className="vote-container">
           {!isViewingOwnPost ? (   
             <>
-              <button className={`large-icon ${upvoteClass}`} disabled={downvoteLimit || upvoteLimit} onClick={() => postVote(post.post_id, 'upvote')}>
+              <button className={`large-icon ${upvoteClass}`} disabled={upvoteLimit} onClick={() => postVote(post.post_id, 'upvote')} title={upvoteLimit ? 'Vote limit reached' : 'Upvote'}>
                 <FaArrowUp />
               </button>
               <span className="total-votes">{upvotes - downvotes}</span>      
-              <button className={`large-icon ${downvoteClass}`} disabled={downvoteLimit || upvoteLimit} onClick={() => postVote(post.post_id, 'downvote')} >
+              <button className={`large-icon ${downvoteClass}`} disabled={downvoteLimit} onClick={() => postVote(post.post_id, 'downvote')} title={downvoteLimit ? 'Vote limit reached' : 'Upvote'}>
                 <FaArrowDown />
               </button>
             </>
