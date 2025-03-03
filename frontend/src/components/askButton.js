@@ -36,7 +36,7 @@ const AskButton = ({ isReply, isGroup, content, showNote, setShowNote, note, set
     };
 
     return (
-        <button className={`small-icon ${isLoading ? 'button disabled' : 'button'}`} disabled={isLoading} onClick={askPost} title="Ask">
+        <button className={`small-icon ${isLoading ? 'button disabled' : 'button'}`} disabled={isLoading} onClick={askPost} title={showNote ? 'Close Note' : isLoading ? 'Loading Note...' : 'Ask'}>
             {showNote ? 'Close' : (isLoading ? 'Loading...' : <img className="standard-icon" src="/media/site_images/icons/ask.png" alt="Ask"/>)}
         </button>
     );

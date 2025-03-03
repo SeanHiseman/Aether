@@ -41,6 +41,7 @@ const ChatChannel = ({ canRemove, channelId, connection, isGroup, setChats, setE
             transports: ['websocket', 'polling'],
             withCredentials: true
         });
+        console.log("Socket:", socket);
         socket.on('connect', () => console.log('Socket connected successfully'));
         socket.on('connect_error', (err) => {
             console.error('Connection Error details:', err);
