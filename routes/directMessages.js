@@ -212,7 +212,7 @@ router.get('/get_chats/:feedId', authenticateCheck, async (req, res) => {
             chatIdsWithConnectionFeed.includes(chatId)
         );
         if (chatIds.length === 0) {
-            return res.json({ success: true, chats: [] });
+            return res.status(200).json({ success: true, chats: [] });
         }
         const chatDetails = await Chats.findAll({
             where: { chat_id: { [Op.in]: chatIds } },

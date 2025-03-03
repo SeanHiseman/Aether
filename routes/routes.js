@@ -41,7 +41,7 @@ router.get('/connection_posts/:feedId', authenticateCheck, async (req, res)=> {
             }, {
                 model: PostVotes,
                 as: 'postVotes',
-                attributes: ['vote_count'],
+                attributes: ['upvotes', 'downvotes'],
                 required: false
             }, {
                 model: PostNotes,
@@ -76,7 +76,7 @@ router.get('/following_posts/:feedId', authenticateCheck, async (req, res) => {
             include: [{
                 model: PostVotes,
                 as: 'postVotes',
-                attributes: ['vote_count'],
+                attributes: ['upvotes', 'downvotes'],
                 required: false
             }, {
                 model: PostNotes,
@@ -237,7 +237,7 @@ router.get('/search/:searcherId', authenticateCheck, async (req, res) => {
             });
             const postVotes = await PostVotes.findAll({
                 where: { post_id: post.post_id },
-                attributes: ['vote_count']
+                attributes: ['upvotes', 'downvotes']
             });
             return {
                 ...post,
