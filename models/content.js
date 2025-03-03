@@ -29,7 +29,8 @@ const PostVotes = sequelize.define('post_votes', {
     vote_id: { type: STRING(36), primaryKey: true },
     post_id: { type: STRING(36), allowNull: false },
     voter_id: { type: STRING(36), allowNull: false },
-    vote_count: {type: INTEGER, defaultValue: 0},
+    upvotes: {type: INTEGER, defaultValue: 0},
+    downvotes: {type: INTEGER, defaultValue: 0},
     created_at: { type: DataTypes.DATE(3), defaultValue: sequelize.literal('CURRENT_TIMESTAMP(3)') },
     updated_at: { type: DataTypes.DATE(3), allowNull: false, defaultValue: sequelize.literal('CURRENT_TIMESTAMP(3)') },
 }, { tableName: 'post_votes', timestamps: false });

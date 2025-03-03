@@ -56,29 +56,20 @@ const ContentWidget = ({ canRemove, feed, isGroup, onEditClick, onPostRemoved, o
 
   const postVote = async (postId, voteType) => {
     try {
-      if (
-        (voteType === 'upvote' && upvoteLimit) ||
-        (voteType === 'downvote' && downvoteLimit)
-      ) {
-        return;
-      }
-      setDownvoteLimit(false);
-      setUpvoteLimit(false);
       const response = await axios.post('/api/content_vote', {
         postId: postId,
-        feedId: feed.feed_id,
+        feedId: viewer.feed_id,
         voteType,
       });
       if (response.data.success) {
-        if (voteType === 'upvote') {
-          setUpvotes((prev) => prev + 1);
-        } else {
-          setDownvotes((prev) => prev + 1);
-        }
+        setUpvotes(response.data.upvotes);
+        setDownvotes(response.data.downvotes);
+        setUpvoteLimit(response.data.reachedUpvoteLimit);
+        setDownvoteLimit(response.data.reachedDownvoteLimit);
       } else {
-        if (voteType === 'upvote') {
+        if (response.data.message === 'upvote limit') {
           setUpvoteLimit(true);
-        } else {
+        } else if (response.data.message === 'downvote limit') {
           setDownvoteLimit(true);
         }
       }
@@ -123,10 +114,9 @@ const ContentWidget = ({ canRemove, feed, isGroup, onEditClick, onPostRemoved, o
           feedId: viewer.feed_id,
           voteType: 'check_vote',
         });
-        if (response.data.message === 'upvote limit') {
-          setUpvoteLimit(true);
-        } else if (response.data.message === 'downvote limit') {
-          setDownvoteLimit(true);
+        if (response.data.success) {
+          setUpvoteLimit(response.data.reachedUpvoteLimit);
+          setDownvoteLimit(response.data.reachedDownvoteLimit);
         }
       } catch {
         setPostErrorMessage('Error checking vote limit');
