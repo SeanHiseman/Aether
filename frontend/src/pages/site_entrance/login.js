@@ -1,5 +1,6 @@
 import axios from 'axios';
 import React, { useContext, useState } from 'react';
+import { FaEye, FaEyeSlash } from 'react-icons/fa';
 import { Link, useNavigate } from 'react-router-dom';
 import { ThemeContext } from '../../themeProvider';
 import '../../css/authentication.css'; 
@@ -7,6 +8,7 @@ import '../../css/authentication.css';
 const Login = () => {
     const [errorMessage, setErrorMessage] = useState('');
     const { refreshTheme } = useContext(ThemeContext);
+    const [showPassword, setShowPassword] = useState(false);
     const navigate = useNavigate();
 
     const handleLogin = async (event) => {
@@ -31,6 +33,11 @@ const Login = () => {
         }
     };
 
+    const togglePasswordVisibility = (event) => {
+        event.preventDefault(); 
+        setShowPassword(!showPassword);
+    };
+
     document.title = "Login";
     return (
         <div className="authentication-container">
@@ -45,7 +52,12 @@ const Login = () => {
                 <p className="error-message">{errorMessage}</p>
                 <form method="post" onSubmit={handleLogin}>
                     <input className="authentication-input-box" name="username" placeholder="Username or email" required />
-                    <input type="password" className="authentication-input-box" name="password" placeholder="Password" required />
+                    <div className="password-container">
+                        <input type={showPassword ? "text" : "password"} className="authentication-input-box" name="password" placeholder="Password" required />
+                        <button type="button" className="small-icon" onClick={togglePasswordVisibility} title={showPassword ? "Hide password" : "Show password"}>
+                            {showPassword ? <FaEyeSlash /> : <FaEye />}
+                        </button>
+                    </div>
                     <input className="submit" type="submit" value="Login" />
                 </form>
             </div>
