@@ -54,6 +54,11 @@
     display: flex;
     justify-content: space-between;
 }
+.password-container {
+    align-items: center;
+    display: flex;
+    gap: 10px;
+}
 .welcome-text {
     font-size: 36px;
     margin-bottom: 30px;
