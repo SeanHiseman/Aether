@@ -31,6 +31,15 @@
     min-width: 200px;
     padding-right: 10px;
 }
+.cancel-save {
+    display: flex;
+    gap: 10px;
+}
+.cancel-save-vertical {
+    display: flex;
+    flex-direction: column;
+
+}
 .channel {
     display: flex;
     flex-direction: column;
@@ -170,9 +179,9 @@
     width: 100%;
 }
 .settings-feed-info {
-    align-items: center;
     display: flex;
     flex-direction: column;
+    gap: var(--large-margin);
     margin: 10px;
     width: 60%;
 }

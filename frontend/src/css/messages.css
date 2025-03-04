@@ -1,10 +1,4 @@
 @import url('variables.css');
-.channel-content.messages, .messages-section {
-    display: flex;
-    flex-direction: column;
-    height: 100%;
-    width: 100%;
-}
 #chat-change, #chat-name {
     display: flex;
     flex-direction: column;
@@ -135,12 +129,6 @@
 .message-info.outgoing {
     justify-content: end;
     margin-right: var(--small-margin);
-}
-.messages-list-container {
-    display: flex;
-    flex-direction: column;
-    height: 100%;
-    overflow-y: auto;
 }
 .read-status {
     color: var(--border);

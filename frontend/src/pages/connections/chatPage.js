@@ -167,7 +167,7 @@ const ChatPage = () => {
     document.title = connection_name;
     return (
         <div className="standard-container">
-            <ChatChannel channelId={selectedChatId} connection={connection} isGroup={false} setChats={setChats} setErrorMessage={setErrorMessage} />
+            <ChatChannel canAdd={true} channelId={selectedChatId} connection={connection} isGroup={false} isLocked={false} setChats={setChats} setErrorMessage={setErrorMessage} />
             <aside id="right-aside">
                 {connection && (
                     <div id="feed-summary">

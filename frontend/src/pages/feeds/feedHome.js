@@ -1,6 +1,6 @@
 import axios from 'axios';
 import { AuthContext } from '../../components/authContext';
-import { FaCog, FaEdit, FaFeatherAlt, FaMinus, FaPlus, FaTrash } from 'react-icons/fa';
+import { FaCog, FaEdit, FaFeatherAlt, FaMinus, FaPlus, FaRegWindowClose, FaSave, FaTrash } from 'react-icons/fa';
 import { Tooltip } from 'react-tooltip';
 import React, { useContext, useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
@@ -24,8 +24,9 @@ const FeedHome = () => {
     const [isChatChannel, setIsChatChannel] = useState(false);
     const [isEdit, setIsEdit] = useState(false);
     const [isEditingChannelName, setIsEditingChannelName] = useState(false);
-    const [isPostChannel, setIsPostChannel] = useState(true);
+    const [isLocked, setIsLocked] = useState(false);
     const [isModerator, setIsModerator] = useState(false);
+    const [isPostChannel, setIsPostChannel] = useState(true);
     const [newChannelName, setNewChannelName] = useState('');
     const [postErrorMessage, setPostErrorMessage] = useState('');
     const [postToEdit, setPostToEdit] = useState(null);
@@ -45,6 +46,7 @@ const FeedHome = () => {
                 const fetchedFeed = response.data.feedResult;
                 setIsAdmin(fetchedFeed.isAdmin);
                 setIsModerator(fetchedFeed.isMod);
+                setIsLocked(fetchedFeed.is_locked);
                 if (viewer.feed_id === fetchedFeed.feed_id){
                     setIsAdmin(true);
                     setIsModerator(true);
@@ -307,7 +309,7 @@ const FeedHome = () => {
                             }}
                         />
                     ) : (
-                        <ChatChannel canRemove={canRemove} channelId={channelRender.channel_id} feedId={feed.feed_id} isGroup={true}/>
+                        <ChatChannel canAdd={isAdmin} canRemove={canRemove} channelId={channelRender.channel_id} feedId={feed.feed_id} isGroup={true} isLocked={isLocked} />
                     )
                 ) : null}
             </div> 
@@ -356,23 +358,16 @@ const FeedHome = () => {
                                     }}
                                 />
                                 <div className="cancel-save">
-                                    <button
-                                        className="button"
-                                        onClick={() => {
-                                            setIsEditingChannelName(false);
-                                            setNewChannelName("");
-                                            setFeedErrorMessage("");
-                                        }}
-                                    >
-                                        Cancel
+                                    <button className="small-icon" onClick={() => {setIsEditingChannelName(false); setNewChannelName(""); setFeedErrorMessage("");}} title="Cancel">
+                                        <FaRegWindowClose />
                                     </button>
-                                    <button className="button" onClick={changeChannelName}>
-                                        Save
+                                    <button className="small-icon" onClick={changeChannelName} title="Save">
+                                        <FaSave />
                                     </button>
                                 </div>
                             </div>
                         ) : (
-                            <div className="chat-name">
+                            <div className="channel-name">
                                 <Link to={`/${urlLetter}/${feed_name}/${channel_name}`}>
                                     <p className="text24">{channel_name}</p>
                                 </Link>
@@ -399,19 +394,23 @@ const FeedHome = () => {
                                             {showChannelForm ? <FaMinus /> : <FaPlus />}
                                         </button>
                                     )}
-                                    {channelMode === "post" && !showPostForm && (feed.is_group || feed.feed_owner === user.user_id) && (
-                                        <button
-                                            className="small-icon"
-                                            onClick={() => {
-                                                setIsEdit(false);
-                                                setPostToEdit(null);
-                                                setShowPostForm(true);
-                                            }}
-                                            title="Create Post"
-                                        >
-                                            <FaFeatherAlt />
-                                        </button>
-                                    )}
+                                    {channelMode === "post" && 
+                                        !showPostForm && 
+                                        (feed.is_group || feed.feed_owner === user.user_id) && 
+                                        (!isLocked || isAdmin) && ( 
+                                            <button
+                                                className="small-icon"
+                                                onClick={() => {
+                                                    setIsEdit(false);
+                                                    setPostToEdit(null);
+                                                    setShowPostForm(true);
+                                                }}
+                                                title="Create Post"
+                                            >
+                                                <FaFeatherAlt />
+                                            </button>
+                                        )
+                                    }
                                 </div>
                                 {showChannelForm && (
                                     <form className="add-channel-form" onSubmit={AddChannel}>

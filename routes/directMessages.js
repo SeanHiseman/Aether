@@ -11,7 +11,7 @@ dotenv.config();
 const router = Router();
 const SECRET_KEY = process.env.ENCRYPTION_SECRET_KEY;
 
-const feedAttributes = ['feed_id', 'parent_id', 'feed_name', 'description', 'feed_photo', 'follower_count', 'created_at', 'updated_at', 'type', 'is_group', 'feed_owner'];
+const feedAttributes = ['feed_id', 'parent_id', 'feed_name', 'description', 'feed_photo', 'follower_count', 'created_at', 'updated_at', 'type', 'is_group', 'feed_owner', 'is_locked'];
 
 router.post('/accept_connect_request', authenticateCheck, async (req, res) => {
     try {

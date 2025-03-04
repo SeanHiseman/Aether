@@ -59,12 +59,9 @@
     padding: 3px 6px;
 }
 .change-name-area {
-    font-size: 36px;
-    height: 42px;
-    max-width: 180px;
-}
-.change-name-area.long {
-    max-width: 100%;
+    font-size: 24px;
+    height: 30px;
+    max-width: 80%;
 }
 .change-text-area {
     font-size: 24px;
@@ -138,10 +135,25 @@
 .chat-channel-button, .conversation-button {
     border-radius: 1000px;
 }
-.chat-name, .change-name {
+.channel-name {
     align-items: center;
     display: flex;
     flex-direction: column;
+}
+.channel-name-settings {
+    align-items: center;
+    display: flex;
+    flex-direction: row;
+}
+.change-name {
+    align-items: center;
+    display: flex;
+    flex-direction: column;
+}
+.change-name-settings {
+    align-items: center;
+    display: flex;
+    flex-direction: row;
 }
 #confirmation-message {
     color: var(--border);
