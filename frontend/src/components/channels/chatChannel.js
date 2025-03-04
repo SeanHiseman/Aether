@@ -7,7 +7,7 @@ import { decrypt, encrypt } from '../../encryptionUtil';
 import Message from '../connections/message';
 import { UnreadContext } from '../connections/unreadContext';
 
-const ChatChannel = ({ canRemove, channelId, connection, isGroup, setChats, setErrorMessage }) => {
+const ChatChannel = ({ canAdd, canRemove, channelId, connection, isGroup, isLocked, setChats, setErrorMessage }) => {
     const [channel, setChannel] = useState([]);
     const { dispatch } = useContext(UnreadContext);
     const [hasMore, setHasMore] = useState(true);
@@ -35,13 +35,11 @@ const ChatChannel = ({ canRemove, channelId, connection, isGroup, setChats, setE
     
     //Fetch and listen for messages
     useEffect(() => {
-        console.log("Socket URL from env:", process.env.REACT_APP_SOCKET_URL);
         const socket = io(process.env.REACT_APP_SOCKET_URL, {
             path: '/socket.io',
             transports: ['websocket', 'polling'],
             withCredentials: true
         });
-        console.log("Socket:", socket);
         socket.on('connect', () => console.log('Socket connected successfully'));
         socket.on('connect_error', (err) => {
             console.error('Connection Error details:', err);
@@ -197,39 +195,45 @@ const ChatChannel = ({ canRemove, channelId, connection, isGroup, setChats, setE
     }, [channelId, isGroup, maxLength, message, setChats, setErrorMessage, viewer.feed_id]);
 
     return (
-        <div className="messages-section">
-            <div className="messages-list-container" ref={messagesContainerRef}>
-                {channel.map((msg, index) => (
-                    <Message
-                        key={msg.message_id || index}
-                        canRemove={canRemove}
-                        deleteMessage={deleteMessage}
-                        isGroup={isGroup}
-                        isOutgoing={msg.sender_id === viewer.feed_id}
-                        isRead={msg.is_read}
-                        message={msg}
-                    />
-                ))}
+        <div className="channel">
+            <div className="channel-content" ref={messagesContainerRef}>
+                {channel.length > 0 ? (
+                    channel.map((msg, index) => (
+                        <Message
+                            key={msg.message_id || index}
+                            canRemove={canRemove}
+                            deleteMessage={deleteMessage}
+                            isGroup={isGroup}
+                            isOutgoing={msg.sender_id === viewer.feed_id}
+                            isRead={msg.is_read}
+                            message={msg}
+                        />
+                    ))
+                ) : (   
+                    <p className="text36">No messages yet</p>
+                )}
                 <div ref={messagesEndRef} />
             </div>
-            <div className="messages-channel-footer">
-                <input
-                    className="chat-message-bar"
-                    type="text"
-                    value={message}
-                    placeholder="Type a message..."
-                    onChange={(e) => {
-                        if (e.target.value.length > maxLength) {
-                            setErrorMessage(`Message cannot exceed ${maxLength} characters.`);
-                            return;
-                        }
-                        setErrorMessage('');
-                        setMessage(e.target.value);
-                    }}
-                    onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
-                />
-                <button className="chat-send-button" onClick={sendMessage}>Send</button>
-            </div>
+            {(!isLocked || canAdd) && (
+                <div className="messages-channel-footer">
+                    <input
+                        className="chat-message-bar"
+                        type="text"
+                        value={message}
+                        placeholder="Type a message..."
+                        onChange={(e) => {
+                            if (e.target.value.length > maxLength) {
+                                setErrorMessage(`Message cannot exceed ${maxLength} characters.`);
+                                return;
+                            }
+                            setErrorMessage('');
+                            setMessage(e.target.value);
+                        }}
+                        onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
+                    />
+                    <button className="chat-send-button" onClick={sendMessage}>Send</button>
+                </div>
+            )}
         </div>
     );
 }

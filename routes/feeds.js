@@ -21,7 +21,7 @@ app.use(express.static(join(__dirname, 'static')));
 const feedProfileUpload = imageUpload('/media/feed_images', 'new_feed_photo');
 
 const defaultImages = [process.env.DEFAULT_USER_IMAGE, process.env.DEFAULT_GROUP_IMAGE];
-const feedAttributes = ['feed_id', 'parent_id', 'feed_name', 'description', 'feed_photo', 'follower_count', 'created_at', 'updated_at', 'type', 'is_group', 'feed_owner'];
+const feedAttributes = ['feed_id', 'parent_id', 'feed_name', 'description', 'feed_photo', 'follower_count', 'created_at', 'updated_at', 'type', 'is_group', 'feed_owner', 'is_locked'];
 
 router.post('/add_feed_channel', authenticateCheck, async (req, res) => {
     try {
@@ -445,6 +445,22 @@ router.get('/sub_feeds/:feedId', authenticateCheck, async (req, res) => {
     } catch (error) {
         res.status(500).json({ success: false });  
     }   
+});
+
+router.post('/toggle_lock', authenticateCheck, async (req, res) => {
+    try {
+        const { feedId } = req.body;
+        const feed = await Feeds.findByPk(feedId);
+        if (!feed) {
+            return res.status(404).json({ error: 'Feed not found' });
+        }
+        feed.is_locked = !feed.is_locked;
+        await feed.save();
+        return res.status(200).json({ is_locked: feed.is_locked });
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ error: 'Internal server error' });
+    }
 });
 
 router.post('/toggle_moderator', authenticateCheck, async (req, res) => {

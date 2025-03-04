@@ -17,14 +17,12 @@ const Login = () => {
         console.log("logging in with username: " + username);
         try {
             const response = await axios.post('/api/login', { password, username }); //username can also be email
-            console.log("response:", response);
             if (response.status === 200) {
                 await refreshTheme();
                 const responseUsername = response.data.username;
                 navigate(`/u/${responseUsername}`);//Main feed name same as username (for now)
             } 
         } catch (error) {
-            console.log(error);
             if (error.response && error.response.status === 401) {
                 setErrorMessage('Invalid username or password');
             } else {

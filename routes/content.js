@@ -9,7 +9,7 @@ import { Router } from 'express';
 import path from 'path';
 import { v4 } from 'uuid';
 
-const feedAttributes = ['feed_id', 'parent_id', 'feed_name', 'description', 'feed_photo', 'follower_count', 'created_at', 'updated_at', 'type', 'is_group', 'feed_owner'];
+const feedAttributes = ['feed_id', 'parent_id', 'feed_name', 'description', 'feed_photo', 'follower_count', 'created_at', 'updated_at', 'type', 'is_group', 'feed_owner', 'is_locked'];
 const noteAttributes = ['note_id', 'note_content', 'timestamp', 'is_misinfo']
 const postAttributes = ['post_id', 'parent_id', 'feed_id', 'channel_id', 'title', 'content', 'replies', 'views', 'upvotes', 'downvotes', 'timestamp', 'poster_id', 'points']
 const router = Router();

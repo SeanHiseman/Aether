@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { FaFileUpload } from 'react-icons/fa';
+import { FaEdit, FaFileUpload, FaLock, FaPencilAlt, FaRegWindowClose, FaSave, FaUnlock } from 'react-icons/fa';
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
@@ -78,6 +78,18 @@ const FeedInfoView = ({ feed, setFeed, user }) => {
         }
     };
     
+    const toggleLock = async () => {
+        try {
+            const response = await axios.post('/api/toggle_lock', { feedId: feed.feed_id });
+            setFeed(prevDetails => ({
+                ...prevDetails,
+                is_locked: response.data.is_locked
+            }));
+        } catch (error) {
+            setErrorMessage('Error changing lock status');
+        }
+    };
+
     const togglePhotoForm = () => {
         if (isPhotoFormVisible) {
             setErrorMessage('');
@@ -115,6 +127,10 @@ const FeedInfoView = ({ feed, setFeed, user }) => {
 
     const updateName = async () => {
         try {
+            if (!newName || newName.length === 0) {
+                setErrorMessage('Name cannot be empty');
+                return;
+            }
             const route = feed.is_group ? 'change_feed_name' : 'change_username';
             await axios.post(`/api/${route}`, {
                 feed_id: feed.feed_id,
@@ -135,8 +151,8 @@ const FeedInfoView = ({ feed, setFeed, user }) => {
             <div className="name-photo-area">
                 <div className="feed-header-photo">
                     <img className="settings-feed-photo" src={`/${feed.feed_photo}`} alt={feed.feed_name} />
-                    <button className="button" onClick={togglePhotoForm}>
-                        {isPhotoFormVisible ? 'Close' : 'Change feed photo'}
+                    <button className="small-icon" onClick={togglePhotoForm} title={isPhotoFormVisible ? "Close" : "Change feed photo"}>
+                        {isPhotoFormVisible ? <><FaRegWindowClose /><p className="icon-text">Close</p></>: <><FaEdit /><p className="icon-text">Change photo</p></>}
                     </button>
                     {isPhotoFormVisible && (
                         <form className="change-feed-photo" onSubmit={ChangeFeedPhoto}>
@@ -150,78 +166,58 @@ const FeedInfoView = ({ feed, setFeed, user }) => {
                     )}
                 </div>
                 <div className="settings-feed-info">
-                    <div className="chat-change">
-                        {isEditingName ? (
-                            <div className="change-name">
-                                <textarea className="change-name-area long" value={newName} placeholder="Feed name..." onChange={(e) => {
-                                    e.preventDefault();
-                                    const input = e.target.value;
-                                    const inputLength = input.length;
-                                    if (inputLength <= 30) {
-                                        setName(input);
-                                    } else {
-                                        setErrorMessage('Name too long');
-                                    }
-                                }}
-                                />
-                                <div className="cancel-save">
-                                    <button className="button" onClick={() => {
-                                        setIsEditingName(false);
-                                        setName('');
-                                        setErrorMessage('');
-                                    }}>Cancel</button>
-                                    <button className="button" onClick={(e) => {
-                                        e.preventDefault();
-                                        updateName();
-                                    }}>Save</button>
-                                </div>
+                    {isEditingName ? (
+                        <div className="change-name-settings">
+                            <textarea className="change-name-area" style={{fontSize: '36px', height: '42px'}}value={newName} placeholder="Feed name..." onChange={(e) => {
+                                e.preventDefault();
+                                const input = e.target.value;
+                                const inputLength = input.length;
+                                if (inputLength <= 30) {
+                                    setName(input);
+                                } else {                                        
+                                    setErrorMessage('Name cannot exceed 30 characters');
+                                }
+                            }}
+                            />
+                            <div className="cancel-save-vertical">
+                                <button className="small-icon" onClick={() => {setIsEditingName(false); setName(''); setErrorMessage('');}} title="Cancel"><FaRegWindowClose /></button>
+                                <button className="small-icon" onClick={(e) => {e.preventDefault(); updateName();}} title="Save"><FaSave /></button>
                             </div>
-                        ) : (
-                            <div className="chat-name">
-                                <p className="text36">{feed.feed_name}</p> 
-                                <button className="button" onClick={() => {
-                                    setIsEditingName(true);
-                                    setName(feed.feed_name);
-                                }}>Change name</button>
+                        </div>
+                    ) : (
+                        <div className="channel-name-settings">
+                            <p className="text36">{feed.feed_name}</p> 
+                            <button className="small-icon" onClick={() => {setIsEditingName(true); setName(feed.feed_name);}} title="Change name"><FaPencilAlt /></button>
+                        </div>
+                    )}
+                    {isEditingDescription ? (
+                        <div className="change-name-settings">
+                            <textarea className="change-name-area" value={newDescription} placeholder="Description..." onChange={(e) => {
+                                e.preventDefault();
+                                const input = e.target.value;
+                                const inputLength = input.length;
+                                if (inputLength <= 1000) {
+                                    setDescription(input);
+                                } else {
+                                    setErrorMessage('Description cannot exceed 1000 characters');
+                                }
+                            }}
+                            />
+                            <div className="cancel-save-vertical">
+                                <button className="small-icon" onClick={() => {setIsEditingDescription(false); setDescription(''); setErrorMessage('');}} title="Cancel"><FaRegWindowClose /></button>
+                                <button className="small-icon" onClick={(e) => {e.preventDefault(); updateDescription();}} title="Save"><FaSave /></button>
                             </div>
-                        )}
-                    </div>
-                    <div className="chat-change">
-                        {isEditingDescription ? (
-                            <div className="change-name">
-                                <textarea className="change-text-area" value={newDescription} placeholder="Description..." onChange={(e) => {
-                                    e.preventDefault();
-                                    const input = e.target.value;
-                                    const inputLength = input.length;
-                                    if (inputLength <= 1000) {
-                                        setDescription(input);
-                                    } else {
-                                        setErrorMessage('Description cannot exceed 1000 characters');
-                                    }
-                                }}
-                                />
-                                <div className="cancel-save">
-                                    <button className="button" onClick={() => {
-                                        setIsEditingDescription(false);
-                                        setDescription('');
-                                        setErrorMessage('');
-                                    }}>Cancel</button>
-                                    <button className="button" onClick={(e) => {
-                                        e.preventDefault();
-                                        updateDescription();
-                                    }}>Save</button>
-                                </div>
-                            </div>
-                        ) : (
-                            <div className="chat-name">
-                                <p className="text24">{feed.description}</p> 
-                                <button className="button" onClick={() => {
-                                    setIsEditingDescription(true);
-                                    setDescription(feed.description);
-                                }}>Change description</button>
-                            </div>
-                        )}
-                    </div>
+                        </div>
+                    ) : (
+                        <div className="channel-name-settings">
+                            {feed.description && feed.description.length > 0 ? (
+                                <p className="text24">{feed.description}</p>
+                            ) : (
+                                <p className="text24 faded-text">Description...</p>
+                            )}
+                            <button className="small-icon" onClick={() => {setIsEditingDescription(true); setDescription(feed.description);}} title="Change description"><FaPencilAlt /></button>
+                        </div>
+                    )}
                     <div className="option-toggle">
                         <button 
                             className={feed.type === 'public' ? 'active-mode' : 'passive-mode'} 
@@ -244,6 +240,13 @@ const FeedInfoView = ({ feed, setFeed, user }) => {
                             Private
                         </button>
                     </div>
+                    {feed.is_group && (
+                        <div>
+                            <button className="small-icon" onClick={toggleLock} title={feed.is_locked ? "Allow regular followers to post" : "Prevent regular followers from posting"}>
+                                {feed.is_locked ? <><FaUnlock /><p className="icon-text">Unlock feed</p></> : <><FaLock /><p className="icon-text">Lock feed</p></>}
+                            </button>
+                        </div>
+                    )}
                 </div>
             </div>
             <div className="error-message">{errorMessage}</div>

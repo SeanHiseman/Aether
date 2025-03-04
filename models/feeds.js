@@ -14,6 +14,7 @@ const Feeds = sequelize.define('feeds', {
     type: { type: STRING(10), defaultValue: 'public' },
     is_group: { type: BOOLEAN, defaultValue: false },
     feed_owner: { type: STRING(36), allowNull: false, references: { model: Users, key: 'user_id' } },
+    is_locked: { type: BOOLEAN, defaultValue: false }
 }, { tableName: 'feeds', timestamps: false });
 
 const FeedChannels = sequelize.define('feed_channels', { 
