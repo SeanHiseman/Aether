@@ -8,6 +8,9 @@ import Message from '../connections/message';
 import { UnreadContext } from '../connections/unreadContext';
 
 const ChatChannel = ({ canAdd, canRemove, channelId, connection, isGroup, isLocked, setChats, setErrorMessage }) => {
+    useEffect(() => {
+        setErrorMessage('Test error message');  
+    }, [setErrorMessage]);
     const [channel, setChannel] = useState([]);
     const { dispatch } = useContext(UnreadContext);
     const [hasMore, setHasMore] = useState(true);

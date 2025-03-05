@@ -6,7 +6,7 @@ import React, { useContext, useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import ChannelList from '../../components/channels/channelList';
 import ChatChannel from '../../components/channels/chatChannel';
-import ContentForm from "../../components/content/contentForm";
+import ContentForm from '../../components/content/contentForm';
 import FollowerChangeButton from '../../components/followerChangeButton';
 import ManageConnectionButton from '../../components/connections/manageConnectionButton';
 import PostChannel from '../../components/channels/postChannel';
