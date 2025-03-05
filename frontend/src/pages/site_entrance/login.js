@@ -16,7 +16,6 @@ const Login = () => {
         const formData = new FormData(event.target);
         const password = formData.get('password');
         const username = formData.get('username');
-        console.log("logging in with username: " + username);
         try {
             const response = await axios.post('/api/login', { password, username }); //username can also be email
             if (response.status === 200) {
