@@ -8,9 +8,6 @@ import Message from '../connections/message';
 import { UnreadContext } from '../connections/unreadContext';
 
 const ChatChannel = ({ canAdd, canRemove, channelId, connection, isGroup, isLocked, setChats, setErrorMessage }) => {
-    useEffect(() => {
-        setErrorMessage('Test error message');  
-    }, [setErrorMessage]);
     const [channel, setChannel] = useState([]);
     const { dispatch } = useContext(UnreadContext);
     const [hasMore, setHasMore] = useState(true);
@@ -40,24 +37,29 @@ const ChatChannel = ({ canAdd, canRemove, channelId, connection, isGroup, isLock
     useEffect(() => {
         const socket = io(process.env.REACT_APP_SOCKET_URL, {
             path: '/socket.io',
+            reconnectionAttempts: 5,
             transports: ['websocket', 'polling'],
-            withCredentials: true
+            withCredentials: true,
         });
         console.log("Socket connecting...");
         console.log("socket", socket);
-        socket.on('connect', () => console.log('Socket connected successfully'));
+        socket.on('connect', () => {
+            console.log('Socket connected successfully');
+            if (channelId) {
+                const channelRoute = isGroup ? 'join_channel' : 'join_chat';
+                socket.emit(channelRoute, channelId);
+                getChannelMessages(channelId);
+            }
+        });
         socket.on('connect_error', (err) => {
             console.error('Connection Error details:', err);
             setErrorMessage(`Connection failed`);
         });
         socketRef.current = socket;
-        const channelRoute = isGroup ? 'join_channel' : 'join_chat';
         const leaveRoute = isGroup ? 'leave_channel' : 'leave_chat';
         const confirmedRoute = isGroup ? 'channel_message_confirmed' : 'chat_message_confirmed';
         const deleteRoute = isGroup ? 'delete_feed_message' : 'delete_direct_message';
         if (channelId) {
-            socket.emit(channelRoute, channelId);
-            getChannelMessages(channelId);
             const handleNewMessage = (newMessage) => {
                 if (newMessage.channel_id === channelId) {
                     const processedMessage = {
@@ -84,13 +86,12 @@ const ChatChannel = ({ canAdd, canRemove, channelId, connection, isGroup, isLock
                         )
                     );
                 }
-            };            
+            };
             socket.on('new_message', handleNewMessage);
             socket.on(confirmedRoute, handleConfirmedMessage);
             socket.on(deleteRoute, deleteMessage);
             socket.on('messages_marked_read', handleMessagesRead);
             socket.on('error_message', (error) => setErrorMessage(error?.error || 'An error occurred'));
-            socket.on('connect_error', (err) => console.log('Connection Error:', err));
             return () => {
                 socket.emit(leaveRoute, channelId);
                 socket.off('new_message', handleNewMessage);
@@ -101,7 +102,7 @@ const ChatChannel = ({ canAdd, canRemove, channelId, connection, isGroup, isLock
                 socket.disconnect();
             };
         }
-    }, [channelId, deleteMessage, isGroup, setErrorMessage, viewer.feed_id]);
+    }, [channelId, deleteMessage, getChannelMessages, isGroup, setErrorMessage]);
     
     useEffect(() => {
         if (messagesContainerRef.current) {
