@@ -550,6 +550,8 @@ router.post('/update_current_feed', async (req, res) => {
 });
 
 export const feedChatChannelSocket = (socket) => {
+    console.log("Socket connected to feed chat channel");
+    console.log("socket:", socket);
     try {
         socket.on('join_channel', (channel_id) => {
             socket.join(channel_id);
