@@ -309,7 +309,7 @@ const FeedHome = () => {
                             }}
                         />
                     ) : (
-                        <ChatChannel canAdd={isAdmin} canRemove={canRemove} channelId={channelRender.channel_id} feedId={feed.feed_id} isGroup={true} isLocked={isLocked} />
+                        <ChatChannel canAdd={isAdmin} canRemove={canRemove} channelId={channelRender.channel_id} feedId={feed.feed_id} isGroup={true} isLocked={isLocked} setErrorMessage={setFeedErrorMessage}/> 
                     )
                 ) : null}
             </div> 
