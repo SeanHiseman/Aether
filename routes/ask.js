@@ -124,7 +124,7 @@ router.get('/get_ask_chats', authenticateCheck, async (req, res) => {
 router.post('/generate_content', authenticateCheck, async (req, res) => {
     try {
         const { currentCode, request, parentCode, senderId } = req.body;
-        console.log("req.body:", req.body);
+        //console.log("req.body:", req.body);
         //Creates API assistant
         const assistant = await openai.beta.assistants.create({
             name: "Ask",
@@ -160,13 +160,13 @@ router.post('/generate_content', authenticateCheck, async (req, res) => {
         const messages = await openai.beta.threads.messages.list(thread.id);
         let aiReply = messages.data.find(msg => msg.role === 'assistant').content[0].text.value;
         const chacaterCount = currentCode.length + (parentCode?.length ?? 0) + aiReply.length; //Parent code can be null
-        console.log("characterCount:", chacaterCount);
+        //console.log("characterCount:", chacaterCount);
         await Users.increment('usage_count', { by: chacaterCount, where: { user_id: senderId } });
         aiReply = aiReply.replace(/^```[a-zA-Z]+\s*|```$/g, '').trim(); //Trims response
         //console.log("aiReply:", aiReply);
         res.status(201).json({ success: true, generatedContent: aiReply });
     } catch (error) {
-        console.log(error);
+        //console.log(error);
         res.status(500).json({ success: false });
     }
 });

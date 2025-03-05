@@ -104,11 +104,13 @@ router.post('/join', async (req, res) => {
         await FeedChannels.create({
             channel_id, channel_name: 'Main', feed_id, is_chat: false
         });
-        //Automatically add to the Feedback feed 
+        //Add to the Development, Feedback, Welcome feeds
+        await Followers.create({
+            follow_id: v4(), follower_id: feed_id, feed_id: process.env.DEVELOPMENT_FEED_ID
+        });
         await Followers.create({
             follow_id: v4(), follower_id: feed_id, feed_id: process.env.FEEDBACK_FEED_ID
         });
-        //Add to the Welcome feed
         await Followers.create({
             follow_id: v4(), follower_id: feed_id, feed_id: process.env.WELCOME_FEED_ID
         });

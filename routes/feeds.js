@@ -584,9 +584,6 @@ export const feedChatChannelSocket = (socket) => {
             );
             socket.to(message.channel_id).emit('channel_message_confirmed', newMessage);
         });
-        socket.on('leave_channel', (channelId) => {
-            socket.leave(channelId);
-        }) 
     } catch (error) {
         console.log("Socket error:", error);
     }
