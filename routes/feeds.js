@@ -553,6 +553,7 @@ export const feedChatChannelSocket = (socket) => {
     console.log("Socket connecting to feed chat channel");
     try {
         socket.on('join_channel', (channel_id) => {
+            console.log("Joining channel", channel_id);
             socket.join(channel_id);
         });
         socket.on('leave_channel', (channel_id) => {
@@ -564,6 +565,7 @@ export const feedChatChannelSocket = (socket) => {
             socket.to(channel_id).emit('delete_feed_message', { message_id });
         });
         socket.on('send_feed_message', async (message) => {
+            console.log("Sending message", message);
             const messageLength = message.content.length;
             if (messageLength === 0) {
                 socket.emit('error_message', { error: "Message too short" });

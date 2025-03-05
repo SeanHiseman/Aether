@@ -377,8 +377,10 @@ router.get('/unread_messages_count/:feed_id', async (req, res) => {
 });
 
 export const directMessagesSocket = (socket) => {
+    console.log("Socket connecting to direct messages");
     try {
         socket.on('join_chat', (chat_id) => {
+            console.log("Joining chat", chat_id);
             socket.join(chat_id);
         });
         socket.on('leave_chat', (chat_id) => {
@@ -390,6 +392,7 @@ export const directMessagesSocket = (socket) => {
             socket.to(channel_id).emit('delete_direct_message', { message_id });
         });
         socket.on('send_direct_message', async (message) => {
+            console.log("Sending direct message", message);
             const messageLength = message.content.length;
             if (messageLength === 0) {
                 socket.emit('error_message', { error: "Message too short" });

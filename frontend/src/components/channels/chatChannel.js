@@ -8,6 +8,7 @@ import Message from '../connections/message';
 import { UnreadContext } from '../connections/unreadContext';
 
 const ChatChannel = ({ canAdd, canRemove, channelId, connection, isGroup, isLocked, setChats, setErrorMessage }) => {
+    console.log("channelId", channelId);
     const [channel, setChannel] = useState([]);
     const { dispatch } = useContext(UnreadContext);
     const [hasMore, setHasMore] = useState(true);
@@ -35,6 +36,7 @@ const ChatChannel = ({ canAdd, canRemove, channelId, connection, isGroup, isLock
     
     //Fetch and listen for messages
     useEffect(() => {
+        console.log("process.env.REACT_APP_SOCKET_URL", process.env.REACT_APP_SOCKET_URL);
         const socket = io(process.env.REACT_APP_SOCKET_URL, {
             path: '/socket.io',
             reconnectionAttempts: 5,
@@ -51,6 +53,9 @@ const ChatChannel = ({ canAdd, canRemove, channelId, connection, isGroup, isLock
                 getChannelMessages(channelId);
             }
         });
+        socket.on('disconnect', (reason) => {
+            console.log('Socket disconnected:', reason);
+        });
         socket.on('connect_error', (err) => {
             console.error('Connection Error details:', err);
             setErrorMessage(`Connection failed`);
@@ -60,6 +65,7 @@ const ChatChannel = ({ canAdd, canRemove, channelId, connection, isGroup, isLock
         const confirmedRoute = isGroup ? 'channel_message_confirmed' : 'chat_message_confirmed';
         const deleteRoute = isGroup ? 'delete_feed_message' : 'delete_direct_message';
         if (channelId) {
+            console.log("channelId", channelId);
             const handleNewMessage = (newMessage) => {
                 if (newMessage.channel_id === channelId) {
                     const processedMessage = {
@@ -166,6 +172,7 @@ const ChatChannel = ({ canAdd, canRemove, channelId, connection, isGroup, isLock
     }, [channelId, getChannelMessages, hasMore, offset]);
 
     const sendMessage = useCallback(() => {
+        console.log("sendMessage");
         try {
             if (!message.trim()) return;
             if (message.length > maxLength) {
@@ -196,6 +203,7 @@ const ChatChannel = ({ canAdd, canRemove, channelId, connection, isGroup, isLock
             }
             setMessage('');
         } catch (error) {
+            console.error("Error sending message:", error);
             setErrorMessage("Error sending message");
         }
     }, [channelId, isGroup, maxLength, message, setChats, setErrorMessage, viewer.feed_id]);
