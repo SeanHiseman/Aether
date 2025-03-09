@@ -11,7 +11,7 @@ import { v4 } from 'uuid';
 
 const feedAttributes = ['feed_id', 'parent_id', 'feed_name', 'description', 'feed_photo', 'follower_count', 'created_at', 'updated_at', 'type', 'is_group', 'feed_owner', 'is_locked'];
 const noteAttributes = ['note_id', 'note_content', 'timestamp', 'is_misinfo']
-const postAttributes = ['post_id', 'parent_id', 'feed_id', 'channel_id', 'title', 'content', 'replies', 'views', 'upvotes', 'downvotes', 'timestamp', 'poster_id', 'points']
+const postAttributes = ['post_id', 'parent_id', 'feed_id', 'channel_id', 'title', 'content', 'replies', 'views', 'upvotes', 'downvotes', 'created_at', 'updated_at', 'poster_id', 'points']
 const router = Router();
 
 router.get('/channel_posts', authenticateCheck, async (req, res) => {
@@ -265,6 +265,7 @@ router.post('/edit_post', authenticateCheck, post_upload.array('files'), async (
         if (title) {
             foundPost.title = title;
         }
+        foundPost.updated_at = sequelize.literal('CURRENT_TIMESTAMP(3)');
         await foundPost.save();
         return res.status(201).json({ success: true });
     } catch (error) {

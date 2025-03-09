@@ -24,11 +24,10 @@ const app = express();
 const http = createServer(app);
 const io = new Server(http, {
     cors: {
-        origin: process.env.FRONTEND_URL,
+        origin: [process.env.FRONTEND_URL, "http://localhost:5000"],
         methods: ['GET', 'POST'],
-        credentials: true,
     },
-    path: '/socket.io'
+    transports: ['websocket', 'polling'],
 });
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -66,15 +65,10 @@ app.get('*', (req, res) => {
     }
 });
 
-io.on('connection', (socket) => {
-    directMessagesSocket(socket);
-    feedChatChannelSocket(socket);
-});
-
 sequelize.authenticate()
 
 const PORT = process.env.APP_PORT;
-http.listen(PORT, '0.0.0.0', () => {
+http.listen(PORT, '::', () => {
     console.log(`Running on ${PORT}`)
 });
 

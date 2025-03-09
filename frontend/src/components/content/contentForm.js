@@ -298,7 +298,7 @@ const ContentForm = ({ feed, isEdit = false, isGroup, isReply, onSubmit, post = 
 	const handleSubmit = useCallback(async e => {
 		e.preventDefault()
 		if (isContentEmpty(blocks)) {
-			setFormErrorMessage('Post cannot be empty.')
+			setFormErrorMessage(isReply ? 'Reply cannot be empty.' : 'Post cannot be empty.')
 			return
 		}
 		const finalHTML = compileFinalHTML(blocks)

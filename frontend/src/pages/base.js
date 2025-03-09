@@ -217,10 +217,18 @@ const BaseLayout = () => {
     return (
         <div className="container">
             <aside id="left-aside" ref={feedContainerRef}>
-                <div className="feed-info main" style={{alignSelf: 'flex-start', marginLeft: 'calc(5% + 10px)'}}>
+                <div className="left-aside-feed-info">
                     <Link className="feed-link" to={`/u/${feed.feed_name}`}>
                         <img className="small-feed-photo" src={`/${feed.feed_photo}`} alt="Feed" />
                         <p className="feed-list-text">{feed.feed_name}</p>
+                    </Link>
+                    <Link id="messages-button" to={`/connections`}>
+                        <div className="message-icon-container">
+                            <FaCommentDots title="Messages and connections" />
+                            {state.total > 0 && (
+                                <span className="unread-badge">{state.total}</span>
+                            )}
+                        </div>
                     </Link>
                 </div>
                 <nav id="personal-feeds">
@@ -306,14 +314,6 @@ const BaseLayout = () => {
                         </div>
                     </form>
                     <div className="spacer"></div>
-                    <Link id="messages-button" to={`/connections`}>
-                        <div className="message-icon-container">
-                            <FaCommentDots />
-                            {state.total > 0 && (
-                                <span className="unread-badge">{state.total}</span>
-                            )}
-                        </div>
-                    </Link>
                 </header>
                 <div className="content">
                     <Outlet />

@@ -258,6 +258,13 @@
     margin: 10px;
     width: 120px; 
 }
+.left-aside-feed-info {
+    align-items: center;
+    display: flex;
+    justify-content: space-between;
+    margin-left: var(--medium-margin);
+    width: 90%;
+}
 #left-aside, #right-aside {
     align-items: center;
     background-color: var(--darkest);
@@ -306,7 +313,7 @@ main {
     transition: var(--transition-regular);
     width: 80%;
 }
-.name-input::placeholder, #search-bar::placeholder, textarea::placeholder, .title-input::placeholder {
+.chat-message-bar::placeholder, .name-input::placeholder, #search-bar::placeholder, textarea::placeholder, .title-input::placeholder {
     color: #7b7b7b;
 }
 #personal-feeds {
@@ -369,7 +376,6 @@ main {
 #search-form {
     display: flex;
     flex-grow: 0;
-    margin-left: 10.5%;
     max-width: 35%;
     height: 80%;
     position: relative;

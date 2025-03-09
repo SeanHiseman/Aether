@@ -8,7 +8,6 @@ import Message from '../connections/message';
 import { UnreadContext } from '../connections/unreadContext';
 
 const ChatChannel = ({ canAdd, canRemove, channelId, connection, isGroup, isLocked, setChats, setErrorMessage }) => {
-    console.log("channelId", channelId);
     const [channel, setChannel] = useState([]);
     const { dispatch } = useContext(UnreadContext);
     const [hasMore, setHasMore] = useState(true);
@@ -37,16 +36,15 @@ const ChatChannel = ({ canAdd, canRemove, channelId, connection, isGroup, isLock
     //Fetch and listen for messages
     useEffect(() => {
         console.log("process.env.REACT_APP_SOCKET_URL", process.env.REACT_APP_SOCKET_URL);
-        const socket = io(process.env.REACT_APP_SOCKET_URL, {
-            path: '/socket.io',
-            reconnectionAttempts: 5,
-            transports: ['websocket', 'polling'],
-            withCredentials: true,
-        });
-        console.log("Socket connecting...");
-        console.log("socket", socket);
+        if (!socketRef.current) {
+            socketRef.current = io(process.env.REACT_APP_SOCKET_URL, {
+                path: '/socket.io/',
+                transports: ['websocket', 'polling'],
+            });
+        }
+        const socket = socketRef.current;
         socket.on('connect', () => {
-            console.log('Socket connected successfully');
+            console.log("Connected to WebSocket server", socket.id);
             if (channelId) {
                 const channelRoute = isGroup ? 'join_channel' : 'join_chat';
                 socket.emit(channelRoute, channelId);
@@ -60,13 +58,13 @@ const ChatChannel = ({ canAdd, canRemove, channelId, connection, isGroup, isLock
             console.error('Connection Error details:', err);
             setErrorMessage(`Connection failed`);
         });
-        socketRef.current = socket;
         const leaveRoute = isGroup ? 'leave_channel' : 'leave_chat';
         const confirmedRoute = isGroup ? 'channel_message_confirmed' : 'chat_message_confirmed';
         const deleteRoute = isGroup ? 'delete_feed_message' : 'delete_direct_message';
         if (channelId) {
             console.log("channelId", channelId);
             const handleNewMessage = (newMessage) => {
+                console.log("newMessage", newMessage);
                 if (newMessage.channel_id === channelId) {
                     const processedMessage = {
                         ...newMessage,
@@ -76,6 +74,7 @@ const ChatChannel = ({ canAdd, canRemove, channelId, connection, isGroup, isLock
                 }
             };
             const handleConfirmedMessage = (confirmedMessage) => {
+                console.log("confirmedMessage", confirmedMessage);
                 const processedMessage = {
                     ...confirmedMessage,
                     content: isGroup ? confirmedMessage.content : decrypt(confirmedMessage.content),
@@ -146,6 +145,7 @@ const ChatChannel = ({ canAdd, canRemove, channelId, connection, isGroup, isLock
             else setChannel(prev => [...messages, ...prev]);
             setOffset(currentOffset + messages.length);
         } catch (error) {
+            console.error("Error fetching messages:", error);
             setErrorMessage('Error fetching messages');
         }
     }, [isGroup, setErrorMessage]);
