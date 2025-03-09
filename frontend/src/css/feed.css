@@ -82,9 +82,6 @@
     align-items: center;
     display: flex;
 }
-.feed-info.main {
-    margin-top: 20px;
-}
 .feed-link {
     align-items: center;
     display: flex;

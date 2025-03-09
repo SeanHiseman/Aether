@@ -12,7 +12,8 @@ const Posts = sequelize.define('posts', {
     views: { type: INTEGER, allowNull: false, defaultValue: 0 },
     upvotes: { type: INTEGER, allowNull: false, defaultValue: 0 },
     downvotes: { type: INTEGER, allowNull: false, defaultValue: 0 },
-    timestamp: { type: DataTypes.DATE(3), defaultValue: sequelize.literal('CURRENT_TIMESTAMP(3)') },
+    created_at: { type: DataTypes.DATE(3), defaultValue: sequelize.literal('CURRENT_TIMESTAMP(3)') },
+    updated_at: { type: DataTypes.DATE(3), defaultValue: sequelize.literal('CURRENT_TIMESTAMP(3)') },
     poster_id: { type: STRING(36), allowNull: false },
     points: { type: INTEGER, allowNull: false, defaultValue: 0 },
 }, { tableName: 'posts', timestamps: false });
