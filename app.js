@@ -26,6 +26,7 @@ const io = new Server(http, {
     cors: {
         origin: [process.env.FRONTEND_URL, "http://localhost:5000"],
         methods: ['GET', 'POST'],
+        credentials : true  
     },
     transports: ['websocket', 'polling'],
 });
@@ -37,7 +38,11 @@ const mediaPath = path.join(__dirname, process.env.MEDIA_DIR);
 const faviconPath = path.join(__dirname, process.env.FAVICON_PATH);
 
 app.use('/media', express.static(mediaPath));
-app.use(cors());
+app.use(cors({
+    origin: [process.env.FRONTEND_URL, "http://localhost:5000"],
+    methods: ['GET', 'POST'],
+    credentials: true
+}));
 app.use(express.json());
 app.use(express.static(root));
 app.use(favicon(faviconPath));
@@ -67,8 +72,14 @@ app.get('*', (req, res) => {
 
 sequelize.authenticate()
 
+io.on("connection", (socket) => {
+    console.log("New socket connection:", socket.id);
+    directMessagesSocket(socket);
+    feedChatChannelSocket(socket);
+});
+
 const PORT = process.env.APP_PORT;
-http.listen(PORT, '::', () => {
+http.listen(PORT, '0.0.0.0', () => {
     console.log(`Running on ${PORT}`)
 });
 
