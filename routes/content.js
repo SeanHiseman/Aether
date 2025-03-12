@@ -7,6 +7,7 @@ import { Feeds, FeedChannels, Posts, PostNotes, PostVotes } from '../models/rela
 import multer from 'multer';
 import { Router } from 'express';
 import path from 'path';
+import { Sequelize } from 'sequelize';
 import { v4 } from 'uuid';
 
 const feedAttributes = ['feed_id', 'parent_id', 'feed_name', 'description', 'feed_photo', 'follower_count', 'created_at', 'updated_at', 'type', 'is_group', 'feed_owner', 'is_locked'];
@@ -237,10 +238,8 @@ router.post('/create_post', authenticateCheck, post_upload.array('files'), async
 
 router.post('/edit_post', authenticateCheck, post_upload.array('files'), async (req, res) => {
     try {
-        let { content, post_id, title } = req.body;
-        console.log("req.body", req.body);
+        let { content, post_id, title } = req.body;;
         const foundPost = await Posts.findByPk(post_id);
-        console.log("foundPost before", foundPost);
         if (!foundPost) {
             return res.status(404).json({ success: false, message: 'Post not found' });
         }
@@ -267,12 +266,10 @@ router.post('/edit_post', authenticateCheck, post_upload.array('files'), async (
         if (title) {
             foundPost.title = title;
         }
-        foundPost.updated_at = sequelize.literal('CURRENT_TIMESTAMP(3)');
-        console.log("foundPost after", foundPost);
+        foundPost.updated_at = Sequelize.literal('CURRENT_TIMESTAMP(3)');
         await foundPost.save();
         return res.status(201).json({ success: true });
     } catch (error) {
-        console.log(error);
         return res.status(500).json({ success: false, error: error.message });
     }
 });
