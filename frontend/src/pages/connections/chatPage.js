@@ -1,7 +1,7 @@
 import axios from 'axios';
 import React, { useCallback, useContext, useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { FaEdit, FaMinus, FaPlus, FaTrash } from 'react-icons/fa';
+import { FaEdit, FaMinus, FaPlus, FaRegWindowClose, FaSave, FaTrash } from 'react-icons/fa';
 import { AuthContext } from '../../components/authContext';
 import ChannelList from '../../components/channels/channelList';
 import ChatChannel from '../../components/channels/chatChannel';
@@ -196,10 +196,10 @@ const ChatPage = () => {
                                         />
                                         <div className="cancel-save">
                                             <button className="button" onClick={() => {setIsEditingChatName(false); setNewChatName(""); setErrorMessage("");}}>
-                                                Cancel
+                                                <FaRegWindowClose />
                                             </button>
                                             <button className="button" onClick={(e) => {e.preventDefault(); changeChannelName(e);}}>
-                                                Save
+                                                <FaSave />
                                             </button>
                                         </div>
                                     </div>
