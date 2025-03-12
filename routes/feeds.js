@@ -300,7 +300,7 @@ router.get('/feed/:feedName', authenticateCheck, async (req, res) => {
     }
 });
 
-router.get('/feed_channel_messages/:channelId', authenticateCheck, async (req, res) => {
+router.get('/feed_channel_messages', authenticateCheck, async (req, res) => {
     try {
         const { channelId, limit, offset } = req.query;
         const messages = await FeedChannelMessages.findAll({
@@ -550,41 +550,38 @@ router.post('/update_current_feed', async (req, res) => {
 });
 
 export const feedChatChannelSocket = (socket) => {
-    console.log("Socket connecting to feed chat channel");
     socket.on('join_channel', (channel_id) => {
-        console.log("Joining channel", channel_id);
         socket.join(channel_id);
     });
     socket.on('leave_channel', (channel_id) => {
         socket.leave(channel_id);
     });
-    socket.on('delete_feed_message', async (data) => {
-        const { message_id, channel_id } = data;
-        await FeedChannelMessages.destroy({ where: { message_id } });
-        socket.to(channel_id).emit('delete_feed_message', { message_id });
-    });
     socket.on('send_feed_message', async (message) => {
-        console.log("Sending message", message);
-        if (message.content.length === 0) {
-            socket.emit('error_message', { error: "Message too short" });
-            return;
+        try {
+            if (message.content.length === 0) {
+                socket.emit('error_message', { error: "Message too short" });
+                return;
+            }
+            if (message.content.length > 1000) {
+                socket.emit('error_message', { error: "Message too long" });
+                return;
+            }
+            const newMessage = await FeedChannelMessages.create({
+                message_id: message.message_id,
+                content: message.content,
+                channel_id: message.channel_id,
+                sender_id: message.sender_id,
+                timestamp: message.timestamp,
+            });
+            await FeedChannels.update(
+                { updated_at: message.timestamp || new Date() },  
+                { where: { channel_id: message.channel_id } }
+            );
+            socket.emit('channel_message_confirmed', newMessage);
+            socket.to(message.channel_id).emit('channel_message_confirmed', newMessage);
+        } catch (err) {
+            console.error("Error handling feed message:", err);
         }
-        if (message.content.length > 1000) {
-            socket.emit('error_message', { error: "Message too long" });
-            return;
-        }
-        const newMessage = await FeedChannelMessages.create({
-            message_id: message.message_id,
-            content: message.content,
-            channel_id: message.channel_id,
-            sender_id: message.sender_id,
-            timestamp: message.timestamp,
-        });
-        await FeedChannels.update(
-            { updated_at: message.timestamp || new Date() },  
-            { where: { channel_id: message.channel_id } }
-        );
-        socket.to(message.channel_id).emit('channel_message_confirmed', newMessage);
     });
 };
 
