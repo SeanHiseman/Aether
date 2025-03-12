@@ -19,8 +19,29 @@ const ChatChannel = ({ canAdd, canRemove, channelId, connection, isGroup, isLock
     const messagesEndRef = useRef(null);
     const socketRef = useRef(null);
 
+    //Initialize socket connection once
     useEffect(() => {
-        if (channelId && !isGroup && viewer.feed_id) {
+        if (!socketRef.current) {
+            socketRef.current = io(process.env.REACT_APP_SOCKET_URL, {
+                transports: ['websocket', 'polling'],
+            });
+            socketRef.current.on('connect_error', (err) => {
+                setErrorMessage(`Connection failed`);
+            });
+            socketRef.current.on('error_message', (error) => 
+                setErrorMessage('An error occurred'));
+        }
+        return () => {
+            if (socketRef.current) {
+                socketRef.current.disconnect();
+                socketRef.current = null;
+            }
+        };
+    }, []); 
+
+    //Mark messages as read when entering a channel
+    useEffect(() => {
+        if (channelId && !isGroup && viewer.feed_id && socketRef.current && socketRef.current.connected) {
             try {
                 socketRef.current.emit('mark_messages_read', {
                     chat_id: channelId,
@@ -31,84 +52,75 @@ const ChatChannel = ({ canAdd, canRemove, channelId, connection, isGroup, isLock
                 setErrorMessage('Error marking messages as read');
             }
         }
-    }, [channelId, isGroup, viewer.feed_id, dispatch]);
+    }, [channelId, isGroup, viewer.feed_id, dispatch, socketRef.current?.connected]);
     
-    //Fetch and listen for messages
+    //Channel-specific setup and event listeners
     useEffect(() => {
-        console.log("process.env.REACT_APP_SOCKET_URL", process.env.REACT_APP_SOCKET_URL);
-        if (!socketRef.current) {
-            socketRef.current = io(process.env.REACT_APP_SOCKET_URL, {
-                path: '/socket.io/',
-                transports: ['websocket', 'polling'],
-            });
-        }
         const socket = socketRef.current;
-        socket.on('connect', () => {
-            console.log("Connected to WebSocket server", socket.id);
-            if (channelId) {
-                const channelRoute = isGroup ? 'join_channel' : 'join_chat';
-                socket.emit(channelRoute, channelId);
-                getChannelMessages(channelId);
-            }
-        });
-        socket.on('disconnect', (reason) => {
-            console.log('Socket disconnected:', reason);
-        });
-        socket.on('connect_error', (err) => {
-            console.error('Connection Error details:', err);
-            setErrorMessage(`Connection failed`);
-        });
+        if (!socket || !channelId) return;
+        const channelRoute = isGroup ? 'join_channel' : 'join_chat';
         const leaveRoute = isGroup ? 'leave_channel' : 'leave_chat';
         const confirmedRoute = isGroup ? 'channel_message_confirmed' : 'chat_message_confirmed';
         const deleteRoute = isGroup ? 'delete_feed_message' : 'delete_direct_message';
-        if (channelId) {
-            console.log("channelId", channelId);
-            const handleNewMessage = (newMessage) => {
-                console.log("newMessage", newMessage);
-                if (newMessage.channel_id === channelId) {
+        const setupChannel = () => {
+            console.log(`Joining ${isGroup ? 'channel' : 'chat'} ${channelId}`);
+            socket.emit(channelRoute, channelId);
+            getChannelMessages(channelId, 0);
+        };
+        if (socket.connected) {
+            setupChannel();
+        } else {
+            socket.once('connect', setupChannel);
+        }
+        const handleNewMessage = (newMessage) => {
+            console.log("newMessage", newMessage);
+            if (newMessage.channel_id === channelId) {
+                setChannel((prevMessages) => {
+                    const messageExists = prevMessages.some(msg => msg.message_id === newMessage.message_id);
+                    if (messageExists) return prevMessages; 
                     const processedMessage = {
                         ...newMessage,
                         content: isGroup ? newMessage.content : decrypt(newMessage.content),
                     };
-                    setChannel((prevMessages) => [...prevMessages, processedMessage]);
-                }
+                    return [...prevMessages, processedMessage];
+                });
+            }
+        };
+        const handleConfirmedMessage = (confirmedMessage) => {
+            console.log("confirmedMessage", confirmedMessage);
+            const processedMessage = {
+                ...confirmedMessage,
+                content: isGroup ? confirmedMessage.content : decrypt(confirmedMessage.content),
             };
-            const handleConfirmedMessage = (confirmedMessage) => {
-                console.log("confirmedMessage", confirmedMessage);
-                const processedMessage = {
-                    ...confirmedMessage,
-                    content: isGroup ? confirmedMessage.content : decrypt(confirmedMessage.content),
-                };
-                setChannel((prevMessages) => [...prevMessages, processedMessage]);
-            };
-            const handleMessagesRead = ({ chat_id, reader_id }) => {
-                if (chat_id === channelId) {
-                    setChannel((prevMessages) =>
-                        prevMessages.map(msg =>
-                            (msg.sender_id !== reader_id && !msg.is_read)
-                                ? { ...msg, is_read: true }
-                                : msg
-                        )
-                    );
-                }
-            };
-            socket.on('new_message', handleNewMessage);
-            socket.on(confirmedRoute, handleConfirmedMessage);
-            socket.on(deleteRoute, deleteMessage);
-            socket.on('messages_marked_read', handleMessagesRead);
-            socket.on('error_message', (error) => setErrorMessage(error?.error || 'An error occurred'));
-            return () => {
+            setChannel((prevMessages) => [...prevMessages, processedMessage]);
+        };
+        const handleMessagesRead = ({ chat_id, reader_id }) => {
+            if (chat_id === channelId) {
+                setChannel((prevMessages) =>
+                    prevMessages.map(msg =>
+                        (msg.sender_id !== reader_id && !msg.is_read)
+                            ? { ...msg, is_read: true }
+                            : msg
+                    )
+                );
+            }
+        };
+        socket.on('new_message', handleNewMessage);
+        socket.on(confirmedRoute, handleConfirmedMessage);
+        socket.on(deleteRoute, deleteMessage);
+        socket.on('messages_marked_read', handleMessagesRead);
+        return () => {
+            if (socket.connected) {
                 socket.emit(leaveRoute, channelId);
-                socket.off('new_message', handleNewMessage);
-                socket.off(confirmedRoute, handleConfirmedMessage);
-                socket.off(deleteRoute, deleteMessage);
-                socket.off('messages_marked_read', handleMessagesRead);
-                socket.off('error_message');
-                socket.disconnect();
-            };
-        }
-    }, [channelId, deleteMessage, getChannelMessages, isGroup, setErrorMessage]);
+            }
+            socket.off('new_message', handleNewMessage);
+            socket.off(confirmedRoute, handleConfirmedMessage);
+            socket.off(deleteRoute, deleteMessage);
+            socket.off('messages_marked_read', handleMessagesRead);
+        };
+    }, [channelId, isGroup, getChannelMessages, deleteMessage]);
     
+    //Auto-scroll to bottom when new messages arrive
     useEffect(() => {
         if (messagesContainerRef.current) {
             messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
@@ -118,9 +130,15 @@ const ChatChannel = ({ canAdd, canRemove, channelId, connection, isGroup, isLock
         }
     }, [channel]);
 
+    useEffect(() => {
+        if (socketRef.current) {
+            socketRef.current.emit('join_channel_type', isGroup ? 'feed_chat' : 'direct_message');
+        }
+    }, [isGroup]);
+
     const deleteMessage = useCallback((messageId) => {
         try {
-            if (!messageId) return;
+            if (!messageId || !socketRef.current || !socketRef.current.connected) return;
             const route = isGroup ? 'delete_feed_message' : 'delete_direct_message';
             socketRef.current.emit(route, {
                 message_id: messageId,
@@ -130,7 +148,7 @@ const ChatChannel = ({ canAdd, canRemove, channelId, connection, isGroup, isLock
         } catch (error) {
             setErrorMessage("Error deleting message");
         }
-    }, [channelId, dispatch, isGroup, viewer.feed_id]);
+    }, [channelId, isGroup, setErrorMessage]);
 
     const getChannelMessages = useCallback(async (channelId, currentOffset = 0) => {
         try {
@@ -145,11 +163,11 @@ const ChatChannel = ({ canAdd, canRemove, channelId, connection, isGroup, isLock
             else setChannel(prev => [...messages, ...prev]);
             setOffset(currentOffset + messages.length);
         } catch (error) {
-            console.error("Error fetching messages:", error);
             setErrorMessage('Error fetching messages');
         }
     }, [isGroup, setErrorMessage]);
 
+    //Reset channel when channelId changes
     useEffect(() => {
         if (channelId) {
             setChannel([]);
@@ -159,6 +177,7 @@ const ChatChannel = ({ canAdd, canRemove, channelId, connection, isGroup, isLock
         }
     }, [channelId, getChannelMessages]);
 
+    //Infinite scrolling
     useEffect(() => {
         const container = messagesContainerRef.current;
         if (!container) return;
@@ -171,14 +190,19 @@ const ChatChannel = ({ canAdd, canRemove, channelId, connection, isGroup, isLock
         return () => container.removeEventListener('scroll', handleScroll);
     }, [channelId, getChannelMessages, hasMore, offset]);
 
+    //Send message with connection checks
     const sendMessage = useCallback(() => {
-        console.log("sendMessage");
         try {
             if (!message.trim()) return;
             if (message.length > maxLength) {
                 setErrorMessage(`Message cannot exceed ${maxLength} characters.`);
                 return;
-            };
+            }
+            if (!socketRef.current || !socketRef.current.connected) {
+                setErrorMessage("Error, please try again.");
+                if (socketRef.current) socketRef.current.connect();
+                return;
+            }
             const newMessage = {
                 message_id: v4(),
                 content: isGroup ? message : encrypt(message),
@@ -189,21 +213,8 @@ const ChatChannel = ({ canAdd, canRemove, channelId, connection, isGroup, isLock
             };
             const route = isGroup ? 'send_feed_message' : 'send_direct_message';
             socketRef.current.emit(route, newMessage);
-            const displayedMessage = { ...newMessage, content: message }; //Prevents displaying ciphertext
-            setChannel((prev) => [...prev, displayedMessage]);
-            if (!isGroup) {
-                setChats((prevChats) => { //Moves current chat to top of chat list
-                    const updatedChats = prevChats.map((chat) => 
-                        chat.chat_id === channelId
-                            ? {...chat, updated_at: new Date().toISOString() }
-                            : chat
-                    );
-                    return updatedChats.sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at));
-                });
-            }
             setMessage('');
         } catch (error) {
-            console.error("Error sending message:", error);
             setErrorMessage("Error sending message");
         }
     }, [channelId, isGroup, maxLength, message, setChats, setErrorMessage, viewer.feed_id]);

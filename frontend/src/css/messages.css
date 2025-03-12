@@ -64,13 +64,11 @@
     border-radius: var(--large-margin);
 }
 #messages-button {
-    border: none;
     border-radius: 16px;
     color: var(--border);
-    font-size: xxx-large;
+    font-size: xx-large;
     height: 70%;
-    margin-right: 5%;
-    padding: 8px;
+    padding: var(--small-margin);
     transition: var(--transition-regular);
 }
 .message {

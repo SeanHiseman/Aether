@@ -20,11 +20,11 @@ import users from './routes/users.js';
 import sequelize  from './databaseSetup.js';
 
 dotenv.config();
-const app = express();
+const app = express(); 
 const http = createServer(app);
 const io = new Server(http, {
     cors: {
-        origin: [process.env.FRONTEND_URL, "http://localhost:5000"],
+        origin: [process.env.FRONTEND_URL, "http://localhost:3000", "http://localhost:7000"],
         methods: ['GET', 'POST'],
         credentials : true  
     },
@@ -39,7 +39,7 @@ const faviconPath = path.join(__dirname, process.env.FAVICON_PATH);
 
 app.use('/media', express.static(mediaPath));
 app.use(cors({
-    origin: [process.env.FRONTEND_URL, "http://localhost:5000"],
+    origin: [process.env.FRONTEND_URL, "http://localhost:3000", "http://localhost:7000"],
     methods: ['GET', 'POST'],
     credentials: true
 }));
@@ -74,12 +74,23 @@ sequelize.authenticate()
 
 io.on("connection", (socket) => {
     console.log("New socket connection:", socket.id);
-    directMessagesSocket(socket);
-    feedChatChannelSocket(socket);
+    socket.on('join_channel_type', (channelType) => {
+        try {
+            if (channelType === 'direct_message') {
+                directMessagesSocket(socket);  
+            } else if (channelType === 'feed_chat') {
+                feedChatChannelSocket(socket);  
+            } else {
+                console.error("Unknown channel type:", channelType);
+            }
+        } catch (error) {
+            console.error(`Error setting up socket for ${channelType}:`, error);
+        }
+    });
 });
 
 const PORT = process.env.APP_PORT;
-http.listen(PORT, '0.0.0.0', () => {
+http.listen(PORT, 'localhost', () => {
     console.log(`Running on ${PORT}`)
 });
 

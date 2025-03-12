@@ -380,7 +380,6 @@ export const directMessagesSocket = (socket) => {
     console.log("Socket connecting to direct messages");
     try {
         socket.on('join_chat', (chat_id) => {
-            console.log("Joining chat", chat_id);
             socket.join(chat_id);
         });
         socket.on('leave_chat', (chat_id) => {
@@ -392,7 +391,6 @@ export const directMessagesSocket = (socket) => {
             socket.to(channel_id).emit('delete_direct_message', { message_id });
         });
         socket.on('send_direct_message', async (message) => {
-            console.log("Sending direct message", message);
             const messageLength = message.content.length;
             if (messageLength === 0) {
                 socket.emit('error_message', { error: "Message too short" });
@@ -414,7 +412,8 @@ export const directMessagesSocket = (socket) => {
                 { updated_at: message.timestamp || new Date() },  
                 { where: { chat_id: message.channel_id } }
             );
-            socket.to(message.chat_id).emit('chat_message_confirmed', newMessage); 
+            socket.to(message.channel_id).emit('chat_message_confirmed', newMessage); 
+            socket.emit('chat_message_confirmed', newMessage);
         });
         socket.on('mark_messages_read', async (data) => {
             const { chat_id, reader_id } = data;
