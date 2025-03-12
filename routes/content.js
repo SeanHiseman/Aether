@@ -61,12 +61,14 @@ router.get('/channel_posts', authenticateCheck, async (req, res) => {
                 where: whereChannel,
             });
             const finalResults = posts.map((post) => ({ ...post.dataValues }));
+            console.log("Final Results: ", finalResults);
             //const sortedPosts = post_type === 'group' 
             //    ? sortPostsByWeightedRatio(finalResults, userId)
             //    : finalResults.sort((a, b) => b.timestamp - a.timestamp);
             return res.status(200).json(finalResults);
         }
     } catch (error) {
+        console.log("Error: ", error);
         res.status(500).json({ success: false });
     }
 });
