@@ -205,7 +205,7 @@ const ContentWidget = ({ canRemove, feed, isGroup, onEditClick, onPostRemoved, o
           </>
         )}
         <p className="text16">{views} {views === 1 ? 'view' : 'views'}</p>
-        <p className="text16">{new Date(post.updated_at).toLocaleDateString()}</p>
+        <p className="text16">{new Date(post.created_at).toLocaleDateString()}</p>
         {post.poster_id === viewer.feed_id && !readOnly && (
           <button className="large-icon" onClick={() => onEditClick(post)} title={isReply ? "Edit Reply" : "Edit Post"}>
             <FaEdit />

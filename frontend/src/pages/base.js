@@ -266,10 +266,10 @@ const BaseLayout = () => {
                                 <span className="file-name">{feedPhotoFile ? feedPhotoFile.name : 'No file chosen'}</span>
                             </div>
                             <div className="option-toggle">
-                                <button className={feedType === 'public' ? 'active-mode' : 'passive-mode'} onClick={(event) => {event.preventDefault(); setFeedType('public');}}>
+                                <button className={feedType === 'public' ? 'active-mode' : 'passive-mode'} onClick={(event) => {event.preventDefault(); setFeedType('public');}} title="Visible to everyone">
                                     Public
                                 </button>
-                                <button className={feedType === 'private' ? 'active-mode' : 'passive-mode'} onClick={(event) => {event.preventDefault(); setFeedType('private');}}>
+                                <button className={feedType === 'private' ? 'active-mode' : 'passive-mode'} onClick={(event) => {event.preventDefault(); setFeedType('private');}} title="Requires permission to follow">
                                     Private
                                 </button>
                             </div>
