@@ -10,7 +10,7 @@ import path from 'path';
 import { v4 } from 'uuid';
 
 const feedAttributes = ['feed_id', 'parent_id', 'feed_name', 'description', 'feed_photo', 'follower_count', 'created_at', 'updated_at', 'type', 'is_group', 'feed_owner', 'is_locked'];
-const noteAttributes = ['note_id', 'note_content', 'timestamp', 'is_misinfo']
+const noteAttributes = ['note_id', 'note_content', 'created_at', 'updated_at', 'is_misinfo']
 const postAttributes = ['post_id', 'parent_id', 'feed_id', 'channel_id', 'title', 'content', 'replies', 'views', 'upvotes', 'downvotes', 'created_at', 'updated_at', 'poster_id', 'points']
 const router = Router();
 
@@ -57,18 +57,16 @@ router.get('/channel_posts', authenticateCheck, async (req, res) => {
                 include: includeOptions,
                 limit: limit ? parseInt(limit, 10) : 10,
                 offset: offset ? parseInt(offset, 10) : 0,
-                order: [['timestamp', 'DESC']],
+                order: [['created_at', 'DESC']],
                 where: whereChannel,
             });
             const finalResults = posts.map((post) => ({ ...post.dataValues }));
-            console.log("Final Results: ", finalResults);
             //const sortedPosts = post_type === 'group' 
             //    ? sortPostsByWeightedRatio(finalResults, userId)
-            //    : finalResults.sort((a, b) => b.timestamp - a.timestamp);
+            //    : finalResults.sort((a, b) => b.created_at - a.created_at);
             return res.status(200).json(finalResults);
         }
     } catch (error) {
-        console.log("Error: ", error);
         res.status(500).json({ success: false });
     }
 });
@@ -351,7 +349,7 @@ router.get('/post_replies/:postId', authenticateCheck, async (req, res) => {
             where: whereClause,
             include: includeOptions,
             attributes: postAttributes,
-            order: [['timestamp', 'DESC']],
+            order: [['created_at', 'DESC']],
         });
         const formattedReplies = replies.map(reply => ({
             ...reply.dataValues,

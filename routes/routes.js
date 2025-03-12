@@ -12,7 +12,7 @@ import { Router } from 'express';
 
 const router = Router();
 const feedAttributes = ['feed_id', 'parent_id', 'feed_name', 'description', 'feed_photo', 'follower_count', 'created_at', 'updated_at', 'type', 'is_group', 'feed_owner', 'is_locked'];
-const notesAttributes = ['note_id', 'note_content', 'timestamp', 'is_misinfo'];
+const notesAttributes = ['note_id', 'note_content', 'created_at', 'updated_at', 'is_misinfo'];
 const postAttributes = ['post_id', 'parent_id', 'feed_id', 'channel_id', 'title', 'content', 'replies', 'views', 'upvotes', 'downvotes', 'created_at', 'updated_at', 'poster_id', 'points'];
 const posterAttributes = ['feed_id', 'feed_name', 'description', 'feed_photo', 'type', 'is_group'];
 
@@ -51,7 +51,7 @@ router.get('/connection_posts/:feedId', authenticateCheck, async (req, res)=> {
             }],
             attributes: postAttributes,
             //Posts sorted chronilogically
-            order: [['timestamp', 'DESC']]
+            order: [['created_at', 'DESC']]
         });
         res.json(posts);
     } catch (error) {
@@ -211,7 +211,7 @@ router.get('/search/:searcherId', authenticateCheck, async (req, res) => {
                     ), 
                     '<[^>]*>', ''
                 ) LIKE :keyword
-            ORDER BY p.timestamp DESC
+            ORDER BY p.created_at DESC
             LIMIT :limit OFFSET :offset
         `, {
             replacements: { 

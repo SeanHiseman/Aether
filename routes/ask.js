@@ -54,7 +54,7 @@ router.post('/ask_button', authenticateCheck, async (req, res) => {
             note_id: v4(),
             post_id: id,
             note_content: aiReply,
-            timestamp: Date.now(),
+            created_at: Date.now(),
             is_misinfo: isMisinfo
         });
         res.status(200).json({ newNote });
