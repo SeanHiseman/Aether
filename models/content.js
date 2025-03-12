@@ -22,7 +22,8 @@ const PostNotes = sequelize.define('post_notes', {
     note_id: { type: STRING(36), primaryKey: true },
     post_id: { type: STRING(36), allowNull: false, references: { model: 'posts', key: 'post_id' }},
     note_content: { type: STRING(1000), allowNull: false },
-    timestamp: { type: DataTypes.DATE(3), defaultValue: sequelize.literal('CURRENT_TIMESTAMP(3)') },
+    created_at: { type: DataTypes.DATE(3), defaultValue: sequelize.literal('CURRENT_TIMESTAMP(3)') },
+    updated_at: { type: DataTypes.DATE(3), defaultValue: sequelize.literal('CURRENT_TIMESTAMP(3)') },
     is_misinfo: { type: BOOLEAN, defaultValue: false},
 }, { tableName: 'post_notes', timestamps: false });
 
