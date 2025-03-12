@@ -427,7 +427,7 @@ const FeedHome = () => {
                                                 </label>
                                             </div>
                                         )}
-                                        <button className="small-icon" title="Create" type="submit">
+                                        <button className="small-icon" title="Create channel" type="submit">
                                             <FaPlus />
                                         </button>
                                     </form>

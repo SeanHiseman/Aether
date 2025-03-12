@@ -226,6 +226,7 @@ const FeedInfoView = ({ feed, setFeed, user }) => {
                                 togglePrivate();
                             }}
                             disabled={feed.type === 'public'}
+                            title="Visible to everyone"
                         >
                             Public
                         </button>
@@ -236,6 +237,7 @@ const FeedInfoView = ({ feed, setFeed, user }) => {
                                 togglePrivate();
                             }}
                             disabled={feed.type === 'private'}
+                            title={feed.is_group ? "Visible only to followers" : "Visible only to connections"}
                         >
                             Private
                         </button>
