@@ -238,7 +238,9 @@ router.post('/create_post', authenticateCheck, post_upload.array('files'), async
 router.post('/edit_post', authenticateCheck, post_upload.array('files'), async (req, res) => {
     try {
         let { content, post_id, title } = req.body;
+        console.log("req.body", req.body);
         const foundPost = await Posts.findByPk(post_id);
+        console.log("foundPost before", foundPost);
         if (!foundPost) {
             return res.status(404).json({ success: false, message: 'Post not found' });
         }
@@ -266,9 +268,11 @@ router.post('/edit_post', authenticateCheck, post_upload.array('files'), async (
             foundPost.title = title;
         }
         foundPost.updated_at = sequelize.literal('CURRENT_TIMESTAMP(3)');
+        console.log("foundPost after", foundPost);
         await foundPost.save();
         return res.status(201).json({ success: true });
     } catch (error) {
+        console.log(error);
         return res.status(500).json({ success: false, error: error.message });
     }
 });
