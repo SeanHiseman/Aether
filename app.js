@@ -90,7 +90,8 @@ io.on("connection", (socket) => {
 });
 
 const PORT = process.env.APP_PORT;
-http.listen(PORT, 'localhost', () => {
+const HOST = process.env.APP_HOST;
+http.listen(PORT, HOST, () => {
     console.log(`Running on ${PORT}`)
 });
 
