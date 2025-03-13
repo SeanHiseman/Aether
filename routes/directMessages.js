@@ -365,19 +365,69 @@ router.get('/unread_messages_count/:feed_id', async (req, res) => {
             acc[feed_id] += chatIdToUnreadCount[chat_id] || 0;
             return acc;
         }, {});
+        const requestCount = await ConnectRequests.count({
+            where: { receiver_id: feed_id }
+        });
         res.status(200).json({
             success: true,
             total: totalCount,
             feedCounts: feedIdToUnreadCount,
-            chatCounts: chatIdToUnreadCount 
+            chatCounts: chatIdToUnreadCount,
+            requestCount: requestCount
         });
     } catch (error) {
         res.status(500).json({ success: false, error: 'Failed to get unread counts' });
     }
 });
 
+export const connectRequestsSocket = (socket) => {
+    try {
+        socket.on('send_connect_request', async (data) => {
+            const { senderId, receiverId } = data;
+            try {
+                await ConnectRequests.create({
+                    sender_id: senderId,
+                    receiver_id: receiverId,
+                    created_at: new Date()
+                });
+                socket.to(receiverId.toString()).emit('new_connect_request', { 
+                    sender_id: senderId 
+                });
+                console.log(`Connect request sent from ${senderId} to ${receiverId}`);
+            } catch (error) {
+                console.error("Error creating connect request:", error);
+                socket.emit('error_message', { error: "Failed to send connect request" });
+            }
+        });
+        socket.on('resolve_connect_request', async (data) => {
+            const { senderId, receiverId, accepted } = data;
+            try {
+                await ConnectRequests.destroy({ 
+                    where: { 
+                        sender_id: senderId, 
+                        receiver_id: receiverId 
+                    } 
+                });
+                socket.to(receiverId.toString()).emit('connect_request_resolved', { 
+                    count: 1,
+                    accepted
+                });
+                socket.to(senderId.toString()).emit('connect_request_response', {
+                    receiverId,
+                    accepted
+                });
+                console.log(`Connect request from ${senderId} to ${receiverId} was ${accepted ? 'accepted' : 'rejected'}`);
+            } catch (error) {
+                console.error("Error resolving connect request:", error);
+                socket.emit('error_message', { error: "Failed to resolve connect request" });
+            }
+        });
+    } catch (error) {
+        console.log("Connect requests socket error:", error);
+    }
+};
+
 export const directMessagesSocket = (socket) => {
-    console.log("Socket connecting to direct messages");
     try {
         socket.on('join_chat', (chat_id) => {
             socket.join(chat_id);
