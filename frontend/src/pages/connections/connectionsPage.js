@@ -66,25 +66,24 @@ const ConnectionsPage = () => {
             loadMoreRequests();
             const socket = window.socket; 
             if (socket) {
-                socket.on('new_connect_request', async () => {
-                    setConnectRequests([]);
-                    setRequestsOffset(0);
-                    setHasMoreRequests(true);
-                    try {
-                        const response = await axios.get('/api/get_connect_requests', { 
-                            params: { feedId: viewer.feed_id, offset: 0 } 
-                        });
-                        const newRequests = response.data.requests || [];
-                        setConnectRequests(newRequests);
-                        setRequestsOffset(newRequests.length);
-                        dispatch({ 
-                            type: 'SET_REQUEST_COUNT',
-                            count: newRequests.length 
-                        });
-                    } catch (error) {
-                        setErrorMessage('Error getting connect requests');
-                    }
-                });
+				socket.on('new_connect_request', async () => {
+					setRequestsOffset(0);
+					setHasMoreRequests(true);
+					try {
+						const response = await axios.get('/api/get_connect_requests', { 
+							params: { feedId: viewer.feed_id, offset: 0 } 
+						});
+						const newRequests = response.data.requests || [];
+						setConnectRequests(newRequests);
+						setRequestsOffset(newRequests.length);
+						dispatch({ 
+							type: 'SET_REQUEST_COUNT',
+							count: newRequests.length 
+						});
+					} catch (error) {
+						setErrorMessage('Error getting connect requests');
+					}
+				});
             }
             return () => {
                 if (socket) {
@@ -136,9 +135,9 @@ const ConnectionsPage = () => {
         }
     };
 
-    document.title = 'Connections';
     const requestCount = state.requestCount || 0;
 
+	document.title = 'Connections';
 	return (
 		<div className="standard-container">
 			<div className="connections-feed">

@@ -74,11 +74,9 @@ app.get('*', (req, res) => {
 sequelize.authenticate()
 
 io.on("connection", (socket) => {
-    console.log("New socket connection:", socket.id);
     socket.on('join_user_room', (userId) => {
         if (userId) {
             socket.join(userId.toString());
-            console.log(`User ${userId} joined personal room`);
         }
     });
     socket.on('join_channel_type', (channelType) => {
