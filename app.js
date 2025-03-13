@@ -24,7 +24,7 @@ const app = express();
 const http = createServer(app);
 const io = new Server(http, {
     cors: {
-        origin: [process.env.FRONTEND_URL, "http://localhost:3000", "http://localhost:7000"],
+        origin: [process.env.FRONTEND_URL, "http://localhost:3000", "http://localhost:5000"],
         methods: ['GET', 'POST'],
         credentials : true  
     },
@@ -39,7 +39,7 @@ const faviconPath = path.join(__dirname, process.env.FAVICON_PATH);
 
 app.use('/media', express.static(mediaPath));
 app.use(cors({
-    origin: [process.env.FRONTEND_URL, "http://localhost:3000", "http://localhost:7000"],
+    origin: [process.env.FRONTEND_URL, "http://localhost:3000", "http://localhost:5000"],
     methods: ['GET', 'POST'],
     credentials: true
 }));
