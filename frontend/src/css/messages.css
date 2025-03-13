@@ -148,7 +148,6 @@
 .unread-badge {
     font-size: large;
     margin: var(--small-margin);
-    position: relative;
     top: -30px;
 }
 .unread-count {

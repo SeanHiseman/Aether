@@ -13,6 +13,7 @@ import { urlencoded } from 'express';
 import ask from './routes/ask.js';
 import authentication from './routes/authentication.js';
 import content from './routes/content.js';
+import { connectRequestsSocket } from './routes/directMessages.js';
 import directMessages, { directMessagesSocket } from './routes/directMessages.js';
 import feeds, { feedChatChannelSocket } from './routes/feeds.js';
 import routes from './routes/routes.js';
@@ -74,12 +75,20 @@ sequelize.authenticate()
 
 io.on("connection", (socket) => {
     console.log("New socket connection:", socket.id);
+    socket.on('join_user_room', (userId) => {
+        if (userId) {
+            socket.join(userId.toString());
+            console.log(`User ${userId} joined personal room`);
+        }
+    });
     socket.on('join_channel_type', (channelType) => {
         try {
             if (channelType === 'direct_message') {
-                directMessagesSocket(socket);  
+                directMessagesSocket(socket);
             } else if (channelType === 'feed_chat') {
-                feedChatChannelSocket(socket);  
+                feedChatChannelSocket(socket);
+            } else if (channelType === 'connect_requests') {
+                connectRequestsSocket(socket); 
             } else {
                 console.error("Unknown channel type:", channelType);
             }
@@ -94,4 +103,3 @@ const HOST = process.env.APP_HOST;
 http.listen(PORT, HOST, () => {
     console.log(`Running on ${PORT}`)
 });
-

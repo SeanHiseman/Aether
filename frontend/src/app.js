@@ -21,6 +21,7 @@ import PersonalFeed from './pages/personalFeed';
 import Privacy from './pages/welcome/privacy';
 import { QueryProvider } from './components/search/queryContext';
 import SearchResults from './pages/searchResults';
+import { SocketProvider } from './socketProvider';
 import { ThemeProvider as CustomThemeProvider } from './themeProvider';
 //import { ThemeProvider as MUIThemeProvider, createTheme } from '@mui/material/styles';
 import { UnreadProvider } from './components/connections/unreadContext';
@@ -34,6 +35,7 @@ const App = () => {
     return (
         <QueryClientProvider client={queryClient}>
             <CustomThemeProvider>
+                <SocketProvider>
                 {/*<MUIThemeProvider theme={muiTheme} >*/}
                         <Router>
                             <Routes>
@@ -78,6 +80,7 @@ const App = () => {
                             </Routes>
                         </Router>
                 {/*</MUIThemeProvider>*/}
+                </SocketProvider>
             </CustomThemeProvider>
         </QueryClientProvider>
     );

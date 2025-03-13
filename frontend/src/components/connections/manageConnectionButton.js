@@ -135,4 +135,3 @@ const ManageConnectionButton = ({ connectRequest, feed, isConnected, viewerId, o
 }
 
 export default ManageConnectionButton;
-
