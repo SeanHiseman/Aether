@@ -4,7 +4,6 @@ import { AuthContext } from '../authContext';
 
 export const UnreadContext = createContext();
 
-
 const unreadReducer = (state, action) => {
     switch (action.type) {
         case 'SET_UNREAD_COUNTS':
@@ -133,7 +132,7 @@ export const UnreadProvider = ({ children }) => {
                 }
             };
         }
-    }, [viewer.feed_id]);
+    }, [viewer.feed_id, window.socket]);
     
     return (
         <UnreadContext.Provider value={{ state, dispatch }}>

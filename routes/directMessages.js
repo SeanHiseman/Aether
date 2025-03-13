@@ -128,16 +128,18 @@ router.delete('/delete_connection', authenticateCheck, async (req, res) => {
             },
             transaction
         });
-        const feedChats = await FeedChats.findAll({
+        const sharedChats = await FeedChats.findAll({
+            attributes: ['chat_id'],
+            group: ['chat_id'],
+            having: sequelize.literal('COUNT(DISTINCT feed_id) = 2'),
             where: {
-                [Op.or]: [
-                    { feed_id: deleterId },
-                    { feed_id: feedId }
-                ]
+                feed_id: {
+                    [Op.in]: [deleterId, feedId]
+                }
             },
             transaction
         });
-        const chatIds = feedChats.map(fc => fc.chat_id);
+        const chatIds = sharedChats.map(chat => chat.chat_id);
         if (chatIds.length > 0) {
             await FeedChats.destroy({
                 where: {
@@ -393,9 +395,7 @@ export const connectRequestsSocket = (socket) => {
                 socket.to(receiverId.toString()).emit('new_connect_request', { 
                     sender_id: senderId 
                 });
-                console.log(`Connect request sent from ${senderId} to ${receiverId}`);
             } catch (error) {
-                console.error("Error creating connect request:", error);
                 socket.emit('error_message', { error: "Failed to send connect request" });
             }
         });
@@ -416,9 +416,7 @@ export const connectRequestsSocket = (socket) => {
                     receiverId,
                     accepted
                 });
-                console.log(`Connect request from ${senderId} to ${receiverId} was ${accepted ? 'accepted' : 'rejected'}`);
             } catch (error) {
-                console.error("Error resolving connect request:", error);
                 socket.emit('error_message', { error: "Failed to resolve connect request" });
             }
         });

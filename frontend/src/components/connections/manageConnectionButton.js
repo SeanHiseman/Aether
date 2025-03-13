@@ -9,7 +9,6 @@ const ManageConnectionButton = ({ connectRequest, feed, isConnected, viewerId, o
     const senderId = request?.sender_id || viewerId;
     const receiverId = request?.receiver_id || feed?.feed_id;
 
-    //Ensures state is correctly set
     useEffect(() => {
         setHasConnection(isConnected || feed.isConnected)
         setRequest(connectRequest || feed.connectRequest);
