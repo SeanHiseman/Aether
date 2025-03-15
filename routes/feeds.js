@@ -556,6 +556,11 @@ export const feedChatChannelSocket = (socket) => {
     socket.on('leave_channel', (channel_id) => {
         socket.leave(channel_id);
     });
+    socket.on('delete_feed_message', async (data) => {
+        const { message_id, channel_id } = data;
+        await FeedChannelMessages.destroy({ where: { message_id: data.message_id } });
+        socket.to(channel_id).emit('delete_feed_message', { message_id });
+    });
     socket.on('send_feed_message', async (message) => {
         try {
             if (message.content.length === 0) {

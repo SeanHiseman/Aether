@@ -435,7 +435,7 @@ export const directMessagesSocket = (socket) => {
         });
         socket.on('delete_direct_message', async (data) => {
             const { message_id, channel_id } = data;
-            await Messages.destroy({ where: { message_id } });
+            await Messages.destroy({ where: { message_id: data.message_id } });
             socket.to(channel_id).emit('delete_direct_message', { message_id });
         });
         socket.on('send_direct_message', async (message) => {
