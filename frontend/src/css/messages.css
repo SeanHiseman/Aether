@@ -22,9 +22,6 @@
     padding: var(--small-margin);
     width: 70%;
 }
-.chat-message-bar::placeholder {
-    color: var(--border);
-}
 .chat-send-button {
     background-color: var(--dark);
     border: none;
