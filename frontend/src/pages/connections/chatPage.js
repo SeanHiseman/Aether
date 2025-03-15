@@ -195,10 +195,10 @@ const ChatPage = () => {
                                             }}
                                         />
                                         <div className="cancel-save">
-                                            <button className="button" onClick={() => {setIsEditingChatName(false); setNewChatName(""); setErrorMessage("");}}>
+                                            <button className="small-icon" onClick={() => {setIsEditingChatName(false); setNewChatName(""); setErrorMessage("");}} title="Cancel">
                                                 <FaRegWindowClose />
                                             </button>
-                                            <button className="button" onClick={(e) => {e.preventDefault(); changeChannelName(e);}}>
+                                            <button className="small-icon" onClick={(e) => {e.preventDefault(); changeChannelName(e);}} title="Save">
                                                 <FaSave />
                                             </button>
                                         </div>
@@ -207,13 +207,13 @@ const ChatPage = () => {
                                     <>
                                         <p className="text36">{title}</p>
                                         <div className="button-group">
-                                            <button className="small-icon" onClick={() => {setIsEditingChatName(true); setNewChatName(title);}}>
+                                            <button className="small-icon" onClick={() => {setIsEditingChatName(true); setNewChatName(title);}} title="Edit chat name">
                                                 <FaEdit />
                                             </button>
-                                            <button className="small-icon" onClick={handleDelete}>
+                                            <button className="small-icon" onClick={handleDelete} title="Delete chat">
                                                 <FaTrash />
                                             </button>
-                                            <button className="small-icon" onClick={toggleForm}>
+                                            <button className="small-icon" onClick={toggleForm} title={showForm ? "Close" : "Create chat"} >
                                                 {showForm ? <FaMinus /> : <FaPlus />}
                                             </button>
                                         </div>
@@ -224,7 +224,7 @@ const ChatPage = () => {
                                 <>
                                     <p className="text36">Main</p>
                                     <div className="button-group">
-                                        <button className="small-icon" onClick={toggleForm}>
+                                        <button className="small-icon" onClick={toggleForm} title={showForm ? "Close" : "Create chat"} >
                                             {showForm ? <FaMinus /> : <FaPlus />}
                                         </button>
                                     </div>
@@ -242,7 +242,7 @@ const ChatPage = () => {
                                         value={newChatName}
                                         onChange={(e) => setNewChatName(e.target.value)}
                                     />
-                                    <button className={`small-icon ${chatLimitReached ? 'disabled' : ''}`} type="submit" disabled={chatLimitReached}>
+                                    <button className={`small-icon ${chatLimitReached ? 'disabled' : ''}`} type="submit" disabled={chatLimitReached} title="Create chat">
                                         <FaPlus />
                                     </button>
                                 </form>
