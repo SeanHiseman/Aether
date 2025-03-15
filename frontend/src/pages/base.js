@@ -307,7 +307,7 @@ const BaseLayout = () => {
                             <button className="icon-button ask" data-tooltip="Ask" type="button" onClick={handleAskClick}>
                                 <img className="standard-icon" src="/media/site_images/icons/ask.png" alt="Ask"/>
                             </button>
-                            <input id="search-bar" type="text" name="keyword" placeholder="Type..." value={currentQuery} onChange={(e) => setCurrentQuery(e.target.value)}/>
+                            <input id="search-bar" type="text" name="keyword" placeholder="Search or Ask..." value={currentQuery} onChange={(e) => setCurrentQuery(e.target.value)}/>
                             <button className="icon-button search" data-tooltip="Search" type="submit" onClick={handleSearchClick}>
                                 <img className="standard-icon" src="/media/site_images/icons/search.png" alt="Search"/>
                             </button>
