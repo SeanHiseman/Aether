@@ -155,11 +155,11 @@ const BaseLayout = () => {
             }
         } catch (error) {
             if (error.response && error.response.status === 413) {
-                setErrorMessage(hasMembership ? "File cannot be more than 100MB": "File cannot be more than 1MB, get membership for more.");
+                setErrorMessage(error.response.data.message, user.has_membership && ". Get membership for more");
             } else if (error.response.status === 400 ) {
                 setErrorMessage("Name taken");
             } else {
-                setErrorMessage("Error creating feed"); 
+                setErrorMessage(error.response.data.message || "Error creating feed"); 
             }
         }
     };

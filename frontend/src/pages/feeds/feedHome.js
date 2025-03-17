@@ -229,7 +229,11 @@ const FeedHome = () => {
             });
             setShowPostForm(false);
         } catch (error) {
-            setFeedErrorMessage("Error creating post");
+            if (error.response && error.response.status === 413) {
+                setPostErrorMessage(error.response.data.message, user.has_membership && ". Get membership for more");
+            } else {
+                setPostErrorMessage(error.response.data.message || "Error creating post");
+            }
         }
     };
 

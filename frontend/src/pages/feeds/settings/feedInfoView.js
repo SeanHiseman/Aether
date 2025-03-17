@@ -58,11 +58,11 @@ const FeedInfoView = ({ feed, setFeed, user }) => {
             setErrorMessage('');
         } catch(error) {
             if (error.response && error.response.status === 413) {
-                setErrorMessage(hasMembership ? "File cannot be more than 100MB" : "File cannot be more than 1MB, get membership for more.");
+                setErrorMessage(error.response.data.message, user.has_membership && ". Get membership for more");
             } else if (error.response && error.response.status === 400) {
-                setErrorMessage(error.response.data.error || "Error, please try again");
+                setErrorMessage(error.response.data.message || "Error, please try again");
             } else {
-                setErrorMessage("Error, please try again");
+                setErrorMessage(error.response.data.message || "Error, please try again");
             }
         }
     };

@@ -11,7 +11,7 @@ import { join } from 'path';
 import path from 'path';
 import { Router } from 'express';
 import { v4 } from 'uuid';
-import { ConnectRequests, Feeds, FeedChannels, FeedChannelMessages, Followers, FollowRequests, NestedFeeds, Posts } from '../models/relationships.js';
+import { ConnectRequests, Feeds, FeedChannels, FeedChannelMessages, Followers, FollowRequests, NestedFeeds, Posts, Users } from '../models/relationships.js';
 
 const app = express();
 dotenv.config();
@@ -22,6 +22,30 @@ const feedProfileUpload = imageUpload('/media/feed_images', 'new_feed_photo');
 
 const defaultImages = [process.env.DEFAULT_USER_IMAGE, process.env.DEFAULT_GROUP_IMAGE];
 const feedAttributes = ['feed_id', 'parent_id', 'feed_name', 'description', 'feed_photo', 'follower_count', 'created_at', 'updated_at', 'type', 'is_group', 'feed_owner', 'is_locked'];
+
+const calculateFileSize = (file) => {
+    return file.size / (1024 * 1024);
+};
+
+const checkProfileStorageLimit = async (req, res, next) => {
+    try {
+        const user = await Users.findByPk(req.session.user.user_id);
+        if (!user) {
+            return res.status(404).json({ success: false, message: 'User not found' });
+        }
+        const maxStorage = user.has_membership ? 100 * 1024 : 100; //100GB for members, 100MB for non-members
+        if (user.storage_count >= maxStorage) {
+            return res.status(413).json({ 
+                success: false, 
+                message: `Weekly limit of ${maxStorage}MB exceeded` 
+            });
+        }
+        req.currentUser = user;
+        next();
+    } catch (error) {
+        return res.status(500).json({ success: false, error: error.message });
+    }
+};
 
 router.post('/add_feed_channel', authenticateCheck, async (req, res) => {
     try {
@@ -102,12 +126,12 @@ router.post('/change_feed_name', authenticateCheck, async (req, res) => {
     }
 });
 
-router.post('/create_feed', authenticateCheck, async (req, res) => {
+router.post('/create_feed', authenticateCheck, checkProfileStorageLimit, async (req, res) => {
     feedProfileUpload(req, res, async function (error) {
         if (error instanceof multer.MulterError) {
             //A Multer error occurred when uploading
             if (error.code === 'LIMIT_FILE_SIZE') {
-                return res.status(413).json({ error: 'File cannot be more than 5MB' });
+                return res.status(413).json({ error: 'File cannot be more than 100MB' });
             }
             return res.status(500).json({ success: false });
         } else if (error) {
@@ -118,11 +142,26 @@ router.post('/create_feed', authenticateCheck, async (req, res) => {
             //Prevents duplicate group names
             const existingFeed = await Feeds.findOne({ where: { feed_name: feedName } });
             if (existingFeed) {
-                return res.status(400).json({ error: 'Name taken' });//Note: image will still be uploaded - NEEDS FIXING
+                if (req.file) {
+                    fs.unlinkSync(path.join(process.cwd(), '/media/feed_images', req.file.filename));
+                }
+                return res.status(400).json({ error: 'Name taken' });
             }
             let feed_photo = "media/site_images/blank-group-icon.jpg";
             if (req.file) {
                 feed_photo = `media/feed_images/${req.file.filename}`;
+                const fileSize = calculateFileSize(req.file);
+                const user = req.currentUser;
+                const maxStorage = user.has_membership ? 100 * 1024 : 100;
+                if (user.storage_count + fileSize > maxStorage) {
+                    fs.unlinkSync(path.join(process.cwd(), '/media/feed_images', req.file.filename));
+                    return res.status(413).json({ 
+                        success: false, 
+                        message: `Weekly limit of ${maxStorage}MB exceeded` 
+                    });
+                }
+                user.storage_count += fileSize;
+                await user.save();
             }
             const feed = await Feeds.create({
                 feed_id: v4(),
@@ -149,6 +188,13 @@ router.post('/create_feed', authenticateCheck, async (req, res) => {
             });
             res.status(201).json({ success: true, feed });
         } catch (error) {
+            if (req.file) {
+                try {
+                    fs.unlinkSync(path.join(process.cwd(), '/media/feed_images', req.file.filename));
+                } catch (err) {
+                    console.error('Error deleting file:', err);
+                }
+            }
             res.status(500).json({ success: false });
         }
     });
@@ -164,34 +210,6 @@ router.delete('/delete_follow_request', authenticateCheck, async (req, res) => {
     } catch (error) {
         res.status(500).json({ success: false });
     }
-});
-
-//Checks input for post uploads
-const postFilter = (req, file, cb) => {
-    if (file.mimetype.startsWith('image') || file.mimetype.startsWith('video')) {
-        cb(null, true);
-    } else {
-        cb(null, false);
-    }
-};
-
-//Multer setup for post uploads
-const post_storage = multer.diskStorage({
-    destination: function (req, file, cb) {
-        cb(null, 'media/content');
-    },
-    filename: function (req, file, cb) {
-        cb(null, Date.now() + path.extname(file.originalname));
-    }
-});
-
-//Uploads with file size limit
-const post_upload = multer({
-    fileFilter: postFilter,
-    limits: (req, file, cb) => {
-        cb(null, { fileSize: req.session?.user?.has_membership ? 1024 * 1024 * 100 : 1024 * 1024 * 1 });
-    },
-    storage: post_storage
 });
 
 router.delete('/delete_feed', authenticateCheck, async (req, res) => {
@@ -488,7 +506,7 @@ router.post('/toggle_private', authenticateCheck, async (req, res) => {
     }
 });
 
-router.put('/update_feed_photo/:feedId', authenticateCheck, async (req, res) => {
+router.put('/update_feed_photo/:feedId', authenticateCheck, checkProfileStorageLimit, async (req, res) => {
     feedProfileUpload(req, res, async function (error) {
         if (error instanceof multer.MulterError) {
             //A Multer error occurred when uploading
@@ -502,15 +520,37 @@ router.put('/update_feed_photo/:feedId', authenticateCheck, async (req, res) => 
         try {
             const feed_id = req.params.feedId; 
             const file = req.file; 
+            if (!file) {
+                return res.status(400).json({ success: false, message: 'No file uploaded' });
+            }
+            const fileSize = calculateFileSize(file);
+            const user = req.currentUser;
+            const maxStorage = user.has_membership ? 100 * 1024 : 100;
+            if (user.storage_count + fileSize > maxStorage) {
+                fs.unlinkSync(path.join(process.cwd(), '/media/feed_images', file.filename));
+                return res.status(413).json({ 
+                    success: false, 
+                    message: `Weekly limit of ${maxStorage}MB exceeded` 
+                });
+            }
             const newPhotoPath = `media/feed_images/${file.filename}`;
             const feed = await Feeds.findOne({ where: { feed_id } });
             if (feed.feed_photo && !defaultImages.includes(feed.feed_photo)) {
                 deleteMedia(feed.feed_photo);
             };
+            user.storage_count += fileSize;
+            await user.save();
             feed.feed_photo = newPhotoPath;
             await feed.save();
             return res.status(200).json({ newPhotoPath: newPhotoPath });
         } catch (error) {
+            if (req.file) {
+                try {
+                    fs.unlinkSync(path.join(process.cwd(), '/media/feed_images', req.file.filename));
+                } catch (err) {
+                    console.error('Error deleting file:', err);
+                }
+            }
             res.status(500).json({ success: false });
         };
     });
