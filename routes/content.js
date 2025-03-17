@@ -3,7 +3,7 @@ import deleteMedia from '../functions/media_handling/deleteMedia.js';
 import cheerio from 'cheerio';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
-import { Feeds, FeedChannels, Posts, PostNotes, PostVotes } from '../models/relationships.js';
+import { Feeds, FeedChannels, Posts, PostNotes, PostVotes, Users } from '../models/relationships.js';
 import multer from 'multer';
 import { Router } from 'express';
 import path from 'path';
@@ -14,6 +14,30 @@ const feedAttributes = ['feed_id', 'parent_id', 'feed_name', 'description', 'fee
 const noteAttributes = ['note_id', 'note_content', 'created_at', 'updated_at', 'is_misinfo']
 const postAttributes = ['post_id', 'parent_id', 'feed_id', 'channel_id', 'title', 'content', 'replies', 'views', 'upvotes', 'downvotes', 'created_at', 'updated_at', 'poster_id', 'points']
 const router = Router();
+
+const calculateFileSizes = (files) => {
+    return files.reduce((total, file) => total + file.size, 0) / (1024 * 1024);
+};
+
+const checkStorageLimit = async (req, res, next) => {
+    try {
+        const user = await Users.findByPk(req.session.user.user_id);
+        if (!user) {
+            return res.status(404).json({ success: false, message: 'User not found' });
+        }
+        const maxStorage = user.has_membership ? 100 * 1024 : 100; //100GB for members, 100MB for non-members
+        if (user.storage_count >= maxStorage) {
+            return res.status(413).json({ 
+                success: false, 
+                message: `Weekly limit of ${maxStorage}MB exceeded` 
+            });
+        }
+        req.currentUser = user;
+        next();
+    } catch (error) {
+        return res.status(500).json({ success: false, error: error.message });
+    }
+};
 
 router.get('/channel_posts', authenticateCheck, async (req, res) => {
     try {
@@ -187,7 +211,7 @@ const post_upload = multer({
     storage: post_storage
 });
 
-router.post('/create_post', authenticateCheck, post_upload.array('files'), async (req, res) => {
+router.post('/create_post', authenticateCheck, checkStorageLimit, post_upload.array('files'), async (req, res) => {
     try {
         let { channel_id, content, feed_id, parent_id, post_id, poster_id, title } = req.body;
         if (!post_id) {
@@ -196,6 +220,20 @@ router.post('/create_post', authenticateCheck, post_upload.array('files'), async
         content = content || '';
         const $ = cheerio.load(content, { decodeEntities: false });
         if (req.files && req.files.length > 0) {
+            const totalFileSize = calculateFileSizes(req.files);
+            const user = req.currentUser;
+            const maxStorage = user.has_membership ? 100 * 1024 : 100; //100GB for members, 100MB for non-members
+            if (user.storage_count + totalFileSize > maxStorage) {
+                req.files.forEach(file => {
+                    fs.unlinkSync(path.join(mediaDir, file.filename));
+                });
+                return res.status(413).json({ 
+                    success: false, 
+                    message: `Weekly limit of ${maxStorage}MB exceeded` 
+                });
+            }
+            user.storage_count += totalFileSize;
+            await user.save();
             let index = 0;
             $('img[src^="blob:"], video[src^="blob:"]').each((i, el) => {
                 if (index < req.files.length) {
@@ -232,11 +270,20 @@ router.post('/create_post', authenticateCheck, post_upload.array('files'), async
         }
         return res.status(200).json({ success: true, post });
     } catch (error) {
+        if (req.files && req.files.length > 0) {
+            req.files.forEach(file => {
+                try {
+                    fs.unlinkSync(path.join(mediaDir, file.filename));
+                } catch (err) {
+                    console.error('Error deleting file:', err);
+                }
+            });
+        }
         return res.status(500).json({ success: false, error: error.message });
     }
 });
 
-router.post('/edit_post', authenticateCheck, post_upload.array('files'), async (req, res) => {
+router.post('/edit_post', authenticateCheck, checkStorageLimit, post_upload.array('files'), async (req, res) => {
     try {
         let { content, post_id, title } = req.body;;
         const foundPost = await Posts.findByPk(post_id);
@@ -245,6 +292,20 @@ router.post('/edit_post', authenticateCheck, post_upload.array('files'), async (
         }
         const $ = cheerio.load(content, { decodeEntities: false });
         if (req.files && req.files.length > 0) {
+            const totalFileSize = calculateFileSizes(req.files);
+            const user = req.currentUser;
+            const maxStorage = user.has_membership ? 100 * 1024 : 100; //100GB for members, 100MB for non-members
+            if (user.storage_count + totalFileSize > maxStorage) {
+                req.files.forEach(file => {
+                    fs.unlinkSync(path.join(mediaDir, file.filename));
+                });
+                return res.status(413).json({ 
+                    success: false, 
+                    message: `Weekly limit of ${maxStorage}MB exceeded` 
+                });
+            }
+            user.storage_count += totalFileSize;
+            await user.save();
             let index = 0;
             $('img[src^="blob:"], video[src^="blob:"]').each((i, el) => {
                 if (index < req.files.length) {
@@ -270,6 +331,15 @@ router.post('/edit_post', authenticateCheck, post_upload.array('files'), async (
         await foundPost.save();
         return res.status(201).json({ success: true });
     } catch (error) {
+        if (req.files && req.files.length > 0) {
+            req.files.forEach(file => {
+                try {
+                    fs.unlinkSync(path.join(mediaDir, file.filename));
+                } catch (err) {
+                    console.error('Error deleting file:', err);
+                }
+            });
+        }
         return res.status(500).json({ success: false, error: error.message });
     }
 });
