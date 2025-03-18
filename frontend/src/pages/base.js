@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { FaCommentDots, FaFileUpload, FaMinus, FaPlus, FaPlusCircle } from 'react-icons/fa';
+import { FaCommentDots, FaFileUpload, FaMinus, FaPlus, FaPlusCircle, FaSearch } from 'react-icons/fa';
 import React, { useContext, useEffect, useRef, useState } from 'react';
 import { Link, Outlet, useNavigate } from 'react-router-dom';
 import { v4 } from 'uuid';
@@ -322,7 +322,7 @@ const BaseLayout = () => {
                     <form id="search-form" onSubmit={handleSearchClick}>
                         <div className="search-container">
                             <button className="icon-button ask" data-tooltip="Ask" type="button" onClick={handleAskClick}>
-                                <img className="standard-icon" src="/media/site_images/icons/ask.png" alt="Ask"/>
+                                <FaSearch />
                             </button>
                             <input 
                                 id="search-bar" 
@@ -331,8 +331,9 @@ const BaseLayout = () => {
                                 placeholder="Search or Ask..." 
                                 value={currentQuery} 
                                 onChange={(e) => {
-                                    if (e.target.value.length <= 1000) {
-                                        setCurrentQuery(e.target.value);
+                                    const input = e.target.value;
+                                    if (input.length <= 1000) {
+                                        setCurrentQuery(input);
                                         setHeaderErrorMessage('');
                                     } else {
                                         setHeaderErrorMessage("Query too long");
