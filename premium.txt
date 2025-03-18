@@ -3,6 +3,7 @@ Premium features
 100 MB files vs 1 MB
 100 GB weekly storage limit vs 100 MB
 1000 blocks on a post vs 10
+1000 character titles vs 100
 10,000 chats with a connection vs 100 
 10,000 channels on user feed vs 100 
 100,000 character blocks vs 1000

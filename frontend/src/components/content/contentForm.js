@@ -73,12 +73,13 @@ const ContentForm = ({ feed, isEdit = false, isGroup, isReply, onSubmit, post = 
 	const navigate = useNavigate()
 	const urlPrefix = isGroup ? 'g' : 'u'
 	const { user } = useContext(AuthContext)
-	const usageLimit = user.has_membership ? 10000000 : 100000;
-	const limitReached = user.usage_count >= usageLimit;
 	const hasMembership = user?.has_membership
 	const BLOCK_LIMIT = hasMembership ? 10000 : 10
-	const TEXT_CHAR_LIMIT = hasMembership ? 100000 : 1000
+	const limitReached = user.usage_count >= usageLimit
 	const MAX_FILE_SIZE = hasMembership ? 100 * 1024 * 1024 : 1 * 1024 * 1024
+	const TEXT_CHAR_LIMIT = hasMembership ? 100000 : 1000
+	const TITLE_CHAR_LIMIT = hasMembership ? 1000 : 100
+	const usageLimit = user.has_membership ? 10000000 : 100000
 
 	const isContentEmpty = useCallback(blocksArray => !blocksArray.some(block => {
 		if (block.type === BLOCK_TYPES.TEXT) return block.data.html && block.data.html.trim() !== ''
@@ -375,13 +376,35 @@ const ContentForm = ({ feed, isEdit = false, isGroup, isReply, onSubmit, post = 
 					</p>
 				)}
 				{!isReply && (
-					<input className="title-input" id="title-entry" onChange={e => setTitle(e.target.value)} placeholder="Add title (optional)..." type="text" value={title} />
+					<input 
+						className="title-input" 
+						id="title-entry" 
+						onChange={(e) => {
+							const input = e.target.value;
+							if (input.length <= TITLE_CHAR_LIMIT) {
+								setTitle(input);
+								setFormErrorMessage('');
+							} else {
+								setFormErrorMessage('Title exceeds character limit.', !user.has_membership && 'Get membership for more.');
+							}
+						}}
+						placeholder="Add title (optional)..." 
+						type="text" 
+						value={title} />
 				)}
 				{showGlobalAiPrompt && (
 					<div className="global-ai-prompt-container">
 						<textarea className="ai-prompt" 
 							disabled={limitReached} 
-							onChange={e => setGlobalAiPrompt(e.target.value)} 
+							onChange={(e) => {
+								const input = e.target.value;
+								if (input.length <= TEXT_CHAR_LIMIT) {
+									setGlobalAiPrompt(input);
+									setFormErrorMessage('');
+								} else {
+									setFormErrorMessage('Prompt exceeds character limit.', !user.has_membership && 'Get membership for more.');
+								}
+							}}
 							placeholder={limitReached ? user.has_membership ? "Usage limit reached" : "Usage limit reached. Get membership for more." : "Describe changes for post..."} 
 							value={globalAiPrompt}/>
 						<button className={isGlobalLoading || !globalAiPrompt.trim() || limitReached ? 'large-icon disabled' : 'large-icon'} 
@@ -442,11 +465,11 @@ const ContentForm = ({ feed, isEdit = false, isGroup, isReply, onSubmit, post = 
 																			className="text-editor"
 																			onChange={val => {
 																				const plainText = val.replace(/<[^>]*>/g, '')
-																				if (!hasMembership && plainText.length > TEXT_CHAR_LIMIT) {
-																					updateBlock({ ...block, data: { ...data, textError: `Exceeded ${TEXT_CHAR_LIMIT} character limit. Get membership to write more:` } })
-																					return
+																				if (plainText.length < TEXT_CHAR_LIMIT) {
+																					updateBlock({ ...block, data: { ...data, html: val, textError: '' } })
+																				} else {
+																					updateBlock({ ...block, data: { ...data, textError: `Exceeded ${TEXT_CHAR_LIMIT} character limit. ${!user.has_membership && 'Get membership for more.'}` } })
 																				}
-																				updateBlock({ ...block, data: { ...data, html: val, textError: '' } })
 																			}}
 																			placeholder="Write your text..."
 																			theme="snow"
@@ -468,7 +491,16 @@ const ContentForm = ({ feed, isEdit = false, isGroup, isReply, onSubmit, post = 
 																				<div className="ai-generator">
 																					<textarea className="ai-prompt" 
 																						disabled={limitReached} 
-																						onChange={e => updateBlock({ ...block, data: { ...data, _tempAiPrompt: e.target.value } })} 
+																						onChange={(e) => {
+																							const input = e.target.value;
+																							if (input.length <= TEXT_CHAR_LIMIT) {
+																								updateBlock({ ...block, data: { ...data, _tempAiPrompt: input } });
+																								setFormErrorMessage('');
+																							} else {
+																								updateBlock({ ...block, data: { ...data, _tempAiPrompt: input } });
+																								setFormErrorMessage('Prompt exceeds character limit.', !user.has_membership && 'Get membership for more.');
+																							}
+																						}}
 																						placeholder={limitReached ? user.has_membership ? "Usage limit reached" : "Usage limit reached. Get membership for more." : "Describe your content..."} 
 																						value={data._tempAiPrompt || ''}/>
 																					<button className={data.isBlockLoading || !data._tempAiPrompt?.trim() || limitReached ? 'small-icon disabled' : 'small-icon'} 

@@ -56,11 +56,11 @@ const Login = () => {
                         value={username}
                         onChange={(e) => {
                             const input = e.target.value;
-                            if (input.length <= 30) {
+                            if (input.length <= 500) {
                                 setUsername(input);
                                 setErrorMessage('');
                             } else {
-                                setErrorMessage('Username/email cannot exceed 30 characters');
+                                setErrorMessage('Cannot exceed 500 characters');
                             }
                         }}
                     />

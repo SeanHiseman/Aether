@@ -68,7 +68,7 @@ const BaseLayout = () => {
                 if (newFeeds.length < 30) {
                     setHasMoreFeeds(false);
                 }
-                // Normalize each feed so there always is a followedFeed object.
+                //Normalize each feed so there always is a followedFeed object.
                 const normalizedFeeds = newFeeds.map(feed => {
                     //If the API already sends a nested followedFeed, use it.
                     if (feed.followedFeed) {
@@ -257,7 +257,22 @@ const BaseLayout = () => {
                     </Tooltip>
                     {showForm && (
                         <form id="create-feed-form" onSubmit={createFeed}>
-                            <input className="name-input" type="text" name="Name" placeholder="Feed name..." value={feedName} onChange={(e) => setFeedName(e.target.value)}/>
+                            <input 
+                                className="name-input" 
+                                type="text" 
+                                name="Name" 
+                                placeholder="Feed name..." 
+                                value={feedName} 
+                                onChange={(e) => {
+                                    e.preventDefault();
+                                    const input = e.target.value;
+                                    if (input.length <= 30) {
+                                        setFeedName(input);
+                                    } else {
+                                        setErrorMessage("Name too long");
+                                    }
+                                }}
+                            />
                             <div className="file-input">
                                 <label htmlFor="feed-photo-input" className="small-icon">
                                     <FaFileUpload /><p className="icon-text">Choose photo</p>
@@ -302,13 +317,27 @@ const BaseLayout = () => {
             <main>
                 <header id="base-header">
                     <div className="spacer"></div>
-                    <form id="search-form" onSubmit={(e) => {e.preventDefault(); handleSearchClick(e);}}>
+                    <form id="search-form" onSubmit={handleSearchClick}>
                         <div className="search-container">
                             <button className="icon-button ask" data-tooltip="Ask" type="button" onClick={handleAskClick}>
                                 <img className="standard-icon" src="/media/site_images/icons/ask.png" alt="Ask"/>
                             </button>
-                            <input id="search-bar" type="text" name="keyword" placeholder="Search or Ask..." value={currentQuery} onChange={(e) => setCurrentQuery(e.target.value)}/>
-                            <button className="icon-button search" data-tooltip="Search" type="submit" onClick={handleSearchClick}>
+                            <input 
+                                id="search-bar" 
+                                type="text" 
+                                name="keyword" 
+                                placeholder="Search or Ask..." 
+                                value={currentQuery} 
+                                onChange={(e) => {
+                                    if (e.target.value.length <= 1000) {
+                                        setCurrentQuery(e.target.value);
+                                    } else {
+                                        setErrorMessage("Query too long");
+                                    }
+                                }}
+                                maxLength={1000} 
+                            />
+                            <button className="icon-button search" data-tooltip="Search" type="submit">
                                 <img className="standard-icon" src="/media/site_images/icons/search.png" alt="Search"/>
                             </button>
                         </div>

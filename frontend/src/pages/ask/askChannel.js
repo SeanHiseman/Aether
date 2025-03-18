@@ -13,6 +13,7 @@ const AskChannel = () => {
 	const [errorMessage, setErrorMessage] = useState('');
 	const [isEditingChatName, setIsEditingChatName] = useState(false);
 	const [isLoading, setIsLoading] = useState(false);
+	const maxLength = user.has_membership ? 100000 : 1000;
 	const [messages, setMessages] = useState([]);
 	const [newChatName, setNewChatName] = useState('');
 	const [showNewChatForm, setShowNewChatForm] = useState(false);
@@ -282,8 +283,16 @@ const AskChannel = () => {
 									className="chat-message-bar" 
 									type="text" 
 									value={currentMessage} 
-									onChange={(e) => setCurrentMessage(e.target.value)} 
 									placeholder={limitReached ? (user.has_membership ? "Usage limit reached" : "Usage limit reached. Get membership for more.") : "Ask..."}
+									onChange={(e) => {
+										const input = e.target.value;
+										if (input.length <= maxLength) {
+											setCurrentMessage(input);
+											setErrorMessage('');
+										} else {
+											setErrorMessage(`${maxLength} character limit.`, !user.has_membership && "Get membership for more.");
+										}
+									}}
 									onKeyDown={(e) => e.key === 'Enter' && sendAskMessage(chatId, currentMessage)} 
 									disabled={isLoading || limitReached}
 								/>

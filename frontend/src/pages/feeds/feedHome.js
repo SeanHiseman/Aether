@@ -356,6 +356,11 @@ const FeedHome = () => {
                                         const input = e.target.value;
                                         if (input.length <= 30) {
                                             setNewChannelName(input);
+                                            if (input.trim() === 'main') {
+                                                setFeedErrorMessage("Cannot be named 'Main'");
+                                            } else {
+                                                setFeedErrorMessage(""); 
+                                            }
                                         } else {
                                             setFeedErrorMessage("Name too long");
                                         }
