@@ -322,7 +322,7 @@ const BaseLayout = () => {
                     <form id="search-form" onSubmit={handleSearchClick}>
                         <div className="search-container">
                             <button className="icon-button ask" data-tooltip="Ask" type="button" onClick={handleAskClick}>
-                                <FaSearch />
+                                <img className="standard-icon" src="/media/site_images/icons/ask.png" alt="Ask"/>
                             </button>
                             <input 
                                 id="search-bar" 
@@ -335,14 +335,15 @@ const BaseLayout = () => {
                                     if (input.length <= 1000) {
                                         setCurrentQuery(input);
                                         setHeaderErrorMessage('');
+                                        console.log("Input valid, cleared error message");
                                     } else {
                                         setHeaderErrorMessage("Query too long");
+                                        console.log("Input too long, set error message to: Query too long");
                                     }
                                 }}
-                                maxLength={1000} 
                             />
                             <button className="icon-button search" data-tooltip="Search" type="submit">
-                                <img className="standard-icon" src="/media/site_images/icons/search.png" alt="Search"/>
+                                <FaSearch className="standard-icon" />
                             </button>
                         </div>
                     </form>

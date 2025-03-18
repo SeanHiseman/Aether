@@ -389,7 +389,9 @@ main {
     border-radius: 6px;
 }
 .spacer {
+    display: block;
     flex-grow: 1;
+    visibility: visible;
 }
 .spacer20px {
     height: 20px;
