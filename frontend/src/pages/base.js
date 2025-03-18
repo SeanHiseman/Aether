@@ -290,7 +290,7 @@ const BaseLayout = () => {
                                     Private
                                 </button>
                             </div>
-                            {feedErrorMessage && <div className="error-message">{feedErrorMessage}</div>}
+                            <div className="error-message">{feedErrorMessage}</div>
                             <button className={feedName.length === 0 ? "small-icon disabled" : "small-icon"} disabled={feedName.length === 0} title={feedName.length === 0 ? "Enter a name" : "Create"} type="submit" value="Create">
                                 <FaPlus />
                             </button>
@@ -346,7 +346,7 @@ const BaseLayout = () => {
                         </div>
                     </form>
                     <div className="spacer">
-                        {headerErrorMessage && <div className="error-message">{headerErrorMessage}</div>}
+                        <div className="error-message">{headerErrorMessage}</div>
                     </div>
                 </header>
                 <div className="content">

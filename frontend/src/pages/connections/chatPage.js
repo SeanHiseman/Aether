@@ -189,6 +189,7 @@ const ChatPage = () => {
                                                 const input = e.target.value;
                                                 if (input.length <= 30) {
                                                     setNewChatName(input);
+                                                    setErrorMessage("");
                                                 } else {
                                                     setErrorMessage("Name too long");
                                                 }
@@ -261,7 +262,7 @@ const ChatPage = () => {
                                 </form>
                                 </>
                             )}
-                            {errorMessage && <div className="error-message">{errorMessage}</div>}
+                            <div className="error-message">{errorMessage}</div>
                         </div>
                         <ChannelList channels={chats} feedId={viewer.feed_id} feedName={connection.feed_name} isChat={true} isGroup={false} setChannels={updateChats} />
                     </div>
