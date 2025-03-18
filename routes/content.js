@@ -9,6 +9,7 @@ import { Router } from 'express';
 import path from 'path';
 import { Sequelize } from 'sequelize';
 import { v4 } from 'uuid';
+import { sleep } from 'openai/core.mjs';
 
 const feedAttributes = ['feed_id', 'parent_id', 'feed_name', 'description', 'feed_photo', 'follower_count', 'created_at', 'updated_at', 'type', 'is_group', 'feed_owner', 'is_locked'];
 const noteAttributes = ['note_id', 'note_content', 'created_at', 'updated_at', 'is_misinfo']
@@ -214,6 +215,7 @@ const post_upload = multer({
 router.post('/create_post', authenticateCheck, checkStorageLimit, post_upload.array('files'), async (req, res) => {
     try {
         let { channel_id, content, feed_id, parent_id, post_id, poster_id, title } = req.body;
+        console.log("req.body:", req.body);
         if (!post_id) {
             post_id = v4();
         }
@@ -261,7 +263,8 @@ router.post('/create_post', authenticateCheck, checkStorageLimit, post_upload.ar
             poster_id,
             title
         });
-        if (parent_id) {
+        console.log("post:", post);
+        if (parent_id) { //parent_id means post is a reply
             const parentPost = await Posts.findOne({ where: { post_id: parent_id } });
             if (parentPost) {
                 parentPost.replies += 1;
@@ -270,6 +273,7 @@ router.post('/create_post', authenticateCheck, checkStorageLimit, post_upload.ar
         }
         return res.status(200).json({ success: true, post });
     } catch (error) {
+        console.error('Error creating post:', error);
         if (req.files && req.files.length > 0) {
             req.files.forEach(file => {
                 try {
