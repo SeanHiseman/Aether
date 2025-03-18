@@ -151,10 +151,9 @@ const FeedHome = () => {
             if (newChannelName.length === 0) {
                 setFeedErrorMessage("Channel needs a name");
                 return;
-            //Names over 30 characters already prevented
             }
             if (newChannelName === 'Main') {
-                setFeedErrorMessage("Channel cannot be named Main");
+                setFeedErrorMessage("Cannot be named Main");
                 return;
             } 
             const channelId = channelRender.channel_id;
@@ -342,15 +341,13 @@ const FeedHome = () => {
                         <ManageConnectionButton feed={feed} viewerId={viewer.feed_id} />
                     )}
                 </div>
-                {feedErrorMessage && <div className="error-message">{feedErrorMessage}</div>}
+                <div className="error-message">{feedErrorMessage}</div>
                 {channelRender && (
                     <div className="channel-name-section">
                         {isEditingChannelName ? (
                             <div className="change-name">
                                 <textarea
                                     className="change-name-area"
-                                    value={newChannelName}
-                                    placeholder="New name"
                                     onChange={(e) => {
                                         e.preventDefault();
                                         const input = e.target.value;
@@ -365,7 +362,8 @@ const FeedHome = () => {
                                             setFeedErrorMessage("Name too long");
                                         }
                                     }}
-                                />
+                                    placeholder="New name"
+                                    value={newChannelName} />
                                 <div className="cancel-save">
                                     <button className="small-icon" onClick={() => {setIsEditingChannelName(false); setNewChannelName(""); setFeedErrorMessage("");}} title="Cancel">
                                         <FaRegWindowClose />
@@ -423,7 +421,25 @@ const FeedHome = () => {
                                 </div>
                                 {showChannelForm && (
                                     <form className="add-channel-form" onSubmit={AddChannel}>
-                                        <input className="name-input" onChange={(e) => setNewChannelName(e.target.value)} placeholder="Channel name..." type="text" value={newChannelName}/>
+                                        <input 
+                                            className="name-input" 
+                                            onChange={(e) => {
+                                                e.preventDefault();
+                                                const input = e.target.value;
+                                                if (input.length <= 30) {
+                                                    setNewChannelName(input);
+                                                    if (input.trim() === 'main') {
+                                                        setFeedErrorMessage("Cannot be named 'Main'");
+                                                    } else {
+                                                        setFeedErrorMessage(""); 
+                                                    }
+                                                } else {
+                                                    setFeedErrorMessage("Name too long");
+                                                }
+                                            }} 
+                                            placeholder="Channel name..." 
+                                            type="text" 
+                                            value={newChannelName} />
                                         {feed.is_group && (
                                             <div className="channel-options">
                                                 <label>
