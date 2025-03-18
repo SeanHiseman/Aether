@@ -240,7 +240,20 @@ const ChatPage = () => {
                                         name="chat_name"
                                         placeholder="Chat name..."
                                         value={newChatName}
-                                        onChange={(e) => setNewChatName(e.target.value)}
+                                        onChange={(e) => {
+                                            e.preventDefault();
+                                            const input = e.target.value;
+                                            if (input.length <= 30) {
+                                                setNewChatName(input);
+                                                if (input.trim() === 'Main') {
+                                                    setErrorMessage("Cannot be named Main");
+                                                } else {
+                                                    setErrorMessage("");
+                                                }
+                                            } else {
+                                                setErrorMessage("Name too long");
+                                            }
+                                        }}
                                     />
                                     <button className={`small-icon ${chatLimitReached ? 'disabled' : ''}`} type="submit" disabled={chatLimitReached} title="Create chat">
                                         <FaPlus />

@@ -247,12 +247,13 @@ const ChatChannel = ({ canAdd, canRemove, channelId, connection, isGroup, isLock
                         value={message}
                         placeholder="Type a message..."
                         onChange={(e) => {
-                            if (e.target.value.length > maxLength) {
-                                setErrorMessage(`Message cannot exceed ${maxLength} characters.`);
-                                return;
+                            const input = e.target.value;
+                            if (input.length <= maxLength) {
+                                setMessage(input);
+                                setErrorMessage('');
+                            } else {
+                                setErrorMessage(`${maxLength} character limit.`, !user.has_membership && "Get membership for more.");
                             }
-                            setErrorMessage('');
-                            setMessage(e.target.value);
                         }}
                         onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
                     />
