@@ -389,9 +389,7 @@ main {
     border-radius: 6px;
 }
 .spacer {
-    display: block;
     flex-grow: 1;
-    visibility: visible;
 }
 .spacer20px {
     height: 20px;
@@ -403,6 +401,7 @@ main {
     width: 100%;
 }
 .standard-icon {
+    color: var(--border);
     cursor: pointer;
     height: 30px;
     padding: 0;

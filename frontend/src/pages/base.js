@@ -335,10 +335,8 @@ const BaseLayout = () => {
                                     if (input.length <= 1000) {
                                         setCurrentQuery(input);
                                         setHeaderErrorMessage('');
-                                        console.log("Input valid, cleared error message");
                                     } else {
                                         setHeaderErrorMessage("Query too long");
-                                        console.log("Input too long, set error message to: Query too long");
                                     }
                                 }}
                             />
