@@ -19,7 +19,7 @@ import { UnreadContext } from '../components/connections/unreadContext';
 const BaseLayout = () => {
     const { isAuthenticated, user, viewer } = useContext(AuthContext);
     const [currentQuery, setCurrentQuery] = useState('');
-    const [errorMessage, setErrorMessage] = useState('');
+    const [feedErrorMessage, setFeedErrorMessage] = useState('');
     const [feeds, setFeeds] = useState([]);
     const [feedsOffset, setFeedsOffset] = useState(0);
     const [feedName, setFeedName] = useState('');
@@ -27,6 +27,7 @@ const BaseLayout = () => {
     const [feedType, setFeedType] = useState('public'); 
     const [feed, setFeed] = useState([]);
     const [hasMoreFeeds, setHasMoreFeeds] = useState(true);
+    const [headerErrorMessage, setHeaderErrorMessage] = useState('');
     const { setQuery } = useQueryContext();
     const { setTheme } = useContext(ThemeContext);
     const [showForm, setShowForm] = useState(false);
@@ -118,7 +119,7 @@ const BaseLayout = () => {
         try {
             event.preventDefault();
             if (!feedName) {
-                setErrorMessage('Feed needs a name');
+                setFeedErrorMessage('Feed needs a name');
                 return;
             } 
             const newFeed = new FormData();
@@ -155,11 +156,11 @@ const BaseLayout = () => {
             }
         } catch (error) {
             if (error.response && error.response.status === 413) {
-                setErrorMessage(error.response.data.message, user.has_membership && ". Get membership for more");
+                setFeedErrorMessage(error.response.data.message, user.has_membership && ". Get membership for more");
             } else if (error.response.status === 400 ) {
-                setErrorMessage("Name taken");
+                setFeedErrorMessage("Name taken");
             } else {
-                setErrorMessage(error.response.data.message || "Error creating feed"); 
+                setFeedErrorMessage(error.response.data.message || "Error creating feed"); 
             }
         }
     };
@@ -168,13 +169,13 @@ const BaseLayout = () => {
         const file = event.target.files[0];
         if (file) {
             if (file.size > MAX_FILE_SIZE) {
-                setErrorMessage(hasMembership ? 
+                setFeedErrorMessage(hasMembership ? 
                     `File exceeds your max size limit of 100MB.` : 
                     `File exceeds your max size limit of 1MB. Get membership for more.`);
                 return;
             }
             setFeedPhotoFile(file);
-            setErrorMessage('');
+            setFeedErrorMessage('');
         }
     };
 
@@ -196,7 +197,7 @@ const BaseLayout = () => {
                 navigate('/ask/home');
             }
         } catch (error) {
-            setErrorMessage("Error sending Ask");
+            setHeaderErrorMessage("Error sending Ask");
         }
     };
 
@@ -211,7 +212,7 @@ const BaseLayout = () => {
             setFeedPhotoFile('No file chosen');
         };
         setShowForm(!showForm);
-        setErrorMessage('');
+        setFeedErrorMessage('');
     };
 
     return (
@@ -268,8 +269,9 @@ const BaseLayout = () => {
                                     const input = e.target.value;
                                     if (input.length <= 30) {
                                         setFeedName(input);
+                                        setFeedErrorMessage('');
                                     } else {
-                                        setErrorMessage("Name too long");
+                                        setFeedErrorMessage("Name too long");
                                     }
                                 }}
                             />
@@ -288,7 +290,7 @@ const BaseLayout = () => {
                                     Private
                                 </button>
                             </div>
-                            {errorMessage && <div className="error-message">{errorMessage}</div>}
+                            {feedErrorMessage && <div className="error-message">{feedErrorMessage}</div>}
                             <button className={feedName.length === 0 ? "small-icon disabled" : "small-icon"} disabled={feedName.length === 0} title={feedName.length === 0 ? "Enter a name" : "Create"} type="submit" value="Create">
                                 <FaPlus />
                             </button>
@@ -331,8 +333,9 @@ const BaseLayout = () => {
                                 onChange={(e) => {
                                     if (e.target.value.length <= 1000) {
                                         setCurrentQuery(e.target.value);
+                                        setHeaderErrorMessage('');
                                     } else {
-                                        setErrorMessage("Query too long");
+                                        setHeaderErrorMessage("Query too long");
                                     }
                                 }}
                                 maxLength={1000} 
@@ -342,7 +345,9 @@ const BaseLayout = () => {
                             </button>
                         </div>
                     </form>
-                    <div className="spacer"></div>
+                    <div className="spacer">
+                        {headerErrorMessage && <div className="error-message">{headerErrorMessage}</div>}
+                    </div>
                 </header>
                 <div className="content">
                     <Outlet />
