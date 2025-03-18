@@ -15,9 +15,7 @@ const PostChannel = ({ canRemove, channelId, channelName, feed, isGroup, onEditC
     };
 
     const getPosts = async ({ pageParam = 0 }) => {
-        const response = await axios.get('/api/channel_posts', {
-            params: { channelId, feedId, isSingle: false, limit: 10, offset: pageParam }
-        });
+        const response = await axios.get('/api/channel_posts', { params: { channelId, feedId, isSingle: false, limit: 10, offset: pageParam }});
         return response.data;
     };
     
