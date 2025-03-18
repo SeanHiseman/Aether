@@ -58,7 +58,7 @@ const FeedInfoView = ({ feed, setFeed, user }) => {
             setErrorMessage('');
         } catch(error) {
             if (error.response && error.response.status === 413) {
-                setErrorMessage(error.response.data.message, user.has_membership && ". Get membership for more");
+                setErrorMessage(error.response.data.message + (!user.has_membership ? ". Get membership for more" : ""));
             } else if (error.response && error.response.status === 400) {
                 setErrorMessage(error.response.data.message || "Error, please try again");
             } else {

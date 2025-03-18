@@ -229,7 +229,7 @@ const FeedHome = () => {
             setShowPostForm(false);
         } catch (error) {
             if (error.response && error.response.status === 413) {
-                setPostErrorMessage(error.response.data.message, user.has_membership && ". Get membership for more");
+                setPostErrorMessage(error.response.data.message + (!user.has_membership ? ". Get membership for more" : ""));
             } else {
                 setPostErrorMessage(error.response.data.message || "Error creating post");
             }

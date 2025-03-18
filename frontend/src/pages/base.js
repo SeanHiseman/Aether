@@ -156,7 +156,7 @@ const BaseLayout = () => {
             }
         } catch (error) {
             if (error.response && error.response.status === 413) {
-                setFeedErrorMessage(error.response.data.message, user.has_membership && ". Get membership for more");
+                setFeedErrorMessage(error.response.data.message + (!user.has_membership ? ". Get membership for more" : ""));
             } else if (error.response.status === 400 ) {
                 setFeedErrorMessage("Name taken");
             } else {
