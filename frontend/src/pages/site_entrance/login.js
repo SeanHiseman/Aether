@@ -3,9 +3,11 @@ import React, { useContext, useState } from 'react';
 import { FaEye, FaEyeSlash } from 'react-icons/fa';
 import { Link, useNavigate } from 'react-router-dom';
 import { ThemeContext } from '../../themeProvider';
-import '../../css/authentication.css'; 
+import '../../css/authentication.css';
 
 const Login = () => {
+    const [username, setUsername] = useState('');
+    const [password, setPassword] = useState('');
     const [errorMessage, setErrorMessage] = useState('');
     const { refreshTheme } = useContext(ThemeContext);
     const [showPassword, setShowPassword] = useState(false);
@@ -13,16 +15,13 @@ const Login = () => {
 
     const handleLogin = async (event) => {
         event.preventDefault();
-        const formData = new FormData(event.target);
-        const password = formData.get('password');
-        const username = formData.get('username');
         try {
-            const response = await axios.post('/api/login', { password, username }); //username can also be email
+            const response = await axios.post('/api/login', { password, username }); //Username can also be email
             if (response.status === 200) {
                 await refreshTheme();
                 const responseUsername = response.data.username;
-                navigate(`/u/${responseUsername}`);//Main feed name same as username (for now)
-            } 
+                navigate(`/u/${responseUsername}`); //Main feed name same as username
+            }
         } catch (error) {
             if (error.response && error.response.status === 401) {
                 setErrorMessage('Invalid username or password');
@@ -32,8 +31,7 @@ const Login = () => {
         }
     };
 
-    const togglePasswordVisibility = (event) => {
-        event.preventDefault(); 
+    const togglePasswordVisibility = () => {
         setShowPassword(!showPassword);
     };
 
@@ -50,10 +48,46 @@ const Login = () => {
                 </div>
                 <p className="error-message">{errorMessage}</p>
                 <form method="post" onSubmit={handleLogin}>
-                    <input className="authentication-input-box" name="username" placeholder="Username or email" required />
+                    <input
+                        className="authentication-input-box"
+                        name="username"
+                        placeholder="Username or email"
+                        required
+                        value={username}
+                        onChange={(e) => {
+                            const input = e.target.value;
+                            if (input.length <= 30) {
+                                setUsername(input);
+                                setErrorMessage('');
+                            } else {
+                                setErrorMessage('Username/email cannot exceed 30 characters');
+                            }
+                        }}
+                    />
                     <div className="password-container">
-                        <input type={showPassword ? "text" : "password"} className="authentication-input-box" name="password" placeholder="Password" required />
-                        <button type="button" className="small-icon" onClick={togglePasswordVisibility} title={showPassword ? "Hide password" : "Show password"}>
+                        <input
+                            type={showPassword ? "text" : "password"}
+                            className="authentication-input-box"
+                            name="password"
+                            placeholder="Password"
+                            required
+                            value={password}
+                            onChange={(e) => {
+                                const input = e.target.value;
+                                if (input.length <= 30) {
+                                    setPassword(input);
+                                    setErrorMessage('');
+                                } else {
+                                    setErrorMessage('Password cannot exceed 30 characters');
+                                }
+                            }}
+                        />
+                        <button
+                            type="button"
+                            className="small-icon"
+                            onClick={togglePasswordVisibility}
+                            title={showPassword ? "Hide password" : "Show password"}
+                        >
                             {showPassword ? <FaEyeSlash /> : <FaEye />}
                         </button>
                     </div>

@@ -7,36 +7,44 @@ import '../../css/authentication.css';
 const Join = () => {
     const [confirmPassword, setConfirmPassword] = useState('');
     const [errorMessage, setErrorMessage] = useState('');
+    const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+    const [username, setUsername] = useState('');
     const navigate = useNavigate();
 
     const handleJoin = async (event) => {
         event.preventDefault();
+        const email = event.target.email.value;
+        const username = event.target.username.value;
+        if (username.length > 30) {
+            setErrorMessage('Username cannot exceed 30 characters');
+            return;
+        }
+        if (email.length > 500) {
+            setErrorMessage('Email cannot exceed 500 characters');
+            return;
+        }
+        if (password.length > 30) {
+            setErrorMessage('Password cannot exceed 30 characters');
+            return;
+        }
         if (password !== confirmPassword) {
             setErrorMessage('Passwords do not match');
             return;
         }
         try {
-            const response = await axios.post('/api/join', { 
-                email: event.target.email.value, 
-                password, 
-                username: event.target.username.value 
-            });
+            const response = await axios.post('/api/join', { email, password, username });
             if (response.data.success) {
                 navigate('/g/Welcome');
             } else {
                 setErrorMessage('Joining failed, please try again');
             }
         } catch (error) {
-            if (error.response && error.response.status === 409) {
-                setErrorMessage('Name already taken');
-            } else {
-                setErrorMessage('Joining failed, please try again');
-            }
+            setErrorMessage(error.response?.status === 409 ? 'Name already taken' : 'Joining failed, please try again');
         }
-    };
+    };    
 
     const togglePasswordVisibility = (setter, currentState) => {
         setter(!currentState);
@@ -57,16 +65,79 @@ const Join = () => {
                 </div>
                 <p className="error-message">{errorMessage}</p>
                 <form method="post" onSubmit={handleJoin}>
-                    <input className="authentication-input-box" name="username" placeholder="Username" required />
-                    <input type="email" className="authentication-input-box" name="email" placeholder="Email" required />
+                    <input
+                        className="authentication-input-box"
+                        name="username"
+                        placeholder="Username"
+                        required
+                        value={username}
+                        onChange={(e) => {
+                            const input = e.target.value;
+                            if (input.length <= 30) {
+                                setUsername(input);
+                                setErrorMessage(""); 
+                            } else {
+                                setErrorMessage("Username cannot exceed 30 characters");
+                            }
+                        }}
+                    />
+                    <input
+                        type="email"
+                        className="authentication-input-box"
+                        name="email"
+                        placeholder="Email"
+                        required
+                        value={email}
+                        onChange={(e) => {
+                            const input = e.target.value;
+                            if (input.length <= 500) {
+                                setEmail(input);
+                                setErrorMessage(""); 
+                            } else {
+                                setErrorMessage("Email cannot exceed 500 characters");
+                            }
+                        }}
+                    />
                     <div className="password-container">
-                        <input type={showPassword ? "text" : "password"} className="authentication-input-box" name="password" placeholder="Password" required onChange={(e) => setPassword(e.target.value)} />
+                        <input 
+                            type={showPassword ? "text" : "password"} 
+                            className="authentication-input-box" 
+                            name="password" 
+                            placeholder="Password" 
+                            required 
+                            value={password}
+                            onChange={(e) => {
+                                const input = e.target.value;
+                                if (input.length <= 30) {
+                                    setPassword(input);
+                                    setErrorMessage("");
+                                } else {
+                                    setErrorMessage("Password cannot exceed 30 characters");
+                                }
+                            }} 
+                        />
                         <button type="button" className="small-icon" onClick={() => togglePasswordVisibility(setShowPassword, showPassword)} title={showPassword ? "Hide password" : "Show password"}>
                             {showPassword ? <FaEyeSlash /> : <FaEye />}
                         </button>
                     </div>
                     <div className="password-container">
-                        <input type={showConfirmPassword ? "text" : "password"} className="authentication-input-box" name="confirm-password" placeholder="Re-enter password" required onChange={(e) => setConfirmPassword(e.target.value)} />
+                        <input 
+                            type={showConfirmPassword ? "text" : "password"} 
+                            className="authentication-input-box" 
+                            name="confirm-password" 
+                            placeholder="Re-enter password" 
+                            required 
+                            value={confirmPassword}
+                            onChange={(e) => {
+                                const input = e.target.value;
+                                if (input.length <= 30) {
+                                    setConfirmPassword(input);
+                                    setErrorMessage("");
+                                } else {
+                                    setErrorMessage("Password cannot exceed 30 characters");
+                                }
+                            }} 
+                        />
                         <button type="button" className="small-icon" onClick={() => togglePasswordVisibility(setShowConfirmPassword, showConfirmPassword)} title={showConfirmPassword ? "Hide password" : "Show password"}>
                             {showConfirmPassword ? <FaEyeSlash /> : <FaEye />}
                         </button>
