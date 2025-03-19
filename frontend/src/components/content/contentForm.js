@@ -322,7 +322,6 @@ const ContentForm = ({ feed, isEdit = false, isGroup, isReply, onSubmit, post = 
 			setShowForm(false)
 			navigate(`/${urlPrefix}/${feed_name}/${channel_name}/${isReply ? post.post_id : postId}`)
 		} catch (error){
-			console.log('Error submitting form:', error)
 			setFormErrorMessage('Error submitting the form.')
 		}
 	}, [blocks, compileFinalHTML, isContentEmpty, isEdit, isReply, channel_name, feed_name, navigate, onSubmit, post, setShowForm, title, urlPrefix])

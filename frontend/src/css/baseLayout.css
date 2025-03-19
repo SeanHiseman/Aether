@@ -204,6 +204,7 @@
     align-items: center;
     border-radius: 14px;
     display: flex;
+    justify-content: space-between;
     padding: 8px;
     transition: var(--transition-regular);
 }
