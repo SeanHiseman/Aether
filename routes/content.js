@@ -188,11 +188,14 @@ const postFilter = (req, file, cb) => {
     const allowedTypes = /jpeg|jpg|png|gif|mp4|mov|avi/;
     const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
     const mimetype = allowedTypes.test(file.mimetype);
-    if (mimetype && extname) {
-        return cb(null, true);
-    } else {
-        cb(new Error('Only images and videos are allowed'));
+    if (!mimetype || !extname) {
+        return cb(new Error('Only images and videos are allowed'));
     }
+    const maxSize = (req.session?.user?.has_membership ? 100 : 1) * 1024 * 1024;
+    if (file.size > maxSize) {
+        return cb(new Error(`File exceeds the limit of ${maxSize / (1024 * 1024)}MB`));
+    }
+    cb(null, true);
 };
 
 const post_storage = multer.diskStorage({
@@ -207,7 +210,6 @@ const post_storage = multer.diskStorage({
 
 const post_upload = multer({
     fileFilter: postFilter,
-    limits: { fileSize: 1024 * 1024 * (req.session?.user?.has_membership ? 100 : 1) },
     storage: post_storage
 });
 
