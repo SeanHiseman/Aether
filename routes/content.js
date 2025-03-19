@@ -21,7 +21,7 @@ const calculateFileSizes = (files) => {
 
 const checkStorageLimit = async (req, res, next) => {
     try {
-        const user = await Users.findByPk(req.session.user.user_id);
+        const user = await Users.findByPk(req.session.user_id);
         console.log("user:", user);
         if (!user) {
             return res.status(404).json({ success: false, message: 'User not found' });
