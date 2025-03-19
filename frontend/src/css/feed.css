@@ -104,6 +104,13 @@
     padding: var(--large-margin);
     width: 70%;
 }
+.followers-header {
+    background-color: var(--darkest);
+    border-bottom-right-radius: 28px;
+    border-bottom-left-radius: 28px;
+    padding: 5px;
+    text-align: left;
+}
 #feed-summary {
     align-items: center;
     display: flex;

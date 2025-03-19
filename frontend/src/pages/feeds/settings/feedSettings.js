@@ -107,11 +107,11 @@ const FeedSettings = () => {
                                 <p className="icon-text">Logout</p>
                             </button>
                         </form>)}
-                        <li className="channel-link" onClick={() => setCurrentView('info')}>Feed info</li>
+                        {feed.isAdmin && (<li className="channel-link" onClick={() => setCurrentView('info')}>Feed info</li>)}
                         <li className="channel-link" onClick={() => setCurrentView('followers')}>{feed.follower_count} {feed.follower_count === 1 ? 'Follower' : 'Followers'}</li>
-                        {feed.type === 'private' && feed.isOwner && feed.is_group && (
+                        {feed.type === 'private' && feed.is_group && (
                             <li className="channel-link" onClick={() => setCurrentView('follow-requests')}>{followRequestCount} {followRequestCount === 1 ? 'Follow request' : 'Follow requests'}</li>
-                            )}
+                        )}
                         {!feed.is_group && (<li className="channel-link" onClick={() => setCurrentView('membership-settings')}>Membership</li>)}
                         {!feed.is_group && (<li className="channel-link" onClick={() => setCurrentView('password-personal')}>Password/Email</li>)}
                         {!feed.is_group && (<li className="channel-link" onClick={() => setCurrentView('theme')}>Theme</li>)}

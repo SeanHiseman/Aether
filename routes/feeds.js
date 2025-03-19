@@ -465,6 +465,16 @@ router.get('/sub_feeds/:feedId', authenticateCheck, async (req, res) => {
     }   
 });
 
+router.post('/toggle_admin', authenticateCheck, async (req, res) => {
+    try {
+        const { feedId, followerId, isAdmin } = req.body;
+        await Followers.update({ is_admin: isAdmin }, { where: { feed_id: feedId, follower_id: followerId } });
+        res.status(200).json({ success: true });
+    } catch (error) {
+        res.status(500).json({ success: false });
+    }
+});
+
 router.post('/toggle_lock', authenticateCheck, async (req, res) => {
     try {
         const { feedId } = req.body;
@@ -501,6 +511,20 @@ router.post('/toggle_private', authenticateCheck, async (req, res) => {
         const newType = feed.type === 'public' ? 'private' : 'public';
         await feed.update({ type: newType });
         res.status(200).json({ success: true, type: newType });
+    } catch (error) {
+        res.status(500).json({ success: false });
+    }
+});
+
+router.post('/transfer_ownership', authenticateCheck, async (req, res) => {
+    try {
+        const { feedId, newOwnerId } = req.body;
+        const feed = await Feeds.findOne({ where: { feed_id: feedId } });
+        if (!feed || feed.feed_owner !== req.user.user_id) {
+            return res.status(403).json({ success: false, message: 'Not authorized' });
+        }
+        await Feeds.update({ feed_owner: newOwnerId }, { where: { feed_id: feedId } });
+        res.status(200).json({ success: true });
     } catch (error) {
         res.status(500).json({ success: false });
     }

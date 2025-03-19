@@ -325,7 +325,7 @@ const FeedHome = () => {
                         <Link to={`/${urlLetter}/${feed_name}/Main`}>
                             <p className="text36">{feed.feed_name}</p>
                         </Link>
-                        {isAdmin && (
+                        {(isModerator || isAdmin) && (
                             <Link to={`/feed_settings/${feed_name}`}>
                                 <button className="small-icon" title="Settings">
                                     <FaCog />
