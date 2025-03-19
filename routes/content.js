@@ -9,7 +9,6 @@ import { Router } from 'express';
 import path from 'path';
 import { Sequelize } from 'sequelize';
 import { v4 } from 'uuid';
-import { sleep } from 'openai/core.mjs';
 
 const feedAttributes = ['feed_id', 'parent_id', 'feed_name', 'description', 'feed_photo', 'follower_count', 'created_at', 'updated_at', 'type', 'is_group', 'feed_owner', 'is_locked'];
 const noteAttributes = ['note_id', 'note_content', 'created_at', 'updated_at', 'is_misinfo']
@@ -23,6 +22,7 @@ const calculateFileSizes = (files) => {
 const checkStorageLimit = async (req, res, next) => {
     try {
         const user = await Users.findByPk(req.session.user.user_id);
+        console.log("user:", user);
         if (!user) {
             return res.status(404).json({ success: false, message: 'User not found' });
         }
@@ -36,6 +36,7 @@ const checkStorageLimit = async (req, res, next) => {
         req.currentUser = user;
         next();
     } catch (error) {
+        console.log('Error checking storage limit:', error);
         return res.status(500).json({ success: false, error: error.message });
     }
 };
@@ -206,9 +207,7 @@ const post_storage = multer.diskStorage({
 
 const post_upload = multer({
     fileFilter: postFilter,
-    limits: (req, file, cb) => {
-        cb(null, { fileSize: req.session?.user?.has_membership ? 1024 * 1024 * 100 : 1024 * 1024 * 1 });
-    },
+    limits: { fileSize: 1024 * 1024 * (req.session?.user?.has_membership ? 100 : 1) },
     storage: post_storage
 });
 
