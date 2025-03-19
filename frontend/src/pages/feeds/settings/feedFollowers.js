@@ -2,12 +2,12 @@ import axios from 'axios';
 import React, { useCallback, useEffect, useState, useContext } from 'react';
 import { Link } from 'react-router-dom';
 import { AuthContext } from '../../../components/authContext';
-import { FaMinusCircle } from 'react-icons/fa';
+import { FaCrown, FaMinus, FaMinusCircle, FaPlusCircle } from 'react-icons/fa';
 
 const FeedFollowers = ({ feed, setFeed }) => {
     const [errorMessage, setErrorMessage] = useState('');
     const [followers, setFollowers] = useState([]);
-    const { user } = useContext(AuthContext);
+    const { user, viewer } = useContext(AuthContext);
 
     const getFeedFollowers = useCallback(async () => {
         try {
@@ -17,36 +17,56 @@ const FeedFollowers = ({ feed, setFeed }) => {
             setErrorMessage('Error getting followers');
         }
     }, [feed.feed_id]);
-    
+
     useEffect(() => {
-        getFeedFollowers();            
+        getFeedFollowers();
     }, [getFeedFollowers]);
 
-    //Used by both viewing followers and admins
     const removeFollower = async (follower) => {
         try {
-            await axios.post('/api/unfollow_feed', { followerId: follower.followerFeed.feed_id, followedFeedId: feed.feed_id })
-            setFollowers((prevFollowers) => prevFollowers.filter((f) => f.follower_id !== follower.follower_id));
+            await axios.post('/api/unfollow_feed', { followerId: follower.follower_id, followedFeedId: feed.feed_id });
+            setFollowers((prev) => prev.filter((f) => f.follower_id !== follower.follower_id));
             setFeed((prevFeed) => ({ ...prevFeed, follower_count: prevFeed.follower_count - 1 }));
         } catch (error) {
             setErrorMessage('Error removing follower');
         }
     };
 
-    //Allows adding/remvoing of moderators
+    const toggleAdminStatus = async (follower) => {
+        if (follower.follower_id === viewer.feed_id && follower.is_admin) { //If removing self as admin
+            if (!window.confirm("Are you sure you want to remove yourself as an admin? You will lose admin privileges.")) {
+                return;
+            }
+        }
+        try {
+            const response = await axios.post('/api/toggle_admin', {
+                feedId: feed.feed_id,
+                followerId: follower.follower_id,
+                isAdmin: !follower.is_admin,
+            });
+            if (response.status === 200) {
+                setFollowers((prev) =>
+                    prev.map((f) =>
+                        f.follower_id === follower.follower_id ? { ...f, is_admin: !f.is_admin } : f
+                    )
+                );
+            }
+        } catch (error) {
+            setErrorMessage("Error toggling admin status");
+        }
+    };
+
     const toggleModeratorStatus = async (follower) => {
         try {
             const response = await axios.post('/api/toggle_moderator', {
-                feedId: follower.followerFeed.feed_id,
+                feedId: feed.feed_id,
                 followerId: follower.follower_id,
-                isMod: !follower.is_mod, //Opposite to current state
+                isMod: !follower.is_mod,
             });
             if (response.status === 200) {
-                setFollowers((prevFollowers) =>
-                    prevFollowers.map((f) =>
-                        f.follower_id === follower.follower_id
-                            ? { ...f, is_mod: !f.is_mod }
-                            : f
+                setFollowers((prev) =>
+                    prev.map((f) =>
+                        f.follower_id === follower.follower_id ? { ...f, is_mod: !f.is_mod } : f
                     )
                 );
             }
@@ -55,34 +75,82 @@ const FeedFollowers = ({ feed, setFeed }) => {
         }
     };
 
+    const transferOwnership = async (follower) => {
+        if (!window.confirm("Are you sure you want to transfer ownership? This action cannot be undone.")) return;
+        try {
+            const response = await axios.post('/api/transfer_ownership', {
+                feedId: feed.feed_id,
+                newOwnerId: follower.follower_id,
+            });
+            if (response.status === 200) {
+                setFeed((prevFeed) => ({ ...prevFeed, feed_owner: follower.follower_id }));
+            }
+        } catch (error) {
+            setErrorMessage("Error transferring ownership");
+        }
+    };
+
     return (
         <div className="channel-content">
-            <p className="text36">Followers</p>
+            <div className="followers-header">
+                <p className="text36">Followers</p>
+                {feed.is_group && <p className="text24">Moderators remove content and followers</p>}
+                {feed.is_group && <p className="text24">Admins remove content, appoint and dismiss mods, and make feed changes</p>}
+            </div>
             {followers.length === 0 ? (
                 <p className="text24">No followers</p>
             ) : (
                 <ul className="content-list">
                     <div className="error-message">{errorMessage}</div>
-                    {followers.map((follower, index) => (
-                        <li key={index}>
-                            <div className="result-widget">
-                                <Link className="feed-link" to={`/u/${follower.followerFeed.feed_name}`}>
-                                    <img className="large-feed-photo" src={`/${follower.followerFeed.feed_photo}`} alt="Feed" />
-                                    <p className="text36 feed-name">{follower.followerFeed.feed_name}</p>
-                                </Link>
-                                {feed.is_group && (
-                                    <button className="button" onClick={() => toggleModeratorStatus(follower)}>
-                                        {follower.is_mod ? 'Remove as moderator' : 'Make moderator'}
-                                    </button>
-                                )}
-                                {follower.followerFeed.feed_id !== user.userId &&
-                                    <button className="small-icon" onClick={() => removeFollower(follower)}>
-                                        <FaMinusCircle />
-                                        <p className="icon-text">Remove follower</p>
-                                    </button>}
-                            </div>
-                        </li>
-                    ))}
+                    {followers.map((follower, index) => {
+                        let role = "Follower";
+                        if (follower.is_mod) role = "Moderator";
+                        if (follower.is_admin) role = "Admin";
+                        if (follower.followerFeed.feed_owner === feed.feed_owner) role = "Leader"; 
+                        return (
+                            <li key={index}>
+                                <div className="result-widget">
+                                    <Link className="feed-link" to={`/u/${follower.followerFeed.feed_name}`}>
+                                        <img className="large-feed-photo" src={`/${follower.followerFeed.feed_photo}`} alt="Feed" />
+                                        <p className="text36 feed-name">{follower.followerFeed.feed_name}</p>
+                                    </Link>
+                                    <p className="text24">{role}</p>
+                                    {feed.is_group && user.user_id !== follower.follower_id && (
+                                        <>
+                                            {/* Admins can make/remove moderators, except the owner */}
+                                            {feed.isAdmin && !follower.is_admin && (
+                                                <button className="small-icon" onClick={() => toggleModeratorStatus(follower)}>
+                                                    {follower.is_mod ? <FaMinusCircle /> : <FaPlusCircle />}
+                                                    <p className="icon-text">{follower.is_mod ? 'Remove as moderator' : 'Make moderator'}</p>
+                                                </button>
+                                            )}
+                                            {/* Feed owner can see and change admin status */}
+                                            {feed.isAdmin && follower.followerFeed.feed_owner !== feed.feed_owner && (
+                                                <button className="small-icon" onClick={() => toggleAdminStatus(follower)}>
+                                                    {follower.is_admin ? <FaMinusCircle /> : <FaPlusCircle />}
+                                                    <p className="icon-text">{follower.is_admin ? 'Remove as admin' : 'Make admin'}</p>
+                                                </button>
+                                            )}
+                                            {/* Feed owner can transfer ownership, but not to themselves */}
+                                            {feed.isOwner && follower.is_admin && follower.followerFeed.feed_owner !== feed.feed_owner && (
+                                                <button className="small-icon" onClick={() => transferOwnership(follower)}>
+                                                    <FaCrown />
+                                                    <p className="icon-text">Make Feed Owner</p>
+                                                </button>
+                                            )}
+                                            {/* Moderators can remove regular followers but not other moderators/admins */}
+                                            {feed.isMod && !follower.is_admin && !follower.is_mod && (
+                                                <button className="small-icon" onClick={() => removeFollower(follower)}>
+                                                    <FaMinus />
+                                                    <p className="icon-text">Remove follower</p>
+                                                </button>
+                                            )}
+                                        </>
+                                    )}
+                                </div>
+                            </li>
+                        );
+                    })}
                 </ul>
             )}
         </div>
