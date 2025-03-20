@@ -114,6 +114,9 @@ router.post('/join', async (req, res) => {
         await Followers.create({
             follow_id: v4(), follower_id: feed_id, feed_id: process.env.WELCOME_FEED_ID
         });
+        await Feeds.increment('follower_count', { where: { feed_id: process.env.DEVELOPMENT_FEED_ID } });
+        await Feeds.increment('follower_count', { where: { feed_id: process.env.FEEDBACK_FEED_ID } });
+        await Feeds.increment('follower_count', { where: { feed_id: process.env.WELCOME_FEED_ID } });
         req.session.user_id = user_id;
         req.session.username = username;
         req.session.viewer_id = feed_id;
