@@ -80,7 +80,7 @@ const FeedFollowers = ({ feed, setFeed }) => {
         try {
             const response = await axios.post('/api/transfer_ownership', {
                 feedId: feed.feed_id,
-                newOwnerId: follower.follower_id,
+                newOwnerId: follower.followerFeed.feed_owner,
             });
             if (response.status === 200) {
                 setFeed((prevFeed) => ({ ...prevFeed, feed_owner: follower.follower_id }));

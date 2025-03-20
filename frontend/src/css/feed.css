@@ -110,6 +110,7 @@
     border-bottom-left-radius: 28px;
     padding: 5px;
     text-align: left;
+    width: 80%;
 }
 #feed-summary {
     align-items: center;
