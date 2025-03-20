@@ -1,5 +1,5 @@
 import { Posts, PostNotes, PostVotes } from "./content.js";
-import { Feeds, FeedChannels, FeedChannelMessages, Followers, FollowRequests, NestedFeeds } from "./feeds.js";
+import { DeepFeeds, DeepFeedContent, Feeds, FeedChannels, FeedChannelMessages, Followers, FollowRequests } from "./feeds.js";
 import { AskChats, AskMessages, Chats, ConnectRequests, Connections, FeedChats, Messages } from "./messages.js";
 import { Users } from "./users.js";
 
@@ -8,6 +8,12 @@ Feeds.belongsTo(Users, { foreignKey: 'feed_owner' });
 
 Feeds.hasMany(FeedChannels, { foreignKey: 'feed_id', as: 'channels' });
 FeedChannels.belongsTo(Feeds, { foreignKey: 'feed_id' });
+
+DeepFeeds.hasMany(DeepFeeds, { foreignKey: 'parent_id', as: 'children' });
+DeepFeeds.hasMany(DeepFeedContent, { foreignKey: 'deep_feed_id', as: 'contents' });
+
+DeepFeedContent.belongsTo(DeepFeeds, { foreignKey: 'deep_feed_id' });
+DeepFeedContent.belongsTo(DeepFeeds, { foreignKey: 'nested_deep_feed_id', as: 'nestedFeed' });
 
 FeedChannelMessages.belongsTo(FeedChannels, { foreignKey: 'channel_id' }); 
 FeedChannels.hasMany(FeedChannelMessages, { foreignKey: 'channel_id' });
@@ -27,11 +33,6 @@ FeedChannels.hasMany(Posts, { as: 'posts', foreignKey: 'channel_id' });
 
 Posts.hasMany(Posts, { as: 'parentPost', foreignKey: 'post_id' });
 Posts.belongsTo(Posts, { as: 'reply', foreignKey: 'post_id' });
-
-Feeds.hasMany(NestedFeeds, { as: 'parentFeeds', foreignKey: 'parent_feed_id' });
-Feeds.hasMany(NestedFeeds, { as: 'subFeeds', foreignKey: 'sub_feed_id' });
-NestedFeeds.belongsTo(Feeds, { as: 'parentFeed', foreignKey: 'parent_feed_id' });
-NestedFeeds.belongsTo(Feeds, { as: 'subFeed', foreignKey: 'sub_feed_id' });
 
 Feeds.hasMany(FollowRequests, { as: 'receivedFollowRequests', foreignKey: 'receiver_id' });
 FollowRequests.belongsTo(Feeds, { as: 'sender', foreignKey: 'sender_id' });
@@ -78,6 +79,8 @@ export {
     Chats, 
     ConnectRequests, 
     Connections, 
+    DeepFeeds, 
+    DeepFeedContent,
     FeedChats, 
     Feeds, 
     FeedChannels, 
@@ -85,7 +88,6 @@ export {
     Followers, 
     FollowRequests, 
     Messages,
-    NestedFeeds,
     Posts, 
     PostNotes, 
     PostVotes,

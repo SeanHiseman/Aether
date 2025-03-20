@@ -1,12 +1,13 @@
 import axios from 'axios';
+import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 import { FaCommentDots, FaFileUpload, FaMinus, FaPlus, FaPlusCircle, FaSearch } from 'react-icons/fa';
 import React, { useContext, useEffect, useRef, useState } from 'react';
 import { Link, Outlet, useNavigate } from 'react-router-dom';
 import { v4 } from 'uuid';
 import { AuthContext } from '../components/authContext';
+import DeepFeedItem from './feeds/deepFeedItem'
 import FeedItem from '../components/channels/feedItem';
 import { ThemeContext } from '../themeProvider';
-import { useQueryContext } from '../components/search/queryContext';
 import '../css/baseLayout.css';
 import '../css/basicStyles.css';
 import '../css/contentFeed.css';
@@ -19,6 +20,7 @@ import { UnreadContext } from '../components/connections/unreadContext';
 const BaseLayout = () => {
     const { isAuthenticated, user, viewer } = useContext(AuthContext);
     const [currentQuery, setCurrentQuery] = useState('');
+    const [deepFeeds, setDeepFeeds] = useState([]);
     const [feedErrorMessage, setFeedErrorMessage] = useState('');
     const [feeds, setFeeds] = useState([]);
     const [feedsOffset, setFeedsOffset] = useState(0);
@@ -28,7 +30,6 @@ const BaseLayout = () => {
     const [feed, setFeed] = useState([]);
     const [hasMoreFeeds, setHasMoreFeeds] = useState(true);
     const [headerErrorMessage, setHeaderErrorMessage] = useState('');
-    const { setQuery } = useQueryContext();
     const { setTheme } = useContext(ThemeContext);
     const [showForm, setShowForm] = useState(false);
     const { state } = useContext(UnreadContext);
@@ -90,8 +91,18 @@ const BaseLayout = () => {
                 setFeeds([]);
             }
         };
+        const fetchDeepFeeds = async () => {
+            try {
+                const { data } = await axios.get(`/api/deep_feeds/${viewer.feed_id}`);
+                console.log("Deep feeds:", data.deepFeeds);
+                setDeepFeeds(data.deepFeeds);
+            } catch (error) {
+                console.error("Error fetching deep feeds:", error);
+            }
+        };
         if (viewer.feed_id) {
             fetchFeeds();
+            fetchDeepFeeds();
         }
     }, [viewer.feed_id, feedsOffset, hasMoreFeeds]);
 
@@ -206,6 +217,46 @@ const BaseLayout = () => {
         navigate(`/search?keyword=${currentQuery}`);
     };
 
+    const onDragEnd = async (result) => {
+        const { source, destination } = result;
+        if (!destination) return;
+        const draggedFeed = feeds[source.index] || deepFeeds[source.index];
+        const targetFeed = feeds[destination.index] || deepFeeds[destination.index];
+        if (!draggedFeed || !targetFeed) return;
+        const isTargetDeepFeed = !!targetFeed.deep_feed_id;
+        if (isTargetDeepFeed) {
+            try {
+                const { data } = await axios.post('/api/add_to_deep_feed', {
+                    deepFeedId: targetFeed.deep_feed_id,
+                    feedId: draggedFeed.feed_id || null,
+                    nestedDeepFeedId: draggedFeed.deep_feed_id || null
+                });
+                if (data.success) {
+                    setFeeds((prev) => prev.filter(f => f.feed_id !== draggedFeed.feed_id));
+                    setDeepFeeds((prev) => prev.filter(df => df.deep_feed_id !== draggedFeed.deep_feed_id));
+                }
+            } catch (error) {
+                console.error("Error adding to deep feed:", error);
+            }
+        } else {
+            const deepFeedName = prompt("Deep feed name:");
+            if (!deepFeedName) return;
+            try {
+                const { data } = await axios.post('/api/create_deep_feed', {
+                    viewerId: viewer.feed_id,
+                    deepFeedName,
+                    feedsToInclude: [draggedFeed.feed_id, targetFeed.feed_id].filter(Boolean)
+                });
+                if (data.success) {
+                    setFeeds((prev) => prev.filter(f => !data.feedsToInclude.includes(f.feed_id)));
+                    setDeepFeeds((prev) => [...prev, data.deepFeed]);
+                }
+            } catch (error) {
+                console.error("Error creating deep feed:", error);
+            }
+        }
+    };    
+    
     const toggleForm = () => { 
         if (showForm) {
             setFeedName('');
@@ -239,6 +290,12 @@ const BaseLayout = () => {
                         <li className="channel-link"><Link to="/p/connection_posts">Connections</Link></li>
                     </ul>
                 </nav>
+                <h2>Deep Feeds</h2>
+                <ul>
+                    {deepFeeds.map((deepFeed) => (
+                        <DeepFeedItem key={deepFeed.deep_feed_id} deepFeed={deepFeed} />
+                    ))}
+                </ul>
                 <div id="create-feed-section">
                     <button className="small-icon" onClick={toggleForm} style={{alignSelf: 'flex-start', marginLeft: 'calc(5% + 10px)'}}>
                         {showForm ? (
@@ -298,22 +355,34 @@ const BaseLayout = () => {
                     )}
                 </div>
                 <nav className="feed-list">
-                    <ul>
-                        {feeds.length === 0 ? (
-                            <p>Followed feeds are shown here</p>
-                        ) : (
-                            feeds.map((feed) => (
-                                <FeedItem
-                                    key={feed.feed_id}
-                                    feedId={feed.feed_id}
-                                    isChat={false}
-                                    linkType={feed.link_type}
-                                    name={feed.followedFeed?.feed_name || feed.feed_name}
-                                    photo={feed.followedFeed?.feed_photo || feed.feed_photo}
-                                />
-                            ))
-                        )}
-                    </ul>
+                    <DragDropContext onDragEnd={onDragEnd}>
+                        <Droppable droppableId="feedList">
+                            {(provided) => (
+                                <ul {...provided.droppableProps} ref={provided.innerRef}>
+                                    {feeds.length === 0 ? (
+                                        <p>Followed feeds are shown here</p>
+                                    ) : (
+                                        feeds.map((feed, index) => (
+                                            <Draggable key={feed.feed_id} draggableId={feed.feed_id.toString()} index={index}>
+                                                {(provided) => (
+                                                    <li ref={provided.innerRef} {...provided.draggableProps} {...provided.dragHandleProps}>
+                                                        <FeedItem
+                                                            feedId={feed.feed_id}
+                                                            isChat={false}
+                                                            linkType={feed.link_type}
+                                                            name={feed.followedFeed?.feed_name || feed.feed_name}
+                                                            photo={feed.followedFeed?.feed_photo || feed.feed_photo}
+                                                        />
+                                                    </li>
+                                                )}
+                                            </Draggable>
+                                        ))
+                                    )}
+                                    {provided.placeholder}
+                                </ul>
+                            )}
+                        </Droppable>
+                    </DragDropContext>
                 </nav>
             </aside>
             <main>

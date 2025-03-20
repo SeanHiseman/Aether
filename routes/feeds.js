@@ -11,7 +11,7 @@ import { join } from 'path';
 import path from 'path';
 import { Router } from 'express';
 import { v4 } from 'uuid';
-import { ConnectRequests, Feeds, FeedChannels, FeedChannelMessages, Followers, FollowRequests, NestedFeeds, Posts, Users } from '../models/relationships.js';
+import { ConnectRequests, DeepFeeds, DeepFeedContent, Feeds, FeedChannels, FeedChannelMessages, Followers, FollowRequests, Posts, Users } from '../models/relationships.js';
 
 const app = express();
 dotenv.config();
@@ -47,6 +47,24 @@ const checkProfileStorageLimit = async (req, res, next) => {
     }
 };
 
+router.post('/accept_follow_request', authenticateCheck, async (req, res) => {
+    try {
+        const { request } = req.body;
+        const follow_request = await FollowRequests.findByPk(request.request_id);
+        await Followers.create({
+            follow_id: v4(),
+            follower_id: follow_request.sender_id,
+            feed_id: follow_request.receiver_id
+        });
+        await Feeds.increment('follower_count', { where: { feed_id: follow_request.receiver_id } });
+        await follow_request.destroy();
+        res.status(200).json({ success: true });
+    } catch (error) {
+
+        res.status(500).json({ success: false });
+    }
+});
+
 router.post('/add_feed_channel', authenticateCheck, async (req, res) => {
     try {
         let { channelName, feedId, isPosts, isChat } = req.body;
@@ -68,20 +86,23 @@ router.post('/add_feed_channel', authenticateCheck, async (req, res) => {
     }
 });
 
-router.post('/accept_follow_request', authenticateCheck, async (req, res) => {
+router.post('/add_to_deep_feed', async (req, res) => {
     try {
-        const { request } = req.body;
-        const follow_request = await FollowRequests.findByPk(request.request_id);
-        await Followers.create({
-            follow_id: v4(),
-            follower_id: follow_request.sender_id,
-            feed_id: follow_request.receiver_id
+        const { deepFeedId, feedId, nestedDeepFeedId } = req.body;
+        console.log("add_to_deep_feed", req.body);
+        if (!feedId && !nestedDeepFeedId) {
+            return res.status(400).json({ success: false, message: 'Must provide either a feedId or nestedDeepFeedId' });
+        }
+        const content = await DeepFeedContent.create({
+            content_id: v4(),
+            deep_feed_id: deepFeedId,
+            feed_id: feedId || null,
+            nested_deep_feed_id: nestedDeepFeedId || null
         });
-        await Feeds.increment('follower_count', { where: { feed_id: follow_request.receiver_id } });
-        await follow_request.destroy();
-        res.status(200).json({ success: true });
+        res.status(201).json({ success: true, content });
     } catch (error) {
-        res.status(500).json({ success: false });
+        console.log("add_to_deep_feed error", error);
+        res.status(500).json({ success: false, error: error.message });
     }
 });
 
@@ -198,6 +219,58 @@ router.post('/create_feed', authenticateCheck, checkProfileStorageLimit, async (
             res.status(500).json({ success: false });
         }
     });
+});
+
+router.post('/create_deep_feed', async (req, res) => {
+    try {
+        const { viewerId, deepFeedName, feedsToInclude } = req.body;
+        if (!feedsToInclude || feedsToInclude.length < 2) {
+            return res.status(400).json({ success: false, message: 'At least two feeds are required' });
+        }
+        const deepFeed = await DeepFeeds.create({
+            deep_feed_id: v4(),
+            owner_id: viewerId,
+            name: deepFeedName,
+            parent_id: null
+        });
+        const contents = feedsToInclude.map(feedId => ({
+            content_id: v4(),
+            deep_feed_id: deepFeed.deep_feed_id,
+            feed_id: feedId
+        }));
+        await DeepFeedContent.bulkCreate(contents);
+        res.status(201).json({ success: true, deepFeed, feedsToInclude });
+    } catch (error) {
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+router.get('/deep_feeds/:viewerId', async (req, res) => {
+    try {
+        const { viewerId } = req.params;
+        console.log("deep_feeds", req.params);
+        const deepFeeds = await DeepFeeds.findAll({
+            where: { owner_id: viewerId, parent_id: null }
+        });
+        res.status(200).json({ success: true, deepFeeds });
+    } catch (error) {
+        console.log("deep_feeds error", error);
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+router.get('/deep_feed_contents/:deepFeedId', async (req, res) => {
+    try {
+        const { deepFeedId } = req.params;
+        console.log("deep_feed_contents", req.params);
+        const contents = await DeepFeedContent.findAll({
+            where: { deep_feed_id: deepFeedId }
+        });
+        res.status(200).json({ success: true, contents });
+    } catch (error) {
+        console.log("deep_feed_contents error", error);
+        res.status(500).json({ success: false, error: error.message });
+    }
 });
 
 router.delete('/delete_follow_request', authenticateCheck, async (req, res) => {
@@ -444,25 +517,6 @@ router.post('/send_follow_request', authenticateCheck, async (req, res) => {``
     } catch (error) {
         res.status(500).send({ success: false });
     }
-});
-
-router.get('/sub_feeds/:feedId', authenticateCheck, async (req, res) => {
-    try {
-        const feedId = req.params.feedId;
-        const subFeeds = await NestedFeeds.findAll({ 
-            where: { parent_feed_id: feedId }, 
-            include: [{
-                model: Feeds,
-                as: 'SubFeed',
-                attributes: feedAttributes
-            }],
-            //Returns feeds alphabetically
-            order: [[{ model: Feeds, as: 'SubFeed' }, 'feed_name', 'ASC']]
-        });
-        res.json(subFeeds);
-    } catch (error) {
-        res.status(500).json({ success: false });  
-    }   
 });
 
 router.post('/toggle_admin', authenticateCheck, async (req, res) => {
