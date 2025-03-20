@@ -519,7 +519,6 @@ router.post('/toggle_private', authenticateCheck, async (req, res) => {
 router.post('/transfer_ownership', authenticateCheck, async (req, res) => {
     try {
         const { feedId, newOwnerId } = req.body;
-        const feed = await Feeds.findOne({ where: { feed_id: feedId } });
         await Feeds.update({ feed_owner: newOwnerId }, { where: { feed_id: feedId } });
         res.status(200).json({ success: true });
     } catch (error) {
