@@ -2,6 +2,20 @@ import { BOOLEAN, DataTypes, STRING, INTEGER, TEXT } from 'sequelize';
 import sequelize from '../databaseSetup.js';
 import { Users } from "./users.js";
 
+const DeepFeeds = sequelize.define('deep_feeds', {
+    deep_feed_id: { type: STRING(36), primaryKey: true },
+    name: { type: STRING(36), allowNull: false },
+    owner_id: { type: STRING(36), allowNull: false },  
+    parent_id: { type: STRING(36), allowNull: true, references: { model: 'DeepFeeds', key: 'deep_feed_id' } }
+}, { tableName: 'deep_feeds', timestamps: true });
+
+const DeepFeedContent = sequelize.define('deep_feed_content', {
+    content_id: { type: STRING(36), primaryKey: true },
+    deep_feed_id: { type: STRING(36), allowNull: false, references: { model: 'DeepFeeds', key: 'deep_feed_id' } },
+    feed_id: { type: STRING(36), allowNull: true },  
+    nested_deep_feed_id: { type: STRING(36), allowNull: true } 
+}, { tableName: 'deep_feed_content', timestamps: true });
+
 const Feeds = sequelize.define('feeds', {
     feed_id: { type: STRING(36), primaryKey: true },
     parent_id: { type: STRING(36), allowNull: true },
@@ -53,16 +67,12 @@ const FollowRequests = sequelize.define('follow_requests', {
     timestamp: { type: DataTypes.DATE(3), defaultValue: sequelize.literal('CURRENT_TIMESTAMP(3)') }
 }, { tableName: 'follow_requests', timestamps: false });
 
-const NestedFeeds = sequelize.define('nested_feeds', { //Many-to-many relationship between feeds
-    sub_feed_id: { type: STRING(36), primaryKey: true},
-    parent_feed_id: { type: STRING(36), primaryKey: true},
-}, { tableName: 'nested_feeds', timestamps: false });
-
 export {
+    DeepFeeds,
+    DeepFeedContent,
     Feeds, 
     FeedChannels,
     FeedChannelMessages,
     Followers,
     FollowRequests,
-    NestedFeeds
 }

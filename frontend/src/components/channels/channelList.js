@@ -42,23 +42,6 @@ const ChannelList = ({ channels, feedId, feedName, isChat, isGroup, setChannels 
         getFeedChannels();
     }, [getFeedChannels]);
 
-    //Fetch subfeeds
-    //useEffect(() => {
-        //if (isGroup) {
-            //const fetchSubFeeds = async () => {
-                //try {
-                    //const response = await axios.get(`/api/sub_feeds/${feedId}`);
-                    //setSubFeeds(response.data);
-                //} catch (error) {
-                    //setErrorMessage("Error getting subfeeds");
-                //}
-            //};
-            //if (feedId) {
-                //fetchSubFeeds();
-            //}
-        //}
-    //}, [feedId]);
-
     return (
         !isChat ? (
             <nav className="channel-list">
