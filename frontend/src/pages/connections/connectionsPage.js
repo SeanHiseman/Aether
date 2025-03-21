@@ -201,7 +201,7 @@ const ConnectionsPage = () => {
 					<p className="text36">Messages</p>
 					<ul>
 						{connections.map(c => (
-							<FeedItem key={c.feed_id} feedId={c.feed_id} isChat={true} linkType={'u'} name={c.feed_name} photo={c.feed_photo} unreadCount={state.feedCounts?.[c.feed_id] || 0} />
+							<FeedItem key={c.feed_id} feed={c} isChat={true} unreadCount={state.feedCounts?.[c.feed_id] || 0} />
 						))}
 					</ul>
 				</nav>

@@ -5,7 +5,7 @@ import React, { useContext, useEffect, useRef, useState } from 'react';
 import { Link, Outlet, useNavigate } from 'react-router-dom';
 import { v4 } from 'uuid';
 import { AuthContext } from '../components/authContext';
-import DeepFeedItem from './feeds/deepFeedItem'
+import DeepFeedItem from '../components/channels/deepFeedItem';
 import FeedItem from '../components/channels/feedItem';
 import { ThemeContext } from '../themeProvider';
 import '../css/baseLayout.css';
@@ -220,8 +220,8 @@ const BaseLayout = () => {
     const onDragEnd = async (result) => {
         const { source, destination } = result;
         if (!destination) return;
-        const draggedFeed = feeds[source.index] || deepFeeds[source.index];
-        const targetFeed = feeds[destination.index] || deepFeeds[destination.index];
+        const draggedFeed = feeds[source.index] ?? deepFeeds[source.index];
+        const targetFeed = feeds[destination.index] ?? deepFeeds[destination.index];
         if (!draggedFeed || !targetFeed) return;
         const isTargetDeepFeed = !!targetFeed.deep_feed_id;
         if (isTargetDeepFeed) {
@@ -236,7 +236,7 @@ const BaseLayout = () => {
                     setDeepFeeds((prev) => prev.filter(df => df.deep_feed_id !== draggedFeed.deep_feed_id));
                 }
             } catch (error) {
-                console.error("Error adding to deep feed:", error);
+                setFeedErrorMessage("Error adding to deep feed");
             }
         } else {
             const deepFeedName = prompt("Deep feed name:");
@@ -288,14 +288,11 @@ const BaseLayout = () => {
                         <li className="channel-link"><Link to="/p/recommended">Recommended</Link></li>
                         <li className="channel-link"><Link to="/p/following">Following</Link></li>
                         <li className="channel-link"><Link to="/p/connection_posts">Connections</Link></li>
+                        {deepFeeds.map((deepFeed) => (
+                            <DeepFeedItem key={deepFeed.deep_feed_id} deepFeed={deepFeed} />
+                        ))}
                     </ul>
                 </nav>
-                <h2>Deep Feeds</h2>
-                <ul>
-                    {deepFeeds.map((deepFeed) => (
-                        <DeepFeedItem key={deepFeed.deep_feed_id} deepFeed={deepFeed} />
-                    ))}
-                </ul>
                 <div id="create-feed-section">
                     <button className="small-icon" onClick={toggleForm} style={{alignSelf: 'flex-start', marginLeft: 'calc(5% + 10px)'}}>
                         {showForm ? (
@@ -367,11 +364,8 @@ const BaseLayout = () => {
                                                 {(provided) => (
                                                     <li ref={provided.innerRef} {...provided.draggableProps} {...provided.dragHandleProps}>
                                                         <FeedItem
-                                                            feedId={feed.feed_id}
+                                                            feed={feed.followedFeed}
                                                             isChat={false}
-                                                            linkType={feed.link_type}
-                                                            name={feed.followedFeed?.feed_name || feed.feed_name}
-                                                            photo={feed.followedFeed?.feed_photo || feed.feed_photo}
                                                         />
                                                     </li>
                                                 )}

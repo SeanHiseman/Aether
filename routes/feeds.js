@@ -248,13 +248,12 @@ router.post('/create_deep_feed', async (req, res) => {
 router.get('/deep_feeds/:viewerId', async (req, res) => {
     try {
         const { viewerId } = req.params;
-        console.log("deep_feeds", req.params);
         const deepFeeds = await DeepFeeds.findAll({
-            where: { owner_id: viewerId, parent_id: null }
+            where: { owner_id: viewerId, parent_id: null },
+            order: [['name', 'ASC']]
         });
         res.status(200).json({ success: true, deepFeeds });
     } catch (error) {
-        console.log("deep_feeds error", error);
         res.status(500).json({ success: false, error: error.message });
     }
 });
@@ -262,13 +261,20 @@ router.get('/deep_feeds/:viewerId', async (req, res) => {
 router.get('/deep_feed_contents/:deepFeedId', async (req, res) => {
     try {
         const { deepFeedId } = req.params;
-        console.log("deep_feed_contents", req.params);
         const contents = await DeepFeedContent.findAll({
-            where: { deep_feed_id: deepFeedId }
-        });
+            where: { deep_feed_id: deepFeedId },
+            include: [
+                { model: DeepFeeds, as: 'nestedDeepFeed' },
+                { model: Feeds, as: 'feed', attributes: feedAttributes }
+            ],
+            order: [
+                [{ model: DeepFeeds, as: 'nestedDeepFeed' }, 'name', 'ASC'],
+                [{ model: Feeds, as: 'feed' }, 'feed_name', 'ASC'] 
+            ]
+        })
         res.status(200).json({ success: true, contents });
     } catch (error) {
-        console.log("deep_feed_contents error", error);
+
         res.status(500).json({ success: false, error: error.message });
     }
 });
