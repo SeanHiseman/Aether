@@ -46,7 +46,6 @@ const ManageConnectionButton = ({ connectRequest, feed, isConnected, viewerId, o
                 }
             }
         } catch (error) {
-            console.error("Request handle error:", error);
             setErrorMessage("Error handling request");
         }
     }; 

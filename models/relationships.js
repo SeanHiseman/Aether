@@ -12,8 +12,8 @@ FeedChannels.belongsTo(Feeds, { foreignKey: 'feed_id' });
 DeepFeeds.hasMany(DeepFeeds, { foreignKey: 'parent_id', as: 'children' });
 DeepFeeds.hasMany(DeepFeedContent, { foreignKey: 'deep_feed_id', as: 'contents' });
 
-DeepFeedContent.belongsTo(DeepFeeds, { foreignKey: 'deep_feed_id' });
-DeepFeedContent.belongsTo(DeepFeeds, { foreignKey: 'nested_deep_feed_id', as: 'nestedFeed' });
+DeepFeedContent.belongsTo(Feeds, { foreignKey: "feed_id", as: "feed" });
+DeepFeedContent.belongsTo(DeepFeeds, { foreignKey: "nested_deep_feed_id", as: "nestedDeepFeed" });
 
 FeedChannelMessages.belongsTo(FeedChannels, { foreignKey: 'channel_id' }); 
 FeedChannels.hasMany(FeedChannelMessages, { foreignKey: 'channel_id' });

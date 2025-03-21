@@ -3,9 +3,10 @@ import React, { useState, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import ChannelList from './channelList';
 
-const FeedItem = ({ feedId, isChat, linkType, name, photo, unreadCount }) => {
+const FeedItem = ({ feed, isChat, unreadCount }) => {
     const [dropdownOpen, setDropdownOpen] = useState(false);
     const [feedChannels, setFeedChannels] = useState([]);
+    const linkType = feed.is_group ? 'g' : 'u';
 
     const dropdownToggle = () => {
         setDropdownOpen((prevOpen) => !prevOpen);
@@ -18,9 +19,9 @@ const FeedItem = ({ feedId, isChat, linkType, name, photo, unreadCount }) => {
     return (
         <li className="feed-list-item">
             <div className="feed-list-link-container">
-                <Link className="feed-list-link" to={isChat ? `/connections/${name}/Main` : `/${linkType}/${name}/Main`}>
-                    <img className="small-feed-photo" src={`/${photo}`} alt={'/media/site_images/blank-group-icon.jpg'} />
-                    <p className="feed-list-text">{name}</p>
+                <Link className="feed-list-link" to={isChat ? `/connections/${feed.feed_name}/Main` : `/${linkType}/${feed.feed_name}/Main`}>
+                    <img className="small-feed-photo" src={`/${feed.feed_photo}`} alt={'/media/site_images/blank-group-icon.jpg'} />
+                    <p className="feed-list-text">{feed.feed_name}</p>
                     {isChat && unreadCount > 0 && (
                         <div className="unread-count">{unreadCount}</div>
                     )}
@@ -28,7 +29,7 @@ const FeedItem = ({ feedId, isChat, linkType, name, photo, unreadCount }) => {
                 <div className="channel-dropdown" onClick={dropdownToggle}>{dropdownOpen ? <FaChevronUp /> : <FaChevronDown />}</div>
             </div>
             {dropdownOpen && (
-                <ChannelList channels={feedChannels} feedId={feedId} feedName={name} isChat={isChat} isGroup={linkType === 'g'} setChannels={updateFeedChannels} />
+                <ChannelList channels={feedChannels} feedId={feed.feed_id} feedName={feed.feed_name} isChat={isChat} isGroup={feed.is_group} setChannels={updateFeedChannels} />
             )}
         </li> 
     )

@@ -3,12 +3,10 @@ import React, { useCallback, useContext, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { AuthContext } from '../../components/authContext';
 import { decrypt } from '../../encryptionUtil';
-import FeedItem from './feedItem';
 import { UnreadContext } from '../connections/unreadContext';
 
 const ChannelList = ({ channels, feedId, feedName, isChat, isGroup, setChannels }) => {
     const [errorMessage, setErrorMessage] = useState('');
-    const [subFeeds, setSubFeeds] = useState([]);
     const { state } = useContext(UnreadContext);
     const urlLetter = isGroup ? 'g' : 'u';
     const { viewer } = useContext(AuthContext);
@@ -54,13 +52,6 @@ const ChannelList = ({ channels, feedId, feedName, isChat, isGroup, setChannels 
                             </Link>
                         </li>
                     ))}
-                </ul>
-                <ul>
-                    {subFeeds.length > 0 && (
-                        subFeeds.map((subFeed) => (
-                            <FeedItem key={subFeed.feed_id} feedId={subFeed.feed_id} name={subFeed.name} photo={subFeed.photo} type="g" link={`/g/${subFeed.name}/Main`} />
-                        ))
-                    )}
                 </ul>
             </nav>
         ) : (

@@ -97,6 +97,7 @@
     align-items: center;
     border-bottom: 1px solid var(--dark);
     display: flex;
+    justify-content: space-between;
     padding: 10px;
     text-align: left;
     text-decoration: none;
