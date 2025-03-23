@@ -90,9 +90,6 @@ router.post('/add_to_deep_feed', async (req, res) => {
     try {
         const { deepFeedId, feedId, nestedDeepFeedId } = req.body;
         console.log("add_to_deep_feed", req.body);
-        if (!feedId && !nestedDeepFeedId) {
-            return res.status(400).json({ success: false, message: 'Must provide either a feedId or nestedDeepFeedId' });
-        }
         const content = await DeepFeedContent.create({
             content_id: v4(),
             deep_feed_id: deepFeedId,
@@ -274,7 +271,6 @@ router.get('/deep_feed_contents/:deepFeedId', async (req, res) => {
         })
         res.status(200).json({ success: true, contents });
     } catch (error) {
-
         res.status(500).json({ success: false, error: error.message });
     }
 });
