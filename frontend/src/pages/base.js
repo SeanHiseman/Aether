@@ -8,20 +8,20 @@ import { AuthContext } from '../components/authContext';
 import DeepFeedItem from '../components/channels/deepFeedItem';
 import FeedItem from '../components/channels/feedItem';
 import { ThemeContext } from '../themeProvider';
+import { Tooltip } from 'react-tooltip';
+import { UnreadContext } from '../components/connections/unreadContext';
 import '../css/baseLayout.css';
 import '../css/basicStyles.css';
 import '../css/contentFeed.css';
 import '../css/contentForm.css';
 import '../css/feed.css';
 import '../css/messages.css';
-import { Tooltip } from 'react-tooltip';
-import { UnreadContext } from '../components/connections/unreadContext';
 
 const BaseLayout = () => {
     const { isAuthenticated, user, viewer } = useContext(AuthContext);
+    const [asideErrorMessage, setAsideErrorMessage] = useState('');
     const [currentQuery, setCurrentQuery] = useState('');
     const [deepFeeds, setDeepFeeds] = useState([]);
-    const [feedErrorMessage, setFeedErrorMessage] = useState('');
     const [feeds, setFeeds] = useState([]);
     const [feedsOffset, setFeedsOffset] = useState(0);
     const [feedName, setFeedName] = useState('');
@@ -130,7 +130,7 @@ const BaseLayout = () => {
         try {
             event.preventDefault();
             if (!feedName) {
-                setFeedErrorMessage('Feed needs a name');
+                setAsideErrorMessage('Feed needs a name');
                 return;
             } 
             const newFeed = new FormData();
@@ -167,11 +167,11 @@ const BaseLayout = () => {
             }
         } catch (error) {
             if (error.response && error.response.status === 413) {
-                setFeedErrorMessage(error.response.data.message + (!user.has_membership ? ". Get membership for more" : ""));
+                setAsideErrorMessage(error.response.data.message + (!user.has_membership ? ". Get membership for more" : ""));
             } else if (error.response.status === 400 ) {
-                setFeedErrorMessage("Name taken");
+                setAsideErrorMessage("Name taken");
             } else {
-                setFeedErrorMessage(error.response.data.message || "Error creating feed"); 
+                setAsideErrorMessage(error.response.data.message || "Error creating feed"); 
             }
         }
     };
@@ -180,13 +180,13 @@ const BaseLayout = () => {
         const file = event.target.files[0];
         if (file) {
             if (file.size > MAX_FILE_SIZE) {
-                setFeedErrorMessage(hasMembership ? 
+                setAsideErrorMessage(hasMembership ? 
                     `File exceeds your max size limit of 100MB.` : 
                     `File exceeds your max size limit of 1MB. Get membership for more.`);
                 return;
             }
             setFeedPhotoFile(file);
-            setFeedErrorMessage('');
+            setAsideErrorMessage('');
         }
     };
 
@@ -220,42 +220,54 @@ const BaseLayout = () => {
     const onDragEnd = async (result) => {
         const { source, destination } = result;
         if (!destination) return;
-        const draggedFeed = feeds[source.index] ?? deepFeeds[source.index];
-        const targetFeed = feeds[destination.index] ?? deepFeeds[destination.index];
-        if (!draggedFeed || !targetFeed) return;
-        const isTargetDeepFeed = !!targetFeed.deep_feed_id;
-        if (isTargetDeepFeed) {
+        const sourceDroppableId = source.droppableId;
+        const destDroppableId = destination.droppableId;
+        const draggedItem = sourceDroppableId.startsWith("deepFeed-")
+            ? deepFeeds.find(df => `deep-${df.deep_feed_id}` === result.draggableId)
+            : feeds.find(f => `feed-${f.feed_id}` === result.draggableId);
+        if (!draggedItem) return;
+        //Dropping inside an existing deep feed
+        if (destDroppableId.startsWith("deepFeed-")) {
+            const targetDeepFeedId = destDroppableId.split("-")[1];
             try {
                 const { data } = await axios.post('/api/add_to_deep_feed', {
-                    deepFeedId: targetFeed.deep_feed_id,
-                    feedId: draggedFeed.feed_id || null,
-                    nestedDeepFeedId: draggedFeed.deep_feed_id || null
+                    deepFeedId: targetDeepFeedId,
+                    feedId: draggedItem.feed_id || null,
+                    nestedDeepFeedId: draggedItem.deep_feed_id || null
                 });
                 if (data.success) {
-                    setFeeds((prev) => prev.filter(f => f.feed_id !== draggedFeed.feed_id));
-                    setDeepFeeds((prev) => prev.filter(df => df.deep_feed_id !== draggedFeed.deep_feed_id));
+                    setFeeds(prev => prev.filter(f => f.feed_id !== draggedItem.feed_id));
+                    setDeepFeeds(prev => prev.map(df => 
+                        df.deep_feed_id === targetDeepFeedId 
+                            ? { ...df, feeds: [...df.feeds, draggedItem] } 
+                            : df
+                    ));
                 }
             } catch (error) {
-                setFeedErrorMessage("Error adding to deep feed");
+                setAsideErrorMessage("Error adding to deep feed");
             }
-        } else {
-            const deepFeedName = prompt("Deep feed name:");
+        }
+        //Creating a new nested deep feed with two dragged feeds
+        else if (sourceDroppableId.startsWith("deepFeed-") && destDroppableId.startsWith("deepFeed-") && sourceDroppableId === destDroppableId) {
+            const deepFeedName = prompt("New deep feed name:");
             if (!deepFeedName) return;
             try {
                 const { data } = await axios.post('/api/create_deep_feed', {
                     viewerId: viewer.feed_id,
                     deepFeedName,
-                    feedsToInclude: [draggedFeed.feed_id, targetFeed.feed_id].filter(Boolean)
+                    feedsToInclude: [draggedItem.feed_id].filter(Boolean)
                 });
                 if (data.success) {
-                    setFeeds((prev) => prev.filter(f => !data.feedsToInclude.includes(f.feed_id)));
-                    setDeepFeeds((prev) => [...prev, data.deepFeed]);
+                    setDeepFeeds(prev => [
+                        ...prev.filter(df => df.deep_feed_id !== draggedItem.deep_feed_id),
+                        data.deepFeed
+                    ]);
                 }
             } catch (error) {
-                console.error("Error creating deep feed:", error);
+                setAsideErrorMessage("Error creating deep feed");
             }
         }
-    };    
+    };           
     
     const toggleForm = () => { 
         if (showForm) {
@@ -263,96 +275,109 @@ const BaseLayout = () => {
             setFeedPhotoFile('No file chosen');
         };
         setShowForm(!showForm);
-        setFeedErrorMessage('');
+        setAsideErrorMessage('');
     };
 
     return (
         <div className="container">
             <aside id="left-aside" ref={feedContainerRef}>
-                <div className="left-aside-feed-info">
-                    <Link className="feed-link" to={`/u/${feed.feed_name}`}>
-                        <img className="small-feed-photo" src={`/${feed.feed_photo}`} alt="Feed" />
-                        <p className="feed-list-text">{feed.feed_name}</p>
-                    </Link>
-                    <Link id="messages-button" to={`/connections`}>
-                        <div className="message-icon-container">
-                            <FaCommentDots title="Messages and connections" />
-                            {state.total > 0 && (
-                                <span className="unread-badge">{state.total}</span>
+                <DragDropContext onDragEnd={onDragEnd}>
+                    <div className="left-aside-feed-info">
+                        <Link className="feed-link" to={`/u/${feed.feed_name}`}>
+                            <img className="small-feed-photo" src={`/${feed.feed_photo}`} alt="Feed" />
+                            <p className="feed-list-text">{feed.feed_name}</p>
+                        </Link>
+                        <Link id="messages-button" to={`/connections`}>
+                            <div className="message-icon-container">
+                                <FaCommentDots title="Messages and connections" />
+                                {state.total > 0 && (
+                                    <span className="unread-badge">{state.total}</span>
+                                )}
+                            </div>
+                        </Link>
+                    </div>
+                    <nav id="personal-feeds">
+                        <ul>
+                            <li className="channel-link"><Link to="/p/recommended">Recommended</Link></li>
+                            <li className="channel-link"><Link to="/p/following">Following</Link></li>
+                            <li className="channel-link"><Link to="/p/connection_posts">Connections</Link></li>
+                            <Droppable droppableId="deepFeedList">
+                                {(provided) => (
+                                    <div ref={provided.innerRef} {...provided.droppableProps}>
+                                        {deepFeeds.map((deepFeed, index) => (
+                                            <Draggable key={deepFeed.deep_feed_id} draggableId={`deep-${deepFeed.deep_feed_id}`} index={index}>
+                                                {(provided) => (
+                                                    <div ref={provided.innerRef} {...provided.draggableProps} {...provided.dragHandleProps}>
+                                                        <DeepFeedItem deepFeed={deepFeed} />
+                                                    </div>
+                                                )}
+                                            </Draggable>
+                                        ))}
+                                        {provided.placeholder}
+                                    </div>
+                                )}
+                            </Droppable>
+                        </ul>
+                    </nav>
+                    <div className="error-message">{asideErrorMessage}</div>
+                    <div id="create-feed-section">
+                        <button className="small-icon" onClick={toggleForm} style={{alignSelf: 'flex-start', marginLeft: 'calc(5% + 10px)'}}>
+                            {showForm ? (
+                                <>
+                                    <FaMinus /> 
+                                    <p className="icon-text">Close</p>
+                                </>
+                            ) : (
+                                <>
+                                    <FaPlusCircle />
+                                    <p className="icon-text">Create Feed</p>
+                                </>
                             )}
-                        </div>
-                    </Link>
-                </div>
-                <nav id="personal-feeds">
-                    <ul>
-                        <li className="channel-link"><Link to="/p/recommended">Recommended</Link></li>
-                        <li className="channel-link"><Link to="/p/following">Following</Link></li>
-                        <li className="channel-link"><Link to="/p/connection_posts">Connections</Link></li>
-                        {deepFeeds.map((deepFeed) => (
-                            <DeepFeedItem key={deepFeed.deep_feed_id} deepFeed={deepFeed} />
-                        ))}
-                    </ul>
-                </nav>
-                <div id="create-feed-section">
-                    <button className="small-icon" onClick={toggleForm} style={{alignSelf: 'flex-start', marginLeft: 'calc(5% + 10px)'}}>
-                        {showForm ? (
-                            <>
-                                <FaMinus /> 
-                                <p className="icon-text">Close</p>
-                            </>
-                        ) : (
-                            <>
-                                <FaPlusCircle />
-                                <p className="icon-text">Create Feed</p>
-                            </>
+                        </button>
+                        <Tooltip place="top" effect="solid" delayShow={0}>
+                            {showForm ? 'Close' : 'Create feed'}
+                        </Tooltip>
+                        {showForm && (
+                            <form id="create-feed-form" onSubmit={createFeed}>
+                                <input 
+                                    className="name-input" 
+                                    type="text" 
+                                    name="Name" 
+                                    placeholder="Feed name..." 
+                                    value={feedName} 
+                                    onChange={(e) => {
+                                        e.preventDefault();
+                                        const input = e.target.value;
+                                        if (input.length <= 30) {
+                                            setFeedName(input);
+                                            setAsideErrorMessage('');
+                                        } else {
+                                            setAsideErrorMessage("Name too long");
+                                        }
+                                    }}
+                                />
+                                <div className="file-input">
+                                    <label htmlFor="feed-photo-input" className="small-icon">
+                                        <FaFileUpload /><p className="icon-text">Choose photo</p>
+                                    </label>
+                                    <input type="file" id="feed-photo-input" name="Feed photo" onChange={handleFileChange} hidden/>
+                                    <span className="file-name">{feedPhotoFile ? feedPhotoFile.name : 'No file chosen'}</span>
+                                </div>
+                                <div className="option-toggle">
+                                    <button className={feedType === 'public' ? 'active-mode' : 'passive-mode'} onClick={(event) => {event.preventDefault(); setFeedType('public');}} title="Visible to everyone">
+                                        Public
+                                    </button>
+                                    <button className={feedType === 'private' ? 'active-mode' : 'passive-mode'} onClick={(event) => {event.preventDefault(); setFeedType('private');}} title="Requires permission to follow">
+                                        Private
+                                    </button>
+                                </div>
+                                <button className={feedName.length === 0 ? "small-icon disabled" : "small-icon"} disabled={feedName.length === 0} title={feedName.length === 0 ? "Enter a name" : "Create"} type="submit" value="Create">
+                                    <FaPlus />
+                                </button>
+                            </form>
                         )}
-                    </button>
-                    <Tooltip place="top" effect="solid" delayShow={0}>
-                        {showForm ? 'Close' : 'Create feed'}
-                    </Tooltip>
-                    {showForm && (
-                        <form id="create-feed-form" onSubmit={createFeed}>
-                            <input 
-                                className="name-input" 
-                                type="text" 
-                                name="Name" 
-                                placeholder="Feed name..." 
-                                value={feedName} 
-                                onChange={(e) => {
-                                    e.preventDefault();
-                                    const input = e.target.value;
-                                    if (input.length <= 30) {
-                                        setFeedName(input);
-                                        setFeedErrorMessage('');
-                                    } else {
-                                        setFeedErrorMessage("Name too long");
-                                    }
-                                }}
-                            />
-                            <div className="file-input">
-                                <label htmlFor="feed-photo-input" className="small-icon">
-                                    <FaFileUpload /><p className="icon-text">Choose photo</p>
-                                </label>
-                                <input type="file" id="feed-photo-input" name="Feed photo" onChange={handleFileChange} hidden/>
-                                <span className="file-name">{feedPhotoFile ? feedPhotoFile.name : 'No file chosen'}</span>
-                            </div>
-                            <div className="option-toggle">
-                                <button className={feedType === 'public' ? 'active-mode' : 'passive-mode'} onClick={(event) => {event.preventDefault(); setFeedType('public');}} title="Visible to everyone">
-                                    Public
-                                </button>
-                                <button className={feedType === 'private' ? 'active-mode' : 'passive-mode'} onClick={(event) => {event.preventDefault(); setFeedType('private');}} title="Requires permission to follow">
-                                    Private
-                                </button>
-                            </div>
-                            <div className="error-message">{feedErrorMessage}</div>
-                            <button className={feedName.length === 0 ? "small-icon disabled" : "small-icon"} disabled={feedName.length === 0} title={feedName.length === 0 ? "Enter a name" : "Create"} type="submit" value="Create">
-                                <FaPlus />
-                            </button>
-                        </form>
-                    )}
-                </div>
-                <nav className="feed-list">
-                    <DragDropContext onDragEnd={onDragEnd}>
+                    </div>
+                    <nav className="feed-list">
                         <Droppable droppableId="feedList">
                             {(provided) => (
                                 <ul {...provided.droppableProps} ref={provided.innerRef}>
@@ -376,8 +401,8 @@ const BaseLayout = () => {
                                 </ul>
                             )}
                         </Droppable>
-                    </DragDropContext>
-                </nav>
+                    </nav>
+                </DragDropContext>
             </aside>
             <main>
                 <header id="base-header">

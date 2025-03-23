@@ -1,15 +1,16 @@
 import axios from 'axios';
+import { Droppable, Draggable } from 'react-beautiful-dnd';
 import React, { useState } from "react";
 import { FaChevronDown, FaChevronUp } from "react-icons/fa";
 import FeedItem from './feedItem';
 
-const DeepFeedItem = ({ deepFeed, onDropFeed }) => {
+const DeepFeedItem = ({ deepFeed }) => {
     const [isExpanded, setIsExpanded] = useState(false);
     const [contents, setContents] = useState([]);
     const [loading, setLoading] = useState(false);
 
     const fetchContents = async () => {
-        if (contents.length > 0) return; //Prevent refetching if already loaded
+        if (contents.length > 0) return;
         setLoading(true);
         try {
             const { data } = await axios.get(`/api/deep_feed_contents/${deepFeed.deep_feed_id}`);
@@ -23,46 +24,49 @@ const DeepFeedItem = ({ deepFeed, onDropFeed }) => {
 
     const handleExpand = () => {
         setIsExpanded(!isExpanded);
-        if (!isExpanded) {
-            fetchContents();
-        }
+        if (!isExpanded) fetchContents();
     };
 
     return (
-        <div
-            onDragOver={(e) => e.preventDefault()}
-            onDrop={(e) => {
-                e.preventDefault();
-                const droppedFeedId = e.dataTransfer.getData("feedId");
-                if (droppedFeedId) {
-                    onDropFeed(droppedFeedId, deepFeed.deep_feed_id);
-                }
-            }}
-            onClick={handleExpand}
-        >
-            <div className="channel-link">
-                <p style={{margin: '0'}}>{deepFeed.name}</p>
-                {isExpanded ? <FaChevronUp /> : <FaChevronDown />}
-            </div>
-            {isExpanded && (
-                <div className="feed-list">
-                    {loading ? (
-                        <p>Loading...</p>
-                    ) : (
-                        contents.map((item) =>
-                            item.nestedDeepFeed ? (
-                                <DeepFeedItem key={item.nestedDeepFeed.deep_feed_id} deepFeed={item.nestedDeepFeed} onDropFeed={onDropFeed} />
-                            ) : (
-                                <FeedItem 
-                                    feed={item.feed}
-                                    isChat={false}
-                                />
-                            )
-                        )
+        <Droppable droppableId={`deepFeed-${deepFeed.deep_feed_id}`} isDropDisabled={!isExpanded}>
+            {(provided) => (
+                <div
+                    ref={provided.innerRef}
+                    {...provided.droppableProps}
+                    className="deep-feed-container"
+                    onClick={handleExpand}
+                >
+                    <div className="channel-link">
+                        <p>{deepFeed.name}</p>
+                        {isExpanded ? <FaChevronUp /> : <FaChevronDown />}
+                    </div>
+                    {isExpanded && (
+                        <div className="feed-list">
+                            {loading ? <p>Loading...</p> : (
+                                contents.map((item, index) => (
+                                    <Draggable
+                                        key={item.feed?.feed_id || item.nestedDeepFeed?.deep_feed_id}
+                                        draggableId={item.feed ? `feed-${item.feed.feed_id}` : `deep-${item.nestedDeepFeed.deep_feed_id}`}
+                                        index={index}
+                                    >
+                                        {(provided) => (
+                                            <div ref={provided.innerRef} {...provided.draggableProps} {...provided.dragHandleProps}>
+                                                {item.nestedDeepFeed ? (
+                                                    <DeepFeedItem deepFeed={item.nestedDeepFeed} />
+                                                ) : (
+                                                    <FeedItem feed={item.feed} isChat={false} />
+                                                )}
+                                            </div>
+                                        )}
+                                    </Draggable>
+                                ))
+                            )}
+                            {provided.placeholder}
+                        </div>
                     )}
                 </div>
             )}
-        </div>
+        </Droppable>
     );
 };
 
