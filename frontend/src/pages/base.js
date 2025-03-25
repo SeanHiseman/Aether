@@ -19,9 +19,9 @@ import '../css/messages.css';
 
 const BaseLayout = () => {
     const { isAuthenticated, user, viewer } = useContext(AuthContext);
-    const [asideErrorMessage, setAsideErrorMessage] = useState('');
     const [currentQuery, setCurrentQuery] = useState('');
     const [deepFeeds, setDeepFeeds] = useState([]);
+    const [asideErrorMessage, setAsideErrorMessage] = useState('');
     const [feeds, setFeeds] = useState([]);
     const [feedsOffset, setFeedsOffset] = useState(0);
     const [feedName, setFeedName] = useState('');
@@ -97,7 +97,7 @@ const BaseLayout = () => {
                 console.log("Deep feeds:", data.deepFeeds);
                 setDeepFeeds(data.deepFeeds);
             } catch (error) {
-                console.error("Error fetching deep feeds:", error);
+                setAsideErrorMessage("Error fetching deep feeds");
             }
         };
         if (viewer.feed_id) {
@@ -130,7 +130,7 @@ const BaseLayout = () => {
         try {
             event.preventDefault();
             if (!feedName) {
-                setAsideErrorMessage('Feed needs a name');
+                setAsideErrorMessage("Feed needs a name");
                 return;
             } 
             const newFeed = new FormData();
@@ -171,7 +171,7 @@ const BaseLayout = () => {
             } else if (error.response.status === 400 ) {
                 setAsideErrorMessage("Name taken");
             } else {
-                setAsideErrorMessage(error.response.data.message || "Error creating feed"); 
+                setAsideErrorMessage("Error creating feed"); 
             }
         }
     };
@@ -219,55 +219,65 @@ const BaseLayout = () => {
 
     const onDragEnd = async (result) => {
         const { source, destination } = result;
-        if (!destination) return;
-        const sourceDroppableId = source.droppableId;
-        const destDroppableId = destination.droppableId;
-        const draggedItem = sourceDroppableId.startsWith("deepFeed-")
-            ? deepFeeds.find(df => `deep-${df.deep_feed_id}` === result.draggableId)
-            : feeds.find(f => `feed-${f.feed_id}` === result.draggableId);
-        if (!draggedItem) return;
-        //Dropping inside an existing deep feed
-        if (destDroppableId.startsWith("deepFeed-")) {
-            const targetDeepFeedId = destDroppableId.split("-")[1];
+    
+        if (!destination || (source.droppableId === destination.droppableId && source.index === destination.index)) {
+            return;
+        }
+    
+        console.log("Drag result:", result);
+    
+        const sourceDeepFeedId = deepFeeds[source.index]?.deep_feed_id;
+        const destinationDeepFeedId = destination.droppableId.startsWith("deep-feed-")
+            ? destination.droppableId.replace("deep-feed-", "")
+            : null;
+    
+        // Dragging a deep feed into another deep feed → Nest it inside
+        if (source.droppableId === "deepFeedsList" && destinationDeepFeedId) {
             try {
                 const { data } = await axios.post('/api/add_to_deep_feed', {
-                    deepFeedId: targetDeepFeedId,
-                    feedId: draggedItem.feed_id || null,
-                    nestedDeepFeedId: draggedItem.deep_feed_id || null
+                    deepFeedId: destinationDeepFeedId,
+                    feedId: null,
+                    nestedDeepFeedId: sourceDeepFeedId
                 });
+    
                 if (data.success) {
-                    setFeeds(prev => prev.filter(f => f.feed_id !== draggedItem.feed_id));
-                    setDeepFeeds(prev => prev.map(df => 
-                        df.deep_feed_id === targetDeepFeedId 
-                            ? { ...df, feeds: [...df.feeds, draggedItem] } 
-                            : df
-                    ));
+                    setDeepFeeds(prev => prev.filter(df => df.deep_feed_id !== sourceDeepFeedId));
+                    refreshDeepFeeds();
                 }
             } catch (error) {
-                setAsideErrorMessage("Error adding to deep feed");
+                setAsideErrorMessage("Error nesting deep feed");
             }
+            return;
         }
-        //Creating a new nested deep feed with two dragged feeds
-        else if (sourceDroppableId.startsWith("deepFeed-") && destDroppableId.startsWith("deepFeed-") && sourceDroppableId === destDroppableId) {
-            const deepFeedName = prompt("New deep feed name:");
-            if (!deepFeedName) return;
+    
+        // Dragging a feed into a deep feed
+        if (source.droppableId === "feedList" && destinationDeepFeedId) {
             try {
-                const { data } = await axios.post('/api/create_deep_feed', {
-                    viewerId: viewer.feed_id,
-                    deepFeedName,
-                    feedsToInclude: [draggedItem.feed_id].filter(Boolean)
+                const { data } = await axios.post('/api/add_to_deep_feed', {
+                    deepFeedId: destinationDeepFeedId,
+                    feedId: feeds[source.index].feed_id,
+                    nestedDeepFeedId: null
                 });
+    
                 if (data.success) {
-                    setDeepFeeds(prev => [
-                        ...prev.filter(df => df.deep_feed_id !== draggedItem.deep_feed_id),
-                        data.deepFeed
-                    ]);
+                    setFeeds(prev => prev.filter(f => f.feed_id !== feeds[source.index].feed_id));
+                    refreshDeepFeeds();
                 }
             } catch (error) {
-                setAsideErrorMessage("Error creating deep feed");
+                setAsideErrorMessage("Error adding feed to deep feed");
             }
+            return;
         }
-    };           
+    };
+    
+    const refreshDeepFeeds = async () => {
+        try {
+            const { data } = await axios.get(`/api/deep_feeds/${viewer.feed_id}`);
+            setDeepFeeds(data.deepFeeds);
+        } catch (error) {
+            setAsideErrorMessage("Error refreshing deep feeds");
+        }
+    };
     
     const toggleForm = () => { 
         if (showForm) {
@@ -281,44 +291,46 @@ const BaseLayout = () => {
     return (
         <div className="container">
             <aside id="left-aside" ref={feedContainerRef}>
+                <div className="left-aside-feed-info">
+                    <Link className="feed-link" to={`/u/${feed.feed_name}`}>
+                        <img className="small-feed-photo" src={`/${feed.feed_photo}`} alt="Feed" />
+                        <p className="feed-list-text">{feed.feed_name}</p>
+                    </Link>
+                    <Link id="messages-button" to={`/connections`}>
+                        <div className="message-icon-container">
+                            <FaCommentDots title="Messages and connections" />
+                            {state.total > 0 && (
+                                <span className="unread-badge">{state.total}</span>
+                            )}
+                        </div>
+                    </Link>
+                </div>
                 <DragDropContext onDragEnd={onDragEnd}>
-                    <div className="left-aside-feed-info">
-                        <Link className="feed-link" to={`/u/${feed.feed_name}`}>
-                            <img className="small-feed-photo" src={`/${feed.feed_photo}`} alt="Feed" />
-                            <p className="feed-list-text">{feed.feed_name}</p>
-                        </Link>
-                        <Link id="messages-button" to={`/connections`}>
-                            <div className="message-icon-container">
-                                <FaCommentDots title="Messages and connections" />
-                                {state.total > 0 && (
-                                    <span className="unread-badge">{state.total}</span>
-                                )}
-                            </div>
-                        </Link>
-                    </div>
                     <nav id="personal-feeds">
                         <ul>
                             <li className="channel-link"><Link to="/p/recommended">Recommended</Link></li>
                             <li className="channel-link"><Link to="/p/following">Following</Link></li>
                             <li className="channel-link"><Link to="/p/connection_posts">Connections</Link></li>
-                            <Droppable droppableId="deepFeedList">
-                                {(provided) => (
-                                    <div ref={provided.innerRef} {...provided.droppableProps}>
-                                        {deepFeeds.map((deepFeed, index) => (
-                                            <Draggable key={deepFeed.deep_feed_id} draggableId={`deep-${deepFeed.deep_feed_id}`} index={index}>
-                                                {(provided) => (
-                                                    <div ref={provided.innerRef} {...provided.draggableProps} {...provided.dragHandleProps}>
-                                                        <DeepFeedItem deepFeed={deepFeed} />
-                                                    </div>
-                                                )}
-                                            </Draggable>
-                                        ))}
-                                        {provided.placeholder}
-                                    </div>
-                                )}
-                            </Droppable>
                         </ul>
                     </nav>
+                    <Droppable droppableId="deepFeedsList" type="deepFeed">
+                        {(provided) => (
+                            <div 
+                                className="deep-feeds-container"
+                                {...provided.droppableProps}
+                                ref={provided.innerRef}
+                            >
+                                {deepFeeds.map((deepFeed, index) => (
+                                    <DeepFeedItem 
+                                        key={deepFeed.deep_feed_id} 
+                                        deepFeed={deepFeed}
+                                        index={index}
+                                    />
+                                ))}
+                                {provided.placeholder}
+                            </div>
+                        )}
+                    </Droppable>
                     <div className="error-message">{asideErrorMessage}</div>
                     <div id="create-feed-section">
                         <button className="small-icon" onClick={toggleForm} style={{alignSelf: 'flex-start', marginLeft: 'calc(5% + 10px)'}}>
@@ -378,16 +390,28 @@ const BaseLayout = () => {
                         )}
                     </div>
                     <nav className="feed-list">
-                        <Droppable droppableId="feedList">
+                        <Droppable droppableId="feedList" type="feed">
                             {(provided) => (
-                                <ul {...provided.droppableProps} ref={provided.innerRef}>
+                                <ul 
+                                    {...provided.droppableProps} 
+                                    ref={provided.innerRef}
+                                    className="feeds-list"
+                                >
                                     {feeds.length === 0 ? (
                                         <p>Followed feeds are shown here</p>
                                     ) : (
                                         feeds.map((feed, index) => (
-                                            <Draggable key={feed.feed_id} draggableId={feed.feed_id.toString()} index={index}>
+                                            <Draggable 
+                                                key={feed.feed_id} 
+                                                draggableId={feed.feed_id.toString()} 
+                                                index={index}
+                                            >
                                                 {(provided) => (
-                                                    <li ref={provided.innerRef} {...provided.draggableProps} {...provided.dragHandleProps}>
+                                                    <li 
+                                                        ref={provided.innerRef} 
+                                                        {...provided.draggableProps} 
+                                                        {...provided.dragHandleProps}
+                                                    >
                                                         <FeedItem
                                                             feed={feed.followedFeed}
                                                             isChat={false}

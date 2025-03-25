@@ -29,7 +29,7 @@ const calculateFileSize = (file) => {
 
 const checkProfileStorageLimit = async (req, res, next) => {
     try {
-        const user = await Users.findByPk(req.session.user.user_id);
+        const user = await Users.findByPk(req.session.user_id);
         if (!user) {
             return res.status(404).json({ success: false, message: 'User not found' });
         }
@@ -60,7 +60,6 @@ router.post('/accept_follow_request', authenticateCheck, async (req, res) => {
         await follow_request.destroy();
         res.status(200).json({ success: true });
     } catch (error) {
-
         res.status(500).json({ success: false });
     }
 });
@@ -89,7 +88,9 @@ router.post('/add_feed_channel', authenticateCheck, async (req, res) => {
 router.post('/add_to_deep_feed', async (req, res) => {
     try {
         const { deepFeedId, feedId, nestedDeepFeedId } = req.body;
-        console.log("add_to_deep_feed", req.body);
+        if (!feedId && !nestedDeepFeedId) {
+            return res.status(400).json({ success: false, message: 'Must provide either a feedId or nestedDeepFeedId' });
+        }
         const content = await DeepFeedContent.create({
             content_id: v4(),
             deep_feed_id: deepFeedId,
@@ -98,7 +99,6 @@ router.post('/add_to_deep_feed', async (req, res) => {
         });
         res.status(201).json({ success: true, content });
     } catch (error) {
-        console.log("add_to_deep_feed error", error);
         res.status(500).json({ success: false, error: error.message });
     }
 });
