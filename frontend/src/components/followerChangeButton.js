@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { FaHeart, FaHeartBroken, FaMinusCircle } from 'react-icons/fa';
+import { FaMinus, FaMinusCircle, FaPlusCircle } from 'react-icons/fa';
 import React, { useEffect, useState } from 'react';
 //import Tooltip from '@mui/material/Tooltip';
 
@@ -52,7 +52,7 @@ const FollowerChangeButton = ({ feed, viewerId }) => {
         <div>
             {/*<Tooltip placement="bottom" title={toolTipText}>*/}
                 <button className="small-icon" onClick={handleFollowerChange} title={follower ? 'Unfollow' : request && isPrivate ? 'Cancel request' : 'Follow'}>
-                    {follower ? <FaHeartBroken /> : request && isPrivate ? <FaMinusCircle /> : <FaHeart />}
+                    {follower ? <FaMinusCircle /> : request && isPrivate ? <FaMinus /> : <FaPlusCircle />}
                     <p className="icon-text">{followerCount} {followerCount === 1 ? 'follower' : 'followers'}</p>
                 </button>
             {/*</Tooltip>*/}
