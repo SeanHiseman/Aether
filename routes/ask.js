@@ -1,4 +1,5 @@
 import authenticateCheck from '../functions/checks/authenticateCheck.js';
+import Anthropic from '@anthropic-ai/sdk/index.mjs';
 import dotenv from 'dotenv';
 import OpenAI from "openai";
 import { Router } from 'express';
@@ -8,6 +9,9 @@ import { AskChats, AskMessages, PostNotes, Users } from '../models/relationships
 dotenv.config();
 const openai = new OpenAI();
 const router = Router();
+const anthropic = new Anthropic({
+    apiKey: process.env.ANTHROPIC_API_KEY
+});
  
 router.post('/ask_button', authenticateCheck, async (req, res) => {
     try {
@@ -124,50 +128,64 @@ router.get('/get_ask_chats', authenticateCheck, async (req, res) => {
 router.post('/generate_content', authenticateCheck, async (req, res) => {
     try {
         const { currentCode, request, parentCode, senderId } = req.body;
-        //console.log("req.body:", req.body);
-        //Creates API assistant
-        const assistant = await openai.beta.assistants.create({
-            name: "Ask",
-            instructions: "Generate or improve html content",
-            model: "gpt-4o-mini",
+        console.log("Request received:", req.body);
+        // Construct the prompt with context
+        const assistantInstructions = parentCode 
+            ? `You are an expert HTML/JavaScript code generator. Generate or improve HTML code based on the following context:
+            Request: ${request}
+            Current Code: ${currentCode}
+            Parent Code: ${parentCode}
+
+            Guidelines:
+            - Provide only the HTML/JavaScript code
+            - Do not set body background colors
+            - Do not add container borders or text alignments
+            - Avoid using vh units
+            - Set body overflow to hidden
+            - Use white text as default
+            - If the request cannot be fulfilled with code, return nothing`
+                        : `You are an expert HTML/JavaScript code generator. Generate or improve HTML code based on the following context:
+
+            Request: ${request}
+            Current Code: ${currentCode}
+
+            Guidelines:
+            - Provide only the HTML/JavaScript code
+            - Do not set body background colors
+            - Do not add container borders or text alignments
+            - Avoid using vh units
+            - Set body overflow to hidden
+            - Use white text as default
+            - If the request cannot be fulfilled with code, return nothing`;
+
+        // Send message to Claude
+        const response = await anthropic.messages.create({
+            model: 'claude-3-5-haiku-latest',
+            max_tokens: 4096,
+            messages: [
+                {
+                    role: 'user',
+                    content: assistantInstructions
+                }
+            ]
         });
-        //Send user message to OpenAI
-        const thread = await openai.beta.threads.create();
-        const userMessage = await openai.beta.threads.messages.create(
-            thread.id,
-            {
-                role: "user",
-                content: request
-            }
-        );
-        const assistantInstructions = parentCode ? `Request and current code are for a reply to parent code. Answer with new or improved html code, containing JavaScript if necessary. Nothing else. Do not set body background colors, container borders, or text alignments. Do not use vh. Overflow hidden in body. White text default. If cannot be made into code, no response. Current code: ${currentCode}, parent code: ${parentCode}` 
-        : `Answer with new or improved html code, containing JavaScript if necessary. Nothing else. Do not set body background colors, container borders, or text alignments. Do not use vh. Overflow hidden in body. White text default. If cannot be made into code, no response. Current code: ${currentCode}`;
-        //console.log("assistantInstructions:", assistantInstructions);
-        //Run OpenAI assistant
-        const run = await openai.beta.threads.runs.create(
-            thread.id,
-            {
-                assistant_id: assistant.id, 
-                instructions: assistantInstructions
-            }
-        ); 
-        //Wait for OpenAI response
-        let runStatus = await openai.beta.threads.runs.retrieve(thread.id, run.id);
-        while (runStatus.status !== "completed") {
-            runStatus = await openai.beta.threads.runs.retrieve(thread.id, run.id);
-        }
-        //Get OpenAI response
-        const messages = await openai.beta.threads.messages.list(thread.id);
-        let aiReply = messages.data.find(msg => msg.role === 'assistant').content[0].text.value;
-        const chacaterCount = currentCode.length + (parentCode?.length ?? 0) + aiReply.length; //Parent code can be null
-        //console.log("characterCount:", chacaterCount);
-        await Users.increment('usage_count', { by: chacaterCount, where: { user_id: senderId } });
-        aiReply = aiReply.replace(/^```[a-zA-Z]+\s*|```$/g, '').trim(); //Trims response
-        //console.log("aiReply:", aiReply);
+        console.log('Anthropic response:', response);
+        // Extract the generated content
+        let aiReply = response.content[0].text.trim();
+
+        // Remove any markdown code block formatting
+        aiReply = aiReply.replace(/^```[a-zA-Z]*\s*|```$/g, '').trim();
+
+        // Calculate character count for usage tracking
+        const characterCount = currentCode.length + (parentCode?.length ?? 0) + aiReply.length;
+
+        // Update user usage count
+        await Users.increment('usage_count', { by: characterCount, where: { user_id: senderId } });
+
         res.status(201).json({ success: true, generatedContent: aiReply });
     } catch (error) {
-        //console.log(error);
-        res.status(500).json({ success: false });
+        console.error('Error generating content:', error);
+        res.status(500).json({ success: false, error: error.message });
     }
 });
 
