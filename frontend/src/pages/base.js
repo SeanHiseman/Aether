@@ -19,9 +19,10 @@ import '../css/messages.css';
 
 const BaseLayout = () => {
     const { isAuthenticated, user, viewer } = useContext(AuthContext);
+    const [asideErrorMessage, setAsideErrorMessage] = useState('');
     const [currentQuery, setCurrentQuery] = useState('');
     const [deepFeeds, setDeepFeeds] = useState([]);
-    const [asideErrorMessage, setAsideErrorMessage] = useState('');
+    const [deepFeedRefs, setDeepFeedRefs] = useState({});
     const [feeds, setFeeds] = useState([]);
     const [feedsOffset, setFeedsOffset] = useState(0);
     const [feedName, setFeedName] = useState('');
@@ -37,6 +38,13 @@ const BaseLayout = () => {
     const navigate = useNavigate();
     const hasMembership = user?.has_membership;
 	const MAX_FILE_SIZE = hasMembership ? 100 * 1024 * 1024 : 1 * 1024 * 1024;
+
+    const registerDeepFeedRef = (deepFeedId, handler) => {
+        setDeepFeedRefs(prev => ({
+            ...prev,
+            [deepFeedId]: handler
+        }));
+    };
 
     useEffect(() => {
         const fetchViewerFeed = async () => {
@@ -219,66 +227,90 @@ const BaseLayout = () => {
 
     const onDragEnd = async (result) => {
         const { source, destination } = result;
-    
+        //No valid destination or same position
         if (!destination || (source.droppableId === destination.droppableId && source.index === destination.index)) {
             return;
         }
-    
-        console.log("Drag result:", result);
-    
-        const sourceDeepFeedId = deepFeeds[source.index]?.deep_feed_id;
-        const destinationDeepFeedId = destination.droppableId.startsWith("deep-feed-")
-            ? destination.droppableId.replace("deep-feed-", "")
-            : null;
-    
-        // Dragging a deep feed into another deep feed → Nest it inside
-        if (source.droppableId === "deepFeedsList" && destinationDeepFeedId) {
-            try {
-                const { data } = await axios.post('/api/add_to_deep_feed', {
+        try {
+            //Creating a new deep feed by dragging feeds together
+            if (source.droppableId === "feedList" && destination.droppableId === "feedList") {
+                const sourceFeed = feeds[source.index];
+                const destinationFeed = feeds[destination.index];
+                const deepFeedName = prompt("Create a new deep feed by combining these feeds. Enter a name:");
+                if (deepFeedName) {
+                    const { data } = await axios.post("/api/create_deep_feed", {
+                        viewerId: viewer.feed_id,
+                        deepFeedName,
+                        feedsToInclude: [sourceFeed.feed_id, destinationFeed.feed_id]
+                    });
+                    if (data.success && data.deepFeed) {
+                        setDeepFeeds(prevDeepFeeds => [
+                            ...prevDeepFeeds,
+                            {
+                                ...data.deepFeed,
+                                feeds: data.feedsToInclude.map(feedId => ({
+                                    feed: feeds.find(f => f.feed_id === feedId) //Match existing feed objects
+                                }))
+                            }
+                        ]);
+                    }                   
+                }
+                return;
+            }
+            //Dragging a feed into a deep feed
+            if (source.droppableId === "feedList" && destination.droppableId.startsWith("deep-feed-")) {
+                const sourceFeed = feeds[source.index];
+                const destinationDeepFeedId = destination.droppableId.replace("deep-feed-", "");
+                try {
+                    const { data } = await axios.post("/api/add_to_deep_feed", {
+                        deepFeedId: destinationDeepFeedId,
+                        feedId: sourceFeed.feed_id,
+                        nestedDeepFeedId: null
+                    });
+                    if (data.success) {
+                        //Trigger the update in the specific DeepFeedItem
+                        if (deepFeedRefs[destinationDeepFeedId]) {
+                            console.log('Calling ref handler for:', destinationDeepFeedId);
+                            deepFeedRefs[destinationDeepFeedId](sourceFeed);
+                        } else {
+                            console.log('No ref found for:', destinationDeepFeedId);
+                        }
+                    }
+                } catch (error) {
+                    setAsideErrorMessage("Error adding feed to deep feed:", error);
+                }
+                return;
+            }
+            //Dragging a deep feed into another deep feed
+            const sourceDeepFeedId = deepFeeds[source.index]?.deep_feed_id;
+            const destinationDeepFeedId = destination.droppableId.startsWith("deep-feed-")
+                ? destination.droppableId.replace("deep-feed-", "")
+                : null;
+            if (source.droppableId === "deepFeedsList" && destinationDeepFeedId) {
+                const { data } = await axios.post("/api/add_to_deep_feed", {
                     deepFeedId: destinationDeepFeedId,
                     feedId: null,
                     nestedDeepFeedId: sourceDeepFeedId
                 });
-    
                 if (data.success) {
-                    setDeepFeeds(prev => prev.filter(df => df.deep_feed_id !== sourceDeepFeedId));
-                    refreshDeepFeeds();
+                    setDeepFeeds(prevDeepFeeds =>
+                        prevDeepFeeds.map(deepFeed =>
+                            deepFeed.deep_feed_id === destinationDeepFeedId
+                                ? {
+                                    ...deepFeed,
+                                    feeds: [...deepFeed.feeds, { nestedDeepFeed: deepFeeds.find(df => df.deep_feed_id === sourceDeepFeedId) }]
+                                }
+                                : deepFeed
+                        )
+                    );
                 }
-            } catch (error) {
-                setAsideErrorMessage("Error nesting deep feed");
+                return;
             }
-            return;
-        }
-    
-        // Dragging a feed into a deep feed
-        if (source.droppableId === "feedList" && destinationDeepFeedId) {
-            try {
-                const { data } = await axios.post('/api/add_to_deep_feed', {
-                    deepFeedId: destinationDeepFeedId,
-                    feedId: feeds[source.index].feed_id,
-                    nestedDeepFeedId: null
-                });
-    
-                if (data.success) {
-                    setFeeds(prev => prev.filter(f => f.feed_id !== feeds[source.index].feed_id));
-                    refreshDeepFeeds();
-                }
-            } catch (error) {
-                setAsideErrorMessage("Error adding feed to deep feed");
-            }
-            return;
-        }
-    };
-    
-    const refreshDeepFeeds = async () => {
-        try {
-            const { data } = await axios.get(`/api/deep_feeds/${viewer.feed_id}`);
-            setDeepFeeds(data.deepFeeds);
         } catch (error) {
-            setAsideErrorMessage("Error refreshing deep feeds");
+            setAsideErrorMessage("Drag and drop error");
         }
     };
-    
+
     const toggleForm = () => { 
         if (showForm) {
             setFeedName('');
@@ -315,16 +347,17 @@ const BaseLayout = () => {
                     </nav>
                     <Droppable droppableId="deepFeedsList" type="deepFeed">
                         {(provided) => (
-                            <div 
+                            <div
                                 className="deep-feeds-container"
                                 {...provided.droppableProps}
                                 ref={provided.innerRef}
                             >
                                 {deepFeeds.map((deepFeed, index) => (
-                                    <DeepFeedItem 
-                                        key={deepFeed.deep_feed_id} 
+                                    <DeepFeedItem
+                                        key={deepFeed.deep_feed_id}
                                         deepFeed={deepFeed}
                                         index={index}
+                                        registerRef={registerDeepFeedRef}
                                     />
                                 ))}
                                 {provided.placeholder}
