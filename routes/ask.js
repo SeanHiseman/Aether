@@ -190,7 +190,7 @@ router.get('/get_ask_messages', authenticateCheck, async (req, res) => {
 router.post('/send_ask_message', authenticateCheck, async (req, res) => {
     try {
         const { chatId, messageContent, senderId, timestamp } = req.body;
-        //console.log("req.body:", req.body);
+        console.log("req.body:", req.body);
         const chat = await AskChats.findOne({ where: { chat_id: chatId } });
         if (!chat) {
             return res.status(404).json({ success: false, message: 'Chat not found' });
@@ -232,7 +232,7 @@ router.post('/send_ask_message', authenticateCheck, async (req, res) => {
         const messages = await openai.beta.threads.messages.list(thread_id);
         const aiReplyMessage = messages.data.find(msg => msg.role === 'assistant');
         const aiReply = aiReplyMessage ? aiReplyMessage.content[0].text.value : "I'm sorry, I couldn't process that.";
-        //console.log("aiReply:", aiReply);
+        console.log("aiReply:", aiReply);
         const newMessage = await AskMessages.create({
             message_id: v4(),
             chat_id: chatId,
@@ -248,7 +248,6 @@ router.post('/send_ask_message', authenticateCheck, async (req, res) => {
             timestamp: Date.now()
         });
         const chacaterCount = messageContent.length + aiReply.length;
-        //console.log("characterCount:", chacaterCount);
         await AskChats.update(
             { updated_at: Date.now() },
             { where: { chat_id: chatId } }
@@ -256,7 +255,7 @@ router.post('/send_ask_message', authenticateCheck, async (req, res) => {
         await Users.increment('usage_count', { by: chacaterCount, where: { user_id: senderId } });
         res.status(201).json({ success: true, newMessage, assistantMessage });
     } catch (error) {
-        //console.log(error);
+        console.log("error sending ask message:", error);
         res.status(500).json({ success: false, message: 'Internal Server Error' });
     }
 });
