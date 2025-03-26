@@ -12,15 +12,10 @@ export const SocketProvider = ({ children }) => {
             transports: ['websocket', 'polling'],
         });
         socketInstance.on('connect', () => {
-            console.log('Socket connected:', socketInstance.id);
             setIsConnected(true);
         });
         socketInstance.on('disconnect', () => {
-            console.log('Socket disconnected');
             setIsConnected(false);
-        });
-        socketInstance.on('error', (error) => {
-            console.error('Socket error:', error);
         });
         setSocket(socketInstance);
         return () => {

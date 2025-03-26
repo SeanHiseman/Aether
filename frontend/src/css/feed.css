@@ -63,6 +63,9 @@
     margin: 10px;
     width: 100%;
 }
+.deep-feeds-container {
+    width: 90%;
+}
 .display-area {
     align-items: center;
     display: flex;
