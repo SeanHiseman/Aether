@@ -51,7 +51,7 @@ const FollowerChangeButton = ({ feed, viewerId }) => {
     return (
         <div>
             {/*<Tooltip placement="bottom" title={toolTipText}>*/}
-                <button className="small-icon" onClick={handleFollowerChange}>
+                <button className="small-icon" onClick={handleFollowerChange} title={follower ? 'Unfollow' : request && isPrivate ? 'Cancel request' : 'Follow'}>
                     {follower ? <FaHeartBroken /> : request && isPrivate ? <FaMinusCircle /> : <FaHeart />}
                     <p className="icon-text">{followerCount} {followerCount === 1 ? 'follower' : 'followers'}</p>
                 </button>

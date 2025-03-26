@@ -5,6 +5,7 @@ import deleteMedia from '../functions/media_handling/deleteMedia.js';
 import dotenv from 'dotenv';
 import imageUpload from '../functions/media_handling/imageUpload.js';
 import express from 'express';
+import fs from 'fs';
 import multer from 'multer';
 import { Op } from 'sequelize';
 import { join } from 'path';

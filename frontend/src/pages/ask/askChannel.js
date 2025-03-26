@@ -7,6 +7,7 @@ import { useQueryContext } from '../../components/search/queryContext';
 import { FaEdit, FaTrash, FaPlus, FaMinus } from 'react-icons/fa';
 
 const AskChannel = () => {
+	const { user } = useContext(AuthContext);   
 	const [changedChatName, setChangedChatName] = useState('');
 	const [chats, setChats] = useState([]);
 	const [currentMessage, setCurrentMessage] = useState('');
@@ -19,8 +20,7 @@ const AskChannel = () => {
 	const [showNewChatForm, setShowNewChatForm] = useState(false);
 	const location = useLocation();
 	const { chatId } = useParams();
-	const { query, setQuery } = useQueryContext();
-	const { user } = useContext(AuthContext);    
+	const { query, setQuery } = useQueryContext(); 
 	const navigate = useNavigate();
 	const initialMessageRef = useRef(false);
 	const usageLimit = user.has_membership ? 10000000 : 100000;
