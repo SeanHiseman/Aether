@@ -47,7 +47,7 @@ const Message = ({ canRemove, deleteMessage, isGroup, isOutgoing, isRead, messag
             </div>
             <div className={`message-info ${isOutgoing ? 'outgoing' : 'incoming'}`}>
                 <p className={`message-date ${isOutgoing ? 'outgoing' : 'incoming'}`}>
-                    {formatTimestamp(message.timestamp)}
+                    {formatTimestamp(message.created_at)}
                 </p>
                 {isOutgoing && !isGroup && (
                     <span className="read-status">

@@ -174,7 +174,7 @@ router.get('/get_chat_messages', authenticateCheck, async (req, res) => {
         const messages = await Messages.findAll({
             where: { chat_id: channelId },
             include: [{ attributes: feedAttributes, model: Feeds }],
-            order: [['timestamp', 'ASC']],
+            order: [['created_at', 'ASC']],
             limit: parseInt(limit) || 20,
             offset: parseInt(offset) || 0,
         });
@@ -454,10 +454,10 @@ export const directMessagesSocket = (socket) => {
                 sender_id: message.sender_id,
                 receiver_id: message.receiver_id,
                 is_read: false,
-                timestamp: message.timestamp
+                created_at: message.created_at
             });
             await Chats.update(
-                { updated_at: message.timestamp || new Date() },  
+                { updated_at: message.created_at || new Date() },  
                 { where: { chat_id: message.channel_id } }
             );
             socket.to(message.channel_id).emit('chat_message_confirmed', newMessage); 

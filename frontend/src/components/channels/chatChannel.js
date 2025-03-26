@@ -209,7 +209,7 @@ const ChatChannel = ({ canAdd, canRemove, channelId, connection, isGroup, isLock
                 sender_id: viewer.feed_id,
                 receiver_id: isGroup ? null: connection.feed_id,
                 channel_id: channelId,
-                timestamp: Date.now(),
+                created_at: Date.now(),
             };
             const route = isGroup ? 'send_feed_message' : 'send_direct_message';
             socketRef.current.emit(route, newMessage);
