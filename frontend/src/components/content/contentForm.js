@@ -501,7 +501,7 @@ const ContentForm = ({ feed, isEdit = false, isGroup, isReply, onSubmit, post = 
 																								setFormErrorMessage('Prompt exceeds character limit.', !user.has_membership && 'Get membership for more.');
 																							}
 																						}}
-																						placeholder={limitReached ? user.has_membership ? "Usage limit reached" : "Usage limit reached. Get membership for more." : "Describe your content..."} 
+																						placeholder={limitReached ? user.has_membership ? "Usage limit reached" : "Usage limit reached. Get membership for more." : "Describe your content (warning: this feature may not work very well yet)..."} 
 																						value={data._tempAiPrompt || ''}/>
 																					<button className={data.isBlockLoading || !data._tempAiPrompt?.trim() || limitReached ? 'small-icon disabled' : 'small-icon'} 
 																						disabled={data.isBlockLoading || !data._tempAiPrompt?.trim() || limitReached} 

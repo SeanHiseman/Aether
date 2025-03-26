@@ -15,7 +15,7 @@ const Users = sequelize.define('users', {
     theme: { type: STRING(1000), allowNull: true, defaultValue: '{"buttonHover":"#737484","dark":"#2c2e31","darkest":"#0f0f0f"}' },
     points: { type: INTEGER, allowNull: false, defaultValue: 0 }, 
     usage_count: { type: INTEGER, allowNull: false, defaultValue: 0 }, 
-    storage_count: { type: INTEGER, allowNull: false, defaultValue: 0 }, 
+    storage_count: { type: FLOAT, allowNull: false, defaultValue: 0 }, 
 }, { tableName: 'users', timestamps: false });
 
 cron.schedule('0 0 * * 0', async () => { //Resets usage count every Sunday night
