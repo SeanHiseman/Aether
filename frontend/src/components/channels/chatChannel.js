@@ -56,69 +56,99 @@ const ChatChannel = ({ canAdd, canRemove, channelId, connection, isGroup, isLock
     
     //Channel-specific setup and event listeners
     useEffect(() => {
-        const socket = socketRef.current;
-        if (!socket || !channelId) return;
-        const channelRoute = isGroup ? 'join_channel' : 'join_chat';
-        const leaveRoute = isGroup ? 'leave_channel' : 'leave_chat';
-        const confirmedRoute = isGroup ? 'channel_message_confirmed' : 'chat_message_confirmed';
-        const deleteRoute = isGroup ? 'delete_feed_message' : 'delete_direct_message';
-        const setupChannel = () => {
-            console.log(`Joining ${isGroup ? 'channel' : 'chat'} ${channelId}`);
-            socket.emit(channelRoute, channelId);
-            getChannelMessages(channelId, 0);
-        };
-        if (socket.connected) {
-            setupChannel();
-        } else {
-            socket.once('connect', setupChannel);
-        }
-        const handleNewMessage = (newMessage) => {
-            console.log("newMessage", newMessage);
-            if (newMessage.channel_id === channelId) {
-                setChannel((prevMessages) => {
-                    const messageExists = prevMessages.some(msg => msg.message_id === newMessage.message_id);
-                    if (messageExists) return prevMessages; 
-                    const processedMessage = {
-                        ...newMessage,
-                        content: isGroup ? newMessage.content : decrypt(newMessage.content),
-                    };
-                    return [...prevMessages, processedMessage];
-                });
+        try {
+            const socket = socketRef.current;
+            if (!socket || !channelId) {
+                console.warn("Socket or channelId is missing");
+                return;
             }
-        };
-        const handleConfirmedMessage = (confirmedMessage) => {
-            console.log("confirmedMessage", confirmedMessage);
-            const processedMessage = {
-                ...confirmedMessage,
-                content: isGroup ? confirmedMessage.content : decrypt(confirmedMessage.content),
+            const channelRoute = isGroup ? 'join_channel' : 'join_chat';
+            const leaveRoute = isGroup ? 'leave_channel' : 'leave_chat';
+            const confirmedRoute = isGroup ? 'channel_message_confirmed' : 'chat_message_confirmed';
+            const deleteRoute = isGroup ? 'delete_feed_message' : 'delete_direct_message';
+            const setupChannel = () => {
+                try {
+                    console.log(`Joining ${channelRoute} with ID:`, channelId);
+                    socket.emit(channelRoute, channelId);
+                    getChannelMessages(channelId, 0);
+                } catch (error) {
+                    console.error("Error setting up channel:", error);
+                }
             };
-            setChannel((prevMessages) => [...prevMessages, processedMessage]);
-        };
-        const handleMessagesRead = ({ chat_id, reader_id }) => {
-            if (chat_id === channelId) {
-                setChannel((prevMessages) =>
-                    prevMessages.map(msg =>
-                        (msg.sender_id !== reader_id && !msg.is_read)
-                            ? { ...msg, is_read: true }
-                            : msg
-                    )
-                );
-            }
-        };
-        socket.on('new_message', handleNewMessage);
-        socket.on(confirmedRoute, handleConfirmedMessage);
-        socket.on(deleteRoute, deleteMessage);
-        socket.on('messages_marked_read', handleMessagesRead);
-        return () => {
             if (socket.connected) {
-                socket.emit(leaveRoute, channelId);
+                setupChannel();
+            } else {
+                socket.once('connect', setupChannel);
             }
-            socket.off('new_message', handleNewMessage);
-            socket.off(confirmedRoute, handleConfirmedMessage);
-            socket.off(deleteRoute, deleteMessage);
-            socket.off('messages_marked_read', handleMessagesRead);
-        };
-    }, [channelId, isGroup, getChannelMessages, deleteMessage]);
+            const handleNewMessage = (newMessage) => {
+                try {
+                    if (newMessage.channel_id === channelId) {
+                        setChannel((prevMessages) => {
+                            const messageExists = prevMessages.some(msg => msg.message_id === newMessage.message_id);
+                            if (messageExists) return prevMessages;
+                            const processedMessage = {
+                                ...newMessage,
+                                content: isGroup ? newMessage.content : decrypt(newMessage.content),
+                            };
+                            return [...prevMessages, processedMessage];
+                        });
+                    }
+                } catch (error) {
+                    console.error("Error handling new message:", error, newMessage);
+                }
+            };
+            const handleConfirmedMessage = (confirmedMessage) => {
+                try {
+                    const processedMessage = {
+                        ...confirmedMessage,
+                        content: isGroup ? confirmedMessage.content : decrypt(confirmedMessage.content),
+                    };
+                    setChannel((prevMessages) => [...prevMessages, processedMessage]);
+                } catch (error) {
+                    console.error("Error handling confirmed message:", error, confirmedMessage);
+                }
+            };
+            const handleMessagesRead = ({ chat_id, reader_id }) => {
+                try {
+                    if (chat_id === channelId) {
+                        setChannel((prevMessages) =>
+                            prevMessages.map(msg =>
+                                (msg.sender_id !== reader_id && !msg.is_read)
+                                    ? { ...msg, is_read: true }
+                                    : msg
+                            )
+                        );
+                    }
+                } catch (error) {
+                    console.error("Error handling messages read:", error);
+                }
+            };
+            try {
+                socket.on('new_message', handleNewMessage);
+                socket.on(confirmedRoute, handleConfirmedMessage);
+                socket.on(deleteRoute, deleteMessage);
+                socket.on('messages_marked_read', handleMessagesRead);
+            } catch (error) {
+                console.error("Error setting up socket listeners:", error);
+            }
+            return () => {
+                try {
+                    if (socket.connected) {
+                        console.log(`Leaving ${leaveRoute} with ID:`, channelId);
+                        socket.emit(leaveRoute, channelId);
+                    }
+                    socket.off('new_message', handleNewMessage);
+                    socket.off(confirmedRoute, handleConfirmedMessage);
+                    socket.off(deleteRoute, deleteMessage);
+                    socket.off('messages_marked_read', handleMessagesRead);
+                } catch (error) {
+                    console.error("Error cleaning up socket listeners:", error);
+                }
+            };
+        } catch (error) {
+            console.error("Unexpected error in useEffect:", error);
+        }
+    }, [channelId, isGroup, getChannelMessages, deleteMessage]);    
     
     //Auto-scroll to bottom when new messages arrive
     useEffect(() => {

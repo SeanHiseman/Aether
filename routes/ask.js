@@ -129,7 +129,6 @@ router.post('/generate_content', authenticateCheck, async (req, res) => {
     try {
         const { currentCode, request, parentCode, senderId } = req.body;
         console.log("Request received:", req.body);
-        // Construct the prompt with context
         const assistantInstructions = parentCode 
             ? `You are an expert HTML/JavaScript code generator. Generate or improve HTML code based on the following context:
             Request: ${request}
@@ -157,11 +156,8 @@ router.post('/generate_content', authenticateCheck, async (req, res) => {
             - Set body overflow to hidden
             - Use white text as default
             - If the request cannot be fulfilled with code, return nothing`;
-
-        // Send message to Claude
         const response = await anthropic.messages.create({
             model: 'claude-3-5-haiku-latest',
-            max_tokens: 4096,
             messages: [
                 {
                     role: 'user',
@@ -170,18 +166,11 @@ router.post('/generate_content', authenticateCheck, async (req, res) => {
             ]
         });
         console.log('Anthropic response:', response);
-        // Extract the generated content
         let aiReply = response.content[0].text.trim();
-
-        // Remove any markdown code block formatting
-        aiReply = aiReply.replace(/^```[a-zA-Z]*\s*|```$/g, '').trim();
-
-        // Calculate character count for usage tracking
+        //Remove any markdown code block formatting
+        aiReply = aiReply.replace(/^```[a-zA-Z]*\s*|```$/g, '').trim();ing
         const characterCount = currentCode.length + (parentCode?.length ?? 0) + aiReply.length;
-
-        // Update user usage count
         await Users.increment('usage_count', { by: characterCount, where: { user_id: senderId } });
-
         res.status(201).json({ success: true, generatedContent: aiReply });
     } catch (error) {
         console.error('Error generating content:', error);
