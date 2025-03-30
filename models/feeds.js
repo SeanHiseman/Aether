@@ -47,7 +47,8 @@ const FeedChannelMessages = sequelize.define('feed_channel_messages', {
     content: { type: STRING(1000), allowNull: false }, 
     channel_id: { type: STRING(36), allowNull: false }, 
     sender_id: { type: STRING(36), allowNull: false},
-    timestamp: { type: DataTypes.DATE(3), defaultValue: sequelize.literal('CURRENT_TIMESTAMP(3)') },
+    created_at: { type: DataTypes.DATE(3), defaultValue: sequelize.literal('CURRENT_TIMESTAMP(3)') },
+    updated_at: { type: DataTypes.DATE(3), defaultValue: sequelize.literal('CURRENT_TIMESTAMP(3)') }
 }, { tableName: 'feed_channel_messages', timestamps: false }); 
   
 const Followers = sequelize.define('followers', {
