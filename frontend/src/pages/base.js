@@ -403,7 +403,7 @@ const BaseLayout = () => {
                                 />
                                 <div className="file-input">
                                     <label htmlFor="feed-photo-input" className="small-icon">
-                                        <FaFileUpload /><p className="icon-text">Choose photo</p>
+                                        <FaFileUpload /><p className="icon-text">Choose feed photo</p>
                                     </label>
                                     <input type="file" id="feed-photo-input" name="Feed photo" onChange={handleFileChange} hidden/>
                                     <span className="file-name">{feedPhotoFile ? feedPhotoFile.name : 'No file chosen'}</span>

@@ -13,9 +13,9 @@ const FeedWidget = ({ feed, viewerId }) => {
                     <p className="description" >{feed.description}</p>
                 </div>
             </Link>
-            {!isViewingSelf && !feed.is_group && (
+            {/*{!isViewingSelf && !feed.is_group && (
                 <ManageConnectionButton feed={feed} viewerId={viewerId} />
-            )}
+            )}*/}
             <div className="search-result-info-box">
                 <div className="result-info-options">
                     <p>{feed.type === 'private' ? "Private" : "Public"}</p>
