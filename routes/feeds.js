@@ -320,10 +320,11 @@ router.delete('/delete_feed', authenticateCheck, async (req, res) => {
 router.delete('/delete_feed_channel', authenticateCheck, async (req, res) => {
     try {
         const { channelId } = req.body;
+        await FeedChannelMessages.destroy({
+            where: { channel_id: channelId }
+        });
         await FeedChannels.destroy({
-            where: { 
-                channel_id: channelId,
-            },
+            where: { channel_id: channelId }
         });
         res.status(200).json({ success: true });
     } catch (error) {

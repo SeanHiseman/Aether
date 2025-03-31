@@ -168,7 +168,7 @@ router.post('/generate_content', authenticateCheck, async (req, res) => {
         console.log('Anthropic response:', response);
         let aiReply = response.content[0].text.trim();
         //Remove any markdown code block formatting
-        aiReply = aiReply.replace(/^```[a-zA-Z]*\s*|```$/g, '').trim();ing
+        aiReply = aiReply.replace(/^```[a-zA-Z]*\s*|```$/g, '').trim();
         const characterCount = currentCode.length + (parentCode?.length ?? 0) + aiReply.length;
         await Users.increment('usage_count', { by: characterCount, where: { user_id: senderId } });
         res.status(201).json({ success: true, generatedContent: aiReply });
