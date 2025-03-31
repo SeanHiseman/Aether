@@ -128,13 +128,17 @@ router.get('/get_ask_chats', authenticateCheck, async (req, res) => {
 router.post('/generate_content', authenticateCheck, async (req, res) => {
     try {
         const { currentCode, request, parentCode, senderId } = req.body;
-        console.log("Request received:", req.body);
-        const assistantInstructions = parentCode 
+        //console.log("Request received:", req.body);
+        const assistantInstructions = parentCode
             ? `You are an expert HTML/JavaScript code generator. Generate or improve HTML code based on the following context:
             Request: ${request}
             Current Code: ${currentCode}
             Parent Code: ${parentCode}
-
+            
+            IMPORTANT: Return ONLY the raw HTML code without any explanations, introductory text, or markdown formatting.
+            Do not include \`\`\`html, \`\`\`, or any other markdown.
+            Start your response directly with <!DOCTYPE html>.
+            
             Guidelines:
             - Provide only the HTML/JavaScript code
             - Do not set body background colors
@@ -143,11 +147,16 @@ router.post('/generate_content', authenticateCheck, async (req, res) => {
             - Set body overflow to hidden
             - Use white text as default
             - If the request cannot be fulfilled with code, return nothing`
-                        : `You are an expert HTML/JavaScript code generator. Generate or improve HTML code based on the following context:
-
+            : 
+            `You are an expert HTML/JavaScript code generator. Generate or improve HTML code based on the following context:
+            
             Request: ${request}
             Current Code: ${currentCode}
-
+            
+            IMPORTANT: Return ONLY the raw HTML code without any explanations, introductory text, or markdown formatting.
+            Do not include \`\`\`html, \`\`\`, or any other markdown.
+            Start your response directly with <!DOCTYPE html>.
+            
             Guidelines:
             - Provide only the HTML/JavaScript code
             - Do not set body background colors
@@ -161,19 +170,25 @@ router.post('/generate_content', authenticateCheck, async (req, res) => {
             messages: [
                 {
                     role: 'user',
-                    content: assistantInstructions
+                    content: assistantInstructions,
                 }
-            ]
+            ],
+            max_tokens: 8192,
         });
-        console.log('Anthropic response:', response);
+        //console.log('Anthropic response:', response);
         let aiReply = response.content[0].text.trim();
-        //Remove any markdown code block formatting
+        //If the response starts with text followed by HTML, extract just the HTML
+        const doctypeIndex = aiReply.indexOf('<!DOCTYPE html>');
+        if (doctypeIndex !== -1) {
+            aiReply = aiReply.substring(doctypeIndex);
+        }
+        //Remove any markdown code block formatting that might still be present
         aiReply = aiReply.replace(/^```[a-zA-Z]*\s*|```$/g, '').trim();
         const characterCount = currentCode.length + (parentCode?.length ?? 0) + aiReply.length;
         await Users.increment('usage_count', { by: characterCount, where: { user_id: senderId } });
         res.status(201).json({ success: true, generatedContent: aiReply });
     } catch (error) {
-        console.error('Error generating content:', error);
+        //console.error('Error generating content:', error);
         res.status(500).json({ success: false, error: error.message });
     }
 });
