@@ -1,3 +1,4 @@
+process.env.NODE_OPTIONS = '--dns-result-order=ipv4first';
 import cors from 'cors';
 import { createServer } from 'http';
 import { dirname } from 'path';
