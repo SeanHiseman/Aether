@@ -337,9 +337,9 @@ const FeedHome = () => {
                     {(feed.is_group || (user.user_id !== feed.feed_owner && feed.type === 'public')) && (
                         <FollowerChangeButton feed={feed} viewerId={viewer.feed_id} />
                     )}
-                    {!isViewingSelf && !feed.is_group && (
+                    {/*{!isViewingSelf && !feed.is_group && (
                         <ManageConnectionButton feed={feed} viewerId={viewer.feed_id} />
-                    )}
+                    )}*/}
                 </div>
                 <div className="error-message">{feedErrorMessage}</div>
                 {channelRender && (
@@ -440,7 +440,7 @@ const FeedHome = () => {
                                             placeholder="Channel name..." 
                                             type="text" 
                                             value={newChannelName} />
-                                        {feed.is_group && (
+                                        {/*{feed.is_group && (
                                             <div className="channel-options">
                                                 <label>
                                                     <input checked={isPostChannel} onChange={handlePostClick} type="checkbox"/>
@@ -451,7 +451,7 @@ const FeedHome = () => {
                                                     Chat Channel
                                                 </label>
                                             </div>
-                                        )}
+                                        )}*/}
                                         <button className="small-icon" title="Create channel" type="submit">
                                             <FaPlus />
                                         </button>
@@ -461,12 +461,12 @@ const FeedHome = () => {
                         )}
                     </div>
                 )}
-                {channelRender && channelRender.is_posts && channelRender.is_chat && (
+                {/*{channelRender && channelRender.is_posts && channelRender.is_chat && (
                     <div className="option-toggle">
                         <button className={channelMode === 'post' ? 'active-mode' : 'passive-mode'} onClick={() => setChannelMode('post')}>Posts</button>
                         <button className={channelMode === 'chat' ? 'active-mode' : 'passive-mode'} onClick={() => setChannelMode('chat')}>Chat</button>
                     </div>
-                )}
+                )}*/}
                 <ChannelList channels={channels} feedId={feed.feed_id} feedName={feed.feed_name} isChat={false} isGroup={feed.is_group} setChannels={setChannels} setErrorMessage={setFeedErrorMessage} />
             </aside>
         </div>

@@ -328,14 +328,14 @@ const BaseLayout = () => {
                         <img className="small-feed-photo" src={`/${feed.feed_photo}`} alt="Feed" />
                         <p className="feed-list-text">{feed.feed_name}</p>
                     </Link>
-                    <Link id="messages-button" to={`/connections`}>
+                    {/*<Link id="messages-button" to={`/connections`}>
                         <div className="message-icon-container">
                             <FaCommentDots title="Messages and connections" />
                             {state.total > 0 && (
                                 <span className="unread-badge">{state.total}</span>
                             )}
                         </div>
-                    </Link>
+                    </Link>*/}
                 </div>
                 <DragDropContext onDragEnd={onDragEnd}>
                     <nav id="personal-feeds">
