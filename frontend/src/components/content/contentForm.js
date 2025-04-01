@@ -254,18 +254,18 @@ const ContentForm = ({ feed, isEdit = false, isGroup, isReply, onSubmit, post = 
 				setFormErrorMessage('Prompt cannot be empty.')
 				return
 			}
-			updateBlock({ ...block, data: { ...block.data, isBlockLoading: true } })
+			updateBlock({ ...block, data: { ...block.data, isBlockLoading: true, _tempAiPrompt: 'Creating...' } });
 			setFormErrorMessage('')
 			const response = await axios.post('/api/generate_content', { currentCode: block.data.code, parentCode: isReply ? post.content : null, request: prompt, senderId: user.user_id })
 			if (response.data && response.status === 201) {
 				const { generatedContent } = response.data
-				updateBlock({ ...block, data: { ...block.data, code: generatedContent, isBlockLoading: false }, isEditing: false })
+				updateBlock({ ...block, data: { ...block.data, code: generatedContent, isBlockLoading: false, _tempAiPrompt: '' }, isEditing: false })
 			} else {
-				updateBlock({ ...block, data: { ...block.data, isBlockLoading: false } })
+				updateBlock({ ...block, data: { ...block.data, isBlockLoading: false, _tempAiPrompt: '' } })
 				setFormErrorMessage('Creation error.')
 			}
 		} catch {
-			updateBlock({ ...block, data: { ...block.data, isBlockLoading: false } })
+			updateBlock({ ...block, data: { ...block.data, isBlockLoading: false, _tempAiPrompt: '' } })
 			setFormErrorMessage('Error creating content.')
 		}
 	}, [hasMembership, post, updateBlock])
@@ -471,7 +471,7 @@ const ContentForm = ({ feed, isEdit = false, isGroup, isReply, onSubmit, post = 
 																					updateBlock({ ...block, data: { ...data, textError: `Exceeded ${TEXT_CHAR_LIMIT} character limit. ${!user.has_membership && 'Get membership for more.'}` } })
 																				}
 																			}}
-																			placeholder="Write your text..."
+																			placeholder="Begin writing..."
 																			theme="snow"
 																			value={data.html}
 																		/>

@@ -9,7 +9,7 @@ a {
 .button, .background-button, .chat-channel-button, .conversation-button, .dark-button, .large-icon, .light-button, #messages-button, .posts-channel-button, .small-icon, .submit-button, .settings-item, .vote-enabled, .vote-arrow-container {
     cursor: pointer;
 }
-body,html {
+body, html {
     background-color: var(--dark);
     color: var(--border);
     font-family: Arial, sans-serif;
@@ -18,7 +18,6 @@ body,html {
     margin: 0;
     padding: 0;
     scrollbar-width: none;
-    word-wrap: break-word;
 }
 .button {
     background-color: var(--dark);
@@ -72,6 +71,11 @@ label {
 }
 .large-icon {
     font-size: x-large;
+}
+p, .channel-link {
+    overflow-wrap: break-word;
+    white-space: normal;
+    word-break: break-word;
 }
 .small-icon {
     font-size: large;

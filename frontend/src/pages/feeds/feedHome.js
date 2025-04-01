@@ -292,8 +292,6 @@ const FeedHome = () => {
                     <ContentForm isEdit={isEdit} isReply={false} onSubmit={isEdit ? handleEditSubmit : handlePostSubmit} postErrorMessage={postErrorMessage} post={postToEdit} setPostErrorMessage={setPostErrorMessage} setShowForm={setShowPostForm}/>
                 ) : replyingToPost ? (
                     <ContentForm feed={feed} isEdit={false} isGroup={feed.is_group} isReply={true} onSubmit={handlePostSubmit} post={replyingToPost} setShowForm={() => setReplyingToPost(null)}/>
-                ) : feedErrorMessage ? (
-                    <div className="text36">{feedErrorMessage}</div>
                 ) : channelRender ? (
                         channelRender.is_posts && (channelMode === 'post' || !channelRender.is_chat) ? (
                         <PostChannel
