@@ -33,12 +33,13 @@ const FeedHome = () => {
     const [replyingToPost, setReplyingToPost] = useState(null); 
     const [showChannelForm, setShowChannelForm] = useState(false);
     const [showPostForm, setShowPostForm] = useState(false);
-    const { user, viewer } = useContext(AuthContext);
-    const isViewingSelf = feed.feed_id === viewer.feed_id;
+    const { isAuthenticated, user, viewer } = useContext(AuthContext);
+    const isViewingSelf = feed.feed_id === viewer?.feed_id;
     const navigate = useNavigate();
     const urlPrefix = feed.is_group ? 'g' : 'u';
 
     useEffect(() => {
+        if (!isAuthenticated) return;
         const fetchFeedData = async () => {
             setLoading(true);
             try {
@@ -215,6 +216,7 @@ const FeedHome = () => {
     const handlePostClick = () => setIsPostChannel((prev) => !prev);
 
     const handlePostSubmit = async (formData) => {
+        if (!isAuthenticated) return;
         if (!formData) {
             setPostErrorMessage("Post cannot be empty");
             return;
@@ -332,7 +334,7 @@ const FeedHome = () => {
                         )}
                     </div>
                     <p className="description" >{feed.description}</p>
-                    {(feed.is_group || (user.user_id !== feed.feed_owner && feed.type === 'public')) && (
+                    {(feed.is_group || (user.user_id !== feed.feed_owner && feed.type === 'public')) && isAuthenticated && (
                         <FollowerChangeButton feed={feed} viewerId={viewer.feed_id} />
                     )}
                     {/*{!isViewingSelf && !feed.is_group && (
@@ -399,23 +401,19 @@ const FeedHome = () => {
                                             {showChannelForm ? <FaMinus /> : <FaPlus />}
                                         </button>
                                     )}
-                                    {channelMode === "post" && 
-                                        !showPostForm && 
-                                        (feed.is_group || feed.feed_owner === user.user_id) && 
-                                        (!isLocked || isAdmin) && ( 
-                                            <button
-                                                className="small-icon"
-                                                onClick={() => {
-                                                    setIsEdit(false);
-                                                    setPostToEdit(null);
-                                                    setShowPostForm(true);
-                                                }}
-                                                title="Create Post"
-                                            >
-                                                <FaFeatherAlt />
-                                            </button>
-                                        )
-                                    }
+                                    {channelMode === "post" && !showPostForm && (feed.is_group || feed.feed_owner === user.user_id) && (!isLocked || isAdmin) && isAuthenticated && ( 
+                                        <button
+                                            className="small-icon"
+                                            onClick={() => {
+                                                setIsEdit(false);
+                                                setPostToEdit(null);
+                                                setShowPostForm(true);
+                                            }}
+                                            title="Create Post"
+                                        >
+                                            <FaFeatherAlt />
+                                        </button>
+                                    )}
                                 </div>
                                 {showChannelForm && (
                                     <form className="add-channel-form" onSubmit={AddChannel}>

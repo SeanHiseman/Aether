@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
-import { FaCommentDots, FaFileUpload, FaMinus, FaPlus, FaPlusCircle, FaSearch } from 'react-icons/fa';
-import React, { useContext, useEffect, useRef, useState } from 'react';
+import { FaFileUpload, FaMinus, FaPlus, FaPlusCircle, FaSearch, FaSignInAlt } from 'react-icons/fa';
+import React, { useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { Link, Outlet, useNavigate } from 'react-router-dom';
 import { v4 } from 'uuid';
 import { AuthContext } from '../components/authContext';
@@ -18,6 +18,7 @@ import '../css/feed.css';
 import '../css/messages.css';
 
 const BaseLayout = () => {
+    console.log("BaseLayout rendered");
     const { isAuthenticated, user, viewer } = useContext(AuthContext);
     const [asideErrorMessage, setAsideErrorMessage] = useState('');
     const [currentQuery, setCurrentQuery] = useState('');
@@ -38,13 +39,6 @@ const BaseLayout = () => {
     const navigate = useNavigate();
     const hasMembership = user?.has_membership;
 	const MAX_FILE_SIZE = hasMembership ? 100 * 1024 * 1024 : 1 * 1024 * 1024;
-
-    const registerDeepFeedRef = (deepFeedId, handler) => {
-        setDeepFeedRefs(prev => ({
-            ...prev,
-            [deepFeedId]: handler
-        }));
-    };
 
     useEffect(() => {
         const fetchViewerFeed = async () => {
@@ -67,12 +61,13 @@ const BaseLayout = () => {
 
     //Fetch feeds that are followed
     useEffect(() => {
+        if (!isAuthenticated || !viewer?.feed_id) return;
         const fetchFeeds = async () => {
             if (!hasMoreFeeds) return; //Stop fetching if no more feeds
             try {
                 //Request 30 feeds at a time using offset and limit
-                const response = await axios.get('/api/feed_list', { 
-                    params: { followerId: viewer.feed_id, offset: feedsOffset, limit: 30 } 
+                const response = await axios.get('/api/feed_list', {
+                    params: { followerId: viewer.feed_id, offset: feedsOffset, limit: 30 }
                 });
                 let newFeeds = response.data.formattedFeeds;
                 if (newFeeds.length < 30) {
@@ -99,20 +94,22 @@ const BaseLayout = () => {
                 setFeeds([]);
             }
         };
+        fetchFeeds();
+    }, [feedsOffset, hasMoreFeeds, isAuthenticated, viewer?.feed_id]);
+
+    useEffect(() => {
+        if (!isAuthenticated || !viewer?.feed_id) return;
         const fetchDeepFeeds = async () => {
             try {
-                const { data } = await axios.get(`/api/deep_feeds/${viewer.feed_id}`);
-                console.log("Deep feeds:", data.deepFeeds);
-                setDeepFeeds(data.deepFeeds);
+                const response = await axios.get(`/api/deep_feeds/${viewer.feed_id}`);
+                setDeepFeeds(response.data.deepFeeds);
             } catch (error) {
+                setDeepFeeds([]);
                 setAsideErrorMessage("Error fetching deep feeds");
             }
         };
-        if (viewer.feed_id) {
-            fetchFeeds();
-            fetchDeepFeeds();
-        }
-    }, [viewer.feed_id, feedsOffset, hasMoreFeeds]);
+        fetchDeepFeeds();
+    }, [isAuthenticated, viewer?.feed_id]);
 
     useEffect(() => {
         const handleScroll = () => {
@@ -135,6 +132,7 @@ const BaseLayout = () => {
     }, [hasMoreFeeds]);
 
     const createFeed = async (event) => {
+        if (!isAuthenticated) return;
         try {
             event.preventDefault();
             if (!feedName) {
@@ -199,6 +197,10 @@ const BaseLayout = () => {
     };
 
     const handleAskClick = async (event) => {
+        if (!isAuthenticated) {
+            setHeaderErrorMessage("Log in to Ask");
+            return;
+        }    
         try {
             event.preventDefault();
             const trimmedQuery = currentQuery.trim();
@@ -324,10 +326,17 @@ const BaseLayout = () => {
         <div className="container">
             <aside id="left-aside" ref={feedContainerRef}>
                 <div className="left-aside-feed-info">
-                    <Link className="feed-link" to={`/u/${feed.feed_name}`}>
-                        <img className="small-feed-photo" src={`/${feed.feed_photo}`} alt="Feed" />
-                        <p className="feed-list-text">{feed.feed_name}</p>
-                    </Link>
+                    {isAuthenticated ? (
+                        <Link className="feed-link" to={`/u/${feed.feed_name}`}>
+                            <img className="small-feed-photo" src={`/${feed.feed_photo}`} alt="Feed" />
+                            <p className="feed-list-text">{feed.feed_name}</p>
+                        </Link>
+                    ) : (
+                        <Link to="/login" className="large-icon">
+                            <FaSignInAlt />
+                            <p className="icon-text">Close</p>
+                        </Link>
+                    )}
                     {/*<Link id="messages-button" to={`/connections`}>
                         <div className="message-icon-container">
                             <FaCommentDots title="Messages and connections" />
@@ -347,18 +356,9 @@ const BaseLayout = () => {
                     </nav>
                     <Droppable droppableId="deepFeedsList" type="deepFeed">
                         {(provided) => (
-                            <div
-                                className="deep-feeds-container"
-                                {...provided.droppableProps}
-                                ref={provided.innerRef}
-                            >
+                            <div className="deep-feeds-container" {...provided.droppableProps} ref={provided.innerRef}>
                                 {deepFeeds.map((deepFeed, index) => (
-                                    <DeepFeedItem
-                                        key={deepFeed.deep_feed_id}
-                                        deepFeed={deepFeed}
-                                        index={index}
-                                        registerRef={registerDeepFeedRef}
-                                    />
+                                    <DeepFeedItem key={deepFeed.deep_feed_id} deepFeed={deepFeed} index={index} />
                                 ))}
                                 {provided.placeholder}
                             </div>
@@ -425,30 +425,15 @@ const BaseLayout = () => {
                     <nav className="feed-list">
                         <Droppable droppableId="feedList" type="feed">
                             {(provided) => (
-                                <ul 
-                                    {...provided.droppableProps} 
-                                    ref={provided.innerRef}
-                                    className="feeds-list"
-                                >
+                                <ul {...provided.droppableProps} ref={provided.innerRef} className="feeds-list">
                                     {feeds.length === 0 ? (
                                         <p>Followed feeds are shown here</p>
                                     ) : (
                                         feeds.map((feed, index) => (
-                                            <Draggable 
-                                                key={feed.feed_id} 
-                                                draggableId={feed.feed_id.toString()} 
-                                                index={index}
-                                            >
+                                            <Draggable key={feed.feed_id} draggableId={feed.feed_id.toString()} index={index}>
                                                 {(provided) => (
-                                                    <li 
-                                                        ref={provided.innerRef} 
-                                                        {...provided.draggableProps} 
-                                                        {...provided.dragHandleProps}
-                                                    >
-                                                        <FeedItem
-                                                            feed={feed.followedFeed}
-                                                            isChat={false}
-                                                        />
+                                                    <li ref={provided.innerRef} {...provided.draggableProps} {...provided.dragHandleProps}>
+                                                        <FeedItem feed={feed.followedFeed} isChat={false} />
                                                     </li>
                                                 )}
                                             </Draggable>

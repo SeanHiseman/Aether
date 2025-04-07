@@ -64,9 +64,10 @@ export const UnreadProvider = ({ children }) => {
         feedCounts: {},
         requestCount: 0
     });
-    const { viewer } = useContext(AuthContext);
+    const { isAuthenticated, viewer } = useContext(AuthContext);
     
     useEffect(() => {
+        if (!isAuthenticated || !viewer) return;
         const fetchUnreadCounts = async () => {
             try {
                 const messageResponse = await axios.get(`/api/unread_messages_count/${viewer.feed_id}`);
@@ -91,48 +92,46 @@ export const UnreadProvider = ({ children }) => {
                 console.error('Failed to fetch unread counts:', error);
             }
         };
-        if (viewer.feed_id) {
-            fetchUnreadCounts();
-            const socket = window.socket; 
-            if (socket) {
-                socket.on('chat_message_confirmed', (message) => {
-                    if (message.receiver_id === viewer.feed_id && !message.is_read) {
-                        dispatch({
-                            type: 'INCREMENT_UNREAD',
-                            chatId: message.chat_id
-                        });
-                    }
-                });
-                socket.on('messages_marked_read', (data) => {
-                    if (data.reader_id === viewer.feed_id) {
-                        dispatch({
-                            type: 'MARK_AS_READ',
-                            chatId: data.chat_id
-                        });
-                    }
-                });
-                socket.on('new_connect_request', () => {
-                    dispatch({ type: 'INCREMENT_REQUEST_COUNT' });
-                });
-                socket.on('connect_request_resolved', (data) => {
-                    if (data.count && data.count > 0) {
-                        dispatch({ 
-                            type: 'DECREMENT_REQUEST_COUNT',
-                            count: data.count || 1
-                        });
-                    }
-                });
-            }
-            return () => {
-                if (socket) {
-                    socket.off('chat_message_confirmed');
-                    socket.off('messages_marked_read');
-                    socket.off('new_connect_request');
-                    socket.off('connect_request_resolved');
+        fetchUnreadCounts();
+        const socket = window.socket; 
+        if (socket) {
+            socket.on('chat_message_confirmed', (message) => {
+                if (message.receiver_id === viewer.feed_id && !message.is_read) {
+                    dispatch({
+                        type: 'INCREMENT_UNREAD',
+                        chatId: message.chat_id
+                    });
                 }
-            };
+            });
+            socket.on('messages_marked_read', (data) => {
+                if (data.reader_id === viewer.feed_id) {
+                    dispatch({
+                        type: 'MARK_AS_READ',
+                        chatId: data.chat_id
+                    });
+                }
+            });
+            socket.on('new_connect_request', () => {
+                dispatch({ type: 'INCREMENT_REQUEST_COUNT' });
+            });
+            socket.on('connect_request_resolved', (data) => {
+                if (data.count && data.count > 0) {
+                    dispatch({ 
+                        type: 'DECREMENT_REQUEST_COUNT',
+                        count: data.count || 1
+                    });
+                }
+            });
         }
-    }, [viewer.feed_id, window.socket]);
+        return () => {
+            if (socket) {
+                socket.off('chat_message_confirmed');
+                socket.off('messages_marked_read');
+                socket.off('new_connect_request');
+                socket.off('connect_request_resolved');
+            }
+        };
+    }, [viewer]);
     
     return (
         <UnreadContext.Provider value={{ state, dispatch }}>

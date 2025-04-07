@@ -1,63 +1,61 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { Draggable, Droppable } from 'react-beautiful-dnd';
 import { FaChevronDown, FaChevronUp } from 'react-icons/fa';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
-import FeedItem from './FeedItem'; 
+import FeedItem from './FeedItem';
 
-const DeepFeedItem = ({ deepFeed, index, registerRef }) => {
+const DeepFeedItem = ({ deepFeed, index }) => {
     const [isExpanded, setIsExpanded] = useState(false);
     const [contents, setContents] = useState([]);
     const [loading, setLoading] = useState(false);
 
     useEffect(() => {
-        const handleAddFeed = (feed) => {
-            setContents(prevContents => {
-                const isAlreadyExists = prevContents.some(
-                    item => item.feed && item.feed.feed_id === feed.feed_id
-                );
-                
-                if (isAlreadyExists) return prevContents;
-
-                return [...prevContents, { 
-                    feed: {
-                        ...feed.followedFeed,
-                        feed_id: feed.followedFeed.feed_id,
-                        feed_name: feed.followedFeed.feed_name,
-                        feed_photo: feed.followedFeed.feed_photo,
-                        is_group: feed.link_type === 'g'
-                    } 
-                }];
-            });
-        };
-        registerRef(deepFeed.deep_feed_id, handleAddFeed);
-    }, [deepFeed.deep_feed_id, registerRef]);
-
-    useEffect(() => {
         if (!isExpanded) return;
-        setContents(deepFeed.feeds || []);
-    }, [deepFeed.feeds, isExpanded]);
-    
+        if (deepFeed.feeds && contents.length === 0) {
+            setContents(deepFeed.feeds);
+        }
+    }, [deepFeed.feeds, isExpanded, contents.length]);
+
     const fetchContents = async () => {
         if (contents.length > 0) return;
         setLoading(true);
         try {
             const { data } = await axios.get(`/api/deep_feed_contents/${deepFeed.deep_feed_id}`);
-            setContents(data.contents);
+            setContents(data.contents || []);
         } catch (error) {
-            console.error("Error fetching deep feed contents:", error);
+            setContents([]);
         } finally {
             setLoading(false);
         }
     };
 
-    const handleExpand = (e) => {
+    const handleExpand = useCallback((e) => {
         e.stopPropagation();
         if (!isExpanded) {
             fetchContents();
         }
-        setIsExpanded(!isExpanded);
-    };
+        setIsExpanded(prev => !prev);
+    }, [isExpanded]);
+
+    const handleAddFeed = useCallback((feed) => {
+        setContents(prevContents => {
+            const isAlreadyExists = prevContents.some(
+                item => item.feed && item.feed.feed_id === feed.followedFeed.feed_id
+            );
+            if (isAlreadyExists) return prevContents;
+            
+            return [...prevContents, {
+                feed: {
+                    ...feed.followedFeed,
+                    feed_id: feed.followedFeed.feed_id,
+                    feed_name: feed.followedFeed.feed_name,
+                    feed_photo: feed.followedFeed.feed_photo,
+                    is_group: feed.link_type === 'g'
+                }
+            }];
+        });
+    }, []);
 
     return (
         <Draggable draggableId={`df-${deepFeed.deep_feed_id}`} index={index}>
