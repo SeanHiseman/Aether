@@ -18,7 +18,6 @@ import '../css/feed.css';
 import '../css/messages.css';
 
 const BaseLayout = () => {
-    console.log("BaseLayout rendered");
     const { isAuthenticated, user, viewer } = useContext(AuthContext);
     const [asideErrorMessage, setAsideErrorMessage] = useState('');
     const [currentQuery, setCurrentQuery] = useState('');

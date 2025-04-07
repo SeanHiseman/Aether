@@ -52,7 +52,6 @@
 .content-list {
     margin: 0;
     margin-top: var(--medium-margin);
-    text-align: center;
     width: 90%;
 }
 .content-item, .content-list {

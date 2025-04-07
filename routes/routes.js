@@ -137,25 +137,18 @@ router.get('/recommended_posts', authenticateCheck, async (req, res) => {
 });
 
 //Searches posts and feeds together
-router.get('/search/:searcherId', authenticateCheck, async (req, res) => { 
+router.get('/search/:searcherId', async (req, res) => { 
     try {
         const searcherId = req.params.searcherId;
-        console.log("Searcher ID:", searcherId);
-        console.log("keyword:", req.query.keyword);
         const keyword = req.query.keyword ? req.query.keyword.toLowerCase() : '';
         const limit = req.query.limit ? parseInt(req.query.limit, 10) : 10;
         const offset = req.query.offset ? parseInt(req.query.offset, 10) : 0;
-        //console.log("Search keyword:", keyword);
-        //console.log("Searcher ID:", searcherId);
-        //console.log("Limit:", limit);
-        //console.log("Offset:", offset);
         const feeds = await Feeds.findAll({
             where: { feed_name: { [Op.like]: `%${keyword}%` } },
             attributes: feedAttributes, 
             limit,
             offset
         });
-        console.log("Feeds found:", feeds);
         const feedData = await Promise.all(feeds.map(async (feed) => {
             const feedJSON = feed.toJSON();
             const response = {
@@ -251,15 +244,12 @@ router.get('/search/:searcherId', authenticateCheck, async (req, res) => {
                 postVotes,
             };
         }));
-        console.log("Post results:", postResults);
-        console.log("Processed posts:", processedPosts);
         res.status(200).json({ 
             feeds: feedData, 
             posts: processedPosts,
             success: true 
         });
     } catch (error) {
-        console.log("Error in search:", error);
         res.status(500).json({ success: false });
     }
 });

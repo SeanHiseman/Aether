@@ -45,6 +45,7 @@ body, html {
 .error-message {
     height: 16px;
     margin: 4px;
+    text-align: center;
 }
 .faded-text {
     color: #7b7b7b;
