@@ -23,7 +23,7 @@ const ContentWidget = ({ canRemove, feed, isGroup, onEditClick, onPostRemoved, o
   const [upvoteLimit, setUpvoteLimit] = useState(false);
   const [upvotes, setUpvotes] = useState(post.upvotes);
   const [views, setViews] = useState(post.views);
-  const { user, viewer } = useContext(AuthContext);
+  const { isAuthenticated, user, viewer } = useContext(AuthContext);
   const isReply = readOnly ? false : post.parent_id !== null; //Read only means not displaying widget as a reply
   const isViewingOwnPost = post.poster_id === viewer.feed_id;
   const urlPrefix = isGroup ? 'g' : 'u';
@@ -40,7 +40,7 @@ const ContentWidget = ({ canRemove, feed, isGroup, onEditClick, onPostRemoved, o
   const incrementViews = useCallback(
     async (postId) => {
       try {
-        if (!hasViewed && viewer.feed_id !== post.poster_id) {
+        if (!hasViewed && (!isAuthenticated || (isAuthenticated && viewer?.feed_id !== post.poster_id))) {
           const response = await axios.post('/api/increment_views', { postId });
           if (response.data.success) {
             setViews((prev) => prev + 1);
@@ -55,6 +55,7 @@ const ContentWidget = ({ canRemove, feed, isGroup, onEditClick, onPostRemoved, o
   );
 
   const postVote = async (postId, voteType) => {
+    if (!isAuthenticated) return;
     try {
       const response = await axios.post('/api/content_vote', {
         postId: postId,
@@ -82,6 +83,7 @@ const ContentWidget = ({ canRemove, feed, isGroup, onEditClick, onPostRemoved, o
   };
 
   const removePost = async () => {
+    if (!isAuthenticated) return;
     if (window.confirm(`Are you sure you want to delete this ${isReply ? 'Relpy' : 'Post'}?`)) {
       try {
         const response = await axios.delete('/api/remove_post', { data: { post } });
@@ -90,7 +92,6 @@ const ContentWidget = ({ canRemove, feed, isGroup, onEditClick, onPostRemoved, o
           navigate(`/${urlPrefix}/${feed_name}/${channel_name}`);
         }
       } catch (error) {
-        console.log("error:", error);
         setPostErrorMessage(`Error removing ${isReply ? 'Relpy' : 'Post'}`);
       }
     }
@@ -100,14 +101,20 @@ const ContentWidget = ({ canRemove, feed, isGroup, onEditClick, onPostRemoved, o
     setReplies((prevReplies) => prevReplies.filter((r) => r.post_id !== replyId));
   };
 
-  useEffect(() => {
-    if ((isViewingOwnPost || feed.isAdmin || feed.isModerator) && !canRemove) {
-      canRemove = true;
+  const handleLoginRedirect = () => {
+    if (window.confirm ('You must be logged in to vote. Would you like to log in?')) {
+      navigate('/login', { state: {from: window.location.pathname} });
     }
-  }, [isViewingOwnPost, feed.isAdmin, feed.isModerator, canRemove]);
+  };
+	useEffect(() => {
+		if (isAuthenticated && (isViewingOwnPost || feed?.isAdmin || feed?.isModerator) && !canRemove) {
+			canRemove = true;
+		}
+	}, [isViewingOwnPost, feed?.isAdmin, feed?.isModerator, canRemove, isAuthenticated]);
 
   useEffect(() => {
     const checkVoteLimit = async () => {
+      if (!isAuthenticated) return;
       try {
         const response = await axios.post('/api/content_vote', {
           postId: post.post_id,
@@ -123,7 +130,7 @@ const ContentWidget = ({ canRemove, feed, isGroup, onEditClick, onPostRemoved, o
       }
     };
     checkVoteLimit();
-  }, [post.post_id, viewer.feed_id]);
+  }, [isAuthenticated, post.post_id, viewer.feed_id]);
 
   useEffect(() => {
     if (showReplies) {
@@ -179,18 +186,30 @@ const ContentWidget = ({ canRemove, feed, isGroup, onEditClick, onPostRemoved, o
           </Link>
         </div>
         <div className="vote-container">
-          {!isViewingOwnPost ? (   
-            <>
-              <button className={`large-icon ${upvoteClass}`} disabled={upvoteLimit} onClick={() => postVote(post.post_id, 'upvote')} title={upvoteLimit ? 'Vote limit reached' : 'Upvote'}>
-                <FaArrowUp />
-              </button>
-              <span className="total-votes">{upvotes - downvotes}</span>      
-              <button className={`large-icon ${downvoteClass}`} disabled={downvoteLimit} onClick={() => postVote(post.post_id, 'downvote')} title={downvoteLimit ? 'Vote limit reached' : 'Upvote'}>
-                <FaArrowDown />
-              </button>
-            </>
+          {isAuthenticated ? (
+            !isViewingOwnPost ? (   
+              <>
+                <button className={`large-icon ${upvoteClass}`} disabled={upvoteLimit} onClick={() => postVote(post.post_id, 'upvote')} title={upvoteLimit ? 'Vote limit reached' : 'Upvote'}>
+                  <FaArrowUp />
+                </button>
+                <span className="total-votes">{upvotes - downvotes}</span>      
+                <button className={`large-icon ${downvoteClass}`} disabled={downvoteLimit} onClick={() => postVote(post.post_id, 'downvote')} title={downvoteLimit ? 'Vote limit reached' : 'Upvote'}>
+                  <FaArrowDown />
+                </button>
+              </>
+            ) : (
+              <span className="total-votes">{upvotes - downvotes} {Math.abs(upvotes - downvotes) === 1 ? 'vote' : 'votes'}</span>
+            )
           ) : (
-            <span className="total-votes">{upvotes - downvotes} {Math.abs(upvotes - downvotes) === 1 ? 'vote' : 'votes'}</span>
+						<>
+							<button className="large-icon" onClick={handleLoginRedirect} title="Login to vote">
+								<FaArrowUp />
+							</button>
+							<span className="total-votes">{upvotes - downvotes}</span>
+							<button className="large-icon" onClick={handleLoginRedirect} title="Login to vote">
+								<FaArrowDown />
+							</button>
+						</>
           )}
         </div>
         {!readOnly && (
@@ -206,17 +225,17 @@ const ContentWidget = ({ canRemove, feed, isGroup, onEditClick, onPostRemoved, o
         )}
         <p className="text16">{views} {views === 1 ? 'view' : 'views'}</p>
         <p className="text16">{new Date(post.created_at).toLocaleDateString()}</p>
-        {post.poster_id === viewer.feed_id && !readOnly && (
+        {isAuthenticated && post.poster_id === viewer.feed_id && !readOnly && (
           <button className="large-icon" onClick={() => onEditClick(post)} title={isReply ? "Edit Reply" : "Edit Post"}>
             <FaEdit />
           </button>
         )}
-        {canRemove && !readOnly && (
+        {isAuthenticated && canRemove && !readOnly && (
           <button className="large-icon" onClick={removePost} title={isReply ? "Delete Reply" : "Delete Post"}>
             <FaTimesCircle />
           </button>
         )}
-        {!post.note?.is_misinfo && (
+        {isAuthenticated && !post.note?.is_misinfo && (
           <AskButton content={post} isGroup={isGroup} isReply={false} note={note} setNote={setNote} setPostErrorMessage={setPostErrorMessage} setShowNote={setShowNote} showNote={showNote} />
         )}
       </div>

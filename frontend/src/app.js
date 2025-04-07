@@ -1,7 +1,7 @@
 import React from 'react';
 import { Navigate, BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { AuthCheck } from './components/authContext';
+import { ProtectedRoute, PublicAuthProvider } from './components/authContext';
 import About from './pages/welcome/about';
 import Algorithm from './pages/welcome/algorithm';
 import AskChannel from './pages/ask/askChannel';
@@ -28,62 +28,62 @@ import { UnreadProvider } from './components/connections/unreadContext';
 import WelcomeHome from './pages/welcome/welcomeHome';
 
 //const muiTheme = createTheme();
-const queryClient = new QueryClient(); //Sets up React Query
 
 //Routes to each layout, some with the base layout wrapper
 const App = () => {
-    return (
-        <QueryClientProvider client={queryClient}>
-            <CustomThemeProvider>
-                <SocketProvider>
-                {/*<MUIThemeProvider theme={muiTheme} >*/}
-                        <Router>
-                            <Routes>
-                                <Route path="/welcome" element={<WelcomeHome />} />
-                                <Route path="/about" element={<About />} />
-                                <Route path="/algorithm" element={<Algorithm />} />
-                                <Route path="/content" element={<Content />} />
-                                <Route path="/feeds" element={<Feeds />} />
-                                <Route path="/membership" element={<Membership />} />
-                                <Route path="/privacy" element={<Privacy />} />
-                                <Route path="/login" element={<Login />} />
-                                <Route path="/join" element={<Join />} />
-                                <Route path="/" element={<QueryProvider>
-                                    <AuthCheck>
-                                        <UnreadProvider>
-                                            <BaseLayout />
-                                        </UnreadProvider>
-                                        </AuthCheck>
-                                    </QueryProvider>}>
-                                    <Route path="ask" element={<AskChannel />} >
-                                        <Route path=":chatId" element={<AskChannel />} />
-                                    </Route>
-                                    <Route path="g/:feed_name" element={<FeedWrapper />}>
-                                        <Route index element={<Navigate replace to="Main" />} />
-                                        <Route path=":channel_name" element={<FeedHome />} >
-                                            <Route path=":post_id" element={<ContentWidget />} />
-                                        </Route>
-                                    </Route>
-                                    <Route path="feed_settings/:feed_name" element={<FeedSettings />} />
-                                    <Route path="connections" element={<ConnectionsPage />} />
-                                    <Route path="connections/:connection_name" element={<ChatPage />} />
-                                    <Route path="connections/:connection_name/:title" element={<ChatPage />} />
-                                    <Route path="p/:feed_name" element={<PersonalFeed/>} />
-                                    <Route path="search" element={<SearchResults />} />
-                                    <Route path="u/:feed_name" element={<FeedWrapper />}>
-                                        <Route index element={<Navigate replace to="Main" />} />
-                                        <Route path=":channel_name" element={<FeedHome />} >
-                                            <Route path=":post_id" element={<ContentWidget />} />
-                                        </Route>
-                                    </Route>
-                                </Route>
-                            </Routes>
-                        </Router>
-                {/*</MUIThemeProvider>*/}
-                </SocketProvider>
-            </CustomThemeProvider>
-        </QueryClientProvider>
-    );
+	const queryClient = new QueryClient(); //Sets up React Query
+	return (
+		<QueryClientProvider client={queryClient}>
+			<CustomThemeProvider>
+				<SocketProvider>
+					<Router>
+						<Routes>
+							<Route path="/welcome" element={<WelcomeHome />} />
+							<Route path="/about" element={<About />} />
+							<Route path="/algorithm" element={<Algorithm />} />
+							<Route path="/content" element={<Content />} />
+							<Route path="/feeds" element={<Feeds />} />
+							<Route path="/membership" element={<Membership />} />
+							<Route path="/privacy" element={<Privacy />} />
+							<Route path="/login" element={<Login />} />
+							<Route path="/join" element={<Join />} />
+							<Route path="/" element={
+								<QueryProvider>
+									<PublicAuthProvider>
+										<UnreadProvider>
+											<BaseLayout />
+										</UnreadProvider>
+									</PublicAuthProvider>
+								</QueryProvider>
+							}>
+								<Route path="ask" element={<AskChannel />} >
+									<Route path=":chatId" element={<AskChannel />} />
+								</Route>
+								<Route path="g/:feed_name" element={<FeedWrapper />}>
+									<Route index element={<Navigate replace to="Main" />} />
+									<Route path=":channel_name" element={<FeedHome />} >
+										<Route path=":post_id" element={<ContentWidget />} />
+									</Route>
+								</Route>
+								<Route path="feed_settings/:feed_name" element={<ProtectedRoute><FeedSettings /></ProtectedRoute>} />
+								<Route path="connections" element={<ProtectedRoute><ConnectionsPage /></ProtectedRoute>} />
+								<Route path="connections/:connection_name" element={<ProtectedRoute><ChatPage /></ProtectedRoute>} />
+								<Route path="connections/:connection_name/:title" element={<ProtectedRoute><ChatPage /></ProtectedRoute>} />
+								<Route path="p/:feed_name" element={<ProtectedRoute><PersonalFeed/></ProtectedRoute>} />
+								<Route path="search" element={<SearchResults />} />
+								<Route path="u/:feed_name" element={<FeedWrapper />}>
+									<Route index element={<Navigate replace to="Main" />} />
+									<Route path=":channel_name" element={<FeedHome />} >
+										<Route path=":post_id" element={<ContentWidget />} />
+									</Route>
+								</Route>
+							</Route>
+						</Routes>
+					</Router>
+				</SocketProvider>
+			</CustomThemeProvider>
+		</QueryClientProvider>
+	);
 };
 
 export default App;
