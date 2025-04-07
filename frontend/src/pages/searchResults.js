@@ -20,13 +20,10 @@ const SearchResults = () => {
 
     //Gets results depending on which type is being viewed
     const fetchSearchResults = async ({ pageParam = 0 }) => {
-        console.log("Fetching search results for keyword:", keyword, "with pageParam:", pageParam);
         const searcherId = viewer?.feed_id;
-        console.log("searcherId:", searcherId);
         const response = await axios.get(
             `/api/search/${searcherId}?keyword=${keyword}&limit=10&offset=${pageParam}`
         );
-        console.log('Search results:', response.data);
         return response.data;
     };
 
@@ -37,7 +34,7 @@ const SearchResults = () => {
         getNextPageParam: (lastPage, allPages) => {
             return lastPage.feeds.length + lastPage.posts.length >= 10 ? allPages.length * 10 : undefined;
         },
-        enabled: !!keyword && !!viewer?.feed_id
+        enabled: !!keyword
     });
 
     //Intersection observer for infinite scrolling
@@ -108,15 +105,14 @@ const SearchResults = () => {
     
     const renderResults = () => {
         if (isLoading) {
-            return <div className="loading-indicator">Loading results...</div>;
+            return <p className="text36" style={{textAlign: 'center'}}>Loading results...</p>;
         }
         if (isError) {
-            setErrorMessage('Error loading search results');
-            return <div className="error-message">Failed to load results. Please try again.</div>;
+            return <p className="text36" style={{textAlign: 'center'}}>Failed to load results. Please try again.</p>;
         }
         const { feeds, posts } = filteredResults;
         if (feeds.length === 0 && posts.length === 0) {
-            return <p className="text36">No results found</p>;
+            return <p className="text36" style={{textAlign: 'center'}}>No results found</p>;
         }
         return (
             <>

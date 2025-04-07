@@ -157,6 +157,9 @@
     display: flex;
     flex-direction: row;
 }
+.chat-message-bar::placeholder, .name-input::placeholder, #search-bar::placeholder, textarea::placeholder, .title-input::placeholder {
+    color: #7b7b7b;
+}
 #confirmation-message {
     color: var(--border);
     margin-left: 10px;
@@ -316,9 +319,6 @@ main {
     padding: 5px;
     transition: var(--transition-regular);
     width: 80%;
-}
-.chat-message-bar::placeholder, .name-input::placeholder, #search-bar::placeholder, textarea::placeholder, .title-input::placeholder {
-    color: #7b7b7b;
 }
 #personal-feeds {
     margin-top: 20px;

@@ -44,7 +44,6 @@ const FeedHome = () => {
             try {
                 const response = await axios.get(`/api/feed/${feed_name}`);
                 const fetchedFeed = response.data.feedResult;
-                console.log(fetchedFeed);
                 setIsAdmin(fetchedFeed.isAdmin);
                 setIsModerator(fetchedFeed.isMod);
                 setIsLocked(fetchedFeed.is_locked);
@@ -302,7 +301,7 @@ const FeedHome = () => {
                             channelId={channelRender.channel_id}
                             channelName={channelRender.channel_name}
                             feed={feed}
-                            isGroup={true}
+                            isGroup={feed.is_group}
                             onEditClick={(post) => {
                                 setShowPostForm(true);
                                 setIsEdit(true);
