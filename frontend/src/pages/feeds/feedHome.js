@@ -39,22 +39,23 @@ const FeedHome = () => {
     const urlPrefix = feed.is_group ? 'g' : 'u';
 
     useEffect(() => {
-        if (!isAuthenticated) return;
         const fetchFeedData = async () => {
             setLoading(true);
             try {
                 const response = await axios.get(`/api/feed/${feed_name}`);
                 const fetchedFeed = response.data.feedResult;
+                console.log(fetchedFeed);
                 setIsAdmin(fetchedFeed.isAdmin);
                 setIsModerator(fetchedFeed.isMod);
                 setIsLocked(fetchedFeed.is_locked);
-                if (viewer.feed_id === fetchedFeed.feed_id){
+                if (viewer?.feed_id === fetchedFeed.feed_id){
                     setIsAdmin(true);
                     setIsModerator(true);
                 }
                 setFeed(fetchedFeed);
                 setFeedNotFound(false);
             } catch (error) {
+                console.error('Error fetching feed data:', error);
                 if (error.response && error.response.status === 404) {
                     setFeedNotFound(true);
                 } else {
@@ -334,7 +335,7 @@ const FeedHome = () => {
                         )}
                     </div>
                     <p className="description" >{feed.description}</p>
-                    {(feed.is_group || (user.user_id !== feed.feed_owner && feed.type === 'public')) && isAuthenticated && (
+                    {(feed.is_group || (user?.user_id !== feed.feed_owner && feed.type === 'public')) && isAuthenticated && (
                         <FollowerChangeButton feed={feed} viewerId={viewer.feed_id} />
                     )}
                     {/*{!isViewingSelf && !feed.is_group && (
@@ -401,7 +402,7 @@ const FeedHome = () => {
                                             {showChannelForm ? <FaMinus /> : <FaPlus />}
                                         </button>
                                     )}
-                                    {channelMode === "post" && !showPostForm && (feed.is_group || feed.feed_owner === user.user_id) && (!isLocked || isAdmin) && isAuthenticated && ( 
+                                    {channelMode === "post" && !showPostForm && (feed.is_group || feed.feed_owner === user?.user_id) && (!isLocked || isAdmin) && isAuthenticated && ( 
                                         <button
                                             className="small-icon"
                                             onClick={() => {

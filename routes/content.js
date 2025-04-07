@@ -39,7 +39,7 @@ const checkStorageLimit = async (req, res, next) => {
     }
 };
 
-router.get('/channel_posts', authenticateCheck, async (req, res) => {
+router.get('/channel_posts', async (req, res) => {
     try {
         const { channelId, feedId, isSingle, limit, offset, postId } = req.query;
         const includeOptions = [{
@@ -381,7 +381,7 @@ router.post('/increment_views', authenticateCheck, async (req, res) => {
     }
 });
 
-router.get('/post_replies/:postId', authenticateCheck, async (req, res) => {
+router.get('/post_replies/:postId', async (req, res) => {
     try {
         const { postId } = req.params;
         const parentPost = await Posts.findOne({ where: { post_id: postId } });

@@ -26,27 +26,45 @@ router.post('/change_password', authenticateCheck, async (req, res) => {
 router.get('/check_authentication', async (req, res) => {
     try {
         if (!req.session || !req.session.user_id) {
-            return res.status(401).json({ success: false, message: "User not authenticated" });
+            return res.status(200).json({
+                authenticated: false,
+                feeds: null,
+                user: null,
+                currentFeed: null
+            });
         }
         const user = await Users.findByPk(req.session.user_id);
         if (!user) {
-            return res.status(401).json({ success: false });
+            return res.status(200).json({
+                authenticated: false,
+                feeds: null,
+                user: null,
+                currentFeed: null
+            });
         }
-        const feeds = await Feeds.findAll({ where: { is_group: 0, feed_owner: req.session.user_id } });
-        if (!feeds || feeds.length === 0) {
-            return res.status(404).json({ success: false });
+        const feeds = await Feeds.findAll({ 
+            where: { 
+                is_group: 0, 
+                feed_owner: req.session.user_id 
+            }
+        });
+        if (!req.session.feed_id && feeds.length > 0) {
+            req.session.feed_id = feeds[0].feed_id;
         }
-        if (!req.session.feed_id) {
-            req.session.feed_id = feeds[0].feed_id; 
-        }
-        res.status(200).json({
+        return res.status(200).json({
             authenticated: true,
-            feeds,
+            feeds: feeds || [],
             user,
             currentFeed: req.session.feed_id
         });
     } catch (error) {
-        res.status(500).json({ success: false });
+        console.error('Authentication check error:', error);
+        return res.status(200).json({
+            authenticated: false,
+            feeds: null,
+            user: null,
+            currentFeed: null
+        });
     }
 });
 

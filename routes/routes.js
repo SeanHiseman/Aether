@@ -140,6 +140,8 @@ router.get('/recommended_posts', authenticateCheck, async (req, res) => {
 router.get('/search/:searcherId', authenticateCheck, async (req, res) => { 
     try {
         const searcherId = req.params.searcherId;
+        console.log("Searcher ID:", searcherId);
+        console.log("keyword:", req.query.keyword);
         const keyword = req.query.keyword ? req.query.keyword.toLowerCase() : '';
         const limit = req.query.limit ? parseInt(req.query.limit, 10) : 10;
         const offset = req.query.offset ? parseInt(req.query.offset, 10) : 0;
@@ -153,6 +155,7 @@ router.get('/search/:searcherId', authenticateCheck, async (req, res) => {
             limit,
             offset
         });
+        console.log("Feeds found:", feeds);
         const feedData = await Promise.all(feeds.map(async (feed) => {
             const feedJSON = feed.toJSON();
             const response = {
@@ -248,8 +251,8 @@ router.get('/search/:searcherId', authenticateCheck, async (req, res) => {
                 postVotes,
             };
         }));
-        //console.log("Post results:", postResults);
-        //console.log("Processed posts:", processedPosts);
+        console.log("Post results:", postResults);
+        console.log("Processed posts:", processedPosts);
         res.status(200).json({ 
             feeds: feedData, 
             posts: processedPosts,

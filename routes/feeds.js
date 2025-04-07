@@ -332,11 +332,11 @@ router.delete('/delete_feed_channel', authenticateCheck, async (req, res) => {
     }
 });
 
-router.get('/feed/:feedName', authenticateCheck, async (req, res) => {
+router.get('/feed/:feedName', async (req, res) => {
     try {
         const feedName = req.params.feedName;
-        const userId = req.session.user_id;
-        const viewerId = req.session.feed_id;
+        const userId = req.session && req.session.user_id;
+        const viewerId = req.session && req.session.feed_id;
         let isAdmin = false,
             isMod = false,
             isConnected = false,
@@ -347,12 +347,14 @@ router.get('/feed/:feedName', authenticateCheck, async (req, res) => {
         if (!feed) {
             return res.status(404).json({ success: false, message: "Feed not found." }); 
         }
-        if (userId === feed.feed_owner) {
+        //If user is logged in and is the owner
+        if (userId && userId === feed.feed_owner) {
             isAdmin = true;
             isMod = true;
             isConnected = true;
             isFollower = true;
-        } else {
+        } else if (viewerId) {
+            //If viewer has a feed_id but isn't the owner
             const followStatus = await FollowerCheck(viewerId, feed.feed_id);
             isAdmin = followStatus.isAdmin;
             isMod = followStatus.isMod;
@@ -391,11 +393,11 @@ router.get('/feed/:feedName', authenticateCheck, async (req, res) => {
         }
         res.status(200).json({ success: true, feedResult });
     } catch (error) {
-        res.status(500).json({ success: false });
+        res.status(500).json({ success: false, message: "An error occurred while retrieving the feed." });
     }
 });
 
-router.get('/feed_channel_messages', authenticateCheck, async (req, res) => {
+router.get('/feed_channel_messages', async (req, res) => {
     try {
         const { channelId, limit, offset } = req.query;
         const messages = await FeedChannelMessages.findAll({
@@ -411,7 +413,7 @@ router.get('/feed_channel_messages', authenticateCheck, async (req, res) => {
     }
 });
 
-router.get('/feed_list', async (req, res) => {
+router.get('/feed_list', authenticateCheck, async (req, res) => {
     try {
         const { followerId, offset } = req.query;
         const parsedOffset = parseInt(offset) || 0;
@@ -472,7 +474,7 @@ router.get('/follow_requests/:feedId', authenticateCheck, async (req, res) => {
     }
 });
 
-router.get('/get_feed_channels/:feedId', authenticateCheck, async (req, res) => {
+router.get('/get_feed_channels/:feedId', async (req, res) => {
     try {
         const feedId = req.params.feedId; 
         const channels = await FeedChannels.findAll({

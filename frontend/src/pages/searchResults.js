@@ -15,26 +15,29 @@ const SearchResults = () => {
     const [searchParams] = useSearchParams();
     const keyword = (searchParams.get('keyword') || '').trim();
     const [timePreference, setTimePreference] = useState(0.001);
-    const { user, viewer } = useContext(AuthContext);
+    const { isAuthenticated, user, viewer } = useContext(AuthContext);
     const loaderRef = useRef(null);
 
     //Gets results depending on which type is being viewed
     const fetchSearchResults = async ({ pageParam = 0 }) => {
-        const searcherId = viewer.feed_id;
+        console.log("Fetching search results for keyword:", keyword, "with pageParam:", pageParam);
+        const searcherId = viewer?.feed_id;
+        console.log("searcherId:", searcherId);
         const response = await axios.get(
             `/api/search/${searcherId}?keyword=${keyword}&limit=10&offset=${pageParam}`
         );
+        console.log('Search results:', response.data);
         return response.data;
     };
 
     //Infinite query to handle pagination
     const { data, error, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading, isError } = useInfiniteQuery({
-        queryKey: ['searchResults', keyword, viewer.feed_id],
+        queryKey: ['searchResults', keyword, viewer?.feed_id],
         queryFn: fetchSearchResults,
         getNextPageParam: (lastPage, allPages) => {
             return lastPage.feeds.length + lastPage.posts.length >= 10 ? allPages.length * 10 : undefined;
         },
-        enabled: !!keyword && !!viewer.feed_id
+        enabled: !!keyword && !!viewer?.feed_id
     });
 
     //Intersection observer for infinite scrolling
@@ -113,14 +116,13 @@ const SearchResults = () => {
         }
         const { feeds, posts } = filteredResults;
         if (feeds.length === 0 && posts.length === 0) {
-            return <p className="text35">No results found</p>;
+            return <p className="text36">No results found</p>;
         }
         return (
             <>
                 {feeds.length > 0 && feeds.map((feed) => (
-                    <FeedWidget key={feed.feed_id} feed={feed} viewerId={viewer.feed_id} />
+                    <FeedWidget key={feed.feed_id} feed={feed} viewerId={viewer?.feed_id} />
                 ))}
-                
                 {posts.length > 0 && posts.map((post) => (
                     <ContentWidget key={post.post_id} feed={post.feed} post={post} isGroup={post.is_group} />
                 ))}
