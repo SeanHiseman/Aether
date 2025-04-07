@@ -5,66 +5,69 @@ import { useNavigate } from 'react-router-dom';
 export const AuthContext = createContext();
 
 export const PublicAuthProvider = ({ children }) => {
-	const [isAuthenticated, setIsAuthenticated] = useState(false);
-	const [user, setUser] = useState(null);
-	const [viewer, setViewer] = useState(null);
+    const [isAuthenticated, setIsAuthenticated] = useState(false);
+    const [user, setUser] = useState(null);
+    const [viewer, setViewer] = useState(null);
+    const [isLoading, setIsLoading] = useState(true);
 
-    //Prevents rerendering
     const contextValue = useMemo(() => {
-        return { isAuthenticated, user, viewer };
-    }, [isAuthenticated, user, viewer]);
+        return { isAuthenticated, user, viewer, isLoading };
+    }, [isAuthenticated, user, viewer, isLoading]);
 
-	useEffect(() => {
-		const checkAuthentication = async () => {
-			try {
-				const response = await axios.get('/api/check_authentication');
-				const { authenticated, feeds, user, currentFeed } = response.data;
-				if (authenticated) {
-					setIsAuthenticated(true);
-					setUser(user);
-					const selectedFeed = feeds.find(feed => feed.feed_id === currentFeed);
-					if (selectedFeed) {
-						if (!viewer || viewer.feed_id !== selectedFeed.feed_id) {
-							setViewer(selectedFeed);
-						}
-					}
-				} else {
-					//User is not authenticated but can still view content
-					setIsAuthenticated(false);
-					setUser(null);
-					setViewer(null);
-				}
-			} catch (error) {
-				//Viewing allowed but not authenticated
-				setIsAuthenticated(false);
-				setUser(null);
-				setViewer(null);
-			}
-		};
-		checkAuthentication();
-	}, []);
+    useEffect(() => {
+        const checkAuthentication = async () => {
+            try {
+                const response = await axios.get('/api/check_authentication');
+                const { authenticated, feeds, user, currentFeed } = response.data;
+                
+                if (authenticated && user) {
+                    setIsAuthenticated(true);
+                    setUser(user);
+                    if (feeds && currentFeed) {
+                        const selectedFeed = feeds.find(feed => feed.feed_id === currentFeed);
+                        if (selectedFeed && (!viewer || viewer.feed_id !== selectedFeed.feed_id)) {
+                            setViewer(selectedFeed);
+                        }
+                    }
+                } else {
+                    setIsAuthenticated(false);
+                    setUser(null);
+                    setViewer(null);
+                }
+            } catch (error) {
+                console.log('Authentication check error:', error);
+                setIsAuthenticated(false);
+                setUser(null);
+                setViewer(null);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+        checkAuthentication();
+    }, []);
 
-	return (
-		<AuthContext.Provider value={contextValue}>
-			{children}
-		</AuthContext.Provider>
-	);
+    return (
+        <AuthContext.Provider value={contextValue}>
+            {!isLoading && children}
+        </AuthContext.Provider>
+    );
 };
 
-//Protect routes that require authentication
 export const ProtectedRoute = ({ children }) => {
-	const { isAuthenticated } = React.useContext(AuthContext);
-	const navigate = useNavigate();
-	
-	useEffect(() => {
-		if (!isAuthenticated) {
-			navigate('/login', { state: { from: window.location.pathname } });
-		}
-	}, [isAuthenticated, navigate]);
-	
-	if (!isAuthenticated) {
-		return null;
-	}
-	
-	return children;
+    const { isAuthenticated, isLoading } = React.useContext(AuthContext);
+    const navigate = useNavigate();
+    
+    useEffect(() => {
+        if (!isLoading && !isAuthenticated) {
+            navigate('/login', { 
+                state: { from: window.location.pathname },
+                replace: true 
+            });
+        }
+    }, [isAuthenticated, isLoading, navigate]);
+    
+    if (isLoading) return <div>Loading...</div>;
+    if (!isAuthenticated) return null;
+    
+    return children;
 };

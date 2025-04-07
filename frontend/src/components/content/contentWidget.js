@@ -25,7 +25,7 @@ const ContentWidget = ({ canRemove, feed, isGroup, onEditClick, onPostRemoved, o
   const [views, setViews] = useState(post.views);
   const { isAuthenticated, user, viewer } = useContext(AuthContext);
   const isReply = readOnly ? false : post.parent_id !== null; //Read only means not displaying widget as a reply
-  const isViewingOwnPost = post.poster_id === viewer.feed_id;
+  const isViewingOwnPost = post.poster_id === viewer?.feed_id;
   const urlPrefix = isGroup ? 'g' : 'u';
 
   const getReplies = useCallback(async (postId) => {
@@ -39,6 +39,7 @@ const ContentWidget = ({ canRemove, feed, isGroup, onEditClick, onPostRemoved, o
 
   const incrementViews = useCallback(
     async (postId) => {
+      if (!isAuthenticated) return; //Only count views if user is logged in
       try {
         if (!hasViewed && (!isAuthenticated || (isAuthenticated && viewer?.feed_id !== post.poster_id))) {
           const response = await axios.post('/api/increment_views', { postId });
@@ -51,7 +52,7 @@ const ContentWidget = ({ canRemove, feed, isGroup, onEditClick, onPostRemoved, o
         setPostErrorMessage('Error incrementing views');
       }
     },
-    [hasViewed, post.poster_id, viewer.feed_id]
+    [hasViewed, post.poster_id, viewer?.feed_id]
   );
 
   const postVote = async (postId, voteType) => {
@@ -102,7 +103,7 @@ const ContentWidget = ({ canRemove, feed, isGroup, onEditClick, onPostRemoved, o
   };
 
   const handleLoginRedirect = () => {
-    if (window.confirm ('You must be logged in to vote. Would you like to log in?')) {
+    if (window.confirm ('Log in to vote.')) {
       navigate('/login', { state: {from: window.location.pathname} });
     }
   };
@@ -113,12 +114,12 @@ const ContentWidget = ({ canRemove, feed, isGroup, onEditClick, onPostRemoved, o
 	}, [isViewingOwnPost, feed?.isAdmin, feed?.isModerator, canRemove, isAuthenticated]);
 
   useEffect(() => {
+    if (!isAuthenticated) return;
     const checkVoteLimit = async () => {
-      if (!isAuthenticated) return;
       try {
         const response = await axios.post('/api/content_vote', {
           postId: post.post_id,
-          feedId: viewer.feed_id,
+          feedId: viewer?.feed_id,
           voteType: 'check_vote',
         });
         if (response.data.success) {
@@ -130,7 +131,7 @@ const ContentWidget = ({ canRemove, feed, isGroup, onEditClick, onPostRemoved, o
       }
     };
     checkVoteLimit();
-  }, [isAuthenticated, post.post_id, viewer.feed_id]);
+  }, [isAuthenticated, post.post_id, viewer?.feed_id]);
 
   useEffect(() => {
     if (showReplies) {
@@ -218,9 +219,11 @@ const ContentWidget = ({ canRemove, feed, isGroup, onEditClick, onPostRemoved, o
               {showReplies ? <FaCommentSlash /> : <FaComments />}
               <p className="text16" id={`reply-count-${post.post_id}`}>{post.replies}</p>
             </button>
-            <button className="large-icon" onClick={() => onReplyClick(post)} disabled={readOnly} title="Reply">
-              <FaReply />
-            </button>
+            {isAuthenticated && (
+              <button className="large-icon" onClick={() => onReplyClick(post)} disabled={readOnly} title="Reply">
+                <FaReply />
+              </button>
+            )}
           </>
         )}
         <p className="text16">{views} {views === 1 ? 'view' : 'views'}</p>

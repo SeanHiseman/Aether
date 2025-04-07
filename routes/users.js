@@ -47,18 +47,18 @@ router.post('/change_username', authenticateCheck, async (req, res) => {
     }
 });
 
-router.get('/get_theme', authenticateCheck, async (req, res) => {
+router.get('/get_theme', async (req, res) => {
     try {
-        const userId = req.session.user_id;
+        const userId = req.session && req.session.user_id;
         if (!userId) {
-            return res.json({ theme: 'dark'});
+            return res.status(200).json({ theme: 'dark'});
         }
         const user = await Users.findOne({
             where: { user_id: userId },
             attributes: ['theme']
         });
         if (!user) {
-            return res.json({ theme: 'dark'});
+            return res.status(200).json({ theme: 'dark'});
         }
         res.json({ theme: user.theme });
     } catch (error) {
