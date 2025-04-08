@@ -6,7 +6,7 @@ import React, { useCallback, useContext, useEffect, useRef, useState } from 'rea
 import { FaAlignCenter, FaArrowCircleUp, FaArrowDown, FaArrowRight, FaArrowUp, FaCircleNotch, FaCommentAlt, FaEdit, FaEye, FaFont, FaPhotoVideo, FaPlus, FaReply, FaSave, FaTerminal, FaTimes, FaToolbox, FaTrash, FaWindowClose } from 'react-icons/fa'
 import ReactQuill from 'react-quill'
 import 'react-quill/dist/quill.snow.css'
-import { v4 as uuidv4 } from 'uuid'
+import { v4 } from 'uuid'
 import { AuthContext } from '../authContext'
 import ContentWidget from './contentWidget'
 
@@ -93,13 +93,13 @@ const ContentForm = ({ feed, isEdit = false, isGroup, isReply, onSubmit, post = 
 			setTitle(post.title || '')
 			const existingBlocks = parseContentBlocks(post.content || '')
 			if (existingBlocks.length) setBlocks(existingBlocks)
-			else setBlocks([{ data: { html: post.content }, id: uuidv4(), isEditing: true, type: BLOCK_TYPES.TEXT }])
+			else setBlocks([{ data: { html: post.content }, id: v4(), isEditing: true, type: BLOCK_TYPES.TEXT }])
 		}
 	}, [isEdit, post])
 
 	useEffect(() => {
 		if (!isEdit) {
-			setBlocks([{ data: { html: '' }, id: uuidv4(), isEditing: true, type: BLOCK_TYPES.TEXT }])
+			setBlocks([{ data: { html: '' }, id: v4(), isEditing: true, type: BLOCK_TYPES.TEXT }])
 		}
 	}, [isEdit])
 
@@ -146,11 +146,11 @@ const ContentForm = ({ feed, isEdit = false, isGroup, isReply, onSubmit, post = 
 		}
 		const newBlock = {
 			data: type === BLOCK_TYPES.TEXT ? { html: '' } : type === BLOCK_TYPES.CODE ? { code: '', isBlockLoading: false, showPrompt: true } : { file: null, fileType: '', isImage: false, isVideo: false, url: '', align: 'left' },
-			id: uuidv4(),
+			id: v4(),
 			isEditing: type !== BLOCK_TYPES.MEDIA,
 			type
 		}
-		setBlocks(prev => [...prev, newBlock])
+		setBlocks(prev => [newBlock, ...prev])
 	}, [blocks.length, BLOCK_LIMIT, hasMembership])
 
 	const handleFilesChange = useCallback(event => {
@@ -171,12 +171,12 @@ const ContentForm = ({ feed, isEdit = false, isGroup, isReply, onSubmit, post = 
 		const fittingFiles = hasMembership ? files : files.slice(0, canFitCount)
 		const uniqueFiles = fittingFiles.map(file => {
 			const ext = file.name.substring(file.name.lastIndexOf('.'))
-			const uniqueName = `${Date.now()}-${uuidv4()}${ext}`
+			const uniqueName = `${Date.now()}-${v4()}${ext}`
 			return new File([file], uniqueName, { type: file.type })
 		})
 		const mediaBlocks = uniqueFiles.map(file => ({
 			data: { file, fileType: file.type, isImage: file.type.startsWith('image/'), isVideo: file.type.startsWith('video/'), url: URL.createObjectURL(file), align: 'left' },
-			id: uuidv4(),
+			id: v4(),
 			isEditing: false,
 			type: BLOCK_TYPES.MEDIA
 		}))
@@ -254,7 +254,7 @@ const ContentForm = ({ feed, isEdit = false, isGroup, isReply, onSubmit, post = 
 				setFormErrorMessage('Prompt cannot be empty.')
 				return
 			}
-			updateBlock({ ...block, data: { ...block.data, isBlockLoading: true, _tempAiPrompt: 'Creating...' } });
+			updateBlock({ ...block, data: { ...block.data, isBlockLoading: true, _tempAiPrompt: '' } });
 			setFormErrorMessage('')
 			const response = await axios.post('/api/generate_content', { currentCode: block.data.code, parentCode: isReply ? post.content : null, request: prompt, senderId: user.user_id })
 			if (response.data && response.status === 201) {
@@ -287,7 +287,7 @@ const ContentForm = ({ feed, isEdit = false, isGroup, isReply, onSubmit, post = 
 			const response = await axios.post('/api/generate_content', { currentCode: fullHTML, parentCode: isReply ? post.content : null, request: prompt, senderId: user.user_id })
 			if (response.data && response.status === 201) {
 				const { generatedContent } = response.data
-				setBlocks([{ data: { code: generatedContent, isBlockLoading: false, showPrompt: true }, id: uuidv4(), isEditing: false, type: BLOCK_TYPES.CODE }])
+				setBlocks([{ data: { code: generatedContent, isBlockLoading: false, showPrompt: true }, id: v4(), isEditing: false, type: BLOCK_TYPES.CODE }])
 			} else setFormErrorMessage('Creation error.')
 		} catch {
 			setFormErrorMessage('Error creating content.')
@@ -308,7 +308,7 @@ const ContentForm = ({ feed, isEdit = false, isGroup, isReply, onSubmit, post = 
 			const formData = new FormData()
 			let postId
 			if (!isEdit) {
-				postId = uuidv4()
+				postId = v4()
 				formData.append('post_id', postId)
 			} else postId = post.post_id
 			formData.append('content', finalHTML)
@@ -424,7 +424,7 @@ const ContentForm = ({ feed, isEdit = false, isGroup, isReply, onSubmit, post = 
 							<Droppable droppableId="blocks-droppable">
 								{provided => (
 									<div ref={provided.innerRef} {...provided.droppableProps}>
-										{!blocks.length && <p className="text24">Add content using the buttons above</p>}
+										{!blocks.length && <p className="text24 dark-text">Add content using the buttons above</p>}
 										{blocks.map((block, index) => {
 											const { data, id, isEditing, type } = block
 											const toggleEdit = () => updateBlock({ ...block, isEditing: !isEditing })
@@ -501,14 +501,23 @@ const ContentForm = ({ feed, isEdit = false, isGroup, isReply, onSubmit, post = 
 																								setFormErrorMessage('Prompt exceeds character limit.', !user.has_membership && 'Get membership for more.');
 																							}
 																						}}
-																						placeholder={limitReached ? user.has_membership ? "Usage limit reached" : "Usage limit reached. Get membership for more." : "Describe your content (warning: this feature may not work very well yet)..."} 
+																						placeholder={limitReached ? (user.has_membership ? "Usage limit reached" 
+																							: "Usage limit reached. Get membership for more.") 
+																							: data.isBlockLoading ? "Loading..." 
+																							: "Describe your content (warning: this feature may not work very well yet)..."
+																						}
 																						value={data._tempAiPrompt || ''}/>
 																					<button className={data.isBlockLoading || !data._tempAiPrompt?.trim() || limitReached ? 'small-icon disabled' : 'small-icon'} 
 																						disabled={data.isBlockLoading || !data._tempAiPrompt?.trim() || limitReached} 
 																						onClick={() => handleGenerateCodeBlock(block)} 
-																						title={limitReached ? user.has_membership ? "Usage limit reached" : "Usage limit reached. Get membership for more." : data.isBlockLoading ? 'Creating...' : !data._tempAiPrompt?.trim() ? 'Enter a prompt' : 'Create'}
+																						title={limitReached ? (user.has_membership ? "Usage limit reached" 
+																							: "Usage limit reached. Get membership for more.") 
+																							: data.isBlockLoading ? 'Loading...' 
+																							: !data._tempAiPrompt?.trim() ? 'Enter a prompt' 
+																							: 'Create'
+																						}
 																						type="button">
-																						{data.isBlockLoading ? <FaCircleNotch /> : <FaArrowCircleUp />}
+																						{data.isBlockLoading ? <FaCircleNotch className="spinner" /> : <FaArrowCircleUp />}
 																					</button>
 																				</div>
 																			) : (
