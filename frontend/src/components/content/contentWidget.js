@@ -103,10 +103,11 @@ const ContentWidget = ({ canRemove, feed, isGroup, onEditClick, onPostRemoved, o
   };
 
   const handleLoginRedirect = () => {
-    if (window.confirm ('Log in to vote.')) {
+    if (window.confirm ('Login to vote.')) {
       navigate('/login', { state: {from: window.location.pathname} });
     }
   };
+  
 	useEffect(() => {
 		if (isAuthenticated && (isViewingOwnPost || feed?.isAdmin || feed?.isModerator) && !canRemove) {
 			canRemove = true;

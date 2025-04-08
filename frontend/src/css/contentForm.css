@@ -170,7 +170,6 @@
 .ql-toolbar .ql-stroke {
 	stroke: #7b7b7b !important;
 }
-
 .shared-container { 
   display: flex;
   flex: 1; 
@@ -182,6 +181,13 @@
   border-radius: 5px;
   padding: var(--medium-margin);
   padding-bottom: 0;
+}
+.spinner {
+  animation: spin 1s linear infinite;
+}
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }
 .title-input {
   background-color: var(--dark);

@@ -36,6 +36,9 @@ body, html {
 .button.large {
     font-size: x-large;
 }
+.dark-text {
+    color: var(--dark);
+}
 .disabled {
     cursor: default;
 }

@@ -128,7 +128,7 @@ router.get('/get_ask_chats', authenticateCheck, async (req, res) => {
 router.post('/generate_content', authenticateCheck, async (req, res) => {
     try {
         const { currentCode, request, parentCode, senderId } = req.body;
-        console.log("Request received:", req.body);
+        //console.log("Request received:", req.body);
         const assistantInstructions = parentCode
             ? `You are an expert HTML/JavaScript code generator. Generate or improve HTML code based on the following context:
             Request: ${request}
@@ -175,7 +175,7 @@ router.post('/generate_content', authenticateCheck, async (req, res) => {
             ],
             max_tokens: 8192,
         });
-        console.log('Anthropic response:', response);
+        //console.log('Anthropic response:', response);
         let aiReply = response.content[0].text.trim();
         //If the response starts with text followed by HTML, extract just the HTML
         const doctypeIndex = aiReply.indexOf('<!DOCTYPE html>');
@@ -188,7 +188,7 @@ router.post('/generate_content', authenticateCheck, async (req, res) => {
         await Users.increment('usage_count', { by: characterCount, where: { user_id: senderId } });
         res.status(201).json({ success: true, generatedContent: aiReply });
     } catch (error) {
-        console.error('Error generating content:', error);
+        //console.error('Error generating content:', error);
         res.status(500).json({ success: false, error: error.message });
     }
 });
