@@ -135,7 +135,6 @@ router.post('/generate_content', authenticateCheck, async (req, res) => {
         const tokens = normalizedRequest.split(/\s+/)
             .filter(word => word.length > 2 && !commonWords.includes(word))
             .map(word => word.replace(/[^\w]/g, '')); //Remove non-alphanumeric characters
-        console.log("Tokens:", tokens);
         let similarPrompt = null;
         //Search for similar prompts to avoid having to generate new content
         if (tokens.length > 0) {
@@ -151,7 +150,6 @@ router.post('/generate_content', authenticateCheck, async (req, res) => {
                         });
                     }
                 }
-                console.log("significantTokens:", significantTokens);
                 if (whereConditions.length > 0) {
                     const potentialMatches = await Prompts.findAll({
                         where: {
@@ -159,7 +157,6 @@ router.post('/generate_content', authenticateCheck, async (req, res) => {
                         },
                         limit: 10
                     });
-                    console.log("Potential Matches:", potentialMatches);
                     if (potentialMatches.length > 0) {
                         let bestMatch = null;
                         let bestScore = 0;
@@ -189,7 +186,6 @@ router.post('/generate_content', authenticateCheck, async (req, res) => {
                         }
                         if (bestMatch) {
                             similarPrompt = bestMatch;
-                            console.log("similarPrompt:", similarPrompt);
                         }
                     }
                 }
@@ -201,7 +197,6 @@ router.post('/generate_content', authenticateCheck, async (req, res) => {
         if (similarPrompt) {
             aiReply = similarPrompt.response_content;
             fromCache = true;
-            console.log("fromCache:", fromCache);
             return res.status(201).json({ 
                 success: true, 
                 generatedContent: aiReply,
@@ -260,14 +255,12 @@ router.post('/generate_content', authenticateCheck, async (req, res) => {
         });
         const characterCount = currentCode.length + (parentCode?.length ?? 0) + aiReply.length;
         await Users.increment('usage_count', { by: characterCount, where: { user_id: senderId } });
-        console.log("fromCache:", fromCache);
         res.status(201).json({ 
             success: true, 
             generatedContent: aiReply,
             fromCache: false
         });
     } catch (error) {
-        console.log(error);
         res.status(500).json({ success: false, error: error.message });
     }
 });
