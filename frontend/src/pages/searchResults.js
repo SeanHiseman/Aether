@@ -117,7 +117,7 @@ const SearchResults = () => {
         return (
             <>
                 {feeds.length > 0 && feeds.map((feed) => (
-                    <FeedWidget key={feed.feed_id} feed={feed} viewerId={viewer?.feed_id} />
+                    <FeedWidget key={feed.feed_id} feed={feed} isAuthenticated={isAuthenticated} viewerId={viewer?.feed_id} />
                 ))}
                 {posts.length > 0 && posts.map((post) => (
                     <ContentWidget key={post.post_id} feed={post.feed} post={post} isGroup={post.is_group} />
