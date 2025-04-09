@@ -20,9 +20,9 @@ const Feeds = () => {
             <div className="welcome-box single">
                 <div className="left-aligned-text">
                     <p className="welcome-box-header">Feeds</p>
-                    <p>Posts are made to feeds. Each feed has channels. Main channels display content from across the feed, so nothing is missed</p>
+                    <p>Posts are made to feeds. Each feed has channels.</p>
                     <div className="spacer20px"/>
-                    <p>See posts just from your connections, follows, recommendations or create your own custom feed</p>
+                    <p>Feeds can be combined together to form Deep Feeds, like folders on a computer</p>
                     <div className="spacer20px"/>
                     <p>Users have their own feeds where only they can post content</p>
                 </div>

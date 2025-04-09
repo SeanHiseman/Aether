@@ -1,5 +1,6 @@
 import { BOOLEAN, STRING, DataTypes, INTEGER, TEXT } from 'sequelize';
 import sequelize from '../databaseSetup.js';
+import { response } from 'express';
 
 const Posts = sequelize.define('posts', {
     post_id: { type: STRING(36), primaryKey: true },
@@ -37,8 +38,16 @@ const PostVotes = sequelize.define('post_votes', {
     updated_at: { type: DataTypes.DATE(3), allowNull: false, defaultValue: sequelize.literal('CURRENT_TIMESTAMP(3)') },
 }, { tableName: 'post_votes', timestamps: false });
 
+const Prompts = sequelize.define('prompts', {
+    prompt_id: { type: STRING(36), primaryKey: true },
+    prompt_content: { type: STRING(100000), allowNull: false },
+    response_content: { type: STRING(100000), allowNull: false },
+    created_at: { type: DataTypes.DATE(3), defaultValue: sequelize.literal('CURRENT_TIMESTAMP(3)') },
+}, { tableName: 'prompts', timestamps: false });
+
 export {
     Posts,
     PostNotes,
-    PostVotes
+    PostVotes,
+    Prompts
 }

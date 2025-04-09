@@ -28,6 +28,7 @@ const About = () => {
                     <div className="spacer20px"/>
                     <p>All users can earn money from their posts, without needing to serve advertisers or be a big creator. Most revenue from memberships is shared with the community, with votes and view deciding how much each post earns</p>
                     <div className="spacer20px"/>
+                    <p>This is a vision we are currently working on making a reality. Join us to help out</p>
                 </div>
             </div>
         </div>

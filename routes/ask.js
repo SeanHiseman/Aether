@@ -3,8 +3,9 @@ import Anthropic from '@anthropic-ai/sdk/index.mjs';
 import dotenv from 'dotenv';
 import OpenAI from "openai";
 import { Router } from 'express';
+import { Sequelize } from 'sequelize';
 import { v4 } from 'uuid';
-import { AskChats, AskMessages, PostNotes, Users } from '../models/relationships.js';
+import { AskChats, AskMessages, PostNotes, Prompts, Users } from '../models/relationships.js';
 
 dotenv.config();
 const openai = new OpenAI();
@@ -128,45 +129,109 @@ router.get('/get_ask_chats', authenticateCheck, async (req, res) => {
 router.post('/generate_content', authenticateCheck, async (req, res) => {
     try {
         const { currentCode, request, parentCode, senderId } = req.body;
-        //console.log("Request received:", req.body);
+        const user = await Users.findOne({ where: { user_id: senderId } });
+        const normalizedRequest = request.toLowerCase().trim();
+        const commonWords = ['a', 'an', 'the', 'and', 'or', 'but', 'is', 'are', 'was', 'were', 'to', 'of', 'in', 'with', 'for', 'on', 'at', 'by'];
+        const tokens = normalizedRequest.split(/\s+/)
+            .filter(word => word.length > 2 && !commonWords.includes(word))
+            .map(word => word.replace(/[^\w]/g, '')); //Remove non-alphanumeric characters
+        let similarPrompt = null;
+        //Search for similar prompts to avoid having to generate new content
+        if (tokens.length > 0) {
+            if (tokens.length >= 2) {
+                const whereConditions = [];
+                const significantTokens = tokens.slice(0, Math.min(tokens.length, 20));
+                for (const token of significantTokens) {
+                    if (token.length > 2) {
+                        whereConditions.push({
+                            prompt_content: {
+                                [Sequelize.Op.like]: `%${token}%`
+                            }
+                        });
+                    }
+                }
+                if (whereConditions.length > 0) {
+                    const potentialMatches = await Prompts.findAll({
+                        where: {
+                            [Sequelize.Op.or]: whereConditions
+                        },
+                        limit: 10
+                    });
+                    if (potentialMatches.length > 0) {
+                        let bestMatch = null;
+                        let bestScore = 0;
+                        for (const prompt of potentialMatches) {
+                            const promptText = prompt.prompt_content.toLowerCase();
+                            const promptTokens = promptText.split(/\s+/)
+                                .filter(word => word.length > 2 && !commonWords.includes(word))
+                                .map(word => word.replace(/[^\w]/g, ''));
+                            let matchingTokens = 0;
+                            let totalTokens = new Set([...significantTokens, ...promptTokens]).size;
+                            for (const token of significantTokens) {
+                                if (promptTokens.includes(token)) {
+                                    matchingTokens++;
+                                }
+                            }
+                            const jaccardSimilarity = matchingTokens / totalTokens;
+                            const lengthRatio = Math.min(normalizedRequest.length, promptText.length) / 
+                                               Math.max(normalizedRequest.length, promptText.length);
+                            const wordCountRatio = Math.min(normalizedRequest.split(/\s+/).length, promptText.split(/\s+/).length) / 
+                                                 Math.max(normalizedRequest.split(/\s+/).length, promptText.split(/\s+/).length);
+                            const combinedScore = (jaccardSimilarity * 0.6) + (lengthRatio * 0.2) + (wordCountRatio * 0.2);
+                            //Require at least half of the significant tokens to match
+                            if (combinedScore > 0.85 && (matchingTokens / significantTokens.length) >= 0.5 && combinedScore > bestScore) {
+                                bestScore = combinedScore;
+                                bestMatch = prompt;
+                            }
+                        }
+                        if (bestMatch) {
+                            similarPrompt = bestMatch;
+                        }
+                    }
+                }
+            }
+        }
+        let aiReply;
+        let fromCache = false;
+        //If a similar prompt is found, use its response and skip AI generation 
+        if (similarPrompt) {
+            aiReply = similarPrompt.response_content;
+            fromCache = true;
+            return res.status(201).json({ 
+                success: true, 
+                generatedContent: aiReply,
+                fromCache: true
+            });
+        }
+        //If no similar prompt was found, proceed with AI generation
         const assistantInstructions = parentCode
             ? `You are an expert HTML/JavaScript code generator. Generate or improve HTML code based on the following context:
             Request: ${request}
             Current Code: ${currentCode}
             Parent Code: ${parentCode}
-            
             IMPORTANT: Return ONLY the raw HTML code without any explanations, introductory text, or markdown formatting.
             Do not include \`\`\`html, \`\`\`, or any other markdown.
             Start your response directly with <!DOCTYPE html>.
-            
             Guidelines:
             - Provide only the HTML/JavaScript code
-            - Do not set body background colors
-            - Do not add container borders or text alignments
-            - Avoid using vh units
             - Set body overflow to hidden
             - Use white text as default
             - If the request cannot be fulfilled with code, return nothing`
             : 
             `You are an expert HTML/JavaScript code generator. Generate or improve HTML code based on the following context:
-            
             Request: ${request}
             Current Code: ${currentCode}
-            
             IMPORTANT: Return ONLY the raw HTML code without any explanations, introductory text, or markdown formatting.
             Do not include \`\`\`html, \`\`\`, or any other markdown.
             Start your response directly with <!DOCTYPE html>.
-            
             Guidelines:
             - Provide only the HTML/JavaScript code
-            - Do not set body background colors
-            - Do not add container borders or text alignments
-            - Avoid using vh units
             - Set body overflow to hidden
             - Use white text as default
             - If the request cannot be fulfilled with code, return nothing`;
+        const model = user.has_membership ? 'claude-3-7-sonnet-latest' : 'claude-3-5-haiku-latest';
         const response = await anthropic.messages.create({
-            model: 'claude-3-5-haiku-latest',
+            model: model,
             messages: [
                 {
                     role: 'user',
@@ -175,8 +240,7 @@ router.post('/generate_content', authenticateCheck, async (req, res) => {
             ],
             max_tokens: 8192,
         });
-        //console.log('Anthropic response:', response);
-        let aiReply = response.content[0].text.trim();
+        aiReply = response.content[0].text.trim();
         //If the response starts with text followed by HTML, extract just the HTML
         const doctypeIndex = aiReply.indexOf('<!DOCTYPE html>');
         if (doctypeIndex !== -1) {
@@ -184,11 +248,20 @@ router.post('/generate_content', authenticateCheck, async (req, res) => {
         }
         //Remove any markdown code block formatting that might still be present
         aiReply = aiReply.replace(/^```[a-zA-Z]*\s*|```$/g, '').trim();
+        await Prompts.create({
+            prompt_id: v4(),
+            prompt_content: request,
+            response_content: aiReply,
+        });
         const characterCount = currentCode.length + (parentCode?.length ?? 0) + aiReply.length;
         await Users.increment('usage_count', { by: characterCount, where: { user_id: senderId } });
-        res.status(201).json({ success: true, generatedContent: aiReply });
+        res.status(201).json({ 
+            success: true, 
+            generatedContent: aiReply,
+            fromCache: false
+        });
     } catch (error) {
-        //console.error('Error generating content:', error);
+        console.log(error);
         res.status(500).json({ success: false, error: error.message });
     }
 });

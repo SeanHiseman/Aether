@@ -22,7 +22,7 @@ const Privacy = () => {
                     <p className="welcome-box-header">Privacy</p>
                     <p>You are not the product</p>
                     <div className="spacer20px"/>
-                    <p>Personal data should be useful to you, and you only</p>
+                    <p>Personal data is useful to you, and you only</p>
                     <div className="spacer20px"/>
                     <p>Algorithms work better when personalised. You are in control. Ask can be used to help easily decide how your algorithms work</p>
                 </div>

@@ -279,9 +279,9 @@ const FeedHome = () => {
                         {feed.is_group && (
                             <FollowerChangeButton feed={feed} viewerId={viewer.feed_id} />
                         )}
-                        {!isViewingSelf && !feed.is_group && (
+                        {/*{!isViewingSelf && !feed.is_group && (
                             <ManageConnectionButton feed={feed} viewerId={viewer.feed_id} />
-                        )}
+                        )}*/}
                     </div>
                 </aside>
             </div>
