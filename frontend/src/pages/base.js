@@ -326,7 +326,7 @@ const BaseLayout = () => {
 
     return (
         <div className="container">
-            <aside id="left-aside" ref={feedContainerRef}>
+            <aside className="left-aside" ref={feedContainerRef}>
                 <div className="left-aside-feed-info">
                     {isAuthenticated && (
                         <Link className="feed-link" to={`/u/${feed.feed_name}`}>
@@ -444,29 +444,29 @@ const BaseLayout = () => {
                         </nav>
                     </DragDropContext>
                 ) : (
-                    <div>
-                        <Link to="/login" className="large-icon">
-                            <FaSignInAlt />
-                            <p className="icon-text">Login</p>
-                        </Link>
+                    <div style={{marginTop: '64px'}}>
                         <Link to="/join" className="large-icon">
                             <FaArrowRight />
                             <p className="icon-text">Join</p>
                         </Link>
-                        <p style={{marginTop: '20px'}}>Sign up or log in for more</p>
+                        <Link to="/login" className="large-icon">
+                            <FaSignInAlt />
+                            <p className="icon-text">Login</p>
+                        </Link>
+                        <p style={{marginTop: '20px'}}>Join or login for more</p>
                     </div>
                 )}
             </aside>
             <main>
                 <header id="base-header">
                     <div className="spacer"></div>
-                    <form id="search-form" onSubmit={handleSearchClick}>
+                    <form className="search-form" onSubmit={handleSearchClick}>
                         <div className="search-container">
                             <button className="icon-button ask" data-tooltip="Ask" type="button" onClick={handleAskClick}>
                                 <img className="standard-icon" src="/media/site_images/icons/ask.png" alt="Ask"/>
                             </button>
                             <input 
-                                id="search-bar" 
+                                className="search-bar" 
                                 type="text" 
                                 name="keyword" 
                                 placeholder="Search or Ask..." 

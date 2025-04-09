@@ -93,7 +93,7 @@ const FeedSettings = () => {
             <div className="settings-area">
                 {renderComponent()}
             </div>  
-            <div id="right-aside">
+            <aside className="right-aside">
                 <nav id="channel-list">
                     <ul>
                         <Link id="feed-summary" to={`/g/${feed_name}`}>
@@ -126,7 +126,7 @@ const FeedSettings = () => {
                         )}
                     </ul>
                 </nav>
-            </div>
+            </aside>
         </div>
     );
 }

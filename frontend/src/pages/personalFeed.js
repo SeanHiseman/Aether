@@ -64,7 +64,7 @@ const PersonalFeed = () => {
                     }*/}
                 </div>
             </div>
-            <aside id="right-aside">
+            <aside className="right-aside">
                 <h1>Coming soon!</h1>
                 {/*<h1>Following</h1>
                 <label>Posts are recent:</label>
