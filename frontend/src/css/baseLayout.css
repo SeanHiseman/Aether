@@ -272,32 +272,32 @@
     margin-top: 16px;
     width: 90%;
 }
-#left-aside, #right-aside {
+.left-aside, .right-aside {
     align-items: center;
     background-color: var(--darkest);
     display: flex;
     flex-direction: column;
     overflow-y: auto;
-    width: 17%;
+    width: 15vw;
 }
-#left-aside {
+.left-aside {
     height: 100%;
     left: 0;
     position: fixed;
     z-index: 11;
 }
-#left-aside nav ul, #right-aside nav ul {
+.left-aside nav ul, .right-aside nav ul {
     list-style: none;
     padding: 0;
     margin: 0;
     text-align: center;
     width: 100%;
 }
-#left-aside nav ul li a, #right-aside nav ul li a {
+.left-aside nav ul li a, .right-aside nav ul li a {
     color: var(--border);
     text-decoration: none;
 }
-#left-aside::-webkit-scrollbar, #right-aside::-webkit-scrollbar {
+.left-aside::-webkit-scrollbar, .right-aside::-webkit-scrollbar {
     display: none; /*Hides scroll bar */
 }
 li {
@@ -343,12 +343,12 @@ main {
     display: flex;
     flex-wrap: wrap;
 }
-#right-aside {
+.right-aside {
     flex-shrink: 0;
     height: 100%;
     overflow-y: auto;
 }
-#right-aside ul {
+.right-aside ul {
     align-self: center;
     display: flex;
     flex-direction: column;
@@ -360,7 +360,7 @@ main {
     left: 100%;
     margin-left: 10px;
 }
-#search-bar {
+.search-bar {
     background-color: var(--darkest);
     border: none;
     color: var(--border);
@@ -377,7 +377,7 @@ main {
     position: relative;
     width: 100%;
 }
-#search-form {
+.search-form {
     display: flex;
     flex-grow: 0;
     max-width: 35%;

@@ -304,7 +304,7 @@ const AskChannel = () => {
                     )}
                 </div>
 			</div>
-            <aside id="right-aside">
+            <aside className="right-aside">
                 <div className="error-message">{errorMessage}</div>
                 {chatName !== 'Ask' ? (
                     <div id="chat-change">

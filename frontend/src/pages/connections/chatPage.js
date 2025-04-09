@@ -168,7 +168,7 @@ const ChatPage = () => {
     return (
         <div className="standard-container">
             <ChatChannel canAdd={true} channelId={selectedChatId} connection={connection} isGroup={false} isLocked={false} setChats={setChats} setErrorMessage={setErrorMessage} />
-            <aside id="right-aside">
+            <aside className="right-aside">
                 {connection && (
                     <div id="feed-summary">
                         <Link className="chat-feed-link" to={`/u/${connection_name}`}>

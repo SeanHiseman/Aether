@@ -139,7 +139,7 @@ const SearchResults = () => {
                     </ul>
                 </div>
             </div>
-            <div id="right-aside">
+            <aside className="right-aside">
                 <p className="text36">Results</p>
                 <div className="error-message">{errorMessage}</div>
                 <nav className="channel-list">
@@ -160,7 +160,7 @@ const SearchResults = () => {
                         <input type="range" min="0" max="0.01" step="0.00001" value={timePreference} onChange={handleTimeChange} />*/}
                     </ul>
                 </nav>
-            </div>
+            </aside>
         </div>
     );
 };

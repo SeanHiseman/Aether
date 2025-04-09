@@ -251,7 +251,7 @@ const FeedHome = () => {
                 <div className="channel-feed">
                     <div className="text36">Loading...</div>
                 </div>
-                <aside id="right-aside"/>
+                <aside className="right-aside"/>
             </div>
         );
     }
@@ -261,7 +261,7 @@ const FeedHome = () => {
                 <div className="channel-feed">            
                     <div className="text36">Feed not found</div>
                 </div>
-                <aside id="right-aside"/>
+                <aside className="right-aside"/>
             </div>
         );
     } 
@@ -271,7 +271,7 @@ const FeedHome = () => {
                 <div className="channel-feed">
                     <p className="text36">This feed is private</p>
                 </div>
-                <aside id="right-aside">
+                <aside className="right-aside">
                     <div id="feed-summary">
                         <img className="large-feed-photo" src={`/${feed.feed_photo}`} alt={feed.feed_name} />
                         <p className="text36">{feed.feed_name}</p>
@@ -316,7 +316,7 @@ const FeedHome = () => {
                     )
                 ) : null}
             </div> 
-            <aside id="right-aside">
+            <aside className="right-aside">
                 <div id="feed-summary">
                     <Link to={`/${urlLetter}/${feed_name}/Main`}>
                         <img className="large-feed-photo" src={`/${feed.feed_photo}`} alt={feed.feed_name} />

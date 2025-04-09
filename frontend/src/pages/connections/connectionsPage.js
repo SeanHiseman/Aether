@@ -196,7 +196,7 @@ const ConnectionsPage = () => {
 					)}
 				</div>
 			</div>
-			<aside id="right-aside">
+			<aside className="right-aside">
 				<nav className="feed-list">
 					<p className="text36">Messages</p>
 					<ul>
