@@ -34,7 +34,7 @@ const WelcomeHome = () => {
                             <p className="welcome-box-header">Content</p>
                             <p>Dynamic posts</p>
                             <p>Infinite customisation</p>
-                            <p>Creator help with Membership</p>
+                            <p>Complex posts, generated simply</p>
                         </div>
                     </Link>
                  </div>
@@ -53,8 +53,8 @@ const WelcomeHome = () => {
                         <div className="left-aligned-text">
                             <p className="welcome-box-header">Feeds</p>
                             <p>Create and follow feeds for any topic</p>
-                            <p>Divided into channels for posts and chats</p>
-                            <p>Custom feeds for connections, follows, recommendations and more</p>
+                            <p>Sorted into channels for posts and chats</p>
+                            <p>Deep Feeds allow feeds to be mixed and sorted</p>
                         </div>
                     </Link>
                 </div>
@@ -63,7 +63,7 @@ const WelcomeHome = () => {
                         <div className="left-aligned-text">
                             <p className="welcome-box-header">Membership</p>                    
                             <p>Earn money from posts</p>
-                            <p>Get help from Ask</p>
+                            <p>Get better help from Ask</p>
                             <p>Vote for moderators, admins, leaders and features</p>
                         </div>
                     </Link>

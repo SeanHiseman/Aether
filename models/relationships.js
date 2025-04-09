@@ -1,4 +1,4 @@
-import { Posts, PostNotes, PostVotes } from "./content.js";
+import { Posts, PostNotes, PostVotes, Prompts } from "./content.js";
 import { DeepFeeds, DeepFeedContent, Feeds, FeedChannels, FeedChannelMessages, Followers, FollowRequests } from "./feeds.js";
 import { AskChats, AskMessages, Chats, ConnectRequests, Connections, FeedChats, Messages } from "./messages.js";
 import { Users } from "./users.js";
@@ -91,5 +91,6 @@ export {
     Posts, 
     PostNotes, 
     PostVotes,
+    Prompts,
     Users
 }

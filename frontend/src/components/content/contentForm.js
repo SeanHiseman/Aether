@@ -262,7 +262,7 @@ const ContentForm = ({ feed, isEdit = false, isGroup, isReply, onSubmit, post = 
 				updateBlock({ ...block, data: { ...block.data, code: generatedContent, isBlockLoading: false, _tempAiPrompt: '' }, isEditing: false })
 			} else {
 				updateBlock({ ...block, data: { ...block.data, isBlockLoading: false, _tempAiPrompt: '' } })
-				setFormErrorMessage('Creation error.')
+				setFormErrorMessage('Error creating content.')
 			}
 		} catch {
 			updateBlock({ ...block, data: { ...block.data, isBlockLoading: false, _tempAiPrompt: '' } })
@@ -503,8 +503,9 @@ const ContentForm = ({ feed, isEdit = false, isGroup, isReply, onSubmit, post = 
 																						}}
 																						placeholder={limitReached ? (user.has_membership ? "Usage limit reached" 
 																							: "Usage limit reached. Get membership for more.") 
-																							: data.isBlockLoading ? "Loading..." 
-																							: "Describe your content (warning: this feature may not work very well yet)..."
+																							: data.isBlockLoading ? "Creating..." 
+																							: user.has_membership ? "Describe your content..."
+																							: "Describe your content... (Get membership for the best responses)"
 																						}
 																						value={data._tempAiPrompt || ''}/>
 																					<button className={data.isBlockLoading || !data._tempAiPrompt?.trim() || limitReached ? 'small-icon disabled' : 'small-icon'} 
@@ -512,7 +513,7 @@ const ContentForm = ({ feed, isEdit = false, isGroup, isReply, onSubmit, post = 
 																						onClick={() => handleGenerateCodeBlock(block)} 
 																						title={limitReached ? (user.has_membership ? "Usage limit reached" 
 																							: "Usage limit reached. Get membership for more.") 
-																							: data.isBlockLoading ? 'Loading...' 
+																							: data.isBlockLoading ? 'Creating...' 
 																							: !data._tempAiPrompt?.trim() ? 'Enter a prompt' 
 																							: 'Create'
 																						}
