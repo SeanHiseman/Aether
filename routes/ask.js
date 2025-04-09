@@ -138,55 +138,53 @@ router.post('/generate_content', authenticateCheck, async (req, res) => {
         let similarPrompt = null;
         //Search for similar prompts to avoid having to generate new content
         if (tokens.length > 0) {
-            if (tokens.length >= 2) {
-                const whereConditions = [];
-                const significantTokens = tokens.slice(0, Math.min(tokens.length, 20));
-                for (const token of significantTokens) {
-                    if (token.length > 2) {
-                        whereConditions.push({
-                            prompt_content: {
-                                [Sequelize.Op.like]: `%${token}%`
-                            }
-                        });
-                    }
-                }
-                if (whereConditions.length > 0) {
-                    const potentialMatches = await Prompts.findAll({
-                        where: {
-                            [Sequelize.Op.or]: whereConditions
-                        },
-                        limit: 10
+            const whereConditions = [];
+            const significantTokens = tokens.slice(0, Math.min(tokens.length, 20));
+            for (const token of significantTokens) {
+                if (token.length > 2) {
+                    whereConditions.push({
+                        prompt_content: {
+                            [Sequelize.Op.like]: `%${token}%`
+                        }
                     });
-                    if (potentialMatches.length > 0) {
-                        let bestMatch = null;
-                        let bestScore = 0;
-                        for (const prompt of potentialMatches) {
-                            const promptText = prompt.prompt_content.toLowerCase();
-                            const promptTokens = promptText.split(/\s+/)
-                                .filter(word => word.length > 2 && !commonWords.includes(word))
-                                .map(word => word.replace(/[^\w]/g, ''));
-                            let matchingTokens = 0;
-                            let totalTokens = new Set([...significantTokens, ...promptTokens]).size;
-                            for (const token of significantTokens) {
-                                if (promptTokens.includes(token)) {
-                                    matchingTokens++;
-                                }
-                            }
-                            const jaccardSimilarity = matchingTokens / totalTokens;
-                            const lengthRatio = Math.min(normalizedRequest.length, promptText.length) / 
-                                               Math.max(normalizedRequest.length, promptText.length);
-                            const wordCountRatio = Math.min(normalizedRequest.split(/\s+/).length, promptText.split(/\s+/).length) / 
-                                                 Math.max(normalizedRequest.split(/\s+/).length, promptText.split(/\s+/).length);
-                            const combinedScore = (jaccardSimilarity * 0.6) + (lengthRatio * 0.2) + (wordCountRatio * 0.2);
-                            //Require at least half of the significant tokens to match
-                            if (combinedScore > 0.85 && (matchingTokens / significantTokens.length) >= 0.5 && combinedScore > bestScore) {
-                                bestScore = combinedScore;
-                                bestMatch = prompt;
+                }
+            }
+            if (whereConditions.length > 0) {
+                const potentialMatches = await Prompts.findAll({
+                    where: {
+                        [Sequelize.Op.or]: whereConditions
+                    },
+                    limit: 10
+                });
+                if (potentialMatches.length > 0) {
+                    let bestMatch = null;
+                    let bestScore = 0;
+                    for (const prompt of potentialMatches) {
+                        const promptText = prompt.prompt_content.toLowerCase();
+                        const promptTokens = promptText.split(/\s+/)
+                            .filter(word => word.length > 2 && !commonWords.includes(word))
+                            .map(word => word.replace(/[^\w]/g, ''));
+                        let matchingTokens = 0;
+                        let totalTokens = new Set([...significantTokens, ...promptTokens]).size;
+                        for (const token of significantTokens) {
+                            if (promptTokens.includes(token)) {
+                                matchingTokens++;
                             }
                         }
-                        if (bestMatch) {
-                            similarPrompt = bestMatch;
+                        const jaccardSimilarity = matchingTokens / totalTokens;
+                        const lengthRatio = Math.min(normalizedRequest.length, promptText.length) / 
+                                            Math.max(normalizedRequest.length, promptText.length);
+                        const wordCountRatio = Math.min(normalizedRequest.split(/\s+/).length, promptText.split(/\s+/).length) / 
+                                                Math.max(normalizedRequest.split(/\s+/).length, promptText.split(/\s+/).length);
+                        const combinedScore = (jaccardSimilarity * 0.6) + (lengthRatio * 0.2) + (wordCountRatio * 0.2);
+                        //Require at least half of the significant tokens to match
+                        if (combinedScore > 0.85 && (matchingTokens / significantTokens.length) >= 0.5 && combinedScore > bestScore) {
+                            bestScore = combinedScore;
+                            bestMatch = prompt;
                         }
+                    }
+                    if (bestMatch) {
+                        similarPrompt = bestMatch;
                     }
                 }
             }

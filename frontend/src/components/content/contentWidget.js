@@ -220,7 +220,7 @@ const ContentWidget = ({ canRemove, feed, isGroup, onEditClick, onPostRemoved, o
               {showReplies ? <FaCommentSlash /> : <FaComments />}
               <p className="text16" id={`reply-count-${post.post_id}`}>{post.replies}</p>
             </button>
-            {isAuthenticated && (
+            {isAuthenticated && !feed.is_locked && (
               <button className="large-icon" onClick={() => onReplyClick(post)} disabled={readOnly} title="Reply">
                 <FaReply />
               </button>
