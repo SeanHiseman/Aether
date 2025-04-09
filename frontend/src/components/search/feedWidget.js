@@ -3,8 +3,9 @@ import { Link } from 'react-router-dom';
 import FollowerChangeButton from '../followerChangeButton';
 import ManageConnectionButton from '../connections/manageConnectionButton';
 
-const FeedWidget = ({ feed, viewerId }) => {
+const FeedWidget = ({ feed, isAuthenticated, viewerId }) => {
     const isViewingSelf = feed.feed_id === viewerId;
+
     return (
         <div className="result-widget">
             <Link to={`/${feed.is_group ? 'g' : 'u'}/${feed.feed_name}/Main`}>
@@ -19,7 +20,7 @@ const FeedWidget = ({ feed, viewerId }) => {
             <div className="search-result-info-box">
                 <div className="result-info-options">
                     <p>{feed.type === 'private' ? "Private" : "Public"}</p>
-                    {!isViewingSelf && !(feed.type === 'private' && !feed.is_group) && (
+                    {!isViewingSelf && !(feed.type === 'private' && !feed.is_group) && isAuthenticated && (
                         <FollowerChangeButton feed={feed} viewerId={viewerId} />
                     )}
                 </div>
