@@ -125,16 +125,23 @@ const ContentForm = ({ feed, isEdit = false, isGroup, isReply, onSubmit, post = 
 			  colorLabel.textContent = 'Color: ';
 			  colorLabel.style.color = 'white';
 			  
-			  const colorPicker = document.createElement('input');
-			  colorPicker.type = 'color';
-			  colorPicker.id = 'color-picker';
-			  colorPicker.onchange = function() {
-				if (selectedElement) {
-				  selectedElement.style.color = this.value;
-				  sendHeight();
-				}
-			  };
-			  
+				const colorPicker = document.createElement('input');
+					colorPicker.type = 'color';
+					colorPicker.id = 'color-picker';
+					colorPicker.onchange = function() {
+					if (selectedElement) {
+						selectedElement.style.color = this.value;
+						sendHeight();
+						
+						// Send the updated content to parent
+						parent.postMessage({
+						action: 'editedContentReady',
+						blockId: '${id}',
+						editedContent: document.documentElement.outerHTML
+						}, '*');
+					}
+				};
+							
 			  const closeBtn = document.createElement('button');
 			  closeBtn.textContent = 'Close';
 			  closeBtn.style.marginLeft = '10px';
@@ -217,11 +224,18 @@ const ContentForm = ({ feed, isEdit = false, isGroup, isReply, onSubmit, post = 
 			  }
 			  
 			  // Listen for blur to apply changes
-			  element.addEventListener('blur', function onBlur() {
+				element.addEventListener('blur', function onBlur() {
 				element.contentEditable = false;
 				element.removeEventListener('blur', onBlur);
 				sendHeight();
-			  }, { once: true });
+				
+				// Send the updated content to parent
+				parent.postMessage({
+					action: 'editedContentReady',
+					blockId: '${id}',
+					editedContent: document.documentElement.outerHTML
+				}, '*');
+				}, { once: true });
 			}
 			
 			// Select element when clicked
@@ -271,20 +285,27 @@ const ContentForm = ({ feed, isEdit = false, isGroup, isReply, onSubmit, post = 
 			
 			// Deselect the current element
 			function deselectElement() {
-			  if (!selectedElement) return;
-			  
-			  // Remove outline
-			  selectedElement.style.outline = selectedElement.dataset.originalOutline || '';
-			  delete selectedElement.dataset.originalOutline;
-			  
-			  // Remove contentEditable
-			  selectedElement.contentEditable = false;
-			  
-			  // Remove resize handles
-			  const container = document.querySelector('.resize-container');
-			  if (container) container.remove();
-			  
-			  selectedElement = null;
+				if (!selectedElement) return;
+				
+				// Remove outline
+				selectedElement.style.outline = selectedElement.dataset.originalOutline || '';
+				delete selectedElement.dataset.originalOutline;
+				
+				// Remove contentEditable
+				selectedElement.contentEditable = false;
+				
+				// Remove resize handles
+				const container = document.querySelector('.resize-container');
+				if (container) container.remove();
+				
+				// Send the updated content to parent
+				parent.postMessage({
+					action: 'editedContentReady',
+					blockId: '${id}',
+					editedContent: document.documentElement.outerHTML
+				}, '*');
+				
+				selectedElement = null;
 			}
 			
 			// Convert RGB to Hex
@@ -353,11 +374,18 @@ const ContentForm = ({ feed, isEdit = false, isGroup, isReply, onSubmit, post = 
 				sendHeight();
 			  }
 			  
-			  function stopResize() {
-				isResizing = false;
-				document.removeEventListener('mousemove', doResize);
-				document.removeEventListener('mouseup', stopResize);
-			  }
+				function stopResize() {
+					isResizing = false;
+					document.removeEventListener('mousemove', doResize);
+					document.removeEventListener('mouseup', stopResize);
+					
+					// Send the updated content to parent
+					parent.postMessage({
+						action: 'editedContentReady',
+						blockId: '${id}',
+						editedContent: document.documentElement.outerHTML
+					}, '*');
+				}
 			  
 			  document.addEventListener('mousemove', doResize);
 			  document.addEventListener('mouseup', stopResize);
@@ -453,7 +481,7 @@ const ContentForm = ({ feed, isEdit = false, isGroup, isReply, onSubmit, post = 
 		</script>`;
 		
 		const scriptToInject = `<script>
-		  function sendHeight() {
+		  function sendHeight() { // why only send height? How do we send only the piece of code that has been changed?
 			var newHeight = document.documentElement.scrollHeight;
 			parent.postMessage({ blockId: '${id}', height: newHeight }, '*');
 		  }
@@ -488,23 +516,102 @@ const ContentForm = ({ feed, isEdit = false, isGroup, isReply, onSubmit, post = 
 		  
 		  // Handle receiving edited content
 		  if (action === 'editedContentReady' && blockId && editedContent) {
+			// Extract the actual content without the injected scripts and editor elements
+			let cleanedContent = editedContent;
+			
+			// Clean up the HTML to remove injected scripts and editor elements
+			if (editedContent.includes('<html')) {
+			  try {
+				// Create a DOM parser to extract just the needed content
+				const parser = new DOMParser();
+				const doc = parser.parseFromString(editedContent, 'text/html');
+				
+				// Remove all the injected scripts
+				const scripts = doc.querySelectorAll('script');
+				scripts.forEach(script => script.remove());
+				
+				// Remove all editor-related elements
+				const editorElements = [
+				  '#editor-controls',
+				  '#toggle-editor', 
+				  '#editor-instructions',
+				  '.resize-container',
+				  '.resize-handle'
+				];
+				
+				editorElements.forEach(selector => {
+				  const elements = doc.querySelectorAll(selector);
+				  elements.forEach(el => el.remove());
+				});
+				
+				// Remove contentEditable attributes from all elements
+				const allElements = doc.querySelectorAll('*');
+				allElements.forEach(el => {
+				  if (el.hasAttribute('contenteditable')) {
+					el.removeAttribute('contenteditable');
+				  }
+				  // Remove data attributes related to the editor
+				  const attributesToRemove = [];
+				  for (let i = 0; i < el.attributes.length; i++) {
+					const attr = el.attributes[i];
+					if (attr.name.startsWith('data-original') || 
+						attr.name === 'data-mce-selected' ||
+						attr.name.includes('editor')) {
+					  attributesToRemove.push(attr.name);
+					}
+				  }
+				  attributesToRemove.forEach(attr => el.removeAttribute(attr));
+				});
+				
+				// Get the cleaned HTML - we need to maintain just the meaningful structure
+				const htmlEl = doc.documentElement;
+				const headEl = doc.head;
+				const bodyEl = doc.body;
+				
+				// Create a new document with just the essential content
+				const cleanDoc = document.implementation.createHTMLDocument();
+				
+				// Copy important nodes from head
+				Array.from(headEl.children).forEach(child => {
+				  if (child.tagName !== 'SCRIPT') { // Skip any remaining scripts
+					cleanDoc.head.appendChild(child.cloneNode(true));
+				  }
+				});
+				
+				// Copy body content (excluding editor elements)
+				Array.from(bodyEl.children).forEach(child => {
+				  if (!child.id || 
+					  !['editor-controls', 'toggle-editor', 'editor-instructions'].includes(child.id)) {
+					cleanDoc.body.appendChild(child.cloneNode(true));
+				  }
+				});
+				
+				// Get the cleaned HTML
+				cleanedContent = '<!DOCTYPE html>\n<html>\n' + 
+								 cleanDoc.documentElement.innerHTML + 
+								 '\n</html>';
+				
+				// One more clean-up pass for any lingering xmlns attributes
+				cleanedContent = cleanedContent.replace(/ xmlns="http:\/\/www\.w3\.org\/1999\/xhtml"/g, '');
+			  } catch (err) {
+				console.error("Error cleaning HTML content:", err);
+			  }
+			}
+			
+			// Update the block's code data with the cleaned content
 			setBlocks(prev => 
 			  prev.map(block => 
 				block.id === blockId
-				  ? { ...block, data: { ...block.data, code: editedContent } }
+				  ? { ...block, data: { ...block.data, code: cleanedContent } }
 				  : block
 			  )
 			);
-			
-			// Show a confirmation message
-			setFormErrorMessage('Changes saved successfully!');
-			setTimeout(() => setFormErrorMessage(''), 2000);
 		  }
 		}
-	  
+		
 		window.addEventListener('message', handleIframeMessage);
 		return () => window.removeEventListener('message', handleIframeMessage);
-	  }, [iframeRefs]);
+	  }, []);
 
 	const handleAddBlock = useCallback(type => {
 		setBlockLimitError('')
@@ -709,31 +816,6 @@ const ContentForm = ({ feed, isEdit = false, isGroup, isReply, onSubmit, post = 
 			setFormErrorMessage('Error submitting the form.')
 		}
 	}, [blocks, compileFinalHTML, isContentEmpty, isEdit, isReply, channel_name, feed_name, navigate, onSubmit, post, setShowForm, title, urlPrefix])
-
-	useEffect(() => {
-		function handleIframeMessage(event) {
-		  const { blockId, height, action, editedContent } = event.data;
-		  
-		  if (blockId && height) {
-			const iframe = iframeRefs.current[blockId];
-			if (iframe) iframe.style.height = `${height}px`;
-		  }
-		  
-		  // Handle edited content from the iframe
-		  if (action === 'editedContentReady' && blockId && editedContent) {
-			setBlocks(prev => 
-			  prev.map(block => 
-				block.id === blockId
-				? { ...block, data: { ...block.data, code: editedContent } }
-				: block
-			  )
-			);
-		  }
-		}
-		
-		window.addEventListener('message', handleIframeMessage);
-		return () => window.removeEventListener('message', handleIframeMessage);
-	  }, []);
 
 	const toggleMediaAlignment = useCallback(block => {
 		const newAlign = block.data.align === 'left' ? 'center' : 'left'
