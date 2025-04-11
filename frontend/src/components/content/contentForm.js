@@ -103,40 +103,408 @@ const ContentForm = ({ feed, isEdit = false, isGroup, isReply, onSubmit, post = 
 		}
 	}, [isEdit])
 
-	const handleIframeMessage = useCallback(event => {
-		const { blockId, height } = event.data
-		if (blockId && height) {
-			const iframe = iframeRefs.current[blockId]
-			if (iframe) iframe.style.height = `${height}px`
-		}
-	}, [])
-
-	useEffect(() => {
-		window.addEventListener('message', handleIframeMessage)
-		return () => window.removeEventListener('message', handleIframeMessage)
-	}, [handleIframeMessage])
-
-	const getIframeSrcDoc = useCallback((id, code) => {
+    const getIframeSrcDoc = useCallback((id, code) => {
 		const trimmedCode = code.trim()
+		const interactiveEditorScript = `
+		<script>
+		  // Interactive editing functionality
+		  (function() {
+			let selectedElement = null;
+			let isResizing = false;
+			let originalWidth, originalHeight, startX, startY;
+			let editorActive = false;
+			
+			// Create editor controls
+			function createEditorControls() {
+			  const controls = document.createElement('div');
+			  controls.id = 'editor-controls';
+			  controls.style.cssText = 'position:fixed;bottom:10px;left:10px;background:#333;padding:10px;border-radius:5px;z-index:9999;display:none;';
+			  
+			  // Color picker in controls
+			  const colorLabel = document.createElement('span');
+			  colorLabel.textContent = 'Color: ';
+			  colorLabel.style.color = 'white';
+			  
+			  const colorPicker = document.createElement('input');
+			  colorPicker.type = 'color';
+			  colorPicker.id = 'color-picker';
+			  colorPicker.onchange = function() {
+				if (selectedElement) {
+				  selectedElement.style.color = this.value;
+				  sendHeight();
+				}
+			  };
+			  
+			  const closeBtn = document.createElement('button');
+			  closeBtn.textContent = 'Close';
+			  closeBtn.style.marginLeft = '10px';
+			  closeBtn.onclick = () => { 
+				controls.style.display = 'none'; 
+				deselectElement(); 
+			  };
+			  
+			  controls.appendChild(colorLabel);
+			  controls.appendChild(colorPicker);
+			  controls.appendChild(closeBtn);
+			  document.body.appendChild(controls);
+			  return controls;
+			}
+			
+			// Create resize handles for the selected element
+			function createResizeHandles(element) {
+			  const handles = ['nw', 'ne', 'sw', 'se', 'n', 's', 'e', 'w'];
+			  const container = document.createElement('div');
+			  container.className = 'resize-container';
+			  container.style.cssText = 'position:absolute;pointer-events:none;border:1px dashed blue;z-index:9998;';
+			  
+			  handles.forEach(pos => {
+				const handle = document.createElement('div');
+				handle.className = 'resize-handle ' + pos;
+				handle.style.cssText = 'position:absolute;width:10px;height:10px;background:blue;border-radius:50%;z-index:10000;cursor:' + pos + '-resize;pointer-events:all;';
+				
+				// Position the handle
+				if (pos.includes('n')) handle.style.top = '-5px';
+				if (pos.includes('s')) handle.style.bottom = '-5px';
+				if (pos.includes('e')) handle.style.right = '-5px';
+				if (pos.includes('w')) handle.style.left = '-5px';
+				if (pos === 'n' || pos === 's') handle.style.left = 'calc(50% - 5px)';
+				if (pos === 'e' || pos === 'w') handle.style.top = 'calc(50% - 5px)';
+				
+				handle.addEventListener('mousedown', function(e) {
+				  e.stopPropagation();
+				  startResize(e, pos);
+				});
+				
+				container.appendChild(handle);
+			  });
+			  
+			  document.body.appendChild(container);
+			  updateResizeContainer(element, container);
+			  return container;
+			}
+			
+			// Update resize container position and size to match selected element
+			function updateResizeContainer(element, container) {
+			  const rect = element.getBoundingClientRect();
+			  container.style.top = rect.top + 'px';
+			  container.style.left = rect.left + 'px';
+			  container.style.width = rect.width + 'px';
+			  container.style.height = rect.height + 'px';
+			}
+			
+			// Make element editable
+			function makeEditable(element) {
+			  if (!element) return;
+			  
+			  // Skip if it's already editable or is a form element
+			  if (element.isContentEditable || 
+				  element.tagName === 'INPUT' || 
+				  element.tagName === 'TEXTAREA' ||
+				  element.tagName === 'SELECT') {
+				return;
+			  }
+			  
+			  element.contentEditable = true;
+			  
+			  // Focus and highlight content
+			  element.focus();
+			  
+			  // Update color picker to match current color
+			  const colorPicker = document.getElementById('color-picker');
+			  if (colorPicker) {
+				const computedStyle = window.getComputedStyle(element);
+				colorPicker.value = rgbToHex(computedStyle.color);
+			  }
+			  
+			  // Listen for blur to apply changes
+			  element.addEventListener('blur', function onBlur() {
+				element.contentEditable = false;
+				element.removeEventListener('blur', onBlur);
+				sendHeight();
+			  }, { once: true });
+			}
+			
+			// Select element when clicked
+			function selectElement(e) {
+			  if (!editorActive) return;
+			  if (e.target.id === 'editor-controls' || e.target.closest('#editor-controls')) return;
+			  if (e.target.className.includes('resize-handle')) return;
+			  if (e.target.id === 'toggle-editor') return;
+			  
+			  // Deselect previous element
+			  deselectElement();
+			  
+			  selectedElement = e.target;
+			  
+			  // Don't select body or html
+			  if (selectedElement === document.body || selectedElement === document.documentElement) {
+				selectedElement = null;
+				return;
+			  }
+			  
+			  // Show element is selected
+			  selectedElement.dataset.originalOutline = selectedElement.style.outline;
+			  selectedElement.style.outline = '2px solid blue';
+			  
+			  // Show controls
+			  const controls = document.getElementById('editor-controls') || createEditorControls();
+			  controls.style.display = 'block';
+			  
+			  // Update color picker
+			  const colorPicker = document.getElementById('color-picker');
+			  if (colorPicker) {
+				const computedStyle = window.getComputedStyle(selectedElement);
+				colorPicker.value = rgbToHex(computedStyle.color);
+			  }
+			  
+			  // Create resize handles
+			  createResizeHandles(selectedElement);
+			  
+			  // Make text editable with double click
+			  selectedElement.addEventListener('dblclick', function onDblClick(evt) {
+				evt.stopPropagation();
+				makeEditable(selectedElement);
+			  }, { once: true });
+			  
+			  e.stopPropagation();
+			}
+			
+			// Deselect the current element
+			function deselectElement() {
+			  if (!selectedElement) return;
+			  
+			  // Remove outline
+			  selectedElement.style.outline = selectedElement.dataset.originalOutline || '';
+			  delete selectedElement.dataset.originalOutline;
+			  
+			  // Remove contentEditable
+			  selectedElement.contentEditable = false;
+			  
+			  // Remove resize handles
+			  const container = document.querySelector('.resize-container');
+			  if (container) container.remove();
+			  
+			  selectedElement = null;
+			}
+			
+			// Convert RGB to Hex
+			function rgbToHex(rgb) {
+			  if (!rgb) return '#000000';
+			  if (rgb.startsWith('#')) return rgb;
+			  
+			  // Handle rgba format
+			  if (rgb.startsWith('rgba')) {
+				const parts = rgb.match(/^rgba\\s*\\(\\s*(\\d+)\\s*,\\s*(\\d+)\\s*,\\s*(\\d+)\\s*,\\s*([\\d.]+)\\s*\\)$/);
+				if (!parts) return '#000000';
+				
+				const r = parseInt(parts[1]).toString(16).padStart(2, '0');
+				const g = parseInt(parts[2]).toString(16).padStart(2, '0');
+				const b = parseInt(parts[3]).toString(16).padStart(2, '0');
+				return '#' + r + g + b;
+			  }
+			  
+			  // Handle rgb format
+			  const parts = rgb.match(/^rgb\\s*\\(\\s*(\\d+)\\s*,\\s*(\\d+)\\s*,\\s*(\\d+)\\s*\\)$/);
+			  if (!parts) return '#000000';
+			  
+			  const r = parseInt(parts[1]).toString(16).padStart(2, '0');
+			  const g = parseInt(parts[2]).toString(16).padStart(2, '0');
+			  const b = parseInt(parts[3]).toString(16).padStart(2, '0');
+			  return '#' + r + g + b;
+			}
+			
+			// Start resizing the element
+			function startResize(e, position) {
+			  if (!selectedElement) return;
+			  
+			  isResizing = true;
+			  startX = e.clientX;
+			  startY = e.clientY;
+			  originalWidth = selectedElement.offsetWidth;
+			  originalHeight = selectedElement.offsetHeight;
+			  
+			  const resizePos = position;
+			  
+			  function doResize(e) {
+				if (!isResizing) return;
+				
+				e.preventDefault();
+				
+				const deltaX = e.clientX - startX;
+				const deltaY = e.clientY - startY;
+				
+				let newWidth = originalWidth;
+				let newHeight = originalHeight;
+				
+				// Update dimensions based on drag position
+				if (resizePos.includes('e')) newWidth = originalWidth + deltaX;
+				if (resizePos.includes('w')) newWidth = originalWidth - deltaX;
+				if (resizePos.includes('s')) newHeight = originalHeight + deltaY;
+				if (resizePos.includes('n')) newHeight = originalHeight - deltaY;
+				
+				// Apply new dimensions
+				if (newWidth > 10) selectedElement.style.width = newWidth + 'px';
+				if (newHeight > 10) selectedElement.style.height = newHeight + 'px';
+				
+				// Update resize handles
+				const container = document.querySelector('.resize-container');
+				updateResizeContainer(selectedElement, container);
+				
+				sendHeight();
+			  }
+			  
+			  function stopResize() {
+				isResizing = false;
+				document.removeEventListener('mousemove', doResize);
+				document.removeEventListener('mouseup', stopResize);
+			  }
+			  
+			  document.addEventListener('mousemove', doResize);
+			  document.addEventListener('mouseup', stopResize);
+			  
+			  e.preventDefault();
+			}
+			
+			// Get the current edited HTML
+			function getEditedHTML() {
+			  return document.documentElement.outerHTML;
+			}
+			
+			// Listen for messages from the parent frame
+			window.addEventListener('message', function(event) {
+			  if (event.data.action === 'getEditedContent') {
+				// Send back the current HTML
+				parent.postMessage({
+				  action: 'editedContentReady',
+				  blockId: '${id}',
+				  editedContent: getEditedHTML()
+				}, '*');
+			  }
+			});
+			
+			// Initialize the editor
+			function initEditor() {
+			  // Add editor toggle button
+			  const toggleBtn = document.createElement('button');
+			  toggleBtn.id = 'toggle-editor';
+			  toggleBtn.textContent = 'Edit Mode: OFF';
+			  toggleBtn.style.cssText = 'position:fixed;top:10px;right:10px;z-index:10001;background:#4a90e2;color:white;border:none;padding:8px 12px;border-radius:4px;';
+			  
+			  toggleBtn.onclick = function() {
+				editorActive = !editorActive;
+				
+				if (editorActive) {
+				  document.addEventListener('click', selectElement);
+				  toggleBtn.textContent = 'Edit Mode: ON';
+				  toggleBtn.style.background = '#e74c3c';
+				  
+				  // Show instructions
+				  const instructions = document.createElement('div');
+				  instructions.id = 'editor-instructions';
+				  instructions.style.cssText = 'position:fixed;top:50px;right:10px;background:rgba(0,0,0,0.7);color:white;padding:10px;border-radius:4px;z-index:10001;font-size:12px;max-width:250px;';
+				  instructions.innerHTML = '<p><b>Editor Instructions:</b></p>' +
+										   '<p>- Click any element to select it</p>' +
+										   '<p>- Double-click text to edit it</p>' +
+										   '<p>- Use color picker to change text color</p>' +
+										   '<p>- Drag blue handles to resize</p>' +
+										   '<p>- Press ESC to deselect</p>';
+				  document.body.appendChild(instructions);
+				  
+				  setTimeout(() => {
+					const inst = document.getElementById('editor-instructions');
+					if (inst) inst.style.opacity = '0';
+					setTimeout(() => {
+					  if (inst) inst.remove();
+					}, 1000);
+				  }, 5000);
+				  
+				} else {
+				  document.removeEventListener('click', selectElement);
+				  deselectElement();
+				  const controls = document.getElementById('editor-controls');
+				  if (controls) controls.style.display = 'none';
+				  toggleBtn.textContent = 'Edit Mode: OFF';
+				  toggleBtn.style.background = '#4a90e2';
+				  
+				  const instructions = document.getElementById('editor-instructions');
+				  if (instructions) instructions.remove();
+				}
+			  };
+			  
+			  document.body.appendChild(toggleBtn);
+			  
+			  // Handle escape key
+			  document.addEventListener('keydown', function(e) {
+				if (e.key === 'Escape') {
+				  deselectElement();
+				  const controls = document.getElementById('editor-controls');
+				  if (controls) controls.style.display = 'none';
+				}
+			  });
+			}
+			
+			// Wait for DOM to be ready
+			if (document.readyState === 'loading') {
+			  document.addEventListener('DOMContentLoaded', initEditor);
+			} else {
+			  initEditor();
+			}
+		  })();
+		</script>`;
+		
 		const scriptToInject = `<script>
-      function sendHeight() {
-        var newHeight = document.documentElement.scrollHeight;
-        parent.postMessage({ blockId: '${id}', height: newHeight }, '*');
-      }
-      window.addEventListener('load', sendHeight);
-      var observer = new MutationObserver(sendHeight);
-      observer.observe(document.body, {childList:true, subtree:true, characterData:true});
-      sendHeight();
-    </script>`
-		let srcDoc = ''
+		  function sendHeight() {
+			var newHeight = document.documentElement.scrollHeight;
+			parent.postMessage({ blockId: '${id}', height: newHeight }, '*');
+		  }
+		  window.addEventListener('load', sendHeight);
+		  var observer = new MutationObserver(sendHeight);
+		  observer.observe(document.body, {childList:true, subtree:true, characterData:true});
+		  sendHeight();
+		</script>`;
+		
+		let srcDoc = '';
 		if (/<html[\s>]/i.test(trimmedCode)) {
-			if (/<\/body>/i.test(trimmedCode)) srcDoc = trimmedCode.replace(/<\/body>/i, scriptToInject + '</body>')
-			else srcDoc = trimmedCode + scriptToInject
+		  if (/<\/body>/i.test(trimmedCode)) {
+			srcDoc = trimmedCode.replace(/<\/body>/i, interactiveEditorScript + scriptToInject + '</body>');
+		  } else {
+			srcDoc = trimmedCode + interactiveEditorScript + scriptToInject;
+		  }
 		} else {
-			srcDoc = `<!DOCTYPE html><html><head><style>html,body { margin:0; padding:0; }</style></head><body><div id="content">${code}</div>${scriptToInject}</body></html>`
+		  srcDoc = `<!DOCTYPE html><html><head><style>html,body { margin:0; padding:0; }</style></head><body><div id="content">${code}</div>${interactiveEditorScript}${scriptToInject}</body></html>`;
 		}
-		return srcDoc
-	}, [])
+		return srcDoc;
+	  }, []);
+
+	  useEffect(() => {
+		function handleIframeMessage(event) {
+		  const { blockId, height, action, editedContent } = event.data;
+		  
+		  // Handle height updates
+		  if (blockId && height) {
+			const iframe = iframeRefs.current[blockId];
+			if (iframe) iframe.style.height = `${height}px`;
+		  }
+		  
+		  // Handle receiving edited content
+		  if (action === 'editedContentReady' && blockId && editedContent) {
+			setBlocks(prev => 
+			  prev.map(block => 
+				block.id === blockId
+				  ? { ...block, data: { ...block.data, code: editedContent } }
+				  : block
+			  )
+			);
+			
+			// Show a confirmation message
+			setFormErrorMessage('Changes saved successfully!');
+			setTimeout(() => setFormErrorMessage(''), 2000);
+		  }
+		}
+	  
+		window.addEventListener('message', handleIframeMessage);
+		return () => window.removeEventListener('message', handleIframeMessage);
+	  }, [iframeRefs]);
 
 	const handleAddBlock = useCallback(type => {
 		setBlockLimitError('')
@@ -245,30 +613,46 @@ const ContentForm = ({ feed, isEdit = false, isGroup, isReply, onSubmit, post = 
 
 	const handleGenerateCodeBlock = useCallback(async block => {
 		if (limitReached) {
-			setFormErrorMessage(hasMembership ? "Usage limit reached" : "Usage limit reached. Get membership for more.");
-			return;
+		  setFormErrorMessage(hasMembership ? "Usage limit reached" : "Usage limit reached. Get membership for more.");
+		  return;
 		}
 		try {
-			const prompt = block.data._tempAiPrompt || ''
-			if (!prompt.trim()) {
-				setFormErrorMessage('Prompt cannot be empty.')
-				return
-			}
-			updateBlock({ ...block, data: { ...block.data, isBlockLoading: true, _tempAiPrompt: '' } });
-			setFormErrorMessage('')
-			const response = await axios.post('/api/generate_content', { currentCode: block.data.code, parentCode: isReply ? post.content : null, request: prompt, senderId: user.user_id })
-			if (response.data && response.status === 201) {
-				const { generatedContent } = response.data
-				updateBlock({ ...block, data: { ...block.data, code: generatedContent, isBlockLoading: false, _tempAiPrompt: '' }, isEditing: false })
-			} else {
-				updateBlock({ ...block, data: { ...block.data, isBlockLoading: false, _tempAiPrompt: '' } })
-				setFormErrorMessage('Error creating content.')
-			}
+		  const prompt = block.data._tempAiPrompt || '';
+		  if (!prompt.trim()) {
+			setFormErrorMessage('Prompt cannot be empty.');
+			return;
+		  }
+		  updateBlock({ ...block, data: { ...block.data, isBlockLoading: true, _tempAiPrompt: '' } });
+		  setFormErrorMessage('');
+		  const response = await axios.post('/api/generate_content', { 
+			currentCode: block.data.code, 
+			parentCode: isReply ? post.content : null, 
+			request: prompt, 
+			senderId: user.user_id,
+			enableInteractiveEditing: true // Add this flag to let the backend know
+		  });
+		  if (response.data && response.status === 201) {
+			const { generatedContent } = response.data;
+			updateBlock({ 
+			  ...block, 
+			  data: { 
+				...block.data, 
+				code: generatedContent, 
+				isBlockLoading: false, 
+				_tempAiPrompt: '', 
+				isInteractiveEditable: true // Add this flag to track interactive editing capability
+			  }, 
+			  isEditing: false 
+			});
+		  } else {
+			updateBlock({ ...block, data: { ...block.data, isBlockLoading: false, _tempAiPrompt: '' } });
+			setFormErrorMessage('Error creating content.');
+		  }
 		} catch {
-			updateBlock({ ...block, data: { ...block.data, isBlockLoading: false, _tempAiPrompt: '' } })
-			setFormErrorMessage('Error creating content.')
+		  updateBlock({ ...block, data: { ...block.data, isBlockLoading: false, _tempAiPrompt: '' } });
+		  setFormErrorMessage('Error creating content.');
 		}
-	}, [hasMembership, post, updateBlock])
+	}, [hasMembership, post, updateBlock]);
 
 	const handleGenerateFullContent = useCallback(async () => {
 		if (limitReached) {
@@ -325,6 +709,31 @@ const ContentForm = ({ feed, isEdit = false, isGroup, isReply, onSubmit, post = 
 			setFormErrorMessage('Error submitting the form.')
 		}
 	}, [blocks, compileFinalHTML, isContentEmpty, isEdit, isReply, channel_name, feed_name, navigate, onSubmit, post, setShowForm, title, urlPrefix])
+
+	useEffect(() => {
+		function handleIframeMessage(event) {
+		  const { blockId, height, action, editedContent } = event.data;
+		  
+		  if (blockId && height) {
+			const iframe = iframeRefs.current[blockId];
+			if (iframe) iframe.style.height = `${height}px`;
+		  }
+		  
+		  // Handle edited content from the iframe
+		  if (action === 'editedContentReady' && blockId && editedContent) {
+			setBlocks(prev => 
+			  prev.map(block => 
+				block.id === blockId
+				? { ...block, data: { ...block.data, code: editedContent } }
+				: block
+			  )
+			);
+		  }
+		}
+		
+		window.addEventListener('message', handleIframeMessage);
+		return () => window.removeEventListener('message', handleIframeMessage);
+	  }, []);
 
 	const toggleMediaAlignment = useCallback(block => {
 		const newAlign = block.data.align === 'left' ? 'center' : 'left'
