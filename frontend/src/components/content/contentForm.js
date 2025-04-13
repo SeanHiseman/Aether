@@ -3,7 +3,7 @@ import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd'
 import { useNavigate, useParams } from 'react-router-dom'
 import PropTypes from 'prop-types'
 import React, { useCallback, useContext, useEffect, useRef, useState } from 'react'
-import { FaAlignCenter, FaArrowCircleUp, FaArrowDown, FaArrowRight, FaArrowUp, FaCircleNotch, FaCommentAlt, FaEdit, FaEye, FaFont, FaPhotoVideo, FaPlus, FaReply, FaSave, FaTerminal, FaTimes, FaToolbox, FaTrash, FaWindowClose } from 'react-icons/fa'
+import { FaAlignCenter, FaArrowCircleUp, FaArrowRight, FaCircleNotch, FaCommentAlt, FaEdit, FaEllipsisV, FaEye, FaFont, FaLink, FaPhotoVideo, FaPlus, FaReply, FaSave, FaShareAlt, FaTerminal, FaTimes, FaToolbox, FaTrash, FaWindowClose } from 'react-icons/fa'
 import ReactQuill from 'react-quill'
 import 'react-quill/dist/quill.snow.css'
 import { v4 } from 'uuid'
@@ -61,13 +61,14 @@ const reorder = (list, startIndex, endIndex) => {
 //Post is either the post being edited or replied to
 const ContentForm = ({ feed, isEdit = false, isGroup, isReply, onSubmit, post = null, setShowForm }) => {
 	const [blocks, setBlocks] = useState([])
+	const [codeBlockDropdown, setCodeBlockDropdown] = useState(false)
 	const [editMode, setEditMode] = useState(true)
 	const [formErrorMessage, setFormErrorMessage] = useState('')
 	const [blockLimitError, setBlockLimitError] = useState('')
 	const [globalAiPrompt, setGlobalAiPrompt] = useState('')
 	const [isGlobalLoading, setIsGlobalLoading] = useState(false)
-	const [title, setTitle] = useState('')
 	const [showGlobalAiPrompt, setShowGlobalAiPrompt] = useState(false)
+	const [title, setTitle] = useState('')
 	const iframeRefs = useRef({})
 	const { channel_name, feed_name } = useParams()
 	const navigate = useNavigate()
@@ -80,6 +81,74 @@ const ContentForm = ({ feed, isEdit = false, isGroup, isReply, onSubmit, post = 
 	const TEXT_CHAR_LIMIT = hasMembership ? 100000 : 1000
 	const TITLE_CHAR_LIMIT = hasMembership ? 1000 : 100
 	const usageLimit = user.has_membership ? 10000000 : 100000
+
+	const addIframe = (blockId) => {
+		const url = prompt('Enter the website URL:');
+		if (url) {
+			try {
+				const parsedUrl = new URL(url);	//Validate URL format
+				if (parsedUrl.protocol !== 'http:' && parsedUrl.protocol !== 'https:') {
+					alert('Please enter a valid http or https URL');
+					return;
+				}
+				const updatedBlocks = blocks.map(block => {
+					if (block.id === blockId && block.type === BLOCK_TYPES.CODE) {
+						const iframeCode = `<div style="width:100%; height:400px;">
+							<iframe src="${parsedUrl.href}" style="width:100%; height:100%; border:none;" sandbox="allow-scripts allow-same-origin" referrerpolicy="no-referrer"></iframe>
+							</div>`;
+						return { 
+							...block, 
+							data: { 
+							...block.data, 
+							code: block.data.code ? block.data.code + '\n\n' + iframeCode : iframeCode 
+							} 
+						};
+					}
+					return block;
+				});
+				setBlocks(updatedBlocks);
+			} catch (error) {
+				alert('Please enter a valid URL (e.g., https://example.com)');
+			}
+		}
+	}
+		
+	const addSocialMedia = (blockId) => {
+		const url = prompt('Enter the social media embed code or URL:');
+		if (url) {
+			const updatedBlocks = blocks.map(block => {
+				if (block.id === blockId && block.type === BLOCK_TYPES.CODE) {
+					let embedCode = url;
+					if (url.trim().startsWith('http') && !url.includes('<')) { 	//If it looks like just a URL, validate and wrap it
+						try {
+							const parsedUrl = new URL(url); //Validate URL format
+							if (parsedUrl.protocol !== 'http:' && parsedUrl.protocol !== 'https:') {
+								alert('Please enter a valid http or https URL');
+								return block;
+							}
+							embedCode = `<div class="social-media-embed" style="width:100%; overflow:hidden;">
+								<!-- Social media embed for ${parsedUrl.href} -->
+								<a href="${parsedUrl.href}" target="_blank" rel="noopener noreferrer">${parsedUrl.href}</a>
+								<!-- Replace this comment with proper embed code if available -->
+								</div>`;
+						} catch (error) {
+							alert('Please enter a valid URL or embed code');
+							return block;
+						}
+					}
+					return { 
+						...block, 
+						data: { 
+							...block.data, 
+							code: block.data.code ? block.data.code + '\n\n' + embedCode : embedCode 
+						} 
+					};
+				}
+				return block;
+			});
+			setBlocks(updatedBlocks);
+		}
+	}
 
 	const isContentEmpty = useCallback(blocksArray => !blocksArray.some(block => {
 		if (block.type === BLOCK_TYPES.TEXT) return block.data.html && block.data.html.trim() !== ''
@@ -103,28 +172,23 @@ const ContentForm = ({ feed, isEdit = false, isGroup, isReply, onSubmit, post = 
 		}
 	}, [isEdit])
 
+	//This section is AI generated, may need cleaning up and adjusting
     const getIframeSrcDoc = useCallback((id, code) => {
 		const trimmedCode = code.trim()
 		const interactiveEditorScript = `
 		<script>
-		  // Interactive editing functionality
 		  (function() {
 			let selectedElement = null;
 			let isResizing = false;
 			let originalWidth, originalHeight, startX, startY;
 			let editorActive = false;
-			
-			// Create editor controls
 			function createEditorControls() {
 			  const controls = document.createElement('div');
 			  controls.id = 'editor-controls';
 			  controls.style.cssText = 'position:fixed;bottom:10px;left:10px;background:#333;padding:10px;border-radius:5px;z-index:9999;display:none;';
-			  
-			  // Color picker in controls
 			  const colorLabel = document.createElement('span');
 			  colorLabel.textContent = 'Color: ';
 			  colorLabel.style.color = 'white';
-			  
 				const colorPicker = document.createElement('input');
 					colorPicker.type = 'color';
 					colorPicker.id = 'color-picker';
@@ -132,16 +196,13 @@ const ContentForm = ({ feed, isEdit = false, isGroup, isReply, onSubmit, post = 
 					if (selectedElement) {
 						selectedElement.style.color = this.value;
 						sendHeight();
-						
-						// Send the updated content to parent
 						parent.postMessage({
 						action: 'editedContentReady',
 						blockId: '${id}',
 						editedContent: document.documentElement.outerHTML
 						}, '*');
 					}
-				};
-							
+				};	
 			  const closeBtn = document.createElement('button');
 			  closeBtn.textContent = 'Close';
 			  closeBtn.style.marginLeft = '10px';
@@ -149,48 +210,37 @@ const ContentForm = ({ feed, isEdit = false, isGroup, isReply, onSubmit, post = 
 				controls.style.display = 'none'; 
 				deselectElement(); 
 			  };
-			  
 			  controls.appendChild(colorLabel);
 			  controls.appendChild(colorPicker);
 			  controls.appendChild(closeBtn);
 			  document.body.appendChild(controls);
 			  return controls;
 			}
-			
-			// Create resize handles for the selected element
 			function createResizeHandles(element) {
 			  const handles = ['nw', 'ne', 'sw', 'se', 'n', 's', 'e', 'w'];
 			  const container = document.createElement('div');
 			  container.className = 'resize-container';
 			  container.style.cssText = 'position:absolute;pointer-events:none;border:1px dashed blue;z-index:9998;';
-			  
 			  handles.forEach(pos => {
 				const handle = document.createElement('div');
 				handle.className = 'resize-handle ' + pos;
 				handle.style.cssText = 'position:absolute;width:10px;height:10px;background:blue;border-radius:50%;z-index:10000;cursor:' + pos + '-resize;pointer-events:all;';
-				
-				// Position the handle
 				if (pos.includes('n')) handle.style.top = '-5px';
 				if (pos.includes('s')) handle.style.bottom = '-5px';
 				if (pos.includes('e')) handle.style.right = '-5px';
 				if (pos.includes('w')) handle.style.left = '-5px';
 				if (pos === 'n' || pos === 's') handle.style.left = 'calc(50% - 5px)';
 				if (pos === 'e' || pos === 'w') handle.style.top = 'calc(50% - 5px)';
-				
 				handle.addEventListener('mousedown', function(e) {
 				  e.stopPropagation();
 				  startResize(e, pos);
 				});
-				
 				container.appendChild(handle);
 			  });
-			  
 			  document.body.appendChild(container);
 			  updateResizeContainer(element, container);
 			  return container;
 			}
-			
-			// Update resize container position and size to match selected element
 			function updateResizeContainer(element, container) {
 			  const rect = element.getBoundingClientRect();
 			  container.style.top = rect.top + 'px';
@@ -198,38 +248,25 @@ const ContentForm = ({ feed, isEdit = false, isGroup, isReply, onSubmit, post = 
 			  container.style.width = rect.width + 'px';
 			  container.style.height = rect.height + 'px';
 			}
-			
-			// Make element editable
 			function makeEditable(element) {
 			  if (!element) return;
-			  
-			  // Skip if it's already editable or is a form element
 			  if (element.isContentEditable || 
 				  element.tagName === 'INPUT' || 
 				  element.tagName === 'TEXTAREA' ||
 				  element.tagName === 'SELECT') {
 				return;
 			  }
-			  
 			  element.contentEditable = true;
-			  
-			  // Focus and highlight content
 			  element.focus();
-			  
-			  // Update color picker to match current color
 			  const colorPicker = document.getElementById('color-picker');
 			  if (colorPicker) {
 				const computedStyle = window.getComputedStyle(element);
 				colorPicker.value = rgbToHex(computedStyle.color);
 			  }
-			  
-			  // Listen for blur to apply changes
 				element.addEventListener('blur', function onBlur() {
 				element.contentEditable = false;
 				element.removeEventListener('blur', onBlur);
 				sendHeight();
-				
-				// Send the updated content to parent
 				parent.postMessage({
 					action: 'editedContentReady',
 					blockId: '${id}',
@@ -237,171 +274,109 @@ const ContentForm = ({ feed, isEdit = false, isGroup, isReply, onSubmit, post = 
 				}, '*');
 				}, { once: true });
 			}
-			
-			// Select element when clicked
 			function selectElement(e) {
 			  if (!editorActive) return;
 			  if (e.target.id === 'editor-controls' || e.target.closest('#editor-controls')) return;
 			  if (e.target.className.includes('resize-handle')) return;
 			  if (e.target.id === 'toggle-editor') return;
-			  
-			  // Deselect previous element
 			  deselectElement();
-			  
 			  selectedElement = e.target;
-			  
-			  // Don't select body or html
 			  if (selectedElement === document.body || selectedElement === document.documentElement) {
 				selectedElement = null;
 				return;
 			  }
-			  
-			  // Show element is selected
 			  selectedElement.dataset.originalOutline = selectedElement.style.outline;
 			  selectedElement.style.outline = '2px solid blue';
-			  
-			  // Show controls
 			  const controls = document.getElementById('editor-controls') || createEditorControls();
 			  controls.style.display = 'block';
-			  
-			  // Update color picker
 			  const colorPicker = document.getElementById('color-picker');
 			  if (colorPicker) {
 				const computedStyle = window.getComputedStyle(selectedElement);
 				colorPicker.value = rgbToHex(computedStyle.color);
 			  }
-			  
-			  // Create resize handles
 			  createResizeHandles(selectedElement);
-			  
-			  // Make text editable with double click
 			  selectedElement.addEventListener('dblclick', function onDblClick(evt) {
 				evt.stopPropagation();
 				makeEditable(selectedElement);
 			  }, { once: true });
-			  
 			  e.stopPropagation();
 			}
-			
-			// Deselect the current element
 			function deselectElement() {
 				if (!selectedElement) return;
-				
-				// Remove outline
 				selectedElement.style.outline = selectedElement.dataset.originalOutline || '';
 				delete selectedElement.dataset.originalOutline;
-				
-				// Remove contentEditable
 				selectedElement.contentEditable = false;
-				
-				// Remove resize handles
 				const container = document.querySelector('.resize-container');
 				if (container) container.remove();
-				
-				// Send the updated content to parent
 				parent.postMessage({
 					action: 'editedContentReady',
 					blockId: '${id}',
 					editedContent: document.documentElement.outerHTML
 				}, '*');
-				
 				selectedElement = null;
 			}
-			
-			// Convert RGB to Hex
 			function rgbToHex(rgb) {
 			  if (!rgb) return '#000000';
 			  if (rgb.startsWith('#')) return rgb;
-			  
-			  // Handle rgba format
 			  if (rgb.startsWith('rgba')) {
 				const parts = rgb.match(/^rgba\\s*\\(\\s*(\\d+)\\s*,\\s*(\\d+)\\s*,\\s*(\\d+)\\s*,\\s*([\\d.]+)\\s*\\)$/);
 				if (!parts) return '#000000';
-				
 				const r = parseInt(parts[1]).toString(16).padStart(2, '0');
 				const g = parseInt(parts[2]).toString(16).padStart(2, '0');
 				const b = parseInt(parts[3]).toString(16).padStart(2, '0');
 				return '#' + r + g + b;
 			  }
-			  
-			  // Handle rgb format
 			  const parts = rgb.match(/^rgb\\s*\\(\\s*(\\d+)\\s*,\\s*(\\d+)\\s*,\\s*(\\d+)\\s*\\)$/);
 			  if (!parts) return '#000000';
-			  
 			  const r = parseInt(parts[1]).toString(16).padStart(2, '0');
 			  const g = parseInt(parts[2]).toString(16).padStart(2, '0');
 			  const b = parseInt(parts[3]).toString(16).padStart(2, '0');
 			  return '#' + r + g + b;
 			}
-			
-			// Start resizing the element
 			function startResize(e, position) {
 			  if (!selectedElement) return;
-			  
 			  isResizing = true;
 			  startX = e.clientX;
 			  startY = e.clientY;
 			  originalWidth = selectedElement.offsetWidth;
 			  originalHeight = selectedElement.offsetHeight;
-			  
 			  const resizePos = position;
-			  
 			  function doResize(e) {
 				if (!isResizing) return;
-				
 				e.preventDefault();
-				
 				const deltaX = e.clientX - startX;
 				const deltaY = e.clientY - startY;
-				
 				let newWidth = originalWidth;
 				let newHeight = originalHeight;
-				
-				// Update dimensions based on drag position
 				if (resizePos.includes('e')) newWidth = originalWidth + deltaX;
 				if (resizePos.includes('w')) newWidth = originalWidth - deltaX;
 				if (resizePos.includes('s')) newHeight = originalHeight + deltaY;
 				if (resizePos.includes('n')) newHeight = originalHeight - deltaY;
-				
-				// Apply new dimensions
 				if (newWidth > 10) selectedElement.style.width = newWidth + 'px';
 				if (newHeight > 10) selectedElement.style.height = newHeight + 'px';
-				
-				// Update resize handles
 				const container = document.querySelector('.resize-container');
 				updateResizeContainer(selectedElement, container);
-				
 				sendHeight();
 			  }
-			  
 				function stopResize() {
 					isResizing = false;
 					document.removeEventListener('mousemove', doResize);
 					document.removeEventListener('mouseup', stopResize);
-					
-					// Send the updated content to parent
 					parent.postMessage({
 						action: 'editedContentReady',
 						blockId: '${id}',
 						editedContent: document.documentElement.outerHTML
 					}, '*');
 				}
-			  
 			  document.addEventListener('mousemove', doResize);
 			  document.addEventListener('mouseup', stopResize);
-			  
 			  e.preventDefault();
 			}
-			
-			// Get the current edited HTML
 			function getEditedHTML() {
 			  return document.documentElement.outerHTML;
 			}
-			
-			// Listen for messages from the parent frame
 			window.addEventListener('message', function(event) {
 			  if (event.data.action === 'getEditedContent') {
-				// Send back the current HTML
 				parent.postMessage({
 				  action: 'editedContentReady',
 				  blockId: '${id}',
@@ -409,24 +384,17 @@ const ContentForm = ({ feed, isEdit = false, isGroup, isReply, onSubmit, post = 
 				}, '*');
 			  }
 			});
-			
-			// Initialize the editor
 			function initEditor() {
-			  // Add editor toggle button
 			  const toggleBtn = document.createElement('button');
 			  toggleBtn.id = 'toggle-editor';
 			  toggleBtn.textContent = 'Edit Mode: OFF';
 			  toggleBtn.style.cssText = 'position:fixed;top:10px;right:10px;z-index:10001;background:#4a90e2;color:white;border:none;padding:8px 12px;border-radius:4px;';
-			  
 			  toggleBtn.onclick = function() {
 				editorActive = !editorActive;
-				
 				if (editorActive) {
 				  document.addEventListener('click', selectElement);
 				  toggleBtn.textContent = 'Edit Mode: ON';
 				  toggleBtn.style.background = '#e74c3c';
-				  
-				  // Show instructions
 				  const instructions = document.createElement('div');
 				  instructions.id = 'editor-instructions';
 				  instructions.style.cssText = 'position:fixed;top:50px;right:10px;background:rgba(0,0,0,0.7);color:white;padding:10px;border-radius:4px;z-index:10001;font-size:12px;max-width:250px;';
@@ -437,7 +405,6 @@ const ContentForm = ({ feed, isEdit = false, isGroup, isReply, onSubmit, post = 
 										   '<p>- Drag blue handles to resize</p>' +
 										   '<p>- Press ESC to deselect</p>';
 				  document.body.appendChild(instructions);
-				  
 				  setTimeout(() => {
 					const inst = document.getElementById('editor-instructions');
 					if (inst) inst.style.opacity = '0';
@@ -445,7 +412,6 @@ const ContentForm = ({ feed, isEdit = false, isGroup, isReply, onSubmit, post = 
 					  if (inst) inst.remove();
 					}, 1000);
 				  }, 5000);
-				  
 				} else {
 				  document.removeEventListener('click', selectElement);
 				  deselectElement();
@@ -453,15 +419,11 @@ const ContentForm = ({ feed, isEdit = false, isGroup, isReply, onSubmit, post = 
 				  if (controls) controls.style.display = 'none';
 				  toggleBtn.textContent = 'Edit Mode: OFF';
 				  toggleBtn.style.background = '#4a90e2';
-				  
 				  const instructions = document.getElementById('editor-instructions');
 				  if (instructions) instructions.remove();
 				}
 			  };
-			  
 			  document.body.appendChild(toggleBtn);
-			  
-			  // Handle escape key
 			  document.addEventListener('keydown', function(e) {
 				if (e.key === 'Escape') {
 				  deselectElement();
@@ -470,8 +432,6 @@ const ContentForm = ({ feed, isEdit = false, isGroup, isReply, onSubmit, post = 
 				}
 			  });
 			}
-			
-			// Wait for DOM to be ready
 			if (document.readyState === 'loading') {
 			  document.addEventListener('DOMContentLoaded', initEditor);
 			} else {
@@ -481,7 +441,7 @@ const ContentForm = ({ feed, isEdit = false, isGroup, isReply, onSubmit, post = 
 		</script>`;
 		
 		const scriptToInject = `<script>
-		  function sendHeight() { // why only send height? How do we send only the piece of code that has been changed?
+		  function sendHeight() { 
 			var newHeight = document.documentElement.scrollHeight;
 			parent.postMessage({ blockId: '${id}', height: newHeight }, '*');
 		  }
@@ -504,114 +464,90 @@ const ContentForm = ({ feed, isEdit = false, isGroup, isReply, onSubmit, post = 
 		return srcDoc;
 	  }, []);
 
-	  useEffect(() => {
-		function handleIframeMessage(event) {
-		  const { blockId, height, action, editedContent } = event.data;
-		  
-		  // Handle height updates
-		  if (blockId && height) {
+	useEffect(() => {
+	function handleIframeMessage(event) {
+		const { blockId, height, action, editedContent } = event.data;
+		if (blockId && height) {
 			const iframe = iframeRefs.current[blockId];
-			if (iframe) iframe.style.height = `${height}px`;
-		  }
-		  
-		  // Handle receiving edited content
-		  if (action === 'editedContentReady' && blockId && editedContent) {
-			// Extract the actual content without the injected scripts and editor elements
-			let cleanedContent = editedContent;
-			
-			// Clean up the HTML to remove injected scripts and editor elements
+			if (iframe) iframe.style.height = `${height}px`;}
+			if (action === 'editedContentReady' && blockId && editedContent) {
+				let cleanedContent = editedContent;
 			if (editedContent.includes('<html')) {
-			  try {
-				// Create a DOM parser to extract just the needed content
+				try {
+				//Create a DOM parser to extract just the needed content
 				const parser = new DOMParser();
 				const doc = parser.parseFromString(editedContent, 'text/html');
-				
-				// Remove all the injected scripts
+				//Remove all the injected scripts
 				const scripts = doc.querySelectorAll('script');
 				scripts.forEach(script => script.remove());
-				
-				// Remove all editor-related elements
+				//Remove all editor-related elements
 				const editorElements = [
-				  '#editor-controls',
-				  '#toggle-editor', 
-				  '#editor-instructions',
-				  '.resize-container',
-				  '.resize-handle'
+					'#editor-controls',
+					'#toggle-editor', 
+					'#editor-instructions',
+					'.resize-container',
+					'.resize-handle'
 				];
-				
 				editorElements.forEach(selector => {
-				  const elements = doc.querySelectorAll(selector);
-				  elements.forEach(el => el.remove());
+					const elements = doc.querySelectorAll(selector);
+					elements.forEach(el => el.remove());
 				});
-				
-				// Remove contentEditable attributes from all elements
+				//Remove contentEditable attributes from all elements
 				const allElements = doc.querySelectorAll('*');
 				allElements.forEach(el => {
-				  if (el.hasAttribute('contenteditable')) {
+					if (el.hasAttribute('contenteditable')) {
 					el.removeAttribute('contenteditable');
-				  }
-				  // Remove data attributes related to the editor
-				  const attributesToRemove = [];
-				  for (let i = 0; i < el.attributes.length; i++) {
+					}
+					//Remove data attributes related to the editor
+					const attributesToRemove = [];
+					for (let i = 0; i < el.attributes.length; i++) {
 					const attr = el.attributes[i];
 					if (attr.name.startsWith('data-original') || 
 						attr.name === 'data-mce-selected' ||
 						attr.name.includes('editor')) {
-					  attributesToRemove.push(attr.name);
+						attributesToRemove.push(attr.name);
 					}
-				  }
-				  attributesToRemove.forEach(attr => el.removeAttribute(attr));
+					}
+					attributesToRemove.forEach(attr => el.removeAttribute(attr));
 				});
-				
-				// Get the cleaned HTML - we need to maintain just the meaningful structure
 				const htmlEl = doc.documentElement;
 				const headEl = doc.head;
 				const bodyEl = doc.body;
-				
-				// Create a new document with just the essential content
 				const cleanDoc = document.implementation.createHTMLDocument();
-				
-				// Copy important nodes from head
 				Array.from(headEl.children).forEach(child => {
-				  if (child.tagName !== 'SCRIPT') { // Skip any remaining scripts
+					if (child.tagName !== 'SCRIPT') { //Skip any remaining scripts
 					cleanDoc.head.appendChild(child.cloneNode(true));
-				  }
+					}
 				});
-				
-				// Copy body content (excluding editor elements)
+				//Copy body content (excluding editor elements)
 				Array.from(bodyEl.children).forEach(child => {
-				  if (!child.id || 
-					  !['editor-controls', 'toggle-editor', 'editor-instructions'].includes(child.id)) {
+					if (!child.id || 
+						!['editor-controls', 'toggle-editor', 'editor-instructions'].includes(child.id)) {
 					cleanDoc.body.appendChild(child.cloneNode(true));
-				  }
+					}
 				});
-				
-				// Get the cleaned HTML
+				//Get the cleaned HTML
 				cleanedContent = '<!DOCTYPE html>\n<html>\n' + 
-								 cleanDoc.documentElement.innerHTML + 
-								 '\n</html>';
-				
-				// One more clean-up pass for any lingering xmlns attributes
+									cleanDoc.documentElement.innerHTML + 
+									'\n</html>';
 				cleanedContent = cleanedContent.replace(/ xmlns="http:\/\/www\.w3\.org\/1999\/xhtml"/g, '');
-			  } catch (err) {
+				} catch (err) {
 				console.error("Error cleaning HTML content:", err);
-			  }
+				}
 			}
-			
-			// Update the block's code data with the cleaned content
 			setBlocks(prev => 
-			  prev.map(block => 
+				prev.map(block => 
 				block.id === blockId
-				  ? { ...block, data: { ...block.data, code: cleanedContent } }
-				  : block
-			  )
+					? { ...block, data: { ...block.data, code: cleanedContent } }
+					: block
+				)
 			);
-		  }
 		}
-		
-		window.addEventListener('message', handleIframeMessage);
-		return () => window.removeEventListener('message', handleIframeMessage);
-	  }, []);
+	}
+	
+	window.addEventListener('message', handleIframeMessage);
+	return () => window.removeEventListener('message', handleIframeMessage);
+	}, []);
 
 	const handleAddBlock = useCallback(type => {
 		setBlockLimitError('')
@@ -657,24 +593,6 @@ const ContentForm = ({ feed, isEdit = false, isGroup, isReply, onSubmit, post = 
 		}))
 		setBlocks(prev => [...prev, ...mediaBlocks])
 	}, [MAX_FILE_SIZE, BLOCK_LIMIT, blocks.length, hasMembership])
-
-	const moveBlockDown = useCallback(index => {
-		if (index === blocks.length - 1) return
-		setBlocks(prev => {
-			const updated = [...prev]
-			;[updated[index + 1], updated[index]] = [updated[index], updated[index + 1]]
-			return updated
-		})
-	}, [blocks.length])
-
-	const moveBlockUp = useCallback(index => {
-		if (index === 0) return
-		setBlocks(prev => {
-			const updated = [...prev]
-			;[updated[index - 1], updated[index]] = [updated[index], updated[index - 1]]
-			return updated
-		})
-	}, [])
 
 	const removeBlock = useCallback(blockId => {
 		setBlocks(prev => prev.filter(block => block.id !== blockId))
@@ -930,18 +848,33 @@ const ContentForm = ({ feed, isEdit = false, isGroup, isReply, onSubmit, post = 
 																			{data.showPrompt ? <FaTerminal /> : <FaCommentAlt />}
 																		</button>
 																	)}
-																	<button className="small-icon" onClick={() => moveBlockUp(index)} title="Move up" type="button"><FaArrowUp /></button>
-																	<button className="small-icon" onClick={() => moveBlockDown(index)} title="Move down" type="button"><FaArrowDown /></button>
-																	<button className="small-icon" onClick={() => removeBlock(id)} title="Delete" type="button"><FaTrash /></button>
+																		<button className="small-icon" onClick={() => removeBlock(id)} title="Delete" type="button"><FaTrash /></button>
 																	{type !== BLOCK_TYPES.MEDIA && (
 																		<button className="small-icon" onClick={toggleEdit} title={isEditing ? 'Preview' : 'Edit'} type="button">{isEditing ? <FaEye /> : <FaEdit />}</button>
 																	)}
 																</div>
-																{type === BLOCK_TYPES.MEDIA && (
-																	<div>
+																<div style={{ position: 'relative' }}>
+																	{type === BLOCK_TYPES.MEDIA && (
 																		<button className="small-icon" onClick={() => toggleMediaAlignment(block)} title="Centre media" type="button"><FaAlignCenter /></button>
-																	</div>
-																)}
+																	)}
+																	{type === BLOCK_TYPES.CODE && (
+																	<>
+																		<button className="small-icon" onClick={() => setCodeBlockDropdown({...codeBlockDropdown, [id]: !codeBlockDropdown[id]})} type="button">
+																			<FaEllipsisV /><p style={{ fontSize: '14px', margin: '0px'}}>Add content</p>
+																		</button>
+																		{codeBlockDropdown[id] && (
+																		<div className="dropdown-menu" style={{ position: 'absolute', right: 0, top: '25px', backgroundColor: 'white', boxShadow: '0px 0px 5px rgba(0,0,0,0.2)', zIndex: 10, borderRadius: '4px', padding: '5px' }}>
+																			<button onClick={() => {setCodeBlockDropdown({...codeBlockDropdown, [id]: false}); addIframe(id);}} style={{ display: 'block', width: '100%', textAlign: 'left', padding: '5px', border: 'none', background: 'none', cursor: 'pointer' }}>
+																				<FaLink style={{ marginRight: '5px' }} /> Add Website Link
+																			</button>
+																			<button onClick={() => {setCodeBlockDropdown({...codeBlockDropdown, [id]: false});addSocialMedia(id);}} style={{ display: 'block', width: '100%', textAlign: 'left', padding: '5px', border: 'none', background: 'none', cursor: 'pointer' }}>
+																				<FaShareAlt style={{ marginRight: '5px' }} /> Insert Social Media Post
+																			</button>
+																		</div>
+																		)}
+																	</>
+																	)}
+																</div>
 															</div>
 															{type === BLOCK_TYPES.TEXT && (
 																<div className="block-content">
