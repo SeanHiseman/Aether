@@ -10,7 +10,7 @@ const FeedDeletion = ({ feed }) => {
         try {
             const response = feed.is_group ? await axios.delete('/api/delete_feed', { data: { feedId: feed.feed_id } }) : await axios.delete('/api/delete_account', { data: { userId: feed.feed_owner } });
                 if (response.data.success) {
-                    const route = feed.is_group ? '/p/recommended' : '/login';
+                    const route = feed.is_group ? '/d/recommended' : '/join';
                     navigate(route);
                 }
         } catch (error) {

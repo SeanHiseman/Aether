@@ -265,14 +265,12 @@ router.post('/generate_content', authenticateCheck, async (req, res) => {
 
 //Get messages within a specific chat
 router.get('/get_ask_messages', authenticateCheck, async (req, res) => {
-    //console.log("get_ask_messages request received");
     try {
         const chatId = req.query.chatId;
         const messages = await AskMessages.findAll({
             where: { chat_id: chatId },
             order: [['timestamp', 'DESC']]
         });
-        //console.log("messages:", messages);
         res.status(200).json({ messages });
     } catch (error) {
         res.status(500).json({ success: false });
