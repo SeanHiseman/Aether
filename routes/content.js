@@ -211,107 +211,138 @@ const post_upload = multer({
     storage: post_storage
 });
 
-// Helper function to clean editor-specific elements from HTML content
-function cleanEditorElements(htmlContent) {
-    const $ = cheerio.load(htmlContent, { decodeEntities: false });
-    
-    // Remove editor UI elements
-    $('#toggle-editor').remove();
-    $('#editor-controls').remove();
-    $('.resize-container').remove();
-    $('#editor-instructions').remove();
-    
-    // Remove editor scripts
-    $('script').each((i, el) => {
-      const scriptText = $(el).html();
-      if (scriptText && (
-          scriptText.includes('Interactive editing') || 
-          scriptText.includes('editorActive') || 
-          scriptText.includes('selectElement')
-      )) {
-        $(el).remove();
-      }
-    });
-    
-    // Remove editor data attributes
-    $('[data-original-outline]').removeAttr('data-original-outline');
-    $('[data-original-pointer-events]').removeAttr('data-original-pointer-events');
-    
-    return $.html();
-  }
-  
-  // Modify create_post route to use the cleaning function
-  router.post('/create_post', authenticateCheck, checkStorageLimit, post_upload.array('files'), async (req, res) => {
+router.post('/create_post', authenticateCheck, checkStorageLimit, post_upload.array('files'), async (req, res) => {
     try {
-      let { channel_id, content, feed_id, parent_id, post_id, poster_id, title } = req.body;
-      if (!post_id) {
-        post_id = v4();
-      }
-      content = content || '';
-      
-      // Clean up editor elements
-      content = cleanEditorElements(content);
-      
-      // Create a DOM with cheerio to process the content
-      const $ = cheerio.load(content, { decodeEntities: false });
-      
-      // Process blob URLs for file uploads
-      if (req.files && req.files.length > 0) {
-        // File handling code remains the same...
-      }
-      
-      // Extract clean HTML content
-      const modifiedContent = $.html();
-      
-      const post = await Posts.create({
-        channel_id,
-        content: modifiedContent,
-        feed_id,
-        parent_id,
-        post_id,
-        poster_id,
-        title
-      });
-      
-      // Rest of the function remains the same...
+        let { channel_id, content, feed_id, parent_id, post_id, poster_id, title } = req.body;
+        if (!post_id) {
+            post_id = v4();
+        }
+        content = content || '';
+        const $ = cheerio.load(content, { decodeEntities: false });
+        if (req.files && req.files.length > 0) {
+            const totalFileSize = calculateFileSizes(req.files);
+            const user = req.currentUser;
+            const maxStorage = user.has_membership ? 100 * 1024 : 100; //100GB for members, 100MB for non-members
+            if (user.storage_count + totalFileSize > maxStorage) {
+                req.files.forEach(file => {
+                    fs.unlinkSync(path.join(mediaDir, file.filename));
+                });
+                return res.status(413).json({ 
+                    success: false, 
+                    message: `Weekly limit of ${maxStorage}MB exceeded` 
+                });
+            }
+            user.storage_count += totalFileSize;
+            await user.save();
+            let index = 0;
+            $('img[src^="blob:"], video[src^="blob:"]').each((i, el) => {
+                if (index < req.files.length) {
+                    const file = req.files[index];
+                    const fileType = file.mimetype.startsWith('image/') ? 'img' : 'video';
+                    if (fileType === 'img') {
+                        $(el).attr('src', `/media/content/${file.filename}`);
+                        $(el).removeAttr('blob:');
+                        $(el).attr('alt', 'Uploaded Image');
+                    } else {
+                        $(el).empty();
+                        $(el).append(`<source src="/media/content/${file.filename}" type="${file.mimetype}">`);
+                    }
+                    index++;
+                }
+            });
+        }
+        const modifiedContent = $.html();
+        const post = await Posts.create({
+            channel_id,
+            content: modifiedContent,
+            feed_id,
+            parent_id,
+            post_id,
+            poster_id,
+            title
+        });
+        if (parent_id) { //parent_id means post is a reply
+            const parentPost = await Posts.findOne({ where: { post_id: parent_id } });
+            if (parentPost) {
+                parentPost.replies += 1;
+                await parentPost.save();
+            }
+        }
+        return res.status(200).json({ success: true, post });
     } catch (error) {
-      // Error handling remains the same...
+        if (req.files && req.files.length > 0) {
+            req.files.forEach(file => {
+                try {
+                    fs.unlinkSync(path.join(mediaDir, file.filename));
+                } catch (err) {
+                    console.error('Error deleting file:', err);
+                }
+            });
+        }
+        return res.status(500).json({ success: false, error: error.message });
     }
-  });
-  
-  // Modify edit_post route similarly
-  router.post('/edit_post', authenticateCheck, checkStorageLimit, post_upload.array('files'), async (req, res) => {
+});
+
+router.post('/edit_post', authenticateCheck, checkStorageLimit, post_upload.array('files'), async (req, res) => {
     try {
-      let { content, post_id, title } = req.body;
-      const foundPost = await Posts.findByPk(post_id);
-      if (!foundPost) {
-        return res.status(404).json({ success: false, message: 'Post not found' });
-      }
-      
-      // Clean up editor elements
-      content = cleanEditorElements(content);
-      
-      // Create a DOM with cheerio to process the content
-      const $ = cheerio.load(content, { decodeEntities: false });
-      
-      // Process blob URLs for file uploads
-      if (req.files && req.files.length > 0) {
-        // File handling code remains the same...
-      }
-      
-      // Extract clean HTML content
-      foundPost.content = $.html();
-      if (title) {
-        foundPost.title = title;
-      }
-      foundPost.updated_at = Sequelize.literal('CURRENT_TIMESTAMP(3)');
-      await foundPost.save();
-      
-      // Rest of the function remains the same...
+        let { content, post_id, title } = req.body;;
+        const foundPost = await Posts.findByPk(post_id);
+        if (!foundPost) {
+            return res.status(404).json({ success: false, message: 'Post not found' });
+        }
+        const $ = cheerio.load(content, { decodeEntities: false });
+        if (req.files && req.files.length > 0) {
+            const totalFileSize = calculateFileSizes(req.files);
+            const user = req.currentUser;
+            const maxStorage = user.has_membership ? 100 * 1024 : 100; //100GB for members, 100MB for non-members
+            if (user.storage_count + totalFileSize > maxStorage) {
+                req.files.forEach(file => {
+                    fs.unlinkSync(path.join(mediaDir, file.filename));
+                });
+                return res.status(413).json({ 
+                    success: false, 
+                    message: `Weekly limit of ${maxStorage}MB exceeded` 
+                });
+            }
+            user.storage_count += totalFileSize;
+            await user.save();
+            let index = 0;
+            $('img[src^="blob:"], video[src^="blob:"]').each((i, el) => {
+                if (index < req.files.length) {
+                    const file = req.files[index];
+                    const fileType = file.mimetype.startsWith('image/') ? 'img' : 'video';
+                    if (fileType === 'img') {
+                        $(el).attr('src', `/media/content/${file.filename}`);
+                        $(el).removeAttr('blob:');
+                        $(el).attr('alt', 'Uploaded Image');
+                    } else {
+                        $(el).empty();
+                        $(el).append(`<source src="/media/content/${file.filename}" type="${file.mimetype}">`);
+                    }
+                    index++;
+                }
+            });
+        }
+        foundPost.content = $.html();
+        if (title) {
+            foundPost.title = title;
+        }
+        foundPost.updated_at = Sequelize.literal('CURRENT_TIMESTAMP(3)');
+        await foundPost.save();
+        return res.status(201).json({ success: true });
     } catch (error) {
-      // Error handling remains the same...
+        if (req.files && req.files.length > 0) {
+            req.files.forEach(file => {
+                try {
+                    fs.unlinkSync(path.join(mediaDir, file.filename));
+                } catch (err) {
+                    console.error('Error deleting file:', err);
+                }
+            });
+        }
+        return res.status(500).json({ success: false, error: error.message });
     }
-  });
+});
 
 router.delete('/remove_post', authenticateCheck, async (req, res) => {
     try {
