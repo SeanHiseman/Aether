@@ -10,6 +10,7 @@ import ChatPage from './pages/connections/chatPage';
 import ConnectionsPage from './pages/connections/connectionsPage';
 import Content from './pages/welcome/content';
 import ContentWidget from './components/content/contentWidget';
+import DeepFeed from './pages/deepFeed';
 import Feeds from './pages/welcome/feeds';
 import FeedHome from './pages/feeds/feedHome';
 import FeedSettings from './pages/feeds/settings/feedSettings';
@@ -17,7 +18,6 @@ import FeedWrapper from './pages/feeds/feedWrapper';
 import Join from './pages/site_entrance/join';
 import Login from './pages/site_entrance/login';
 import Membership from './pages/welcome/membership';
-import PersonalFeed from './pages/personalFeed';
 import Privacy from './pages/welcome/privacy';
 import { QueryProvider } from './components/search/queryContext';
 import SearchResults from './pages/searchResults';
@@ -69,7 +69,7 @@ const App = () => {
 								<Route path="connections" element={<ProtectedRoute><ConnectionsPage /></ProtectedRoute>} />
 								<Route path="connections/:connection_name" element={<ProtectedRoute><ChatPage /></ProtectedRoute>} />
 								<Route path="connections/:connection_name/:title" element={<ProtectedRoute><ChatPage /></ProtectedRoute>} />
-								<Route path="p/:feed_name" element={<ProtectedRoute><PersonalFeed/></ProtectedRoute>} />
+								<Route path="d/:deep_feed_id" element={<ProtectedRoute><DeepFeed/></ProtectedRoute>} />
 								<Route path="search" element={<SearchResults />} />
 								<Route path="u/:feed_name" element={<FeedWrapper />}>
 									<Route index element={<Navigate replace to="Main" />} />

@@ -62,7 +62,7 @@ const DeepFeedItem = ({ deepFeed, index }) => {
             {(provided) => (
                 <div ref={provided.innerRef} {...provided.draggableProps} className="deep-feed-container">
                     <div className="channel-link deep-feed-header" {...provided.dragHandleProps}>
-                        <Link to={`/p/${deepFeed.name}`}>
+                        <Link to={`/d/${deepFeed.deep_feed_id}`}>
                             <p style={{ margin: "0" }}>{deepFeed.name}</p>
                         </Link>
                         <div onClick={handleExpand}>

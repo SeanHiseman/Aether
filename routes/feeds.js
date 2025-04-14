@@ -276,6 +276,77 @@ router.get('/deep_feed_contents/:deepFeedId', async (req, res) => {
     }
 });
 
+router.get('/deep_feed_posts', async (req, res) => {
+    try {
+        const { deepFeedId, limit = 10, offset = 0 } = req.query;
+        if (deepFeedId === 'following') { //Following deep feed is a special case
+            const followerId = req.session.feed_id;
+            if (!followerId) {
+                return res.status(401).json({ error: 'Unauthorized' });
+            }
+            const followedFeeds = await Followers.findAll({
+                where: { follower_id: followerId },
+                attributes: ['feed_id']
+            });
+            if (followedFeeds.length === 0) {
+                return res.json({ success: true, posts: [], deepFeedName: 'Following' });
+            }
+            const feedIds = followedFeeds.map(follow => follow.feed_id);
+            const posts = await Posts.findAll({
+                where: { feed_id: { [Op.in]: feedIds } },
+                include: [{
+                    model: Feeds,
+                    as: 'poster',
+                    attributes: feedAttributes
+                },{
+                    model: FeedChannels,
+                    as: 'parentChannel',
+                    attributes: ['channel_id', 'channel_name', 'feed_id']
+                }],
+                order: [['created_at', 'DESC']],
+                limit: parseInt(limit),
+                offset: parseInt(offset)
+            });
+            return res.json({ 
+                success: true, 
+                posts,
+                deepFeedName: 'Following'
+            });
+        } else {
+            const deepFeed = await DeepFeeds.findByPk(deepFeedId);
+            if (!deepFeed) {
+                return res.status(404).json({ error: 'Deep feed not found' });
+            }
+            const feedIds = await DeepFeedContent.findAll({
+                where: { deep_feed_id: deepFeedId },
+                attributes: ['feed_id']
+            });
+            const posts = await Posts.findAll({
+                where: { feed_id: feedIds.map(feed => feed.feed_id) },
+                include: [{
+                    model: Feeds,
+                    as: 'poster',
+                    attributes: feedAttributes
+                },{
+                    model: FeedChannels,
+                    as: 'parentChannel',
+                    attributes: ['channel_id', 'channel_name', 'feed_id']
+                }],
+                order: [['created_at', 'DESC']],
+                limit: parseInt(limit),
+                offset: parseInt(offset)
+            });
+            res.status(200).json({ 
+                deepFeedName: deepFeed.name,
+                posts,
+                success: true, 
+            });
+        }
+    } catch (error) {
+        res.status(500).json({ success: false, error: error.message });
+    }
+});  
+
 router.delete('/delete_follow_request', authenticateCheck, async (req, res) => {
     try {
         const { receiverId, senderId } = req.body;

@@ -347,9 +347,9 @@ const BaseLayout = () => {
                     <DragDropContext onDragEnd={onDragEnd}>
                         <nav id="personal-feeds">
                             <ul>
-                                <li className="channel-link"><Link to="/p/recommended">Recommended</Link></li>
-                                <li className="channel-link"><Link to="/p/following">Following</Link></li>
-                                <li className="channel-link"><Link to="/p/connection_posts">Connections</Link></li>
+                                {/*<li className="channel-link"><Link to="/d/recommended">Recommended</Link></li>*/}
+                                <li className="channel-link"><Link to="/d/following">Following</Link></li>
+                                {/*<li className="channel-link"><Link to="/d/connection_posts">Connections</Link></li>*/}
                             </ul>
                         </nav>
                         <Droppable droppableId="deepFeedsList" type="deepFeed">
