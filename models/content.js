@@ -1,6 +1,5 @@
 import { BOOLEAN, STRING, DataTypes, INTEGER, TEXT } from 'sequelize';
 import sequelize from '../databaseSetup.js';
-import { response } from 'express';
 
 const Posts = sequelize.define('posts', {
     post_id: { type: STRING(36), primaryKey: true },
