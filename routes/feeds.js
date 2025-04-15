@@ -295,6 +295,7 @@ router.get('/deep_feed_posts', async (req, res) => {
             const posts = await Posts.findAll({
                 where: { 
                     feed_id: { [Op.in]: feedIds },
+                    poster_id : { [Op.ne]: followerId }, //Exclude posts by the viewer
                     parent_id: null //Only top-level posts 
                 },
                 include: [{

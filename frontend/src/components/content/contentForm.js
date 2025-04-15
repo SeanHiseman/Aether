@@ -173,134 +173,150 @@ const ContentForm = ({ feed, isEdit = false, isGroup, isReply, onSubmit, post = 
 	}, [isEdit])
 
 	//This section is AI generated, may need cleaning up and adjusting
-    const getIframeSrcDoc = useCallback((id, code) => {
+	const getIframeSrcDoc = useCallback((id, code, isEditing) => {
 		const trimmedCode = code.trim()
 		const interactiveEditorScript = `
 		<script>
-		  (function() {
+		(function() {
 			let selectedElement = null;
 			let isResizing = false;
 			let originalWidth, originalHeight, startX, startY;
-			let editorActive = false;
+			let editorActive = true;
+	
 			function createEditorControls() {
-			  const controls = document.createElement('div');
-			  controls.id = 'editor-controls';
-			  controls.style.cssText = 'position:fixed;bottom:10px;left:10px;background:#333;padding:10px;border-radius:5px;z-index:9999;display:none;';
-			  const colorLabel = document.createElement('span');
-			  colorLabel.textContent = 'Color: ';
-			  colorLabel.style.color = 'white';
-				const colorPicker = document.createElement('input');
-					colorPicker.type = 'color';
-					colorPicker.id = 'color-picker';
-					colorPicker.onchange = function() {
+				const controls = document.createElement('div');
+				controls.id = 'editor-controls';
+				controls.style.cssText = 'position:fixed;bottom:10px;left:10px;background:#333;padding:10px;border-radius:5px;z-index:9999;display:none;';
+				const label = document.createElement('span');
+				label.textContent = 'Style: ';
+				label.style.color = 'white';
+				const propertySelect = document.createElement('select');
+				propertySelect.id = 'style-property';
+				['color', 'backgroundColor'].forEach(prop => {
+					const option = document.createElement('option');
+					option.value = prop;
+					option.textContent = prop;
+					propertySelect.appendChild(option);
+				});
+				const colorInput = document.createElement('input');
+				colorInput.type = 'color';
+				colorInput.id = 'style-color';
+				colorInput.onchange = function() {
 					if (selectedElement) {
-						selectedElement.style.color = this.value;
+						const property = propertySelect.value;
+						selectedElement.style[property] = this.value;
 						sendHeight();
 						parent.postMessage({
+							action: 'editedContentReady',
+							blockId: '${id}',
+							editedContent: document.documentElement.outerHTML
+						}, '*');
+					}
+				};
+				const closeBtn = document.createElement('button');
+				closeBtn.textContent = 'Close';
+				closeBtn.style.marginLeft = '10px';
+				closeBtn.onclick = () => { 
+					controls.style.display = 'none'; 
+					deselectElement(); 
+				};
+				controls.appendChild(label);
+				controls.appendChild(propertySelect);
+				controls.appendChild(colorInput);
+				controls.appendChild(closeBtn);
+				document.body.appendChild(controls);
+				return controls;
+			}
+	
+			function updateColorInputStyle(element) {
+				const colorInput = document.getElementById('style-color');
+				const property = document.getElementById('style-property')?.value || 'color';
+				if (colorInput) {
+					const computedStyle = window.getComputedStyle(element);
+					colorInput.value = rgbToHex(computedStyle[property]);
+				}
+			}
+	
+			function createResizeHandles(element) {
+				const handles = ['nw', 'ne', 'sw', 'se', 'n', 's', 'e', 'w'];
+				const container = document.createElement('div');
+				container.className = 'resize-container';
+				container.style.cssText = 'position:absolute;pointer-events:none;border:1px dashed blue;z-index:9998;';
+				handles.forEach(pos => {
+					const handle = document.createElement('div');
+					handle.className = 'resize-handle ' + pos;
+					handle.style.cssText = 'position:absolute;width:10px;height:10px;background:blue;border-radius:50%;z-index:10000;cursor:' + pos + '-resize;pointer-events:all;';
+					if (pos.includes('n')) handle.style.top = '-5px';
+					if (pos.includes('s')) handle.style.bottom = '-5px';
+					if (pos.includes('e')) handle.style.right = '-5px';
+					if (pos.includes('w')) handle.style.left = '-5px';
+					if (pos === 'n' || pos === 's') handle.style.left = 'calc(50% - 5px)';
+					if (pos === 'e' || pos === 'w') handle.style.top = 'calc(50% - 5px)';
+					handle.addEventListener('mousedown', function(e) {
+						e.stopPropagation();
+						startResize(e, pos);
+					});
+					container.appendChild(handle);
+				});
+				document.body.appendChild(container);
+				updateResizeContainer(element, container);
+				return container;
+			}
+	
+			function updateResizeContainer(element, container) {
+				const rect = element.getBoundingClientRect();
+				container.style.top = rect.top + 'px';
+				container.style.left = rect.left + 'px';
+				container.style.width = rect.width + 'px';
+				container.style.height = rect.height + 'px';
+			}
+	
+			function makeEditable(element) {
+				if (!element) return;
+				if (element.isContentEditable || 
+					element.tagName === 'INPUT' || 
+					element.tagName === 'TEXTAREA' ||
+					element.tagName === 'SELECT') {
+					return;
+				}
+				element.contentEditable = true;
+				element.focus();
+				updateColorInputStyle(element);
+				element.addEventListener('blur', function onBlur() {
+					element.contentEditable = false;
+					element.removeEventListener('blur', onBlur);
+					sendHeight();
+					parent.postMessage({
 						action: 'editedContentReady',
 						blockId: '${id}',
 						editedContent: document.documentElement.outerHTML
-						}, '*');
-					}
-				};	
-			  const closeBtn = document.createElement('button');
-			  closeBtn.textContent = 'Close';
-			  closeBtn.style.marginLeft = '10px';
-			  closeBtn.onclick = () => { 
-				controls.style.display = 'none'; 
-				deselectElement(); 
-			  };
-			  controls.appendChild(colorLabel);
-			  controls.appendChild(colorPicker);
-			  controls.appendChild(closeBtn);
-			  document.body.appendChild(controls);
-			  return controls;
-			}
-			function createResizeHandles(element) {
-			  const handles = ['nw', 'ne', 'sw', 'se', 'n', 's', 'e', 'w'];
-			  const container = document.createElement('div');
-			  container.className = 'resize-container';
-			  container.style.cssText = 'position:absolute;pointer-events:none;border:1px dashed blue;z-index:9998;';
-			  handles.forEach(pos => {
-				const handle = document.createElement('div');
-				handle.className = 'resize-handle ' + pos;
-				handle.style.cssText = 'position:absolute;width:10px;height:10px;background:blue;border-radius:50%;z-index:10000;cursor:' + pos + '-resize;pointer-events:all;';
-				if (pos.includes('n')) handle.style.top = '-5px';
-				if (pos.includes('s')) handle.style.bottom = '-5px';
-				if (pos.includes('e')) handle.style.right = '-5px';
-				if (pos.includes('w')) handle.style.left = '-5px';
-				if (pos === 'n' || pos === 's') handle.style.left = 'calc(50% - 5px)';
-				if (pos === 'e' || pos === 'w') handle.style.top = 'calc(50% - 5px)';
-				handle.addEventListener('mousedown', function(e) {
-				  e.stopPropagation();
-				  startResize(e, pos);
-				});
-				container.appendChild(handle);
-			  });
-			  document.body.appendChild(container);
-			  updateResizeContainer(element, container);
-			  return container;
-			}
-			function updateResizeContainer(element, container) {
-			  const rect = element.getBoundingClientRect();
-			  container.style.top = rect.top + 'px';
-			  container.style.left = rect.left + 'px';
-			  container.style.width = rect.width + 'px';
-			  container.style.height = rect.height + 'px';
-			}
-			function makeEditable(element) {
-			  if (!element) return;
-			  if (element.isContentEditable || 
-				  element.tagName === 'INPUT' || 
-				  element.tagName === 'TEXTAREA' ||
-				  element.tagName === 'SELECT') {
-				return;
-			  }
-			  element.contentEditable = true;
-			  element.focus();
-			  const colorPicker = document.getElementById('color-picker');
-			  if (colorPicker) {
-				const computedStyle = window.getComputedStyle(element);
-				colorPicker.value = rgbToHex(computedStyle.color);
-			  }
-				element.addEventListener('blur', function onBlur() {
-				element.contentEditable = false;
-				element.removeEventListener('blur', onBlur);
-				sendHeight();
-				parent.postMessage({
-					action: 'editedContentReady',
-					blockId: '${id}',
-					editedContent: document.documentElement.outerHTML
-				}, '*');
+					}, '*');
 				}, { once: true });
 			}
+	
 			function selectElement(e) {
-			  if (!editorActive) return;
-			  if (e.target.id === 'editor-controls' || e.target.closest('#editor-controls')) return;
-			  if (e.target.className.includes('resize-handle')) return;
-			  if (e.target.id === 'toggle-editor') return;
-			  deselectElement();
-			  selectedElement = e.target;
-			  if (selectedElement === document.body || selectedElement === document.documentElement) {
-				selectedElement = null;
-				return;
-			  }
-			  selectedElement.dataset.originalOutline = selectedElement.style.outline;
-			  selectedElement.style.outline = '2px solid blue';
-			  const controls = document.getElementById('editor-controls') || createEditorControls();
-			  controls.style.display = 'block';
-			  const colorPicker = document.getElementById('color-picker');
-			  if (colorPicker) {
-				const computedStyle = window.getComputedStyle(selectedElement);
-				colorPicker.value = rgbToHex(computedStyle.color);
-			  }
-			  createResizeHandles(selectedElement);
-			  selectedElement.addEventListener('dblclick', function onDblClick(evt) {
-				evt.stopPropagation();
-				makeEditable(selectedElement);
-			  }, { once: true });
-			  e.stopPropagation();
+				if (!editorActive) return;
+				if (e.target.id === 'editor-controls' || e.target.closest('#editor-controls')) return;
+				if (e.target.className.includes('resize-handle')) return;
+				deselectElement();
+				selectedElement = e.target;
+				if (selectedElement === document.body || selectedElement === document.documentElement) {
+					selectedElement = null;
+					return;
+				}
+				selectedElement.dataset.originalOutline = selectedElement.style.outline;
+				selectedElement.style.outline = '2px solid blue';
+				const controls = document.getElementById('editor-controls') || createEditorControls();
+				controls.style.display = 'block';
+				updateColorInputStyle(selectedElement);
+				createResizeHandles(selectedElement);
+				selectedElement.addEventListener('dblclick', function onDblClick(evt) {
+					evt.stopPropagation();
+					makeEditable(selectedElement);
+				}, { once: true });
+				e.stopPropagation();
 			}
+	
 			function deselectElement() {
 				if (!selectedElement) return;
 				selectedElement.style.outline = selectedElement.dataset.originalOutline || '';
@@ -315,49 +331,51 @@ const ContentForm = ({ feed, isEdit = false, isGroup, isReply, onSubmit, post = 
 				}, '*');
 				selectedElement = null;
 			}
+	
 			function rgbToHex(rgb) {
-			  if (!rgb) return '#000000';
-			  if (rgb.startsWith('#')) return rgb;
-			  if (rgb.startsWith('rgba')) {
-				const parts = rgb.match(/^rgba\\s*\\(\\s*(\\d+)\\s*,\\s*(\\d+)\\s*,\\s*(\\d+)\\s*,\\s*([\\d.]+)\\s*\\)$/);
+				if (!rgb) return '#000000';
+				if (rgb.startsWith('#')) return rgb;
+				if (rgb.startsWith('rgba')) {
+					const parts = rgb.match(/^rgba\\s*\\(\\s*(\\d+)\\s*,\\s*(\\d+)\\s*,\\s*(\\d+)\\s*,\\s*([\\d.]+)\\s*\\)$/);
+					if (!parts) return '#000000';
+					const r = parseInt(parts[1]).toString(16).padStart(2, '0');
+					const g = parseInt(parts[2]).toString(16).padStart(2, '0');
+					const b = parseInt(parts[3]).toString(16).padStart(2, '0');
+					return '#' + r + g + b;
+				}
+				const parts = rgb.match(/^rgb\\s*\\(\\s*(\\d+)\\s*,\\s*(\\d+)\\s*,\\s*(\\d+)\\s*\\)$/);
 				if (!parts) return '#000000';
 				const r = parseInt(parts[1]).toString(16).padStart(2, '0');
 				const g = parseInt(parts[2]).toString(16).padStart(2, '0');
 				const b = parseInt(parts[3]).toString(16).padStart(2, '0');
 				return '#' + r + g + b;
-			  }
-			  const parts = rgb.match(/^rgb\\s*\\(\\s*(\\d+)\\s*,\\s*(\\d+)\\s*,\\s*(\\d+)\\s*\\)$/);
-			  if (!parts) return '#000000';
-			  const r = parseInt(parts[1]).toString(16).padStart(2, '0');
-			  const g = parseInt(parts[2]).toString(16).padStart(2, '0');
-			  const b = parseInt(parts[3]).toString(16).padStart(2, '0');
-			  return '#' + r + g + b;
 			}
+	
 			function startResize(e, position) {
-			  if (!selectedElement) return;
-			  isResizing = true;
-			  startX = e.clientX;
-			  startY = e.clientY;
-			  originalWidth = selectedElement.offsetWidth;
-			  originalHeight = selectedElement.offsetHeight;
-			  const resizePos = position;
-			  function doResize(e) {
-				if (!isResizing) return;
-				e.preventDefault();
-				const deltaX = e.clientX - startX;
-				const deltaY = e.clientY - startY;
-				let newWidth = originalWidth;
-				let newHeight = originalHeight;
-				if (resizePos.includes('e')) newWidth = originalWidth + deltaX;
-				if (resizePos.includes('w')) newWidth = originalWidth - deltaX;
-				if (resizePos.includes('s')) newHeight = originalHeight + deltaY;
-				if (resizePos.includes('n')) newHeight = originalHeight - deltaY;
-				if (newWidth > 10) selectedElement.style.width = newWidth + 'px';
-				if (newHeight > 10) selectedElement.style.height = newHeight + 'px';
-				const container = document.querySelector('.resize-container');
-				updateResizeContainer(selectedElement, container);
-				sendHeight();
-			  }
+				if (!selectedElement) return;
+				isResizing = true;
+				startX = e.clientX;
+				startY = e.clientY;
+				originalWidth = selectedElement.offsetWidth;
+				originalHeight = selectedElement.offsetHeight;
+				const resizePos = position;
+				function doResize(e) {
+					if (!isResizing) return;
+					e.preventDefault();
+					const deltaX = e.clientX - startX;
+					const deltaY = e.clientY - startY;
+					let newWidth = originalWidth;
+					let newHeight = originalHeight;
+					if (resizePos.includes('e')) newWidth = originalWidth + deltaX;
+					if (resizePos.includes('w')) newWidth = originalWidth - deltaX;
+					if (resizePos.includes('s')) newHeight = originalHeight + deltaY;
+					if (resizePos.includes('n')) newHeight = originalHeight - deltaY;
+					if (newWidth > 10) selectedElement.style.width = newWidth + 'px';
+					if (newHeight > 10) selectedElement.style.height = newHeight + 'px';
+					const container = document.querySelector('.resize-container');
+					updateResizeContainer(selectedElement, container);
+					sendHeight();
+				}
 				function stopResize() {
 					isResizing = false;
 					document.removeEventListener('mousemove', doResize);
@@ -368,101 +386,71 @@ const ContentForm = ({ feed, isEdit = false, isGroup, isReply, onSubmit, post = 
 						editedContent: document.documentElement.outerHTML
 					}, '*');
 				}
-			  document.addEventListener('mousemove', doResize);
-			  document.addEventListener('mouseup', stopResize);
-			  e.preventDefault();
+				document.addEventListener('mousemove', doResize);
+				document.addEventListener('mouseup', stopResize);
+				e.preventDefault();
 			}
+	
 			function getEditedHTML() {
-			  return document.documentElement.outerHTML;
+				return document.documentElement.outerHTML;
 			}
+	
 			window.addEventListener('message', function(event) {
-			  if (event.data.action === 'getEditedContent') {
-				parent.postMessage({
-				  action: 'editedContentReady',
-				  blockId: '${id}',
-				  editedContent: getEditedHTML()
-				}, '*');
-			  }
+				if (event.data.action === 'getEditedContent') {
+					parent.postMessage({
+						action: 'editedContentReady',
+						blockId: '${id}',
+						editedContent: getEditedHTML()
+					}, '*');
+				}
 			});
+	
 			function initEditor() {
-			  const toggleBtn = document.createElement('button');
-			  toggleBtn.id = 'toggle-editor';
-			  toggleBtn.textContent = 'Edit Mode: OFF';
-			  toggleBtn.style.cssText = 'position:fixed;top:10px;right:10px;z-index:10001;background:#4a90e2;color:white;border:none;padding:8px 12px;border-radius:4px;';
-			  toggleBtn.onclick = function() {
-				editorActive = !editorActive;
-				if (editorActive) {
-				  document.addEventListener('click', selectElement);
-				  toggleBtn.textContent = 'Edit Mode: ON';
-				  toggleBtn.style.background = '#e74c3c';
-				  const instructions = document.createElement('div');
-				  instructions.id = 'editor-instructions';
-				  instructions.style.cssText = 'position:fixed;top:50px;right:10px;background:rgba(0,0,0,0.7);color:white;padding:10px;border-radius:4px;z-index:10001;font-size:12px;max-width:250px;';
-				  instructions.innerHTML = '<p><b>Editor Instructions:</b></p>' +
-										   '<p>- Click any element to select it</p>' +
-										   '<p>- Double-click text to edit it</p>' +
-										   '<p>- Use color picker to change text color</p>' +
-										   '<p>- Drag blue handles to resize</p>' +
-										   '<p>- Press ESC to deselect</p>';
-				  document.body.appendChild(instructions);
-				  setTimeout(() => {
-					const inst = document.getElementById('editor-instructions');
-					if (inst) inst.style.opacity = '0';
-					setTimeout(() => {
-					  if (inst) inst.remove();
-					}, 1000);
-				  }, 5000);
-				} else {
-				  document.removeEventListener('click', selectElement);
-				  deselectElement();
-				  const controls = document.getElementById('editor-controls');
-				  if (controls) controls.style.display = 'none';
-				  toggleBtn.textContent = 'Edit Mode: OFF';
-				  toggleBtn.style.background = '#4a90e2';
-				  const instructions = document.getElementById('editor-instructions');
-				  if (instructions) instructions.remove();
-				}
-			  };
-			  document.body.appendChild(toggleBtn);
-			  document.addEventListener('keydown', function(e) {
-				if (e.key === 'Escape') {
-				  deselectElement();
-				  const controls = document.getElementById('editor-controls');
-				  if (controls) controls.style.display = 'none';
-				}
-			  });
+				document.addEventListener('click', selectElement);
+				document.addEventListener('keydown', function(e) {
+					if (e.key === 'Escape') {
+						deselectElement();
+						const controls = document.getElementById('editor-controls');
+						if (controls) controls.style.display = 'none';
+					}
+				});
 			}
+	
 			if (document.readyState === 'loading') {
-			  document.addEventListener('DOMContentLoaded', initEditor);
+				document.addEventListener('DOMContentLoaded', initEditor);
 			} else {
-			  initEditor();
+				initEditor();
 			}
-		  })();
+		})();
 		</script>`;
-		
+	
 		const scriptToInject = `<script>
-		  function sendHeight() { 
-			var newHeight = document.documentElement.scrollHeight;
-			parent.postMessage({ blockId: '${id}', height: newHeight }, '*');
-		  }
-		  window.addEventListener('load', sendHeight);
-		  var observer = new MutationObserver(sendHeight);
-		  observer.observe(document.body, {childList:true, subtree:true, characterData:true});
-		  sendHeight();
+			function sendHeight() { 
+				var newHeight = document.documentElement.scrollHeight;
+				parent.postMessage({ blockId: '${id}', height: newHeight }, '*');
+			}
+			window.addEventListener('load', sendHeight);
+			var observer = new MutationObserver(sendHeight);
+			observer.observe(document.body, {childList:true, subtree:true, characterData:true});
+			sendHeight();
 		</script>`;
-		
+	
+		const editorScripts = isEditing ? 
+			interactiveEditorScript + scriptToInject : 
+			scriptToInject;
+	
 		let srcDoc = '';
 		if (/<html[\s>]/i.test(trimmedCode)) {
-		  if (/<\/body>/i.test(trimmedCode)) {
-			srcDoc = trimmedCode.replace(/<\/body>/i, interactiveEditorScript + scriptToInject + '</body>');
-		  } else {
-			srcDoc = trimmedCode + interactiveEditorScript + scriptToInject;
-		  }
+			if (/<\/body>/i.test(trimmedCode)) {
+				srcDoc = trimmedCode.replace(/<\/body>/i, editorScripts + '</body>');
+			} else {
+				srcDoc = trimmedCode + editorScripts;
+			}
 		} else {
-		  srcDoc = `<!DOCTYPE html><html><head><style>html,body { margin:0; padding:0; }</style></head><body><div id="content">${code}</div>${interactiveEditorScript}${scriptToInject}</body></html>`;
+			srcDoc = `<!DOCTYPE html><html><head><style>html,body { margin:0; padding:0; }</style></head><body><div id="content">${code}</div>${editorScripts}</body></html>`;
 		}
 		return srcDoc;
-	  }, []);
+	}, []);	
 
 	useEffect(() => {
 	function handleIframeMessage(event) {
@@ -472,77 +460,75 @@ const ContentForm = ({ feed, isEdit = false, isGroup, isReply, onSubmit, post = 
 			if (iframe) iframe.style.height = `${height}px`;}
 			if (action === 'editedContentReady' && blockId && editedContent) {
 				let cleanedContent = editedContent;
-			if (editedContent.includes('<html')) {
-				try {
-				//Create a DOM parser to extract just the needed content
-				const parser = new DOMParser();
-				const doc = parser.parseFromString(editedContent, 'text/html');
-				//Remove all the injected scripts
-				const scripts = doc.querySelectorAll('script');
-				scripts.forEach(script => script.remove());
-				//Remove all editor-related elements
-				const editorElements = [
-					'#editor-controls',
-					'#toggle-editor', 
-					'#editor-instructions',
-					'.resize-container',
-					'.resize-handle'
-				];
-				editorElements.forEach(selector => {
-					const elements = doc.querySelectorAll(selector);
-					elements.forEach(el => el.remove());
-				});
-				//Remove contentEditable attributes from all elements
-				const allElements = doc.querySelectorAll('*');
-				allElements.forEach(el => {
-					if (el.hasAttribute('contenteditable')) {
-					el.removeAttribute('contenteditable');
-					}
-					//Remove data attributes related to the editor
-					const attributesToRemove = [];
-					for (let i = 0; i < el.attributes.length; i++) {
-					const attr = el.attributes[i];
-					if (attr.name.startsWith('data-original') || 
-						attr.name === 'data-mce-selected' ||
-						attr.name.includes('editor')) {
-						attributesToRemove.push(attr.name);
-					}
-					}
-					attributesToRemove.forEach(attr => el.removeAttribute(attr));
-				});
-				const htmlEl = doc.documentElement;
-				const headEl = doc.head;
-				const bodyEl = doc.body;
-				const cleanDoc = document.implementation.createHTMLDocument();
-				Array.from(headEl.children).forEach(child => {
-					if (child.tagName !== 'SCRIPT') { //Skip any remaining scripts
-					cleanDoc.head.appendChild(child.cloneNode(true));
-					}
-				});
-				//Copy body content (excluding editor elements)
-				Array.from(bodyEl.children).forEach(child => {
-					if (!child.id || 
-						!['editor-controls', 'toggle-editor', 'editor-instructions'].includes(child.id)) {
-					cleanDoc.body.appendChild(child.cloneNode(true));
-					}
-				});
-				//Get the cleaned HTML
-				cleanedContent = '<!DOCTYPE html>\n<html>\n' + 
-									cleanDoc.documentElement.innerHTML + 
-									'\n</html>';
-				cleanedContent = cleanedContent.replace(/ xmlns="http:\/\/www\.w3\.org\/1999\/xhtml"/g, '');
-				} catch (err) {
-				console.error("Error cleaning HTML content:", err);
+				if (editedContent.includes('<html')) {
+				  try {
+					const parser = new DOMParser();
+					const doc = parser.parseFromString(editedContent, 'text/html');
+					const scripts = doc.querySelectorAll('script');
+					scripts.forEach(script => {
+					  //Only remove editor scripts, preserve user scripts
+					  if (script.textContent.includes('editor-controls') || 
+						  script.textContent.includes('resize-container') ||
+						  script.textContent.includes('sendHeight')) {
+						script.remove();
+					  }
+					});
+					const editorElements = [
+					  '#editor-controls',
+					  '#toggle-editor', 
+					  '#editor-instructions',
+					  '.resize-container',
+					  '.resize-handle'
+					];
+					editorElements.forEach(selector => {
+					  const elements = doc.querySelectorAll(selector);
+					  elements.forEach(el => el.remove());
+					});
+					const allElements = doc.querySelectorAll('*');
+					allElements.forEach(el => {
+					  if (el.hasAttribute('contenteditable')) {
+						el.removeAttribute('contenteditable');
+					  }
+					  //Remove data attributes related to the editor
+					  const attributesToRemove = [];
+					  for (let i = 0; i < el.attributes.length; i++) {
+						const attr = el.attributes[i];
+						if (attr.name.startsWith('data-original') || 
+							attr.name === 'data-mce-selected' ||
+							attr.name.includes('editor')) {
+						  attributesToRemove.push(attr.name);
+						}
+					  }
+					  attributesToRemove.forEach(attr => el.removeAttribute(attr));
+					});
+					
+					cleanedContent = '<!DOCTYPE html>\n<html>\n';
+					cleanedContent += '<head>' + doc.head.innerHTML + '</head>\n';
+					cleanedContent += '<body>';
+					Array.from(doc.body.childNodes).forEach(node => {
+					  if (!node.id || 
+						  !['editor-controls', 'toggle-editor', 'editor-instructions'].includes(node.id)) {
+						if (node.nodeType === Node.ELEMENT_NODE) {
+						  cleanedContent += node.outerHTML;
+						} else if (node.nodeType === Node.TEXT_NODE) {
+						  cleanedContent += node.textContent;
+						}
+					  }
+					});
+					cleanedContent += '</body>\n</html>';
+					cleanedContent = cleanedContent.replace(/ xmlns="http:\/\/www\.w3\.org\/1999\/xhtml"/g, '');
+				  } catch (err) {
+					console.error("Error cleaning HTML content:", err);
+				  }
 				}
-			}
-			setBlocks(prev => 
-				prev.map(block => 
-				block.id === blockId
-					? { ...block, data: { ...block.data, code: cleanedContent } }
-					: block
-				)
-			);
-		}
+				setBlocks(prev => 
+				  prev.map(block => 
+					block.id === blockId
+					  ? { ...block, data: { ...block.data, code: cleanedContent } }
+					  : block
+				  )
+				);
+			  }
 	}
 	
 	window.addEventListener('message', handleIframeMessage);
@@ -599,9 +585,23 @@ const ContentForm = ({ feed, isEdit = false, isGroup, isReply, onSubmit, post = 
 		if (iframeRefs.current[blockId]) delete iframeRefs.current[blockId]
 	}, [])
 
-	const updateBlock = useCallback(updatedBlock => {
-		setBlocks(prev => prev.map(b => (b.id === updatedBlock.id ? updatedBlock : b)))
-	}, [])
+	const updateBlock = useCallback((updatedBlock) => {
+		setBlocks((prev) => 
+			prev.map((b) => {
+				if (b.id === updatedBlock.id) {
+					return { 
+						...b, 
+						data: {
+						...b.data,
+						...updatedBlock.data
+						},
+						isEditing: updatedBlock.isEditing !== undefined ? updatedBlock.isEditing : b.isEditing
+					};
+				}
+				return b;
+			})
+		);
+	}, []);
 
 	const onDragEnd = useCallback(result => {
 		const { destination, source } = result
@@ -654,7 +654,6 @@ const ContentForm = ({ feed, isEdit = false, isGroup, isReply, onSubmit, post = 
 			parentCode: isReply ? post.content : null, 
 			request: prompt, 
 			senderId: user.user_id,
-			enableInteractiveEditing: true // Add this flag to let the backend know
 		  });
 		  if (response.data && response.status === 201) {
 			const { generatedContent } = response.data;
@@ -665,7 +664,6 @@ const ContentForm = ({ feed, isEdit = false, isGroup, isReply, onSubmit, post = 
 				code: generatedContent, 
 				isBlockLoading: false, 
 				_tempAiPrompt: '', 
-				isInteractiveEditable: true // Add this flag to track interactive editing capability
 			  }, 
 			  isEditing: false 
 			});
@@ -853,6 +851,7 @@ const ContentForm = ({ feed, isEdit = false, isGroup, isReply, onSubmit, post = 
 																		<button className="small-icon" onClick={toggleEdit} title={isEditing ? 'Preview' : 'Edit'} type="button">{isEditing ? <FaEye /> : <FaEdit />}</button>
 																	)}
 																</div>
+																{isEditing && type === BLOCK_TYPES.CODE && <p className="text16" style={{color: '#7b7b7b', marginLeft: '0px'}}>Click on elements to edit them (may be glitchy)</p>}
 																<div style={{ position: 'relative' }}>
 																	{type === BLOCK_TYPES.MEDIA && (
 																		<button className="small-icon" onClick={() => toggleMediaAlignment(block)} title="Centre media" type="button"><FaAlignCenter /></button>
@@ -946,13 +945,27 @@ const ContentForm = ({ feed, isEdit = false, isGroup, isReply, onSubmit, post = 
 																					</button>
 																				</div>
 																			) : (
-																				<textarea className="code-input" onChange={e => updateBlock({ ...block, data: { ...data, code: e.target.value } })} placeholder="Enter code..." value={data.code} />
+																				<textarea 
+																					className="code-input" 
+																					onChange={e => {
+																						const newValue = e.target.value;
+																						updateBlock({ 
+																						id: block.id, 
+																						data: { 
+																							...data, 
+																							code: newValue 
+																						}
+																						});
+																					}} 
+																					placeholder="Enter code..." 
+																					value={data.code} 
+																					/>
 																			)}
 																		</>
 																	)}
 																	{data.code.trim() ? (
 																		<div className="code-preview">
-																			<iframe ref={el => { iframeRefs.current[id] = el }} sandbox="allow-scripts allow-same-origin" srcDoc={getIframeSrcDoc(id, data.code)} style={{ border: 'none', width: '100%', height: '0px' }} title={`code-preview-${id}`} />
+																			<iframe ref={el => { iframeRefs.current[id] = el }} sandbox="allow-scripts allow-same-origin" srcDoc={getIframeSrcDoc(id, data.code, isEditing)} style={{ border: 'none', width: '100%', height: '0px' }} title={`code-preview-${id}`} />
 																		</div>
 																	) : (
 																		<p>Nothing to preview</p>
@@ -992,7 +1005,7 @@ const ContentForm = ({ feed, isEdit = false, isGroup, isReply, onSubmit, post = 
 									if (type === BLOCK_TYPES.CODE) {
 										return data.code.trim() ? (
 											<div key={i}>
-												<iframe ref={el => { iframeRefs.current[block.id] = el }} sandbox="allow-scripts allow-same-origin" srcDoc={getIframeSrcDoc(block.id, data.code)} style={{ border: 'none', width: '100%', height: '0px' }} title={`live-preview-${i}`} />
+												<iframe ref={el => { iframeRefs.current[block.id] = el }} sandbox="allow-scripts allow-same-origin" srcDoc={getIframeSrcDoc(block.id, data.code, false)} style={{ border: 'none', width: '100%', height: '0px' }} title={`live-preview-${i}`} />
 											</div>
 										) : null
 									}
