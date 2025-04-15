@@ -121,6 +121,23 @@ router.post('/change_channel_name', authenticateCheck, async (req, res) => {
     }
 });
 
+router.post('/change_deep_feed_name', authenticateCheck, async (req, res) => {
+    try {
+        const { deepFeedId, newName } = req.body;
+        if (newName === 'Following') {
+            res.status(401).json({ success: false, message: "Can't be called Following" })
+        } else { 
+            await DeepFeeds.update(
+                { name: newName },
+                { where: { deep_feed_id: deepFeedId } }
+            );
+            res.status(200).json({ success: true });
+        }
+    } catch (error) {
+        res.status(500).json({ success: false });
+    }
+});
+
 router.post('/change_description', authenticateCheck, async (req, res) => {
     try {
         const { description, feedId } = req.body;
@@ -353,6 +370,21 @@ router.get('/deep_feed_posts', async (req, res) => {
         res.status(500).json({ success: false, error: error.message });
     }
 });  
+
+router.delete('/delete_deep_feed', authenticateCheck, async (req, res) => {
+    try {
+        const { deepFeedId } = req.body;
+        await DeepFeedContent.destroy({
+            where: { deep_feed_id: deepFeedId }
+        });
+        await DeepFeeds.destroy({
+            where: { deep_feed_id: deepFeedId }
+        });
+        res.status(200).json({ success: true });
+    } catch (error) {
+        res.status(500).json({ success: false });
+    }
+});
 
 router.delete('/delete_follow_request', authenticateCheck, async (req, res) => {
     try {
