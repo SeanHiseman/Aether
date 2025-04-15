@@ -153,7 +153,7 @@ router.post('/login', async (req, res) => {
             req.session.user_id = user.user_id;
             req.session.username = user.username;
             req.session.viewer_id = feed.feed_id;
-            res.status(200).json({ success: true, username: user.username });
+            res.status(200).json({ success: true });
         }
         else {
             res.status(401).json({ success: false });

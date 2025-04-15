@@ -19,8 +19,7 @@ const Login = () => {
             const response = await axios.post('/api/login', { password, username }); //Username can also be email
             if (response.status === 200) {
                 await refreshTheme();
-                const responseUsername = response.data.username;
-                navigate(`/u/${responseUsername}`); //Main feed name same as username
+                navigate('/d/following'); 
             }
         } catch (error) {
             if (error.response && error.response.status === 401) {
