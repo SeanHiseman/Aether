@@ -293,7 +293,10 @@ router.get('/deep_feed_posts', async (req, res) => {
             }
             const feedIds = followedFeeds.map(follow => follow.feed_id);
             const posts = await Posts.findAll({
-                where: { feed_id: { [Op.in]: feedIds } },
+                where: { 
+                    feed_id: { [Op.in]: feedIds },
+                    parent_id: null //Only top-level posts 
+                },
                 include: [{
                     model: Feeds,
                     as: 'poster',
@@ -322,7 +325,10 @@ router.get('/deep_feed_posts', async (req, res) => {
                 attributes: ['feed_id']
             });
             const posts = await Posts.findAll({
-                where: { feed_id: feedIds.map(feed => feed.feed_id) },
+                where: { 
+                    feed_id: feedIds.map(feed => feed.feed_id),
+                    parent_id: null //Only top-level posts
+                },
                 include: [{
                     model: Feeds,
                     as: 'poster',

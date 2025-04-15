@@ -7,7 +7,7 @@ import AskButton from '../askButton';
 import ContentDisplay from './contentDisplay';
 import PropTypes from 'prop-types';
 
-const ContentWidget = ({ canRemove, feed, isGroup, onEditClick, onPostRemoved, onReplyClick, parent, post, readOnly = false }) => {
+const ContentWidget = ({ feed, isGroup, onEditClick, onPostRemoved, onReplyClick, parent, post, readOnly = false }) => {
   const [downvoteLimit, setDownvoteLimit] = useState(false);
   const [downvotes, setDownvotes] = useState(post.downvotes);
   const { feed_name, channel_name, post_id } = useParams();
@@ -24,6 +24,7 @@ const ContentWidget = ({ canRemove, feed, isGroup, onEditClick, onPostRemoved, o
   const [upvotes, setUpvotes] = useState(post.upvotes);
   const [views, setViews] = useState(post.views);
   const { isAuthenticated, user, viewer } = useContext(AuthContext);
+  const canRemove = (viewer?.feed_id === post?.poster_id) || (feed?.isAdmin || feed?.isMod);
   const isReply = readOnly ? false : post.parent_id !== null; //Read only means not displaying widget as a reply
   const isViewingOwnPost = post.poster_id === viewer?.feed_id;
   const urlPrefix = isGroup ? 'g' : 'u';
