@@ -1,17 +1,20 @@
 import axios from 'axios';
-import React, { useCallback, useContext, useEffect, useRef, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import React, { useContext, useEffect, useRef, useState } from 'react';
+import { FaEdit, FaRegWindowClose, FaSave, FaTrash } from 'react-icons/fa';
+import { useNavigate, useParams } from 'react-router-dom';
 import { AuthContext } from '../components/authContext';
 import ContentWidget from '../components/content/contentWidget';
 import { useInfiniteQuery } from '@tanstack/react-query';
-import { use } from 'react';
 
 const DeepFeed = () => {
     const [errorMessage, setErrorMessage] = useState('');
     const { deep_feed_id } = useParams();
     const [deepFeedName, setDeepFeedName] = useState('');
+    const [isEditingName, setIsEditingName] = useState(false);
+    const [newName, setNewName] = useState('');
     const [timePreference, setTimePreference] = useState(0.001);
     const { user, viewer } = useContext(AuthContext);
+    const navigate = useNavigate();
     
     const getPosts = async ({ pageParam = 0 }) => {
         const response = await axios.get('/api/deep_feed_posts', {
@@ -37,6 +40,52 @@ const DeepFeed = () => {
     });
 
     const loaderRef = useRef(null);
+
+    const changeDeepFeedName = async (event) => {
+        event.preventDefault();
+        try {
+            if (newName.length === 0) {
+                setErrorMessage("Needs a name");
+                return;
+            }
+            if (newName === 'Following') {
+                setErrorMessage("Cannot be named Following");
+                return;
+            } 
+            const response = await axios.post('/api/change_deep_feed_name', {
+                deepFeedId: deep_feed_id,
+                newName
+            });
+            if (response.status === 200) {
+                setErrorMessage('');
+                setIsEditingName(false);
+                setNewName('');
+                setDeepFeedName(newName);
+                document.title = newName;
+            }
+        } catch {
+            setErrorMessage("Error changing name");
+        }
+    };
+
+    const handleDelete = async () => {
+        if (window.confirm(`Are you sure you want to delete ${deepFeedName}?`)) {
+            try {
+                if (deepFeedName === 'Following') {
+                    setErrorMessage("Following cannot be deleted.");
+                    return;
+                }
+                const response = await axios.delete('/api/delete_deep_feed', { data: { deepFeedId: deep_feed_id } });
+                if (response.data.success) {
+                    setDeepFeedName('Following');
+                    setErrorMessage('');
+                    navigate('/d/following');
+                }
+            } catch (error) {
+                setErrorMessage('Error deleting deep feed');
+            }
+        }
+    };
 
     useEffect(() => {
         const observer = new IntersectionObserver((entries) => {
@@ -106,7 +155,62 @@ const DeepFeed = () => {
                 </div>
             </div>
             <aside className="right-aside">
-                <h1>{deepFeedName}</h1>
+                <div className="channel-name-section">
+                    {isEditingName ? (
+                        <div className="change-name">
+                            <textarea
+                                className="change-name-area"
+                                onChange={(e) => {
+                                    e.preventDefault();
+                                    const input = e.target.value;
+                                    if (input.length <= 30) {
+                                        setNewName(input);
+                                        if (input.trim() === 'following') {
+                                            setErrorMessage("Cannot be named 'Following'");
+                                        } else {
+                                            setErrorMessage(""); 
+                                        }
+                                    } else {
+                                        setErrorMessage("Name too long");
+                                    }
+                                }}
+                                placeholder="New name"
+                                value={newName} />
+                            <div className="cancel-save">
+                                <button className="small-icon" onClick={() => {setIsEditingName(false); setNewName(""); setErrorMessage("");}} title="Cancel">
+                                    <FaRegWindowClose />
+                                </button>
+                                <button className="small-icon" onClick={changeDeepFeedName} title="Save">
+                                    <FaSave />
+                                </button>
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="channel-name">
+                            <h1>{deepFeedName}</h1>
+                            <div className="button-group">
+                                {deepFeedName !== "Following" && ( 
+                                    <>
+                                        <button
+                                            className="small-icon"
+                                            onClick={() => {
+                                                setIsEditingName(true);
+                                                setNewName(deepFeedName);
+                                            }}
+                                            title="Edit name"
+                                        >
+                                            <FaEdit />
+                                        </button>
+                                        <button className="small-icon" onClick={handleDelete} title="Delete Deep Feed">
+                                            <FaTrash />
+                                        </button>
+                                    </>
+                                )}
+                            </div>
+                        </div>
+                    )}
+                    <div className="error-message">{errorMessage}</div>
+                </div>
                 {/*<label>Posts are recent:</label>
                 <input type="range" min="0" max="0.001" step="0.00001" value={timePreference} onChange={handleTimeChange} />
                 <div className="error-message">{errorMessage}</div>*/}
