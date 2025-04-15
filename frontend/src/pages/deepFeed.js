@@ -4,61 +4,57 @@ import { useParams } from 'react-router-dom';
 import { AuthContext } from '../components/authContext';
 import ContentWidget from '../components/content/contentWidget';
 import { useInfiniteQuery } from '@tanstack/react-query';
+import { use } from 'react';
 
 const DeepFeed = () => {
-    const { viewer } = useContext(AuthContext);
     const [errorMessage, setErrorMessage] = useState('');
     const { deep_feed_id } = useParams();
     const [deepFeedName, setDeepFeedName] = useState('');
     const [timePreference, setTimePreference] = useState(0.001);
+    const { user, viewer } = useContext(AuthContext);
     
-    const [fetchNextPageState, setFetchNextPageState] = useState({ 
-        isFetchingNextPage: false, 
-        hasNextPage: false,
-        fetchNextPage: () => {}
-    });
-
-    const observerRef = useRef();
-    const lastPostElementRef = useCallback(node => {
-        if (isFetchingNextPage) return;
-        if (observerRef.current) observerRef.current.disconnect();
-        observerRef.current = new IntersectionObserver(entries => {
-            if (entries[0].isIntersecting && hasNextPage) {
-                fetchNextPage();
+    const getPosts = async ({ pageParam = 0 }) => {
+        const response = await axios.get('/api/deep_feed_posts', {
+            params: {
+                deepFeedId: deep_feed_id,
+                limit: 10,
+                offset: pageParam
             }
         });
-        if (node) observerRef.current.observe(node);
-    }, [isFetchingNextPage, hasNextPage, fetchNextPage]);
+        if (pageParam === 0 && response.data.deepFeedName) {
+            setDeepFeedName(response.data.deepFeedName);
+            document.title = response.data.deepFeedName;
+        }
+        return response.data.posts;
+    };
 
     const { data, error, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading, status } = useInfiniteQuery({
         queryKey: ['deepFeedPosts', deep_feed_id],
-        queryFn: async ({ pageParam = 0 }) => {
-            const response = await axios.get('/api/deep_feed_posts', {
-                params: {
-                    deepFeedId: deep_feed_id,
-                    limit: 10,
-                    offset: pageParam
-                }
-            });
-            console.log("response", response.data.posts);
-            if (pageParam === 0 && response.data.deepFeedName) {
-                setDeepFeedName(response.data.deepFeedName);
-                document.title = response.data.deepFeedName;
-            }
-            return response.data.posts;
-        },
+        queryFn: getPosts,
         getNextPageParam: (lastPage, allPages) => {
             return lastPage.length === 10 ? allPages.length * 10 : undefined;
-        },
+        }
     });
-    
+
+    const loaderRef = useRef(null);
+
     useEffect(() => {
-        setFetchNextPageState({
-            isFetchingNextPage,
-            hasNextPage,
-            fetchNextPage
+        const observer = new IntersectionObserver((entries) => {
+            if (entries[0].isIntersecting && hasNextPage && !isFetchingNextPage) {
+                fetchNextPage();
+            }
         });
-    }, [isFetchingNextPage, hasNextPage, fetchNextPage]);
+        if (loaderRef.current) {
+            observer.observe(loaderRef.current);
+        }
+        return () => {
+            if (loaderRef.current) {
+                observer.unobserve(loaderRef.current);
+            }
+        };
+    }, [loaderRef, hasNextPage, isFetchingNextPage, fetchNextPage]);
+
+    const allPosts = data ? data.pages.flatMap(page => page) : [];
 
     //Load user's time preference (not used yet)
     useEffect(() => {
@@ -84,33 +80,28 @@ const DeepFeed = () => {
         }
     };
 
-    const allPosts = data ? data.pages.flatMap(page => page) : [];
-
     return (
         <div className="standard-container">
             <div className="content-feed">
                 <div className="channel-content">
                     {allPosts.length > 0 ? (
-                        <ul className="content-list">
-                            {allPosts.map((post, index) => {
-                                if (allPosts.length === index + 1) {
-                                    return (
-                                        <div key={post.post_id} ref={lastPostElementRef}>
-                                            <ContentWidget feed={post.poster} isGroup={post.is_group} post={post}/>
-                                        </div>
-                                    );
-                                } else {
-                                    return (
-                                        <ContentWidget key={post.post_id} feed={post.poster} isGroup={post.is_group} post={post}/>
-                                    );
-                                }
-                            })}
-                        </ul>
+                        <>
+                            <ul className="content-list">
+                                {allPosts.map((post) => (
+                                    <ContentWidget 
+                                        key={post.post_id} 
+                                        feed={post.poster} 
+                                        isGroup={post.is_group} 
+                                        post={post}
+                                    />
+                                ))}
+                            </ul>
+                            <div ref={loaderRef}>
+                                {isFetchingNextPage && <p className="text36">Loading more posts...</p>}
+                            </div>
+                        </>
                     ) : (
                         <p className="text36">No posts yet</p>
-                    )}
-                    {isFetchingNextPage && (
-                        <div className="text36">Loading more posts...</div>
                     )}
                 </div>
             </div>

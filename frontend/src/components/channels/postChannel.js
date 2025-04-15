@@ -4,7 +4,7 @@ import { useParams } from 'react-router-dom';
 import { useInfiniteQuery, useQuery, useQueryClient } from '@tanstack/react-query';
 import ContentWidget from '../content/contentWidget';
 
-const PostChannel = ({ canRemove, channelId, channelName, feed, isGroup, onEditClick, onReplyClick }) => {
+const PostChannel = ({ channelId, channelName, feed, isGroup, onEditClick, onReplyClick }) => {
     const feedId = feed.feed_id;
     const queryClient = useQueryClient();
     const { post_id } = useParams();
@@ -78,7 +78,6 @@ const PostChannel = ({ canRemove, channelId, channelName, feed, isGroup, onEditC
                     singlePost ? (
                         <ul className="content-list">
                             <ContentWidget 
-                                canRemove={canRemove}
                                 feed={feed}
                                 isGroup={isGroup}
                                 onEditClick={onEditClick}
@@ -96,7 +95,6 @@ const PostChannel = ({ canRemove, channelId, channelName, feed, isGroup, onEditC
                             {postsData.pages.flat().map(post => (
                                 <ContentWidget
                                     key={post.post_id}
-                                    canRemove={canRemove}
                                     feed={feed}
                                     isGroup={isGroup}
                                     onEditClick={onEditClick}

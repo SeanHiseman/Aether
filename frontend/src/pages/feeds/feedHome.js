@@ -34,7 +34,6 @@ const FeedHome = () => {
     const [showChannelForm, setShowChannelForm] = useState(false);
     const [showPostForm, setShowPostForm] = useState(false);
     const { isAuthenticated, user, viewer } = useContext(AuthContext);
-    const isViewingSelf = feed.feed_id === viewer?.feed_id;
     const navigate = useNavigate();
     const urlPrefix = feed.is_group ? 'g' : 'u';
 
@@ -297,7 +296,6 @@ const FeedHome = () => {
                 ) : channelRender ? (
                         channelRender.is_posts && (channelMode === 'post' || !channelRender.is_chat) ? (
                         <PostChannel
-                            canRemove={canRemove}
                             channelId={channelRender.channel_id}
                             channelName={channelRender.channel_name}
                             feed={feed}
