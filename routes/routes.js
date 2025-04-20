@@ -184,7 +184,6 @@ router.get('/search/:searcherId', async (req, res) => {
             }
             return response;
         }));
-        //Doesn't include HTML and JavaScript directly when searching (needs fixing)
         const postResults = await sequelize.query(`
             SELECT p.*, 
                 REGEXP_REPLACE(
@@ -198,15 +197,17 @@ router.get('/search/:searcherId', async (req, res) => {
                     '<[^>]*>', ''
                 ) AS clean_content
             FROM posts p
+            JOIN feeds f ON p.feed_id = f.feed_id
             WHERE 
-                p.title LIKE :keyword
+                (p.title LIKE :keyword
                 OR REGEXP_REPLACE(
                     REGEXP_REPLACE(
                         REGEXP_REPLACE(p.content, '<title>.*?</title>', ''), 
                         '<script.*?</script>', ''
                     ), 
                     '<[^>]*>', ''
-                ) LIKE :keyword
+                ) LIKE :keyword)
+                AND f.type != 'private'
             ORDER BY p.created_at DESC
             LIMIT :limit OFFSET :offset
         `, {

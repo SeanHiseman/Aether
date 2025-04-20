@@ -6,15 +6,15 @@ const DeepFeeds = sequelize.define('deep_feeds', {
     deep_feed_id: { type: STRING(36), primaryKey: true },
     name: { type: STRING(36), allowNull: false },
     owner_id: { type: STRING(36), allowNull: false },  
-    parent_id: { type: STRING(36), allowNull: true, references: { model: 'DeepFeeds', key: 'deep_feed_id' } }
-}, { tableName: 'deep_feeds', timestamps: true });
+    parent_id: { type: STRING(36), allowNull: true, references: { model: 'DeepFeeds', key: 'deep_feed_id' } },
+}, { tableName: 'deep_feeds', timestamps: false });
 
 const DeepFeedContent = sequelize.define('deep_feed_content', {
     content_id: { type: STRING(36), primaryKey: true },
     deep_feed_id: { type: STRING(36), allowNull: false, references: { model: 'DeepFeeds', key: 'deep_feed_id' } },
     feed_id: { type: STRING(36), allowNull: true },  
     nested_deep_feed_id: { type: STRING(36), allowNull: true } 
-}, { tableName: 'deep_feed_content', timestamps: true });
+}, { tableName: 'deep_feed_content', timestamps: false });
 
 const Feeds = sequelize.define('feeds', {
     feed_id: { type: STRING(36), primaryKey: true },
@@ -23,12 +23,12 @@ const Feeds = sequelize.define('feeds', {
     description: { type: STRING(1000), allowNull: true },
     feed_photo: { type: TEXT, allowNull: true },
     follower_count: { type: INTEGER, defaultValue: 0 },
-    created_at: { type: DataTypes.DATE(3), defaultValue: sequelize.literal('CURRENT_TIMESTAMP(3)') },
-    updated_at: { type: DataTypes.DATE(3), defaultValue: sequelize.literal('CURRENT_TIMESTAMP(3)') },
     type: { type: STRING(10), defaultValue: 'public' },
     is_group: { type: BOOLEAN, defaultValue: false },
     feed_owner: { type: STRING(36), allowNull: false, references: { model: Users, key: 'user_id' } },
-    is_locked: { type: BOOLEAN, defaultValue: false }
+    is_locked: { type: BOOLEAN, defaultValue: false },
+    created_at: { type: DataTypes.DATE(3), defaultValue: sequelize.literal('CURRENT_TIMESTAMP(3)') },
+    updated_at: { type: DataTypes.DATE(3), defaultValue: sequelize.literal('CURRENT_TIMESTAMP(3)') },
 }, { tableName: 'feeds', timestamps: false });
 
 const FeedChannels = sequelize.define('feed_channels', { 
