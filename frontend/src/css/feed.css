@@ -74,6 +74,27 @@
     justify-content: space-between;
     width: 100%;
 }
+.feed-drag-overlay, .deep-feed-drag-overlay {
+    opacity: 0.8;
+    transform: scale(1.05);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+    background-color: var(--background-color);
+    border-radius: 5px;
+    padding: 8px;
+    width: 90%;
+    cursor: grabbing;
+}
+.feed-drag-overlay .feed-list-link-container,
+.feed-drag-overlay .feed-list-link {
+    display: flex;
+    align-items: center;
+}
+.deep-feed-drag-overlay .deep-feed-header {
+    padding: 8px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
 .feed-header-photo {
     align-items: center;
     display: flex;
@@ -89,7 +110,7 @@
     display: flex;
 }
 .feed-list {
-    width: 90%;
+    width: 96%;
 }
 .feed-name {
     align-items: center;

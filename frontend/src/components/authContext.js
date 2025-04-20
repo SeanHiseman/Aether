@@ -35,7 +35,6 @@ export const PublicAuthProvider = ({ children }) => {
                     setViewer(null);
                 }
             } catch (error) {
-                console.log('Authentication check error:', error);
                 setIsAuthenticated(false);
                 setUser(null);
                 setViewer(null);

@@ -1,34 +1,56 @@
 import axios from 'axios';
-import React, { useContext, useEffect, useRef, useState } from 'react';
+import { DragDropContext } from 'react-beautiful-dnd';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { FaEdit, FaRegWindowClose, FaSave, FaTrash } from 'react-icons/fa';
 import { useNavigate, useParams } from 'react-router-dom';
-import { AuthContext } from '../components/authContext';
 import ContentWidget from '../components/content/contentWidget';
+import DeepFeedItem from '../components/channels/deepFeedItem';
 import { useInfiniteQuery } from '@tanstack/react-query';
 
 const DeepFeed = () => {
     const [errorMessage, setErrorMessage] = useState('');
     const { deep_feed_id } = useParams();
-    const [deepFeedName, setDeepFeedName] = useState('');
+    const [deepFeed, setDeepFeed] = useState({
+        deep_feed_id: null,
+        name: '',
+        owner_id: null,
+        parent_id: null
+    });
     const [isEditingName, setIsEditingName] = useState(false);
     const [newName, setNewName] = useState('');
     const [timePreference, setTimePreference] = useState(0.001);
-    const { user, viewer } = useContext(AuthContext);
     const navigate = useNavigate();
     
     const getPosts = async ({ pageParam = 0 }) => {
-        const response = await axios.get('/api/deep_feed_posts', {
-            params: {
-                deepFeedId: deep_feed_id,
-                limit: 10,
-                offset: pageParam
+        try {
+            const response = await axios.get('/api/deep_feed_posts', {
+                params: {
+                    deepFeedId: deep_feed_id,
+                    limit: 10,
+                    offset: pageParam
+                }
+            });
+            console.log("response.data:", response.data);
+            if (pageParam === 0 && response.data.deepFeed) {
+                console.log("setting deepFeed:", response.data.deepFeed);
+                setDeepFeed(response.data.deepFeed);
+                document.title = response.data.deepFeed.name;
+            } else if (deep_feed_id === 'following') {
+                console.log("deep_feed_id:", deep_feed_id);
+                setDeepFeed({
+                    deep_feed_id: 'following',
+                    name: 'Following',
+                    owner_id: 'system',
+                    parent_id: null,
+                });
+                document.title = 'Following';
             }
-        });
-        if (pageParam === 0 && response.data.deepFeedName) {
-            setDeepFeedName(response.data.deepFeedName);
-            document.title = response.data.deepFeedName;
+            return response.data.posts;
+        } catch (error) {
+            console.error('Error fetching posts:', error);
+            setErrorMessage('Error fetching posts');
+            return [];
         }
-        return response.data.posts;
     };
 
     const { data, error, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading, status } = useInfiniteQuery({
@@ -48,8 +70,8 @@ const DeepFeed = () => {
                 setErrorMessage("Needs a name");
                 return;
             }
-            if (newName === 'Following') {
-                setErrorMessage("Cannot be named Following");
+            if (newName.trim() === 'following') {
+                setErrorMessage("Cannot be named 'Following'");
                 return;
             } 
             const response = await axios.post('/api/change_deep_feed_name', {
@@ -60,7 +82,7 @@ const DeepFeed = () => {
                 setErrorMessage('');
                 setIsEditingName(false);
                 setNewName('');
-                setDeepFeedName(newName);
+                setDeepFeed((prev) => ({ ...prev, name: newName }));
                 document.title = newName;
             }
         } catch {
@@ -69,15 +91,23 @@ const DeepFeed = () => {
     };
 
     const handleDelete = async () => {
-        if (window.confirm(`Are you sure you want to delete ${deepFeedName}?`)) {
+        if (window.confirm(`Are you sure you want to delete ${deepFeed.name}?`)) {
             try {
-                if (deepFeedName === 'Following') {
+                if (deepFeed.name === 'Following') {
                     setErrorMessage("Following cannot be deleted.");
                     return;
                 }
                 const response = await axios.delete('/api/delete_deep_feed', { data: { deepFeedId: deep_feed_id } });
                 if (response.data.success) {
-                    setDeepFeedName('Following');
+                    setDeepFeed((prev) => { //Sets deepFeed to Following, with other properties null
+                        const updated = { name: 'Following' };
+                        for (const key in prev) {
+                            if (key !== 'name') {
+                                updated[key] = null;
+                            }
+                        }
+                        return updated;
+                    });                    
                     setErrorMessage('');
                     navigate('/d/following');
                 }
@@ -105,7 +135,7 @@ const DeepFeed = () => {
 
     const allPosts = data ? data.pages.flatMap(page => page) : [];
 
-    //Load user's time preference (not used yet)
+    //Load user's time preference (outdated)
     useEffect(() => {
         const fetchTimePreference = async () => {
             try {
@@ -118,7 +148,7 @@ const DeepFeed = () => {
         fetchTimePreference();
     }, []);
 
-    //Save time value to backend (not used yet)
+    //Save time value to backend (outdated)
     const handleTimeChange = (event) => {
         try {
             const newValue = parseFloat(event.target.value);
@@ -187,15 +217,15 @@ const DeepFeed = () => {
                         </div>
                     ) : (
                         <div className="channel-name">
-                            <h1>{deepFeedName}</h1>
+                            <p className="text36">{deepFeed.name}</p>
                             <div className="button-group">
-                                {deepFeedName !== "Following" && ( 
+                                {deepFeed?.name !== "Following" && ( 
                                     <>
                                         <button
                                             className="small-icon"
                                             onClick={() => {
                                                 setIsEditingName(true);
-                                                setNewName(deepFeedName);
+                                                setNewName(deepFeed.name);
                                             }}
                                             title="Edit name"
                                         >
@@ -212,11 +242,16 @@ const DeepFeed = () => {
                     <div className="error-message">{errorMessage}</div>
                 </div>
                 {/*<label>Posts are recent:</label>
-                <input type="range" min="0" max="0.001" step="0.00001" value={timePreference} onChange={handleTimeChange} />
-                <div className="error-message">{errorMessage}</div>*/}
+                <input type="range" min="0" max="0.001" step="0.00001" value={timePreference} onChange={handleTimeChange} />*/}
+                {/*<DeepFeedItem 
+                    index={0} 
+                    deepFeed={deepFeed} 
+                    showHeader={false} 
+                    onFeedAdded={registerFeedCallback}
+                />*/}
             </aside>
         </div>
-    )
+    );
 }
 
 export default DeepFeed;

@@ -2,12 +2,21 @@ import { FaChevronDown, FaChevronUp } from 'react-icons/fa';
 import React, { useState, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import ChannelList from './channelList';
+import { useSortable } from '@dnd-kit/sortable';
 
-const FeedItem = ({ feed, isChat, unreadCount }) => {
+const FeedItem = ({ feed, isChat, unreadCount, id }) => {
     const [dropdownOpen, setDropdownOpen] = useState(false);
     const [feedChannels, setFeedChannels] = useState([]);
     const linkType = feed.is_group ? 'g' : 'u';
 
+    const {
+        attributes,
+        listeners,
+        setNodeRef,
+    } = useSortable({
+        id: id || feed.feed_id.toString(),
+    });
+    
     const dropdownToggle = () => {
         setDropdownOpen((prevOpen) => !prevOpen);
     };
@@ -17,7 +26,12 @@ const FeedItem = ({ feed, isChat, unreadCount }) => {
     }, []);
 
     return (
-        <li className="feed-list-item">
+        <li 
+            className="feed-list-item" 
+            ref={setNodeRef} 
+            {...attributes} 
+            {...listeners}
+        >
             <div className="feed-list-link-container">
                 <Link className="feed-list-link" to={isChat ? `/connections/${feed.feed_name}/Main` : `/${linkType}/${feed.feed_name}/Main`}>
                     <img className="small-feed-photo" src={`/${feed.feed_photo}`} alt={'/media/site_images/blank-group-icon.jpg'} />

@@ -66,9 +66,9 @@ const App = () => {
 									</Route>
 								</Route>
 								<Route path="feed_settings/:feed_name" element={<ProtectedRoute><FeedSettings /></ProtectedRoute>} />
-								<Route path="connections" element={<ProtectedRoute><ConnectionsPage /></ProtectedRoute>} />
+								{/*<Route path="connections" element={<ProtectedRoute><ConnectionsPage /></ProtectedRoute>} />
 								<Route path="connections/:connection_name" element={<ProtectedRoute><ChatPage /></ProtectedRoute>} />
-								<Route path="connections/:connection_name/:title" element={<ProtectedRoute><ChatPage /></ProtectedRoute>} />
+								<Route path="connections/:connection_name/:title" element={<ProtectedRoute><ChatPage /></ProtectedRoute>} />*/}
 								<Route path="d/:deep_feed_id" element={<ProtectedRoute><DeepFeed/></ProtectedRoute>} />
 								<Route path="search" element={<SearchResults />} />
 								<Route path="u/:feed_name" element={<FeedWrapper />}>

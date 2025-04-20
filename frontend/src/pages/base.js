@@ -1,7 +1,8 @@
 import axios from 'axios';
-import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
+import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, DragOverlay } from '@dnd-kit/core';
+import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { FaArrowRight, FaFileUpload, FaMinus, FaPlus, FaPlusCircle, FaSearch, FaSignInAlt } from 'react-icons/fa';
-import React, { useContext, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { Link, Outlet, useNavigate } from 'react-router-dom';
 import { v4 } from 'uuid';
 import { AuthContext } from '../components/authContext';
@@ -22,7 +23,7 @@ const BaseLayout = () => {
     const [asideErrorMessage, setAsideErrorMessage] = useState('');
     const [currentQuery, setCurrentQuery] = useState('');
     const [deepFeeds, setDeepFeeds] = useState([]);
-    const [deepFeedRefs, setDeepFeedRefs] = useState({});
+    const [deepFeedCallbacks, setDeepFeedCallbacks] = useState({});
     const [feeds, setFeeds] = useState([]);
     const [feedsOffset, setFeedsOffset] = useState(0);
     const [feedName, setFeedName] = useState('');
@@ -38,6 +39,279 @@ const BaseLayout = () => {
     const navigate = useNavigate();
     const hasMembership = user?.has_membership;
 	const MAX_FILE_SIZE = hasMembership ? 100 * 1024 * 1024 : 1 * 1024 * 1024;
+    const [activeId, setActiveId] = useState(null);
+    const [activeDragItem, setActiveDragItem] = useState(null);
+    const [dragType, setDragType] = useState(null);
+    
+    const sensors = useSensors(
+        useSensor(PointerSensor, {
+            activationConstraint: {
+                distance: 8,
+            },
+        })
+    );
+
+    const handleDragStart = (event) => {
+        const { active } = event;
+        const activeId = active.id;
+        let dragType = 'feed';
+        let dragItem = null;
+        if (typeof activeId === 'string' && activeId.startsWith('df-')) {
+            dragType = 'deepFeed';
+            const deepFeedId = activeId.replace('df-', '');
+            dragItem = deepFeeds.find(df => df.deep_feed_id === deepFeedId);
+        } else if (typeof activeId === 'string' && activeId.startsWith('df-item-')) {
+            //Feed inside a deep feed
+            dragType = 'feedInDeepFeed';
+            const feedId = activeId.replace('df-item-', '');
+            //Find which deep feed contains this feed
+            for (const deepFeed of deepFeeds) {
+                const content = deepFeed.feeds?.find(item => 
+                    item.feed && item.feed.feed_id === feedId
+                );
+                if (content) {
+                    dragItem = {
+                        feed: content.feed,
+                        parentDeepFeedId: deepFeed.deep_feed_id
+                    };
+                    break;
+                }
+            }
+        } else {
+            dragType = 'feed';
+            dragItem = feeds.find(feed => feed.feed_id.toString() === activeId);
+        }
+        setDragType(dragType);
+        setActiveDragItem(dragItem);
+        setActiveId(activeId);
+    };
+
+    const handleDragEnd = async (event) => {
+        const { active, over } = event;
+        if (!over) {
+            //If it's a feedInDeepFeed being dragged out with no destination
+            if (dragType === 'feedInDeepFeed') {
+                try {
+                    const sourceParentDeepFeedId = activeDragItem.parentDeepFeedId;
+                    const sourceFeedId = activeDragItem.feed.feed_id;
+                    
+                    const { data } = await axios.post("/api/remove_from_deep_feed", {
+                        deepFeedId: sourceParentDeepFeedId,
+                        feedId: sourceFeedId
+                    });
+                    
+                    if (data.success && deepFeedCallbacks[sourceParentDeepFeedId]) {
+                        deepFeedCallbacks[sourceParentDeepFeedId]({ type: 'UPDATE_CONTENTS' });
+                    }
+                } catch (error) {
+                    setAsideErrorMessage("Error removing from Deep Feed");
+                }
+            } else if (dragType === 'nestedDeepFeed') {
+                try {
+                    const sourceParentDeepFeedId = activeDragItem.parentDeepFeedId;
+                    const nestedDeepFeedId = activeDragItem.nestedDeepFeed.deep_feed_id;
+                    
+                    const { data } = await axios.post("/api/remove_from_deep_feed", {
+                        deepFeedId: sourceParentDeepFeedId,
+                        nestedDeepFeedId: nestedDeepFeedId
+                    });
+                    
+                    if (data.success && deepFeedCallbacks[sourceParentDeepFeedId]) {
+                        deepFeedCallbacks[sourceParentDeepFeedId]({ type: 'UPDATE_CONTENTS' });
+                    }
+                } catch (error) {
+                    setAsideErrorMessage("Error removing nested deep feed");
+                }
+            }
+            setActiveId(null);
+            setActiveDragItem(null);
+            setDragType(null);
+            return;
+        }
+        const activeId = active.id;
+        const overId = over.id;
+        if (activeId === overId) {
+            setActiveId(null);
+            setActiveDragItem(null);
+            setDragType(null);
+            return;
+        }
+        try {
+            //Creating a new deep feed by dragging feeds together in feed list
+            if (dragType === 'feed' && typeof overId === 'string' && !overId.startsWith('df-') && !overId.startsWith('df-item-')) {
+                const sourceFeed = feeds.find(feed => feed.feed_id.toString() === activeId);
+                const destinationFeed = feeds.find(feed => feed.feed_id.toString() === overId);
+                if (sourceFeed && destinationFeed) {
+                    const deepFeedName = prompt("Enter Deep Feed name:");
+                    if (deepFeedName) {
+                        const { data } = await axios.post("/api/create_deep_feed", {
+                            viewerId: viewer.feed_id,
+                            deepFeedName,
+                            feedsToInclude: [sourceFeed.feed_id, destinationFeed.feed_id]
+                        });
+                        if (data.success && data.deepFeed) {
+                            setDeepFeeds(prevDeepFeeds => [
+                                ...prevDeepFeeds,
+                                {
+                                    ...data.deepFeed,
+                                    feeds: data.feedsToInclude.map(feedId => ({
+                                        feed: feeds.find(f => f.feed_id === feedId)
+                                    }))
+                                }
+                            ]);
+                        }                   
+                    }
+                }
+            }
+            //Dragging a feed into a deep feed
+            else if (dragType === 'feed' && typeof overId === 'string' && overId.startsWith('df-')) {
+                const sourceFeed = feeds.find(feed => feed.feed_id.toString() === activeId);
+                const destinationDeepFeedId = overId.replace('df-', '');
+                if (sourceFeed) {
+                    try {
+                        const { data } = await axios.post("/api/add_to_deep_feed", {
+                            deepFeedId: destinationDeepFeedId,
+                            feedId: sourceFeed.feed_id,
+                            nestedDeepFeedId: null
+                        });
+                        if (data.success) {
+                            if (deepFeedCallbacks[destinationDeepFeedId]) {
+                                deepFeedCallbacks[destinationDeepFeedId](sourceFeed);
+                            } else {
+                                setAsideErrorMessage("Error updating Deep Feed");
+                            }
+                        }
+                    } catch (error) {
+                        setAsideErrorMessage("Error updating Deep Feed");
+                    }
+                }
+            }
+            //Dragging a deep feed into another deep feed
+            else if (dragType === 'deepFeed' && typeof overId === 'string' && overId.startsWith('df-')) {
+                const sourceDeepFeedId = activeId.replace('df-', '');
+                const destinationDeepFeedId = overId.replace('df-', '');
+                const sourceDeepFeed = deepFeeds.find(df => df.deep_feed_id === sourceDeepFeedId);
+                //Don't allow dropping a deep feed onto itself
+                if (!sourceDeepFeed || sourceDeepFeedId === destinationDeepFeedId) {
+                    setActiveId(null);
+                    setActiveDragItem(null);
+                    setDragType(null);
+                    return;
+                }
+                try {
+                    const { data } = await axios.post("/api/add_to_deep_feed", {
+                        deepFeedId: destinationDeepFeedId,
+                        feedId: null,
+                        nestedDeepFeedId: sourceDeepFeedId
+                    });
+                    
+                    if (data.success) {
+                        //Remove the source deep feed from the top level since it's now nested
+                        setDeepFeeds(prevDeepFeeds => 
+                            prevDeepFeeds.filter(df => df.deep_feed_id !== sourceDeepFeedId)
+                        );
+                        if (deepFeedCallbacks[destinationDeepFeedId]) {
+                            deepFeedCallbacks[destinationDeepFeedId]({
+                                type: 'ADD_NESTED_DEEP_FEED',
+                                nestedDeepFeed: sourceDeepFeed
+                            });
+                        }
+                    } else {
+                        setAsideErrorMessage(data.message || "Error adding deep feed");
+                    }
+                } catch (error) {
+                    setAsideErrorMessage("Error adding deep feed");
+                }
+            }
+            //Creating a nested deep feed by dragging feeds within a deep feed
+            else if ((dragType === 'feedInDeepFeed' && typeof overId === 'string' && overId.startsWith('df-item-')) ||
+                    (dragType === 'feed' && typeof overId === 'string' && overId.startsWith('df-item-'))) {
+                let sourceParentDeepFeedId, sourceFeedId, destFeedId;
+                let sourceFeedItem, destFeedItem;
+                if (dragType === 'feedInDeepFeed') {
+                    sourceParentDeepFeedId = activeDragItem.parentDeepFeedId;
+                    sourceFeedId = activeDragItem.feed.feed_id;
+                    sourceFeedItem = activeDragItem.feed;
+                } else {
+                    sourceFeedId = activeId;
+                    sourceFeedItem = feeds.find(feed => feed.feed_id.toString() === activeId)?.followedFeed;
+                }
+                destFeedId = overId.replace('df-item-', '');
+                //Find which deep feed contains the destination feed
+                let destParentDeepFeedId;
+                for (const deepFeed of deepFeeds) {
+                    const content = deepFeed.feeds?.find(item => 
+                        item.feed && item.feed.feed_id === destFeedId
+                    );
+                    if (content) {
+                        destParentDeepFeedId = deepFeed.deep_feed_id;
+                        destFeedItem = content.feed;
+                        break;
+                    }
+                }
+                if (sourceFeedItem && destFeedItem) {
+                    //If both feeds are in the same deep feed, create a nested deep feed
+                    if (dragType === 'feedInDeepFeed' && sourceParentDeepFeedId === destParentDeepFeedId) {
+                        const deepFeedName = prompt("Enter Deep Feed name:");
+                        if (deepFeedName) {
+                            try {
+                                const { data } = await axios.post("/api/create_deep_feed", {
+                                    viewerId: viewer.feed_id,
+                                    deepFeedName,
+                                    feedsToInclude: [sourceFeedId, destFeedId],
+                                    parentDeepFeedId: destParentDeepFeedId
+                                });
+                                if (data.success && data.deepFeed) {
+                                    setDeepFeeds(prevDeepFeeds => 
+                                        prevDeepFeeds.map(df => {
+                                            if (df.deep_feed_id === destParentDeepFeedId) {
+                                                const currentFeeds = [...df.feeds];
+                                                //Remove the two feeds that were combined
+                                                const filteredFeeds = currentFeeds.filter(item => 
+                                                    !(item.feed && (item.feed.feed_id === sourceFeedId || item.feed.feed_id === destFeedId))
+                                                );
+                                                filteredFeeds.push({ 
+                                                    nestedDeepFeed: data.deepFeed 
+                                                });
+                                                return { ...df, feeds: filteredFeeds };
+                                            }
+                                            return df;
+                                        })
+                                    );
+                                    if (deepFeedCallbacks[destParentDeepFeedId]) {
+                                        deepFeedCallbacks[destParentDeepFeedId]({ type: 'UPDATE_CONTENTS' });
+                                    }
+                                }
+                            } catch (error) {
+                                setAsideErrorMessage("Error creating Deep Feed");
+                            }
+                        }
+                    }
+                    //If the dragged feed is from outside, add it to the deep feed
+                    else if (dragType === 'feed' && destParentDeepFeedId) {
+                        try {
+                            const sourceFeed = feeds.find(feed => feed.feed_id.toString() === activeId);
+                            const { data } = await axios.post("/api/add_to_deep_feed", {
+                                deepFeedId: destParentDeepFeedId,
+                                feedId: sourceFeed.feed_id,
+                                nestedDeepFeedId: null
+                            });
+                            if (data.success && deepFeedCallbacks[destParentDeepFeedId]) {
+                                deepFeedCallbacks[destParentDeepFeedId](sourceFeed);
+                            }
+                        } catch (error) {
+                            setAsideErrorMessage("Error adding to Deep Feed");
+                        }
+                    }
+                }
+            }
+        } catch (error) {
+            setAsideErrorMessage("Error in drag operation");
+        }
+        setActiveId(null);
+        setActiveDragItem(null);
+        setDragType(null);
+    };
 
     useEffect(() => {
         const fetchViewerFeed = async () => {
@@ -74,11 +348,9 @@ const BaseLayout = () => {
                 }
                 //Normalize each feed so there always is a followedFeed object.
                 const normalizedFeeds = newFeeds.map(feed => {
-                    //If the API already sends a nested followedFeed, use it.
                     if (feed.followedFeed) {
                         return feed;
                     }
-                    //Otherwise, create it from the top-level properties.
                     return {
                         feed_id: feed.feed_id,
                         followedFeed: {
@@ -95,6 +367,13 @@ const BaseLayout = () => {
         };
         fetchFeeds();
     }, [feedsOffset, hasMoreFeeds, isAuthenticated, viewer?.feed_id]);
+
+    const registerFeedCallback = useCallback((deepFeedId, callback) => {
+        setDeepFeedCallbacks(prev => ({
+            ...prev,
+            [deepFeedId]: callback
+        }));
+    }, []);
 
     useEffect(() => {
         if (!isAuthenticated || !viewer?.feed_id) return;
@@ -229,92 +508,6 @@ const BaseLayout = () => {
         navigate(`/search?keyword=${currentQuery}`);
     };
 
-    const onDragEnd = async (result) => {
-        const { source, destination } = result;
-        //No valid destination or same position
-        if (!destination || (source.droppableId === destination.droppableId && source.index === destination.index)) {
-            return;
-        }
-        try {
-            //Creating a new deep feed by dragging feeds together
-            if (source.droppableId === "feedList" && destination.droppableId === "feedList") {
-                const sourceFeed = feeds[source.index];
-                const destinationFeed = feeds[destination.index];
-                const deepFeedName = prompt("Create a new deep feed by combining these feeds. Enter a name:");
-                if (deepFeedName) {
-                    const { data } = await axios.post("/api/create_deep_feed", {
-                        viewerId: viewer.feed_id,
-                        deepFeedName,
-                        feedsToInclude: [sourceFeed.feed_id, destinationFeed.feed_id]
-                    });
-                    if (data.success && data.deepFeed) {
-                        setDeepFeeds(prevDeepFeeds => [
-                            ...prevDeepFeeds,
-                            {
-                                ...data.deepFeed,
-                                feeds: data.feedsToInclude.map(feedId => ({
-                                    feed: feeds.find(f => f.feed_id === feedId) //Match existing feed objects
-                                }))
-                            }
-                        ]);
-                    }                   
-                }
-                return;
-            }
-            //Dragging a feed into a deep feed
-            if (source.droppableId === "feedList" && destination.droppableId.startsWith("deep-feed-")) {
-                const sourceFeed = feeds[source.index];
-                const destinationDeepFeedId = destination.droppableId.replace("deep-feed-", "");
-                try {
-                    const { data } = await axios.post("/api/add_to_deep_feed", {
-                        deepFeedId: destinationDeepFeedId,
-                        feedId: sourceFeed.feed_id,
-                        nestedDeepFeedId: null
-                    });
-                    if (data.success) {
-                        //Trigger the update in the specific DeepFeedItem
-                        if (deepFeedRefs[destinationDeepFeedId]) {
-                            console.log('Calling ref handler for:', destinationDeepFeedId);
-                            deepFeedRefs[destinationDeepFeedId](sourceFeed);
-                        } else {
-                            console.log('No ref found for:', destinationDeepFeedId);
-                        }
-                    }
-                } catch (error) {
-                    setAsideErrorMessage("Error adding feed to deep feed:", error);
-                }
-                return;
-            }
-            //Dragging a deep feed into another deep feed
-            const sourceDeepFeedId = deepFeeds[source.index]?.deep_feed_id;
-            const destinationDeepFeedId = destination.droppableId.startsWith("deep-feed-")
-                ? destination.droppableId.replace("deep-feed-", "")
-                : null;
-            if (source.droppableId === "deepFeedsList" && destinationDeepFeedId) {
-                const { data } = await axios.post("/api/add_to_deep_feed", {
-                    deepFeedId: destinationDeepFeedId,
-                    feedId: null,
-                    nestedDeepFeedId: sourceDeepFeedId
-                });
-                if (data.success) {
-                    setDeepFeeds(prevDeepFeeds =>
-                        prevDeepFeeds.map(deepFeed =>
-                            deepFeed.deep_feed_id === destinationDeepFeedId
-                                ? {
-                                    ...deepFeed,
-                                    feeds: [...deepFeed.feeds, { nestedDeepFeed: deepFeeds.find(df => df.deep_feed_id === sourceDeepFeedId) }]
-                                }
-                                : deepFeed
-                        )
-                    );
-                }
-                return;
-            }
-        } catch (error) {
-            setAsideErrorMessage("Drag and drop error");
-        }
-    };
-
     const toggleForm = () => { 
         if (showForm) {
             setFeedName('');
@@ -344,7 +537,7 @@ const BaseLayout = () => {
                     </Link>*/}
                 </div>
                 {isAuthenticated ? (
-                    <DragDropContext onDragEnd={onDragEnd}>
+                    <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
                         <nav id="personal-feeds">
                             <ul>
                                 {/*<li className="channel-link"><Link to="/d/recommended">Recommended</Link></li>*/}
@@ -352,16 +545,19 @@ const BaseLayout = () => {
                                 {/*<li className="channel-link"><Link to="/d/connection_posts">Connections</Link></li>*/}
                             </ul>
                         </nav>
-                        <Droppable droppableId="deepFeedsList" type="deepFeed">
-                            {(provided) => (
-                                <div className="deep-feeds-container" {...provided.droppableProps} ref={provided.innerRef}>
-                                    {deepFeeds.map((deepFeed, index) => (
-                                        <DeepFeedItem key={deepFeed.deep_feed_id} deepFeed={deepFeed} index={index} />
-                                    ))}
-                                    {provided.placeholder}
-                                </div>
-                            )}
-                        </Droppable>
+                        <div className="deep-feeds-container">
+                            <SortableContext items={deepFeeds.map(df => `df-${df.deep_feed_id}`)} strategy={verticalListSortingStrategy}>
+                                {deepFeeds.map((deepFeed, index) => (
+                                    <DeepFeedItem 
+                                        key={deepFeed.deep_feed_id} 
+                                        deepFeed={deepFeed} 
+                                        index={index} 
+                                        onFeedAdded={registerFeedCallback} 
+                                        showHeader={true}
+                                    />
+                                ))}
+                            </SortableContext>
+                        </div>
                         <div className="error-message">{asideErrorMessage}</div>
                         <div id="create-feed-section">
                             <button className="small-icon" onClick={toggleForm} style={{alignSelf: 'flex-start', marginLeft: 'calc(5% + 10px)'}}>
@@ -421,28 +617,55 @@ const BaseLayout = () => {
                             )}
                         </div>
                         <nav className="feed-list">
-                            <Droppable droppableId="feedList" type="feed">
-                                {(provided) => (
-                                    <ul {...provided.droppableProps} ref={provided.innerRef} className="feeds-list">
-                                        {feeds.length === 0 ? (
-                                            <p>Followed feeds are shown here</p>
-                                        ) : (
-                                            feeds.map((feed, index) => (
-                                                <Draggable key={feed.feed_id} draggableId={feed.feed_id.toString()} index={index}>
-                                                    {(provided) => (
-                                                        <li ref={provided.innerRef} {...provided.draggableProps} {...provided.dragHandleProps}>
-                                                            <FeedItem feed={feed.followedFeed} isChat={false} />
-                                                        </li>
-                                                    )}
-                                                </Draggable>
-                                            ))
-                                        )}
-                                        {provided.placeholder}
-                                    </ul>
-                                )}
-                            </Droppable>
+                            <SortableContext items={feeds.map(feed => feed.feed_id.toString())} strategy={verticalListSortingStrategy}>
+                                <ul className="feeds-list">
+                                    {feeds.length === 0 ? (
+                                        <p>Followed feeds are shown here</p>
+                                    ) : (
+                                        feeds.map((feed, index) => (
+                                            <FeedItem key={feed.feed_id} feed={feed.followedFeed} id={feed.feed_id.toString()} isChat={false} />
+                                        ))
+                                    )}
+                                </ul>
+                            </SortableContext>
                         </nav>
-                    </DragDropContext>
+                        <DragOverlay>
+                            {activeId && activeDragItem && dragType === 'feed' && (
+                                <div className="feed-list-item feed-drag-overlay">
+                                    <div className="feed-list-link-container">
+                                        <div className="feed-list-link">
+                                            <img className="small-feed-photo" src={`/${activeDragItem.followedFeed.feed_photo}`} alt="Feed" />
+                                            <p className="feed-list-text">{activeDragItem.followedFeed.feed_name}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+                            {activeId && activeDragItem && dragType === 'deepFeed' && (
+                                <div className="deep-feed-container deep-feed-drag-overlay">
+                                    <div className="channel-link deep-feed-header">
+                                        <p style={{ margin: "0" }}>{activeDragItem.name}</p>
+                                    </div>
+                                </div>
+                            )}
+                            {activeId && activeDragItem && dragType === 'feedInDeepFeed' && (
+                                <div className="feed-list-item feed-drag-overlay">
+                                    <div className="feed-list-link-container">
+                                        <div className="feed-list-link">
+                                            <img className="small-feed-photo" src={`/${activeDragItem.feed.feed_photo}`} alt="Feed" />
+                                            <p className="feed-list-text">{activeDragItem.feed.feed_name}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+                            {activeId && activeDragItem && dragType === 'nestedDeepFeed' && (
+                                <div className="deep-feed-container deep-feed-drag-overlay">
+                                    <div className="channel-link deep-feed-header">
+                                        <p style={{ margin: "0" }}>{activeDragItem.nestedDeepFeed.name}</p>
+                                    </div>
+                                </div>
+                            )}
+                        </DragOverlay>
+                    </DndContext>
                 ) : (
                     <div style={{marginTop: '64px'}}>
                         <Link to="/join" className="large-icon">
