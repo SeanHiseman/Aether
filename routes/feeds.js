@@ -11,6 +11,7 @@ import { Op } from 'sequelize';
 import { join } from 'path';
 import path from 'path';
 import { Router } from 'express';
+import sequelize from '../databaseSetup.js';
 import { v4 } from 'uuid';
 import { ConnectRequests, DeepFeeds, DeepFeedContent, Feeds, FeedChannels, FeedChannelMessages, Followers, FollowRequests, Posts, Users } from '../models/relationships.js';
 
@@ -89,6 +90,7 @@ router.post('/add_feed_channel', authenticateCheck, async (req, res) => {
 router.post('/add_to_deep_feed', async (req, res) => {
     try {
         const { deepFeedId, feedId, nestedDeepFeedId } = req.body;
+        //console.log("adding to deep feed, ", "deepFeedId:", deepFeedId, "feedId:", feedId, "nestedDeepFeedId:", nestedDeepFeedId);
         if (!feedId && !nestedDeepFeedId) {
             return res.status(400).json({ success: false, message: 'Must provide either a feedId or nestedDeepFeedId' });
         }
@@ -112,6 +114,7 @@ router.post('/add_to_deep_feed', async (req, res) => {
             feed_id: feedId || null,
             nested_deep_feed_id: nestedDeepFeedId || null
         });
+        //console.log("content created:", content);
         if (nestedDeepFeedId) {
             await DeepFeeds.update(
                 { parent_id: deepFeedId },
@@ -120,6 +123,7 @@ router.post('/add_to_deep_feed', async (req, res) => {
         }
         res.status(201).json({ success: true, content });
     } catch (error) {
+        //console.error('Error adding to deep feed:', error);
         res.status(500).json({ success: false, error: error.message });
     }
 });
@@ -413,20 +417,23 @@ router.get('/deep_feed_posts', authenticateCheck, async (req, res) => {
 			return res.status(200).json({ success: true, deepFeed, posts });
 		}
 	} catch (error) {
-		console.error('Error fetching deep feed posts:', error);
 		res.status(500).json({ success: false, error: error.message });
 	}
 }); 
 
 router.delete('/delete_deep_feed', authenticateCheck, async (req, res) => {
     try {
+        const transaction = await sequelize.transaction();
         const { deepFeedId } = req.body;
         await DeepFeedContent.destroy({
-            where: { deep_feed_id: deepFeedId }
+            where: { deep_feed_id: deepFeedId },
+            transaction: transaction,
         });
         await DeepFeeds.destroy({
-            where: { deep_feed_id: deepFeedId }
+            where: { deep_feed_id: deepFeedId },
+            transaction: transaction,
         });
+        await transaction.commit();
         res.status(200).json({ success: true });
     } catch (error) {
         res.status(500).json({ success: false });
@@ -671,6 +678,7 @@ router.get('/get_feed_followers/:feedId', authenticateCheck, async (req, res) =>
 router.post('/remove_from_deep_feed', authenticateCheck, async (req, res) => {
     try {
         const { deepFeedId, feedId, nestedDeepFeedId } = req.body;
+        //console.log("removing from deep feed:", deepFeedId, feedId, nestedDeepFeedId);
         if (!feedId && !nestedDeepFeedId) {
             return res.status(400).json({ success: false, message: 'Must provide either a feedId or nestedDeepFeedId' });
         }
@@ -685,6 +693,7 @@ router.post('/remove_from_deep_feed', authenticateCheck, async (req, res) => {
         });
         res.status(204).json({ success: true });
     } catch (error) {
+       // console.error('Error removing from deep feed:', error);
         res.status(500).json({ success: false, error: error.message });
     }
 });
@@ -724,7 +733,6 @@ router.post('/toggle_lock', authenticateCheck, async (req, res) => {
         await feed.save();
         return res.status(200).json({ is_locked: feed.is_locked });
     } catch (error) {
-        console.error(error);
         return res.status(500).json({ error: 'Internal server error' });
     }
 });
