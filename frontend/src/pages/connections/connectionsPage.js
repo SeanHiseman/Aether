@@ -31,6 +31,7 @@ const ConnectionsPage = () => {
             }
         } catch (error) {
             setErrorMessage('Error getting connections');
+            setTimeout(() => { setErrorMessage(''); }, 5000);
         }
     };
 
@@ -51,6 +52,7 @@ const ConnectionsPage = () => {
             }
         } catch (error) {
             setErrorMessage('Error getting connect requests');
+            setTimeout(() => { setErrorMessage(''); }, 5000);
         }
     };
 
@@ -82,6 +84,7 @@ const ConnectionsPage = () => {
 						});
 					} catch (error) {
 						setErrorMessage('Error getting connect requests');
+                        setTimeout(() => { setErrorMessage(''); }, 5000);
 					}
 				});
             }

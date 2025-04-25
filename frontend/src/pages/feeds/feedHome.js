@@ -58,6 +58,7 @@ const FeedHome = () => {
                     setFeedNotFound(true);
                 } else {
                     setFeedErrorMessage('Failed to load feed');
+                    setTimeout(() => { setFeedErrorMessage(''); }, 3000);
                 }
             } finally {
                 setLoading(false);
@@ -94,15 +95,18 @@ const FeedHome = () => {
                 finalChannelName = newChannelName;
                 if (channels.some(channel => channel.channel_name === finalChannelName)) {
                     setFeedErrorMessage("Name already used");
+                    setTimeout(() => { setFeedErrorMessage(''); }, 3000);
                     return;
                 }
             }
             if (finalChannelName === "Main") {
                 setFeedErrorMessage("Cannot be named Main");
+                setTimeout(() => { setFeedErrorMessage(''); }, 3000);
                 return;
             }
             if (finalChannelName.length >= 30) {
                 setFeedErrorMessage("Name too long");
+                setTimeout(() => { setFeedErrorMessage(''); }, 3000);
                 return;
             }
             const response = await axios.post('/api/add_feed_channel', {
@@ -121,9 +125,11 @@ const FeedHome = () => {
                 navigate(`/${urlLetter}/${feed_name}/${finalChannelName}`);
             } else {
                 setFeedErrorMessage('Failed to add channel');
+                setTimeout(() => { setFeedErrorMessage(''); }, 3000);
             }
         } catch (error) {
             setFeedErrorMessage('Failed to add channel');
+            setTimeout(() => { setFeedErrorMessage(''); }, 3000);
         }
     };
     
@@ -150,10 +156,12 @@ const FeedHome = () => {
         try {
             if (newChannelName.length === 0) {
                 setFeedErrorMessage("Channel needs a name");
+                setTimeout(() => { setFeedErrorMessage(''); }, 3000);
                 return;
             }
             if (newChannelName === 'Main') {
                 setFeedErrorMessage("Cannot be named Main");
+                setTimeout(() => { setFeedErrorMessage(''); }, 3000);
                 return;
             } 
             const channelId = channelRender.channel_id;
@@ -174,6 +182,7 @@ const FeedHome = () => {
             }
         } catch {
             setFeedErrorMessage("Error changing channel name");
+            setTimeout(() => { setFeedErrorMessage(''); }, 3000);
         }
     };
 
@@ -182,6 +191,7 @@ const FeedHome = () => {
             try {
                 if (channel_name === 'Main') {
                     setFeedErrorMessage("Main chat cannot be deleted.");
+                    setTimeout(() => { setFeedErrorMessage(''); }, 3000);
                     return;
                 }
                 const channelId = channelRender.channel_id;
@@ -192,6 +202,7 @@ const FeedHome = () => {
                 }
             } catch (error) {
                 setFeedErrorMessage('Error deleting channel');
+                setTimeout(() => { setFeedErrorMessage(''); }, 3000);
             }
         }
     };
@@ -207,6 +218,7 @@ const FeedHome = () => {
             setPostToEdit(null);
         } catch (error) {
             setFeedErrorMessage("Error editing post");
+            setTimeout(() => { setFeedErrorMessage(''); }, 3000);
         }
     };
 
@@ -218,6 +230,7 @@ const FeedHome = () => {
         if (!isAuthenticated) return;
         if (!formData) {
             setPostErrorMessage("Post cannot be empty");
+            setTimeout(() => { setFeedErrorMessage(''); }, 3000);
             return;
         }
         try {
@@ -231,8 +244,10 @@ const FeedHome = () => {
         } catch (error) {
             if (error.response && error.response.status === 413) {
                 setPostErrorMessage(error.response.data.message + (!user.has_membership ? ". Get membership for more" : ""));
+                setTimeout(() => { setFeedErrorMessage(''); }, 10000); //Longer timeout for membership message
             } else {
                 setPostErrorMessage(error.response.data.message || "Error creating post");
+                setTimeout(() => { setFeedErrorMessage(''); }, 3000);
             }
         }
     };

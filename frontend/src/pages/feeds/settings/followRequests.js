@@ -21,6 +21,7 @@ const FollowRequests = ({ feed, followRequests, setFeed, setFollowRequests, setR
             });
         } catch (error) {
             setErrorMessage('Error handling request');
+            setTimeout(() => { setErrorMessage(''); }, 5000);
         }
     };
 
@@ -52,20 +53,6 @@ const FollowRequests = ({ feed, followRequests, setFeed, setFollowRequests, setR
                         </li>
                     ))}
                 </ul>
-                /*<ul>
-                    <p>Group feeds</p>
-                    {nestRequests.map((request) => (
-                        <li key={request.request_id}>
-                            {request.sender.groupName}
-                            <button className="button" onClick={() => handleNestRequest("accept", request.request_id, request.sender_id)}>
-                                Accept
-                            </button>
-                            <button className="button" onClick={() => handleNestRequest("reject", request.request_id)}>
-                                Reject
-                            </button>
-                        </li>
-                    ))}
-                </ul>*/
             )}
         </div>
     );

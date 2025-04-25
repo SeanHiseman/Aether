@@ -33,6 +33,7 @@ const AskChannel = () => {
 				setChats(response.data.chats);
 			} catch (error) {
 				setErrorMessage('Error fetching chats');
+				setTimeout(() => { setErrorMessage(''); }, 5000);
 			}
 		};
 		fetchChats();
@@ -45,6 +46,7 @@ const AskChannel = () => {
 					if (location.state?.initialMessage && !initialMessageRef.current) {
 						if (limitReached) {
 							setErrorMessage(user.has_membership ? "Usage limit reached" : "Usage limit reached. Get membership for more.");
+							setTimeout(() => { setErrorMessage(''); }, 10000);
 							return;
 						}
 						initialMessageRef.current = true; 
@@ -52,6 +54,7 @@ const AskChannel = () => {
 					} else if (query.length !== 0) {
 						if (limitReached) {
 							setErrorMessage(user.has_membership ? "Usage limit reached" : "Usage limit reached. Get membership for more.");
+							setTimeout(() => { setErrorMessage(''); }, 10000);
 							return;
 						}
 						setIsLoading(true);
@@ -70,6 +73,7 @@ const AskChannel = () => {
 				}
 			} catch (error) {
 				setErrorMessage('Error getting messages');
+				setTimeout(() => { setErrorMessage(''); }, 5000);
 			}
 		};
 		fetchMessages();
@@ -83,14 +87,17 @@ const AskChannel = () => {
 		try {
 			if (changedChatName.trim().length === 0) {
 				setErrorMessage("Chat needs a name");
+				setTimeout(() => { setErrorMessage(''); }, 5000);
 				return;
 			}
 			if (changedChatName.trim() === 'Ask') {
 				setErrorMessage("Chat cannot be named Ask");
+				setTimeout(() => { setErrorMessage(''); }, 5000);
 				return;
 			}
 			if (changedChatName.trim().length > 30) {
 				setErrorMessage("Name too long");
+				setTimeout(() => { setErrorMessage(''); }, 5000);
 				return;
 			}
 			const response = await axios.post('/api/change_ask_chat_name', {
@@ -107,6 +114,7 @@ const AskChannel = () => {
 			}
 		} catch (error) {
 			setErrorMessage("Error changing chat name");
+			setTimeout(() => { setErrorMessage(''); }, 5000);
 		}
 	};
 
@@ -129,11 +137,13 @@ const AskChannel = () => {
 				finalChatName = newChatName.trim();
 				if (chats.some(c => c.name === finalChatName)) {
 					setErrorMessage("Name already used");
+					setTimeout(() => { setErrorMessage(''); }, 5000);
 					return;
 				}
 			}
 			if (finalChatName.length > 30) {
 				setErrorMessage("Name too long");
+				setTimeout(() => { setErrorMessage(''); }, 5000);
 				return;
 			}
 			const response = await axios.post('/api/create_ask_chat', {
@@ -152,9 +162,11 @@ const AskChannel = () => {
 				setShowNewChatForm(false);
 			} else {
 				setErrorMessage("Error creating chat");
+				setTimeout(() => { setErrorMessage(''); }, 5000);
 			}
 		} catch (error) {
 			setErrorMessage("Error creating chat");
+			setTimeout(() => { setErrorMessage(''); }, 5000);
 		}
 	};
 
@@ -166,6 +178,7 @@ const AskChannel = () => {
 				navigate('/ask/home');
 			} catch (error) {
 				setErrorMessage('Error deleting chat');
+				setTimeout(() => { setErrorMessage(''); }, 5000);
 			}
 		}
 	};
@@ -181,6 +194,7 @@ const AskChannel = () => {
 			setCurrentMessage('');
 		} catch (error) {
 			setErrorMessage("Error submitting chat");
+			setTimeout(() => { setErrorMessage(''); }, 5000);
 		}
 	};
 
@@ -212,9 +226,11 @@ const AskChannel = () => {
 				setErrorMessage('');
 			} else {
 				setErrorMessage("Error sending message");
+				setTimeout(() => { setErrorMessage(''); }, 5000);
 			}
 		} catch (error) {
 			setErrorMessage("Error sending message");
+			setTimeout(() => { setErrorMessage(''); }, 5000);
 		} finally {
 			setIsLoading(false);
 		}
@@ -224,6 +240,7 @@ const AskChannel = () => {
 		event.preventDefault();
 		if (newChatName.trim().length > 30) {
 			setErrorMessage("Chat name too long");
+			setTimeout(() => { setErrorMessage(''); }, 5000);
 			return;
 		}
 		await createNewAskChat();

@@ -9,7 +9,7 @@ const DeepFeedItem = ({ deepFeed, onFeedAdded, parentDeepFeedId = null, showHead
     const [isExpanded, setIsExpanded] = useState(false);
     const [contents, setContents] = useState([]);
     const [loading, setLoading] = useState(false);
-    const [error, setError] = useState('');
+    const [errorMessage, setErrorMessage] = useState('');
 
     const { attributes, listeners, setNodeRef } = useSortable({
         id: parentDeepFeedId ? `nested-df-${deepFeed.deep_feed_id}` : `df-${deepFeed.deep_feed_id}`,
@@ -45,13 +45,20 @@ const DeepFeedItem = ({ deepFeed, onFeedAdded, parentDeepFeedId = null, showHead
     }, [deepFeed.deep_feed_id, onFeedAdded]);
 
     const fetchContents = async () => {
-        if (contents.length > 0) return;
-        setLoading(true);
         try {
-            const { data } = await axios.get(`/api/deep_feed_contents/${deepFeed.deep_feed_id}`);
-            setContents(data.contents || []);
+            if (contents.length > 0) return;
+            setLoading(true);
+            try {
+                const { data } = await axios.get(`/api/deep_feed_contents/${deepFeed.deep_feed_id}`);
+                setContents(data.contents || []);
+            } catch (error) {
+                setContents([]);
+            } finally {
+                setLoading(false);
+            }
         } catch (error) {
-            setContents([]);
+            setErrorMessage('Error fetching contents. Please try again.');
+            setTimeout(() => { setErrorMessage(''); }, 5000);
         } finally {
             setLoading(false);
         }
@@ -67,30 +74,35 @@ const DeepFeedItem = ({ deepFeed, onFeedAdded, parentDeepFeedId = null, showHead
     }, [isExpanded, showHeader]);
 
     const handleAddFeed = useCallback((feed) => {
-        //console.log('Adding feed:', feed);
-        if (feed.type === 'UPDATE_CONTENTS') {
-            fetchContents();
-            return;
+        try {
+            //console.log('Adding feed:', feed);
+            if (feed.type === 'UPDATE_CONTENTS') {
+                fetchContents();
+                return;
+            }
+            if (feed.type === 'ADD_NESTED_DEEP_FEED') {
+                setContents(prevContents => [...prevContents, { nestedDeepFeed: feed.nestedDeepFeed }]);
+                return;
+            }
+            setContents(prevContents => {
+                //Check if this feed already exists in the content
+                const isAlreadyExists = prevContents.some(
+                    item => item.feed && item.feed.feed_id === feed.feed_id
+                );
+                if (isAlreadyExists) return prevContents;
+                return [...prevContents, {
+                    feed: {
+                        feed_id: feed.feed_id,
+                        feed_name: feed.feed_name,
+                        feed_photo: feed.feed_photo,
+                        is_group: feed.is_group,
+                    }
+                }];
+            });
+        } catch (error) {
+            setErrorMessage('Error adding feed. Please try again.');
+            setTimeout(() => { setErrorMessage(''); }, 5000);
         }
-        if (feed.type === 'ADD_NESTED_DEEP_FEED') {
-            setContents(prevContents => [...prevContents, { nestedDeepFeed: feed.nestedDeepFeed }]);
-            return;
-        }
-        setContents(prevContents => {
-            //Check if this feed already exists in the content
-            const isAlreadyExists = prevContents.some(
-                item => item.feed && item.feed.feed_id === feed.feed_id
-            );
-            if (isAlreadyExists) return prevContents;
-            return [...prevContents, {
-                feed: {
-                    feed_id: feed.feed_id,
-                    feed_name: feed.feed_name,
-                    feed_photo: feed.feed_photo,
-                    is_group: feed.is_group,
-                }
-            }];
-        });
     }, []);
 
     const sortableItemIds = [
@@ -112,7 +124,7 @@ const DeepFeedItem = ({ deepFeed, onFeedAdded, parentDeepFeedId = null, showHead
                     <div onClick={handleExpand}>
                         {isExpanded ? <FaChevronUp /> : <FaChevronDown />}
                     </div>
-                    {error && <div className="error-message">{error}</div>}
+                    {errorMessage && <div className="error-message">{errorMessage}</div>}
                 </div>
             )}
             {isExpanded && (
@@ -121,7 +133,7 @@ const DeepFeedItem = ({ deepFeed, onFeedAdded, parentDeepFeedId = null, showHead
                         <p className="text16">Loading...</p>
                     ) : (
                         <>
-                            {error && <div className="error-message">{error}</div>}
+                            {errorMessage && <div className="error-message">{errorMessage}</div>}
                             <SortableContext id={`sortable-${deepFeed.deep_feed_id}`} items={sortableItemIds} strategy={verticalListSortingStrategy}>
                                 {contents.map((item) =>
                                     item.nestedDeepFeed ? (

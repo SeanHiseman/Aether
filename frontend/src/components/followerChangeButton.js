@@ -43,6 +43,7 @@ const FollowerChangeButton = ({ feed, viewerId }) => {
             }
         } catch (error) {
             setErrorMessage("Error updating following");
+            setTimeout(() => { setErrorMessage(''); }, 5000);
         }
     };
     

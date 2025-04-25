@@ -47,6 +47,7 @@ const FeedSettings = () => {
                 setFollowRequestCount(requests.length);
             } catch (error) {
                 setErrorMessage('Error getting requests');
+                setTimeout(() => { setErrorMessage(''); }, 5000);
             } 
         };
         getFollowRequests();
@@ -60,9 +61,11 @@ const FeedSettings = () => {
                 navigate('/login');
             } else {
                 setErrorMessage('Logout failed');
+                setTimeout(() => { setErrorMessage(''); }, 5000);
             }
         } catch (error) {
-            setErrorMessage('Error during logout');
+            setErrorMessage('Logout failed');
+            setTimeout(() => { setErrorMessage(''); }, 5000);
         }
     };
 

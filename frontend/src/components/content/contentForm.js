@@ -639,12 +639,14 @@ const ContentForm = ({ feed, isEdit = false, isGroup, isReply, onSubmit, post = 
 	const handleGenerateCodeBlock = useCallback(async block => {
 		if (limitReached) {
 		  setFormErrorMessage(hasMembership ? "Usage limit reached" : "Usage limit reached. Get membership for more.");
+		  setTimeout(() => { setFormErrorMessage(''); }, 10000);
 		  return;
 		}
 		try {
 		  const prompt = block.data._tempAiPrompt || '';
 		  if (!prompt.trim()) {
 			setFormErrorMessage('Prompt cannot be empty.');
+			setTimeout(() => { setFormErrorMessage(''); }, 5000);
 			return;
 		  }
 		  updateBlock({ ...block, data: { ...block.data, isBlockLoading: true, _tempAiPrompt: '' } });
@@ -670,22 +672,26 @@ const ContentForm = ({ feed, isEdit = false, isGroup, isReply, onSubmit, post = 
 		  } else {
 			updateBlock({ ...block, data: { ...block.data, isBlockLoading: false, _tempAiPrompt: '' } });
 			setFormErrorMessage('Error creating content.');
+			setTimeout(() => { setFormErrorMessage(''); }, 5000);
 		  }
 		} catch {
 		  updateBlock({ ...block, data: { ...block.data, isBlockLoading: false, _tempAiPrompt: '' } });
 		  setFormErrorMessage('Error creating content.');
+		  setTimeout(() => { setFormErrorMessage(''); }, 5000);
 		}
 	}, [hasMembership, post, updateBlock]);
 
 	const handleGenerateFullContent = useCallback(async () => {
 		if (limitReached) {
 			setFormErrorMessage(hasMembership ? "Usage limit reached" : "Usage limit reached. Get membership for more.");
+			setTimeout(() => { setFormErrorMessage(''); }, 10000);
 			return;
 		}
 		try {
 			const prompt = globalAiPrompt.trim()
 			if (!prompt) {
 				setFormErrorMessage('Prompt cannot be empty.')
+				setTimeout(() => { setFormErrorMessage(''); }, 5000);
 				return
 			}
 			setIsGlobalLoading(true)
@@ -695,9 +701,10 @@ const ContentForm = ({ feed, isEdit = false, isGroup, isReply, onSubmit, post = 
 			if (response.data && response.status === 201) {
 				const { generatedContent } = response.data
 				setBlocks([{ data: { code: generatedContent, isBlockLoading: false, showPrompt: true }, id: v4(), isEditing: false, type: BLOCK_TYPES.CODE }])
-			} else setFormErrorMessage('Creation error.')
+			} else setFormErrorMessage('Creation error.'); setTimeout(() => { setFormErrorMessage(''); }, 5000);
 		} catch {
 			setFormErrorMessage('Error creating content.')
+			setTimeout(() => { setFormErrorMessage(''); }, 5000);
 		} finally {
 			setIsGlobalLoading(false)
 		}
@@ -707,6 +714,7 @@ const ContentForm = ({ feed, isEdit = false, isGroup, isReply, onSubmit, post = 
 		e.preventDefault()
 		if (isContentEmpty(blocks)) {
 			setFormErrorMessage(isReply ? 'Reply cannot be empty.' : 'Post cannot be empty.')
+			setTimeout(() => { setFormErrorMessage(''); }, 5000);
 			return
 		}
 		const finalHTML = compileFinalHTML(blocks)
@@ -730,6 +738,7 @@ const ContentForm = ({ feed, isEdit = false, isGroup, isReply, onSubmit, post = 
 			navigate(`/${urlPrefix}/${feed_name}/${channel_name}/${isReply ? post.post_id : postId}`)
 		} catch (error){
 			setFormErrorMessage('Error submitting the form.')
+			setTimeout(() => { setFormErrorMessage(''); }, 5000);
 		}
 	}, [blocks, compileFinalHTML, isContentEmpty, isEdit, isReply, channel_name, feed_name, navigate, onSubmit, post, setShowForm, title, urlPrefix])
 

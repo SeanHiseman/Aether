@@ -35,6 +35,7 @@ const ContentWidget = ({ feed, isGroup, onEditClick, onPostRemoved, onReplyClick
       setReplies(response.data);
     } catch {
       setPostErrorMessage('Error getting replies');
+      setTimeout(() => { setPostErrorMessage(''); }, 5000);
     }
   }, []);
 
@@ -51,6 +52,7 @@ const ContentWidget = ({ feed, isGroup, onEditClick, onPostRemoved, onReplyClick
         }
       } catch {
         setPostErrorMessage('Error incrementing views');
+        setTimeout(() => { setPostErrorMessage(''); }, 5000);
       }
     },
     [hasViewed, post.poster_id, viewer?.feed_id]
@@ -81,6 +83,7 @@ const ContentWidget = ({ feed, isGroup, onEditClick, onPostRemoved, onReplyClick
       }
     } catch {
       setPostErrorMessage('Error voting');
+      setTimeout(() => { setPostErrorMessage(''); }, 5000);
     }
   };
 
@@ -95,6 +98,7 @@ const ContentWidget = ({ feed, isGroup, onEditClick, onPostRemoved, onReplyClick
         }
       } catch (error) {
         setPostErrorMessage(`Error removing ${isReply ? 'Relpy' : 'Post'}`);
+        setTimeout(() => { setPostErrorMessage(''); }, 5000);
       }
     }
   };
@@ -130,6 +134,7 @@ const ContentWidget = ({ feed, isGroup, onEditClick, onPostRemoved, onReplyClick
         }
       } catch {
         setPostErrorMessage('Error checking vote limit');
+        setTimeout(() => { setPostErrorMessage(''); }, 5000);
       }
     };
     checkVoteLimit();

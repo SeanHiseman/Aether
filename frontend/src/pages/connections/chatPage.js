@@ -27,6 +27,7 @@ const ChatPage = () => {
             setConnection(response.data.connection); 
         } catch (error) {
             setErrorMessage('Error getting connection');
+            setTimeout(() => { setErrorMessage(''); }, 5000);
         }
     };
     
@@ -46,11 +47,13 @@ const ChatPage = () => {
         try {
             if (newChatName.length === 0) {
                 setErrorMessage("Channel needs a name");
+                setTimeout(() => { setErrorMessage(''); }, 5000);
                 return;
             //Names over 30 characters already prevented
             }
             if (newChatName === 'Main') {
                 setErrorMessage("Channel cannot be named Main");
+                setTimeout(() => { setErrorMessage(''); }, 5000);
                 return;
             } 
             let finalChannelName = newChatName;
@@ -73,6 +76,7 @@ const ChatPage = () => {
             }
         } catch {
             setErrorMessage("Error changing channel name");
+            setTimeout(() => { setErrorMessage(''); }, 5000);
         }
     };
 
@@ -80,11 +84,13 @@ const ChatPage = () => {
         event.preventDefault();
         if (chats.length >= chatLimit) {
             setErrorMessage("Chat limit reached");
+            setTimeout(() => { setErrorMessage(''); }, 5000);
             return;
         }
         try {
             if (!connection) {
                 setErrorMessage("No matching connection found");
+                setTimeout(() => { setErrorMessage(''); }, 5000);
                 return;
             }
             const participants = [
@@ -107,15 +113,18 @@ const ChatPage = () => {
                 finalChatName = newChatName;
                 if (chats.some(c => c.title === finalChatName)) {
                 setErrorMessage("Name already used");
+                setTimeout(() => { setErrorMessage(''); }, 5000);
                 return;
                 }
             }
             if (finalChatName.length >= 30) {
                 setErrorMessage("Name too long");
+                setTimeout(() => { setErrorMessage(''); }, 5000);
                 return;
             }
             if (finalChatName === 'Main') {
                 setErrorMessage("Cannot be named Main");
+                setTimeout(() => { setErrorMessage(''); }, 5000);
                 return;
             }
             const encryptedChatName = encrypt(finalChatName);
@@ -134,9 +143,11 @@ const ChatPage = () => {
                 navigate(`/connections/${connection_name}/${finalChatName}`);
             } else {
                 setErrorMessage("Failed to create chat");
+                setTimeout(() => { setErrorMessage(''); }, 5000);
             }
         } catch (error) {
             setErrorMessage("Failed to create chat");
+            setTimeout(() => { setErrorMessage(''); }, 5000);
         }
     };
 
@@ -145,6 +156,7 @@ const ChatPage = () => {
             try {
                 if (title === 'Main') {
                     setErrorMessage("Main chat cannot be deleted.");
+                    setTimeout(() => { setErrorMessage(''); }, 5000);
                     return;
                 }
                 const response = await axios.delete('/api/delete_chat', { data: { channelId: selectedChatId } });
@@ -154,6 +166,7 @@ const ChatPage = () => {
                 }
             } catch (error) {
                 setErrorMessage('Error deleting channel');
+                setTimeout(() => { setErrorMessage(''); }, 5000);
             }
         }
     };

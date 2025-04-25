@@ -45,6 +45,7 @@ const DeepFeed = () => {
             return response.data.posts;
         } catch (error) {
             setErrorMessage('Error fetching posts');
+            setTimeout(() => { setErrorMessage(''); }, 5000);
             return [];
         }
     };
@@ -64,10 +65,12 @@ const DeepFeed = () => {
         try {
             if (newName.length === 0) {
                 setErrorMessage("Needs a name");
+                setTimeout(() => { setErrorMessage(''); }, 5000);
                 return;
             }
             if (newName.trim() === 'following') {
                 setErrorMessage("Cannot be named 'Following'");
+                setTimeout(() => { setErrorMessage(''); }, 5000);
                 return;
             } 
             const response = await axios.post('/api/change_deep_feed_name', {
@@ -83,6 +86,7 @@ const DeepFeed = () => {
             }
         } catch {
             setErrorMessage("Error changing name");
+            setTimeout(() => { setErrorMessage(''); }, 5000);
         }
     };
 
@@ -91,6 +95,7 @@ const DeepFeed = () => {
             try {
                 if (deepFeed.name === 'Following') {
                     setErrorMessage("Following cannot be deleted.");
+                    setTimeout(() => { setErrorMessage(''); }, 5000);
                     return;
                 }
                 const response = await axios.delete('/api/delete_deep_feed', { data: { deepFeedId: deep_feed_id } });
@@ -109,6 +114,7 @@ const DeepFeed = () => {
                 }
             } catch (error) {
                 setErrorMessage('Error deleting deep feed');
+                setTimeout(() => { setErrorMessage(''); }, 5000);
             }
         }
     };
@@ -139,6 +145,7 @@ const DeepFeed = () => {
                 setTimePreference(response.data.preference);
             } catch (error) {
                 setErrorMessage('Error getting preference');
+                setTimeout(() => { setErrorMessage(''); }, 5000);
             }
         };
         fetchTimePreference();
@@ -152,6 +159,7 @@ const DeepFeed = () => {
             axios.post('/api/set_time_preference', { preference: newValue })
         } catch (error) {
             setErrorMessage('Error changing preference');
+            setTimeout(() => { setErrorMessage(''); }, 5000);
         }
     };
 

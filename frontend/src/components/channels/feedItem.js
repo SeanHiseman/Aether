@@ -61,14 +61,7 @@ const FeedItem = ({ feed, id, isChat, parentDeepFeedId, unreadCount }) => {
     }, []);
 
     return (
-        <li
-            ref={setNodeRef}
-            style={style}
-            className={`feed-list-item ${isDragging ? 'dragging' : ''}`}
-            data-parent-deep-feed-id={parentDeepFeedId}
-            onPointerDown={handlePointerDown}
-            onPointerUp={handlePointerUp}
-        >
+        <li ref={setNodeRef} style={style} className={`feed-list-item ${isDragging ? 'dragging' : ''}`} data-parent-deep-feed-id={parentDeepFeedId} onPointerDown={handlePointerDown} onPointerUp={handlePointerUp}>
             <div className="feed-list-link-container" {...attributes} {...listeners}>
                 <Link className="feed-list-link" to={isChat ? `/connections/${feed.feed_name}/Main` : `/${linkType}/${feed.feed_name}/Main`} onClick={handleLinkClick}>
                     <img className="small-feed-photo" src={`/${feed.feed_photo}`} alt={'/media/site_images/blank-group-icon.jpg'} />

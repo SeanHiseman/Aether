@@ -20,18 +20,22 @@ const Join = () => {
         const username = event.target.username.value;
         if (username.length > 30) {
             setErrorMessage('Username cannot exceed 30 characters');
+            setTimeout(() => { setErrorMessage(''); }, 3000);
             return;
         }
         if (email.length > 500) {
             setErrorMessage('Email cannot exceed 500 characters');
+            setTimeout(() => { setErrorMessage(''); }, 3000);
             return;
         }
         if (password.length > 30) {
             setErrorMessage('Password cannot exceed 30 characters');
+            setTimeout(() => { setErrorMessage(''); }, 3000);
             return;
         }
         if (password !== confirmPassword) {
             setErrorMessage('Passwords do not match');
+            setTimeout(() => { setErrorMessage(''); }, 3000);
             return;
         }
         try {
@@ -40,9 +44,11 @@ const Join = () => {
                 navigate('/g/Welcome');
             } else {
                 setErrorMessage('Joining failed, please try again');
+                setTimeout(() => { setErrorMessage(''); }, 3000);
             }
         } catch (error) {
             setErrorMessage(error.response?.status === 409 ? 'Name already taken' : 'Joining failed, please try again');
+            setTimeout(() => { setErrorMessage(''); }, 3000);
         }
     };    
 

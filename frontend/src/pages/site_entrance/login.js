@@ -24,8 +24,10 @@ const Login = () => {
         } catch (error) {
             if (error.response && error.response.status === 401) {
                 setErrorMessage('Invalid username or password');
+                setTimeout(() => { setErrorMessage(''); }, 3000);
             } else {
                 setErrorMessage('Failed to login, please try again');
+                setTimeout(() => { setErrorMessage(''); }, 3000);
             }
         }
     };

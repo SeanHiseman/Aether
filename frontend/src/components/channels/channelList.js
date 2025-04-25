@@ -32,6 +32,7 @@ const ChannelList = ({ channels, feedId, feedName, isChat, isGroup, setChannels 
             }
         } catch (error) {
             setErrorMessage('Error getting channels');
+            setTimeout(() => { setErrorMessage(''); }, 5000);
             setChannels([]);
         }
     }, [feedId, feedName, isChat, setChannels, viewer?.feed_id]);
