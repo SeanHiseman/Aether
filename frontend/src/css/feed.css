@@ -112,6 +112,14 @@
 .feed-list {
     width: 96%;
 }
+.feed-list-item.dragging {
+    background-color: var(--dark);
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.15);
+}
+.feed-list-item {    
+    transition: var(--transition-regular);
+    user-select: none;
+}
 .feed-name {
     align-items: center;
     display: flex;

@@ -30,13 +30,10 @@ const DeepFeed = () => {
                     offset: pageParam
                 }
             });
-            console.log("response.data:", response.data);
             if (pageParam === 0 && response.data.deepFeed) {
-                console.log("setting deepFeed:", response.data.deepFeed);
                 setDeepFeed(response.data.deepFeed);
                 document.title = response.data.deepFeed.name;
             } else if (deep_feed_id === 'following') {
-                console.log("deep_feed_id:", deep_feed_id);
                 setDeepFeed({
                     deep_feed_id: 'following',
                     name: 'Following',
@@ -47,7 +44,6 @@ const DeepFeed = () => {
             }
             return response.data.posts;
         } catch (error) {
-            console.error('Error fetching posts:', error);
             setErrorMessage('Error fetching posts');
             return [];
         }

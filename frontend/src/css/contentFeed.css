@@ -21,7 +21,8 @@
     border-radius: 28px;
     box-shadow: var(--shadow);
     cursor: pointer;
-    margin-bottom: var(--large-margin);
+    margin-bottom: var(--medium-margin);
+    margin-top: var(--medium-margin);
     padding: var(--large-margin);
     padding-bottom: var(--medium-margin);
 }

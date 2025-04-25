@@ -114,7 +114,6 @@ router.post('/add_to_deep_feed', async (req, res) => {
             feed_id: feedId || null,
             nested_deep_feed_id: nestedDeepFeedId || null
         });
-        //console.log("content created:", content);
         if (nestedDeepFeedId) {
             await DeepFeeds.update(
                 { parent_id: deepFeedId },
@@ -263,6 +262,7 @@ router.post('/create_feed', authenticateCheck, checkProfileStorageLimit, async (
 router.post('/create_deep_feed', authenticateCheck, async (req, res) => {
     try {
         const { deepFeedName, feedsToInclude, parentDeepFeedId, viewerId } = req.body;
+        //console.log("Creating deep feed:", "deepFeedName:", deepFeedName, "feedsToInclude:", feedsToInclude, "parentDeepFeedId:", parentDeepFeedId, "viewerId:", viewerId);
         if (!feedsToInclude || feedsToInclude.length < 2) {
             return res.status(400).json({ success: false, message: 'At least two feeds are required' });
         }
@@ -294,6 +294,7 @@ router.post('/create_deep_feed', authenticateCheck, async (req, res) => {
         }
         res.status(201).json({ success: true, deepFeed, feedsToInclude });
     } catch (error) {
+        //console.error('Error creating deep feed:', error);
         res.status(500).json({ success: false, error: error.message });
     }
 });
@@ -678,22 +679,18 @@ router.get('/get_feed_followers/:feedId', authenticateCheck, async (req, res) =>
 router.post('/remove_from_deep_feed', authenticateCheck, async (req, res) => {
     try {
         const { deepFeedId, feedId, nestedDeepFeedId } = req.body;
-        //console.log("removing from deep feed:", deepFeedId, feedId, nestedDeepFeedId);
+        //console.log("removing from deep feed:", "deepFeedId:", deepFeedId, "feedId:", feedId, "nestedDeepFeedId:", nestedDeepFeedId);
         if (!feedId && !nestedDeepFeedId) {
             return res.status(400).json({ success: false, message: 'Must provide either a feedId or nestedDeepFeedId' });
         }
-        await DeepFeedContent.destroy({
-            where: {
-                deep_feed_id: deepFeedId,
-                [Op.or]: [
-                    { feed_id: feedId || null },
-                    { nested_deep_feed_id: nestedDeepFeedId || null }
-                ]
-            }
-        });
-        res.status(204).json({ success: true });
+        const where = {
+            deep_feed_id: deepFeedId,
+            ...(feedId ? { feed_id: feedId } : { nested_deep_feed_id: nestedDeepFeedId })
+        };
+        await DeepFeedContent.destroy({ where });
+        res.status(200).json({ success: true });
     } catch (error) {
-       // console.error('Error removing from deep feed:', error);
+        //console.error('Error removing from deep feed:', error);
         res.status(500).json({ success: false, error: error.message });
     }
 });
