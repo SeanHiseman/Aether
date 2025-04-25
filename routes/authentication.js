@@ -6,6 +6,7 @@ import { hash, compare } from 'bcrypt';
 import { Op } from 'sequelize';
 import { v4 } from 'uuid';
 import { Connections, ConnectRequests, Feeds, FeedChannels, Followers, FeedChats, Messages, Posts, PostVotes, Users } from '../models/relationships.js'; 
+import sequelize from '../databaseSetup.js';
 
 dotenv.config();
 const router = Router();
@@ -70,27 +71,30 @@ router.get('/check_authentication', async (req, res) => {
 
 //Deletes user accont and all associated data
 router.delete('/delete_account', authenticateCheck, async (req, res) => {
+    let transaction
     try {
+        transaction = await sequelize.transaction();
         const { userId } = req.body;
         const feed = await Feeds.findOne({ where: { feed_owner: userId } });
         const id = feed.feed_id;
         if (feed.feed_photo !== process.env.DEFAULT_USER_IMAGE) {
             deleteMedia(feed.feed_photo)
         }
-        await FeedChannels.destroy({ where: { feed_id: id } });
-        await Posts.destroy({ where: { poster_id: id } });
-        await Followers.destroy({ where: { follower_id: id } });
-        await PostVotes.destroy({ where: { voter_id: id } });
-        await Connections.destroy({ where: { [Op.or]: [{ feed1_id: id }, { feed2_id: id }] } });
-        await ConnectRequests.destroy({ where: { [Op.or]: [{ sender_id: userId }, { receiver_id: userId }] } });
-        await FeedChats.destroy({ where: { feed_id: id } });
-        await Messages.destroy({ where: { sender_id: userId } });
-        await Feeds.destroy({ where: { feed_owner: userId } });
-        await Users.destroy({ where: { user_id: userId } });
+        await FeedChannels.destroy({ where: { feed_id: id }, transaction });
+        await Posts.destroy({ where: { poster_id: id }, transaction });
+        await Followers.destroy({ where: { follower_id: id }, transaction });
+        await PostVotes.destroy({ where: { voter_id: id }, transaction });
+        await Connections.destroy({ where: { [Op.or]: [{ feed1_id: id }, { feed2_id: id }] }, transaction });
+        await ConnectRequests.destroy({ where: { [Op.or]: [{ sender_id: userId }, { receiver_id: userId }] }, transaction });
+        await FeedChats.destroy({ where: { feed_id: id }, transaction });
+        await Messages.destroy({ where: { sender_id: userId }, transaction });
+        await Feeds.destroy({ where: { feed_owner: userId }, transaction });
+        await Users.destroy({ where: { user_id: userId }, transaction });
+        await transaction.commit();
         res.clearCookie('sid');
         return res.status(200).json({ success: true });
     } catch (error) {
-        console.log(error);
+        if (transaction) await transaction.rollback();
         return res.status(500).json({ success: false });
     }
 });

@@ -423,20 +423,22 @@ router.get('/deep_feed_posts', authenticateCheck, async (req, res) => {
 }); 
 
 router.delete('/delete_deep_feed', authenticateCheck, async (req, res) => {
+    let transaction;
     try {
-        const transaction = await sequelize.transaction();
+        transaction = await sequelize.transaction();
         const { deepFeedId } = req.body;
         await DeepFeedContent.destroy({
             where: { deep_feed_id: deepFeedId },
-            transaction: transaction,
+            transaction,
         });
         await DeepFeeds.destroy({
             where: { deep_feed_id: deepFeedId },
-            transaction: transaction,
+            transaction,
         });
         await transaction.commit();
         res.status(200).json({ success: true });
     } catch (error) {
+        if (transaction) await transaction.rollback();
         res.status(500).json({ success: false });
     }
 });
@@ -454,7 +456,9 @@ router.delete('/delete_follow_request', authenticateCheck, async (req, res) => {
 });
 
 router.delete('/delete_feed', authenticateCheck, async (req, res) => {
+    let transaction;
     try {
+        transaction = await sequelize.transaction();
         const { feedId } = req.body;
         const feed = await Feeds.findOne({ where: { feed_id: feedId } });
         if (!feed) {
@@ -464,35 +468,37 @@ router.delete('/delete_feed', authenticateCheck, async (req, res) => {
         if (feedPhoto && !defaultImages.includes(feedPhoto)) {
             deleteMedia(feedPhoto);
         }
-        await Posts.destroy({ where: { feed_id: feedId  } });
+        await Posts.destroy({ where: { feed_id: feedId }, transaction });
         await FollowRequests.destroy({
             where: {
                 [Op.or]: [
                     { receiver_id: feedId },
                     { sender_id: feedId }
                 ]
-            }
+            }, transaction
         });
-        await Followers.destroy({ where: { feed_id: feedId  } });
-        await FeedChannels.destroy({ where: { feed_id: feedId  } });
-        await Feeds.destroy({ where: { feed_id: feedId  } });
+        await Followers.destroy({ where: { feed_id: feedId }, transaction });
+        await FeedChannels.destroy({ where: { feed_id: feedId }, transaction });
+        await Feeds.destroy({ where: { feed_id: feedId }, transaction });
+        await transaction.commit();
         res.status(200).json({ success: true });
     } catch (error) {
+        if (transaction) await transaction.rollback();
         res.status(500).json({ success: false });
     }
 });
 
 router.delete('/delete_feed_channel', authenticateCheck, async (req, res) => {
+    let transaction;
     try {
+        transaction = await sequelize.transaction();
         const { channelId } = req.body;
-        await FeedChannelMessages.destroy({
-            where: { channel_id: channelId }
-        });
-        await FeedChannels.destroy({
-            where: { channel_id: channelId }
-        });
+        await FeedChannelMessages.destroy({ where: { channel_id: channelId }, transaction });
+        await FeedChannels.destroy({ where: { channel_id: channelId }, transaction });
+        await transaction.commit();
         res.status(200).json({ success: true });
     } catch (error) {
+        if (transaction) await transaction.rollback();
         res.status(500).json({ success: false });
     }
 });

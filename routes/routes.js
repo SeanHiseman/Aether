@@ -184,6 +184,7 @@ router.get('/search/:searcherId', async (req, res) => {
             }
             return response;
         }));
+        //Needs adjusting
         const postResults = await sequelize.query(`
             SELECT p.*, 
                 REGEXP_REPLACE(

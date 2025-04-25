@@ -6,6 +6,7 @@ import { Router } from 'express';
 import { Sequelize } from 'sequelize';
 import { v4 } from 'uuid';
 import { AskChats, AskMessages, PostNotes, Prompts, Users } from '../models/relationships.js';
+import sequelize from '../databaseSetup.js';
 
 dotenv.config();
 const openai = new OpenAI();
@@ -98,16 +99,16 @@ router.post('/create_ask_chat', authenticateCheck, async (req, res) => {
 });
 
 router.delete('/delete_ask_chat', authenticateCheck, async (req, res) => {
+    let transaction;
     try {
+        transaction = await sequelize.transaction();
         const { chat_id } = req.body;
-        await AskMessages.destroy({
-            where: { chat_id }
-        });
-        await AskChats.destroy({
-            where: { chat_id },
-        });
+        await AskMessages.destroy({ where: { chat_id }, transaction });
+        await AskChats.destroy({ where: { chat_id }, transaction });
+        await transaction.commit();
         res.status(200).json({ success: true });
     } catch (error) {
+        if (transaction) await transaction.rollback();
         res.status(500).json({ success: false });
     }
 });
