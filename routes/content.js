@@ -9,6 +9,7 @@ import { Router } from 'express';
 import path from 'path';
 import { Sequelize } from 'sequelize';
 import { v4 } from 'uuid';
+import sequelize from '../databaseSetup.js';
 
 const feedAttributes = ['feed_id', 'parent_id', 'feed_name', 'description', 'feed_photo', 'follower_count', 'created_at', 'updated_at', 'type', 'is_group', 'feed_owner', 'is_locked'];
 const noteAttributes = ['note_id', 'note_content', 'created_at', 'updated_at', 'is_misinfo']
@@ -113,7 +114,7 @@ router.post('/content_vote', authenticateCheck, async (req, res) => {
         });
         const currentNetVote = vote.upvotes - vote.downvotes;
         if (voteType === 'check_vote') {
-            return res.json({
+            return res.status(200).json({
                 success: true,
                 message: 'vote status',
                 reachedUpvoteLimit: currentNetVote >= 10,
@@ -133,7 +134,7 @@ router.post('/content_vote', authenticateCheck, async (req, res) => {
                     content.upvotes += 1;
                 }
             } else {
-                return res.json({
+                return res.status(200).json({
                     success: false,
                     message: 'upvote limit',
                     reachedUpvoteLimit: true,
@@ -150,7 +151,7 @@ router.post('/content_vote', authenticateCheck, async (req, res) => {
                     content.downvotes += 1;
                 }
             } else {
-                return res.json({
+                return res.status(200).json({
                     success: false,
                     message: 'downvote limit',
                     reachedUpvoteLimit: currentNetVote >= 10,
@@ -345,7 +346,9 @@ router.post('/edit_post', authenticateCheck, checkStorageLimit, post_upload.arra
 });
 
 router.delete('/remove_post', authenticateCheck, async (req, res) => {
+    let transaction;
     try {
+        transaction = await sequelize.transaction();
         const { post } = req.body;
         const foundPost = await Posts.findByPk(post.post_id);
         deleteMedia(foundPost.content);
@@ -354,11 +357,13 @@ router.delete('/remove_post', authenticateCheck, async (req, res) => {
             parentPost.replies -= 1;
             await parentPost.save();
         }
-        await PostVotes.destroy({ where: { post_id: post.post_id } });
-        await PostNotes.destroy({ where: { post_id: post.post_id } });
-        await Posts.destroy({ where: { post_id: post.post_id } });
+        await PostVotes.destroy({ where: { post_id: post.post_id }, transaction: transaction });
+        await PostNotes.destroy({ where: { post_id: post.post_id }, transaction: transaction });
+        await Posts.destroy({ where: { post_id: post.post_id }, transaction: transaction });
+        await transaction.commit();
         res.status(200).json({ success: true });
     } catch (error) {
+        if (transaction) await transaction.rollback();
         res.status(500).json({ success: false });
     }
 });

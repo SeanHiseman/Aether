@@ -76,25 +76,17 @@ router.post('/create_chat', authenticateCheck, async (req, res) => {
 });
 
 router.delete('/delete_chat', authenticateCheck, async (req, res) => {
+    let transaction;
     try {
+        transaction = await sequelize.transaction();
         const { channelId } = req.body;
-        await Messages.destroy({
-            where: {
-                chat_id: channelId
-            }
-        })
-        await FeedChats.destroy({
-            where: { 
-                chat_id: channelId
-            },
-        });
-        await Chats.destroy({
-            where: { 
-                chat_id: channelId
-            },
-        });
+        await Messages.destroy({ where: { chat_id: channelId, transaction }})
+        await FeedChats.destroy({ where: { chat_id: channelId, transaction }});
+        await Chats.destroy({ where: { chat_id: channelId, transaction }});
+        await transaction.commit();
         res.status(200).json({ success: true });
     } catch (error) {
+        if (transaction) await transaction.rollback();
         res.status(500).json({ success: false });
     }
 });
@@ -115,9 +107,10 @@ router.delete('/delete_connect_request', authenticateCheck, async (req, res) => 
     }
 });
 
-router.delete('/delete_connection', authenticateCheck, async (req, res) => {
-    const transaction = await sequelize.transaction(); 
+router.delete('/delete_connection', authenticateCheck, async (req, res) => { 
+    let transaction;
     try {
+        transaction = await sequelize.transaction();
         const { deleterId, feedId } = req.body;
         await Connections.destroy({
             where: { 
@@ -125,8 +118,7 @@ router.delete('/delete_connection', authenticateCheck, async (req, res) => {
                     { feed1_id: deleterId, feed2_id: feedId },
                     { feed1_id: feedId, feed2_id: deleterId },
                 ]
-            },
-            transaction
+            }, transaction
         });
         const sharedChats = await FeedChats.findAll({
             attributes: ['chat_id'],
@@ -136,34 +128,18 @@ router.delete('/delete_connection', authenticateCheck, async (req, res) => {
                 feed_id: {
                     [Op.in]: [deleterId, feedId]
                 }
-            },
-            transaction
+            }, transaction
         });
         const chatIds = sharedChats.map(chat => chat.chat_id);
         if (chatIds.length > 0) {
-            await FeedChats.destroy({
-                where: {
-                    chat_id: chatIds
-                },
-                transaction
-            });
-            await Messages.destroy({
-                where: {
-                    chat_id: chatIds
-                },
-                transaction
-            });
-            await Chats.destroy({
-                where: {
-                    chat_id: chatIds
-                },
-                transaction
-            });
+            await FeedChats.destroy({ where: { chat_id: chatIds }, transaction });
+            await Messages.destroy({ where: { chat_id: chatIds }, transaction });
+            await Chats.destroy({ where: { chat_id: chatIds }, transaction });
         }
         await transaction.commit();
         res.status(200).json({ success: true });
     } catch (error) {
-        await transaction.rollback();
+        if (transaction) await transaction.rollback();
         res.status(500).json({ success: false });
     }
 });
@@ -197,16 +173,12 @@ router.get('/get_chats/:feedId', authenticateCheck, async (req, res) => {
         }
         const connectionFeedId = connectionFeed.feed_id;
         const chatsWithViewerFeed = await FeedChats.findAll({
-            where: {
-                feed_id: viewerFeedId
-            },
+            where: { feed_id: viewerFeedId },
             attributes: ['chat_id']
         });
         const chatIdsWithViewerFeed = chatsWithViewerFeed.map(chat => chat.chat_id);
         const chatsWithConectionFeed = await FeedChats.findAll({
-            where: {
-                feed_id: connectionFeedId
-            },
+            where: { feed_id: connectionFeedId },
             attributes: ['chat_id']
         });
         const chatIdsWithConnectionFeed = chatsWithConectionFeed.map(chat => chat.chat_id);
