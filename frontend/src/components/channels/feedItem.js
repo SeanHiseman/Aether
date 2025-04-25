@@ -1,22 +1,57 @@
 import { FaChevronDown, FaChevronUp } from 'react-icons/fa';
-import React, { useState, useCallback } from 'react';
+import React, { useCallback, useState } from 'react';
 import { Link } from 'react-router-dom';
 import ChannelList from './channelList';
 import { useSortable } from '@dnd-kit/sortable';
 
-const FeedItem = ({ feed, isChat, unreadCount, id }) => {
+const FeedItem = ({ feed, id, isChat, parentDeepFeedId, unreadCount }) => {
     const [dropdownOpen, setDropdownOpen] = useState(false);
     const [feedChannels, setFeedChannels] = useState([]);
+    const [isDragActive, setIsDragActive] = useState(false);
     const linkType = feed.is_group ? 'g' : 'u';
+
+    const handlePointerDown = (e) => {
+        //console.log('Pointer down event:', e);
+        setIsDragActive(true);
+    };
+    
+    const handlePointerUp = (e) => {
+        //console.log('Pointer up event:', e);
+        setIsDragActive(false);
+    };
+
+    const handleLinkClick = (e) => {
+        //console.log('Link click event:', e);
+        if (isDragging || isDragActive) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+    };
 
     const {
         attributes,
         listeners,
         setNodeRef,
+        transform,
+        transition,
+        isDragging,
     } = useSortable({
-        id: id || feed.feed_id.toString(),
+        id,
+        data: {
+            parentDeepFeedId,
+            type: 'feed',
+            feed: feed
+        }
     });
-    
+
+    const style = transform ? {
+        transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
+        transition,
+        zIndex: isDragging ? 1000 : 1,
+        position: 'relative',
+        opacity: isDragging ? 0.5 : 1,
+    } : {};
+
     const dropdownToggle = () => {
         setDropdownOpen((prevOpen) => !prevOpen);
     };
@@ -26,27 +61,38 @@ const FeedItem = ({ feed, isChat, unreadCount, id }) => {
     }, []);
 
     return (
-        <li 
-            className="feed-list-item" 
-            ref={setNodeRef} 
-            {...attributes} 
-            {...listeners}
+        <li
+            ref={setNodeRef}
+            style={style}
+            className={`feed-list-item ${isDragging ? 'dragging' : ''}`}
+            data-parent-deep-feed-id={parentDeepFeedId}
+            onPointerDown={handlePointerDown}
+            onPointerUp={handlePointerUp}
         >
-            <div className="feed-list-link-container">
-                <Link className="feed-list-link" to={isChat ? `/connections/${feed.feed_name}/Main` : `/${linkType}/${feed.feed_name}/Main`}>
+            <div className="feed-list-link-container" {...attributes} {...listeners}>
+                <Link className="feed-list-link" to={isChat ? `/connections/${feed.feed_name}/Main` : `/${linkType}/${feed.feed_name}/Main`} onClick={handleLinkClick}>
                     <img className="small-feed-photo" src={`/${feed.feed_photo}`} alt={'/media/site_images/blank-group-icon.jpg'} />
                     <p className="feed-list-text">{feed.feed_name}</p>
                     {isChat && unreadCount > 0 && (
                         <div className="unread-count">{unreadCount}</div>
                     )}
                 </Link>
-                <div className="channel-dropdown" onClick={dropdownToggle}>{dropdownOpen ? <FaChevronUp /> : <FaChevronDown />}</div>
+                <div className="channel-dropdown" onClick={dropdownToggle}>
+                    {dropdownOpen ? <FaChevronUp /> : <FaChevronDown />}
+                </div>
             </div>
             {dropdownOpen && (
-                <ChannelList channels={feedChannels} feedId={feed.feed_id} feedName={feed.feed_name} isChat={isChat} isGroup={feed.is_group} setChannels={updateFeedChannels} />
+                <ChannelList
+                    channels={feedChannels}
+                    feedId={feed.feed_id}
+                    feedName={feed.feed_name}
+                    isChat={isChat}
+                    isGroup={feed.is_group}
+                    setChannels={updateFeedChannels}
+                />
             )}
-        </li> 
-    )
+        </li>
+    );
 };
 
 export default FeedItem;
