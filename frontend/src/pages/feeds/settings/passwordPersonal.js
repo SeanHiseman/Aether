@@ -18,10 +18,12 @@ const PasswordPersonal = ({ user }) => {
         event.preventDefault();
         if (email.length > maxEmailLength) {
             setEmailMessage(`Email cannot exceed ${maxEmailLength} characters`);
+            setTimeout(() => { setEmailMessage(''); }, 5000);
             return;
         }
         if (email !== confirmEmail) {
             setEmailMessage('Emails do not match');
+            setTimeout(() => { setEmailMessage(''); }, 5000);
             return;
         }
         try {
@@ -29,8 +31,10 @@ const PasswordPersonal = ({ user }) => {
             setEmail('');
             setConfirmEmail('');
             setEmailMessage(response.data.success ? 'Email changed' : 'Email change error, please try again');
+            setTimeout(() => { setEmailMessage(''); }, 5000);
         } catch (error) {
             setEmailMessage('Email change error, please try again');
+            setTimeout(() => { setEmailMessage(''); }, 5000);
         }
     };
 
@@ -38,10 +42,12 @@ const PasswordPersonal = ({ user }) => {
         event.preventDefault();
         if (password.length > maxPasswordLength) {
             setPasswordMessage(`Password cannot exceed ${maxPasswordLength} characters`);
+            setTimeout(() => { setPasswordMessage(''); }, 5000);
             return;
         }
         if (password !== confirmPassword) {
             setPasswordMessage('Passwords do not match');
+            setTimeout(() => { setPasswordMessage(''); }, 5000);
             return;
         }
         try {
@@ -49,8 +55,10 @@ const PasswordPersonal = ({ user }) => {
             setPassword('');
             setConfirmPassword('');
             setPasswordMessage(response.data.success ? 'Password changed' : 'Password change error, please try again');
+            setTimeout(() => { setPasswordMessage(''); }, 5000);
         } catch (error) {
             setPasswordMessage('Password change error, please try again');
+            setTimeout(() => { setPasswordMessage(''); }, 5000);
         }
     };
 

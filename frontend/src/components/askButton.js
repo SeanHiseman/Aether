@@ -30,6 +30,7 @@ const AskButton = ({ isReply, isGroup, content, showNote, setShowNote, note, set
             }
         } catch (error) {
             setPostErrorMessage("Error using Ask.");
+            setTimeout(() => { setPostErrorMessage(''); }, 5000);
         } finally {
             setIsLoading(false);
         }

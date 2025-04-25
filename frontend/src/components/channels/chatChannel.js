@@ -27,9 +27,11 @@ const ChatChannel = ({ canAdd, canRemove, channelId, connection, isGroup, isLock
             });
             socketRef.current.on('connect_error', (err) => {
                 setErrorMessage(`Connection failed`);
+                setTimeout(() => { setErrorMessage(''); }, 5000);
             });
             socketRef.current.on('error_message', (error) => 
                 setErrorMessage('An error occurred'));
+                setTimeout(() => { setErrorMessage(''); }, 5000);
         }
         return () => {
             if (socketRef.current) {
@@ -50,6 +52,7 @@ const ChatChannel = ({ canAdd, canRemove, channelId, connection, isGroup, isLock
                 dispatch({ chatId: channelId, type: 'MARK_AS_READ' });
             } catch (error) {
                 setErrorMessage('Error marking messages as read');
+                setTimeout(() => { setErrorMessage(''); }, 5000);
             }
         }
     }, [channelId, isGroup, viewer.feed_id, dispatch, socketRef.current?.connected]);
@@ -59,7 +62,6 @@ const ChatChannel = ({ canAdd, canRemove, channelId, connection, isGroup, isLock
         try {
             const socket = socketRef.current;
             if (!socket || !channelId) {
-                console.warn("Socket or channelId is missing");
                 return;
             }
             const channelRoute = isGroup ? 'join_channel' : 'join_chat';
@@ -68,11 +70,12 @@ const ChatChannel = ({ canAdd, canRemove, channelId, connection, isGroup, isLock
             const deleteRoute = isGroup ? 'delete_feed_message' : 'delete_direct_message';
             const setupChannel = () => {
                 try {
-                    console.log(`Joining ${channelRoute} with ID:`, channelId);
+                    //console.log(`Joining ${channelRoute} with ID:`, channelId);
                     socket.emit(channelRoute, channelId);
                     getChannelMessages(channelId, 0);
                 } catch (error) {
-                    console.error("Error setting up channel:", error);
+                    setErrorMessage("Error setting up channel");
+                    setTimeout(() => { setErrorMessage(''); }, 5000);
                 }
             };
             if (socket.connected) {
@@ -94,7 +97,8 @@ const ChatChannel = ({ canAdd, canRemove, channelId, connection, isGroup, isLock
                         });
                     }
                 } catch (error) {
-                    console.error("Error handling new message:", error, newMessage);
+                    setErrorMessage("Error handling new message");
+                    setTimeout(() => { setErrorMessage(''); }, 5000);
                 }
             };
             const handleConfirmedMessage = (confirmedMessage) => {
@@ -105,7 +109,8 @@ const ChatChannel = ({ canAdd, canRemove, channelId, connection, isGroup, isLock
                     };
                     setChannel((prevMessages) => [...prevMessages, processedMessage]);
                 } catch (error) {
-                    console.error("Error handling confirmed message:", error, confirmedMessage);
+                    setErrorMessage("Error handling confirmed message");
+                    setTimeout(() => { setErrorMessage(''); }, 5000);
                 }
             };
             const handleMessagesRead = ({ chat_id, reader_id }) => {
@@ -120,7 +125,8 @@ const ChatChannel = ({ canAdd, canRemove, channelId, connection, isGroup, isLock
                         );
                     }
                 } catch (error) {
-                    console.error("Error handling messages read:", error);
+                    setErrorMessage("Error handling messages read");
+                    setTimeout(() => { setErrorMessage(''); }, 5000);
                 }
             };
             try {
@@ -129,12 +135,13 @@ const ChatChannel = ({ canAdd, canRemove, channelId, connection, isGroup, isLock
                 socket.on(deleteRoute, deleteMessage);
                 socket.on('messages_marked_read', handleMessagesRead);
             } catch (error) {
-                console.error("Error setting up socket listeners:", error);
+                setErrorMessage("Error setting up socket listeners");
+                setTimeout(() => { setErrorMessage(''); }, 5000);
             }
             return () => {
                 try {
                     if (socket.connected) {
-                        console.log(`Leaving ${leaveRoute} with ID:`, channelId);
+                        //console.log(`Leaving ${leaveRoute} with ID:`, channelId);
                         socket.emit(leaveRoute, channelId);
                     }
                     socket.off('new_message', handleNewMessage);
@@ -142,11 +149,13 @@ const ChatChannel = ({ canAdd, canRemove, channelId, connection, isGroup, isLock
                     socket.off(deleteRoute, deleteMessage);
                     socket.off('messages_marked_read', handleMessagesRead);
                 } catch (error) {
-                    console.error("Error cleaning up socket listeners:", error);
+                    setErrorMessage("Connection error");
+                    setTimeout(() => { setErrorMessage(''); }, 5000);
                 }
             };
         } catch (error) {
-            console.error("Unexpected error in useEffect:", error);
+            setErrorMessage("Unexpected error");
+            setTimeout(() => { setErrorMessage(''); }, 5000);
         }
     }, [channelId, isGroup, getChannelMessages, deleteMessage]);    
     
@@ -177,6 +186,7 @@ const ChatChannel = ({ canAdd, canRemove, channelId, connection, isGroup, isLock
             setChannel(prev => prev.filter(m => m.message_id !== messageId));  
         } catch (error) {
             setErrorMessage("Error deleting message");
+            setTimeout(() => { setErrorMessage(''); }, 5000);
         }
     }, [channelId, isGroup, setErrorMessage]);
 
@@ -194,6 +204,7 @@ const ChatChannel = ({ canAdd, canRemove, channelId, connection, isGroup, isLock
             setOffset(currentOffset + messages.length);
         } catch (error) {
             setErrorMessage('Error fetching messages');
+            setTimeout(() => { setErrorMessage(''); }, 5000);
         }
     }, [isGroup, setErrorMessage]);
 
@@ -226,10 +237,12 @@ const ChatChannel = ({ canAdd, canRemove, channelId, connection, isGroup, isLock
             if (!message.trim()) return;
             if (message.length > maxLength) {
                 setErrorMessage(`Message cannot exceed ${maxLength} characters.`);
+                setTimeout(() => { setErrorMessage(''); }, 5000);
                 return;
             }
             if (!socketRef.current || !socketRef.current.connected) {
                 setErrorMessage("Error, please try again.");
+                setTimeout(() => { setErrorMessage(''); }, 5000);
                 if (socketRef.current) socketRef.current.connect();
                 return;
             }
@@ -246,6 +259,7 @@ const ChatChannel = ({ canAdd, canRemove, channelId, connection, isGroup, isLock
             setMessage('');
         } catch (error) {
             setErrorMessage("Error sending message");
+            setTimeout(() => { setErrorMessage(''); }, 5000);   
         }
     }, [channelId, isGroup, maxLength, message, setChats, setErrorMessage, viewer.feed_id]);
 

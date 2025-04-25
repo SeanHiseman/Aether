@@ -15,6 +15,7 @@ const FeedDeletion = ({ feed }) => {
                 }
         } catch (error) {
             setErrorMessage('Error deleting feed');
+            setTimeout(() => { setErrorMessage(''); }, 5000);
         }
     };
 

@@ -34,6 +34,7 @@ const FeedInfoView = ({ feed, setFeed, user }) => {
             const fileInput = event.target.elements.new_feed_photo;
             if (!fileInput.files[0]) {
                 setErrorMessage('Please upload an image');
+                setTimeout(() => { setErrorMessage(''); }, 5000);
                 return;
             }
             const file = fileInput.files[0];
@@ -41,6 +42,7 @@ const FeedInfoView = ({ feed, setFeed, user }) => {
                 setErrorMessage(hasMembership 
                     ? `File exceeds your max size limit.` 
                     : `File exceeds your max size limit. Get membership for more.`);
+                    setTimeout(() => { setErrorMessage(''); }, 10000);
                 return;
             }
             const formData = new FormData();
@@ -59,10 +61,10 @@ const FeedInfoView = ({ feed, setFeed, user }) => {
         } catch(error) {
             if (error.response && error.response.status === 413) {
                 setErrorMessage(error.response.data.message + (!user.has_membership ? ". Get membership for more" : ""));
-            } else if (error.response && error.response.status === 400) {
-                setErrorMessage(error.response.data.message || "Error, please try again");
+                setTimeout(() => { setErrorMessage(''); }, 10000);
             } else {
                 setErrorMessage(error.response.data.message || "Error, please try again");
+                setTimeout(() => { setErrorMessage(''); }, 5000);
             }
         }
     };
@@ -87,6 +89,7 @@ const FeedInfoView = ({ feed, setFeed, user }) => {
             }));
         } catch (error) {
             setErrorMessage('Error changing lock status');
+            setTimeout(() => { setErrorMessage(''); }, 5000);
         }
     };
 
@@ -108,6 +111,7 @@ const FeedInfoView = ({ feed, setFeed, user }) => {
             }));
         } catch (error) {
             setErrorMessage('Error changing status');
+            setTimeout(() => { setErrorMessage(''); }, 5000);
         }
     };
 
@@ -122,6 +126,7 @@ const FeedInfoView = ({ feed, setFeed, user }) => {
         }
         catch (error) {
             setErrorMessage('Error changing description');
+            setTimeout(() => { setErrorMessage(''); }, 5000);
         }
     };
 
@@ -143,6 +148,7 @@ const FeedInfoView = ({ feed, setFeed, user }) => {
         }
         catch (error) {
             setErrorMessage('Error changing name');
+            setTimeout(() => { setErrorMessage(''); }, 5000);
         }
     }; 
 

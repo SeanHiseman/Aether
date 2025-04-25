@@ -157,7 +157,7 @@ const BaseLayout = () => {
                     }
                 } catch (error) {
                     setAsideErrorMessage("Error removing from Deep Feed");
-                    setTimeout(() => { setAsideErrorMessage(''); }, 3000);
+                    setTimeout(() => { setAsideErrorMessage(''); }, 5000);
                 }
             } else if (dragType === 'nestedDeepFeed') {
                 try {
@@ -172,7 +172,7 @@ const BaseLayout = () => {
                     }
                 } catch (error) {
                     setAsideErrorMessage("Error removing nested deep feed");
-                    setTimeout(() => { setAsideErrorMessage(''); }, 3000);
+                    setTimeout(() => { setAsideErrorMessage(''); }, 5000);
                 }
             }
             setActiveId(null);
@@ -244,12 +244,12 @@ const BaseLayout = () => {
                                 deepFeedCallbacks[targetParentDeepFeedId](sourceFeed.followedFeed); //DeepFeedItem uses data from followedFeed
                             } else {
                                 setAsideErrorMessage("Error updating feep feed");
-                                setTimeout(() => { setAsideErrorMessage(''); }, 3000);
+                                setTimeout(() => { setAsideErrorMessage(''); }, 5000);
                             }
                         }
                     } catch (error) {
                         setAsideErrorMessage("Error updating deep feed");
-                        setTimeout(() => { setAsideErrorMessage(''); }, 3000);
+                        setTimeout(() => { setAsideErrorMessage(''); }, 5000);
                     }
                 }
             }
@@ -306,7 +306,7 @@ const BaseLayout = () => {
                     } catch (error) {
                         //console.log("Error creating nested deep feed", error);
                         setAsideErrorMessage("Error creating nested Deep Feed");
-                        setTimeout(() => { setAsideErrorMessage(''); }, 3000);
+                        setTimeout(() => { setAsideErrorMessage(''); }, 5000);
                     }
                 }
             }
@@ -341,16 +341,16 @@ const BaseLayout = () => {
                             }
                         } else {
                             setAsideErrorMessage("Error removing feed from deep feed");
-                            setTimeout(() => { setAsideErrorMessage(''); }, 3000);
+                            setTimeout(() => { setAsideErrorMessage(''); }, 5000);
                         }
                     } else {
                         setAsideErrorMessage("Error adding feed to deep feed");
-                        setTimeout(() => { setAsideErrorMessage(''); }, 3000);
+                        setTimeout(() => { setAsideErrorMessage(''); }, 5000);
                     }
                 } catch (error) {
                     //console.log("Error moving feed between deep feeds", error);
                     setAsideErrorMessage("Error moving feed between deep feeds");
-                    setTimeout(() => { setAsideErrorMessage(''); }, 3000);
+                    setTimeout(() => { setAsideErrorMessage(''); }, 5000);
                 }
             }
             //Case 5: Moving nested deep feed from one deep feed to another
@@ -386,15 +386,15 @@ const BaseLayout = () => {
                             }
                         } else {
                             setAsideErrorMessage("Error removing deep feed");
-                            setTimeout(() => { setAsideErrorMessage(''); }, 3000);
+                            setTimeout(() => { setAsideErrorMessage(''); }, 5000);
                         }
                     } else {
                         setAsideErrorMessage("Error adding deep feed");
-                        setTimeout(() => { setAsideErrorMessage(''); }, 3000);
+                        setTimeout(() => { setAsideErrorMessage(''); }, 5000);
                     }
                 } catch (error) {
                     setAsideErrorMessage("Error moving deep feed");
-                    setTimeout(() => { setAsideErrorMessage(''); }, 3000);
+                    setTimeout(() => { setAsideErrorMessage(''); }, 5000);
                 }
             }
         } catch (error) {
@@ -477,7 +477,7 @@ const BaseLayout = () => {
             } catch (error) {
                 setDeepFeeds([]);
                 setAsideErrorMessage("Error fetching deep feeds");
-                setTimeout(() => { setAsideErrorMessage(''); }, 3000);
+                setTimeout(() => { setAsideErrorMessage(''); }, 5000);
             }
         };
         fetchDeepFeeds();
@@ -546,12 +546,10 @@ const BaseLayout = () => {
         } catch (error) {
             if (error.response && error.response.status === 413) {
                 setAsideErrorMessage(error.response.data.message + (!user.has_membership ? ". Get membership for more" : ""));
-            } else if (error.response.status === 400 ) {
-                setAsideErrorMessage("Name taken");
-                setTimeout(() => { setAsideErrorMessage(''); }, 3000);
+                setTimeout(() => { setAsideErrorMessage(''); }, 10000);
             } else {
                 setAsideErrorMessage("Error creating feed"); 
-                setTimeout(() => { setAsideErrorMessage(''); }, 3000);
+                setTimeout(() => { setAsideErrorMessage(''); }, 5000);
             }
         }
     };
@@ -596,7 +594,7 @@ const BaseLayout = () => {
             }
         } catch (error) {
             setHeaderErrorMessage("Error sending Ask");
-            setTimeout(() => { setAsideErrorMessage(''); }, 3000);
+            setTimeout(() => { setAsideErrorMessage(''); }, 5000);
         }
     };
 

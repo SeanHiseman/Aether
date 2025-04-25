@@ -15,6 +15,7 @@ const FeedFollowers = ({ feed, setFeed }) => {
             setFollowers(response.data.followers);
         } catch (error) {
             setErrorMessage('Error getting followers');
+            setTimeout(() => { setErrorMessage(''); }, 5000);
         }
     }, [feed.feed_id]);
 
@@ -29,6 +30,7 @@ const FeedFollowers = ({ feed, setFeed }) => {
             setFeed((prevFeed) => ({ ...prevFeed, follower_count: prevFeed.follower_count - 1 }));
         } catch (error) {
             setErrorMessage('Error removing follower');
+            setTimeout(() => { setErrorMessage(''); }, 5000);
         }
     };
 
@@ -53,6 +55,7 @@ const FeedFollowers = ({ feed, setFeed }) => {
             }
         } catch (error) {
             setErrorMessage("Error toggling admin status");
+            setTimeout(() => { setErrorMessage(''); }, 5000);
         }
     };
 
@@ -72,6 +75,7 @@ const FeedFollowers = ({ feed, setFeed }) => {
             }
         } catch (error) {
             setErrorMessage("Error toggling moderator status");
+            setTimeout(() => { setErrorMessage(''); }, 5000);
         }
     };
 
@@ -87,6 +91,7 @@ const FeedFollowers = ({ feed, setFeed }) => {
             }
         } catch (error) {
             setErrorMessage("Error transferring ownership");
+            setTimeout(() => { setErrorMessage(''); }, 5000);
         }
     };
 

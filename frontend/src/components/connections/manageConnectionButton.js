@@ -47,6 +47,7 @@ const ManageConnectionButton = ({ connectRequest, feed, isConnected, viewerId, o
             }
         } catch (error) {
             setErrorMessage("Error handling request");
+            setTimeout(() => { setErrorMessage(''); }, 5000);
         }
     }; 
 
@@ -93,6 +94,7 @@ const ManageConnectionButton = ({ connectRequest, feed, isConnected, viewerId, o
             }
         } catch (error) {
             setErrorMessage("Connection handling error");
+            setTimeout(() => { setErrorMessage(''); }, 5000);
         }
     };   
 

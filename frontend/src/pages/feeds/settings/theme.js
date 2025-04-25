@@ -23,8 +23,10 @@ const Theme = () => {
 		try {
 			await updateTheme(customTheme);
 			setFeedbackMessage('Theme updated');
+			setTimeout(() => { setFeedbackMessage(''); }, 5000);
 		} catch {
 			setErrorMessage('Error changing theme');
+			setTimeout(() => { setErrorMessage(''); }, 5000);
 		}
 	};
 	const handleDefaultThemeSelect = async (themeName) => {
@@ -32,6 +34,7 @@ const Theme = () => {
 			await updateTheme(themeName);
 		} catch {
 			setErrorMessage('Error changing theme');
+			setTimeout(() => { setErrorMessage(''); }, 5000);
 		}
 	};
 	return (
