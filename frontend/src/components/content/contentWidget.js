@@ -1,13 +1,14 @@
 import axios from 'axios';
-import { FaArrowDown, FaArrowUp, FaChevronDown, FaChevronUp, FaComments, FaCommentSlash, FaEdit, FaReply, FaTimesCircle } from 'react-icons/fa';
+import { FaArrowDown, FaArrowUp, FaChevronDown, FaChevronUp, FaComments, FaCommentSlash, FaEdit, FaReply, FaTimesCircle, FaTree, FaListUl } from 'react-icons/fa';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import React, { useCallback, useContext, useEffect, useState } from 'react';
 import { AuthContext } from '../authContext';
 import AskButton from '../askButton';
 import ContentDisplay from './contentDisplay';
+import ReplyTreeView from './replyTreeView';
 import PropTypes from 'prop-types';
 
-const ContentWidget = ({ feed, isGroup, onEditClick, onPostRemoved, onReplyClick, parent, post, readOnly = false }) => {
+const ContentWidget = ({ canRemove, feed, isGroup, onEditClick, onPostRemoved, onReplyClick, parent, post, readOnly = false }) => {
   const [downvoteLimit, setDownvoteLimit] = useState(false);
   const [downvotes, setDownvotes] = useState(post.downvotes);
   const { feed_name, channel_name, post_id } = useParams();
@@ -20,11 +21,11 @@ const ContentWidget = ({ feed, isGroup, onEditClick, onPostRemoved, onReplyClick
   const [showFullContent, setShowFullContent] = useState(false);
   const [showNote, setShowNote] = useState(post.note && post.note.is_misinfo);
   const [showReplies, setShowReplies] = useState(post_id ? (post.replies > 0) : false);
+  const [treeViewMode, setTreeViewMode] = useState(false);
   const [upvoteLimit, setUpvoteLimit] = useState(false);
   const [upvotes, setUpvotes] = useState(post.upvotes);
   const [views, setViews] = useState(post.views);
   const { isAuthenticated, user, viewer } = useContext(AuthContext);
-  const canRemove = (viewer?.feed_id === post?.poster_id) || (feed?.isAdmin || feed?.isMod);
   const isReply = readOnly ? false : post.parent_id !== null; //Read only means not displaying widget as a reply
   const isViewingOwnPost = post.poster_id === viewer?.feed_id;
   const urlPrefix = isGroup ? 'g' : 'u';
@@ -32,10 +33,15 @@ const ContentWidget = ({ feed, isGroup, onEditClick, onPostRemoved, onReplyClick
   const getReplies = useCallback(async (postId) => {
     try {
       const response = await axios.get(`/api/post_replies/${postId}`);
-      setReplies(response.data);
+      const processedReplies = response.data.map(reply => ({
+        ...reply,
+        showSubReplies: false,
+        subReplies: []
+      }));
+      
+      setReplies(processedReplies);
     } catch {
       setPostErrorMessage('Error getting replies');
-      setTimeout(() => { setPostErrorMessage(''); }, 5000);
     }
   }, []);
 
@@ -52,7 +58,6 @@ const ContentWidget = ({ feed, isGroup, onEditClick, onPostRemoved, onReplyClick
         }
       } catch {
         setPostErrorMessage('Error incrementing views');
-        setTimeout(() => { setPostErrorMessage(''); }, 5000);
       }
     },
     [hasViewed, post.poster_id, viewer?.feed_id]
@@ -83,13 +88,12 @@ const ContentWidget = ({ feed, isGroup, onEditClick, onPostRemoved, onReplyClick
       }
     } catch {
       setPostErrorMessage('Error voting');
-      setTimeout(() => { setPostErrorMessage(''); }, 5000);
     }
   };
 
   const removePost = async () => {
     if (!isAuthenticated) return;
-    if (window.confirm(`Are you sure you want to delete this ${isReply ? 'Relpy' : 'Post'}?`)) {
+    if (window.confirm(`Are you sure you want to delete this ${isReply ? 'Reply' : 'Post'}?`)) {
       try {
         const response = await axios.delete('/api/remove_post', { data: { post } });
         if (response.data.success) {
@@ -97,8 +101,7 @@ const ContentWidget = ({ feed, isGroup, onEditClick, onPostRemoved, onReplyClick
           navigate(`/${urlPrefix}/${feed_name}/${channel_name}`);
         }
       } catch (error) {
-        setPostErrorMessage(`Error removing ${isReply ? 'Relpy' : 'Post'}`);
-        setTimeout(() => { setPostErrorMessage(''); }, 5000);
+        setPostErrorMessage(`Error removing ${isReply ? 'Reply' : 'Post'}`);
       }
     }
   };
@@ -113,11 +116,13 @@ const ContentWidget = ({ feed, isGroup, onEditClick, onPostRemoved, onReplyClick
     }
   };
   
-	useEffect(() => {
-		if (isAuthenticated && (isViewingOwnPost || feed?.isAdmin || feed?.isModerator) && !canRemove) {
-			canRemove = true;
-		}
-	}, [isViewingOwnPost, feed?.isAdmin, feed?.isModerator, canRemove, isAuthenticated]);
+  const [canRemoveState, setCanRemoveState] = useState(canRemove);
+  
+  useEffect(() => {
+    if (isAuthenticated && (isViewingOwnPost || feed?.isAdmin || feed?.isModerator) && !canRemoveState) {
+      setCanRemoveState(true);
+    }
+  }, [isViewingOwnPost, feed?.isAdmin, feed?.isModerator, canRemoveState, isAuthenticated]);
 
   useEffect(() => {
     if (!isAuthenticated) return;
@@ -134,7 +139,6 @@ const ContentWidget = ({ feed, isGroup, onEditClick, onPostRemoved, onReplyClick
         }
       } catch {
         setPostErrorMessage('Error checking vote limit');
-        setTimeout(() => { setPostErrorMessage(''); }, 5000);
       }
     };
     checkVoteLimit();
@@ -153,11 +157,43 @@ const ContentWidget = ({ feed, isGroup, onEditClick, onPostRemoved, onReplyClick
     setShowReplies((prev) => !prev);
   };
 
+  const toggleViewMode = () => {
+    setTreeViewMode((prev) => !prev);
+  };
+
   const handleOverflowChange = (overflowing) => {
     setIsOverflowing(overflowing);
     if (!overflowing) {
       setShowFullContent(false);
     }
+  };
+
+  const renderReplyContent = (reply) => {
+    return (
+      <div className="tree-reply-content">
+        <div className="feed-info">
+          <Link className="feed-link" to={`/u/${reply.poster.feed_name}`}>
+            <img className="small-feed-photo" src={`/${reply.poster.feed_photo}`} alt="Feed" />
+            <p className="feed-list-text">{reply.poster.feed_name}</p>
+          </Link>
+        </div>
+        <ContentDisplay 
+          content={reply.content} 
+          showFullContent={false} 
+          showScrollBar={false}
+          treeViewMode={true}
+        />
+        <div className="tree-reply-footer">
+          <span className="total-votes">{reply.upvotes - reply.downvotes} votes</span>
+          <button className="small-icon" onClick={() => onReplyClick(reply)} title="Reply">
+            <FaReply />
+          </button>
+          {reply.replies > 0 && (
+            <span className="reply-count">{reply.replies} {reply.replies === 1 ? 'reply' : 'replies'}</span>
+          )}
+        </div>
+      </div>
+    );
   };
 
   const downvoteClass = downvoteLimit ? 'vote-disabled' : 'vote-enabled';
@@ -201,7 +237,7 @@ const ContentWidget = ({ feed, isGroup, onEditClick, onPostRemoved, onReplyClick
                   <FaArrowUp />
                 </button>
                 <span className="total-votes">{upvotes - downvotes}</span>      
-                <button className={`large-icon ${downvoteClass}`} disabled={downvoteLimit} onClick={() => postVote(post.post_id, 'downvote')} title={downvoteLimit ? 'Vote limit reached' : 'Upvote'}>
+                <button className={`large-icon ${downvoteClass}`} disabled={downvoteLimit} onClick={() => postVote(post.post_id, 'downvote')} title={downvoteLimit ? 'Vote limit reached' : 'Downvote'}>
                   <FaArrowDown />
                 </button>
               </>
@@ -209,15 +245,15 @@ const ContentWidget = ({ feed, isGroup, onEditClick, onPostRemoved, onReplyClick
               <span className="total-votes">{upvotes - downvotes} {Math.abs(upvotes - downvotes) === 1 ? 'vote' : 'votes'}</span>
             )
           ) : (
-						<>
-							<button className="large-icon" onClick={handleLoginRedirect} title="Login to vote">
-								<FaArrowUp />
-							</button>
-							<span className="total-votes">{upvotes - downvotes}</span>
-							<button className="large-icon" onClick={handleLoginRedirect} title="Login to vote">
-								<FaArrowDown />
-							</button>
-						</>
+            <>
+              <button className="large-icon" onClick={handleLoginRedirect} title="Login to vote">
+                <FaArrowUp />
+              </button>
+              <span className="total-votes">{upvotes - downvotes}</span>
+              <button className="large-icon" onClick={handleLoginRedirect} title="Login to vote">
+                <FaArrowDown />
+              </button>
+            </>
           )}
         </div>
         {!readOnly && (
@@ -226,6 +262,11 @@ const ContentWidget = ({ feed, isGroup, onEditClick, onPostRemoved, onReplyClick
               {showReplies ? <FaCommentSlash /> : <FaComments />}
               <p className="text16" id={`reply-count-${post.post_id}`}>{post.replies}</p>
             </button>
+            {showReplies && post.replies > 0 && (
+              <button className="large-icon" onClick={toggleViewMode} title={treeViewMode ? "Switch to List View" : "Switch to Tree View"}>
+                {treeViewMode ? <FaListUl /> : <FaTree />}
+              </button>
+            )}
             {isAuthenticated && !feed.is_locked && (
               <button className="large-icon" onClick={() => onReplyClick(post)} disabled={readOnly} title="Reply">
                 <FaReply />
@@ -251,14 +292,32 @@ const ContentWidget = ({ feed, isGroup, onEditClick, onPostRemoved, onReplyClick
       </div>
       {showReplies && (
         <div className="reply-section">
-          {replies.length !== 0 ? (
-            replies.map((reply) => (
-              <ContentWidget canRemove={canRemove} feed={feed} isGroup={isGroup} key={reply.post_id} onEditClick={onEditClick} onPostRemoved={replyRemoved} onReplyClick={onReplyClick} post={reply} readOnly={readOnly} />
-            ))
+          {treeViewMode ? (
+            <ReplyTreeView 
+              replies={replies} 
+              onReplyClick={onReplyClick}
+              renderReplyContent={renderReplyContent}
+            />
           ) : (
-            <p className="text24">No replies</p>
+            replies.length !== 0 ? (
+              replies.map((reply) => (
+                <ContentWidget 
+                  canRemove={canRemoveState} 
+                  feed={feed} 
+                  isGroup={isGroup} 
+                  key={reply.post_id} 
+                  onEditClick={onEditClick} 
+                  onPostRemoved={replyRemoved} 
+                  onReplyClick={onReplyClick} 
+                  post={reply} 
+                  readOnly={readOnly} 
+                />
+              ))
+            ) : (
+              <p className="text24">No replies</p>
+            )
           )}
-          {replies.length > 0 && (
+          {replies.length > 0 && !treeViewMode && (
             <div className="replies-footer">
               <button className="small-icon" onClick={toggleReplies} title="Close Replies">
                 <FaChevronUp />

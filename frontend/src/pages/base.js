@@ -25,6 +25,7 @@ const BaseLayout = () => {
     const [deepFeeds, setDeepFeeds] = useState([]);
     const [deepFeedCallbacks, setDeepFeedCallbacks] = useState({});
     const [feeds, setFeeds] = useState([]);
+    const feedContainerRef = useRef(null);
     const [feedsOffset, setFeedsOffset] = useState(0);
     const [feedName, setFeedName] = useState('');
     const [feedPhotoFile, setFeedPhotoFile] = useState(null);
@@ -35,7 +36,6 @@ const BaseLayout = () => {
     const { setTheme } = useContext(ThemeContext);
     const [showForm, setShowForm] = useState(false);
     const { state } = useContext(UnreadContext);
-    const feedContainerRef = useRef(null);
     const navigate = useNavigate();
     const hasMembership = user?.has_membership;
 	const MAX_FILE_SIZE = hasMembership ? 100 * 1024 * 1024 : 1 * 1024 * 1024;
