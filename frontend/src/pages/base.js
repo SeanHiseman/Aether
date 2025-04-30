@@ -1,4 +1,5 @@
 import axios from 'axios';
+import Cropper from 'react-easy-crop';
 import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, DragOverlay } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { FaArrowRight, FaFileUpload, FaMinus, FaPlus, FaPlusCircle, FaSearch, FaSignInAlt } from 'react-icons/fa';
@@ -8,6 +9,7 @@ import { v4 } from 'uuid';
 import { AuthContext } from '../components/authContext';
 import DeepFeedItem from '../components/channels/deepFeedItem';
 import FeedItem from '../components/channels/feedItem';
+import GetCroppedImg from '../components/getCroppedImg';
 import { ThemeContext } from '../themeProvider';
 import { Tooltip } from 'react-tooltip';
 import { UnreadContext } from '../components/connections/unreadContext';
@@ -20,10 +22,15 @@ import '../css/messages.css';
 
 const BaseLayout = () => {
     const { isAuthenticated, user, viewer } = useContext(AuthContext);
+    const [activeId, setActiveId] = useState(null);
+    const [activeDragItem, setActiveDragItem] = useState(null);
     const [asideErrorMessage, setAsideErrorMessage] = useState('');
+    const [crop, setCrop] = useState({ x: 0, y: 0 });
+    const [croppedAreaPixels, setCroppedAreaPixels] = useState(null);
     const [currentQuery, setCurrentQuery] = useState('');
     const [deepFeeds, setDeepFeeds] = useState([]);
     const [deepFeedCallbacks, setDeepFeedCallbacks] = useState({});
+    const [dragType, setDragType] = useState(null);
     const [feeds, setFeeds] = useState([]);
     const [feedsOffset, setFeedsOffset] = useState(0);
     const [feedName, setFeedName] = useState('');
@@ -32,6 +39,7 @@ const BaseLayout = () => {
     const [feed, setFeed] = useState([]);
     const [hasMoreFeeds, setHasMoreFeeds] = useState(true);
     const [headerErrorMessage, setHeaderErrorMessage] = useState('');
+    const [imageSrc, setImageSrc] = useState(null);
     const { setTheme } = useContext(ThemeContext);
     const [showForm, setShowForm] = useState(false);
     const { state } = useContext(UnreadContext);
@@ -39,9 +47,7 @@ const BaseLayout = () => {
     const navigate = useNavigate();
     const hasMembership = user?.has_membership;
 	const MAX_FILE_SIZE = hasMembership ? 100 * 1024 * 1024 : 1 * 1024 * 1024;
-    const [activeId, setActiveId] = useState(null);
-    const [activeDragItem, setActiveDragItem] = useState(null);
-    const [dragType, setDragType] = useState(null);
+    const [zoom, setZoom] = useState(1);
     
     const sensors = useSensors(
         useSensor(PointerSensor, {
@@ -510,14 +516,22 @@ const BaseLayout = () => {
             if (!feedName) {
                 setAsideErrorMessage("Feed needs a name");
                 return;
-            } 
+            }
             const newFeed = new FormData();
             newFeed.append('feedName', feedName);
             newFeed.append('type', feedType);
             newFeed.append('isGroup', true);
             newFeed.append('feedOwner', user.user_id);
             newFeed.append('viewerFeedId', viewer.feed_id);
-            if (feedPhotoFile) {
+            if (imageSrc && croppedAreaPixels) {
+                try {
+                    const croppedBlob = await GetCroppedImg(imageSrc, croppedAreaPixels);
+                    newFeed.append('new_feed_photo', croppedBlob, 'cropped.jpg');
+                } catch {
+                    setAsideErrorMessage("Failed to crop image");
+                    return;
+                }
+            } else if (feedPhotoFile) {
                 newFeed.append('new_feed_photo', feedPhotoFile);
             }
             const response = await axios.post('/api/create_feed', newFeed, {
@@ -527,7 +541,7 @@ const BaseLayout = () => {
             });
             if (response.data.success === true) {
                 const createdFeed = response.data.feed;
-                setFeeds((prevFeeds) => [ //Format the new feed to match the expected structure
+                setFeeds((prevFeeds) => [
                     ...prevFeeds,
                     {
                         feed_id: createdFeed.feed_id,
@@ -548,7 +562,7 @@ const BaseLayout = () => {
                 setAsideErrorMessage(error.response.data.message + (!user.has_membership ? ". Get membership for more" : ""));
                 setTimeout(() => { setAsideErrorMessage(''); }, 10000);
             } else {
-                setAsideErrorMessage("Error creating feed"); 
+                setAsideErrorMessage("Error creating feed");
                 setTimeout(() => { setAsideErrorMessage(''); }, 5000);
             }
         }
@@ -564,6 +578,11 @@ const BaseLayout = () => {
                 return;
             }
             setFeedPhotoFile(file);
+            const reader = new FileReader();
+            reader.onload = () => {
+                setImageSrc(reader.result);
+            };
+            reader.readAsDataURL(file);
             setAsideErrorMessage('');
         }
     };
@@ -602,6 +621,10 @@ const BaseLayout = () => {
         event.preventDefault();
         navigate(`/search?keyword=${currentQuery}`);
     };
+
+    const onCropComplete = useCallback((_, croppedPixels) => {
+        setCroppedAreaPixels(croppedPixels);
+    }, []);
 
     const toggleForm = () => { 
         if (showForm) {
@@ -688,20 +711,40 @@ const BaseLayout = () => {
                                         <label htmlFor="feed-photo-input" className="small-icon">
                                             <FaFileUpload /><p className="icon-text">Choose feed photo</p>
                                         </label>
-                                        <input type="file" id="feed-photo-input" name="Feed photo" onChange={handleFileChange} hidden/>
+                                        <input type="file" id="feed-photo-input" name="Feed photo" accept="image/*" onChange={handleFileChange} hidden />
                                         <span className="file-name">{feedPhotoFile ? feedPhotoFile.name : 'No file chosen'}</span>
                                     </div>
+                                    {imageSrc && (
+                                        <div className="crop-container" style={{ position: 'relative', width: '100%', height: 180 }}>
+                                            <Cropper
+                                                image={imageSrc}
+                                                crop={crop}
+                                                zoom={zoom}
+                                                aspect={1}
+                                                onCropChange={setCrop}
+                                                onZoomChange={setZoom}
+                                                onCropComplete={onCropComplete}
+                                            />
+                                        </div>
+                                    )}
                                     <div className="option-toggle">
-                                        <button className={feedType === 'public' ? 'active-mode' : 'passive-mode'} onClick={(event) => {event.preventDefault(); setFeedType('public');}} title="Visible to everyone">
+                                        <button className={feedType === 'public' ? 'active-mode' : 'passive-mode'} onClick={(event) => {
+                                            event.preventDefault();
+                                            setFeedType('public');
+                                        }} title="Visible to everyone">
                                             Public
                                         </button>
-                                        <button className={feedType === 'private' ? 'active-mode' : 'passive-mode'} onClick={(event) => {event.preventDefault(); setFeedType('private');}} title="Requires permission to follow">
+                                        <button className={feedType === 'private' ? 'active-mode' : 'passive-mode'} onClick={(event) => {
+                                            event.preventDefault();
+                                            setFeedType('private');
+                                        }} title="Requires permission to follow">
                                             Private
                                         </button>
                                     </div>
                                     <button className={feedName.length === 0 ? "small-icon disabled" : "small-icon"} disabled={feedName.length === 0} title={feedName.length === 0 ? "Enter a name" : "Create"} type="submit" value="Create">
                                         <FaPlus />
                                     </button>
+                                    {asideErrorMessage && <div className="error-message">{asideErrorMessage}</div>}
                                 </form>
                             )}
                         </div>

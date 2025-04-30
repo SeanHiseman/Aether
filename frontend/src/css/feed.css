@@ -160,9 +160,8 @@
     margin-top: 40px;
 }
 .name-photo-area {
-    align-items: center; 
     display: flex;
-    height: 70%;
+    height: 100%;
     justify-content: space-between;
     width: 100%;
 }
@@ -219,7 +218,7 @@
     flex-direction: column;
     gap: var(--large-margin);
     margin: 10px;
-    width: 60%;
+    width: 40%;
 }
 .settings-feed-photo {
     border-radius: 43px;
