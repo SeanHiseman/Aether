@@ -64,7 +64,7 @@ const BaseLayout = () => {
         let dragItem = null;
         let parentDeepFeedId = active.data.current?.parentDeepFeedId || null;
         if (typeof activeId === 'string' && activeId.startsWith('df-item-')) {
-            //console.log("df-item-");
+            console.log("df-item-");
             dragType = 'feedInDeepFeed';
             const feedId = activeId.replace('df-item-', '');
             const parentDeepFeed = deepFeeds.find(df => df.deep_feed_id === parentDeepFeedId);
@@ -98,29 +98,29 @@ const BaseLayout = () => {
                 console.log("Parent deep feed not found or has no feeds");
             }
         } else if (typeof activeId === 'string' && activeId.startsWith('df-')) {
-            //console.log("df-");
+            console.log("df-");
             dragType = 'deepFeed';
             const deepFeedId = activeId.replace('df-', '');
             dragItem = deepFeeds.find(df => df.deep_feed_id === deepFeedId);
-            //console.log("dragItem two", dragItem);
+            console.log("dragItem two", dragItem);
         } else if (typeof activeId === 'string' && activeId.startsWith('nested-df-')) {
-            //console.log("nested-df-");
+            console.log("nested-df-");
             dragType = 'nestedDeepFeed';
-            //const nestedDeepFeedId = activeId.replace('nested-df-', '');
+            const nestedDeepFeedId = activeId.replace('nested-df-', '');
             if (active.data.current?.nestedDeepFeed) {
                 dragItem = {
                     nestedDeepFeed: active.data.current.nestedDeepFeed,
                     parentDeepFeedId: parentDeepFeedId
                 };
-                //console.log("Found nested deep feed in data:", dragItem);
+                console.log("Found nested deep feed in data:", dragItem);
             }
         } else {
             dragType = 'feed';
             dragItem = feeds.find(feed => feed.feed_id.toString() === activeId);
-            //console.log("dragItem four", dragItem);
+            console.log("dragItem four", dragItem);
         }
         if (!dragItem && dragType === 'feedInDeepFeed') {
-            //console.warn("Failed to find feed item using standard methods, trying alternatives");
+            console.warn("Failed to find feed item using standard methods, trying alternatives");
             const feedId = activeId.replace('df-item-', '');
             const feedFromAllFeeds = feeds.find(feed => feed.feed_id.toString() === feedId);
             if (feedFromAllFeeds) {
@@ -133,21 +133,21 @@ const BaseLayout = () => {
                     },
                     parentDeepFeedId: parentDeepFeedId
                 };
-                //console.log("Created dragItem from feeds array:", dragItem);
+            console.log("Created dragItem from feeds array:", dragItem);
             }
         }
         setDragType(dragType);
-        //console.log("drag type", dragType);
-        //console.log("drag item", dragItem);
+        console.log("drag type", dragType);
+        console.log("drag item", dragItem);
         setActiveDragItem(dragItem);
         setActiveId(activeId);
     };
 
     const handleDragEnd = async (event) => {
         const { active, over } = event;
-        //console.log("Drag ended", { active, over });
+        console.log("Drag ended", { active, over });
         if (!over) {
-            //console.log("drag ended with no over target", active.id);
+            console.log("drag ended with no over target", active.id);
             //Case 7: Dragging content outside without a target (removal)
             if (dragType === 'feedInDeepFeed') {
                 console.log("case 7");
@@ -199,16 +199,16 @@ const BaseLayout = () => {
         try {
             const sourceParentDeepFeedId = active.data.current?.parentDeepFeedId;
             const targetParentDeepFeedId = over.data.current?.parentDeepFeedId;
-            //console.log("sourceParentDeepFeedId", sourceParentDeepFeedId);
-            //console.log("targetParentDeepFeedId", targetParentDeepFeedId);
-            //console.log("dragType", dragType);
-            //console.log("activeId", activeId);
-            //console.log("overId", overId);
-            //console.log("over data", over.data.current);
-            //console.log("active data", active.data.current);
+            console.log("sourceParentDeepFeedId", sourceParentDeepFeedId);
+            console.log("targetParentDeepFeedId", targetParentDeepFeedId);
+            console.log("dragType", dragType);
+            console.log("activeId", activeId);
+            console.log("overId", overId);
+            console.log("over data", over.data.current);
+            console.log("active data", active.data.current);
             //Case 1: Creating a new deep feed by combining 2 feeds in feed list
             if (dragType === 'feed' && typeof overId === 'string' && !overId.startsWith('df-') && !overId.startsWith('df-item-') && !sourceParentDeepFeedId) {
-                //console.log("case 1");
+                console.log("case 1");
                 const sourceFeed = feeds.find(feed => feed.feed_id.toString() === activeId);
                 const destinationFeed = feeds.find(feed => feed.feed_id.toString() === overId);
                 if (sourceFeed && destinationFeed) {
@@ -236,7 +236,8 @@ const BaseLayout = () => {
             }
             //Case 2: Dragging a feed from feed list into a deep feed
             else if (dragType === 'feed' && typeof overId === 'string' && overId.startsWith('df-') && !sourceParentDeepFeedId) {
-                //console.log("case 2");
+                console.log("case 2");
+                console.log("case 2 targetDeepFeedId", targetParentDeepFeedId);
                 const sourceFeed = feeds.find(feed => feed.feed_id.toString() === activeId);
                 if (sourceFeed) {
                     try {
@@ -261,8 +262,8 @@ const BaseLayout = () => {
             }
             //Case 3: Creating a nested deep feed (two feeds dragged and dropped together in same deep feed) 
             else if (dragType === 'feedInDeepFeed' && typeof overId === 'string' && overId.startsWith('df-item-') && sourceParentDeepFeedId === targetParentDeepFeedId) {
-                //console.log("case 3");
-                //console.log("Creating nested deep feed"); 
+                console.log("case 3");
+                console.log("Creating nested deep feed"); 
                 const sourceFeedId = activeDragItem.feed.feed_id;
                 const destFeedId = overId.replace('df-item-', '');
                 if (sourceFeedId === destFeedId) {
@@ -283,22 +284,17 @@ const BaseLayout = () => {
                         if (data.success && data.deepFeed) {
                             const parentDeepFeed = deepFeeds.find(df => df.deep_feed_id === sourceParentDeepFeedId);
                             if (parentDeepFeed && deepFeedCallbacks[sourceParentDeepFeedId]) {
-                                // First, notify the parent deep feed to update its contents
                                 deepFeedCallbacks[sourceParentDeepFeedId]({ type: 'UPDATE_CONTENTS' });
-                                // Alternatively, you can manually update the state here:
                                 setDeepFeeds(prevDeepFeeds => 
                                     prevDeepFeeds.map(df => {
                                         if (df.deep_feed_id === sourceParentDeepFeedId) {
-                                            // Get current feeds
                                             const currentFeeds = [...(df.feeds || [])];
-                                            // Remove the two feeds that were combined
                                             const filteredFeeds = currentFeeds.filter(item => 
                                                 !(item.feed && (
                                                     item.feed.feed_id === sourceFeedId || 
                                                     item.feed.feed_id === destFeedId
                                                 ))
                                             );
-                                            // Add the new nested deep feed
                                             filteredFeeds.push({ 
                                                 nestedDeepFeed: data.deepFeed 
                                             });
@@ -310,7 +306,7 @@ const BaseLayout = () => {
                             }
                         }
                     } catch (error) {
-                        //console.log("Error creating nested deep feed", error);
+                        console.log("Error creating nested deep feed", error);
                         setAsideErrorMessage("Error creating nested Deep Feed");
                         setTimeout(() => { setAsideErrorMessage(''); }, 5000);
                     }
@@ -318,7 +314,7 @@ const BaseLayout = () => {
             }
             //Case 4: Moving feed from one deep feed to another
             else if (dragType === 'feedInDeepFeed' && typeof overId === 'string' && overId.startsWith('df-')) {
-                //console.log("case 4");
+                console.log("case 4");
                 const sourceFeedId = activeDragItem.feed.feed_id;
                 //Don't move if source and destination are the same
                 if (sourceParentDeepFeedId === targetParentDeepFeedId) {
@@ -354,14 +350,14 @@ const BaseLayout = () => {
                         setTimeout(() => { setAsideErrorMessage(''); }, 5000);
                     }
                 } catch (error) {
-                    //console.log("Error moving feed between deep feeds", error);
+                    console.log("Error moving feed between deep feeds", error);
                     setAsideErrorMessage("Error moving feed between deep feeds");
                     setTimeout(() => { setAsideErrorMessage(''); }, 5000);
                 }
             }
             //Case 5: Moving nested deep feed from one deep feed to another
             else if (dragType === 'nestedDeepFeed' && typeof overId === 'string' && overId.startsWith('df-')) {
-                //console.log("case 5");
+                console.log("case 5");
                 const nestedDeepFeedId = activeDragItem.nestedDeepFeed.deep_feed_id;
                 if (sourceParentDeepFeedId === targetParentDeepFeedId) {
                     setActiveId(null);
@@ -404,7 +400,7 @@ const BaseLayout = () => {
                 }
             }
         } catch (error) {
-            //console.log("Error in drag operation", error);
+            console.log("Error in drag operation", error);
             setAsideErrorMessage("Error in drag operation");
         }
         setActiveId(null);
