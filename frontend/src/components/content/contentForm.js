@@ -3,12 +3,14 @@ import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd'
 import { useNavigate, useParams } from 'react-router-dom'
 import PropTypes from 'prop-types'
 import React, { useCallback, useContext, useEffect, useRef, useState } from 'react'
-import { FaAlignCenter, FaArrowCircleUp, FaArrowRight, FaCircleNotch, FaCommentAlt, FaEdit, FaEllipsisV, FaEye, FaFont, FaLink, FaPhotoVideo, FaPlus, FaReply, FaSave, FaShareAlt, FaTerminal, FaTimes, FaToolbox, FaTrash, FaWindowClose } from 'react-icons/fa'
+import { FaAlignCenter, FaArrowCircleUp, FaArrowRight, FaCircleNotch, FaCommentAlt, FaCrop, FaEdit, FaEllipsisV, FaEye, FaFont, FaLink, FaPhotoVideo, FaRegLightbulb, FaReply, FaSave, FaShareAlt, FaTerminal, FaTimes, FaToolbox, FaTrash, FaWindowClose } from 'react-icons/fa'
 import ReactQuill from 'react-quill'
 import 'react-quill/dist/quill.snow.css'
 import { v4 } from 'uuid'
 import { AuthContext } from '../authContext'
 import ContentWidget from './contentWidget'
+import Cropper from 'react-easy-crop';
+import GetCroppedImg from '../getCroppedImg'
 
 const BLOCK_TYPES = { CODE: 'CODE', MEDIA: 'MEDIA', TEXT: 'TEXT' }
 
@@ -65,6 +67,7 @@ const ContentForm = ({ feed, isEdit = false, isGroup, isReply, onSubmit, post = 
 	const [editMode, setEditMode] = useState(true)
 	const [formErrorMessage, setFormErrorMessage] = useState('')
 	const [blockLimitError, setBlockLimitError] = useState('')
+	const [cropState, setCropState] = useState({});
 	const [globalAiPrompt, setGlobalAiPrompt] = useState('')
 	const [isGlobalLoading, setIsGlobalLoading] = useState(false)
 	const [showGlobalAiPrompt, setShowGlobalAiPrompt] = useState(false)
@@ -149,6 +152,34 @@ const ContentForm = ({ feed, isEdit = false, isGroup, isReply, onSubmit, post = 
 			setBlocks(updatedBlocks);
 		}
 	}
+
+	const applyCrop = useCallback(async (blockId) => {
+		const blockCropState = cropState[blockId];
+		if (!blockCropState || !blockCropState.croppedAreaPixels) return;
+		try {
+			const block = blocks.find(b => b.id === blockId);
+			if (!block || !block.data.isImage) return;
+			const croppedBlob = await GetCroppedImg(block.data.url, blockCropState.croppedAreaPixels);
+			const croppedUrl = URL.createObjectURL(croppedBlob);
+			const filename = `cropped-${Date.now()}.jpg`;
+			const croppedFile = new File([croppedBlob], filename, { type: 'image/jpeg' });
+			updateBlock({
+				id: blockId,
+				data: {
+				...block.data,
+				file: croppedFile,
+				url: croppedUrl
+				}
+			});
+			setCropState(prev => {
+				const newState = { ...prev };
+				delete newState[blockId];
+				return newState;
+			});
+		} catch (error) {
+		  setFormErrorMessage('Failed to crop image. Please try again.');
+		}
+	}, [blocks, cropState, updateBlock, setFormErrorMessage]);
 
 	const isContentEmpty = useCallback(blocksArray => !blocksArray.some(block => {
 		if (block.type === BLOCK_TYPES.TEXT) return block.data.html && block.data.html.trim() !== ''
@@ -742,6 +773,16 @@ const ContentForm = ({ feed, isEdit = false, isGroup, isReply, onSubmit, post = 
 		}
 	}, [blocks, compileFinalHTML, isContentEmpty, isEdit, isReply, channel_name, feed_name, navigate, onSubmit, post, setShowForm, title, urlPrefix])
 
+	const onCropComplete = useCallback((blockId, croppedAreaPixels) => {
+		setCropState(prev => ({
+			...prev,
+			[blockId]: {
+				...prev[blockId],
+				croppedAreaPixels  
+			}
+		}));
+	}, []);
+
 	const toggleMediaAlignment = useCallback(block => {
 		const newAlign = block.data.align === 'left' ? 'center' : 'left'
 		updateBlock({ ...block, data: { ...block.data, align: newAlign } })
@@ -764,7 +805,7 @@ const ContentForm = ({ feed, isEdit = false, isGroup, isReply, onSubmit, post = 
 								{editMode ? <FaEye /> : <FaEdit />}
 							</button>
 							{!showGlobalAiPrompt ? (
-								<button className="small-icon" onClick={() => setShowGlobalAiPrompt(true)} title="Assistance" type="button"><FaPlus /></button>
+								<button className="small-icon" onClick={() => setShowGlobalAiPrompt(true)} title="Assistance" type="button"><FaRegLightbulb /></button>
 							) : (
 								<button className="small-icon" onClick={() => setShowGlobalAiPrompt(false)} title="Hide assistance" type="button"><FaTimes /></button>
 							)}
@@ -828,7 +869,7 @@ const ContentForm = ({ feed, isEdit = false, isGroup, isReply, onSubmit, post = 
 							onClick={handleGenerateFullContent} 
 							title={limitReached ? "Usage limit reached" : isGlobalLoading ? 'Creating...' : !globalAiPrompt.trim() ? 'Enter a prompt' : 'Create'} 
 							type="button">
-							{isGlobalLoading ? <FaCircleNotch /> : <FaArrowCircleUp />}
+							{isGlobalLoading ? <FaCircleNotch className="spinner" /> : <FaArrowCircleUp />}
 						</button>
 					</div>
 				)}
@@ -845,7 +886,7 @@ const ContentForm = ({ feed, isEdit = false, isGroup, isReply, onSubmit, post = 
 											const { data, id, isEditing, type } = block
 											const toggleEdit = () => updateBlock({ ...block, isEditing: !isEditing })
 											return (
-												<Draggable key={id} draggableId={id} index={index}>
+												<Draggable key={id} draggableId={id} index={index} isDragDisabled={cropState[id]?.isCropping}>
 													{provided2 => (
 														<div className="block" ref={provided2.innerRef} style={{ marginBottom: '20px' }} {...provided2.draggableProps} {...provided2.dragHandleProps}>
 															<div className="block-controls" style={{ display: 'flex', justifyContent: 'space-between' }}>
@@ -862,8 +903,30 @@ const ContentForm = ({ feed, isEdit = false, isGroup, isReply, onSubmit, post = 
 																</div>
 																{isEditing && type === BLOCK_TYPES.CODE && <p className="text16" style={{color: '#7b7b7b', marginLeft: '0px'}}>Click on elements to edit them (may be glitchy)</p>}
 																<div style={{ position: 'relative' }}>
-																	{type === BLOCK_TYPES.MEDIA && (
-																		<button className="small-icon" onClick={() => toggleMediaAlignment(block)} title="Centre media" type="button"><FaAlignCenter /></button>
+																{type === BLOCK_TYPES.MEDIA && (
+																	<div style={{ position: 'relative', display: 'flex', gap: '10px' }}>
+																		{data.isImage && (
+																		<button 
+																			className="small-icon" 
+																			onClick={() => setCropState(prev => ({
+																			...prev,
+																			[id]: {
+																				isCropping: true,
+																				crop: { x: 0, y: 0 },
+																				zoom: 1,
+																				croppedAreaPixels: null
+																			}
+																			}))} 
+																			title="Crop image" 
+																			type="button"
+																		>
+																			<FaCrop /><p className="icon-text">Crop</p>
+																		</button>
+																		)}
+																		<button className="small-icon" onClick={() => toggleMediaAlignment(block)} title="Centre media" type="button">
+																			<FaAlignCenter />
+																		</button>
+																	</div>
 																	)}
 																	{type === BLOCK_TYPES.CODE && (
 																	<>
@@ -881,7 +944,7 @@ const ContentForm = ({ feed, isEdit = false, isGroup, isReply, onSubmit, post = 
 																		</div>
 																		)}
 																	</>
-																	)}
+																)}
 																</div>
 															</div>
 															{type === BLOCK_TYPES.TEXT && (
@@ -983,14 +1046,62 @@ const ContentForm = ({ feed, isEdit = false, isGroup, isReply, onSubmit, post = 
 															)}
 															{type === BLOCK_TYPES.MEDIA && (
 																<div className="media-preview">
+																	{cropState[id]?.isCropping && data.isImage ? (
+																		<div>
+																			<div className="crop-container" style={{ position: 'relative', width: '100%', height: 300 }}>
+																				<Cropper
+																					image={data.url}
+																					crop={cropState[id]?.crop || { x: 0, y: 0 }}
+																					zoom={cropState[id]?.zoom || 1}
+																					aspect={4/3}
+																					onCropChange={(crop) => setCropState(prev => ({
+																						...prev,
+																						[id]: {
+																							...prev[id],
+																							crop
+																						}
+																					}))}
+																					onCropComplete={(_, croppedPixels) => onCropComplete(id, croppedPixels)}
+																					onZoomChange={(zoom) => setCropState(prev => ({
+																						...prev,
+																						[id]: {
+																							...prev[id],
+																							zoom
+																						}
+																					}))}
+																					onInteractionStart={() => {}}
+																				/>
+																			</div>
+																			<div className="crop-controls" style={{ display: 'flex', justifyContent: 'center', marginTop: 10, gap: 10 }}>
+																				<button 
+																					className="small-icon"
+																					onClick={() => setCropState(prev => {
+																						const newState = { ...prev };
+																						delete newState[id];
+																						return newState;
+																					})}
+																					title="Cancel" 
+																					type="button"
+																				>
+																					<FaTimes /><p className="icon-text">Cancel</p>
+																				</button>
+																				<button className="small-icon" onClick={() => applyCrop(id)} title="Apply Crop" type="button">
+																					<FaSave /><p className="icon-text">Apply</p>
+																				</button>
+																		</div>
+																</div>
+															) : (
+																<>
 																	{data.isImage ? (
-																		<img alt="Uploaded Media" src={data.url} style={data.align === 'center' ? { display: 'block', margin: '0 auto', maxWidth: '100%', height: 'auto' } : { maxWidth: '100%', height: 'auto' }} />
+																	<img alt="Uploaded Media" src={data.url} style={data.align === 'center' ? { display: 'block', margin: '0 auto', maxWidth: '100%', height: 'auto' } : { maxWidth: '100%', height: 'auto' }} />
 																	) : data.isVideo ? (
 																		<video controls src={data.url} style={data.align === 'center' ? { display: 'block', margin: '0 auto', maxWidth: '100%', height: 'auto' } : { maxWidth: '100%', height: 'auto' }} />
 																	) : (
 																		<p>Unsupported</p>
 																	)}
-																</div>
+																</>
+															)}
+															</div>
 															)}
 														</div>
 													)}
