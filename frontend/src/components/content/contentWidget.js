@@ -9,6 +9,7 @@ import ReplyTreeView from './replyTreeView';
 import PropTypes from 'prop-types';
 
 const ContentWidget = ({ canRemove, feed, isGroup, onEditClick, onPostRemoved, onReplyClick, parent, post, readOnly = false }) => {
+  const [canRemoveState, setCanRemoveState] = useState(canRemove);
   const [downvoteLimit, setDownvoteLimit] = useState(false);
   const [downvotes, setDownvotes] = useState(post.downvotes);
   const { feed_name, channel_name, post_id } = useParams();
@@ -115,8 +116,6 @@ const ContentWidget = ({ canRemove, feed, isGroup, onEditClick, onPostRemoved, o
       navigate('/login', { state: {from: window.location.pathname} });
     }
   };
-  
-  const [canRemoveState, setCanRemoveState] = useState(canRemove);
   
   useEffect(() => {
     if (isAuthenticated && (isViewingOwnPost || feed?.isAdmin || feed?.isModerator) && !canRemoveState) {
@@ -281,7 +280,7 @@ const ContentWidget = ({ canRemove, feed, isGroup, onEditClick, onPostRemoved, o
             <FaEdit />
           </button>
         )}
-        {isAuthenticated && canRemove && !readOnly && (
+        {isAuthenticated && canRemoveState && !readOnly && (
           <button className="large-icon" onClick={removePost} title={isReply ? "Delete Reply" : "Delete Post"}>
             <FaTimesCircle />
           </button>
