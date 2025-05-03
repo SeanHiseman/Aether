@@ -1,3 +1,4 @@
+//This form needs splitting into multiple components, it's too long and complex
 import axios from 'axios'
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd'
 import { useNavigate, useParams } from 'react-router-dom'
@@ -39,7 +40,7 @@ const parseContentBlocks = (htmlString) => {
 		} else if (blockClass.includes('media-block')) {
 			const img = div.querySelector('img')
 			const video = div.querySelector('video')
-			const align = div.getAttribute('data-align') || 'left'
+			const align = div.getAttribute('data-align') || 'center'
 			if (img) {
 				result.push({ data: { file: null, fileType: 'image/*', isImage: true, isVideo: false, url: img.getAttribute('src'), align }, id: blockId, isEditing: false, type: BLOCK_TYPES.MEDIA })
 			} else if (video) {
@@ -117,41 +118,46 @@ const ContentForm = ({ feed, isEdit = false, isGroup, isReply, onSubmit, post = 
 	}
 		
 	const addSocialMedia = (blockId) => {
-		const url = prompt('Enter the social media embed code or URL:');
-		if (url) {
-			const updatedBlocks = blocks.map(block => {
-				if (block.id === blockId && block.type === BLOCK_TYPES.CODE) {
-					let embedCode = url;
-					if (url.trim().startsWith('http') && !url.includes('<')) { 	//If it looks like just a URL, validate and wrap it
-						try {
-							const parsedUrl = new URL(url); //Validate URL format
-							if (parsedUrl.protocol !== 'http:' && parsedUrl.protocol !== 'https:') {
-								alert('Please enter a valid http or https URL');
-								return block;
-							}
-							embedCode = `<div class="social-media-embed" style="width:100%; overflow:hidden;">
-								<!-- Social media embed for ${parsedUrl.href} -->
-								<a href="${parsedUrl.href}" target="_blank" rel="noopener noreferrer">${parsedUrl.href}</a>
-								<!-- Replace this comment with proper embed code if available -->
-								</div>`;
-						} catch (error) {
-							alert('Please enter a valid URL or embed code');
-							return block;
-						}
-					}
-					return { 
-						...block, 
-						data: { 
-							...block.data, 
-							code: block.data.code ? block.data.code + '\n\n' + embedCode : embedCode 
-						} 
-					};
-				}
+		const input = prompt('Enter the social media embed code or URL:');
+		if (!input) return;
+		const updatedBlocks = blocks.map(block => {
+		  	if (block.id !== blockId || block.type !== BLOCK_TYPES.CODE) {
 				return block;
-			});
-			setBlocks(updatedBlocks);
-		}
-	}
+		  	}
+		  	let embedCode = input.trim();
+			if (embedCode.startsWith('http') && !embedCode.includes('<')) {
+				try {
+					const parsed = new URL(embedCode);
+					if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+						alert('Please enter a valid http or https URL');
+						return block;
+					}
+					embedCode = `<a href="${parsed.href}" target="_blank" rel="noopener noreferrer">${parsed.href}</a>`;
+				}
+				catch (e) {
+					alert('Please enter a valid URL or embed code');
+					return block;
+				}
+			}
+			if (!embedCode.startsWith('<div class="social-media-embed"')) {
+				embedCode =
+				`<div class="social-media-embed" ` +
+				`style="width:100%;display:flex;justify-content:center;overflow:hidden;">` +
+					embedCode +
+				`</div>`;
+			}
+			return {
+				...block,
+				data: {
+				...block.data,
+				code: block.data.code
+					? block.data.code + '\n\n' + embedCode
+					: embedCode
+				}
+			};
+		});
+		setBlocks(updatedBlocks);
+	};
 
 	const applyCrop = useCallback(async (blockId) => {
 		const blockCropState = cropState[blockId];
@@ -603,7 +609,7 @@ const ContentForm = ({ feed, isEdit = false, isGroup, isReply, onSubmit, post = 
 			return new File([file], uniqueName, { type: file.type })
 		})
 		const mediaBlocks = uniqueFiles.map(file => ({
-			data: { file, fileType: file.type, isImage: file.type.startsWith('image/'), isVideo: file.type.startsWith('video/'), url: URL.createObjectURL(file), align: 'left' },
+			data: { file, fileType: file.type, isImage: file.type.startsWith('image/'), isVideo: file.type.startsWith('video/'), url: URL.createObjectURL(file), align: 'center' },
 			id: v4(),
 			isEditing: false,
 			type: BLOCK_TYPES.MEDIA
@@ -784,7 +790,10 @@ const ContentForm = ({ feed, isEdit = false, isGroup, isReply, onSubmit, post = 
 	}, []);
 
 	const toggleMediaAlignment = useCallback(block => {
-		const newAlign = block.data.align === 'left' ? 'center' : 'left'
+		let newAlign;
+		if (block.data.align === 'center') newAlign = 'left' 
+		else if (block.data.align === 'left') newAlign = 'center' 
+		else newAlign = 'center'
 		updateBlock({ ...block, data: { ...block.data, align: newAlign } })
 	}, [updateBlock])
 
@@ -923,7 +932,7 @@ const ContentForm = ({ feed, isEdit = false, isGroup, isReply, onSubmit, post = 
 																			<FaCrop /><p className="icon-text">Crop</p>
 																		</button>
 																		)}
-																		<button className="small-icon" onClick={() => toggleMediaAlignment(block)} title="Centre media" type="button">
+																		<button className="small-icon" onClick={() => toggleMediaAlignment(block)} title={block.data.align === 'center' ? "Align left" : "Align centre"} type="button">
 																			<FaAlignCenter />
 																		</button>
 																	</div>
