@@ -60,8 +60,9 @@ const App = () => {
 									<Route path=":chatId" element={<AskChannel />} />
 								</Route>
 								<Route path="g/:feed_name" element={<FeedWrapper />}>
-									<Route index element={<Navigate replace to="Main" />} />
-									<Route path=":channel_name" element={<FeedHome />} >
+									<Route index element={<Navigate to="Main" replace />} />
+										<Route path=":channel_name" element={<FeedHome />}>
+										<Route path="drafts" element={<FeedHome />} />
 										<Route path=":post_id" element={<ContentWidget />} />
 									</Route>
 								</Route>
@@ -72,8 +73,9 @@ const App = () => {
 								<Route path="d/:deep_feed_id" element={<ProtectedRoute><DeepFeed/></ProtectedRoute>} />
 								<Route path="search" element={<SearchResults />} />
 								<Route path="u/:feed_name" element={<FeedWrapper />}>
-									<Route index element={<Navigate replace to="Main" />} />
-									<Route path=":channel_name" element={<FeedHome />} >
+									<Route index element={<Navigate to="Main" replace />} />
+										<Route path=":channel_name" element={<FeedHome />}>
+										<Route path="drafts" element={<FeedHome />} />
 										<Route path=":post_id" element={<ContentWidget />} />
 									</Route>
 								</Route>

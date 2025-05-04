@@ -760,12 +760,12 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onSubm
                 formData.append('post_id', postId)
             } else postId = post.post_id
             formData.append('content', finalHTML)
-            if (!post) { //draft that hasn't yet been saved needs an ids
-                formData.append('draft_id', draftId);
-            } 
+            console.log("post:", post);
+            if (!post) { formData.append('draft_id', draftId) }
             if (isReply && post) formData.append('parent_id', post.post_id)
             if (!isReply) formData.append('title', title)
             blocks.filter(b => b.type === BLOCK_TYPES.MEDIA && b.data.file).forEach(mediaBlock => formData.append('files', mediaBlock.data.file))
+            console.log("submitting post");
             await onSubmit(formData);
             setTitle('')
             setBlocks([])
@@ -776,7 +776,7 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onSubm
             setFormErrorMessage('Error submitting the form.')
             setTimeout(() => { setFormErrorMessage(''); }, 5000);
         }
-    }, [blocks, compileFinalHTML, draftId, isContentEmpty, isEdit, isReply, channel_name, feed_name, navigate, onSubmit, post, setShowForm, title, urlPrefix])
+    }, [blocks, compileFinalHTML, isContentEmpty, isEdit, isReply, channel_name, feed_name, navigate, onSubmit, post, setShowForm, title, urlPrefix])
 
     const onCropComplete = useCallback((blockId, croppedAreaPixels) => {
         setCropState(prev => ({
@@ -813,21 +813,20 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onSubm
         formData.append('feed_id',   feed.feed_id);
         formData.append('channel_id',channelId);
         formData.append('poster_id', viewer.feed_id);
-        let id = draftId;
-        if (!id) {
-            id = v4();
-            setDraftId(id);
-        }
-        console.log("using draft_id:", id);
-        formData.append('draft_id', id);
+        //let id = draftId
+        //if (!id) {
+          //id = v4()
+          //setDraftId(id)
+        //}
+        //formData.append('draft_id', id);
+        //console.log("contentForm id:", id);
+        //console.log("contentForm formData.draft_id:", formData.draft_id);
         try {
             const response = await axios.post('/api/create_draft', formData, { headers: { 'Content-Type': 'multipart/form-data' }});
             if (response.data.success) {
                 setFormErrorMessage('Draft saved!');
                 setTimeout(() => setFormErrorMessage(''), 3000);
-                console.log("response.data.draft:", response.data.draft);
                 const [savedDraft] = response.data.draft;
-                console.log("savedDraft.draft_id:", savedDraft.draft_id);
                 setDraftId(savedDraft.draft_id);
             }
         }
@@ -835,7 +834,7 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onSubm
             setFormErrorMessage('Error saving draft.');
             setTimeout(() => setFormErrorMessage(''), 5000);
         }
-    }, [blocks, compileFinalHTML, draftId, isContentEmpty, isReply, post, title, feed, channelId, viewer]);
+    }, [blocks, compileFinalHTML, isContentEmpty, isReply, post, title, feed, channelId, viewer]);
 
     const toggleMediaAlignment = useCallback(block => {
         let newAlign;

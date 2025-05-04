@@ -1,9 +1,9 @@
 import axios from 'axios';
 import { AuthContext } from '../../components/authContext';
-import { FaCog, FaEdit, FaFeatherAlt, FaFolder, FaFolderOpen, FaMinus, FaPlus, FaRegWindowClose, FaSave, FaTrash } from 'react-icons/fa';
+import { FaCog, FaEdit, FaFeatherAlt, FaMinus, FaPlus, FaRegWindowClose, FaSave, FaTrash } from 'react-icons/fa';
 import { Tooltip } from 'react-tooltip';
 import React, { useContext, useEffect, useState } from 'react';
-import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import ChannelList from '../../components/channels/channelList';
 import ChatChannel from '../../components/channels/chatChannel';
 import ContentForm from '../../components/content/contentForm';
@@ -33,11 +33,10 @@ const FeedHome = () => {
     const [postToEdit, setPostToEdit] = useState(null);
     const [replyingToPost, setReplyingToPost] = useState(null); 
     const [showChannelForm, setShowChannelForm] = useState(false);
+    const [showDrafts, setShowDrafts] = useState(false);
     const [showPostForm, setShowPostForm] = useState(false);
     const { isAuthenticated, user, viewer } = useContext(AuthContext);
-    const location = useLocation();
     const navigate = useNavigate();
-    const showDrafts = location.pathname.endsWith('/drafts');
     const urlPrefix = feed.is_group ? 'g' : 'u';
 
     useEffect(() => {
@@ -94,11 +93,9 @@ const FeedHome = () => {
         }
     }, [showDrafts, channel_name])
 
-    useEffect(() => {
-        if (!showDrafts) {
-            setDraftPosts([]);
-        }
-    }, [feed_name, channel_name, showDrafts]);
+    useEffect(() => { //Clear drafts when switching away 
+        setShowDrafts(false)
+    }, [channel_name])
 
     const AddChannel = async (event) => {
         event.preventDefault();
@@ -264,13 +261,8 @@ const FeedHome = () => {
             await axios.post('/api/create_post', formData, {
                 headers: { 'Content-Type': 'multipart/form-data' },
             });
-            const draftId = formData.get('draft_id')
-            await axios.delete('/api/remove_draft', {
-                headers: { 'Content-Type': 'application/json' },
-                data: {   
-                    draft: { draft_id: draftId }
-                }
-            });       
+            console.log("draftId handle submit:", formData.draft_id);
+            const draftResponse = await axios.post('/api/remove_draft', { draft_id: formData.draft_id } ); console.log("remove draft response:", draftResponse)
             setShowPostForm(false);
         } catch (error) {
             if (error.response && error.response.status === 413) {
@@ -280,14 +272,6 @@ const FeedHome = () => {
                 setPostErrorMessage(error.response.data.message || "Error creating post");
                 setTimeout(() => { setFeedErrorMessage(''); }, 3000);
             }
-        }
-    };
-
-    const handleToggleDrafts = () => {
-        if (showDrafts) {
-            navigate(`/${urlLetter}/${feed_name}/${channel_name}`);
-        } else {
-            navigate(`/${urlLetter}/${feed_name}/${channel_name}/drafts`);
         }
     };
 
@@ -350,7 +334,7 @@ const FeedHome = () => {
                         feed={feed}
                         isDraft={true}
                         isGroup={feed.is_group}
-                        onEditClick={(post) => { console.log("clicking edit button with post:", post); setShowPostForm(true); setIsEdit(true); setPostToEdit(post); handleToggleDrafts(); }}
+                        onEditClick={(post) => { setShowPostForm(true); setIsEdit(true); setPostToEdit(post); }}
                         onReplyClick={null}
                         posts={draftPosts}
                     />
@@ -459,7 +443,7 @@ const FeedHome = () => {
                                             {showChannelForm ? <FaMinus /> : <FaPlus />}
                                         </button>
                                     )}
-                                    {channelMode === 'post' && !showPostForm && (feed.is_group || feed.feed_owner === user?.user_id) && (!isLocked || isAdmin) && isAuthenticated && (
+                                    {channelMode === "post" && !showPostForm && (feed.is_group || feed.feed_owner === user?.user_id) && (!isLocked || isAdmin) && isAuthenticated && ( 
                                         <button
                                             className="small-icon"
                                             onClick={() => {
@@ -472,12 +456,19 @@ const FeedHome = () => {
                                             <FaFeatherAlt />
                                         </button>
                                     )}
-                                    {showPostForm && (
-                                        <button className="small-icon" onClick={handleToggleDrafts} title={showDrafts ? 'Hide Drafts' : 'Show Drafts'}>
-                                            {showDrafts ? <FaFolder /> : <FaFolderOpen />}<p className="icon-text">{showDrafts ? "Hide drafts" : "Drafts"}</p>
-                                        </button>
-                                    )}
                                 </div>
+                                {showPostForm && (
+                                    <button
+                                        className="small-icon"
+                                        onClick={() => {
+                                            setShowDrafts(prev => !prev)
+                                            setShowPostForm(false)
+                                        }}
+                                        title={showDrafts ? 'Hide Drafts' : 'Show Drafts'}
+                                    >
+                                        Drafts
+                                    </button>
+                                )}
                                 {showChannelForm && (
                                     <form className="add-channel-form" onSubmit={AddChannel}>
                                         <input 
