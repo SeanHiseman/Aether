@@ -69,7 +69,7 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onSubm
     const [formErrorMessage, setFormErrorMessage] = useState('')
     const [blockLimitError, setBlockLimitError] = useState('')
     const [cropState, setCropState] = useState({});
-    const [draftId, setDraftId] = useState(null);
+    const [draftId, setDraftId] = useState(post?.draft_id || null)
     const [globalAiPrompt, setGlobalAiPrompt] = useState('')
     const [isGlobalLoading, setIsGlobalLoading] = useState(false)
     const [showGlobalAiPrompt, setShowGlobalAiPrompt] = useState(false)
@@ -80,7 +80,7 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onSubm
     const urlPrefix = isGroup ? 'g' : 'u'
     const { user, viewer } = useContext(AuthContext)
     const hasMembership = user?.has_membership
-    const isDraft = Boolean(draftId) && !isEdit && !isReply //May need to be changed to allow replies as drafts
+    const isDraft = Boolean(draftId)
     const BLOCK_LIMIT = hasMembership ? 10000 : 10
     const limitReached = user.usage_count >= usageLimit
     const MAX_FILE_SIZE = hasMembership ? 100 * 1024 * 1024 : 1 * 1024 * 1024
