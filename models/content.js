@@ -18,6 +18,18 @@ const Posts = sequelize.define('posts', {
     points: { type: INTEGER, allowNull: false, defaultValue: 0 },
 }, { tableName: 'posts', timestamps: false });
 
+const PostDrafts = sequelize.define('post_drafts', {
+    draft_id: { type: STRING(36), primaryKey: true },
+    parent_id: { type: STRING(36), allowNull: true },
+    feed_id: { type: STRING(36), allowNull: false },
+    channel_id: { type: STRING(36), allowNull: false },
+    title: { type: STRING(120), allowNull: true },
+    content: { type: TEXT, allowNull: false },
+    poster_id: { type: STRING(36), allowNull: false },
+    created_at: { type: DataTypes.DATE(3), defaultValue: sequelize.literal('CURRENT_TIMESTAMP(3)') },
+    updated_at: { type: DataTypes.DATE(3), defaultValue: sequelize.literal('CURRENT_TIMESTAMP(3)'), onUpdate : sequelize.literal('CURRENT_TIMESTAMP(3)') },
+}, { tableName: 'post_drafts', timestamps: false });
+
 const PostNotes = sequelize.define('post_notes', {
     note_id: { type: STRING(36), primaryKey: true },
     post_id: { type: STRING(36), allowNull: false, references: { model: 'posts', key: 'post_id' }},
@@ -46,6 +58,7 @@ const Prompts = sequelize.define('prompts', {
 
 export {
     Posts,
+    PostDrafts,
     PostNotes,
     PostVotes,
     Prompts

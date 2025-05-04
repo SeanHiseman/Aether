@@ -3,7 +3,7 @@ import deleteMedia from '../functions/media_handling/deleteMedia.js';
 import cheerio from 'cheerio';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
-import { Feeds, FeedChannels, Posts, PostNotes, PostVotes, Users } from '../models/relationships.js';
+import { Feeds, FeedChannels, Posts, PostDrafts, PostNotes, PostVotes, Users } from '../models/relationships.js';
 import multer from 'multer';
 import { Router } from 'express';
 import path from 'path';
@@ -212,6 +212,46 @@ const post_upload = multer({
     storage: post_storage
 });
 
+router.post('/create_draft', authenticateCheck, checkStorageLimit, post_upload.array('files'), async (req, res) => {
+    try {
+        let { draft_id, feed_id, channel_id, parent_id, content, title, poster_id } = req.body
+        //console.log("create draft req.body:", req.body);
+        if (!draft_id) draft_id = v4()
+        const $ = cheerio.load(content, { decodeEntities:false })
+        let fileIdx = 0
+        $('img[src^="blob:"], video[src^="blob:"]').each((i, el) => {
+            const file = req.files[fileIdx++]
+            if (!file) return
+            const src = `/media/content/${file.filename}`
+            if (el.tagName==='img') {
+                $(el).attr('src', src)
+                .removeAttr('blob:')
+            } else {
+                $(el).empty()
+                .append(`<source src="${src}" type="${file.mimetype}">`)
+            }
+        })
+        const modifiedContent = $.html()
+        const draft = await PostDrafts.upsert({
+            draft_id, feed_id, channel_id,
+            parent_id: parent_id||null,
+            content: modifiedContent,
+            title: title||null,
+            poster_id
+        });
+        console.log("created draft:", draft);
+        return res.status(200).json({ success: true, draft: draft })
+    } catch(error) {
+        console.log("error creating draft:", error);
+        if (req.files) {
+            req.files.forEach(f => {
+                fs.unlinkSync(path.join(__dirname,'../media/content',f.filename))
+            })
+        }
+        return res.status(500).json({ success: false, error: error.message })
+    }
+});
+
 router.post('/create_post', authenticateCheck, checkStorageLimit, post_upload.array('files'), async (req, res) => {
     try {
         let { channel_id, content, feed_id, parent_id, post_id, poster_id, title } = req.body;
@@ -275,8 +315,8 @@ router.post('/create_post', authenticateCheck, checkStorageLimit, post_upload.ar
             req.files.forEach(file => {
                 try {
                     fs.unlinkSync(path.join(mediaDir, file.filename));
-                } catch (err) {
-                    console.error('Error deleting file:', err);
+                } catch (error) {
+                    return res.status(500).json({ success: false, error: error.message });
                 }
             });
         }
@@ -345,6 +385,33 @@ router.post('/edit_post', authenticateCheck, checkStorageLimit, post_upload.arra
     }
 });
 
+router.get('/get_post_drafts', authenticateCheck, async (req, res) => {
+    try {
+        const { channel_id, poster_id, limit = 10, offset = 0 } = req.query;
+        const drafts = await PostDrafts.findAll({
+            where: { channel_id, poster_id },
+            order: [['updated_at','DESC']],
+            limit:  parseInt(limit,  10),
+            offset: parseInt(offset, 10)
+        });
+        return res.status(200).json({ drafts });
+    } catch (error) {
+        return res.status(500).json({ error: 'Failed to load drafts' });
+    }
+});
+
+router.delete('/remove_draft', authenticateCheck, async (req, res) => {
+    try {
+        const { draft } = req.body;
+        const foundDraft = await PostDrafts.findByPk(draft.draft_id);
+        deleteMedia(foundDraft.content);
+        await PostDrafts.destroy({ where: { draft_id: draft.draft_id } });
+        res.status(200).json({ success: true });
+    } catch (error) {
+        res.status(500).json({ success: false });
+    }
+});
+
 router.delete('/remove_post', authenticateCheck, async (req, res) => {
     let transaction;
     try {
@@ -357,9 +424,9 @@ router.delete('/remove_post', authenticateCheck, async (req, res) => {
             parentPost.replies -= 1;
             await parentPost.save();
         }
-        await PostVotes.destroy({ where: { post_id: post.post_id }, transaction: transaction });
-        await PostNotes.destroy({ where: { post_id: post.post_id }, transaction: transaction });
-        await Posts.destroy({ where: { post_id: post.post_id }, transaction: transaction });
+        await PostVotes.destroy({ where: { post_id: post.post_id }, transaction });
+        await PostNotes.destroy({ where: { post_id: post.post_id }, transaction });
+        await Posts.destroy({ where: { post_id: post.post_id }, transaction });
         await transaction.commit();
         res.status(200).json({ success: true });
     } catch (error) {

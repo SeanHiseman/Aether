@@ -24,7 +24,9 @@ const PostChannel = ({ channelId, channelName, feed, isDraft, isGroup, onEditCli
     };
     
     const getDrafts = async ({ pageParam = 0 }) => {
+        console.log("getting drafts");
         const response = await axios.get('/api/get_post_drafts', { params: { channel_id: channelId, poster_id: viewer?.feed_id, limit: PAGE_SIZE, offset: pageParam }});
+        console.log("response:", response);
         return response.data.drafts; 
     };
 

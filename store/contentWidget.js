@@ -148,7 +148,8 @@ const ContentWidget = ({ canRemove, feed, isDraft, isGroup, onEditClick, onPostR
   }, [isViewingOwnPost, feed?.isAdmin, feed?.isModerator, canRemoveState, isAuthenticated]);
 
   useEffect(() => {
-    if (!isAuthenticated || isDraft) return;
+    //if (!isAuthenticated || isDraft) return;
+    if (!isAuthenticated) return;
     const checkVoteLimit = async () => {
       try {
         const response = await axios.post('/api/content_vote', {
@@ -298,7 +299,7 @@ const ContentWidget = ({ canRemove, feed, isDraft, isGroup, onEditClick, onPostR
           </>
         )}
         {!isDraft && (<p className="text16">{views} {views === 1 ? 'view' : 'views'}</p>)}
-        <p className="text16" style={{margin: '0px'}}>{new Date(post.created_at).toLocaleDateString()}</p>
+        <p className="text16" style={'margin: 0px'}>{new Date(post.created_at).toLocaleDateString()}</p>
         {isAuthenticated && post.poster_id === viewer.feed_id && !readOnly && (
           <button className="large-icon" onClick={() => onEditClick(post)} title={isReply ? "Edit Reply" : isDraft ? "Edit draft" : "Edit Post"}>
             <FaEdit />
