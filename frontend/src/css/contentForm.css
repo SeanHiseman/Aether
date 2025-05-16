@@ -147,6 +147,7 @@
   display: flex;
   flex-direction: column;
   height: auto;
+  min-height: 30%;
   padding: 20px;
   width: 100%;
 }
@@ -176,8 +177,10 @@
   flex-direction: column; 
   gap: 20px; 
 }
+.single-container {
+  min-height: 46%;
+}
 .single-container.edit {
-  border: 1px solid var(--border);
   border-radius: 5px;
   padding: var(--medium-margin);
   padding-bottom: 0;
@@ -191,7 +194,6 @@
 }
 .title-input {
   background-color: var(--dark);
-  border: 1px solid var(--border);
   border-radius: 5px;
   box-sizing: border-box;
   color: var(--border);
