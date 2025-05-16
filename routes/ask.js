@@ -11,9 +11,9 @@ import sequelize from '../databaseSetup.js';
 dotenv.config();
 const openai = new OpenAI();
 const router = Router();
-const anthropic = new Anthropic({
-    apiKey: process.env.ANTHROPIC_API_KEY
-});
+//const anthropic = new Anthropic({ 
+    //apiKey: process.env.ANTHROPIC_API_KEY
+//});
  
 router.post('/ask_button', authenticateCheck, async (req, res) => {
     try {
@@ -131,6 +131,8 @@ router.post('/generate_content', authenticateCheck, async (req, res) => {
     try {
         const { currentCode, request, parentCode, senderId } = req.body;
         const user = await Users.findOne({ where: { user_id: senderId } });
+        const model = user.has_membership ? 'gpt-o4-mini' : 'gpt-4.1-mini'; 
+        const tokenMultiplier = user.has_membership ? 11 : 4; //o4-mini 11x more than 4.1-nano baseline
         const normalizedRequest = request.toLowerCase().trim();
         const commonWords = ['a', 'an', 'the', 'and', 'or', 'but', 'is', 'are', 'was', 'were', 'to', 'of', 'in', 'with', 'for', 'on', 'at', 'by'];
         const tokens = normalizedRequest.split(/\s+/)
@@ -200,31 +202,28 @@ router.post('/generate_content', authenticateCheck, async (req, res) => {
             });
         }
         const assistantInstructions = parentCode
-            ? `You are an expert HTML/JavaScript code generator. Generate or improve HTML code based on the following context:
+            ? `Generate or improve HTML code based on the following context:
             Request: ${request}
             Current Code: ${currentCode}
             Parent Code: ${parentCode}
             IMPORTANT: Return ONLY the raw HTML code without any explanations, introductory text, or markdown formatting.
-            Do not include \`\`\`html, \`\`\`, or any other markdown.
-            Start your response directly with <!DOCTYPE html>.
-            Guidelines:
-            - Provide only the HTML/JavaScript code
-            - Set body overflow to hidden
-            - Use white text as default
-            - If the request cannot be fulfilled with code, return nothing`
+            Do not include \`\`\`html, \`\`\`
+            Start directly with <!DOCTYPE html>.
+            Only the HTML/JavaScript code
+            Set body overflow to hidden
+            Use white text as default
+            If the request cannot be fulfilled with code, return nothing`
             :
-            `You are an expert HTML/JavaScript code generator. Generate or improve HTML code based on the following context:
+            `Generate or improve HTML code based on the following context:
             Request: ${request}
             Current Code: ${currentCode}
             IMPORTANT: Return ONLY the raw HTML code without any explanations, introductory text, or markdown formatting.
-            Do not include \`\`\`html, \`\`\`, or any other markdown.
-            Start your response directly with <!DOCTYPE html>.
-            Guidelines:
-            - Provide only the HTML/JavaScript code
-            - Set body overflow to hidden
-            - Use white text as default
-            - If the request cannot be fulfilled with code, return nothing`;
-        const model = user.has_membership ? 'gpt-4.1-2025-04-14' : 'gpt-4.1-mini-2025-04-14';
+            Do not include \`\`\`html, \`\`\`
+            Start directly with <!DOCTYPE html>.
+            Only the HTML/JavaScript code
+            Set body overflow to hidden
+            Use white text as default
+            If the request cannot be fulfilled with code, return nothing`;
         const completion = await openai.chat.completions.create({
             model: model,
             messages: [
@@ -242,24 +241,17 @@ router.post('/generate_content', authenticateCheck, async (req, res) => {
             aiReply = aiReply.substring(doctypeIndex);
         }
         aiReply = aiReply.replace(/^```[a-zA-Z]*\s*|```$/g, '').trim();
-        await Prompts.create({
-            prompt_id: v4(),
-            prompt_content: request,
-            response_content: aiReply,
-        });
-        const characterCount = currentCode.length + (parentCode?.length ?? 0) + aiReply.length;
-        await Users.increment('usage_count', { by: characterCount, where: { user_id: senderId } });
-        res.status(201).json({
-            success: true,
-            generatedContent: aiReply,
-            fromCache: false
-        });
+        await Prompts.create({ prompt_id: v4(), prompt_content: request, response_content: aiReply});
+		const inputTokens = runStatus.usage?.input_tokens || 0;
+		const outputTokens = runStatus.usage?.output_tokens || 0;
+		const totalTokens = (inputTokens + (outputTokens * 4)) * tokenMultiplier; //Multiplier adjustst for more expensive models, output tokens are 4x the cost of input tokens
+		await Users.increment('usage_count', { by: totalTokens, where: { user_id: senderId } });
+        res.status(201).json({ success: true, generatedContent: aiReply, fromCache: false });
     } catch (error) {
         console.error('Error generating content:', error);
         res.status(500).json({ success: false, error: error.message });
     }
 });
-
 
 //Get messages within a specific chat
 router.get('/get_ask_messages', authenticateCheck, async (req, res) => {
@@ -279,6 +271,9 @@ router.post('/send_ask_message', authenticateCheck, async (req, res) => {
     try {
         const { chatId, messageContent, senderId, timestamp } = req.body;
         const chat = await AskChats.findOne({ where: { chat_id: chatId } });
+        const user = await Users.findOne({ where: { user_id: senderId } }); //Perhaps use session user_id
+        const model = user.has_membership ? 'gpt-4.1-mini' : 'gpt-4.1-nano';
+        const tokenMultiplier = user.has_membership ? 4 : 1;
         if (!chat) {
             return res.status(404).json({ success: false, message: 'Chat not found' });
         }
@@ -287,7 +282,7 @@ router.post('/send_ask_message', authenticateCheck, async (req, res) => {
             const assistant = await openai.beta.assistants.create({
                 name: "Ask",
                 instructions: "Assist users",
-                model: "gpt-4o-mini",
+                model: model,
             });
             assistant_id = assistant.id;
             const thread = await openai.beta.threads.create();
@@ -333,12 +328,10 @@ router.post('/send_ask_message', authenticateCheck, async (req, res) => {
             content: aiReply,
             timestamp: Date.now()
         });
-        const chacaterCount = messageContent.length + aiReply.length;
-        await AskChats.update(
-            { updated_at: Date.now() },
-            { where: { chat_id: chatId } }
-        );
-        await Users.increment('usage_count', { by: chacaterCount, where: { user_id: senderId } });
+		const inputTokens = runStatus.usage?.input_tokens || 0;
+		const outputTokens = runStatus.usage?.output_tokens || 0;
+		const totalTokens = (inputTokens + (outputTokens * 4)) * tokenMultiplier; //Multiplier adjustst for more expensive models, output tokens are 4x the cost of input tokens
+		await Users.increment('usage_count', { by: totalTokens, where: { user_id: senderId } });
         res.status(201).json({ success: true, newMessage, assistantMessage });
     } catch (error) {
         res.status(500).json({ success: false, message: 'Internal Server Error' });

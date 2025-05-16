@@ -23,7 +23,7 @@ const AskChannel = () => {
 	const { query, setQuery } = useQueryContext(); 
 	const navigate = useNavigate();
 	const initialMessageRef = useRef(false);
-	const usageLimit = user.has_membership ? 10000000 : 100000;
+	const usageLimit = user.has_membership ? 25000000 : 2500000;
 	const limitReached = user.usage_count >= usageLimit ? true : false;
 
 	useEffect(() => {
