@@ -206,7 +206,7 @@ router.post('/generate_content', authenticateCheck, async (req, res) => {
             Request: ${request}
             Current Code: ${currentCode}
             Parent Code: ${parentCode}
-            IMPORTANT: Return ONLY the raw HTML code without any explanations, introductory text, or markdown formatting.
+            IMPORTANT: Return ONLY the raw HTML code without any explanations, comments, introductory text, or markdown formatting.
             Do not include \`\`\`html, \`\`\`
             Start directly with <!DOCTYPE html>.
             Only the HTML/JavaScript code
@@ -217,7 +217,7 @@ router.post('/generate_content', authenticateCheck, async (req, res) => {
             `Generate or improve HTML code based on the following context:
             Request: ${request}
             Current Code: ${currentCode}
-            IMPORTANT: Return ONLY the raw HTML code without any explanations, introductory text, or markdown formatting.
+            IMPORTANT: Return ONLY the raw HTML code without any explanations, comments, introductory text, or markdown formatting.
             Do not include \`\`\`html, \`\`\`
             Start directly with <!DOCTYPE html>.
             Only the HTML/JavaScript code

@@ -11,8 +11,7 @@
     text-decoration: none;
 }
 .chat-message-bar {
-    background-color: var(--darkest);
-    border: 1px solid var(--border);
+    background-color: var(--dark);
     border-radius: var(--large-margin);
     color: var(--border);
     flex: 1;
