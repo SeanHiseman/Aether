@@ -10,8 +10,8 @@
     background-color: var(--darkest);
     width: 200px;
 }
-.button.join:hover {
-    background-color: var(--button-hover);
+.button.join:hover, .button.theme:hover {
+    background-color: var(--light);
 }
 .button.join-small {
     font-size: 18px;
@@ -25,6 +25,7 @@
 }
 .button.theme {
     align-items: center;
+    background-color: var(--darkest);
     box-sizing: border-box;
     display: flex;
     justify-content: space-between;
@@ -77,8 +78,6 @@
 .feed-drag-overlay, .deep-feed-drag-overlay {
     opacity: 0.8;
     transform: scale(1.05);
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
-    background-color: var(--background-color);
     border-radius: 5px;
     padding: 8px;
     width: 90%;
@@ -114,7 +113,6 @@
 }
 .feed-list-item.dragging {
     background-color: var(--dark);
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.15);
 }
 .feed-list-item {    
     transition: var(--transition-regular);
@@ -126,9 +124,9 @@
 }
 .feed-settings {
     align-items: center;
-    background-color: var(--darkest);
+    background-color: var(--dark);
+    border: 1px solid var(--border);
     border-radius: 20px;
-    box-shadow: var(--shadow);
     display: flex;
     flex-direction: column;
     margin-top: -140px;
@@ -151,7 +149,7 @@
     width: 100%
 }
 .light-button.join {
-    background-color: var(--dark);
+    background-color: var(--darkest);
 }
 .membership-join {
     align-items: center;
@@ -176,7 +174,7 @@
 .option-toggle button {
     background-color: var(--darkest);
     border: none;
-    color: var(--border);
+    color: var(--lightest);
     cursor: pointer;
     flex: 1;
     font-weight: bold;

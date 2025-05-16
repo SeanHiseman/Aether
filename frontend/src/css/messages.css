@@ -12,8 +12,9 @@
 }
 .chat-message-bar {
     background-color: var(--dark);
+    border: 1px solid var(--border);
     border-radius: var(--large-margin);
-    color: var(--border);
+    color: var(--lightest);
     flex: 1;
     font-size: large;
     margin: var(--medium-margin);
@@ -25,7 +26,7 @@
     background-color: var(--dark);
     border: none;
     border-radius: var(--large-margin);
-    color: var(--border);
+    color: var(--lightest);
     font-size: large;
     min-height: 50px;
     min-width: 90px;
@@ -40,7 +41,7 @@
 }
 .chat-input {
     padding: 10px;
-    background-color: var(--border);
+    background-color: var(--lightest);
     border-top: 1px solid var(--darkest);
 }
 .connections-feed {
@@ -61,7 +62,7 @@
 }
 #messages-button {
     border-radius: 16px;
-    color: var(--border);
+    color: var(--lightest);
     font-size: xx-large;
     height: 70%;
     padding: var(--small-margin);
@@ -93,7 +94,7 @@
     width: 100%;
 }
 .message.incoming {
-    background-color: var(--darkest);
+    background-color: var(--dark);
 }
 .message.outgoing {
     background-color: var(--light);
@@ -125,7 +126,7 @@
     margin-right: var(--small-margin);
 }
 .read-status {
-    color: var(--border);
+    color: var(--lightest);
     margin: var(--small-margin);
 }
 .tab-titles {

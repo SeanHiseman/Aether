@@ -5,20 +5,23 @@ import ThemeButton from './themeButton';
 const Theme = () => {
 	const { defaultThemeColors, setTheme: updateTheme, theme, themes } = useContext(ThemeContext);
 	const isDefaultTheme = typeof theme === 'string';
-	const initialCustomTheme = (!isDefaultTheme && theme) || { border: '#dddddd', dark: '#2c2e31', darkest: '#0f0f0f', light: '#737484' };
+	const initialCustomTheme = (!isDefaultTheme && theme) || { border: '#323437', dark: '#2c2e31', darkest: '#0f0f0f', light: '#737484', lightest: '#dddddd' };
 	const [customTheme, setCustomTheme] = useState(initialCustomTheme);
 	const [errorMessage, setErrorMessage] = useState('');
 	const [feedbackMessage, setFeedbackMessage] = useState('');
+
 	useEffect(() => {
 		if (typeof theme === 'object') {
 			setCustomTheme(theme);
 		}
 	}, [theme]);
+
 	const handleColorChange = (key, value) => {
 		const updated = { ...customTheme, [key]: value };
 		setCustomTheme(updated);
 		document.documentElement.style.setProperty(`--${key}`, value);
 	};
+
 	const handleCustomThemeSave = async () => {
 		try {
 			await updateTheme(customTheme);
@@ -29,6 +32,7 @@ const Theme = () => {
 			setTimeout(() => { setErrorMessage(''); }, 5000);
 		}
 	};
+
 	const handleDefaultThemeSelect = async (themeName) => {
 		try {
 			await updateTheme(themeName);
@@ -37,6 +41,7 @@ const Theme = () => {
 			setTimeout(() => { setErrorMessage(''); }, 5000);
 		}
 	};
+	
 	return (
 		<div className="feed-settings">
 			<p className="text36">Choose your theme</p>
@@ -49,7 +54,7 @@ const Theme = () => {
 			<div className="custom-theme-container">
 				<p className="text24">Custom Theme</p>
 				<div className="custom-theme-preview">
-					{['darkest','dark','light','border'].map((key) => (
+					{['darkest','dark','light','lightest','border'].map((key) => (
 						<div key={key} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
 							<input type="color" className="custom-theme-input" value={customTheme[key] || '#000000'} onChange={(e) => handleColorChange(key, e.target.value)} />
 							<span style={{ margin: '5px' }}>{key.charAt(0).toUpperCase() + key.slice(1)}</span>

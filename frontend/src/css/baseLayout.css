@@ -41,7 +41,7 @@
     justify-content: center;
 }
 .change-feed-photo {
-    background-color: var(--dark);
+    background-color: var(--darkest);
     border-radius: 10px;
     display: flex;
     flex-direction: column;
@@ -54,7 +54,7 @@
     background-color: var(--darkest);
     border: 1px solid var(--border);
     border-radius: 10px;
-    color: var(--border);
+    color: var(--lightest);
     font-family: Arial, sans-serif;
     padding: 3px 6px;
 }
@@ -80,7 +80,7 @@
     width: 100%;
 }
 .channel-dropdown {
-    color: var(--border);
+    color: var(--lightest);
     cursor: pointer;
     margin-left: 12px;
 }
@@ -95,7 +95,7 @@
 }
 .channel-link {
     align-items: center;
-    border-bottom: 1px solid var(--dark);
+    border-bottom: 1px solid var(--border);
     display: flex;
     justify-content: space-between;
     padding: 10px;
@@ -115,7 +115,7 @@
 }
 .channel-list-link, .channel-list-link:visited {
     text-decoration: none;
-    color: var(--border);
+    color: var(--lightest);
 }
 .channel-name-section {
     align-items: center;
@@ -126,7 +126,7 @@
 .chat-channel-button, .conversation-button, .posts-channel-button {
     background-color: var(--darkest);
     border: 1px solid var(--border);
-    color: var(--border);
+    color: var(--lightest);
     font-size: large;
     margin: 10px;
     max-width: 200px;
@@ -161,7 +161,7 @@
     color: #7b7b7b;
 }
 #confirmation-message {
-    color: var(--border);
+    color: var(--lightest);
     margin-left: 10px;
     text-align: right;
 }
@@ -247,7 +247,7 @@
 .icon-button:hover::after {
     background-color: var(--light);
     border-radius: .3rem;
-    color: var(--border);
+    color: var(--lightest);
     content: attr(data-tooltip);
     font-size: large;
     opacity: 1;
@@ -294,7 +294,7 @@
     width: 100%;
 }
 .left-aside nav ul li a, .right-aside nav ul li a {
-    color: var(--border);
+    color: var(--lightest);
     text-decoration: none;
 }
 .left-aside::-webkit-scrollbar, .right-aside::-webkit-scrollbar {
@@ -313,7 +313,7 @@ main {
     background-color: var(--dark);
     border: 1px solid var(--border);
     border-radius: 10px;
-    color: var(--border);
+    color: var(--lightest);
     font-size: large;
     margin: 10px;
     padding: 5px;
@@ -363,23 +363,22 @@ main {
 .search-bar {
     background-color: var(--dark);
     border: none;
-    color: var(--border);
+    color: var(--lightest);
     flex-grow: 1;
     font-size: large;
-    padding: 10px;
+    height: 100%;
 }
 .search-container {
     align-items: center;
+    background-color: var(--border);
+    border: 1px solid var(--dark);
     border-radius: 20px;
     display: flex;
-    overflow: visible;
     position: relative;
     width: 100%;
 }
 .search-form {
-    background-color: var(--dark);
     display: flex;
-    flex-grow: 0;
     max-width: 35%;
     height: 80%;
     position: relative;
@@ -403,7 +402,7 @@ main {
     width: 100%;
 }
 .standard-icon {
-    color: var(--border);
+    color: var(--lightest);
     cursor: pointer;
     height: 30px;
     padding: 0;
