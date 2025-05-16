@@ -86,7 +86,7 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onSubm
     const MAX_FILE_SIZE = hasMembership ? 100 * 1024 * 1024 : 1 * 1024 * 1024
     const TEXT_CHAR_LIMIT = hasMembership ? 100000 : 1000
     const TITLE_CHAR_LIMIT = hasMembership ? 1000 : 100
-    const usageLimit = user.has_membership ? 10000000 : 100000
+    const usageLimit = user.has_membership ? 25000000 : 2500000
 
     const addIframe = (blockId) => {
         const url = prompt('Enter the website URL:');
