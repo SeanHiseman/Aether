@@ -17,9 +17,9 @@
     margin: var(--medium-margin);
 }
 .content-item, .result-widget {
-    background-color: var(--darkest);
+    background-color: var(--dark);
     border-radius: 28px;
-    box-shadow: var(--shadow);
+    border: 1px solid var(--border);
     cursor: pointer;
     margin-bottom: var(--medium-margin);
     margin-top: var(--medium-margin);
@@ -169,7 +169,7 @@
     width: 100%;
     height: 600px;
     overflow: hidden;
-    border: 1px solid var(--border);
+    border: 1px solid var(--lightest);
     border-radius: 8px;
     margin: 15px 0;
     background-color: var(--darkest);
@@ -189,7 +189,7 @@
     position: absolute;
     width: 250px;
     padding: 10px;
-    border: 1px solid var(--border);
+    border: 1px solid var(--lightest);
     border-radius: 8px;
     background-color: var(--darkest);
     box-shadow: 0 2px 5px rgba(0,0,0,0.1);

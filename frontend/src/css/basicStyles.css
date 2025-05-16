@@ -8,8 +8,8 @@ a {
     cursor: pointer;
 }
 body, html {
-    background-color: var(--dark);
-    color: var(--border);
+    background-color: var(--darkest);
+    color: var(--lightest);
     font-family: Arial, sans-serif;
     font-size: large;
     height: 100%;
@@ -18,12 +18,12 @@ body, html {
     scrollbar-width: none;
 }
 .button {
-    background-color: var(--dark);
+    background-color: var(--darkest);
 }
 .button, .dark-button {
     border-radius: var(--small-margin);
     border: none;
-    color: var(--border);
+    color: var(--lightest);
     padding: 3px 6px;
     margin:  var(--small-margin);
     transition: var(--transition-regular);
@@ -35,7 +35,7 @@ body, html {
     font-size: x-large;
 }
 .dark-text {
-    color: var(--dark);
+    color: var(--darkest);
 }
 .disabled {
     cursor: default;
@@ -65,7 +65,7 @@ label {
     background: none;
     border: none;
     border-radius: 8px;
-    color: var(--border);
+    color: var(--lightest);
     display: flex;
     justify-content: center;
     margin: 4px;
