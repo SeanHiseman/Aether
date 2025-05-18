@@ -82,11 +82,11 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onSubm
     const hasMembership = user?.has_membership
     const isDraft = Boolean(draftId)
     const BLOCK_LIMIT = hasMembership ? 10000 : 10
-    const limitReached = user.usage_count >= usageLimit
     const MAX_FILE_SIZE = hasMembership ? 100 * 1024 * 1024 : 1 * 1024 * 1024
     const TEXT_CHAR_LIMIT = hasMembership ? 100000 : 1000
     const TITLE_CHAR_LIMIT = hasMembership ? 1000 : 100
     const usageLimit = user.has_membership ? 25000000 : 2500000
+    const limitReached = user.usage_count >= usageLimit
 
     const addIframe = (blockId) => {
         const url = prompt('Enter the website URL:');
@@ -876,68 +876,29 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onSubm
                 <div className="action-buttons-sticky" style={{ width: '100%' }}>
                     <div className="action-buttons" style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-start', position: 'relative' }}>
                         <div className="left-buttons" style={{ display: 'flex', gap: '10px' }}>
-                            {/** 1) Close is always available */}
-                            <button
-                                className="small-icon"
-                                type="button"
-                                onClick={() => setShowForm(false)}
-                                title="Close"
-                            >
+                            <button className="small-icon" type="button" onClick={() => setShowForm(false)} title="Close">
                                 <FaWindowClose />
                             </button>
-
-                            {/** 2) Delete is always available (unless you want to hide it on replies) */}
                             {!isReply && (
-                                <button
-                                className="small-icon"
-                                type="button"
-                                onClick={deleteHandler}
-                                title={isDraft ? 'Delete draft' : isEdit ? 'Delete post' : 'Delete'}
-                                >
-                                <FaTrash />
+                                <button className="small-icon" type="button" onClick={deleteHandler} title={isDraft ? 'Delete draft' : isEdit ? 'Delete post' : 'Delete'}>
+                                    <FaTrash />
                                 </button>
                             )}
-
-                            {/** 3) Now branch into the 3 “action” scenarios */}
                             {isReply ? (
-                                /** Case 4: replying => only “Reply” **/
-                                <button
-                                className="small-icon"
-                                form="post-form"
-                                type="submit"
-                                title="Reply"
-                                >
-                                <FaReply />
+                                <button className="small-icon" form="post-form" type="submit" title="Reply">
+                                    <FaReply />
                                 </button>
-
                             ) : isEdit && !isDraft ? (
-                                /** Case 2: editing a live post => only “Save edit” **/
-                                <button
-                                className="small-icon"
-                                form="post-form"
-                                type="submit"
-                                title="Save edit"
-                                >
-                                <FaSave />
+                                <button className="small-icon" form="post-form" type="submit" title="Save edit">
+                                    <FaSave />
                                 </button>
 
                             ) : (
-                                /** Case 1 & 3: new post OR editing a draft => “Save draft” + “Post” **/
                                 <>
-                                <button
-                                    className="small-icon"
-                                    type="button"
-                                    onClick={saveDraft}
-                                    title={isDraft ? 'Save draft' : 'Save draft'}
-                                >
+                                <button className="small-icon" type="button" onClick={saveDraft} title={isDraft ? 'Save draft' : 'Save draft'}>
                                     <FaSave />
                                 </button>
-                                <button
-                                    className="small-icon"
-                                    form="post-form"
-                                    type="submit"
-                                    title={isDraft ? 'Post' : 'Post'}
-                                >
+                                <button className="small-icon" form="post-form" type="submit" title={isDraft ? 'Post' : 'Post'}>
                                     <FaArrowRight />
                                 </button>
                                 </>
@@ -1012,7 +973,7 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onSubm
                                     setPostErrorMessage('Prompt exceeds character limit.', !user.has_membership && 'Get membership for more.');
                                 }
                             }}
-                            placeholder={limitReached ? user.has_membership ? "Usage limit reached" : "Usage limit reached. Get membership for more." : "Describe changes for post..."} 
+                            placeholder={limitReached ? user.has_membership ? "Usage limit reached. Buy new membership to reset" : "Usage limit reached. Get membership for more." : "Describe changes for post..."} 
                             value={globalAiPrompt}/>
                         <button className={isGlobalLoading || !globalAiPrompt.trim() || limitReached ? 'large-icon disabled' : 'large-icon'} 
                             disabled={isGlobalLoading || !globalAiPrompt.trim() || limitReached} 
@@ -1024,14 +985,19 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onSubm
                     </div>
                 )}
                 <input accept="image/*,video/*" hidden id="media-input" multiple onChange={handleFilesChange} type="file" />
-                {editMode && <p className="text24" style={{ marginLeft: 0, marginTop: 0 }}>{isReply ? 'Reply' : 'Editing'}</p>}
+                {editMode && 
+                    <div style={{width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
+                        <p className="text24" style={{marginLeft: 0, marginTop: 0}}>{isReply ? 'Reply' : 'Editing'}</p>
+                        <p className="text16 faded-text">Drag and drop blocks to reorder</p>
+                    </div>
+                }
                 <div className={editMode ? 'single-container edit' : 'single-container'}>
                     {editMode ? (
                         <DragDropContext onDragEnd={onDragEnd}>
                             <Droppable droppableId="blocks-droppable">
                                 {provided => (
                                     <div ref={provided.innerRef} {...provided.droppableProps}>
-                                        {!blocks.length && <p className="text24 dark-text">Add content using the buttons above</p>}
+                                        {!blocks.length && <p className="text24 faded-text">Add content using the buttons above</p>}
                                         {blocks.map((block, index) => {
                                             const { data, id, isEditing, type } = block
                                             const toggleEdit = () => updateBlock({ ...block, isEditing: !isEditing })
@@ -1051,7 +1017,7 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onSubm
                                                                         <button className="small-icon" onClick={toggleEdit} title={isEditing ? 'Preview' : 'Edit'} type="button">{isEditing ? <FaEye /> : <FaEdit />}</button>
                                                                     )}
                                                                 </div>
-                                                                {isEditing && type === BLOCK_TYPES.CODE && <p className="text16" style={{color: '#7b7b7b', marginLeft: '0px'}}>Click on elements to edit them (may be glitchy)</p>}
+                                                                {isEditing && type === BLOCK_TYPES.CODE && <p className="text16 faded-text">Click on elements to edit them (may be glitchy)</p>}
                                                                 <div style={{ position: 'relative' }}>
                                                                 {type === BLOCK_TYPES.MEDIA && (
                                                                     <div style={{ position: 'relative', display: 'flex', gap: '10px' }}>
@@ -1085,11 +1051,11 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onSubm
                                                                         </button>
                                                                         {codeBlockDropdown[id] && (
                                                                         <div className="dropdown-menu">
-                                                                            <button onClick={() => {setCodeBlockDropdown({...codeBlockDropdown, [id]: false}); addIframe(id);}} style={{ display: 'block', width: '100%', textAlign: 'left', padding: '5px', border: 'none', background: 'none', cursor: 'pointer' }}>
-                                                                                <FaLink style={{ marginRight: '5px' }} /> Add Website Link
+                                                                            <button className="small-icon" onClick={() => {setCodeBlockDropdown({...codeBlockDropdown, [id]: false}); addIframe(id);}}>
+                                                                                <FaLink /><p className="icon-text">Add website link</p>
                                                                             </button>
-                                                                            <button onClick={() => {setCodeBlockDropdown({...codeBlockDropdown, [id]: false});addSocialMedia(id);}} style={{ display: 'block', width: '100%', textAlign: 'left', padding: '5px', border: 'none', background: 'none', cursor: 'pointer' }}>
-                                                                                <FaShareAlt style={{ marginRight: '5px' }} /> Insert Social Media Post
+                                                                            <button className="small-icon" onClick={() => {setCodeBlockDropdown({...codeBlockDropdown, [id]: false});addSocialMedia(id);}}>
+                                                                                <FaShareAlt /><p className="icon-text">Insert Social Media Post</p>
                                                                             </button>
                                                                         </div>
                                                                         )}
@@ -1146,7 +1112,7 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onSubm
                                                                                                 setPostErrorMessage('Prompt exceeds character limit.', !user.has_membership && 'Get membership for more.');
                                                                                             }
                                                                                         }}
-                                                                                        placeholder={limitReached ? (user.has_membership ? "Usage limit reached" 
+                                                                                        placeholder={limitReached ? (user.has_membership ? "Usage limit reached. Buy new membership to reset" 
                                                                                             : "Usage limit reached. Get membership for more.") 
                                                                                             : data.isBlockLoading ? "Creating..." 
                                                                                             : user.has_membership ? "Describe your content..."
