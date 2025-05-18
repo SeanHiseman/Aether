@@ -1,24 +1,24 @@
 import axios from 'axios';
 import { DragDropContext } from 'react-beautiful-dnd';
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { FaEdit, FaRegWindowClose, FaSave, FaTrash } from 'react-icons/fa';
 import { useNavigate, useParams } from 'react-router-dom';
+import { AuthContext } from '../components/authContext';
+import ContentForm from '../components/content/contentForm';
 import ContentWidget from '../components/content/contentWidget';
 import DeepFeedItem from '../components/channels/deepFeedItem';
 import { useInfiniteQuery } from '@tanstack/react-query';
 
 const DeepFeed = () => {
+    const [activeReplyPostId, setActiveReplyPostId] = useState(null);
     const [errorMessage, setErrorMessage] = useState('');
     const { deep_feed_id } = useParams();
-    const [deepFeed, setDeepFeed] = useState({
-        deep_feed_id: null,
-        name: '',
-        owner_id: null,
-        parent_id: null
-    });
+    const [deepFeed, setDeepFeed] = useState({ deep_feed_id: null, name: '', owner_id: null, parent_id: null });
     const [isEditingName, setIsEditingName] = useState(false);
     const [newName, setNewName] = useState('');
+    const [postErrorMessage, setPostErrorMessage] = useState('');
     const [timePreference, setTimePreference] = useState(0.001);
+    const { isAuthenticated, user, viewer } = useContext(AuthContext);
     const navigate = useNavigate();
     
     const getPosts = async ({ pageParam = 0 }) => {
@@ -100,7 +100,7 @@ const DeepFeed = () => {
                 }
                 const response = await axios.delete('/api/delete_deep_feed', { data: { deepFeedId: deep_feed_id } });
                 if (response.data.success) {
-                    setDeepFeed((prev) => { //Sets deepFeed to Following, with other properties null
+                    setDeepFeed((prev) => {
                         const updated = { name: 'Following' };
                         for (const key in prev) {
                             if (key !== 'name') {
@@ -115,6 +115,38 @@ const DeepFeed = () => {
             } catch (error) {
                 setErrorMessage('Error deleting deep feed');
                 setTimeout(() => { setErrorMessage(''); }, 5000);
+            }
+        }
+    };
+
+    const handlePostSubmit = async (formData) => {
+        if (!isAuthenticated) return;
+        if (!formData) {
+            setPostErrorMessage("Post cannot be empty");
+            setTimeout(() => { setPostErrorMessage(''); }, 3000);
+            return;
+        }
+        try {
+            formData.append('poster_id', viewer.feed_id);
+            await axios.post('/api/create_post', formData, {
+                headers: { 'Content-Type': 'multipart/form-data' },
+            });
+            const draftId = formData.get('draft_id');
+            if (draftId) {
+                await axios.delete('/api/remove_draft', {
+                    headers: { 'Content-Type': 'application/json' },
+                    data: { draft: { draft_id: draftId } }
+                });   
+            }    
+            setActiveReplyPostId(null);
+        } catch (error) {
+            console.error(error);
+            if (error.response && error.response.status === 413) {
+                setPostErrorMessage(error.response.data.message + (!user.has_membership ? ". Get membership for more" : ""));
+                setTimeout(() => { setPostErrorMessage(''); }, 10000);
+            } else {
+                setPostErrorMessage(error.response.data?.message || "Error creating post");
+                setTimeout(() => { setPostErrorMessage(''); }, 3000);
             }
         }
     };
@@ -136,8 +168,8 @@ const DeepFeed = () => {
     }, [loaderRef, hasNextPage, isFetchingNextPage, fetchNextPage]);
 
     const allPosts = data ? data.pages.flatMap(page => page) : [];
+    const activePost = allPosts.find(p => p.post_id === activeReplyPostId);
 
-    //Load user's time preference (outdated)
     useEffect(() => {
         const fetchTimePreference = async () => {
             try {
@@ -151,12 +183,11 @@ const DeepFeed = () => {
         fetchTimePreference();
     }, []);
 
-    //Save time value to backend (outdated)
     const handleTimeChange = (event) => {
         try {
             const newValue = parseFloat(event.target.value);
             setTimePreference(newValue);
-            axios.post('/api/set_time_preference', { preference: newValue })
+            axios.post('/api/set_time_preference', { preference: newValue });
         } catch (error) {
             setErrorMessage('Error changing preference');
             setTimeout(() => { setErrorMessage(''); }, 5000);
@@ -167,14 +198,29 @@ const DeepFeed = () => {
         <div className="standard-container">
             <div className="content-feed">
                 <div className="channel-content">
-                    {allPosts.length > 0 ? (
+                    {activeReplyPostId && activePost ? (
+                        <ContentForm
+                            key={`reply-${activePost.post_id}`}
+                            channelId={activePost.parentChannel.channel_id}
+                            feed={activePost.feed}
+                            isEdit={false}
+                            isGroup={activePost.poster.feed_id === activePost.feed_id ? false : true}
+                            isReply={true}
+                            onSubmit={handlePostSubmit}
+                            post={activePost}
+                            postErrorMessage={postErrorMessage}
+                            setPostErrorMessage={setPostErrorMessage}
+                            setShowForm={() => setActiveReplyPostId(null)}
+                        />
+                    ) : allPosts.length > 0 ? (
                         <>
                             <ul className="content-list">
                                 {allPosts.map((post) => (
-                                    <ContentWidget 
-                                        key={post.post_id} 
-                                        feed={post.poster} 
-                                        isGroup={post.is_group} 
+                                    <ContentWidget
+                                        key={post.post_id}
+                                        feed={post.poster}
+                                        isGroup={post.is_group}
+                                        onReplyClick={() => setActiveReplyPostId(post.post_id)}
                                         post={post}
                                     />
                                 ))}
@@ -245,14 +291,6 @@ const DeepFeed = () => {
                     )}
                     <div className="error-message">{errorMessage}</div>
                 </div>
-                {/*<label>Posts are recent:</label>
-                <input type="range" min="0" max="0.001" step="0.00001" value={timePreference} onChange={handleTimeChange} />*/}
-                {/*<DeepFeedItem 
-                    index={0} 
-                    deepFeed={deepFeed} 
-                    showHeader={false} 
-                    onFeedAdded={registerFeedCallback}
-                />*/}
             </aside>
         </div>
     );

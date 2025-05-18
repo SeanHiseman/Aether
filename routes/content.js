@@ -215,7 +215,6 @@ const post_upload = multer({
 router.post('/create_draft', authenticateCheck, checkStorageLimit, post_upload.array('files'), async (req, res) => {
     try {
         let { draft_id, feed_id, channel_id, parent_id, content, title, poster_id } = req.body
-        //console.log("create draft req.body:", req.body);
         if (!draft_id) draft_id = v4()
         const $ = cheerio.load(content, { decodeEntities:false })
         let fileIdx = 0
@@ -239,10 +238,8 @@ router.post('/create_draft', authenticateCheck, checkStorageLimit, post_upload.a
             title: title||null,
             poster_id
         });
-        console.log("created draft:", draft);
         return res.status(200).json({ success: true, draft: draft })
     } catch(error) {
-        console.log("error creating draft:", error);
         if (req.files) {
             req.files.forEach(f => {
                 fs.unlinkSync(path.join(__dirname,'../media/content',f.filename))

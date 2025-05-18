@@ -5,7 +5,7 @@ import ThemeButton from './themeButton';
 const Theme = () => {
 	const { defaultThemeColors, setTheme: updateTheme, theme, themes } = useContext(ThemeContext);
 	const isDefaultTheme = typeof theme === 'string';
-	const initialCustomTheme = (!isDefaultTheme && theme) || { border: '#323437', dark: '#2c2e31', darkest: '#0f0f0f', light: '#737484', lightest: '#dddddd' };
+	const initialCustomTheme = (!isDefaultTheme && theme) || { border: '#323437', dark: '#232527', darkest: '#0f0f0f', light: '#737484', lightest: '#dddddd' };
 	const [customTheme, setCustomTheme] = useState(initialCustomTheme);
 	const [errorMessage, setErrorMessage] = useState('');
 	const [feedbackMessage, setFeedbackMessage] = useState('');

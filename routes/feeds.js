@@ -345,7 +345,7 @@ router.get('/deep_feed_posts', authenticateCheck, async (req, res) => {
 				attributes: ['feed_id']
 			});
 			if (followedFeeds.length === 0) {
-				return res.json({ success: true, posts: [], deepFeedName: 'Following' });
+				return res.status(200).json({ success: true, posts: [], deepFeedName: 'Following' });
 			}
 			const feedIds = followedFeeds.map(follow => follow.feed_id);
 			const posts = await Posts.findAll({

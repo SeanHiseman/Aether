@@ -62,11 +62,11 @@ const reorder = (list, startIndex, endIndex) => {
 }
 
 //Post is either the post being edited or replied to
-const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onSubmit, post = null, setShowForm }) => {
+const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onSubmit, post = null, postErrorMessage, setPostErrorMessage, setShowForm }) => {
+    console.log("feed`", feed)
     const [blocks, setBlocks] = useState([])
     const [codeBlockDropdown, setCodeBlockDropdown] = useState(false)
     const [editMode, setEditMode] = useState(true)
-    const [formErrorMessage, setFormErrorMessage] = useState('')
     const [blockLimitError, setBlockLimitError] = useState('')
     const [cropState, setCropState] = useState({});
     const [draftId, setDraftId] = useState(post?.draft_id || null)
@@ -185,9 +185,9 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onSubm
                 return newState;
             });
         } catch (error) {
-          setFormErrorMessage('Failed to crop image. Please try again.');
+          setPostErrorMessage('Failed to crop image. Please try again.');
         }
-    }, [blocks, cropState, updateBlock, setFormErrorMessage]);
+    }, [blocks, cropState, updateBlock, setPostErrorMessage]);
 
     const compileFinalHTML = useCallback(allBlocks => {
         let finalHTML = ''
@@ -225,7 +225,7 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onSubm
                     data: { draft: { draft_id: draftId } },
                 })
                 setDraftId(null)
-                setFormErrorMessage('Draft deleted')
+                setPostErrorMessage('Draft deleted')
             } else {
                 await axios.delete('/api/remove_post', {
                     data: {
@@ -235,16 +235,16 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onSubm
                         },
                     },
                 })
-                setFormErrorMessage('Post deleted')
+                setPostErrorMessage('Post deleted')
                 navigate(`/${urlPrefix}/${feed_name}/${channel_name}`)
             }
             setShowForm(false)
-            setTimeout(() => setFormErrorMessage(''), 3000)
+            setTimeout(() => setPostErrorMessage(''), 3000)
         } catch (err) {
-            setFormErrorMessage(`Error deleting ${isDraft ? 'draft' : 'post'}`)
-            setTimeout(() => setFormErrorMessage(''), 3000)
+            setPostErrorMessage(`Error deleting ${isDraft ? 'draft' : 'post'}`)
+            setTimeout(() => setPostErrorMessage(''), 3000)
         }
-    }, [channel_name, draftId, feed_name, isDraft, navigate, post, setDraftId, setShowForm, setFormErrorMessage, urlPrefix,])  
+    }, [channel_name, draftId, feed_name, isDraft, navigate, post, setDraftId, setShowForm, setPostErrorMessage, urlPrefix,])  
 
     const isContentEmpty = useCallback(blocksArray => !blocksArray.some(block => {
         if (block.type === BLOCK_TYPES.TEXT) return block.data.html && block.data.html.trim() !== ''
@@ -642,10 +642,10 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onSubm
         const oversized = files.filter(f => f.size > MAX_FILE_SIZE)
         if (oversized.length) {
             const names = oversized.map(f => f.name).join(', ')
-            setFormErrorMessage(hasMembership ? `These files exceed your max size limit: ${names}.` : `These files exceed your max size limit: ${names}. Get membership for more.`);
+            setPostErrorMessage(hasMembership ? `These files exceed your max size limit: ${names}.` : `These files exceed your max size limit: ${names}. Get membership for more.`);
             return
         }
-        setFormErrorMessage('')
+        setPostErrorMessage('')
         const canFitCount = Math.max(0, BLOCK_LIMIT - blocks.length)
         const fittingFiles = hasMembership ? files : files.slice(0, canFitCount)
         const uniqueFiles = fittingFiles.map(file => {
@@ -671,19 +671,19 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onSubm
 
     const handleGenerateCodeBlock = useCallback(async block => {
         if (limitReached) {
-          setFormErrorMessage(hasMembership ? "Usage limit reached" : "Usage limit reached. Get membership for more.");
-          setTimeout(() => { setFormErrorMessage(''); }, 10000);
+          setPostErrorMessage(hasMembership ? "Usage limit reached" : "Usage limit reached. Get membership for more.");
+          setTimeout(() => { setPostErrorMessage(''); }, 10000);
           return;
         }
         try {
           const prompt = block.data._tempAiPrompt || '';
           if (!prompt.trim()) {
-            setFormErrorMessage('Prompt cannot be empty.');
-            setTimeout(() => { setFormErrorMessage(''); }, 5000);
+            setPostErrorMessage('Prompt cannot be empty.');
+            setTimeout(() => { setPostErrorMessage(''); }, 5000);
             return;
           }
           updateBlock({ ...block, data: { ...block.data, isBlockLoading: true, _tempAiPrompt: '' } });
-          setFormErrorMessage('');
+          setPostErrorMessage('');
           const response = await axios.post('/api/generate_content', { 
             currentCode: block.data.code, 
             parentCode: isReply ? post.content : null, 
@@ -704,55 +704,56 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onSubm
             });
           } else {
             updateBlock({ ...block, data: { ...block.data, isBlockLoading: false, _tempAiPrompt: '' } });
-            setFormErrorMessage('Error creating content.');
-            setTimeout(() => { setFormErrorMessage(''); }, 5000);
+            setPostErrorMessage('Error creating content.');
+            setTimeout(() => { setPostErrorMessage(''); }, 5000);
           }
         } catch {
           updateBlock({ ...block, data: { ...block.data, isBlockLoading: false, _tempAiPrompt: '' } });
-          setFormErrorMessage('Error creating content.');
-          setTimeout(() => { setFormErrorMessage(''); }, 5000);
+          setPostErrorMessage('Error creating content.');
+          setTimeout(() => { setPostErrorMessage(''); }, 5000);
         }
     }, [hasMembership, post, updateBlock]);
 
     const handleGenerateFullContent = useCallback(async () => {
         if (limitReached) {
-            setFormErrorMessage(hasMembership ? "Usage limit reached" : "Usage limit reached. Get membership for more.");
-            setTimeout(() => { setFormErrorMessage(''); }, 10000);
+            setPostErrorMessage(hasMembership ? "Usage limit reached" : "Usage limit reached. Get membership for more.");
+            setTimeout(() => { setPostErrorMessage(''); }, 10000);
             return;
         }
         try {
             const prompt = globalAiPrompt.trim()
             if (!prompt) {
-                setFormErrorMessage('Prompt cannot be empty.')
-                setTimeout(() => { setFormErrorMessage(''); }, 5000);
+                setPostErrorMessage('Prompt cannot be empty.')
+                setTimeout(() => { setPostErrorMessage(''); }, 5000);
                 return
             }
             setIsGlobalLoading(true)
-            setFormErrorMessage('')
+            setPostErrorMessage('')
             const fullHTML = compileFinalHTML(blocks)
             const response = await axios.post('/api/generate_content', { currentCode: fullHTML, parentCode: isReply ? post.content : null, request: prompt, senderId: user.user_id })
             if (response.data && response.status === 201) {
                 const { generatedContent } = response.data
                 setBlocks([{ data: { code: generatedContent, isBlockLoading: false, showPrompt: true }, id: v4(), isEditing: false, type: BLOCK_TYPES.CODE }])
-            } else setFormErrorMessage('Creation error.'); setTimeout(() => { setFormErrorMessage(''); }, 5000);
+            } else setPostErrorMessage('Creation error.'); setTimeout(() => { setPostErrorMessage(''); }, 5000);
         } catch {
-            setFormErrorMessage('Error creating content.')
-            setTimeout(() => { setFormErrorMessage(''); }, 5000);
+            setPostErrorMessage('Error creating content.')
+            setTimeout(() => { setPostErrorMessage(''); }, 5000);
         } finally {
             setIsGlobalLoading(false)
         }
     }, [blocks, compileFinalHTML, globalAiPrompt, hasMembership, post])
 
     const handleSubmit = useCallback(async e => {
+        console.log("submitting");
         e.preventDefault()
         if (isContentEmpty(blocks)) {
-            setFormErrorMessage(isReply ? 'Reply cannot be empty.' : 'Post cannot be empty.')
-            setTimeout(() => { setFormErrorMessage(''); }, 5000);
+            setPostErrorMessage(isReply ? 'Reply cannot be empty.' : 'Post cannot be empty.')
+            setTimeout(() => { setPostErrorMessage(''); }, 5000);
             return
         }
         const finalHTML = compileFinalHTML(blocks)
         try {
-            setFormErrorMessage('')
+            setPostErrorMessage('')
             const formData = new FormData()
             let postId
             if (!isEdit) {
@@ -760,11 +761,13 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onSubm
                 formData.append('post_id', postId)
             } else postId = post.post_id
             formData.append('content', finalHTML)
+            formData.append('feed_id', feed.feed_id);
             if (!post) { //draft that hasn't yet been saved needs an ids
                 formData.append('draft_id', draftId);
             } 
             if (isReply && post) formData.append('parent_id', post.post_id)
             if (!isReply) formData.append('title', title)
+            if (channelId) formData.append('channel_id', channelId)
             blocks.filter(b => b.type === BLOCK_TYPES.MEDIA && b.data.file).forEach(mediaBlock => formData.append('files', mediaBlock.data.file))
             await onSubmit(formData);
             setTitle('')
@@ -773,8 +776,9 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onSubm
             setShowForm(false)
             navigate(`/${urlPrefix}/${feed_name}/${channel_name}/${isReply ? post.post_id : postId}`)
         } catch (error){
-            setFormErrorMessage('Error submitting the form.')
-            setTimeout(() => { setFormErrorMessage(''); }, 5000);
+            console.error('Error submitting the form:', error)
+            setPostErrorMessage('Error submitting the form.')
+            setTimeout(() => { setPostErrorMessage(''); }, 5000);
         }
     }, [blocks, compileFinalHTML, draftId, isContentEmpty, isEdit, isReply, channel_name, feed_name, navigate, onSubmit, post, setShowForm, title, urlPrefix])
 
@@ -796,10 +800,10 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onSubm
     const saveDraft = useCallback(async e => {
         e.preventDefault();
         if (isContentEmpty(blocks)) {
-            setFormErrorMessage(
+            setPostErrorMessage(
                 isReply ? 'Reply cannot be empty.' : 'Post cannot be empty.'
             );
-            setTimeout(() => setFormErrorMessage(''), 5000);
+            setTimeout(() => setPostErrorMessage(''), 5000);
             return;
         }
         const finalHTML = compileFinalHTML(blocks);
@@ -818,22 +822,19 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onSubm
             id = v4();
             setDraftId(id);
         }
-        console.log("using draft_id:", id);
         formData.append('draft_id', id);
         try {
             const response = await axios.post('/api/create_draft', formData, { headers: { 'Content-Type': 'multipart/form-data' }});
             if (response.data.success) {
-                setFormErrorMessage('Draft saved!');
-                setTimeout(() => setFormErrorMessage(''), 3000);
-                console.log("response.data.draft:", response.data.draft);
+                setPostErrorMessage('Draft saved!');
+                setTimeout(() => setPostErrorMessage(''), 3000);
                 const [savedDraft] = response.data.draft;
-                console.log("savedDraft.draft_id:", savedDraft.draft_id);
                 setDraftId(savedDraft.draft_id);
             }
         }
         catch (error) {
-            setFormErrorMessage('Error saving draft.');
-            setTimeout(() => setFormErrorMessage(''), 5000);
+            setPostErrorMessage('Error saving draft.');
+            setTimeout(() => setPostErrorMessage(''), 5000);
         }
     }, [blocks, compileFinalHTML, draftId, isContentEmpty, isReply, post, title, feed, channelId, viewer]);
 
@@ -875,22 +876,72 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onSubm
                 <div className="action-buttons-sticky" style={{ width: '100%' }}>
                     <div className="action-buttons" style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-start', position: 'relative' }}>
                         <div className="left-buttons" style={{ display: 'flex', gap: '10px' }}>
-                            <button className="small-icon" type="button" onClick={() => setShowForm(false)} title="Close">
+                            {/** 1) Close is always available */}
+                            <button
+                                className="small-icon"
+                                type="button"
+                                onClick={() => setShowForm(false)}
+                                title="Close"
+                            >
                                 <FaWindowClose />
                             </button>
-                            {!isReply && (isDraft || isEdit) && (
-                                <button className="small-icon" type="button" onClick={deleteHandler} title={isDraft ? 'Delete draft' : 'Delete post'}>
-                                    <FaTrash />
+
+                            {/** 2) Delete is always available (unless you want to hide it on replies) */}
+                            {!isReply && (
+                                <button
+                                className="small-icon"
+                                type="button"
+                                onClick={deleteHandler}
+                                title={isDraft ? 'Delete draft' : isEdit ? 'Delete post' : 'Delete'}
+                                >
+                                <FaTrash />
                                 </button>
                             )}
-                            {!isEdit && !isReply && (
-                                <button className="small-icon" type="button" onClick={saveDraft} title="Save draft">
+
+                            {/** 3) Now branch into the 3 “action” scenarios */}
+                            {isReply ? (
+                                /** Case 4: replying => only “Reply” **/
+                                <button
+                                className="small-icon"
+                                form="post-form"
+                                type="submit"
+                                title="Reply"
+                                >
+                                <FaReply />
+                                </button>
+
+                            ) : isEdit && !isDraft ? (
+                                /** Case 2: editing a live post => only “Save edit” **/
+                                <button
+                                className="small-icon"
+                                form="post-form"
+                                type="submit"
+                                title="Save edit"
+                                >
+                                <FaSave />
+                                </button>
+
+                            ) : (
+                                /** Case 1 & 3: new post OR editing a draft => “Save draft” + “Post” **/
+                                <>
+                                <button
+                                    className="small-icon"
+                                    type="button"
+                                    onClick={saveDraft}
+                                    title={isDraft ? 'Save draft' : 'Save draft'}
+                                >
                                     <FaSave />
                                 </button>
+                                <button
+                                    className="small-icon"
+                                    form="post-form"
+                                    type="submit"
+                                    title={isDraft ? 'Post' : 'Post'}
+                                >
+                                    <FaArrowRight />
+                                </button>
+                                </>
                             )}
-                            <button className="small-icon" form="post-form" type="submit" title={isEdit ? 'Save edit' : isReply ? 'Reply' : 'Post'}>
-                                {isEdit ? <FaSave /> : isReply ? <FaReply /> : <FaArrowRight />}
-                            </button>
                         </div>
                         <div className="center-buttons" style={{ display: 'flex', gap: '10px', position: 'absolute', left: '50%', transform: 'translateX(-50%)' }}>
                             {!showGlobalAiPrompt ? (
@@ -921,9 +972,9 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onSubm
                         )}
                     </div>
                 </div>
-                {(blockLimitError || formErrorMessage) && (
+                {(blockLimitError || postErrorMessage) && (
                     <p className="text16" style={{ display: 'flex', alignItems: 'center', margin: '0' }}>
-                        {blockLimitError || formErrorMessage}
+                        {blockLimitError || postErrorMessage}
                         {blockLimitError && (
                             <button className="small-icon" onClick={() => navigate('/membership')} type="button" style={{ marginLeft: '5px' }} title="Get Membership">
                                 <FaArrowCircleUp />
@@ -939,9 +990,9 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onSubm
                             const input = e.target.value;
                             if (input.length <= TITLE_CHAR_LIMIT) {
                                 setTitle(input);
-                                setFormErrorMessage('');
+                                setPostErrorMessage('');
                             } else {
-                                setFormErrorMessage('Title exceeds character limit.', !user.has_membership && 'Get membership for more.');
+                                setPostErrorMessage('Title exceeds character limit.', !user.has_membership && 'Get membership for more.');
                             }
                         }}
                         placeholder="Add title (optional)..." 
@@ -956,9 +1007,9 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onSubm
                                 const input = e.target.value;
                                 if (input.length <= TEXT_CHAR_LIMIT) {
                                     setGlobalAiPrompt(input);
-                                    setFormErrorMessage('');
+                                    setPostErrorMessage('');
                                 } else {
-                                    setFormErrorMessage('Prompt exceeds character limit.', !user.has_membership && 'Get membership for more.');
+                                    setPostErrorMessage('Prompt exceeds character limit.', !user.has_membership && 'Get membership for more.');
                                 }
                             }}
                             placeholder={limitReached ? user.has_membership ? "Usage limit reached" : "Usage limit reached. Get membership for more." : "Describe changes for post..."} 
@@ -973,7 +1024,7 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onSubm
                     </div>
                 )}
                 <input accept="image/*,video/*" hidden id="media-input" multiple onChange={handleFilesChange} type="file" />
-                {editMode && <p className="text24" style={{ marginLeft: 0, marginTop: 0 }}>Editing</p>}
+                {editMode && <p className="text24" style={{ marginLeft: 0, marginTop: 0 }}>{isReply ? 'Reply' : 'Editing'}</p>}
                 <div className={editMode ? 'single-container edit' : 'single-container'}>
                     {editMode ? (
                         <DragDropContext onDragEnd={onDragEnd}>
@@ -1033,7 +1084,7 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onSubm
                                                                             <FaEllipsisV /><p style={{ fontSize: '14px', margin: '0px'}}>Add content</p>
                                                                         </button>
                                                                         {codeBlockDropdown[id] && (
-                                                                        <div className="dropdown-menu" style={{ position: 'absolute', right: 0, top: '25px', backgroundColor: 'white', boxShadow: '0px 0px 5px rgba(0,0,0,0.2)', zIndex: 10, borderRadius: '4px', padding: '5px' }}>
+                                                                        <div className="dropdown-menu">
                                                                             <button onClick={() => {setCodeBlockDropdown({...codeBlockDropdown, [id]: false}); addIframe(id);}} style={{ display: 'block', width: '100%', textAlign: 'left', padding: '5px', border: 'none', background: 'none', cursor: 'pointer' }}>
                                                                                 <FaLink style={{ marginRight: '5px' }} /> Add Website Link
                                                                             </button>
@@ -1089,10 +1140,10 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onSubm
                                                                                             const input = e.target.value;
                                                                                             if (input.length <= TEXT_CHAR_LIMIT) {
                                                                                                 updateBlock({ ...block, data: { ...data, _tempAiPrompt: input } });
-                                                                                                setFormErrorMessage('');
+                                                                                                setPostErrorMessage('');
                                                                                             } else {
                                                                                                 updateBlock({ ...block, data: { ...data, _tempAiPrompt: input } });
-                                                                                                setFormErrorMessage('Prompt exceeds character limit.', !user.has_membership && 'Get membership for more.');
+                                                                                                setPostErrorMessage('Prompt exceeds character limit.', !user.has_membership && 'Get membership for more.');
                                                                                             }
                                                                                         }}
                                                                                         placeholder={limitReached ? (user.has_membership ? "Usage limit reached" 

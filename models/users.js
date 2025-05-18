@@ -12,7 +12,7 @@ const Users = sequelize.define('users', {
     collaborative_preference: { type: FLOAT, allowNull: false, defaultValue: 0.5 },
     time_preference: { type: FLOAT, allowNull: false, defaultValue: 0.0001 },
     has_membership: { type: BOOLEAN, defaultValue: false }, 
-    theme: { type: STRING(1000), allowNull: true, defaultValue: '{"border":"#323437","dark":"#2c2e31","darkest":"#0f0f0f","light":"#737484",lightest:"#dddddd"}' },
+    theme: { type: STRING(1000), allowNull: true, defaultValue: '{"border":"#323437","dark":"#232527","darkest":"#0f0f0f","light":"#737484",lightest:"#dddddd"}' },
     points: { type: INTEGER, allowNull: false, defaultValue: 0 }, 
     usage_count: { type: INTEGER, allowNull: false, defaultValue: 0 }, 
     storage_count: { type: FLOAT, allowNull: false, defaultValue: 0 }, 
