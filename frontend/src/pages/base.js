@@ -2,7 +2,8 @@ import axios from 'axios';
 import Cropper from 'react-easy-crop';
 import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, DragOverlay } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
-import { FaArrowRight, FaFileUpload, FaMinus, FaPlus, FaPlusCircle, FaSearch, FaSignInAlt } from 'react-icons/fa';
+import { FaArrowRight, FaFileUpload, FaMinus, FaPlus, FaPlusCircle, FaSignInAlt } from 'react-icons/fa';
+import { MagnifyingGlassIcon } from '@radix-ui/react-icons';
 import React, { useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { Link, Outlet, useNavigate } from 'react-router-dom';
 import { v4 } from 'uuid';
@@ -833,7 +834,7 @@ const BaseLayout = () => {
                                 }}
                             />
                             <button className="icon-button search" data-tooltip="Search" type="submit">
-                                <FaSearch className="standard-icon" />
+                                <MagnifyingGlassIcon className="standard-icon" style={{ transform: 'scale(1.3)' }}/>
                             </button>
                         </div>
                     </form>

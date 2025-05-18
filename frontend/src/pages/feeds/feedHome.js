@@ -28,7 +28,7 @@ const FeedHome = () => {
     const [isLocked, setIsLocked] = useState(false);
     const [isModerator, setIsModerator] = useState(false);
     const [isPostChannel, setIsPostChannel] = useState(true);
-    const [newChannelName, setNewChannelName] = useState('');
+    const [newChannelName, setNewChannelName] = useState(''); 
     const [postErrorMessage, setPostErrorMessage] = useState('');
     const [postToEdit, setPostToEdit] = useState(null);
     const [replyingToPost, setReplyingToPost] = useState(null); 
@@ -157,7 +157,10 @@ const FeedHome = () => {
         }
     };
     
+    console.log("channel_name", channel_name);
+    console.log("channels", channels);
     const channelRender = channels.find(c => c.channel_name === channel_name);
+    console.log("channelRender", channelRender);
 
     useEffect(() => {
         if (!channelRender && channels.length > 0) {
@@ -258,19 +261,19 @@ const FeedHome = () => {
             return;
         }
         try {
-            formData.append('feed_id', feed.feed_id);
-            formData.append('channel_id', channelRender.channel_id);
             formData.append('poster_id', viewer.feed_id);
             await axios.post('/api/create_post', formData, {
                 headers: { 'Content-Type': 'multipart/form-data' },
             });
             const draftId = formData.get('draft_id')
-            await axios.delete('/api/remove_draft', {
-                headers: { 'Content-Type': 'application/json' },
-                data: {   
-                    draft: { draft_id: draftId }
-                }
-            });       
+            if (draftId !== null && draftId !== '') {
+                await axios.delete('/api/remove_draft', {
+                    headers: { 'Content-Type': 'application/json' },
+                    data: {   
+                        draft: { draft_id: draftId }
+                    }
+                });       
+            }
             setShowPostForm(false);
         } catch (error) {
             if (error.response && error.response.status === 413) {
@@ -346,18 +349,18 @@ const FeedHome = () => {
                 {showDrafts ? (
                     <PostChannel
                         channelId={channelRender.channel_id}
-                        channelName={channelRender.channel_name}
+                        channelName={channel_name}
                         feed={feed}
                         isDraft={true}
                         isGroup={feed.is_group}
-                        onEditClick={(post) => { console.log("clicking edit button with post:", post); setShowPostForm(true); setIsEdit(true); setPostToEdit(post); handleToggleDrafts(); }}
+                        onEditClick={(post) => { setShowPostForm(true); setIsEdit(true); setPostToEdit(post); handleToggleDrafts(); }}
                         onReplyClick={null}
                         posts={draftPosts}
                     />
                 ) : showPostForm ? (
-                    <ContentForm channelId={channelRender.channel_id} feed={feed} isEdit={isEdit} isReply={false} onSubmit={isEdit ? handleEditSubmit : handlePostSubmit} postErrorMessage={postErrorMessage} post={postToEdit} setPostErrorMessage={setPostErrorMessage} setShowForm={setShowPostForm}/>
+                    <ContentForm channelId={channelRender.channel_id} feed={feed} isEdit={isEdit} isReply={false} onSubmit={isEdit ? handleEditSubmit : handlePostSubmit} post={postToEdit} postErrorMessage={postErrorMessage} setPostErrorMessage={setPostErrorMessage} setShowForm={setShowPostForm}/>
                 ) : replyingToPost ? (
-                    <ContentForm channelId={channelRender.channel_id} feed={feed} isEdit={false} isGroup={feed.is_group} isReply={true} onSubmit={handlePostSubmit} post={replyingToPost} setShowForm={() => setReplyingToPost(null)}/>
+                    <ContentForm channelId={channelRender.channel_id} feed={feed} isEdit={false} isGroup={feed.is_group} isReply={true} onSubmit={handlePostSubmit} post={replyingToPost} postErrorMessage={postErrorMessage} setPostErrorMessage={setPostErrorMessage} setShowForm={() => setReplyingToPost(null)}/>
                 ) : channelRender ? (
                         channelRender.is_posts && (channelMode === 'post' || !channelRender.is_chat) ? (
                         <PostChannel
