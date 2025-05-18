@@ -45,7 +45,7 @@ const AskChannel = () => {
 				if (chatId) {
 					if (location.state?.initialMessage && !initialMessageRef.current) {
 						if (limitReached) {
-							setErrorMessage(user.has_membership ? "Usage limit reached" : "Usage limit reached. Get membership for more.");
+							setErrorMessage(user.has_membership ? "Usage limit reached. Buy new membership to reset" : "Usage limit reached. Get membership for more.");
 							setTimeout(() => { setErrorMessage(''); }, 10000);
 							return;
 						}
@@ -53,7 +53,7 @@ const AskChannel = () => {
 						await sendAskMessage(chatId, location.state.initialMessage);
 					} else if (query.length !== 0) {
 						if (limitReached) {
-							setErrorMessage(user.has_membership ? "Usage limit reached" : "Usage limit reached. Get membership for more.");
+							setErrorMessage(user.has_membership ? "Usage limit reached. Buy new membership to reset" : "Usage limit reached. Get membership for more.");
 							setTimeout(() => { setErrorMessage(''); }, 10000);
 							return;
 						}
@@ -186,7 +186,7 @@ const AskChannel = () => {
 	const handleHomeSubmit = async (event) => {
 		event.preventDefault();
 		if (limitReached) {
-			setErrorMessage(user.has_membership ? "Usage limit reached" : "Usage limit reached. Get membership for more.");
+			setErrorMessage(user.has_membership ? "Usage limit reached. Buy new membership to reset" : "Usage limit reached. Get membership for more.");
 			return;
 		}
 		try {
@@ -202,7 +202,7 @@ const AskChannel = () => {
 
 	const sendAskMessage = async (chatId, messageContent = currentMessage) => {
 		if (limitReached) {
-			setErrorMessage(user.has_membership ? "Usage limit reached" : "Usage limit reached. Get membership for more.");
+			setErrorMessage(user.has_membership ? "Usage limit reached. Buy new membership to reset" : "Usage limit reached. Get membership for more.");
 			return;
 		}
 		try {
@@ -298,9 +298,7 @@ const AskChannel = () => {
                             <div className="messages-channel-footer">
 								<input 
 									className="chat-message-bar" 
-									type="text" 
-									value={currentMessage} 
-									placeholder={limitReached ? (user.has_membership ? "Usage limit reached" : "Usage limit reached. Get membership for more.") : "Ask..."}
+									disabled={isLoading || limitReached}
 									onChange={(e) => {
 										const input = e.target.value;
 										if (input.length <= maxLength) {
@@ -311,7 +309,9 @@ const AskChannel = () => {
 										}
 									}}
 									onKeyDown={(e) => e.key === 'Enter' && sendAskMessage(chatId, currentMessage)} 
-									disabled={isLoading || limitReached}
+									placeholder={limitReached ? (user.has_membership ? "Usage limit reached. Buy new membership to reset" : "Usage limit reached. Get membership for more.") : "Ask..."}
+									type="text" 
+									value={currentMessage} 
 								/>
                                 <button className={isLoading || limitReached ? "chat-send-button disabled" : "chat-send-button"} onClick={() => sendAskMessage(chatId, currentMessage)} disabled={isLoading || limitReached}>
                                     {isLoading ? 'Loading...' : 'Send'}

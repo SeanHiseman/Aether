@@ -115,7 +115,7 @@
   padding: var(--small-margin);
   position: absolute;
   right: 0;
-  top: var(--large-margin);
+  width: 160px;
   z-index: 10;
 }
 .global-ai-prompt-container {
@@ -192,8 +192,6 @@
 }
 .single-container.edit {
   border-radius: 5px;
-  padding: var(--medium-margin);
-  padding-bottom: 0;
 }
 .spinner {
   animation: spin 1s linear infinite;

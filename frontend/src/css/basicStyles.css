@@ -37,11 +37,9 @@ body, html {
 .dark-text {
     color: var(--darkest);
 }
-.disabled {
-    cursor: default;
-}
 .disabled:hover {
     background: none;
+    cursor: default;
 }
 .error-message {
     height: 16px;
@@ -49,7 +47,7 @@ body, html {
     text-align: center;
 }
 .faded-text {
-    color: #7b7b7b;
+    color: var(--light);
 }
 .icon-text {
     margin: 0 0 0 8px;
