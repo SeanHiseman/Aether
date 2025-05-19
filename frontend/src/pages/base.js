@@ -814,14 +814,14 @@ const BaseLayout = () => {
                     <div className="spacer"></div>
                     <form className="search-form" onSubmit={handleSearchClick}>
                         <div className="search-container">
-                            <button className="icon-button ask" data-tooltip="Ask" type="button" onClick={handleAskClick}>
+                            {/*<button className="icon-button ask" data-tooltip="Ask" type="button" onClick={handleAskClick}>
                                 <img className="standard-icon" src="/media/site_images/icons/ask.png" alt="Ask"/>
-                            </button>
+                            </button>*/}
                             <input 
                                 className="search-bar" 
                                 type="text" 
                                 name="keyword" 
-                                placeholder="Search or Ask..." 
+                                placeholder="Search..." 
                                 value={currentQuery} 
                                 onChange={(e) => {
                                     const input = e.target.value;
