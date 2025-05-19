@@ -56,9 +56,9 @@ const App = () => {
 									</PublicAuthProvider>
 								</QueryProvider>
 							}>
-								<Route path="ask" element={<AskChannel />} >
+								{/*<Route path="ask" element={<AskChannel />} >
 									<Route path=":chatId" element={<AskChannel />} />
-								</Route>
+								</Route>*/}
 								<Route path="g/:feed_name" element={<FeedWrapper />}>
 									<Route index element={<Navigate to="Main" replace />} />
 										<Route path=":channel_name" element={<FeedHome />}>
