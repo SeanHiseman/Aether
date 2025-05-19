@@ -311,9 +311,9 @@ const ContentWidget = ({ canRemove, feed, isDraft, isGroup, onEditClick, onPostR
             <FaTrash />
           </button>
         )}
-        {isAuthenticated && !post.note?.is_misinfo && !isDraft && (
+        {/*{isAuthenticated && !post.note?.is_misinfo && !isDraft && (
           <AskButton content={post} isGroup={isGroup} isReply={false} note={note} setNote={setNote} setPostErrorMessage={setPostErrorMessage} setShowNote={setShowNote} showNote={showNote} />
-        )}
+        )}*/}
       </div>
       {showReplies && (
         <div className="reply-section">

@@ -363,6 +363,8 @@ main {
 .search-bar {
     background-color: var(--dark);
     border: none;
+    border-bottom-left-radius: var(--large-margin);
+    border-top-left-radius: var(--large-margin);
     color: var(--lightest);
     flex-grow: 1;
     font-size: large;
@@ -379,7 +381,8 @@ main {
 }
 .search-form {
     display: flex;
-    max-width: 35%;
+    /*max-width: 35%;*/
+    max-width: 40%;
     height: 80%;
     position: relative;
     width: 100%;
