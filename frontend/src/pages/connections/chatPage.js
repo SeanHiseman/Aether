@@ -1,6 +1,6 @@
 import axios from 'axios';
 import React, { useCallback, useContext, useEffect, useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { Link, useNavigate, useOutletContext, useParams } from 'react-router-dom';
 import { FaEdit, FaMinus, FaPlus, FaRegWindowClose, FaSave, FaTrash } from 'react-icons/fa';
 import { AuthContext } from '../../components/authContext';
 import ChannelList from '../../components/channels/channelList';
@@ -20,6 +20,7 @@ const ChatPage = () => {
     const chatLimit = user && user.has_membership ? 10000 : 100;
     const chatLimitReached = chats.length >= chatLimit;
     const navigate = useNavigate();
+    const { rightClasses } = useOutletContext(); 
 
     const fetchConnection = async () => {
         try {
@@ -181,7 +182,7 @@ const ChatPage = () => {
     return (
         <div className="standard-container">
             <ChatChannel canAdd={true} channelId={selectedChatId} connection={connection} isGroup={false} isLocked={false} setChats={setChats} setErrorMessage={setErrorMessage} />
-            <aside className="right-aside">
+            <aside className={rightClasses}>
                 {connection && (
                     <div id="feed-summary">
                         <Link className="chat-feed-link" to={`/u/${connection_name}`}>

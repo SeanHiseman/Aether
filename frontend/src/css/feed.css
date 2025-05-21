@@ -209,7 +209,8 @@
     align-items: center;
     display: flex;
     justify-content: center;
-    height: calc(100vh - 80px);
+    height: 100%;
+    margin-top: var(--header-height);
     width: 100%;
 }
 .settings-feed-info {
