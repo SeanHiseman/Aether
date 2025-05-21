@@ -3,7 +3,7 @@ import axios from 'axios';
 import React, { useContext, useEffect, useRef, useState } from 'react';
 import { FaChevronDown, FaChevronUp } from 'react-icons/fa';
 import { useInfiniteQuery } from '@tanstack/react-query';
-import { useSearchParams } from 'react-router-dom';
+import { useOutletContext, useSearchParams } from 'react-router-dom';
 import ContentWidget from '../components/content/contentWidget';
 import FeedWidget from '../components/search/feedWidget';
 
@@ -17,6 +17,7 @@ const SearchResults = () => {
     const [timePreference, setTimePreference] = useState(0.001);
     const { isAuthenticated, user, viewer } = useContext(AuthContext);
     const loaderRef = useRef(null);
+    const { rightClasses } = useOutletContext(); 
 
     //Gets results depending on which type is being viewed
     const fetchSearchResults = async ({ pageParam = 0 }) => {
@@ -139,7 +140,7 @@ const SearchResults = () => {
                     </ul>
                 </div>
             </div>
-            <aside className="right-aside">
+            <aside className={rightClasses}>
                 <p className="text36">Results</p>
                 <div className="error-message">{errorMessage}</div>
                 <nav className="channel-list">

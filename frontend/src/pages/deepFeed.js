@@ -2,7 +2,7 @@ import axios from 'axios';
 import { DragDropContext } from 'react-beautiful-dnd';
 import React, { useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { FaEdit, FaRegWindowClose, FaSave, FaTrash } from 'react-icons/fa';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useOutletContext, useParams } from 'react-router-dom';
 import { AuthContext } from '../components/authContext';
 import ContentForm from '../components/content/contentForm';
 import ContentWidget from '../components/content/contentWidget';
@@ -20,6 +20,7 @@ const DeepFeed = () => {
     const [timePreference, setTimePreference] = useState(0.001);
     const { isAuthenticated, user, viewer } = useContext(AuthContext);
     const navigate = useNavigate();
+    const { rightClasses } = useOutletContext(); 
     
     const getPosts = async ({ pageParam = 0 }) => {
         try {
@@ -234,7 +235,7 @@ const DeepFeed = () => {
                     )}
                 </div>
             </div>
-            <aside className="right-aside">
+            <aside className={rightClasses}>
                 <div className="channel-name-section">
                     {isEditingName ? (
                         <div className="change-name">

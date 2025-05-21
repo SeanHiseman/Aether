@@ -2,7 +2,7 @@ import { AuthContext } from '../../../components/authContext';
 import axios from 'axios';
 import { FaSignOutAlt } from 'react-icons/fa';
 import React, { useContext, useEffect, useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { Link, useNavigate, useOutletContext, useParams } from 'react-router-dom';
 import FeedDeletion from './feedDeletion';
 import FeedFollowers from './feedFollowers';
 import FeedInfoView from './feedInfoView';
@@ -20,6 +20,7 @@ const FeedSettings = () => {
     const [followRequests, setFollowRequests] = useState([]);
     const [followRequestCount, setFollowRequestCount] = useState(0);
     const navigate = useNavigate();
+    const { rightClasses } = useOutletContext(); 
     const { user } = useContext(AuthContext);
 
     useEffect(() => {
@@ -96,7 +97,7 @@ const FeedSettings = () => {
             <div className="settings-area">
                 {renderComponent()}
             </div>  
-            <aside className="right-aside">
+            <aside className={rightClasses}>
                 <nav id="channel-list">
                     <ul>
                         <Link id="feed-summary" to={`/g/${feed_name}`}>
