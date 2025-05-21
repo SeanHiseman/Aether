@@ -5,6 +5,7 @@
     flex-direction: column;
 }
 .authentication-box {
+    border: 1px solid var(--border);
     background-color: var(--dark);
     border-radius: 10px;
     padding: 20px;
@@ -31,7 +32,7 @@
     font-size: large;
     margin: 8px 0;
     padding: 14px 20px;
-    transition: var(--transition-regular);
+    transition: background-color var(--transition-regular);
     width: 100%;
 }
 .link {
@@ -45,7 +46,7 @@
     padding: 10px 20px;
     text-align: center;
     text-decoration: none;
-    transition: var(--transition-regular);
+    transition: background-color var(--transition-regular);
 }
 .link:hover, .submit:hover{
     background-color: var(--light);

@@ -26,7 +26,7 @@ body, html {
     color: var(--lightest);
     padding: 3px 6px;
     margin:  var(--small-margin);
-    transition: var(--transition-regular);
+    transition: background-color var(--transition-regular);
 }
 .button, .dark-button, .dark-button-disabled {
     font-size: large;

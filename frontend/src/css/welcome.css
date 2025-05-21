@@ -6,10 +6,9 @@
     margin: 24px;
     text-align: left;
 }
-.welcome, .welcome-box {
-    box-shadow: var(--shadow);
-}
 .button.join.welcome {
+    background-color: var(--dark);
+    border: 1px solid var(--border);
     border-radius: 32px;
     margin: 16px;
     transition: 0.3s;
@@ -19,7 +18,8 @@
 }
 .welcome-box {
     align-items: center;
-    background-color: var(--darkest);
+    background-color: var(--dark);
+    border: 1px solid var(--border);
     border-radius: 32px;
     color: white;
     cursor: pointer;
@@ -51,7 +51,7 @@
 }
 #welcome-container {
     align-items: center;
-    background-color: var(--dark);
+    background-color: var(--darkest);
     display: flex;
     flex-direction: column;
     margin: 0;

@@ -31,7 +31,7 @@
     min-height: 50px;
     min-width: 90px;
     padding: var(--small-margin);
-    transition: var(--transition-regular);
+    transition: background-color (--transition-regular);
 }
 .chat-send-button:hover {
     background-color: var(--light);
@@ -66,7 +66,7 @@
     font-size: xx-large;
     height: 70%;
     padding: var(--small-margin);
-    transition: var(--transition-regular);
+    transition: background-color var(--transition-regular);
 }
 .message {
     border-radius: var(--medium-margin);
