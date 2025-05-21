@@ -3,7 +3,7 @@ import { AuthContext } from '../../components/authContext';
 import { FaCog, FaEdit, FaFeatherAlt, FaFolder, FaFolderOpen, FaMinus, FaPlus, FaRegWindowClose, FaSave, FaTrash } from 'react-icons/fa';
 import { Tooltip } from 'react-tooltip';
 import React, { useContext, useEffect, useState } from 'react';
-import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
+import { Link, useLocation, useNavigate, useOutletContext, useParams } from 'react-router-dom';
 import ChannelList from '../../components/channels/channelList';
 import ChatChannel from '../../components/channels/chatChannel';
 import ContentForm from '../../components/content/contentForm';
@@ -37,6 +37,7 @@ const FeedHome = () => {
     const { isAuthenticated, user, viewer } = useContext(AuthContext);
     const location = useLocation();
     const navigate = useNavigate();
+    const { rightClasses } = useOutletContext(); 
     const showDrafts = location.pathname.endsWith('/drafts');
     const urlPrefix = feed.is_group ? 'g' : 'u';
 
@@ -377,7 +378,7 @@ const FeedHome = () => {
                     )
                 ) : null}
             </div> 
-            <aside className="right-aside">
+            <aside className={rightClasses}>
                 <div id="feed-summary">
                     <Link to={`/${urlLetter}/${feed_name}/Main`}>
                         <img className="large-feed-photo" src={`/${feed.feed_photo}`} alt={feed.feed_name} />

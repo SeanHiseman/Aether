@@ -146,6 +146,7 @@
     align-items: center;
     display: flex;
     flex-direction: column;
+    position: relative;
     width: 100%
 }
 .light-button.join {
@@ -172,7 +173,7 @@
     width: 180px;
 }
 .option-toggle button {
-    background-color: var(--darkest);
+    background-color: var(--dark);
     border: none;
     color: var(--lightest);
     cursor: pointer;
@@ -183,7 +184,7 @@
     transition: var(--transition-regular);
 }
 .option-toggle button.active-mode {
-    background-color: var(--light);
+    background-color: var(--darkest);
 }
 .option-toggle button:first-child {
     border-top-left-radius: 10px;
@@ -194,7 +195,7 @@
     border-bottom-right-radius: 10px;
 }
 .option-toggle button.passive-mode:hover {
-    background-color: var(--dark);
+    background-color: var(--light);
 }
 .results-wrapper {
     grid-column: 1 / 2;

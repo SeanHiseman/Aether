@@ -2,7 +2,7 @@ import axios from 'axios';
 import Cropper from 'react-easy-crop';
 import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, DragOverlay } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
-import { FaArrowRight, FaFileUpload, FaMinus, FaPlus, FaPlusCircle, FaSignInAlt } from 'react-icons/fa';
+import { FaArrowRight, FaBars, FaFileUpload, FaMinus, FaPlus, FaPlusCircle, FaSignInAlt } from 'react-icons/fa';
 import { MagnifyingGlassIcon } from '@radix-ui/react-icons';
 import React, { useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { Link, Outlet, useNavigate } from 'react-router-dom';
@@ -31,6 +31,7 @@ const BaseLayout = () => {
     const [currentQuery, setCurrentQuery] = useState('');
     const [deepFeeds, setDeepFeeds] = useState([]);
     const [deepFeedCallbacks, setDeepFeedCallbacks] = useState({});
+    const [desk, setDesk ] = useState({left:false, right:false});
     const [dragType, setDragType] = useState(null);
     const [feeds, setFeeds] = useState([]);
     const feedContainerRef = useRef(null);
@@ -42,6 +43,7 @@ const BaseLayout = () => {
     const [hasMoreFeeds, setHasMoreFeeds] = useState(true);
     const [headerErrorMessage, setHeaderErrorMessage] = useState('');
     const [imageSrc, setImageSrc] = useState(null);
+    const [mobileOpen, setMobileOpen] = useState(null);
     const { setTheme } = useContext(ThemeContext);
     const [showForm, setShowForm] = useState(false);
     const { state } = useContext(UnreadContext);
@@ -49,6 +51,51 @@ const BaseLayout = () => {
     const hasMembership = user?.has_membership;
 	const MAX_FILE_SIZE = hasMembership ? 100 * 1024 * 1024 : 1 * 1024 * 1024;
     const [zoom, setZoom] = useState(1);
+    
+    const isMobile = () => window.matchMedia('(max-width:768px)').matches;
+    const toggleLeft  = () => {
+        if (isMobile()) 
+            setMobileOpen(mobileOpen==='left'?null:'left');
+         else            
+            setDesk(d => ({...d, left:!d.left}));  
+    };
+
+    const toggleRight = () => {
+        if (isMobile()) 
+            setMobileOpen(mobileOpen==='right'?null:'right');
+        else            
+            setDesk(d => ({...d, right:!d.right}));
+    };
+
+    const closeDrawers = () => setMobileOpen(null);
+  
+    const contentClasses = [
+        'content',
+        desk.left  ? 'hide-left'  : '',
+        desk.right ? 'hide-right' : '',
+        isMobile() && mobileOpen==='left'  ? 'shift-right' : '',
+        isMobile() && mobileOpen==='right' ? 'shift-left'  : ''
+    ].join(' ');
+  
+    const headerClasses = [
+        'base-header',
+        desk.left  ? 'hide-left'  : '',
+        desk.right ? 'hide-right' : '',
+        isMobile() && mobileOpen==='left'  ? 'shift-right' : '',
+        isMobile() && mobileOpen==='right' ? 'shift-left'  : ''
+    ].join(' ');
+
+    const leftClasses  = [
+        'left-aside',
+        desk.left  ? 'collapsed' : '',
+        isMobile() && mobileOpen==='left'  ? 'open' : ''
+    ].join(' ');
+  
+    const rightClasses = [
+        'right-aside',
+        desk.right ? 'collapsed' : '',
+        isMobile() && mobileOpen==='right' ? 'open' : ''
+    ].join(' ');
     
     const sensors = useSensors(
         useSensor(PointerSensor, {
@@ -58,7 +105,7 @@ const BaseLayout = () => {
         })
     );
 
-    const handleDragStart = (event) => {
+    const dragStart = (event) => {
         const { active } = event;
         const activeId = active.id;
         let dragType = 'feed';
@@ -144,7 +191,7 @@ const BaseLayout = () => {
         setActiveId(activeId);
     };
 
-    const handleDragEnd = async (event) => {
+    const dragEnd = async (event) => {
         const { active, over } = event;
         console.log("Drag ended", { active, over });
         if (!over) {
@@ -506,6 +553,36 @@ const BaseLayout = () => {
         };
     }, [hasMoreFeeds]);
 
+    const askClick = async (event) => {
+        event.preventDefault(); 
+        if (!isAuthenticated) {
+            const willLogin = window.confirm('Please log in to continue');
+            if (willLogin) {
+                navigate('/login', { state: { from: window.location.pathname } });
+            }
+            return; 
+        }
+        try {
+            const trimmedQuery = currentQuery.trim();
+            const newChatId = v4();
+            if (trimmedQuery) {
+                if (user.has_membership) {
+                    await axios.post('/api/create_ask_chat', {
+                        chatId: newChatId,
+                        chatName: "New chat"
+                    });
+                    navigate(`/ask/${newChatId}`, { state: { initialMessage: trimmedQuery } });
+                }
+                setCurrentQuery('');
+            } else {
+                navigate('/ask/home');
+            }
+        } catch (error) {
+            setHeaderErrorMessage("Error sending Ask");
+            setTimeout(() => { setAsideErrorMessage(''); }, 5000);
+        }
+    };
+
     const createFeed = async (event) => {
         if (!isAuthenticated) return;
         try {
@@ -584,37 +661,7 @@ const BaseLayout = () => {
         }
     };
 
-    const handleAskClick = async (event) => {
-        event.preventDefault(); 
-        if (!isAuthenticated) {
-            const willLogin = window.confirm('Please log in to continue');
-            if (willLogin) {
-                navigate('/login', { state: { from: window.location.pathname } });
-            }
-            return; 
-        }
-        try {
-            const trimmedQuery = currentQuery.trim();
-            const newChatId = v4();
-            if (trimmedQuery) {
-                if (user.has_membership) {
-                    await axios.post('/api/create_ask_chat', {
-                        chatId: newChatId,
-                        chatName: "New chat"
-                    });
-                    navigate(`/ask/${newChatId}`, { state: { initialMessage: trimmedQuery } });
-                }
-                setCurrentQuery('');
-            } else {
-                navigate('/ask/home');
-            }
-        } catch (error) {
-            setHeaderErrorMessage("Error sending Ask");
-            setTimeout(() => { setAsideErrorMessage(''); }, 5000);
-        }
-    };
-
-    const handleSearchClick = (event) => {
+    const searchClick = (event) => {
         event.preventDefault();
         navigate(`/search?keyword=${currentQuery}`);
     };
@@ -632,9 +679,10 @@ const BaseLayout = () => {
         setAsideErrorMessage('');
     };
 
-    return (
+    return (    
+        <>{mobileOpen && <div className="backdrop" onClick={closeDrawers} />}
         <div className="container">
-            <aside className="left-aside" ref={feedContainerRef}>
+            <aside className={leftClasses} ref={feedContainerRef}>
                 <div className="left-aside-feed-info">
                     {isAuthenticated && (
                         <Link className="feed-link" to={`/u/${feed.feed_name}`}>
@@ -652,7 +700,7 @@ const BaseLayout = () => {
                     </Link>*/}
                 </div>
                 {isAuthenticated ? (
-                    <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+                    <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={dragStart} onDragEnd={dragEnd}>
                         <nav id="personal-feeds">
                             <ul>
                                 {/*<li className="channel-link"><Link to="/d/recommended">Recommended</Link></li>*/}
@@ -663,7 +711,7 @@ const BaseLayout = () => {
                         <div className="deep-feeds-container">
                             <SortableContext items={deepFeeds.map(df => `df-${df.deep_feed_id}`)} strategy={verticalListSortingStrategy}>
                                 {deepFeeds.map((deepFeed) => (
-                                    <DeepFeedItem key={deepFeed.deep_feed_id} deepFeed={deepFeed} handleDragStart={handleDragStart} handleDragEnd={handleDragEnd} onFeedAdded={registerFeedCallback} showHeader={true} />
+                                    <DeepFeedItem key={deepFeed.deep_feed_id} deepFeed={deepFeed} handleDragStart={dragStart} handleDragEnd={dragEnd} onFeedAdded={registerFeedCallback} showHeader={true} />
                                 ))}
                             </SortableContext>
                         </div>
@@ -713,15 +761,7 @@ const BaseLayout = () => {
                                     </div>
                                     {imageSrc && (
                                         <div className="crop-container" style={{ position: 'relative', width: '100%', height: 180 }}>
-                                            <Cropper
-                                                image={imageSrc}
-                                                crop={crop}
-                                                zoom={zoom}
-                                                aspect={1}
-                                                onCropChange={setCrop}
-                                                onZoomChange={setZoom}
-                                                onCropComplete={onCropComplete}
-                                            />
+                                            <Cropper aspect={1} crop={crop} image={imageSrc} onCropChange={setCrop} onCropComplete={onCropComplete} onZoomChange={setZoom} zoom={zoom} />
                                         </div>
                                     )}
                                     <div className="option-toggle">
@@ -810,11 +850,12 @@ const BaseLayout = () => {
                 )}
             </aside>
             <main>
-                <header id="base-header">
+                <header className={headerClasses}>
+                    <button className="small-icon" onClick={toggleLeft} title={desk.left ? "Open sidebar" : "Close sidebar"}><FaBars /></button>
                     <div className="spacer"></div>
-                    <form className="search-form" onSubmit={handleSearchClick}>
+                    <form className="search-form" onSubmit={searchClick}>
                         <div className="search-container">
-                            {/*<button className="icon-button ask" data-tooltip="Ask" type="button" onClick={handleAskClick}>
+                            {/*<button className="icon-button ask" data-tooltip="Ask" type="button" onClick={askClick}>
                                 <img className="standard-icon" src="/media/site_images/icons/ask.png" alt="Ask"/>
                             </button>*/}
                             <input 
@@ -841,12 +882,14 @@ const BaseLayout = () => {
                     <div className="spacer">
                         <p className="error-message">{headerErrorMessage}</p>
                     </div>
+                    <button className="small-icon" onClick={toggleRight} title={desk.right ? "Open sidebar" : "Close sidebar"}><FaBars /></button>
                 </header>
-                <div className="content">
-                    <Outlet />
+                <div className={contentClasses}>
+                    <Outlet context={{ rightClasses }}/>
                 </div>
             </main>
         </div>
+        </>
     );
 };
 
