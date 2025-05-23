@@ -131,7 +131,7 @@ router.post('/generate_content', authenticateCheck, async (req, res) => {
     try {
         const { currentCode, request, parentCode, senderId } = req.body;
         const user = await Users.findOne({ where: { user_id: senderId } });
-        const model = user.has_membership ? 'gpt-o4-mini' : 'gpt-4.1-mini'; 
+        const model = user.has_membership ? 'o4-mini' : 'gpt-4.1-mini'; 
         const tokenMultiplier = user.has_membership ? 11 : 4; //o4-mini 11x more than 4.1-nano baseline
         const normalizedRequest = request.toLowerCase().trim();
         const commonWords = ['a', 'an', 'the', 'and', 'or', 'but', 'is', 'are', 'was', 'were', 'to', 'of', 'in', 'with', 'for', 'on', 'at', 'by'];
@@ -232,8 +232,7 @@ router.post('/generate_content', authenticateCheck, async (req, res) => {
                     content: assistantInstructions
                 }
             ],
-            max_tokens: user.has_membership ? 32768 : 8192,
-            temperature: 0.7,
+            max_completion_tokens: user.has_membership ? 100000 : 32768,
         });
         aiReply = completion.choices[0].message.content.trim();
         const doctypeIndex = aiReply.indexOf('<!DOCTYPE html>');
@@ -242,9 +241,9 @@ router.post('/generate_content', authenticateCheck, async (req, res) => {
         }
         aiReply = aiReply.replace(/^```[a-zA-Z]*\s*|```$/g, '').trim();
         await Prompts.create({ prompt_id: v4(), prompt_content: request, response_content: aiReply});
-		const inputTokens = runStatus.usage?.input_tokens || 0;
-		const outputTokens = runStatus.usage?.output_tokens || 0;
-		const totalTokens = (inputTokens + (outputTokens * 4)) * tokenMultiplier; //Multiplier adjustst for more expensive models, output tokens are 4x the cost of input tokens
+        const inputTokens = completion.usage?.input_tokens || 0;
+        const outputTokens = completion.usage?.output_tokens || 0;
+        const totalTokens = (inputTokens + (outputTokens * 4)) * tokenMultiplier; //Multiplier adjustst for more expensive models, output tokens are 4x the cost of input tokens
 		await Users.increment('usage_count', { by: totalTokens, where: { user_id: senderId } });
         res.status(201).json({ success: true, generatedContent: aiReply, fromCache: false });
     } catch (error) {

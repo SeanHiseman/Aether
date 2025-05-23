@@ -28,14 +28,7 @@ const FeedItem = ({ feed, id, isChat, parentDeepFeedId, unreadCount }) => {
         }
     };
 
-    const {
-        attributes,
-        listeners,
-        setNodeRef,
-        transform,
-        transition,
-        isDragging,
-    } = useSortable({
+    const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
         id,
         data: {
             parentDeepFeedId,

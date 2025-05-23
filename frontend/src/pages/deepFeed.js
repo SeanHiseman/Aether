@@ -197,7 +197,7 @@ const DeepFeed = () => {
 
     return (
         <div className="standard-container">
-            <div className="content-feed">
+            <div className="channel-feed">
                 <div className="channel-content">
                     {activeReplyPostId && activePost ? (
                         <ContentForm
