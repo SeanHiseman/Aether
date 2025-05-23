@@ -91,7 +91,6 @@
     flex: 1;
     flex-direction: column;
     overflow-y: auto;
-    height: 100%;
     margin-top: 80px;
     width: 100%
 }
@@ -180,6 +179,7 @@
     overflow: auto; 
     z-index: 0;
 }
+/*Content feed may be redundant*/
 .content-feed, .messages-feed {
     display: flex;
     flex-direction: column; 

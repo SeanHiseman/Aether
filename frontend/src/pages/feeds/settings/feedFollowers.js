@@ -144,7 +144,7 @@ const FeedFollowers = ({ feed, setFeed }) => {
                                                 </button>
                                             )}
                                             {/* Moderators can remove regular followers but not other moderators/admins */}
-                                            {feed.isMod && !follower.is_admin && !follower.is_mod && (
+                                            {(feed.isMod && !follower.is_admin && !follower.is_mod || !feed.is_group) && (
                                                 <button className="small-icon" onClick={() => removeFollower(follower)}>
                                                     <FaMinus />
                                                     <p className="icon-text">Remove follower</p>
