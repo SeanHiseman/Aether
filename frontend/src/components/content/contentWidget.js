@@ -158,11 +158,13 @@ const ContentWidget = ({ canRemove, feed, isDraft, isGroup, onEditClick, onPostR
           feedId: viewer?.feed_id,
           voteType: 'check_vote',
         });
+        console.log("Vote limit response:", response.data);
         if (response.data.success) {
           setUpvoteLimit(response.data.reachedUpvoteLimit);
           setDownvoteLimit(response.data.reachedDownvoteLimit);
         }
-      } catch {
+      } catch (error) { 
+        console.error("Error checking vote limit:", error);
         setPostErrorMessage('Error checking vote limit');
       }
     };

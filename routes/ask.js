@@ -241,13 +241,12 @@ router.post('/generate_content', authenticateCheck, async (req, res) => {
         }
         aiReply = aiReply.replace(/^```[a-zA-Z]*\s*|```$/g, '').trim();
         await Prompts.create({ prompt_id: v4(), prompt_content: request, response_content: aiReply});
-        const inputTokens = completion.usage?.input_tokens || 0;
-        const outputTokens = completion.usage?.output_tokens || 0;
+        const inputTokens = completion.usage?.prompt_tokens || 0;
+        const outputTokens = completion.usage?.completion_tokens || 0;
         const totalTokens = (inputTokens + (outputTokens * 4)) * tokenMultiplier; //Multiplier adjustst for more expensive models, output tokens are 4x the cost of input tokens
 		await Users.increment('usage_count', { by: totalTokens, where: { user_id: senderId } });
         res.status(201).json({ success: true, generatedContent: aiReply, fromCache: false });
     } catch (error) {
-        console.error('Error generating content:', error);
         res.status(500).json({ success: false, error: error.message });
     }
 });

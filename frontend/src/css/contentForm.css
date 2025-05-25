@@ -45,7 +45,7 @@
   border: 1px solid var(--border);
   border-radius: var(--medium-margin);
   box-sizing: border-box;
-  margin-bottom: var(--medium-margin);
+  margin-top: var(--medium-margin);
   padding: 10px;
   width: 100%;
 }

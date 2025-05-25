@@ -32,12 +32,22 @@ import WelcomeHome from './pages/welcome/welcomeHome';
 //Routes to each layout, some with the base layout wrapper
 const App = () => {
 	const queryClient = new QueryClient(); //Sets up React Query
+	const BaseLayoutWithProviders = (
+		<QueryProvider>
+			<PublicAuthProvider>
+				<UnreadProvider>
+					<BaseLayout />
+				</UnreadProvider>
+			</PublicAuthProvider>
+		</QueryProvider>	
+	);
 	return (
 		<QueryClientProvider client={queryClient}>
 			<CustomThemeProvider>
 				<SocketProvider>
 					<Router>
 						<Routes>
+							<Route path="/" element={<Navigate to="/welcome" replace />} />
 							<Route path="/welcome" element={<WelcomeHome />} />
 							<Route path="/about" element={<About />} />
 							<Route path="/algorithm" element={<Algorithm />} />
@@ -47,15 +57,7 @@ const App = () => {
 							<Route path="/privacy" element={<Privacy />} />
 							<Route path="/login" element={<Login />} />
 							<Route path="/join" element={<Join />} />
-							<Route path="/" element={
-								<QueryProvider>
-									<PublicAuthProvider>
-										<UnreadProvider>
-											<BaseLayout />
-										</UnreadProvider>
-									</PublicAuthProvider>
-								</QueryProvider>
-							}>
+							<Route element={BaseLayoutWithProviders}>
 								{/*<Route path="ask" element={<AskChannel />} >
 									<Route path=":chatId" element={<AskChannel />} />
 								</Route>*/}
