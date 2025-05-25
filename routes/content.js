@@ -100,6 +100,7 @@ router.get('/channel_posts', async (req, res) => {
 router.post('/content_vote', authenticateCheck, async (req, res) => {
     try {
         const { postId, feedId, voteType } = req.body; //feedId refers to the user who is voting
+        console.log('content_vote:', postId, feedId, voteType);
         const content = await Posts.findByPk(postId);
         if (!content) {
             return res.status(404).json({ success: false, message: 'Content not found' });
@@ -171,6 +172,7 @@ router.post('/content_vote', authenticateCheck, async (req, res) => {
             reachedDownvoteLimit: newNetVote <= -10
         });
     } catch (error) {
+        console.error('Error in content_vote:', error);
         return res.status(500).json({ success: false });
     }
 });
