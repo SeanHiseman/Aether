@@ -522,6 +522,7 @@ router.delete('/delete_feed_channel', authenticateCheck, async (req, res) => {
         res.status(500).json({ success: false, message: error.message || "Failed to delete channel." });
     }
 });
+
 router.get('/feed/:feedName', async (req, res) => {
     try {
         const feedName = req.params.feedName;

@@ -206,23 +206,21 @@ router.post('/generate_content', authenticateCheck, async (req, res) => {
             Request: ${request}
             Current Code: ${currentCode}
             Parent Code: ${parentCode}
-            IMPORTANT: Return ONLY the raw HTML code without any explanations, comments, introductory text, or markdown formatting.
+            IMPORTANT: Return ONLY the raw HTML/Javascript  code without any explanations, comments, introductory text, or markdown formatting.
             Do not include \`\`\`html, \`\`\`
-            Start directly with <!DOCTYPE html>.
-            Only the HTML/JavaScript code
-            Set body overflow to hidden
-            Use white text as default
+            Start with <!DOCTYPE html>.
+            Body background #232527, hieght 300px minimum
+            White text as default
             If the request cannot be fulfilled with code, return nothing`
             :
             `Generate or improve HTML code based on the following context:
             Request: ${request}
             Current Code: ${currentCode}
-            IMPORTANT: Return ONLY the raw HTML code without any explanations, comments, introductory text, or markdown formatting.
+            IMPORTANT: Return ONLY the raw HTML/Javascript code without any explanations, comments, introductory text, or markdown formatting.
             Do not include \`\`\`html, \`\`\`
-            Start directly with <!DOCTYPE html>.
-            Only the HTML/JavaScript code
-            Set body overflow to hidden
-            Use white text as default
+            Start with <!DOCTYPE html>.
+            Body background #232527, hieght 300px minimum
+            White text as default
             If the request cannot be fulfilled with code, return nothing`;
         const completion = await openai.chat.completions.create({
             model: model,
