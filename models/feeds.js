@@ -38,6 +38,7 @@ const FeedChannels = sequelize.define('feed_channels', {
     feed_id: { type: STRING(36), allowNull: false }, 
     is_posts: { type: BOOLEAN, defaultValue: true},
     is_chat: { type: BOOLEAN, defaultValue: true},
+    display_order: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 0 },
     created_at: { type: DataTypes.DATE(3), defaultValue: sequelize.literal('CURRENT_TIMESTAMP(3)') },
     updated_at: { type: DataTypes.DATE(3), defaultValue: sequelize.literal('CURRENT_TIMESTAMP(3)') }
 }, { tableName: 'feed_channels', timestamps: false }); 
