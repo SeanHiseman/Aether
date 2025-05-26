@@ -158,10 +158,10 @@ const FeedHome = () => {
         }
     };
     
-    console.log("channel_name", channel_name);
-    console.log("channels", channels);
+    //console.log("channel_name", channel_name);
+    //console.log("channels", channels);
     const channelRender = channels.find(c => c.channel_name === channel_name);
-    console.log("channelRender", channelRender);
+    //console.log("channelRender", channelRender);
 
     useEffect(() => {
         if (!channelRender && channels.length > 0) {
@@ -530,7 +530,7 @@ const FeedHome = () => {
                         <button className={channelMode === 'chat' ? 'active-mode' : 'passive-mode'} onClick={() => setChannelMode('chat')}>Chat</button>
                     </div>
                 )}*/}
-                <ChannelList channels={channels} feedId={feed.feed_id} feedName={feed.feed_name} isChat={false} isGroup={feed.is_group} setChannels={setChannels} setErrorMessage={setFeedErrorMessage} />
+                <ChannelList canReorder={isAdmin} channels={channels} feedId={feed.feed_id} feedName={feed.feed_name} isChat={false} isGroup={feed.is_group} setChannels={setChannels} />
             </aside>
         </div>
     );

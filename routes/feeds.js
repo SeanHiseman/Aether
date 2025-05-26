@@ -67,22 +67,35 @@ router.post('/accept_follow_request', authenticateCheck, async (req, res) => {
 });
 
 router.post('/add_feed_channel', authenticateCheck, async (req, res) => {
+    let transaction;
     try {
+        transaction = await sequelize.transaction();
         let { channelName, feedId, isPosts, isChat } = req.body;
         //If channel types are not specified
         if (isPosts === false && isChat === false) {
             isPosts = true;
             isChat = true;
         };
-        const newChannel = await FeedChannels.create({ 
+        const maxOrderResult = await FeedChannels.findOne({
+            attributes: [[sequelize.fn('COALESCE', sequelize.fn('MAX', sequelize.col('display_order')), -1), 'maxOrder']],
+            where: { feed_id: feedId },
+            transaction,
+            raw: true
+        });
+        const nextDisplayOrder = (maxOrderResult ? maxOrderResult.maxOrder : -1) + 1;
+        const newChannelData = { 
             channel_id: v4(),
             channel_name: channelName,
             feed_id: feedId,
             is_posts: isPosts,
-            is_chat: isChat
-        });
+            is_chat: isChat,
+            display_order: nextDisplayOrder
+        };
+        const newChannel = await FeedChannels.create(newChannelData, { transaction });
+        await transaction.commit();
         res.status(201).json({ success: true, newChannel });
     } catch (error) {
+        if (transaction) await transaction.rollback();
         res.status(500).json({ success: false });
     }
 });
@@ -493,16 +506,22 @@ router.delete('/delete_feed_channel', authenticateCheck, async (req, res) => {
     try {
         transaction = await sequelize.transaction();
         const { channelId } = req.body;
+        if (!channelId) {
+            return res.status(400).json({ success: false, message: "Channel ID is required." });
+        }
         await FeedChannelMessages.destroy({ where: { channel_id: channelId }, transaction });
-        await FeedChannels.destroy({ where: { channel_id: channelId }, transaction });
+        const deletedCount = await FeedChannels.destroy({ where: { channel_id: channelId }, transaction });
+        if (deletedCount === 0) {
+            await transaction.rollback(); 
+            return res.status(404).json({ success: false, message: "Channel not found." });
+        }
         await transaction.commit();
-        res.status(200).json({ success: true });
+        res.status(200).json({ success: true, message: "Channel deleted successfully." });
     } catch (error) {
         if (transaction) await transaction.rollback();
-        res.status(500).json({ success: false });
+        res.status(500).json({ success: false, message: error.message || "Failed to delete channel." });
     }
 });
-
 router.get('/feed/:feedName', async (req, res) => {
     try {
         const feedName = req.params.feedName;
@@ -655,7 +674,7 @@ router.get('/get_feed_channels/:feedId', async (req, res) => {
                 as: 'feed',
                 attributes: feedAttributes,
             }],
-            order: [['created_at', 'ASC']]
+            order: [['display_order', 'ASC'], ['channel_name', 'ASC']] //Secondary in case of same display order
         });
         res.status(200).json({ success: true, channels });
     } catch (error) {
@@ -698,6 +717,35 @@ router.post('/remove_from_deep_feed', authenticateCheck, async (req, res) => {
     } catch (error) {
         console.error('Error removing from deep feed:', error);
         res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+router.put('/reorder_feed_channels', async (req, res) => {
+    let transaction;
+    try {
+        transaction = await sequelize.transaction();
+        const { feed_id, orderedChannelIds } = req.body; 
+        if (!feed_id || !Array.isArray(orderedChannelIds)) {
+            return res.status(400).json({ success: false, message: 'Missing feed_id or orderedChannelIds.' });
+        }
+        const updatePromises = orderedChannelIds.map((channel_id, index) => {
+            return FeedChannels.update(
+                { display_order: index },
+                {
+                    where: {
+                        channel_id: channel_id,
+                        feed_id: feed_id 
+                    },
+                    transaction
+                }
+            );
+        });
+        await Promise.all(updatePromises);
+        await transaction.commit();
+        res.status(200).json({ success: true, message: 'Channels reordered successfully.' });
+    } catch (error) {
+        if (transaction) await transaction.rollback();
+        res.status(500).json({ success: false, message: 'Failed to reorder channels.', error: error.message });
     }
 });
 

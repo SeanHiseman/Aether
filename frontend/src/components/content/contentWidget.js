@@ -9,8 +9,8 @@ import ReplyTreeView from './replyTreeView';
 import PropTypes from 'prop-types';
 
 const ContentWidget = ({ canRemove, feed, isDraft, isGroup, onEditClick, onPostRemoved, onReplyClick, parent, post, readOnly = false }) => {
-  console.log("content widget feed", feed);
-  console.log("content widget post", post);
+  //console.log("content widget feed", feed);
+  //console.log("content widget post", post);
   const [canRemoveState, setCanRemoveState] = useState(canRemove);
   const [downvoteLimit, setDownvoteLimit] = useState(false);
   const [downvotes, setDownvotes] = useState(post.downvotes);
@@ -158,13 +158,11 @@ const ContentWidget = ({ canRemove, feed, isDraft, isGroup, onEditClick, onPostR
           feedId: viewer?.feed_id,
           voteType: 'check_vote',
         });
-        console.log("Vote limit response:", response.data);
         if (response.data.success) {
           setUpvoteLimit(response.data.reachedUpvoteLimit);
           setDownvoteLimit(response.data.reachedDownvoteLimit);
         }
       } catch (error) { 
-        console.error("Error checking vote limit:", error);
         setPostErrorMessage('Error checking vote limit');
       }
     };
