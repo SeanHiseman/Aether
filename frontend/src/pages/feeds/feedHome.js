@@ -158,10 +158,10 @@ const FeedHome = () => {
         }
     };
     
-    //console.log("channel_name", channel_name);
-    //console.log("channels", channels);
+    console.log("channel_name", channel_name);
+    console.log("channels", channels);
     const channelRender = channels.find(c => c.channel_name === channel_name);
-    //console.log("channelRender", channelRender);
+    console.log("channelRender", channelRender);
 
     useEffect(() => {
         if (!channelRender && channels.length > 0) {
@@ -333,7 +333,7 @@ const FeedHome = () => {
                         <img className="large-feed-photo" src={`/${feed.feed_photo}`} alt={feed.feed_name} />
                         <p className="text36">{feed.feed_name}</p>
                         <p className="description" >{feed.description}</p>
-                        {feed.is_group && (
+                        {feed.is_group && viewer && (
                             <FollowerChangeButton feed={feed} viewerId={viewer.feed_id} />
                         )}
                         {/*{!isViewingSelf && !feed.is_group && (
@@ -349,7 +349,7 @@ const FeedHome = () => {
             <div className="channel-feed">
                 {showDrafts ? (
                     <PostChannel
-                        channelId={channelRender.channel_id}
+                        channelId={channelRender?.channel_id}
                         channelName={channel_name}
                         feed={feed}
                         isDraft={true}
