@@ -235,7 +235,6 @@ const FeedHome = () => {
 
     const handleEditSubmit = async (formData) => { 
         try {
-            console.log("feedHome editing post", formData);
             formData.append('post_id', postToEdit.post_id);
             await axios.post('/api/edit_post', formData, {
                 headers: { 'Content-Type': 'multipart/form-data' },
@@ -244,7 +243,6 @@ const FeedHome = () => {
             setIsEdit(false);
             setPostToEdit(null);
         } catch (error) {
-            console.error("Error editing post:", error);
             setFeedErrorMessage("Error editing post");
             setTimeout(() => { setFeedErrorMessage(''); }, 3000);
         }

@@ -59,7 +59,6 @@ router.get('/check_authentication', async (req, res) => {
             currentFeed: req.session.feed_id
         });
     } catch (error) {
-        console.error('Authentication check error:', error);
         return res.status(200).json({
             authenticated: false,
             feeds: null,
@@ -156,6 +155,7 @@ router.post('/login', async (req, res) => {
         if (user && await compare(password, user.password)) {
             req.session.user_id = user.user_id;
             req.session.username = user.username;
+            req.session.has_membership = user.has_membership;
             req.session.viewer_id = feed.feed_id;
             res.status(200).json({ success: true });
         }

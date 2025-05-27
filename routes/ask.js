@@ -93,7 +93,6 @@ router.post('/create_ask_chat', authenticateCheck, async (req, res) => {
         });
         res.status(201).json(newChat);
     } catch (error) {
-        console.log(error);
         res.status(500).json({ success: false });
     }
 });

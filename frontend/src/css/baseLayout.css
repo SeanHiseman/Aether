@@ -453,8 +453,8 @@ ul {
 .vote-enabled:hover {
     background-color: var(--light);
 }
-.vote-disabled {
-    background-color: var(--dark) !important;
+.vote-disabled, .vote-disabled:hover {
+    background-color: var(--border) !important;
     cursor: default !important;
 }
 

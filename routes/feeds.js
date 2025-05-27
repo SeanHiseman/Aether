@@ -264,7 +264,7 @@ router.post('/create_feed', authenticateCheck, checkProfileStorageLimit, async (
                 try {
                     fs.unlinkSync(path.join(process.cwd(), '/media/feed_images', req.file.filename));
                 } catch (err) {
-                    console.error('Error deleting file:', err);
+                    res.status(500).json({ success: false, error: 'Failed to delete uploaded file' });
                 }
             }
             res.status(500).json({ success: false });
@@ -866,7 +866,7 @@ router.put('/update_feed_photo/:feedId', authenticateCheck, checkProfileStorageL
                 try {
                     fs.unlinkSync(path.join(process.cwd(), '/media/feed_images', req.file.filename));
                 } catch (err) {
-                    console.error('Error deleting file:', err);
+                    res.status(500).json({ success: false, error: 'Failed to delete uploaded file' });
                 }
             }
             res.status(500).json({ success: false });
