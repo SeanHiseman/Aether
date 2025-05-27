@@ -158,10 +158,7 @@ const FeedHome = () => {
         }
     };
     
-    console.log("channel_name", channel_name);
-    console.log("channels", channels);
     const channelRender = channels.find(c => c.channel_name === channel_name);
-    console.log("channelRender", channelRender);
 
     useEffect(() => {
         if (!channelRender && channels.length > 0) {
@@ -175,6 +172,7 @@ const FeedHome = () => {
     useEffect(() => {
         setShowPostForm(false);
         setReplyingToPost(null);
+        //setIsDraftEdit(false); 
         setIsEdit(false);
         setPostToEdit(null);
     }, [channel_name]);
@@ -235,9 +233,10 @@ const FeedHome = () => {
         }
     };
 
-    const handleEditSubmit = async (formData) => {
-        formData.append('post_id', postToEdit.post_id);
+    const handleEditSubmit = async (formData) => { 
         try {
+            console.log("feedHome editing post", formData);
+            formData.append('post_id', postToEdit.post_id);
             await axios.post('/api/edit_post', formData, {
                 headers: { 'Content-Type': 'multipart/form-data' },
             });
@@ -245,6 +244,7 @@ const FeedHome = () => {
             setIsEdit(false);
             setPostToEdit(null);
         } catch (error) {
+            console.error("Error editing post:", error);
             setFeedErrorMessage("Error editing post");
             setTimeout(() => { setFeedErrorMessage(''); }, 3000);
         }
@@ -273,7 +273,7 @@ const FeedHome = () => {
                     data: {   
                         draft: { draft_id: draftId }
                     }
-                });       
+                });     
             }
             setShowPostForm(false);
         } catch (error) {
@@ -359,9 +359,32 @@ const FeedHome = () => {
                         posts={draftPosts}
                     />
                 ) : showPostForm ? (
-                    <ContentForm channelId={channelRender.channel_id} feed={feed} isEdit={isEdit} isReply={false} onSubmit={isEdit ? handleEditSubmit : handlePostSubmit} post={postToEdit} postErrorMessage={postErrorMessage} setPostErrorMessage={setPostErrorMessage} setShowForm={setShowPostForm}/>
+                    <ContentForm 
+                        channelId={channelRender.channel_id} 
+                        feed={feed} 
+                        isEdit={isEdit} 
+                        isReply={false} 
+                        onEditSubmit={handleEditSubmit} 
+                        onPostSubmit={handlePostSubmit}
+                        populateFromPost={Boolean(postToEdit)}
+                        post={postToEdit} 
+                        postErrorMessage={postErrorMessage} 
+                        setPostErrorMessage={setPostErrorMessage} 
+                        setShowForm={setShowPostForm}
+                    />
                 ) : replyingToPost ? (
-                    <ContentForm channelId={channelRender.channel_id} feed={feed} isEdit={false} isGroup={feed.is_group} isReply={true} onSubmit={handlePostSubmit} post={replyingToPost} postErrorMessage={postErrorMessage} setPostErrorMessage={setPostErrorMessage} setShowForm={() => setReplyingToPost(null)}/>
+                    <ContentForm 
+                        channelId={channelRender.channel_id} 
+                        feed={feed} 
+                        isEdit={false}
+                        isGroup={feed.is_group} 
+                        isReply={true} 
+                        onPostSubmit={handlePostSubmit} 
+                        post={replyingToPost} 
+                        postErrorMessage={postErrorMessage} 
+                        setPostErrorMessage={setPostErrorMessage} 
+                        setShowForm={() => setReplyingToPost(null)}
+                    />
                 ) : channelRender ? (
                         channelRender.is_posts && (channelMode === 'post' || !channelRender.is_chat) ? (
                         <PostChannel
@@ -468,6 +491,7 @@ const FeedHome = () => {
                                             className="small-icon"
                                             onClick={() => {
                                                 setIsEdit(false);
+                                                //setIsDraftEdit(false);
                                                 setPostToEdit(null);
                                                 setShowPostForm(true);
                                             }}

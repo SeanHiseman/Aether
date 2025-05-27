@@ -34,9 +34,9 @@ const parseContentBlocks = (htmlString) => {
         const content = div.innerHTML.trim()
         if (blockClass.includes('code-block')) {
             const code = div.getAttribute('data-code') || ''
-            result.push({ data: { code, isBlockLoading: false, showPrompt: true }, id: blockId, isEditing: false, type: BLOCK_TYPES.CODE })
+            result.push({ data: { code, isBlockLoading: false, showPrompt: true }, id: blockId, isEditing: true, type: BLOCK_TYPES.CODE })
         } else if (blockClass.includes('text-block')) {
-            result.push({ data: { html: content }, id: blockId, isEditing: false, type: BLOCK_TYPES.TEXT })
+            result.push({ data: { html: content }, id: blockId, isEditing: true, type: BLOCK_TYPES.TEXT })
         } else if (blockClass.includes('media-block')) {
             const img = div.querySelector('img')
             const video = div.querySelector('video')
@@ -62,8 +62,7 @@ const reorder = (list, startIndex, endIndex) => {
 }
 
 //Post is either the post being edited or replied to
-const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onSubmit, post = null, postErrorMessage, setPostErrorMessage, setShowForm }) => {
-    console.log("feed`", feed)
+const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onEditSubmit, onPostSubmit, post = null, postErrorMessage, setPostErrorMessage, setShowForm }) => {
     const [blocks, setBlocks] = useState([])
     const [codeBlockDropdown, setCodeBlockDropdown] = useState(false)
     const [editMode, setEditMode] = useState(true)
@@ -75,6 +74,7 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onSubm
     const [showGlobalAiPrompt, setShowGlobalAiPrompt] = useState(false)
     const [title, setTitle] = useState('')
     const iframeRefs = useRef({})
+    const [isPostingDraft, setIsPostingDraft] = useState(false);
     const { channel_name, feed_name } = useParams()
     const navigate = useNavigate()
     const urlPrefix = isGroup ? 'g' : 'u'
@@ -172,11 +172,11 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onSubm
             const filename = `cropped-${Date.now()}.jpg`;
             const croppedFile = new File([croppedBlob], filename, { type: 'image/jpeg' });
             updateBlock({
-                id: blockId,
-                data: {
-                ...block.data,
-                file: croppedFile,
-                url: croppedUrl
+                    id: blockId,
+                    data: {
+                    ...block.data,
+                    file: croppedFile,
+                    url: croppedUrl
                 }
             });
             setCropState(prev => {
@@ -557,34 +557,33 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onSubm
                         }
                         });
                         const editorElements = [
-                        '#editor-controls',
-                        '#toggle-editor', 
-                        '#editor-instructions',
-                        '.resize-container',
-                        '.resize-handle'
+                            '#editor-controls',
+                            '#toggle-editor', 
+                            '#editor-instructions',
+                            '.resize-container',
+                            '.resize-handle'
                         ];
                         editorElements.forEach(selector => {
-                        const elements = doc.querySelectorAll(selector);
-                        elements.forEach(el => el.remove());
+                            const elements = doc.querySelectorAll(selector);
+                            elements.forEach(el => el.remove());
                         });
                         const allElements = doc.querySelectorAll('*');
                         allElements.forEach(el => {
-                        if (el.hasAttribute('contenteditable')) {
-                            el.removeAttribute('contenteditable');
-                        }
-                        //Remove data attributes related to the editor
-                        const attributesToRemove = [];
-                        for (let i = 0; i < el.attributes.length; i++) {
-                            const attr = el.attributes[i];
-                            if (attr.name.startsWith('data-original') || 
-                                attr.name === 'data-mce-selected' ||
-                                attr.name.includes('editor')) {
-                            attributesToRemove.push(attr.name);
+                            if (el.hasAttribute('contenteditable')) {
+                                el.removeAttribute('contenteditable');
                             }
-                        }
-                        attributesToRemove.forEach(attr => el.removeAttribute(attr));
+                            //Remove data attributes related to the editor
+                            const attributesToRemove = [];
+                            for (let i = 0; i < el.attributes.length; i++) {
+                                const attr = el.attributes[i];
+                                if (attr.name.startsWith('data-original') || 
+                                    attr.name === 'data-mce-selected' ||
+                                    attr.name.includes('editor')) {
+                                attributesToRemove.push(attr.name);
+                                }
+                            }
+                            attributesToRemove.forEach(attr => el.removeAttribute(attr));
                         });
-                        
                         cleanedContent = '<!DOCTYPE html>\n<html>\n';
                         cleanedContent += '<head>' + doc.head.innerHTML + '</head>\n';
                         cleanedContent += '<body>';
@@ -592,16 +591,16 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onSubm
                         if (!node.id || 
                             !['editor-controls', 'toggle-editor', 'editor-instructions'].includes(node.id)) {
                             if (node.nodeType === Node.ELEMENT_NODE) {
-                            cleanedContent += node.outerHTML;
+                                cleanedContent += node.outerHTML;
                             } else if (node.nodeType === Node.TEXT_NODE) {
-                            cleanedContent += node.textContent;
+                                cleanedContent += node.textContent;
                             }
                         }
                         });
                         cleanedContent += '</body>\n</html>';
                         cleanedContent = cleanedContent.replace(/ xmlns="http:\/\/www\.w3\.org\/1999\/xhtml"/g, '');
                     } catch (err) {
-                        console.error("Error cleaning HTML content:", err);
+                        setPostErrorMessage("Error cleaning content");
                     }
                     }
                     setBlocks(prev => 
@@ -744,43 +743,42 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onSubm
     }, [blocks, compileFinalHTML, globalAiPrompt, hasMembership, post])
 
     const handleSubmit = useCallback(async e => {
-        console.log("submitting");
         e.preventDefault()
         if (isContentEmpty(blocks)) {
             setPostErrorMessage(isReply ? 'Reply cannot be empty.' : 'Post cannot be empty.')
             setTimeout(() => { setPostErrorMessage(''); }, 5000);
             return
         }
-        const finalHTML = compileFinalHTML(blocks)
         try {
-            setPostErrorMessage('')
+            const finalHTML = compileFinalHTML(blocks)
             const formData = new FormData()
             let postId
-            if (!isEdit) {
+            if (!isEdit || isDraft) {
                 postId = v4()
                 formData.append('post_id', postId)
             } else postId = post.post_id
             formData.append('content', finalHTML)
             formData.append('feed_id', feed.feed_id);
-            if (!post) { //draft that hasn't yet been saved needs an ids
+            if (!post || draftId) { 
                 formData.append('draft_id', draftId);
             } 
             if (isReply && post) formData.append('parent_id', post.post_id)
             if (!isReply) formData.append('title', title)
             if (channelId) formData.append('channel_id', channelId)
             blocks.filter(b => b.type === BLOCK_TYPES.MEDIA && b.data.file).forEach(mediaBlock => formData.append('files', mediaBlock.data.file))
-            await onSubmit(formData);
+            await (isEdit && !isPostingDraft ? onEditSubmit(formData) : onPostSubmit(formData));
+            setIsPostingDraft(false);
             setTitle('')
             setBlocks([])
             setGlobalAiPrompt('')
             setShowForm(false)
+            setPostErrorMessage('')
             navigate(`/${urlPrefix}/${feed_name}/${channel_name}/${isReply ? post.post_id : postId}`)
-        } catch (error){
-            console.error('Error submitting the form:', error)
+        } catch (error) {
             setPostErrorMessage('Error submitting the form.')
             setTimeout(() => { setPostErrorMessage(''); }, 5000);
         }
-    }, [blocks, compileFinalHTML, draftId, isContentEmpty, isEdit, isReply, channel_name, feed_name, navigate, onSubmit, post, setShowForm, title, urlPrefix])
+    }, [blocks, compileFinalHTML, draftId, isContentEmpty, isEdit, isPostingDraft, isReply, channel_name, feed_name, navigate, onEditSubmit, onPostSubmit, post, setShowForm, title, urlPrefix])
 
     const onCropComplete = useCallback((blockId, croppedAreaPixels) => {
         setCropState(prev => ({
@@ -826,7 +824,7 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onSubm
         try {
             const response = await axios.post('/api/create_draft', formData, { headers: { 'Content-Type': 'multipart/form-data' }});
             if (response.data.success) {
-                setPostErrorMessage('Draft saved!');
+                setPostErrorMessage('Draft saved');
                 setTimeout(() => setPostErrorMessage(''), 3000);
                 const [savedDraft] = response.data.draft;
                 setDraftId(savedDraft.draft_id);
@@ -895,12 +893,12 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onSubm
 
                             ) : (
                                 <>
-                                <button className="small-icon" type="button" onClick={saveDraft} title={isDraft ? 'Save draft' : 'Save draft'}>
-                                    <FaSave />
-                                </button>
-                                <button className="small-icon" form="post-form" type="submit" title={isDraft ? 'Post' : 'Post'}>
-                                    <FaArrowRight />
-                                </button>
+                                    <button className="small-icon" type="button" onClick={saveDraft} title="Save draft">
+                                        <FaSave />
+                                    </button>
+                                    <button className="small-icon" form="post-form" type="submit" title="Post" onClick={() => setIsPostingDraft(true)}>
+                                        <FaArrowRight />
+                                    </button>
                                 </>
                             )}
                         </div>
@@ -1279,9 +1277,10 @@ ContentForm.propTypes = {
     isEdit: PropTypes.bool,
     isGroup: PropTypes.bool,
     isReply: PropTypes.bool,
-    onSubmit: PropTypes.func.isRequired,
+    onEditSubmit: PropTypes.func,
+    onPostSubmit: PropTypes.func,
     post: PropTypes.object,
-    setShowForm: PropTypes.func.isRequired,
+    setShowForm: PropTypes.func,
 }
 
 export default ContentForm;
