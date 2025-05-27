@@ -100,79 +100,80 @@ router.get('/channel_posts', async (req, res) => {
 router.post('/content_vote', authenticateCheck, async (req, res) => {
     try {
         const { postId, feedId, voteType } = req.body; //feedId refers to the user who is voting
+        const voteLimit = req.session.has_membership ? 10 : 1; 
         const content = await Posts.findByPk(postId);
         if (!content) {
             return res.status(404).json({ success: false, message: 'Content not found' });
         }
-        const [vote, created] = await PostVotes.findOrCreate({
-            where: { post_id: postId, voter_id: feedId },
-            defaults: {
-                vote_id: v4(),
-                upvotes: 0,
-                downvotes: 0,
-            }
-        });
-        const currentNetVote = vote.upvotes - vote.downvotes;
-        if (voteType === 'check_vote') {
-            return res.status(200).json({
-                success: true,
-                message: 'vote status',
-                reachedUpvoteLimit: currentNetVote >= 10,
-                reachedDownvoteLimit: currentNetVote <= -10,
-                currentUpvotes: vote.upvotes,
-                currentDownvotes: vote.downvotes,
-                netVote: currentNetVote
-            });
-        }
-        if (voteType === 'upvote') {
-            if (currentNetVote < 10) {
-                if (vote.downvotes > 0) {
-                    vote.downvotes -= 1;
-                    content.downvotes -= 1;
-                } else {
-                    vote.upvotes += 1;
-                    content.upvotes += 1;
-                }
-            } else {
-                return res.status(200).json({
-                    success: false,
-                    message: 'upvote limit',
-                    reachedUpvoteLimit: true,
-                    reachedDownvoteLimit: currentNetVote <= -10
-                });
-            }
-        } else if (voteType === 'downvote') {
-            if (currentNetVote > -10) {
-                if (vote.upvotes > 0) {
-                    vote.upvotes -= 1;
-                    content.upvotes -= 1;
-                } else {
-                    vote.downvotes += 1;
-                    content.downvotes += 1;
-                }
-            } else {
-                return res.status(200).json({
-                    success: false,
-                    message: 'downvote limit',
-                    reachedUpvoteLimit: currentNetVote >= 10,
-                    reachedDownvoteLimit: true
-                });
-            }
-        }
-        await vote.save();
-        await content.save();
-        const newNetVote = vote.upvotes - vote.downvotes;
-        return res.status(200).json({
-            success: true,
-            upvotes: content.upvotes,
-            downvotes: content.downvotes,
-            netVote: newNetVote,
-            reachedUpvoteLimit: newNetVote >= 10,
-            reachedDownvoteLimit: newNetVote <= -10
-        });
-    } catch (error) {
-        return res.status(500).json({ success: false });
-    }
+		const [vote, created] = await PostVotes.findOrCreate({
+			where: { post_id: postId, voter_id: feedId },
+			defaults: {
+				vote_id: v4(),
+				upvotes: 0,
+				downvotes: 0,
+			}
+		});
+		const currentNetVote = vote.upvotes - vote.downvotes;
+		if (voteType === 'check_vote') {
+			return res.status(200).json({
+				success: true,
+				message: 'vote status',
+				reachedUpvoteLimit: currentNetVote >= voteLimit,
+				reachedDownvoteLimit: currentNetVote <= -voteLimit,
+				currentUpvotes: vote.upvotes,
+				currentDownvotes: vote.downvotes,
+				netVote: currentNetVote
+			});
+		}
+		if (voteType === 'upvote') {
+			if (currentNetVote < voteLimit) {
+				if (vote.downvotes > 0) {
+					vote.downvotes -= 1;
+					content.downvotes -= 1;
+				} else {
+					vote.upvotes += 1;
+					content.upvotes += 1;
+				}
+			} else {
+				return res.status(200).json({
+					success: false,
+					message: 'upvote limit',
+					reachedUpvoteLimit: true,
+					reachedDownvoteLimit: currentNetVote <= -voteLimit
+				});
+			}
+		} else if (voteType === 'downvote') {
+			if (currentNetVote > -voteLimit) {
+				if (vote.upvotes > 0) {
+					vote.upvotes -= 1;
+					content.upvotes -= 1;
+				} else {
+					vote.downvotes += 1;
+					content.downvotes += 1;
+				}
+			} else {
+				return res.status(200).json({
+					success: false,
+					message: 'downvote limit',
+					reachedUpvoteLimit: currentNetVote >= voteLimit,
+					reachedDownvoteLimit: true
+				});
+			}
+		}
+		await vote.save();
+		await content.save();
+		const newNetVote = vote.upvotes - vote.downvotes;
+		return res.status(200).json({
+			success: true,
+			upvotes: content.upvotes,
+			downvotes: content.downvotes,
+			netVote: newNetVote,
+			reachedUpvoteLimit: newNetVote >= voteLimit,
+			reachedDownvoteLimit: newNetVote <= -voteLimit
+		});
+	} catch (error) {
+		return res.status(500).json({ success: false });
+	}
 });
 
 const __filename = fileURLToPath(import.meta.url);
@@ -374,7 +375,7 @@ router.post('/edit_post', authenticateCheck, checkStorageLimit, post_upload.arra
                 try {
                     fs.unlinkSync(path.join(mediaDir, file.filename));
                 } catch (err) {
-                    console.error('Error deleting file:', err);
+                    res.status(500).json({ success: false, error: err.message });
                 }
             });
         }

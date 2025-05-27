@@ -26,7 +26,7 @@ const ContentWidget = ({ canRemove, feed, isDraft, isGroup, onEditClick, onPostR
   const [upvoteLimit, setUpvoteLimit] = useState(false);
   const [upvotes, setUpvotes] = useState(post.upvotes);
   const [views, setViews] = useState(post.views);
-  const { isAuthenticated, viewer } = useContext(AuthContext);
+  const { isAuthenticated, viewer, user } = useContext(AuthContext);
   const isReply = readOnly ? false : post.parent_id !== null; //Read only means not displaying widget as a reply
   const isViewingOwnPost = post.poster_id === viewer?.feed_id;
   const urlPrefix = isGroup ? 'g' : 'u';
@@ -256,11 +256,11 @@ const ContentWidget = ({ canRemove, feed, isDraft, isGroup, onEditClick, onPostR
           {isAuthenticated ? (
             !isViewingOwnPost ? (   
               <>
-                <button className={`large-icon ${upvoteClass}`} disabled={upvoteLimit} onClick={() => postVote(post.post_id, 'upvote')} title={upvoteLimit ? 'Vote limit reached' : 'Upvote'}>
+                <button className={`large-icon ${upvoteClass}`} disabled={upvoteLimit} onClick={() => postVote(post.post_id, 'upvote')} title={upvoteLimit ? (user.has_membership ? 'Vote limit reached' : 'Get membership for more votes') : 'Upvote'}>
                   <FaArrowUp />
                 </button>
                 <span className="total-votes">{upvotes - downvotes}</span>      
-                <button className={`large-icon ${downvoteClass}`} disabled={downvoteLimit} onClick={() => postVote(post.post_id, 'downvote')} title={downvoteLimit ? 'Vote limit reached' : 'Downvote'}>
+                <button className={`large-icon ${downvoteClass}`} disabled={downvoteLimit} onClick={() => postVote(post.post_id, 'downvote')} title={downvoteLimit ? (user.has_membership ? 'Vote limit reached' : 'Get membership for more votes') : 'Downvote'}>
                   <FaArrowDown />
                 </button>
               </>

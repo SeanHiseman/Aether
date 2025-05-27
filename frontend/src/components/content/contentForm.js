@@ -42,12 +42,12 @@ const parseContentBlocks = (htmlString) => {
             const video = div.querySelector('video')
             const align = div.getAttribute('data-align') || 'center'
             if (img) {
-                result.push({ data: { file: null, fileType: 'image/*', isImage: true, isVideo: false, url: img.getAttribute('src'), align }, id: blockId, isEditing: false, type: BLOCK_TYPES.MEDIA })
+                result.push({ data: { file: null, fileType: 'image/*', isImage: true, isVideo: false, url: img.getAttribute('src'), align }, id: blockId, isEditing: true, type: BLOCK_TYPES.MEDIA })
             } else if (video) {
                 const source = video.querySelector('source')
-                result.push({ data: { file: null, fileType: source ? source.getAttribute('type') : '', isImage: false, isVideo: true, url: source ? source.getAttribute('src') : '', align }, id: blockId, isEditing: false, type: BLOCK_TYPES.MEDIA })
+                result.push({ data: { file: null, fileType: source ? source.getAttribute('type') : '', isImage: false, isVideo: true, url: source ? source.getAttribute('src') : '', align }, id: blockId, isEditing: true, type: BLOCK_TYPES.MEDIA })
             } else {
-                result.push({ data: { file: null, fileType: '', isImage: false, isVideo: false, url: '', align }, id: blockId, isEditing: false, type: BLOCK_TYPES.MEDIA })
+                result.push({ data: { file: null, fileType: '', isImage: false, isVideo: false, url: '', align }, id: blockId, isEditing: true, type: BLOCK_TYPES.MEDIA })
             }
         }
     })
@@ -99,7 +99,7 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onEdit
                 }
                 const updatedBlocks = blocks.map(block => {
                     if (block.id === blockId && block.type === BLOCK_TYPES.CODE) {
-                        const iframeCode = `<div style="width:100%; height:400px;">
+                        const iframeCode = `<div style="width:100%; height:470px;">
                             <iframe src="${parsedUrl.href}" style="width:100%; height:100%; border:none;" sandbox="allow-scripts allow-same-origin" referrerpolicy="no-referrer"></iframe>
                             </div>`;
                         return { 
@@ -1135,17 +1135,22 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onEdit
                                                                                     className="code-input" 
                                                                                     onChange={e => {
                                                                                         const newValue = e.target.value;
-                                                                                        updateBlock({ 
-                                                                                        id: block.id, 
-                                                                                        data: { 
-                                                                                            ...data, 
-                                                                                            code: newValue 
+                                                                                        if (newValue.length <= 100 * TEXT_CHAR_LIMIT) {
+                                                                                            updateBlock({ 
+                                                                                                id: block.id, 
+                                                                                                data: { 
+                                                                                                    ...data, 
+                                                                                                    code: newValue 
+                                                                                                }
+                                                                                            });
+                                                                                            setPostErrorMessage('');
+                                                                                        } else {
+                                                                                            setPostErrorMessage('Code exceeds character limit.', !user.has_membership && 'Get membership for more.');
                                                                                         }
-                                                                                        });
                                                                                     }} 
                                                                                     placeholder="Enter code..." 
                                                                                     value={data.code} 
-                                                                                    />
+                                                                                />
                                                                             )}
                                                                         </>
                                                                     )}
