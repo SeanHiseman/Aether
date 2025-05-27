@@ -9,8 +9,6 @@ import ReplyTreeView from './replyTreeView';
 import PropTypes from 'prop-types';
 
 const ContentWidget = ({ canRemove, feed, isDraft, isGroup, onEditClick, onPostRemoved, onReplyClick, parent, post, readOnly = false }) => {
-  //console.log("content widget feed", feed);
-  console.log("content widget post", post);
   const [canRemoveState, setCanRemoveState] = useState(canRemove);
   const [downvoteLimit, setDownvoteLimit] = useState(false);
   const [downvotes, setDownvotes] = useState(post.downvotes);
