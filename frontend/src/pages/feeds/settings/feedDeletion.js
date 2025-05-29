@@ -1,9 +1,10 @@
 import axios from 'axios';
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useOutletContext } from 'react-router-dom';
 
-const FeedDeletion = ({ feed }) => {
+const FeedDeletion = () => {
     const [errorMessage, setErrorMessage] = useState('');
+    const { feed } = useOutletContext();
     const navigate = useNavigate();
 
     const deleteFeed = async () => {

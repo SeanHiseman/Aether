@@ -97,6 +97,7 @@
     width: 45%;
 }
 .welcome-box.single:hover {
+    background-color: var(--dark);
     transform: none;
 }
 .welcome-box-header {

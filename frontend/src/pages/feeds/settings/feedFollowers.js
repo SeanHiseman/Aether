@@ -1,13 +1,14 @@
 import axios from 'axios';
 import React, { useCallback, useEffect, useState, useContext } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useOutletContext } from 'react-router-dom';
 import { AuthContext } from '../../../components/authContext';
 import { FaCrown, FaMinus, FaMinusCircle, FaPlusCircle } from 'react-icons/fa';
 
-const FeedFollowers = ({ feed, setFeed }) => {
+const FeedFollowers = () => {
     const [errorMessage, setErrorMessage] = useState('');
     const [followers, setFollowers] = useState([]);
     const { user, viewer } = useContext(AuthContext);
+    const { feed, setFeed } = useOutletContext();
 
     const getFeedFollowers = useCallback(async () => {
         try {
