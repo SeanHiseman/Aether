@@ -19,6 +19,7 @@ import '../css/basicStyles.css';
 import '../css/contentFeed.css';
 import '../css/contentForm.css';
 import '../css/feed.css';
+import '../css/membership.css';
 import '../css/messages.css';
 
 const BaseLayout = () => {
@@ -629,6 +630,10 @@ const BaseLayout = () => {
                 setFeedName('');
                 setShowForm(false);
                 setFeedPhotoFile(null);
+                setImageSrc(null);
+                setCrop({ x: 0, y: 0 });
+                setZoom(1);
+                setCroppedAreaPixels(null);
                 navigate(`/g/${createdFeed.feed_name}`);
             }
         } catch (error) {
@@ -673,7 +678,11 @@ const BaseLayout = () => {
     const toggleForm = () => { 
         if (showForm) {
             setFeedName('');
-            setFeedPhotoFile('No file chosen');
+            setFeedPhotoFile(null);
+            setImageSrc(null);
+            setCrop({ x: 0, y: 0 });
+            setZoom(1);
+            setCroppedAreaPixels(null);
         };
         setShowForm(!showForm);
         setAsideErrorMessage('');
