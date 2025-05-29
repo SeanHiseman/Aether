@@ -1,5 +1,5 @@
 import React from 'react';
-import { Navigate, BrowserRouter as Router, Route, Routes } from 'react-router-dom';
+import { Navigate, Outlet, BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ProtectedRoute, PublicAuthProvider } from './components/authContext';
 import About from './pages/welcome/about';
@@ -18,7 +18,9 @@ import FeedWrapper from './pages/feeds/feedWrapper';
 import Join from './pages/site_entrance/join';
 import Login from './pages/site_entrance/login';
 import Membership from './pages/welcome/membership';
+import Placeholder from './pages/welcome/placeholder';
 import Privacy from './pages/welcome/privacy';
+import Team from './pages/welcome/team';
 import { QueryProvider } from './components/search/queryContext';
 import SearchResults from './pages/searchResults';
 import { SocketProvider } from './socketProvider';
@@ -48,13 +50,21 @@ const App = () => {
 					<Router>
 						<Routes>
 							<Route path="/" element={<Navigate to="/welcome" replace />} />
-							<Route path="/welcome" element={<WelcomeHome />} />
-							<Route path="/about" element={<About />} />
-							<Route path="/algorithm" element={<Algorithm />} />
-							<Route path="/content" element={<Content />} />
-							<Route path="/feeds" element={<Feeds />} />
-							<Route path="/membership" element={<Membership />} />
-							<Route path="/privacy" element={<Privacy />} />
+							<Route path="/welcome" element={<Outlet />}>
+								<Route index element={<WelcomeHome />} />
+								<Route path="about" element={<About />} />
+								<Route path="algorithm" element={<Algorithm />} />
+								<Route path="content" element={<Content />} />
+								<Route path="feeds" element={<Feeds />} />
+								<Route path="membership" element={<Membership />} />
+								<Route path="contact" element={<Placeholder />} />
+								<Route path="licenses" element={<Placeholder />} />
+								<Route path="private-policy" element={<Placeholder />} />
+								<Route path="privacy" element={<Privacy />} />
+								<Route path="support" element={<Placeholder />} />
+								<Route path="team" element={<Team />} />
+								<Route path="terms" element={<Placeholder />} />
+							</Route>
 							<Route path="/login" element={<Login />} />
 							<Route path="/join" element={<Join />} />
 							<Route element={BaseLayoutWithProviders}>

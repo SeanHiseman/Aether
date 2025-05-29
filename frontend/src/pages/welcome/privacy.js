@@ -20,11 +20,11 @@ const Privacy = () => {
             <div className="welcome-box single">
                 <div className="left-aligned-text">
                     <p className="welcome-box-header">Privacy</p>
-                    <p>You are not the product</p>
+                    <p>You are not the product. We do not sell or monetise your personal data</p>
                     <div className="spacer20px"/>
-                    <p>Personal data is useful to you, and you only</p>
+                    <p>Passwords and private messages are encrypted</p>
                     <div className="spacer20px"/>
-                    <p>Algorithms work better when personalised. You are in control. Ask can be used to help easily decide how your algorithms work</p>
+                    <p>Algorithms work better when personalised, you are in control of how</p>
                 </div>
             </div>
         </div>
