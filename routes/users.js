@@ -105,8 +105,10 @@ router.post('/create-checkout-session', authenticateCheck, async (req, res) => {
                 price: priceId,
                 quantity: 1,
             }],
-            success_url: `${process.env.FRONTEND_URL}/settings?success=true`,
-            cancel_url: `${process.env.FRONTEND_URL}/settings?canceled=true`,
+            //success_url: `${process.env.FRONTEND_URL}/feed_settings?success=true`,
+            //cancel_url: `${process.env.FRONTEND_URL}/feed_settings?canceled=true`,
+            success_url: `${process.env.FRONTEND_URL}/feed_settings/${req.session.username}`,
+            cancel_url: `${process.env.FRONTEND_URL}/feed_settings/${req.session.username}`,
             metadata: { userId: userId.toString() },
             customer_email: userEmail,
         });

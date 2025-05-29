@@ -26,9 +26,12 @@ const About = () => {
                     <div className="spacer20px"/>
                     <p>With no advertising, we have no need to serve addictive content. Instead, our aim is maximise how meaningfully time is spent on our site</p>
                     <div className="spacer20px"/>
-                    <p>All users can earn money from their posts, without needing to serve advertisers or be a big creator. Most revenue from memberships is shared with the community, with votes and view deciding how much each post earns</p>
+                    <p>Our platform aims to give you new ways to view, create, and organise social media</p>
                     <div className="spacer20px"/>
-                    <p>This is a vision we are currently working on making a reality. Join us to help out</p>
+                    <p>This is a vision we are currently working on making a reality. Join us to take part in the future of social media</p>
+                    <div className="spacer20px"/>
+                    <div className="spacer20px"/>
+                    <p>Coming soon: connect with other users to send chats and posts</p>
                 </div>
             </div>
         </div>

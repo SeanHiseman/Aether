@@ -19,12 +19,14 @@ const Membership = () => {
             </div>
             <div className="welcome-box single">
                 <div className="left-aligned-text">
-                    <p className="welcome-box-header">Membership (coming soon)</p>
-                    <p>Membership grants access to premium features and revenue sharing. Only members can claim the money earnt from their posts</p>
+                    <p className="welcome-box-header">Membership</p>
+                    <p>Get more access to better models for creating dynamic posts</p>
                     <div className="spacer20px"/>
-                    <p>Ask is an assistant that assists members with their use of Aether, including with creating posts. Members get much greater usage of Ask</p>
+                    <p>Create longer, more detailed posts</p>
                     <div className="spacer20px"/>
-                    <p>Voting for admins, new features and group decisions is exclusive to members</p>
+                    <div className="spacer20px"/>
+                    <p>Coming soon: Voting for mods and admins, revenue sharing, HD content, enhanced customisations</p>
+                    <p></p>
                 </div>
             </div>
         </div>

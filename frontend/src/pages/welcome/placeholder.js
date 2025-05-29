@@ -2,9 +2,9 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import '../../css/welcome.css';
 
-const Content = () => {
-
-    document.title="Content";
+const Placeholder = () => {
+    document.title = "Coming soon";
+    
     return (
         <div id="welcome-container">
             <p id="welcome-text">Welcome to Aether</p>
@@ -19,17 +19,11 @@ const Content = () => {
             </div>
             <div className="welcome-box single">
                 <div className="left-aligned-text">
-                    <p className="welcome-box-header">Content</p>
-                    <p>Create dynamic, two-way content that the user can interact with, like mini-apps</p>
-                    <div className="spacer20px"/>
-                    <p>Combine text, image, video, and interaction to build engaging and unique posts</p>
-                    <div className="spacer20px"/>
-                    <div className="spacer20px"/>
-                    <p>Coming soon: Third-party plugins, enhanced editing, quote posts</p>
+                    <p className="welcome-box-header">Coming soon...</p>
                 </div>
             </div>
         </div>
     );
 };
 
-export default Content;
+export default Placeholder;

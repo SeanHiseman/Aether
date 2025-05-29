@@ -20,11 +20,13 @@ const Algorithm = () => {
             <div className="welcome-box single">
                 <div className="left-aligned-text">
                     <p className="welcome-box-header">Algorithm</p>
-                    <p>How you are shown content should be transparent and simple, not hidden and messy</p>
+                    <p>Custom algorithms coming Summer 2025</p>
                     <div className="spacer20px"/>
-                    <p>Free users can customise to consider time, previous post votes and the votes of your friends</p>
+                    <p>How you are shown content should be transparent, simple, and easy to control</p>
                     <div className="spacer20px"/>
-                    <p>Members can tell their preferences directly to Ask, as well as having advanced customisations such as specific topics, users, tone of posts and more</p>
+                    <p>Our vision is to build algorithms that users can customise and finely tune</p>
+                    <div className="spacer20px"/>
+                    <p>Users will be able to save algorithms and apply them across feeds, as well as sharing them with each other</p>
                 </div>
             </div>
         </div>
