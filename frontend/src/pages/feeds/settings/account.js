@@ -2,7 +2,7 @@ import axios from 'axios';
 import React, { useState } from 'react';
 import { FaEye, FaEyeSlash } from 'react-icons/fa';
 
-const PasswordPersonal = ({ user }) => {
+const Account = ({ user }) => {
     const [confirmEmail, setConfirmEmail] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
     const [email, setEmail] = useState('');
@@ -164,4 +164,4 @@ const PasswordPersonal = ({ user }) => {
     );
 };
 
-export default PasswordPersonal;
+export default Account;

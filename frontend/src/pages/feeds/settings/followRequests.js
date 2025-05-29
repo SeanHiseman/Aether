@@ -1,10 +1,11 @@
 import axios from 'axios';
 import { FaPlusCircle, FaMinusCircle } from 'react-icons/fa';
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useOutletContext } from 'react-router-dom';
 
-const FollowRequests = ({ feed, followRequests, setFeed, setFollowRequests, setRequestCount }) => {
+const FollowRequests = () => {
     const [errorMessage, setErrorMessage] = useState('');
+    const { feed, followRequests, setFeed, setFollowRequests, setFollowRequestCount } = useOutletContext();
 
     const handleRequestAction = async (request, result) => {
         try {
@@ -16,7 +17,7 @@ const FollowRequests = ({ feed, followRequests, setFeed, setFollowRequests, setR
             }
             setFollowRequests((prevRequests) => {
                 const updatedRequests = prevRequests.filter((prevRequest) => prevRequest.request_id !== request.request_id);
-                setRequestCount(updatedRequests.length); 
+                setFollowRequestCount(updatedRequests.length);
                 return updatedRequests;
             });
         } catch (error) {

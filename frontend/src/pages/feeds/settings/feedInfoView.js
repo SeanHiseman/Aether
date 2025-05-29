@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useOutletContext } from 'react-router-dom';
 import axios from 'axios';
 import Cropper from 'react-easy-crop';
 import GetCroppedImg from '../../../components/getCroppedImg'; 
 import { FaEdit, FaRegWindowClose, FaSave, FaFileUpload, FaPencilAlt, FaLock, FaUnlock } from 'react-icons/fa';
 
-const FeedInfoView = ({ feed, setFeed, user }) => {
+const FeedInfoView = () => {
     const [crop, setCrop] = useState({ x: 0, y: 0 });
     const [croppedAreaPixels, setCroppedAreaPixels] = useState(null);
     const [errorMessage, setErrorMessage] = useState('');
@@ -19,6 +19,7 @@ const FeedInfoView = ({ feed, setFeed, user }) => {
     const [newName, setName] = useState('');
     const [zoom, setZoom] = useState(1);
     const navigate = useNavigate();
+    const { feed, setFeed, user } = useOutletContext();
     const hasMembership = user?.has_membership;
     const MAX_FILE_SIZE = hasMembership ? 100 * 1024 * 1024 : 1 * 1024 * 1024;
 

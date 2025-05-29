@@ -1,14 +1,16 @@
 import axios from 'axios';
 import React, { useState, useEffect } from 'react';
 import { Check, Star, Zap, Shield, Crown, ListFilter } from 'lucide-react';
+import { useOutletContext } from 'react-router-dom';
 
-const MembershipSettings = ({ user }) => {
+const MembershipSettings = () => {
     const [errorMessage, setErrorMessage] = useState('');
     const [successMessage, setSuccessMessage] = useState('');
     const [loading, setLoading] = useState(false);
     const [selectedPlan, setSelectedPlan] = useState('monthly');
     const [showConfirm, setShowConfirm] = useState(false);
     const [subscriptionStatus, setSubscriptionStatus] = useState(null);
+    const { user } = useOutletContext();
 
     useEffect(() => {
         if (user?.has_membership) {
