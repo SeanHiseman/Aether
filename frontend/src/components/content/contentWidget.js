@@ -227,7 +227,7 @@ const ContentWidget = ({ canRemove, feed, isDraft, isGroup, onEditClick, onPostR
       {postErrorMessage && <div className="error-message">{postErrorMessage}</div>}
       {post.title && (
         <div className="title-container">
-          <Link className="text36" style={{ marginLeft: 0 }} to={`/${urlPrefix}/${feed.feed_name}/${channel_name || post.parentChannel.channel_name}/${post.post_id}`} onClick={() => incrementViews(post.post_id)}>
+          <Link className="text36" style={{ marginLeft: 0 }} to={`/${urlPrefix}/${feed.feed_name}/${channel_name || post.parentChannel?.channel_name}/${post.post_id}`} onClick={() => incrementViews(post.post_id)}>
             {post.title}
           </Link>
           {post.displayGroupName && (

@@ -155,7 +155,11 @@ router.post('/login', async (req, res) => {
         if (user && await compare(password, user.password)) {
             req.session.user_id = user.user_id;
             req.session.username = user.username;
+            req.session.email = user.email;
             req.session.has_membership = user.has_membership;
+            req.theme = user.theme;
+            req.usage_count = user.usage_count;
+            req.storage_count = user.storage_count;
             req.session.viewer_id = feed.feed_id;
             res.status(200).json({ success: true });
         }

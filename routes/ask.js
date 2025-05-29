@@ -129,9 +129,8 @@ router.get('/get_ask_chats', authenticateCheck, async (req, res) => {
 router.post('/generate_content', authenticateCheck, async (req, res) => {
     try {
         const { currentCode, request, parentCode, senderId } = req.body;
-        const user = await Users.findOne({ where: { user_id: senderId } });
-        const model = user.has_membership ? 'o4-mini' : 'gpt-4.1-mini'; 
-        const tokenMultiplier = user.has_membership ? 11 : 4; //o4-mini 11x more than 4.1-nano baseline
+        const model = req.session.has_membership ? 'o4-mini' : 'gpt-4.1-mini'; 
+        const tokenMultiplier = req.session.has_membership ? 11 : 4; //o4-mini 11x more than 4.1-nano baseline
         const normalizedRequest = request.toLowerCase().trim();
         const commonWords = ['a', 'an', 'the', 'and', 'or', 'but', 'is', 'are', 'was', 'were', 'to', 'of', 'in', 'with', 'for', 'on', 'at', 'by'];
         const tokens = normalizedRequest.split(/\s+/)
@@ -229,7 +228,7 @@ router.post('/generate_content', authenticateCheck, async (req, res) => {
                     content: assistantInstructions
                 }
             ],
-            max_completion_tokens: user.has_membership ? 100000 : 32768,
+            max_completion_tokens: req.session.has_membership ? 100000 : 32768,
         });
         aiReply = completion.choices[0].message.content.trim();
         const doctypeIndex = aiReply.indexOf('<!DOCTYPE html>');
