@@ -1,4 +1,3 @@
-process.env.NODE_OPTIONS = '--dns-result-order=ipv4first';
 import cors from 'cors';
 import { createServer } from 'http';
 import { dirname } from 'path';
@@ -6,6 +5,7 @@ import dotenv from 'dotenv';
 import express from 'express';
 import favicon from 'serve-favicon';
 import { fileURLToPath } from 'url';
+import { handleStripeWebhook } from './routes/webhookHandler.js';
 import history from 'express-history-api-fallback';
 import path from 'path';
 import { Server } from 'socket.io';
@@ -45,6 +45,9 @@ app.use(cors({
     methods: ['GET', 'POST'],
     credentials: true
 }));
+
+app.post('/api/stripe-webhook', express.raw({ type: 'application/json' }), handleStripeWebhook);
+
 app.use(express.json());
 app.use(express.static(root));
 app.use(favicon(faviconPath));
