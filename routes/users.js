@@ -11,7 +11,26 @@ import { Op } from 'sequelize';
 
 dotenv.config();
 const router = Router();
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+const isDevelopment = process.env.NODE_ENV !== 'production';
+const stripeConfig = {
+    secretKey: isDevelopment 
+        ? process.env.STRIPE_TEST_SECRET_KEY 
+        : process.env.STRIPE_SECRET_KEY,
+    publishableKey: isDevelopment 
+        ? process.env.STRIPE_TEST_PUBLISHABLE_KEY 
+        : process.env.STRIPE_PUBLISHABLE_KEY,
+    webhookSecret: isDevelopment 
+        ? process.env.STRIPE_TEST_WEBHOOK_SECRET 
+        : process.env.STRIPE_WEBHOOK_SECRET,
+    monthlyPriceId: isDevelopment 
+        ? process.env.STRIPE_MONTHLY_TEST_PRICE_ID 
+        : process.env.STRIPE_MONTHLY_PRICE_ID,
+    yearlyPriceId: isDevelopment 
+        ? process.env.STRIPE_YEARLY_TEST_PRICE_ID 
+        : process.env.STRIPE_YEARLY_PRICE_ID
+};
+
+const stripe = new Stripe(stripeConfig.secretKey);
 
 router.post('/change_email', authenticateCheck, async (req, res) => {
     try {
@@ -96,10 +115,8 @@ router.post('/create-checkout-session', authenticateCheck, async (req, res) => {
         console.log('User ID:', userId);
         console.log('User Email:', userEmail);
         const priceId = planType === 'yearly'
-            ? process.env.STRIPE_YEARLY_TEST_PRICE_ID
-            : process.env.STRIPE_MONTHLY_TEST_PRICE_ID;
-            //? process.env.STRIPE_YEARLY_PRICE_ID
-            //: process.env.STRIPE_MONTHLY_PRICE_ID;
+            ? stripeConfig.yearlyPriceId
+            : stripeConfig.monthlyPriceId;
         const session = await stripe.checkout.sessions.create({
             payment_method_types: ['card'],
             mode: 'subscription',
@@ -124,8 +141,7 @@ router.post('/create-checkout-session', authenticateCheck, async (req, res) => {
 
 router.post('/stripe-webhook', express.raw({ type: 'application/json' }), async (req, res) => {
     const sig = req.headers['stripe-signature'];
-    //const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;
-    const endpointSecret = process.env.STRIPE_TEST_WEBHOOK_SECRET;
+    const endpointSecret = stripeConfig.webhookSecret;
     let event;
     try {
         event = stripe.webhooks.constructEvent(req.body, sig, endpointSecret);

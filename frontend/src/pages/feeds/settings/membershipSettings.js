@@ -71,10 +71,7 @@ const MembershipSettings = () => {
     };
 
     const handleCancelMembership = () => {
-        console.log('Cancel button clicked');
-        console.log('Current showConfirm state:', showConfirm);
         setShowConfirm(true);
-        console.log('Set showConfirm to true');
     };
 
     // Also add this right after your state declarations:
