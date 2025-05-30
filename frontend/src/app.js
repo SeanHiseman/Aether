@@ -85,7 +85,7 @@ const App = () => {
 										<Route path=":post_id" element={<ContentWidget />} />
 									</Route>
 								</Route>
-								<Route path="feed_settings/:feed_name" element={<ProtectedRoute><FeedSettings /></ProtectedRoute>}>
+								<Route path="settings/:feed_name" element={<ProtectedRoute><FeedSettings /></ProtectedRoute>}>
 									<Route index element={<Navigate to="info" replace />} />
 									<Route path="deletion" element={<FeedDeletion />} />
 									<Route path="followers" element={<FeedFollowers />} />
