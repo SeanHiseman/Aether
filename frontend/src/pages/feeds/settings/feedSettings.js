@@ -12,6 +12,7 @@ const FeedSettings = () => {
     const [followRequests, setFollowRequests] = useState([]);
     const [followRequestCount, setFollowRequestCount] = useState(0);
     const [isAuthorized, setIsAuthorized] = useState(false);
+    const [isLoading, setIsLoading] = useState(true);
     const navigate = useNavigate();
     const { rightClasses } = useOutletContext(); 
     const { user } = useContext(AuthContext);
@@ -19,6 +20,7 @@ const FeedSettings = () => {
     useEffect(() => {
         const fetchFeedData = async () => {
             try {
+                setIsLoading(true);
                 const response = await axios.get(`/api/feed/${feed_name}`);
                 const feedData = response.data.feedResult;
                 setFeed(feedData);
@@ -35,7 +37,9 @@ const FeedSettings = () => {
                 } else {
                     setErrorMessage('Error loading feed data');
                 }
-            } 
+            } finally {
+                setIsLoading(false);
+            }
         };
         fetchFeedData();
     }, [feed_name, navigate]);
@@ -74,6 +78,15 @@ const FeedSettings = () => {
     };
 
     document.title = "Settings";
+    if (isLoading) {
+        return (
+            <div className="standard-container">
+                <div className="settings-area">
+                    <p>Loading...</p>
+                </div>
+            </div>
+        );
+    }
     return (
         <div className="standard-container">  
             <div className="settings-area">
