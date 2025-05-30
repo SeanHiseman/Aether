@@ -11,6 +11,7 @@ const FeedSettings = () => {
     const { feed_name } = useParams();
     const [followRequests, setFollowRequests] = useState([]);
     const [followRequestCount, setFollowRequestCount] = useState(0);
+    const [isAuthorized, setIsAuthorized] = useState(false);
     const navigate = useNavigate();
     const { rightClasses } = useOutletContext(); 
     const { user } = useContext(AuthContext);
@@ -19,17 +20,25 @@ const FeedSettings = () => {
         const fetchFeedData = async () => {
             try {
                 const response = await axios.get(`/api/feed/${feed_name}`);
-                const feed = response.data.feedResult;
-                setFeed(feed);
+                const feedData = response.data.feedResult;
+                setFeed(feedData);
                 setFeedNotFound(false);
+                if (feedData.isOwner || feedData.isAdmin || feedData.isMod) {
+                    setIsAuthorized(true);
+                } else {
+                    setIsAuthorized(false);
+                    navigate(`/${feed.is_group ? 'g' : 'u'}/${feed_name}`);
+                }
             } catch (error) {
                 if (error.response && error.response.status === 404) {
                     setFeedNotFound(true);
+                } else {
+                    setErrorMessage('Error loading feed data');
                 }
-            }
+            } 
         };
         fetchFeedData();
-    }, [feed_name]);
+    }, [feed_name, navigate]);
 
     useEffect(() => {
         const getFollowRequests = async () => {
@@ -88,39 +97,39 @@ const FeedSettings = () => {
                         )}
                         {feed.isAdmin && (
                             <li className="channel-link">
-                                <Link to={`/feed_settings/${feed_name}/info`}>Feed info</Link>
+                                <Link to={`/settings/${feed_name}/info`}>Feed info</Link>
                             </li>
                         )}
                         {!feed.is_group && (
                             <li className="channel-link">
-                                <Link to={`/feed_settings/${feed_name}/account`}>Account</Link>
+                                <Link to={`/settings/${feed_name}/account`}>Account</Link>
                             </li>
                         )}
                         <li className="channel-link">
-                            <Link to={`/feed_settings/${feed_name}/followers`}>
+                            <Link to={`/settings/${feed_name}/followers`}>
                                 {feed.follower_count} {feed.follower_count === 1 ? 'Follower' : 'Followers'}
                             </Link>
                         </li>
                         {feed.type === 'private' && feed.is_group && (
                             <li className="channel-link">
-                                <Link to={`/feed_settings/${feed_name}/follow_requests`}>
+                                <Link to={`/settings/${feed_name}/follow_requests`}>
                                     {followRequestCount} {followRequestCount === 1 ? 'Follow request' : 'Follow requests'}
                                 </Link>
                             </li>
                         )}
                         {!feed.is_group && (
                             <li className="channel-link">
-                                <Link to={`/feed_settings/${feed_name}/membership`}>Membership</Link>
+                                <Link to={`/settings/${feed_name}/membership`}>Membership</Link>
                             </li>
                         )}
                         {!feed.is_group && (
                             <li className="channel-link">
-                                <Link to={`/feed_settings/${feed_name}/theme`}>Theme</Link>
+                                <Link to={`/settings/${feed_name}/theme`}>Theme</Link>
                             </li>
                         )}
                         {feed.isOwner && (
                             <li className="channel-link">
-                                <Link to={`/feed_settings/${feed_name}/deletion`} style={{color: 'red'}}>
+                                <Link to={`/settings/${feed_name}/deletion`} style={{color: 'red'}}>
                                     {feed.is_group ? 'Delete feed' : 'Delete account'}
                                 </Link>
                             </li>

@@ -91,7 +91,7 @@ const ChatChannel = ({ canAdd, canRemove, channelId, connection, isGroup, isLock
                             if (messageExists) return prevMessages;
                             const processedMessage = {
                                 ...newMessage,
-                                content: isGroup ? newMessage.content : decrypt(newMessage.content),
+                                content: isGroup ? newMessage.content : decrypt(newMessage.content), //Needs updating to not use frontend decryption
                             };
                             return [...prevMessages, processedMessage];
                         });
@@ -105,7 +105,7 @@ const ChatChannel = ({ canAdd, canRemove, channelId, connection, isGroup, isLock
                 try {
                     const processedMessage = {
                         ...confirmedMessage,
-                        content: isGroup ? confirmedMessage.content : decrypt(confirmedMessage.content),
+                        content: isGroup ? confirmedMessage.content : decrypt(confirmedMessage.content), //Needs updating to not use frontend decryption
                     };
                     setChannel((prevMessages) => [...prevMessages, processedMessage]);
                 } catch (error) {
@@ -141,7 +141,6 @@ const ChatChannel = ({ canAdd, canRemove, channelId, connection, isGroup, isLock
             return () => {
                 try {
                     if (socket.connected) {
-                        //console.log(`Leaving ${leaveRoute} with ID:`, channelId);
                         socket.emit(leaveRoute, channelId);
                     }
                     socket.off('new_message', handleNewMessage);
@@ -248,7 +247,7 @@ const ChatChannel = ({ canAdd, canRemove, channelId, connection, isGroup, isLock
             }
             const newMessage = {
                 message_id: v4(),
-                content: isGroup ? message : encrypt(message),
+                content: isGroup ? message : encrypt(message), //Needs updating to not use frontend encryption
                 sender_id: viewer.feed_id,
                 receiver_id: isGroup ? null: connection.feed_id,
                 channel_id: channelId,

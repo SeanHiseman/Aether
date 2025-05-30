@@ -96,8 +96,10 @@ router.post('/create-checkout-session', authenticateCheck, async (req, res) => {
         console.log('User ID:', userId);
         console.log('User Email:', userEmail);
         const priceId = planType === 'yearly'
-            ? process.env.STRIPE_YEARLY_PRICE_ID
-            : process.env.STRIPE_MONTHLY_PRICE_ID;
+            ? process.env.STRIPE_YEARLY_TEST_PRICE_ID
+            : process.env.STRIPE_MONTHLY_TEST_PRICE_ID;
+            //? process.env.STRIPE_YEARLY_PRICE_ID
+            //: process.env.STRIPE_MONTHLY_PRICE_ID;
         const session = await stripe.checkout.sessions.create({
             payment_method_types: ['card'],
             mode: 'subscription',
@@ -107,8 +109,8 @@ router.post('/create-checkout-session', authenticateCheck, async (req, res) => {
             }],
             //success_url: `${process.env.FRONTEND_URL}/feed_settings/${req.session.username}/membership?success=true`,
             //cancel_url: `${process.env.FRONTEND_URL}/feed_settings/${req.session.username}/membership?canceled=true`,
-            success_url: `${process.env.FRONTEND_URL}/feed_settings/${req.session.username}/membership`,
-            cancel_url: `${process.env.FRONTEND_URL}/feed_settings/${req.session.username}/membership`,
+            success_url: `${process.env.FRONTEND_URL}/settings/${req.session.username}/membership`,
+            cancel_url: `${process.env.FRONTEND_URL}/settings/${req.session.username}/membership`,
             metadata: { userId: userId.toString() },
             customer_email: userEmail,
         });
@@ -122,7 +124,8 @@ router.post('/create-checkout-session', authenticateCheck, async (req, res) => {
 
 router.post('/stripe-webhook', express.raw({ type: 'application/json' }), async (req, res) => {
     const sig = req.headers['stripe-signature'];
-    const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;
+    //const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;
+    const endpointSecret = process.env.STRIPE_TEST_WEBHOOK_SECRET;
     let event;
     try {
         event = stripe.webhooks.constructEvent(req.body, sig, endpointSecret);
@@ -160,7 +163,7 @@ router.post('/stripe-webhook', express.raw({ type: 'application/json' }), async 
 
 async function handleSuccessfulPayment(session) {
     console.log('Handling successful payment for session:', session);
-    const userId = session.user_id;
+    const userId = session.metadata.userId;
     const subscriptionId = session.subscription;
     try {
         const subscription = await stripe.subscriptions.retrieve(subscriptionId);
