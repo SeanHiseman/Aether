@@ -5,6 +5,7 @@ import { Users } from '../models/relationships.js';
 dotenv.config();
 
 const isDevelopment = process.env.NODE_ENV !== 'production';
+console.log('Environment:', isDevelopment ? 'Development' : 'Production');
 const stripeConfig = {
     secretKey: isDevelopment 
         ? process.env.STRIPE_TEST_SECRET_KEY 
@@ -13,7 +14,8 @@ const stripeConfig = {
         ? process.env.STRIPE_TEST_WEBHOOK_SECRET 
         : process.env.STRIPE_WEBHOOK_SECRET
 };
-
+console.log('Stripe Secret Key:', stripeConfig.secretKey);
+console.log('Stripe Webhook Secret:', stripeConfig.webhookSecret);
 const stripe = new Stripe(stripeConfig.secretKey);
 
 export async function handleStripeWebhook(req, res) {
