@@ -48,6 +48,19 @@ app.use(cors({
 
 app.post('/api/stripe-webhook', express.raw({ type: 'application/json' }), handleStripeWebhook);
 
+//Test
+app.get('/api/stripe-webhook', (req, res) => {
+    console.log('GET request to webhook endpoint received');
+    res.json({ status: 'Webhook endpoint is reachable', timestamp: new Date().toISOString() });
+});
+
+app.post('/api/stripe-webhook-test', (req, res) => {
+    console.log('Test POST request received');
+    console.log('Headers:', req.headers);
+    console.log('Body:', req.body);
+    res.json({ status: 'Test POST received' });
+});
+
 app.use(express.json());
 app.use(express.static(root));
 app.use(favicon(faviconPath));
