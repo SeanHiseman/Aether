@@ -19,6 +19,8 @@ const stripe = new Stripe(stripeConfig.secretKey);
 export async function handleStripeWebhook(req, res) {
     const sig = req.headers['stripe-signature'];
     const endpointSecret = stripeConfig.webhookSecret;
+    console.log('Received webhook with signature:', sig);
+    console.log('Endpoint secret:', endpointSecret);
     let event;
     try {
         event = stripe.webhooks.constructEvent(req.body, sig, endpointSecret);
@@ -59,9 +61,12 @@ async function handleSuccessfulPayment(session) {
     console.log('Handling successful payment for session:', session);
     const userId = session.metadata.userId;
     const subscriptionId = session.subscription;
+    console.log(`User ID: ${userId}, Subscription ID: ${subscriptionId}`);
     try {
         const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+        console.log('Retrieved subscription:', subscription);
         const currentPeriodEnd = new Date(subscription.current_period_end * 1000);
+        console.log('Current period end:', currentPeriodEnd);
         await Users.update({ 
             has_membership: true,
             stripe_subscription_id: subscriptionId,
