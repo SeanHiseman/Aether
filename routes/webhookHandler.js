@@ -19,16 +19,44 @@ console.log('Stripe Webhook Secret:', stripeConfig.webhookSecret);
 const stripe = new Stripe(stripeConfig.secretKey);
 
 export async function handleStripeWebhook(req, res) {
+    console.log('WEBHOOK HANDLER CALLED!');
+    console.log('Time:', new Date().toISOString());
+    console.log('Method:', req.method);
+    console.log('URL:', req.url);
+    console.log('Environment:', process.env.NODE_ENV);
+    console.log('Webhook secret exists:', !!stripeConfig.webhookSecret);
+    console.log('Webhook secret preview:', stripeConfig.webhookSecret?.substring(0, 15) + '...');
+    console.log('Headers received:');
+    Object.keys(req.headers).forEach(key => {
+        if (key.toLowerCase().includes('stripe')) {
+            console.log(`  ${key}: ${req.headers[key]}`);
+        }
+    });
+    console.log('Body type:', typeof req.body);
+    console.log('Body is Buffer:', Buffer.isBuffer(req.body));
+    console.log('Body length:', req.body?.length || 'undefined');
     const sig = req.headers['stripe-signature'];
     const endpointSecret = stripeConfig.webhookSecret;
-    console.log('Received webhook with signature:', sig);
-    console.log('Endpoint secret:', endpointSecret);
+    if (!sig) {
+        console.error('❌ No Stripe signature header found');
+        return res.status(400).send('No signature');
+    }
+    if (!endpointSecret) {
+        console.error('❌ No webhook secret configured');
+        console.error('Available env vars:', Object.keys(process.env).filter(k => k.includes('STRIPE')));
+        return res.status(400).send('No webhook secret');
+    }
     let event;
     try {
+        console.log('🔐 Attempting to verify webhook signature...');
         event = stripe.webhooks.constructEvent(req.body, sig, endpointSecret);
-        console.log('Webhook event received:', event.type);
+        console.log('✅ Webhook signature verified successfully!');
+        console.log('Event type:', event.type);
+        console.log('Event ID:', event.id);
     } catch (err) {
-        console.error('Webhook signature verification failed:', err.message);
+        console.error('❌ Webhook signature verification failed:');
+        console.error('Error message:', err.message);
+        console.error('Error type:', err.type);
         return res.status(400).send(`Webhook Error: ${err.message}`);
     }
     try {
