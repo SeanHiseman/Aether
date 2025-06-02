@@ -57,29 +57,15 @@ async function handleSuccessfulPayment(session) {
     const userId = session.metadata.userId;
     const subscriptionId = session.subscription;
     console.log(`User ID: ${userId}, Subscription ID: ${subscriptionId}`);
-    
     try {
-        const subscription = await stripe.subscriptions.retrieve(subscriptionId);
-        console.log('Retrieved subscription:', subscription);
-        const currentPeriodEnd = new Date(subscription.current_period_end * 1000);
-        console.log('Current period end:', currentPeriodEnd);
-        console.log('Type of currentPeriodEnd:', typeof currentPeriodEnd);
-        console.log('Is valid date?', currentPeriodEnd instanceof Date && !isNaN(currentPeriodEnd));
-        const updateResult = await Users.update({ 
+        await Users.update({ 
             has_membership: true,
             stripe_subscription_id: subscriptionId,
-            subscription_expires_at: currentPeriodEnd,
             updated_at: new Date()
         }, { 
             where: { user_id: userId } 
         });
-        console.log('Update result:', updateResult);
-        const updatedUser = await Users.findOne({
-            where: { user_id: userId },
-            attributes: ['subscription_expires_at', 'has_membership', 'stripe_subscription_id']
-        });
-        console.log('Updated user:', updatedUser?.dataValues);
-        console.log(`User ${userId} membership activated until ${currentPeriodEnd}`);
+        console.log(`User ${userId} membership activated, waiting for invoice to set expiration`);
     } catch (error) {
         console.error('Error in handleSuccessfulPayment:', error);
         throw error;
@@ -87,25 +73,43 @@ async function handleSuccessfulPayment(session) {
 }
 
 async function handleSuccessfulRenewal(invoice) {
-    const subscriptionId = invoice.subscription;
+    console.log('Handling successful renewal/payment for invoice:', invoice.id);
+    const subscriptionId = invoice.subscription || invoice.parent?.subscription_details?.subscription;
     if (!subscriptionId) {
+        console.log('No subscription ID found in invoice');
         return;
     }
     const periodEndUnix = invoice.lines?.data?.[0]?.period?.end;
-    let currentPeriodEnd = periodEndUnix
-        ? new Date(periodEndUnix * 1000)
-        : null;
-    if (!currentPeriodEnd) {
-        const subscription = await stripe.subscriptions.retrieve(subscriptionId);
-        currentPeriodEnd = new Date(subscription.current_period_end * 1000);
+    if (!periodEndUnix) {
+        console.error('No period end found in invoice');
+        return;
     }
+    const currentPeriodEnd = new Date(periodEndUnix * 1000);
+    console.log(`Subscription ${subscriptionId} expires at ${currentPeriodEnd}`);
     const [updatedRows] = await Users.update(
         {
             has_membership: true,
             subscription_expires_at: currentPeriodEnd,
             updated_at: new Date(),
-        }, { where: { stripe_subscription_id: subscriptionId } }
+        }, 
+        { where: { stripe_subscription_id: subscriptionId } }
     );
+    if (updatedRows > 0) {
+        console.log(`Updated expiration date for subscription ${subscriptionId}`);
+    } else {
+        if (invoice.billing_reason === 'subscription_create' && invoice.customer_email) {
+            const [updatedByEmail] = await Users.update(
+                {
+                    has_membership: true,
+                    subscription_expires_at: currentPeriodEnd,
+                    stripe_subscription_id: subscriptionId,
+                    updated_at: new Date(),
+                }, 
+                { where: { email: invoice.customer_email } }
+            );
+            console.log(`Updated ${updatedByEmail} users by email ${invoice.customer_email}`);
+        }
+    }
 }
 
 async function handleCancelledSubscription(subscription) {
