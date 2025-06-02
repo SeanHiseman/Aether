@@ -57,12 +57,15 @@ async function handleSuccessfulPayment(session) {
     const userId = session.metadata.userId;
     const subscriptionId = session.subscription;
     console.log(`User ID: ${userId}, Subscription ID: ${subscriptionId}`);
+    
     try {
         const subscription = await stripe.subscriptions.retrieve(subscriptionId);
         console.log('Retrieved subscription:', subscription);
         const currentPeriodEnd = new Date(subscription.current_period_end * 1000);
         console.log('Current period end:', currentPeriodEnd);
-        await Users.update({ 
+        console.log('Type of currentPeriodEnd:', typeof currentPeriodEnd);
+        console.log('Is valid date?', currentPeriodEnd instanceof Date && !isNaN(currentPeriodEnd));
+        const updateResult = await Users.update({ 
             has_membership: true,
             stripe_subscription_id: subscriptionId,
             subscription_expires_at: currentPeriodEnd,
@@ -70,8 +73,15 @@ async function handleSuccessfulPayment(session) {
         }, { 
             where: { user_id: userId } 
         });
+        console.log('Update result:', updateResult);
+        const updatedUser = await Users.findOne({
+            where: { user_id: userId },
+            attributes: ['subscription_expires_at', 'has_membership', 'stripe_subscription_id']
+        });
+        console.log('Updated user:', updatedUser?.dataValues);
         console.log(`User ${userId} membership activated until ${currentPeriodEnd}`);
     } catch (error) {
+        console.error('Error in handleSuccessfulPayment:', error);
         throw error;
     }
 }

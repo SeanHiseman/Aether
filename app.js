@@ -47,57 +47,7 @@ app.use(cors({
     credentials: true
 }));
 
-app.use('/api/stripe-webhook', (req, res, next) => {
-    console.log('=== WEBHOOK ENDPOINT HIT ===');
-    console.log('Time:', new Date().toISOString());
-    console.log('Method:', req.method);
-    console.log('URL:', req.url);
-    console.log('Original URL:', req.originalUrl);
-    console.log('IP:', req.ip);
-    console.log('User-Agent:', req.get('User-Agent'));
-    console.log('Content-Type:', req.get('Content-Type'));
-    console.log('Content-Length:', req.get('Content-Length'));
-    console.log('All Headers:');
-    Object.entries(req.headers).forEach(([key, value]) => {
-        console.log(`  ${key}: ${value}`);
-    });
-    console.log('Body type before processing:', typeof req.body);
-    console.log('Body length:', req.body ? req.body.length : 'undefined');
-    next();
-});
-
 app.post('/api/stripe-webhook', express.raw({ type: 'application/json' }), handleStripeWebhook);
-
-app.get('/api/stripe-webhook', (req, res) => {
-    console.log('GET request to webhook endpoint received');
-    res.json({ status: 'Webhook endpoint is reachable', timestamp: new Date().toISOString() });
-});
-
-app.get('/api/stripe-webhook-debug', (req, res) => {
-    console.log('=== WEBHOOK DEBUG ENDPOINT CALLED ===');
-    console.log('Server is receiving requests on this route');
-    res.json({ 
-        status: 'Webhook debug endpoint reached successfully',
-        timestamp: new Date().toISOString(),
-        environment: process.env.NODE_ENV,
-        server_url: req.get('host'),
-        method: req.method
-    });
-});
-
-app.post('/api/stripe-webhook-test', (req, res) => {
-    console.log('Test POST request received');
-    console.log('Headers:', req.headers);
-    console.log('Body:', req.body);
-    res.json({ status: 'Test POST received' });
-});
-
-app.all('/api/stripe*', (req, res, next) => {
-    console.log('=== STRIPE ROUTE ACCESSED ===');
-    console.log('Route:', req.originalUrl);
-    console.log('Method:', req.method);
-    next();
-});
 
 app.use(express.json());
 app.use(express.static(root));
