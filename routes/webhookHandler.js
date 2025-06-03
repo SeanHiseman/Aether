@@ -1,4 +1,3 @@
-//webhookHandler.js
 import dotenv from 'dotenv';
 import Stripe from 'stripe';
 import { Users } from '../models/relationships.js';

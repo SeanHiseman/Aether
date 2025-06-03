@@ -1,8 +1,9 @@
 import axios from 'axios';
 import React, { useState } from 'react';
+import { useOutletContext } from 'react-router-dom';
 import { FaEye, FaEyeSlash } from 'react-icons/fa';
 
-const Account = ({ user }) => {
+const Account = () => {
     const [confirmEmail, setConfirmEmail] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
     const [email, setEmail] = useState('');
@@ -11,6 +12,7 @@ const Account = ({ user }) => {
     const [passwordMessage, setPasswordMessage] = useState('');
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+    const { user } = useOutletContext();
     const maxEmailLength = 500;
     const maxPasswordLength = 50;
 
@@ -121,6 +123,7 @@ const Account = ({ user }) => {
             </div>
             <div className="display-area">
                 <p className="text36">Change email</p>
+                <p classname="text16">Current email: {user.email}</p>
                 <form method="post" onSubmit={changeEmail} style={{ width: "60%" }}>
                     <input 
                         type="email" 
