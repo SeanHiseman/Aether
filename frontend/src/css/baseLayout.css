@@ -509,8 +509,9 @@ ul {
         right:0; 
         transform:translateX( 100%);
     }
-    .left-aside.open, .right-aside.open{
+    .left-aside.open, .right-aside.open {
         transform:translateX(0);
+        width: 40vw;
     }
     .content.shift-right{
         transform:translateX(var(--left-width));

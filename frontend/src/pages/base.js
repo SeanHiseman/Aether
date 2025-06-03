@@ -718,6 +718,9 @@ const BaseLayout = () => {
                             </ul>
                         </nav>
                         <div className="deep-feeds-container">
+                            {deepFeeds.length === 0 && (
+                                <p className="text16 faded-text">Drag and drop feeds together (experimental)</p>
+                            )}
                             <SortableContext items={deepFeeds.map(df => `df-${df.deep_feed_id}`)} strategy={verticalListSortingStrategy}>
                                 {deepFeeds.map((deepFeed) => (
                                     <DeepFeedItem key={deepFeed.deep_feed_id} deepFeed={deepFeed} handleDragStart={dragStart} handleDragEnd={dragEnd} onFeedAdded={registerFeedCallback} showHeader={true} />

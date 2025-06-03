@@ -4,6 +4,7 @@ import { FaEye, FaEyeSlash } from 'react-icons/fa';
 import { Link, useNavigate } from 'react-router-dom';
 import { ThemeContext } from '../../themeProvider';
 import '../../css/authentication.css';
+import '../../css/basicStyles.css';
 
 const Login = () => {
     const [username, setUsername] = useState('');
@@ -75,11 +76,11 @@ const Login = () => {
                             value={password}
                             onChange={(e) => {
                                 const input = e.target.value;
-                                if (input.length <= 30) {
+                                if (input.length <= 120) {
                                     setPassword(input);
                                     setErrorMessage('');
                                 } else {
-                                    setErrorMessage('Password cannot exceed 30 characters');
+                                    setErrorMessage('Password cannot exceed 120 characters');
                                 }
                             }}
                         />

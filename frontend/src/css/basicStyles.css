@@ -80,6 +80,9 @@ p, .channel-link {
 .small-icon {
     font-size: large;
 }
+.spinner {
+  animation: spin 1s linear infinite;
+}
 .text16 {
     font-size: 16px;
 }
@@ -92,4 +95,8 @@ p, .channel-link {
 .text16, .text24, .text36 {
     margin: 8px;
     max-width: 96%;
+}
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }
