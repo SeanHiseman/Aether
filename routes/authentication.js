@@ -6,6 +6,7 @@ import { hash, compare } from 'bcrypt';
 import { Op } from 'sequelize';
 import { v4 } from 'uuid';
 import { Connections, ConnectRequests, Feeds, FeedChannels, Followers, FeedChats, Messages, Posts, PostVotes, Users } from '../models/relationships.js'; 
+import { generateVerificationToken, sendVerificationEmail } from '../functions/emailService.js';
 import sequelize from '../databaseSetup.js';
 
 dotenv.config();
@@ -102,7 +103,7 @@ router.post('/join', async (req, res) => {
     try {
         const email = req.body.email;
         const username = req.body.username;
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/; //Already checked in frontend
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/; //Checked in frontend too
         if (!emailRegex.test(email)) {
             return res.status(400).json({ message: 'Invalid email format' });
         }
@@ -117,8 +118,10 @@ router.post('/join', async (req, res) => {
         const user_id = v4();
         const hashedPassword = await hash(req.body.password, 10);
         const UserSince = new Date();
+        const verificationToken = generateVerificationToken(user_id, email);
+        const verificationTokenExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); //24 hours
         await Users.create({
-            email, user_id, username, password: hashedPassword, UserSince
+            email, user_id, username, password: hashedPassword, UserSince, email_verified: false, verification_token: verificationToken, verification_token_expires: verificationTokenExpires
         });
         //Add initial user feed
         const default_photo = process.env.DEFAULT_USER_IMAGE;
@@ -144,11 +147,17 @@ router.post('/join', async (req, res) => {
         await Feeds.increment('follower_count', { where: { feed_id: process.env.DEVELOPMENT_FEED_ID } });
         await Feeds.increment('follower_count', { where: { feed_id: process.env.FEEDBACK_FEED_ID } });
         await Feeds.increment('follower_count', { where: { feed_id: process.env.WELCOME_FEED_ID } });
+        try {
+            await sendVerificationEmail(email, username, verificationToken);
+        } catch (emailError) {
+            console.error('Failed to send verification email:', emailError);
+        }
         req.session.user_id = user_id;
         req.session.username = username;
         req.session.viewer_id = feed_id;
-        res.status(200).json({ success: true });
+        res.status(200).json({ success: true, message: 'Account created successfully. Please check your email to verify your account.' });
     } catch (error) {
+        console.error('Error during user registration:', error);
         res.status(500).json({ success: false });
     }
 });
@@ -186,6 +195,70 @@ router.post('/logout', (req, res) => {
         res.clearCookie('sid');
         return res.json({ success: true });
     });
+});
+
+router.post('/resend-verification', async (req, res) => {
+    try {
+        const { email } = req.body;
+        const user = await Users.findOne({ where: { email } });
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+        if (user.email_verified) {
+            return res.status(400).json({ message: 'Email already verified' });
+        }
+        const verificationToken = generateVerificationToken(user.user_id, email);
+        const verificationTokenExpires = new Date(Date.now() + 24 * 60 * 60 * 1000);
+        await user.update({
+            verification_token: verificationToken,
+            verification_token_expires: verificationTokenExpires
+        });
+        await sendVerificationEmail(email, user.username, verificationToken);
+        res.status(200).json({ success: true, message: 'Verification email sent!' });
+    } catch (error) {
+        console.error('Resend verification error:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+router.get('/verify-email', async (req, res) => {
+    try {
+        const { token } = req.query;
+        if (!token) {
+            return res.status(400).json({ message: 'Verification token is required' });
+        }
+        let decoded;
+        try {
+            decoded = jwt.verify(token, process.env.JWT_SECRET);
+        } catch (error) {
+            return res.status(400).json({ message: 'Invalid or expired verification token' });
+        }
+        const user = await Users.findOne({ 
+            where: { 
+                user_id: decoded.userId,
+                email: decoded.email,
+                verification_token: token
+            }
+        });
+        if (!user) {
+            return res.status(404).json({ message: 'User not found or token invalid' });
+        }
+        if (user.email_verified) {
+            return res.status(200).json({ message: 'Email already verified' });
+        }
+        if (new Date() > user.verification_token_expires) {
+            return res.status(400).json({ message: 'Verification token has expired' });
+        }
+        await user.update({
+            email_verified: true,
+            verification_token: null,
+            verification_token_expires: null
+        });
+        res.status(200).json({ success: true, message: 'Email verified successfully!' });
+    } catch (error) {
+        console.error('Email verification error:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
 });
 
 export default router;

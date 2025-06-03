@@ -33,7 +33,7 @@ const MembershipSettings = () => {
             });
             setSubscriptionStatus(response.data);
         } catch (error) {
-            console.error('Error fetching subscription status:', error);
+            setErrorMessage('Error fetching subscription status');
         }
     };
 
@@ -50,14 +50,12 @@ const MembershipSettings = () => {
                     'Authorization': `Bearer ${localStorage.getItem('token')}`
                 }
             });
-            console.log('Checkout session response', response);
             if (response.data.url) {
                 window.location.href = response.data.url;
             } else {
                 setErrorMessage(response.data.error || 'Failed to initiate payment. Please try again.');
             }
         } catch (error) {
-            console.error('Error initiating payment:', error);
             if (error.response) {
                 setErrorMessage(error.response.data.error || 'Failed to initiate payment. Please try again.');
             } else if (error.request) {
@@ -74,13 +72,7 @@ const MembershipSettings = () => {
         setShowConfirm(true);
     };
 
-    // Also add this right after your state declarations:
-    useEffect(() => {
-        console.log('showConfirm changed to:', showConfirm);
-    }, [showConfirm]);
-
     const proceedCancel = async () => {            
-        console.log('Cancelling membership...');
         setShowConfirm(false);
         setLoading(true);
         setErrorMessage('');
@@ -90,11 +82,9 @@ const MembershipSettings = () => {
                     'Authorization': `Bearer ${localStorage.getItem('token')}`
                 }
             });
-            console.log('Cancellation response:', response);
             setSuccessMessage(response.data.message || 'Subscription cancelled successfully.');
             fetchSubscriptionStatus(); 
         } catch (error) {
-            console.error('Error cancelling subscription:', error);
             if (error.response) {
                 setErrorMessage(error.response.data.error || 'Failed to cancel membership. Please contact support.');
             } else if (error.request) {

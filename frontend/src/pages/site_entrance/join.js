@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { FaEye, FaEyeSlash } from 'react-icons/fa';
 import { Link, useNavigate } from 'react-router-dom';
 import '../../css/authentication.css'; 
+import '../../css/basicStyles.css';
 
 const Join = () => {
     const [confirmPassword, setConfirmPassword] = useState('');
@@ -23,55 +24,32 @@ const Join = () => {
         event.preventDefault();
         const email = event.target.email.value;
         const username = event.target.username.value;
-        if (!validateEmail(email)) {
-            setErrorMessage('Please enter a valid email address');
-            setTimeout(() => { setErrorMessage(''); }, 3000);
-            return;
-        }
-        if (username.length > 30) {
-            setErrorMessage('Username cannot exceed 30 characters');
-            setTimeout(() => { setErrorMessage(''); }, 3000);
-            return;
-        }
-        if (email.length > 500) {
-            setErrorMessage('Email cannot exceed 500 characters');
-            setTimeout(() => { setErrorMessage(''); }, 3000);
-            return;
-        }
-        if (password.length > 120) {
-            setErrorMessage('Password cannot exceed 120 characters');
-            setTimeout(() => { setErrorMessage(''); }, 3000);
-            return;
-        }
-        if (password !== confirmPassword) {
-            setErrorMessage('Passwords do not match');
-            setTimeout(() => { setErrorMessage(''); }, 3000);
+        if (!validateEmail(email) || password !== confirmPassword || errorMessage) { //Redundant check
             return;
         }
         try {
             const response = await axios.post('/api/join', { email, password, username });
             if (response.data.success) {
-                navigate('/g/Welcome');
+                if (response.data.requiresVerification) {
+                    setErrorMessage('');
+                    alert('Account created! Please check your email to verify your address.');
+                    navigate('/login');
+                } else {
+                    navigate('/g/Welcome');
+                }
             } else {
                 setErrorMessage('Joining failed, please try again');
                 setTimeout(() => { setErrorMessage(''); }, 3000);
             }
         } catch (error) {
+            console.error('Error joining:', error);
             if (error.response?.status === 409) {
-                const message = error.response.data.message;
-                if (message === 'Email already registered') {
-                    setErrorMessage('Email already registered. Please use a different email or login.');
-                } else if (message === 'Username already taken') {
-                    setErrorMessage('Username already taken. Please choose a different username.');
-                } else {
-                    setErrorMessage('Account already exists');
-                }
+                setErrorMessage(error.response.data.message);
             } else if (error.response?.status === 400) {
                 setErrorMessage(error.response.data.message || 'Invalid input');
             } else {
                 setErrorMessage('Joining failed, please try again');
             }
-            setTimeout(() => { setErrorMessage(''); }, 3000);
         }
     };    
 
@@ -121,9 +99,16 @@ const Join = () => {
                             const input = e.target.value;
                             if (input.length <= 500) {
                                 setEmail(input);
-                                setErrorMessage(""); 
+                                if (input && validateEmail(input)) {
+                                    setErrorMessage("");
+                                }
                             } else {
                                 setErrorMessage("Email cannot exceed 500 characters");
+                            }
+                        }}
+                        onBlur={(e) => {
+                            if (e.target.value && !validateEmail(e.target.value)) {
+                                setErrorMessage("Please enter a valid email address");
                             }
                         }}
                     />
@@ -139,7 +124,11 @@ const Join = () => {
                                 const input = e.target.value;
                                 if (input.length <= 120) {
                                     setPassword(input);
-                                    setErrorMessage("");
+                                    if (confirmPassword && input !== confirmPassword) {
+                                        setErrorMessage("Passwords do not match");
+                                    } else if (confirmPassword && input === confirmPassword) {
+                                        setErrorMessage("");
+                                    }
                                 } else {
                                     setErrorMessage("Password cannot exceed 120 characters");
                                 }
@@ -159,11 +148,15 @@ const Join = () => {
                             value={confirmPassword}
                             onChange={(e) => {
                                 const input = e.target.value;
-                                if (input.length <= 30) {
+                                if (input.length <= 120) {
                                     setConfirmPassword(input);
-                                    setErrorMessage("");
+                                    if (password && input !== password) {
+                                        setErrorMessage("Passwords do not match");
+                                    } else if (password && input === password) {
+                                        setErrorMessage("");
+                                    }
                                 } else {
-                                    setErrorMessage("Password cannot exceed 30 characters");
+                                    setErrorMessage("Password cannot exceed 120 characters");
                                 }
                             }} 
                         />

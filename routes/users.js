@@ -30,16 +30,33 @@ const stripe = new Stripe(stripeConfig.secretKey);
 router.post('/change_email', authenticateCheck, async (req, res) => {
     try {
         const { email, userId } = req.body;
-        if (!email || !email.includes('@')) {
-            return res.status(400).json({ success: false, error: 'Valid email required' });
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email)) {
+            return res.status(400).json({ success: false, error: 'Invalid email format' });
+        }
+        const existingEmail = await Users.findOne({ where: { email } });
+        if (existingEmail) {
+            return res.status(409).json({ success: false, error: 'Email already in use' });
         }
         const user = await Users.findOne({ where: { user_id: userId } });
         if (!user) {
             return res.status(404).json({ success: false, error: 'User not found' });
         }
-        user.email = email;
-        await user.save();
-        res.status(200).json({ success: true });
+        const verificationToken = generateVerificationToken(userId, email);
+        const verificationTokenExpires = new Date(Date.now() + 24 * 60 * 60 * 1000);
+        await user.update({
+            verification_token: verificationToken,
+            verification_token_expires: verificationTokenExpires
+        });
+        try {
+            await sendEmailChangeVerification(email, user.username, verificationToken, user.email);
+            res.status(200).json({ 
+                success: true, 
+                message: 'Verification email sent to your new email address' 
+            });
+        } catch (emailError) {
+            res.status(500).json({ success: false, error: 'Failed to send verification email' });
+        }
     } catch (error) {
         res.status(500).json({ success: false, error: 'Failed to update email' });
     }

@@ -14,42 +14,40 @@ const Account = () => {
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const { user } = useOutletContext();
     const maxEmailLength = 500;
-    const maxPasswordLength = 50;
+    const maxPasswordLength = 120;
+
+    const validateEmail = (email) => {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        return emailRegex.test(email);
+    };
 
     const changeEmail = async (event) => {
         event.preventDefault();
-        if (email.length > maxEmailLength) {
-            setEmailMessage(`Email cannot exceed ${maxEmailLength} characters`);
-            setTimeout(() => { setEmailMessage(''); }, 5000);
-            return;
-        }
-        if (email !== confirmEmail) {
-            setEmailMessage('Emails do not match');
-            setTimeout(() => { setEmailMessage(''); }, 5000);
+        if (!validateEmail(email) || email !== confirmEmail || email === user.email || emailMessage) { //Redundant check
             return;
         }
         try {
             const response = await axios.post('/api/change_email', { email, userId: user.user_id });
-            setEmail('');
-            setConfirmEmail('');
-            setEmailMessage(response.data.success ? 'Email changed' : 'Email change error, please try again');
-            setTimeout(() => { setEmailMessage(''); }, 5000);
+            if (response.data.success) {
+                setEmail('');
+                setConfirmEmail('');
+                setEmailMessage('Verification email sent! Please check your new email address.');
+            }
         } catch (error) {
-            setEmailMessage('Email change error, please try again');
+            if (error.response?.status === 409) {
+                setEmailMessage('This email is already in use');
+            } else if (error.response?.status === 400) {
+                setEmailMessage(error.response.data.error || 'Invalid email');
+            } else {
+                setEmailMessage('Email change error, please try again');
+            }
             setTimeout(() => { setEmailMessage(''); }, 5000);
         }
     };
 
     const changePassword = async (event) => {
         event.preventDefault();
-        if (password.length > maxPasswordLength) {
-            setPasswordMessage(`Password cannot exceed ${maxPasswordLength} characters`);
-            setTimeout(() => { setPasswordMessage(''); }, 5000);
-            return;
-        }
-        if (password !== confirmPassword) {
-            setPasswordMessage('Passwords do not match');
-            setTimeout(() => { setPasswordMessage(''); }, 5000);
+        if (password !== confirmPassword || passwordMessage) { //Redundant check
             return;
         }
         try {
@@ -72,6 +70,7 @@ const Account = () => {
         <div className="feed-settings">
             <div className="display-area">
                 <p className="text36">Change password</p>
+                <p className="error-message">{passwordMessage}</p>
                 <form method="post" onSubmit={changePassword} style={{ width: "60%" }}>
                     <div className="password-container">
                         <input 
@@ -83,11 +82,15 @@ const Account = () => {
                             value={password} 
                             onChange={(e) => {
                                 const input = e.target.value;
-                                if (input.length <= 30) {
+                                if (input.length <= maxPasswordLength) {
                                     setPassword(input);
-                                    setPasswordMessage("");
+                                    if (confirmPassword && input !== confirmPassword) {
+                                        setPasswordMessage("Passwords do not match");
+                                    } else if (confirmPassword && input === confirmPassword) {
+                                        setPasswordMessage("");
+                                    }
                                 } else {
-                                    setPasswordMessage("Password cannot exceed 30 characters");
+                                    setPasswordMessage(`Password cannot exceed ${maxPasswordLength} characters`);
                                 }
                             }} 
                         />
@@ -105,11 +108,15 @@ const Account = () => {
                             value={confirmPassword} 
                             onChange={(e) => {
                                 const input = e.target.value;
-                                if (input.length <= 30) {
+                                if (input.length <= maxPasswordLength) {
                                     setConfirmPassword(input);
-                                    setPasswordMessage("");
+                                    if (password && input !== password) {
+                                        setPasswordMessage("Passwords do not match");
+                                    } else if (password && input === password) {
+                                        setPasswordMessage("");
+                                    }
                                 } else {
-                                    setPasswordMessage("Password cannot exceed 30 characters");
+                                    setPasswordMessage(`Password cannot exceed ${maxPasswordLength} characters`);
                                 }
                             }} 
                         />
@@ -117,13 +124,18 @@ const Account = () => {
                             {showConfirmPassword ? <FaEyeSlash /> : <FaEye />}
                         </button>
                     </div>
-                    <input className="submit" type="submit" value="Change password" />
+                    <input 
+                        className="submit" 
+                        type="submit" 
+                        value="Change password" 
+                        disabled={!password || !confirmPassword || !!passwordMessage}
+                    />
                 </form>
-                <p className="error-message">{passwordMessage}</p>
             </div>
             <div className="display-area">
                 <p className="text36">Change email</p>
-                <p classname="text16">Current email: {user.email}</p>
+                <p className="text16 faded-text">Current email: {user.email}</p>
+                <p className="error-message">{emailMessage}</p>
                 <form method="post" onSubmit={changeEmail} style={{ width: "60%" }}>
                     <input 
                         type="email" 
@@ -134,34 +146,56 @@ const Account = () => {
                         value={email} 
                         onChange={(e) => {
                             const input = e.target.value;
-                            if (input.length <= 500) {
+                            if (input.length <= maxEmailLength) {
                                 setEmail(input);
-                                setEmailMessage(""); 
+                                if (input && validateEmail(input) && input !== user.email) {
+                                    setEmailMessage("");
+                                }
+                                if (confirmEmail && input !== confirmEmail) {
+                                    setEmailMessage("Emails do not match");
+                                }
                             } else {
-                                setEmailMessage("Email cannot exceed 500 characters");
+                                setEmailMessage(`Email cannot exceed ${maxEmailLength} characters`);
                             }
-                        }} 
+                        }}
+                        onBlur={(e) => {
+                            if (e.target.value) {
+                                if (!validateEmail(e.target.value)) {
+                                    setEmailMessage("Please enter a valid email address");
+                                } else if (e.target.value === user.email) {
+                                    setEmailMessage("Must use a different email to the current");
+                                }
+                            }
+                        }}
                     />
                     <input 
                         type="email" 
                         className="authentication-input-box" 
-                        name="email" 
+                        name="confirm-email" 
                         placeholder="Re-enter email" 
                         required 
                         value={confirmEmail} 
                         onChange={(e) => {
                             const input = e.target.value;
-                            if (input.length <= 500) {
+                            if (input.length <= maxEmailLength) {
                                 setConfirmEmail(input);
-                                setEmailMessage(""); 
+                                if (email && input !== email) {
+                                    setEmailMessage("Emails do not match");
+                                } else if (email && input === email && validateEmail(email) && email !== user.email) {
+                                    setEmailMessage("");
+                                }
                             } else {
-                                setEmailMessage("Email cannot exceed 500 characters");
+                                setEmailMessage(`Email cannot exceed ${maxEmailLength} characters`);
                             }
                         }} 
                     />
-                    <input className="submit" type="submit" value="Change email" />
+                    <input 
+                        className="submit" 
+                        type="submit" 
+                        value="Change email" 
+                        disabled={!email || !confirmEmail || !!emailMessage}
+                    />
                 </form>
-                <p className="error-message">{emailMessage}</p>
             </div>
         </div>
     );

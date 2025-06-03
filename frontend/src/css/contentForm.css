@@ -193,13 +193,6 @@
 .single-container.edit {
   border-radius: 5px;
 }
-.spinner {
-  animation: spin 1s linear infinite;
-}
-@keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
-}
 .title-input {
   background-color: var(--darkest);
   border: 1px solid var(--border);

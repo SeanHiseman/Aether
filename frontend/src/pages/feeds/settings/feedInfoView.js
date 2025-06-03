@@ -141,7 +141,7 @@ const FeedInfoView = () => {
             });
             setFeed({ ...feed, feed_name: newName });
             setIsEditingName(false);
-            navigate(`/feed_settings/${newName}`);
+            navigate(`/settings/${newName}`);
         } catch {
             setErrorMessage('Error changing name');
             setTimeout(() => { setErrorMessage(''); }, 5000);
