@@ -1,4 +1,3 @@
-//app.js
 import cors from 'cors';
 import { createServer } from 'http';
 import { dirname } from 'path';

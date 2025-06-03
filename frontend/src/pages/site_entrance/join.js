@@ -14,10 +14,20 @@ const Join = () => {
     const [username, setUsername] = useState('');
     const navigate = useNavigate();
 
+    const validateEmail = (email) => {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        return emailRegex.test(email);
+    };
+
     const handleJoin = async (event) => {
         event.preventDefault();
         const email = event.target.email.value;
         const username = event.target.username.value;
+        if (!validateEmail(email)) {
+            setErrorMessage('Please enter a valid email address');
+            setTimeout(() => { setErrorMessage(''); }, 3000);
+            return;
+        }
         if (username.length > 30) {
             setErrorMessage('Username cannot exceed 30 characters');
             setTimeout(() => { setErrorMessage(''); }, 3000);
@@ -28,8 +38,8 @@ const Join = () => {
             setTimeout(() => { setErrorMessage(''); }, 3000);
             return;
         }
-        if (password.length > 30) {
-            setErrorMessage('Password cannot exceed 30 characters');
+        if (password.length > 120) {
+            setErrorMessage('Password cannot exceed 120 characters');
             setTimeout(() => { setErrorMessage(''); }, 3000);
             return;
         }
@@ -47,7 +57,20 @@ const Join = () => {
                 setTimeout(() => { setErrorMessage(''); }, 3000);
             }
         } catch (error) {
-            setErrorMessage(error.response?.status === 409 ? 'Name already taken' : 'Joining failed, please try again');
+            if (error.response?.status === 409) {
+                const message = error.response.data.message;
+                if (message === 'Email already registered') {
+                    setErrorMessage('Email already registered. Please use a different email or login.');
+                } else if (message === 'Username already taken') {
+                    setErrorMessage('Username already taken. Please choose a different username.');
+                } else {
+                    setErrorMessage('Account already exists');
+                }
+            } else if (error.response?.status === 400) {
+                setErrorMessage(error.response.data.message || 'Invalid input');
+            } else {
+                setErrorMessage('Joining failed, please try again');
+            }
             setTimeout(() => { setErrorMessage(''); }, 3000);
         }
     };    
@@ -114,11 +137,11 @@ const Join = () => {
                             value={password}
                             onChange={(e) => {
                                 const input = e.target.value;
-                                if (input.length <= 30) {
+                                if (input.length <= 120) {
                                     setPassword(input);
                                     setErrorMessage("");
                                 } else {
-                                    setErrorMessage("Password cannot exceed 30 characters");
+                                    setErrorMessage("Password cannot exceed 120 characters");
                                 }
                             }} 
                         />

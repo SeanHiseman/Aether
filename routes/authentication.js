@@ -102,12 +102,18 @@ router.post('/join', async (req, res) => {
     try {
         const email = req.body.email;
         const username = req.body.username;
-        //Check for existing username
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/; //Already checked in frontend
+        if (!emailRegex.test(email)) {
+            return res.status(400).json({ message: 'Invalid email format' });
+        }
+        const existingEmail = await Users.findOne({ where: { email } });
+        if (existingEmail) {
+            return res.status(409).json({ message: 'Email already registered' });
+        }
         const existingUser = await Users.findOne({ where: { username } });
         if (existingUser) {
             return res.status(409).json({ message: 'Username already taken' });
         }
-        //Add user info to database, including encrypted password
         const user_id = v4();
         const hashedPassword = await hash(req.body.password, 10);
         const UserSince = new Date();
