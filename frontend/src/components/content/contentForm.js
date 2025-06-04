@@ -187,7 +187,7 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onEdit
         } catch (error) {
           setPostErrorMessage('Failed to crop image. Please try again.');
         }
-    }, [blocks, cropState, updateBlock, setPostErrorMessage]);
+    }, [blocks, cropState, updateBlock]);
 
     const compileFinalHTML = useCallback(allBlocks => {
         let finalHTML = ''
