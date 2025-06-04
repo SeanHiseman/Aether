@@ -1,493 +1,569 @@
 /*This sheet is for styles that are used across the site*/
-@import url('variables.css');
-.add-channel-form, #create-feed-form {
-    align-items: center;
-    background-color: var(--dark);
-    display: flex;
-    flex-direction: column;
-    justify-content: flex-start;
-    padding: 5px;
-    border-radius: 10px;
-    width: 90%;
-    margin: 10px;
+@import url("variables.css");
+.add-channel-form,
+#create-feed-form {
+  align-items: center;
+  background-color: var(--dark);
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  padding: 5px;
+  border-radius: 10px;
+  width: 90%;
+  margin: 10px;
 }
 .add-channel-section {
-    align-items: center;
-    display: flex;
-    flex-direction: column;
+  align-items: center;
+  display: flex;
+  flex-direction: column;
 }
 .ask:hover::after {
-    bottom: 7px;
-    margin-right: 10px;
-    right: 100%;
+  bottom: 7px;
+  margin-right: 10px;
+  right: 100%;
 }
 .base-header {
-    align-items: center;
-    background-color: var(--darkest); 
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    height: 70px;
-    margin-left: var(--left-width);
-    margin-right: var(--right-width);
-    padding: var(--small-margin);
-    position: fixed;
-    width: calc(100vw - var(--left-width) - var(--right-width));
-    top: 0;
-    z-index: 10;
+  align-items: center;
+  background-color: var(--darkest);
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  height: 70px;
+  margin-left: var(--left-width);
+  margin-right: var(--right-width);
+  padding: var(--small-margin);
+  position: fixed;
+  width: calc(100vw - var(--left-width) - var(--right-width));
+  top: 0;
+  z-index: 2000; /* sidebars are 1000 → header now on top      */
 }
 #cancel-save {
-    align-items: center;
-    display: flex;
-    justify-content: center;
+  align-items: center;
+  display: flex;
+  justify-content: center;
 }
 .change-feed-photo {
-    background-color: var(--darkest);
-    border-radius: 10px;
-    display: flex;
-    flex-direction: column;
-    margin-top: 280px;
-    padding: 5px;
-    position: absolute;
-    width: 220px;
+  background-color: var(--darkest);
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  margin-top: 280px;
+  padding: 5px;
+  position: absolute;
+  width: 220px;
 }
-.change-name-area, .change-text-area {
-    background-color: var(--darkest);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    color: var(--lightest);
-    font-family: Arial, sans-serif;
-    padding: 3px 6px;
+.change-name-area,
+.change-text-area {
+  background-color: var(--darkest);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--lightest);
+  font-family: Arial, sans-serif;
+  padding: 3px 6px;
 }
 .change-name-area {
-    font-size: 24px;
-    height: 30px;
-    max-width: 80%;
+  font-size: 24px;
+  height: 30px;
+  max-width: 80%;
 }
 .change-text-area {
-    font-size: 24px;
-    height: 120px;
+  font-size: 24px;
+  height: 120px;
 }
 .change-text-area.small {
-    max-width: 10vw;
+  max-width: 10vw;
 }
 .channel-content {
-    align-items: center;
-    display: flex;
-    flex-direction: column;
-    flex-grow: 1;
-    height: 100%;
-    overflow-y: auto;
-    width: 100%;
+  align-items: center;
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+  height: 100%;
+  overflow-y: auto;
+  width: 100%;
 }
 .channel-dropdown {
-    color: var(--lightest);
-    cursor: pointer;
-    margin-left: 12px;
+  color: var(--lightest);
+  cursor: pointer;
+  margin-left: 12px;
 }
 .channel-feed {
-    align-items: center;
-    display: flex;
-    flex: 1;
-    flex-direction: column;
-    overflow-y: auto;
-    margin-top: 80px;
-    width: 100%
+  align-items: center;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  overflow-y: auto;
+  margin-top: 80px;
+  width: 100%;
 }
 .channel-link {
-    align-items: center;
-    border-bottom: 1px solid var(--border);
-    display: flex;
-    justify-content: space-between;
-    padding: 10px;
-    text-align: left;
-    text-decoration: none;
+  align-items: center;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  padding: 10px;
+  text-align: left;
+  text-decoration: none;
 }
-.channel-item, .channel-link {
-    cursor: pointer;
-    transition: background-color var(--transition-regular);
+.channel-item,
+.channel-link {
+  cursor: pointer;
+  transition: background-color var(--transition-regular);
 }
-.channel-link:hover, .channel-item:hover {
-    background-color: var(--dark);
+.channel-link:hover,
+.channel-item:hover {
+  background-color: var(--dark);
 }
 .channel-list {
-    margin-left: var(--medium-margin);
-    width: 90%;
+  margin-left: var(--medium-margin);
+  width: 90%;
 }
-.channel-list-link, .channel-list-link:visited {
-    text-decoration: none;
-    color: var(--lightest);
+.channel-list-link,
+.channel-list-link:visited {
+  text-decoration: none;
+  color: var(--lightest);
 }
 .channel-name-section {
-    align-items: center;
-    display: flex;
-    flex-direction: column;
-    width: 100%;
+  align-items: center;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
 }
-.chat-channel-button, .conversation-button, .posts-channel-button {
-    background-color: var(--darkest);
-    border: 1px solid var(--border);
-    color: var(--lightest);
-    font-size: large;
-    margin: 10px;
-    max-width: 200px;
-    padding: 5px 10px;
-    transition: background-color var(--transition-regular);
+.chat-channel-button,
+.conversation-button,
+.posts-channel-button {
+  background-color: var(--darkest);
+  border: 1px solid var(--border);
+  color: var(--lightest);
+  font-size: large;
+  margin: 10px;
+  max-width: 200px;
+  padding: 5px 10px;
+  transition: background-color var(--transition-regular);
 }
-.chat-channel-button, .conversation-button {
-    border-radius: 1000px;
+.chat-channel-button,
+.conversation-button {
+  border-radius: 1000px;
 }
 .channel-name {
-    align-items: center;
-    display: flex;
-    flex-direction: column;
+  align-items: center;
+  display: flex;
+  flex-direction: column;
 }
 .channel-name-settings {
-    align-items: center;
-    display: flex;
-    flex-direction: row;
+  align-items: center;
+  display: flex;
+  flex-direction: row;
 }
 .change-name {
-    align-items: center;
-    display: flex;
-    flex-direction: column;
-    width: 100%;
+  align-items: center;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
 }
 .change-name-settings {
-    align-items: center;
-    display: flex;
-    flex-direction: row;
+  align-items: center;
+  display: flex;
+  flex-direction: row;
 }
-.chat-message-bar::placeholder, .name-input::placeholder, #search-bar::placeholder, textarea::placeholder, .title-input::placeholder {
-    color: var(--light);
+.chat-message-bar::placeholder,
+.name-input::placeholder,
+#search-bar::placeholder,
+textarea::placeholder,
+.title-input::placeholder {
+  color: var(--light);
 }
 #confirmation-message {
-    color: var(--lightest);
-    margin-left: 10px;
-    text-align: right;
+  color: var(--lightest);
+  margin-left: 10px;
+  text-align: right;
 }
 .container {
-    display: flex;
-    flex-direction: row;
-    height: 100vh;
+  display: flex;
+  flex-direction: row;
+  height: 100vh;
 }
 .content {
-    display: flex;
-    flex-direction: column;
-    flex-grow: 1; 
-    margin-left: var(--left-width);
-    overflow: auto; 
-    z-index: 0;
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+  margin-left: var(--left-width);
+  overflow: auto;
+  z-index: 0;
 }
 /*Content feed may be redundant*/
-.content-feed, .messages-feed {
-    display: flex;
-    flex-direction: column; 
-    flex-grow: 1;
-    overflow: auto;
-    width: 100%;
+.content-feed,
+.messages-feed {
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+  overflow: auto;
+  width: 100%;
 }
 .dark-button {
-    background-color: var(--darkest);
+  background-color: var(--darkest);
 }
 .description {
-    margin: 5px;
-    max-width: 80%;
+  margin: 5px;
+  max-width: 80%;
 }
-#description-section .view-description, #name-section .view-name {
-    align-items: center;
-    display: flex;
+#description-section .view-description,
+#name-section .view-name {
+  align-items: center;
+  display: flex;
 }
-#description-section .change-description, #name-section .change-name {
-    display: flex;
-    flex-direction: column;
+#description-section .change-description,
+#name-section .change-name {
+  display: flex;
+  flex-direction: column;
 }
 .feed-list-link {
-    align-items: center;
-    display: flex;
+  align-items: center;
+  display: flex;
 }
 .feed-list-link-container {
-    align-items: center;
-    border-radius: 14px;
-    display: flex;
-    justify-content: space-between;
-    padding: 8px;
-    transition: background-color var(--transition-regular);
+  align-items: center;
+  border-radius: 14px;
+  display: flex;
+  justify-content: space-between;
+  padding: 8px;
+  transition: background-color var(--transition-regular);
 }
 .feed-list-link-container:hover {
-    background-color: var(--dark);
+  background-color: var(--dark);
 }
 .feed-list-text {
-    margin: 0;
-    margin-left: 10px;
+  margin: 0;
+  margin-left: 10px;
 }
 .file-input {
-    align-items: center;
-    display: flex;
-    flex-direction: column;
+  align-items: center;
+  display: flex;
+  flex-direction: column;
 }
 .file-name {
-    margin: 10px;
+  margin: 10px;
 }
 .icon-button {
-    border: none;
-    background-color: var(--darkest);
-    height: 100%;
-    position: relative;
-    transition: background-color var(--transition-regular);
+  border: none;
+  background-color: var(--darkest);
+  height: 100%;
+  position: relative;
+  transition: background-color var(--transition-regular);
 }
 .icon-button.ask {
-    background-color: var(--dark);
-    border-top-left-radius: 20px;
-    border-bottom-left-radius: 20px;
+  background-color: var(--dark);
+  border-top-left-radius: 20px;
+  border-bottom-left-radius: 20px;
 }
 .icon-button.search {
-    background-color: var(--dark);
-    border-top-right-radius: 20px;
-    border-bottom-right-radius: 20px;
+  background-color: var(--dark);
+  border-top-right-radius: 20px;
+  border-bottom-right-radius: 20px;
 }
 .icon-button:hover::after {
-    background-color: var(--light);
-    border-radius: .3rem;
-    color: var(--lightest);
-    content: attr(data-tooltip);
-    font-size: large;
-    opacity: 1;
-    padding: .5rem;
-    position: absolute;
-    text-align: center;
-    transition: opacity 0.3s ease;
-    width: max-content;
-    z-index: 100;
+  background-color: var(--light);
+  border-radius: 0.3rem;
+  color: var(--lightest);
+  content: attr(data-tooltip);
+  font-size: large;
+  opacity: 1;
+  padding: 0.5rem;
+  position: absolute;
+  text-align: center;
+  transition: opacity 0.3s ease;
+  width: max-content;
+  z-index: 100;
 }
 .large-feed-photo {
-    border-radius: 18px;
-    height: 120px; 
-    margin: 10px;
-    width: 120px; 
+  border-radius: 18px;
+  height: 120px;
+  margin: 10px;
+  width: 120px;
 }
 .left-aside-feed-info {
-    align-items: center;
-    display: flex;
-    justify-content: space-between;
-    margin-left: var(--medium-margin);
-    margin-top: 16px;
-    width: 90%;
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+  margin-left: var(--medium-margin);
+  margin-top: 16px;
+  width: 90%;
 }
-.left-aside, .right-aside {
-    align-items: center;
-    background-color: var(--darkest);
-    display: flex;
-    flex-direction: column;
-    overflow-y: auto;
+.left-aside,
+.right-aside {
+  align-items: center;
+  background-color: var(--darkest);
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
 }
 .left-aside {
-    height: 100%;
-    left: 0;
-    position: fixed;
-    width: var(--left-width);
-    z-index: 11;
+  height: 100%;
+  left: 0;
+  position: fixed;
+  width: var(--left-width);
+  z-index: 11;
 }
-.left-aside nav ul, .right-aside nav ul {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-    text-align: center;
-    width: 100%;
+.left-aside nav ul,
+.right-aside nav ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  text-align: center;
+  width: 100%;
 }
-.left-aside nav ul li a, .right-aside nav ul li a {
-    color: var(--lightest);
-    text-decoration: none;
+.left-aside nav ul li a,
+.right-aside nav ul li a {
+  color: var(--lightest);
+  text-decoration: none;
 }
-.left-aside::-webkit-scrollbar, .right-aside::-webkit-scrollbar {
-    display: none; /*Hides scroll bar */
+.left-aside::-webkit-scrollbar,
+.right-aside::-webkit-scrollbar {
+  display: none; /*Hides scroll bar */
 }
 li {
-    list-style-type: none;
+  list-style-type: none;
 }
 main {
-    display: flex;
-    flex-direction: column;
-    width: 100%;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
 }
 .name-input {
-    background-color: var(--dark);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    color: var(--lightest);
-    font-size: large;
-    margin: 10px;
-    padding: 5px;
-    transition: background-color var(--transition-regular);
-    width: 80%;
+  background-color: var(--dark);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--lightest);
+  font-size: large;
+  margin: 10px;
+  padding: 5px;
+  transition: background-color var(--transition-regular);
+  width: 80%;
 }
 #personal-feeds {
-    margin-top: 20px;
-    width: 90%;
+  margin-top: 20px;
+  width: 90%;
 }
 .posts-channel-button {
-    border-radius: 5px;
+  border-radius: 5px;
 }
-#public-private-section, #post-chat-section {
-    display: flex;
-    max-width: 100%;
+#public-private-section,
+#post-chat-section {
+  display: flex;
+  max-width: 100%;
 }
 .raw-content {
-    border-radius: 10px;
+  border-radius: 10px;
 }
 .results-wrapper {
-    display: flex;
-    align-items: center;
-    margin-left: 140px;
+  display: flex;
+  align-items: center;
+  margin-left: 140px;
 }
 .results {
-    display: flex;
-    flex-wrap: wrap;
+  display: flex;
+  flex-wrap: wrap;
 }
 .right-aside {
-    flex-shrink: 0;
-    height: 100%;
-    margin-top: 16px;
-    overflow-y: auto;
-    width: var(--right-width);
+  flex-shrink: 0;
+  height: 100%;
+  margin-top: 16px;
+  overflow-y: auto;
+  width: var(--right-width);
 }
 .right-aside ul {
-    align-self: center;
-    display: flex;
-    flex-direction: column;
-    list-style-type: none;
-    padding: 0;
+  align-self: center;
+  display: flex;
+  flex-direction: column;
+  list-style-type: none;
+  padding: 0;
 }
 .search:hover::after {
-    bottom: 7px;
-    left: 100%;
-    margin-left: 10px;
+  bottom: 7px;
+  left: 100%;
+  margin-left: 10px;
 }
 .search-bar {
-    background-color: var(--dark);
-    border: none;
-    border-bottom-left-radius: var(--large-margin);
-    border-top-left-radius: var(--large-margin);
-    color: var(--lightest);
-    flex-grow: 1;
-    font-size: large;
-    height: 100%;
+  background-color: var(--dark);
+  border: none;
+  border-bottom-left-radius: var(--large-margin);
+  border-top-left-radius: var(--large-margin);
+  color: var(--lightest);
+  flex-grow: 1;
+  font-size: large;
+  height: 100%;
 }
 .search-container {
-    align-items: center;
-    background-color: var(--border);
-    border: 1px solid var(--dark);
-    border-radius: 20px;
-    display: flex;
-    position: relative;
-    width: 100%;
+  align-items: center;
+  background-color: var(--border);
+  border: 1px solid var(--dark);
+  border-radius: 20px;
+  display: flex;
+  position: relative;
+  width: 100%;
 }
 .search-form {
-    display: flex;
-    /*max-width: 35%;*/
-    max-width: 40%;
-    height: 80%;
-    position: relative;
-    width: 100%;
+  display: flex;
+  /*max-width: 35%;*/
+  max-width: 40%;
+  height: 80%;
+  position: relative;
+  width: 100%;
 }
 .small-feed-photo {
-    height: 40px; 
-    width: 40px; 
-    border-radius: 6px;
+  height: 40px;
+  width: 40px;
+  border-radius: 6px;
 }
 .spacer {
-    flex-grow: 1;
+  flex-grow: 1;
 }
 .spacer20px {
-    height: 20px;
+  height: 20px;
 }
 .standard-container {
-    display: flex;
-    overflow: hidden;
-    height: 100%;
-    width: 100%;
+  display: flex;
+  overflow: hidden;
+  height: 100%;
+  width: 100%;
 }
 .standard-icon {
-    color: var(--lightest);
-    cursor: pointer;
-    height: 30px;
-    padding: 0;
-    width: 30px;
-    transition: background-color var(--transition-regular);
+  color: var(--lightest);
+  cursor: pointer;
+  height: 30px;
+  padding: 0;
+  width: 30px;
+  transition: background-color var(--transition-regular);
 }
 .total-votes {
-    font-size: x-large;
-    margin: 4px;
+  font-size: x-large;
+  margin: 4px;
 }
 #upload-form {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    width: 100%;
-    flex: 1;
-    width: 80%;
-    padding: 5px;
-    border-radius: 10px;
-    margin: 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  flex: 1;
+  width: 80%;
+  padding: 5px;
+  border-radius: 10px;
+  margin: 10px;
 }
 #upload-form input[type="file"] {
-    flex: 1;
-    margin-top: 10px;
-    margin-bottom: 10px;
+  flex: 1;
+  margin-top: 10px;
+  margin-bottom: 10px;
 }
 ul {
-    padding-inline-start: 0;
+  padding-inline-start: 0;
 }
 #upload-form input[type="file"] {
-    display: block;  
-    width: 100%;    
+  display: block;
+  width: 100%;
 }
 .vote-container {
-    align-items: center;
-    display: flex;
+  align-items: center;
+  display: flex;
 }
 .vote-enabled {
-    background-color: var(--darkest);
-    transition: background-color var(--transition-regular);
+  background-color: var(--darkest);
+  transition: background-color var(--transition-regular);
 }
 .vote-enabled:hover {
-    background-color: var(--light);
+  background-color: var(--light);
 }
-.vote-disabled, .vote-disabled:hover {
-    background-color: var(--border) !important;
-    cursor: default !important;
+.vote-disabled,
+.vote-disabled:hover {
+  background-color: var(--border) !important;
+  cursor: default !important;
 }
 
 .base-header.hide-left {
-    margin-left: 0;
-    width: calc(100vw - var(--right-width));
+  margin-left: 0;
+  width: calc(100vw - var(--right-width));
 }
 .base-header.hide-right {
-    margin-right: 0;
-    width: calc(100vw - var(--left-width));
+  margin-right: 0;
+  width: calc(100vw - var(--left-width));
 }
 .base-header.hide-left.hide-right {
-    width: 100vw;
+  width: 100vw;
 }
-.content.hide-left  {
-    margin-left: 0;
+.content.hide-left {
+  margin-left: 0;
 }
 .content.hide-right {
-    margin-right: 0;
+  margin-right: 0;
 }
-.left-aside.collapsed  {
-    width:0; overflow:hidden;
+.left-aside.collapsed {
+  width: 0;
+  overflow: hidden;
 }
 .right-aside.collapsed {
-    width:0; overflow:hidden;
+  width: 0;
+  overflow: hidden;
 }
-.push-right{
-    margin-left:auto;
+.push-right {
+  margin-left: auto;
 }
-.push-left{
-    margin-right:auto;
+.push-left {
+  margin-right: auto;
 }
-@media (max-width:768px){
+
+@media (max-width: 768px) {
+  /* A) give both asides the same width right from the start          */
+  :root {
+    --sidebar-mobile-width: 45vw; /* pick any %, 70-80 feels right */
+  }
+
+  .base-header {
+    margin-left: 0;
+    margin-right: 0;
+    width: 100vw;
+  }
+  .left-aside,
+  .right-aside {
+    position: fixed;
+    width: var(--sidebar-mobile-width); /* ← only one width     */
+    z-index: 1000;
+    top: 70px; /* header height                    */
+    height: calc(100% - 70px);
+    margin-top: 0; /* cancel the desktop 16-px margin  */
+    transition: transform 0.3s ease; /* smooth slide         */
+  }
+
+  /* B) keep them off-screen until .open is added                     */
+  .left-aside {
+    left: 0;
+    transform: translateX(-100%);
+  }
+  .right-aside {
+    left: auto;
+    right: 0;
+    transform: translateX(100%);
+  }
+
+  /* C) when .open is present they are fully visible                  */
+  .left-aside.open,
+  .right-aside.open {
+    transform: translateX(0);
+  }
+  .content {
+    margin-left: 0;
+  }
+
+  /* D) move the centre content by the same distance                  */
+  .content.shift-right {
+    transform: translateX(var(--sidebar-mobile-width));
+  }
+  .content.shift-left {
+    transform: translateX(calc(-1 * var(--sidebar-mobile-width)));
+  }
+
+  /* header already stretches full-width, no change needed */
+}
+/* @media (max-width:768px){
     .base-header {
         margin-left: 0;
         margin-right: 0;
@@ -519,4 +595,4 @@ ul {
     .content.shift-left {
         transform:translateX(calc(-1 * var(--right-width)));
     }
-}
+} */
