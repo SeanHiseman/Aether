@@ -28,6 +28,7 @@ export const sendVerificationEmail = async (email, username, verificationToken) 
         html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
             <h2 style="color: #333;">Welcome to Aether, ${username}!</h2>
+             <p>(This email is a non-functional placeholder for now, working verification coming soon!)</p>
             <p>Thanks for signing up. Please verify your email address by clicking the link below:</p>
             <div style="margin: 30px 0;">
             <a href="${verificationUrl}" 

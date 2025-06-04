@@ -209,6 +209,7 @@ router.post('/generate_content', authenticateCheck, async (req, res) => {
             Start with <!DOCTYPE html>.
             Body background #232527, hieght 300px minimum
             White text as default
+            Ensure all interactions work on mobile and desktop.
             If the request cannot be fulfilled with code, return nothing`
             :
             `Generate or improve HTML code based on the following context:
@@ -219,6 +220,7 @@ router.post('/generate_content', authenticateCheck, async (req, res) => {
             Start with <!DOCTYPE html>.
             Body background #232527, hieght 300px minimum
             White text as default
+            Ensure all interactions work on mobile and desktop.
             If the request cannot be fulfilled with code, return nothing`;
         const completion = await openai.chat.completions.create({
             model: model,
