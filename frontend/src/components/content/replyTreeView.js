@@ -13,6 +13,27 @@ const ReplyTreeView = ({ replies, onReplyClick, renderReplyContent }) => {
   const [replyNodes, setReplyNodes] = useState({});
   const [loadingReplies, setLoadingReplies] = useState({});
   
+  const NODE_WIDTH = 250;
+  const NODE_HEIGHT = 100; 
+  const BUTTON_HEIGHT = 30;
+  
+  useEffect(() => {
+  const container = containerRef.current;
+  if (!container) return;
+  
+  const wheelHandler = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    handleWheel(e);
+  };
+  
+  container.addEventListener('wheel', wheelHandler, { passive: false });
+  
+  return () => {
+    container.removeEventListener('wheel', wheelHandler);
+  };
+}, [scale, position]);
+
   useEffect(() => {
     const initialReplyNodes = {};
     replies.forEach(reply => {
@@ -66,7 +87,6 @@ const ReplyTreeView = ({ replies, onReplyClick, renderReplyContent }) => {
         });
         newReplies.forEach(reply => {
           if (reply.parent_id && updatedNodes[reply.parent_id]) {
-            // Only add to children if not already there
             if (!updatedNodes[reply.parent_id].children.includes(reply.post_id)) {
               updatedNodes[reply.parent_id].children.push(reply.post_id);
             }
@@ -183,25 +203,25 @@ const ReplyTreeView = ({ replies, onReplyClick, renderReplyContent }) => {
     if (node.hasMoreReplies && !node.loadedReplies) {
       const success = await fetchRepliesForNode(replyId);
       if (!success) return; 
-      setReplyNodes(prev => {
-        const updatedNodes = { ...prev };
-        updatedNodes[replyId].expanded = true;
-        const childrenIds = updatedNodes[replyId].children;
-        const parentPos = updatedNodes[replyId].position;
-        childrenIds.forEach((childId, index) => {
-          const spacing = 300;
-          const offset = (childrenIds.length - 1) * spacing / 2;
-          updatedNodes[childId].position = {
-            x: parentPos.x - offset + index * spacing,
-            y: parentPos.y + 150
-          };
-          if (updatedNodes[childId].expanded) {
-            positionChildNodes(childId, updatedNodes, 1);
-          }
-        });
-        return updatedNodes;
-      });
     }
+    setReplyNodes(prev => {
+      const updatedNodes = { ...prev };
+      updatedNodes[replyId].expanded = true;
+      const childrenIds = updatedNodes[replyId].children;
+      const parentPos = updatedNodes[replyId].position;
+      childrenIds.forEach((childId, index) => {
+        const spacing = 300;
+        const offset = (childrenIds.length - 1) * spacing / 2;
+        updatedNodes[childId].position = {
+          x: parentPos.x - offset + index * spacing,
+          y: parentPos.y + 300 
+        };
+        if (updatedNodes[childId].expanded) {
+          positionChildNodes(childId, updatedNodes, 1);
+        }
+      });
+      return updatedNodes;
+    });
   };
   
   const positionChildNodes = (parentId, nodes, depth) => {
@@ -212,7 +232,7 @@ const ReplyTreeView = ({ replies, onReplyClick, renderReplyContent }) => {
       const offset = (childrenIds.length - 1) * spacing / 2;
       nodes[childId].position = {
         x: parentPos.x - offset + index * spacing,
-        y: parentPos.y + 150
+        y: parentPos.y + 300 
       };
       if (nodes[childId].expanded) {
         positionChildNodes(childId, nodes, depth + 1);
@@ -226,7 +246,7 @@ const ReplyTreeView = ({ replies, onReplyClick, renderReplyContent }) => {
     const ctx = canvas.getContext('2d');
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.strokeStyle = '#888';
-    ctx.lineWidth = 2 * scale;
+    ctx.lineWidth = 2;
     Object.keys(replyNodes).forEach(replyId => {
       const node = replyNodes[replyId];
       if (node.expanded) {
@@ -234,14 +254,14 @@ const ReplyTreeView = ({ replies, onReplyClick, renderReplyContent }) => {
           const childNode = replyNodes[childId];
           if (childNode) {
             ctx.beginPath();
-            const startX = node.position.x + position.x + 125; //Center of node
-            const startY = node.position.y + position.y + 50; //Bottom of node
-            const endX = childNode.position.x + position.x + 125; //Center of child node
-            const endY = childNode.position.y + position.y; //Top of child node
+            const startX = (node.position.x + NODE_WIDTH / 2) * scale + position.x;
+            const startY = (node.position.y + NODE_HEIGHT) * scale + position.y;
+            const endX = (childNode.position.x + NODE_WIDTH / 2) * scale + position.x;
+            const endY = childNode.position.y * scale + position.y;
             ctx.moveTo(startX, startY);
             ctx.bezierCurveTo(
-              startX, startY + 50,
-              endX, endY - 50,
+              startX, startY + 50 * scale,
+              endX, endY - 50 * scale,
               endX, endY
             );
             ctx.stroke();
@@ -271,20 +291,57 @@ const ReplyTreeView = ({ replies, onReplyClick, renderReplyContent }) => {
   }, [position, scale, replyNodes]);
 
   return (
-    <div className="reply-tree-container" ref={containerRef} onWheel={handleWheel}>
-      <canvas className="reply-tree-canvas" ref={canvasRef} onMouseDown={handleMouseDown} onMouseMove={handleMouseMove} onMouseUp={handleMouseUp} onMouseLeave={handleMouseLeave} />
-      <div className="tree-nodes-container" style={{ transform: `scale(${scale})` }}>
+    <div className="reply-tree-container" ref={containerRef}>
+      <canvas 
+        className="reply-tree-canvas" 
+        ref={canvasRef} 
+        onMouseDown={handleMouseDown} 
+        onMouseMove={handleMouseMove} 
+        onMouseUp={handleMouseUp} 
+        onMouseLeave={handleMouseLeave} 
+      />
+      <div 
+        className="tree-nodes-container" 
+        style={{ 
+          transform: `scale(${scale})`,
+          transformOrigin: '0 0'
+        }}
+      >
         {Object.keys(replyNodes).map(replyId => {
           const node = replyNodes[replyId];
           const hasChildren = node.children.length > 0;
           const hasUnloadedReplies = node.hasMoreReplies && !node.loadedReplies;
           const showExpandButton = hasChildren || hasUnloadedReplies;
           const isLoading = loadingReplies[replyId];
+          
           return (
-            <div key={replyId} className="reply-node" style={{ left: `${node.position.x + position.x}px`, top: `${node.position.y + position.y}px`}}>
-              {renderReplyContent(node.reply)}
+            <div 
+              key={replyId} 
+              className="reply-node" 
+              style={{ 
+                left: `${node.position.x + position.x / scale}px`, 
+                top: `${node.position.y + position.y / scale}px`,
+                width: `${NODE_WIDTH}px`,
+                minHeight: `${NODE_HEIGHT + (showExpandButton ? BUTTON_HEIGHT : 0)}px`
+              }}
+              onClick={(e) => {
+                if (!e.target.classList.contains('expand-reply-btn')) {
+                  onReplyClick(node.reply);
+                }
+              }}
+            >
+              <div style={{ marginBottom: showExpandButton ? `${BUTTON_HEIGHT}px` : '0' }}>
+                {renderReplyContent(node.reply)}
+              </div>
               {showExpandButton && (
-                <button className="expand-reply-btn" onClick={() => toggleReplyExpansion(replyId)} disabled={isLoading}>
+                <button 
+                  className="expand-reply-btn" 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    toggleReplyExpansion(replyId);
+                  }} 
+                  disabled={isLoading}
+                >
                   {isLoading ? '...' : node.expanded ? '-' : hasChildren ? `+${node.children.length}` : `+${node.reply.replies}`}
                 </button>
               )}
@@ -292,7 +349,7 @@ const ReplyTreeView = ({ replies, onReplyClick, renderReplyContent }) => {
           );
         })}
       </div>
-      <div className="tree-controls" style={{ position: 'absolute', bottom: '10px', right: '10px', zIndex: 10 }}>
+      <div className="tree-controls">
         <button onClick={zoomIn} className="control-btn" title="Zoom In">
           <FaPlus />
         </button>
