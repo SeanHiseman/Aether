@@ -28,7 +28,7 @@
   display: flex;
   flex-wrap: wrap;
   justify-content: space-between;
-  height: 70px;
+  height: var(--header-height);
   margin-left: var(--left-width);
   margin-right: var(--right-width);
   padding: var(--small-margin);
@@ -86,6 +86,7 @@
 .channel-dropdown {
   color: var(--lightest);
   cursor: pointer;
+  font-size: clamp(4px, 2vw, 16px);
   margin-left: 12px;
 }
 .channel-feed {
@@ -255,13 +256,13 @@ textarea::placeholder,
 }
 .icon-button.ask {
   background-color: var(--dark);
-  border-top-left-radius: 20px;
-  border-bottom-left-radius: 20px;
+  border-top-left-radius: calc(0.3 * var(--header-height));
+  border-bottom-left-radius: calc(0.3 * var(--header-height));
 }
 .icon-button.search {
   background-color: var(--dark);
-  border-top-right-radius: 20px;
-  border-bottom-right-radius: 20px;
+  border-top-right-radius: calc(0.3 * var(--header-height));
+  border-bottom-right-radius: calc(0.3 * var(--header-height));
 }
 .icon-button:hover::after {
   background-color: var(--light);
@@ -278,10 +279,10 @@ textarea::placeholder,
   z-index: 100;
 }
 .large-feed-photo {
-  border-radius: 18px;
-  height: 120px;
-  margin: 10px;
-  width: 120px;
+  border-radius: 1.6vw;
+  height: 8vw;
+  margin: 0.8vw;
+  width: 8vw;
 }
 .left-aside-feed-info {
   align-items: center;
@@ -317,7 +318,6 @@ textarea::placeholder,
 .left-aside nav ul li a,
 .right-aside nav ul li a {
   color: var(--lightest);
-  font-size: clamp(4px, 3vw, 24px);
   text-decoration: none;
 }
 .left-aside::-webkit-scrollbar,
@@ -381,26 +381,20 @@ main {
   list-style-type: none;
   padding: 0;
 }
-.search:hover::after {
-  bottom: 7px;
-  left: 100%;
-  margin-left: 10px;
-}
 .search-bar {
   background-color: var(--dark);
   border: none;
-  border-bottom-left-radius: var(--large-margin);
-  border-top-left-radius: var(--large-margin);
+  border-bottom-left-radius: calc(0.3 * var(--header-height));
+  border-top-left-radius: calc(0.3 * var(--header-height));
   color: var(--lightest);
   flex-grow: 1;
-  font-size: large;
+  font-size: clamp(4px, 2vw, 16px);
   height: 100%;
 }
 .search-container {
   align-items: center;
-  background-color: var(--border);
   border: 1px solid var(--dark);
-  border-radius: 20px;
+  border-radius: calc(0.3 * var(--header-height));
   display: flex;
   position: relative;
   width: 100%;
@@ -413,9 +407,9 @@ main {
   width: 100%;
 }
 .small-feed-photo {
-  height: 40px;
-  width: 40px;
-  border-radius: 6px;
+  height: 3vw;
+  width: 3vw;
+  border-radius: 0.6vw;
 }
 .standard-container {
   display: flex;
@@ -426,9 +420,9 @@ main {
 .standard-icon {
   color: var(--lightest);
   cursor: pointer;
-  height: 30px;
+  height: clamp(4px, 3vw, 24px);
   padding: 0;
-  width: 30px;
+  width: clamp(4px, 3vw, 24px);
   transition: background-color var(--transition-regular);
 }
 .total-votes {

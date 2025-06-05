@@ -94,7 +94,7 @@
     position: relative;
 }
 .large-widget-text {
-    font-size: 36px;
+    font-size: clamp(4px, 2vw, 16px);
     margin: 10px 10px 10px 0;
 }
 .name-connection-box {

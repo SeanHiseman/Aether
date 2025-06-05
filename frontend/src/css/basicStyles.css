@@ -42,7 +42,7 @@ body, html {
     cursor: default;
 }
 .error-message {
-    height: 16px;
+    height: clamp(4px, 2vw, 16px);
     margin: 4px;
     text-align: center;
 }
@@ -62,15 +62,15 @@ label {
     align-items: center;
     background: none;
     border: none;
-    border-radius: 8px;
+    border-radius: clamp(2px, 0.6vw, 5px);
     color: var(--lightest);
     display: flex;
     justify-content: center;
-    margin: 4px;
-    padding: 4px; 
+    margin: clamp(2px, 0.3vw, 5px);
+    padding: clamp(2px, 0.3vw, 5px);
 }
 .large-icon {
-    font-size: clamp(4px, 3vw, 24px);
+    font-size: clamp(6px, 3vw, 24px);
 }
 p, .channel-link {
     font-size: clamp(4px, 2vw, 16px);
@@ -79,7 +79,7 @@ p, .channel-link {
     word-break: break-word;
 }
 .small-icon {
-    font-size: clamp(4px, 2vw, 16px);
+    font-size: clamp(6px, 2vw, 16px);
 }
 .spinner {
   animation: spin 1s linear infinite;
