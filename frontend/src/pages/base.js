@@ -1,35 +1,10 @@
 import axios from "axios";
 import Cropper from "react-easy-crop";
-import {
-  DndContext,
-  closestCenter,
-  PointerSensor,
-  useSensor,
-  useSensors,
-  DragOverlay,
-} from "@dnd-kit/core";
-import {
-  SortableContext,
-  verticalListSortingStrategy,
-} from "@dnd-kit/sortable";
-import {
-  FaArrowRight,
-  FaBars,
-  FaFileUpload,
-  FaMinus,
-  FaPlus,
-  FaPlusCircle,
-  FaSignInAlt,
-  FaTimes,
-} from "react-icons/fa";
+import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, DragOverlay } from "@dnd-kit/core";
+import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
+import { FaArrowRight, FaBars, FaFileUpload, FaMinus, FaPlus, FaPlusCircle, FaSignInAlt, FaTimes } from "react-icons/fa";
 import { MagnifyingGlassIcon } from "@radix-ui/react-icons";
-import React, {
-  useCallback,
-  useContext,
-  useEffect,
-  useRef,
-  useState,
-} from "react";
+import React, { useCallback, useContext, useEffect, useRef, useState } from "react";
 import { Link, Outlet, useNavigate } from "react-router-dom";
 import { v4 } from "uuid";
 import { AuthContext } from "../components/authContext";
@@ -96,15 +71,7 @@ const BaseLayout = () => {
     desk.left ? "hide-left" : "",
     desk.right ? "hide-right" : "",
     isMobile() && mobileOpen === "left" ? "shift-right" : "",
-    isMobile() && mobileOpen === "right" ? "shift-left" : "",
-  ].join(" ");
-
-  const headerClasses = [
-    "base-header",
-    desk.left ? "hide-left" : "",
-    desk.right ? "hide-right" : "",
-    isMobile() && mobileOpen === "left" ? "shift-right" : "",
-    isMobile() && mobileOpen === "right" ? "shift-left" : "",
+    //isMobile() && mobileOpen === "right" ? "shift-left" : "",
   ].join(" ");
 
   const leftClasses = [
@@ -1095,7 +1062,7 @@ const BaseLayout = () => {
           )}
         </aside>
         <main>
-          <header className={headerClasses}>
+          <header className="base-header">
             <button
               className="small-icon"
               onClick={toggleLeft}
@@ -1108,7 +1075,6 @@ const BaseLayout = () => {
                 <FaBars />
               )}
             </button>
-            <div className="spacer"></div>
             <form className="search-form" onSubmit={searchClick}>
               <div className="search-container">
                 {/*<button className="icon-button ask" data-tooltip="Ask" type="button" onClick={askClick}>
@@ -1142,9 +1108,7 @@ const BaseLayout = () => {
                 </button>
               </div>
             </form>
-            <div className="spacer">
-              <p className="error-message">{headerErrorMessage}</p>
-            </div>
+            {headerErrorMessage && <p className="error-message">{headerErrorMessage}</p>}
             <button
               className="small-icon"
               onClick={toggleRight}

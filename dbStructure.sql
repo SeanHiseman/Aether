@@ -1,31 +1,3 @@
--- MySQL dump 10.13  Distrib 8.0.28, for Win64 (x86_64)
---
--- Host: aetherdb.c5ckg4eoum4a.eu-west-2.rds.amazonaws.com    Database: aetherProduction
--- ------------------------------------------------------
--- Server version	8.0.40
-
-/*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
-/*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
-/*!40101 SET @OLD_COLLATION_CONNECTION=@@COLLATION_CONNECTION */;
-/*!50503 SET NAMES utf8 */;
-/*!40103 SET @OLD_TIME_ZONE=@@TIME_ZONE */;
-/*!40103 SET TIME_ZONE='+00:00' */;
-/*!40014 SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0 */;
-/*!40014 SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0 */;
-/*!40101 SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='NO_AUTO_VALUE_ON_ZERO' */;
-/*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;
-SET @MYSQLDUMP_TEMP_LOG_BIN = @@SESSION.SQL_LOG_BIN;
-SET @@SESSION.SQL_LOG_BIN= 0;
-
---
--- GTID state at the beginning of the backup 
---
-
-SET @@GLOBAL.GTID_PURGED=/*!80000 '+'*/ '';
-
---
--- Table structure for table `ask_chats`
---
 
 DROP TABLE IF EXISTS `ask_chats`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -426,19 +398,98 @@ CREATE TABLE `users` (
   `storage_count` float NOT NULL DEFAULT '0',
   `stripe_subscription_id` varchar(255) DEFAULT NULL,
   `subscription_expires_at` datetime(3) DEFAULT NULL,
+  `email_verified` tinyint(1) DEFAULT '0',
+  `verification_token` varchar(255) DEFAULT NULL,
+  `verification_token_expires` datetime(3) DEFAULT NULL,
   PRIMARY KEY (`user_id`),
   UNIQUE KEY `email` (`email`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
-SET @@SESSION.SQL_LOG_BIN = @MYSQLDUMP_TEMP_LOG_BIN;
-/*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 
-/*!40101 SET SQL_MODE=@OLD_SQL_MODE */;
-/*!40014 SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS */;
-/*!40014 SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS */;
-/*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
-/*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
-/*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
-/*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
+INSERT INTO `users` (
+    `user_id`,
+    `username`,
+    `password`,
+    `email`,
+    `created_at`,
+    `updated_at`
+) VALUES (
+    'cf84729e-e00a-4ee5-a8d5-d8247e186b49',
+    'Aether',
+    'placeholder',
+    'bob@mail.com',
+    CURRENT_TIMESTAMP(3),
+    CURRENT_TIMESTAMP(3)
+);
 
--- Dump completed on 2025-05-28 12:48:11
+INSERT INTO `feeds` (
+    `feed_id`, 
+    `feed_name`, 
+    `feed_owner`, 
+    `created_at`, 
+    `updated_at`
+) VALUES 
+(
+    'af685571-fef0-4896-83a3-2f26786cb967',
+    'Development',
+    'cf84729e-e00a-4ee5-a8d5-d8247e186b49', 
+    CURRENT_TIMESTAMP(3),
+    CURRENT_TIMESTAMP(3)
+),
+(
+    '35438122-a002-4a92-a3b4-24aa9d5b73b6',
+    'Feedback',
+    'cf84729e-e00a-4ee5-a8d5-d8247e186b49', 
+    CURRENT_TIMESTAMP(3),
+    CURRENT_TIMESTAMP(3)
+),
+(
+    'ce95ea4e-5b3e-4661-aaa6-e0830d2d68d2',
+    'Welcome',
+    'cf84729e-e00a-4ee5-a8d5-d8247e186b49',
+    CURRENT_TIMESTAMP(3),
+    CURRENT_TIMESTAMP(3)
+),
+(
+    '50c3bf90-53a0-470e-a4ac-3cb3c7b4f791',
+    'Aether',
+    'cf84729e-e00a-4ee5-a8d5-d8247e186b49', 
+    CURRENT_TIMESTAMP(3),
+    CURRENT_TIMESTAMP(3)
+);
+
+INSERT INTO `followers` (
+    `follow_id`,
+    `follower_id`,
+    `feed_id`,
+    `is_mod`,
+    `is_admin`,
+    `created_at`,
+    `updated_at`
+) VALUES
+(
+    UUID(), 
+    '50c3bf90-53a0-470e-a4ac-3cb3c7b4f791', 
+    'ce95ea4e-5b3e-4661-aaa6-e0830d2d68d2',
+    1, 
+    1, 
+    CURRENT_TIMESTAMP(3),
+    CURRENT_TIMESTAMP(3)
+),
+(
+    UUID(), 
+    '50c3bf90-53a0-470e-a4ac-3cb3c7b4f791', 
+    'af685571-fef0-4896-83a3-2f26786cb967', 
+    1, 
+    1, 
+    CURRENT_TIMESTAMP(3),
+    CURRENT_TIMESTAMP(3)
+),
+(
+    UUID(), 
+    '50c3bf90-53a0-470e-a4ac-3cb3c7b4f791', 
+    '35438122-a002-4a92-a3b4-24aa9d5b73b6', 
+    1, 
+    1, 
+    CURRENT_TIMESTAMP(3),
+    CURRENT_TIMESTAMP(3)
+);
