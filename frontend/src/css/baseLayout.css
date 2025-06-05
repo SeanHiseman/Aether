@@ -62,12 +62,12 @@
   padding: 3px 6px;
 }
 .change-name-area {
-  font-size: 24px;
+  font-size: clamp(4px, 3vw, 24px);
   height: 30px;
   max-width: 80%;
 }
 .change-text-area {
-  font-size: 24px;
+  font-size: clamp(4px, 3vw, 24px);
   height: 120px;
 }
 .change-text-area.small {
@@ -78,6 +78,7 @@
   display: flex;
   flex-direction: column;
   flex-grow: 1;
+  font-size: clamp(4px, 3vw, 24px);
   height: 100%;
   overflow-y: auto;
   width: 100%;
@@ -233,6 +234,7 @@ textarea::placeholder,
   background-color: var(--dark);
 }
 .feed-list-text {
+  font-size: clamp(4px, 2vw, 16px);
   margin: 0;
   margin-left: 10px;
 }
@@ -315,6 +317,7 @@ textarea::placeholder,
 .left-aside nav ul li a,
 .right-aside nav ul li a {
   color: var(--lightest);
+  font-size: clamp(4px, 3vw, 24px);
   text-decoration: none;
 }
 .left-aside::-webkit-scrollbar,
@@ -429,7 +432,7 @@ main {
   transition: background-color var(--transition-regular);
 }
 .total-votes {
-  font-size: x-large;
+  font-size: clamp(4px, 2vw, 16px);
   margin: 4px;
 }
 #upload-form {
