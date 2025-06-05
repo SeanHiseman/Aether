@@ -83,17 +83,18 @@ p, .channel-link {
 .spinner {
   animation: spin 1s linear infinite;
 }
+/*Numbers refer to max size pixels, may need changing for consistency*/
 .text16 {
-    font-size: 16px;
+    font-size: clamp(4px, 2vw, 16px);
 }
 .text24 {
-    font-size: 24px;
+    font-size: clamp(4px, 3vw, 24px);
 }
-.text36 {
-    font-size: 36px;
+.text36 { 
+    font-size: clamp(4px, 4vw, 36px);
 }
 .text16, .text24, .text36 {
-    margin: 8px;
+    margin: clamp(2px, 2vw, 16px);
     max-width: 96%;
 }
 @keyframes spin {

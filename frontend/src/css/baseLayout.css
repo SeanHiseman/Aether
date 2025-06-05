@@ -27,7 +27,7 @@
   background-color: var(--darkest);
   display: flex;
   flex-wrap: wrap;
-  justify-content: center;
+  justify-content: space-between;
   height: 70px;
   margin-left: var(--left-width);
   margin-right: var(--right-width);
@@ -404,7 +404,6 @@ main {
 }
 .search-form {
   display: flex;
-  /*max-width: 35%;*/
   max-width: 40%;
   height: 80%;
   position: relative;
@@ -414,12 +413,6 @@ main {
   height: 40px;
   width: 40px;
   border-radius: 6px;
-}
-.spacer {
-  flex-grow: 1;
-}
-.spacer20px {
-  height: 20px;
 }
 .standard-container {
   display: flex;
@@ -532,7 +525,13 @@ ul {
     margin-top: 0; /* cancel the desktop 16-px margin  */
     transition: transform 0.3s ease; /* smooth slide         */
   }
-
+  .search-container {
+    width: auto;
+  }
+  .search-form {
+    max-width: 100%;
+    width: auto;
+  }
   /* B) keep them off-screen until .open is added                     */
   .left-aside {
     left: 0;
