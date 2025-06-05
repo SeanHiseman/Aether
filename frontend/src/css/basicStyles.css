@@ -70,15 +70,16 @@ label {
     padding: 4px; 
 }
 .large-icon {
-    font-size: x-large;
+    font-size: clamp(4px, 3vw, 24px);
 }
 p, .channel-link {
+    font-size: clamp(4px, 2vw, 16px);
     overflow-wrap: break-word;
     white-space: normal;
     word-break: break-word;
 }
 .small-icon {
-    font-size: large;
+    font-size: clamp(4px, 2vw, 16px);
 }
 .spinner {
   animation: spin 1s linear infinite;
