@@ -4,10 +4,11 @@
     --dark: #232527;
     --light: #737484;
     --lightest: #dddddd;
-    --large-margin: 20px;
-    --medium-margin: 10px;
-    --small-margin: 5px;
     --header-height: clamp(40px, 5vw, 70px);
+    --xl-margin: clamp(16px, 4.8vw, 40px);
+    --large-margin: clamp(8px, 2.4vw, 20px);
+    --medium-margin: clamp(4px, 1.2vw, 10px);
+    --small-margin: clamp(2px, 0.6vw, 5px);
     --transition-regular: 0.3s ease;
     --left-width: 16vw;
     --right-width: 16vw;

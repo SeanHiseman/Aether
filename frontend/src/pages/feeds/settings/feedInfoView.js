@@ -149,7 +149,7 @@ const FeedInfoView = () => {
     };
 
     return (
-        <div className="feed-settings">
+        <div className="feed-settings short">
             <div className="name-photo-area">
                 <div className="feed-header-photo">
                     <img className="settings-feed-photo" src={`/${feed.feed_photo}`} alt={feed.feed_name} />
@@ -161,7 +161,7 @@ const FeedInfoView = () => {
                             <div className="file-input">
                                 <label htmlFor="new-feed-photo" className="small-icon"><FaFileUpload /><p className="icon-text">Choose photo</p></label>
                                 <input type="file" id="new-feed-photo" name="new_feed_photo" accept="image/*" onChange={handleFileChange} hidden />
-                                <span className="file-name">{feedPhotoFile}</span>
+                                <p className="text16">{feedPhotoFile}</p>
                             </div>
                             {imageSrc && (
                                 <div className="crop-container" style={{ position: 'relative', width: '100%', height:100 }}>
