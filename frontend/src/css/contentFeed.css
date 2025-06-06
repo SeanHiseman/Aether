@@ -18,7 +18,7 @@
 }
 .content-item, .result-widget {
     background-color: var(--dark);
-    border-radius: 28px;
+    border-radius: calc(var(--large-margin) + 0.8vw);
     border: 1px solid var(--border);
     cursor: pointer;
     margin-bottom: var(--medium-margin);
@@ -94,7 +94,7 @@
     position: relative;
 }
 .large-widget-text {
-    font-size: clamp(4px, 2vw, 16px);
+    font-size: clamp(4px, 4vw, 36px);
     margin: 10px 10px 10px 0;
 }
 .name-connection-box {
@@ -168,10 +168,9 @@
     width: 100%;
     height: 600px;
     overflow: hidden;
-    border: 1px solid var(--border);
     border-radius: 8px;
     margin: 15px 0;
-    background-color: var(--darkest);
+    background-color: var(--dark);
     transition: height 0.3s ease;
 }
 .reply-tree-container.expanded {
@@ -192,7 +191,7 @@
     padding-bottom: 35px; 
     border: 1px solid var(--border);
     border-radius: 8px;
-    background-color: var(--dark);
+    background-color: var(--darkest);
     box-shadow: 0 2px 5px rgba(0,0,0,0.1);
     transition: transform 0.2s ease, box-shadow 0.2s ease;
     cursor: pointer;

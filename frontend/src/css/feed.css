@@ -3,24 +3,24 @@
     color: red;
 }
 .button.delete, .button.join {
-    font-size: 36px;
-    padding: 20px;
+    font-size: clamp(4px, 4vw, 36px);
+    padding: var(--large-margin);
 }
 .button.join {
     background-color: var(--darkest);
-    width: 200px;
+    width: calc(10 * var(--large-margin));
 }
 .button.join:hover, .button.theme:hover {
     background-color: var(--light);
 }
 .button.join-small {
-    font-size: 18px;
-    padding: 10px;
-    width: 100px;
+    font-size: clamp(4px, 2vw, 16px);
+    padding: var(--medium-margin);
+    width: calc(5 * var(--large-margin));
 }
 .button-group {
     display: flex;
-    gap: 8px; 
+    gap: var(--medium-margin);
     justify-content: center;
 }
 .button.theme {
@@ -29,12 +29,12 @@
     box-sizing: border-box;
     display: flex;
     justify-content: space-between;
-    min-width: 200px;
-    padding-right: 10px;
+    min-width: calc(10 * var(--large-margin));
+    padding-right: var(--medium-margin);
 }
 .cancel-save {
     display: flex;
-    gap: 10px;
+    gap: var(--medium-margin);
 }
 .cancel-save-vertical {
     display: flex;
@@ -61,7 +61,7 @@
     align-items: center;
     display: flex;
     flex-direction: column;
-    margin: 10px;
+    margin: var(--medium-margin);
     width: 100%;
 }
 .deep-feeds-container {
@@ -77,8 +77,8 @@
 .feed-drag-overlay, .deep-feed-drag-overlay {
     opacity: 0.8;
     transform: scale(1.05);
-    border-radius: 5px;
-    padding: 8px;
+    border-radius: var(--small-margin);
+    padding: var(--medium-margin);
     width: 90%;
     cursor: grabbing;
 }
@@ -88,7 +88,7 @@
     align-items: center;
 }
 .deep-feed-drag-overlay .deep-feed-header {
-    padding: 8px;
+    padding: var(--medium-margin);
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -125,19 +125,18 @@
     align-items: center;
     background-color: var(--dark);
     border: 1px solid var(--border);
-    border-radius: 20px;
+    border-radius: var(--large-margin);
     display: flex;
     flex-direction: column;
-    margin-top: -140px;
-    height: 70%;
+    height: clamp(400px, 70vh, 1000px);
     padding: var(--large-margin);
     width: 70%;
 }
+.feed-settings.short {
+    height: clamp(200px, 40vh, 600px);
+}
 .followers-header {
     background-color: var(--darkest);
-    border-bottom-right-radius: 28px;
-    border-bottom-left-radius: 28px;
-    padding: 5px;
     text-align: left;
     width: 80%;
 }
@@ -155,7 +154,7 @@
     align-items: center;
     display: flex;
     flex-direction: column;
-    margin-top: 40px;
+    margin-top: calc(2 * var(--medium-margin));
 }
 .name-photo-area {
     display: flex;
@@ -165,12 +164,12 @@
 }
 .option-toggle {
     border: 1px solid var(--darkest);
-    border-radius: 10px;
+    border-radius: var(--medium-margin);
     display: flex;
-    margin: 10px;
-    min-height: 36px;
+    margin: var(--medium-margin);
+    min-height: clamp(4px, 4vw, 36px);
     overflow: hidden;
-    width: 180px;
+    width: clamp(5px, 20vw, 180px);
 }
 .option-toggle button {
     background-color: var(--dark);
@@ -178,21 +177,22 @@
     color: var(--lightest);
     cursor: pointer;
     flex: 1;
+    font-size: clamp(4px, 2vw, 16px);
     font-weight: bold;
     outline: none;
-    padding: 10px 20px;
+    padding: var(--medium-margin) var(--large-margin);
     transition: var(--transition-regular);
 }
 .option-toggle button.active-mode {
     background-color: var(--darkest);
 }
 .option-toggle button:first-child {
-    border-top-left-radius: 10px;
-    border-bottom-left-radius: 10px;
+    border-top-left-radius: var(--medium-margin);
+    border-bottom-left-radius: var(--medium-margin);
 }
 .option-toggle button:last-child {
-    border-top-right-radius: 10px;
-    border-bottom-right-radius: 10px;
+    border-top-right-radius: var(--medium-margin);
+    border-bottom-right-radius: var(--medium-margin);
 }
 .option-toggle button.passive-mode:hover {
     background-color: var(--light);
@@ -203,34 +203,34 @@
     overflow-y: auto;
 }
 .search-result-profile {
-    margin: 10px;
+    margin: var(--medium-margin);
 }
 .settings-area {
-    align-items: center;
     display: flex;
     justify-content: center;
     height: calc(100% - var(--header-height));
     margin-top: var(--header-height);
+    padding: var(--medium-margin);
     width: 100%;
 }
 .settings-feed-info {
     display: flex;
     flex-direction: column;
     gap: var(--large-margin);
-    margin: 10px;
+    margin: var(--medium-margin);
     width: 40%;
 }
 .settings-feed-photo {
-    border-radius: 43px;
-    height: 200px; 
-    margin: 20px;
-    width: 200px; 
+    border-radius: var(--xl-margin);
+    height: calc(10 * var(--large-margin));
+    margin: var(--large-margin);
+    width: calc(10 * var(--large-margin));
 }
 .theme-box {
     border: 1px solid var(--border);
-    height: 20px;
-    margin: 0 5px;
-    width: 20px;
+    height: var(--large-margin);
+    margin: 0 var(--small-margin);
+    width: var(--large-margin);
 }
 .theme-container {
     display: flex;
@@ -241,11 +241,11 @@
     display: flex;
     flex-direction: column;
     justify-content: flex-start;
-    padding: 5px;
+    padding: var(--small-margin);
     background-color: var(--light);
-    border-radius: 10px;
+    border-radius: var(--medium-margin);
     border: 1px solid var(--border);
-    max-width: 200px; 
-    margin: 10px;
-    max-height: 200px;
+    max-width: calc(10 * var(--large-margin)); 
+    margin: var(--medium-margin);
+    max-height: calc(10 * var(--large-margin));
 }

@@ -44,26 +44,26 @@
 }
 .change-feed-photo {
   background-color: var(--darkest);
-  border-radius: 10px;
+  border-radius: var(--medium-margin);
   display: flex;
   flex-direction: column;
-  margin-top: 280px;
-  padding: 5px;
+  margin-top: cal(14 * var(--large-margin));
+  padding: var(--small-margin);
   position: absolute;
-  width: 220px;
+  width: cal(11 * var(--large-margin));
 }
 .change-name-area,
 .change-text-area {
   background-color: var(--darkest);
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: var(--medium-margin);
   color: var(--lightest);
   font-family: Arial, sans-serif;
-  padding: 3px 6px;
+  padding: var(--small-margin) var(--medium-margin);
 }
 .change-name-area {
   font-size: clamp(4px, 3vw, 24px);
-  height: 30px;
+  height: var(--xl-margin);
   max-width: 80%;
 }
 .change-text-area {
@@ -237,7 +237,7 @@ textarea::placeholder,
 .feed-list-text {
   font-size: clamp(4px, 2vw, 16px);
   margin: 0;
-  margin-left: 10px;
+  margin-left: var(--medium-margin);
 }
 .file-input {
   align-items: center;
@@ -279,10 +279,10 @@ textarea::placeholder,
   z-index: 100;
 }
 .large-feed-photo {
-  border-radius: 1.6vw;
-  height: 8vw;
+  border-radius: var(--large-margin);
+  height: clamp(45px, 9vw, 120px);
   margin: 0.8vw;
-  width: 8vw;
+  width: clamp(45px, 9vw, 120px);
 }
 .left-aside-feed-info {
   align-items: center;
@@ -335,20 +335,20 @@ main {
 .name-input {
   background-color: var(--dark);
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: var(--medium-margin);
   color: var(--lightest);
-  font-size: large;
-  margin: 10px;
-  padding: 5px;
+  font-size: clamp(4px, 2vw, 16px);
+  margin: var(--medium-margin);
+  padding: var(--small-margin);
   transition: background-color var(--transition-regular);
   width: 80%;
 }
 #personal-feeds {
-  margin-top: 20px;
+  margin-top: var(--large-margin);
   width: 90%;
 }
 .posts-channel-button {
-  border-radius: 5px;
+  border-radius: var(--small-margin);
 }
 #public-private-section,
 #post-chat-section {
@@ -356,12 +356,7 @@ main {
   max-width: 100%;
 }
 .raw-content {
-  border-radius: 10px;
-}
-.results-wrapper {
-  display: flex;
-  align-items: center;
-  margin-left: 140px;
+  border-radius: var(--medium-margin);
 }
 .results {
   display: flex;
@@ -370,7 +365,7 @@ main {
 .right-aside {
   flex-shrink: 0;
   height: 100%;
-  margin-top: 16px;
+  margin-top: var(--medium-margin);
   overflow-y: auto;
   width: var(--right-width);
 }
@@ -407,9 +402,9 @@ main {
   width: 100%;
 }
 .small-feed-photo {
-  height: 3vw;
-  width: 3vw;
-  border-radius: 0.6vw;
+  height: clamp(15px, 3vw, 40px);
+  width: clamp(15px, 3vw, 40px);
+  border-radius: clamp(3px, 0.6vw, 8px);
 }
 .standard-container {
   display: flex;
@@ -427,7 +422,7 @@ main {
 }
 .total-votes {
   font-size: clamp(4px, 2vw, 16px);
-  margin: 4px;
+  margin: var(--small-margin);
 }
 #upload-form {
   display: flex;
@@ -436,14 +431,14 @@ main {
   width: 100%;
   flex: 1;
   width: 80%;
-  padding: 5px;
-  border-radius: 10px;
-  margin: 10px;
+  padding: var(--small-margin);
+  border-radius: var(--medium-margin);
+  margin: var(--medium-margin);
 }
 #upload-form input[type="file"] {
   flex: 1;
-  margin-top: 10px;
-  margin-bottom: 10px;
+  margin-top: var(--medium-margin);
+  margin-bottom: var(--medium-margin);
 }
 ul {
   padding-inline-start: 0;
@@ -517,8 +512,8 @@ ul {
     position: fixed;
     width: var(--sidebar-mobile-width); /* ← only one width     */
     z-index: 1000;
-    top: 70px; /* header height                    */
-    height: calc(100% - 70px);
+    top: var(--header-height); /* header height                    */
+    height: calc(100% - var(--header-height));
     margin-top: 0; /* cancel the desktop 16-px margin  */
     transition: transform 0.3s ease; /* smooth slide         */
   }

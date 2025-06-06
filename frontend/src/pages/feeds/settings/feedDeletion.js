@@ -36,7 +36,7 @@ const FeedDeletion = () => {
     };
 
     return (
-        <div className="feed-settings">
+        <div className="feed-settings short">
             <div className="display-area">
                 <p className="text36">{feed.is_group ? 'Are you sure you wish to delete this feed?' : 'Are you sure you wish to delete your account?'}</p>
                 <p className="text24">This action cannot be reversed</p>

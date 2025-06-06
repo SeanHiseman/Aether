@@ -29,10 +29,10 @@ body, html {
     transition: background-color var(--transition-regular);
 }
 .button, .dark-button, .dark-button-disabled {
-    font-size: large;
+    font-size: clamp(4px, 2vw, 16px);
 }
 .button.large {
-    font-size: x-large;
+    font-size: clamp(4px, 3vw, 24px);
 }
 .dark-text {
     color: var(--darkest);
@@ -95,7 +95,7 @@ p, .channel-link {
     font-size: clamp(4px, 4vw, 36px);
 }
 .text16, .text24, .text36 {
-    margin: clamp(2px, 2vw, 16px);
+    margin: clamp(2px, 2vw, 8px);
     max-width: 96%;
 }
 @keyframes spin {

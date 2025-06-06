@@ -900,9 +900,9 @@ const BaseLayout = () => {
                         onChange={handleFileChange}
                         hidden
                       />
-                      <span className="file-name">
+                      <p className="text16">
                         {feedPhotoFile ? feedPhotoFile.name : "No file chosen"}
-                      </span>
+                      </p>
                     </div>
                     {imageSrc && (
                       <div
