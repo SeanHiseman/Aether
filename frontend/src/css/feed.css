@@ -3,7 +3,7 @@
     color: red;
 }
 .button.delete, .button.join {
-    font-size: clamp(4px, 4vw, 36px);
+    font-size: clamp(6px, 4vw, 36px);
     padding: var(--large-margin);
 }
 .button.join {
@@ -14,7 +14,7 @@
     background-color: var(--light);
 }
 .button.join-small {
-    font-size: clamp(4px, 2vw, 16px);
+    font-size: clamp(6px, 2vw, 16px);
     padding: var(--medium-margin);
     width: calc(5 * var(--large-margin));
 }
@@ -177,7 +177,7 @@
     color: var(--lightest);
     cursor: pointer;
     flex: 1;
-    font-size: clamp(4px, 2vw, 16px);
+    font-size: clamp(6px, 2vw, 16px);
     font-weight: bold;
     outline: none;
     padding: var(--medium-margin) var(--large-margin);

@@ -62,12 +62,12 @@
   padding: var(--small-margin) var(--medium-margin);
 }
 .change-name-area {
-  font-size: clamp(4px, 3vw, 24px);
+  font-size: clamp(6px, 3vw, 24px);
   height: var(--xl-margin);
   max-width: 80%;
 }
 .change-text-area {
-  font-size: clamp(4px, 3vw, 24px);
+  font-size: clamp(6px, 3vw, 24px);
   height: 120px;
 }
 .change-text-area.small {
@@ -78,7 +78,7 @@
   display: flex;
   flex-direction: column;
   flex-grow: 1;
-  font-size: clamp(4px, 3vw, 24px);
+  font-size: clamp(6px, 3vw, 24px);
   height: 100%;
   overflow-y: auto;
   width: 100%;
@@ -86,7 +86,7 @@
 .channel-dropdown {
   color: var(--lightest);
   cursor: pointer;
-  font-size: clamp(4px, 2vw, 16px);
+  font-size: clamp(6px, 2vw, 16px);
   margin-left: 12px;
 }
 .channel-feed {
@@ -228,14 +228,14 @@ textarea::placeholder,
   border-radius: 14px;
   display: flex;
   justify-content: space-between;
-  padding: 8px;
+  padding: var(--medium-margin);
   transition: background-color var(--transition-regular);
 }
 .feed-list-link-container:hover {
   background-color: var(--dark);
 }
 .feed-list-text {
-  font-size: clamp(4px, 2vw, 16px);
+  font-size: clamp(6px, 2vw, 16px);
   margin: 0;
   margin-left: var(--medium-margin);
 }
@@ -245,7 +245,7 @@ textarea::placeholder,
   flex-direction: column;
 }
 .file-name {
-  margin: 10px;
+  margin: var(--medium-margin);
 }
 .icon-button {
   border: none;
@@ -337,7 +337,7 @@ main {
   border: 1px solid var(--border);
   border-radius: var(--medium-margin);
   color: var(--lightest);
-  font-size: clamp(4px, 2vw, 16px);
+  font-size: clamp(6px, 2vw, 16px);
   margin: var(--medium-margin);
   padding: var(--small-margin);
   transition: background-color var(--transition-regular);
@@ -383,7 +383,7 @@ main {
   border-top-left-radius: calc(0.3 * var(--header-height));
   color: var(--lightest);
   flex-grow: 1;
-  font-size: clamp(4px, 2vw, 16px);
+  font-size: clamp(6px, 2vw, 16px);
   height: 100%;
 }
 .search-container {
@@ -415,13 +415,13 @@ main {
 .standard-icon {
   color: var(--lightest);
   cursor: pointer;
-  height: clamp(4px, 3vw, 24px);
+  height: clamp(6px, 3vw, 24px);
   padding: 0;
-  width: clamp(4px, 3vw, 24px);
+  width: clamp(6px, 3vw, 24px);
   transition: background-color var(--transition-regular);
 }
 .total-votes {
-  font-size: clamp(4px, 2vw, 16px);
+  font-size: clamp(6px, 2vw, 16px);
   margin: var(--small-margin);
 }
 #upload-form {

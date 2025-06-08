@@ -65,7 +65,7 @@ const Join = () => {
             </Link>
             <div className="authentication-box">
                 <div className="login-register">
-                    <h1>Join</h1>
+                    <p className="text36">Join</p>
                     <Link to="/login">
                         <p className="link">Login</p>
                     </Link>

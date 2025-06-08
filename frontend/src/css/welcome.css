@@ -1,98 +1,100 @@
 @import url('variables.css');
 #join-login {
-    margin-top: 8px;
+    margin-top: var(--medium-margin);
 }
 .left-aligned-text {
-    margin: 24px;
+    margin: var(--text24);
     text-align: left;
 }
 .button.join.welcome {
     background-color: var(--dark);
     border: 1px solid var(--border);
-    border-radius: 32px;
-    margin: 16px;
+    border-radius: clamp(16px, 3.2vw, 32px);
+    margin: var(--large-margin);
     transition: 0.3s;
 }
 .button.join.welcome:hover, .welcome-box:hover {
     background-color: #353739;
-    transform: translate(5px, -5px);
+    transform: translate(var(--small-margin), calc(-1 * var(--small-margin)));
 }
 .footer {
     background: rgba(20, 20, 30, 0.9);
-    backdrop-filter: blur(20px);
+    backdrop-filter: blur(var(--large-margin));
     border-top: 1px solid rgba(255, 255, 255, 0.1);
     margin-top: auto;
-    padding: 3rem 2rem 2rem;
+    padding: clamp(12px, 6vw, 48px) clamp(8px, 4vw, 32px) clamp(8px, 4vw, 32px);
     width: 100%;
     position: relative;
 }
 .footer-content {
-    max-width: 1200px;
+    max-width: clamp(800px, 60vw, 1200px);
     margin: 0 auto;
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: 2rem;
+    grid-template-columns: repeat(auto-fit, minmax(clamp(200px, 15vw, 250px), 1fr));
+    gap: clamp(8px, 4vw, 32px);
     align-items: start;
 }
 .footer-section h3 {
-    font-size: 1.1rem;
+    font-size: clamp(6px, 2.2vw, 17.6px);
     font-weight: 600;
-    margin-bottom: 1rem;
+    margin-bottom: var(--large-margin);
     color: #e0e0ff;
     letter-spacing: 0.02em;
 }
 .footer-links {
     display: flex;
     flex-direction: column;
-    gap: 0.75rem;
+    gap: clamp(3px, 1.5vw, 12px);
 }
 .footer-links a {
     color: rgba(255, 255, 255, 0.7);
     text-decoration: none;
-    font-size: 0.95rem;
+    font-size: clamp(6px, 1.9vw, 15.2px);
     transition: all 0.3s ease;
-    padding: 0.25rem 0;
+    padding: clamp(1px, 0.5vw, 4px) 0;
 }
 .footer-links a:hover {
     color: #6a6aff;
-    transform: translateX(4px);
+    transform: translateX(clamp(1px, 0.8vw, 4px));
 }
 .social-links {
     display: flex;
-    gap: 1rem;
-    margin-top: 0.5rem;
+    gap: var(--large-margin);
+    margin-top: var(--medium-margin);
 }
 .social-link {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 44px;
-    height: 44px;
+    width: clamp(22px, 4.4vw, 44px);
+    height: clamp(22px, 4.4vw, 44px);
     background: rgba(255, 255, 255, 0.1);
-    border-radius: 12px;
+    border-radius: var(--medium-margin);
     color: rgba(255, 255, 255, 0.7);
     text-decoration: none;
     transition: all 0.3s ease;
-    backdrop-filter: blur(10px);
+    backdrop-filter: blur(var(--medium-margin));
 }
 .social-link:hover {
     background: rgba(106, 106, 255, 0.2);
     color: #6a6aff;
-    transform: translateY(-2px);
+    transform: translateY(calc(-1 * var(--small-margin)));
 }
 .welcome-box {
     align-items: center;
     background-color: var(--dark);
     border: 1px solid var(--border);
-    border-radius: 32px;
+    border-radius: clamp(16px, 3.2vw, 32px);
     color: white;
     cursor: pointer;
     display: flex;
-    font-size: 24px;
+    font-size: var(--text24);
+    padding: var(--medium-margin);
     transition: 0.3s;
 }
 .welcome-box.single {
     cursor: default;
+    padding: var(--large-margin);
     transition: none;
     width: 45%;
 }
@@ -101,17 +103,17 @@
     transform: none;
 }
 .welcome-box-header {
-    font-size: 36px;
+    font-size: var(--text36);
     font-weight: bold;
-    margin-bottom: 36px;
-    margin-top: 6px;
+    margin-bottom: var(--text36);
+    margin-top: clamp(3px, 1.2vw, 6px);
 }
 #welcome-center {
     display: grid;
-    grid-template-columns: repeat(2, calc(50% - 16px)); 
-    gap: 32px;
-    margin-bottom: 32px;
-    margin-top: 10px;
+    grid-template-columns: repeat(2, calc(50% - var(--large-margin))); 
+    gap: clamp(16px, 3.2vw, 32px);
+    margin-bottom: clamp(16px, 3.2vw, 32px);
+    margin-top: var(--medium-margin);
     width: 90%;
 }
 #welcome-container {
@@ -122,12 +124,11 @@
     margin: 0;
 }
 #welcome-text {
-    font-size: 48px;
-    margin-bottom: 8px;
-    margin-top: 36px;
+    font-size: clamp(6px, 6vw, 48px);
+    margin-bottom: var(--medium-margin);
+    margin-top: var(--text36);
     position: relative;
 }
-
 @media (max-width: 768px) {
     #welcome-center {
         grid-template-columns: 1fr;
@@ -135,21 +136,22 @@
         width: 95%;
     }
     .welcome-box {
-        min-height: 180px;
+        min-height: clamp(120px, 18vw, 180px);
     }
     .left-aligned-text {
         margin: 1.5rem;
     }
     .welcome-box-header {
-        font-size: 1.75rem;
+        font-size: clamp(6px, 3.5vw, 28px);
     }
     #join-login {
-        flex-direction: column;
         align-items: center;
-        gap: 0.75rem;
+        display: flex;
+        flex-direction: column;
+        gap: clamp(3px, 1.5vw, 12px);
     }
     .button.join.welcome {
-        width: 200px;
+        width: clamp(150px, 25vw, 200px);
         text-align: center;
     }
     .footer-content {
@@ -160,19 +162,18 @@
         justify-content: center;
     }
 }
-
 @media (max-width: 480px) {
     .left-aligned-text {
-        margin: 1rem;
+        margin: var(--large-margin);
     }
     .welcome-box-header {
-        font-size: 1.5rem;
-        margin-bottom: 1rem;
+        font-size: var(--text24);
+        margin-bottom: var(--large-margin);
     }
     .left-aligned-text p:not(.welcome-box-header) {
-        font-size: 0.9rem;
+        font-size: clamp(6px, 1.8vw, 14.4px);
     }
     .footer {
-        padding: 2rem 1rem 1.5rem;
+        padding: clamp(8px, 4vw, 32px) var(--large-margin) var(--text24);
     }
 }

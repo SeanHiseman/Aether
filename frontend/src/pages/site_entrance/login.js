@@ -43,7 +43,7 @@ const Login = () => {
             <p className="welcome-text">Welcome back</p>
             <div className="authentication-box">
                 <div className="login-register">
-                    <h1>Login</h1>
+                    <p className="text36">Login</p>
                     <Link to="/join">
                         <p className="link">Join</p>
                     </Link>

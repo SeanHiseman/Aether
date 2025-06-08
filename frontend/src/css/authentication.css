@@ -7,31 +7,32 @@
 .authentication-box {
     border: 1px solid var(--border);
     background-color: var(--dark);
-    border-radius: 10px;
-    padding: 20px;
+    border-radius: var(--medium-margin);
+    padding: var(--large-margin);
     box-shadow: var(--shadow);
     text-align: center;
-    width: 400px;
+    width: calc(10 * var(--xl-margin));
 }
 .authentication-input-box {
     border: 1px solid var(--lightest);
-    border-radius: 10px;
+    border-radius: var(--medium-margin);
     box-sizing: border-box;
     display: inline-block;
-    margin: 8px 0;
+    font-size: clamp(6px, 2vw, 16px);
+    margin: var(--medium-margin) 0;
     outline: none;
-    padding: 12px;
+    padding: var(--medium-margin);
     width: 100%;
 }
 .submit {
     background-color: var(--darkest);
     border: none;
-    border-radius: 10px;
+    border-radius: var(--medium-margin);
     color: var(--lightest);
     cursor: pointer;
-    font-size: large;
-    margin: 8px 0;
-    padding: 14px 20px;
+    font-size: clamp(6px, 2vw, 16px);
+    margin: var(--medium-margin)x 0;
+    padding: var(--medium-margin) var(--large-margin);
     transition: background-color var(--transition-regular);
     width: 100%;
 }
@@ -39,11 +40,11 @@
     align-self: center;
     background-color: var(--darkest);
     border: none;
-    border-radius: 10px;
+    border-radius: var(--medium-margin);
     color: var(--lightest);
     display: inline-block;
-    font-size: large;
-    padding: 10px 20px;
+    font-size: clamp(6px, 2vw, 16px);
+    padding: var(--medium-margin) var(--large-margin);
     text-align: center;
     text-decoration: none;
     transition: background-color var(--transition-regular);
@@ -51,17 +52,18 @@
 .link:hover, .submit:hover{
     background-color: var(--light);
 }
-.login-register{
+.login-register {
+    align-items: center;
     display: flex;
     justify-content: space-between;
 }
 .password-container {
     align-items: center;
     display: flex;
-    gap: 10px;
+    gap: var(--medium-margin);
 }
 .welcome-text {
-    font-size: 36px;
-    margin-bottom: 30px;
-    margin-top: 50px;
+    font-size: clamp(6px, 4vw, 36px);
+    margin-bottom: var(--large-margin);
+    margin-top: var(--xl-margin);
 }
