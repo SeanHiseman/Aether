@@ -29,10 +29,10 @@ body, html {
     transition: background-color var(--transition-regular);
 }
 .button, .dark-button, .dark-button-disabled {
-    font-size: clamp(4px, 2vw, 16px);
+    font-size: clamp(6px, 2vw, 16px);
 }
 .button.large {
-    font-size: clamp(4px, 3vw, 24px);
+    font-size: clamp(6px, 3vw, 24px);
 }
 .dark-text {
     color: var(--darkest);
@@ -42,8 +42,8 @@ body, html {
     cursor: default;
 }
 .error-message {
-    height: clamp(4px, 2vw, 16px);
-    margin: 4px;
+    height: clamp(6px, 2vw, 16px);
+    margin: var(--small-margin);
     text-align: center;
 }
 .faded-text {
@@ -73,7 +73,7 @@ label {
     font-size: clamp(6px, 3vw, 24px);
 }
 p, .channel-link {
-    font-size: clamp(4px, 2vw, 16px);
+    font-size: clamp(6px, 2vw, 16px);
     overflow-wrap: break-word;
     white-space: normal;
     word-break: break-word;
@@ -86,15 +86,18 @@ p, .channel-link {
 }
 /*Numbers refer to max size pixels, may need changing for consistency*/
 .text16 {
-    font-size: clamp(4px, 2vw, 16px);
+    font-size: clamp(6px, 2vw, 16px);
 }
 .text24 {
-    font-size: clamp(4px, 3vw, 24px);
+    font-size: clamp(6px, 3vw, 24px);
 }
 .text36 { 
-    font-size: clamp(4px, 4vw, 36px);
+    font-size: clamp(6px, 4vw, 36px);
 }
-.text16, .text24, .text36 {
+.text48 { 
+    font-size: clamp(6px, 5vw, 48px);
+}
+.text16, .text24, .text36, .text48 {
     margin: clamp(2px, 2vw, 8px);
     max-width: 96%;
 }

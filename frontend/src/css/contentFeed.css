@@ -94,7 +94,7 @@
     position: relative;
 }
 .large-widget-text {
-    font-size: clamp(4px, 4vw, 36px);
+    font-size: clamp(6px, 4vw, 36px);
     margin: 10px 10px 10px 0;
 }
 .name-connection-box {
@@ -288,13 +288,13 @@
     align-items: center;
     justify-content: center;
     padding: 5px 10px;
-    border-radius: 4px;
+    border-radius: var(--small-margin);
     font-size: 0.9rem;
     cursor: pointer;
     transition: background-color 0.2s ease;
 }
 .view-toggle-btn svg {
-    margin-right: 4px;
+    margin-right: var(--small-margin)
 }
 .content-display.tree-view-mode {
     max-height: 120px;
