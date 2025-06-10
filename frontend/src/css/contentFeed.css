@@ -23,8 +23,7 @@
     cursor: pointer;
     margin-bottom: var(--medium-margin);
     margin-top: var(--medium-margin);
-    padding: var(--large-margin);
-    padding-bottom: var(--medium-margin);
+    padding: var(--medium-margin);
 }
 .content-item.reply {
     box-shadow: none;
@@ -52,7 +51,7 @@
 }
 .content-list {
     margin: 0;
-    width: 90%;
+    width: 97%;
 }
 .content-item, .content-list {
     box-sizing: border-box;
@@ -60,7 +59,7 @@
 .content-metadata {
     align-items: center;
     display: flex;
-    font-size: x-large;
+    font-size: var(--medium-text);
     justify-content: space-between;
     width: 98%;
 }
@@ -71,8 +70,8 @@
     width: 50%;
 }
 .custom-theme-input {
-    height: 60px;
-    width: 60px;
+    height: var(--xl-margin);
+    width: var(--xl-margin);
 }
 .custom-theme-preview {
     display: flex;
@@ -80,9 +79,8 @@
     width: 100%;
 }
 .feed-photo {
-    width: 30px;
-    height: 30px;
-    border-radius: 50%;
+    width: var(--xl-margin);
+    height: var(--xl-margin);
 }
 .horizontal-container {
     align-items: flex-start;
@@ -94,8 +92,8 @@
     position: relative;
 }
 .large-widget-text {
-    font-size: clamp(6px, 4vw, 36px);
-    margin: 10px 10px 10px 0;
+    font-size: var(--large-text);
+    margin: var(--medium-margin) var(--medium-margin) var(--medium-margin) 0;
 }
 .name-connection-box {
     display: flex;
@@ -127,7 +125,7 @@
     transition: 0.3s;
 }
 .result-widget:hover {
-    transform: translate(5px, -5px);
+    transform: translate(var(--small-margin), calc(-1 * var(--small-margin)));
 }
 .post-list {
     margin: 0px;
@@ -148,9 +146,8 @@
     position: relative;
 }
 .uploader-photo {
-    height: 40px; 
-    width: 40px; 
-    border-radius: 50%;
+    height: var(--xl-margin);
+    width: var(--xl-margin); 
 }
 
 
@@ -166,15 +163,15 @@
 .reply-tree-container {
     position: relative;
     width: 100%;
-    height: 600px;
+    height: calc(15 * var(--xl-margin));
     overflow: hidden;
-    border-radius: 8px;
-    margin: 15px 0;
+    border-radius: var(--medium-margin);
+    margin: var(--medium-margin) 0;
     background-color: var(--dark);
     transition: height 0.3s ease;
 }
 .reply-tree-container.expanded {
-    height: 800px;
+    height: calc(12* var(--xl-margin));
 }
 .tree-nodes-container {
     position: absolute;
@@ -185,53 +182,51 @@
 }
 .reply-node {
     position: absolute;
-    width: 250px;
-    min-height: 120px;
-    padding: 10px;
-    padding-bottom: 35px; 
+    width: calc(12 * var(--large-margin));
+    min-height: calc(12 * var(--medium-margin));
+    padding: var(--medium-margin);
+    padding-bottom: var(--xl-margin);
     border: 1px solid var(--border);
-    border-radius: 8px;
+    border-radius: var(--medium-margin);
     background-color: var(--darkest);
-    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
     transition: transform 0.2s ease, box-shadow 0.2s ease;
     cursor: pointer;
     overflow: visible;
 }
 .reply-node:hover {
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
     transform: translateY(-2px);
 }
 .tree-reply-content {
-    font-size: 0.9rem;
-    max-height: 200px;
+    font-size: var(--small-text);
+    max-height: calc(10 * var(--large-margin));
     overflow-y: auto;
-    padding-right: 5px;
-    margin-bottom: 10px; 
+    padding-right: var(--small-margin);
+    margin-bottom: var(--medium-margin);
 }
 .tree-reply-content .feed-info {
-    margin-bottom: 5px;
-    font-size: 0.8rem;
+    margin-bottom: var(--small-margin);
+    font-size: var(--small-text);
 }
 .tree-reply-content .small-feed-photo {
-    width: 20px;
-    height: 20px;
+    width: var(--large-margin);
+    height: var(--large-margin);
 }
 .tree-reply-footer {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-top: 8px;
-    padding-top: 5px;
+    margin-top: var(--medium-margin);
+    padding-top: var(--small-margin);
     border-top: 1px solid #eee;
-    font-size: 0.8rem;
+    font-size: var(--small-text)
 }
 .expand-reply-btn {
     position: absolute;
     bottom: -15px;
     left: 50%;
     transform: translateX(-50%);
-    width: 30px;
-    height: 30px;
+    width: var(--large-margin);
+    height: var(--large-margin);
     border-radius: 50%;
     background-color: #fff;
     border: 2px solid #ddd;
@@ -241,7 +236,7 @@
     cursor: pointer;
     z-index: 10;
     font-weight: bold;
-    font-size: 12px;
+    font-size: var(--small-text);
     transition: background-color 0.3s ease, border-color 0.3s ease;
 }
 .expand-reply-btn:hover:not(:disabled) {
@@ -255,15 +250,15 @@
 }
 .tree-controls {
     position: absolute;
-    bottom: 10px;
-    right: 10px;
+    bottom: var(--medium-margin);
+    right: var(--medium-margin);
     z-index: 10;
     display: flex;
-    gap: 5px;
+    gap: var(--small-margin);
 }
 .control-btn {
-    width: 36px;
-    height: 36px;
+    width: var(--xl-margin);
+    height: var(--xl-margin);
     border-radius: 50%;
     background-color: white;
     border: 1px solid #ddd;
@@ -271,25 +266,22 @@
     justify-content: center;
     align-items: center;
     cursor: pointer;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
     transition: all 0.2s ease;
 }
 .control-btn:hover {
     background-color: var(--light);
     transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
 }
 .control-btn:active {
     transform: translateY(0);
-    box-shadow: 0 2px 3px rgba(0,0,0,0.1);
 }
 .view-toggle-btn {
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 5px 10px;
+    padding: var(--small-margin);
     border-radius: var(--small-margin);
-    font-size: 0.9rem;
+    font-size: var(--small-text);
     cursor: pointer;
     transition: background-color 0.2s ease;
 }
@@ -299,7 +291,7 @@
 .content-display.tree-view-mode {
     max-height: 120px;
     overflow-y: auto;
-    font-size: 0.9rem;
+    font-size: var(--small-text);
     line-height: 1.4;
 }
 @keyframes drawLine {

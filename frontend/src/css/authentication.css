@@ -18,7 +18,7 @@
     border-radius: var(--medium-margin);
     box-sizing: border-box;
     display: inline-block;
-    font-size: clamp(6px, 2vw, 16px);
+    font-size: var(--small-text);
     margin: var(--medium-margin) 0;
     outline: none;
     padding: var(--medium-margin);
@@ -30,7 +30,7 @@
     border-radius: var(--medium-margin);
     color: var(--lightest);
     cursor: pointer;
-    font-size: clamp(6px, 2vw, 16px);
+    font-size: var(--small-text);
     margin: var(--medium-margin)x 0;
     padding: var(--medium-margin) var(--large-margin);
     transition: background-color var(--transition-regular);
@@ -43,7 +43,7 @@
     border-radius: var(--medium-margin);
     color: var(--lightest);
     display: inline-block;
-    font-size: clamp(6px, 2vw, 16px);
+    font-size: var(--small-text);
     padding: var(--medium-margin) var(--large-margin);
     text-align: center;
     text-decoration: none;
@@ -63,7 +63,7 @@
     gap: var(--medium-margin);
 }
 .welcome-text {
-    font-size: clamp(6px, 4vw, 36px);
+    font-size: var(--large-text);
     margin-bottom: var(--large-margin);
     margin-top: var(--xl-margin);
 }

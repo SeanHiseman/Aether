@@ -7,10 +7,10 @@
   display: flex;
   flex-direction: column;
   justify-content: flex-start;
-  padding: 5px;
-  border-radius: 10px;
+  padding: var(--small-margin);
+  border-radius: var(--medium-margin);
   width: 90%;
-  margin: 10px;
+  margin: var(--medium-margin);
 }
 .add-channel-section {
   align-items: center;
@@ -62,12 +62,12 @@
   padding: var(--small-margin) var(--medium-margin);
 }
 .change-name-area {
-  font-size: clamp(6px, 3vw, 24px);
+  font-size: var(--medium-text);
   height: var(--xl-margin);
   max-width: 80%;
 }
 .change-text-area {
-  font-size: clamp(6px, 3vw, 24px);
+  font-size: var(--medium-text);
   height: 120px;
 }
 .change-text-area.small {
@@ -78,7 +78,7 @@
   display: flex;
   flex-direction: column;
   flex-grow: 1;
-  font-size: clamp(6px, 3vw, 24px);
+  font-size: var(--medium-text);
   height: 100%;
   overflow-y: auto;
   width: 100%;
@@ -86,7 +86,7 @@
 .channel-dropdown {
   color: var(--lightest);
   cursor: pointer;
-  font-size: clamp(6px, 2vw, 16px);
+  font-size: var(--small-text);
   margin-left: 12px;
 }
 .channel-feed {
@@ -95,7 +95,7 @@
   flex: 1;
   flex-direction: column;
   overflow-y: auto;
-  margin-top: 80px;
+  margin-top: var(--header-height);
   width: 100%;
 }
 .channel-link {
@@ -177,7 +177,7 @@ textarea::placeholder,
 }
 #confirmation-message {
   color: var(--lightest);
-  margin-left: 10px;
+  margin-left: var(--medium-margin);
   text-align: right;
 }
 .container {
@@ -206,7 +206,7 @@ textarea::placeholder,
   background-color: var(--darkest);
 }
 .description {
-  margin: 5px;
+  margin: var(--small-margin);
   max-width: 80%;
 }
 #description-section .view-description,
@@ -225,7 +225,7 @@ textarea::placeholder,
 }
 .feed-list-link-container {
   align-items: center;
-  border-radius: 14px;
+  border-radius: var(--medium-margin);
   display: flex;
   justify-content: space-between;
   padding: var(--medium-margin);
@@ -235,7 +235,7 @@ textarea::placeholder,
   background-color: var(--dark);
 }
 .feed-list-text {
-  font-size: clamp(6px, 2vw, 16px);
+  font-size: var(--small-text);
   margin: 0;
   margin-left: var(--medium-margin);
 }
@@ -289,7 +289,7 @@ textarea::placeholder,
   display: flex;
   justify-content: space-between;
   margin-left: var(--medium-margin);
-  margin-top: 16px;
+  margin-top: var(--medium-margin);
   width: 90%;
 }
 .left-aside,
@@ -337,7 +337,7 @@ main {
   border: 1px solid var(--border);
   border-radius: var(--medium-margin);
   color: var(--lightest);
-  font-size: clamp(6px, 2vw, 16px);
+  font-size: var(--small-text);
   margin: var(--medium-margin);
   padding: var(--small-margin);
   transition: background-color var(--transition-regular);
@@ -383,7 +383,7 @@ main {
   border-top-left-radius: calc(0.3 * var(--header-height));
   color: var(--lightest);
   flex-grow: 1;
-  font-size: clamp(6px, 2vw, 16px);
+  font-size: var(--small-text);
   height: 100%;
 }
 .search-container {
@@ -415,13 +415,13 @@ main {
 .standard-icon {
   color: var(--lightest);
   cursor: pointer;
-  height: clamp(6px, 3vw, 24px);
+  height: var(--medium-text);
   padding: 0;
-  width: clamp(6px, 3vw, 24px);
+  width: var(--medium-text);
   transition: background-color var(--transition-regular);
 }
 .total-votes {
-  font-size: clamp(6px, 2vw, 16px);
+  font-size: var(--small-text);
   margin: var(--small-margin);
 }
 #upload-form {

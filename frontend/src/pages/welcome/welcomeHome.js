@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 import '../../css/welcome.css';
 
 const WelcomeHome = () => {
-    document.title = "Welcome to Aether - Better Social Media";
+    document.title = "Welcome to Aether Social";
     
     return (
         <>

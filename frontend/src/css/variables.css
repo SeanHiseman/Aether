@@ -4,11 +4,18 @@
     --dark: #232527;
     --light: #737484;
     --lightest: #dddddd;
+
     --header-height: clamp(40px, 5vw, 70px);
     --xl-margin: clamp(16px, 4.8vw, 40px);
     --large-margin: clamp(8px, 2.4vw, 20px);
     --medium-margin: clamp(4px, 1.2vw, 10px);
     --small-margin: clamp(2px, 0.6vw, 5px);
+
+    --xl-text: clamp(6px, 5vw, 48px);
+    --large-text: clamp(6px, 4vw, 36px);
+    --medium-text: clamp(6px, 3vw, 24px);
+    --small-text: clamp(6px, 2vw, 16px);
+
     --transition-regular: 0.3s ease;
     --left-width: 16vw;
     --right-width: 16vw;
