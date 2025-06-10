@@ -23,7 +23,6 @@
     cursor: pointer;
     margin-bottom: var(--medium-margin);
     margin-top: var(--medium-margin);
-    padding: var(--medium-margin);
 }
 .content-item.reply {
     box-shadow: none;
@@ -61,7 +60,8 @@
     display: flex;
     font-size: var(--medium-text);
     justify-content: space-between;
-    width: 98%;
+    margin-left: var(--medium-margin);
+    margin-right: var(--medium-margin);
 }
 .custom-theme-container {
     align-items: center;
@@ -139,6 +139,8 @@
     align-items: center;
     display: flex;
     justify-content: space-between;
+    margin-left: var(--medium-margin);
+    margin-right: var(--medium-margin);
 }
 .uploader-info {
     display: flex;
@@ -306,4 +308,9 @@
     stroke-dasharray: 1000;
     stroke-dashoffset: 1000;
     animation: drawLine 1s ease forwards;
+}
+@media (max-width: 768px) {
+    .content-list {
+        width: 100%;
+    }
 }
