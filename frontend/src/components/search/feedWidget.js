@@ -20,7 +20,7 @@ const FeedWidget = ({ feed, isAuthenticated, viewerId }) => {
             <div className="search-result-info-box">
                 <div className="result-info-options">
                     <p>{feed.type === 'private' ? "Private" : "Public"}</p>
-                    {!isViewingSelf && !(feed.type === 'private' && !feed.is_group) && isAuthenticated && (
+                    {!isViewingSelf && isAuthenticated && (
                         <FollowerChangeButton feed={feed} viewerId={viewerId} />
                     )}
                 </div>

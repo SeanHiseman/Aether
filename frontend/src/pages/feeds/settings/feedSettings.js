@@ -123,7 +123,7 @@ const FeedSettings = () => {
                                 {feed.follower_count} {feed.follower_count === 1 ? 'Follower' : 'Followers'}
                             </Link>
                         </li>
-                        {feed.type === 'private' && feed.is_group && (
+                        {feed.type === 'private' && (
                             <li className="channel-link">
                                 <Link to={`/settings/${feed_name}/follow_requests`}>
                                     {followRequestCount} {followRequestCount === 1 ? 'Follow request' : 'Follow requests'}

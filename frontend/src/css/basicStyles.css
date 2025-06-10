@@ -78,6 +78,9 @@ p, .channel-link {
     white-space: normal;
     word-break: break-word;
 }
+p {
+    margin: var(--medium-margin);
+}
 .small-icon {
     font-size: var(--small-text)
 }
