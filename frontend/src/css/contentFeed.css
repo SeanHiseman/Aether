@@ -18,7 +18,7 @@
 }
 .content-item, .result-widget {
     background-color: var(--dark);
-    border-radius: calc(var(--large-margin) + 0.8vw);
+    border-radius: calc(clamp(3px, .6vw, 8px) + var(--medium-margin));
     border: 1px solid var(--border);
     cursor: pointer;
     margin-bottom: var(--medium-margin);
