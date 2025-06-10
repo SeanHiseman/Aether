@@ -101,6 +101,9 @@ router.delete('/delete_account', authenticateCheck, async (req, res) => {
 
 router.post('/join', async (req, res) => {
     try {
+        if (req.session) {
+			await new Promise(resolve => req.session.destroy(resolve));
+		}
         const email = req.body.email;
         const username = req.body.username;
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/; //Checked in frontend too
@@ -164,6 +167,9 @@ router.post('/join', async (req, res) => {
 
 router.post('/login', async (req, res) => {
     try {
+        if (req.session) {
+			await new Promise(resolve => req.session.destroy(resolve));
+		}
         const { password, username } = req.body;
         const user = await Users.findOne({ where: { [Op.or]: [{ email: username }, { username }] } });
         const feed = await Feeds.findOne({ where: { feed_owner: user.user_id, is_group: false }})

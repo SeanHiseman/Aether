@@ -97,8 +97,10 @@ const ContentDisplay = ({ content, onOverflowChange = () => {}, showFullContent,
     <div
       ref={contentRef}
       style={{
-        overflow: overflowStyle,
+        borderTopLeftRadius: 'calc(var(--large-margin) + 0.8vw)',
+        borderTopRightRadius: 'calc(var(--large-margin) + 0.8vw)',
         maxHeight: maxHeightStyle,
+        overflow: overflowStyle,
         transition: 'max-height 0.3s ease',
       }}
     >
