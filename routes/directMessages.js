@@ -80,9 +80,9 @@ router.delete('/delete_chat', authenticateCheck, async (req, res) => {
     try {
         transaction = await sequelize.transaction();
         const { channelId } = req.body;
-        await Messages.destroy({ where: { chat_id: channelId, transaction }})
-        await FeedChats.destroy({ where: { chat_id: channelId, transaction }});
-        await Chats.destroy({ where: { chat_id: channelId, transaction }});
+        await Messages.destroy({ where: { chat_id: channelId }, transaction });
+        await FeedChats.destroy({ where: { chat_id: channelId }, transaction });
+        await Chats.destroy({ where: { chat_id: channelId }, transaction });
         await transaction.commit();
         res.status(200).json({ success: true });
     } catch (error) {
