@@ -331,7 +331,7 @@ const FeedHome = () => {
                         <img className="large-feed-photo" src={`/${feed.feed_photo}`} alt={feed.feed_name} />
                         <p className="text36">{feed.feed_name}</p>
                         <p className="description" >{feed.description}</p>
-                        { viewer && isAuthenticated && (
+                        {viewer && isAuthenticated && (
                             <FollowerChangeButton feed={feed} viewerId={viewer.feed_id} />
                         )}
                         {/*{!isViewingSelf && !feed.is_group && (
@@ -417,8 +417,10 @@ const FeedHome = () => {
                         )}
                     </div>
                     <p className="description" >{feed.description}</p>
-                    {(user?.user_id !== feed.feed_owner) && isAuthenticated && (
+                    {(user?.user_id !== feed.feed_owner || feed.is_group) && isAuthenticated && viewer ? (
                         <FollowerChangeButton feed={feed} viewerId={viewer.feed_id} />
+                    ) : (
+                        <p className="icon-text">{feed.follower_count} {(feed.follower_count) === 1 ? 'follower' : 'followers'}</p>
                     )}
                     {/*{!isViewingSelf && !feed.is_group && (
                         <ManageConnectionButton feed={feed} viewerId={viewer.feed_id} />

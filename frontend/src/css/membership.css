@@ -10,9 +10,9 @@
     padding: var(--medium-margin) var(--large-margin);
     border-radius: var(--medium-margin);
     font-weight: 600;
-    font-size: var(--text16);
+    font-size: var(--small-text);
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: var(--transition-regular);
 }
 .cancel-button:disabled {
     opacity: 0.5;
@@ -20,7 +20,7 @@
 }
 .cancel-button:hover:not(:disabled) {
     background-color: #dc2626;
-    transform: translateY(-var(--small-margin));
+    transform: translateY(calc(-1 * var(--small-margin)));
 }
 .cancel-button-modal {
     background-color: #d1d5db;
@@ -31,7 +31,7 @@
 }
 .cancel-notice {
     color: var(--color-accent-yellow);
-    font-size: clamp(6px, 1.8vw, 14.4px);
+    font-size: var(--small-text);
     font-weight: 500;
 }
 .confirm-button {
@@ -73,7 +73,7 @@
 }
 .expiry-text {
     color: var(--light);
-    font-size: clamp(6px, 1.8vw, 14.4px);
+    font-size: var(--small-text);
     margin-bottom: var(--small-margin);
 }
 .feature-card {
@@ -81,11 +81,11 @@
     border: 1px solid var(--border);
     border-radius: var(--medium-margin);
     padding: var(--large-margin);
-    transition: all 0.2s ease;
+    transition: var(--transition-regular);
 }
 .feature-card:hover {
     opacity: 0.8;
-    transform: translateY(-calc(var(--small-margin) / 2));
+    transform: translateY(calc(-1 * var(--small-margin)));
 }
 .feature-content {
     display: flex;
@@ -118,12 +118,12 @@
     margin-right: auto;
 }
 .main-subtitle {
-    font-size: clamp(6px, 2.5vw, 20px);
+    font-size: var(--medium-text);
     color: var(--light);
     line-height: 1.6;
 }
 .main-title {
-    font-size: clamp(6px, 7vw, 56px);
+    font-size: var(--xl-text);
     font-weight: 700;
     margin-bottom: var(--medium-margin);
     background: linear-gradient(135deg, var(--color-accent-purple), #ec4899);
@@ -204,7 +204,7 @@
 }
 .monthly-button:hover:not(:disabled) {
     background: linear-gradient(135deg, #9333ea, #2563eb);
-    transform: translateY(-1px);
+    transform: translateY(calc(-1 * var(--small-margin)));
     box-shadow: var(--shadow-lg);
 }
 .monthly-plan.selected {
@@ -215,7 +215,7 @@
     padding: var(--medium-margin) var(--large-margin);
     border-radius: var(--medium-margin);
     font-weight: 700;
-    font-size: var(--text16);
+    font-size: var(--small-text);
     cursor: pointer;
     transition: all 0.3s ease;
     border: none;
@@ -235,7 +235,7 @@
     box-shadow: var(--shadow-lg);
 }
 .plan-card:hover {
-    transform: translateY(-var(--small-margin));
+    transform: translateY(calc(-1 * var(--small-margin)));
     box-shadow: var(--shadow-xl);
 }
 .plan-card.selected {
@@ -252,7 +252,7 @@
     margin-bottom: var(--large-margin);
 }
 .plan-title {
-    font-size: clamp(6px, 3.75vw, 30px);
+    font-size: var(--large-text);
     font-weight: 700;
     margin-bottom: var(--medium-margin);
     color: var(--color-text-primary);
@@ -264,7 +264,7 @@
     margin: 0 auto var(--large-margin);
 }
 .price-amount {
-    font-size: clamp(6px, 6vw, 48px);
+    font-size: var(--xl-text);
     font-weight: 700;
     color: var(--color-text-primary);
 }
@@ -281,7 +281,7 @@
     color: var(--color-accent-purple);
     padding: var(--small-margin) var(--medium-margin);
     border-radius: var(--large-margin);
-    font-size: clamp(6px, 1.5vw, 12px);
+    font-size: var(--small-text);
     font-weight: 700;
 }
 .status-card {
@@ -339,12 +339,12 @@
     color: var(--color-text-primary);
 }
 .welcome-subtitle {
-    font-size: var(--text24);
+    font-size: var(--medium-text);
     color: var(--light);
     margin-bottom: var(--large-margin);
 }
 .welcome-title {
-    font-size: var(--text36);
+    font-size: var(--large-text);
     font-weight: 700;
     margin-bottom: var(--medium-margin);
     color: var(--color-text-primary);
@@ -355,7 +355,7 @@
 }
 .yearly-button:hover:not(:disabled) {
     background-color: #f3f4f6;
-    transform: translateY(-1px);
+    transform: translateY(calc(-1 * var(--small-margin)));
     box-shadow: var(--shadow-lg);
 }
 .yearly-plan {
@@ -382,10 +382,10 @@
         grid-template-columns: 1fr;
     }
     .main-subtitle {
-        font-size: clamp(6px, 2.25vw, 18px);
+        font-size: var(--medium-text);
     }
     .main-title {
-        font-size: clamp(6px, 5vw, 40px);
+        font-size: var(--large-text);
     }
     .membership-container {
         padding: var(--medium-margin);
@@ -402,17 +402,17 @@
         gap: var(--medium-margin);
     }
     .welcome-title {
-        font-size: clamp(6px, 4vw, 32px);
+        font-size: var(--large-text);
     }
 }
 @media (max-width: 480px) {
     .main-title {
-        font-size: clamp(6px, 4vw, 32px);
+        font-size: var(--large-text);
     }
     .plan-card {
         padding: var(--large-margin);
     }
     .price-amount {
-        font-size: clamp(6px, 5vw, 40px);
+        font-size: var(--large-text);
     }
 }

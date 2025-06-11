@@ -69,7 +69,7 @@
 .code-editor-container {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: var(--medium-margin);
 }
 .code-input {
   background-color: var(--darkest);

@@ -120,32 +120,32 @@ const FeedFollowers = () => {
                                         <img className="large-feed-photo" src={`/${follower.followerFeed.feed_photo}`} alt="Feed" />
                                         <p className="text36 feed-name">{follower.followerFeed.feed_name}</p>
                                     </Link>
-                                    <p className="text24">{role}</p>
-                                    {feed.is_group && user.user_id !== follower.follower_id && (
+                                    {feed.is_group && (<p className="text24">{role}</p>)}
+                                    {user.user_id !== follower.follower_id && (
                                         <>
                                             {/* Admins can make/remove moderators, except the owner */}
-                                            {feed.isAdmin && !follower.is_admin && (
+                                            {feed.isAdmin && !follower.is_admin && feed.is_group && (
                                                 <button className="small-icon" onClick={() => toggleModeratorStatus(follower)}>
                                                     {follower.is_mod ? <FaMinusCircle /> : <FaPlusCircle />}
                                                     <p className="icon-text">{follower.is_mod ? 'Remove as moderator' : 'Make moderator'}</p>
                                                 </button>
                                             )}
                                             {/* Feed owner can see and change admin status */}
-                                            {feed.isAdmin && follower.followerFeed.feed_owner !== feed.feed_owner && (
+                                            {feed.isAdmin && follower.followerFeed.feed_owner !== feed.feed_owner && feed.is_group && (
                                                 <button className="small-icon" onClick={() => toggleAdminStatus(follower)}>
                                                     {follower.is_admin ? <FaMinusCircle /> : <FaPlusCircle />}
                                                     <p className="icon-text">{follower.is_admin ? 'Remove as admin' : 'Make admin'}</p>
                                                 </button>
                                             )}
                                             {/* Feed owner can transfer ownership, but not to themselves */}
-                                            {feed.isOwner && follower.is_admin && follower.followerFeed.feed_owner !== feed.feed_owner && (
+                                            {feed.isOwner && follower.is_admin && follower.followerFeed.feed_owner !== feed.feed_owner && feed.is_group && (
                                                 <button className="small-icon" onClick={() => transferOwnership(follower)}>
                                                     <FaCrown />
                                                     <p className="icon-text">Make Feed Owner</p>
                                                 </button>
                                             )}
                                             {/* Moderators can remove regular followers but not other moderators/admins */}
-                                            {(feed.isMod && !follower.is_admin && !follower.is_mod || !feed.is_group) && (
+                                            {(feed.isMod && !follower.is_admin && !follower.is_mod) && (
                                                 <button className="small-icon" onClick={() => removeFollower(follower)}>
                                                     <FaMinus />
                                                     <p className="icon-text">Remove follower</p>

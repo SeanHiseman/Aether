@@ -31,7 +31,7 @@
     color: var(--lightest);
     cursor: pointer;
     font-size: var(--small-text);
-    margin: var(--medium-margin)x 0;
+    margin: var(--medium-margin) 0;
     padding: var(--medium-margin) var(--large-margin);
     transition: background-color var(--transition-regular);
     width: 100%;
