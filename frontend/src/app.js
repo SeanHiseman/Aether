@@ -24,6 +24,7 @@ import Join from './pages/site_entrance/join';
 import Login from './pages/site_entrance/login';
 import Membership from './pages/welcome/membership';
 import MembershipSettings from './pages/feeds/settings/membershipSettings';
+import NotFound from './notFound';
 import Placeholder from './pages/welcome/placeholder';
 import Privacy from './pages/welcome/privacy';
 import Team from './pages/welcome/team';
@@ -107,6 +108,7 @@ const App = () => {
 										<Route path=":post_id" element={<ContentWidget />} />
 									</Route>
 								</Route>
+								<Route path="*" element={<NotFound />} />
 							</Route>
 						</Routes>
 					</Router>

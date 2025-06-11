@@ -402,9 +402,9 @@ main {
   width: 100%;
 }
 .small-feed-photo {
-  height: clamp(15px, 3vw, 40px);
-  width: clamp(15px, 3vw, 40px);
-  border-radius: clamp(3px, 0.6vw, 8px);
+  border-radius: clamp(4px, 0.8vw, 8px);
+  height: clamp(20px, 4vw, 40px);
+  width: clamp(20px, 4vw, 40px);
 }
 .standard-container {
   display: flex;

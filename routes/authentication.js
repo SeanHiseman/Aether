@@ -69,7 +69,7 @@ router.get('/check_authentication', async (req, res) => {
     }
 });
 
-//Deletes user accont and all associated data
+//Deletes user account and all associated data
 router.delete('/delete_account', authenticateCheck, async (req, res) => {
     let transaction
     try {

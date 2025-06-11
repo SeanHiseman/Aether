@@ -78,7 +78,7 @@ router.post('/change_ask_chat_name', authenticateCheck, async (req, res) => {
         );
         res.status(200).json({ success: true });
     } catch (error) {
-        res.status(500).json({ esuccess: false });
+        res.status(500).json({ success: false });
     }
 });
 
