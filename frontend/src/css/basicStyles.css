@@ -50,13 +50,13 @@ body, html {
     color: var(--light);
 }
 .icon-text {
-    margin: 0 0 0 var(--medium-margin);
+    margin: 0 0 0 var(--medium-margin); /*Text always to the right of the icon*/
 }
 input[type="text"] {
     outline: none;
 }
 label {
-    margin: 10px;
+    margin: var(--medium-margin);
 }
 .large-icon, .small-icon {
     align-items: center;
