@@ -58,7 +58,7 @@ const FeedItem = ({ feed, id, isChat, parentDeepFeedId, unreadCount }) => {
             <div className="feed-list-link-container" {...attributes} {...listeners}>
                 <Link className="feed-list-link" to={isChat ? `/connections/${feed.feed_name}/Main` : `/${linkType}/${feed.feed_name}/Main`} onClick={handleLinkClick}>
                     <img className="small-feed-photo" src={`/${feed.feed_photo}`} alt={'/media/site_images/blank-group-icon.jpg'} />
-                    <p className="feed-list-text">{feed.feed_name}</p>
+                    <p className="text16">{feed.feed_name}</p>
                     {isChat && unreadCount > 0 && (
                         <div className="unread-count">{unreadCount}</div>
                     )}

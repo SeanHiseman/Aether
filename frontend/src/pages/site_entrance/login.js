@@ -1,5 +1,5 @@
 import axios from 'axios';
-import React, { useContext, useState } from 'react';
+import { useContext, useState } from 'react';
 import { FaEye, FaEyeSlash } from 'react-icons/fa';
 import { Link, useNavigate } from 'react-router-dom';
 import { ThemeContext } from '../../themeProvider';
@@ -24,11 +24,11 @@ const Login = () => {
             }
         } catch (error) {
             if (error.response && error.response.status === 401) {
-                setErrorMessage('Invalid username or password');
-                setTimeout(() => { setErrorMessage(''); }, 3000);
+                setErrorMessage(error.response.data?.message || 'Invalid username or password');
+                setTimeout(() => { setErrorMessage(''); }, 5000);
             } else {
                 setErrorMessage('Failed to login, please try again');
-                setTimeout(() => { setErrorMessage(''); }, 3000);
+                setTimeout(() => { setErrorMessage(''); }, 5000);
             }
         }
     };

@@ -18,7 +18,7 @@
 }
 .content-item, .result-widget {
     background-color: var(--dark);
-    border-radius: calc(clamp(4px, .8vw, 8px) + var(--medium-margin));
+    border-radius: calc(clamp(4px, 1vw, 10px) + var(--medium-margin));
     border: 1px solid var(--border);
     cursor: pointer;
     margin-bottom: var(--medium-margin);
@@ -50,6 +50,7 @@
 }
 .content-list {
     margin: 0;
+    padding-top: var(--medium-margin);
     width: 97%;
 }
 .content-item, .content-list {
@@ -62,6 +63,7 @@
     justify-content: space-between;
     margin-left: var(--medium-margin);
     margin-right: var(--medium-margin);
+    padding-bottom: var(--medium-margin);
 }
 .custom-theme-container {
     align-items: center;

@@ -1,4 +1,3 @@
-import React from 'react';
 import { Navigate, Outlet, BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ProtectedRoute, PublicAuthProvider } from './components/authContext';
@@ -12,6 +11,7 @@ import ConnectionsPage from './pages/connections/connectionsPage';
 import Content from './pages/welcome/content';
 import ContentWidget from './components/content/contentWidget';
 import DeepFeed from './pages/deepFeed';
+import EmailVerification from './pages/site_entrance/verification';
 import Feeds from './pages/welcome/feeds';
 import FeedDeletion from './pages/feeds/settings/feedDeletion';
 import FeedFollowers from './pages/feeds/settings/feedFollowers';
@@ -75,6 +75,7 @@ const App = () => {
 							</Route>
 							<Route path="/login" element={<Login />} />
 							<Route path="/join" element={<Join />} />
+							<Route path="/verify-email" element={<EmailVerification />} />
 							<Route element={BaseLayoutWithProviders}>
 								{/*<Route path="ask" element={<AskChannel />} >
 									<Route path=":chatId" element={<AskChannel />} />

@@ -1,5 +1,5 @@
-import nodemailer from 'nodemailer';
 import jwt from 'jsonwebtoken';
+import nodemailer from 'nodemailer';
  
 const transporter = nodemailer.createTransport({
     host: "smtp-relay.brevo.com",
@@ -27,8 +27,7 @@ export const sendVerificationEmail = async (email, username, verificationToken) 
         subject: 'Verify your email',
         html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-            <h2 style="color: #333;">Welcome to Aether, ${username}!</h2>
-             <p>(This email is a non-functional placeholder for now, working verification coming soon!)</p>
+            <h2 style="color: #333;">Welcome to Aether Social, ${username}!</h2>
             <p>Thanks for signing up. Please verify your email address by clicking the link below:</p>
             <div style="margin: 30px 0;">
             <a href="${verificationUrl}" 
@@ -54,7 +53,7 @@ export const sendVerificationEmail = async (email, username, verificationToken) 
         
         This link will expire in 24 hours.
         
-        If you didn't create an account on Aether, you can safely ignore this email.
+        If you didn't create an account on Aether Social, you can safely ignore this email.
         `
     };
     return transporter.sendMail(mailOptions);

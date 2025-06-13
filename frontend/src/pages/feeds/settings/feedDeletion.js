@@ -55,6 +55,7 @@ const FeedDeletion = () => {
                         </p>
                         <input 
                             type="text" 
+                            className="name-input"
                             placeholder="Type DELETE to confirm"
                             value={confirmText}
                             style={{ marginBottom: '15px', padding: '8px', width: '200px' }}
@@ -69,7 +70,7 @@ const FeedDeletion = () => {
                             >
                                 Confirm {feed.is_group ? 'Delete Feed' : 'Delete Account'}
                             </button>
-                            <button className="button secondary" onClick={cancelDeletion}>
+                            <button className="button" onClick={cancelDeletion}>
                                 Cancel
                             </button>
                         </div>

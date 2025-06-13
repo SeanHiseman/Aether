@@ -399,7 +399,7 @@ CREATE TABLE `users` (
   `stripe_subscription_id` varchar(255) DEFAULT NULL,
   `subscription_expires_at` datetime(3) DEFAULT NULL,
   `email_verified` tinyint(1) DEFAULT '0',
-  `verification_token` varchar(255) DEFAULT NULL,
+  `verification_token` text DEFAULT NULL,
   `verification_token_expires` datetime(3) DEFAULT NULL,
   PRIMARY KEY (`user_id`),
   UNIQUE KEY `email` (`email`)

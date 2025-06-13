@@ -1,5 +1,5 @@
 import axios from 'axios';
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { FaEye, FaEyeSlash } from 'react-icons/fa';
 import { Link, useNavigate } from 'react-router-dom';
 import '../../css/authentication.css'; 
@@ -29,14 +29,10 @@ const Join = () => {
         }
         try {
             const response = await axios.post('/api/join', { email, password, username });
+            console.log('Join response:', response.data);
             if (response.data.success) {
-                if (response.data.requiresVerification) {
-                    setErrorMessage('');
-                    alert('Account created! Please check your email to verify your address.');
-                    navigate('/login');
-                } else {
-                    navigate('/g/Welcome');
-                }
+                setErrorMessage('');
+                navigate('/verify-email');
             } else {
                 setErrorMessage('Joining failed, please try again');
                 setTimeout(() => { setErrorMessage(''); }, 3000);
