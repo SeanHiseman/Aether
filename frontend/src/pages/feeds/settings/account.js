@@ -125,10 +125,14 @@ const Account = () => {
                         </button>
                     </div>
                     <input 
-                        className="submit" 
+                        className={
+							'submit' +
+							((!password || !confirmPassword || password !== confirmPassword) ? ' disabled' : '')
+						}
+                        disabled={!password || !confirmPassword || password !== confirmPassword}
+                        title={passwordMessage}
                         type="submit" 
                         value="Change password" 
-                        disabled={!password || !confirmPassword || !!passwordMessage}
                     />
                 </form>
             </div>
@@ -190,10 +194,14 @@ const Account = () => {
                         }} 
                     />
                     <input 
-                        className="submit" 
+                        className={
+							'submit' +
+							((!email || !confirmEmail || email !== confirmEmail) ? ' disabled' : '')
+						}
+                        disabled={!email || !confirmEmail || email !== confirmEmail}
+                        title={emailMessage}
                         type="submit" 
                         value="Change email" 
-                        disabled={!email || !confirmEmail || !!emailMessage}
                     />
                 </form>
             </div>

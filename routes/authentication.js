@@ -8,13 +8,19 @@ import { compare, hash } from 'bcrypt';
 import { Op } from 'sequelize';
 import { v4 } from 'uuid';
 import { Connections, ConnectRequests, Feeds, FeedChannels, Followers, FeedChats, Messages, Posts, PostVotes, Users } from '../models/relationships.js'; 
-import { generateVerificationToken, sendVerificationEmail } from '../functions/emailService.js';
+import { generateVerificationToken, sendPasswordResetEmail, sendVerificationEmail } from '../functions/emailService.js';
 import sequelize from '../databaseSetup.js';
 
 dotenv.config();
 const router = Router();
 
-router.post('/change_password', authenticateCheck, async (req, res) => {
+const resendLimiter = rateLimit({
+	windowMs: 15 * 60 * 1000,
+	max: 3,
+	message: 'Too many requests – please try again later'
+});
+
+router.post('/change_password', authenticateCheck, async (req, res) => { //For logged in users
     try {
         const { password, user_id } = req.body;
         const hashedPassword = await hash(password, 10);
@@ -110,6 +116,27 @@ router.delete('/delete_account', authenticateCheck, async (req, res) => {
         if (transaction) await transaction.rollback();
         return res.status(500).json({ success: false });
     }
+});
+
+router.post('/forgot-password', resendLimiter, async (req, res) => {
+	try {
+		const { email } = req.body;
+		const user = await Users.findOne({ where: { email } });
+		if (!user) {
+			return res.status(200).json({ success: true });
+		}
+		const resetToken = jwt.sign(
+			{ email, type: 'password_reset', userId: user.user_id },
+			process.env.JWT_SECRET,
+			{ expiresIn: '1h' }
+		);
+		const resetExpires = new Date(Date.now() + 60 * 60 * 1000);
+		await user.update({ reset_token: resetToken, reset_token_expires: resetExpires });
+		await sendPasswordResetEmail(email, user.username, resetToken);
+		return res.status(200).json({ success: true });
+	} catch (error) { 
+		return res.status(500).json({ success: false });
+	}
 });
 
 router.post('/join', async (req, res) => {
@@ -225,12 +252,6 @@ router.post('/logout', (req, res) => {
     });
 });
 
-const resendLimiter = rateLimit({
-	windowMs: 15 * 60 * 1000,
-	max: 3,
-	message: 'Too many requests – please try again later'
-});
-
 router.post('/resend-verification', resendLimiter, async (req, res) => {
 		const { email } = req.body;
 		const user = await Users.findOne({ where: { email } });
@@ -243,6 +264,40 @@ router.post('/resend-verification', resendLimiter, async (req, res) => {
 		return res.status(200).json({ success: true, message: 'Verification email sent' });
 	}
 );
+
+router.post('/reset-password', async (req, res) => { //For users who have forgotten their password
+	const { password, token } = req.body;
+	let decoded;
+	try {
+		decoded = jwt.verify(token, process.env.JWT_SECRET);
+	} catch {
+		return res.status(400).json({ success: false, message: 'Invalid or expired reset token' });
+	}
+	if (decoded.type !== 'password_reset') {
+		return res.status(400).json({ success: false, message: 'Invalid reset token' });
+	}
+	try {
+		const user = await Users.findOne({
+			where: {
+				email: decoded.email,
+				reset_token: token,
+				user_id: decoded.userId
+			}
+		});
+		if (!user || new Date() > user.reset_token_expires) {
+			return res.status(400).json({ success: false, message: 'Invalid or expired reset token' });
+		}
+		const hashedPassword = await hash(password, 10);
+		await user.update({
+			password: hashedPassword,
+			reset_token: null,
+			reset_token_expires: null
+		});
+		return res.status(200).json({ success: true, message: 'Password reset successful' });
+	} catch (error) {
+		return res.status(500).json({ success: false, message: 'Server error' });
+	}
+});
 
 router.get('/verify-email', async (req, res) => {
 	try {

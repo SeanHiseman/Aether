@@ -24,18 +24,6 @@
     padding: var(--medium-margin);
     width: 100%;
 }
-.submit {
-    background-color: var(--darkest);
-    border: none;
-    border-radius: var(--medium-margin);
-    color: var(--lightest);
-    cursor: pointer;
-    font-size: var(--small-text);
-    margin: var(--medium-margin) 0;
-    padding: var(--medium-margin) var(--large-margin);
-    transition: background-color var(--transition-regular);
-    width: 100%;
-}
 .link {
     align-self: center;
     background-color: var(--darkest);
@@ -61,6 +49,21 @@
     align-items: center;
     display: flex;
     gap: var(--medium-margin);
+}
+.submit {
+    background-color: var(--darkest);
+    border: none;
+    border-radius: var(--medium-margin);
+    color: var(--lightest);
+    cursor: pointer;
+    font-size: var(--small-text);
+    margin: var(--medium-margin) 0;
+    padding: var(--medium-margin) var(--large-margin);
+    transition: background-color var(--transition-regular);
+    width: 100%;
+}
+.submit.disabled:hover {
+    background-color: var(--darkest);
 }
 .welcome-text {
     font-size: var(--large-text);

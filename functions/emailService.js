@@ -62,7 +62,7 @@ export const sendVerificationEmail = async (email, username, verificationToken) 
 export const sendPasswordResetEmail = async (email, username, resetToken) => {
     const resetUrl = `${process.env.FRONTEND_URL}/reset-password?token=${resetToken}`;
     const mailOptions = {
-        from: `"Aether" <${process.env.EMAIL_USER}>`,
+        from: `"Aether" <no-reply@aether.cool>`,
         to: email,
         subject: 'Reset your Aether password',
         html: `
