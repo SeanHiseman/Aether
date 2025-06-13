@@ -268,9 +268,9 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onEdit
         }
     }, [isEdit])
 
-    //This section is AI generated, may need cleaning up and adjusting
     const getIframeSrcDoc = useCallback((id, code, isEditing) => {
-        const trimmedCode = code.trim()
+        const trimmedCode = code.trim();
+        /*
         const interactiveEditorScript = `
         <script>
         (function() {
@@ -311,9 +311,9 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onEdit
                 const closeBtn = document.createElement('button');
                 closeBtn.textContent = 'Close';
                 closeBtn.style.marginLeft = '10px';
-                closeBtn.onclick = () => { 
-                    controls.style.display = 'none'; 
-                    deselectElement(); 
+                closeBtn.onclick = () => {
+                    controls.style.display = 'none';
+                    deselectElement();
                 };
                 controls.appendChild(label);
                 controls.appendChild(propertySelect);
@@ -364,8 +364,8 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onEdit
             }
             function makeEditable(element) {
                 if (!element) return;
-                if (element.isContentEditable || 
-                    element.tagName === 'INPUT' || 
+                if (element.isContentEditable ||
+                    element.tagName === 'INPUT' ||
                     element.tagName === 'TEXTAREA' ||
                     element.tagName === 'SELECT') {
                     return;
@@ -424,14 +424,14 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onEdit
                 if (!rgb) return '#000000';
                 if (rgb.startsWith('#')) return rgb;
                 if (rgb.startsWith('rgba')) {
-                    const parts = rgb.match(/^rgba\\s*\\(\\s*(\\d+)\\s*,\\s*(\\d+)\\s*,\\s*(\\d+)\\s*,\\s*([\\d.]+)\\s*\\)$/);
+                    const parts = rgb.match(/^rgba\s*\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*,\s*([\d.]+)\s*\)$/);
                     if (!parts) return '#000000';
                     const r = parseInt(parts[1]).toString(16).padStart(2, '0');
                     const g = parseInt(parts[2]).toString(16).padStart(2, '0');
                     const b = parseInt(parts[3]).toString(16).padStart(2, '0');
                     return '#' + r + g + b;
                 }
-                const parts = rgb.match(/^rgb\\s*\\(\\s*(\\d+)\\s*,\\s*(\\d+)\\s*,\\s*(\\d+)\\s*\\)$/);
+                const parts = rgb.match(/^rgb\s*\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)$/);
                 if (!parts) return '#000000';
                 const r = parseInt(parts[1]).toString(16).padStart(2, '0');
                 const g = parseInt(parts[2]).toString(16).padStart(2, '0');
@@ -506,22 +506,18 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onEdit
             }
         })();
         </script>`;
-    
+        */
         const scriptToInject = `<script>
-            function sendHeight() { 
+            function sendHeight() {
                 var newHeight = document.documentElement.scrollHeight;
                 parent.postMessage({ blockId: '${id}', height: newHeight }, '*');
             }
             window.addEventListener('load', sendHeight);
             var observer = new MutationObserver(sendHeight);
-            observer.observe(document.body, {childList:true, subtree:true, characterData:true});
+            observer.observe(document.body, { childList: true, subtree: true, characterData: true });
             sendHeight();
         </script>`;
-    
-        const editorScripts = isEditing ? 
-            interactiveEditorScript + scriptToInject : 
-            scriptToInject;
-    
+        const editorScripts = scriptToInject;
         let srcDoc = '';
         if (/<html[\s>]/i.test(trimmedCode)) {
             if (/<\/body>/i.test(trimmedCode)) {
@@ -533,7 +529,7 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onEdit
             srcDoc = `<!DOCTYPE html><html><head><style>html,body { margin:0; padding:0; }</style></head><body><div id="content">${code}</div>${editorScripts}</body></html>`;
         }
         return srcDoc;
-    }, []);	
+    }, []);
 
     useEffect(() => {
         function handleIframeMessage(event) {
@@ -1015,7 +1011,7 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onEdit
                                                                         <button className="small-icon" onClick={toggleEdit} title={isEditing ? 'Preview' : 'Edit'} type="button">{isEditing ? <FaEye /> : <FaEdit />}</button>
                                                                     )}
                                                                 </div>
-                                                                {isEditing && type === BLOCK_TYPES.CODE && <p className="text16 faded-text">Click on elements to edit them (may be glitchy)</p>}
+                                                                {/*{isEditing && type === BLOCK_TYPES.CODE && <p className="text16 faded-text">Click on elements to edit them (may be glitchy)</p>}*/}
                                                                 <div style={{ position: 'relative' }}>
                                                                 {type === BLOCK_TYPES.MEDIA && (
                                                                     <div style={{ position: 'relative', display: 'flex', gap: '10px' }}>

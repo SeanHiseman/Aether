@@ -4,3 +4,12 @@ This is because users view and interact with each other through their feeds, not
 The style a variable is written in distinguishes its origin. Variables defined in the code are written with camelCase e.g. userId, whereas variables originating from the database use underscores e.g. user_id. 
 
 Run the commands in dbStructure.sql to create a local version of the MySQL database
+
+Currently paused features:
+Ask chatbot
+Ask fact checking button
+Deep feeds
+Multi voting
+Clicking to edit dynamic content
+Connections
+Messaging

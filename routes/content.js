@@ -100,7 +100,7 @@ router.get('/channel_posts', async (req, res) => {
 router.post('/content_vote', authenticateCheck, async (req, res) => {
     try {
         const { postId, feedId, voteType } = req.body; //feedId refers to the user who is voting
-        const voteLimit = 10;
+        const voteLimit = 1; //Changed from 10
         const content = await Posts.findByPk(postId);
         if (!content) {
             return res.status(404).json({ success: false, message: 'Content not found' });
