@@ -1,5 +1,5 @@
 import axios from 'axios';
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import { FaEye, FaEyeSlash } from 'react-icons/fa';
 
@@ -13,6 +13,8 @@ const Account = () => {
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const { user } = useOutletContext();
+    const isEmailDisabled = !email || !confirmEmail || email !== confirmEmail;
+	const isPasswordDisabled = !password || !confirmPassword || password !== confirmPassword;
     const maxEmailLength = 500;
     const maxPasswordLength = 120;
 
@@ -124,16 +126,13 @@ const Account = () => {
                             {showConfirmPassword ? <FaEyeSlash /> : <FaEye />}
                         </button>
                     </div>
-                    <input 
-                        className={
-							'submit' +
-							((!password || !confirmPassword || password !== confirmPassword) ? ' disabled' : '')
-						}
-                        disabled={!password || !confirmPassword || password !== confirmPassword}
-                        title={passwordMessage}
-                        type="submit" 
-                        value="Change password" 
-                    />
+					<input 
+						className={'submit' + (isPasswordDisabled ? ' disabled' : '')}
+						disabled={isPasswordDisabled}
+						title={passwordMessage}
+						type="submit" 
+						value="Change password" 
+					/>
                 </form>
             </div>
             <div className="display-area">
@@ -193,16 +192,13 @@ const Account = () => {
                             }
                         }} 
                     />
-                    <input 
-                        className={
-							'submit' +
-							((!email || !confirmEmail || email !== confirmEmail) ? ' disabled' : '')
-						}
-                        disabled={!email || !confirmEmail || email !== confirmEmail}
-                        title={emailMessage}
-                        type="submit" 
-                        value="Change email" 
-                    />
+					<input 
+						className={'submit' + (isEmailDisabled ? ' disabled' : '')}
+						disabled={isEmailDisabled}
+						title={emailMessage}
+						type="submit" 
+						value="Change email" 
+					/>
                 </form>
             </div>
         </div>

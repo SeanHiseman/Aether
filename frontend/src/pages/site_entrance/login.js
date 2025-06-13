@@ -13,6 +13,7 @@ const Login = () => {
     const { refreshTheme } = useContext(ThemeContext);
     const [showPassword, setShowPassword] = useState(false);
     const navigate = useNavigate();
+    const isDisabled = !password || !username;
 
     const handleLogin = async (event) => {
         event.preventDefault();
@@ -93,7 +94,12 @@ const Login = () => {
                             {showPassword ? <FaEyeSlash /> : <FaEye />}
                         </button>
                     </div>
-                    <input className="submit" type="submit" value="Login" />
+                    <input
+                        className={`submit${isDisabled ? ' disabled' : ''}`}
+                        disabled={isDisabled}
+                        type="submit"
+                        value="Login"
+                    />
                     <Link to="/forgot-password">
                         <p className="text16">Forgot password?</p>
                     </Link>

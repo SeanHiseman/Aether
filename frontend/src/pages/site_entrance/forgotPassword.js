@@ -6,6 +6,7 @@ import '../../css/basicStyles.css';
 
 const ForgotPassword = () => {
 	const [email, setEmail] = useState('');
+	const isDisabled = !email;
 	const [message, setMessage] = useState('');
 
 	const handleSubmit = async event => {
@@ -32,7 +33,12 @@ const ForgotPassword = () => {
 						value={email}
 						onChange={e => setEmail(e.target.value)}
 					/>
-					<input className="submit" type="submit" value="Send Reset Link" />
+					<input
+						className={`submit${isDisabled ? ' disabled' : ''}`}
+						disabled={isDisabled}
+						type="submit"
+						value="Send Reset Link"
+					/>
 				</form>
 				<Link to="/login">
 					<p className="text16">Back to Login</p>

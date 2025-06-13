@@ -14,6 +14,7 @@ const Join = () => {
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [username, setUsername] = useState('');
     const navigate = useNavigate();
+    const isDisabled = !confirmPassword || !email || !password || !username || !validateEmail(email) || password !== confirmPassword || Boolean(errorMessage);
 
     const validateEmail = (email) => {
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -160,7 +161,12 @@ const Join = () => {
                             {showConfirmPassword ? <FaEyeSlash /> : <FaEye />}
                         </button>
                     </div>
-                    <input className="submit" type="submit" value="Join" />
+                    <input
+                        className={`submit${isDisabled ? ' disabled' : ''}`}
+                        disabled={isDisabled}
+                        type="submit"
+                        value="Join"
+                    />
                 </form>
             </div>
         </div>
