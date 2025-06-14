@@ -42,7 +42,7 @@ const checkStorageLimit = async (req, res, next) => {
 
 router.get('/channel_posts', async (req, res) => {
     try {
-        const { channelId, feedId, isSingle, limit, offset, postId } = req.query;
+        const { channelId, feedId, isMain, isSingle, limit, offset, postId } = req.query;
         const includeOptions = [{
             model: Feeds,
             as: 'poster',
@@ -76,7 +76,7 @@ router.get('/channel_posts', async (req, res) => {
             const whereChannel = {
                 feed_id: feedId,
                 parent_id: null,
-                ...(channelId ? { channel_id: channelId } : {}),
+                ...((isMain !== 'true' && channelId) ? { channel_id: channelId } : {})
             };
             const posts = await Posts.findAll({
                 attributes: postAttributes,

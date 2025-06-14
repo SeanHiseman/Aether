@@ -9,8 +9,9 @@ const PostChannel = ({ channelId, channelName, feed, isDraft, isGroup, onEditCli
     const feedId = feed.feed_id;
     const loaderRef = useRef(null);
     const queryClient = useQueryClient();
-    const { post_id } = useParams();
+    const { channel_name, post_id } = useParams();
     const { viewer } = useContext(AuthContext);
+    const isMain = channel_name === 'Main';
     const PAGE_SIZE = 10;
 
     const getSinglePost = async () => {
@@ -19,7 +20,7 @@ const PostChannel = ({ channelId, channelName, feed, isDraft, isGroup, onEditCli
     };
 
     const getPosts = async ({ pageParam = 0 }) => {
-        const response = await axios.get('/api/channel_posts', { params: { channelId, feedId, isSingle: false, limit: 10, offset: pageParam }});
+        const response = await axios.get('/api/channel_posts', { params: { channelId, feedId, isMain, isSingle: false, limit: 10, offset: pageParam }});
         return response.data;
     };
     
