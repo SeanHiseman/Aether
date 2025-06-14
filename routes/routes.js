@@ -1,11 +1,7 @@
-import authenticateCheck from '../functions/checks/authenticateCheck.js';
-import calculatePoints from '../functions/postPoints.js';
 import ConnectCheck from '../functions/checks/connectCheck.js';
 import FollowerCheck from '../functions/checks/followerCheck.js';
-import { hybridRecommendations } from '../functions/recommendation/hybrid.js';
 import sequelize from '../databaseSetup.js';
-import sortPostsByWeightedRatio from '../functions/postSorting.js';
-import { Connections, ConnectRequests, Feeds, FeedChannels, Followers, FollowRequests, Posts, PostNotes, PostVotes } from '../models/relationships.js'; 
+import { ConnectRequests, Feeds, FeedChannels, FollowRequests, PostNotes, PostVotes } from '../models/relationships.js'; 
 import { Users } from '../models/users.js'; 
 import { Op } from 'sequelize';
 import { Router } from 'express';
@@ -13,85 +9,7 @@ import { Router } from 'express';
 const router = Router();
 const feedAttributes = ['feed_id', 'parent_id', 'feed_name', 'description', 'feed_photo', 'follower_count', 'created_at', 'updated_at', 'type', 'is_group', 'feed_owner', 'is_locked'];
 const notesAttributes = ['note_id', 'note_content', 'created_at', 'updated_at', 'is_misinfo'];
-const postAttributes = ['post_id', 'parent_id', 'feed_id', 'channel_id', 'title', 'content', 'replies', 'views', 'upvotes', 'downvotes', 'created_at', 'updated_at', 'poster_id', 'points'];
 const posterAttributes = ['feed_id', 'feed_name', 'description', 'feed_photo', 'type', 'is_group'];
-
-router.get('/connection_posts/:feedId', authenticateCheck, async (req, res)=> {
-    try {
-        const feedId = req.params.feedId;
-        const connections = await Connections.findAll({
-            where: {[Op.or]: [
-                { feed1_id: feedId },
-                { feed2_id: feedId }
-            ]},
-            attributes: ['feed1_id', 'feed2_id']
-        });
-        //Get connection IDs, since the feed might be in either column
-        const connectionIds = connections.reduce((acc, connection) => {
-            if (connection.feed1_id !== feedId && !acc.includes(connection.feed1_id)) acc.push(connection.feed1_id);
-            if (connection.feed2_id !== feedId && !acc.includes(connection.feed2_id)) acc.push(connection.feed2_id);
-            return acc;
-        }, []);
-        const posts = await Posts.findAll({
-            where: { poster_id: { [Op.in]: connectionIds }},
-            include: [{
-                model: Feeds,
-                as: 'poster',
-                attributes: feedAttributes,
-            }, {
-                model: PostVotes,
-                as: 'postVotes',
-                attributes: ['upvotes', 'downvotes'],
-                required: false
-            }, {
-                model: PostNotes,
-                as: 'note',
-                attributes: notesAttributes,
-                required: false
-            }],
-            attributes: postAttributes,
-            //Posts sorted chronilogically
-            order: [['created_at', 'DESC']]
-        });
-        res.json(posts);
-    } catch (error) {
-        res.status(500).json({ success: false });   
-    }
-});
-
-router.get('/following_posts/:feedId', authenticateCheck, async (req, res) => {
-    try {
-        const feedId = req.params.feedId;
-        const followedFeeds = await Followers.findAll({
-            where: { follower_id: feedId },
-            include: [{
-                model: Feeds,
-                attributes: feedAttributes,
-            }],
-            attributes: [],
-        });
-        const feedIds = followedFeeds.map((f) => f.feed.feed_id);
-        const followedPosts = await Posts.findAll({
-            where: { feed_id: { [Op.in]: feedIds } },
-            include: [{
-                model: PostVotes,
-                as: 'postVotes',
-                attributes: ['upvotes', 'downvotes'],
-                required: false
-            }, {
-                model: PostNotes,
-                as: 'note',
-                attributes: notesAttributes,
-                required: false
-            }],
-            attributes: postAttributes,
-        });
-        //const sortedPosts = await sortPostsByWeightedRatio(posts, userId);
-        res.json(followedPosts);
-    } catch (error) {
-        res.status(500).json({ success: false });
-    }
-});
 
 //Get recommendation preference
 router.get('/get_filter_preference', async (req, res) => {
@@ -114,23 +32,6 @@ router.get('/get_time_preference', async (req, res) => {
             attributes: ['time_preference'],
         });
         res.json({ preference: user.time_preference });
-    } catch (error) {
-        res.status(500).json({ success: false });
-    }
-});
-
-//Accesses recommendation algorithm to provide content
-router.get('/recommended_posts', authenticateCheck, async (req, res) => {
-    try {
-        const userId = req.session.user_id;
-        const user = await Users.findByPk(userId);
-        const recommendations = await hybridRecommendations(user);
-        const sortedPosts = await sortPostsByWeightedRatio(recommendations, userId);
-        //Logs scores
-        //sortedPosts.forEach((post) => {
-            //console.log(post.title, post.score);
-        //});
-        res.status(200).json(sortedPosts);
     } catch (error) {
         res.status(500).json({ success: false });
     }

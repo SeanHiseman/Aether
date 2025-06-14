@@ -34,6 +34,14 @@ body, html {
 .button.large {
     font-size: var(--small-text);
 }
+.clickable {
+    border-radius: var(--small-margin);
+    cursor: pointer;
+    padding: var(--small-margin);
+}
+.clickable:hover {
+    background-color: var(--light);
+}
 .dark-text {
     color: var(--darkest);
 }

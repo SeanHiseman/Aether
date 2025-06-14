@@ -3,7 +3,7 @@ import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-
 import { FaChevronDown, FaChevronUp } from 'react-icons/fa';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
-import FeedItem from './FeedItem';
+import FeedItem from './feedItem';
 
 const DeepFeedItem = ({ deepFeed, onFeedAdded, parentDeepFeedId = null, showHeader }) => {
     const [isExpanded, setIsExpanded] = useState(false);

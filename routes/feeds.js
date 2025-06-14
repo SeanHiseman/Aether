@@ -358,26 +358,30 @@ router.get('/deep_feed_posts', authenticateCheck, async (req, res) => {
 				attributes: ['feed_id']
 			});
 			if (followedFeeds.length === 0) {
-				return res.status(200).json({ success: true, posts: [], deepFeedName: 'Following' });
+				return res.status(200).json({ success: true, posts: [] });
 			}
 			const feedIds = followedFeeds.map(follow => follow.feed_id);
 			const posts = await Posts.findAll({
 				where: {
-					feed_id: { [Op.in]: feedIds },
+					feed_id:   { [Op.in]: feedIds },
 					poster_id: { [Op.ne]: followerId },
 					parent_id: null
 				},
-				include: [{
-					model: Feeds,
-					as: 'poster',
-					attributes: feedAttributes
-				}, {
-					model: FeedChannels,
-					as: 'parentChannel',
-					attributes: ['channel_id', 'channel_name', 'feed_id']
-				}],
+				include: [{ 
+                    model: FeedChannels,
+                    as: 'parentChannel',
+                    attributes: ['channel_id','channel_name','feed_id'],
+                    include: [{
+                            model: Feeds,
+                            attributes: feedAttributes
+                        }]
+                },{
+                    model: Feeds,
+                    as: 'poster',
+                    attributes: feedAttributes
+                }],
 				order: [['created_at', 'DESC']],
-				limit: parseInt(limit),
+				limit:  parseInt(limit),
 				offset: parseInt(offset)
 			});
 			return res.status(200).json({ success: true, posts });
@@ -386,13 +390,12 @@ router.get('/deep_feed_posts', authenticateCheck, async (req, res) => {
 			if (!deepFeed) {
 				return res.status(404).json({ error: 'Deep feed not found' });
 			}
-            //Recursively finds all posts in nested deep feeds (may need optimisation)
-			const getAllFeedIdsInDeepFeed = async (deepFeedId, visited = new Set()) => { 
+			const getAllFeedIdsInDeepFeed = async (deepFeedId, visited = new Set()) => {
 				if (visited.has(deepFeedId)) return [];
 				visited.add(deepFeedId);
 				const contents = await DeepFeedContent.findAll({
 					where: { deep_feed_id: deepFeedId },
-					attributes: ['feed_id', 'nested_deep_feed_id']
+					attributes: ['feed_id','nested_deep_feed_id']
 				});
 				const feedIds = [];
 				for (const content of contents) {
@@ -400,8 +403,8 @@ router.get('/deep_feed_posts', authenticateCheck, async (req, res) => {
 						feedIds.push(content.feed_id);
 					}
 					if (content.nested_deep_feed_id) {
-						const nestedFeedIds = await getAllFeedIdsInDeepFeed(content.nested_deep_feed_id, visited);
-						feedIds.push(...nestedFeedIds);
+						const nested = await getAllFeedIdsInDeepFeed(content.nested_deep_feed_id, visited);
+						feedIds.push(...nested);
 					}
 				}
 				return feedIds;
@@ -412,20 +415,24 @@ router.get('/deep_feed_posts', authenticateCheck, async (req, res) => {
 			}
 			const posts = await Posts.findAll({
 				where: {
-					feed_id: { [Op.in]: allFeedIds },
+					feed_id:   { [Op.in]: allFeedIds },
 					parent_id: null
 				},
 				include: [{
-					model: Feeds,
-					as: 'poster',
-					attributes: feedAttributes
-				}, {
-					model: FeedChannels,
-					as: 'parentChannel',
-					attributes: ['channel_id', 'channel_name', 'feed_id']
-				}],
+                    model: FeedChannels,
+                    as: 'parentChannel',
+                    attributes: ['channel_id','channel_name','feed_id'],
+                    include: [{
+                            model: Feeds,
+                            attributes: feedAttributes
+                        }]
+                },{
+                    model: Feeds,
+                    as: 'poster',
+                    attributes: feedAttributes
+                }],
 				order: [['created_at', 'DESC']],
-				limit: parseInt(limit),
+				limit:  parseInt(limit),
 				offset: parseInt(offset)
 			});
 			return res.status(200).json({ success: true, deepFeed, posts });
@@ -433,7 +440,7 @@ router.get('/deep_feed_posts', authenticateCheck, async (req, res) => {
 	} catch (error) {
 		res.status(500).json({ success: false, error: error.message });
 	}
-}); 
+});
 
 router.delete('/delete_deep_feed', authenticateCheck, async (req, res) => {
     let transaction;

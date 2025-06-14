@@ -41,60 +41,64 @@ const checkStorageLimit = async (req, res, next) => {
 };
 
 router.get('/channel_posts', async (req, res) => {
-    try {
-        const { channelId, feedId, isMain, isSingle, limit, offset, postId } = req.query;
-        const includeOptions = [{
-            model: Feeds,
-            as: 'poster',
-            attributes: feedAttributes,
-        }, {
-            model: PostVotes,
-            as: 'votes',
-            attributes: ['upvotes', 'downvotes'],
-            required: false
-        }, {
+	try {
+		const { channelId, feedId, isMain, isSingle, limit, offset, postId } = req.query;
+		const includeOptions = [{
             model: PostNotes,
             as: 'note',
             attributes: noteAttributes,
             required: false
-        }, {
+        },{
             model: FeedChannels,
             as: 'parentChannel',
-            attributes: ['channel_id', 'channel_name'],
+            attributes: ['channel_id','channel_name'],
+            required: false,
+            include: [{
+                    model: Feeds,
+                    attributes: feedAttributes
+                }]
+        },{
+            model: Feeds,
+            as: 'poster',
+            attributes: feedAttributes
+        },{
+            model: PostVotes,
+            as: 'votes',
+            attributes: ['upvotes','downvotes'],
             required: false
         }];
-        if (isSingle === 'true') {
-            const post = await Posts.findOne({
-                attributes: postAttributes,
-                include: includeOptions,
-                where: { feed_id: feedId, post_id: postId, ...(channelId ? { channel_id: channelId } : {}) },
-            });
-            if (!post) return res.status(404).json({ success: false });
-            return res.status(200).json({ success: true, post });
-        } 
-        else {
-            const whereChannel = {
-                feed_id: feedId,
-                parent_id: null,
-                ...((isMain !== 'true' && channelId) ? { channel_id: channelId } : {})
-            };
-            const posts = await Posts.findAll({
-                attributes: postAttributes,
-                include: includeOptions,
-                limit: limit ? parseInt(limit, 10) : 10,
-                offset: offset ? parseInt(offset, 10) : 0,
-                order: [['created_at', 'DESC']],
-                where: whereChannel,
-            });
-            const finalResults = posts.map((post) => ({ ...post.dataValues }));
-            //const sortedPosts = post_type === 'group' 
-            //    ? sortPostsByWeightedRatio(finalResults, userId)
-            //    : finalResults.sort((a, b) => b.created_at - a.created_at);
-            return res.status(200).json(finalResults);
-        }
-    } catch (error) {
-        res.status(500).json({ success: false });
-    }
+		if (isSingle === 'true') {
+			const post = await Posts.findOne({
+				attributes: postAttributes,
+				include: includeOptions,
+				where: {
+					feed_id: feedId,
+					post_id: postId,
+					...(channelId ? { channel_id: channelId } : {})
+				},
+			});
+			if (!post) return res.status(404).json({ success: false });
+			return res.status(200).json({ success: true, post });
+		} else {
+			const whereChannel = {
+				feed_id: feedId,
+				parent_id: null,
+				...((isMain !== 'true' && channelId) ? { channel_id: channelId } : {})
+			};
+			const posts = await Posts.findAll({
+				attributes: postAttributes,
+				include: includeOptions,
+				limit:  limit    ? parseInt(limit,10)  : 10,
+				offset: offset  ? parseInt(offset,10) : 0,
+				order:  [['created_at','DESC']],
+				where:  whereChannel,
+			});
+			const finalResults = posts.map((post) => ({ ...post.dataValues }));
+			return res.status(200).json(finalResults);
+		}
+	} catch (error) {
+		res.status(500).json({ success: false });
+	}
 });
 
 router.post('/content_vote', authenticateCheck, async (req, res) => {
