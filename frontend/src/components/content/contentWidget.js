@@ -285,11 +285,11 @@ const ContentWidget = ({ canRemove, feed, isDraft, isGroup, onEditClick, onPostR
               {showReplies ? <FaCommentSlash /> : <FaComments />}
               <p className="text16" id={`reply-count-${post.post_id}`}>{post.replies}</p>
             </button>
-            {showReplies && post.replies > 0 && (
+            {/*{showReplies && post.replies > 0 && (
               <button className="large-icon" onClick={toggleViewMode} title={treeViewMode ? "Switch to List View" : "Switch to Tree View"}>
                 {treeViewMode ? <FaListUl /> : <FaTree />}
               </button>
-            )}
+            )}*/}
             {isAuthenticated && !feed.is_locked && (
               <button className="large-icon" onClick={() => onReplyClick(post)} disabled={readOnly} title="Reply">
                 <FaReply />

@@ -418,7 +418,7 @@ INSERT INTO `users` (
     'cf84729e-e00a-4ee5-a8d5-d8247e186b49',
     'Aether',
     'placeholder',
-    'bob@mail.com',
+    'thing@mail.com',
     CURRENT_TIMESTAMP(3),
     CURRENT_TIMESTAMP(3)
 );
@@ -430,20 +430,6 @@ INSERT INTO `feeds` (
     `created_at`, 
     `updated_at`
 ) VALUES 
-(
-    'af685571-fef0-4896-83a3-2f26786cb967',
-    'Development',
-    'cf84729e-e00a-4ee5-a8d5-d8247e186b49', 
-    CURRENT_TIMESTAMP(3),
-    CURRENT_TIMESTAMP(3)
-),
-(
-    '35438122-a002-4a92-a3b4-24aa9d5b73b6',
-    'Feedback',
-    'cf84729e-e00a-4ee5-a8d5-d8247e186b49', 
-    CURRENT_TIMESTAMP(3),
-    CURRENT_TIMESTAMP(3)
-),
 (
     'ce95ea4e-5b3e-4661-aaa6-e0830d2d68d2',
     'Welcome',
@@ -476,22 +462,4 @@ INSERT INTO `followers` (
     1, 
     CURRENT_TIMESTAMP(3),
     CURRENT_TIMESTAMP(3)
-),
-(
-    UUID(), 
-    '50c3bf90-53a0-470e-a4ac-3cb3c7b4f791', 
-    'af685571-fef0-4896-83a3-2f26786cb967', 
-    1, 
-    1, 
-    CURRENT_TIMESTAMP(3),
-    CURRENT_TIMESTAMP(3)
-),
-(
-    UUID(), 
-    '50c3bf90-53a0-470e-a4ac-3cb3c7b4f791', 
-    '35438122-a002-4a92-a3b4-24aa9d5b73b6', 
-    1, 
-    1, 
-    CURRENT_TIMESTAMP(3),
-    CURRENT_TIMESTAMP(3)
-);
+)

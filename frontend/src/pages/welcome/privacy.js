@@ -1,4 +1,3 @@
-import React from 'react';
 import { Link } from 'react-router-dom';
 import '../../css/welcome.css';
 
@@ -21,9 +20,7 @@ const Privacy = () => {
                 <div className="left-aligned-text">
                     <p className="welcome-box-header">Privacy</p>
                     <p>You are not the product. We do not sell or monetise your personal data</p>
-                    <div className="spacer20px"/>
                     <p>Passwords and private messages are encrypted</p>
-                    <div className="spacer20px"/>
                     <p>Algorithms work better when personalised, you are in control of how</p>
                 </div>
             </div>

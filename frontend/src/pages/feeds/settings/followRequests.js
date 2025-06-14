@@ -1,6 +1,6 @@
 import axios from 'axios';
 import { FaPlusCircle, FaMinusCircle } from 'react-icons/fa';
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Link, useOutletContext } from 'react-router-dom';
 
 const FollowRequests = () => {

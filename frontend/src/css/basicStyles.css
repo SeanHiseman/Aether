@@ -78,14 +78,14 @@ p, .channel-link {
     white-space: normal;
     word-break: break-word;
 }
-p {
+p, h1, h2, h3, h4, h5, h6 {
     margin: var(--medium-margin);
 }
 .small-icon {
     font-size: var(--small-text)
 }
 .spinner {
-  animation: spin 1s linear infinite;
+    animation: spin 1s linear infinite;
 }
 /*Numbers refer to max size pixels, may need changing for consistency*/
 .text16 {

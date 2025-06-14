@@ -1,5 +1,3 @@
-
-import React from 'react';
 import { Link } from 'react-router-dom';
 import '../../css/welcome.css';
 
@@ -24,9 +22,9 @@ const WelcomeHome = () => {
                         <div className="welcome-box">
                             <div className="left-aligned-text">
                                 <p className="welcome-box-header">About Aether</p>
-                                <p>Dynamic content that adapts to you</p>
-                                <p>Full user control over experience</p>
-                                <p>No ads, complete privacy protection</p>
+                                <p>The world's only platform for sharing dynamic content</p>
+                                <p>Control your content with custom algorithms and deep feeds</p>
+                                <p>Built for usefulness, not attention</p>
                             </div>
                         </div>
                     </Link>
@@ -34,7 +32,7 @@ const WelcomeHome = () => {
                         <div className="welcome-box">
                             <div className="left-aligned-text">
                                 <p className="welcome-box-header">Content</p>
-                                <p>Dynamic, interactive posts like mini-apps</p>
+                                <p>Dynamic, interactive posts</p>
                                 <p>Infinitely customizable experiences</p>
                                 <p>Generate or build content yourself</p>
                             </div>
@@ -46,7 +44,7 @@ const WelcomeHome = () => {
                                 <p className="welcome-box-header">Feeds</p>
                                 <p>Create and follow feeds for any topic</p>
                                 <p>Organized into channels for posts and chats</p>
-                                <p>Deep Feeds mix and sort content intelligently</p>
+                                <p>Deep feeds mix and sort content intelligently</p>
                             </div>
                         </div>
                     </Link>
@@ -85,14 +83,14 @@ const WelcomeHome = () => {
             <footer className="footer">
                 <div className="footer-content">
                     <div className="footer-section">
-                        <h3>Business</h3>
+                        <h3 style={{ marginLeft: 0 }}>Business</h3>
                         <div className="footer-links">
                             <Link to="/welcome/team">Team</Link>
                             <Link to="/welcome/support">Support</Link>
                         </div>
                     </div>
                     <div className="footer-section">
-                        <h3>Legal</h3>
+                        <h3 style={{ marginLeft: 0 }}>Legal</h3>
                         <div className="footer-links">
                             <Link to="/welcome/terms">Terms of Service</Link>
                             <Link to="/welcome/licenses">Licenses</Link>
@@ -100,7 +98,7 @@ const WelcomeHome = () => {
                         </div>
                     </div>
                     <div className="footer-section">
-                        <h3>Connect</h3>
+                        <h3 style={{ marginLeft: 0 }}>Connect</h3>
                         <div className="footer-links">
                             <Link to="/welcome/contact">Contact</Link>
                         </div>

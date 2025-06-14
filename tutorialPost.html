@@ -1,0 +1,451 @@
+<html><head></head><body><div class="content-block text-block" data-blockid="29a624f5-81cb-47b1-8aac-9390f34649fa"><p>Posts can be made from text, media, or custom blocks. These blocks can be added with the buttons in the top right.</p><p>This is a text block. Immediately above are options for editing text.</p><p>The eye button toggles between edit and preview mode.</p></div><div class="content-block code-block" data-blockid="bd417fbd-7257-4a05-b336-23cf20ab1816" data-code="<!DOCTYPE html>
+ <html lang=&quot;en&quot;>
+ <head>
+ <meta charset=&quot;UTF-8&quot;>
+ <title>Interactive Tutorial: Dynamic Content</title>
+ <style>
+ 	:root {
+ 		--border: #3e3f41;
+ 		--darkest: #0f0f0f;
+ 		--dark: #232527;
+ 		--light: #737484;
+ 		--lightest: #dddddd;
+ 	}
+ 	* {
+ 		margin: 0;
+ 		padding: 0;
+ 		box-sizing: border-box;
+ 	}
+ 	body {
+ 		font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+ 		background: var(--darkest);
+ 		color: var(--lightest);
+ 		line-height: 1.6;
+ 		min-height: 100vh;
+ 	}
+ 	.container {
+ 		max-width: 800px;
+ 		margin: 0 auto;
+ 		padding: 40px 20px;
+ 	}
+ 	.hero {
+ 		text-align: center;
+ 		margin-bottom: 50px;
+ 	}
+ 	.hero h1 {
+ 		font-size: 2.5rem;
+ 		font-weight: 700;
+ 		margin-bottom: 16px;
+ 		color: var(--lightest);
+ 	}
+ 	.hero p {
+ 		font-size: 1.1rem;
+ 		color: var(--light);
+ 		margin-bottom: 8px;
+ 	}
+ 	.block {
+ 		background: var(--dark);
+ 		border: 1px solid var(--border);
+ 		border-radius: 8px;
+ 		padding: 24px;
+ 		margin-bottom: 24px;
+ 		transition: border-color 0.2s ease;
+ 	}
+ 	.block:hover {
+ 		border-color: var(--light);
+ 	}
+ 	.block h2 {
+ 		font-size: 1.3rem;
+ 		margin-bottom: 8px;
+ 		color: var(--lightest);
+ 	}
+ 	.block p {
+ 		color: var(--light);
+ 		margin-bottom: 20px;
+ 	}
+ 	.demo {
+ 		background: var(--darkest);
+ 		border: 1px solid var(--border);
+ 		border-radius: 6px;
+ 		padding: 20px;
+ 		text-align: center;
+ 	}
+ 	button {
+ 		background: var(--lightest);
+ 		color: var(--darkest);
+ 		border: none;
+ 		padding: 8px 16px;
+ 		border-radius: 4px;
+ 		font-size: 0.9rem;
+ 		font-weight: 500;
+ 		cursor: pointer;
+ 		margin: 4px;
+ 		transition: all 0.2s ease;
+ 	}
+ 	button:hover {
+ 		background: var(--light);
+ 		transform: translateY(-1px);
+ 	}
+ 	button:active {
+ 		transform: translateY(0);
+ 	}
+ 	input, select {
+ 		background: var(--dark);
+ 		border: 1px solid var(--border);
+ 		border-radius: 4px;
+ 		padding: 8px 12px;
+ 		color: var(--lightest);
+ 		font-size: 0.9rem;
+ 		margin: 4px;
+ 		transition: border-color 0.2s ease;
+ 	}
+ 	input:focus, select:focus {
+ 		outline: none;
+ 		border-color: var(--light);
+ 	}
+ 	input::placeholder {
+ 		color: var(--light);
+ 	}
+ 	.output {
+ 		margin: 16px 0;
+ 		padding: 12px;
+ 		background: var(--dark);
+ 		border-left: 3px solid var(--light);
+ 		border-radius: 0 4px 4px 0;
+ 		min-height: 20px;
+ 		font-family: 'Monaco', 'Menlo', monospace;
+ 		font-size: 0.9rem;
+ 	}
+ 	.color-grid {
+ 		display: grid;
+ 		grid-template-columns: repeat(auto-fit, minmax(60px, 1fr));
+ 		gap: 8px;
+ 		margin: 16px 0;
+ 	}
+ 	.color-box {
+ 		width: 60px;
+ 		height: 60px;
+ 		border-radius: 4px;
+ 		cursor: pointer;
+ 		border: 2px solid transparent;
+ 		transition: all 0.2s ease;
+ 	}
+ 	.color-box:hover {
+ 		border-color: var(--lightest);
+ 		transform: scale(1.05);
+ 	}
+ 	.progress-bar {
+ 		width: 100%;
+ 		height: 8px;
+ 		background: var(--border);
+ 		border-radius: 4px;
+ 		overflow: hidden;
+ 		margin: 16px 0;
+ 	}
+ 	.progress-fill {
+ 		height: 100%;
+ 		background: var(--lightest);
+ 		width: 0%;
+ 		transition: width 0.3s ease;
+ 	}
+ 	.card-grid {
+ 		display: grid;
+ 		grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+ 		gap: 12px;
+ 		margin: 16px 0;
+ 	}
+ 	.card {
+ 		background: var(--dark);
+ 		border: 1px solid var(--border);
+ 		border-radius: 6px;
+ 		padding: 16px;
+ 		text-align: center;
+ 		cursor: pointer;
+ 		transition: all 0.2s ease;
+ 	}
+ 	.card:hover {
+ 		border-color: var(--light);
+ 		transform: translateY(-2px);
+ 	}
+ 	.card.selected {
+ 		border-color: var(--lightest);
+ 		background: var(--border);
+ 	}
+ 	.number-display {
+ 		font-size: 2rem;
+ 		font-weight: bold;
+ 		margin: 16px 0;
+ 		font-family: 'Monaco', 'Menlo', monospace;
+ 	}
+ 	.tag {
+ 		display: inline-block;
+ 		background: var(--border);
+ 		color: var(--lightest);
+ 		padding: 4px 8px;
+ 		border-radius: 12px;
+ 		font-size: 0.8rem;
+ 		margin: 2px;
+ 		cursor: pointer;
+ 		transition: all 0.2s ease;
+ 	}
+ 	.tag:hover {
+ 		background: var(--light);
+ 	}
+ 	.tag.active {
+ 		background: var(--lightest);
+ 		color: var(--darkest);
+ 	}
+ </style>
+ </head>
+ <body>
+ <div class=&quot;container&quot;>
+ 	<div class=&quot;hero&quot;>
+ 		<h1>Custom Blocks</h1>
+ 		<p>Interactive content created by you and the Aether community</p>
+ 		<p>Build dynamic experiences with prompts or direct code input</p>
+ 	</div>
+ 	<div class=&quot;block&quot;>
+ 		<h2>1. Color Palette Generator</h2>
+ 		<p>Generate and preview color combinations</p>
+ 		<div class=&quot;demo&quot;>
+ 			<button id=&quot;generateColors&quot;>Generate Palette</button>
+ 			<div class=&quot;color-grid&quot; id=&quot;colorGrid&quot;></div>
+ 			<div class=&quot;output&quot; id=&quot;colorOutput&quot;>Click generate to create a color palette</div>
+ 		</div>
+ 	</div>
+ 	<div class=&quot;block&quot;>
+ 		<h2>2. Progress Tracker</h2>
+ 		<p>Interactive progress bar with dynamic updates</p>
+ 		<div class=&quot;demo&quot;>
+ 			<div class=&quot;progress-bar&quot;>
+ 				<div class=&quot;progress-fill&quot; id=&quot;progressFill&quot;></div>
+ 			</div>
+ 			<div class=&quot;number-display&quot; id=&quot;progressText&quot;>0%</div>
+ 			<button id=&quot;addProgress&quot;>+10%</button>
+ 			<button id=&quot;subtractProgress&quot;>-10%</button>
+ 			<button id=&quot;resetProgress&quot;>Reset</button>
+ 		</div>
+ 	</div>
+ 	<div class=&quot;block&quot;>
+ 		<h2>3. Card Memory Game</h2>
+ 		<p>Click cards to reveal patterns and test your memory</p>
+ 		<div class=&quot;demo&quot;>
+ 			<button id=&quot;shuffleCards&quot;>Shuffle Cards</button>
+ 			<div class=&quot;card-grid&quot; id=&quot;cardGrid&quot;></div>
+ 			<div class=&quot;output&quot; id=&quot;gameOutput&quot;>Click shuffle to start the game</div>
+ 		</div>
+ 	</div>
+ 	<div class=&quot;block&quot;>
+ 		<h2>4. Tag Filter System</h2>
+ 		<p>Interactive tag selection with filtering capabilities</p>
+ 		<div class=&quot;demo&quot;>
+ 			<div id=&quot;tagContainer&quot;></div>
+ 			<div class=&quot;output&quot; id=&quot;tagOutput&quot;>Select tags to see active filters</div>
+ 		</div>
+ 	</div>
+ 	<div class=&quot;block&quot;>
+ 		<h2>5. Data Transformer</h2>
+ 		<p>Input data and see it transformed in real-time</p>
+ 		<div class=&quot;demo&quot;>
+ 			<input type=&quot;text&quot; id=&quot;dataInput&quot; placeholder=&quot;Enter comma-separated values&quot;>
+ 			<select id=&quot;transformType&quot;>
+ 				<option value=&quot;reverse&quot;>Reverse</option>
+ 				<option value=&quot;sort&quot;>Sort</option>
+ 				<option value=&quot;unique&quot;>Remove Duplicates</option>
+ 				<option value=&quot;count&quot;>Count Items</option>
+ 			</select>
+ 			<div class=&quot;output&quot; id=&quot;dataOutput&quot;>Enter some data to see transformations</div>
+ 		</div>
+ 	</div>
+ 	<div class=&quot;block&quot;>
+ 		<h2>6. Random Quote Generator</h2>
+ 		<p>Generate inspirational quotes with categories</p>
+ 		<div class=&quot;demo&quot;>
+ 			<select id=&quot;quoteCategory&quot;>
+ 				<option value=&quot;motivation&quot;>Motivation</option>
+ 				<option value=&quot;creativity&quot;>Creativity</option>
+ 				<option value=&quot;success&quot;>Success</option>
+ 				<option value=&quot;wisdom&quot;>Wisdom</option>
+ 			</select>
+ 			<button id=&quot;generateQuote&quot;>Generate Quote</button>
+ 			<div class=&quot;output&quot; id=&quot;quoteOutput&quot;>Select a category and generate a quote</div>
+ 		</div>
+ 	</div>
+ </div>
+ <script>
+ 	const generateColorsBtn = document.getElementById('generateColors');
+ 	const colorGrid = document.getElementById('colorGrid');
+ 	const colorOutput = document.getElementById('colorOutput');
+ 	generateColorsBtn.addEventListener('click', () => {
+ 		const colors = [];
+ 		colorGrid.innerHTML = '';
+ 		for (let i = 0; i < 6; i++) {
+ 			const hue = Math.floor(Math.random() * 360);
+ 			const saturation = Math.floor(Math.random() * 30) + 70;
+ 			const lightness = Math.floor(Math.random() * 30) + 40;
+ 			const color = `hsl(${hue}, ${saturation}%, ${lightness}%)`;
+ 			colors.push(color);
+ 			
+ 			const colorBox = document.createElement('div');
+ 			colorBox.className = 'color-box';
+ 			colorBox.style.backgroundColor = color;
+ 			colorBox.addEventListener('click', () => {
+ 				navigator.clipboard.writeText(color);
+ 				colorOutput.textContent = `Copied: ${color}`;
+ 			});
+ 			colorGrid.appendChild(colorBox);
+ 		}
+ 		colorOutput.textContent = 'Click any color to copy its value';
+ 	});
+ 	let progress = 0;
+ 	const progressFill = document.getElementById('progressFill');
+ 	const progressText = document.getElementById('progressText');
+ 	const addProgressBtn = document.getElementById('addProgress');
+ 	const subtractProgressBtn = document.getElementById('subtractProgress');
+ 	const resetProgressBtn = document.getElementById('resetProgress');
+ 	function updateProgress() {
+ 		progress = Math.max(0, Math.min(100, progress));
+ 		progressFill.style.width = progress + '%';
+ 		progressText.textContent = progress + '%';
+ 	}
+ 	addProgressBtn.addEventListener('click', () => {
+ 		progress += 10;
+ 		updateProgress();
+ 	});
+ 	subtractProgressBtn.addEventListener('click', () => {
+ 		progress -= 10;
+ 		updateProgress();
+ 	});
+ 	resetProgressBtn.addEventListener('click', () => {
+ 		progress = 0;
+ 		updateProgress();
+ 	});
+ 	const shuffleCardsBtn = document.getElementById('shuffleCards');
+ 	const cardGrid = document.getElementById('cardGrid');
+ 	const gameOutput = document.getElementById('gameOutput');
+ 	let selectedCards = [];
+ 	let cardValues = [];
+ 	shuffleCardsBtn.addEventListener('click', () => {
+ 		cardGrid.innerHTML = '';
+ 		selectedCards = [];
+ 		cardValues = ['A', 'B', 'C', 'D', 'A', 'B', 'C', 'D'];
+ 		cardValues.sort(() => Math.random() - 0.5);
+ 		cardValues.forEach((value, index) => {
+ 			const card = document.createElement('div');
+ 			card.className = 'card';
+ 			card.textContent = '?';
+ 			card.dataset.value = value;
+ 			card.dataset.index = index;
+ 			card.addEventListener('click', () => {
+ 				if (card.classList.contains('selected') || selectedCards.length >= 2) return;
+ 				card.textContent = value;
+ 				card.classList.add('selected');
+ 				selectedCards.push(card);
+ 				if (selectedCards.length === 2) {
+ 					setTimeout(() => {
+ 						if (selectedCards[0].dataset.value === selectedCards[1].dataset.value) {
+ 							gameOutput.textContent = 'Match found! 🎉';
+ 						} else {
+ 							gameOutput.textContent = 'No match, try again';
+ 							selectedCards[0].textContent = '?';
+ 							selectedCards[1].textContent = '?';
+ 							selectedCards[0].classList.remove('selected');
+ 							selectedCards[1].classList.remove('selected');
+ 						}
+ 						selectedCards = [];
+ 					}, 1000);
+ 				}
+ 			});
+ 			cardGrid.appendChild(card);
+ 		});
+ 		gameOutput.textContent = 'Find matching pairs by clicking cards';
+ 	});
+ 	const tagContainer = document.getElementById('tagContainer');
+ 	const tagOutput = document.getElementById('tagOutput');
+ 	const tags = ['JavaScript', 'CSS', 'HTML', 'React', 'Node.js', 'Python', 'Design', 'UI/UX'];
+ 	const activeTags = new Set();
+ 	tags.forEach(tagName => {
+ 		const tag = document.createElement('span');
+ 		tag.className = 'tag';
+ 		tag.textContent = tagName;
+ 		tag.addEventListener('click', () => {
+ 			if (activeTags.has(tagName)) {
+ 				activeTags.delete(tagName);
+ 				tag.classList.remove('active');
+ 			} else {
+ 				activeTags.add(tagName);
+ 				tag.classList.add('active');
+ 			}
+ 			if (activeTags.size > 0) {
+ 				tagOutput.textContent = `Active filters: ${Array.from(activeTags).join(', ')}`;
+ 			} else {
+ 				tagOutput.textContent = 'No active filters';
+ 			}
+ 		});
+ 		tagContainer.appendChild(tag);
+ 	});
+ 	const dataInput = document.getElementById('dataInput');
+ 	const transformType = document.getElementById('transformType');
+ 	const dataOutput = document.getElementById('dataOutput');
+ 	function transformData() {
+ 		const input = dataInput.value.trim();
+ 		if (!input) {
+ 			dataOutput.textContent = 'Enter some data to see transformations';
+ 			return;
+ 		}
+ 		const data = input.split(',').map(item => item.trim()).filter(item => item);
+ 		const type = transformType.value;
+ 		let result;
+ 		switch (type) {
+ 			case 'reverse':
+ 				result = data.reverse().join(', ');
+ 				break;
+ 			case 'sort':
+ 				result = data.sort().join(', ');
+ 				break;
+ 			case 'unique':
+ 				result = [...new Set(data)].join(', ');
+ 				break;
+ 			case 'count':
+ 				result = `${data.length} items`;
+ 				break;
+ 		}
+ 		dataOutput.textContent = result;
+ 	}
+ 	dataInput.addEventListener('input', transformData);
+ 	transformType.addEventListener('change', transformData);
+ 	const quoteCategory = document.getElementById('quoteCategory');
+ 	const generateQuoteBtn = document.getElementById('generateQuote');
+ 	const quoteOutput = document.getElementById('quoteOutput');
+ 	const quotes = {
+ 		motivation: [
+ 			&quot;The only way to do great work is to love what you do.&quot;,
+ 			&quot;Innovation distinguishes between a leader and a follower.&quot;,
+ 			&quot;Your limitation—it's only your imagination.&quot;
+ 		],
+ 		creativity: [
+ 			&quot;Creativity is intelligence having fun.&quot;,
+ 			&quot;The creative adult is the child who survived.&quot;,
+ 			&quot;Imagination is more important than knowledge.&quot;
+ 		],
+ 		success: [
+ 			&quot;Success is not final, failure is not fatal.&quot;,
+ 			&quot;Don't be afraid to give up the good to go for the great.&quot;,
+ 			&quot;The way to get started is to quit talking and start doing.&quot;
+ 		],
+ 		wisdom: [
+ 			&quot;The only true wisdom is in knowing you know nothing.&quot;,
+ 			&quot;Yesterday is history, tomorrow is a mystery, today is a gift.&quot;,
+ 			&quot;A wise person learns from the mistakes of others.&quot;
+ 		]
+ 	};
+ 	generateQuoteBtn.addEventListener('click', () => {
+ 		const category = quoteCategory.value;
+ 		const categoryQuotes = quotes[category];
+ 		const randomQuote = categoryQuotes[Math.floor(Math.random() * categoryQuotes.length)];
+ 		quoteOutput.textContent = `&quot;${randomQuote}&quot;`;
+ 	});
+ </script>
+ </body>
+ </html>
+ "></div><div class="content-block text-block" data-blockid="f873bd98-4f86-4adf-b82e-a5aee7cb3eca"><p>Websites and posts from other social media sites can be embedded in custom blocks too.</p></div><div class="content-block media-block" data-blockid="5ffcffda-ea7e-4c77-b16a-8fdab0d48ded" data-align="center"><img src="/media/content/a86c7c4d-2a44-40cd-bad1-75c469bb661f.png" alt="Uploaded image" style="max-width:100%;height:auto;display:block;margin:0 auto"></div></body></html>

@@ -51,7 +51,7 @@
 .content-list {
     margin: 0;
     padding-top: var(--medium-margin);
-    width: 97%;
+    width: 96%;
 }
 .content-item, .content-list {
     box-sizing: border-box;

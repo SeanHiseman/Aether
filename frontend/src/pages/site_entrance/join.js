@@ -14,12 +14,11 @@ const Join = () => {
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [username, setUsername] = useState('');
     const navigate = useNavigate();
-    const isDisabled = !confirmPassword || !email || !password || !username || !validateEmail(email) || password !== confirmPassword || Boolean(errorMessage);
-
     const validateEmail = (email) => {
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         return emailRegex.test(email);
     };
+    const isDisabled = !confirmPassword || !email || !password || !username || !validateEmail(email) || password !== confirmPassword || Boolean(errorMessage);
 
     const handleJoin = async (event) => {
         event.preventDefault();

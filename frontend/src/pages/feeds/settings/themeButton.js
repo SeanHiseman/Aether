@@ -1,5 +1,3 @@
-import React from 'react';
-
 const ThemeButton = ({ colors, onThemeSelect, themeName }) => {
 	return (
 		<button className="button theme" onClick={() => onThemeSelect(themeName)}>

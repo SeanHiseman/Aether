@@ -1,5 +1,5 @@
 import axios from 'axios';
-import React, { useState } from 'react';
+import { useState } from 'react';
 
 const AskButton = ({ isReply, isGroup, content, showNote, setShowNote, note, setNote, setPostErrorMessage }) => {
     const [isLoading, setIsLoading] = useState(false);

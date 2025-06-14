@@ -1,5 +1,5 @@
 import axios from 'axios';
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Check, Star, Zap, Shield, Crown, ListFilter } from 'lucide-react';
 import { useOutletContext } from 'react-router-dom';
 

@@ -637,7 +637,12 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onEdit
         const oversized = files.filter(f => f.size > MAX_FILE_SIZE)
         if (oversized.length) {
             const names = oversized.map(f => f.name).join(', ')
-            setPostErrorMessage(hasMembership ? `These files exceed your max size limit: ${names}.` : `These files exceed your max size limit: ${names}. Get membership for more.`);
+            setPostErrorMessage(
+                hasMembership ? `These files exceed your max size limit: ${names}.` : `These files exceed your max size limit: ${names}. Get membership for more.`
+            )
+            setTimeout(() => {
+                setPostErrorMessage('')
+            }, 5000)
             return
         }
         setPostErrorMessage('')

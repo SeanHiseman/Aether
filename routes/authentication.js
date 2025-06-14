@@ -1,18 +1,34 @@
 import authenticateCheck from '../functions/checks/authenticateCheck.js';
 import deleteMedia from '../functions/media_handling/deleteMedia.js';
 import dotenv from 'dotenv';
+import { fileURLToPath } from 'url';
 import jwt from 'jsonwebtoken';
+import path from 'path';
+import { promises as fs } from 'fs';
 import rateLimit from 'express-rate-limit';
 import { Router } from 'express';
 import { compare, hash } from 'bcrypt';
 import { Op } from 'sequelize';
 import { v4 } from 'uuid';
-import { Connections, ConnectRequests, Feeds, FeedChannels, Followers, FeedChats, Messages, Posts, PostVotes, Users } from '../models/relationships.js'; 
+import { Connections, ConnectRequests, Feeds, FeedChannels, Followers, FeedChats, Messages, Posts, PostDrafts, PostNotes, PostVotes, Users } from '../models/relationships.js'; 
 import { generateVerificationToken, sendPasswordResetEmail, sendVerificationEmail } from '../functions/emailService.js';
 import sequelize from '../databaseSetup.js';
 
 dotenv.config();
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+let tutorialContent = '';
+const tutorialTemplatePath = path.join(__dirname, '..', 'tutorialPost.html');
 const router = Router();
+
+(async () => {
+	try {
+		tutorialContent = await fs.readFile(tutorialTemplatePath, 'utf8');
+	} catch (error) {
+		console.log('Error reading tutorial template:', error);
+		tutorialContent = '';
+	}
+})();
 
 const resendLimiter = rateLimit({
 	windowMs: 15 * 60 * 1000,
@@ -100,9 +116,19 @@ router.delete('/delete_account', authenticateCheck, async (req, res) => {
             await deleteMedia(feed.feed_photo)
         }
         await FeedChannels.destroy({ where: { feed_id: id }, transaction });
+        const userPosts = await Posts.findAll({
+            where: { poster_id: id },
+            attributes: ['post_id'],
+            transaction,
+        });
+        const userPostIds = userPosts.map(p => p.post_id);
+        if (userPostIds.length > 0) {
+            await PostNotes.destroy({ where: { post_id: { [Op.in]: userPostIds } }, transaction });
+            await PostVotes.destroy({ where: { post_id: { [Op.in]: userPostIds } }, transaction });
+        }
         await Posts.destroy({ where: { poster_id: id }, transaction });
+        await PostDrafts.destroy({ where: { poster_id: id }, transaction });
         await Followers.destroy({ where: { follower_id: id }, transaction });
-        await PostVotes.destroy({ where: { voter_id: id }, transaction });
         await Connections.destroy({ where: { [Op.or]: [{ feed1_id: id }, { feed2_id: id }] }, transaction });
         await ConnectRequests.destroy({ where: { [Op.or]: [{ sender_id: userId }, { receiver_id: userId }] }, transaction });
         await FeedChats.destroy({ where: { feed_id: id }, transaction });
@@ -180,15 +206,11 @@ router.post('/join', async (req, res) => {
         await FeedChannels.create({
             channel_id, channel_name: 'Main', feed_id, is_chat: false
         });
-        //Add to the Development, Feedback, Welcome feeds
-        await Followers.create({
-            follow_id: v4(), follower_id: feed_id, feed_id: process.env.DEVELOPMENT_FEED_ID
-        });
-        await Followers.create({
-            follow_id: v4(), follower_id: feed_id, feed_id: process.env.FEEDBACK_FEED_ID
-        });
         await Followers.create({
             follow_id: v4(), follower_id: feed_id, feed_id: process.env.WELCOME_FEED_ID
+        });
+        await PostDrafts.create({
+            draft_id: v4(), feed_id, channel_id, title: 'Edit this draft post using the edit button below', content: tutorialContent, poster_id: feed_id
         });
         await Feeds.increment('follower_count', { where: { feed_id: process.env.DEVELOPMENT_FEED_ID } });
         await Feeds.increment('follower_count', { where: { feed_id: process.env.FEEDBACK_FEED_ID } });

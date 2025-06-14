@@ -4,7 +4,7 @@ import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, DragOv
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { FaArrowRight, FaBars, FaFileUpload, FaMinus, FaPlus, FaPlusCircle, FaSignInAlt, FaTimes } from "react-icons/fa";
 import { MagnifyingGlassIcon } from "@radix-ui/react-icons";
-import React, { useCallback, useContext, useEffect, useRef, useState } from "react";
+import { useCallback, useContext, useEffect, useRef, useState } from "react";
 import { Link, Outlet, useNavigate } from "react-router-dom";
 import { v4 } from "uuid";
 import { AuthContext } from "../components/authContext";

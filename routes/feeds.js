@@ -13,7 +13,7 @@ import path from 'path';
 import { Router } from 'express';
 import sequelize from '../databaseSetup.js';
 import { v4 } from 'uuid';
-import { ConnectRequests, DeepFeeds, DeepFeedContent, Feeds, FeedChannels, FeedChannelMessages, Followers, FollowRequests, Posts, Users } from '../models/relationships.js';
+import { ConnectRequests, DeepFeeds, DeepFeedContent, Feeds, FeedChannels, FeedChannelMessages, Followers, FollowRequests, Posts, PostNotes, PostVotes, Users } from '../models/relationships.js';
 
 const app = express();
 dotenv.config();
@@ -480,6 +480,16 @@ router.delete('/delete_feed', authenticateCheck, async (req, res) => {
         const feedPhoto = feed.feed_photo;
         if (feedPhoto && !defaultImages.includes(feedPhoto)) {
             deleteMedia(feedPhoto);
+        }
+        const feedPosts = await Posts.findAll({
+            where: { feed_id: feedId },
+            attributes: ['post_id'],
+            transaction,
+        });
+        const feedPostIds = feedPosts.map(p => p.post_id);
+        if (feedPostIds.length > 0) {
+            await PostNotes.destroy({ where: { post_id: { [Op.in]: feedPostIds } }, transaction });
+            await PostVotes.destroy({ where: { post_id: { [Op.in]: feedPostIds } }, transaction });
         }
         await Posts.destroy({ where: { feed_id: feedId }, transaction });
         await FollowRequests.destroy({

@@ -1,6 +1,6 @@
 import { AuthContext } from '../components/authContext';
 import axios from 'axios';
-import React, { useContext, useEffect, useRef, useState } from 'react';
+import { useContext, useEffect, useRef, useState } from 'react';
 import { FaChevronDown, FaChevronUp } from 'react-icons/fa';
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { useOutletContext, useSearchParams } from 'react-router-dom';

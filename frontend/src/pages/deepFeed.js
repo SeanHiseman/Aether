@@ -1,6 +1,6 @@
 import axios from 'axios';
 import { DragDropContext } from 'react-beautiful-dnd';
-import React, { useCallback, useContext, useEffect, useRef, useState } from 'react';
+import { useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { FaEdit, FaRegWindowClose, FaSave, FaTrash } from 'react-icons/fa';
 import { useNavigate, useOutletContext, useParams } from 'react-router-dom';
 import { AuthContext } from '../components/authContext';

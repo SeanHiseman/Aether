@@ -1,6 +1,6 @@
 import axios from 'axios';
 import { FaUserMinus, FaUserPlus } from 'react-icons/fa';
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 
 const ManageConnectionButton = ({ connectRequest, feed, isConnected, viewerId, onRequestUpdate }) => {
     const [errorMessage, setErrorMessage] = useState('');

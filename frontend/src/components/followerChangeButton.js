@@ -1,6 +1,6 @@
 import axios from 'axios';
 import { FaMinus, FaMinusCircle, FaPlusCircle } from 'react-icons/fa';
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 //import Tooltip from '@mui/material/Tooltip';
 
 const FollowerChangeButton = ({ feed, viewerId }) => {

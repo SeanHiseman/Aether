@@ -1,4 +1,3 @@
-import React from 'react';
 import { Link } from 'react-router-dom';
 import '../../css/welcome.css';
 
@@ -21,12 +20,8 @@ const Feeds = () => {
                 <div className="left-aligned-text">
                     <p className="welcome-box-header">Feeds</p>
                     <p>Posts are made to feeds. Each feed has channels.</p>
-                    <div className="spacer20px"/>
-                    <p>Feeds followed by a user can be combined together to form Deep Feeds, like folders on a computer</p>
-                    <div className="spacer20px"/>
                     <p>Users have their own feeds where only they can post content</p>
-                    <div className="spacer20px"/>
-                    <div className="spacer20px"/>
+                    <p>Coming soon: Feeds followed by a user can be combined together to form deep feeds, like folders on a computer</p>
                     <p>Coming soon: Chat channels for live group messaging</p>
                 </div>
             </div>

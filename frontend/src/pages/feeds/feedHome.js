@@ -2,7 +2,7 @@ import axios from 'axios';
 import { AuthContext } from '../../components/authContext';
 import { FaCog, FaEdit, FaFeatherAlt, FaFolder, FaFolderOpen, FaMinus, FaPlus, FaRegWindowClose, FaSave, FaTrash } from 'react-icons/fa';
 import { Tooltip } from 'react-tooltip';
-import React, { useContext, useEffect, useState } from 'react';
+import { useContext, useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate, useOutletContext, useParams } from 'react-router-dom';
 import ChannelList from '../../components/channels/channelList';
 import ChatChannel from '../../components/channels/chatChannel';

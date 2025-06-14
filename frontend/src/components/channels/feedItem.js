@@ -1,5 +1,5 @@
 import { FaChevronDown, FaChevronUp } from 'react-icons/fa';
-import React, { useCallback, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { Link } from 'react-router-dom';
 import ChannelList from './channelList';
 import { useSortable } from '@dnd-kit/sortable';

@@ -1,5 +1,5 @@
 import axios from 'axios';
-import React, { useContext, useEffect, useState } from 'react';
+import { useContext, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import FeedItem from '../../components/channels/feedItem';
 import ManageConnectionButton from '../../components/connections/manageConnectionButton';

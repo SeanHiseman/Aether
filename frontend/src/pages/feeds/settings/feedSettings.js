@@ -1,7 +1,7 @@
 import { AuthContext } from '../../../components/authContext';
 import axios from 'axios';
 import { FaSignOutAlt } from 'react-icons/fa';
-import React, { useContext, useEffect, useState } from 'react';
+import { useContext, useEffect, useState } from 'react';
 import { Link, useNavigate, useOutletContext, useParams, Outlet } from 'react-router-dom';
 
 const FeedSettings = () => {
