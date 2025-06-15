@@ -9,7 +9,6 @@ import ReplyTreeView from './replyTreeView';
 import PropTypes from 'prop-types';
 
 const ContentWidget = ({ canRemove, feed, isDraft, isGroup, onEditClick, onPostRemoved, onReplyClick, parent, post, readOnly = false }) => {
-	console.log("post", post);
 	const [canRemoveState, setCanRemoveState] = useState(canRemove);
 	const [downvoteLimit, setDownvoteLimit] = useState(false);
 	const [downvotes, setDownvotes] = useState(post.downvotes);
@@ -28,11 +27,11 @@ const ContentWidget = ({ canRemove, feed, isDraft, isGroup, onEditClick, onPostR
 	const [upvotes, setUpvotes] = useState(post.upvotes);
 	const [views, setViews] = useState(post.views);
 	const { isAuthenticated, viewer, user } = useContext(AuthContext);
-    const channelName = channel_name || post.parentChannel.channel_name;
+    const channelName = post.parentChannel.channel_name;
     const feedName = post.parentChannel.feed?.feed_name;
 	const isReply = readOnly ? false : post.parent_id !== null; //Read only means not displaying widget as a reply
 	const isViewingOwnPost = post.poster_id === viewer?.feed_id;
-	const urlPrefix = (isGroup || post.parentChannel.feed.is_group) ? 'g' : 'u';
+	const urlPrefix = (isGroup || post.parentChannel.feed?.is_group) ? 'g' : 'u';
 
 	const getReplies = useCallback(async (postId) => {
 		try {
@@ -228,19 +227,17 @@ const ContentWidget = ({ canRemove, feed, isDraft, isGroup, onEditClick, onPostR
 	return (
 		<div className={`content-item ${isReply ? 'reply' : ''}`}>
 			{postErrorMessage && <div className="error-message">{postErrorMessage}</div>}
-			{post.title && (
-				<div className="title-container">
-					<Link className="text36" style={{ marginLeft: 0 }} to={`/${urlPrefix}/${feed.feed_name}/${channel_name || post.parentChannel?.channel_name}/${post.post_id}`} onClick={() => incrementViews(post.post_id)}>
-						{post.title}
-					</Link>
-					{post.displayGroupName && (
-						<Link className="feed-link" to={`/g/${feed.feed_name}`}>
-							<p className="feed-list-text">{feed.feed_name}</p>
-							<img className="small-feed-photo" src={`/${feed.feed_photo}`} alt="Feed" />
-						</Link>
-					)}
-				</div>
-			)}
+			<Link
+				className="title-container"
+				onClick={() => incrementViews(post.post_id)}
+				style={{ display: 'block' }}
+				to={`/${urlPrefix}/${feed.feed_name}/${post.parentChannel?.channel_name}/${post.post_id}`}
+			>
+				<span className="text36" style={{ marginLeft: 0 }}>
+					{post.title || '\u00A0'}
+				</span>
+			</Link>
+
 			<ContentDisplay content={post.content} onOverflowChange={handleOverflowChange} showFullContent={showFullContent} showScrollBar={false} />
 			{isOverflowing && (
 				<button className="small-icon" onClick={() => setShowFullContent(!showFullContent)} title={showFullContent ? 'Show less' : 'Show more'}>
@@ -250,9 +247,9 @@ const ContentWidget = ({ canRemove, feed, isDraft, isGroup, onEditClick, onPostR
 			{showNote && <div className="ask-note"><p className="ask-note-text">{note}</p></div>}
 			<div className="content-metadata">
 				{!isDraft && (<div className="feed-info">
-					<Link className="feed-link" onClick={() => incrementViews(post.post_id)} to={`/u/${post.poster.feed_name}`}>
-						<img className="small-feed-photo" src={`/${post.poster.feed_photo}`} alt="Feed" />
-						<p className="feed-list-text">{post.poster.feed_name}</p>
+					<Link className="feed-link" onClick={() => incrementViews(post.post_id)} to={`/u/${post.poster?.feed_name}`}>
+						<img className="small-feed-photo" src={`/${post.poster?.feed_photo}`} alt={'/media/site_images/blank-profile.png'} />
+						<p className="feed-list-text">{post.poster?.feed_name ?? 'Anonymous'}</p>
 					</Link>
 				</div>)}
                 <Link to={`/${urlPrefix}/${feedName}/${channelName}`}>

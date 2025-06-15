@@ -54,9 +54,9 @@ router.get('/channel_posts', async (req, res) => {
             attributes: ['channel_id','channel_name'],
             required: false,
             include: [{
-                    model: Feeds,
-                    attributes: feedAttributes
-                }]
+                model: Feeds,
+                attributes: feedAttributes
+            }]
         },{
             model: Feeds,
             as: 'poster',

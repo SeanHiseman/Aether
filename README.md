@@ -7,7 +7,7 @@ Run the commands in dbStructure.sql to create a local version of the MySQL datab
 
 Currently paused features:
 Ask chatbot
-Ask fact checking button
+Ask notes
 Deep feeds
 Multi voting
 Clicking to edit dynamic content
