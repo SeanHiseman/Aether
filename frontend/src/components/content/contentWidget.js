@@ -252,13 +252,14 @@ const ContentWidget = ({ canRemove, feed, isDraft, isGroup, onEditClick, onPostR
 						<p className="feed-list-text">{post.poster?.feed_name ?? 'Anonymous'}</p>
 					</Link>
 				</div>)}
-				<div className="link-date-container">
-					<Link to={`/${urlPrefix}/${feedName}/${channelName}`}>
-						<p className="text16 clickable">{feedName}/{channelName}</p>
-					</Link>
+				<Link to={`/${urlPrefix}/${feedName}/${channelName}`}>
+					<p className="text16 clickable">{feedName}/{channelName}</p>
+				</Link>
+				<div className="view-date-container">
 					<p className="text16" style={{ margin: '0px' }}>
 						{new Date(post.created_at).toLocaleDateString()}
 					</p>
+					{!isDraft && (<p className="text16">{views} {views === 1 ? 'view' : 'views'}</p>)}
 				</div>
 				{!isDraft && (<div className="vote-container">
 					{isAuthenticated ? (
@@ -305,7 +306,6 @@ const ContentWidget = ({ canRemove, feed, isDraft, isGroup, onEditClick, onPostR
 						)}
 					</>
 				)}
-				{!isDraft && (<p className="text16">{views} {views === 1 ? 'view' : 'views'}</p>)}
 				{isAuthenticated && post.poster_id === viewer.feed_id && !readOnly && (
 					<button className="large-icon" onClick={() => onEditClick(post)} title={isReply ? "Edit Reply" : isDraft ? "Edit draft" : "Edit Post"}>
 						<FaEdit />
