@@ -97,6 +97,10 @@
     font-size: var(--large-text);
     margin: var(--medium-margin) var(--medium-margin) var(--medium-margin) 0;
 }
+.link-date-container {
+    display: flex;
+    flex-direction: column;
+}
 .name-connection-box {
     display: flex;
     justify-content: space-between;
