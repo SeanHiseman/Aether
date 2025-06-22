@@ -10,6 +10,7 @@ import PropTypes from 'prop-types';
 import useTimeAgo from '../../useTimeAgo';
 
 const ContentWidget = ({ canRemove, feed, isDraft, isGroup, onEditClick, onPostRemoved, onReplyClick, parent, post, readOnly = false }) => {
+	console.log('ContentWidget rendered with post:', post);
 	const [canRemoveState, setCanRemoveState] = useState(canRemove);
 	const [downvoteLimit, setDownvoteLimit] = useState(false);
 	const [downvotes, setDownvotes] = useState(post.downvotes);
@@ -33,7 +34,7 @@ const ContentWidget = ({ canRemove, feed, isDraft, isGroup, onEditClick, onPostR
 	const isReply = readOnly ? false : post.parent_id !== null; //Read only means not displaying widget as a reply
 	const isViewingOwnPost = post.poster_id === viewer?.feed_id;
 	const timeAgo = useTimeAgo(post.created_at);
-	const urlPrefix = (isGroup || post.parentChannel.feed?.is_group) ? 'g' : 'u';
+	const urlPrefix = (post.parentChannel.feed?.is_group) ? 'g' : 'u';
 
 	const getReplies = useCallback(async (postId) => {
 		try {
@@ -233,13 +234,12 @@ const ContentWidget = ({ canRemove, feed, isDraft, isGroup, onEditClick, onPostR
 				className="title-container"
 				onClick={() => incrementViews(post.post_id)}
 				style={{ display: 'block' }}
-				to={`/${urlPrefix}/${feed.feed_name}/${post.parentChannel?.channel_name}/${post.post_id}`}
+				to={`/${urlPrefix}/${post.parentChannel?.feed?.feed_name}/${post.parentChannel?.channel_name}/${post.post_id}`}
 			>
 				<span className="text36" style={{ marginLeft: 0 }}>
 					{post.title || '\u00A0'}
 				</span>
 			</Link>
-
 			<ContentDisplay content={post.content} onOverflowChange={handleOverflowChange} showFullContent={showFullContent} showScrollBar={false} />
 			{isOverflowing && (
 				<button className="small-icon" onClick={() => setShowFullContent(!showFullContent)} title={showFullContent ? 'Show less' : 'Show more'}>
@@ -257,9 +257,6 @@ const ContentWidget = ({ canRemove, feed, isDraft, isGroup, onEditClick, onPostR
 				<Link to={`/${urlPrefix}/${feedName}/${channelName}`}>
 					<p className="text16 clickable">{feedName}/{channelName}</p>
 				</Link>
-                <Link to={`/${urlPrefix}/${feedName}/${channelName}`}>
-                    <p className="text16 clickable">{feedName}/{channelName}</p>
-                </Link>
 				{!isDraft && (<div className="vote-container">
 					{isAuthenticated ? (
 						!isViewingOwnPost ? (   
