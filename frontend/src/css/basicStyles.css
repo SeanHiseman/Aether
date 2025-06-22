@@ -110,7 +110,6 @@ p, h1, h2, h3, h4, h5, h6 {
 }
 .text16, .text24, .text36, .text48 {
     margin: clamp(2px, 2vw, 8px);
-    max-width: 96%;
 }
 @keyframes spin {
   from { transform: rotate(0deg); }

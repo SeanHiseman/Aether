@@ -7,6 +7,7 @@ import AskButton from '../askButton';
 import ContentDisplay from './contentDisplay';
 import ReplyTreeView from './replyTreeView';
 import PropTypes from 'prop-types';
+import useTimeAgo from '../../useTimeAgo';
 
 const ContentWidget = ({ canRemove, feed, isDraft, isGroup, onEditClick, onPostRemoved, onReplyClick, parent, post, readOnly = false }) => {
 	const [canRemoveState, setCanRemoveState] = useState(canRemove);
@@ -31,6 +32,7 @@ const ContentWidget = ({ canRemove, feed, isDraft, isGroup, onEditClick, onPostR
     const feedName = post.parentChannel.feed?.feed_name;
 	const isReply = readOnly ? false : post.parent_id !== null; //Read only means not displaying widget as a reply
 	const isViewingOwnPost = post.poster_id === viewer?.feed_id;
+	const timeAgo = useTimeAgo(post.created_at);
 	const urlPrefix = (isGroup || post.parentChannel.feed?.is_group) ? 'g' : 'u';
 
 	const getReplies = useCallback(async (postId) => {
@@ -255,12 +257,6 @@ const ContentWidget = ({ canRemove, feed, isDraft, isGroup, onEditClick, onPostR
 				<Link to={`/${urlPrefix}/${feedName}/${channelName}`}>
 					<p className="text16 clickable">{feedName}/{channelName}</p>
 				</Link>
-				<div className="view-date-container">
-					<p className="text16" style={{ margin: '0px' }}>
-						{new Date(post.created_at).toLocaleDateString()}
-					</p>
-					{!isDraft && (<p className="text16">{views} {views === 1 ? 'view' : 'views'}</p>)}
-				</div>
 				{!isDraft && (<div className="vote-container">
 					{isAuthenticated ? (
 						!isViewingOwnPost ? (   
@@ -319,6 +315,10 @@ const ContentWidget = ({ canRemove, feed, isDraft, isGroup, onEditClick, onPostR
 				{/*{isAuthenticated && !post.note?.is_misinfo && !isDraft && (
 					<AskButton content={post} isGroup={isGroup} isReply={false} note={note} setNote={setNote} setPostErrorMessage={setPostErrorMessage} setShowNote={setShowNote} showNote={showNote} />
 				)}*/}
+				<div className="view-date-container">
+					<p className="text16 faded-text" style={{ margin: '0px' }}>{post_id ? timeAgo : new Date(post.created_at).toLocaleDateString()}</p>
+					{!isDraft && (<p className="text16 faded-text" style={{ margin: '0px' }}>{views} {views === 1 ? 'view' : 'views'}</p>)}
+				</div>
 			</div>
 			{showReplies && (
 				<div className="reply-section">

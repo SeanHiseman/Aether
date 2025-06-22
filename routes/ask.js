@@ -199,19 +199,19 @@ router.post('/generate_content', authenticateCheck, async (req, res) => {
                 fromCache: true
             });
         }
-        const assistantInstructions = parentCode
-            ? `Generate or improve HTML code based on the following context:
-            Request: ${request}
-            Current Code: ${currentCode}
-            Parent Code: ${parentCode}
-            IMPORTANT: Return ONLY the raw HTML/Javascript  code without any explanations, comments, introductory text, or markdown formatting.
-            Do not include \`\`\`html, \`\`\`
-            Body background #232527 (unless specified), height 300px minimum. 
-            Use styles: --border: #3e3f41;--darkest: #0f0f0f; --dark: #232527; --light: #737484; --lightest: #dddddd;
-            White text as default
-            Ensure all interactions work on mobile and desktop.
-            If the request cannot be fulfilled with code, return nothing`
-            :
+        const assistantInstructions = 
+            //parentCode ? `Generate or improve HTML code based on the following context:
+            //Request: ${request}
+            //Current Code: ${currentCode}
+            //Parent Code: ${parentCode}
+            //IMPORTANT: Return ONLY the raw HTML/Javascript  code without any explanations, comments, introductory text, or markdown formatting.
+            //Do not include \`\`\`html, \`\`\`
+            //Body background #232527 (unless specified), height 300px minimum. 
+            //Use styles: --border: #3e3f41;--darkest: #0f0f0f; --dark: #232527; --light: #737484; --lightest: #dddddd;
+            //White text as default
+            //Ensure all interactions work on mobile and desktop.
+            //If the request cannot be fulfilled with code, return nothing`
+            //:
             `Generate or improve HTML code based on the following context:
             Request: ${request}
             Current Code: ${currentCode}

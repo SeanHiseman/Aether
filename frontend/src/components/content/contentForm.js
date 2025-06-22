@@ -264,7 +264,7 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onEdit
 
     useEffect(() => {
         if (!isEdit) {
-            setBlocks([{ data: { html: '' }, id: v4(), isEditing: true, type: BLOCK_TYPES.TEXT }])
+            setBlocks([])
         }
     }, [isEdit])
 
@@ -671,46 +671,46 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onEdit
 
     const handleGenerateCodeBlock = useCallback(async block => {
         if (limitReached) {
-          setPostErrorMessage(hasMembership ? "Usage limit reached" : "Usage limit reached. Get membership for more.");
-          setTimeout(() => { setPostErrorMessage(''); }, 10000);
-          return;
+            setPostErrorMessage(hasMembership ? "Usage limit reached" : "Usage limit reached. Get membership for more.");
+            setTimeout(() => { setPostErrorMessage(''); }, 10000);
+            return;
         }
         try {
-          const prompt = block.data._tempAiPrompt || '';
-          if (!prompt.trim()) {
-            setPostErrorMessage('Prompt cannot be empty.');
-            setTimeout(() => { setPostErrorMessage(''); }, 5000);
-            return;
-          }
-          updateBlock({ ...block, data: { ...block.data, isBlockLoading: true, _tempAiPrompt: '' } });
-          setPostErrorMessage('');
-          const response = await axios.post('/api/generate_content', { 
-            currentCode: block.data.code, 
-            parentCode: isReply ? post.content : null, 
-            request: prompt, 
-            senderId: user.user_id,
-          });
-          if (response.data && response.status === 201) {
-            const { generatedContent } = response.data;
-            updateBlock({ 
-              ...block, 
-              data: { 
-                ...block.data, 
-                code: generatedContent, 
-                isBlockLoading: false, 
-                _tempAiPrompt: '', 
-              }, 
-              isEditing: false 
+            const prompt = block.data._tempAiPrompt || '';
+            if (!prompt.trim()) {
+                setPostErrorMessage('Prompt cannot be empty.');
+                setTimeout(() => { setPostErrorMessage(''); }, 5000);
+                return;
+            }
+            updateBlock({ ...block, data: { ...block.data, isBlockLoading: true, _tempAiPrompt: '' } });
+            setPostErrorMessage('');
+            const response = await axios.post('/api/generate_content', { 
+                currentCode: block.data.code, 
+                //parentCode: isReply ? post.content : null, 
+                request: prompt, 
+                senderId: user.user_id,
             });
-          } else {
+            if (response.data && response.status === 201) {
+                const { generatedContent } = response.data;
+                updateBlock({ 
+                ...block, 
+                data: { 
+                    ...block.data, 
+                    code: generatedContent, 
+                    isBlockLoading: false, 
+                    _tempAiPrompt: '', 
+                }, 
+                isEditing: false 
+            });
+            } else {
+                updateBlock({ ...block, data: { ...block.data, isBlockLoading: false, _tempAiPrompt: '' } });
+                setPostErrorMessage('Error creating content.');
+                setTimeout(() => { setPostErrorMessage(''); }, 5000);
+            }
+        } catch {
             updateBlock({ ...block, data: { ...block.data, isBlockLoading: false, _tempAiPrompt: '' } });
             setPostErrorMessage('Error creating content.');
             setTimeout(() => { setPostErrorMessage(''); }, 5000);
-          }
-        } catch {
-          updateBlock({ ...block, data: { ...block.data, isBlockLoading: false, _tempAiPrompt: '' } });
-          setPostErrorMessage('Error creating content.');
-          setTimeout(() => { setPostErrorMessage(''); }, 5000);
         }
     }, [hasMembership, post, updateBlock]);
 
@@ -875,33 +875,15 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onEdit
                 <div className="action-buttons-sticky" style={{ width: '100%' }}>
                     <div className="action-buttons" style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-start', position: 'relative' }}>
                         <div className="left-buttons" style={{ display: 'flex', gap: '10px' }}>
-                            <button className="small-icon" type="button" onClick={() => setShowForm(false)} title="Close">
-                                <FaWindowClose />
+                            <button className="small-icon" type="button" onClick={() => handleAddBlock(BLOCK_TYPES.TEXT)} title="Add text">
+                                <FaFont />
                             </button>
-                            {!isReply && (
-                                <button className="small-icon" type="button" onClick={deleteHandler} title={isDraft ? 'Delete draft' : isEdit ? 'Delete post' : 'Delete'}>
-                                    <FaTrash />
-                                </button>
-                            )}
-                            {isReply ? (
-                                <button className="small-icon" form="post-form" type="submit" title="Reply">
-                                    <FaReply />
-                                </button>
-                            ) : isEdit && !isDraft ? (
-                                <button className="small-icon" form="post-form" type="submit" title="Save edit">
-                                    <FaSave />
-                                </button>
-
-                            ) : (
-                                <>
-                                    <button className="small-icon" type="button" onClick={saveDraft} title="Save draft">
-                                        <FaSave />
-                                    </button>
-                                    <button className="small-icon" form="post-form" type="submit" title="Post" onClick={() => setIsPostingDraft(true)}>
-                                        <FaArrowRight />
-                                    </button>
-                                </>
-                            )}
+                            <label htmlFor="media-input" className="small-icon" title="Add media">
+                                <FaPhotoVideo />
+                            </label>
+                            <button className="small-icon" type="button" onClick={() => handleAddBlock(BLOCK_TYPES.CODE)} title="Add custom">
+                                <FaToolbox />
+                            </button>
                         </div>
                         <div className="center-buttons" style={{ display: 'flex', gap: '10px', position: 'absolute', left: '50%', transform: 'translateX(-50%)' }}>
                             {!showGlobalAiPrompt ? (
@@ -919,15 +901,33 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onEdit
                         </div>
                         {editMode && (
                             <div className="right-buttons" style={{ display: 'flex', gap: '10px', position: 'absolute', right: '0' }}>
-                                <button className="small-icon" type="button" onClick={() => handleAddBlock(BLOCK_TYPES.TEXT)} title="Add text">
-                                    <FaFont />
+                                <button className="small-icon" type="button" onClick={() => setShowForm(false)} title="Close">
+                                    <FaWindowClose />
                                 </button>
-                                <label htmlFor="media-input" className="small-icon" title="Add media">
-                                    <FaPhotoVideo />
-                                </label>
-                                <button className="small-icon" type="button" onClick={() => handleAddBlock(BLOCK_TYPES.CODE)} title="Add custom">
-                                    <FaToolbox />
-                                </button>
+                                {!isReply && (
+                                    <button className="small-icon" type="button" onClick={deleteHandler} title={isDraft ? 'Delete draft' : isEdit ? 'Delete post' : 'Delete'}>
+                                        <FaTrash />
+                                    </button>
+                                )}
+                                {isReply ? (
+                                    <button className="small-icon" form="post-form" type="submit" title="Reply">
+                                        <FaReply />
+                                    </button>
+                                ) : isEdit && !isDraft ? (
+                                    <button className="small-icon" form="post-form" type="submit" title="Save edit">
+                                        <FaSave />
+                                    </button>
+
+                                ) : (
+                                    <>
+                                        <button className="small-icon" type="button" onClick={saveDraft} title="Save draft">
+                                            <FaSave />
+                                        </button>
+                                        <button className="small-icon" form="post-form" type="submit" title="Post" onClick={() => setIsPostingDraft(true)}>
+                                            <FaArrowRight />
+                                        </button>
+                                    </>
+                                )}
                             </div>
                         )}
                     </div>
@@ -936,7 +936,7 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onEdit
                     <p className="text16" style={{ display: 'flex', alignItems: 'center', margin: '0' }}>
                         {blockLimitError || postErrorMessage}
                         {blockLimitError && (
-                            <button className="small-icon" onClick={() => navigate('/membership')} type="button" style={{ marginLeft: '5px' }} title="Get Membership">
+                            <button className="small-icon" onClick={() => navigate('/settings/membership')} type="button" style={{ marginLeft: '5px' }} title="Get Membership">
                                 <FaArrowCircleUp />
                             </button>
                         )}
@@ -996,7 +996,7 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onEdit
                             <Droppable droppableId="blocks-droppable">
                                 {provided => (
                                     <div ref={provided.innerRef} {...provided.droppableProps}>
-                                        {!blocks.length && <p className="text24 faded-text">Add content using the buttons above</p>}
+                                        {!blocks.length && <p className="text24 faded-text" style={{ marginLeft: '0px' }}>Add content using the buttons above</p>}
                                         {blocks.map((block, index) => {
                                             const { data, id, isEditing, type } = block
                                             const toggleEdit = () => updateBlock({ ...block, isEditing: !isEditing })
@@ -1016,7 +1016,6 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onEdit
                                                                         <button className="small-icon" onClick={toggleEdit} title={isEditing ? 'Preview' : 'Edit'} type="button">{isEditing ? <FaEye /> : <FaEdit />}</button>
                                                                     )}
                                                                 </div>
-                                                                {/*{isEditing && type === BLOCK_TYPES.CODE && <p className="text16 faded-text">Click on elements to edit them (may be glitchy)</p>}*/}
                                                                 <div style={{ position: 'relative' }}>
                                                                 {type === BLOCK_TYPES.MEDIA && (
                                                                     <div style={{ position: 'relative', display: 'flex', gap: '10px' }}>
@@ -1051,7 +1050,7 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onEdit
                                                                         {codeBlockDropdown[id] && (
                                                                         <div className="dropdown-menu">
                                                                             <button className="small-icon" onClick={() => {setCodeBlockDropdown({...codeBlockDropdown, [id]: false}); addIframe(id);}}>
-                                                                                <FaLink /><p className="icon-text">Add website link</p>
+                                                                                <FaLink /><p className="icon-text">Embed website</p>
                                                                             </button>
                                                                             <button className="small-icon" onClick={() => {setCodeBlockDropdown({...codeBlockDropdown, [id]: false});addSocialMedia(id);}}>
                                                                                 <FaShareAlt /><p className="icon-text">Insert Social Media Post</p>
@@ -1067,7 +1066,7 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onEdit
                                                                     {data.textError && (
                                                                         <div style={{ display: 'inline-flex', alignItems: 'center', marginBottom: '5px' }}>
                                                                             {data.textError}
-                                                                            <button className="small-icon" onClick={() => navigate('/membership')} type="button" style={{ marginLeft: '5px' }}><FaArrowCircleUp /></button>
+                                                                            <button className="small-icon" onClick={() => navigate('/settings/membership')} type="button" style={{ marginLeft: '5px' }}><FaArrowCircleUp /></button>
                                                                         </div>
                                                                     )}
                                                                     {isEditing ? (
