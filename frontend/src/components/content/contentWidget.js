@@ -321,7 +321,7 @@ const ContentWidget = ({ canRemove, feed, isDraft, isGroup, onEditClick, onPostR
 					<AskButton content={post} isGroup={isGroup} isReply={false} note={note} setNote={setNote} setPostErrorMessage={setPostErrorMessage} setShowNote={setShowNote} showNote={showNote} />
 				)}*/}
 				<div className="view-date-container">
-					<p className="text16 faded-text" style={{ margin: '0px' }}>{post_id ? timeAgo : new Date(post.created_at).toLocaleDateString()}</p>
+					<p className="text16 faded-text" style={{ margin: '0px' }}>{post_id ? new Date(post.created_at).toLocaleDateString() : timeAgo}</p>
 					{!isDraft && (<p className="text16 faded-text" style={{ margin: '0px' }}>{views} {views === 1 ? 'view' : 'views'}</p>)}
 				</div>
 			</div>
