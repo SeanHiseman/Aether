@@ -1,4 +1,5 @@
 import axios from 'axios';
+import AlgorithmSelector from '../../algorithms/algorithmSelector'; //Project code
 import { AuthContext } from '../../components/authContext';
 import { FaCog, FaEdit, FaFeatherAlt, FaFolder, FaFolderOpen, FaMinus, FaPlus, FaRegWindowClose, FaSave, FaTrash } from 'react-icons/fa';
 import { Tooltip } from 'react-tooltip';
@@ -505,6 +506,7 @@ const FeedHome = () => {
                                             {showDrafts ? <FaFolder /> : <FaFolderOpen />}<p className="icon-text">{showDrafts ? "Hide drafts" : "Drafts"}</p>
                                         </button>
                                     )}
+                                    <AlgorithmSelector feedId={feed.feed_id} />
                                 </div>
                                 {showChannelForm && (
                                     <form className="add-channel-form" onSubmit={AddChannel}>

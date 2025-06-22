@@ -11,6 +11,7 @@ import path from 'path';
 import { Server } from 'socket.io';
 import session from 'express-session';
 import { urlencoded } from 'express';
+import algorithmRoutes from './custom_algorithms/algorithmRoutes.js'; //Project code
 import ask from './routes/ask.js';
 import authentication from './routes/authentication.js';
 import content from './routes/content.js';
@@ -58,6 +59,7 @@ app.use(session({
     saveUninitialized: true,
 }));
 
+app.use('/api/', algorithmRoutes); //Project code
 app.use('/api/', ask);
 app.use('/api/', authentication);
 app.use('/api/', content);

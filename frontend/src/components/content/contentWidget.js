@@ -10,7 +10,6 @@ import PropTypes from 'prop-types';
 import useTimeAgo from '../../useTimeAgo';
 
 const ContentWidget = ({ canRemove, feed, isDraft, isGroup, onEditClick, onPostRemoved, onReplyClick, parent, post, readOnly = false }) => {
-	console.log('ContentWidget rendered with post:', post);
 	const [canRemoveState, setCanRemoveState] = useState(canRemove);
 	const [downvoteLimit, setDownvoteLimit] = useState(false);
 	const [downvotes, setDownvotes] = useState(post.downvotes);

@@ -14,6 +14,7 @@ import GetCroppedImg from "../components/getCroppedImg";
 import { ThemeContext } from "../themeProvider";
 import { Tooltip } from "react-tooltip";
 import { UnreadContext } from "../components/connections/unreadContext";
+import "../css/algorithms.css"; //Project code
 import "../css/baseLayout.css";
 import "../css/basicStyles.css";
 import "../css/contentFeed.css";
