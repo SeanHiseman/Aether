@@ -37,9 +37,11 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 const root = path.join(__dirname, process.env.FRONTEND_BUILD_DIR);
+const appBuildPath = path.join(__dirname, process.env.APP_BUILD_DIR);
 const mediaPath = path.join(__dirname, process.env.MEDIA_DIR);
 const faviconPath = path.join(__dirname, process.env.FAVICON_PATH);
 
+app.use('/app_builds', express.static(appBuildPath))
 app.use('/media', express.static(mediaPath));
 app.use(cors({
     origin: [process.env.FRONTEND_URL, "http://localhost:3000", "http://localhost:5000"],
@@ -68,15 +70,22 @@ app.use('/api/', feeds);
 app.use('/api/', routes);
 app.use('/api/', users);
 
-app.use(history('index.html', { root }));
+app.get('*', (req, res, next) => {
+	if (
+		req.path.startsWith('/app_builds/') ||
+		req.path.startsWith('/api/') ||
+		req.path.startsWith('/media/') ||
+		path.extname(req.path)
+	) {
+		return next()
+	}
+	if (req.headers.accept.includes('text/html')) {
+		return res.sendFile(path.join(root, 'index.html'))
+	}
+	next()
+})
 
-app.get('*', (req, res) => {
-    if (req.headers.accept.includes('text/html')) {
-        res.sendFile(path.join(root, 'index.html'));
-    } else {
-        res.status(404).json({ success: false });
-    }
-});
+app.use(history('index.html', { root }))
 
 sequelize.authenticate()
 

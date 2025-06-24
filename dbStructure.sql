@@ -360,6 +360,27 @@ CREATE TABLE `posts` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
+-- Table structure for table `app_builds`
+--
+
+DROP TABLE IF EXISTS `app_builds`;
+CREATE TABLE `app_builds` (
+  `build_id`   VARCHAR(36)    NOT NULL,
+  `post_id`    VARCHAR(36)    NULL,
+  `path`       VARCHAR(255)   NOT NULL,
+  `created_at` DATETIME(3)    NOT NULL
+     DEFAULT CURRENT_TIMESTAMP(3),
+  PRIMARY KEY (`build_id`),
+  INDEX `idx_appbuilds_post` (`post_id`),
+  CONSTRAINT `fk_appbuilds_posts`
+    FOREIGN KEY (`post_id`)
+    REFERENCES `posts` (`post_id`)
+    ON DELETE SET NULL
+    ON UPDATE CASCADE
+) ENGINE=InnoDB;
+
+
+--
 -- Table structure for table `prompts`
 --
 

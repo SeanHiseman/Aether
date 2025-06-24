@@ -3,22 +3,25 @@ import deleteMedia from '../functions/media_handling/deleteMedia.js';
 import cheerio from 'cheerio';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
-import { Feeds, FeedChannels, Posts, PostDrafts, PostNotes, PostVotes, Users } from '../models/relationships.js';
+import { AppBuilds, Feeds, FeedChannels, Posts, PostDrafts, PostNotes, PostVotes, Users } from '../models/relationships.js';
 import multer from 'multer';
 import { Router } from 'express';
 import path from 'path';
 import { Sequelize } from 'sequelize';
+import unzipper from 'unzipper'
 import { v4 } from 'uuid';
+import yauzl from 'yauzl'
 import sequelize from '../databaseSetup.js';
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const mediaDir = path.join(__dirname, '..', 'media', 'content');
 const feedAttributes = ['feed_id', 'parent_id', 'feed_name', 'description', 'feed_photo', 'follower_count', 'created_at', 'updated_at', 'type', 'is_group', 'feed_owner', 'is_locked'];
 const noteAttributes = ['note_id', 'note_content', 'created_at', 'updated_at', 'is_misinfo']
 const postAttributes = ['post_id', 'parent_id', 'feed_id', 'channel_id', 'title', 'content', 'replies', 'views', 'upvotes', 'downvotes', 'created_at', 'updated_at', 'poster_id', 'points']
 const router = Router();
-
-const calculateFileSizes = (files) => {
-    return files.reduce((total, file) => total + file.size, 0) / (1024 * 1024);
-};
+if (!fs.existsSync(mediaDir)) fs.mkdirSync(mediaDir, { recursive: true });
+const calculateFileSizes = files => files.reduce((total, file) => total + file.size, 0) / (1024 * 1024);
 
 const checkStorageLimit = async (req, res, next) => {
     try {
@@ -180,14 +183,6 @@ router.post('/content_vote', authenticateCheck, async (req, res) => {
 	}
 });
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-const mediaDir = path.join(__dirname, '..', 'media', 'content');
-if (!fs.existsSync(mediaDir)) {
-    fs.mkdirSync(mediaDir, { recursive: true });
-}
-
 const postFilter = (req, file, cb) => {
     const allowedTypes = /jpeg|jpg|png|gif|mp4|mov|avi/;
     const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
@@ -202,7 +197,7 @@ const postFilter = (req, file, cb) => {
     cb(null, true);
 };
 
-const post_storage = multer.diskStorage({
+const postStorage = multer.diskStorage({
     destination: (req, file, cb) => {
         cb(null, mediaDir);
     },
@@ -212,12 +207,12 @@ const post_storage = multer.diskStorage({
     }
 });
 
-const post_upload = multer({
+const postUpload = multer({
     fileFilter: postFilter,
-    storage: post_storage
+    storage: postStorage
 });
 
-router.post('/create_draft', authenticateCheck, checkStorageLimit, post_upload.array('files'), async (req, res) => {
+router.post('/create_draft', authenticateCheck, checkStorageLimit, postUpload.array('files'), async (req, res) => {
     try {
         let { draft_id, feed_id, channel_id, parent_id, content, title, poster_id } = req.body
         if (!draft_id) draft_id = v4()
@@ -254,7 +249,7 @@ router.post('/create_draft', authenticateCheck, checkStorageLimit, post_upload.a
     }
 });
 
-router.post('/create_post', authenticateCheck, checkStorageLimit, post_upload.array('files'), async (req, res) => {
+router.post('/create_post', authenticateCheck, checkStorageLimit, postUpload.array('files'), async (req, res) => {
     try {
         let { channel_id, content, feed_id, parent_id, post_id, poster_id, title } = req.body;
         if (!post_id) {
@@ -326,7 +321,7 @@ router.post('/create_post', authenticateCheck, checkStorageLimit, post_upload.ar
     }
 });
 
-router.post('/edit_post', authenticateCheck, checkStorageLimit, post_upload.array('files'), async (req, res) => {
+router.post('/edit_post', authenticateCheck, checkStorageLimit, postUpload.array('files'), async (req, res) => {
     try {
         let { content, post_id, title } = req.body;;
         const foundPost = await Posts.findByPk(post_id);
@@ -504,5 +499,88 @@ router.get('/post_replies/:postId', async (req, res) => {
         return res.status(500).json({ success: false });
     }
 });
+
+//Protect against zip bombs
+const MAX_ENTRIES =  1000
+const MAX_TOTAL_UNCOMPRESSED = 500 * 1024 * 1024 
+
+const isValidZip = filePath => new Promise((resolve, reject) => {
+    yauzl.open(filePath, { lazyEntries: true }, (err, zipfile) => {
+        if (err) return reject(err)
+        let entriesCount = 0
+        let totalUncompressed = 0
+        zipfile.readEntry()
+        zipfile.on('entry', entry => {
+            entriesCount++
+            totalUncompressed += entry.uncompressedSize
+            if (entriesCount > MAX_ENTRIES || totalUncompressed > MAX_TOTAL_UNCOMPRESSED) {
+                zipfile.close()
+                return reject(new Error('Archive exceeds allowed limits'))
+            }
+            zipfile.readEntry()
+        })
+        zipfile.on('end', () => resolve(true))
+    })
+})
+
+const buildFilter = (req, file, cb) => {
+    const ok = file.mimetype === 'application/zip'
+            || file.originalname.toLowerCase().endsWith('.zip')
+    return ok
+        ? cb(null, true)
+        : cb(new Error('Only .zip builds are allowed'))
+}
+
+const buildUpload = multer({
+    storage: postStorage,
+    fileFilter: buildFilter
+})
+
+const flattenIfNeeded = async dir => {
+    const entries = await fs.promises.readdir(dir)
+    for (const name of entries) {
+        const full = path.join(dir, name)
+        if ((await fs.promises.lstat(full)).isDirectory()) {
+            const subEntries = await fs.promises.readdir(full)
+            if (subEntries.includes('index.html')) {
+                const tmp = path.join(dir, '_tmp')
+                await fs.promises.rename(full, tmp)
+                for (const f of subEntries) {
+                    await fs.promises.rename(path.join(tmp, f), path.join(dir, f))
+                }
+                await fs.promises.rmdir(tmp)
+            }
+        }
+    }
+}
+
+router.post('/upload_build', authenticateCheck, buildUpload.single('build'), async (req, res) => {
+    try {
+        const buildId   = v4()
+        const targetDir = path.join(__dirname, '..', 'app_builds', buildId)
+        await fs.promises.mkdir(targetDir, { recursive: true })
+
+        await fs
+            .createReadStream(req.file.path)
+            .pipe(unzipper.Extract({ path: targetDir }))
+            .promise()
+
+        await flattenIfNeeded(targetDir)
+
+        const html      = await fs.promises.readFile(path.join(targetDir, 'index.html'), 'utf8')
+        const indexPath = path.join(targetDir, 'index.html')
+        const updated   = html
+            .replace(/(href|src)="\/([^"]+)"/g, `$1="/app_builds/${buildId}/$2"`)
+            .replace(/<head>/, `<head><base href="/app_builds/${buildId}/">`)
+        await fs.promises.writeFile(indexPath, updated)
+
+        await fs.promises.unlink(req.file.path)
+        await AppBuilds.create({ build_id: buildId, path: `/app_builds/${buildId}` })
+        return res.status(201).json({ success: true, buildId })
+    } catch (error) {
+        try { await fs.promises.unlink(req.file.path) } catch {}
+        return res.status(400).json({ success: false, message: error.message })
+    }
+})
 
 export default router;

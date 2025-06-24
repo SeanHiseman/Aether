@@ -4,3 +4,18 @@ ADD COLUMN verification_token TEXT NULL,
 ADD COLUMN verification_token_expires DATETIME(3) NULL;
 ADD COLUMN `reset_token` TEXT NULL AFTER `verification_token`,
 ADD COLUMN `reset_token_expires` DATETIME(3) NULL AFTER `verification_token_expires`;
+
+CREATE TABLE `app_builds` (
+  `build_id`   VARCHAR(36)    NOT NULL,
+  `post_id`    VARCHAR(36)    NULL,
+  `path`       VARCHAR(255)   NOT NULL,
+  `created_at` DATETIME(3)    NOT NULL
+     DEFAULT CURRENT_TIMESTAMP(3),
+  PRIMARY KEY (`build_id`),
+  INDEX `idx_appbuilds_post` (`post_id`),
+  CONSTRAINT `fk_appbuilds_posts`
+    FOREIGN KEY (`post_id`)
+    REFERENCES `posts` (`post_id`)
+    ON DELETE SET NULL
+    ON UPDATE CASCADE
+) ENGINE=InnoDB;

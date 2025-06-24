@@ -1,6 +1,13 @@
 import { BOOLEAN, STRING, DataTypes, INTEGER, TEXT } from 'sequelize';
 import sequelize from '../databaseSetup.js';
 
+const AppBuilds = sequelize.define('app_builds', {
+    build_id: { type: DataTypes.STRING(36), primaryKey: true },
+    post_id: { type: DataTypes.STRING(36), allowNull: true },
+    path: { type: DataTypes.STRING(255), allowNull: false },
+    created_at: { type: DataTypes.DATE(3), defaultValue: sequelize.literal('CURRENT_TIMESTAMP(3)') }
+}, { tableName: 'app_builds', timestamps: false });
+
 const Posts = sequelize.define('posts', {
     post_id: { type: STRING(36), primaryKey: true },
     parent_id: { type: STRING(36), allowNull: true }, 
@@ -57,6 +64,7 @@ const Prompts = sequelize.define('prompts', {
 }, { tableName: 'prompts', timestamps: false });
 
 export {
+    AppBuilds, 
     Posts,
     PostDrafts,
     PostNotes,

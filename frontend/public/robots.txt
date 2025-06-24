@@ -1,0 +1,9 @@
+#Block every crawler from /private/, allow everything else:
+User-agent: *
+Disallow: /private/
+
+#Give Googlebot special access:
+User-agent: Googlebot
+Allow: /
+
+Sitemap: https://aether.cool/sitemap.xml

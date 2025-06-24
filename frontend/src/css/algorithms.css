@@ -1,23 +1,6 @@
 @import url('variables.css');
 
-@keyframes fadeIn {
-	from {
-		opacity: 0;
-	}
-	to {
-		opacity: 1;
-	}
-}
-@keyframes slideIn {
-	from {
-		opacity: 0;
-		transform: translateY(-20px) scale(0.95);
-	}
-	to {
-		opacity: 1;
-		transform: translateY(0) scale(1);
-	}
-}
+
 @media (max-width: 768px) {
 	.action-row {
 		align-items: stretch;
@@ -89,7 +72,6 @@
 .algorithm-selector__trigger:hover {
 	background: linear-gradient(135deg, var(--border) 0%, var(--light) 100%);
 	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-	transform: translateY(-2px);
 }
 .error-state {
 	background: rgba(220, 38, 38, 0.1);

@@ -4,7 +4,7 @@ import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd'
 import { useNavigate, useParams } from 'react-router-dom'
 import PropTypes from 'prop-types'
 import React, { useCallback, useContext, useEffect, useRef, useState } from 'react'
-import { FaAlignCenter, FaArrowCircleUp, FaArrowRight, FaCircleNotch, FaCommentAlt, FaCrop, FaEdit, FaEllipsisV, FaEye, FaFont, FaLink, FaPhotoVideo, FaRegLightbulb, FaReply, FaSave, FaShareAlt, FaTerminal, FaTimes, FaToolbox, FaTrash, FaWindowClose } from 'react-icons/fa'
+import { FaAlignCenter, FaArrowCircleUp, FaArrowRight, FaCircleNotch, FaCommentAlt, FaCube, FaCrop, FaEdit, FaEllipsisV, FaEye, FaFont, FaLink, FaPhotoVideo, FaRegLightbulb, FaReply, FaSave, FaShareAlt, FaTerminal, FaTimes, FaToolbox, FaTrash, FaWindowClose } from 'react-icons/fa'
 import ReactQuill from 'react-quill'
 import 'react-quill/dist/quill.snow.css'
 import { v4 } from 'uuid'
@@ -13,7 +13,7 @@ import ContentWidget from './contentWidget'
 import Cropper from 'react-easy-crop';
 import GetCroppedImg from '../getCroppedImg'
 
-const BLOCK_TYPES = { CODE: 'CODE', MEDIA: 'MEDIA', TEXT: 'TEXT' }
+const BLOCK_TYPES = { APP: 'APP', CODE: 'CODE', MEDIA: 'MEDIA', TEXT: 'TEXT' }
 
 const escapeHtml = (html) =>
     html
@@ -22,6 +22,8 @@ const escapeHtml = (html) =>
         .replace(/'/g, '&#39;')
         .replace(/</g, '&lt;')
         .replace(/>/g, '&gt;')
+
+const isZip = f => f.type === 'application/zip' || f.name.endsWith('.zip')
 
 const parseContentBlocks = (htmlString) => {
     const parser = new DOMParser()
@@ -49,6 +51,9 @@ const parseContentBlocks = (htmlString) => {
             } else {
                 result.push({ data: { file: null, fileType: '', isImage: false, isVideo: false, url: '', align }, id: blockId, isEditing: true, type: BLOCK_TYPES.MEDIA })
             }
+        }
+        else if (blockClass.includes('app-block')) {
+	        result.push({ data:{ buildId: div.getAttribute('data-buildid') }, id: blockId, isEditing: false, type: BLOCK_TYPES.APP })
         }
     })
     return result
@@ -161,6 +166,28 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onEdit
         setBlocks(updatedBlocks);
     };
 
+    const appFileChange = useCallback(async e => {
+        const file = e.target.files[0]
+        if (!file || !isZip(file)) return
+        try {
+            const data = new FormData()
+            data.append('build', file)
+            const response = await axios.post('/api/upload_build', data)
+            if (response.data && response.data.success) {
+                const appBlock = {
+                    data: { buildId: response.data.buildId },
+                    id: v4(),
+                    isEditing: false,
+                    type: BLOCK_TYPES.APP
+                }
+                setBlocks(prev => [...prev, appBlock])
+            }
+        } catch {
+            setPostErrorMessage('App upload failed.')
+            setTimeout(() => setPostErrorMessage(''), 5000)
+        }
+    }, [])
+
     const applyCrop = useCallback(async (blockId) => {
         const blockCropState = cropState[blockId];
         if (!blockCropState || !blockCropState.croppedAreaPixels) return;
@@ -195,6 +222,7 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onEdit
             if (block.type === BLOCK_TYPES.TEXT) return block.data.html && block.data.html.trim() !== ''
             if (block.type === BLOCK_TYPES.CODE) return block.data.code && block.data.code.trim() !== ''
             if (block.type === BLOCK_TYPES.MEDIA) return block.data.url && block.data.url.trim() !== ''
+            if (block.type === BLOCK_TYPES.APP)   return true
             return false
         }).forEach(block => {
             if (block.type === BLOCK_TYPES.TEXT) {
@@ -210,6 +238,8 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onEdit
                 } else {
                     finalHTML += `<div class="content-block media-block" data-blockid="${block.id}" data-align="${block.data.align}">Unsupported</div>`
                 }
+            } else if (block.type === BLOCK_TYPES.APP) {
+	            finalHTML += `<div class="content-block app-block" data-blockid="${block.id}" data-buildid="${block.data.buildId}"></div>`
             }
         })
         return finalHTML
@@ -884,6 +914,9 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onEdit
                             <button className="small-icon" type="button" onClick={() => handleAddBlock(BLOCK_TYPES.CODE)} title="Add custom">
                                 <FaToolbox />
                             </button>
+                            <label htmlFor="app-input" className="small-icon" title="Add app">
+                                <FaCube />
+                            </label>
                         </div>
                         <div className="center-buttons" style={{ display: 'flex', gap: '10px', position: 'absolute', left: '50%', transform: 'translateX(-50%)' }}>
                             {!showGlobalAiPrompt ? (
@@ -984,6 +1017,7 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onEdit
                     </div>
                 )}
                 <input accept="image/*,video/*" hidden id="media-input" multiple onChange={handleFilesChange} type="file" />
+                <input accept=".zip" hidden id="app-input" onChange={appFileChange} type="file" />
                 {editMode && 
                     <div style={{width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
                         <p className="text24" style={{marginLeft: 0, marginTop: 0}}>{isReply ? 'Reply' : 'Editing'}</p>
@@ -1017,48 +1051,48 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onEdit
                                                                     )}
                                                                 </div>
                                                                 <div style={{ position: 'relative' }}>
-                                                                {type === BLOCK_TYPES.MEDIA && (
-                                                                    <div style={{ position: 'relative', display: 'flex', gap: '10px' }}>
-                                                                        {data.isImage && (
-                                                                        <button 
-                                                                            className="small-icon" 
-                                                                            onClick={() => setCropState(prev => ({
-                                                                            ...prev,
-                                                                            [id]: {
-                                                                                isCropping: true,
-                                                                                crop: { x: 0, y: 0 },
-                                                                                zoom: 1,
-                                                                                croppedAreaPixels: null
-                                                                            }
-                                                                            }))} 
-                                                                            title="Crop image" 
-                                                                            type="button"
-                                                                        >
-                                                                            <FaCrop /><p className="icon-text">Crop</p>
-                                                                        </button>
-                                                                        )}
-                                                                        <button className="small-icon" onClick={() => toggleMediaAlignment(block)} title={block.data.align === 'center' ? "Align left" : "Align centre"} type="button">
-                                                                            <FaAlignCenter />
-                                                                        </button>
-                                                                    </div>
-                                                                    )}
-                                                                    {type === BLOCK_TYPES.CODE && (
-                                                                    <>
-                                                                        <button className="small-icon" onClick={() => setCodeBlockDropdown({...codeBlockDropdown, [id]: !codeBlockDropdown[id]})} type="button">
-                                                                            <FaEllipsisV /><p style={{ fontSize: '14px', margin: '0px'}}>Add content</p>
-                                                                        </button>
-                                                                        {codeBlockDropdown[id] && (
-                                                                        <div className="dropdown-menu">
-                                                                            <button className="small-icon" onClick={() => {setCodeBlockDropdown({...codeBlockDropdown, [id]: false}); addIframe(id);}}>
-                                                                                <FaLink /><p className="icon-text">Embed website</p>
+                                                                    {type === BLOCK_TYPES.MEDIA && (
+                                                                        <div style={{ position: 'relative', display: 'flex', gap: '10px' }}>
+                                                                            {data.isImage && (
+                                                                            <button 
+                                                                                className="small-icon" 
+                                                                                onClick={() => setCropState(prev => ({
+                                                                                ...prev,
+                                                                                [id]: {
+                                                                                    isCropping: true,
+                                                                                    crop: { x: 0, y: 0 },
+                                                                                    zoom: 1,
+                                                                                    croppedAreaPixels: null
+                                                                                }
+                                                                                }))} 
+                                                                                title="Crop image" 
+                                                                                type="button"
+                                                                            >
+                                                                                <FaCrop /><p className="icon-text">Crop</p>
                                                                             </button>
-                                                                            <button className="small-icon" onClick={() => {setCodeBlockDropdown({...codeBlockDropdown, [id]: false});addSocialMedia(id);}}>
-                                                                                <FaShareAlt /><p className="icon-text">Insert Social Media Post</p>
+                                                                            )}
+                                                                            <button className="small-icon" onClick={() => toggleMediaAlignment(block)} title={block.data.align === 'center' ? "Align left" : "Align centre"} type="button">
+                                                                                <FaAlignCenter />
                                                                             </button>
                                                                         </div>
-                                                                        )}
-                                                                    </>
-                                                                )}
+                                                                    )}
+                                                                    {type === BLOCK_TYPES.CODE && (
+                                                                        <>
+                                                                            <button className="small-icon" onClick={() => setCodeBlockDropdown({...codeBlockDropdown, [id]: !codeBlockDropdown[id]})} type="button">
+                                                                                <FaEllipsisV /><p style={{ fontSize: '14px', margin: '0px'}}>Add content</p>
+                                                                            </button>
+                                                                            {codeBlockDropdown[id] && (
+                                                                            <div className="dropdown-menu">
+                                                                                <button className="small-icon" onClick={() => {setCodeBlockDropdown({...codeBlockDropdown, [id]: false}); addIframe(id);}}>
+                                                                                    <FaLink /><p className="icon-text">Embed website</p>
+                                                                                </button>
+                                                                                <button className="small-icon" onClick={() => {setCodeBlockDropdown({...codeBlockDropdown, [id]: false});addSocialMedia(id);}}>
+                                                                                    <FaShareAlt /><p className="icon-text">Insert Social Media Post</p>
+                                                                                </button>
+                                                                            </div>
+                                                                            )}
+                                                                        </>
+                                                                    )}
                                                                 </div>
                                                             </div>
                                                             {type === BLOCK_TYPES.TEXT && (
@@ -1207,20 +1241,31 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onEdit
                                                                                 <button className="small-icon" onClick={() => applyCrop(id)} title="Apply Crop" type="button">
                                                                                     <FaSave /><p className="icon-text">Apply</p>
                                                                                 </button>
+                                                                            </div>
                                                                         </div>
-                                                                </div>
-                                                            ) : (
-                                                                <>
-                                                                    {data.isImage ? (
-                                                                    <img alt="Uploaded Media" src={data.url} style={data.align === 'center' ? { display: 'block', margin: '0 auto', maxWidth: '100%', height: 'auto' } : { maxWidth: '100%', height: 'auto' }} />
-                                                                    ) : data.isVideo ? (
-                                                                        <video controls src={data.url} style={data.align === 'center' ? { display: 'block', margin: '0 auto', maxWidth: '100%', height: 'auto' } : { maxWidth: '100%', height: 'auto' }} />
                                                                     ) : (
-                                                                        <p>Unsupported</p>
+                                                                        <>
+                                                                            {data.isImage ? (
+                                                                                <img alt="Uploaded Media" src={data.url} style={data.align === 'center' ? { display: 'block', margin: '0 auto', maxWidth: '100%', height: 'auto' } : { maxWidth: '100%', height: 'auto' }} />
+                                                                            ) : data.isVideo ? (
+                                                                                <video controls src={data.url} style={data.align === 'center' ? { display: 'block', margin: '0 auto', maxWidth: '100%', height: 'auto' } : { maxWidth: '100%', height: 'auto' }} />
+                                                                            ) : (
+                                                                                <p>Unsupported</p>
+                                                                            )}
+                                                                        </>
                                                                     )}
-                                                                </>
+                                                                </div>
                                                             )}
-                                                            </div>
+                                                            {type === BLOCK_TYPES.APP && (
+                                                                <div key={id}>
+                                                                    <iframe
+                                                                        ref={el => { iframeRefs.current[id] = el }}
+                                                                        sandbox="allow-scripts allow-same-origin"
+                                                                        src={`/app_builds/${data.buildId}/index.html`}
+                                                                        style={{ border:'none', width:'100%', height:'0px' }}
+                                                                        title={`app-preview-${id}`}
+                                                                    />
+                                                                </div>
                                                             )}
                                                         </div>
                                                     )}

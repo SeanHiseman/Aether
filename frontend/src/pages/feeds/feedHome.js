@@ -506,8 +506,8 @@ const FeedHome = () => {
                                             {showDrafts ? <FaFolder /> : <FaFolderOpen />}<p className="icon-text">{showDrafts ? "Hide drafts" : "Drafts"}</p>
                                         </button>
                                     )}
-                                    <AlgorithmSelector feedId={feed.feed_id} />
                                 </div>
+                                <AlgorithmSelector feedId={feed.feed_id} />
                                 {showChannelForm && (
                                     <form className="add-channel-form" onSubmit={AddChannel}>
                                         <input 

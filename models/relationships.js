@@ -1,4 +1,4 @@
-import { Posts, PostDrafts, PostNotes, PostVotes, Prompts } from "./content.js";
+import { AppBuilds, Posts, PostDrafts, PostNotes, PostVotes, Prompts } from "./content.js";
 import { DeepFeeds, DeepFeedContent, Feeds, FeedChannels, FeedChannelMessages, Followers, FollowRequests } from "./feeds.js";
 import { AskChats, AskMessages, Chats, ConnectRequests, Connections, FeedChats, Messages } from "./messages.js";
 import { Users } from "./users.js";
@@ -33,6 +33,9 @@ FeedChannels.hasMany(Posts, { as: 'posts', foreignKey: 'channel_id' });
 
 Posts.hasMany(Posts, { as: 'parentPost', foreignKey: 'post_id' });
 Posts.belongsTo(Posts, { as: 'reply', foreignKey: 'post_id' });
+
+Posts.hasMany(AppBuilds, { foreignKey: 'post_id', sourceKey: 'post_id' });
+AppBuilds.belongsTo(Posts, { foreignKey: 'post_id', targetKey: 'post_id' });
 
 Feeds.hasMany(FollowRequests, { as: 'receivedFollowRequests', foreignKey: 'receiver_id' });
 FollowRequests.belongsTo(Feeds, { as: 'sender', foreignKey: 'sender_id' });
@@ -74,6 +77,7 @@ PostNotes.belongsTo(Posts, { foreignKey: 'post_id', as: 'parentPost'});
 Posts.hasOne(PostNotes, { foreignKey: 'post_id', as: 'note'});
 
 export {
+    AppBuilds,
     AskChats, 
     AskMessages, 
     Chats, 
