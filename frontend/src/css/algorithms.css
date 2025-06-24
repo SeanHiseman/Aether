@@ -67,7 +67,7 @@
 	color: var(--lightest);
 	cursor: pointer;
 	font-size: var(--small-text);
-	padding: var(--medium-margin) var(--large-margin);
+	padding: var(--small-margin);
 }
 .algorithm-selector__trigger:hover {
 	background: linear-gradient(135deg, var(--border) 0%, var(--light) 100%);

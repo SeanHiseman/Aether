@@ -388,7 +388,7 @@ router.get('/get_post_drafts', authenticateCheck, async (req, res) => {
         const drafts = await PostDrafts.findAll({
             where: { channel_id, poster_id },
             order: [['updated_at','DESC']],
-            limit:  parseInt(limit,  10),
+            limit: parseInt(limit,  10),
             offset: parseInt(offset, 10)
         });
         return res.status(200).json({ drafts });
@@ -397,39 +397,78 @@ router.get('/get_post_drafts', authenticateCheck, async (req, res) => {
     }
 });
 
+const deleteBuilds = async html => {
+	const buildsDir	= path.resolve(process.cwd(), 'app_builds');
+	const ids = new Set();
+	const regexAttr	= /data-buildid="([0-9a-fA-F-]{36})"/g;
+	const regexPath	= /\/app_builds\/([0-9a-fA-F-]{36})/g;
+	let match;
+	while ((match = regexPath.exec(html)) !== null)	ids.add(match[1].toLowerCase());
+	while ((match = regexAttr.exec(html)) !== null)	ids.add(match[1].toLowerCase());
+	for (const id of ids) {
+		const dir = path.join(buildsDir, id);
+		try { await fs.promises.rm(dir, { recursive: true, force: true }); } catch {}
+		await AppBuilds.destroy({ where: { build_id: id } });
+	}
+};
+
+router.delete('/remove_build', authenticateCheck, async (req, res) => {
+		const { buildId } = req.body;
+		if (!buildId) {
+			return res.status(400).json({ success: false, message: 'Missing buildId' });
+		}
+		try {
+			await deleteBuilds(`<div data-buildid="${buildId}"></div>`);
+			return res.status(200).json({ success: true });
+		} catch (error) {
+			return res.status(500).json({ success: false });
+		}
+	}
+);
+
 router.delete('/remove_draft', authenticateCheck, async (req, res) => {
-    try {
-        const { draft } = req.body;
-        const foundDraft = await PostDrafts.findByPk(draft.draft_id);
-        deleteMedia(foundDraft.content);
-        await PostDrafts.destroy({ where: { draft_id: draft.draft_id } });
-        res.status(200).json({ success: true });
-    } catch (error) {
-        res.status(500).json({ success: false });
-    }
+    let transaction;
+	try {
+        transaction = await sequelize.transaction();
+		const { draft } = req.body;
+		const foundDraft = await PostDrafts.findByPk(draft.draft_id);
+		if (foundDraft) {
+			deleteMedia(foundDraft.content);
+			await deleteBuilds(foundDraft.content, { transcation });
+			await PostDrafts.destroy({ where: { draft_id: draft.draft_id } });
+		}
+        await transaction.commit();
+		return res.status(200).json({ success: true });
+	} catch (error) {
+        if (transaction) await transaction.rollback();
+		return res.status(500).json({ success: false });
+	}
 });
 
 router.delete('/remove_post', authenticateCheck, async (req, res) => {
-    let transaction;
-    try {
-        transaction = await sequelize.transaction();
-        const { post } = req.body;
-        const foundPost = await Posts.findByPk(post.post_id);
-        deleteMedia(foundPost.content);
-        if (post.parent_id) {
-            const parentPost = await Posts.findByPk(post.parent_id);
-            parentPost.replies -= 1;
-            await parentPost.save();
-        }
-        await PostVotes.destroy({ where: { post_id: post.post_id }, transaction });
-        await PostNotes.destroy({ where: { post_id: post.post_id }, transaction });
-        await Posts.destroy({ where: { post_id: post.post_id }, transaction });
-        await transaction.commit();
-        res.status(200).json({ success: true });
-    } catch (error) {
-        if (transaction) await transaction.rollback();
-        res.status(500).json({ success: false });
-    }
+	let transaction;
+	try {
+		transaction = await sequelize.transaction();
+		const { post } = req.body;
+		const foundPost = await Posts.findByPk(post.post_id);
+		if (foundPost) {
+			deleteMedia(foundPost.content);
+			await deleteBuilds(foundPost.content, { transaction });
+			if (post.parent_id) {
+				const parentPost = await Posts.findByPk(post.parent_id);
+				parentPost.replies -= 1;
+				await parentPost.save();
+			}
+			await PostVotes.destroy({ where: { post_id: post.post_id }, transaction });
+			await PostNotes.destroy({ where: { post_id: post.post_id }, transaction });
+			await Posts.destroy({ where: { post_id: post.post_id }, transaction });
+		}
+		await transaction.commit();
+		return res.status(200).json({ success: true });
+	} catch (error) {
+		if (transaction) await transaction.rollback();
+		return res.status(500).json({ success: false });
+	}
 });
 
 router.post('/increment_views', authenticateCheck, async (req, res) => {
@@ -437,13 +476,7 @@ router.post('/increment_views', authenticateCheck, async (req, res) => {
         const { postId } = req.body;
         const post = await Posts.findByPk(postId);
         post.views += 1;
-        //Update post points
-        //post.points = calculatePoints(post.upvotes, post.downvotes, post.views);
         await post.save();
-        //Update user points
-        //const user = await Users.findByPk(post.poster_id);
-        //user.points = await ProfilePosts.sum('points', { where: { poster_id: post.poster_id } });
-        //await user.save();
         res.status(200).json({ success: true });
     } catch (error) {
         res.status(500).json({ success: false });   
@@ -556,28 +589,25 @@ const flattenIfNeeded = async dir => {
 
 router.post('/upload_build', authenticateCheck, buildUpload.single('build'), async (req, res) => {
     try {
-        const buildId   = v4()
+        const buildId = v4()
         const targetDir = path.join(__dirname, '..', 'app_builds', buildId)
         await fs.promises.mkdir(targetDir, { recursive: true })
-
         await fs
             .createReadStream(req.file.path)
             .pipe(unzipper.Extract({ path: targetDir }))
             .promise()
-
         await flattenIfNeeded(targetDir)
-
-        const html      = await fs.promises.readFile(path.join(targetDir, 'index.html'), 'utf8')
+        const html = await fs.promises.readFile(path.join(targetDir, 'index.html'), 'utf8')
         const indexPath = path.join(targetDir, 'index.html')
-        const updated   = html
+        const updated = html
             .replace(/(href|src)="\/([^"]+)"/g, `$1="/app_builds/${buildId}/$2"`)
             .replace(/<head>/, `<head><base href="/app_builds/${buildId}/">`)
         await fs.promises.writeFile(indexPath, updated)
-
         await fs.promises.unlink(req.file.path)
         await AppBuilds.create({ build_id: buildId, path: `/app_builds/${buildId}` })
         return res.status(201).json({ success: true, buildId })
     } catch (error) {
+        console.error('Error uploading build:', error)
         try { await fs.promises.unlink(req.file.path) } catch {}
         return res.status(400).json({ success: false, message: error.message })
     }

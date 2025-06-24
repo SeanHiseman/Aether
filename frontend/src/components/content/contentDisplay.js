@@ -17,7 +17,7 @@ const AppBlock = ({ buildId }) => {
 			ref={iframeRef}
 			sandbox="allow-scripts allow-same-origin"
 			src={`/app_builds/${buildId}/index.html`}
-			style={{ border: 'none', minHeight: '300px', width: '100%', height: '300px' }}
+			style={{ border: 'none', minHeight: '50vh', width: '100%', height: '50vh' }}
 			title={`app-block-${buildId}`}
 			onLoad={onLoad}
 		/>

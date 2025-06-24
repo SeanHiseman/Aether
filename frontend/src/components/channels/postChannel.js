@@ -14,6 +14,8 @@ const PostChannel = ({ channelId, channelName, feed, isDraft, isGroup, onEditCli
     const isMain = channel_name === 'Main';
     const PAGE_SIZE = 10;
 
+    const channelReady = !!channelId;
+
     const getSinglePost = async () => {
         const response = await axios.get('/api/channel_posts', { params: { feedId, isSingle: true, postId: post_id } });
         return response.data.post; 
@@ -30,7 +32,7 @@ const PostChannel = ({ channelId, channelName, feed, isDraft, isGroup, onEditCli
     };
 
     const { data: draftsData, error: draftsError, fetchNextPage: fetchNextDrafts, hasNextPage: hasMoreDrafts, isFetchingNextPage: isFetchingDrafts, isLoading: draftsLoading } = useInfiniteQuery({
-        enabled: !post_id && isDraft,
+        enabled: !post_id && isDraft && channelReady,
         queryKey: ['drafts', channelId, viewer?.feed_id],
         queryFn: getDrafts,
         getNextPageParam: (lastPage, allPages) =>
@@ -39,7 +41,7 @@ const PostChannel = ({ channelId, channelName, feed, isDraft, isGroup, onEditCli
 
     //Gets individual post 
     const { data: singlePost, error: singlePostError, isLoading: singlePostLoading } = useQuery({
-        enabled: !!post_id, //post_id only present in url for single posts
+        enabled: !!post_id && channelReady, //post_id only present in url for single posts
         queryFn: getSinglePost,
         queryKey: ['singlePost', post_id]
     });
@@ -96,6 +98,9 @@ const PostChannel = ({ channelId, channelName, feed, isDraft, isGroup, onEditCli
         return () => loaderRef.current && obs.unobserve(loaderRef.current)
     }, [isDraft, hasMoreDrafts, isFetchingDrafts, fetchNextDrafts, hasNextPage, isFetchingNextPage, fetchNextPage])
 
+    if (!channelReady) {
+		return <p className="text36">Loading channel...</p>;
+	}
     if (post_id && singlePostError) {
         if (singlePostError.response?.status === 404) {
             return <p className="text36">Post not found. Please check the URL.</p>;

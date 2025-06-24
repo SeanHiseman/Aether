@@ -28,12 +28,12 @@ const ContentWidget = ({ canRemove, feed, isDraft, isGroup, onEditClick, onPostR
 	const [upvotes, setUpvotes] = useState(post.upvotes);
 	const [views, setViews] = useState(post.views);
 	const { isAuthenticated, viewer, user } = useContext(AuthContext);
-    const channelName = post.parentChannel.channel_name;
-    const feedName = post.parentChannel.feed?.feed_name;
+    const channelName = post.parentChannel?.channel_name;
+    const feedName = post.parentChannel?.feed?.feed_name;
 	const isReply = readOnly ? false : post.parent_id !== null; //Read only means not displaying widget as a reply
 	const isViewingOwnPost = post.poster_id === viewer?.feed_id;
 	const timeAgo = useTimeAgo(post.created_at);
-	const urlPrefix = (post.parentChannel.feed?.is_group) ? 'g' : 'u';
+	const urlPrefix = (post.parentChannel?.feed?.is_group) ? 'g' : 'u';
 
 	const getReplies = useCallback(async (postId) => {
 		try {
@@ -253,9 +253,9 @@ const ContentWidget = ({ canRemove, feed, isDraft, isGroup, onEditClick, onPostR
 						<p className="feed-list-text">{post.poster?.feed_name ?? 'Anonymous'}</p>
 					</Link>
 				</div>)}
-				<Link to={`/${urlPrefix}/${feedName}/${channelName}`}>
+				{!isDraft && <Link to={`/${urlPrefix}/${feedName}/${channelName}`}>
 					<p className="text16 clickable">{feedName}/{channelName}</p>
-				</Link>
+				</Link>}
 				{!isDraft && (<div className="vote-container">
 					{isAuthenticated ? (
 						!isViewingOwnPost ? (   

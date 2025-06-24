@@ -70,6 +70,14 @@ app.use('/api/', feeds);
 app.use('/api/', routes);
 app.use('/api/', users);
 
+app.get('/robots.txt', (req, res) => {
+	res.sendFile(path.join(__dirname, 'frontend', 'build', 'robots.txt'));
+});
+
+app.get('/sitemap.xml', (req, res) => {
+	res.sendFile(path.join(__dirname, 'frontend', 'build', 'sitemap.xml'));
+});
+
 app.get('*', (req, res, next) => {
 	if (
 		req.path.startsWith('/app_builds/') ||
