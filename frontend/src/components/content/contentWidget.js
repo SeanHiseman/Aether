@@ -249,19 +249,36 @@ const ContentWidget = ({ canRemove, feed, isDraft, isGroup, onEditClick, onPostR
 					{post.title || '\u00A0'}
 				</span>
 			</Link>
-			<div ref={fullscreenRef} style={{ width: '100%' }}>
-				<ContentDisplay
-					content={post.content}
-					onOverflowChange={handleOverflowChange}
-					showFullContent={showFullContent}
-					showScrollBar={false}
-				/>
-				<div style={{
+			<div
+				ref={fullscreenRef}
+				style={{
+					position: 'relative',
+					width: '100%',
+					height: '100vh',
+					display: 'flex',
+					flexDirection: 'column'
+				}}
+			>
+				<div style={{ flex: 1, overflowY: 'auto' }}>
+					<ContentDisplay
+						content={post.content}
+						onOverflowChange={handleOverflowChange}
+						showFullContent={showFullContent}
+						showScrollBar={false}
+					/>
+				</div>
+				<div
+					style={{
+						position: 'absolute',
+						bottom: 0,
+						left: 0,
+						width: '100%',
 						display: 'flex',
 						justifyContent: 'space-between',
 						alignItems: 'center',
-						width: '100%',
-					}}>
+						padding: '0.5rem'
+					}}
+				>
 					{isOverflowing && (
 						<button
 							className="small-icon"
@@ -271,7 +288,11 @@ const ContentWidget = ({ canRemove, feed, isDraft, isGroup, onEditClick, onPostR
 							{showFullContent ? <FaChevronUp /> : <FaChevronDown />}
 						</button>
 					)}
-					<button className="large-icon" onClick={toggleFullscreen} title="Toggle full-screen">
+					<button
+						className="large-icon"
+						onClick={toggleFullscreen}
+						title="Toggle full-screen"
+					>
 						<FaExpand />
 					</button>
 				</div>
