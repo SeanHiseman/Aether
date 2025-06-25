@@ -8,7 +8,7 @@ const ContentDisplay = ({ content, onOverflowChange = () => {}, showFullContent,
 	const contentRef = useRef(null)
 	const iframeRefs = useRef({})
 	const maxHeightStyle = showFullContent ? 'none' : '50vh'
-	const overflowStyle = showScrollBar ? 'auto' : 'hidden'
+	const overflowStyle = 'visible'
 
 	useEffect(() => {
 		const parser = new DOMParser()
