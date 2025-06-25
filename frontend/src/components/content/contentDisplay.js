@@ -6,9 +6,7 @@ import AppWebContainer from './appWebContainer'
 const ContentDisplay = ({ content, onOverflowChange = () => {}, showFullContent, showScrollBar }) => {
 	const [blocks, setBlocks] = useState([])
 	const contentRef = useRef(null)
-	const iframeRefs = useRef({})
 	const maxHeightStyle = showFullContent ? 'none' : '50vh'
-	const overflowStyle = 'visible'
 
 	useEffect(() => {
 		const parser = new DOMParser()
@@ -20,51 +18,48 @@ const ContentDisplay = ({ content, onOverflowChange = () => {}, showFullContent,
 			const id = div.getAttribute('data-blockid')
 			if (div.classList.contains('text-block')) {
 				parsed.push({
+					html: div.innerHTML.trim(),
 					id,
 					type: 'text',
-					html: div.innerHTML.trim()
 				})
-			}
-			else if (div.classList.contains('code-block')) {
+			} else if (div.classList.contains('code-block')) {
 				parsed.push({
+					code: div.getAttribute('data-code') || '',
 					id,
 					type: 'code',
-					code: div.getAttribute('data-code') || ''
 				})
-			}
-			else if (div.classList.contains('media-block')) {
+			} else if (div.classList.contains('media-block')) {
 				const align = div.getAttribute('data-align') || 'left'
 				const img   = div.querySelector('img')
 				const video = div.querySelector('video')
 				if (img) {
 					parsed.push({
+						align,
 						id,
-						type: 'media',
 						isImage: true,
 						isVideo: false,
-						align,
-						url: img.src
+						type: 'media',
+						url: img.src,
 					})
 				} else if (video) {
 					const src = video.querySelector('source')
 					parsed.push({
-						id,
-						type: 'media',
-						isImage: false,
-						isVideo: true,
 						align,
 						fileType: src?.type || '',
-						url: src?.src || ''
+						id,
+						isImage: false,
+						isVideo: true,
+						type: 'media',
+						url: src?.src || '',
 					})
 				}
-			}
-			else if (div.classList.contains('app-block')) {
+			} else if (div.classList.contains('app-block')) {
 				parsed.push({
-					id,
-					type: 'app',
 					appPath: div.getAttribute('data-apppath'),
 					buildId: div.getAttribute('data-buildid'),
-					kind:    div.getAttribute('data-kind') || 'static'
+					id,
+					kind: div.getAttribute('data-kind') || 'static',
+					type: 'app',
 				})
 			}
 		})
@@ -72,56 +67,13 @@ const ContentDisplay = ({ content, onOverflowChange = () => {}, showFullContent,
 		setBlocks(parsed)
 	}, [content])
 
-	useEffect(() => {
-		function handleMessage(e) {
-			if (!e.data || !e.data.blockId || !e.data.height) return
-			const iframe = iframeRefs.current[e.data.blockId]
-			if (iframe) {
-				iframe.style.height = `${e.data.height}px`
-				debounceCheckOverflow()
-			}
-		}
-		window.addEventListener('message', handleMessage)
-		return () => window.removeEventListener('message', handleMessage)
-	}, [])
-
-	useEffect(() => {
-		debounceCheckOverflow()
-	}, [blocks])
-
-	useEffect(() => {
-		const observer = new ResizeObserver(debounceCheckOverflow)
-		if (contentRef.current) observer.observe(contentRef.current)
-		return () => {
-			if (contentRef.current) observer.unobserve(contentRef.current)
-			observer.disconnect()
-		}
-	}, [blocks])
-
-	const debounce = (func, delay) => {
-		let timer
-		return () => {
-			clearTimeout(timer)
-			timer = setTimeout(func, delay)
-		}
-	}
-
-	const checkOverflow = () => {
-		if (!contentRef.current) return
-		const currentHeight = contentRef.current.scrollHeight
-		const maxAllowed = window.innerHeight * 0.5
-		onOverflowChange(currentHeight > maxAllowed)
-	}
-
-	const debounceCheckOverflow = debounce(checkOverflow, 100)
-
 	return (
 		<div
 			ref={contentRef}
 			style={{
 				maxHeight: maxHeightStyle,
-				overflow: overflowStyle,
-				transition: 'max-height 0.3s ease',
+				overflow: 'hidden',
+				position: 'relative',
 			}}
 		>
 			{blocks.map((block, i) => {
@@ -132,12 +84,9 @@ const ContentDisplay = ({ content, onOverflowChange = () => {}, showFullContent,
 					return (
 						<iframe
 							key={i}
-							ref={el => {
-								iframeRefs.current[block.id] = el
-							}}
 							sandbox="allow-scripts allow-same-origin"
-							srcDoc={`<!DOCTYPE html><html><head><style>body{margin:0;padding:0}</style></head><body>${block.code}<script>function h(){const d=document.body.scrollHeight;parent.postMessage({blockId:'${block.id}',height:d},'*')}window.addEventListener('load',h);window.addEventListener('resize',h);new MutationObserver(h).observe(document.body,{childList:true,subtree:true,characterData:true})<\/script></body></html>`}
-							style={{ border: 'none', height: '0px', width: '100%' }}
+							srcDoc={block.code}
+							style={{ border: 'none', height: '100%', width: '100%' }}
 							title={`code-block-${block.id}`}
 						/>
 					)
