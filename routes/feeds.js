@@ -528,6 +528,7 @@ router.delete('/delete_feed_channel', authenticateCheck, async (req, res) => {
             return res.status(400).json({ success: false, message: "Channel ID is required." });
         }
         await FeedChannelMessages.destroy({ where: { channel_id: channelId }, transaction });
+        await Posts.destroy({ where: { channel_id: channelId }, transaction });
         const deletedCount = await FeedChannels.destroy({ where: { channel_id: channelId }, transaction });
         if (deletedCount === 0) {
             await transaction.rollback(); 
