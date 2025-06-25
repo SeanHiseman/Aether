@@ -1,7 +1,7 @@
 import axios from 'axios';
-import { FaArrowDown, FaArrowUp, FaChevronDown, FaChevronUp, FaComments, FaCommentSlash, FaEdit, FaReply, FaTrash, FaTree, FaListUl } from 'react-icons/fa';
+import { FaArrowDown, FaArrowUp, FaChevronDown, FaChevronUp, FaComments, FaCommentSlash, FaEdit, FaExpand, FaReply, FaTrash, FaTree, FaListUl } from 'react-icons/fa';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { useCallback, useContext, useEffect, useState } from 'react';
+import { useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { AuthContext } from '../authContext';
 import AskButton from '../askButton';
 import ContentDisplay from './contentDisplay';
@@ -14,6 +14,7 @@ const ContentWidget = ({ canRemove, feed, isDraft, isGroup, onEditClick, onPostR
 	const [downvoteLimit, setDownvoteLimit] = useState(false);
 	const [downvotes, setDownvotes] = useState(post.downvotes);
 	const { feed_name, channel_name, post_id } = useParams();
+	const fullscreenRef = useRef(null);
 	const [hasViewed, setHasViewed] = useState(false);
 	const [isOverflowing, setIsOverflowing] = useState(false);
 	const navigate = useNavigate();
@@ -180,6 +181,15 @@ const ContentWidget = ({ canRemove, feed, isDraft, isGroup, onEditClick, onPostR
 		}
 	}, [getReplies, hasViewed, incrementViews, post.post_id, showReplies]);
 
+	const toggleFullscreen = () => {
+		if (!fullscreenRef.current) return;
+		if (!document.fullscreenElement) {
+			fullscreenRef.current.requestFullscreen();
+		} else {
+			document.exitFullscreen();
+		}
+	};
+
 	const toggleReplies = () => {
 		setShowReplies((prev) => !prev);
 	};
@@ -239,12 +249,33 @@ const ContentWidget = ({ canRemove, feed, isDraft, isGroup, onEditClick, onPostR
 					{post.title || '\u00A0'}
 				</span>
 			</Link>
-			<ContentDisplay content={post.content} onOverflowChange={handleOverflowChange} showFullContent={showFullContent} showScrollBar={false} />
-			{isOverflowing && (
-				<button className="small-icon" onClick={() => setShowFullContent(!showFullContent)} title={showFullContent ? 'Show less' : 'Show more'}>
-					{showFullContent ? <FaChevronUp /> : <FaChevronDown />}
-				</button>
-			)}
+			<div ref={fullscreenRef} style={{ width: '100%' }}>
+				<ContentDisplay
+					content={post.content}
+					onOverflowChange={handleOverflowChange}
+					showFullContent={showFullContent}
+					showScrollBar={false}
+				/>
+				<div style={{
+						display: 'flex',
+						justifyContent: 'space-between',
+						alignItems: 'center',
+						width: '100%',
+					}}>
+					{isOverflowing && (
+						<button
+							className="small-icon"
+							onClick={() => setShowFullContent(!showFullContent)}
+							title={showFullContent ? 'Show less' : 'Show more'}
+						>
+							{showFullContent ? <FaChevronUp /> : <FaChevronDown />}
+						</button>
+					)}
+					<button className="large-icon" onClick={toggleFullscreen} title="Toggle full-screen">
+						<FaExpand />
+					</button>
+				</div>
+			</div>
 			{showNote && <div className="ask-note"><p className="ask-note-text">{note}</p></div>}
 			<div className="content-metadata">
 				{!isDraft && (<div className="feed-info">
