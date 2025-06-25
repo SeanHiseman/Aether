@@ -4,6 +4,7 @@ import sequelize from '../databaseSetup.js';
 const AppBuilds = sequelize.define('app_builds', {
     build_id: { type: DataTypes.STRING(36), primaryKey: true },
     post_id: { type: DataTypes.STRING(36), allowNull: true },
+    kind: { type: DataTypes.ENUM('static', 'webcontainer'), defaultValue: 'static' },
     path: { type: DataTypes.STRING(255), allowNull: false },
     created_at: { type: DataTypes.DATE(3), defaultValue: sequelize.literal('CURRENT_TIMESTAMP(3)') }
 }, { tableName: 'app_builds', timestamps: false });
@@ -22,7 +23,6 @@ const Posts = sequelize.define('posts', {
     created_at: { type: DataTypes.DATE(3), defaultValue: sequelize.literal('CURRENT_TIMESTAMP(3)') },
     updated_at: { type: DataTypes.DATE(3), defaultValue: sequelize.literal('CURRENT_TIMESTAMP(3)') },
     poster_id: { type: STRING(36), allowNull: false },
-    points: { type: INTEGER, allowNull: false, defaultValue: 0 },
 }, { tableName: 'posts', timestamps: false });
 
 const PostDrafts = sequelize.define('post_drafts', {

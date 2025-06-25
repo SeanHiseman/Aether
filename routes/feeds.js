@@ -363,7 +363,7 @@ router.get('/deep_feed_posts', authenticateCheck, async (req, res) => {
 			const feedIds = followedFeeds.map(follow => follow.feed_id);
 			const posts = await Posts.findAll({
 				where: {
-					feed_id:   { [Op.in]: feedIds },
+					feed_id: { [Op.in]: feedIds },
 					poster_id: { [Op.ne]: followerId },
 					parent_id: null
 				},
@@ -372,9 +372,9 @@ router.get('/deep_feed_posts', authenticateCheck, async (req, res) => {
                     as: 'parentChannel',
                     attributes: ['channel_id','channel_name','feed_id'],
                     include: [{
-                            model: Feeds,
-                            attributes: feedAttributes
-                        }]
+                        model: Feeds,
+                        attributes: feedAttributes
+                    }]
                 },{
                     model: Feeds,
                     as: 'poster',
@@ -438,6 +438,7 @@ router.get('/deep_feed_posts', authenticateCheck, async (req, res) => {
 			return res.status(200).json({ success: true, deepFeed, posts });
 		}
 	} catch (error) {
+        console.error('Error fetching deep feed posts:', error);
 		res.status(500).json({ success: false, error: error.message });
 	}
 });

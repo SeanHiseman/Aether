@@ -1,4 +1,3 @@
-//This form needs splitting into multiple components, it's too long and complex
 import axios from 'axios'
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd'
 import { useNavigate, useParams } from 'react-router-dom'
@@ -25,38 +24,98 @@ const escapeHtml = (html) =>
 
 const isZip = f => f.type === 'application/zip' || f.name.endsWith('.zip')
 
-const parseContentBlocks = (htmlString) => {
-    const parser = new DOMParser()
-    const doc = parser.parseFromString(htmlString, 'text/html')
-    const divs = doc.querySelectorAll('div.content-block')
-    const result = []
-    divs.forEach((div) => {
-        const blockClass = div.className
-        const blockId = div.getAttribute('data-blockid')
-        const content = div.innerHTML.trim()
-        if (blockClass.includes('code-block')) {
-            const code = div.getAttribute('data-code') || ''
-            result.push({ data: { code, isBlockLoading: false, showPrompt: true }, id: blockId, isEditing: true, type: BLOCK_TYPES.CODE })
-        } else if (blockClass.includes('text-block')) {
-            result.push({ data: { html: content }, id: blockId, isEditing: true, type: BLOCK_TYPES.TEXT })
-        } else if (blockClass.includes('media-block')) {
-            const img = div.querySelector('img')
-            const video = div.querySelector('video')
-            const align = div.getAttribute('data-align') || 'center'
-            if (img) {
-                result.push({ data: { file: null, fileType: 'image/*', isImage: true, isVideo: false, url: img.getAttribute('src'), align }, id: blockId, isEditing: true, type: BLOCK_TYPES.MEDIA })
-            } else if (video) {
-                const source = video.querySelector('source')
-                result.push({ data: { file: null, fileType: source ? source.getAttribute('type') : '', isImage: false, isVideo: true, url: source ? source.getAttribute('src') : '', align }, id: blockId, isEditing: true, type: BLOCK_TYPES.MEDIA })
-            } else {
-                result.push({ data: { file: null, fileType: '', isImage: false, isVideo: false, url: '', align }, id: blockId, isEditing: true, type: BLOCK_TYPES.MEDIA })
-            }
-        }
-        else if (blockClass.includes('app-block')) {
-	        result.push({ data:{ buildId: div.getAttribute('data-buildid') }, id: blockId, isEditing: false, type: BLOCK_TYPES.APP })
-        }
-    })
-    return result
+const parseContentBlocks = htmlString => {
+	const doc   = new DOMParser().parseFromString(htmlString || '', 'text/html')
+	const divs  = doc.querySelectorAll('div.content-block')
+	const result = []
+
+	divs.forEach(div => {
+		const blockClass = div.className
+		const blockId    = div.getAttribute('data-blockid')
+		const content    = div.innerHTML.trim()
+
+		if (div.classList.contains('app-block')) {
+			result.push({
+				data: {
+					appPath: div.getAttribute('data-apppath'),
+					buildId: div.getAttribute('data-buildid'),
+					kind:    div.getAttribute('data-kind')
+				},
+				id:        blockId,
+				isEditing: false,
+				type:      BLOCK_TYPES.APP
+			})
+		} else if (blockClass.includes('code-block')) {
+			result.push({
+				data: {
+					code:           div.getAttribute('data-code') || '',
+					isBlockLoading: false,
+					showPrompt:     true
+				},
+				id:        blockId,
+				isEditing: true,
+				type:      BLOCK_TYPES.CODE
+			})
+		} else if (blockClass.includes('text-block')) {
+			result.push({
+				data:      { html: content },
+				id:        blockId,
+				isEditing: true,
+				type:      BLOCK_TYPES.TEXT
+			})
+		} else if (blockClass.includes('media-block')) {
+			const align  = div.getAttribute('data-align') || 'center'
+			const img    = div.querySelector('img')
+			const video  = div.querySelector('video')
+
+			if (img) {
+				result.push({
+					data: {
+						align,
+						file:      null,
+						fileType:  'image/*',
+						isImage:   true,
+						isVideo:   false,
+						url:       img.getAttribute('src')
+					},
+					id:        blockId,
+					isEditing: true,
+					type:      BLOCK_TYPES.MEDIA
+				})
+			} else if (video) {
+				const source = video.querySelector('source')
+				result.push({
+					data: {
+						align,
+						file:      null,
+						fileType:  source?.getAttribute('type') || '',
+						isImage:   false,
+						isVideo:   true,
+						url:       source?.getAttribute('src') || ''
+					},
+					id:        blockId,
+					isEditing: true,
+					type:      BLOCK_TYPES.MEDIA
+				})
+			} else {
+				result.push({
+					data: {
+						align,
+						file:      null,
+						fileType:  '',
+						isImage:   false,
+						isVideo:   false,
+						url:       ''
+					},
+					id:        blockId,
+					isEditing: true,
+					type:      BLOCK_TYPES.MEDIA
+				})
+			}
+		}
+	})
+
+	return result
 }
 
 const reorder = (list, startIndex, endIndex) => {
@@ -167,30 +226,48 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onEdit
     };
 
     const appFileChange = useCallback(async e => {
-        const file = e.target.files[0]
-        if (!file || !isZip(file)) return
-        const blockId = v4()
+        const blockId  = v4()
+        const file     = e.target.files[0]
+        const formData = new FormData()
+
+        // add placeholder immediately
         setBlocks(prev => [
             ...prev,
-            { id: blockId, isEditing: false, type: BLOCK_TYPES.APP,
-                data: { isUploading: true, fileName: file.name } }
+            { 
+                id:        blockId,
+                isEditing: false,
+                type:      BLOCK_TYPES.APP,
+                data: {
+                    fileName:    file.name,
+                    isUploading: true
+                }
+            }
         ])
-        const formData = new FormData()
+
         formData.append('build', file)
+
         try {
-            const res = await axios.post('/api/upload_build', formData)
-            if (res.data?.success) {
-                setBlocks(prev => prev.map(b =>
-                    b.id === blockId
-                        ? { id: blockId, isEditing: false, type: BLOCK_TYPES.APP,
-                            data: { buildId: res.data.buildId } }
-                        : b
-                ))
+            const { data } = await axios.post('/api/upload_build', formData)
+
+            if (data.success) {
+                updateBlock({
+                    id:        blockId,
+                    isEditing: false,
+                    type:      BLOCK_TYPES.APP,
+                    data: {
+                        appPath:     data.path,
+                        buildId:     data.buildId,
+                        isUploading: false,
+                        kind:        data.kind
+                    }
+                })
             } else {
                 setPostErrorMessage('App upload failed.')
+                setTimeout(() => setPostErrorMessage(''), 5000)
             }
         } catch {
             setPostErrorMessage('App upload failed.')
+            setTimeout(() => setPostErrorMessage(''), 5000)
         }
     }, [])
 
@@ -218,7 +295,8 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onEdit
                 return newState;
             });
         } catch (error) {
-          setPostErrorMessage('Failed to crop image. Please try again.');
+            setPostErrorMessage('Failed to crop image. Please try again.');
+            setTimeout(() => setPostErrorMessage(''), 5000)
         }
     }, [blocks, cropState, updateBlock]);
 
@@ -237,32 +315,69 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onEdit
 
     const compileFinalHTML = useCallback(allBlocks => {
         let finalHTML = ''
+
         allBlocks
             .filter(block => {
-                if (block.type === BLOCK_TYPES.TEXT) return block.data.html?.trim()
-                if (block.type === BLOCK_TYPES.CODE) return block.data.code?.trim()
+                if (block.type === BLOCK_TYPES.TEXT)  return block.data.html?.trim()
+                if (block.type === BLOCK_TYPES.CODE)  return block.data.code?.trim()
                 if (block.type === BLOCK_TYPES.MEDIA) return block.data.url?.trim()
-                if (block.type === BLOCK_TYPES.APP) return true
+                if (block.type === BLOCK_TYPES.APP)   return true
                 return false
             })
             .forEach(block => {
                 if (block.type === BLOCK_TYPES.TEXT) {
-                    finalHTML += `<div class="content-block text-block" data-blockid="${block.id}">${block.data.html || 'Nothing to preview'}</div>`
-                } else if (block.type === BLOCK_TYPES.CODE) {
-                    const escapedCode = escapeHtml(block.data.code || 'Nothing to preview')
-                    finalHTML += `<div class="content-block code-block" data-blockid="${block.id}" data-code="${escapedCode}"></div>`
-                } else if (block.type === BLOCK_TYPES.MEDIA) {
-                    if (block.data.isImage) {
-                        finalHTML += `<div class="content-block media-block" data-blockid="${block.id}" data-align="${block.data.align}"><img src="${block.data.url}" alt="Uploaded image" style="max-width:100%;height:auto;display:${block.data.align === 'center' ? 'block' : 'inline'};margin:${block.data.align === 'center' ? '0 auto' : ''}" /></div>`
-                    } else if (block.data.isVideo) {
-                        finalHTML += `<div class="content-block media-block" data-blockid="${block.id}" data-align="${block.data.align}"><video controls style="max-width:100%;height:auto;display:${block.data.align === 'center' ? 'block' : 'inline'};margin:${block.data.align === 'center' ? '0 auto' : ''}"><source src="${block.data.url}" type="${block.data.fileType}" /></video></div>`
-                    } else {
-                        finalHTML += `<div class="content-block media-block" data-blockid="${block.id}" data-align="${block.data.align}">Unsupported</div>`
+                    finalHTML +=
+                        `<div class="content-block text-block"` +
+                        ` data-blockid="${block.id}">` +
+                        `${block.data.html || 'Nothing to preview'}` +
+                        `</div>`
+                }
+                else if (block.type === BLOCK_TYPES.CODE) {
+                    const escaped = escapeHtml(block.data.code || 'Nothing to preview')
+                    finalHTML +=
+                        `<div class="content-block code-block"` +
+                        ` data-blockid="${block.id}"` +
+                        ` data-code="${escaped}"></div>`
+                }
+                else if (block.type === BLOCK_TYPES.MEDIA) {
+                    const { align, url, fileType, isImage, isVideo } = block.data
+                    if (isImage) {
+                        finalHTML +=
+                            `<div class="content-block media-block"` +
+                            ` data-blockid="${block.id}"` +
+                            ` data-align="${align}">` +
+                            `<img src="${url}" alt="Uploaded image"` +
+                            ` style="max-width:100%;height:auto;display:${align==='center'?'block':'inline'};margin:${align==='center'?'0 auto':''}" />` +
+                            `</div>`
                     }
-                } else if (block.type === BLOCK_TYPES.APP && block.data.buildId) {
-                    finalHTML += `<div class="content-block app-block" data-blockid="${block.id}" data-buildid="${block.data.buildId}"></div>`
+                    else if (isVideo) {
+                        finalHTML +=
+                            `<div class="content-block media-block"` +
+                            ` data-blockid="${block.id}"` +
+                            ` data-align="${align}">` +
+                            `<video controls` +
+                            ` style="max-width:100%;height:auto;display:${align==='center'?'block':'inline'};margin:${align==='center'?'0 auto':''}">` +
+                            `<source src="${url}" type="${fileType}" />` +
+                            `</video></div>`
+                    }
+                    else {
+                        finalHTML +=
+                            `<div class="content-block media-block"` +
+                            ` data-blockid="${block.id}"` +
+                            ` data-align="${align}">Unsupported</div>`
+                    }
+                }
+                else if (block.type === BLOCK_TYPES.APP) {
+                    const { appPath, buildId, kind } = block.data
+                    finalHTML +=
+                        `<div class="content-block app-block"` +
+                        ` data-apppath="${appPath}"` +
+                        ` data-blockid="${block.id}"` +
+                        ` data-buildid="${buildId}"` +
+                        ` data-kind="${kind}"></div>`
                 }
             })
+
         return finalHTML
     }, [])
 

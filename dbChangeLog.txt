@@ -8,6 +8,7 @@ ADD COLUMN `reset_token_expires` DATETIME(3) NULL AFTER `verification_token_expi
 CREATE TABLE `app_builds` (
   `build_id`   VARCHAR(36)    NOT NULL,
   `post_id`    VARCHAR(36)    NULL,
+  `kind`       ENUM('static','webcontainer') NOT NULL DEFAULT 'static',
   `path`       VARCHAR(255)   NOT NULL,
   `created_at` DATETIME(3)    NOT NULL
      DEFAULT CURRENT_TIMESTAMP(3),
@@ -19,3 +20,11 @@ CREATE TABLE `app_builds` (
     ON DELETE SET NULL
     ON UPDATE CASCADE
 ) ENGINE=InnoDB;
+
+ALTER TABLE `users`
+    DROP COLUMN `time_preference`,
+    DROP COLUMN `collaborative_preference`,
+    DROP COLUMN `points`;
+
+ALTER TABLE `posts`
+    DROP COLUMN `points`;

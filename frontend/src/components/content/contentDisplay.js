@@ -1,35 +1,9 @@
 import PropTypes from 'prop-types'
 import { useEffect, useRef, useState } from 'react'
+import AppBlock from './appBlock'
+import AppWebContainer from './appWebContainer'
 
-const AppBlock = ({ buildId }) => {
-	const iframeRef = useRef(null)
-	const MIN_HEIGHT = 300
-	const onLoad = e => {
-		try {
-			const doc = e.target.contentWindow.document
-			const h = Math.max(doc.body.scrollHeight, MIN_HEIGHT)
-			e.target.style.height = `${h}px`
-		} catch {}
-	}
-	return (
-		<iframe
-			key={buildId}
-			ref={iframeRef}
-			sandbox="allow-scripts allow-same-origin"
-			src={`/app_builds/${buildId}/index.html`}
-			style={{ border: 'none', minHeight: '50vh', width: '100%', height: '50vh' }}
-			title={`app-block-${buildId}`}
-			onLoad={onLoad}
-		/>
-	)
-}
-
-const ContentDisplay = ({
-	content,
-	onOverflowChange = () => {},
-	showFullContent,
-	showScrollBar,
-}) => {
+const ContentDisplay = ({ content, onOverflowChange = () => {}, showFullContent, showScrollBar }) => {
 	const [blocks, setBlocks] = useState([])
 	const contentRef = useRef(null)
 	const iframeRefs = useRef({})
@@ -38,38 +12,63 @@ const ContentDisplay = ({
 
 	useEffect(() => {
 		const parser = new DOMParser()
-		const doc = parser.parseFromString(content || '', 'text/html')
-		const divs = doc.querySelectorAll('.content-block')
+		const doc    = parser.parseFromString(content || '', 'text/html')
+		const divs   = doc.querySelectorAll('.content-block')
 		const parsed = []
+
 		divs.forEach(div => {
+			const id = div.getAttribute('data-blockid')
 			if (div.classList.contains('text-block')) {
-				parsed.push({ html: div.innerHTML.trim(), type: 'text' })
-			} else if (div.classList.contains('code-block')) {
-				const code = div.getAttribute('data-code') || ''
-				parsed.push({ code, id: div.getAttribute('data-blockid'), type: 'code' })
-			} else if (div.classList.contains('media-block')) {
+				parsed.push({
+					id,
+					type: 'text',
+					html: div.innerHTML.trim()
+				})
+			}
+			else if (div.classList.contains('code-block')) {
+				parsed.push({
+					id,
+					type: 'code',
+					code: div.getAttribute('data-code') || ''
+				})
+			}
+			else if (div.classList.contains('media-block')) {
 				const align = div.getAttribute('data-align') || 'left'
-				const img = div.querySelector('img')
+				const img   = div.querySelector('img')
 				const video = div.querySelector('video')
 				if (img) {
-					parsed.push({ align, isImage: true, isVideo: false, type: 'media', url: img.src })
-				} else if (video) {
-					const source = video.querySelector('source')
 					parsed.push({
+						id,
+						type: 'media',
+						isImage: true,
+						isVideo: false,
 						align,
-						fileType: source ? source.type : '',
+						url: img.src
+					})
+				} else if (video) {
+					const src = video.querySelector('source')
+					parsed.push({
+						id,
+						type: 'media',
 						isImage: false,
 						isVideo: true,
-						type: 'media',
-						url: source ? source.src : '',
+						align,
+						fileType: src?.type || '',
+						url: src?.src || ''
 					})
-				} else {
-					parsed.push({ align, isImage: false, isVideo: false, type: 'media', url: '' })
 				}
-			} else if (div.classList.contains('app-block')) {
-				parsed.push({ buildId: div.getAttribute('data-buildid'), type: 'app' })
+			}
+			else if (div.classList.contains('app-block')) {
+				parsed.push({
+					id,
+					type: 'app',
+					appPath: div.getAttribute('data-apppath'),
+					buildId: div.getAttribute('data-buildid'),
+					kind:    div.getAttribute('data-kind') || 'static'
+				})
 			}
 		})
+
 		setBlocks(parsed)
 	}, [content])
 
@@ -159,7 +158,9 @@ const ContentDisplay = ({
 					return <div key={i}>Unsupported</div>
 				}
 				if (block.type === 'app') {
-					return <AppBlock buildId={block.buildId} key={block.buildId} />
+					return block.kind === 'webcontainer'
+						? <AppWebContainer key={block.id} buildId={block.buildId}/>
+						: <AppBlock      key={block.id} appPath={block.appPath}/>
 				}
 				return null
 			})}

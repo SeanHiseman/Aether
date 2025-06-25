@@ -14,7 +14,6 @@ const SearchResults = () => {
     const [selectedView, setSelectedView] = useState('combined');
     const [searchParams] = useSearchParams();
     const keyword = (searchParams.get('keyword') || '').trim();
-    const [timePreference, setTimePreference] = useState(0.001);
     const { isAuthenticated, user, viewer } = useContext(AuthContext);
     const loaderRef = useRef(null);
     const { rightClasses } = useOutletContext(); 
@@ -53,31 +52,6 @@ const SearchResults = () => {
 
     const dropdownToggle = () => {
         setDropdownOpen((prevOpen) => !prevOpen);
-    };
-
-    //Load user's time preference
-    //useEffect(() => {
-        //const getTimePreference = async () => {
-            //try {
-                //const response = axios.get('/api/get_time_preference');
-                //setTimePreference(response.data.preference);
-            //} catch (error) {
-                //console.error('Error getting preference:', error);
-            //}
-        //}
-        //getTimePreference();
-    //}, []);
-
-    //Save time value to backend
-    const handleTimeChange = (event) => {
-        try {
-            const newValue = parseFloat(event.target.value);
-            setTimePreference(newValue);
-            axios.post('/api/set_time_preference', { preference: newValue })
-            //setTimePreference(response.data);
-        } catch (error) {
-            setErrorMessage('Error saving time preference');
-        }
     };
 
     const getFilteredResults = () => {
@@ -157,8 +131,6 @@ const SearchResults = () => {
                                 <li className="channel-link" onClick={() => setFeedTypeFilter('user')}>Users</li>
                             </ul>
                         )}
-                        {/*<label>Posts are recent:</label>
-                        <input type="range" min="0" max="0.01" step="0.00001" value={timePreference} onChange={handleTimeChange} />*/}
                     </ul>
                 </nav>
             </aside>

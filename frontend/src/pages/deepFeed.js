@@ -1,7 +1,7 @@
 import axios from 'axios';
 import AlgorithmSelector from '../algorithms/algorithmSelector'; //Project code
 import { DragDropContext } from 'react-beautiful-dnd';
-import { useCallback, useContext, useEffect, useRef, useState } from 'react';
+import { useContext, useEffect, useRef, useState } from 'react';
 import { FaEdit, FaRegWindowClose, FaSave, FaTrash } from 'react-icons/fa';
 import { useNavigate, useOutletContext, useParams } from 'react-router-dom';
 import { AuthContext } from '../components/authContext';
@@ -18,7 +18,6 @@ const DeepFeed = () => {
     const [isEditingName, setIsEditingName] = useState(false);
     const [newName, setNewName] = useState('');
     const [postErrorMessage, setPostErrorMessage] = useState('');
-    const [timePreference, setTimePreference] = useState(0.001);
     const { isAuthenticated, user, viewer } = useContext(AuthContext);
     const navigate = useNavigate();
     const { rightClasses } = useOutletContext(); 
@@ -171,30 +170,6 @@ const DeepFeed = () => {
 
     const allPosts = data ? data.pages.flatMap(page => page) : [];
     const activePost = allPosts.find(p => p.post_id === activeReplyPostId);
-
-    useEffect(() => {
-        const fetchTimePreference = async () => {
-            try {
-                const response = await axios.get('/api/get_time_preference');
-                setTimePreference(response.data.preference);
-            } catch (error) {
-                setErrorMessage('Error getting preference');
-                setTimeout(() => { setErrorMessage(''); }, 5000);
-            }
-        };
-        fetchTimePreference();
-    }, []);
-
-    const handleTimeChange = (event) => {
-        try {
-            const newValue = parseFloat(event.target.value);
-            setTimePreference(newValue);
-            axios.post('/api/set_time_preference', { preference: newValue });
-        } catch (error) {
-            setErrorMessage('Error changing preference');
-            setTimeout(() => { setErrorMessage(''); }, 5000);
-        }
-    };
 
     return (
         <div className="standard-container">

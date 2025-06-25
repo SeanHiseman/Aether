@@ -353,7 +353,6 @@ CREATE TABLE `posts` (
   `downvotes` int DEFAULT '0',
   `created_at` datetime(3) DEFAULT CURRENT_TIMESTAMP(3),
   `poster_id` char(36) NOT NULL,
-  `points` int DEFAULT '0',
   `updated_at` datetime(3) DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
   PRIMARY KEY (`post_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
@@ -367,6 +366,7 @@ DROP TABLE IF EXISTS `app_builds`;
 CREATE TABLE `app_builds` (
   `build_id`   VARCHAR(36)    NOT NULL,
   `post_id`    VARCHAR(36)    NULL,
+  `kind`       ENUM('static','webcontainer') NOT NULL DEFAULT 'static',
   `path`       VARCHAR(255)   NOT NULL,
   `created_at` DATETIME(3)    NOT NULL
      DEFAULT CURRENT_TIMESTAMP(3),
@@ -378,7 +378,6 @@ CREATE TABLE `app_builds` (
     ON DELETE SET NULL
     ON UPDATE CASCADE
 ) ENGINE=InnoDB;
-
 
 --
 -- Table structure for table `prompts`
@@ -410,11 +409,8 @@ CREATE TABLE `users` (
   `email` varchar(120) NOT NULL,
   `created_at` datetime(3) DEFAULT CURRENT_TIMESTAMP(3),
   `updated_at` datetime(3) DEFAULT CURRENT_TIMESTAMP(3),
-  `collaborative_preference` float NOT NULL DEFAULT '0.5',
-  `time_preference` float NOT NULL DEFAULT '0.0001',
   `has_membership` tinyint(1) DEFAULT '0',
   `theme` text,
-  `points` int NOT NULL DEFAULT '0',
   `usage_count` int NOT NULL DEFAULT '0',
   `storage_count` float NOT NULL DEFAULT '0',
   `stripe_subscription_id` varchar(255) DEFAULT NULL,

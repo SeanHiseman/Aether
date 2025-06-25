@@ -1,11 +1,11 @@
-import { formatDistanceToNow } from 'date-fns';
+import { formatDistanceToNowStrict } from 'date-fns';
 import { useEffect, useState } from 'react';
 
 export default function useTimeAgo(date) {
-	const [timeAgo, setTimeAgo] = useState(formatDistanceToNow(new Date(date), { addSuffix: true }));
+	const [timeAgo, setTimeAgo] = useState(formatDistanceToNowStrict(new Date(date), { addSuffix: true }));
 	useEffect(() => {
 		const update = () => {
-			setTimeAgo(formatDistanceToNow(new Date(date), { addSuffix: true }));
+			setTimeAgo(formatDistanceToNowStrict(new Date(date), { addSuffix: true }));
 		};
 		update();
 		const id = setInterval(update, 60000);

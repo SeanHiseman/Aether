@@ -15,10 +15,11 @@ import sequelize from '../databaseSetup.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+const buildsDir = path.resolve(process.cwd(), 'app_builds')
 const mediaDir = path.join(__dirname, '..', 'media', 'content');
 const feedAttributes = ['feed_id', 'parent_id', 'feed_name', 'description', 'feed_photo', 'follower_count', 'created_at', 'updated_at', 'type', 'is_group', 'feed_owner', 'is_locked'];
 const noteAttributes = ['note_id', 'note_content', 'created_at', 'updated_at', 'is_misinfo']
-const postAttributes = ['post_id', 'parent_id', 'feed_id', 'channel_id', 'title', 'content', 'replies', 'views', 'upvotes', 'downvotes', 'created_at', 'updated_at', 'poster_id', 'points']
+const postAttributes = ['post_id', 'parent_id', 'feed_id', 'channel_id', 'title', 'content', 'replies', 'views', 'upvotes', 'downvotes', 'created_at', 'updated_at', 'poster_id']
 const router = Router();
 if (!fs.existsSync(mediaDir)) fs.mkdirSync(mediaDir, { recursive: true });
 const calculateFileSizes = files => files.reduce((total, file) => total + file.size, 0) / (1024 * 1024);
@@ -534,83 +535,101 @@ router.get('/post_replies/:postId', async (req, res) => {
 });
 
 //Protect against zip bombs
-const MAX_ENTRIES =  1000
+const MAX_ENTRIES = 1000
 const MAX_TOTAL_UNCOMPRESSED = 500 * 1024 * 1024 
 
 const isValidZip = filePath => new Promise((resolve, reject) => {
-    yauzl.open(filePath, { lazyEntries: true }, (err, zipfile) => {
-        if (err) return reject(err)
-        let entriesCount = 0
-        let totalUncompressed = 0
-        zipfile.readEntry()
-        zipfile.on('entry', entry => {
-            entriesCount++
-            totalUncompressed += entry.uncompressedSize
-            if (entriesCount > MAX_ENTRIES || totalUncompressed > MAX_TOTAL_UNCOMPRESSED) {
-                zipfile.close()
-                return reject(new Error('Archive exceeds allowed limits'))
-            }
-            zipfile.readEntry()
-        })
-        zipfile.on('end', () => resolve(true))
-    })
+	yauzl.open(filePath, { lazyEntries: true }, (err, zipfile) => {
+		if (err) return reject(err)
+		let entriesCount			= 0
+		let totalUncompressed		= 0
+		zipfile.readEntry()
+		zipfile.on('entry', entry => {
+			entriesCount++
+			totalUncompressed		+= entry.uncompressedSize
+			if (entriesCount > MAX_ENTRIES || totalUncompressed > MAX_TOTAL_UNCOMPRESSED) {
+				zipfile.close()
+				return reject(new Error('Archive exceeds allowed limits'))
+			}
+			zipfile.readEntry()
+		})
+		zipfile.on('end', () => resolve(true))
+	})
 })
 
-const buildFilter = (req, file, cb) => {
-    const ok = file.mimetype === 'application/zip'
-            || file.originalname.toLowerCase().endsWith('.zip')
-    return ok
-        ? cb(null, true)
-        : cb(new Error('Only .zip builds are allowed'))
-}
+const buildFilter = (req, file, cb) =>
+	file.mimetype === 'application/zip' || file.originalname.toLowerCase().endsWith('.zip')
+		? cb(null, true)
+		: cb(new Error('Only .zip builds are allowed'))
 
-const buildUpload = multer({
-    storage: postStorage,
-    fileFilter: buildFilter
+const buildStorage = multer.diskStorage({
+	destination:	(req, file, cb) => cb(null, buildsDir),
+	filename:		(req, file, cb) => cb(null, `${v4()}.zip`)
 })
 
-const flattenIfNeeded = async dir => {
-    const entries = await fs.promises.readdir(dir)
-    for (const name of entries) {
-        const full = path.join(dir, name)
-        if ((await fs.promises.lstat(full)).isDirectory()) {
-            const subEntries = await fs.promises.readdir(full)
-            if (subEntries.includes('index.html')) {
-                const tmp = path.join(dir, '_tmp')
-                await fs.promises.rename(full, tmp)
-                for (const f of subEntries) {
-                    await fs.promises.rename(path.join(tmp, f), path.join(dir, f))
-                }
-                await fs.promises.rmdir(tmp)
-            }
-        }
-    }
+const upload = multer({ fileFilter: buildFilter, storage: buildStorage })
+
+const locateIndexDir = async start => {
+	const queue = [start]
+	while (queue.length) {
+		const current				= queue.shift()
+		const entries				= await fs.promises.readdir(current, { withFileTypes: true })
+		if (entries.some(e => e.isFile() && e.name === 'index.html')) return current
+		for (const e of entries.filter(e => e.isDirectory()))
+			queue.push(path.join(current, e.name))
+	}
+	return null
 }
 
-router.post('/upload_build', authenticateCheck, buildUpload.single('build'), async (req, res) => {
-    try {
-        const buildId = v4()
-        const targetDir = path.join(__dirname, '..', 'app_builds', buildId)
-        await fs.promises.mkdir(targetDir, { recursive: true })
-        await fs
-            .createReadStream(req.file.path)
-            .pipe(unzipper.Extract({ path: targetDir }))
-            .promise()
-        await flattenIfNeeded(targetDir)
-        const html = await fs.promises.readFile(path.join(targetDir, 'index.html'), 'utf8')
-        const indexPath = path.join(targetDir, 'index.html')
-        const updated = html
-            .replace(/(href|src)="\/([^"]+)"/g, `$1="/app_builds/${buildId}/$2"`)
-            .replace(/<head>/, `<head><base href="/app_builds/${buildId}/">`)
-        await fs.promises.writeFile(indexPath, updated)
-        await fs.promises.unlink(req.file.path)
-        await AppBuilds.create({ build_id: buildId, path: `/app_builds/${buildId}` })
-        return res.status(201).json({ success: true, buildId })
-    } catch (error) {
-        console.error('Error uploading build:', error)
-        try { await fs.promises.unlink(req.file.path) } catch {}
-        return res.status(400).json({ success: false, message: error.message })
-    }
+router.post('/upload_build', authenticateCheck, upload.single('build'), async (req, res) => {
+	let baseUrl
+	let buildId
+	let indexDir
+	let kind
+	let targetDir
+	let tmpZip
+
+	try {
+		if (!req.file) throw new Error('No file uploaded')
+		buildId = v4()
+		tmpZip   = req.file.path
+
+		await isValidZip(tmpZip)
+
+		targetDir = path.join(buildsDir, buildId)
+		await fs.promises.mkdir(targetDir, { recursive: true })
+
+		const finalZip = path.join(buildsDir, `${buildId}.zip`)
+		await fs.promises.rename(tmpZip, finalZip)
+		await fs.createReadStream(finalZip).pipe(unzipper.Extract({ path: targetDir })).promise()
+
+		indexDir = await locateIndexDir(targetDir)
+		if (!indexDir) throw new Error('index.html not found')
+
+		kind   = fs.existsSync(path.join(targetDir, 'package.json')) ? 'webcontainer' : 'static'
+		const relDir = path.relative(targetDir, indexDir).replace(/\\/g, '/')
+		baseUrl      = `/app_builds/${buildId}${relDir ? `/${relDir}` : ''}`
+
+		if (kind === 'static') {
+			const htmlPath = path.join(indexDir, 'index.html')
+			const html     = await fs.promises.readFile(htmlPath, 'utf8')
+			const patched  = html
+				.replace(/(href|src)="\/([^"]+)"/g, `$1="${baseUrl}/$2"`)
+				.replace(/<head>/, `<head><base href="${baseUrl}/">`)
+			await fs.promises.writeFile(htmlPath, patched)
+		}
+
+		await AppBuilds.create({ build_id: buildId, kind, path: baseUrl })
+		return res.status(201).json({ buildId, kind, path: baseUrl, success: true })
+	} catch (err) {
+		if (tmpZip) {
+			try { await fs.promises.unlink(tmpZip) } catch {}
+		}
+		if (targetDir) {
+			try { await fs.promises.rm(targetDir, { recursive: true, force: true }) } catch {}
+		}
+		return res.status(400).json({ message: err.message, success: false })
+	}
 })
 
 export default router;

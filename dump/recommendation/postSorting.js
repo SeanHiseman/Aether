@@ -1,4 +1,5 @@
-import { Users } from "../models/users.js";
+//UNUSED AND OUTDATED
+import { Users } from "../../models/users.js";
 
 async function sortPostsByWeightedRatio(posts, userId) {
     //try {

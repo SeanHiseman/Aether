@@ -27,21 +27,24 @@ const app = express();
 const http = createServer(app);
 const io = new Server(http, {
     cors: {
-        origin: [process.env.FRONTEND_URL, "http://localhost:3000", "http://localhost:5000"],
+        credentials: true,
         methods: ['GET', 'POST'],
-        credentials : true  
+        origin: [process.env.FRONTEND_URL, "http://localhost:3000", "http://localhost:5000"],
     },
     transports: ['websocket', 'polling'],
 });
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-const root = path.join(__dirname, process.env.FRONTEND_BUILD_DIR);
 const appBuildPath = path.join(__dirname, process.env.APP_BUILD_DIR);
-const mediaPath = path.join(__dirname, process.env.MEDIA_DIR);
 const faviconPath = path.join(__dirname, process.env.FAVICON_PATH);
+const root = path.join(__dirname, process.env.FRONTEND_BUILD_DIR);
+const mediaPath = path.join(__dirname, process.env.MEDIA_DIR);
 
-app.use('/app_builds', express.static(appBuildPath))
+app.use('/app_builds', express.static(appBuildPath, {
+	setHeaders: res => res.set('Access-Control-Allow-Origin', '*')
+}))
 app.use('/media', express.static(mediaPath));
 app.use(cors({
     origin: [process.env.FRONTEND_URL, "http://localhost:3000", "http://localhost:5000"],
