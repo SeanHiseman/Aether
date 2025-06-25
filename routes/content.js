@@ -435,7 +435,7 @@ router.delete('/remove_draft', authenticateCheck, async (req, res) => {
 		const foundDraft = await PostDrafts.findByPk(draft.draft_id);
 		if (foundDraft) {
 			deleteMedia(foundDraft.content);
-			await deleteBuilds(foundDraft.content, { transcation });
+			await deleteBuilds(foundDraft.content, { transaction });
 			await PostDrafts.destroy({ where: { draft_id: draft.draft_id } });
 		}
         await transaction.commit();

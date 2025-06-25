@@ -31,7 +31,7 @@ const FeedInfoView = () => {
         if (isEditingDescription) setDescription(feed.description);
     }, [isEditingDescription, feed.description]);
 
-    const ChangeFeedPhoto = async (event) => {
+    const changeFeedPhoto = async (event) => {
         event.preventDefault();
         if (!imageSrc || !croppedAreaPixels) {
             setErrorMessage('Please upload and crop an image');
@@ -132,6 +132,10 @@ const FeedInfoView = () => {
             setErrorMessage('Name cannot be empty');
             return;
         }
+        if (newName.toLowerCase() === feed.feed_name.toLowerCase()) {
+            setErrorMessage('Name is unchanged');
+            return;
+        }
         try {
             const route = feed.is_group ? 'change_feed_name' : 'change_username';
             await axios.post(`/api/${route}`, {
@@ -142,8 +146,9 @@ const FeedInfoView = () => {
             setFeed({ ...feed, feed_name: newName });
             setIsEditingName(false);
             navigate(`/settings/${newName}`);
-        } catch {
-            setErrorMessage('Error changing name');
+        } catch (error) {
+            console.error('Error updating feed name:', error);
+		    setErrorMessage(error.response?.data?.message || 'Error changing name');
             setTimeout(() => { setErrorMessage(''); }, 5000);
         }
     };
@@ -157,7 +162,7 @@ const FeedInfoView = () => {
                         {isPhotoFormVisible ? <><FaRegWindowClose /><p className="icon-text">Close</p></> : <><FaEdit /><p className="icon-text">Change photo</p></>}
                     </button>
                     {isPhotoFormVisible && (
-                        <form className="change-feed-photo" onSubmit={ChangeFeedPhoto}>
+                        <form className="change-feed-photo" onSubmit={changeFeedPhoto}>
                             <div className="file-input">
                                 <label htmlFor="new-feed-photo" className="small-icon"><FaFileUpload /><p className="icon-text">Choose photo</p></label>
                                 <input type="file" id="new-feed-photo" name="new_feed_photo" accept="image/*" onChange={handleFileChange} hidden />

@@ -16,6 +16,7 @@ const ContentWidget = ({ canRemove, feed, isDraft, isGroup, onEditClick, onPostR
 	const { feed_name, channel_name, post_id } = useParams();
 	const fullscreenRef = useRef(null);
 	const [hasViewed, setHasViewed] = useState(false);
+	const [isFullscreenMode, setIsFullscreenMode] = useState(false)
 	const [isOverflowing, setIsOverflowing] = useState(false);
 	const navigate = useNavigate();
 	const [note, setNote] = useState(post.note ? post.note.note_content : '');
@@ -181,6 +182,12 @@ const ContentWidget = ({ canRemove, feed, isDraft, isGroup, onEditClick, onPostR
 		}
 	}, [getReplies, hasViewed, incrementViews, post.post_id, showReplies]);
 
+	useEffect(() => {
+		const handler = () => setIsFullscreenMode(!!document.fullscreenElement)
+		document.addEventListener('fullscreenchange', handler)
+		return () => document.removeEventListener('fullscreenchange', handler)
+	}, [])
+
 	const toggleFullscreen = () => {
 		if (!fullscreenRef.current) return;
 		if (!document.fullscreenElement) {
@@ -249,50 +256,30 @@ const ContentWidget = ({ canRemove, feed, isDraft, isGroup, onEditClick, onPostR
 					{post.title || '\u00A0'}
 				</span>
 			</Link>
-			<div
-				ref={fullscreenRef}
+			<div ref={fullscreenRef}
 				style={{
 					position: 'relative',
 					width: '100%',
-					height: '100vh',
 					display: 'flex',
-					flexDirection: 'column'
+					flexDirection: 'column',
+					...(isFullscreenMode
+						? { height: '100vh', overflow: 'visible' }
+						: showFullContent
+							? { height: 'auto', overflow: 'visible' }
+							: { height: '50vh', overflow: 'hidden' }
+					)
 				}}
 			>
-				<div style={{ flex: 1, overflowY: 'auto' }}>
-					<ContentDisplay
-						content={post.content}
-						onOverflowChange={handleOverflowChange}
-						showFullContent={showFullContent}
-						showScrollBar={false}
-					/>
+				<div id="test-div" style={isFullscreenMode ? { flex: 1, overflowY: 'auto' } : { height: '100%' }}>
+					<ContentDisplay content={post.content} onOverflowChange={handleOverflowChange} showFullContent={showFullContent} showScrollBar={false} />
 				</div>
-				<div
-					style={{
-						position: 'absolute',
-						bottom: 0,
-						left: 0,
-						width: '100%',
-						display: 'flex',
-						justifyContent: 'space-between',
-						alignItems: 'center',
-						padding: '0.5rem'
-					}}
-				>
-					{isOverflowing && (
-						<button
-							className="small-icon"
-							onClick={() => setShowFullContent(!showFullContent)}
-							title={showFullContent ? 'Show less' : 'Show more'}
-						>
+				<div style={{ position: 'absolute', bottom: 0, left: 0, width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.5rem'}}>
+					{isOverflowing && !isFullscreenMode && (
+						<button className="small-icon" onClick={() => setShowFullContent(!showFullContent)} title={showFullContent ? 'Show less' : 'Show more'}>
 							{showFullContent ? <FaChevronUp /> : <FaChevronDown />}
 						</button>
 					)}
-					<button
-						className="large-icon"
-						onClick={toggleFullscreen}
-						title="Toggle full-screen"
-					>
+					<button className="large-icon" onClick={toggleFullscreen} title="Toggle full-screen">
 						<FaExpand />
 					</button>
 				</div>

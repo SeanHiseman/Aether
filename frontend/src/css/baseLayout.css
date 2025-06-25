@@ -49,7 +49,7 @@
   flex-direction: column;
   margin-top: cal(14 * var(--large-margin));
   padding: var(--small-margin);
-  position: absolute;
+  position: relative;
   width: cal(11 * var(--large-margin));
 }
 .change-name-area,

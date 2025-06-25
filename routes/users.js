@@ -78,11 +78,24 @@ router.post('/change_theme', authenticateCheck, async (req, res) => {
 router.post('/change_username', authenticateCheck, async (req, res) => {
     try {
         const { feed_id, newName, user_id } = req.body;
-        if (!newName || newName.trim().length < 3) {
+        const trimmedName = newName.trim();
+        if (!trimmedName || trimmedName.length < 3) {
             return res.status(400).json({ success: false, error: 'Username must be at least 3 characters' });
         }
-        const feed = await Feeds.findOne({ where: { feed_id } });
         const user = await Users.findOne({ where: { user_id } });
+        if (!user) {
+            return res.status(404).json({ success: false, error: 'User not found' });
+        }
+        if (user.username.toLowerCase() === trimmedName.toLowerCase()) {
+            return res.status(200).json({ success: true, message: 'Name is unchanged' });
+        }
+        const existingUser = await Users.findOne({
+            where: { username: { [Op.like]: trimmedName } }
+        });
+        if (existingUser && existingUser.user_id !== user_id) {
+            return res.status(409).json({ success: false, message: 'Username already in use' });
+        }
+        const feed = await Feeds.findOne({ where: { feed_id } });
         if (!feed || !user) {
             return res.status(404).json({ success: false, error: 'Feed or user not found' });
         }
@@ -92,7 +105,6 @@ router.post('/change_username', authenticateCheck, async (req, res) => {
         await user.save();
         res.status(200).json({ success: true });
     } catch (error) {
-        console.error('Error changing username:', error);
         res.status(500).json({ success: false, error: 'Failed to update username' });
     }
 });

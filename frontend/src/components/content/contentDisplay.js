@@ -6,14 +6,13 @@ import AppWebContainer from './appWebContainer'
 const ContentDisplay = ({ content, onOverflowChange = () => {}, showFullContent, showScrollBar }) => {
 	const [blocks, setBlocks] = useState([])
 	const contentRef = useRef(null)
-	const maxHeightStyle = showFullContent ? 'none' : '50vh'
+	const heightStyle = showFullContent ? 'none' : '100%'
 
 	useEffect(() => {
 		const parser = new DOMParser()
-		const doc    = parser.parseFromString(content || '', 'text/html')
-		const divs   = doc.querySelectorAll('.content-block')
+		const doc = parser.parseFromString(content || '', 'text/html')
+		const divs = doc.querySelectorAll('.content-block')
 		const parsed = []
-
 		divs.forEach(div => {
 			const id = div.getAttribute('data-blockid')
 			if (div.classList.contains('text-block')) {
@@ -30,7 +29,7 @@ const ContentDisplay = ({ content, onOverflowChange = () => {}, showFullContent,
 				})
 			} else if (div.classList.contains('media-block')) {
 				const align = div.getAttribute('data-align') || 'left'
-				const img   = div.querySelector('img')
+				const img = div.querySelector('img')
 				const video = div.querySelector('video')
 				if (img) {
 					parsed.push({
@@ -68,14 +67,7 @@ const ContentDisplay = ({ content, onOverflowChange = () => {}, showFullContent,
 	}, [content])
 
 	return (
-		<div
-			ref={contentRef}
-			style={{
-				maxHeight: maxHeightStyle,
-				overflow: 'hidden',
-				position: 'relative',
-			}}
-		>
+		<div ref={contentRef} style={{ height: heightStyle, overflow: 'hidden',position: 'relative' }}>
 			{blocks.map((block, i) => {
 				if (block.type === 'text') {
 					return <div dangerouslySetInnerHTML={{ __html: block.html }} key={i} />
@@ -109,7 +101,7 @@ const ContentDisplay = ({ content, onOverflowChange = () => {}, showFullContent,
 				if (block.type === 'app') {
 					return block.kind === 'webcontainer'
 						? <AppWebContainer key={block.id} buildId={block.buildId}/>
-						: <AppBlock      key={block.id} appPath={block.appPath}/>
+						: <AppBlock key={block.id} appPath={block.appPath}/>
 				}
 				return null
 			})}

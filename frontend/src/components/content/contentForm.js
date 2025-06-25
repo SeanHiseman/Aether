@@ -3,7 +3,7 @@ import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd'
 import { useNavigate, useParams } from 'react-router-dom'
 import PropTypes from 'prop-types'
 import { useCallback, useContext, useEffect, useRef, useState } from 'react'
-import { FaAlignCenter, FaArrowCircleUp, FaArrowRight, FaCircleNotch, FaCommentAlt, FaCube, FaCrop, FaEdit, FaEllipsisV, FaEye, FaFont, FaLink, FaPhotoVideo, FaRegLightbulb, FaReply, FaSave, FaShareAlt, FaTerminal, FaTimes, FaToolbox, FaTrash, FaWindowClose } from 'react-icons/fa'
+import { FaAlignCenter, FaArrowCircleUp, FaArrowRight, FaCircleNotch, FaCommentAlt, FaCopy, FaCube, FaCrop, FaEdit, FaEllipsisV, FaEye, FaFont, FaLink, FaPhotoVideo, FaRegLightbulb, FaReply, FaSave, FaShareAlt, FaTerminal, FaTimes, FaToolbox, FaTrash, FaWindowClose } from 'react-icons/fa'
 import ReactQuill from 'react-quill'
 import 'react-quill/dist/quill.snow.css'
 import { v4 } from 'uuid'
@@ -22,99 +22,93 @@ const escapeHtml = (html) =>
         .replace(/</g, '&lt;')
         .replace(/>/g, '&gt;')
 
-const isZip = f => f.type === 'application/zip' || f.name.endsWith('.zip')
-
 const parseContentBlocks = htmlString => {
-	const doc   = new DOMParser().parseFromString(htmlString || '', 'text/html')
-	const divs  = doc.querySelectorAll('div.content-block')
+	const doc = new DOMParser().parseFromString(htmlString || '', 'text/html')
+	const divs = doc.querySelectorAll('div.content-block')
 	const result = []
-
 	divs.forEach(div => {
 		const blockClass = div.className
-		const blockId    = div.getAttribute('data-blockid')
-		const content    = div.innerHTML.trim()
-
+		const blockId = div.getAttribute('data-blockid')
+		const content = div.innerHTML.trim()
 		if (div.classList.contains('app-block')) {
 			result.push({
 				data: {
 					appPath: div.getAttribute('data-apppath'),
 					buildId: div.getAttribute('data-buildid'),
-					kind:    div.getAttribute('data-kind')
+					kind: div.getAttribute('data-kind')
 				},
-				id:        blockId,
+				id: blockId,
 				isEditing: false,
-				type:      BLOCK_TYPES.APP
+				type: BLOCK_TYPES.APP
 			})
 		} else if (blockClass.includes('code-block')) {
 			result.push({
 				data: {
-					code:           div.getAttribute('data-code') || '',
+					code: div.getAttribute('data-code') || '',
 					isBlockLoading: false,
-					showPrompt:     true
+					showPrompt: true
 				},
-				id:        blockId,
+				id: blockId,
 				isEditing: true,
-				type:      BLOCK_TYPES.CODE
+				type: BLOCK_TYPES.CODE
 			})
 		} else if (blockClass.includes('text-block')) {
 			result.push({
-				data:      { html: content },
-				id:        blockId,
+				data: { html: content },
+				id: blockId,
 				isEditing: true,
-				type:      BLOCK_TYPES.TEXT
+				type: BLOCK_TYPES.TEXT
 			})
 		} else if (blockClass.includes('media-block')) {
-			const align  = div.getAttribute('data-align') || 'center'
-			const img    = div.querySelector('img')
-			const video  = div.querySelector('video')
-
+			const align = div.getAttribute('data-align') || 'center'
+			const img = div.querySelector('img')
+			const video = div.querySelector('video')
 			if (img) {
 				result.push({
 					data: {
 						align,
-						file:      null,
-						fileType:  'image/*',
-						isImage:   true,
-						isVideo:   false,
-						url:       img.getAttribute('src')
+						file: null,
+						fileType: 'image/*',
+						isImage: true,
+						isVideo: false,
+						url: img.getAttribute('src')
 					},
-					id:        blockId,
+					id: blockId,
 					isEditing: true,
-					type:      BLOCK_TYPES.MEDIA
+					type: BLOCK_TYPES.MEDIA
 				})
 			} else if (video) {
 				const source = video.querySelector('source')
 				result.push({
 					data: {
 						align,
-						file:      null,
-						fileType:  source?.getAttribute('type') || '',
-						isImage:   false,
-						isVideo:   true,
-						url:       source?.getAttribute('src') || ''
+						file: null,
+						fileType: source?.getAttribute('type') || '',
+						isImage: false,
+						isVideo: true,
+						url: source?.getAttribute('src') || ''
 					},
-					id:        blockId,
+					id: blockId,
 					isEditing: true,
-					type:      BLOCK_TYPES.MEDIA
+					type: BLOCK_TYPES.MEDIA
 				})
 			} else {
 				result.push({
 					data: {
 						align,
-						file:      null,
-						fileType:  '',
-						isImage:   false,
-						isVideo:   false,
-						url:       ''
+						file: null,
+						fileType: '',
+						isImage: false,
+						isVideo: false,
+						url: ''
 					},
-					id:        blockId,
+					id: blockId,
 					isEditing: true,
-					type:      BLOCK_TYPES.MEDIA
+					type: BLOCK_TYPES.MEDIA
 				})
 			}
 		}
 	})
-
 	return result
 }
 
@@ -128,11 +122,11 @@ const reorder = (list, startIndex, endIndex) => {
 //Post is either the post being edited or replied to
 const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onEditSubmit, onPostSubmit, post = null, postErrorMessage, setPostErrorMessage, setShowForm }) => {
     const [blocks, setBlocks] = useState([])
-    const [codeBlockDropdown, setCodeBlockDropdown] = useState(false)
-    const [editMode, setEditMode] = useState(true)
     const [blockLimitError, setBlockLimitError] = useState('')
-    const [cropState, setCropState] = useState({});
+    const [codeBlockDropdown, setCodeBlockDropdown] = useState(false)
+    const [cropState, setCropState] = useState({})
     const [draftId, setDraftId] = useState(post?.draft_id || null)
+    const [editMode, setEditMode] = useState(true)
     const [globalAiPrompt, setGlobalAiPrompt] = useState('')
     const [isGlobalLoading, setIsGlobalLoading] = useState(false)
     const [showGlobalAiPrompt, setShowGlobalAiPrompt] = useState(false)
@@ -229,36 +223,30 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onEdit
         const blockId  = v4()
         const file     = e.target.files[0]
         const formData = new FormData()
-
-        // add placeholder immediately
         setBlocks(prev => [
-            ...prev,
-            { 
-                id:        blockId,
+            ...prev, { 
+                id: blockId,
                 isEditing: false,
-                type:      BLOCK_TYPES.APP,
+                type: BLOCK_TYPES.APP,
                 data: {
-                    fileName:    file.name,
+                    fileName: file.name,
                     isUploading: true
                 }
             }
         ])
-
         formData.append('build', file)
-
         try {
             const { data } = await axios.post('/api/upload_build', formData)
-
             if (data.success) {
                 updateBlock({
-                    id:        blockId,
+                    id: blockId,
                     isEditing: false,
-                    type:      BLOCK_TYPES.APP,
+                    type: BLOCK_TYPES.APP,
                     data: {
-                        appPath:     data.path,
-                        buildId:     data.buildId,
+                        appPath: data.path,
+                        buildId: data.buildId,
                         isUploading: false,
-                        kind:        data.kind
+                        kind: data.kind
                     }
                 })
             } else {
@@ -315,13 +303,12 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onEdit
 
     const compileFinalHTML = useCallback(allBlocks => {
         let finalHTML = ''
-
         allBlocks
             .filter(block => {
-                if (block.type === BLOCK_TYPES.TEXT)  return block.data.html?.trim()
-                if (block.type === BLOCK_TYPES.CODE)  return block.data.code?.trim()
+                if (block.type === BLOCK_TYPES.TEXT) return block.data.html?.trim()
+                if (block.type === BLOCK_TYPES.CODE) return block.data.code?.trim()
                 if (block.type === BLOCK_TYPES.MEDIA) return block.data.url?.trim()
-                if (block.type === BLOCK_TYPES.APP)   return true
+                if (block.type === BLOCK_TYPES.APP) return true
                 return false
             })
             .forEach(block => {
@@ -377,7 +364,6 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onEdit
                         ` data-kind="${kind}"></div>`
                 }
             })
-
         return finalHTML
     }, [])
 
@@ -475,7 +461,6 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onEdit
                         const doc = parser.parseFromString(editedContent, 'text/html');
                         const scripts = doc.querySelectorAll('script');
                         scripts.forEach(script => {
-                        //Only remove editor scripts, preserve user scripts
                         if (script.textContent.includes('editor-controls') || 
                             script.textContent.includes('resize-container') ||
                             script.textContent.includes('sendHeight')) {
@@ -957,6 +942,42 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onEdit
                                                                     {type !== BLOCK_TYPES.MEDIA && (
                                                                         <button className="small-icon" onClick={toggleEdit} title={isEditing ? 'Preview' : 'Edit'} type="button">{isEditing ? <FaEye /> : <FaEdit />}</button>
                                                                     )}
+                                                                    {(type === BLOCK_TYPES.TEXT || type === BLOCK_TYPES.CODE || (type === BLOCK_TYPES.MEDIA && data.isImage)) && (
+                                                                        <button
+                                                                            className="small-icon"
+                                                                            onClick={() => {
+                                                                                async function doCopy() {
+                                                                                    if (type === BLOCK_TYPES.MEDIA) {
+                                                                                        try {
+                                                                                            const response = await fetch(data.url)
+                                                                                            const blob = await response.blob()
+                                                                                            const item = new ClipboardItem({ [blob.type]: blob })
+                                                                                            await navigator.clipboard.write([item])
+                                                                                        } catch {
+                                                                                            await navigator.clipboard.writeText(data.url)
+                                                                                        }
+                                                                                    } else if (type === BLOCK_TYPES.TEXT) {
+                                                                                        const text = data.html.replace(/<[^>]*>/g, '')
+                                                                                        await navigator.clipboard.writeText(text)
+                                                                                    } else {
+                                                                                        await navigator.clipboard.writeText(data.code)
+                                                                                    }
+                                                                                }
+                                                                                doCopy().then(() => {
+                                                                                    setPostErrorMessage('Copied')
+                                                                                    setTimeout(() => setPostErrorMessage(''), 2000)
+                                                                                })
+                                                                                setCodeBlockDropdown({
+                                                                                    ...codeBlockDropdown,
+                                                                                    [id]: false
+                                                                                })
+                                                                            }}
+                                                                            title="Copy"
+                                                                            type="button"
+                                                                        >
+                                                                            <FaCopy />
+                                                                        </button>
+                                                                    )}
                                                                 </div>
                                                                 <div style={{ position: 'relative' }}>
                                                                     {type === BLOCK_TYPES.MEDIA && (
@@ -1098,7 +1119,7 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onEdit
                                                                     )}
                                                                     {data.code.trim() ? (
                                                                         <div className="code-preview">
-                                                                            <iframe ref={el => { iframeRefs.current[id] = el }} sandbox="allow-scripts allow-same-origin" srcDoc={getIframeSrcDoc(id, data.code, isEditing)} style={{ border: 'none', width: '100%', height: '0px' }} title={`code-preview-${id}`} />
+                                                                            <iframe ref={el => { iframeRefs.current[id] = el }} sandbox="allow-scripts allow-same-origin" srcDoc={getIframeSrcDoc(id, data.code, isEditing)} style={{ border: 'none', width: '100%', height: '50vh' }} title={`code-preview-${id}`} />
                                                                         </div>
                                                                     ) : (
                                                                         <p>Nothing to preview</p>

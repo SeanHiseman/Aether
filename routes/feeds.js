@@ -190,10 +190,23 @@ router.post('/change_feed_name', authenticateCheck, async (req, res) => {
     try {
         const { feed_id, newName } = req.body;
         const feed = await Feeds.findOne({ where: { feed_id } });
+        if (feed.feed_name.toLowerCase() === newName.toLowerCase()) {
+            return res.status(200).json({ success: true, message: 'Name is unchanged' });
+        }
+        const existingFeed = await Feeds.findOne({
+            where: {
+                feed_id: { [Op.ne]: feed_id },
+                feed_name: { [Op.like]: newName }
+            }
+        });
+        if (existingFeed) {
+            return res.status(409).json({ success: false, message: 'Name already in use' });
+        }
         feed.feed_name = newName;
         await feed.save();
         res.status(200).json({ success: true });
     } catch (error) {
+
         res.status(500).json({ success: false });
     }
 });
