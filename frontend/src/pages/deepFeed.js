@@ -21,7 +21,7 @@ const DeepFeed = () => {
     const { isAuthenticated, user, viewer } = useContext(AuthContext);
     const navigate = useNavigate();
     const { rightClasses } = useOutletContext(); 
-    
+
     const getPosts = async ({ pageParam = 0 }) => {
         try {
             const response = await axios.get('/api/deep_feed_posts', {
@@ -91,7 +91,7 @@ const DeepFeed = () => {
         }
     };
 
-    const handleDelete = async () => {
+    const deletePost = async () => {
         if (window.confirm(`Are you sure you want to delete ${deepFeed.name}?`)) {
             try {
                 if (deepFeed.name === 'Following') {
@@ -120,7 +120,7 @@ const DeepFeed = () => {
         }
     };
 
-    const handlePostSubmit = async (formData) => {
+    const postSubmit = async (formData) => {
         if (!isAuthenticated) return;
         if (!formData) {
             setPostErrorMessage("Post cannot be empty");
@@ -128,7 +128,7 @@ const DeepFeed = () => {
             return;
         }
         try {
-            formData.append('poster_id', viewer.feed_id);
+            formData.append('poster_id', viewer?.feed_id);
             await axios.post('/api/create_post', formData, {
                 headers: { 'Content-Type': 'multipart/form-data' },
             });
@@ -141,7 +141,7 @@ const DeepFeed = () => {
             }    
             setActiveReplyPostId(null);
         } catch (error) {
-            console.error(error);
+            console.error("Error creating post:", error);
             if (error.response && error.response.status === 413) {
                 setPostErrorMessage(error.response.data.message + (!user.has_membership ? ". Get membership for more" : ""));
                 setTimeout(() => { setPostErrorMessage(''); }, 10000);
@@ -170,6 +170,18 @@ const DeepFeed = () => {
 
     const allPosts = data ? data.pages.flatMap(page => page) : [];
     const activePost = allPosts.find(p => p.post_id === activeReplyPostId);
+    console.log("activePost", activePost);
+    const editSubmit = async (formData) => {
+        try {
+            formData.append('post_id', activePost.post_id);
+            await axios.post('/api/edit_post', formData);
+        } catch (error) {
+            setErrorMessage('Error editing post');
+            setTimeout(() => {
+                setErrorMessage('');
+            }, 3000);
+        }
+    };
 
     return (
         <div className="standard-container">
@@ -178,12 +190,13 @@ const DeepFeed = () => {
                     {activeReplyPostId && activePost ? (
                         <ContentForm
                             key={`reply-${activePost.post_id}`}
-                            channelId={activePost.parentChannel.channel_id}
-                            feed={activePost.feed}
+                            channelId={activePost.parentChannel?.channel_id}
+                            feed={activePost.parentChannel?.feed}
                             isEdit={false}
-                            isGroup={activePost.poster.feed_id === activePost.feed_id ? false : true}
+                            isGroup={activePost.poster?.feed_id === activePost.feed_id ? false : true}
                             isReply={true}
-                            onSubmit={handlePostSubmit}
+                            onEditSubmit={editSubmit}
+                            onPostSubmit={postSubmit}
                             post={activePost}
                             postErrorMessage={postErrorMessage}
                             setPostErrorMessage={setPostErrorMessage}
@@ -258,7 +271,7 @@ const DeepFeed = () => {
                                         >
                                             <FaEdit />
                                         </button>
-                                        <button className="small-icon" onClick={handleDelete} title="Delete Deep Feed">
+                                        <button className="small-icon" onClick={deletePost} title="Delete Deep Feed">
                                             <FaTrash />
                                         </button>
                                     </>

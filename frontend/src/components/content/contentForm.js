@@ -121,6 +121,7 @@ const reorder = (list, startIndex, endIndex) => {
 
 //Post is either the post being edited or replied to
 const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onEditSubmit, onPostSubmit, post = null, postErrorMessage, setPostErrorMessage, setShowForm }) => {
+    console.log("channelId:", channelId, "feed:", feed, "isEdit:", isEdit, "isGroup:", isGroup, "isReply:", isReply, "post:", post);
     const [blocks, setBlocks] = useState([])
     const [blockLimitError, setBlockLimitError] = useState('')
     const [codeBlockDropdown, setCodeBlockDropdown] = useState(false)
@@ -157,7 +158,7 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onEdit
                 }
                 const updatedBlocks = blocks.map(block => {
                     if (block.id === blockId && block.type === BLOCK_TYPES.CODE) {
-                        const iframeCode = `<div style="width:100%; height:470px;">
+                        const iframeCode = `<div style="width:100%; height:100vh">
                             <iframe src="${parsedUrl.href}" style="width:100%; height:100%; border:none;" sandbox="allow-scripts allow-same-origin" referrerpolicy="no-referrer"></iframe>
                             </div>`;
                         return { 
@@ -752,8 +753,12 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onEdit
             setGlobalAiPrompt('')
             setShowForm(false)
             setPostErrorMessage('')
-            navigate(`/${urlPrefix}/${feed_name}/${channel_name}/${isReply ? post.post_id : postId}`)
-        } catch {
+            console.log("post:", post)
+            const feedName = feed?.feed_name || feed_name
+            const channelName = post?.parentChannel?.channel_name || channel_name
+            navigate(`/${urlPrefix}/${feedName}/${channelName}/${isReply ? post.post_id : postId}`)
+        } catch (error) {
+            console.error('Error submitting form:', error)
             setPostErrorMessage('Error submitting the form.')
             setTimeout(() => { setPostErrorMessage('') }, 5000)
         }

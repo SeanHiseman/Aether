@@ -234,7 +234,7 @@ const FeedHome = () => {
         }
     };
 
-    const handleEditSubmit = async (formData) => {
+    const editSubmit = async (formData) => {
         try {
             formData.append('post_id', postToEdit.post_id);
             await axios.post('/api/edit_post', formData);
@@ -253,7 +253,7 @@ const FeedHome = () => {
     const handleChatClick = () => setIsChatChannel((prev) => !prev);
     const handlePostClick = () => setIsPostChannel((prev) => !prev);
 
-    const handlePostSubmit = async (formData) => {
+    const postSubmit = async (formData) => {
         if (!isAuthenticated) return;
         if (!formData) {
             setPostErrorMessage("Post cannot be empty");
@@ -286,7 +286,7 @@ const FeedHome = () => {
         }
     };
 
-    const handleToggleDrafts = () => {
+    const toggleDrafts = () => {
         if (showDrafts) {
             navigate(`/${urlLetter}/${feed_name}/${channel_name}`);
         } else {
@@ -353,7 +353,7 @@ const FeedHome = () => {
                         feed={feed}
                         isDraft={true}
                         isGroup={feed.is_group}
-                        onEditClick={(post) => { setShowPostForm(true); setIsEdit(true); setPostToEdit(post); handleToggleDrafts(); }}
+                        onEditClick={(post) => { setShowPostForm(true); setIsEdit(true); setPostToEdit(post); toggleDrafts(); }}
                         onReplyClick={null}
                         posts={draftPosts}
                     />
@@ -363,8 +363,8 @@ const FeedHome = () => {
                         feed={feed} 
                         isEdit={isEdit} 
                         isReply={false} 
-                        onEditSubmit={handleEditSubmit} 
-                        onPostSubmit={handlePostSubmit}
+                        onEditSubmit={editSubmit} 
+                        onPostSubmit={postSubmit}
                         populateFromPost={Boolean(postToEdit)}
                         post={postToEdit} 
                         postErrorMessage={postErrorMessage} 
@@ -378,7 +378,8 @@ const FeedHome = () => {
                         isEdit={false}
                         isGroup={feed.is_group} 
                         isReply={true} 
-                        onPostSubmit={handlePostSubmit} 
+                        onEditSubmit={editSubmit}
+                        onPostSubmit={postSubmit} 
                         post={replyingToPost} 
                         postErrorMessage={postErrorMessage} 
                         setPostErrorMessage={setPostErrorMessage} 
@@ -502,7 +503,7 @@ const FeedHome = () => {
                                         </button>
                                     )}
                                     {showPostForm && (
-                                        <button className="small-icon" onClick={handleToggleDrafts} title={showDrafts ? 'Hide Drafts' : 'Show Drafts'}>
+                                        <button className="small-icon" onClick={toggleDrafts} title={showDrafts ? 'Hide Drafts' : 'Show Drafts'}>
                                             {showDrafts ? <FaFolder /> : <FaFolderOpen />}<p className="icon-text">{showDrafts ? "Hide drafts" : "Drafts"}</p>
                                         </button>
                                     )}

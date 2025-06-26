@@ -253,7 +253,6 @@ router.post('/create_draft', authenticateCheck, checkStorageLimit, postUpload.ar
 router.post('/create_post', authenticateCheck, checkStorageLimit, postUpload.array('files'), async (req, res) => {
     try {
         let { channel_id, content, feed_id, parent_id, post_id, poster_id, title } = req.body;
-        console.log('Creating post with data:', { channel_id, content, feed_id, parent_id, post_id, poster_id, title });
         if (!post_id) {
             post_id = v4();
         }
@@ -310,7 +309,6 @@ router.post('/create_post', authenticateCheck, checkStorageLimit, postUpload.arr
         }
         return res.status(200).json({ success: true, post });
     } catch (error) {
-        console.error('Error creating post:', error);
         if (req.files && req.files.length > 0) {
             req.files.forEach(file => {
                 try {

@@ -11,7 +11,7 @@ body, html {
     background-color: var(--darkest);
     color: var(--lightest);
     font-family: Arial, sans-serif;
-    font-size: large;
+    font-size: var(--small-text);
     height: 100%;
     margin: 0;
     padding: 0;
