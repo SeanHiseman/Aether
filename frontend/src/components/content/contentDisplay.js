@@ -6,7 +6,7 @@ import AppWebContainer from './appWebContainer'
 const ContentDisplay = ({ content, onOverflowChange = () => {}, showFullContent, showScrollBar }) => {
 	const [blocks, setBlocks] = useState([])
 	const contentRef = useRef(null)
-	const heightStyle = showFullContent ? 'none' : '100%'
+	const heightStyle = showFullContent ? 'auto' : '100%'
 
 	useEffect(() => {
 		const parser = new DOMParser()
@@ -66,8 +66,23 @@ const ContentDisplay = ({ content, onOverflowChange = () => {}, showFullContent,
 		setBlocks(parsed)
 	}, [content])
 
+	useEffect(() => {
+		const element = contentRef.current
+		if (!element) return
+		const fixed = blocks.some(b => b.type === 'code' || b.type === 'app')
+		const update = () => onOverflowChange(fixed || element.scrollHeight > element.clientHeight)
+		update()
+		const ro = new ResizeObserver(update)
+		ro.observe(element)
+		window.addEventListener('resize', update)
+		return () => {
+			ro.disconnect()
+			window.removeEventListener('resize', update)
+		}
+	}, [blocks, onOverflowChange])
+
 	return (
-		<div ref={contentRef} style={{ height: heightStyle, overflow: 'hidden',position: 'relative' }}>
+		<div ref={contentRef} style={{ height: heightStyle, overflow: showScrollBar ? 'auto' : 'hidden', position: 'relative' }}>
 			{blocks.map((block, i) => {
 				if (block.type === 'text') {
 					return <div dangerouslySetInnerHTML={{ __html: block.html }} key={i} />

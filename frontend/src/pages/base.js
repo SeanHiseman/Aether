@@ -536,7 +536,6 @@ const BaseLayout = () => {
             form.append("isGroup", true);
             form.append("feedOwner", user.user_id);
             form.append("viewerFeedId", viewer.feed_id);
-
             if (imageSrc && croppedAreaPixels) {
                 try {
                     const blob = await GetCroppedImg(imageSrc, croppedAreaPixels);
@@ -550,12 +549,11 @@ const BaseLayout = () => {
             else if (feedPhotoFile) {
                 form.append("new_feed_photo", feedPhotoFile);
             }
-
-            const res = await axios.post("/api/create_feed", form, {
+            const response = await axios.post("/api/create_feed", form, {
                 headers: { "Content-Type": "multipart/form-data" }
             });
-            if (res.data.success) {
-                const created = res.data.feed;
+            if (response.data.success) {
+                const created = response.data.feed;
                 setFeeds(prev => [
                     ...prev,
                     {

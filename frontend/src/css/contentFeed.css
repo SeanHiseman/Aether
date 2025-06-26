@@ -16,6 +16,11 @@
     font-size: medium;
     margin: var(--medium-margin);
 }
+.content-footer {
+    align-items: center;
+    display: flex;
+    justify-content: space-between;
+}
 .content-item, .result-widget {
     background-color: var(--dark);
     border-radius: calc(clamp(4px, 1vw, 10px) + var(--medium-margin));

@@ -264,24 +264,25 @@ const ContentWidget = ({ canRemove, feed, isDraft, isGroup, onEditClick, onPostR
 					flexDirection: 'column',
 					...(isFullscreenMode
 						? { height: '100vh', overflow: 'visible' }
-						: showFullContent
-							? { height: 'auto', overflow: 'visible' }
-							: { height: '50vh', overflow: 'hidden' }
-					)
+						: isOverflowing
+							? (showFullContent
+								? { height: 'auto', overflow: 'visible' }
+								: { height: '50vh', overflow: 'hidden' })
+							: { height: 'auto', overflow: 'visible' })
 				}}
 			>
 				<div id="test-div" style={isFullscreenMode ? { flex: 1, overflowY: 'auto' } : { height: '100%' }}>
 					<ContentDisplay content={post.content} onOverflowChange={handleOverflowChange} showFullContent={showFullContent} showScrollBar={false} />
 				</div>
-				<div style={{ position: 'absolute', bottom: 0, left: 0, width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.5rem'}}>
+				<div className="content-footer">
+					<button className="large-icon" onClick={toggleFullscreen} title={isFullscreenMode ? "Close full-screen" : "Full-screen"}>
+						<FaExpand />
+					</button>
 					{isOverflowing && !isFullscreenMode && (
 						<button className="small-icon" onClick={() => setShowFullContent(!showFullContent)} title={showFullContent ? 'Show less' : 'Show more'}>
 							{showFullContent ? <FaChevronUp /> : <FaChevronDown />}
 						</button>
 					)}
-					<button className="large-icon" onClick={toggleFullscreen} title="Toggle full-screen">
-						<FaExpand />
-					</button>
 				</div>
 			</div>
 			{showNote && <div className="ask-note"><p className="ask-note-text">{note}</p></div>}

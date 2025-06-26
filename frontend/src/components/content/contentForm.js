@@ -132,7 +132,7 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onEdit
     const [showGlobalAiPrompt, setShowGlobalAiPrompt] = useState(false)
     const [title, setTitle] = useState('')
     const iframeRefs = useRef({})
-    const [isPostingDraft, setIsPostingDraft] = useState(false);
+    const [isPostingDraft, setIsPostingDraft] = useState(false)
     const { channel_name, feed_name } = useParams()
     const navigate = useNavigate()
     const urlPrefix = isGroup ? 'g' : 'u'
@@ -527,6 +527,80 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onEdit
         return () => window.removeEventListener('message', handleIframeMessage);
     }, []);
 
+    const generateCodeBlock = useCallback(async block => {
+        if (limitReached) {
+            setPostErrorMessage(hasMembership ? "Usage limit reached" : "Usage limit reached. Get membership for more.");
+            setTimeout(() => { setPostErrorMessage(''); }, 10000);
+            return;
+        }
+        try {
+            const prompt = block.data._tempAiPrompt || '';
+            if (!prompt.trim()) {
+                setPostErrorMessage('Prompt cannot be empty.');
+                setTimeout(() => { setPostErrorMessage(''); }, 5000);
+                return;
+            }
+            updateBlock({ ...block, data: { ...block.data, isBlockLoading: true, _tempAiPrompt: '' } });
+            setPostErrorMessage('');
+            const response = await axios.post('/api/generate_content', { 
+                currentCode: block.data.code, 
+                //parentCode: isReply ? post.content : null, 
+                request: prompt, 
+                senderId: user.user_id,
+            });
+            if (response.data && response.status === 201) {
+                const { generatedContent } = response.data;
+                updateBlock({ 
+                ...block, 
+                data: { 
+                    ...block.data, 
+                    code: generatedContent, 
+                    isBlockLoading: false, 
+                    _tempAiPrompt: '', 
+                }, 
+                isEditing: false 
+            });
+            } else {
+                updateBlock({ ...block, data: { ...block.data, isBlockLoading: false, _tempAiPrompt: '' } });
+                setPostErrorMessage('Error creating content.');
+                setTimeout(() => { setPostErrorMessage(''); }, 5000);
+            }
+        } catch {
+            updateBlock({ ...block, data: { ...block.data, isBlockLoading: false, _tempAiPrompt: '' } });
+            setPostErrorMessage('Error creating content.');
+            setTimeout(() => { setPostErrorMessage(''); }, 5000);
+        }
+    }, [hasMembership, post, updateBlock]);
+
+    const generateFullContent = useCallback(async () => {
+        if (limitReached) {
+            setPostErrorMessage(hasMembership ? "Usage limit reached" : "Usage limit reached. Get membership for more.");
+            setTimeout(() => { setPostErrorMessage(''); }, 10000);
+            return;
+        }
+        try {
+            const prompt = globalAiPrompt.trim()
+            if (!prompt) {
+                setPostErrorMessage('Prompt cannot be empty.')
+                setTimeout(() => { setPostErrorMessage(''); }, 5000);
+                return
+            }
+            setIsGlobalLoading(true)
+            setPostErrorMessage('')
+            const fullHTML = compileFinalHTML(blocks)
+            const response = await axios.post('/api/generate_content', { currentCode: fullHTML, parentCode: isReply ? post.content : null, request: prompt, senderId: user.user_id })
+            if (response.data && response.status === 201) {
+                const { generatedContent } = response.data
+                setBlocks([{ data: { code: generatedContent, isBlockLoading: false, showPrompt: true }, id: v4(), isEditing: false, type: BLOCK_TYPES.CODE }])
+            } else setPostErrorMessage('Creation error.'); setTimeout(() => { setPostErrorMessage(''); }, 5000);
+        } catch {
+            setPostErrorMessage('Error creating content.')
+            setTimeout(() => { setPostErrorMessage(''); }, 5000);
+        } finally {
+            setIsGlobalLoading(false)
+        }
+    }, [blocks, compileFinalHTML, globalAiPrompt, hasMembership, post])
+
     const handleAddBlock = useCallback(type => {
         setBlockLimitError('')
         if (blocks.length >= BLOCK_LIMIT) {
@@ -583,121 +657,6 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onEdit
         if (destination.index === source.index) return
         setBlocks(prev => reorder(prev, source.index, destination.index))
     }, [])
-
-    const handleGenerateCodeBlock = useCallback(async block => {
-        if (limitReached) {
-            setPostErrorMessage(hasMembership ? "Usage limit reached" : "Usage limit reached. Get membership for more.");
-            setTimeout(() => { setPostErrorMessage(''); }, 10000);
-            return;
-        }
-        try {
-            const prompt = block.data._tempAiPrompt || '';
-            if (!prompt.trim()) {
-                setPostErrorMessage('Prompt cannot be empty.');
-                setTimeout(() => { setPostErrorMessage(''); }, 5000);
-                return;
-            }
-            updateBlock({ ...block, data: { ...block.data, isBlockLoading: true, _tempAiPrompt: '' } });
-            setPostErrorMessage('');
-            const response = await axios.post('/api/generate_content', { 
-                currentCode: block.data.code, 
-                //parentCode: isReply ? post.content : null, 
-                request: prompt, 
-                senderId: user.user_id,
-            });
-            if (response.data && response.status === 201) {
-                const { generatedContent } = response.data;
-                updateBlock({ 
-                ...block, 
-                data: { 
-                    ...block.data, 
-                    code: generatedContent, 
-                    isBlockLoading: false, 
-                    _tempAiPrompt: '', 
-                }, 
-                isEditing: false 
-            });
-            } else {
-                updateBlock({ ...block, data: { ...block.data, isBlockLoading: false, _tempAiPrompt: '' } });
-                setPostErrorMessage('Error creating content.');
-                setTimeout(() => { setPostErrorMessage(''); }, 5000);
-            }
-        } catch {
-            updateBlock({ ...block, data: { ...block.data, isBlockLoading: false, _tempAiPrompt: '' } });
-            setPostErrorMessage('Error creating content.');
-            setTimeout(() => { setPostErrorMessage(''); }, 5000);
-        }
-    }, [hasMembership, post, updateBlock]);
-
-    const handleGenerateFullContent = useCallback(async () => {
-        if (limitReached) {
-            setPostErrorMessage(hasMembership ? "Usage limit reached" : "Usage limit reached. Get membership for more.");
-            setTimeout(() => { setPostErrorMessage(''); }, 10000);
-            return;
-        }
-        try {
-            const prompt = globalAiPrompt.trim()
-            if (!prompt) {
-                setPostErrorMessage('Prompt cannot be empty.')
-                setTimeout(() => { setPostErrorMessage(''); }, 5000);
-                return
-            }
-            setIsGlobalLoading(true)
-            setPostErrorMessage('')
-            const fullHTML = compileFinalHTML(blocks)
-            const response = await axios.post('/api/generate_content', { currentCode: fullHTML, parentCode: isReply ? post.content : null, request: prompt, senderId: user.user_id })
-            if (response.data && response.status === 201) {
-                const { generatedContent } = response.data
-                setBlocks([{ data: { code: generatedContent, isBlockLoading: false, showPrompt: true }, id: v4(), isEditing: false, type: BLOCK_TYPES.CODE }])
-            } else setPostErrorMessage('Creation error.'); setTimeout(() => { setPostErrorMessage(''); }, 5000);
-        } catch {
-            setPostErrorMessage('Error creating content.')
-            setTimeout(() => { setPostErrorMessage(''); }, 5000);
-        } finally {
-            setIsGlobalLoading(false)
-        }
-    }, [blocks, compileFinalHTML, globalAiPrompt, hasMembership, post])
-
-    const handleSubmit = useCallback(async e => {
-        e.preventDefault()
-        if (isContentEmpty(blocks)) {
-            setPostErrorMessage(isReply ? 'Reply cannot be empty.' : 'Post cannot be empty.')
-            setTimeout(() => { setPostErrorMessage('') }, 5000)
-            return
-        }
-        try {
-            const finalHTML = compileFinalHTML(blocks)
-            const formData = new FormData()
-            let postId
-            if (!isEdit || isDraft) {
-                postId = v4()
-                formData.append('post_id', postId)
-            } else postId = post.post_id
-            formData.append('content', finalHTML)
-            formData.append('feed_id', feed.feed_id);
-            if (!post || draftId) { 
-                formData.append('draft_id', draftId);
-            } 
-            if (isReply && post) formData.append('parent_id', post.post_id)
-            if (!isReply) formData.append('title', title)
-            if (channelId) formData.append('channel_id', channelId)
-            if (isReply && post) formData.append('parent_id', post.post_id)
-            blocks
-                .filter(b => b.type === BLOCK_TYPES.MEDIA && b.data.file)
-                .forEach(mediaBlock => formData.append('files', mediaBlock.data.file))
-            await (isEdit && !isPostingDraft ? onEditSubmit(formData) : onPostSubmit(formData))
-            setIsPostingDraft(false)
-            setTitle('')
-            setBlocks([])
-            setGlobalAiPrompt('')
-            setShowForm(false)
-            setPostErrorMessage('')
-            navigate(`/${urlPrefix}/${feed_name}/${channel_name}/${isReply ? post.post_id : postId}`)
-        } catch {
-            setPostErrorMessage('Error submitting the form.')
-            setTimeout(() => { setPostErrorMessage('') }, 5000)
-        }
-    }, [blocks, channelId, compileFinalHTML, compileFinalHTML, draftId, feed.feed_id, isContentEmpty, isDraft, isEdit, isPostingDraft, isReply, navigate, onEditSubmit, onPostSubmit, post, urlPrefix])
 
     const onCropComplete = useCallback((blockId, croppedAreaPixels) => {
         setCropState(prev => ({
@@ -760,6 +719,46 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onEdit
         }
     }, [blocks, channelId, compileFinalHTML, draftId, feed.feed_id, isContentEmpty, isReply, post, title, viewer.feed_id])
 
+    const submitForm = useCallback(async e => {
+        e.preventDefault()
+        if (isContentEmpty(blocks)) {
+            setPostErrorMessage(isReply ? 'Reply cannot be empty.' : 'Post cannot be empty.')
+            setTimeout(() => { setPostErrorMessage('') }, 5000)
+            return
+        }
+        try {
+            const finalHTML = compileFinalHTML(blocks)
+            const formData = new FormData()
+            let postId
+            if (!isEdit || isDraft) {
+                postId = v4()
+                formData.append('post_id', postId)
+            } else postId = post.post_id
+            formData.append('content', finalHTML)
+            formData.append('feed_id', feed.feed_id);
+            if (!post || draftId) { 
+                formData.append('draft_id', draftId);
+            } 
+            if (!isReply) formData.append('title', title)
+            if (channelId) formData.append('channel_id', channelId)
+            if (isReply && post) formData.append('parent_id', post.post_id)
+            blocks
+                .filter(b => b.type === BLOCK_TYPES.MEDIA && b.data.file)
+                .forEach(mediaBlock => formData.append('files', mediaBlock.data.file))
+            await (isEdit && !isPostingDraft ? onEditSubmit(formData) : onPostSubmit(formData))
+            setIsPostingDraft(false)
+            setTitle('')
+            setBlocks([])
+            setGlobalAiPrompt('')
+            setShowForm(false)
+            setPostErrorMessage('')
+            navigate(`/${urlPrefix}/${feed_name}/${channel_name}/${isReply ? post.post_id : postId}`)
+        } catch {
+            setPostErrorMessage('Error submitting the form.')
+            setTimeout(() => { setPostErrorMessage('') }, 5000)
+        }
+    }, [blocks, channelId, compileFinalHTML, compileFinalHTML, draftId, feed.feed_id, isContentEmpty, isDraft, isEdit, isPostingDraft, isReply, navigate, onEditSubmit, onPostSubmit, post, title, urlPrefix])
+
     const toggleMediaAlignment = useCallback(block => {
         let newAlign;
         if (block.data.align === 'center') newAlign = 'left' 
@@ -794,7 +793,7 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onEdit
                     <ContentWidget canRemove={false} feed={feed} isGroup={isGroup} onEditClick={() => {}} onPostRemoved={() => {}} onReplyClick={() => {}} post={post} readOnly />
                 </div>
             )}
-            <form className="post-form" id="post-form" onSubmit={handleSubmit}>
+            <form className="post-form" id="post-form" onSubmit={submitForm}>
                 <div className="action-buttons-sticky" style={{ width: '100%' }}>
                     <div className="action-buttons" style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-start', position: 'relative' }}>
                         <div className="left-buttons" style={{ display: 'flex', gap: '10px' }}>
@@ -902,7 +901,7 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onEdit
                             value={globalAiPrompt}/>
                         <button className={isGlobalLoading || !globalAiPrompt.trim() || limitReached ? 'large-icon disabled' : 'large-icon'} 
                             disabled={isGlobalLoading || !globalAiPrompt.trim() || limitReached} 
-                            onClick={handleGenerateFullContent} 
+                            onClick={generateFullContent} 
                             title={limitReached ? "Usage limit reached" : isGlobalLoading ? 'Creating...' : !globalAiPrompt.trim() ? 'Enter a prompt' : 'Create'} 
                             type="button">
                             {isGlobalLoading ? <FaCircleNotch className="spinner" /> : <FaArrowCircleUp />}
@@ -1082,7 +1081,7 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onEdit
                                                                                         value={data._tempAiPrompt || ''}/>
                                                                                     <button className={data.isBlockLoading || !data._tempAiPrompt?.trim() || limitReached ? 'small-icon disabled' : 'small-icon'} 
                                                                                         disabled={data.isBlockLoading || !data._tempAiPrompt?.trim() || limitReached} 
-                                                                                        onClick={() => handleGenerateCodeBlock(block)} 
+                                                                                        onClick={() => generateCodeBlock(block)} 
                                                                                         title={limitReached ? (user.has_membership ? "Usage limit reached" 
                                                                                             : "Usage limit reached. Get membership for more.") 
                                                                                             : data.isBlockLoading ? 'Creating...' 

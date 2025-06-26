@@ -213,7 +213,7 @@ const FeedHome = () => {
         }
     };
 
-    const handleDelete = async () => {
+    const deleteChannel = async () => {
         if (window.confirm(`Are you sure you want to delete ${channel_name}? All content will be lost.`)) {
             try {
                 if (channel_name === 'Main') {
@@ -234,18 +234,18 @@ const FeedHome = () => {
         }
     };
 
-    const handleEditSubmit = async (formData) => { 
+    const handleEditSubmit = async (formData) => {
         try {
             formData.append('post_id', postToEdit.post_id);
-            await axios.post('/api/edit_post', formData, {
-                headers: { 'Content-Type': 'multipart/form-data' },
-            });
-            setShowPostForm(false);
+            await axios.post('/api/edit_post', formData);
             setIsEdit(false);
             setPostToEdit(null);
+            setShowPostForm(false);
         } catch (error) {
-            setFeedErrorMessage("Error editing post");
-            setTimeout(() => { setFeedErrorMessage(''); }, 3000);
+            setFeedErrorMessage('Error editing post');
+            setTimeout(() => {
+                setFeedErrorMessage('');
+            }, 3000);
         }
     };
 
@@ -477,7 +477,7 @@ const FeedHome = () => {
                                             >
                                                 <FaEdit />
                                             </button>
-                                            <button className="small-icon" onClick={handleDelete} title="Delete channel">
+                                            <button className="small-icon" onClick={deleteChannel} title="Delete channel">
                                                 <FaTrash />
                                             </button>
                                         </>

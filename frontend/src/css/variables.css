@@ -5,16 +5,16 @@
     --light: #737484;
     --lightest: #dddddd;
 
-    --header-height: clamp(40px, 5vw, 70px);
-    --xl-margin: clamp(16px, 4.8vw, 40px);
-    --large-margin: clamp(8px, 2.4vw, 20px);
-    --medium-margin: clamp(4px, 1.2vw, 10px);
-    --small-margin: clamp(2px, 0.6vw, 5px);
+    --header-height: clamp(60px, 10vw, 70px);
+    --xl-margin: clamp(24px, 7.2vw, 40px);
+    --large-margin: clamp(12px, 3.6vw, 20px);
+    --medium-margin: clamp(6px, 1.9vw, 10px);
+    --small-margin: clamp(3px, 0.9vw, 5px);
 
-    --xl-text: clamp(8px, 6vw, 48px);
-    --large-text: clamp(8px, 4.8vw, 36px);
-    --medium-text: clamp(8px, 3.6vw, 24px);
-    --small-text: clamp(8px, 2.4vw, 16px);
+    --xl-text: clamp(12px, 8vw, 48px);
+    --large-text: clamp(12px, 6vw, 36px);
+    --medium-text: clamp(12px, 4.8vw, 24px);
+    --small-text: clamp(12px, 3.6vw, 16px);
 
     --transition-regular: 0.3s ease;
     --left-width: 16vw;

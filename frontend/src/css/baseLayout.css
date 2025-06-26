@@ -238,7 +238,7 @@ textarea::placeholder,
   font-size: var(--medium-text);
   font-weight: bold;
   margin: 0;
-  margin-left: var(--medium-margin);
+  margin-left: var(--small-margin);
 }
 .file-input {
   align-items: center;
