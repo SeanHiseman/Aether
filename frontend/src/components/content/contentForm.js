@@ -121,7 +121,7 @@ const reorder = (list, startIndex, endIndex) => {
 
 //Post is either the post being edited or replied to
 const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onEditSubmit, onPostSubmit, post = null, postErrorMessage, setPostErrorMessage, setShowForm }) => {
-    console.log("channelId:", channelId, "feed:", feed, "isEdit:", isEdit, "isGroup:", isGroup, "isReply:", isReply, "post:", post);
+    const blocksRef = useRef([]) 
     const [blocks, setBlocks] = useState([])
     const [blockLimitError, setBlockLimitError] = useState('')
     const [codeBlockDropdown, setCodeBlockDropdown] = useState(false)
@@ -129,6 +129,7 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onEdit
     const [draftId, setDraftId] = useState(post?.draft_id || null)
     const [editMode, setEditMode] = useState(true)
     const [globalAiPrompt, setGlobalAiPrompt] = useState('')
+    const isDraft = Boolean(draftId)
     const [isGlobalLoading, setIsGlobalLoading] = useState(false)
     const [showGlobalAiPrompt, setShowGlobalAiPrompt] = useState(false)
     const [title, setTitle] = useState('')
@@ -136,10 +137,10 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onEdit
     const [isPostingDraft, setIsPostingDraft] = useState(false)
     const { channel_name, feed_name } = useParams()
     const navigate = useNavigate()
+    const submittedRef = useRef(false)
     const urlPrefix = isGroup ? 'g' : 'u'
     const { user, viewer } = useContext(AuthContext)
     const hasMembership = user?.has_membership
-    const isDraft = Boolean(draftId)
     const BLOCK_LIMIT = hasMembership ? 10000 : 10
     const MAX_FILE_SIZE = hasMembership ? 100 * 1024 * 1024 : 1 * 1024 * 1024
     const TEXT_CHAR_LIMIT = hasMembership ? 100000 : 1000
@@ -289,18 +290,41 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onEdit
         }
     }, [blocks, cropState, updateBlock]);
 
-    const closeForm = useCallback(async () => {
-        for (const b of blocks) {
-            if (b.type === BLOCK_TYPES.APP && b.data.buildId) {
-                try {
-                    await axios.delete('/api/remove_build', {
-                        data: { buildId: b.data.buildId },
-                    })
-                } catch {}
+    //Remove uploaded builds if form is closed without posting or saving, or if a block is deleted
+    useEffect(() => {
+        return () => {
+            if (!draftId && !isEdit && !submittedRef.current) {
+                (async () => {
+                    for (const b of blocksRef.current) {
+                        if (b.type === BLOCK_TYPES.APP && b.data.buildId) {
+                            try {
+                                await axios.delete('/api/remove_build', {
+                                    data: { buildId: b.data.buildId },
+                                })
+                            } catch {}
+                        }
+                    }
+                })()
             }
         }
-        setShowForm(false)
-    }, [blocks, setShowForm])
+    }, [])
+
+    //Ensure unused app builds are removed when the form is closed
+    useEffect(() => {
+        blocksRef.current = blocks
+    }, [blocks])
+
+    const closeForm = () => {
+        setShowForm(false);
+        if (!draftId && !isEdit && !submittedRef.current) {
+            blocksRef.current.forEach(b => {
+                if (b.type === BLOCK_TYPES.APP && b.data.buildId) {
+                    axios.delete('/api/remove_build', { data: { buildId: b.data.buildId } })
+                        .catch(()=>{});
+                }
+            });
+        }
+    };
 
     const compileFinalHTML = useCallback(allBlocks => {
         let finalHTML = ''
@@ -684,6 +708,7 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onEdit
 
     const saveDraft = useCallback(async e => {
         e.preventDefault()
+        submittedRef.current = true //Redundant backup
         if (isContentEmpty(blocks)) {
             setPostErrorMessage(isReply ? 'Reply cannot be empty.' : 'Post cannot be empty.')
             setTimeout(() => { setPostErrorMessage('') }, 5000)
@@ -714,7 +739,7 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onEdit
                 const [savedDraft] = response.data.draft
                 setDraftId(savedDraft.draft_id)
             }
-        } catch {
+        } catch (error){
             setPostErrorMessage('Error saving draft.')
             setTimeout(() => { setPostErrorMessage('') }, 5000)
         }
@@ -722,6 +747,7 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onEdit
 
     const submitForm = useCallback(async e => {
         e.preventDefault()
+        submittedRef.current = true //Prevents cleanup from deleting builds
         if (isContentEmpty(blocks)) {
             setPostErrorMessage(isReply ? 'Reply cannot be empty.' : 'Post cannot be empty.')
             setTimeout(() => { setPostErrorMessage('') }, 5000)
@@ -753,12 +779,10 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onEdit
             setGlobalAiPrompt('')
             setShowForm(false)
             setPostErrorMessage('')
-            console.log("post:", post)
             const feedName = feed?.feed_name || feed_name
             const channelName = post?.parentChannel?.channel_name || channel_name
             navigate(`/${urlPrefix}/${feedName}/${channelName}/${isReply ? post.post_id : postId}`)
         } catch (error) {
-            console.error('Error submitting form:', error)
             setPostErrorMessage('Error submitting the form.')
             setTimeout(() => { setPostErrorMessage('') }, 5000)
         }
@@ -862,16 +886,14 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onEdit
                         )}
                     </div>
                 </div>
-                {(blockLimitError || postErrorMessage) && (
-                    <p className="text16" style={{ display: 'flex', alignItems: 'center', margin: '0' }}>
-                        {blockLimitError || postErrorMessage}
-                        {blockLimitError && (
-                            <button className="small-icon" onClick={() => navigate('/settings/membership')} type="button" style={{ marginLeft: '5px' }} title="Get Membership">
-                                <FaArrowCircleUp />
-                            </button>
-                        )}
-                    </p>
-                )}
+                <p className="error-message">
+                    {blockLimitError || postErrorMessage}
+                    {blockLimitError && (
+                        <button className="small-icon" onClick={() => navigate('/settings/membership')} type="button" style={{ marginLeft: '5px' }} title="Get Membership">
+                            <FaArrowCircleUp />
+                        </button>
+                    )}
+                </p>
                 {!isReply && (
                     <input 
                         className="title-input" 

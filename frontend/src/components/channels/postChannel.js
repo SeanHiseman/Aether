@@ -1,20 +1,26 @@
 import axios from 'axios';
 import { useContext, useEffect, useRef } from 'react';
-import { useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { useInfiniteQuery, useQuery, useQueryClient } from '@tanstack/react-query';
 import { AuthContext } from '../../components/authContext';
 import ContentWidget from '../content/contentWidget';
 
 const PostChannel = ({ channelId, channelName, feed, isDraft, isGroup, onEditClick, onReplyClick }) => {
+    const channelReady = !!channelId;
     const feedId = feed.feed_id;
     const loaderRef = useRef(null);
     const queryClient = useQueryClient();
     const { channel_name, post_id } = useParams();
-    const { viewer } = useContext(AuthContext);
+    const { user, viewer } = useContext(AuthContext);
     const isMain = channel_name === 'Main';
+    const navigate = useNavigate();
     const PAGE_SIZE = 10;
 
-    const channelReady = !!channelId;
+    useEffect(() => {
+        if (isDraft && !isGroup && viewer?.feed_id !== feedId) {
+            navigate(`/u/${feed?.feed_name}/Main`, { replace: true });
+        }
+    }, [feedId, isDraft, isGroup, navigate, user?.feed_id, viewer?.handle]);
 
     const getSinglePost = async () => {
         const response = await axios.get('/api/channel_posts', { params: { feedId, isSingle: true, postId: post_id } });

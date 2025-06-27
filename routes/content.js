@@ -431,11 +431,11 @@ router.delete('/remove_draft', authenticateCheck, async (req, res) => {
     let transaction;
 	try {
         transaction = await sequelize.transaction();
-		const { draft } = req.body;
+		const { draft, isPosting } = req.body;
 		const foundDraft = await PostDrafts.findByPk(draft.draft_id);
 		if (foundDraft) {
 			deleteMedia(foundDraft.content);
-			await deleteBuilds(foundDraft.content, { transaction });
+			if (!isPosting) await deleteBuilds(foundDraft.content, { transaction }); //Prevents build removal when posting drafts
 			await PostDrafts.destroy({ where: { draft_id: draft.draft_id } });
 		}
         await transaction.commit();
@@ -508,8 +508,12 @@ router.get('/post_replies/:postId', async (req, res) => {
             },{
                 model: FeedChannels,
                 as: 'parentChannel',
-                attributes: ['channel_name'],
-                required: false
+                attributes: ['channel_name', 'channel_id'],
+                required: false,
+                include: [{
+                    model: Feeds,
+                    attributes: feedAttributes
+                }]
             }
         ];
         const parentFeedId = parentPost.feed_id;

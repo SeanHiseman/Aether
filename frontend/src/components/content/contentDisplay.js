@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from 'react'
 import AppBlock from './appBlock'
 import AppWebContainer from './appWebContainer'
 
-const ContentDisplay = ({ content, onOverflowChange = () => {}, showFullContent, showScrollBar }) => {
+const ContentDisplay = ({ content, onCodeAppChange = () => {}, onOverflowChange = () => {}, showFullContent, showScrollBar }) => {
 	const [blocks, setBlocks] = useState([])
 	const contentRef = useRef(null)
 	const heightStyle = showFullContent ? 'auto' : '100%'
@@ -66,6 +66,7 @@ const ContentDisplay = ({ content, onOverflowChange = () => {}, showFullContent,
 		setBlocks(parsed)
 	}, [content])
 
+	//Find element height for use in determining what height to set content
 	useEffect(() => {
 		const element = contentRef.current
 		if (!element) return
@@ -80,6 +81,11 @@ const ContentDisplay = ({ content, onOverflowChange = () => {}, showFullContent,
 			window.removeEventListener('resize', update)
 		}
 	}, [blocks, onOverflowChange])
+
+	//Detect if there is any code or app blocks to toggle fullscreen button
+	useEffect(() => {
+		onCodeAppChange(blocks.some(b => b.type === 'app' || b.type === 'code'))
+	}, [blocks, onCodeAppChange])
 
 	return (
 		<div ref={contentRef} style={{ height: heightStyle, overflow: showScrollBar ? 'auto' : 'hidden', position: 'relative' }}>
@@ -126,6 +132,7 @@ const ContentDisplay = ({ content, onOverflowChange = () => {}, showFullContent,
 
 ContentDisplay.propTypes = {
 	content: PropTypes.string.isRequired,
+	onCodeAppChange: PropTypes.func,
 	onOverflowChange: PropTypes.func,
 	showFullContent: PropTypes.bool.isRequired,
 	showScrollBar: PropTypes.bool.isRequired,

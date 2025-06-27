@@ -15,6 +15,7 @@ const ContentWidget = ({ canRemove, feed, isDraft, isGroup, onEditClick, onPostR
 	const [downvotes, setDownvotes] = useState(post.downvotes);
 	const { feed_name, channel_name, post_id } = useParams();
 	const fullscreenRef = useRef(null);
+	const [hasCodeOrApp, setHasCodeOrApp] = useState(false); //To prevent images and text having the fullscreen button
 	const [hasViewed, setHasViewed] = useState(false);
 	const [isFullscreenMode, setIsFullscreenMode] = useState(false)
 	const [isOverflowing, setIsOverflowing] = useState(false);
@@ -110,7 +111,8 @@ const ContentWidget = ({ canRemove, feed, isDraft, isGroup, onEditClick, onPostR
 				url = "/api/remove_draft";
 				dataPayload = {
 					draft: {
-						draft_id: post.draft_id
+						draft_id: post.draft_id,
+						isPosting: false
 					}
 				};
 			} else {
@@ -126,7 +128,11 @@ const ContentWidget = ({ canRemove, feed, isDraft, isGroup, onEditClick, onPostR
 			if (response.data.success) {
 				onPostRemoved(isDraft ? post.draft_id : post.post_id)
 				if (!isDraft) {
-					navigate(`/${urlPrefix}/${feed_name}/${channel_name}`);
+					if (post.parent_id) {
+						navigate(`/${urlPrefix}/${post.parentChannel?.feed?.feed_name}/${post.parentChannel?.channel_name}/${post.parent_id}`);
+					} else {
+						navigate(`/${urlPrefix}/${post.parentChannel?.feed?.feed_name}/${post.parentChannel?.channel_name}`);
+					}
 				}
 			} else {
 				setPostErrorMessage(`Error removing ${item}`);
@@ -221,12 +227,7 @@ const ContentWidget = ({ canRemove, feed, isDraft, isGroup, onEditClick, onPostR
 						<p className="feed-list-text">{reply.poster.feed_name}</p>
 					</Link>
 				</div>
-				<ContentDisplay 
-					content={reply.content} 
-					showFullContent={false} 
-					showScrollBar={false}
-					treeViewMode={true}
-				/>
+				<ContentDisplay content={reply.content}  onCodeAppChange={setHasCodeOrApp} showFullContent={false} showScrollBar={false} treeViewMode={true} />
 				<div className="tree-reply-footer">
 					<span className="total-votes">{reply.upvotes - reply.downvotes} votes</span>
 					<button className="small-icon" onClick={() => onReplyClick(reply)} title="Reply">
@@ -272,12 +273,14 @@ const ContentWidget = ({ canRemove, feed, isDraft, isGroup, onEditClick, onPostR
 				}}
 			>
 				<div id="test-div" style={isFullscreenMode ? { flex: 1, overflowY: 'auto' } : { height: '100%' }}>
-					<ContentDisplay content={post.content} onOverflowChange={handleOverflowChange} showFullContent={showFullContent} showScrollBar={false} />
+					<ContentDisplay content={post.content} onCodeAppChange={setHasCodeOrApp} onOverflowChange={handleOverflowChange} showFullContent={showFullContent} showScrollBar={false} />
 				</div>
 				<div className="content-footer">
-					<button className="large-icon" onClick={toggleFullscreen} title={isFullscreenMode ? "Close full-screen" : "Full-screen"}>
-						<FaExpand />
-					</button>
+					{hasCodeOrApp && (
+						<button className="large-icon" onClick={toggleFullscreen} title={isFullscreenMode ? "Close full-screen" : "Full-screen"}>
+							<FaExpand />
+						</button>
+					)}
 					{isOverflowing && !isFullscreenMode && (
 						<button className="small-icon" onClick={() => setShowFullContent(!showFullContent)} title={showFullContent ? 'Show less' : 'Show more'}>
 							{showFullContent ? <FaChevronUp /> : <FaChevronDown />}

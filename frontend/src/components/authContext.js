@@ -19,7 +19,6 @@ export const PublicAuthProvider = ({ children }) => {
             try {
                 const response = await axios.get('/api/check_authentication');
                 const { authenticated, feeds, user, currentFeed } = response.data;
-                
                 if (authenticated && user) {
                     setIsAuthenticated(true);
                     setUser(user);
@@ -67,6 +66,6 @@ export const ProtectedRoute = ({ children }) => {
     
     if (isLoading) return <div>Loading...</div>;
     if (!isAuthenticated) return null;
-    
+
     return children;
 };

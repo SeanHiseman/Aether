@@ -173,10 +173,9 @@ const FeedHome = () => {
     useEffect(() => {
         setShowPostForm(false);
         setReplyingToPost(null);
-        //setIsDraftEdit(false); 
         setIsEdit(false);
         setPostToEdit(null);
-    }, [channel_name]);
+    }, [channel_name, feed_name]);
 
     const changeChannelName = async (event) => {
         event.preventDefault();
@@ -270,7 +269,8 @@ const FeedHome = () => {
                 await axios.delete('/api/remove_draft', {
                     headers: { 'Content-Type': 'application/json' },
                     data: {   
-                        draft: { draft_id: draftId }
+                        draft: { draft_id: draftId },
+                        isPosting: true,
                     }
                 });     
             }

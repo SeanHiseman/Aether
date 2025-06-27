@@ -52,7 +52,6 @@ body, html {
 .error-message {
     height: var(--small-text);
     margin: var(--small-margin);
-    text-align: center;
 }
 .faded-text {
     color: var(--light);

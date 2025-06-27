@@ -11,7 +11,8 @@ import DeepFeedItem from '../components/channels/deepFeedItem';
 import { useInfiniteQuery } from '@tanstack/react-query';
 
 const DeepFeed = () => {
-    const [activeReplyPostId, setActiveReplyPostId] = useState(null);
+    const [activeEditPost, setActiveEditPost] = useState(null);
+    const [activeReplyPost,	setActiveReplyPost]	= useState(null);
     const [errorMessage, setErrorMessage] = useState('');
     const { deep_feed_id } = useParams();
     const [deepFeed, setDeepFeed] = useState({ deep_feed_id: null, name: '', owner_id: null, parent_id: null });
@@ -139,9 +140,8 @@ const DeepFeed = () => {
                     data: { draft: { draft_id: draftId } }
                 });   
             }    
-            setActiveReplyPostId(null);
+            setActiveReplyPost(null);
         } catch (error) {
-            console.error("Error creating post:", error);
             if (error.response && error.response.status === 413) {
                 setPostErrorMessage(error.response.data.message + (!user.has_membership ? ". Get membership for more" : ""));
                 setTimeout(() => { setPostErrorMessage(''); }, 10000);
@@ -169,17 +169,16 @@ const DeepFeed = () => {
     }, [loaderRef, hasNextPage, isFetchingNextPage, fetchNextPage]);
 
     const allPosts = data ? data.pages.flatMap(page => page) : [];
-    const activePost = allPosts.find(p => p.post_id === activeReplyPostId);
-    console.log("activePost", activePost);
+
     const editSubmit = async (formData) => {
+        if (!activeEditPost) return;
         try {
-            formData.append('post_id', activePost.post_id);
+            formData.append('post_id', activeEditPost.post_id);
             await axios.post('/api/edit_post', formData);
+            setActiveEditPost(null);
         } catch (error) {
             setErrorMessage('Error editing post');
-            setTimeout(() => {
-                setErrorMessage('');
-            }, 3000);
+            setTimeout(() => { setErrorMessage('') }, 3000);
         }
     };
 
@@ -187,20 +186,34 @@ const DeepFeed = () => {
         <div className="standard-container">
             <div className="channel-feed">
                 <div className="channel-content">
-                    {activeReplyPostId && activePost ? (
+                    {activeEditPost ? (
+						<ContentForm
+							key={`edit-${activeEditPost.post_id}`}
+							channelId={activeEditPost.parentChannel?.channel_id}
+							feed={activeEditPost.parentChannel?.feed}
+							isEdit={true}
+							isGroup={activeEditPost.poster?.feed_id !== activeEditPost.feed_id}
+							isReply={false}
+							onEditSubmit={editSubmit}
+							post={activeEditPost}
+							postErrorMessage={postErrorMessage}
+							setPostErrorMessage={setPostErrorMessage}
+							setShowForm={() => setActiveEditPost(null)}
+						/>
+                    ) : activeReplyPost ? (
                         <ContentForm
-                            key={`reply-${activePost.post_id}`}
-                            channelId={activePost.parentChannel?.channel_id}
-                            feed={activePost.parentChannel?.feed}
+                            key={`reply-${activeReplyPost.post_id}`}
+                            channelId={activeReplyPost.parentChannel?.channel_id}
+                            feed={activeReplyPost.parentChannel?.feed}
                             isEdit={false}
-                            isGroup={activePost.poster?.feed_id === activePost.feed_id ? false : true}
+                            isGroup={activeReplyPost.poster?.feed_id === activeReplyPost.feed_id ? false : true}
                             isReply={true}
                             onEditSubmit={editSubmit}
                             onPostSubmit={postSubmit}
-                            post={activePost}
+                            post={activeReplyPost}
                             postErrorMessage={postErrorMessage}
                             setPostErrorMessage={setPostErrorMessage}
-                            setShowForm={() => setActiveReplyPostId(null)}
+                            setShowForm={() => setActiveReplyPost(null)}
                         />
                     ) : allPosts.length > 0 ? (
                         <>
@@ -208,9 +221,12 @@ const DeepFeed = () => {
                                 {allPosts.map((post) => (
                                     <ContentWidget
                                         key={post.post_id}
+                                        canRemove={false}
                                         feed={post.poster}
                                         isGroup={post.is_group}
-                                        onReplyClick={() => setActiveReplyPostId(post.post_id)}
+                                        onEditClick={setActiveEditPost}
+                                        onPostRemoved={() => {}}
+                                        onReplyClick={setActiveReplyPost}
                                         post={post}
                                     />
                                 ))}
