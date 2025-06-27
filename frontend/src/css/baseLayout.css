@@ -254,6 +254,11 @@ textarea::placeholder,
   height: 100%;
   position: relative;
   transition: background-color var(--transition-regular);
+  cursor: pointer;
+  padding: 0 calc(0.4 * var(--header-height));
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 .icon-button.ask {
   background-color: var(--dark);
@@ -265,19 +270,11 @@ textarea::placeholder,
   border-top-right-radius: calc(0.3 * var(--header-height));
   border-bottom-right-radius: calc(0.3 * var(--header-height));
 }
-.icon-button:hover::after {
-  background-color: var(--light);
-  border-radius: 0.3rem;
-  color: var(--lightest);
-  content: attr(data-tooltip);
-  font-size: large;
-  opacity: 1;
-  padding: 0.5rem;
-  position: absolute;
-  text-align: center;
-  transition: opacity 0.3s ease;
-  width: max-content;
-  z-index: 100;
+.icon-button.search:hover {
+  background-color: var(--border);
+}
+.icon-button.search:active {
+  background-color: var(--border);
 }
 .large-feed-photo {
   border-radius: clamp(4px, 1vw, 10px);
@@ -293,8 +290,7 @@ textarea::placeholder,
   margin-top: var(--medium-margin);
   width: 90%;
 }
-.left-aside,
-.right-aside {
+.left-aside, .right-aside {
   align-items: center;
   background-color: var(--darkest);
   display: flex;
@@ -308,21 +304,18 @@ textarea::placeholder,
   width: var(--left-width);
   z-index: 11;
 }
-.left-aside nav ul,
-.right-aside nav ul {
+.left-aside nav ul, .right-aside nav ul {
   list-style: none;
   padding: 0;
   margin: 0;
   text-align: center;
   width: 100%;
 }
-.left-aside nav ul li a,
-.right-aside nav ul li a {
+.left-aside nav ul li a, .right-aside nav ul li a {
   color: var(--lightest);
   text-decoration: none;
 }
-.left-aside::-webkit-scrollbar,
-.right-aside::-webkit-scrollbar {
+.left-aside::-webkit-scrollbar, .right-aside::-webkit-scrollbar {
   display: none; /*Hides scroll bar */
 }
 li {
@@ -351,8 +344,7 @@ main {
 .posts-channel-button {
   border-radius: var(--small-margin);
 }
-#public-private-section,
-#post-chat-section {
+#public-private-section, #post-chat-section {
   display: flex;
   max-width: 100%;
 }
@@ -377,30 +369,37 @@ main {
   list-style-type: none;
   padding: 0;
 }
-.search-bar {
+.search-form {
   background-color: var(--dark);
-  border: none;
-  border-bottom-left-radius: calc(0.3 * var(--header-height));
-  border-top-left-radius: calc(0.3 * var(--header-height));
-  color: var(--lightest);
-  flex-grow: 1;
-  font-size: var(--small-text);
-  height: 100%;
+  border: 1px solid var(--border);
+  border-radius: calc(clamp(4px, 1vw, 10px) + var(--medium-margin));
+  height: 90%;
+  overflow: hidden;
 }
 .search-container {
   align-items: center;
-  border: 1px solid var(--dark);
-  border-radius: calc(0.3 * var(--header-height));
   display: flex;
-  position: relative;
-  width: 100%;
+  height: 100%;
+  width: 40vw;
 }
-.search-form {
-  display: flex;
-  max-width: 40%;
-  height: 80%;
-  position: relative;
-  width: 100%;
+.search-bar {
+  background-color: transparent;
+  border: none;
+  border-top-left-radius: calc(clamp(4px, 1vw, 10px) + var(--medium-margin));
+  border-bottom-left-radius: calc(clamp(4px, 1vw, 10px) + var(--medium-margin));
+  color: inherit;
+  flex: 1;
+  height: 100%;
+  outline: none;;
+  font-size: var(--small-text);
+  padding: 0 var(--medium-margin);
+}
+.search-bar::placeholder {
+  color: var(--light);
+  opacity: 1;
+}
+.search-bar:focus {
+  background-color: var(--border);
 }
 .small-feed-photo {
   border-radius: clamp(4px, 1vw, 10px);
@@ -459,8 +458,7 @@ ul {
 .vote-enabled:hover {
   background-color: var(--light);
 }
-.vote-disabled,
-.vote-disabled:hover {
+.vote-disabled, .vote-disabled:hover {
   background-color: var(--border) !important;
   cursor: default !important;
 }
@@ -502,14 +500,12 @@ ul {
   :root {
     --sidebar-mobile-width: 45vw; /* pick any %, 70-80 feels right */
   }
-
   .base-header {
     margin-left: 0;
     margin-right: 0;
     width: 100vw;
   }
-  .left-aside,
-  .right-aside {
+  .left-aside, .right-aside {
     position: fixed;
     width: var(--sidebar-mobile-width); /* ← only one width     */
     z-index: 1000;
@@ -535,7 +531,6 @@ ul {
     right: 0;
     transform: translateX(100%);
   }
-
   /* C) when .open is present they are fully visible                  */
   .left-aside.open,
   .right-aside.open {

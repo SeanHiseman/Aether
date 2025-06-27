@@ -188,20 +188,42 @@ const ContentWidget = ({ canRemove, feed, isDraft, isGroup, onEditClick, onPostR
 		}
 	}, [getReplies, hasViewed, incrementViews, post.post_id, showReplies]);
 
-	useEffect(() => {
-		const handler = () => setIsFullscreenMode(!!document.fullscreenElement)
-		document.addEventListener('fullscreenchange', handler)
-		return () => document.removeEventListener('fullscreenchange', handler)
-	}, [])
-
 	const toggleFullscreen = () => {
-		if (!fullscreenRef.current) return;
-		if (!document.fullscreenElement) {
-			fullscreenRef.current.requestFullscreen();
-		} else {
-			document.exitFullscreen();
+		const element = fullscreenRef.current
+		if (!element) return
+		const request =	element.requestFullscreen
+			|| element.webkitRequestFullscreen
+			|| element.mozRequestFullScreen
+			|| element.msRequestFullscreen
+		const exit = document.exitFullscreen
+			|| document.webkitExitFullscreen
+			|| document.mozCancelFullScreen
+			|| document.msExitFullscreen
+		document.fullscreenElement ? exit?.call(document) : request?.call(element)
+	}
+
+	//Fullscreen handling for different browsers
+	useEffect(() => {
+		const handler = () =>
+			setIsFullscreenMode(
+				Boolean(
+					document.fullscreenElement
+					|| document.webkitFullscreenElement
+					|| document.mozFullScreenElement
+					|| document.msFullscreenElement
+				)
+			)
+		document.addEventListener('fullscreenchange', handler)
+		document.addEventListener('webkitfullscreenchange', handler)
+		document.addEventListener('mozfullscreenchange', handler)
+		document.addEventListener('MSFullscreenChange', handler)
+		return () => {
+			document.removeEventListener('fullscreenchange', handler)
+			document.removeEventListener('webkitfullscreenchange', handler)
+			document.removeEventListener('mozfullscreenchange', handler)
+			document.removeEventListener('MSFullscreenChange', handler)
 		}
-	};
+	}, [])
 
 	const toggleReplies = () => {
 		setShowReplies((prev) => !prev);
@@ -276,16 +298,16 @@ const ContentWidget = ({ canRemove, feed, isDraft, isGroup, onEditClick, onPostR
 					<ContentDisplay content={post.content} onCodeAppChange={setHasCodeOrApp} onOverflowChange={handleOverflowChange} showFullContent={showFullContent} showScrollBar={false} />
 				</div>
 				<div className="content-footer">
-					{hasCodeOrApp && (
+					{(fullscreenRef.current?.requestFullscreen || fullscreenRef.current?.webkitRequestFullscreen) && hasCodeOrApp && (
 						<button className="large-icon" onClick={toggleFullscreen} title={isFullscreenMode ? "Close full-screen" : "Full-screen"}>
 							<FaExpand />
 						</button>
 					)}
-					{isOverflowing && !isFullscreenMode && (
+					{/*{isOverflowing && !isFullscreenMode && (
 						<button className="small-icon" onClick={() => setShowFullContent(!showFullContent)} title={showFullContent ? 'Show less' : 'Show more'}>
 							{showFullContent ? <FaChevronUp /> : <FaChevronDown />}
 						</button>
-					)}
+					)}*/}
 				</div>
 			</div>
 			{showNote && <div className="ask-note"><p className="ask-note-text">{note}</p></div>}

@@ -15,5 +15,6 @@ Connections
 Messaging
 Branched replies
 Replies accessing parent post code
+Expand content heigh chevron
 
 Code related to the Customisable Social Media Algorithms Master's project is contained within the custom_algorithms folder of the main directory, frontend/src/algorithms, or marked with //Project code

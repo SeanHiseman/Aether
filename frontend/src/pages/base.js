@@ -839,7 +839,7 @@ const BaseLayout = () => {
                 </aside>
                 <main>
                     <header className="base-header">
-                        <button className="small-icon" onClick={toggleLeft} title={desk.left ? "Open sidebar" : "Close sidebar"}>
+                        <button className="large-icon" onClick={toggleLeft} title={desk.left ? "Open sidebar" : "Close sidebar"}>
                             {(isMobile() && mobileOpen === "left") ||
                             (!isMobile() && !desk.left) ? (
                                 <FaTimes />
@@ -865,7 +865,7 @@ const BaseLayout = () => {
                                         }
                                     }}
                                 />
-                                <button className="icon-button search" data-tooltip="Search" type="submit">
+                                <button className="icon-button search" data-tooltip="Search" title="Search" type="submit">
                                     <MagnifyingGlassIcon className="standard-icon" style={{ transform: "scale(1.3)" }}/>
                                 </button>
                             </div>
@@ -873,7 +873,7 @@ const BaseLayout = () => {
                         {headerErrorMessage && (
                             <p className="error-message">{headerErrorMessage}</p>
                         )}
-                        <button className="small-icon" onClick={toggleRight} title={desk.right ? "Open sidebar" : "Close sidebar"}>
+                        <button className="large-icon" onClick={toggleRight} title={desk.right ? "Open sidebar" : "Close sidebar"}>
                             {(isMobile() && mobileOpen === "right") ||
                             (!isMobile() && !desk.right) ? (
                                 <FaTimes />
