@@ -194,8 +194,7 @@ textarea::placeholder,
   z-index: 0;
 }
 /*Content feed may be redundant*/
-.content-feed,
-.messages-feed {
+.content-feed, .messages-feed {
   display: flex;
   flex-direction: column;
   flex-grow: 1;
@@ -209,13 +208,11 @@ textarea::placeholder,
   margin: var(--small-margin);
   max-width: 80%;
 }
-#description-section .view-description,
-#name-section .view-name {
+#description-section .view-description, #name-section .view-name {
   align-items: center;
   display: flex;
 }
-#description-section .change-description,
-#name-section .change-name {
+#description-section .change-description, #name-section .change-name {
   display: flex;
   flex-direction: column;
 }
@@ -422,7 +419,6 @@ main {
 }
 .total-votes {
   font-size: var(--medium-text);
-  margin: var(--small-margin);
 }
 #upload-form {
   display: flex;

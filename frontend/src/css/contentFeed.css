@@ -66,6 +66,7 @@
     display: flex;
     font-size: var(--medium-text);
     justify-content: space-between;
+    margin-bottom: var(--small-margin);
     margin-left: var(--medium-margin);
     margin-right: var(--medium-margin);
 }

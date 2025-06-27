@@ -73,8 +73,8 @@ label {
     color: var(--lightest);
     display: flex;
     justify-content: center;
-    margin: clamp(6px, 2vw, 10px);
-    padding: clamp(6px, 2vw, 10px);
+    margin: clamp(3px, 1vw, 5px);
+    padding: clamp(3px, 1vw, 5px);
 }
 .large-icon {
     font-size: var(--medium-text);
