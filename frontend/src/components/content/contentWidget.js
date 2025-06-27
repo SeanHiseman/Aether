@@ -319,7 +319,7 @@ const ContentWidget = ({ canRemove, feed, isDraft, isGroup, onEditClick, onPostR
 					</Link>
 				</div>)}
 				{!isDraft && <Link to={`/${urlPrefix}/${feedName}/${channelName}`}>
-					<p className="text16 clickable">{feedName}/{channelName}</p>
+					<p className="text24 clickable">{feedName}/{channelName}</p>
 				</Link>}
 				{!isDraft && (<div className="vote-container">
 					{isAuthenticated ? (

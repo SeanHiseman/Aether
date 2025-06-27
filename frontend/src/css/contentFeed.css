@@ -68,7 +68,6 @@
     justify-content: space-between;
     margin-left: var(--medium-margin);
     margin-right: var(--medium-margin);
-    padding-bottom: var(--medium-margin);
 }
 .custom-theme-container {
     align-items: center;

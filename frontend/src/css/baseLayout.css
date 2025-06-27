@@ -421,7 +421,7 @@ main {
   transition: background-color var(--transition-regular);
 }
 .total-votes {
-  font-size: var(--small-text);
+  font-size: var(--medium-text);
   margin: var(--small-margin);
 }
 #upload-form {
