@@ -1,5 +1,5 @@
 import { AppBuilds, Posts, PostDrafts, PostNotes, PostVotes, Prompts } from "./content.js";
-import { DeepFeeds, DeepFeedContent, Feeds, FeedChannels, FeedChannelMessages, Followers, FollowRequests } from "./feeds.js";
+import { DeepFeeds, DeepFeedContent, Feeds, FeedChannels, FeedChannelMessages, Followers, FollowRequests, SavedPosts, SavedPostChannels } from "./feeds.js";
 import { AskChats, AskMessages, Chats, ConnectRequests, Connections, FeedChats, Messages } from "./messages.js";
 import { Users } from "./users.js";
 
@@ -76,6 +76,12 @@ AskMessages.belongsTo(Users, { foreignKey: 'sender_id', as: 'sender' });
 PostNotes.belongsTo(Posts, { foreignKey: 'post_id', as: 'parentPost'});
 Posts.hasOne(PostNotes, { foreignKey: 'post_id', as: 'note'});
 
+SavedPosts.belongsTo(Posts, { foreignKey: 'post_id' });
+SavedPosts.belongsTo(Feeds,	{ foreignKey: 'feed_id' });
+SavedPosts.belongsTo(SavedPostChannels, { foreignKey: 'channel_id' });
+SavedPostChannels.belongsTo(Feeds, { foreignKey: 'saver_id' });
+SavedPostChannels.hasMany(SavedPosts, { foreignKey: 'channel_id' });
+
 export {
     AppBuilds,
     AskChats, 
@@ -97,5 +103,7 @@ export {
     PostNotes, 
     PostVotes,
     Prompts,
+    SavedPosts,
+    SavedPostChannels,
     Users
 }

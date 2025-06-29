@@ -134,6 +134,10 @@
 .result-widget:hover {
     transform: translate(var(--small-margin), calc(-1 * var(--small-margin)));
 }
+.post-button-group {
+    align-items: center;
+    display: flex;
+}
 .post-list {
     margin: 0px;
 }

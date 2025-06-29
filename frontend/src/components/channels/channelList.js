@@ -8,20 +8,20 @@ import { AuthContext } from '../../components/authContext';
 import { decrypt } from '../../encryptionUtil';
 import { UnreadContext } from '../connections/unreadContext';
 
-const SortableFeedChannelItem = ({ id, channel, urlLetter, feedName }) => {
+const SortableFeedChannelItem = ({ channel, id, url }) => {
     const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
     const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.7 : 1, cursor: 'grab' };
 
     return (
         <li ref={setNodeRef} style={style} className={`channel-item ${isDragging ? 'dragging-active' : ''}`}  {...attributes}  {...listeners} >
-            <Link to={`/${urlLetter}/${feedName}/${channel.channel_name}`} style={{ pointerEvents: isDragging ? 'none' : 'auto' }} >
+            <Link to={url} style={{ pointerEvents: isDragging ? 'none' : 'auto' }} >
                 <div className="channel-link">{channel.channel_name}</div>
             </Link>
         </li>
     );
 };
 
-const ChannelList = ({ canReorder = false, channels, feedId, feedName, isChat, isGroup, setChannels }) => {
+const ChannelList = ({ canReorder = false, channels, feedId, feedName, isChat, isGroup, isSaved, setChannels }) => {
     const [errorMessage, setErrorMessage] = useState('');
     const { state: unreadState } = useContext(UnreadContext); 
     const urlLetter = isGroup ? 'g' : 'u';
@@ -37,6 +37,7 @@ const ChannelList = ({ canReorder = false, channels, feedId, feedName, isChat, i
                     setErrorMessage(response.data.message || 'Error getting channels from API');
                     setChannels([]);
                 }
+                console.log("response:", response);
             } else {
                 const response = await axios.get(`/api/get_chats/${viewer.feed_id}`, {
                     params: { connectionName: feedName }
@@ -123,8 +124,7 @@ const ChannelList = ({ canReorder = false, channels, feedId, feedName, isChat, i
                                         key={channel.channel_id} 
                                         id={channel.channel_id}   
                                         channel={channel}
-                                        urlLetter={urlLetter}
-                                        feedName={feedName}
+                                        url={isSaved ? `/saved/${channel.channel_name}` : `/${urlLetter}/${feedName}/${channel.channel_name}`}
                                     />
                                 ))}
                             </ul>

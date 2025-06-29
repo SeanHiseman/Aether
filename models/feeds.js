@@ -69,6 +69,25 @@ const FollowRequests = sequelize.define('follow_requests', {
     timestamp: { type: DataTypes.DATE(3), defaultValue: sequelize.literal('CURRENT_TIMESTAMP(3)') }
 }, { tableName: 'follow_requests', timestamps: false });
 
+const SavedPosts = sequelize.define('saved_posts', {
+    post_id: { type: STRING(36), primaryKey: true },
+    saver_id: { type: STRING(36), allowNull: false },
+    feed_id: { type: STRING(36), allowNull: false },
+    channel_id: { type: STRING(36), allowNull: false },
+    saved_channel_id: { type: STRING(36), allowNull: false },
+    created_at: { type: DataTypes.DATE(3), defaultValue: sequelize.literal('CURRENT_TIMESTAMP(3)') },
+    updated_at: { type: DataTypes.DATE(3), defaultValue: sequelize.literal('CURRENT_TIMESTAMP(3)'), onUpdate : sequelize.literal('CURRENT_TIMESTAMP(3)') },
+}, { tableName: 'saved_posts', timestamps: false });
+
+const SavedPostChannels = sequelize.define('saved_post_channels', {
+    channel_id: { type: DataTypes.STRING(36), primaryKey: true },
+    channel_name: { type: DataTypes.STRING(50), allowNull: false },
+    created_at: { type: DataTypes.DATE(3), defaultValue: sequelize.literal('CURRENT_TIMESTAMP(3)') },
+    display_order: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 0 },
+    saver_id: { type: DataTypes.STRING(36), allowNull: false },
+    updated_at: { type: DataTypes.DATE(3), defaultValue: sequelize.literal('CURRENT_TIMESTAMP(3)'), onUpdate: sequelize.literal('CURRENT_TIMESTAMP(3)') }
+}, { tableName: 'saved_post_channels', timestamps: false });
+
 export {
     DeepFeeds,
     DeepFeedContent,
@@ -77,4 +96,6 @@ export {
     FeedChannelMessages,
     Followers,
     FollowRequests,
+    SavedPosts,
+    SavedPostChannels
 }

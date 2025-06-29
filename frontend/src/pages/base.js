@@ -654,6 +654,11 @@ const BaseLayout = () => {
                                         <Link to="/d/following">Following</Link>
                                     </li>
                                 </ul>
+                                <ul>
+                                    <li className="channel-link">
+                                        <Link to="/saved/Main">Saved posts</Link>
+                                    </li>
+                                </ul>
                             </nav>
                             {/*<div className="deep-feeds-container">
                                 {deepFeeds.length === 0 && (

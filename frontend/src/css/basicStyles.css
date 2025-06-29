@@ -34,6 +34,9 @@ body, html {
 .button.large {
     font-size: var(--small-text);
 }
+.button-text-bottom {
+    margin: 0;
+}
 .clickable {
     border-radius: var(--small-margin);
     cursor: pointer;
@@ -109,6 +112,10 @@ p, h1, h2, h3, h4, h5, h6 {
 }
 .text16, .text24, .text36, .text48 {
     margin: clamp(2px, 2vw, 8px);
+}
+.tiny-text {
+    font-size: var(--tiny-text);
+    margin: clamp(2px, 1vw, 4px)
 }
 @keyframes spin {
   from { transform: rotate(0deg); }

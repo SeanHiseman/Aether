@@ -15,6 +15,7 @@
     --large-text: clamp(10px, 4vw, 32px);
     --medium-text: clamp(10px, 3vw, 24px);
     --small-text: clamp(10px, 2vw, 16px);
+    --tiny-text: clamp(8px, 1.5vw, 12px);
 
     --transition-regular: 0.3s ease;
     --left-width: 16vw;

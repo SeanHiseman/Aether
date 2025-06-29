@@ -26,6 +26,7 @@ import Login from './pages/site_entrance/login';
 import Membership from './pages/welcome/membership';
 import MembershipSettings from './pages/feeds/settings/membershipSettings';
 import NotFound from './notFound';
+import SavedPosts from './pages/feeds/savedPosts';
 import Placeholder from './pages/welcome/placeholder';
 import Privacy from './pages/welcome/privacy';
 import ResetPassword from './pages/site_entrance/resetPassword';
@@ -90,6 +91,10 @@ const App = () => {
 										<Route path="drafts" element={<FeedHome />} />
 										<Route path=":post_id" element={<ContentWidget />} />
 									</Route>
+								</Route>
+								<Route path="saved">
+									<Route index element={<Navigate to="Main" replace />} />
+									<Route path=":channel_name" element={<ProtectedRoute><SavedPosts /></ProtectedRoute>} />
 								</Route>
 								<Route path="settings/:feed_name" element={<ProtectedRoute><FeedSettings /></ProtectedRoute>}>
 									<Route index element={<Navigate to="info" replace />} />

@@ -13,7 +13,7 @@ import path from 'path';
 import { Router } from 'express';
 import sequelize from '../databaseSetup.js';
 import { v4 } from 'uuid';
-import { ConnectRequests, DeepFeeds, DeepFeedContent, Feeds, FeedChannels, FeedChannelMessages, Followers, FollowRequests, Posts, PostNotes, PostVotes, Users } from '../models/relationships.js';
+import { ConnectRequests, DeepFeeds, DeepFeedContent, Feeds, FeedChannels, FeedChannelMessages, Followers, FollowRequests, Posts, PostNotes, PostVotes, SavedPosts, SavedPostChannels, Users } from '../models/relationships.js';
 
 const app = express();
 dotenv.config();
@@ -70,12 +70,31 @@ router.post('/add_feed_channel', authenticateCheck, async (req, res) => {
     let transaction;
     try {
         transaction = await sequelize.transaction();
-        let { channelName, feedId, isPosts, isChat } = req.body;
+        let { channelName, feedId, isChat, isPosts, isSaved } = req.body;
         //If channel types are not specified
         if (isPosts === false && isChat === false) {
             isPosts = true;
             isChat = true;
         };
+        if (isSaved) {
+            const saverId = req.session.viewer_id;
+            const maxOrderResult = await SavedPostChannels.findOne({
+                attributes: [[sequelize.fn('COALESCE', sequelize.fn('MAX', sequelize.col('display_order')), -1), 'maxOrder']],
+                where: { saver_id: saverId },
+                transaction,
+                raw: true
+            });
+            const nextDisplayOrder = (maxOrderResult ? maxOrderResult.maxOrder : -1) + 1;
+            const newChannelData = { 
+                channel_id: v4(),
+                channel_name: channelName,
+                saver_id: saverId,
+                display_order: nextDisplayOrder
+            };
+            const newChannel = await SavedPostChannels.create(newChannelData, { transaction });
+            await transaction.commit();
+            return res.status(201).json({ success: true, newChannel });
+        }
         const maxOrderResult = await FeedChannels.findOne({
             attributes: [[sequelize.fn('COALESCE', sequelize.fn('MAX', sequelize.col('display_order')), -1), 'maxOrder']],
             where: { feed_id: feedId },
@@ -361,6 +380,7 @@ router.get('/deep_feed_contents/:deepFeedId', authenticateCheck, async (req, res
 router.get('/deep_feed_posts', authenticateCheck, async (req, res) => {
 	try {
 		const { deepFeedId, limit = 10, offset = 0 } = req.query;
+        const saverId = req.session.viewer_id;
 		if (deepFeedId === 'following') { //Following deep feed is a special case
 			const followerId = req.session.feed_id;
 			if (!followerId) {
@@ -394,10 +414,21 @@ router.get('/deep_feed_posts', authenticateCheck, async (req, res) => {
                     attributes: feedAttributes
                 }],
 				order: [['created_at', 'DESC']],
-				limit:  parseInt(limit),
+				limit: parseInt(limit),
 				offset: parseInt(offset)
 			});
-			return res.status(200).json({ success: true, posts });
+			const ids = posts.map(p => p.post_id);
+            const savedRows = await SavedPosts.findAll({
+                attributes: ['post_id'],
+                raw: true,
+                where: { saver_id: saverId, post_id: ids }
+            });
+            const savedSet = new Set(savedRows.map(s => s.post_id));
+            const finalResults = posts.map(p => ({
+                ...p.dataValues,
+                is_saved: savedSet.has(p.post_id)
+            }));
+            return res.status(200).json({ success: true, posts: finalResults });
 		} else {
 			const deepFeed = await DeepFeeds.findByPk(deepFeedId);
 			if (!deepFeed) {
@@ -436,22 +467,32 @@ router.get('/deep_feed_posts', authenticateCheck, async (req, res) => {
                     as: 'parentChannel',
                     attributes: ['channel_id','channel_name','feed_id'],
                     include: [{
-                            model: Feeds,
-                            attributes: feedAttributes
-                        }]
+                        model: Feeds,
+                        attributes: feedAttributes
+                    }]
                 },{
                     model: Feeds,
                     as: 'poster',
                     attributes: feedAttributes
                 }],
 				order: [['created_at', 'DESC']],
-				limit:  parseInt(limit),
+				limit: parseInt(limit),
 				offset: parseInt(offset)
 			});
-			return res.status(200).json({ success: true, deepFeed, posts });
+            const ids = posts.map(p => p.post_id);
+            const savedRows = await SavedPosts.findAll({
+                where: { saver_id: saverId, post_id: ids },
+                attributes: ['post_id'],
+                raw: true
+            });
+            const savedSet = new Set(savedRows.map(s => s.post_id));
+            const finalResults = posts.map(p => ({
+                ...p.dataValues,
+                is_saved: savedSet.has(p.post_id)
+            }));
+            return res.status(200).json({ success: true, posts: finalResults });
 		}
 	} catch (error) {
-        console.error('Error fetching deep feed posts:', error);
 		res.status(500).json({ success: false, error: error.message });
 	}
 });
@@ -700,6 +741,19 @@ router.get('/follow_requests/:feedId', authenticateCheck, async (req, res) => {
 router.get('/get_feed_channels/:feedId', async (req, res) => {
     try {
         const feedId = req.params.feedId; 
+        const saverId = req.session.viewer_id;
+        if (feedId === 'saved') { //Channels in the 'saved' feed
+            const channels = await SavedPostChannels.findAll({
+                where: { saver_id: saverId },
+                include: [{
+                    model: Feeds,
+                    as: 'feed',
+                    attributes: feedAttributes,
+                }],
+                order: [['display_order', 'ASC'], ['channel_name', 'ASC']] 
+            });
+            return res.status(200).json({ success: true, channels });
+        }
         const channels = await FeedChannels.findAll({
             where: { feed_id: feedId },
             include: [{
@@ -734,6 +788,30 @@ router.get('/get_feed_followers/:feedId', authenticateCheck, async (req, res) =>
     }
 });
 
+router.get('/get_saved_posts/:channelId?', authenticateCheck, async (req, res) => {
+    try {
+        const { channelId } = req.params;
+        const saverId = req.session.viewer_id;
+        const rows = await SavedPosts.findAll({
+            where: { saved_channel_id: channelId, saver_id: saverId },
+            include: [{
+                model: Posts,
+                include: [
+                    { model: Feeds, as: 'poster' },
+                    { model: FeedChannels, as: 'parentChannel' }
+                ]
+            }]
+        });
+        const posts = rows.map(r => {
+            const post = r.post.dataValues;
+            return { ...post, is_saved: true };
+        });
+        res.status(200).json({ posts });
+    } catch (error) {
+        res.status(500).json({ posts: [] });
+    }
+});
+
 router.post('/remove_from_deep_feed', authenticateCheck, async (req, res) => {
     try {
         const { deepFeedId, feedId, nestedDeepFeedId } = req.body;
@@ -750,6 +828,19 @@ router.post('/remove_from_deep_feed', authenticateCheck, async (req, res) => {
     } catch (error) {
         console.error('Error removing from deep feed:', error);
         res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+router.delete('/remove_saved_post', authenticateCheck, async (req, res) => {
+    try {
+        const { channelId, feedId, postId } = req.body;
+        const count = await SavedPosts.destroy({
+            where: { channel_id: channelId, post_id: postId, saver_id: feedId }
+        });
+        if (!count) return res.status(404).json({ success: false, message: 'Not saved' });
+        res.status(200).json({ success: true });
+    } catch {
+        res.status(500).json({ success: false });
     }
 });
 
@@ -780,6 +871,27 @@ router.put('/reorder_feed_channels', async (req, res) => {
         if (transaction) await transaction.rollback();
         res.status(500).json({ success: false, message: 'Failed to reorder channels.', error: error.message });
     }
+});
+
+router.post('/save_post', authenticateCheck, async (req, res) => {
+	try {
+		const { channelId, feedId, postId } = req.body;
+        //const { channelId, feedId, postId, savedChannelId } = req.body; //Upon proper channels implementation
+        console.log("req.body:", req.body);
+		const where = { channel_id: channelId, post_id: postId, saver_id: feedId };
+        const mainChannel = await SavedPostChannels.findOne({
+            where: { saver_id: feedId, channel_name: 'Main' }
+        })
+		const existing = await SavedPosts.findOne({ where });
+		if (existing) {
+			await existing.destroy();
+			return res.status(200).json({ saved: false });
+		}
+		await SavedPosts.create({ ...where, feed_id: feedId, saved_channel_id: mainChannel.channel_id });
+		res.status(200).json({ saved: true });
+	} catch (error) {
+		res.status(500).json({ success: false });
+	}
 });
 
 router.post('/send_follow_request', authenticateCheck, async (req, res) => {``

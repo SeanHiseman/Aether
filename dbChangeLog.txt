@@ -28,3 +28,55 @@ ALTER TABLE `users`
 
 ALTER TABLE `posts`
     DROP COLUMN `points`;
+
+CREATE TABLE saved_posts (
+	post_id			CHAR(36)	NOT NULL,
+	saver_id		CHAR(36)	NOT NULL,
+	feed_id			CHAR(36)	NOT NULL,
+	channel_id		CHAR(36)	NOT NULL,
+	saved_channel_id CHAR(36)	NOT NULL,
+	created_at		DATETIME(3)	NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+	updated_at		DATETIME(3)	NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
+	PRIMARY KEY (post_id, saver_id),
+	FOREIGN KEY (post_id)	REFERENCES posts(post_id)			ON DELETE CASCADE,
+	FOREIGN KEY (saver_id)	REFERENCES feeds(feed_id)			ON DELETE CASCADE,
+	FOREIGN KEY (feed_id)	REFERENCES feeds(feed_id)			ON DELETE CASCADE,
+	FOREIGN KEY (channel_id)REFERENCES feed_channels(channel_id)	ON DELETE CASCADE
+) ENGINE = InnoDB;
+
+CREATE TABLE saved_post_channels (
+	channel_id		CHAR(36)	NOT NULL PRIMARY KEY,
+	saver_id		CHAR(36)	NOT NULL,
+	channel_name	VARCHAR(50) NOT NULL,
+	display_order	INT			NOT NULL DEFAULT 0,
+	created_at		DATETIME(3)	NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+	updated_at		DATETIME(3)	NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
+	UNIQUE KEY saver_channel (saver_id, channel_name),
+	FOREIGN KEY (saver_id) REFERENCES feeds(feed_id) ON DELETE CASCADE
+) ENGINE = InnoDB;
+
+INSERT INTO saved_post_channels (
+    channel_id,
+    channel_name,
+    created_at,
+    display_order,
+    saver_id,
+    updated_at
+)
+SELECT
+    UUID(),
+    'Main',
+    CURRENT_TIMESTAMP(3),
+    0,
+    f.feed_id,
+    CURRENT_TIMESTAMP(3)
+FROM
+    feeds AS f
+WHERE
+    f.is_group = FALSE
+  AND NOT EXISTS (
+    SELECT 1
+    FROM saved_post_channels AS spc
+    WHERE spc.saver_id = f.feed_id
+      AND spc.channel_name = 'Main'
+);

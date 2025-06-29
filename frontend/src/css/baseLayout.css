@@ -259,13 +259,13 @@ textarea::placeholder,
 }
 .icon-button.ask {
   background-color: var(--dark);
-  border-top-left-radius: calc(0.3 * var(--header-height));
-  border-bottom-left-radius: calc(0.3 * var(--header-height));
+  border-top-right-radius: calc(clamp(4px, 1vw, 10px) + var(--medium-margin));
+  border-bottom-right-radius: calc(clamp(4px, 1vw, 10px) + var(--medium-margin));
 }
 .icon-button.search {
   background-color: var(--dark);
-  border-top-right-radius: calc(0.3 * var(--header-height));
-  border-bottom-right-radius: calc(0.3 * var(--header-height));
+  border-top-right-radius: calc(clamp(4px, 1vw, 10px) + var(--medium-margin));
+  border-bottom-right-radius: calc(clamp(4px, 1vw, 10px) + var(--medium-margin));
 }
 .icon-button.search:hover {
   background-color: var(--border);

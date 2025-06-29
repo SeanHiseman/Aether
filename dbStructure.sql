@@ -14,10 +14,6 @@ CREATE TABLE `ask_chats` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
---
--- Table structure for table `ask_messages`
---
-
 DROP TABLE IF EXISTS `ask_messages`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
@@ -35,10 +31,6 @@ CREATE TABLE `ask_messages` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
---
--- Table structure for table `chats`
---
-
 DROP TABLE IF EXISTS `chats`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
@@ -50,10 +42,6 @@ CREATE TABLE `chats` (
   PRIMARY KEY (`chat_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Table structure for table `connect_requests`
---
 
 DROP TABLE IF EXISTS `connect_requests`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -71,10 +59,6 @@ CREATE TABLE `connect_requests` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
---
--- Table structure for table `connections`
---
-
 DROP TABLE IF EXISTS `connections`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
@@ -91,10 +75,6 @@ CREATE TABLE `connections` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
---
--- Table structure for table `deep_feed_content`
---
-
 DROP TABLE IF EXISTS `deep_feed_content`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
@@ -108,10 +88,6 @@ CREATE TABLE `deep_feed_content` (
   CONSTRAINT `deep_feed_content_ibfk_1` FOREIGN KEY (`deep_feed_id`) REFERENCES `deep_feeds` (`deep_feed_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Table structure for table `deep_feeds`
---
 
 DROP TABLE IF EXISTS `deep_feeds`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -127,10 +103,6 @@ CREATE TABLE `deep_feeds` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
---
--- Table structure for table `feed_channel_messages`
---
-
 DROP TABLE IF EXISTS `feed_channel_messages`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
@@ -144,10 +116,6 @@ CREATE TABLE `feed_channel_messages` (
   PRIMARY KEY (`message_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Table structure for table `feed_channels`
---
 
 DROP TABLE IF EXISTS `feed_channels`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -166,10 +134,6 @@ CREATE TABLE `feed_channels` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
---
--- Table structure for table `feed_chats`
---
-
 DROP TABLE IF EXISTS `feed_chats`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
@@ -183,10 +147,6 @@ CREATE TABLE `feed_chats` (
   CONSTRAINT `feed_chats_ibfk_2` FOREIGN KEY (`chat_id`) REFERENCES `chats` (`chat_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Table structure for table `feeds`
---
 
 DROP TABLE IF EXISTS `feeds`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -210,10 +170,6 @@ CREATE TABLE `feeds` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
---
--- Table structure for table `follow_requests`
---
-
 DROP TABLE IF EXISTS `follow_requests`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
@@ -225,10 +181,6 @@ CREATE TABLE `follow_requests` (
   PRIMARY KEY (`request_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Table structure for table `followers`
---
 
 DROP TABLE IF EXISTS `followers`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -244,10 +196,6 @@ CREATE TABLE `followers` (
   PRIMARY KEY (`follow_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Table structure for table `messages`
---
 
 DROP TABLE IF EXISTS `messages`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -271,10 +219,6 @@ CREATE TABLE `messages` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
---
--- Table structure for table `post_drafts`
---
-
 DROP TABLE IF EXISTS `post_drafts`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
@@ -294,10 +238,6 @@ CREATE TABLE `post_drafts` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
---
--- Table structure for table `post_notes`
---
-
 DROP TABLE IF EXISTS `post_notes`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
@@ -314,10 +254,6 @@ CREATE TABLE `post_notes` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
---
--- Table structure for table `post_votes`
---
-
 DROP TABLE IF EXISTS `post_votes`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
@@ -332,10 +268,6 @@ CREATE TABLE `post_votes` (
   PRIMARY KEY (`vote_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Table structure for table `posts`
---
 
 DROP TABLE IF EXISTS `posts`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -358,10 +290,6 @@ CREATE TABLE `posts` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
---
--- Table structure for table `app_builds`
---
-
 DROP TABLE IF EXISTS `app_builds`;
 CREATE TABLE `app_builds` (
   `build_id`   VARCHAR(36)    NOT NULL,
@@ -379,10 +307,6 @@ CREATE TABLE `app_builds` (
     ON UPDATE CASCADE
 ) ENGINE=InnoDB;
 
---
--- Table structure for table `prompts`
---
-
 DROP TABLE IF EXISTS `prompts`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
@@ -394,10 +318,6 @@ CREATE TABLE `prompts` (
   PRIMARY KEY (`prompt_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Table structure for table `users`
---
 
 DROP TABLE IF EXISTS `users`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -423,6 +343,34 @@ CREATE TABLE `users` (
   PRIMARY KEY (`user_id`),
   UNIQUE KEY `email` (`email`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+DROP TABLE IF EXISTS `saved_posts`;
+CREATE TABLE saved_posts (
+	post_id			CHAR(36)	NOT NULL,
+	saver_id		CHAR(36)	NOT NULL,
+	feed_id			CHAR(36)	NOT NULL,
+	channel_id		CHAR(36)	NOT NULL,
+  saved_channel_id CHAR(36)	NOT NULL,
+	created_at		DATETIME(3)	NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+	updated_at		DATETIME(3)	NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
+	PRIMARY KEY (post_id, saver_id),
+	FOREIGN KEY (post_id)	REFERENCES posts(post_id)			ON DELETE CASCADE,
+	FOREIGN KEY (saver_id)	REFERENCES feeds(feed_id)			ON DELETE CASCADE,
+	FOREIGN KEY (feed_id)	REFERENCES feeds(feed_id)			ON DELETE CASCADE,
+	FOREIGN KEY (channel_id)REFERENCES feed_channels(channel_id)	ON DELETE CASCADE
+) ENGINE = InnoDB;
+
+DROP TABLE IF EXISTS `saved_post_channels`;
+CREATE TABLE saved_post_channels (
+	channel_id		CHAR(36)	NOT NULL PRIMARY KEY,
+	saver_id		CHAR(36)	NOT NULL,
+	channel_name	VARCHAR(50) NOT NULL,
+	display_order	INT			NOT NULL DEFAULT 0,
+	created_at		DATETIME(3)	NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+	updated_at		DATETIME(3)	NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
+	UNIQUE KEY saver_channel (saver_id, channel_name),
+	FOREIGN KEY (saver_id) REFERENCES feeds(feed_id) ON DELETE CASCADE
+) ENGINE = InnoDB;
 
 INSERT INTO `users` (
     `user_id`,

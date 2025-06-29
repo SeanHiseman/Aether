@@ -10,7 +10,7 @@ import { Router } from 'express';
 import { compare, hash } from 'bcrypt';
 import { Op } from 'sequelize';
 import { v4 } from 'uuid';
-import { Connections, ConnectRequests, Feeds, FeedChannels, Followers, FeedChats, Messages, Posts, PostDrafts, PostNotes, PostVotes, Users } from '../models/relationships.js'; 
+import { Connections, ConnectRequests, Feeds, FeedChannels, Followers, FeedChats, Messages, Posts, PostDrafts, PostNotes, PostVotes, SavedPostChannels, Users } from '../models/relationships.js'; 
 import { generateVerificationToken, sendPasswordResetEmail, sendVerificationEmail } from '../functions/emailService.js';
 import sequelize from '../databaseSetup.js';
 
@@ -205,6 +205,9 @@ router.post('/join', async (req, res) => {
         const channel_id = v4();
         await FeedChannels.create({
             channel_id, channel_name: 'Main', feed_id, is_chat: false
+        });
+        await SavedPostChannels.create({
+            channel_id: v4(), saver_id: feed_id, channel_name: "Main", display_order: 0
         });
         await Followers.create({
             follow_id: v4(), follower_id: feed_id, feed_id: process.env.WELCOME_FEED_ID

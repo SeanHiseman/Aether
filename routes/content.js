@@ -3,7 +3,7 @@ import deleteMedia from '../functions/media_handling/deleteMedia.js';
 import cheerio from 'cheerio';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
-import { AppBuilds, Feeds, FeedChannels, Posts, PostDrafts, PostNotes, PostVotes, Users } from '../models/relationships.js';
+import { AppBuilds, Feeds, FeedChannels, Posts, PostDrafts, PostNotes, PostVotes, SavedPosts, Users } from '../models/relationships.js';
 import multer from 'multer';
 import { Router } from 'express';
 import path from 'path';
@@ -47,6 +47,7 @@ const checkStorageLimit = async (req, res, next) => {
 router.get('/channel_posts', async (req, res) => {
 	try {
 		const { channelId, feedId, isMain, isSingle, limit, offset, postId } = req.query;
+        const saverId = req.session.viewer_id;
 		const includeOptions = [{
             model: PostNotes,
             as: 'note',
@@ -82,24 +83,35 @@ router.get('/channel_posts', async (req, res) => {
 				},
 			});
 			if (!post) return res.status(404).json({ success: false });
-			return res.status(200).json({ success: true, post });
-		} else {
-			const whereChannel = {
-				feed_id: feedId,
-				parent_id: null,
-				...((isMain !== 'true' && channelId) ? { channel_id: channelId } : {})
-			};
-			const posts = await Posts.findAll({
-				attributes: postAttributes,
-				include: includeOptions,
-				limit:  limit    ? parseInt(limit,10)  : 10,
-				offset: offset  ? parseInt(offset,10) : 0,
-				order:  [['created_at','DESC']],
-				where:  whereChannel,
-			});
-			const finalResults = posts.map((post) => ({ ...post.dataValues }));
-			return res.status(200).json(finalResults);
-		}
+            const existing = await SavedPosts.findOne({ where: { saver_id: saverId, post_id: postId } });
+            post.dataValues.is_saved = Boolean(existing);
+            return res.status(200).json({ success: true, post });
+		} 
+        const whereChannel = {
+            feed_id: feedId,
+            parent_id: null,
+            ...((isMain !== 'true' && channelId) ? { channel_id: channelId } : {})
+        };
+        const posts = await Posts.findAll({
+            attributes: postAttributes,
+            include: includeOptions,
+            limit:  limit    ? parseInt(limit,10)  : 10,
+            offset: offset  ? parseInt(offset,10) : 0,
+            order:  [['created_at','DESC']],
+            where:  whereChannel,
+        });
+        const ids = posts.map(p => p.post_id);
+        const savedRows = await SavedPosts.findAll({
+            where: { saver_id: saverId, post_id: ids },
+            attributes: ['post_id'],
+            raw: true
+        });
+        const savedSet = new Set(savedRows.map(s => s.post_id));
+        const finalResults = posts.map(p => ({
+            ...p.dataValues,
+            is_saved: savedSet.has(p.post_id)
+        }));
+        return res.status(200).json(finalResults);
 	} catch (error) {
 		res.status(500).json({ success: false });
 	}

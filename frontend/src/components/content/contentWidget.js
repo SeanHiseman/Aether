@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { FaArrowDown, FaArrowUp, FaChevronDown, FaChevronUp, FaComments, FaCommentSlash, FaEdit, FaExpand, FaReply, FaTrash, FaTree, FaListUl } from 'react-icons/fa';
+import { FaArrowDown, FaArrowUp, FaBookmark, FaChevronDown, FaChevronUp, FaComments, FaCommentSlash, FaEdit, FaExpand, FaRegBookmark,  FaReply, FaTrash, FaTree, FaListUl } from 'react-icons/fa';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { AuthContext } from '../authContext';
@@ -9,7 +9,7 @@ import ReplyTreeView from './replyTreeView';
 import PropTypes from 'prop-types';
 import useTimeAgo from '../../useTimeAgo';
 
-const ContentWidget = ({ canRemove, feed, isDraft, isGroup, onEditClick, onPostRemoved, onReplyClick, parent, post, readOnly = false }) => {
+const ContentWidget = ({ canRemove, feed, isDraft, isGroup, onEditClick, onPostRemoved, onReplyClick, onSaveToggle = () => {}, parent, post, readOnly = false }) => {
 	const [canRemoveState, setCanRemoveState] = useState(canRemove);
 	const [downvoteLimit, setDownvoteLimit] = useState(false);
 	const [downvotes, setDownvotes] = useState(post.downvotes);
@@ -19,10 +19,12 @@ const ContentWidget = ({ canRemove, feed, isDraft, isGroup, onEditClick, onPostR
 	const [hasViewed, setHasViewed] = useState(false);
 	const [isFullscreenMode, setIsFullscreenMode] = useState(false)
 	const [isOverflowing, setIsOverflowing] = useState(false);
+	const [isSaved, setIsSaved] = useState(post.is_saved);
 	const navigate = useNavigate();
 	const [note, setNote] = useState(post.note ? post.note.note_content : '');
 	const [postErrorMessage, setPostErrorMessage] = useState('');
 	const [replies, setReplies] = useState([]);
+	const [savedText, setSavedText] = useState('');
 	const [showFullContent, setShowFullContent] = useState(false);
 	const [showNote, setShowNote] = useState(post.note && post.note.is_misinfo);
 	const [showReplies, setShowReplies] = useState(post_id ? (post.replies > 0) : false);
@@ -49,8 +51,15 @@ const ContentWidget = ({ canRemove, feed, isDraft, isGroup, onEditClick, onPostR
 			setReplies(processedReplies);
 		} catch {
 			setPostErrorMessage('Error getting replies');
+			setTimeout(() => setPostErrorMessage(""), 3000);
 		}
 	}, []);
+
+	const handleLoginRedirect = () => {
+		if (window.confirm ('Login to vote.')) {
+			navigate('/login', { state: {from: window.location.pathname} });
+		}
+	};
 
 	const incrementViews = useCallback(
 		async (postId) => {
@@ -65,6 +74,7 @@ const ContentWidget = ({ canRemove, feed, isDraft, isGroup, onEditClick, onPostR
 				}
 			} catch {
 				setPostErrorMessage('Error incrementing views');
+				setTimeout(() => setPostErrorMessage(""), 3000);
 			}
 		},
 		[hasViewed, post.poster_id, viewer?.feed_id]
@@ -95,6 +105,7 @@ const ContentWidget = ({ canRemove, feed, isDraft, isGroup, onEditClick, onPostR
 			}
 		} catch {
 			setPostErrorMessage('Error voting');
+			setTimeout(() => setPostErrorMessage(""), 3000);
 		}
 	};
 
@@ -146,13 +157,34 @@ const ContentWidget = ({ canRemove, feed, isDraft, isGroup, onEditClick, onPostR
 	const replyRemoved = (replyId) => {
 		setReplies((prevReplies) => prevReplies.filter((r) => r.post_id !== replyId));
 	};
-
-	const handleLoginRedirect = () => {
-		if (window.confirm ('Login to vote.')) {
-			navigate('/login', { state: {from: window.location.pathname} });
-		}
-	};
   
+	const savePost = async () => {
+        try {
+            if (isSaved) {
+                await axios.delete('/api/remove_saved_post', {
+                    data: {
+                        channelId: post.parentChannel.channel_id,
+                        feedId: viewer.feed_id,
+                        postId: post.post_id
+                    }
+                });
+            } else {
+                await axios.post('/api/save_post', {
+                    channelId: post.parentChannel.channel_id,
+                    feedId: viewer.feed_id,
+                    postId: post.post_id
+                });
+            }
+            setIsSaved(!isSaved);
+			onSaveToggle?.(post.post_id, !isSaved);
+			setSavedText(isSaved ? "Unsaved" : "Saved");
+			setTimeout(() => setSavedText(""), 3000);
+        } catch (error) {
+            setSavedText('Error');
+			setTimeout(() => setSavedText(""), 3000);
+        }
+    };
+
 	useEffect(() => {
 		if (isAuthenticated && (isViewingOwnPost || feed?.isAdmin || feed?.isModerator) && !canRemoveState) {
 			setCanRemoveState(true);
@@ -324,7 +356,7 @@ const ContentWidget = ({ canRemove, feed, isDraft, isGroup, onEditClick, onPostR
 				{!isDraft && (<div className="vote-container">
 					{isAuthenticated ? (
 						!isViewingOwnPost ? (   
-							<>
+							<div className="post-button-group">
 								<button className={`large-icon ${upvoteClass}`} disabled={upvoteLimit} onClick={() => postVote(post.post_id, 'upvote')} title={upvoteLimit ? (user.has_membership ? 'Vote limit reached' : 'Get membership for more votes') : 'Upvote'}>
 									<FaArrowUp />
 								</button>
@@ -332,12 +364,12 @@ const ContentWidget = ({ canRemove, feed, isDraft, isGroup, onEditClick, onPostR
 								<button className={`large-icon ${downvoteClass}`} disabled={downvoteLimit} onClick={() => postVote(post.post_id, 'downvote')} title={downvoteLimit ? (user.has_membership ? 'Vote limit reached' : 'Get membership for more votes') : 'Downvote'}>
 									<FaArrowDown />
 								</button>
-							</>
+							</div>
 						) : (
 							<span className="total-votes">{upvotes - downvotes} {Math.abs(upvotes - downvotes) === 1 ? 'vote' : 'votes'}</span>
 						)
 					) : (
-						<>
+						<div className="post-button-group">
 							<button className="large-icon" onClick={handleLoginRedirect} title="Login to vote">
 								<FaArrowUp />
 							</button>
@@ -345,11 +377,11 @@ const ContentWidget = ({ canRemove, feed, isDraft, isGroup, onEditClick, onPostR
 							<button className="large-icon" onClick={handleLoginRedirect} title="Login to vote">
 								<FaArrowDown />
 							</button>
-						</>
+						</div>
 					)}
 				</div>)}
 				{!readOnly && !isDraft && (
-					<>
+					<div className="post-button-group">
 						<button className="large-icon" data-content-id={post.post_id} onClick={toggleReplies} title={showReplies ? "Close Replies" : "Show Replies"}>
 							{showReplies ? <FaCommentSlash /> : <FaComments />}
 							<p className="text16" id={`reply-count-${post.post_id}`}>{post.replies}</p>
@@ -364,21 +396,29 @@ const ContentWidget = ({ canRemove, feed, isDraft, isGroup, onEditClick, onPostR
 								<FaReply />
 							</button>
 						)}
-					</>
+					</div>
 				)}
-				{isAuthenticated && post.poster_id === viewer.feed_id && !readOnly && (
-					<button className="large-icon" onClick={() => onEditClick(post)} title={isReply ? "Edit Reply" : isDraft ? "Edit draft" : "Edit Post"}>
-						<FaEdit />
-					</button>
-				)}
-				{isAuthenticated && canRemoveState && !readOnly && (
-					<button className="large-icon" onClick={removePost} title={isReply ? "Delete Reply" : isDraft ? "Delete draft" : "Delete Post"}>
-						<FaTrash />
-					</button>
-				)}
+				<div className="post-button-group">
+					{isAuthenticated && post.poster_id === viewer.feed_id && !readOnly && (
+						<button className="large-icon" onClick={() => onEditClick(post)} title={isReply ? "Edit Reply" : isDraft ? "Edit draft" : "Edit Post"}>
+							<FaEdit />
+						</button>
+					)}
+					{isAuthenticated && canRemoveState && !readOnly && (
+						<button className="large-icon" onClick={removePost} title={isReply ? "Delete Reply" : isDraft ? "Delete draft" : "Delete Post"}>
+							<FaTrash />
+						</button>
+					)}
+				</div>
 				{/*{isAuthenticated && !post.note?.is_misinfo && !isDraft && (
 					<AskButton content={post} isGroup={isGroup} isReply={false} note={note} setNote={setNote} setPostErrorMessage={setPostErrorMessage} setShowNote={setShowNote} showNote={showNote} />
 				)}*/}
+				<div className="button-text-bottom">
+					<button className="large-icon" title={isSaved ? 'Unsave post' : 'Save post'} onClick={savePost}>
+						{isSaved ? <FaBookmark /> : <FaRegBookmark />}
+					</button>
+					<p className="tiny-text">{savedText}</p>
+				</div>
 				<div className="view-date-container">
 					<p className="text16 faded-text" style={{ margin: '0px' }}>{post_id ? new Date(post.created_at).toLocaleDateString() : timeAgo}</p>
 					{!isDraft && (<p className="text16 faded-text" style={{ margin: '0px' }}>{views} {views === 1 ? 'view' : 'views'}</p>)}
@@ -431,6 +471,7 @@ ContentWidget.propTypes = {
 	onEditClick: PropTypes.func.isRequired,
 	onPostRemoved: PropTypes.func.isRequired,
 	onReplyClick: PropTypes.func.isRequired, 
+	onSaveToggle: PropTypes.func.isRequired,
 	parent: PropTypes.object,
 	post: PropTypes.object.isRequired,
 	readOnly: PropTypes.bool, 
