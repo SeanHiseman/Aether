@@ -37,7 +37,6 @@ const ChannelList = ({ canReorder = false, channels, feedId, feedName, isChat, i
                     setErrorMessage(response.data.message || 'Error getting channels from API');
                     setChannels([]);
                 }
-                console.log("response:", response);
             } else {
                 const response = await axios.get(`/api/get_chats/${viewer.feed_id}`, {
                     params: { connectionName: feedName }

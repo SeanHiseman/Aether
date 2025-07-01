@@ -60,8 +60,8 @@ const AddAlgorithm = ({ onCreated }) => {
 			} else {
 				throw new Error(data.message || 'Failed to create algorithm.');
 			}
-		} catch (err) {
-			setError(err.response?.data?.error || err.message);
+		} catch (error) {
+			setError(error.response?.data?.error || error.message);
 		} finally {
 			setLoading(false);
 		}

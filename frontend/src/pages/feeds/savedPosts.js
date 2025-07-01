@@ -79,14 +79,14 @@ const SavedPosts = () => {
 						</ul>
 						: <p className="text36">No posts yet</p>
 				)}
-				{!currentChannel && <p className="text36">Choose a channel</p>}
+				{/*{!currentChannel && <p className="text36">Choose a channel</p>}*/}
 			</div>
 			<aside className="right-aside">
 				<p className="text36">Saved posts</p>
 				{/*<button className="small-icon" onClick={addChannel} title="New channel">
 					<FaPlus />
 				</button>*/}
-				<ChannelList
+				{/*<ChannelList
 					canReorder={true}
 					channels={channels}
 					feedId="saved"
@@ -95,7 +95,7 @@ const SavedPosts = () => {
 					isGroup={false}
 					isSaved={true}
 					setChannels={setChannels}
-				/>
+				/>*/}
 				<div className="error-message">{savedError}</div>
 			</aside>
 		</div>

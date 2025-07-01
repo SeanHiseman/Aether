@@ -853,37 +853,35 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onEdit
                                 {editMode ? <FaEye /> : <FaEdit />}
                             </button>
                         </div>
-                        {editMode && (
-                            <div className="right-buttons" style={{ display: 'flex', gap: '10px', position: 'absolute', right: '0' }}>
-                                <button className="small-icon" type="button" onClick={closeForm} title="Close">
-                                    <FaWindowClose />
+                        <div className="right-buttons" style={{ display: 'flex', gap: '10px', position: 'absolute', right: '0' }}>
+                            <button className="small-icon" type="button" onClick={closeForm} title="Close">
+                                <FaWindowClose />
+                            </button>
+                            {!isReply && (
+                                <button className="small-icon" type="button" onClick={deleteHandler} title={isDraft ? 'Delete draft' : isEdit ? 'Delete post' : 'Delete'}>
+                                    <FaTrash />
                                 </button>
-                                {!isReply && (
-                                    <button className="small-icon" type="button" onClick={deleteHandler} title={isDraft ? 'Delete draft' : isEdit ? 'Delete post' : 'Delete'}>
-                                        <FaTrash />
-                                    </button>
-                                )}
-                                {isReply ? (
-                                    <button className="small-icon" form="post-form" type="submit" title="Reply">
-                                        <FaReply />
-                                    </button>
-                                ) : isEdit && !isDraft ? (
-                                    <button className="small-icon" form="post-form" type="submit" title="Save edit">
-                                        <FaSave />
-                                    </button>
+                            )}
+                            {isReply ? (
+                                <button className="small-icon" form="post-form" type="submit" title="Reply">
+                                    <FaReply />
+                                </button>
+                            ) : isEdit && !isDraft ? (
+                                <button className="small-icon" form="post-form" type="submit" title="Save edit">
+                                    <FaSave />
+                                </button>
 
-                                ) : (
-                                    <>
-                                        <button className="small-icon" type="button" onClick={saveDraft} title="Save draft">
-                                            <FaSave />
-                                        </button>
-                                        <button className="small-icon" form="post-form" type="submit" title="Post" onClick={() => setIsPostingDraft(true)}>
-                                            <FaArrowRight />
-                                        </button>
-                                    </>
-                                )}
-                            </div>
+                        ) : (
+                            <>
+                                <button className="small-icon" type="button" onClick={saveDraft} title="Save draft">
+                                    <FaSave />
+                                </button>
+                                <button className="small-icon" form="post-form" type="submit" title="Post" onClick={() => setIsPostingDraft(true)}>
+                                    <FaArrowRight />
+                                </button>
+                            </>
                         )}
+                        </div>
                     </div>
                 </div>
                 <p className="error-message">
