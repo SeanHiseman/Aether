@@ -395,6 +395,56 @@ router.post('/edit_post', authenticateCheck, checkStorageLimit, postUpload.array
     }
 });
 
+router.get("/explore_posts", async (req, res) => {
+    try {
+        const { limit = 9, filter = "all" } = req.query;
+        // The where clause now filters for top-level posts only (parent_id is null).
+        const where = {
+            parent_id: null,
+        };
+        // The 'filter' query parameter is available for future expansion,
+        // for example, to filter by posts that contain app builds vs. regular content.
+        if (filter === "posts") {
+            // Custom logic for post-specific filtering can be added here.
+        }
+        const posts = await Posts.findAll({
+        attributes: postAttributes,
+        include: [
+            {
+            model: Feeds,
+                as: "poster",
+                attributes: feedAttributes,
+            },{
+            model: FeedChannels,
+                as: "parentChannel",
+                attributes: ["channel_id", "channel_name"],
+            },{
+            model: PostNotes,
+                as: "note",
+                attributes: noteAttributes,
+                required: false,
+            },{
+                model: PostVotes,
+                as: "votes",
+                attributes: ["upvotes", "downvotes"],
+                required: false,
+            },
+        ],
+        where, 
+        limit: parseInt(limit, 10),
+        order: sequelize.random
+            ? sequelize.random()
+            : [sequelize.literal("RAND()")],
+        });
+        const formatted = posts.map((post) => ({
+            ...post.dataValues,
+        }));
+        res.status(200).json({ posts: formatted });
+    } catch (error) {
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
 router.get('/get_post_drafts', authenticateCheck, async (req, res) => {
     try {
         const { channel_id, poster_id, limit = 10, offset = 0 } = req.query;

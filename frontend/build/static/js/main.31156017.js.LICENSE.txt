@@ -1,3 +1,10 @@
+/*
+* React Tooltip
+* {@link https://github.com/ReactTooltip/react-tooltip}
+* @copyright ReactTooltip Team
+* @license MIT
+*/
+
 /*!
 	Copyright (c) 2018 Jed Watson.
 	Licensed under the MIT License (MIT), see
@@ -10,8 +17,6 @@
  * Copyright (c) 2014, Jason Chen
  * Copyright (c) 2013, salesforce.com
  */
-
-/*! regenerator-runtime -- Copyright (c) 2014-present, Facebook, Inc. -- license (MIT): https://github.com/babel/babel/blob/main/packages/babel-helpers/LICENSE */
 
 /**
  * @license React
@@ -54,7 +59,14 @@
  */
 
 /**
- * @remix-run/router v1.14.2
+ * @license lucide-react v0.511.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+
+/**
+ * @remix-run/router v1.23.0
  *
  * Copyright (c) Remix Software Inc.
  *
@@ -80,7 +92,7 @@
  */
 
 /**
- * React Router DOM v6.21.3
+ * React Router DOM v6.30.1
  *
  * Copyright (c) Remix Software Inc.
  *
@@ -91,7 +103,7 @@
  */
 
 /**
- * React Router v6.21.3
+ * React Router v6.30.1
  *
  * Copyright (c) Remix Software Inc.
  *

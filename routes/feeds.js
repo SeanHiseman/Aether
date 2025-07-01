@@ -596,6 +596,51 @@ router.delete('/delete_feed_channel', authenticateCheck, async (req, res) => {
     }
 });
 
+// This endpoint fetches a paginated list of public Feeds for the "Explore" page.
+router.get("/explore_feeds", async (req, res) => {
+    try {
+        // 1. Get pagination parameters from query string, with defaults
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 6; // A good number for a grid layout
+        const offset = (page - 1) * limit;
+        // 2. Use findAndCountAll on the Feeds model for efficient pagination
+        const { count, rows: feeds } = await Feeds.findAndCountAll({
+        where: {
+            // Filter for feeds that are suitable for a public "Explore" page
+            type: "public",
+            is_locked: false,
+        },
+        // Order by follower count to show more popular feeds first
+        order: [["follower_count", "DESC"]],
+        // Select only the attributes needed by the frontend to keep the payload small
+        attributes: [
+            "feed_id",
+            "feed_name",
+            "description",
+            "feed_photo",
+            "follower_count",
+            "is_group",
+        ],
+            limit: limit,
+            offset: offset,
+        });
+        // 3. Calculate if there are more pages left
+        const hasMore = page * limit < count;
+        // 4. Send the response in the format your frontend infinite scroll needs
+        res.status(200).json({
+            success: true,
+            feeds: feeds,
+            hasMore: hasMore,
+        });
+    } catch (error) {
+            console.error("Error fetching explore feeds:", error);
+            res.status(500).json({
+            success: false,
+            message: "Server error while fetching feeds.",
+        });
+    }
+});
+
 router.get('/feed/:feedName', async (req, res) => {
     try {
         const feedName = req.params.feedName;

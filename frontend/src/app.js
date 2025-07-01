@@ -12,6 +12,7 @@ import Content from './pages/welcome/content';
 import ContentWidget from './components/content/contentWidget';
 import DeepFeed from './pages/deepFeed';
 import EmailVerification from './pages/site_entrance/verification';
+import ExplorePage from './pages/explore/explorePage';
 import Feeds from './pages/welcome/feeds';
 import FeedDeletion from './pages/feeds/settings/feedDeletion';
 import FeedFollowers from './pages/feeds/settings/feedFollowers';
@@ -96,6 +97,7 @@ const App = () => {
 									<Route index element={<Navigate to="Main" replace />} />
 									<Route path=":channel_name" element={<ProtectedRoute><SavedPosts /></ProtectedRoute>} />
 								</Route>
+								<Route path="explore" element={<ProtectedRoute><ExplorePage /></ProtectedRoute>}/>
 								<Route path="settings/:feed_name" element={<ProtectedRoute><FeedSettings /></ProtectedRoute>}>
 									<Route index element={<Navigate to="info" replace />} />
 									<Route path="deletion" element={<FeedDeletion />} />
