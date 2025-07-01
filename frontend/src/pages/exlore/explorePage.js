@@ -94,17 +94,16 @@ const ExplorePage = () => {
   return (
     <div className="flex flex-row h-screen bg-black text-white">
       {/* Main Content */}
-      <h1 className="text-4xl font-bold mb-6 text-center mt-1">Explore</h1>
-      {/* <div className="flex-1 p-6 pt-24 overflow-y-auto min-w-0">
-        
+      <div className="flex-1 p-6 pt-24 overflow-y-auto min-w-0">
+        {/* <h1 className="text-4xl font-bold mb-6 text-center mt-1">Explore</h1> */}
         {loading ? (
           <div className="flex justify-center items-center h-64">
             <span className="text-xl text-gray-400">Loading...</span>
           </div>
         ) : (
-          <> */}
-      {/* Posts Grid */}
-      {/* <div>
+          <>
+            {/* Posts Grid */}
+            <div>
               <h2 className="text-2xl font-semibold mb-4">Featured Posts</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-10">
                 {posts.map((post) => (
@@ -118,13 +117,25 @@ const ExplorePage = () => {
                   </div>
                 ))}
               </div>
-            </div> */}
+            </div>
 
-      {/* Channels Grid with Infinite Scroll */}
-      {/* <div>
+            {/* Channels Grid with Infinite Scroll */}
+            <div>
               <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
                 {feeds.map((feed) => (
-
+                  //   <Link
+                  //     key={channel.channel_id}
+                  //     to={`/${channel.is_group ? "g" : "u"}/${
+                  //       channel.feed_name
+                  //     }/${channel.channel_name}`}
+                  //     className="block bg-gray-800 rounded-xl shadow hover:shadow-lg transition p-6 text-center"
+                  //   >
+                  //     <div className="text-lg font-bold text-blue-400 mb-2">
+                  //       {channel.channel_name}
+                  //     </div>
+                  //     <div className="text-gray-400">{channel.feed_name}</div>
+                  //   </Link>
+                  // ))}
                   <ExploreFeedWidget
                     key={feed.feed_id}
                     feed={feed}
@@ -132,11 +143,11 @@ const ExplorePage = () => {
                     viewerId={viewer?.feed_id}
                   />
                 ))}
-              </div> */}
+              </div>
 
-      {/* --- The Trigger Element --- */}
-      {/* This element will trigger the next fetch when it becomes visible */}
-      {/* {hasMore && (
+              {/* --- The Trigger Element --- */}
+              {/* This element will trigger the next fetch when it becomes visible */}
+              {hasMore && (
                 <div ref={ref} className="flex justify-center items-center p-8">
                   <span className="text-xl text-gray-400">
                     {loadingMore ? "Loading more..." : ""}
@@ -152,7 +163,7 @@ const ExplorePage = () => {
             </div>
           </>
         )}
-      </div> */}
+      </div>
 
       {/* Right Sidebar (Filters) */}
       <aside className={`${rightClasses} w-80 bg-white`}>
