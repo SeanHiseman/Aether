@@ -1,4 +1,5 @@
 /*! tailwindcss v4.1.10 | MIT License | https://tailwindcss.com */
+@import url('variables.css');
 @layer properties;
 @layer theme, base, components, utilities;
 @layer theme {
@@ -125,16 +126,6 @@
   img, video {
     max-width: 100%;
     height: auto;
-  }
-  button, input, select, optgroup, textarea, ::file-selector-button {
-    font: inherit;
-    font-feature-settings: inherit;
-    font-variation-settings: inherit;
-    letter-spacing: inherit;
-    color: inherit;
-    border-radius: 0;
-    background-color: transparent;
-    opacity: 1;
   }
   :where(select:is([multiple], [size])) optgroup {
     font-weight: bolder;
@@ -267,8 +258,14 @@
     -webkit-box-orient: vertical;
     -webkit-line-clamp: 4;
   }
-  .block {
-    display: block;
+  .explore-block {
+    background-color: var(--dark);
+    border: 1px solid var(--border);
+    border-radius: var(--medium-margin);
+    box-sizing: border-box;
+    margin-top: var(--medium-margin);
+    padding: var(--medium-margin);
+    width: 100%;
   }
   .contents {
     display: contents;
@@ -314,6 +311,7 @@
   }
   .flex-1 {
     flex: 1;
+    margin-top: var(--header-height);
   }
   .flex-shrink {
     flex-shrink: 1;

@@ -1,202 +1,172 @@
-import { useEffect, useState, useCallback, useContext } from "react";
+import { useCallback, useContext, useEffect, useRef, useState } from "react";
 import { AuthContext } from "../../components/authContext";
 import axios from "axios";
-import ExploreContentWidget from "../../components/explore/ExploreContentWidget";
+import ExploreContentWidget from "../../components/explore/exploreContentWidget";
 import ExploreFeedWidget from "../../components/explore/ExploreFeedWidget";
 import { Link, useOutletContext } from "react-router-dom";
-import { useInView } from "react-intersection-observer";
 
 const ExplorePage = () => {
-  // State for posts (unchanged)
-  const [posts, setPosts] = useState([]);
+	const [feedPage, setFeedPage] = useState(0);
+	const [feeds, setFeeds] = useState([]);
+	const [filter, setFilter] = useState("all");
+	const [loading, setLoading] = useState(true);
+	const [loadingMore, setLoadingMore] = useState(false);
+	const [postPage, setPostPage] = useState(0);
+	const [posts, setPosts] = useState([]);
 
-  // --- State for Infinite Scroll Channels ---
-  const [feeds, setFeeds] = useState([]);
-  const [page, setPage] = useState(1); // <-- Track the current page for channels
-  const [hasMore, setHasMore] = useState(true); // <-- Track if more channels are available
-  const [loading, setLoading] = useState(true);
-  const [loadingMore, setLoadingMore] = useState(false); // <-- Separate loading state for subsequent fetches
-  const { isAuthenticated, user, viewer } = useContext(AuthContext);
-  const [filter, setFilter] = useState("all");
-  const { rightClasses } = useOutletContext();
+	const { isAuthenticated, user, viewer } = useContext(AuthContext);
+	const { rightClasses } = useOutletContext();
 
-  // --- Intersection Observer for the trigger element ---
-  // `ref` will be attached to a loader element at the bottom of the list.
-  // `inView` will be true when that element is visible on screen.
-  const { ref, inView } = useInView({
-    threshold: 0.5, // Trigger when 50% of the loader is visible
-  });
+	const scrollRef = useRef(null);
 
-  // --- Reusable function to fetch feeds ---
-  const fetchFeeds = useCallback(async () => {
-    if (loadingMore || !hasMore) return; // Don't fetch if already fetching or no more data
+	const fetchPosts = useCallback(
+		async (page = 0) => {
+			try {
+				const res = await axios.get("/api/explore_posts", {
+					params: { filter, limit: 6, offset: page * 6 },
+				});
+				setPosts(prev => (page === 0 ? res.data.posts : [...prev, ...res.data.posts]));
+			} catch (err) {
+				console.error("Failed to fetch posts", err);
+			}
+		},
+		[filter]
+	);
 
-    setLoadingMore(true);
-    try {
-      const res = await axios.get("/api/explore_feeds", {
-        params: { limit: 6, page: page }, // <-- Send the current page number
-      });
+	const fetchFeeds = useCallback(
+		async (page = 0) => {
+			try {
+				const res = await axios.get("/api/explore_feeds", {
+					params: { limit: 6, offset: page * 6 },
+				});
+				setFeeds(prev => (page === 0 ? res.data.feeds : [...prev, ...res.data.feeds]));
+			} catch (err) {
+				console.error("Failed to fetch feeds", err);
+			}
+		},
+		[filter]
+	);
 
-      // Append new feeds to the existing list, not replace them
-      setFeeds((prevFeeds) => [...prevFeeds, ...res.data.feeds]);
+	useEffect(() => {
+		setLoading(true);
+		setFeedPage(0);
+		setPostPage(0);
+		Promise.all([fetchPosts(0), fetchFeeds(0)]).then(() => setLoading(false));
+	}, [filter, fetchFeeds, fetchPosts]);
 
-      // Update hasMore based on the API response
-      setHasMore(res.data.hasMore);
-    } catch (err) {
-      console.error("Failed to fetch feeds", err);
-    } finally {
-      setLoadingMore(false);
-    }
-  }, [page, loadingMore, hasMore]);
+	const loadMore = async () => {
+		if (loading || loadingMore) return;
+		setLoadingMore(true);
+		await Promise.all([fetchPosts(postPage + 1), fetchFeeds(feedPage + 1)]);
+		setPostPage(p => p + 1);
+		setFeedPage(f => f + 1);
+		setLoadingMore(false);
+	};
 
-  // --- useEffect to fetch INITIAL data (posts and first page of channels) ---
-  useEffect(() => {
-    const fetchInitialData = async () => {
-      setLoading(true);
-      try {
-        // Fetch posts (this logic remains the same)
-        const postsRes = await axios.get("/api/explore_posts", {
-          params: { limit: 6, filter },
-        });
-        setPosts(postsRes.data.posts || []);
+	const handleScroll = () => {
+		const el = scrollRef.current;
+		if (!el) return;
+		if (el.scrollTop + el.clientHeight >= el.scrollHeight - 200) loadMore();
+	};
 
-        // Reset and fetch first page of channels when filter changes
-        setFeeds([]);
-        setPage(1);
-        setHasMore(true);
-        // We'll let the second useEffect handle the actual first fetch
-      } catch (err) {
-        setPosts([]);
-        setFeeds([]);
-      }
-      setLoading(false);
-    };
-    fetchInitialData();
-  }, [filter]); // Re-run only when filter changes
+	const renderAllContent = () => {
+		let feedIndex = 0;
+		let postIndex = 0;
+		const sections = [];
+		while (postIndex < posts.length || feedIndex < feeds.length) {
+			if (postIndex < posts.length) {
+				sections.push(
+					<div key={`posts-${postIndex}`} className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-10">
+						{posts.slice(postIndex, postIndex + 2).map(post => (
+							<div key={post.post_id} className="col-span-1 md:col-span-2 bg-gray-800 rounded-xl shadow hover:shadow-lg transition p-4">
+								<Link to={`/d/${post.deep_feed_id}/${post.post_id}`}>
+									<ExploreContentWidget post={post} />
+								</Link>
+							</div>
+						))}
+					</div>
+				);
+				postIndex += 2;
+			}
+			if (feedIndex < feeds.length) {
+				sections.push(
+					<div key={`feeds-${feedIndex}`} className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+						{feeds.slice(feedIndex, feedIndex + 3).map(feed => (
+							<ExploreFeedWidget
+								key={feed.feed_id}
+								feed={feed}
+								isAuthenticated={isAuthenticated}
+								viewerId={viewer?.feed_id}
+							/>
+						))}
+					</div>
+				);
+				feedIndex += 3;
+			}
+		}
+		return sections;
+	};
 
-  // --- useEffect to fetch MORE channels when the trigger is in view ---
-  useEffect(() => {
-    // If the loader element is in view, we have more data to fetch, and we're not already loading
-    if (inView && hasMore && !loading) {
-      // Increment the page number to fetch the next set of data
-      setPage((prevPage) => prevPage + 1);
-    }
-  }, [inView, hasMore, loading]);
-
-  // --- useEffect to actually call the fetch function when page changes ---
-  useEffect(() => {
-    if (page > 0) {
-      // page is initialized to 1
-      fetchFeeds();
-    }
-  }, [page, fetchFeeds]); // depends on page and the memoized fetch function
-
-  return (
-    <div className="flex flex-row h-screen bg-black text-white">
-      {/* Main Content */}
-      <div className="flex-1 p-6 pt-24 overflow-y-auto min-w-0">
-        {/* <h1 className="text-4xl font-bold mb-6 text-center mt-1">Explore</h1> */}
-        {loading ? (
-          <div className="flex justify-center items-center h-64">
-            <span className="text-xl text-gray-400">Loading...</span>
-          </div>
-        ) : (
-          <>
-            {/* Posts Grid */}
-            <div>
-              <h2 className="text-2xl font-semibold mb-4">Featured Posts</h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-10">
-                {posts.map((post) => (
-                  <div
-                    key={post.post_id}
-                    className="bg-gray-800 rounded-xl shadow hover:shadow-lg transition p-4"
-                  >
-                    <Link to={`/d/${post.deep_feed_id}/${post.post_id}`}>
-                      <ExploreContentWidget post={post} />
-                    </Link>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Channels Grid with Infinite Scroll */}
-            <div>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
-                {feeds.map((feed) => (
-                  //   <Link
-                  //     key={channel.channel_id}
-                  //     to={`/${channel.is_group ? "g" : "u"}/${
-                  //       channel.feed_name
-                  //     }/${channel.channel_name}`}
-                  //     className="block bg-gray-800 rounded-xl shadow hover:shadow-lg transition p-6 text-center"
-                  //   >
-                  //     <div className="text-lg font-bold text-blue-400 mb-2">
-                  //       {channel.channel_name}
-                  //     </div>
-                  //     <div className="text-gray-400">{channel.feed_name}</div>
-                  //   </Link>
-                  // ))}
-                  <ExploreFeedWidget
-                    key={feed.feed_id}
-                    feed={feed}
-                    isAuthenticated={isAuthenticated}
-                    viewerId={viewer?.feed_id}
-                  />
-                ))}
-              </div>
-
-              {/* --- The Trigger Element --- */}
-              {/* This element will trigger the next fetch when it becomes visible */}
-              {hasMore && (
-                <div ref={ref} className="flex justify-center items-center p-8">
-                  <span className="text-xl text-gray-400">
-                    {loadingMore ? "Loading more..." : ""}
-                  </span>
-                </div>
-              )}
-
-              {!hasMore && feeds.length > 0 && (
-                <div className="text-center text-gray-500 p-8">
-                  You've reached the end!
-                </div>
-              )}
-            </div>
-          </>
-        )}
-      </div>
-
-      {/* Right Sidebar (Filters) */}
-      <aside className={`${rightClasses} w-80 bg-white`}>
-        <h3 className="text-xl font-semibold mb-4">Filters</h3>
-        <div className="flex flex-col gap-3 text-black">
-          <button
-            className={`py-2 px-4 rounded ${
-              filter === "all" ? "bg-blue-500 text-white" : "bg-gray-100"
-            }`}
-            onClick={() => setFilter("all")}
-          >
-            All
-          </button>
-          <button
-            className={`py-2 px-4 rounded ${
-              filter === "posts" ? "bg-blue-500 text-white" : "bg-gray-100"
-            }`}
-            onClick={() => setFilter("posts")}
-          >
-            Posts Only
-          </button>
-          <button
-            className={`py-2 px-4 rounded ${
-              filter === "channels" ? "bg-blue-500 text-white" : "bg-gray-100"
-            }`}
-            onClick={() => setFilter("channels")}
-          >
-            Channels Only
-          </button>
-        </div>
-      </aside>
-    </div>
-  );
+	return (
+		<div className="standard-container">
+			{/* Main Content */}
+			<div
+				ref={scrollRef}
+				onScroll={handleScroll}
+				className="flex-1 p-6 pt-24 overflow-y-auto min-w-0"
+			>
+				{loading ? (
+					<div className="flex justify-center items-center h-64">
+						<span className="text-xl text-gray-400">Loading...</span>
+					</div>
+				) : (
+					<>
+						{filter === "all" && renderAllContent()}
+						{filter === "posts" && (
+							<div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-10">
+								{posts.map(post => (
+									<div key={post.post_id} className="col-span-1 md:col-span-2 bg-gray-800 rounded-xl shadow hover:shadow-lg transition p-4">
+										<Link to={`/d/${post.deep_feed_id}/${post.post_id}`}>
+											<ExploreContentWidget post={post} />
+										</Link>
+									</div>
+								))}
+							</div>
+						)}
+						{filter === "channels" && (
+							<div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+								{feeds.map(feed => (
+									<ExploreFeedWidget
+										key={feed.feed_id}
+										feed={feed}
+										isAuthenticated={isAuthenticated}
+										viewerId={viewer?.feed_id}
+									/>
+								))}
+							</div>
+						)}
+					</>
+				)}
+			</div>
+			{/* Right Sidebar (Filters) */}
+			<aside className={`${rightClasses} w-80 bg-white`}>
+				<p className="large-text">Filters</p>
+				<nav className="channel-list">
+					<ul>
+						<li className="channel-link" onClick={() => setFilter("all")}>
+							All
+						</li>
+						<li className="channel-link" onClick={() => setFilter("posts")}>
+							Posts
+						</li>
+						<li className="channel-link" onClick={() => setFilter("channels")}>
+							Feeds
+						</li>
+					</ul>
+				</nav>
+			</aside>
+		</div>
+	);
 };
 
 export default ExplorePage;

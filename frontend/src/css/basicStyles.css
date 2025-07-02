@@ -97,7 +97,7 @@ p, h1, h2, h3, h4, h5, h6 {
 .spinner {
     animation: spin 1s linear infinite;
 }
-/*Numbers refer to max size pixels, may need changing for consistency*/
+/*Numbers refer to max size pixels, old naming system, don't use*/
 .text16 {
     font-size: var(--small-text);
 }
@@ -110,12 +110,26 @@ p, h1, h2, h3, h4, h5, h6 {
 .text48 { 
     font-size: var(--xl-text);
 }
-.text16, .text24, .text36, .text48 {
-    margin: clamp(2px, 2vw, 8px);
-}
+
+/*Use these text names from now on */
 .tiny-text {
     font-size: var(--tiny-text);
     margin: clamp(2px, 1vw, 4px)
+}
+.small-text {
+    font-size: var(--small-text);
+}
+.medium-text {
+    font-size: var(--medium-text);
+}
+.large-text { 
+    font-size: var(--large-text);
+}
+.xl-text { 
+    font-size: var(--xl-text);
+}
+.text16, .text24, .text36, .text48, .small-text, .medium-text, .large-text, .xl-text {
+    margin: clamp(2px, 2vw, 8px);
 }
 @keyframes spin {
   from { transform: rotate(0deg); }

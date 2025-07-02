@@ -1,6 +1,5 @@
 @import url('variables.css');
 
-
 @media (max-width: 768px) {
 	.action-row {
 		align-items: stretch;

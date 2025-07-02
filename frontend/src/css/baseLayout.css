@@ -191,6 +191,7 @@ textarea::placeholder,
   flex-grow: 1;
   margin-left: var(--left-width);
   overflow: auto;
+  width: calc(100vw - var(--left-width));
   z-index: 0;
 }
 /*Content feed may be redundant*/

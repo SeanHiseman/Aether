@@ -281,7 +281,7 @@ const ContentWidget = ({ canRemove, feed, isDraft, isGroup, onEditClick, onPostR
 						<p className="feed-list-text">{reply.poster.feed_name}</p>
 					</Link>
 				</div>
-				<ContentDisplay content={reply.content}  onCodeAppChange={setHasCodeOrApp} showFullContent={false} showScrollBar={false} treeViewMode={true} />
+				<ContentDisplay content={reply.content} onCodeAppChange={setHasCodeOrApp} showFullContent={false} showScrollBar={false} treeViewMode={true} />
 				<div className="tree-reply-footer">
 					<span className="total-votes">{reply.upvotes - reply.downvotes} votes</span>
 					<button className="small-icon" onClick={() => onReplyClick(reply)} title="Reply">
@@ -307,7 +307,7 @@ const ContentWidget = ({ canRemove, feed, isDraft, isGroup, onEditClick, onPostR
 				style={{ display: 'block' }}
 				to={`/${urlPrefix}/${post.parentChannel?.feed?.feed_name}/${post.parentChannel?.channel_name}/${post.post_id}`}
 			>
-				<span className="text36" style={{ marginLeft: 0 }}>
+				<span className="large-text" style={{ marginLeft: 0 }}>
 					{post.title || '\u00A0'}
 				</span>
 			</Link>
@@ -351,7 +351,7 @@ const ContentWidget = ({ canRemove, feed, isDraft, isGroup, onEditClick, onPostR
 					</Link>
 				</div>)}
 				{!isDraft && <Link to={`/${urlPrefix}/${feedName}/${channelName}`}>
-					<p className="text24 clickable">{feedName}/{channelName}</p>
+					<p className="medium-text clickable">{feedName}/{channelName}</p>
 				</Link>}
 				{!isDraft && (<div className="vote-container">
 					{isAuthenticated ? (
@@ -384,7 +384,7 @@ const ContentWidget = ({ canRemove, feed, isDraft, isGroup, onEditClick, onPostR
 					<div className="post-button-group">
 						<button className="large-icon" data-content-id={post.post_id} onClick={toggleReplies} title={showReplies ? "Close Replies" : "Show Replies"}>
 							{showReplies ? <FaCommentSlash /> : <FaComments />}
-							<p className="text16" id={`reply-count-${post.post_id}`}>{post.replies}</p>
+							<p className="small-text" id={`reply-count-${post.post_id}`}>{post.replies}</p>
 						</button>
 						{/*{showReplies && post.replies > 0 && (
 							<button className="large-icon" onClick={toggleViewMode} title={treeViewMode ? "Switch to List View" : "Switch to Tree View"}>
@@ -420,8 +420,8 @@ const ContentWidget = ({ canRemove, feed, isDraft, isGroup, onEditClick, onPostR
 					<p className="tiny-text">{savedText}</p>
 				</div>)}
 				<div className="view-date-container">
-					<p className="text16 faded-text" style={{ margin: '0px' }}>{post_id ? new Date(post.created_at).toLocaleDateString() : timeAgo}</p>
-					{!isDraft && (<p className="text16 faded-text" style={{ margin: '0px' }}>{views} {views === 1 ? 'view' : 'views'}</p>)}
+					<p className="small-text faded-text" style={{ margin: '0px' }}>{post_id ? new Date(post.created_at).toLocaleDateString() : timeAgo}</p>
+					{!isDraft && (<p className="small-text faded-text" style={{ margin: '0px' }}>{views} {views === 1 ? 'view' : 'views'}</p>)}
 				</div>
 			</div>
 			{showReplies && (
@@ -448,7 +448,7 @@ const ContentWidget = ({ canRemove, feed, isDraft, isGroup, onEditClick, onPostR
 								/>
 							))
 						) : (
-							<p className="text24">No replies</p>
+							<p className="medium-text">No replies</p>
 						)
 					)}
 					{replies.length > 0 && !treeViewMode && (

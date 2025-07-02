@@ -1,4 +1,3 @@
-import React from "react";
 import { Link } from "react-router-dom";
 
 // Note: I removed the unused FollowerChangeButton and ManageConnectionButton imports
@@ -14,7 +13,7 @@ const ExploreFeedWidget = ({ feed }) => {
     <Link
       // The Link is now the main container for the card for better clickability
       to={`/${feed.is_group ? "g" : "u"}/${feed.feed_name}/Main`}
-      className="block bg-gray-800 rounded-lg p-4 text-center transition-all duration-200 ease-in-out transform hover:-translate-y-1 hover:shadow-xl hover:bg-gray-700"
+      className="explore-block bg-gray-800 rounded-lg p-4 text-center transition-all duration-200 ease-in-out transform hover:-translate-y-1 hover:shadow-xl hover:bg-gray-700"
     >
       {/* Profile Image */}
       <div className="w-20 h-20 rounded-full overflow-hidden mb-4">

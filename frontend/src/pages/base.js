@@ -649,12 +649,13 @@ const BaseLayout = () => {
                     {isAuthenticated ? (
                         <>{/*<DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={dragStart} onDragEnd={dragEnd}>*/}
                             <nav id="personal-feeds">
-                                <ul>
+                                <ul>     
+                                    <li className="channel-link">
+                                        <Link to="/explore">Explore</Link>
+                                    </li>
                                     <li className="channel-link">
                                         <Link to="/d/following">Following</Link>
                                     </li>
-                                </ul>
-                                <ul>
                                     <li className="channel-link">
                                         <Link to="/saved/Main">Saved posts</Link>
                                     </li>

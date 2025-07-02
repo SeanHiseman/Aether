@@ -396,30 +396,34 @@ router.post('/edit_post', authenticateCheck, checkStorageLimit, postUpload.array
 });
 
 router.get("/explore_posts", async (req, res) => {
-    try {
-        const { limit = 9, filter = "all" } = req.query;
-        // The where clause now filters for top-level posts only (parent_id is null).
-        const where = {
-            parent_id: null,
-        };
-        // The 'filter' query parameter is available for future expansion,
-        // for example, to filter by posts that contain app builds vs. regular content.
-        if (filter === "posts") {
-            // Custom logic for post-specific filtering can be added here.
-        }
-        const posts = await Posts.findAll({
-        attributes: postAttributes,
-        include: [
-            {
-            model: Feeds,
+	try {
+        console.log("getting explore posts");
+		const page = parseInt(req.query.page, 10) || 1;
+		const limit = parseInt(req.query.limit, 10) || 6;
+		const offset = (page - 1) * limit;
+		// The where clause now filters for top-level posts only (parent_id is null).
+		const where = { parent_id: null };
+		// The 'filter' query parameter is available for future expansion.
+		const { filter = "all" } = req.query;
+		if (filter === "posts") {
+			// Custom logic for post-specific filtering can be added here.
+		}
+		const { count, rows } = await Posts.findAndCountAll({
+			attributes: postAttributes,
+			include: [{
+                model: Feeds,
                 as: "poster",
                 attributes: feedAttributes,
             },{
-            model: FeedChannels,
+                model: FeedChannels,
                 as: "parentChannel",
                 attributes: ["channel_id", "channel_name"],
+                include: [{
+                    model: Feeds,
+                    attributes: feedAttributes,
+                }],
             },{
-            model: PostNotes,
+                model: PostNotes,
                 as: "note",
                 attributes: noteAttributes,
                 required: false,
@@ -428,21 +432,21 @@ router.get("/explore_posts", async (req, res) => {
                 as: "votes",
                 attributes: ["upvotes", "downvotes"],
                 required: false,
-            },
-        ],
-        where, 
-        limit: parseInt(limit, 10),
-        order: sequelize.random
-            ? sequelize.random()
-            : [sequelize.literal("RAND()")],
-        });
-        const formatted = posts.map((post) => ({
-            ...post.dataValues,
-        }));
-        res.status(200).json({ posts: formatted });
-    } catch (error) {
-        res.status(500).json({ success: false, error: error.message });
-    }
+            }],
+			where,
+			limit,
+			offset,
+			order: sequelize.random
+				? sequelize.random()
+				: [sequelize.literal("RAND()")],
+		});
+		const formatted = rows.map(post => ({ ...post.dataValues }));
+		const hasMore = page * limit < count;
+		res.status(200).json({ posts: formatted, hasMore });
+	} catch (error) {
+        console.log("error:", error);
+		res.status(500).json({ success: false, error: error.message });
+	}
 });
 
 router.get('/get_post_drafts', authenticateCheck, async (req, res) => {
