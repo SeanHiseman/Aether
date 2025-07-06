@@ -1,11 +1,11 @@
 import axios from 'axios';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
-const AddAlgorithm = ({ onCreated }) => {
+const AddAlgorithm = ({ algorithms = [], editingAlgorithm = null, feedId, onCreated, onUpdated }) => {
 	const [algorithmDescription, setAlgorithmDescription] = useState('');
 	const [algorithmName, setAlgorithmName] = useState('');
 	const [chronology, setChronology] = useState('newest');
-	const [contentType, setContentType] = useState({ images: true, text: true, videos: true });
+	const [contentType, setContentType] = useState({ images: true, text: true, videos: true, interactive: true });
 	const [endTime, setEndTime] = useState('23:59');
 	const [error, setError] = useState(null);
 	const [loading, setLoading] = useState(false);
@@ -18,19 +18,38 @@ const AddAlgorithm = ({ onCreated }) => {
 	const [wordBoost, setWordBoost] = useState('');
 	const [wordSuppress, setWordSuppress] = useState('');
 
-	const handleSubmit = async () => {
-		setError(null);
-		if (!algorithmName.trim()) {
-			setError('Name is required.');
-			return;
+	useEffect(() => {
+		if (editingAlgorithm) {
+			const { algorithm_code = '{}', algorithm_description = '', algorithm_name = '' } = editingAlgorithm;
+			const code = JSON.parse(algorithm_code);
+			setAlgorithmDescription(algorithm_description);
+			setAlgorithmName(algorithm_name);
+			setChronology(code.chronology || 'newest');
+			setContentType(code.contentType || { images: true, text: true, videos: true, interactive: true });
+			setPersonalRuleInput(code.personalRuleInput || '');
+			setSentiment(code.sentiment ?? 0);
+			setSimilarity(code.similarity ?? 0);
+			setStartTime(code.startTime || '00:00');
+			setEndTime(code.endTime || '23:59');
+			setStrength(code.strength ?? 1);
+			setTemplate(code.template || 'none');
+			setWordBoost((code.wordBoost || []).join(','));
+			setWordSuppress((code.wordSuppress || []).join(','));
 		}
-		setLoading(true);
+	}, [editingAlgorithm]);
+
+	const handleSubmit = async () => {
 		try {
-			const { data } = await axios.post('/api/create_algorithm', {
+			setError(null);
+			setLoading(true);
+			const nameToUse = algorithmName.trim() || `Algorithm ${algorithms.length + 1}`;
+			const payload = {
 				algorithmDescription,
-				algorithmName,
+				algorithmId: editingAlgorithm?.algorithm_id,
+				algorithmName: nameToUse,
 				chronology,
 				contentType,
+				feedId,
 				personalRuleInput,
 				sentiment,
 				similarity,
@@ -40,25 +59,15 @@ const AddAlgorithm = ({ onCreated }) => {
 				template,
 				wordBoost: wordBoost.split(',').map(w => w.trim()).filter(Boolean),
 				wordSuppress: wordSuppress.split(',').map(w => w.trim()).filter(Boolean)
-			});
+			};
+			const { data } = editingAlgorithm
+				? await axios.put('/api/edit_algorithm', payload)
+				: await axios.post('/api/create_algorithm', payload);
 			if (data.success) {
-				const newAlgo = data.newAlgorithm;
-				setAlgorithmDescription('');
-				setAlgorithmName('');
-				setChronology('newest');
-				setContentType({ images: true, text: true, videos: true });
-				setPersonalRuleInput('');
-				setSentiment(0);
-				setSimilarity(0);
-				setStartTime('00:00');
-				setEndTime('23:59');
-				setStrength(1);
-				setTemplate('none');
-				setWordBoost('');
-				setWordSuppress('');
-				onCreated && onCreated(newAlgo);
+				const saved = data.updatedAlgorithm || data.newAlgorithm;
+				editingAlgorithm ? onUpdated && onUpdated(saved) : onCreated && onCreated(saved);
 			} else {
-				throw new Error(data.message || 'Failed to create algorithm.');
+				throw new Error(data.message || 'Failed to save algorithm.');
 			}
 		} catch (error) {
 			setError(error.response?.data?.error || error.message);
@@ -68,8 +77,8 @@ const AddAlgorithm = ({ onCreated }) => {
 	};
 
 	return (
-		<div className="section">
-			<h3 className="section-title">Create New Algorithm</h3>
+		<div className="create-algorithm">
+			<p className="medium-text">{editingAlgorithm ? 'Edit Algorithm' : 'Create New Algorithm'}</p>
 			<div className="form hide-scrollbar">
 				<div className="form-group">
 					<input
@@ -82,7 +91,7 @@ const AddAlgorithm = ({ onCreated }) => {
 					/>
 				</div>
 				<div className="form-group">
-					<label className="text24">Chronology</label>
+					<label className="medium-text">Chronology</label>
 					<select
 						className="form-select"
 						value={chronology}
@@ -94,7 +103,7 @@ const AddAlgorithm = ({ onCreated }) => {
 					</select>
 				</div>
 				<div className="form-group">
-					<label className="text24">Sentiment Boost/Decay</label>
+					<label className="medium-text">Sentiment Boost/Decay</label>
 					<input
 						className="form-input"
 						required
@@ -107,7 +116,7 @@ const AddAlgorithm = ({ onCreated }) => {
 					/>
 				</div>
 				<div className="form-group">
-					<label className="text24">Content Variety</label>
+					<label className="medium-text">Content Variety</label>
 					<input
 						className="form-input"
 						required
@@ -120,7 +129,7 @@ const AddAlgorithm = ({ onCreated }) => {
 					/>
 				</div>
 				<div className="form-group">
-					<label className="text24">Content Types</label>
+					<label className="medium-text">Content Types</label>
 					<div>
 						<label>
 							<input
@@ -157,7 +166,7 @@ const AddAlgorithm = ({ onCreated }) => {
 					</div>
 				</div>
 				<div className="form-group">
-					<label className="text24">Boost Words (comma separated)</label>
+					<label className="medium-text">Boost Words (comma separated)</label>
 					<input
 						className="form-input"
 						type="text"
@@ -167,7 +176,7 @@ const AddAlgorithm = ({ onCreated }) => {
 					/>
 				</div>
 				<div className="form-group">
-					<label className="text24">Suppress Words (comma separated)</label>
+					<label className="medium-text">Suppress Words (comma separated)</label>
 					<input
 						className="form-input"
 						type="text"
@@ -177,7 +186,7 @@ const AddAlgorithm = ({ onCreated }) => {
 					/>
 				</div>
 				<div className="form-group">
-					<label className="text24">Personal Rule</label>
+					<label className="medium-text">Personal Rule</label>
 					<input
 						className="form-input"
 						required
@@ -188,7 +197,7 @@ const AddAlgorithm = ({ onCreated }) => {
 					/>
 				</div>
 				<div className="form-group">
-					<label className="text24">Active Hours</label>
+					<label className="medium-text">Active Hours</label>
 					<div>
 						<input
 							type="time"
@@ -204,7 +213,7 @@ const AddAlgorithm = ({ onCreated }) => {
 					</div>
 				</div>
 				<div className="form-group">
-					<label className="text24">Template</label>
+					<label className="medium-text">Template</label>
 					<select
 						className="form-select"
 						value={template}
@@ -217,7 +226,7 @@ const AddAlgorithm = ({ onCreated }) => {
 					</select>
 				</div>
 				<div className="form-group">
-					<label className="text24">Similarity to Upvoted Posts</label>
+					<label className="medium-text">Similarity to Upvoted Posts</label>
 					<input
 						className="form-input"
 						required
@@ -237,7 +246,9 @@ const AddAlgorithm = ({ onCreated }) => {
 						type="button"
 						disabled={loading}
 					>
-						{loading ? 'Creating...' : 'Create Algorithm'}
+						{loading
+							? editingAlgorithm ? 'Saving...' : 'Creating...'
+							: editingAlgorithm ? 'Save Changes' : 'Create Algorithm'}
 					</button>
 				</div>
 			</div>

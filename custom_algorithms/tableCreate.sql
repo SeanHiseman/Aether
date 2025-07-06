@@ -13,6 +13,7 @@ CREATE TABLE `algorithms` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE `feed_algorithms` (
+	`id` CHAR(36) NOT NULL PRIMARY KEY,
 	`algorithm_id` CHAR(36) NOT NULL,
 	`feed_id` CHAR(36) NOT NULL,
 	`user_id` CHAR(36) NOT NULL,

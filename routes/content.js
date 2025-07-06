@@ -101,6 +101,7 @@ router.get('/channel_posts', async (req, res) => {
             where:  whereChannel,
         });
         const ids = posts.map(p => p.post_id);
+        if (!ids.length)	return res.status(200).json([]);
         const savedRows = await SavedPosts.findAll({
             where: { saver_id: saverId, post_id: ids },
             attributes: ['post_id'],

@@ -3,19 +3,53 @@ import { useEffect, useState } from 'react';
 import AddAlgorithm from './addAlgorithm';
 
 const AlgorithmSelector = ({ feedId }) => {
-	const [assignError, setAssignError] = useState(null);
-	const [assignLoading, setAssignLoading] = useState(false);
 	const [algorithms, setAlgorithms] = useState([]);
+	const [assignedAlgorithmId, setAssignedAlgorithmId] = useState('');
+	const [assignError, setAssignError] = useState(null);
+	const [editingAlgorithm, setEditingAlgorithm] = useState(null);
 	const [error, setError] = useState(null);
 	const [loading, setLoading] = useState(false);
 	const [modalOpen, setModalOpen] = useState(false);
-	const [selectedAlgorithmId, setSelectedAlgorithmId] = useState('');
+	const [optionsOpen, setOptionsOpen] = useState(false);
+
+	const assignAlgorithm = async (algorithmId) => {
+		setAssignError(null);
+		try {
+			if (assignedAlgorithmId) {
+				await axios.delete('/api/remove_algorithm', {
+					data: { algorithmId: assignedAlgorithmId, feedId }
+				});
+			}
+			const response = await axios.post('/api/assign_algorithm', {
+				algorithmId,
+				feedId
+			});
+			if (!response.data.success) throw new Error(response.data.message || 'Failed to assign algorithm.');
+			setAssignedAlgorithmId(algorithmId);
+			setOptionsOpen(false);
+		} catch (error) {
+			setAssignError(error.response?.data?.error || error.message || 'Failed to assign algorithm.');
+		} 
+	};
 
 	const closeModal = () => {
 		setAssignError(null);
+		setEditingAlgorithm(false);
 		setError(null);
 		setModalOpen(false);
-		setSelectedAlgorithmId('');
+		setOptionsOpen(false);
+	};
+
+	const deleteAlgorithm = async algorithmId => {
+		try {
+			await axios.delete('/api/delete_algorithm', {
+				data: { algorithmId, feedId }
+			});
+			setAlgorithms(prev => prev.filter(a => a.algorithm_id !== algorithmId));
+			if (algorithmId === assignedAlgorithmId) setAssignedAlgorithmId('');
+		} catch (error) {
+			setError(error.response?.data?.error || error.message || 'Failed to delete algorithm.');
+		}
 	};
 
 	const fetchAlgorithms = async () => {
@@ -23,46 +57,34 @@ const AlgorithmSelector = ({ feedId }) => {
 		setLoading(true);
 		try {
 			const { data } = await axios.get('/api/get_user_algorithms');
-			if (data.success) {
-				setAlgorithms(data.algorithms);
-			} else {
-				throw new Error(data.message || 'Failed to load algorithms.');
-			}
-		} catch (err) {
-			setError(err.response?.data?.error || err.message || 'Failed to load algorithms.');
+			if (!data.success) throw new Error(data.message || 'Failed to load algorithms.');
+			setAlgorithms(data.algorithms);
+			const assigned = data.algorithms.find(a =>
+				a.feed_algorithms?.some(fa => fa.feed_id === feedId)
+			);
+			setAssignedAlgorithmId(assigned ? assigned.algorithm_id : '');
+		} catch (error) {
+			setError(error.response?.data?.error || error.message || 'Failed to load algorithms.');
 		} finally {
 			setLoading(false);
 		}
 	};
 
-	const handleAssign = async () => {
-		setAssignError(null);
-		if (!selectedAlgorithmId) {
-			setAssignError('Please select an algorithm.');
-			return;
-		}
-		setAssignLoading(true);
-		try {
-			const { data } = await axios.post('/api/assign_algorithm', {
-				feedId,
-				algorithmId: selectedAlgorithmId
-			});
-			if (data.success) {
-				closeModal();
-			} else {
-				throw new Error(data.message || 'Failed to assign algorithm.');
-			}
-		} catch (err) {
-			setAssignError(err.response?.data?.error || err.message || 'Failed to assign algorithm.');
-		} finally {
-			setAssignLoading(false);
-		}
-	};
-
 	const handleCreated = newAlgo => {
 		setAlgorithms(prev => [...prev, newAlgo]);
-		setSelectedAlgorithmId(newAlgo.algorithm_id);
-		setTimeout(handleAssign, 0);
+		assignAlgorithm(newAlgo.algorithm_id);
+	};
+
+	const selectAlgorithm = (algorithmId) => {
+		const algorithm = algorithms.find(a => a.algorithm_id === algorithmId);
+		const isAlreadyAssigned = algorithm?.feed_algorithms?.some(fa => fa.feed_id === feedId);
+		if (isAlreadyAssigned) return;
+		assignAlgorithm(algorithmId);
+	};
+
+	const updateAlgorithms = updatedAlgo => {
+		setAlgorithms(prev => prev.map(a => a.algorithm_id === updatedAlgo.algorithm_id ? updatedAlgo : a));
+		setEditingAlgorithm(null);
 	};
 
 	useEffect(() => {
@@ -82,41 +104,76 @@ const AlgorithmSelector = ({ feedId }) => {
 			{modalOpen && (
 				<div className="algorithm-overlay" onClick={closeModal}>
 					<div className="algorithm-content" onClick={e => e.stopPropagation()}>
-						<div className="algorithm-header">
-							<p className="text36">Algorithm Selection</p>
-							<button className="button" onClick={closeModal}>✕</button>
-						</div>
+						<button className="button" onClick={closeModal}>✕</button>
 						{loading && <div className="loading-state">Loading algorithms...</div>}
 						{!loading && (
 							<>
-								<div className="section">
-									<div className="form-group">
-										<label className="text24">Available Algorithms</label>
-										<select
-											className="form-select"
-											value={selectedAlgorithmId}
-											onChange={e => setSelectedAlgorithmId(e.target.value)}
+								<div className="choose-algorithm">
+									{assignedAlgorithmId && (
+										<p className="current-assignment">
+											Currently algorithm:&nbsp;
+											{algorithms.find(a => a.algorithm_id === assignedAlgorithmId)?.algorithm_name}
+										</p>
+									)}
+									<div className={`dropdown${optionsOpen ? ' open' : ''}`}>
+										<div
+											className="form-select dropdown-trigger"
+											onClick={() => setOptionsOpen(o => !o)}
 										>
-											<option value="">Choose an algorithm...</option>
-											{algorithms.map(a => (
-												<option key={a.algorithm_id} value={a.algorithm_id}>
-													{a.algorithm_name}
-												</option>
-											))}
-										</select>
-									</div>
-									<div className="action-row">
-										<button
-											className="button"
-											onClick={handleAssign}
-											disabled={assignLoading || !selectedAlgorithmId}
-										>
-											{assignLoading ? 'Assigning...' : 'Assign Algorithm'}
-										</button>
+											{assignedAlgorithmId
+												? algorithms.find(a => a.algorithm_id === assignedAlgorithmId)?.algorithm_name
+												: 'Choose an algorithm...'}
+										</div>
+										{optionsOpen && (
+											<ul className="algorithm-options">
+												{algorithms.map(a => {
+													const isAssigned = a.feed_algorithms?.some(fa => fa.feed_id === feedId);
+													const isCurrentlyAssigned = a.algorithm_id === assignedAlgorithmId;
+													return (
+														<li key={a.algorithm_id} className={isAssigned ? 'assigned' : ''}>
+															<label
+																onClick={() => selectAlgorithm(a.algorithm_id)}
+																style={{ 
+																	cursor: isAssigned && !isCurrentlyAssigned ? 'not-allowed' : 'pointer',
+																	opacity: isAssigned && !isCurrentlyAssigned ? 0.6 : 1
+																}}
+															>
+																<input
+																	checked={isCurrentlyAssigned}
+																	disabled={isAssigned && !isCurrentlyAssigned}
+																	name="algorithm"
+																	readOnly
+																	type="radio"
+																	value={a.algorithm_id}
+																/>
+																{a.algorithm_name}
+																{isAssigned ? ' (assigned)' : ''}
+															</label>
+															<button
+																className="small-icon"
+																onClick={e => {
+																	e.stopPropagation();
+																	setEditingAlgorithm(a);
+																}}
+																title="Edit algorithm"
+															>✏️</button>
+															<button
+																className="small-icon"
+																onClick={e => {
+																	e.stopPropagation();
+																	deleteAlgorithm(a.algorithm_id);
+																}}
+																title="Delete algorithm"
+															>🗑️</button>
+														</li>
+													);
+												})}
+											</ul>
+										)}
 									</div>
 									{assignError && <div className="error-state">{assignError}</div>}
 								</div>
-								<AddAlgorithm onCreated={handleCreated} />
+								<AddAlgorithm algorithms={algorithms} editingAlgorithm={editingAlgorithm} feedId={feedId} onCreated={handleCreated} onUpdated={updateAlgorithms} />
 							</>
 						)}
 						{error && !loading && <div className="error-state">{error}</div>}
