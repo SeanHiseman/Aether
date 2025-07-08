@@ -4,10 +4,11 @@ import cheerio from 'cheerio';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
 import { AppBuilds, Feeds, FeedChannels, Posts, PostDrafts, PostNotes, PostVotes, SavedPosts, Users } from '../models/relationships.js';
+import { Algorithms, AlgorithmLocations } from '../custom_algorithms/algorithmRelationships.js'
 import multer from 'multer';
 import { Router } from 'express';
 import path from 'path';
-import { Sequelize } from 'sequelize';
+import { Op, col, fn, where as sqlWhere, Sequelize } from 'sequelize';
 import unzipper from 'unzipper'
 import { v4 } from 'uuid';
 import yauzl from 'yauzl'
@@ -44,77 +45,150 @@ const checkStorageLimit = async (req, res, next) => {
     }
 };
 
+//Project code
 router.get('/channel_posts', async (req, res) => {
 	try {
 		const { channelId, feedId, isMain, isSingle, limit, offset, postId } = req.query;
-        const saverId = req.session.viewer_id;
+		const saverId	= req.session.viewer_id;
+		const userId	= req.session.user_id;
 		const includeOptions = [{
-            model: PostNotes,
-            as: 'note',
-            attributes: noteAttributes,
-            required: false
-        },{
-            model: FeedChannels,
-            as: 'parentChannel',
-            attributes: ['channel_id','channel_name'],
-            required: false,
-            include: [{
-                model: Feeds,
-                attributes: feedAttributes
-            }]
-        },{
-            model: Feeds,
-            as: 'poster',
-            attributes: feedAttributes
-        },{
-            model: PostVotes,
-            as: 'votes',
-            attributes: ['upvotes','downvotes'],
-            required: false
-        }];
+			as: 'note',
+			attributes: noteAttributes,
+			model: PostNotes,
+			required: false
+		},{
+			as: 'parentChannel',
+			attributes: ['channel_id', 'channel_name'],
+			include: [{
+				attributes: feedAttributes,
+				model: Feeds
+			}],
+			model: FeedChannels,
+			required: false
+		},{
+			as: 'poster',
+			attributes: feedAttributes,
+			model: Feeds
+		},{
+			as: 'votes',
+			attributes: ['downvotes', 'upvotes'],
+			model: PostVotes,
+			required: false
+		}];
 		if (isSingle === 'true') {
-			const post = await Posts.findOne({
+			const singlePost = await Posts.findOne({
 				attributes: postAttributes,
 				include: includeOptions,
 				where: {
+					...(channelId ? { channel_id: channelId } : {}),
 					feed_id: feedId,
-					post_id: postId,
-					...(channelId ? { channel_id: channelId } : {})
-				},
+					post_id: postId
+				}
 			});
-			if (!post) return res.status(404).json({ success: false });
-            const existing = await SavedPosts.findOne({ where: { saver_id: saverId, post_id: postId } });
-            post.dataValues.is_saved = Boolean(existing);
-            return res.status(200).json({ success: true, post });
-		} 
-        const whereChannel = {
-            feed_id: feedId,
-            parent_id: null,
-            ...((isMain !== 'true' && channelId) ? { channel_id: channelId } : {})
-        };
-        const posts = await Posts.findAll({
-            attributes: postAttributes,
-            include: includeOptions,
-            limit:  limit    ? parseInt(limit,10)  : 10,
-            offset: offset  ? parseInt(offset,10) : 0,
-            order:  [['created_at','DESC']],
-            where:  whereChannel,
-        });
-        const ids = posts.map(p => p.post_id);
-        if (!ids.length)	return res.status(200).json([]);
-        const savedRows = await SavedPosts.findAll({
-            where: { saver_id: saverId, post_id: ids },
-            attributes: ['post_id'],
-            raw: true
-        });
-        const savedSet = new Set(savedRows.map(s => s.post_id));
-        const finalResults = posts.map(p => ({
-            ...p.dataValues,
-            is_saved: savedSet.has(p.post_id)
-        }));
-        return res.status(200).json(finalResults);
+			if (!singlePost) return res.status(404).json({ success: false });
+			const existing = saverId
+				? await SavedPosts.findOne({
+						where: { post_id: postId, saver_id: saverId }
+				  })
+				: null;
+			singlePost.dataValues.is_saved = Boolean(existing);
+			return res.status(200).json({ success: true, post: singlePost });
+		}
+		let algorithmLocation = null;
+		if (userId) {
+			algorithmLocation = await AlgorithmLocations.findOne({
+				where: { location_id: channelId, user_id: userId }
+			});
+			//console.log("algorithmLocation:", algorithmLocation);
+		}
+		let algorithm = {};
+		if (algorithmLocation) {
+			const algorithmRow = await Algorithms.findOne({
+				attributes: ['algorithm_code'],
+				where: { algorithm_id: algorithmLocation.algorithm_id }
+			});
+			//console.log("algorithmRow:", algorithmRow);
+			if (algorithmRow) algorithm = JSON.parse(algorithmRow.algorithm_code);
+		}
+		const chronology	= algorithm.chronology   || 'newest';
+		const contentType	= algorithm.contentType  || {};
+		const endTime		= algorithm.endTime      || null;
+		const sentiment		= algorithm.sentiment    || 0;
+		const similarity	= algorithm.similarity   || 0;
+		const startTime		= algorithm.startTime    || null;
+		const strength		= algorithm.strength     || 1;
+		const wordBoost		= algorithm.wordBoost    || [];
+		const wordSuppress	= algorithm.wordSuppress || [];
+		const timeWhere =
+			startTime && endTime
+				? sqlWhere(fn('TIME', col('created_at')), {
+						[Op.between]: [startTime, endTime]
+				  })
+				: {};
+		const whereChannel = {
+			...(isMain !== 'true' && channelId ? { channel_id: channelId } : {}),
+			feed_id: feedId,
+			parent_id: null
+		};
+		const posts = await Posts.findAll({
+			attributes: postAttributes,
+			include: includeOptions,
+			limit:	limit  ? parseInt(limit, 10)  : 10,
+			offset:	offset ? parseInt(offset, 10) : 0,
+			where: { ...whereChannel, ...(Object.keys(timeWhere).length ? { [Op.and]: timeWhere } : {}) }
+		});
+		//console.log("posts.length:", posts.length);
+		const parsedPosts = posts.filter(p => {
+			const $ = cheerio.load(p.body || '');
+			const hasImages		= $('img').length > 0;
+			const hasInteractive	= $('iframe, embed, object').length > 0;
+			const hasText		= $.text().trim().length > 0;
+			const hasVideos		= $('video[src], video source[src]').length > 0;
+			if (contentType.images      && !hasImages)		return false;
+			if (contentType.interactive && !hasInteractive)	return false;
+			if (contentType.text        && !hasText)		return false;
+			if (contentType.videos      && !hasVideos)		return false;
+			return true;
+		});
+		const ids = parsedPosts.map(p => p.post_id);
+		if (!ids.length) return res.status(200).json([]);
+		const savedRows = saverId
+			? await SavedPosts.findAll({
+					attributes: ['post_id'],
+					raw: true,
+					where: { post_id: ids, saver_id: saverId }
+			  })
+			: [];
+		const savedSet = new Set(savedRows.map(s => s.post_id));
+		const scorePost = p => {
+			let score = 0;
+			const body = p.body || '';
+			wordBoost.forEach(w    => { if (body.includes(w)) score += 10; });
+			wordSuppress.forEach(w => { if (body.includes(w)) score -= 10; });
+			if (typeof p.sentiment        === 'number') score += p.sentiment        * sentiment  * 10;
+			if (typeof p.similarity_score === 'number') score += p.similarity_score * similarity * 10;
+			return score * strength;
+		};
+		const finalResults = parsedPosts
+			.map(p => ({
+				...p.dataValues,
+				is_saved: savedSet.has(p.post_id),
+				score:    scorePost(p.dataValues)
+			}))
+			.sort((a, b) => {
+				if (b.score === a.score) {
+					return chronology === 'oldest'
+						? a.created_at - b.created_at
+						: b.created_at - a.created_at;
+				}
+				return b.score - a.score;
+			})
+			.map(({ score, ...rest }) => rest);
+		//console.log("finalResults:", finalResults.length);
+		return res.status(200).json(finalResults);
 	} catch (error) {
-		res.status(500).json({ success: false });
+		console.log('error getting channel posts:', error);
+		return res.status(500).json({ success: false });
 	}
 });
 

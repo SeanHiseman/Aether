@@ -508,7 +508,7 @@ const FeedHome = () => {
                                         </button>
                                     )}
                                 </div>
-                                {isAuthenticated && (<AlgorithmSelector feedId={feed.feed_id} />)}
+                                {isAuthenticated && (<AlgorithmSelector locationId={channelRender.channel_id} />)}
                                 {showChannelForm && (
                                     <form className="add-channel-form" onSubmit={AddChannel}>
                                         <input 

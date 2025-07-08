@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { useEffect, useState } from 'react';
 
-const AddAlgorithm = ({ algorithms = [], editingAlgorithm = null, feedId, onCreated, onUpdated }) => {
+const AddAlgorithm = ({ algorithms = [], editingAlgorithm = null, locationId, onCreated, onUpdated }) => {
 	const [algorithmDescription, setAlgorithmDescription] = useState('');
 	const [algorithmName, setAlgorithmName] = useState('');
 	const [chronology, setChronology] = useState('newest');
@@ -49,7 +49,7 @@ const AddAlgorithm = ({ algorithms = [], editingAlgorithm = null, feedId, onCrea
 				algorithmName: nameToUse,
 				chronology,
 				contentType,
-				feedId,
+				locationId,
 				personalRuleInput,
 				sentiment,
 				similarity,

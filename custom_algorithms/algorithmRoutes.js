@@ -1,7 +1,7 @@
 import authenticateCheck from '../functions/checks/authenticateCheck.js';
 import { Router } from 'express';
 import { v4 } from 'uuid';
-import { Algorithms, FeedAlgorithms } from './algorithmRelationships.js';
+import { Algorithms, AlgorithmLocations} from './algorithmRelationships.js';
 import { Feeds, Users } from '../models/relationships.js';
 import sequelize from '../databaseSetup.js';
 
@@ -9,20 +9,18 @@ const router = Router();
 
 router.post('/assign_algorithm', authenticateCheck, async (req, res) => {
 	try {
-		const { algorithmId, feedId } = req.body;
-		console.log("algorithmId:", algorithmId);
-		console.log("feedId:", feedId);
+		const { algorithmId, locationId } = req.body;
+		console.log("assign algorithm req.body:", req.body);
 		const userId = req.session.user_id;
-		console.log("userId:", userId);
-		const existing = await FeedAlgorithms.findOne({
-			where: { algorithm_id: algorithmId, feed_id: feedId, user_id: userId }
+		const existing = await AlgorithmLocations.findOne({
+			where: { algorithm_id: algorithmId, location_id: locationId, user_id: userId }
 		});
 		console.log("existing:", existing);
 		if (existing) {
 			console.log("algorithm already assigned")
 			return res.status(400).json({ success: false, message: 'Algorithm already assigned to this feed.' });
 		}
-		await FeedAlgorithms.create({ id: v4(), algorithm_id: algorithmId, feed_id: feedId, user_id: userId });
+		await AlgorithmLocations.create({ id: v4(), algorithm_id: algorithmId, location_id: locationId, user_id: userId });
 		res.status(200).json({ success: true });
 	} catch (error) {
 		console.error("error adding algorithm:", error);
@@ -40,7 +38,7 @@ router.post('/create_algorithm', authenticateCheck, async (req, res) => {
 			chronology,
 			contentType,
 			engagement,
-			feedId,
+			locationId,
 			personalRuleInput,
 			sentiment,
 			strength,
@@ -72,9 +70,6 @@ router.post('/create_algorithm', authenticateCheck, async (req, res) => {
 			}),
 			user_id: userId
 		}, { transaction });
-		await FeedAlgorithms.create({
-			id: v4(), algorithm_id: newAlgorithm.algorithm_id, feed_id: feedId, user_id: userId
-		}, { transaction });
 		await transaction.commit();
 		res.status(201).json({ success: true, newAlgorithm });
 	} catch (error) {
@@ -88,7 +83,7 @@ router.delete('/delete_algorithm', authenticateCheck, async (req, res) => {
 	let transaction
 	try {
 		transaction = await sequelize.transaction();
-		const { algorithmId, feedId } = req.body;
+		const { algorithmId, locationId } = req.body;
 		const userId = req.session.user_id;
 		const existing = await Algorithms.findOne({
 			where: { algorithm_id: algorithmId }
@@ -96,7 +91,7 @@ router.delete('/delete_algorithm', authenticateCheck, async (req, res) => {
 		if (!existing) {
 			return res.status(400).json({ success: false, message: 'Algorithm not found.' });
 		}
-		await FeedAlgorithms.destroy({ where: { algorithm_id: algorithmId, feed_id: feedId, user_id: userId }, transaction });
+		await AlgorithmLocations.destroy({ where: { algorithm_id: algorithmId, location_id: locationId, user_id: userId }, transaction });
 		await Algorithms.destroy({ where: { algorithm_id: algorithmId }, transaction });		
 		await transaction.commit();
 		res.status(200).json({ success: true });
@@ -163,31 +158,32 @@ router.get('/get_user_algorithms', authenticateCheck, async (req, res) => {
 		const userId = req.session.user_id;
 		const algorithms = await Algorithms.findAll({
 			include: [{
-				attributes: ['feed_id'],
-				as: 'feed_algorithms',
-				model: FeedAlgorithms,
+				attributes: ['location_id'],
+				as: 'algorithm_locations',
+				model: AlgorithmLocations,
 				required: false
 			}],
 			where: { user_id: userId }
 		});
 		res.status(200).json({ success: true, algorithms });
 	} catch (error) {
-		console.log("getting user algorithms error:", error);
 		res.status(500).json({ success: false, message: 'Failed to get algorithms.' });
 	}
 });
 
 router.delete('/remove_algorithm', authenticateCheck, async (req, res) => {
 	try {
-		const { algorithmId, feedId } = req.body;
+		const { algorithmId, locationId } = req.body;
+		console.log("remove req.body:", req.body);
 		const userId = req.session.user_id;
-		const existing = await FeedAlgorithms.findOne({
-			where: { algorithm_id: algorithmId, feed_id: feedId, user_id: userId }
+		const existing = await AlgorithmLocations.findOne({
+			where: { algorithm_id: algorithmId, location_id: locationId, user_id: userId }
 		});
 		if (!existing) {
+			console.log("not existing")
 			return res.status(400).json({ success: false, message: 'Algorithm not assigned to this feed.' });
 		}
-		await FeedAlgorithms.destroy({ where: { algorithm_id: algorithmId, feed_id: feedId, user_id: userId } });
+		await AlgorithmLocations.destroy({ where: { algorithm_id: algorithmId, location_id: locationId, user_id: userId } });
 		res.status(200).json({ success: true });
 	} catch (error) {
 		console.error("error removing algorithm:", error);

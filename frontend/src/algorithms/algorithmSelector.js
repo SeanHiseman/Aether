@@ -1,8 +1,9 @@
 import axios from 'axios';
 import { useEffect, useState } from 'react';
+import { FaEdit, FaTrash } from 'react-icons/fa';
 import AddAlgorithm from './addAlgorithm';
 
-const AlgorithmSelector = ({ feedId }) => {
+const AlgorithmSelector = ({ locationId }) => {
 	const [algorithms, setAlgorithms] = useState([]);
 	const [assignedAlgorithmId, setAssignedAlgorithmId] = useState('');
 	const [assignError, setAssignError] = useState(null);
@@ -17,12 +18,12 @@ const AlgorithmSelector = ({ feedId }) => {
 		try {
 			if (assignedAlgorithmId) {
 				await axios.delete('/api/remove_algorithm', {
-					data: { algorithmId: assignedAlgorithmId, feedId }
+					data: { algorithmId: assignedAlgorithmId, locationId }
 				});
 			}
 			const response = await axios.post('/api/assign_algorithm', {
 				algorithmId,
-				feedId
+				locationId
 			});
 			if (!response.data.success) throw new Error(response.data.message || 'Failed to assign algorithm.');
 			setAssignedAlgorithmId(algorithmId);
@@ -43,7 +44,7 @@ const AlgorithmSelector = ({ feedId }) => {
 	const deleteAlgorithm = async algorithmId => {
 		try {
 			await axios.delete('/api/delete_algorithm', {
-				data: { algorithmId, feedId }
+				data: { algorithmId, locationId }
 			});
 			setAlgorithms(prev => prev.filter(a => a.algorithm_id !== algorithmId));
 			if (algorithmId === assignedAlgorithmId) setAssignedAlgorithmId('');
@@ -60,7 +61,7 @@ const AlgorithmSelector = ({ feedId }) => {
 			if (!data.success) throw new Error(data.message || 'Failed to load algorithms.');
 			setAlgorithms(data.algorithms);
 			const assigned = data.algorithms.find(a =>
-				a.feed_algorithms?.some(fa => fa.feed_id === feedId)
+				a.algorithm_locations?.some(fa => fa.location_id === locationId)
 			);
 			setAssignedAlgorithmId(assigned ? assigned.algorithm_id : '');
 		} catch (error) {
@@ -70,14 +71,20 @@ const AlgorithmSelector = ({ feedId }) => {
 		}
 	};
 
+	//const handleCreated = newAlgo => {
+		//setAlgorithms(prev => [...prev, newAlgo]);
+		//setAssignedAlgorithmId(newAlgo.algorithm_id);
+		//setOptionsOpen(false);
+	//};
+
 	const handleCreated = newAlgo => {
 		setAlgorithms(prev => [...prev, newAlgo]);
 		assignAlgorithm(newAlgo.algorithm_id);
 	};
 
-	const selectAlgorithm = (algorithmId) => {
+	const selectAlgorithm = algorithmId => {
 		const algorithm = algorithms.find(a => a.algorithm_id === algorithmId);
-		const isAlreadyAssigned = algorithm?.feed_algorithms?.some(fa => fa.feed_id === feedId);
+		const isAlreadyAssigned = algorithm?.algorithm_locations?.some(fa => fa.location_id === locationId);
 		if (isAlreadyAssigned) return;
 		assignAlgorithm(algorithmId);
 	};
@@ -91,7 +98,7 @@ const AlgorithmSelector = ({ feedId }) => {
 		if (modalOpen) fetchAlgorithms();
 	}, [modalOpen]);
 
-	if (!feedId) return null;
+	if (!locationId) return null;
 
 	return (
 		<div className="algorithm-selector">
@@ -127,13 +134,13 @@ const AlgorithmSelector = ({ feedId }) => {
 										{optionsOpen && (
 											<ul className="algorithm-options">
 												{algorithms.map(a => {
-													const isAssigned = a.feed_algorithms?.some(fa => fa.feed_id === feedId);
+													const isAssigned = a.algorithm_locations?.some(fa => fa.location_id === locationId);
 													const isCurrentlyAssigned = a.algorithm_id === assignedAlgorithmId;
 													return (
 														<li key={a.algorithm_id} className={isAssigned ? 'assigned' : ''}>
 															<label
 																onClick={() => selectAlgorithm(a.algorithm_id)}
-																style={{ 
+																style={{
 																	cursor: isAssigned && !isCurrentlyAssigned ? 'not-allowed' : 'pointer',
 																	opacity: isAssigned && !isCurrentlyAssigned ? 0.6 : 1
 																}}
@@ -146,8 +153,7 @@ const AlgorithmSelector = ({ feedId }) => {
 																	type="radio"
 																	value={a.algorithm_id}
 																/>
-																{a.algorithm_name}
-																{isAssigned ? ' (assigned)' : ''}
+																{a.algorithm_name}{isAssigned ? ' (assigned)' : ''}
 															</label>
 															<button
 																className="small-icon"
@@ -156,7 +162,7 @@ const AlgorithmSelector = ({ feedId }) => {
 																	setEditingAlgorithm(a);
 																}}
 																title="Edit algorithm"
-															>✏️</button>
+															><FaEdit /></button>
 															<button
 																className="small-icon"
 																onClick={e => {
@@ -164,19 +170,19 @@ const AlgorithmSelector = ({ feedId }) => {
 																	deleteAlgorithm(a.algorithm_id);
 																}}
 																title="Delete algorithm"
-															>🗑️</button>
+															><FaTrash /></button>
 														</li>
 													);
 												})}
 											</ul>
 										)}
 									</div>
-									{assignError && <div className="error-state">{assignError}</div>}
+									{assignError && <div className="error-message">{assignError}</div>}
 								</div>
-								<AddAlgorithm algorithms={algorithms} editingAlgorithm={editingAlgorithm} feedId={feedId} onCreated={handleCreated} onUpdated={updateAlgorithms} />
+								<AddAlgorithm algorithms={algorithms} editingAlgorithm={editingAlgorithm} locationId={locationId} onCreated={handleCreated} onUpdated={updateAlgorithms} />
 							</>
 						)}
-						{error && !loading && <div className="error-state">{error}</div>}
+						{error && !loading && <div className="error-message">{error}</div>}
 					</div>
 				</div>
 			)}
