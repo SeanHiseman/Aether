@@ -474,7 +474,6 @@ router.post('/edit_post', authenticateCheck, checkStorageLimit, postUpload.array
 
 router.get("/explore_posts", async (req, res) => {
 	try {
-        console.log("getting explore posts");
 		const page = parseInt(req.query.page, 10) || 1;
 		const limit = parseInt(req.query.limit, 10) || 6;
 		const offset = (page - 1) * limit;
@@ -491,15 +490,22 @@ router.get("/explore_posts", async (req, res) => {
                 model: Feeds,
                 as: "poster",
                 attributes: feedAttributes,
-            },{
-                model: FeedChannels,
-                as: "parentChannel",
-                attributes: ["channel_id", "channel_name"],
-                include: [{
-                    model: Feeds,
-                    attributes: feedAttributes,
-                }],
-            },{
+			},{
+				model: FeedChannels,
+				as: "parentChannel",
+				attributes: ["channel_id", "channel_name"],
+				include: [{
+					attributes: feedAttributes,
+					model: Feeds,
+					required: true,
+					where: {
+						type: {
+							[sequelize.Op.ne]: "private" //Excludes posts in private feeds
+						}
+					}
+				}],
+				required: true
+			},{
                 model: PostNotes,
                 as: "note",
                 attributes: noteAttributes,
@@ -742,11 +748,9 @@ router.post('/upload_build', authenticateCheck, upload.single('build'), async (r
 		await isValidZip(tmpZip)
 		targetDir = path.join(buildsDir, buildId)
 		await fs.promises.mkdir(targetDir, { recursive: true })
-		const finalZip = path.join(buildsDir, `${buildId}.zip`)
-		await fs.promises.rename(tmpZip, finalZip)
-		await fs.createReadStream(finalZip).pipe(unzipper.Extract({ path: targetDir })).promise()
+		await fs.createReadStream(tmpZip).pipe(unzipper.Extract({ path: targetDir })).promise()
+		await fs.promises.unlink(tmpZip)					
 		indexDir = await locateIndexDir(targetDir)
-		if (!indexDir) throw new Error('index.html not found')
 		kind = fs.existsSync(path.join(targetDir, 'package.json')) ? 'webcontainer' : 'static'
 		const relDir = path.relative(targetDir, indexDir).replace(/\\/g, '/')
 		baseUrl = `/app_builds/${buildId}${relDir ? `/${relDir}` : ''}`
