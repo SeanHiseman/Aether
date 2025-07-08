@@ -15,7 +15,7 @@ const AppBlock = ({ appPath }) => {
         <iframe
             key={appPath}
             ref={iframeRef}
-            sandbox="allow-scripts allow-same-origin"
+            sandbox="allow-downloads allow-forms allow-modals allow-pointer-lock allow-popups allow-same-origin allow-scripts"
             src={`${appPath}/index.html`}
             style={{ border: 'none', minHeight: '50vh', width: '100%', height: '50vh' }}
             title={`app-block-${appPath}`}

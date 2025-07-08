@@ -1,6 +1,7 @@
 import authenticateCheck from '../functions/checks/authenticateCheck.js';
 import deleteMedia from '../functions/media_handling/deleteMedia.js';
 import cheerio from 'cheerio';
+import dotenv from 'dotenv';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
 import { AppBuilds, Feeds, FeedChannels, Posts, PostDrafts, PostNotes, PostVotes, SavedPosts, Users } from '../models/relationships.js';
@@ -14,9 +15,10 @@ import { v4 } from 'uuid';
 import yauzl from 'yauzl'
 import sequelize from '../databaseSetup.js';
 
+dotenv.config();
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const buildsDir = path.resolve(process.cwd(), 'app_builds')
+const buildsDir = path.join(process.cwd(), process.env.APP_BUILD_DIR);
 const mediaDir = path.join(__dirname, '..', 'media', 'content');
 const feedAttributes = ['feed_id', 'parent_id', 'feed_name', 'description', 'feed_photo', 'follower_count', 'created_at', 'updated_at', 'type', 'is_group', 'feed_owner', 'is_locked'];
 const noteAttributes = ['note_id', 'note_content', 'created_at', 'updated_at', 'is_misinfo']

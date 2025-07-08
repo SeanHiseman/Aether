@@ -261,6 +261,24 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onEdit
         }
     }, [])
 
+    const updateBlock = useCallback((updatedBlock) => {
+        setBlocks((prev) => 
+            prev.map((b) => {
+                if (b.id === updatedBlock.id) {
+                    return { 
+                        ...b, 
+                        data: {
+                        ...b.data,
+                        ...updatedBlock.data
+                        },
+                        isEditing: updatedBlock.isEditing !== undefined ? updatedBlock.isEditing : b.isEditing
+                    };
+                }
+                return b;
+            })
+        );
+    }, []);
+
     const applyCrop = useCallback(async (blockId) => {
         const blockCropState = cropState[blockId];
         if (!blockCropState || !blockCropState.croppedAreaPixels) return;
@@ -795,24 +813,6 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onEdit
         else newAlign = 'center'
         updateBlock({ ...block, data: { ...block.data, align: newAlign } })
     }, [updateBlock])
-
-    const updateBlock = useCallback((updatedBlock) => {
-        setBlocks((prev) => 
-            prev.map((b) => {
-                if (b.id === updatedBlock.id) {
-                    return { 
-                        ...b, 
-                        data: {
-                        ...b.data,
-                        ...updatedBlock.data
-                        },
-                        isEditing: updatedBlock.isEditing !== undefined ? updatedBlock.isEditing : b.isEditing
-                    };
-                }
-                return b;
-            })
-        );
-    }, []);
 
     return (
         <div className="create-post-container" style={{ paddingTop: isReply ? '0px' : '20px' }}>
