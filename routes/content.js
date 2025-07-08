@@ -500,7 +500,7 @@ router.get("/explore_posts", async (req, res) => {
 					required: true,
 					where: {
 						type: {
-							[sequelize.Op.ne]: "private" //Excludes posts in private feeds
+							[Op.ne]: "private" //Excludes posts in private feeds
 						}
 					}
 				}],
