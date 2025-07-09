@@ -24,11 +24,6 @@ import sequelize  from './databaseSetup.js';
 
 dotenv.config();
 const app = express(); 
-app.use((req, res, next) => {
-	res.setHeader('Cross-Origin-Embedder-Policy', 'credentialless');
-	res.setHeader('Cross-Origin-Opener-Policy', 'same-origin');
-	next();
-});
 const http = createServer(app);
 const io = new Server(http, {
     cors: {
@@ -48,12 +43,8 @@ const root = path.join(__dirname, process.env.FRONTEND_BUILD_DIR);
 const mediaPath = path.join(__dirname, process.env.MEDIA_DIR);
 
 app.use('/app_builds', express.static(appBuildPath, {
-	setHeaders: res => {
-		res.set('Access-Control-Allow-Origin', '*');
-		res.set('Cross-Origin-Embedder-Policy', 'credentialless');
-		res.set('Cross-Origin-Opener-Policy', 'same-origin');
-	}
-}));
+	setHeaders: res => res.set('Access-Control-Allow-Origin', '*')
+}))
 app.use('/media', express.static(mediaPath));
 app.use(cors({
     origin: [process.env.FRONTEND_URL, "http://localhost:3000", "http://localhost:5000"],
