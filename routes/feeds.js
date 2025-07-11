@@ -307,7 +307,6 @@ router.post('/create_feed', authenticateCheck, checkProfileStorageLimit, async (
 router.post('/create_deep_feed', authenticateCheck, async (req, res) => {
     try {
         const { deepFeedName, feedsToInclude, parentDeepFeedId, viewerId } = req.body;
-        console.log("Creating deep feed:", "deepFeedName:", deepFeedName, "feedsToInclude:", feedsToInclude, "parentDeepFeedId:", parentDeepFeedId, "viewerId:", viewerId);
         if (!feedsToInclude || feedsToInclude.length < 2) {
             return res.status(400).json({ success: false, message: 'At least two feeds are required' });
         }
@@ -486,11 +485,11 @@ router.get('/deep_feed_posts', authenticateCheck, async (req, res) => {
                 raw: true
             });
             const savedSet = new Set(savedRows.map(s => s.post_id));
-            const finalResults = posts.map(p => ({
-                ...p.dataValues,
-                is_saved: savedSet.has(p.post_id)
-            }));
-            return res.status(200).json({ success: true, posts: finalResults });
+			const finalResults = posts.map(p => ({
+				...p.dataValues,
+				is_saved: savedSet.has(p.post_id)
+			}));
+			return res.status(200).json({ deepFeed, posts: finalResults, success: true });
 		}
 	} catch (error) {
 		res.status(500).json({ success: false, error: error.message });
@@ -828,12 +827,12 @@ router.get('/get_feed_followers/:feedId', authenticateCheck, async (req, res) =>
     }
 });
 
-router.get('/get_saved_posts/:channelId?', authenticateCheck, async (req, res) => {
+//router.get('/get_saved_posts/:channelId?', authenticateCheck, async (req, res) => { 
+router.get('/get_saved_posts', authenticateCheck, async (req, res) => {
     try {
-        const { channelId } = req.params;
         const saverId = req.session.viewer_id;
         const rows = await SavedPosts.findAll({
-            where: { saved_channel_id: channelId, saver_id: saverId },
+            where: { saver_id: saverId },
             include: [{
                 model: Posts,
                 include: [
@@ -917,7 +916,6 @@ router.post('/save_post', authenticateCheck, async (req, res) => {
 	try {
 		const { channelId, feedId, postId } = req.body;
         //const { channelId, feedId, postId, savedChannelId } = req.body; //Upon proper channels implementation
-        console.log("req.body:", req.body);
 		const where = { channel_id: channelId, post_id: postId, saver_id: feedId };
         const mainChannel = await SavedPostChannels.findOne({
             where: { saver_id: feedId, channel_name: 'Main' }

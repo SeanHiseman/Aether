@@ -44,7 +44,7 @@ const WelcomeHome = () => {
                                 <p className="welcome-box-header">Feeds</p>
                                 <p>Create and follow feeds for any topic</p>
                                 <p>Organized into channels for posts and chats</p>
-                                <p>Deep feeds mix and sort content intelligently</p>
+                                <p>Combined feeds help you to organise content</p>
                             </div>
                         </div>
                     </Link>

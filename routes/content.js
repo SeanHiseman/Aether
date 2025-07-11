@@ -101,7 +101,6 @@ router.get('/channel_posts', async (req, res) => {
 			algorithmLocation = await AlgorithmLocations.findOne({
 				where: { location_id: channelId, user_id: userId }
 			});
-			//console.log("algorithmLocation:", algorithmLocation);
 		}
 		let algorithm = {};
 		if (algorithmLocation) {
@@ -109,22 +108,21 @@ router.get('/channel_posts', async (req, res) => {
 				attributes: ['algorithm_code'],
 				where: { algorithm_id: algorithmLocation.algorithm_id }
 			});
-			//console.log("algorithmRow:", algorithmRow);
 			if (algorithmRow) algorithm = JSON.parse(algorithmRow.algorithm_code);
 		}
-		const chronology	= algorithm.chronology   || 'newest';
-		const contentType	= algorithm.contentType  || {};
-		const endTime		= algorithm.endTime      || null;
-		const sentiment		= algorithm.sentiment    || 0;
-		const similarity	= algorithm.similarity   || 0;
-		const startTime		= algorithm.startTime    || null;
-		const strength		= algorithm.strength     || 1;
-		const wordBoost		= algorithm.wordBoost    || [];
-		const wordSuppress	= algorithm.wordSuppress || [];
+		const chronology = algorithm.chronology || 'newest';
+		const contentType = algorithm.contentType || {};
+		const endTime = algorithm.endTime || null;
+		const sentiment = algorithm.sentiment || 0;
+		const similarity = algorithm.similarity || 0;
+		const startTime	= algorithm.startTime || null;
+		const strength = algorithm.strength || 1;
+		const wordBoost = algorithm.wordBoost || [];
+		const wordSuppress = algorithm.wordSuppress || [];
 		const timeWhere =
 			startTime && endTime
 				? sqlWhere(fn('TIME', col('created_at')), {
-						[Op.between]: [startTime, endTime]
+						[Op.between] : [startTime, endTime]
 				  })
 				: {};
 		const whereChannel = {
@@ -135,21 +133,20 @@ router.get('/channel_posts', async (req, res) => {
 		const posts = await Posts.findAll({
 			attributes: postAttributes,
 			include: includeOptions,
-			limit:	limit  ? parseInt(limit, 10)  : 10,
+			limit: limit ? parseInt(limit, 10) : 10,
 			offset:	offset ? parseInt(offset, 10) : 0,
 			where: { ...whereChannel, ...(Object.keys(timeWhere).length ? { [Op.and]: timeWhere } : {}) }
 		});
-		//console.log("posts.length:", posts.length);
 		const parsedPosts = posts.filter(p => {
 			const $ = cheerio.load(p.body || '');
-			const hasImages		= $('img').length > 0;
-			const hasInteractive	= $('iframe, embed, object').length > 0;
-			const hasText		= $.text().trim().length > 0;
-			const hasVideos		= $('video[src], video source[src]').length > 0;
-			if (contentType.images      && !hasImages)		return false;
+			const hasImages	= $('img').length > 0;
+			const hasInteractive = $('iframe, embed, object').length > 0;
+			const hasText = $.text().trim().length > 0;
+			const hasVideos	= $('video[src], video source[src]').length > 0;
+			if (contentType.images && !hasImages) return false;
 			if (contentType.interactive && !hasInteractive)	return false;
-			if (contentType.text        && !hasText)		return false;
-			if (contentType.videos      && !hasVideos)		return false;
+			if (contentType.text && !hasText) return false;
+			if (contentType.videos && !hasVideos) return false;
 			return true;
 		});
 		const ids = parsedPosts.map(p => p.post_id);
@@ -165,9 +162,9 @@ router.get('/channel_posts', async (req, res) => {
 		const scorePost = p => {
 			let score = 0;
 			const body = p.body || '';
-			wordBoost.forEach(w    => { if (body.includes(w)) score += 10; });
+			wordBoost.forEach(w => { if (body.includes(w)) score += 10; });
 			wordSuppress.forEach(w => { if (body.includes(w)) score -= 10; });
-			if (typeof p.sentiment        === 'number') score += p.sentiment        * sentiment  * 10;
+			if (typeof p.sentiment === 'number') score += p.sentiment * sentiment  * 10;
 			if (typeof p.similarity_score === 'number') score += p.similarity_score * similarity * 10;
 			return score * strength;
 		};
@@ -175,7 +172,7 @@ router.get('/channel_posts', async (req, res) => {
 			.map(p => ({
 				...p.dataValues,
 				is_saved: savedSet.has(p.post_id),
-				score:    scorePost(p.dataValues)
+				score: scorePost(p.dataValues)
 			}))
 			.sort((a, b) => {
 				if (b.score === a.score) {
@@ -186,10 +183,8 @@ router.get('/channel_posts', async (req, res) => {
 				return b.score - a.score;
 			})
 			.map(({ score, ...rest }) => rest);
-		//console.log("finalResults:", finalResults.length);
 		return res.status(200).json(finalResults);
 	} catch (error) {
-		console.log('error getting channel posts:', error);
 		return res.status(500).json({ success: false });
 	}
 });

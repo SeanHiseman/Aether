@@ -86,7 +86,7 @@ const DeepFeed = () => {
                 setDeepFeed((prev) => ({ ...prev, name: newName }));
                 document.title = newName;
             }
-        } catch {
+        } catch (error) {
             setErrorMessage("Error changing name");
             setTimeout(() => { setErrorMessage(''); }, 5000);
         }

@@ -64,70 +64,39 @@ const BaseLayout = () => {
 
     const dragStart = event => {
         const { active } = event;
-        const activeIdLocal = active.id;
-        let dragTypeLocal = "feed";
-        let dragItemLocal = null;
-        const parentDeepFeedId = active.data.current?.parentDeepFeedId || null;
-        if (typeof activeIdLocal === "string" && activeIdLocal.startsWith("df-item-")) {
-            dragTypeLocal = "feedInDeepFeed";
-            const feedId = activeIdLocal.replace("df-item-", "");
-            const parentDeepFeed = deepFeeds.find(df => df.deep_feed_id === parentDeepFeedId);
-            if (parentDeepFeed?.feeds) {
-                const content = parentDeepFeed.feeds.find(item => item.feed?.feed_id === feedId);
-                if (content) {
-                    dragItemLocal = { feed: content.feed, parentDeepFeedId };
-                } else {
-                    for (const df of deepFeeds) {
-                        const fallback = df.feeds?.find(item => item.feed?.feed_id === feedId);
-                        if (fallback) {
-                            dragItemLocal = { feed: fallback.feed, parentDeepFeedId: df.deep_feed_id };
-                            break;
-                        }
-                    }
-                }
-            }
+        const activeId = active.id;
+        const dragData = active.data.current;
+        let dragType = "feed";
+        let dragItem = null;
+        let feedId;
+        if (activeId.startsWith('df-')) {
+            const parts = activeId.split('-');
+            feedId = parts[parts.length - 1];
+            dragType = "feedInDeepFeed";
+        } else if (activeId.startsWith('sidebar-feed-')) {
+            feedId = activeId.replace('sidebar-feed-', '');
+            dragType = "feed";
+        } else {
+            feedId = activeId;
         }
-        else if (typeof activeIdLocal === "string" && activeIdLocal.startsWith("df-")) {
-            dragTypeLocal = "deepFeed";
-            const deepFeedId = activeIdLocal.replace("df-", "");
-            dragItemLocal = deepFeeds.find(df => df.deep_feed_id === deepFeedId);
-        }
-        else if (typeof activeIdLocal === "string" && activeIdLocal.startsWith("nested-df-")) {
-            dragTypeLocal = "nestedDeepFeed";
-            if (active.data.current?.nestedDeepFeed) {
-                dragItemLocal = {
-                    nestedDeepFeed: active.data.current.nestedDeepFeed,
-                    parentDeepFeedId
-                };
-            } else {
-                dragItemLocal = null;
-            }
+        if (dragData?.parentDeepFeedId) {
+            dragType = "feedInDeepFeed";
+            dragItem = { 
+                feed: dragData.feed, 
+                parentDeepFeedId: dragData.parentDeepFeedId 
+            };
         }
         else {
-            dragItemLocal = feeds.find(f => f.feed_id.toString() === activeIdLocal);
+            dragItem = feeds.find(f => f.feed_id.toString() === feedId);
         }
-        if (!dragItemLocal && dragTypeLocal === "feedInDeepFeed") {
-            const feedId = activeIdLocal.replace("df-item-", "");
-            const feedFromAll = feeds.find(f => f.feed_id.toString() === feedId);
-            if (feedFromAll) {
-                dragItemLocal = {
-                    feed: {
-                        feed_id: feedFromAll.feed_id,
-                        feed_name: feedFromAll.followedFeed?.feed_name,
-                        feed_photo: feedFromAll.followedFeed?.feed_photo,
-                        is_group: feedFromAll.link_type === "g"
-                    },
-                    parentDeepFeedId
-                };
-            }
-        }
-        setDragType(dragTypeLocal);
-        setActiveDragItem(dragItemLocal);
-        setActiveId(activeIdLocal);
+        setDragType(dragType);
+        setActiveDragItem(dragItem);
+        setActiveId(activeId);
     };
 
     const dragEnd = async event => {
         const { active, over } = event;
+        //If dropped outside any droppable area, remove from deep feed
         if (!over) {
             if (dragType === "feedInDeepFeed" && activeDragItem) {
                 try {
@@ -140,250 +109,119 @@ const BaseLayout = () => {
                         deepFeedCallbacks[activeDragItem.parentDeepFeedId]({ type: "UPDATE_CONTENTS" });
                     }
                 }
-                catch {
-                    setAsideErrorMessage("Error removing from Deep Feed");
+                catch (error) {
+                    console.log("Error removing from deep feed:", error);
+                    setAsideErrorMessage("Error removing from deep feed");
                     setTimeout(() => setAsideErrorMessage(""), 5000);
                 }
             }
-            else if (dragType === "nestedDeepFeed" && activeDragItem) {
-                try {
-                    const payload = {
-                        deepFeedId: activeDragItem.parentDeepFeedId,
-                        nestedDeepFeedId: activeDragItem.nestedDeepFeed.deep_feed_id
-                    };
-                    const { data } = await axios.post("/api/remove_from_deep_feed", payload);
-                    if (data.success && deepFeedCallbacks[activeDragItem.parentDeepFeedId]) {
-                        deepFeedCallbacks[activeDragItem.parentDeepFeedId]({ type: "UPDATE_CONTENTS" });
-                    }
-                }
-                catch {
-                    setAsideErrorMessage("Error removing nested deep feed");
-                    setTimeout(() => setAsideErrorMessage(""), 5000);
-                }
-            }
-            setActiveId(null);
-            setActiveDragItem(null);
-            setDragType(null);
+            resetDragState();
             return;
         }
-        const activeIdLocal = active.id;
+        const activeId = active.id;
         const overId = over.id;
-        if (activeIdLocal === overId) {
-            setActiveId(null);
-            setActiveDragItem(null);
-            setDragType(null);
+        const overData = over.data.current;
+        let targetFeedId;
+        if (overId.toString().startsWith('sidebar-feed-')) {
+            targetFeedId = overId.toString().replace('sidebar-feed-', '');
+        } else if (overId.toString().includes('-feed-')) {
+            const parts = overId.toString().split('-');
+            targetFeedId = parts[parts.length - 1];
+        }
+        //Check if the overId is a deep feed (not a feed within a deep feed)
+        const isOverDeepFeed = (overId.toString().startsWith('df-') && !overId.toString().includes('-feed-')) 
+            || overData?.type === 'deepFeed';
+        let targetDeepFeedId;
+        if (isOverDeepFeed) {
+            if (overData?.deepFeedId) {
+                targetDeepFeedId = overData.deepFeedId;
+            } else if (overId.toString().startsWith('df-')) {
+                targetDeepFeedId = overId.toString().replace('df-', '');
+            }
+        }
+        //Don't do anything if dropping on self
+        if (activeId === overId) {
+            resetDragState();
             return;
         }
         try {
-            const sourceParentDeepFeedId = active.data.current?.parentDeepFeedId;
-            const targetParentDeepFeedId = over.data.current?.parentDeepFeedId;
-            // Case 1: two feeds combine into a new deep feed
-            if (
-                dragType === "feed"
-                && typeof overId === "string"
-                && !overId.startsWith("df-")
-                && !overId.startsWith("df-item-")
-                && !sourceParentDeepFeedId
-            ) {
-                const sourceFeed = feeds.find(f => f.feed_id.toString() === activeIdLocal);
-                const destFeed = feeds.find(f => f.feed_id.toString() === overId);
-                if (sourceFeed && destFeed) {
-                    const deepFeedName = prompt("Enter deep feed name:");
+            //Case 1: Regular feed from sidebar dropped on deep feed
+            if (dragType === "feed" && isOverDeepFeed && targetDeepFeedId) {
+                const sourceFeed = activeDragItem;
+                if (sourceFeed) {
+                    const payload = {
+                        deepFeedId: targetDeepFeedId,
+                        feedId: sourceFeed.feed_id
+                    };
+                    const { data } = await axios.post("/api/add_to_deep_feed", payload);
+                    if (data.success && deepFeedCallbacks[targetDeepFeedId]) {
+                        deepFeedCallbacks[targetDeepFeedId]({ type: "UPDATE_CONTENTS" });
+                    }
+                }
+            }
+            //Case 2: Feed from deep feed dropped on another deep feed
+            else if (dragType === "feedInDeepFeed" && isOverDeepFeed && targetDeepFeedId) {
+                const sourceFeedId = activeDragItem.feed.feed_id;
+                const sourceDeepFeedId = activeDragItem.parentDeepFeedId;
+                //Only proceed if dropping on a different deep feed
+                if (sourceDeepFeedId !== targetDeepFeedId) {
+                    const addPayload = {
+                        deepFeedId: targetDeepFeedId,
+                        feedId: sourceFeedId
+                    };
+                    const { data: addData } = await axios.post("/api/add_to_deep_feed", addPayload);
+                    if (addData.success) {
+                        const removePayload = {
+                            deepFeedId: sourceDeepFeedId,
+                            feedId: sourceFeedId
+                        };
+                        const { data: removeData } = await axios.post("/api/remove_from_deep_feed", removePayload);
+                        if (removeData.success) {
+                            if (deepFeedCallbacks[targetDeepFeedId]) {
+                                deepFeedCallbacks[targetDeepFeedId]({ type: "UPDATE_CONTENTS" });
+                            }
+                            if (deepFeedCallbacks[sourceDeepFeedId]) {
+                                deepFeedCallbacks[sourceDeepFeedId]({ type: "UPDATE_CONTENTS" });
+                            }
+                        }
+                    }
+                }
+            }
+            //Case 3: Two regular feeds from sidebar combine to create new deep feed
+            else if (dragType === "feed" && !isOverDeepFeed && targetFeedId) {
+                const sourceFeed = activeDragItem;
+                const targetFeed = feeds.find(f => f.feed_id.toString() === targetFeedId);
+                if (sourceFeed && targetFeed && sourceFeed.feed_id !== targetFeed.feed_id) {
+                    const deepFeedName = prompt("Enter name for combined feed:");
                     if (deepFeedName) {
                         const payload = {
                             viewerId: viewer.feed_id,
                             deepFeedName,
-                            feedsToInclude: [sourceFeed.feed_id, destFeed.feed_id]
+                            feedsToInclude: [sourceFeed.feed_id, targetFeed.feed_id]
                         };
                         const { data } = await axios.post("/api/create_deep_feed", payload);
                         if (data.success && data.deepFeed) {
-                            const newDeep = {
+                            const newDeepFeed = {
                                 ...data.deepFeed,
-                                feeds: data.feedsToInclude.map(id => ({ feed: feeds.find(f => f.feed_id === id) }))
+                                feeds: data.feedsToInclude.map(id => ({ 
+                                    feed: feeds.find(f => f.feed_id === id) 
+                                }))
                             };
-                            setDeepFeeds(prev => [...prev, newDeep]);
+                            setDeepFeeds(prev => [...prev, newDeepFeed]);
                             navigate(`/d/${data.deepFeed.deep_feed_id}`);
                         }
                     }
                 }
             }
-            // Case 2: feed → existing deep feed
-            else if (
-                dragType === "feed"
-                && typeof overId === "string"
-                && overId.startsWith("df-")
-                && !sourceParentDeepFeedId
-            ) {
-                const sourceFeed = feeds.find(f => f.feed_id.toString() === activeIdLocal);
-                if (sourceFeed) {
-                    try {
-                        const payload = {
-                            deepFeedId: targetParentDeepFeedId,
-                            feedId: sourceFeed.feed_id,
-                            nestedDeepFeedId: null
-                        };
-                        const { data } = await axios.post("/api/add_to_deep_feed", payload);
-                        if (data.success) {
-                            if (deepFeedCallbacks[targetParentDeepFeedId]) {
-                                deepFeedCallbacks[targetParentDeepFeedId](sourceFeed.followedFeed);
-                            }
-                            else {
-                                setAsideErrorMessage("Error updating feep feed");
-                                setTimeout(() => setAsideErrorMessage(""), 5000);
-                            }
-                        }
-                    }
-                    catch {
-                        setAsideErrorMessage("Error updating deep feed");
-                        setTimeout(() => setAsideErrorMessage(""), 5000);
-                    }
-                }
-            }
-            // Case 3: two feeds inside same deep feed → nested deep feed
-            else if (
-                dragType === "feedInDeepFeed"
-                && typeof overId === "string"
-                && overId.startsWith("df-item-")
-                && sourceParentDeepFeedId === targetParentDeepFeedId
-            ) {
-                const sourceFeedId = activeDragItem.feed.feed_id;
-                const destFeedId = overId.replace("df-item-", "");
-                if (sourceFeedId !== destFeedId) {
-                    const deepFeedName = prompt("Enter deep feed name:");
-                    if (deepFeedName) {
-                        try {
-                            const payload = {
-                                viewerId: viewer.feed_id,
-                                deepFeedName,
-                                feedsToInclude: [sourceFeedId, destFeedId],
-                                parentDeepFeedId: sourceParentDeepFeedId
-                            };
-                            const { data } = await axios.post("/api/create_deep_feed", payload);
-                            if (data.success && data.deepFeed) {
-                                if (deepFeedCallbacks[sourceParentDeepFeedId]) {
-                                    deepFeedCallbacks[sourceParentDeepFeedId]({ type: "UPDATE_CONTENTS" });
-                                }
-                                setDeepFeeds(prev => prev.map(df => {
-                                    if (df.deep_feed_id === sourceParentDeepFeedId) {
-                                        const filtered = (df.feeds || []).filter(item =>
-                                            !(item.feed && (item.feed.feed_id === sourceFeedId || item.feed.feed_id === destFeedId))
-                                        );
-                                        return {
-                                            ...df,
-                                            feeds: [
-                                                ...filtered,
-                                                { nestedDeepFeed: data.deepFeed }
-                                            ]
-                                        };
-                                    }
-                                    return df;
-                                }));
-                            }
-                        }
-                        catch {
-                            setAsideErrorMessage("Error creating nested Deep Feed");
-                            setTimeout(() => setAsideErrorMessage(""), 5000);
-                        }
-                    }
-                }
-            }
-            // Case 4: move feed from one deep feed to another
-            else if (
-                dragType === "feedInDeepFeed"
-                && typeof overId === "string"
-                && overId.startsWith("df-")
-            ) {
-                const sourceFeedId = activeDragItem.feed.feed_id;
-                if (sourceParentDeepFeedId !== targetParentDeepFeedId) {
-                    try {
-                        const addPayload = {
-                            deepFeedId: targetParentDeepFeedId,
-                            feedId: sourceFeedId,
-                            nestedDeepFeedId: null
-                        };
-                        const { data: addData } = await axios.post("/api/add_to_deep_feed", addPayload);
-                        if (addData.success) {
-                            const removePayload = {
-                                deepFeedId: sourceParentDeepFeedId,
-                                feedId: sourceFeedId
-                            };
-                            const { data: removeData } = await axios.post("/api/remove_from_deep_feed", removePayload);
-                            if (removeData.success) {
-                                if (deepFeedCallbacks[targetParentDeepFeedId]) {
-                                    deepFeedCallbacks[targetParentDeepFeedId](activeDragItem.feed);
-                                }
-                                if (deepFeedCallbacks[sourceParentDeepFeedId]) {
-                                    deepFeedCallbacks[sourceParentDeepFeedId]({ type: "UPDATE_CONTENTS" });
-                                }
-                            }
-                            else {
-                                setAsideErrorMessage("Error removing feed from deep feed");
-                                setTimeout(() => setAsideErrorMessage(""), 5000);
-                            }
-                        }
-                        else {
-                            setAsideErrorMessage("Error adding feed to deep feed");
-                            setTimeout(() => setAsideErrorMessage(""), 5000);
-                        }
-                    }
-                    catch {
-                        setAsideErrorMessage("Error moving feed between deep feeds");
-                        setTimeout(() => setAsideErrorMessage(""), 5000);
-                    }
-                }
-            }
-            // Case 5: move nested deep feed to another deep feed
-            else if (
-                dragType === "nestedDeepFeed"
-                && typeof overId === "string"
-                && overId.startsWith("df-")
-            ) {
-                const nestedDeepFeedId = activeDragItem.nestedDeepFeed.deep_feed_id;
-                if (sourceParentDeepFeedId !== targetParentDeepFeedId) {
-                    try {
-                        const addPayload = {
-                            deepFeedId: targetParentDeepFeedId,
-                            feedId: null,
-                            nestedDeepFeedId
-                        };
-                        const { data: addData } = await axios.post("/api/add_to_deep_feed", addPayload);
-                        if (addData.success) {
-                            const removePayload = {
-                                deepFeedId: sourceParentDeepFeedId,
-                                nestedDeepFeedId
-                            };
-                            const { data: removeData } = await axios.post("/api/remove_from_deep_feed", removePayload);
-                            if (removeData.success) {
-                                if (deepFeedCallbacks[targetParentDeepFeedId]) {
-                                    deepFeedCallbacks[targetParentDeepFeedId]({
-                                        type: "ADD_NESTED_DEEP_FEED",
-                                        nestedDeepFeed: activeDragItem.nestedDeepFeed
-                                    });
-                                }
-                                if (deepFeedCallbacks[sourceParentDeepFeedId]) {
-                                    deepFeedCallbacks[sourceParentDeepFeedId]({ type: "UPDATE_CONTENTS" });
-                                }
-                            }
-                            else {
-                                setAsideErrorMessage("Error removing deep feed");
-                                setTimeout(() => setAsideErrorMessage(""), 5000);
-                            }
-                        }
-                        else {
-                            setAsideErrorMessage("Error adding deep feed");
-                            setTimeout(() => setAsideErrorMessage(""), 5000);
-                        }
-                    }
-                    catch {
-                        setAsideErrorMessage("Error moving deep feed");
-                        setTimeout(() => setAsideErrorMessage(""), 5000);
-                    }
-                }
-            }
-        }
-        catch {
+        } catch (error) {
+            console.log("Error in drag operation:", error);
             setAsideErrorMessage("Error in drag operation");
+            setTimeout(() => setAsideErrorMessage(""), 5000);
         }
+        resetDragState();
+    };
+
+    const resetDragState = () => {
         setActiveId(null);
         setActiveDragItem(null);
         setDragType(null);
@@ -514,7 +352,7 @@ const BaseLayout = () => {
                 navigate("/ask/home");
             }
         }
-        catch {
+        catch (error) {
             setHeaderErrorMessage("Error sending Ask");
             setTimeout(() => setAsideErrorMessage(""), 5000);
         }
@@ -647,7 +485,7 @@ const BaseLayout = () => {
                         )}
                     </div>
                     {isAuthenticated ? (
-                        <>{/*<DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={dragStart} onDragEnd={dragEnd}>*/}
+                        <><DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={dragStart} onDragEnd={dragEnd}>
                             <nav id="personal-feeds">
                                 <ul>     
                                     <li className="channel-link">
@@ -661,19 +499,13 @@ const BaseLayout = () => {
                                     </li>
                                 </ul>
                             </nav>
-                            {/*<div className="deep-feeds-container">
-                                {deepFeeds.length === 0 && (
-                                    <p className="text16 faded-text">
-                                        Drag and drop feeds together (experimental)
-                                    </p>
-                                )}
-                                <SortableContext items={deepFeeds.map(df => `df-${df.deep_feed_id}`)} strategy={verticalListSortingStrategy}
-                                >
+                            <div className="deep-feeds-container">
+                                <SortableContext items={feeds.map(f => f.feed_id.toString())} strategy={verticalListSortingStrategy}>
                                     {deepFeeds.map(deepFeed => (
                                         <DeepFeedItem key={deepFeed.deep_feed_id} deepFeed={deepFeed} handleDragStart={dragStart} handleDragEnd={dragEnd} onFeedAdded={registerFeedCallback} showHeader={true}/>
                                     ))}
                                 </SortableContext>
-                            </div>*/}
+                            </div>
                             <p className="error-message">{asideErrorMessage}</p>
                             <div id="create-feed-section">
                                 <button className="small-icon" onClick={toggleForm} style={{alignSelf: "flex-start", marginLeft: "calc(5% + 10px)"}}>
@@ -758,77 +590,60 @@ const BaseLayout = () => {
                                 )}
                             </div>
                             <nav className="feed-list">
-                                {/*<SortableContext items={feeds.map(f => f.feed_id.toString())} strategy={verticalListSortingStrategy}>*/}
+                                <p className="text16 faded-text">
+                                    Drag and drop feeds together 
+                                </p>
+                                <SortableContext 
+                                    items={feeds.map(f => `sidebar-feed-${f.feed_id}`)} 
+                                    strategy={verticalListSortingStrategy}
+                                >
                                     <ul className="feeds-list">
-                                        {feeds.length === 0 ? (
-                                            <p>Followed feeds are shown here</p>
-                                        ) : (
-                                            feeds.map(f => (
-                                                <FeedItem key={f.feed_id} feed={f.followedFeed} id={f.feed_id.toString()} isChat={false}/>
-                                            ))
-                                        )}
+                                        {feeds.map(f => (
+                                            <FeedItem 
+                                                key={f.feed_id} 
+                                                feed={f.followedFeed} 
+                                                id={f.feed_id.toString()} 
+                                                isChat={false}
+                                            />
+                                        ))}
                                     </ul>
-                                {/*</SortableContext>*/}
+                                </SortableContext>
                             </nav>
-                            {/*<DragOverlay>
-                                {activeId &&
-                                    activeDragItem &&
-                                    dragType === "feed" && (
-                                        <div className="feed-list-item feed-drag-overlay">
-                                            <div className="feed-list-link-container">
-                                                <div className="feed-list-link">
-                                                    <img
-                                                        className="small-feed-photo"
-                                                        src={`/${activeDragItem.followedFeed.feed_photo}`}
-                                                        alt="Feed"
-                                                    />
-                                                    <p className="feed-list-text">
-                                                        {activeDragItem.followedFeed.feed_name}
-                                                    </p>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    )}
-                                {activeId &&
-                                    activeDragItem &&
-                                    dragType === "deepFeed" && (
-                                        <div className="deep-feed-container deep-feed-drag-overlay">
-                                            <div className="channel-link deep-feed-header">
-                                                <p style={{ margin: "0" }}>{activeDragItem.name}</p>
-                                            </div>
-                                        </div>
-                                    )}
-                                {activeId &&
-                                    activeDragItem &&
-                                    dragType === "feedInDeepFeed" && (
-                                        <div className="feed-list-item feed-drag-overlay">
-                                            <div className="feed-list-link-container">
-                                                <div className="feed-list-link">
-                                                    <img
-                                                        className="small-feed-photo"
-                                                        src={`/${activeDragItem.feed.feed_photo}`}
-                                                        alt="Feed"
-                                                    />
-                                                    <p className="feed-list-text">
-                                                        {activeDragItem.feed.feed_name}
-                                                    </p>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    )}
-                                {activeId &&
-                                    activeDragItem &&
-                                    dragType === "nestedDeepFeed" && (
-                                        <div className="deep-feed-container deep-feed-drag-overlay">
-                                            <div className="channel-link deep-feed-header">
-                                                <p style={{ margin: "0" }}>
-                                                    {activeDragItem.nestedDeepFeed.name}
+                            <DragOverlay>
+                                {activeId && activeDragItem && dragType === "feed" && (
+                                    <div className="feed-list-item feed-drag-overlay">
+                                        <div className="feed-list-link-container">
+                                            <div className="feed-list-link">
+                                                <img
+                                                    className="small-feed-photo"
+                                                    src={`/${activeDragItem.followedFeed.feed_photo}`}
+                                                    alt="Feed"
+                                                />
+                                                <p className="feed-list-text">
+                                                    {activeDragItem.followedFeed.feed_name}
                                                 </p>
                                             </div>
                                         </div>
-                                    )}
-                            </DragOverlay>*/}
-                        {/*</DndContext>*/}</>
+                                    </div>
+                                )}
+                                {activeId && activeDragItem && dragType === "feedInDeepFeed" && (
+                                    <div className="feed-list-item feed-drag-overlay">
+                                        <div className="feed-list-link-container">
+                                            <div className="feed-list-link">
+                                                <img
+                                                    className="small-feed-photo"
+                                                    src={`/${activeDragItem.feed.feed_photo}`}
+                                                    alt="Feed"
+                                                />
+                                                <p className="feed-list-text">
+                                                    {activeDragItem.feed.feed_name}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+                            </DragOverlay>
+                        </DndContext></>
                     ) : (
                         <div style={{ marginTop: "64px" }}>
                             <Link to="/join" className="large-icon">

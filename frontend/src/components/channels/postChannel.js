@@ -33,9 +33,7 @@ const PostChannel = ({ channelId, channelName, feed, isDraft, isGroup, onEditCli
 
 	const getPosts = async ({ pageParam = 0 }) => {
 		try {
-			console.log("getting posts");
 			const response = await axios.get('/api/channel_posts', { params: { channelId, feedId, isMain, isSingle: false, limit: 10, offset: pageParam } });
-			console.log("response:", response);
 			return response.data;
 		} catch (error) {
 			console.log("error getting posts:", error);

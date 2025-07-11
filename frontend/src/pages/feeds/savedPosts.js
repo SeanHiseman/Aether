@@ -17,11 +17,12 @@ const SavedPosts = () => {
 
     useEffect(() => {
         if (!isAuthenticated || !channel_name) return;
-        const current = channels.find(c => c.channel_name === channel_name);
-    	if (!current) return;
+        //const current = channels.find(c => c.channel_name === channel_name);
+    	//if (!current) return;
         async function fetchPosts() {
             try {
-                const response = await axios.get(`/api/get_saved_posts/${current?.channel_id}`);
+                //const response = await axios.get(`/api/get_saved_posts/${current?.channel_id}`);
+				const response = await axios.get(`/api/get_saved_posts`);
                 setPosts(response.data.posts);
             } catch (error) {
                 setSavedError('Error loading posts');
@@ -59,8 +60,8 @@ const SavedPosts = () => {
 	return (
 		<div className="standard-container">
 			<div className="channel-feed">
-				{currentChannel && (
-					posts.length > 0
+				{/*{currentChannel && (*/}
+					{posts.length > 0
 						? <ul className="content-list">
 							{posts.map((post) => (
 								<ContentWidget
@@ -77,8 +78,8 @@ const SavedPosts = () => {
 								/>
 							))}
 						</ul>
-						: <p className="text36">No posts yet</p>
-				)}
+						: <p className="text36">No posts yet</p>}
+				{/*})}*/}
 				{/*{!currentChannel && <p className="text36">Choose a channel</p>}*/}
 			</div>
 			<aside className="right-aside">

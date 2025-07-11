@@ -7,33 +7,19 @@ import { useSortable } from '@dnd-kit/sortable';
 const FeedItem = ({ feed, id, isChat, parentDeepFeedId, unreadCount }) => {
     const [dropdownOpen, setDropdownOpen] = useState(false);
     const [feedChannels, setFeedChannels] = useState([]);
-    const [isDragActive, setIsDragActive] = useState(false);
     const linkType = feed.is_group ? 'g' : 'u';
 
-    const handlePointerDown = (e) => {
-        //console.log('Pointer down event:', e);
-        setIsDragActive(true);
-    };
-    
-    const handlePointerUp = (e) => {
-        //console.log('Pointer up event:', e);
-        setIsDragActive(false);
-    };
-
-    const handleLinkClick = (e) => {
-        //console.log('Link click event:', e);
-        if (isDragging || isDragActive) {
-            e.preventDefault();
-            e.stopPropagation();
-        }
-    };
+    const uniqueId = parentDeepFeedId 
+        ? `df-${parentDeepFeedId}-feed-${id}` 
+        : `sidebar-feed-${id}`;
 
     const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
-        id,
+        id: uniqueId,  
         data: {
             parentDeepFeedId,
             type: 'feed',
-            feed: feed
+            feed: feed,
+            originalId: id  
         }
     });
 
@@ -54,9 +40,9 @@ const FeedItem = ({ feed, id, isChat, parentDeepFeedId, unreadCount }) => {
     }, []);
 
     return (
-        <li ref={setNodeRef} style={style} className={`feed-list-item ${isDragging ? 'dragging' : ''}`} data-parent-deep-feed-id={parentDeepFeedId} onPointerDown={handlePointerDown} onPointerUp={handlePointerUp}>
+        <li ref={setNodeRef} style={style} className={`feed-list-item ${isDragging ? 'dragging' : ''}`} data-parent-deep-feed-id={parentDeepFeedId}>
             <div className="feed-list-link-container" {...attributes} {...listeners}>
-                <Link className="feed-list-link" to={isChat ? `/connections/${feed.feed_name}/Main` : `/${linkType}/${feed.feed_name}/Main`} onClick={handleLinkClick}>
+                <Link className="feed-list-link" to={isChat ? `/connections/${feed.feed_name}/Main` : `/${linkType}/${feed.feed_name}/Main`}>
                     <img className="small-feed-photo" src={`/${feed.feed_photo}`} alt={'/media/site_images/blank-group-icon.jpg'} />
                     <p className="text16">{feed.feed_name}</p>
                     {isChat && unreadCount > 0 && (

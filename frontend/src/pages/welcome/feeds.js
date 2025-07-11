@@ -21,7 +21,7 @@ const Feeds = () => {
                     <p className="welcome-box-header">Feeds</p>
                     <p>Posts are made to feeds. Each feed has channels.</p>
                     <p>Users have their own feeds where only they can post content</p>
-                    <p>Coming soon: Feeds followed by a user can be combined together to form deep feeds, like folders on a computer</p>
+                    <p>Feeds followed by a user can be dragged and dropped together to form combined feeds</p>
                     <p>Coming soon: Chat channels for live group messaging</p>
                 </div>
             </div>

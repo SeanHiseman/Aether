@@ -1,7 +1,6 @@
 /*This sheet is for styles that are used across the site*/
 @import url("variables.css");
-.add-channel-form,
-#create-feed-form {
+.add-channel-form, #create-feed-form {
   align-items: center;
   background-color: var(--dark);
   display: flex;
@@ -52,8 +51,7 @@
   position: relative;
   width: cal(11 * var(--large-margin));
 }
-.change-name-area,
-.change-text-area {
+.change-name-area, .change-text-area {
   background-color: var(--darkest);
   border: 1px solid var(--border);
   border-radius: var(--medium-margin);
@@ -107,21 +105,18 @@
   text-align: left;
   text-decoration: none;
 }
-.channel-item,
-.channel-link {
+.channel-item, .channel-link {
   cursor: pointer;
   transition: background-color var(--transition-regular);
 }
-.channel-link:hover,
-.channel-item:hover {
+.channel-link:hover, .channel-item:hover {
   background-color: var(--dark);
 }
 .channel-list {
   margin-left: var(--medium-margin);
   width: 90%;
 }
-.channel-list-link,
-.channel-list-link:visited {
+.channel-list-link, .channel-list-link:visited {
   text-decoration: none;
   color: var(--lightest);
 }
@@ -131,9 +126,7 @@
   flex-direction: column;
   width: 100%;
 }
-.chat-channel-button,
-.conversation-button,
-.posts-channel-button {
+.chat-channel-button, .conversation-button, .posts-channel-button {
   background-color: var(--darkest);
   border: 1px solid var(--border);
   color: var(--lightest);
@@ -143,8 +136,7 @@
   padding: 5px 10px;
   transition: background-color var(--transition-regular);
 }
-.chat-channel-button,
-.conversation-button {
+.chat-channel-button, .conversation-button {
   border-radius: 1000px;
 }
 .channel-name {
@@ -168,11 +160,7 @@
   display: flex;
   flex-direction: row;
 }
-.chat-message-bar::placeholder,
-.name-input::placeholder,
-#search-bar::placeholder,
-textarea::placeholder,
-.title-input::placeholder {
+.chat-message-bar::placeholder, .name-input::placeholder, #search-bar::placeholder, textarea::placeholder, .title-input::placeholder {
   color: var(--light);
 }
 #confirmation-message {
