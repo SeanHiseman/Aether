@@ -14,8 +14,8 @@ const AlgorithmSelector = ({ locationId }) => {
 	const [optionsOpen, setOptionsOpen] = useState(false);
 
 	const assignAlgorithm = async (algorithmId) => {
-		setAssignError(null);
 		try {
+			setAssignError(null);
 			if (assignedAlgorithmId) {
 				await axios.delete('/api/remove_algorithm', {
 					data: { algorithmId: assignedAlgorithmId, locationId }
@@ -27,9 +27,25 @@ const AlgorithmSelector = ({ locationId }) => {
 			});
 			if (!response.data.success) throw new Error(response.data.message || 'Failed to assign algorithm.');
 			setAssignedAlgorithmId(algorithmId);
-			setOptionsOpen(false);
+			setAlgorithms(prev => {
+				const updated = prev.map(algo => ({
+					...algo,
+					algorithm_locations: algo.algorithm_id === algorithmId 
+						? [...(algo.algorithm_locations || []), { location_id: locationId }]
+						: (algo.algorithm_locations || []).filter(loc => loc.location_id !== locationId)
+				}))
+				//Manually move assigned algorithm to top of the list, so that fetchAlgorithms() does not need to be called again
+				updated.sort((a, b) => a.algorithm_name.localeCompare(b.algorithm_name));
+				const index = updated.findIndex(a => a.algorithm_id === algorithmId);
+				if (index > 0) {
+					const [assigned] = updated.splice(index, 1);
+					updated.unshift(assigned);
+				}
+				return updated;
+			});
 		} catch (error) {
-			setAssignError(error.response?.data?.error || error.message || 'Failed to assign algorithm.');
+			setAssignError('Failed to assign algorithm');
+			setTimeout(() => { setAssignError('') }, 3000);
 		} 
 	};
 
@@ -49,36 +65,55 @@ const AlgorithmSelector = ({ locationId }) => {
 			setAlgorithms(prev => prev.filter(a => a.algorithm_id !== algorithmId));
 			if (algorithmId === assignedAlgorithmId) setAssignedAlgorithmId('');
 		} catch (error) {
-			setError(error.response?.data?.error || error.message || 'Failed to delete algorithm.');
+			setError('Failed to delete algorithm');
+			setTimeout(() => { setError('') }, 3000);
 		}
 	};
 
 	const fetchAlgorithms = async () => {
-		setError(null);
-		setLoading(true);
 		try {
+			setError(null);
+			setLoading(true);
 			const { data } = await axios.get('/api/get_user_algorithms');
 			if (!data.success) throw new Error(data.message || 'Failed to load algorithms.');
-			setAlgorithms(data.algorithms);
 			const assigned = data.algorithms.find(a =>
 				a.algorithm_locations?.some(fa => fa.location_id === locationId)
 			);
-			setAssignedAlgorithmId(assigned ? assigned.algorithm_id : '');
+			const assignedId = assigned ? assigned.algorithm_id : '';
+			const sorted = [...data.algorithms].sort((a, b) => a.algorithm_name.localeCompare(b.algorithm_name));
+			if (assignedId) {
+				const assignedIndex = sorted.findIndex(a => a.algorithm_id === assignedId);
+				if (assignedIndex > 0) {
+					const [assignedAlgo] = sorted.splice(assignedIndex, 1);
+					sorted.unshift(assignedAlgo);
+				}
+			}
+			setAlgorithms(sorted);
+			setAssignedAlgorithmId(assignedId);
 		} catch (error) {
-			setError(error.response?.data?.error || error.message || 'Failed to load algorithms.');
+			setError('Failed to load algorithms');
+			setTimeout(() => { setError('') }, 3000);
 		} finally {
 			setLoading(false);
 		}
 	};
 
-	//const handleCreated = newAlgo => {
-		//setAlgorithms(prev => [...prev, newAlgo]);
-		//setAssignedAlgorithmId(newAlgo.algorithm_id);
-		//setOptionsOpen(false);
-	//};
-
 	const handleCreated = newAlgo => {
-		setAlgorithms(prev => [...prev, newAlgo]);
+		const newAlgoWithLocation = {
+			...newAlgo,
+			algorithm_locations: [{ location_id: locationId }]
+		};
+		//Manually move assigned algorithm to top of the list, so that fetchAlgorithms() does not need to be called again
+		setAlgorithms(prev => {
+			const updated = [...prev, newAlgoWithLocation]
+			updated.sort((a, b) => a.algorithm_name.localeCompare(b.algorithm_name));
+			const index = updated.findIndex(a => a.algorithm_id === newAlgo.algorithm_id);
+			if (index > 0) {
+				const [created] = updated.splice(index, 1);
+				updated.unshift(created);
+			}
+			return updated;
+		});
 		assignAlgorithm(newAlgo.algorithm_id);
 	};
 
@@ -111,17 +146,14 @@ const AlgorithmSelector = ({ locationId }) => {
 			{modalOpen && (
 				<div className="algorithm-overlay" onClick={closeModal}>
 					<div className="algorithm-content" onClick={e => e.stopPropagation()}>
-						<button className="button" onClick={closeModal}>✕</button>
+						<div className="selector-header">
+							<button className="button" onClick={closeModal} title="Close">✕</button>
+							<div className="error-message">{assignError}</div>
+						</div>
 						{loading && <div className="loading-state">Loading algorithms...</div>}
 						{!loading && (
 							<>
 								<div className="choose-algorithm">
-									{assignedAlgorithmId && (
-										<p className="current-assignment">
-											Currently algorithm:&nbsp;
-											{algorithms.find(a => a.algorithm_id === assignedAlgorithmId)?.algorithm_name}
-										</p>
-									)}
 									<div className={`dropdown${optionsOpen ? ' open' : ''}`}>
 										<div
 											className="form-select dropdown-trigger"
@@ -177,12 +209,11 @@ const AlgorithmSelector = ({ locationId }) => {
 											</ul>
 										)}
 									</div>
-									{assignError && <div className="error-message">{assignError}</div>}
 								</div>
 								<AddAlgorithm algorithms={algorithms} editingAlgorithm={editingAlgorithm} locationId={locationId} onCreated={handleCreated} onUpdated={updateAlgorithms} />
 							</>
 						)}
-						{error && !loading && <div className="error-message">{error}</div>}
+						<div className="error-message">{error}</div>
 					</div>
 				</div>
 			)}

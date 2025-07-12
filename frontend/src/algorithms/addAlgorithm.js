@@ -6,10 +6,10 @@ const AddAlgorithm = ({ algorithms = [], editingAlgorithm = null, locationId, on
 	const [algorithmName, setAlgorithmName] = useState('');
 	const [chronology, setChronology] = useState('newest');
 	const [contentType, setContentType] = useState({ images: true, text: true, videos: true, interactive: true });
+	const [customInstruction, setCustomInstruction] = useState('');
 	const [endTime, setEndTime] = useState('23:59');
 	const [error, setError] = useState(null);
 	const [loading, setLoading] = useState(false);
-	const [personalRuleInput, setPersonalRuleInput] = useState('');
 	const [sentiment, setSentiment] = useState(0);
 	const [similarity, setSimilarity] = useState(0);
 	const [startTime, setStartTime] = useState('00:00');
@@ -26,7 +26,6 @@ const AddAlgorithm = ({ algorithms = [], editingAlgorithm = null, locationId, on
 			setAlgorithmName(algorithm_name);
 			setChronology(code.chronology || 'newest');
 			setContentType(code.contentType || { images: true, text: true, videos: true, interactive: true });
-			setPersonalRuleInput(code.personalRuleInput || '');
 			setSentiment(code.sentiment ?? 0);
 			setSimilarity(code.similarity ?? 0);
 			setStartTime(code.startTime || '00:00');
@@ -38,7 +37,7 @@ const AddAlgorithm = ({ algorithms = [], editingAlgorithm = null, locationId, on
 		}
 	}, [editingAlgorithm]);
 
-	const handleSubmit = async () => {
+	const submitAlgorithm = async () => {
 		try {
 			setError(null);
 			setLoading(true);
@@ -49,8 +48,8 @@ const AddAlgorithm = ({ algorithms = [], editingAlgorithm = null, locationId, on
 				algorithmName: nameToUse,
 				chronology,
 				contentType,
+				customInstruction,
 				locationId,
-				personalRuleInput,
 				sentiment,
 				similarity,
 				startTime,
@@ -66,11 +65,15 @@ const AddAlgorithm = ({ algorithms = [], editingAlgorithm = null, locationId, on
 			if (data.success) {
 				const saved = data.updatedAlgorithm || data.newAlgorithm;
 				editingAlgorithm ? onUpdated && onUpdated(saved) : onCreated && onCreated(saved);
+				setAlgorithmName('');
+				setWordBoost('');
+				setWordSuppress('');
 			} else {
 				throw new Error(data.message || 'Failed to save algorithm.');
 			}
 		} catch (error) {
-			setError(error.response?.data?.error || error.message);
+			setError("Error submitting algorithm");
+			setTimeout(() => { setError('') }, 3000);
 		} finally {
 			setLoading(false);
 		}
@@ -78,9 +81,16 @@ const AddAlgorithm = ({ algorithms = [], editingAlgorithm = null, locationId, on
 
 	return (
 		<div className="create-algorithm">
-			<p className="medium-text">{editingAlgorithm ? 'Edit Algorithm' : 'Create New Algorithm'}</p>
+			<div className="create-header">
+				<p className="medium-text">{editingAlgorithm ? 'Edit Algorithm' : 'Create New Algorithm'}</p>
+				<button className="button button--success" onClick={submitAlgorithm} type="button" title="Create new algorithm" disabled={loading}>
+					{loading
+						? editingAlgorithm ? 'Saving...' : 'Creating...'
+						: editingAlgorithm ? 'Save Changes' : 'Create'}
+				</button>
+			</div>
 			<div className="form hide-scrollbar">
-				<div className="form-group">
+				<div className="form-row">
 					<input
 						className="form-input"
 						placeholder="Enter name"
@@ -90,46 +100,73 @@ const AddAlgorithm = ({ algorithms = [], editingAlgorithm = null, locationId, on
 						onChange={e => setAlgorithmName(e.target.value)}
 					/>
 				</div>
-				<div className="form-group">
-					<label className="medium-text">Chronology</label>
-					<select
-						className="form-select"
-						value={chronology}
-						onChange={e => setChronology(e.target.value)}
-					>
-						<option value="newest">Newest First</option>
-						<option value="oldest">Oldest First</option>
-						<option value="mixed">Mixed Chronology</option>
-					</select>
-				</div>
-				<div className="form-group">
-					<label className="medium-text">Sentiment Boost/Decay</label>
-					<input
-						className="form-input"
+				<div className="form-row">
+					<textarea
+						className="form-textarea"
+						placeholder="Describe your algorithm..."
 						required
-						step="0.1"
-						type="range"
-						min="-1"
-						max="1"
-						value={sentiment}
-						onChange={e => setSentiment(parseFloat(e.target.value))}
+						type="text"
+						value={customInstruction}
+						onChange={e => setCustomInstruction(e.target.value)}
 					/>
 				</div>
-				<div className="form-group">
-					<label className="medium-text">Content Variety</label>
-					<input
-						className="form-input"
-						required
-						step="0.1"
-						type="range"
-						min="0"
-						max="1"
-						value={strength}
-						onChange={e => setStrength(parseFloat(e.target.value))}
-					/>
+				<div className="form-row">
+					<div className="form-group">
+						<label className="small-text">Template</label>
+						<select
+							className="form-select"
+							value={template}
+							onChange={e => setTemplate(e.target.value)}
+						>
+							<option value="none">None</option>
+							<option value="work">Work Focus</option>
+							<option value="weekend">Weekend Leisure</option>
+							<option value="news">News Only</option>
+						</select>
+					</div>
+					<div className="form-group">
+						<label className="small-text">Chronology</label>
+						<select
+							className="form-select"
+							value={chronology}
+							onChange={e => setChronology(e.target.value)}
+						>
+							<option value="newest">Newest First</option>
+							<option value="oldest">Oldest First</option>
+							<option value="mixed">Mixed Chronology</option>
+						</select>
+					</div>
 				</div>
-				<div className="form-group">
-					<label className="medium-text">Content Types</label>
+				<div className="form-row">
+					<div className="form-group">
+						<label className="small-text">Sentiment Boost/Decay</label>
+						<input
+							className="form-input"
+							required
+							step="0.1"
+							type="range"
+							min="-1"
+							max="1"
+							value={sentiment}
+							onChange={e => setSentiment(parseFloat(e.target.value))}
+						/>
+					</div>
+					<div className="form-group">
+						<label className="small-text">Content Variety</label>
+						<input
+							className="form-input"
+							required
+							step="0.1"
+							type="range"
+							min="0"
+							max="1"
+							value={strength}
+							onChange={e => setStrength(parseFloat(e.target.value))}
+						/>
+					</div>
+				</div>
+				<div className="form-row">
+					<label className="small-text">Content Types</label>
 					<div>
 						<label>
 							<input
@@ -165,92 +202,60 @@ const AddAlgorithm = ({ algorithms = [], editingAlgorithm = null, locationId, on
 						</label>
 					</div>
 				</div>
-				<div className="form-group">
-					<label className="medium-text">Boost Words (comma separated)</label>
-					<input
-						className="form-input"
-						type="text"
-						value={wordBoost}
-						onChange={e => setWordBoost(e.target.value)}
-						placeholder="e.g. sports,tech"
-					/>
-				</div>
-				<div className="form-group">
-					<label className="medium-text">Suppress Words (comma separated)</label>
-					<input
-						className="form-input"
-						type="text"
-						value={wordSuppress}
-						onChange={e => setWordSuppress(e.target.value)}
-						placeholder="e.g. politics"
-					/>
-				</div>
-				<div className="form-group">
-					<label className="medium-text">Personal Rule</label>
-					<input
-						className="form-input"
-						required
-						type="text"
-						value={personalRuleInput}
-						onChange={e => setPersonalRuleInput(e.target.value)}
-						placeholder="e.g. no posts from feed X after 8pm"
-					/>
-				</div>
-				<div className="form-group">
-					<label className="medium-text">Active Hours</label>
-					<div>
+				<div className="form-row">
+					<div className="form-group">
+						<label className="small-text">Boost Words</label>
 						<input
-							type="time"
-							value={startTime}
-							onChange={e => setStartTime(e.target.value)}
+							className="form-input"
+							type="text"
+							value={wordBoost}
+							onChange={e => setWordBoost(e.target.value)}
+							placeholder="e.g. sports,tech"
 						/>
-						-
+					</div>
+					<div className="form-group">
+						<label className="small-text">Suppress Words</label>
 						<input
-							type="time"
-							value={endTime}
-							onChange={e => setEndTime(e.target.value)}
+							className="form-input"
+							type="text"
+							value={wordSuppress}
+							onChange={e => setWordSuppress(e.target.value)}
+							placeholder="e.g. politics"
 						/>
 					</div>
 				</div>
-				<div className="form-group">
-					<label className="medium-text">Template</label>
-					<select
-						className="form-select"
-						value={template}
-						onChange={e => setTemplate(e.target.value)}
-					>
-						<option value="none">None</option>
-						<option value="work">Work Focus</option>
-						<option value="weekend">Weekend Leisure</option>
-						<option value="news">News Only</option>
-					</select>
-				</div>
-				<div className="form-group">
-					<label className="medium-text">Similarity to Upvoted Posts</label>
-					<input
-						className="form-input"
-						required
-						step="0.1"
-						type="range"
-						min="-1"
-						max="1"
-						value={similarity}
-						onChange={e => setSimilarity(parseFloat(e.target.value))}
-					/>
+				<div className="form-row">
+					<div className="form-group">
+						<label className="small-text">Active Hours</label>
+						<div>
+							<input
+								type="time"
+								value={startTime}
+								onChange={e => setStartTime(e.target.value)}
+							/>
+							-
+							<input
+								type="time"
+								value={endTime}
+								onChange={e => setEndTime(e.target.value)}
+							/>
+						</div>
+					</div>
+					<div className="form-group">
+						<label className="small-text">Similarity to Upvoted Posts</label>
+						<input
+							className="form-input"
+							required
+							step="0.1"
+							type="range"
+							min="-1"
+							max="1"
+							value={similarity}
+							onChange={e => setSimilarity(parseFloat(e.target.value))}
+						/>
+					</div>
 				</div>
 				{error && <div className="error-state">{error}</div>}
-				<div className="form-actions">
-					<button
-						className="button button--success"
-						onClick={handleSubmit}
-						type="button"
-						disabled={loading}
-					>
-						{loading
-							? editingAlgorithm ? 'Saving...' : 'Creating...'
-							: editingAlgorithm ? 'Save Changes' : 'Create Algorithm'}
-					</button>
-				</div>
 			</div>
 		</div>
 	);

@@ -4,13 +4,12 @@
 	background: var(--dark);
 	border: 1px solid var(--border);
 	border-radius: var(--large-margin);
-	max-height: 80vh;
-	max-width: calc(14 * var(--xl-margin));
+	max-height: 90vh;
 	overflow-y: auto;
 	padding: var(--large-margin);
 	position: relative;
     scrollbar-width: none;
-	width: 90%;
+	width: calc(70vw - 2*var(--right-width));
 }
 .algorithm-content::-webkit-scrollbar {
     display: none;              
@@ -90,7 +89,6 @@
 	justify-content: space-between;
 	padding: var(--medium-margin);
 	border-bottom: 1px solid var(--border);
-	transition: background-color 0.15s ease;
 }
 .algorithm-options li:hover {
 	background: var(--dark);
@@ -130,6 +128,12 @@
 .create-algorithm {
 	padding-top: var(--medium-margin);
 }
+.create-header {
+	align-items: center;
+	display: flex;
+	justify-content: space-between;
+	width: 99%;
+}
 .current-assignment {
 	color: var(--light);
 	font-size: var(--small-text);
@@ -152,7 +156,6 @@
 	display: flex;
 	align-items: center;
 	justify-content: space-between;
-	transition: all 0.2s ease;
 }
 .dropdown-trigger:hover {
 	background: var(--dark);
@@ -162,29 +165,43 @@
 	content: '▼';
 	font-size: var(--tiny-text);
 	color: var(--light);
-	transition: transform 0.2s ease;
 }
 .dropdown.open .dropdown-trigger {
 	border-color: var(--light);
 	background: var(--dark);
 }
-
 .dropdown.open .dropdown-trigger::after {
 	transform: rotate(180deg);
 }
-.form {
-	display: flex;
-	flex-direction: column;
-	gap: var(--large-margin);
-}
-.form-actions {
+.form-row {
 	display: flex;
 	gap: var(--medium-margin);
-	justify-content: flex-end;
-	padding-top: var(--large-margin);
+	margin-bottom: var(--large-margin);
 }
-.form-group {
+.form-row .form-group {
+	flex: 1;
+	width: 50%;
+}
+.form-group input[type="checkbox"] {
+	appearance: none;
+	width: var(--medium-margin);
+	height: var(--medium-margin);
+	border: 2px solid var(--border);
+	border-radius: var(--small-margin);
+	background: var(--darkest);
+	cursor: pointer;
+	margin-right: var(--small-margin);
 	position: relative;
+}
+.form-group input[type="checkbox"]:checked {
+	background: var(--lightest);
+	border-color: var(--lightest);
+}
+.form-group input[type="checkbox"]:checked::after {
+	content: '✓';
+	position: absolute;
+	color: var(--dark);
+	font-weight: bold;
 }
 .form-input, .form-textarea {
 	background: var(--darkest);
@@ -193,7 +210,33 @@
 	color: var(--lightest);
 	font-size: var(--small-text);
 	padding: var(--medium-margin);
-	width: 94%;
+	width: 100%;
+	box-sizing: border-box;
+}
+.form-input[type="range"] {
+	-webkit-appearance: none;
+	appearance: none;
+	height: var(--medium-margin);
+	background: var(--border);
+	border-radius: var(--small-margin);
+	outline: none;
+	padding: 0;
+}
+.form-input[type="range"]::-moz-range-thumb {
+	width: var(--large-margin);
+	height: var(--large-margin);
+	background: var(--dark);
+	border-radius: 50%;
+	cursor: pointer;
+	border: 2px solid var(--border);
+}
+.form-input[type="time"] {
+	width: calc(50% - var(--medium-margin));
+	margin-right: var(--small-margin);
+}
+.form-input[type="time"]:last-child {
+	margin-right: 0;
+	margin-left: var(--small-margin);
 }
 .form-select {
 	background: var(--darkest);
@@ -203,13 +246,11 @@
 	font-size: var(--small-text);
 	padding: var(--medium-margin);
 	width: 100%;
+	box-sizing: border-box;
 }
 .form-textarea {
 	min-height: calc(3 * var(--large-margin));
 	resize: vertical;
-}
-.form-textarea.code-input {
-	font-size: var(--small-text);
 }
 .loading-state {
 	color: var(--light);
@@ -223,30 +264,26 @@
 .mt-auto {
 	margin-top: auto;
 }
-.small-icon {
-	background: transparent;
-	border: 1px solid var(--border);
-	border-radius: 4px;
-	color: var(--light);
-	cursor: pointer;
-	font-size: var(--tiny-text);
-	padding: 4px 6px;
-	transition: all 0.2s ease;
-	margin-left: var(--small-margin);
+.selector-header {
+	align-items: center;
+	display: flex;
 }
 .text-center {
 	text-align: center;
 }
 @media (max-width: 768px) {
-	.action-row {
-		align-items: stretch;
+	.form-row {
 		flex-direction: column;
+		gap: var(--medium-margin);
 	}
-    .algorithm-content {
-		margin: var(--large-margin);
-		padding: var(--large-margin);
+	.form-row .form-group {
+		width: 100%;
+		flex: none;
 	}
-	.form-actions {
-		flex-direction: column;
+	.form-input[type="time"] {
+		width: calc(50% - 10px);
+	}
+	.algorithm-content {
+		width: calc(90vw - 2*var(--medium-margin));
 	}
 }

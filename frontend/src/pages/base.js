@@ -110,8 +110,8 @@ const BaseLayout = () => {
                     }
                 }
                 catch (error) {
-                    console.log("Error removing from deep feed:", error);
-                    setAsideErrorMessage("Error removing from deep feed");
+                    console.log("Error removing from combined feed:", error);
+                    setAsideErrorMessage("Error removing from combined feed");
                     setTimeout(() => setAsideErrorMessage(""), 5000);
                 }
             }
