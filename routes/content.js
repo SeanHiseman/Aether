@@ -51,8 +51,8 @@ const checkStorageLimit = async (req, res, next) => {
 router.get('/channel_posts', async (req, res) => {
 	try {
 		const { channelId, feedId, isMain, isSingle, limit, offset, postId } = req.query;
-		const saverId	= req.session.viewer_id;
-		const userId	= req.session.user_id;
+		const saverId = req.session.viewer_id;
+		const userId = req.session.user_id;
 		const includeOptions = [{
 			as: 'note',
 			attributes: noteAttributes,
@@ -164,7 +164,7 @@ router.get('/channel_posts', async (req, res) => {
 			const body = p.body || '';
 			wordBoost.forEach(w => { if (body.includes(w)) score += 10; });
 			wordSuppress.forEach(w => { if (body.includes(w)) score -= 10; });
-			if (typeof p.sentiment === 'number') score += p.sentiment * sentiment  * 10;
+			if (typeof p.sentiment === 'number') score += p.sentiment * sentiment * 10;
 			if (typeof p.similarity_score === 'number') score += p.similarity_score * similarity * 10;
 			return score * strength;
 		};
