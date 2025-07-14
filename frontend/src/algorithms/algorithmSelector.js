@@ -44,6 +44,7 @@ const AlgorithmSelector = ({ locationId }) => {
 				return updated;
 			});
 		} catch (error) {
+			console.error('Error assigning algorithm:', error);
 			setAssignError('Failed to assign algorithm');
 			setTimeout(() => { setAssignError('') }, 3000);
 		} 
@@ -160,7 +161,7 @@ const AlgorithmSelector = ({ locationId }) => {
 											onClick={() => setOptionsOpen(o => !o)}
 										>
 											{assignedAlgorithmId
-												? algorithms.find(a => a.algorithm_id === assignedAlgorithmId)?.algorithm_name
+												? `Assigned algorithm: ${algorithms.find(a => a.algorithm_id === assignedAlgorithmId)?.algorithm_name}`
 												: 'Choose an algorithm...'}
 										</div>
 										{optionsOpen && (

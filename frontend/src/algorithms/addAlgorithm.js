@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { FaInfoCircle } from 'react-icons/fa';
 import { useEffect, useState } from 'react';
 
 const AddAlgorithm = ({ algorithms = [], editingAlgorithm = null, locationId, onCreated, onUpdated }) => {
@@ -13,10 +14,22 @@ const AddAlgorithm = ({ algorithms = [], editingAlgorithm = null, locationId, on
 	const [sentiment, setSentiment] = useState(0);
 	const [similarity, setSimilarity] = useState(0);
 	const [startTime, setStartTime] = useState('00:00');
-	const [strength, setStrength] = useState(1);
+	const [strength, setStrength] = useState(0.5);
 	const [template, setTemplate] = useState('none');
 	const [wordBoost, setWordBoost] = useState('');
 	const [wordSuppress, setWordSuppress] = useState('');
+	const [dateFrom, setDateFrom] = useState('');
+	const [dateTo, setDateTo] = useState('');
+	const [specificDate, setSpecificDate] = useState('');
+	const [activeDays, setActiveDays] = useState({
+		monday: true,
+		tuesday: true,
+		wednesday: true,
+		thursday: true,
+		friday: true,
+		saturday: true,
+		sunday: true
+	});
 
 	useEffect(() => {
 		if (editingAlgorithm) {
@@ -34,6 +47,18 @@ const AddAlgorithm = ({ algorithms = [], editingAlgorithm = null, locationId, on
 			setTemplate(code.template || 'none');
 			setWordBoost((code.wordBoost || []).join(','));
 			setWordSuppress((code.wordSuppress || []).join(','));
+			setDateFrom(code.dateFrom || '');
+			setDateTo(code.dateTo || '');
+			setSpecificDate(code.specificDate || '');
+			setActiveDays(code.activeDays || {
+				monday: true,
+				tuesday: true,
+				wednesday: true,
+				thursday: true,
+				friday: true,
+				saturday: true,
+				sunday: true
+			});
 		}
 	}, [editingAlgorithm]);
 
@@ -57,7 +82,11 @@ const AddAlgorithm = ({ algorithms = [], editingAlgorithm = null, locationId, on
 				strength,
 				template,
 				wordBoost: wordBoost.split(',').map(w => w.trim()).filter(Boolean),
-				wordSuppress: wordSuppress.split(',').map(w => w.trim()).filter(Boolean)
+				wordSuppress: wordSuppress.split(',').map(w => w.trim()).filter(Boolean),
+				dateFrom,
+				dateTo,
+				specificDate,
+				activeDays
 			};
 			const { data } = editingAlgorithm
 				? await axios.put('/api/edit_algorithm', payload)
@@ -68,6 +97,9 @@ const AddAlgorithm = ({ algorithms = [], editingAlgorithm = null, locationId, on
 				setAlgorithmName('');
 				setWordBoost('');
 				setWordSuppress('');
+				setDateFrom('');
+				setDateTo('');
+				setSpecificDate('');
 			} else {
 				throw new Error(data.message || 'Failed to save algorithm.');
 			}
@@ -77,6 +109,10 @@ const AddAlgorithm = ({ algorithms = [], editingAlgorithm = null, locationId, on
 		} finally {
 			setLoading(false);
 		}
+	};
+
+	const shouldShowDateInputs = () => {
+		return ['from_date', 'until_date', 'between_dates'].includes(chronology);
 	};
 
 	return (
@@ -112,7 +148,12 @@ const AddAlgorithm = ({ algorithms = [], editingAlgorithm = null, locationId, on
 				</div>
 				<div className="form-row">
 					<div className="form-group">
-						<label className="small-text">Template</label>
+						<div className="form-label-with-info">
+							<label className="small-text">Template</label>
+							<div className="info-icon" title="Predefined algorithms. Once selected, you can customise further.">
+								<FaInfoCircle />
+							</div>
+						</div>
 						<select
 							className="form-select"
 							value={template}
@@ -125,7 +166,12 @@ const AddAlgorithm = ({ algorithms = [], editingAlgorithm = null, locationId, on
 						</select>
 					</div>
 					<div className="form-group">
-						<label className="small-text">Chronology</label>
+						<div className="form-label-with-info">
+							<label className="small-text">Chronology</label>
+							<div className="info-icon" title="Controls the time ordering and date range of posts shown.">
+								<FaInfoCircle />
+							</div>
+						</div>
 						<select
 							className="form-select"
 							value={chronology}
@@ -134,12 +180,46 @@ const AddAlgorithm = ({ algorithms = [], editingAlgorithm = null, locationId, on
 							<option value="newest">Newest First</option>
 							<option value="oldest">Oldest First</option>
 							<option value="mixed">Mixed Chronology</option>
+							<option value="from_date">From Date</option>
+							<option value="until_date">Until Date</option>
+							<option value="between_dates">Between Dates</option>
 						</select>
 					</div>
 				</div>
+				{shouldShowDateInputs() && (
+					<div className="form-row">
+						{(chronology === 'from_date' || chronology === 'between_dates') && (
+							<div className="form-group">
+								<label className="small-text">From Date</label>
+								<input
+									className="form-input"
+									type="date"
+									value={dateFrom}
+									onChange={e => setDateFrom(e.target.value)}
+								/>
+							</div>
+						)}
+						{(chronology === 'until_date' || chronology === 'between_dates') && (
+							<div className="form-group">
+								<label className="small-text">Until Date</label>
+								<input
+									className="form-input"
+									type="date"
+									value={dateTo}
+									onChange={e => setDateTo(e.target.value)}
+								/>
+							</div>
+						)}
+					</div>
+				)}
 				<div className="form-row">
 					<div className="form-group">
-						<label className="small-text">Sentiment Boost/Decay</label>
+						<div className="form-label-with-info">
+							<label className="small-text">Sentiment</label>
+							<div className="info-icon" title="Controls the emotional tone of content shown. Negative shows more critical/negative content, positive shows more upbeat/positive content.">
+								<FaInfoCircle />
+							</div>
+						</div>
 						<input
 							className="form-input"
 							required
@@ -150,9 +230,19 @@ const AddAlgorithm = ({ algorithms = [], editingAlgorithm = null, locationId, on
 							value={sentiment}
 							onChange={e => setSentiment(parseFloat(e.target.value))}
 						/>
+						<div className="slider-labels">
+							<span className="tiny-text">Negative</span>
+							<span className="tiny-text">Neutral</span>
+							<span className="tiny-text">Positive</span>
+						</div>
 					</div>
 					<div className="form-group">
-						<label className="small-text">Content Variety</label>
+						<div className="form-label-with-info">
+							<label className="small-text">Content Variety</label>
+							<div className="info-icon" title="Controls how diverse the content types are. Random shows completely varied content, similar shows more consistent content types.">
+								<FaInfoCircle />
+							</div>
+						</div>
 						<input
 							className="form-input"
 							required
@@ -163,10 +253,20 @@ const AddAlgorithm = ({ algorithms = [], editingAlgorithm = null, locationId, on
 							value={strength}
 							onChange={e => setStrength(parseFloat(e.target.value))}
 						/>
+						<div className="slider-labels">
+							<span className="tiny-text">Random</span>
+							<span className="tiny-text">Mixed</span>
+							<span className="tiny-text">Similar</span>
+						</div>
 					</div>
 				</div>
 				<div className="form-row">
-					<label className="small-text">Content Types</label>
+					<div className="form-label-with-info">
+						<label className="small-text">Content Types</label>
+						<div className="info-icon" title="Unchecking a box will filter out all forms of that content.">
+							<FaInfoCircle />
+						</div>
+					</div>
 					<div>
 						<label>
 							<input
@@ -204,7 +304,12 @@ const AddAlgorithm = ({ algorithms = [], editingAlgorithm = null, locationId, on
 				</div>
 				<div className="form-row">
 					<div className="form-group">
-						<label className="small-text">Boost Words</label>
+						<div className="form-label-with-info">
+							<label className="small-text">Boost Words</label>
+							<div className="info-icon" title="Type words, separated by commas, that you wish to see more of.">
+								<FaInfoCircle />
+							</div>
+						</div>
 						<input
 							className="form-input"
 							type="text"
@@ -214,7 +319,12 @@ const AddAlgorithm = ({ algorithms = [], editingAlgorithm = null, locationId, on
 						/>
 					</div>
 					<div className="form-group">
-						<label className="small-text">Suppress Words</label>
+						<div className="form-label-with-info">
+							<label className="small-text">Suppress Words</label>
+							<div className="info-icon" title="Type words, separated by commas, that you wish to see less more of.">
+								<FaInfoCircle />
+							</div>
+						</div>
 						<input
 							className="form-input"
 							type="text"
@@ -226,7 +336,12 @@ const AddAlgorithm = ({ algorithms = [], editingAlgorithm = null, locationId, on
 				</div>
 				<div className="form-row">
 					<div className="form-group">
-						<label className="small-text">Active Hours</label>
+						<div className="form-label-with-info">
+							<label className="small-text">Active Hours</label>
+							<div className="info-icon" title="This algorithm will only be applied at these times of day.">
+								<FaInfoCircle />
+							</div>
+						</div>
 						<div>
 							<input
 								type="time"
@@ -242,7 +357,12 @@ const AddAlgorithm = ({ algorithms = [], editingAlgorithm = null, locationId, on
 						</div>
 					</div>
 					<div className="form-group">
-						<label className="small-text">Similarity to Upvoted Posts</label>
+						<div className="form-label-with-info">
+							<label className="small-text">Vote Impact</label>
+							<div className="info-icon" title="Controls how much user votes and interactions influence future content recommendations. None ignores votes, heavy makes votes strongly influence what you see.">
+								<FaInfoCircle />
+							</div>
+						</div>
 						<input
 							className="form-input"
 							required
@@ -253,6 +373,11 @@ const AddAlgorithm = ({ algorithms = [], editingAlgorithm = null, locationId, on
 							value={similarity}
 							onChange={e => setSimilarity(parseFloat(e.target.value))}
 						/>
+						<div className="slider-labels">
+							<span className="tiny-text">None</span>
+							<span className="tiny-text">Mild</span>
+							<span className="tiny-text">Heavy</span>
+						</div>
 					</div>
 				</div>
 				{error && <div className="error-state">{error}</div>}
