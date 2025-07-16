@@ -43,7 +43,7 @@ const Theme = () => {
 	};
 	
 	return (
-		<div className="feed-settings short">
+		<div className="feed-settings">
 			<p className="text36">Choose your theme</p>
 			<div className="display-area" style={{ display: 'grid', gap: '10px', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))' }}>
 				{themes.map((themeName) => (
