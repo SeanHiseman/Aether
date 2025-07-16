@@ -74,7 +74,7 @@
     align-items: center;
     display: flex;
     flex-direction: column;
-    width: 50%;
+    width: 100%;
 }
 .custom-theme-input {
     height: var(--xl-margin);

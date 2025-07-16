@@ -73,8 +73,7 @@
     width: 90%;
     cursor: grabbing;
 }
-.feed-drag-overlay .feed-list-link-container,
-.feed-drag-overlay .feed-list-link {
+.feed-drag-overlay .feed-list-link-container, .feed-drag-overlay .feed-list-link {
     display: flex;
     align-items: center;
 }
