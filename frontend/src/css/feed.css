@@ -122,6 +122,9 @@
     padding: var(--large-margin);
     width: 70%;
 }
+.feed-settings.short {
+    height: clamp(300px, 40vw, 1000px);
+}
 .followers-header {
     background-color: var(--darkest);
     text-align: left;
@@ -156,7 +159,6 @@
     margin: var(--medium-margin);
     min-height: clamp(4px, 4vw, 36px);
     overflow: hidden;
-    width: clamp(5px, 20vw, 180px);
 }
 .option-toggle button {
     background-color: var(--dark);
@@ -235,4 +237,9 @@
     max-width: calc(10 * var(--large-margin)); 
     margin: var(--medium-margin);
     max-height: calc(10 * var(--large-margin));
+}
+@media (max-width: 768px) {
+    .feed-settings {
+        width: 100%;
+    }
 }

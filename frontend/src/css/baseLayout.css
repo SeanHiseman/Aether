@@ -524,6 +524,7 @@ ul {
   }
   .content {
     margin-left: 0;
+    width: 100vw;
   }
 
   /* header already stretches full-width, no change needed */
