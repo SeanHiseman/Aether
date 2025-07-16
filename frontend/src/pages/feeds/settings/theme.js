@@ -27,7 +27,7 @@ const Theme = () => {
 			await updateTheme(customTheme);
 			setFeedbackMessage('Theme updated');
 			setTimeout(() => { setFeedbackMessage(''); }, 5000);
-		} catch {
+		} catch (error){
 			setErrorMessage('Error changing theme');
 			setTimeout(() => { setErrorMessage(''); }, 5000);
 		}
@@ -36,7 +36,7 @@ const Theme = () => {
 	const handleDefaultThemeSelect = async (themeName) => {
 		try {
 			await updateTheme(themeName);
-		} catch {
+		} catch (error){
 			setErrorMessage('Error changing theme');
 			setTimeout(() => { setErrorMessage(''); }, 5000);
 		}
@@ -45,7 +45,7 @@ const Theme = () => {
 	return (
 		<div className="feed-settings short">
 			<p className="text36">Choose your theme</p>
-			<div className="display-area" style={{ display: 'grid', gap: '10px', gridTemplateColumns: 'repeat(3, 1fr)' }}>
+			<div className="display-area" style={{ display: 'grid', gap: '10px', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))' }}>
 				{themes.map((themeName) => (
 					<ThemeButton key={themeName} colors={defaultThemeColors[themeName]} onThemeSelect={handleDefaultThemeSelect} themeName={themeName} />
 				))}

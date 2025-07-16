@@ -10,20 +10,16 @@ const router = Router();
 router.post('/assign_algorithm', authenticateCheck, async (req, res) => {
 	try {
 		const { algorithmId, locationId } = req.body;
-		console.log("assign algorithm req.body:", req.body);
 		const userId = req.session.user_id;
 		const existing = await AlgorithmLocations.findOne({
 			where: { algorithm_id: algorithmId, location_id: locationId, user_id: userId }
 		});
-		console.log("existing:", existing);
 		if (existing) {
-			console.log("algorithm already assigned")
-			return res.status(400).json({ success: false, message: 'Algorithm already assigned to this feed.' });
+			return res.status(200).json({ success: true, message: 'Algorithm already assigned to this feed.' });
 		}
 		await AlgorithmLocations.create({ id: v4(), algorithm_id: algorithmId, location_id: locationId, user_id: userId });
 		res.status(200).json({ success: true });
 	} catch (error) {
-		console.error("error adding algorithm:", error);
 		res.status(500).json({ success: false, message: 'Failed to assign algorithm.' });
 	}
 });

@@ -14,6 +14,7 @@ const AlgorithmSelector = ({ locationId }) => {
 	const [optionsOpen, setOptionsOpen] = useState(false);
 
 	const assignAlgorithm = async (algorithmId) => {
+		if (assignedAlgorithmId === algorithmId) return;
 		try {
 			setAssignError(null);
 			if (assignedAlgorithmId) {
