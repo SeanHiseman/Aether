@@ -21,7 +21,7 @@ const FeedWidget = ({ feed, isAuthenticated, viewerId }) => {
                 <div className="result-info-options">
                     <p>{feed.type === 'private' ? "Private" : "Public"}</p>
                     {!isViewingSelf && isAuthenticated && (
-                        <FollowerChangeButton feed={feed} viewerId={viewerId} />
+                        <FollowerChangeButton feed={feed} showName={false} showVertical={false} viewerId={viewerId} />
                     )}
                 </div>
                 <Link to={`/${feed.is_group ? 'g' : 'u'}/${feed.feed_name}/Main`}>

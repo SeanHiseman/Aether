@@ -1,9 +1,9 @@
 import { useCallback, useContext, useEffect, useRef, useState } from "react";
 import { AuthContext } from "../../components/authContext";
 import axios from "axios";
-import ExploreContentWidget from "../../components/explore/exploreContentWidget";
-import ExploreFeedWidget from "../../components/explore/ExploreFeedWidget";
-import { Link, useOutletContext } from "react-router-dom";
+import SmallContentWidget from "../../components/content/smallContentWidget";
+import FeedWidget from "../../components/content/feedWidget";
+import { useOutletContext } from "react-router-dom";
 
 const ExplorePage = () => {
 	const [feedPage, setFeedPage] = useState(0);
@@ -76,12 +76,10 @@ const ExplorePage = () => {
 		while (postIndex < posts.length || feedIndex < feeds.length) {
 			if (postIndex < posts.length) {
 				sections.push(
-					<div key={`posts-${postIndex}`} className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-10">
+					<div key={`posts-${postIndex}`} className="grid grid-cols md:grid-cols-4 gap-3 mb-3">
 						{posts.slice(postIndex, postIndex + 2).map(post => (
-							<div key={post.post_id} className="col-span-1 md:col-span-2 bg-gray-800 rounded-xl shadow hover:shadow-lg transition p-4">
-								<Link to={`/d/${post.deep_feed_id}/${post.post_id}`}>
-									<ExploreContentWidget post={post} />
-								</Link>
+							<div key={post.post_id} className="col-span-1 md:col-span-2 bg-gray-800 rounded-xl shadow hover:shadow-lg transition h-full">
+								<SmallContentWidget post={post} showFullContent={true} showScrollBar={false} />
 							</div>
 						))}
 					</div>
@@ -90,9 +88,9 @@ const ExplorePage = () => {
 			}
 			if (feedIndex < feeds.length) {
 				sections.push(
-					<div key={`feeds-${feedIndex}`} className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+					<div key={`feeds-${feedIndex}`} className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
 						{feeds.slice(feedIndex, feedIndex + 3).map(feed => (
-							<ExploreFeedWidget
+							<FeedWidget
 								key={feed.feed_id}
 								feed={feed}
 								isAuthenticated={isAuthenticated}
@@ -113,7 +111,7 @@ const ExplorePage = () => {
 			<div
 				ref={scrollRef}
 				onScroll={handleScroll}
-				className="flex-1 p-6 pt-24 overflow-y-auto min-w-0"
+				className="channel-feed"
 			>
 				{loading ? (
 					<div className="flex justify-center items-center h-64">
@@ -123,20 +121,18 @@ const ExplorePage = () => {
 					<>
 						{filter === "all" && renderAllContent()}
 						{filter === "posts" && (
-							<div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-10">
+							<div className="grid grid-cols md:grid-cols-4 gap-3 mb-3">
 								{posts.map(post => (
-									<div key={post.post_id} className="col-span-1 md:col-span-2 bg-gray-800 rounded-xl shadow hover:shadow-lg transition p-4">
-										<Link to={`/d/${post.deep_feed_id}/${post.post_id}`}>
-											<ExploreContentWidget post={post} />
-										</Link>
+									<div key={post.post_id} className="col-span-1 md:col-span-2 bg-gray-800 rounded-xl shadow hover:shadow-lg transition h-full">
+										<SmallContentWidget post={post} />
 									</div>
 								))}
 							</div>
 						)}
 						{filter === "channels" && (
-							<div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+							<div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
 								{feeds.map(feed => (
-									<ExploreFeedWidget
+									<FeedWidget
 										key={feed.feed_id}
 										feed={feed}
 										isAuthenticated={isAuthenticated}

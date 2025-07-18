@@ -322,7 +322,7 @@ const ContentWidget = ({ canRemove, feed, isDraft, isGroup, onEditClick, onPostR
 						: isOverflowing
 							? (showFullContent
 								? { height: 'auto', overflow: 'visible' }
-								: { height: '50vh', overflow: 'hidden' })
+								: { height: '70vh', overflow: 'hidden' })
 							: { height: 'auto', overflow: 'visible' })
 				}}
 			>

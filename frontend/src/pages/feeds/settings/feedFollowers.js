@@ -9,6 +9,7 @@ const FeedFollowers = () => {
     const [followers, setFollowers] = useState([]);
     const { user, viewer } = useContext(AuthContext);
     const { feed, setFeed } = useOutletContext();
+    const [followerCount, setFollowerCount] = useState(feed.follower_count || 0);
 
     const getFeedFollowers = useCallback(async () => {
         try {
@@ -29,6 +30,7 @@ const FeedFollowers = () => {
             await axios.post('/api/unfollow_feed', { followerId: follower.follower_id, followedFeedId: feed.feed_id });
             setFollowers((prev) => prev.filter((f) => f.follower_id !== follower.follower_id));
             setFeed((prevFeed) => ({ ...prevFeed, follower_count: prevFeed.follower_count - 1 }));
+            setFollowerCount(prevCount => prevCount - 1);
         } catch (error) {
             setErrorMessage('Error removing follower');
             setTimeout(() => { setErrorMessage(''); }, 5000);
@@ -99,7 +101,7 @@ const FeedFollowers = () => {
     return (
         <div className="channel-content">
             <div className="followers-header">
-                <p className="text36">Followers</p>
+                <p className="text36">{followerCount} {followerCount === 1 ? 'follower' : 'followers'}</p>
                 {feed.is_group && <p className="text24">Moderators remove content and followers</p>}
                 {feed.is_group && <p className="text24">Admins remove content, appoint and dismiss mods, and make feed changes</p>}
             </div>

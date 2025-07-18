@@ -11,32 +11,6 @@ const feedAttributes = ['feed_id', 'parent_id', 'feed_name', 'description', 'fee
 const notesAttributes = ['note_id', 'note_content', 'created_at', 'updated_at', 'is_misinfo'];
 const posterAttributes = ['feed_id', 'feed_name', 'description', 'feed_photo', 'type', 'is_group'];
 
-//Get recommendation preference
-router.get('/get_filter_preference', async (req, res) => {
-    try {
-        const userId = req.session.user_id;
-        const user = await Users.findByPk(userId, {
-            attributes: ['collaborative_preference'],
-        });
-        res.json({ preference: user.recommendation_preference });
-    } catch (error) {
-        res.status(500).json({ success: false });
-    }
-});
-
-//Get recommendation preference
-router.get('/get_time_preference', async (req, res) => {
-    try {
-        const userId = req.session.user_id;
-        const user = await Users.findByPk(userId, {
-            attributes: ['time_preference'],
-        });
-        res.json({ preference: user.time_preference });
-    } catch (error) {
-        res.status(500).json({ success: false });
-    }
-});
-
 //Searches posts and feeds together
 router.get('/search/:searcherId', async (req, res) => { 
     try {
@@ -152,34 +126,6 @@ router.get('/search/:searcherId', async (req, res) => {
             posts: processedPosts,
             success: true 
         });
-    } catch (error) {
-        res.status(500).json({ success: false });
-    }
-});
-
-//Update recommendation preference
-router.post('/set_filter_preference', async (req, res) => {
-    try {
-        const userId = req.session.user_id;
-        const { preference } = req.body;
-        const user = await Users.findByPk(userId);
-        user.collaborative_preference = preference;
-        await user.save();
-        res.status(200).json({ success: true });
-    } catch (error) {
-        res.status(500).json({ success: false });
-    }
-});
-
-//Update time preference
-router.post('/set_time_preference', async (req, res) => {
-    try {
-        const userId = req.session.user_id;
-        const { preference } = req.body;
-        const user = await Users.findByPk(userId);
-        user.time_preference = preference;
-        await user.save();
-        res.status(200).json({ success: true });
     } catch (error) {
         res.status(500).json({ success: false });
     }

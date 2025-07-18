@@ -1,9 +1,8 @@
 import axios from 'axios';
 import { FaMinus, FaMinusCircle, FaPlusCircle } from 'react-icons/fa';
 import { useEffect, useState } from 'react';
-//import Tooltip from '@mui/material/Tooltip';
 
-const FollowerChangeButton = ({ feed, viewerId }) => {
+const FollowerChangeButton = ({ feed, showName, showVertical, viewerId }) => {
     const [errorMessage, setErrorMessage] = useState('');
     const [follower, setFollower] = useState(feed.isFollower);
     const [followerCount, setFollowerCount] = useState(feed.follower_count);
@@ -46,17 +45,15 @@ const FollowerChangeButton = ({ feed, viewerId }) => {
             setTimeout(() => { setErrorMessage(''); }, 5000);
         }
     };
-    
-    //const toolTipText = follower ? 'Unfollow' : request && isPrivate ? 'Cancel request' : 'Follow';
 
     return (
-        <div>
-            {/*<Tooltip placement="bottom" title={toolTipText}>*/}
-                <button className="small-icon" onClick={handleFollowerChange} title={follower ? 'Unfollow' : isPrivate ? request ? 'Cancel request' : 'Send follow request' : 'Follow'}>
-                    {follower ? <FaMinusCircle /> : request && isPrivate ? <FaMinus /> : <FaPlusCircle />}
-                    <p className="icon-text">{followerCount} {followerCount === 1 ? 'follower' : 'followers'}</p>
-                </button>
-            {/*</Tooltip>*/}
+        <div className={showVertical ? "follow-container vertical" : "follow-container horizontal"}>
+            {showName && <p className="font-bold text-white text-lg truncate">{feed.feed_name}</p>}
+            <p className="small-text">{followerCount} {followerCount === 1 ? 'follower' : 'followers'}</p>
+            <button className="follow-button" onClick={handleFollowerChange}>
+                {follower ? <FaMinusCircle /> : request && isPrivate ? <FaMinus /> : <FaPlusCircle />}
+                <p className="icon-text">{follower ? 'Unfollow' : isPrivate ? request ? 'Cancel request' : 'Follow request' : 'Follow'}</p>
+            </button>
             {errorMessage && <div className="error-message">{errorMessage}</div>}
         </div>
     )

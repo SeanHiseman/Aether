@@ -122,7 +122,6 @@ router.post('/add_feed_channel', authenticateCheck, async (req, res) => {
 router.post('/add_to_deep_feed', async (req, res) => {
     try {
         const { deepFeedId, feedId, nestedDeepFeedId } = req.body;
-        console.log("adding to deep feed, ", "deepFeedId:", deepFeedId, "feedId:", feedId, "nestedDeepFeedId:", nestedDeepFeedId);
         if (!feedId && !nestedDeepFeedId) {
             return res.status(400).json({ success: false, message: 'Must provide either a feedId or nestedDeepFeedId' });
         }
@@ -154,7 +153,6 @@ router.post('/add_to_deep_feed', async (req, res) => {
         }
         res.status(201).json({ success: true, content });
     } catch (error) {
-        console.error('Error adding to deep feed:', error);
         res.status(500).json({ success: false, error: error.message });
     }
 });
@@ -597,41 +595,45 @@ router.delete('/delete_feed_channel', authenticateCheck, async (req, res) => {
 
 router.get("/explore_feeds", async (req, res) => {
 	try {
+		const viewerId = req.session.viewer_id;
 		const page = parseInt(req.query.page, 10) || 1;
 		const limit = parseInt(req.query.limit, 10) || 6;
 		const offset = (page - 1) * limit;
 		const { count, rows: feeds } = await Feeds.findAndCountAll({
 			where: {
-				// Filter for feeds that are suitable for a public "Explore" page
 				type: "public",
 				is_locked: false,
 			},
-			// Order by follower count to show more popular feeds first
 			order: [["follower_count", "DESC"]],
-			// Select only the attributes needed by the frontend to keep the payload small
-			attributes: [
-				"feed_id",
-				"feed_name",
-				"description",
-				"feed_photo",
-				"follower_count",
-				"is_group",
-			],
+			attributes: feedAttributes,
 			limit,
 			offset,
 		});
+		const feedData = await Promise.all(feeds.map(async (feed) => {
+			const feedJSON = feed.toJSON();
+			const response = {
+				...feedJSON,
+				isAdmin: false,
+				isMod: false,
+				isFollower: false,
+			};
+			const followStatus = await FollowerCheck(viewerId, feed.feed_id);
+			response.isAdmin = followStatus?.isAdmin || false;
+			response.isMod = followStatus?.isMod || false;
+			response.isFollower = followStatus?.following || false;
+			if (feed.type === "private") {
+				const followRequest = await FollowRequests.findOne({
+					where: { sender_id: viewerId, receiver_id: feed.feed_id }
+				});
+				response.followRequest = followRequest || null;
+			}
+			return response;
+		}));
 		const hasMore = page * limit < count;
-		res.status(200).json({
-			success: true,
-			feeds,
-			hasMore,
-		});
+		res.status(200).json({ success: true, feeds: feedData, hasMore });
 	} catch (error) {
 		console.error("Error fetching explore feeds:", error);
-		res.status(500).json({
-			success: false,
-			message: "Server error while fetching feeds.",
-		});
+		res.status(500).json({ success: false, message: "Server error while fetching feeds." });
 	}
 });
 

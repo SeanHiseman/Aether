@@ -3,7 +3,7 @@ a {
     color: inherit;
     text-decoration: none;
 }
-.button.active, .button:hover, .button.selected:focus, .chat-channel-button:hover, .conversation-button:hover, .dark-button:hover, .dark-button.selected:focus, .icon-button:hover, .large-icon:hover, #messages-button:hover, .posts-channel-button:hover, .small-icon:hover {
+.button.active, .button:hover, .button.selected:focus, .chat-channel-button:hover, .conversation-button:hover, .follow-button:hover, .icon-button:hover, .large-icon:hover, #messages-button:hover, .posts-channel-button:hover, .small-icon:hover {
     background-color: var(--light);
     cursor: pointer;
 }
@@ -19,8 +19,6 @@ body, html {
 }
 .button {
     background-color: var(--darkest);
-}
-.button, .dark-button {
     border-radius: var(--small-margin);
     border: none;
     color: var(--lightest);
@@ -30,12 +28,6 @@ body, html {
 }
 .button, .dark-button, .dark-button-disabled {
     font-size: var(--small-text);
-}
-.button.large {
-    font-size: var(--small-text);
-}
-.button-text-bottom {
-    margin: 0;
 }
 .clickable {
     border-radius: var(--small-margin);

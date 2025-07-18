@@ -420,7 +420,7 @@ const FeedHome = () => {
                     </div>
                     <p className="description" >{feed.description}</p>
                     {(user?.user_id !== feed.feed_owner || feed.is_group) && isAuthenticated && viewer ? (
-                        <FollowerChangeButton feed={feed} viewerId={viewer.feed_id} />
+                        <FollowerChangeButton feed={feed} showName={false} showVertical={true} viewerId={viewer.feed_id} />
                     ) : (
                         <p className="icon-text">{feed.follower_count} {(feed.follower_count) === 1 ? 'follower' : 'followers'}</p>
                     )}

@@ -4,8 +4,8 @@ import { useContext, useEffect, useRef, useState } from 'react';
 import { FaChevronDown, FaChevronUp } from 'react-icons/fa';
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { useOutletContext, useSearchParams } from 'react-router-dom';
-import ContentWidget from '../components/content/contentWidget';
-import FeedWidget from '../components/search/feedWidget';
+import SmallContentWidget from '../components/content/smallContentWidget';
+import FeedWidget from '../components/content/feedWidget';
 
 const SearchResults = () => {
     const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -89,16 +89,39 @@ const SearchResults = () => {
         if (feeds.length === 0 && posts.length === 0) {
             return <p className="text36" style={{textAlign: 'center'}}>No results found</p>;
         }
-        return (
-            <>
-                {feeds.length > 0 && feeds.map((feed) => (
-                    <FeedWidget key={feed.feed_id} feed={feed} isAuthenticated={isAuthenticated} viewerId={viewer?.feed_id} />
-                ))}
-                {posts.length > 0 && posts.map((post) => (
-                    <ContentWidget key={post.post_id} feed={post.feed} post={post} isGroup={post.is_group} />
-                ))}
-            </>
-        );
+        let feedIndex = 0;
+        let postIndex = 0;
+        const sections = [];
+        while (postIndex < posts.length || feedIndex < feeds.length) {
+            if (postIndex < posts.length) {
+                sections.push(
+                    <div key={`posts-${postIndex}`} className="grid grid-cols md:grid-cols-4 gap-3 mb-3">
+                        {posts.slice(postIndex, postIndex + 2).map(post => (
+                            <div key={post.post_id} className="col-span-1 md:col-span-2 bg-gray-800 rounded-xl shadow hover:shadow-lg transition">
+                                <SmallContentWidget post={post} showFullContent={true} showScrollBar={false} />
+                            </div>
+                        ))}
+                    </div>
+                );
+                postIndex += 2;
+            }
+            if (feedIndex < feeds.length) {
+                sections.push(
+                    <div key={`feeds-${feedIndex}`} className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
+                        {feeds.slice(feedIndex, feedIndex + 3).map(feed => (
+                            <FeedWidget
+                                key={feed.feed_id}
+                                feed={feed}
+                                isAuthenticated={isAuthenticated}
+                                viewerId={viewer?.feed_id}
+                            />
+                        ))}
+                    </div>
+                );
+                feedIndex += 3;
+            }
+        }
+        return sections;
     };
 
     document.title = 'Search';
