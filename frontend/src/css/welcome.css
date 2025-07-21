@@ -6,6 +6,15 @@
     margin: var(--text24);
     text-align: left;
 }
+.button.join {
+    background-color: var(--darkest);
+    font-size: var(--large-text);
+    padding: var(--large-margin);
+    width: calc(10 * var(--large-margin));
+}
+.button.join:hover{
+    background-color: var(--light);
+}
 .button.join.welcome {
     background-color: var(--dark);
     border: 1px solid var(--border);

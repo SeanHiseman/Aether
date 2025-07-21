@@ -6,6 +6,7 @@ import FeedWidget from "../../components/content/feedWidget";
 import { useOutletContext } from "react-router-dom";
 
 const ExplorePage = () => {
+	const [errorMessage, setErrorMessage] = useState("");
 	const [feedPage, setFeedPage] = useState(0);
 	const [feeds, setFeeds] = useState([]);
 	const [filter, setFilter] = useState("all");
@@ -13,10 +14,8 @@ const ExplorePage = () => {
 	const [loadingMore, setLoadingMore] = useState(false);
 	const [postPage, setPostPage] = useState(0);
 	const [posts, setPosts] = useState([]);
-
-	const { isAuthenticated, user, viewer } = useContext(AuthContext);
+	const { isAuthenticated, viewer } = useContext(AuthContext);
 	const { rightClasses } = useOutletContext();
-
 	const scrollRef = useRef(null);
 
 	const fetchPosts = useCallback(
@@ -26,8 +25,8 @@ const ExplorePage = () => {
 					params: { filter, limit: 6, offset: page * 6 },
 				});
 				setPosts(prev => (page === 0 ? res.data.posts : [...prev, ...res.data.posts]));
-			} catch (err) {
-				console.error("Failed to fetch posts", err);
+			} catch (error) {
+				setErrorMessage("Failed to fetch posts");
 			}
 		},
 		[filter]
@@ -40,8 +39,8 @@ const ExplorePage = () => {
 					params: { limit: 6, offset: page * 6 },
 				});
 				setFeeds(prev => (page === 0 ? res.data.feeds : [...prev, ...res.data.feeds]));
-			} catch (err) {
-				console.error("Failed to fetch feeds", err);
+			} catch (error) {
+				setErrorMessage("Failed to fetch feeds");
 			}
 		},
 		[filter]
@@ -76,7 +75,7 @@ const ExplorePage = () => {
 		while (postIndex < posts.length || feedIndex < feeds.length) {
 			if (postIndex < posts.length) {
 				sections.push(
-					<div key={`posts-${postIndex}`} className="grid grid-cols md:grid-cols-4 gap-3 mb-3">
+					<div key={`posts-${postIndex}`} className="grid grid-cols-2 gap-3 mb-3">
 						{posts.slice(postIndex, postIndex + 2).map(post => (
 							<div key={post.post_id} className="col-span-1 md:col-span-2 bg-gray-800 rounded-xl shadow hover:shadow-lg transition h-full">
 								<SmallContentWidget post={post} showFullContent={true} showScrollBar={false} />
@@ -88,8 +87,8 @@ const ExplorePage = () => {
 			}
 			if (feedIndex < feeds.length) {
 				sections.push(
-					<div key={`feeds-${feedIndex}`} className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
-						{feeds.slice(feedIndex, feedIndex + 3).map(feed => (
+					<div key={`feeds-${feedIndex}`} className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-3">
+						{feeds.slice(feedIndex, feedIndex + 6).map(feed => (
 							<FeedWidget
 								key={feed.feed_id}
 								feed={feed}
@@ -99,7 +98,7 @@ const ExplorePage = () => {
 						))}
 					</div>
 				);
-				feedIndex += 3;
+				feedIndex += 6;
 			}
 		}
 		return sections;
@@ -107,7 +106,6 @@ const ExplorePage = () => {
 
 	return (
 		<div className="standard-container">
-			{/* Main Content */}
 			<div
 				ref={scrollRef}
 				onScroll={handleScroll}
@@ -121,16 +119,16 @@ const ExplorePage = () => {
 					<>
 						{filter === "all" && renderAllContent()}
 						{filter === "posts" && (
-							<div className="grid grid-cols md:grid-cols-4 gap-3 mb-3">
+							<div className="grid grid-cols-2 gap-3 mb-3">
 								{posts.map(post => (
-									<div key={post.post_id} className="col-span-1 md:col-span-2 bg-gray-800 rounded-xl shadow hover:shadow-lg transition h-full">
-										<SmallContentWidget post={post} />
+									<div key={post.post_id} className="col-span-1 sm:col-span-1 md:col-span-2 bg-gray-800 rounded-xl">
+										<SmallContentWidget post={post} showFullContent={true} showScrollBar={false} />
 									</div>
 								))}
 							</div>
 						)}
 						{filter === "channels" && (
-							<div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
+							<div className="grid grid-cols-2 md:grid-cols-3 gap-3">
 								{feeds.map(feed => (
 									<FeedWidget
 										key={feed.feed_id}
@@ -144,8 +142,8 @@ const ExplorePage = () => {
 					</>
 				)}
 			</div>
-			{/* Right Sidebar (Filters) */}
 			<aside className={`${rightClasses} w-80 bg-white`}>
+				<p className="error-message">{errorMessage}</p>
 				<p className="large-text">Filters</p>
 				<nav className="channel-list">
 					<ul>

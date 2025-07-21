@@ -498,7 +498,6 @@ ul {
     top: var(--header-height); /* header height                    */
     height: calc(100% - var(--header-height));
     margin-top: 0; /* cancel the desktop 16-px margin  */
-    transition: transform 0.3s ease; /* smooth slide         */
   }
   .search-container {
     width: auto;

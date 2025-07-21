@@ -95,9 +95,9 @@ const SearchResults = () => {
         while (postIndex < posts.length || feedIndex < feeds.length) {
             if (postIndex < posts.length) {
                 sections.push(
-                    <div key={`posts-${postIndex}`} className="grid grid-cols md:grid-cols-4 gap-3 mb-3">
+                    <div key={`posts-${postIndex}`} className="grid grid-cols-2 gap-3 mb-3">
                         {posts.slice(postIndex, postIndex + 2).map(post => (
-                            <div key={post.post_id} className="col-span-1 md:col-span-2 bg-gray-800 rounded-xl shadow hover:shadow-lg transition">
+                            <div key={post.post_id} className="bg-gray-800 rounded-xl">
                                 <SmallContentWidget post={post} showFullContent={true} showScrollBar={false} />
                             </div>
                         ))}
@@ -107,8 +107,8 @@ const SearchResults = () => {
             }
             if (feedIndex < feeds.length) {
                 sections.push(
-                    <div key={`feeds-${feedIndex}`} className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
-                        {feeds.slice(feedIndex, feedIndex + 3).map(feed => (
+                    <div key={`feeds-${feedIndex}`} className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-3">
+                        {feeds.slice(feedIndex, feedIndex + 6).map(feed => (
                             <FeedWidget
                                 key={feed.feed_id}
                                 feed={feed}
@@ -118,7 +118,7 @@ const SearchResults = () => {
                         ))}
                     </div>
                 );
-                feedIndex += 3;
+                feedIndex += 6;
             }
         }
         return sections;

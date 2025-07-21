@@ -128,7 +128,7 @@
     align-items: center;
     background: none;
     border: 2px solid var(--border);
-    border-radius: 20px;
+    border-radius: var(--large-margin);
     color: var(--lightest);
     display: flex;
     font-size: var(--small-text);
@@ -139,11 +139,11 @@
 .follow-container {
     align-items: center;
     display: flex;
-    gap: var(--small-margin);
 }
 .follow-container.horizontal {
     flex-direction: row;
     justify-content: space-between;
+    width: 100%;
 }
 .follow-container.vertical {
     flex-direction: column;

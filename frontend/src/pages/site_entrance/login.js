@@ -21,7 +21,7 @@ const Login = () => {
             const response = await axios.post('/api/login', { password, username }); //Username can also be email
             if (response.status === 200) {
                 await refreshTheme();
-                navigate('/d/following'); 
+                navigate('/explore'); 
             }
         } catch (error) {
             if (error.response && error.response.status === 401) {

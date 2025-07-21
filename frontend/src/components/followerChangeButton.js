@@ -2,7 +2,7 @@ import axios from 'axios';
 import { FaMinus, FaMinusCircle, FaPlusCircle } from 'react-icons/fa';
 import { useEffect, useState } from 'react';
 
-const FollowerChangeButton = ({ feed, showName, showVertical, viewerId }) => {
+const FollowerChangeButton = ({ feed, showFollowers = true, showName, showVertical, viewerId }) => {
     const [errorMessage, setErrorMessage] = useState('');
     const [follower, setFollower] = useState(feed.isFollower);
     const [followerCount, setFollowerCount] = useState(feed.follower_count);
@@ -49,7 +49,7 @@ const FollowerChangeButton = ({ feed, showName, showVertical, viewerId }) => {
     return (
         <div className={showVertical ? "follow-container vertical" : "follow-container horizontal"}>
             {showName && <p className="font-bold text-white text-lg truncate">{feed.feed_name}</p>}
-            <p className="small-text">{followerCount} {followerCount === 1 ? 'follower' : 'followers'}</p>
+            {showFollowers && <p className="small-text">{followerCount} {followerCount === 1 ? 'follower' : 'followers'}</p>}
             <button className="follow-button" onClick={handleFollowerChange}>
                 {follower ? <FaMinusCircle /> : request && isPrivate ? <FaMinus /> : <FaPlusCircle />}
                 <p className="icon-text">{follower ? 'Unfollow' : isPrivate ? request ? 'Cancel request' : 'Follow request' : 'Follow'}</p>
