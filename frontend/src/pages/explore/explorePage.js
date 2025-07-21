@@ -17,12 +17,13 @@ const ExplorePage = () => {
 	const { isAuthenticated, viewer } = useContext(AuthContext);
 	const { rightClasses } = useOutletContext();
 	const scrollRef = useRef(null);
+	const CLEANUP_THRESHOLD = 100; //Remove old posts and feeds from rendered list
 
 	const fetchPosts = useCallback(
 		async (page = 0) => {
 			try {
 				const res = await axios.get("/api/explore_posts", {
-					params: { filter, limit: 6, offset: page * 6 },
+					params: { filter, limit: 4, offset: page * 4 },
 				});
 				setPosts(prev => (page === 0 ? res.data.posts : [...prev, ...res.data.posts]));
 			} catch (error) {
@@ -56,45 +57,53 @@ const ExplorePage = () => {
 	const loadMore = async () => {
 		if (loading || loadingMore) return;
 		setLoadingMore(true);
+		if (posts.length + feeds.length > CLEANUP_THRESHOLD) {
+			setPosts(prev => prev.slice(-20)); 
+			setFeeds(prev => prev.slice(-30));
+		}
 		await Promise.all([fetchPosts(postPage + 1), fetchFeeds(feedPage + 1)]);
 		setPostPage(p => p + 1);
 		setFeedPage(f => f + 1);
 		setLoadingMore(false);
 	};
 
-	const handleScroll = () => {
+	const handleScroll = useCallback(() => {
 		const el = scrollRef.current;
 		if (!el) return;
-		if (el.scrollTop + el.clientHeight >= el.scrollHeight - 200) loadMore();
-	};
 
-	const renderAllContent = () => {
+		if (scrollRef.current.scrollTimeout) {
+			clearTimeout(scrollRef.current.scrollTimeout);
+		}
+		scrollRef.current.scrollTimeout = setTimeout(() => {
+			if (el.scrollTop + el.clientHeight >= el.scrollHeight - 200) {
+				loadMore();
+			}
+		}, 100);
+	}, [loadingMore, loading]);
+
+	const renderAllContent = useCallback(() => {
 		let feedIndex = 0;
 		let postIndex = 0;
 		const sections = [];
-		while (postIndex < posts.length || feedIndex < feeds.length) {
+		const totalSections = Math.ceil(Math.max(posts.length / 4, feeds.length / 6));
+		for (let i = 0; i < totalSections; i++) {
 			if (postIndex < posts.length) {
 				sections.push(
 					<div key={`posts-${postIndex}`} className="grid grid-cols-2 gap-3 mb-3">
-						{posts.slice(postIndex, postIndex + 2).map(post => (
+						{posts.slice(postIndex, postIndex + 4).map(post => (
 							<div key={post.post_id} className="col-span-1 md:col-span-2 bg-gray-800 rounded-xl shadow hover:shadow-lg transition h-full">
 								<SmallContentWidget post={post} showFullContent={true} showScrollBar={false} />
 							</div>
 						))}
 					</div>
 				);
-				postIndex += 2;
+				postIndex += 4;
 			}
 			if (feedIndex < feeds.length) {
 				sections.push(
 					<div key={`feeds-${feedIndex}`} className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-3">
 						{feeds.slice(feedIndex, feedIndex + 6).map(feed => (
-							<FeedWidget
-								key={feed.feed_id}
-								feed={feed}
-								isAuthenticated={isAuthenticated}
-								viewerId={viewer?.feed_id}
-							/>
+							<FeedWidget key={feed.feed_id} feed={feed} isAuthenticated={isAuthenticated} viewerId={viewer?.feed_id} />
 						))}
 					</div>
 				);
@@ -102,7 +111,15 @@ const ExplorePage = () => {
 			}
 		}
 		return sections;
-	};
+	}, [posts, feeds, isAuthenticated, viewer?.feed_id]);
+
+	useEffect(() => {
+		return () => {
+			if (scrollRef.current?.scrollTimeout) {
+				clearTimeout(scrollRef.current.scrollTimeout);
+			}
+		};
+	}, []);
 
 	return (
 		<div className="standard-container">

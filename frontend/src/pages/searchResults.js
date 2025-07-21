@@ -17,6 +17,7 @@ const SearchResults = () => {
     const { isAuthenticated, user, viewer } = useContext(AuthContext);
     const loaderRef = useRef(null);
     const { rightClasses } = useOutletContext(); 
+    const CLEANUP_THRESHOLD = 100; //Remove old posts and feeds from rendered list
 
     //Gets results depending on which type is being viewed
     const fetchSearchResults = async ({ pageParam = 0 }) => {

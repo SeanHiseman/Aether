@@ -22,6 +22,7 @@ const DeepFeed = () => {
     const { isAuthenticated, user, viewer } = useContext(AuthContext);
     const navigate = useNavigate();
     const { rightClasses } = useOutletContext(); 
+    const CLEANUP_THRESHOLD = 100; //Remove old posts and feeds from rendered list
 
     const getPosts = async ({ pageParam = 0 }) => {
         try {
