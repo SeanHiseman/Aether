@@ -5,6 +5,7 @@ import ContentDisplay from './contentDisplay';
 import ContentThumbnail from './thumbnails/contentThumbnail';
 
 const SmallContentWidget = ({ post }) => {
+    console.log("post", post);
     const [hasCodeOrApp, setHasCodeOrApp] = useState(false);
     const [isFullscreenMode, setIsFullscreenMode] = useState(false);
     const fullscreenRef = useRef(null);

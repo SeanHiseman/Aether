@@ -105,7 +105,8 @@ router.get('/search/:searcherId', async (req, res) => {
             const parentChannel = await FeedChannels.findByPk(post.channel_id, {
                 attributes: ['channel_id', 'channel_name']
             });
-            const poster = await Feeds.findByPk(post.feed_id, {
+            console.log("post", post);
+            const poster = await Feeds.findByPk(post.poster_id, {
                 attributes: posterAttributes
             });
             const postVotes = await PostVotes.findAll({
@@ -127,6 +128,7 @@ router.get('/search/:searcherId', async (req, res) => {
             success: true 
         });
     } catch (error) {
+        console.error('Error in search route:', error);
         res.status(500).json({ success: false });
     }
 });

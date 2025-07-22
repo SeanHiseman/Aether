@@ -413,7 +413,7 @@ const ContentWidget = ({ canRemove, feed, isDraft, isGroup, onEditClick, onPostR
 				{/*{isAuthenticated && !post.note?.is_misinfo && !isDraft && (
 					<AskButton content={post} isGroup={isGroup} isReply={false} note={note} setNote={setNote} setPostErrorMessage={setPostErrorMessage} setShowNote={setShowNote} showNote={showNote} />
 				)}*/}
-				{!isDraft && (<div className="button-text-bottom">
+				{!isDraft && isAuthenticated && (<div className="button-text-bottom">
 					<button className="large-icon" title={isSaved ? 'Unsave post' : 'Save post'} onClick={savePost}>
 						{isSaved ? <FaBookmark /> : <FaRegBookmark />}
 					</button>
