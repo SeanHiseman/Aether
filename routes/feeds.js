@@ -595,19 +595,18 @@ router.delete('/delete_feed_channel', authenticateCheck, async (req, res) => {
 
 router.get("/explore_feeds", async (req, res) => {
 	try {
+        const { exclude = [] } = req.query;
 		const viewerId = req.session.viewer_id;
-		const page = parseInt(req.query.page, 10) || 1;
 		const limit = parseInt(req.query.limit, 10) || 6;
-		const offset = (page - 1) * limit;
 		const { count, rows: feeds } = await Feeds.findAndCountAll({
 			where: {
 				type: "public",
 				is_locked: false,
+                feed_id: { [Op.notIn]: exclude },
 			},
-			order: [["follower_count", "DESC"]],
+			order: sequelize.literal("RAND()"),
 			attributes: feedAttributes,
 			limit,
-			offset,
 		});
 		const feedData = await Promise.all(feeds.map(async (feed) => {
 			const feedJSON = feed.toJSON();
@@ -629,8 +628,7 @@ router.get("/explore_feeds", async (req, res) => {
 			}
 			return response;
 		}));
-		const hasMore = page * limit < count;
-		res.status(200).json({ success: true, feeds: feedData, hasMore });
+		res.status(200).json({ success: true, feeds: feedData, hasMore: feedData.length >= limit });
 	} catch (error) {
 		console.error("Error fetching explore feeds:", error);
 		res.status(500).json({ success: false, message: "Server error while fetching feeds." });

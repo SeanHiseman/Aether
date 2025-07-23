@@ -14,45 +14,44 @@ const ExplorePage = () => {
 	const [loadingMore, setLoadingMore] = useState(false);
 	const [postPage, setPostPage] = useState(0);
 	const [posts, setPosts] = useState([]);
+	const [shownFeedIds, setShownFeedIds] = useState([]);
+	const [shownPostIds, setShownPostIds] = useState([]);
 	const { isAuthenticated, viewer } = useContext(AuthContext);
 	const { rightClasses } = useOutletContext();
 	const scrollRef = useRef(null);
 	const CLEANUP_THRESHOLD = 100; //Remove old posts and feeds from rendered list
 
 	const fetchPosts = useCallback(
-		async (page = 0) => {
+		async () => {
 			try {
 				const res = await axios.get("/api/explore_posts", {
-					params: { filter, limit: 4, offset: page * 4 },
+					params: { filter, limit: 4, exclude: shownPostIds },
 				});
-				setPosts(prev => (page === 0 ? res.data.posts : [...prev, ...res.data.posts]));
+				const newPosts = res.data.posts;
+				setPosts(prev => [...prev, ...newPosts]);
+				setShownPostIds(prev => [...prev, ...newPosts.map(p => p.post_id)]);
 			} catch (error) {
 				setErrorMessage("Failed to fetch posts");
 			}
 		},
-		[filter]
+		[filter, shownPostIds]
 	);
 
 	const fetchFeeds = useCallback(
-		async (page = 0) => {
+		async () => {
 			try {
 				const res = await axios.get("/api/explore_feeds", {
-					params: { limit: 6, offset: page * 6 },
+					params: { limit: 6, exclude: shownFeedIds },
 				});
-				setFeeds(prev => (page === 0 ? res.data.feeds : [...prev, ...res.data.feeds]));
+				const newFeeds = res.data.feeds;
+				setFeeds(prev => [...prev, ...newFeeds]);
+				setShownFeedIds(prev => [...prev, ...newFeeds.map(f => f.feed_id)]);
 			} catch (error) {
 				setErrorMessage("Failed to fetch feeds");
 			}
 		},
-		[filter]
+		[shownFeedIds]
 	);
-
-	useEffect(() => {
-		setLoading(true);
-		setFeedPage(0);
-		setPostPage(0);
-		Promise.all([fetchPosts(0), fetchFeeds(0)]).then(() => setLoading(false));
-	}, [filter, fetchFeeds, fetchPosts]);
 
 	const loadMore = async () => {
 		if (loading || loadingMore) return;
@@ -61,9 +60,11 @@ const ExplorePage = () => {
 			setPosts(prev => prev.slice(-20)); 
 			setFeeds(prev => prev.slice(-30));
 		}
-		await Promise.all([fetchPosts(postPage + 1), fetchFeeds(feedPage + 1)]);
-		setPostPage(p => p + 1);
-		setFeedPage(f => f + 1);
+		const nextPostPage = postPage + 1;
+		const nextFeedPage = feedPage + 1;
+		await Promise.all([fetchPosts(nextPostPage), fetchFeeds(nextFeedPage)]);
+		setPostPage(nextPostPage);
+		setFeedPage(nextFeedPage);
 		setLoadingMore(false);
 	};
 
@@ -120,6 +121,15 @@ const ExplorePage = () => {
 			}
 		};
 	}, []);
+
+	useEffect(() => {
+		setLoading(true);
+		setFeedPage(0);
+		setPostPage(0);
+		setFeeds([]); 
+		setPosts([]);
+		Promise.all([fetchPosts(0), fetchFeeds(0)]).then(() => setLoading(false));
+	}, [filter]);
 
 	return (
 		<div className="standard-container">

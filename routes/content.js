@@ -469,11 +469,10 @@ router.post('/edit_post', authenticateCheck, checkStorageLimit, postUpload.array
 
 router.get("/explore_posts", async (req, res) => {
 	try {
-		const page = parseInt(req.query.page, 10) || 1;
+		const { exclude = [] } = req.query;
 		const limit = parseInt(req.query.limit, 10) || 6;
-		const offset = (page - 1) * limit;
 		// The where clause now filters for top-level posts only (parent_id is null).
-		const where = { parent_id: null };
+		const where = { parent_id: null, post_id: { [Op.notIn]: exclude } };
 		// The 'filter' query parameter is available for future expansion.
 		const { filter = "all" } = req.query;
 		if (filter === "posts") {
@@ -513,14 +512,12 @@ router.get("/explore_posts", async (req, res) => {
             }],
 			where,
 			limit,
-			offset,
 			order: sequelize.random
 				? sequelize.random()
 				: [sequelize.literal("RAND()")],
 		});
 		const formatted = rows.map(post => ({ ...post.dataValues }));
-		const hasMore = page * limit < count;
-		res.status(200).json({ posts: formatted, hasMore });
+		res.status(200).json({ posts: formatted, hasMore: rows.length >= limit });
 	} catch (error) {
         console.log("error:", error);
 		res.status(500).json({ success: false, error: error.message });
