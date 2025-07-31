@@ -470,6 +470,7 @@ router.post('/edit_post', authenticateCheck, checkStorageLimit, postUpload.array
 router.get("/explore_posts", async (req, res) => {
 	try {
 		const { exclude = [] } = req.query;
+		const saverId = req.session.viewer_id;
 		const limit = parseInt(req.query.limit, 10) || 6;
 		// The where clause now filters for top-level posts only (parent_id is null).
 		const where = { parent_id: null, post_id: { [Op.notIn]: exclude } };
@@ -516,7 +517,19 @@ router.get("/explore_posts", async (req, res) => {
 				? sequelize.random()
 				: [sequelize.literal("RAND()")],
 		});
-		const formatted = rows.map(post => ({ ...post.dataValues }));
+		const postIds = rows.map(p => p.post_id);
+		const savedRows = saverId
+			? await SavedPosts.findAll({
+				attributes: ['post_id'],
+				raw: true,
+				where: { post_id: postIds, saver_id: saverId }
+			})
+			: [];
+		const savedSet = new Set(savedRows.map(s => s.post_id));
+		const formatted = rows.map(post => ({
+			...post.dataValues,
+			is_saved: savedSet.has(post.post_id)
+		}));
 		res.status(200).json({ posts: formatted, hasMore: rows.length >= limit });
 	} catch (error) {
         console.log("error:", error);

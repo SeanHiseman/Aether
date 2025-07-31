@@ -26,7 +26,6 @@
     border-radius: calc(clamp(4px, 1vw, 10px) + var(--medium-margin));
     border: 1px solid var(--border);
     cursor: pointer;
-    margin-bottom: var(--medium-margin);
     margin-top: var(--medium-margin);
 }
 .content-item.reply {
