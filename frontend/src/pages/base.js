@@ -2,7 +2,7 @@ import axios from "axios";
 import Cropper from "react-easy-crop";
 import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, DragOverlay } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
-import { FaArrowRight, FaBars, FaFileUpload, FaMinus, FaPlus, FaPlusCircle, FaSignInAlt, FaTimes } from "react-icons/fa";
+import { FaArrowRight, FaBars, FaCog, FaFileUpload, FaMinus, FaPlus, FaPlusCircle, FaSignInAlt, FaTimes } from "react-icons/fa";
 import { MagnifyingGlassIcon } from "@radix-ui/react-icons";
 import { useCallback, useContext, useEffect, useRef, useState } from "react";
 import { Link, Outlet, useNavigate } from "react-router-dom";
@@ -478,10 +478,13 @@ const BaseLayout = () => {
                 <aside className={leftClasses} ref={feedContainerRef}>
                     <div className="left-aside-feed-info">
                         {isAuthenticated && (
-                            <Link className="feed-link" to={`/u/${feed.feed_name}`}>
-                                <img className="small-feed-photo" src={`/${feed.feed_photo}`} alt="Feed"/>
+                            <><Link className="feed-link" to={`/u/${feed.feed_name}`}>
+                                <img className="small-feed-photo" src={`/${feed.feed_photo}`} alt="Feed" />
                                 <p className="feed-list-text">{feed.feed_name}</p>
                             </Link>
+                            <Link className="small-icon" to={`/settings/${feed.feed_name}`} title="Settings">
+                                <FaCog />
+                            </Link></>
                         )}
                     </div>
                     {isAuthenticated ? (
@@ -660,12 +663,24 @@ const BaseLayout = () => {
                 </aside>
                 <main>
                     <header className="base-header">
-                        <button className="large-icon" onClick={toggleLeft} title={desk.left ? "Open sidebar" : "Close sidebar"}>
+                        <button className="sidebar-toggle" onClick={toggleLeft} title={desk.left ? "Open sidebar" : "Close sidebar"}>
                             {(isMobile() && mobileOpen === "left") ||
                             (!isMobile() && !desk.left) ? (
-                                <FaTimes />
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" strokeWidth="2">
+                                	<>
+                                        <line x1="21" y1="12" x2="7" y2="12" />
+                                        <polyline points="11 8 7 12 11 16" />
+                                        <line x1="3" y1="6" x2="3" y2="18" />
+                                    </>
+                                </svg>
                             ) : (
-                                <FaBars />
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" strokeWidth="2">
+                                    <>
+                                        <line x1="3" y1="12" x2="17" y2="12" />
+                                        <polyline points="13 8 17 12 13 16" />
+                                        <line x1="21" y1="6" x2="21" y2="18" />
+                                    </>
+                                </svg>
                             )}
                         </button>
                         <form className="search-form" onSubmit={searchClick}>
@@ -694,12 +709,24 @@ const BaseLayout = () => {
                         {headerErrorMessage && (
                             <p className="error-message">{headerErrorMessage}</p>
                         )}
-                        <button className="large-icon" onClick={toggleRight} title={desk.right ? "Open sidebar" : "Close sidebar"}>
+                        <button className="sidebar-toggle" onClick={toggleRight} title={desk.right ? "Open sidebar" : "Close sidebar"}>
                             {(isMobile() && mobileOpen === "right") ||
                             (!isMobile() && !desk.right) ? (
-                                <FaTimes />
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" strokeWidth="2">
+                                    <>
+                                        <line x1="3" y1="12" x2="17" y2="12" />
+                                        <polyline points="13 8 17 12 13 16" />
+                                        <line x1="21" y1="6" x2="21" y2="18" />
+                                    </>
+                                </svg>
                             ) : (
-                                <FaBars />
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" strokeWidth="2">
+                                	<>
+                                        <line x1="21" y1="12" x2="7" y2="12" />
+                                        <polyline points="11 8 7 12 11 16" />
+                                        <line x1="3" y1="6" x2="3" y2="18" />
+                                    </>
+                                </svg>
                             )}
                         </button>
                     </header>

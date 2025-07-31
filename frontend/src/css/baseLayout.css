@@ -388,6 +388,22 @@ main {
 .search-bar:focus {
   background-color: var(--border);
 }
+.sidebar-toggle {
+  align-items: center;
+  background: none;
+  border: none;
+  border-radius: clamp(2px, 0.6vw, 5px);
+  color: var(--border);
+  display: flex;
+  font-size: var(--medium-text);
+  justify-content: center;
+  margin: clamp(3px, 1vw, 5px);
+  padding: clamp(3px, 1vw, 5px);
+  stroke: var(--border);
+}
+.sidebar-toggle:hover {
+  cursor: pointer;
+}
 .small-feed-photo {
   border-radius: clamp(4px, 1vw, 10px);
   height: clamp(20px, 5vw, 50px);
@@ -449,6 +465,7 @@ ul {
   cursor: default !important;
 }
 
+
 .base-header.hide-left {
   margin-left: 0;
   width: calc(100vw - var(--right-width));
@@ -462,6 +479,7 @@ ul {
 }
 .content.hide-left {
   margin-left: 0;
+  width: 100vw;
 }
 .content.hide-right {
   margin-right: 0;
