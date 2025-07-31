@@ -598,7 +598,7 @@ router.get("/explore_feeds", async (req, res) => {
         const { exclude = [] } = req.query;
 		const viewerId = req.session.viewer_id;
 		const limit = parseInt(req.query.limit, 10) || 6;
-		const { count, rows: feeds } = await Feeds.findAndCountAll({
+		const { rows: feeds } = await Feeds.findAndCountAll({
 			where: {
 				type: "public",
 				is_locked: false,

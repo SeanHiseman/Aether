@@ -478,7 +478,7 @@ router.get("/explore_posts", async (req, res) => {
 		if (filter === "posts") {
 			// Custom logic for post-specific filtering can be added here.
 		}
-		const { count, rows } = await Posts.findAndCountAll({
+		const { rows } = await Posts.findAndCountAll({
 			attributes: postAttributes,
 			include: [{
                 model: Feeds,

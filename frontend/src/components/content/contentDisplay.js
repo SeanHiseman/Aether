@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from 'react'
 import AppBlock from './appBlock'
 import AppWebContainer from './appWebContainer'
 
-const ContentDisplay = ({ content, onCodeAppChange = () => {}, onOverflowChange = () => {}, showFullContent, showScrollBar }) => {
+const ContentDisplay = ({ content, onCodeAppChange = () => {}, onOverflowChange = () => {}, showFullContent = false, showScrollBar = true }) => {
 	const [blocks, setBlocks] = useState([])
 	const contentRef = useRef(null)
 	const heightStyle = showFullContent ? 'auto' : '100%'

@@ -68,11 +68,13 @@ const SmallContentWidget = ({ post }) => {
                     width: '100%',
                     display: 'flex',
                     flexDirection: 'column',
-                    ...(isFullscreenMode ? { height: '100vh', overflow: 'visible' } : {})
+                    ...(isFullscreenMode
+                        ? { height: 'auto', overflow: 'visible' }
+                        : { height: '60vh', overflow: 'hidden' })
                 }}
             >
                 <div style={isFullscreenMode ? { flex: 1, overflowY: 'auto' } : { height: '100%' }}>
-                    <ContentDisplay content={post.content} onCodeAppChange={setHasCodeOrApp} showFullContent={true} showScrollBar={true} />
+                    <ContentDisplay content={post.content} onCodeAppChange={setHasCodeOrApp} showFullContent={true} showScrollBar={false} />
                 </div>
                 <div className="content-footer">
                     {(fullscreenRef.current?.requestFullscreen || fullscreenRef.current?.webkitRequestFullscreen) && hasCodeOrApp && (
