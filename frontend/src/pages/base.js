@@ -2,7 +2,7 @@ import axios from "axios";
 import Cropper from "react-easy-crop";
 import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, DragOverlay } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
-import { FaArrowRight, FaBars, FaCog, FaFileUpload, FaMinus, FaPlus, FaPlusCircle, FaSignInAlt, FaTimes } from "react-icons/fa";
+import { FaArrowRight, FaCog, FaFileUpload, FaMinus, FaPlus, FaPlusCircle, FaSignInAlt } from "react-icons/fa";
 import { MagnifyingGlassIcon } from "@radix-ui/react-icons";
 import { useCallback, useContext, useEffect, useRef, useState } from "react";
 import { Link, Outlet, useNavigate } from "react-router-dom";
@@ -662,7 +662,7 @@ const BaseLayout = () => {
                     )}
                 </aside>
                 <main>
-                    <header className="base-header">
+                    <header className={"base-header" + (desk.left ? " hide-left" : "") + (desk.right ? " hide-right" : "")}>
                         <button className="sidebar-toggle" onClick={toggleLeft} title={desk.left ? "Open sidebar" : "Close sidebar"}>
                             {(isMobile() && mobileOpen === "left") ||
                             (!isMobile() && !desk.left) ? (

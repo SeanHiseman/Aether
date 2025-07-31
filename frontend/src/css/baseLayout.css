@@ -468,7 +468,7 @@ ul {
 
 .base-header.hide-left {
   margin-left: 0;
-  width: calc(100vw - var(--right-width));
+  width: 100vw;
 }
 .base-header.hide-right {
   margin-right: 0;
