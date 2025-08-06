@@ -50,7 +50,8 @@ const checkStorageLimit = async (req, res, next) => {
 //Project code
 router.get('/channel_posts', async (req, res) => {
 	try {
-		const { channelId, feedId, isMain, isSingle, limit, offset, postId } = req.query;
+		const { channelId, excludedPostIds, feedId, isMain, isSingle, limit, offset, postId } = req.query;
+		const excludedIds = excludedPostIds ? excludedPostIds.split(',') : [];
 		const saverId = req.session.viewer_id;
 		const userId = req.session.user_id;
 		const includeOptions = [{
@@ -96,96 +97,132 @@ router.get('/channel_posts', async (req, res) => {
 			singlePost.dataValues.is_saved = Boolean(existing);
 			return res.status(200).json({ success: true, post: singlePost });
 		}
-		let algorithmLocation = null;
-		if (userId) {
-			algorithmLocation = await AlgorithmLocations.findOne({
-				where: { location_id: channelId, user_id: userId }
-			});
-		}
 		let algorithm = {};
-		if (algorithmLocation) {
-			const algorithmRow = await Algorithms.findOne({
-				attributes: ['algorithm_code'],
-				where: { algorithm_id: algorithmLocation.algorithm_id }
-			});
-			if (algorithmRow) algorithm = JSON.parse(algorithmRow.algorithm_code);
+		if (userId && channelId) {
+			const algorithmLocation = await AlgorithmLocations.findOne({ where: { location_id: channelId, user_id: userId } });
+			if (algorithmLocation) {
+				const algorithmRow = await Algorithms.findOne({
+					attributes: ['algorithm_code'],
+					where: { algorithm_id: algorithmLocation.algorithm_id }
+				});
+				if (algorithmRow) {
+					try {
+						algorithm = JSON.parse(algorithmRow.algorithm_code);
+					} catch (error) {
+						console.error("Failed to parse algorithm JSON:", error);
+						algorithm = {}; 
+					}
+				}
+			}
 		}
-		const chronology = algorithm.chronology || 'newest';
-		const contentType = algorithm.contentType || {};
-		const endTime = algorithm.endTime || null;
-		const sentiment = algorithm.sentiment || 0;
-		const similarity = algorithm.similarity || 0;
-		const startTime	= algorithm.startTime || null;
-		const strength = algorithm.strength || 1;
-		const wordBoost = algorithm.wordBoost || [];
-		const wordSuppress = algorithm.wordSuppress || [];
-		const timeWhere =
-			startTime && endTime
-				? sqlWhere(fn('TIME', col('created_at')), {
-						[Op.between] : [startTime, endTime]
-				  })
-				: {};
 		const whereChannel = {
 			...(isMain !== 'true' && channelId ? { channel_id: channelId } : {}),
 			feed_id: feedId,
-			parent_id: null
+			parent_id: null,
+			post_id: { [Op.notIn]: excludedIds } 
 		};
+		const initialLimit = (limit ? parseInt(limit, 20) : 20) * 3;
+		const { chronology = 'newest' } = algorithm;
 		const posts = await Posts.findAll({
 			attributes: postAttributes,
 			include: includeOptions,
-			limit: limit ? parseInt(limit, 10) : 10,
-			offset:	offset ? parseInt(offset, 10) : 0,
-			where: { ...whereChannel, ...(Object.keys(timeWhere).length ? { [Op.and]: timeWhere } : {}) }
+			limit: initialLimit,
+			offset: offset ? parseInt(offset, 20) : 0,
+			where: whereChannel,
+			order: [['created_at', chronology === 'oldest' ? 'ASC' : 'DESC']] //Presort to chronological, apply algorithm from there
 		});
-		const parsedPosts = posts.filter(p => {
-			const $ = cheerio.load(p.body || '');
-			const hasImages	= $('img').length > 0;
-			const hasInteractive = $('iframe, embed, object').length > 0;
-			const hasText = $.text().trim().length > 0;
-			const hasVideos	= $('video[src], video source[src]').length > 0;
-			if (contentType.images && !hasImages) return false;
-			if (contentType.interactive && !hasInteractive)	return false;
-			if (contentType.text && !hasText) return false;
-			if (contentType.videos && !hasVideos) return false;
-			return true;
-		});
-		const ids = parsedPosts.map(p => p.post_id);
-		if (!ids.length) return res.status(200).json([]);
-		const savedRows = saverId
-			? await SavedPosts.findAll({
-					attributes: ['post_id'],
-					raw: true,
-					where: { post_id: ids, saver_id: saverId }
-			  })
-			: [];
-		const savedSet = new Set(savedRows.map(s => s.post_id));
-		const scorePost = p => {
-			let score = 0;
-			const body = p.body || '';
-			wordBoost.forEach(w => { if (body.includes(w)) score += 10; });
-			wordSuppress.forEach(w => { if (body.includes(w)) score -= 10; });
-			if (typeof p.sentiment === 'number') score += p.sentiment * sentiment * 10;
-			if (typeof p.similarity_score === 'number') score += p.similarity_score * similarity * 10;
-			return score * strength;
+		if (!posts.length) {
+			return res.status(200).json([]);
+		}
+		const { strength = 1, scoring = {}, rules = [] } = algorithm;
+		console.log("APPLYING ALGORITHM:", JSON.stringify(algorithm, null, 2));
+		const evaluateCondition = (postContext, condition) => {
+			const { field, operator, value } = condition;
+			const { post, has_images, has_videos, has_text, text_body, post_time_str } = postContext;
+			let subject;
+			switch (field) {
+				case 'post_time': subject = post_time_str; break;
+				case 'body': subject = text_body; break;
+				case 'category': subject = post.category; break;
+				case 'sentiment_score': subject = post.sentiment; break;
+				case 'has_images': subject = has_images; break;
+				case 'has_videos': subject = has_videos; break;
+				case 'has_text': subject = has_text; break;
+				default: return false;
+			}
+			if (subject === undefined || subject === null) return false;
+			switch (operator) {
+				case 'AFTER': return subject > value;
+				case 'BEFORE': return subject < value;
+				case 'EQUALS': return subject === value;
+				case 'CONTAINS': return typeof subject === 'string' && subject.toLowerCase().includes(String(value).toLowerCase());
+				case 'CONTAINS_ANY': return Array.isArray(value) && typeof subject === 'string' && value.some(v => subject.toLowerCase().includes(String(v).toLowerCase()));
+				case 'GREATER_THAN': return subject > value;
+				case 'LESS_THAN': return subject < value;
+				default: return false;
+			}
 		};
-		const finalResults = parsedPosts
-			.map(p => ({
-				...p.dataValues,
-				is_saved: savedSet.has(p.post_id),
-				score: scorePost(p.dataValues)
-			}))
-			.sort((a, b) => {
-				if (b.score === a.score) {
-					return chronology === 'oldest'
-						? a.created_at - b.created_at
-						: b.created_at - a.created_at;
+		let processedPosts = [];
+		for (const post of posts) {
+			const $ = cheerio.load(post.body || '');
+			const createdAt = new Date(post.created_at);
+			const postContext = {
+				post: post.dataValues,
+				has_images: $('img').length > 0,
+				has_videos: $('video').length > 0,
+				has_text: $.text().trim().length > 0,
+				text_body: $.text().trim(),
+				post_time_str: `${String(createdAt.getHours()).padStart(2, '0')}:${String(createdAt.getMinutes()).padStart(2, '0')}`
+			};
+			if (postContext.text_body.includes("1")) {
+        		console.log(`Post ID ${post.post_id} contains '1'. Text: "${postContext.text_body}"`);
+    		}
+			let isSuppressed = false;
+			let score = 0;
+			for (const rule of rules) {
+				const conditionsMet = rule.conditions.every(cond => evaluateCondition(postContext, cond));
+				if (conditionsMet) {
+					const exceptionMet = rule.exceptions?.some(exc => evaluateCondition(postContext, exc.condition));
+					if (exceptionMet) continue; 
+					switch (rule.action.type) {
+						case 'SUPPRESS': isSuppressed = true; break;
+						case 'BOOST': score += rule.action.value || 0; break;
+						case 'PENALIZE': score -= rule.action.value || 0; break;
+					}
 				}
-				return b.score - a.score;
-			})
-			.map(({ score, ...rest }) => rest);
-		return res.status(200).json(finalResults);
+				if (isSuppressed) break;
+			}
+			if (isSuppressed) continue;
+			const { sentiment = 0, similarity = 0, wordBoost = [], wordSuppress = [] } = scoring;
+			if (wordBoost) wordBoost.forEach(item => { if (postContext.text_body.toLowerCase().includes(item.word.toLowerCase())) score += item.value || 10; });
+			if (wordSuppress) wordSuppress.forEach(item => { if (postContext.text_body.toLowerCase().includes(item.word.toLowerCase())) score += item.value || -10; });
+			if (sentiment && typeof post.dataValues.sentiment === 'number') score += post.dataValues.sentiment * sentiment;
+			if (similarity && typeof post.dataValues.similarity_score === 'number') score += post.dataValues.similarity_score * similarity;
+			processedPosts.push({ ...post.dataValues, score: score * strength });
+		}
+		processedPosts.sort((a, b) => {
+			if (b.score !== a.score) return b.score - a.score;
+			const dateA = new Date(a.created_at);
+			const dateB = new Date(b.created_at);
+			return chronology === 'oldest' ? dateA - dateB : dateB - dateA;
+		});
+		const finalPosts = processedPosts.slice(0, limit ? parseInt(limit, 20) : 20);
+		if (!finalPosts.length) return res.status(200).json([]);
+		const finalIds = finalPosts.map(p => p.post_id);
+		const savedRows = saverId ? await SavedPosts.findAll({
+			attributes: ['post_id'],
+			raw: true,
+			where: { post_id: { [Op.in]: finalIds }, saver_id: saverId }
+		}) : [];
+		const savedSet = new Set(savedRows.map(s => s.post_id));
+		const results = finalPosts.map(p => {
+			const { score, ...rest } = p;
+			return { ...rest, is_saved: savedSet.has(p.post_id) };
+		});
+		return res.status(200).json(results);
 	} catch (error) {
-		return res.status(500).json({ success: false });
+		console.error("Error in /channel_posts:", error);
+		return res.status(500).json({ success: false, message: 'Internal server error.' });
 	}
 });
 
@@ -471,7 +508,7 @@ router.get("/explore_posts", async (req, res) => {
 	try {
 		const { exclude = [] } = req.query;
 		const saverId = req.session.viewer_id;
-		const limit = parseInt(req.query.limit, 10) || 6;
+		const limit = parseInt(req.query.limit, 20) || 6;
 		// The where clause now filters for top-level posts only (parent_id is null).
 		const where = { parent_id: null, post_id: { [Op.notIn]: exclude } };
 		// The 'filter' query parameter is available for future expansion.

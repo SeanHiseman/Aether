@@ -37,7 +37,7 @@ const ExplorePage = () => {
 	const { isAuthenticated, viewer } = useContext(AuthContext);
 	const { rightClasses } = useOutletContext();
 	const scrollRef = useRef(null);
-	const CLEANUP_THRESHOLD = 100; //Remove old posts and feeds from rendered list
+	const CLEANUP_THRESHOLD = 100; //Remove old posts and feeds from rendered list (temporary)
 
 	const fetchPosts = useCallback(
 		async () => {
@@ -58,10 +58,10 @@ const ExplorePage = () => {
 	const fetchFeeds = useCallback(
 		async () => {
 			try {
-				const res = await axios.get("/api/explore_feeds", {
+				const response = await axios.get("/api/explore_feeds", {
 					params: { limit: FETCH_LIMIT, exclude: shownFeedIds },
 				});
-				const newFeeds = res.data.feeds;
+				const newFeeds = response.data.feeds;
 				setFeeds(prev => [...prev, ...newFeeds]);
 				setShownFeedIds(prev => [...prev, ...newFeeds.map(f => f.feed_id)]);
 			} catch (error) {

@@ -14,8 +14,7 @@ const PostChannel = ({ channelId, channelName, feed, isDraft, isGroup, onEditCli
 	const { isAuthenticated, user, viewer } = useContext(AuthContext);
 	const isMain = channel_name === 'Main';
 	const navigate = useNavigate();
-	const PAGE_SIZE = 10;
-	const CLEANUP_THRESHOLD = 100; //Remove old posts and feeds from rendered list
+	const PAGE_SIZE = 20;
 
 	useEffect(() => {
 		if (isDraft && !isGroup && viewer?.feed_id !== feedId) {
