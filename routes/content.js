@@ -4,12 +4,13 @@ import cheerio from 'cheerio';
 import dotenv from 'dotenv';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
-import { AppBuilds, Feeds, FeedChannels, Posts, PostDrafts, PostNotes, PostVotes, SavedPosts, Users } from '../models/relationships.js';
+import { AppBuilds, Feeds, FeedChannels, Posts, PostDrafts, PostNotes, PostVotes, SavedPosts, Users, ViewedPosts } from '../models/relationships.js';
 import { Algorithms, AlgorithmLocations } from '../custom_algorithms/algorithmRelationships.js'
 import multer from 'multer';
 import { Router } from 'express';
 import path from 'path';
 import { Op, col, fn, where as sqlWhere, Sequelize } from 'sequelize';
+import Sentiment from 'sentiment';
 import unzipper from 'unzipper'
 import { v4 } from 'uuid';
 import yauzl from 'yauzl'
@@ -24,6 +25,7 @@ const feedAttributes = ['feed_id', 'parent_id', 'feed_name', 'description', 'fee
 const noteAttributes = ['note_id', 'note_content', 'created_at', 'updated_at', 'is_misinfo']
 const postAttributes = ['post_id', 'parent_id', 'feed_id', 'channel_id', 'title', 'content', 'replies', 'views', 'upvotes', 'downvotes', 'created_at', 'updated_at', 'poster_id']
 const router = Router();
+const sentiment = new Sentiment();
 if (!fs.existsSync(mediaDir)) fs.mkdirSync(mediaDir, { recursive: true });
 const calculateFileSizes = files => files.reduce((total, file) => total + file.size, 0) / (1024 * 1024);
 
@@ -46,6 +48,30 @@ const checkStorageLimit = async (req, res, next) => {
         return res.status(500).json({ success: false, error: error.message });
     }
 };
+
+//Project code
+function analyseSentiment(htmlContent) {
+	console.log("Analyzing sentiment for content:", htmlContent);
+    if (!htmlContent) return 0;
+    const $ = cheerio.load(htmlContent);
+    //Remove script and style tags completely
+    $('script, style').remove();
+    const cleanText = $.text()
+        .trim()
+        .replace(/\s+/g, ' ') //Replace multiple whitespace with single space
+        .replace(/[^\w\s.,!?-]/g, '') //Remove special characters except basic punctuation
+        .toLowerCase();
+    console.log("Cleaned text for sentiment analysis:", cleanText);
+    if (!cleanText) return 0;
+    const result = sentiment.analyze(cleanText);
+	console.log("Sentiment analysis result:", result);
+    let normalisedScore = 0;
+    if (result.tokens.length > 0) {
+		const avgSentiment = result.score / result.tokens.length; //Sentiment per token
+		normalisedScore = Math.tanh(avgSentiment) //Normalise to range [-1, 1]
+    }
+    return normalisedScore;
+}
 
 //Project code
 router.get('/channel_posts', async (req, res) => {
@@ -164,7 +190,9 @@ router.get('/channel_posts', async (req, res) => {
 		};
 		let processedPosts = [];
 		for (const post of posts) {
-			const $ = cheerio.load(post.body || '');
+			const $ = cheerio.load(post.content || '');
+			//Remove script and style tags for text extraction
+			$('script, style').remove();
 			const createdAt = new Date(post.created_at);
 			const postContext = {
 				post: post.dataValues,
@@ -174,9 +202,9 @@ router.get('/channel_posts', async (req, res) => {
 				text_body: $.text().trim(),
 				post_time_str: `${String(createdAt.getHours()).padStart(2, '0')}:${String(createdAt.getMinutes()).padStart(2, '0')}`
 			};
-			if (postContext.text_body.includes("1")) {
-        		console.log(`Post ID ${post.post_id} contains '1'. Text: "${postContext.text_body}"`);
-    		}
+			const sentimentScore = analyseSentiment(postContext.text_body);
+			console.log("postId:", post.post_id, "sentimentScore:", sentimentScore);
+			post.dataValues.sentiment = sentimentScore; //Fix
 			let isSuppressed = false;
 			let score = 0;
 			for (const rule of rules) {
@@ -194,10 +222,21 @@ router.get('/channel_posts', async (req, res) => {
 			}
 			if (isSuppressed) continue;
 			const { sentiment = 0, similarity = 0, wordBoost = [], wordSuppress = [] } = scoring;
-			if (wordBoost) wordBoost.forEach(item => { if (postContext.text_body.toLowerCase().includes(item.word.toLowerCase())) score += item.value || 10; });
-			if (wordSuppress) wordSuppress.forEach(item => { if (postContext.text_body.toLowerCase().includes(item.word.toLowerCase())) score += item.value || -10; });
-			if (sentiment && typeof post.dataValues.sentiment === 'number') score += post.dataValues.sentiment * sentiment;
-			if (similarity && typeof post.dataValues.similarity_score === 'number') score += post.dataValues.similarity_score * similarity;
+			if (wordBoost) wordBoost.forEach(item => { 
+				if (postContext.text_body.toLowerCase().includes(item.word.toLowerCase())) 
+					score += item.value || 10; 
+			});
+			if (wordSuppress) wordSuppress.forEach(item => { 
+				if (postContext.text_body.toLowerCase().includes(item.word.toLowerCase())) 
+					score += item.value || -10; 
+			});
+			if (sentiment !== undefined && typeof post.dataValues.sentiment === 'number') {
+				const sentimentDistance = Math.abs(post.dataValues.sentiment - sentiment);
+				score += (1 - sentimentDistance) * 10; //Boost for closeness to target sentiment
+			}
+			if (similarity && typeof post.dataValues.similarity_score === 'number') {
+				score += post.dataValues.similarity_score * similarity;
+			} 
 			processedPosts.push({ ...post.dataValues, score: score * strength });
 		}
 		processedPosts.sort((a, b) => {
@@ -664,13 +703,31 @@ router.delete('/remove_post', authenticateCheck, async (req, res) => {
 });
 
 router.post('/increment_views', authenticateCheck, async (req, res) => {
+	let transaction;
     try {
+		transaction = await sequelize.transaction();
         const { postId } = req.body;
-        const post = await Posts.findByPk(postId);
-        post.views += 1;
-        await post.save();
+        const post = await Posts.findByPk(postId, { transaction });
+		post.views += 1;
+        await post.save({ transaction});
+		const existingView = await ViewedPosts.findOne({
+			where: { post_id: postId, viewer_id: req.session.viewer_id }.
+			transaction,
+		});
+		if (existingView) {
+			existingView.views += 1;
+			await existingView.save({ transaction});
+		} else {
+			await ViewedPosts.create({
+				post_id: postId,
+				viewer_id: req.session.viewer_id,	
+				views: 1
+			}, { transaction });
+		}
+		await transaction.commit();
         res.status(200).json({ success: true });
     } catch (error) {
+		if (transaction) await transaction.rollback();
         res.status(500).json({ success: false });   
     }
 });

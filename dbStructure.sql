@@ -372,6 +372,19 @@ CREATE TABLE saved_post_channels (
 	FOREIGN KEY (saver_id) REFERENCES feeds(feed_id) ON DELETE CASCADE
 ) ENGINE = InnoDB;
 
+DROP TABLE IF EXISTS `viewed_posts`;
+CREATE TABLE viewed_posts (
+	post_id CHAR(36) NOT NULL,
+	viewer_id CHAR(36) NOT NULL,
+	views INT NOT NULL DEFAULT 1,
+	created_at DATETIME(3) DEFAULT CURRENT_TIMESTAMP(3),
+	updated_at DATETIME(3) DEFAULT CURRENT_TIMESTAMP(3),
+	PRIMARY KEY (post_id, viewer_id),
+	FOREIGN KEY (post_id) REFERENCES posts(post_id),
+	FOREIGN KEY (viewer_id) REFERENCES feeds(feed_id)
+);
+
+
 INSERT INTO `users` (
     `user_id`,
     `username`,

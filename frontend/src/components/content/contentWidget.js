@@ -49,7 +49,7 @@ const ContentWidget = ({ canRemove, feed, isDraft, isGroup, onEditClick, onPostR
 				subReplies: []
 			}));
 			setReplies(processedReplies);
-		} catch {
+		} catch (error){
 			setPostErrorMessage('Error getting replies');
 			setTimeout(() => setPostErrorMessage(""), 3000);
 		}
@@ -72,7 +72,7 @@ const ContentWidget = ({ canRemove, feed, isDraft, isGroup, onEditClick, onPostR
 					}
 					setHasViewed(true);
 				}
-			} catch {
+			} catch (error) {
 				setPostErrorMessage('Error incrementing views');
 				setTimeout(() => setPostErrorMessage(""), 3000);
 			}
@@ -103,7 +103,7 @@ const ContentWidget = ({ canRemove, feed, isDraft, isGroup, onEditClick, onPostR
 			if (!hasViewed) {
 				await incrementViews(postId);
 			}
-		} catch {
+		} catch (error){
 			setPostErrorMessage('Error voting');
 			setTimeout(() => setPostErrorMessage(""), 3000);
 		}
@@ -322,7 +322,7 @@ const ContentWidget = ({ canRemove, feed, isDraft, isGroup, onEditClick, onPostR
 						: isOverflowing
 							? (showFullContent
 								? { height: 'auto', overflow: 'visible' }
-								: { height: '60vh', overflow: 'hidden' })
+								: post_id ? { height: '76vh', overflow: 'hidden' } : { height: '60vh', overflow: 'hidden' })
 							: { height: 'auto', overflow: 'visible' })
 				}}
 			>

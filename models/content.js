@@ -1,4 +1,5 @@
 import { BOOLEAN, STRING, DataTypes, INTEGER, TEXT } from 'sequelize';
+import { Feeds } from './feeds.js';
 import sequelize from '../databaseSetup.js';
 
 const AppBuilds = sequelize.define('app_builds', {
@@ -63,11 +64,20 @@ const Prompts = sequelize.define('prompts', {
     created_at: { type: DataTypes.DATE(3), defaultValue: sequelize.literal('CURRENT_TIMESTAMP(3)') },
 }, { tableName: 'prompts', timestamps: false });
 
+const ViewedPosts = sequelize.define('viewed_posts', {
+    post_id: { type: STRING(36), primaryKey: true, references: { model: Posts, key: 'post_id' }},
+    viewer_id: { type: STRING(36), allowNull: false, references: { model: Feeds, key: 'feed_id' }},
+    views: { type: INTEGER, allowNull: false, defaultValue: 1 },
+    created_at: { type: DataTypes.DATE(3), defaultValue: sequelize.literal('CURRENT_TIMESTAMP(3)') },
+    updated_at: { type: DataTypes.DATE(3), defaultValue: sequelize.literal('CURRENT_TIMESTAMP(3)') },
+}, { tableName: 'viewed_posts', timestamps: false });
+
 export {
     AppBuilds, 
     Posts,
     PostDrafts,
     PostNotes,
     PostVotes,
-    Prompts
+    Prompts, 
+    ViewedPosts
 }
