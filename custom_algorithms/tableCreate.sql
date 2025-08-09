@@ -3,9 +3,9 @@ DROP TABLE IF EXISTS `algorithms`;
 
 CREATE TABLE `algorithms` (
 	`algorithm_code` TEXT NOT NULL,
-	`algorithm_description` TEXT NULL,
 	`algorithm_id` CHAR(36) NOT NULL,
 	`algorithm_name` VARCHAR(120) NOT NULL,
+	`custom_instruction` TEXT NULL,
 	`created_at` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
 	`updated_at` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
 	`user_id` CHAR(36) NOT NULL,

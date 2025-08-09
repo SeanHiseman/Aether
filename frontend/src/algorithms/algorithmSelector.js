@@ -1,6 +1,6 @@
 import axios from 'axios';
 import { useEffect, useState } from 'react';
-import { FaEdit, FaTrash } from 'react-icons/fa';
+import { FaEdit, FaRegEye, FaTrash } from 'react-icons/fa';
 import AddAlgorithm from './addAlgorithm';
 
 const AlgorithmSelector = ({ locationId }) => {
@@ -22,11 +22,13 @@ const AlgorithmSelector = ({ locationId }) => {
 					data: { algorithmId: assignedAlgorithmId, locationId }
 				});
 			}
-			const response = await axios.post('/api/assign_algorithm', {
-				algorithmId,
-				locationId
-			});
-			if (!response.data.success) throw new Error(response.data.message || 'Failed to assign algorithm.');
+			if (algorithmId) {
+				const response = await axios.post('/api/assign_algorithm', {
+					algorithmId,
+					locationId
+				});
+				if (!response.data.success) throw new Error(response.data.message || 'Failed to assign algorithm.');
+			}
 			setAssignedAlgorithmId(algorithmId);
 			setAlgorithms(prev => {
 				const updated = prev.map(algo => ({
@@ -49,6 +51,26 @@ const AlgorithmSelector = ({ locationId }) => {
 			setAssignError('Failed to assign algorithm');
 			setTimeout(() => { setAssignError('') }, 3000);
 		} 
+	};
+
+	const unassignAlgorithm = async () => {
+		try {
+			setAssignError(null);
+			if (assignedAlgorithmId) {
+				await axios.delete('/api/remove_algorithm', {
+					data: { algorithmId: assignedAlgorithmId, locationId }
+				});	
+			}
+			setAssignedAlgorithmId('');
+			setAlgorithms(prev => prev.map(algo => ({
+				...algo,
+				algorithm_locations: (algo.algorithm_locations || []).filter(loc => loc.location_id !== locationId)
+			})));
+		} catch (error) {
+			console.error('Error unassigning algorithm:', error);
+			setAssignError('Failed to unassign algorithm');
+			setTimeout(() => { setAssignError('') }, 3000);
+		};
 	};
 
 	const closeModal = () => {
@@ -126,6 +148,14 @@ const AlgorithmSelector = ({ locationId }) => {
 		assignAlgorithm(algorithmId);
 	};
 
+	const selectRadio = algorithmId => {
+		if (assignedAlgorithmId === algorithmId) {
+			unassignAlgorithm();
+		} else {
+			selectAlgorithm(algorithmId);
+		}
+	};
+
 	const updateAlgorithms = updatedAlgo => {
 		setAlgorithms(prev => prev.map(a => a.algorithm_id === updatedAlgo.algorithm_id ? updatedAlgo : a));
 		setEditingAlgorithm(null);
@@ -167,27 +197,38 @@ const AlgorithmSelector = ({ locationId }) => {
 										</div>
 										{optionsOpen && (
 											<ul className="algorithm-options">
+												<li key="unassign">
+													<label
+														onClick={() => selectRadio('')}
+														style={{
+															cursor: assignedAlgorithmId ? 'pointer' : 'not-allowed',
+															opacity: assignedAlgorithmId ? 1 : 0.6,
+														}}
+													>	
+														<input
+															name="algorithm"
+															readOnly
+															type="radio"
+															value=""
+															checked={assignedAlgorithmId === ''}
+															disabled={!assignedAlgorithmId}
+														/>
+														No algorithm
+													</label>
+												</li>
 												{algorithms.map(a => {
-													const isAssigned = a.algorithm_locations?.some(fa => fa.location_id === locationId);
 													const isCurrentlyAssigned = a.algorithm_id === assignedAlgorithmId;
 													return (
-														<li key={a.algorithm_id} className={isAssigned ? 'assigned' : ''}>
-															<label
-																onClick={() => selectAlgorithm(a.algorithm_id)}
-																style={{
-																	cursor: isAssigned && !isCurrentlyAssigned ? 'not-allowed' : 'pointer',
-																	opacity: isAssigned && !isCurrentlyAssigned ? 0.6 : 1
-																}}
-															>
+														<li key={a.algorithm_id} className={isCurrentlyAssigned ? 'assigned' : ''}>
+															<label onClick={() => selectRadio(a.algorithm_id)} style={{ cursor:'pointer' }}>
 																<input
 																	checked={isCurrentlyAssigned}
-																	disabled={isAssigned && !isCurrentlyAssigned}
 																	name="algorithm"
 																	readOnly
 																	type="radio"
 																	value={a.algorithm_id}
 																/>
-																{a.algorithm_name}{isAssigned ? ' (assigned)' : ''}
+																{a.algorithm_name}{isCurrentlyAssigned ? ' (assigned)' : ''}
 															</label>
 															<button
 																className="small-icon"

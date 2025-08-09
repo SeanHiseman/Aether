@@ -22,7 +22,9 @@ function InfoIconWithTooltip({ info }) {
 }
 
 const AddAlgorithm = ({ algorithms = [], editingAlgorithm = null, locationId, onCreated, onUpdated }) => {
-    const [algorithmDescription, setAlgorithmDescription] = useState('');
+    console.log("algorithms:", algorithms);    
+    const [activeDays, setActiveDays] = useState({ monday: true, tuesday: true, wednesday: true, thursday: true, friday: true, saturday: true, sunday: true });
+    const [algorithmCode, setAlgorithmCode] = useState('');
     const [algorithmName, setAlgorithmName] = useState('');
     const [chronology, setChronology] = useState('newest');
     const [contentType, setContentType] = useState({ images: true, text: true, videos: true, interactive: true });
@@ -40,46 +42,28 @@ const AddAlgorithm = ({ algorithms = [], editingAlgorithm = null, locationId, on
     const [dateFrom, setDateFrom] = useState('');
     const [dateTo, setDateTo] = useState('');
     const [specificDate, setSpecificDate] = useState('');
-    const [activeDays, setActiveDays] = useState({
-        monday: true,
-        tuesday: true,
-        wednesday: true,
-        thursday: true,
-        friday: true,
-        saturday: true,
-        sunday: true
-    });
     const [showMoreOptions, setShowMoreOptions] = useState(false);
 
     useEffect(() => {
         if (editingAlgorithm) {
-            const { algorithm_code = '{}', algorithm_description = '', algorithm_name = '' } = editingAlgorithm;
-            const code = JSON.parse(algorithm_code);
-            setAlgorithmDescription(algorithm_description);
+            const { algorithm_code = '', algorithm_name = '' } = editingAlgorithm;
+            setAlgorithmCode(algorithm_code);
             setAlgorithmName(algorithm_name);
-            setChronology(code.chronology || 'newest');
-            setContentType(code.contentType || { images: true, text: true, videos: true, interactive: true });
+            setChronology(algorithmCode.chronology || 'newest');
+            setContentType(algorithmCode.contentType || { images: true, text: true, videos: true, interactive: true });
             setCustomInstruction(editingAlgorithm.custom_instruction || ''); 
-            setSentiment(code.sentiment ?? 0);
-            setSimilarity(code.similarity ?? 0);
-            setStartTime(code.startTime || '00:00');
-            setEndTime(code.endTime || '23:59');
-            setStrength(code.strength ?? 1);
-            setTemplate(code.template || 'none');
-            setWordBoost((code.wordBoost || []).join(','));
-            setWordSuppress((code.wordSuppress || []).join(','));
-            setDateFrom(code.dateFrom || '');
-            setDateTo(code.dateTo || '');
-            setSpecificDate(code.specificDate || '');
-            setActiveDays(code.activeDays || {
-                monday: true,
-                tuesday: true,
-                wednesday: true,
-                thursday: true,
-                friday: true,
-                saturday: true,
-                sunday: true
-            });
+            setSentiment(algorithmCode.sentiment ?? 0);
+            setSimilarity(algorithmCode.similarity ?? 0);
+            setStartTime(algorithmCode.startTime || '00:00');
+            setEndTime(algorithmCode.endTime || '23:59');
+            setStrength(algorithmCode.strength ?? 1);
+            setTemplate(algorithmCode.template || 'none');
+            setWordBoost((algorithmCode.wordBoost || []).join(','));
+            setWordSuppress((algorithmCode.wordSuppress || []).join(','));
+            setDateFrom(algorithmCode.dateFrom || '');
+            setDateTo(algorithmCode.dateTo || '');
+            setSpecificDate(algorithmCode.specificDate || '');
+            setActiveDays(algorithmCode.activeDays || { monday: true, tuesday: true, wednesday: true, thursday: true, friday: true, saturday: true, sunday: true });
         }
     }, [editingAlgorithm]);
 
@@ -89,7 +73,6 @@ const AddAlgorithm = ({ algorithms = [], editingAlgorithm = null, locationId, on
             setLoading(true);
             const nameToUse = algorithmName.trim() || `Algorithm ${algorithms.length + 1}`;
             const payload = {
-                algorithmDescription,
                 algorithmId: editingAlgorithm?.algorithm_id,
                 algorithmName: nameToUse,
                 chronology,
@@ -161,7 +144,7 @@ const AddAlgorithm = ({ algorithms = [], editingAlgorithm = null, locationId, on
                 <div className="form-row">
                     <textarea
                         className="form-textarea"
-                        placeholder="Describe your algorithm..."
+                        placeholder={customInstruction ? customInstruction : "Describe your algorithm..."}
                         required
                         type="text"
                         value={customInstruction}
@@ -318,7 +301,7 @@ const AddAlgorithm = ({ algorithms = [], editingAlgorithm = null, locationId, on
                             <div className="form-group">
                                 <div className="form-label-with-info">
                                     <label className="small-text">Suppress Words</label>
-                                    <InfoIconWithTooltip info="Type words, separated by commas, that you wish to see less more of." />
+                                    <InfoIconWithTooltip info="Type words, separated by commas, that you wish to see less of." />
                                 </div>
                                 <input
                                     className="form-input"

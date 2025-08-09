@@ -31,10 +31,9 @@ router.post('/create_algorithm', authenticateCheck, async (req, res) => {
 	try {
 		const {
 			algorithmName,
-			algorithmDescription,
 			chronology,
 			contentType,
-			engagement,
+			customInstruction,
 			sentiment,
 			strength,
 			startTime,
@@ -42,7 +41,6 @@ router.post('/create_algorithm', authenticateCheck, async (req, res) => {
 			similarity,
 			wordBoost,
 			wordSuppress,
-			customInstruction
 		} = req.body;
 		console.log("create_algorithm req.body:", req.body);
 		const userId = req.session.user_id;
@@ -131,7 +129,7 @@ router.post('/create_algorithm', authenticateCheck, async (req, res) => {
 			algorithmCode = aiReply.replace(/```json\n|```/g, '').trim();
 			console.log("AI generated algorithmCode:", algorithmCode);
 		} else {
-			algorithmCode = JSON.stringify({
+			algorithmCode = JSON.stringify({ //Construct JSON if no custom instruction
 				chronology,
 				strength,
 				scoring: {
@@ -151,8 +149,8 @@ router.post('/create_algorithm', authenticateCheck, async (req, res) => {
 		const newAlgorithm = await Algorithms.create({
 			algorithm_id: v4(),
 			algorithm_name: algorithmName,
-			algorithm_description: algorithmDescription || null,
 			algorithm_code: algorithmCode,
+			custom_instruction: customInstruction || null,
 			user_id: userId
 		}, { transaction });
 		console.log("newAlgorithm:", newAlgorithm);
@@ -260,7 +258,6 @@ router.get('/get_user_algorithms', authenticateCheck, async (req, res) => {
 router.delete('/remove_algorithm', authenticateCheck, async (req, res) => {
 	try {
 		const { algorithmId, locationId } = req.body;
-		console.log("remove req.body:", req.body);
 		const userId = req.session.user_id;
 		const existing = await AlgorithmLocations.findOne({
 			where: { algorithm_id: algorithmId, location_id: locationId, user_id: userId }
@@ -272,7 +269,6 @@ router.delete('/remove_algorithm', authenticateCheck, async (req, res) => {
 		await AlgorithmLocations.destroy({ where: { algorithm_id: algorithmId, location_id: locationId, user_id: userId } });
 		res.status(200).json({ success: true });
 	} catch (error) {
-		console.error("error removing algorithm:", error);
 		res.status(500).json({ success: false, message: 'Failed to remove algorithm.' });
 	}
 });
