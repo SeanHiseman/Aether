@@ -44,29 +44,6 @@ const AddAlgorithm = ({ algorithms = [], editingAlgorithm = null, locationId, on
     const [specificDate, setSpecificDate] = useState('');
     const [showMoreOptions, setShowMoreOptions] = useState(false);
 
-    useEffect(() => {
-        if (editingAlgorithm) {
-            const { algorithm_code = '', algorithm_name = '' } = editingAlgorithm;
-            setAlgorithmCode(algorithm_code);
-            setAlgorithmName(algorithm_name);
-            setChronology(algorithmCode.chronology || 'newest');
-            setContentType(algorithmCode.contentType || { images: true, text: true, videos: true, interactive: true });
-            setCustomInstruction(editingAlgorithm.custom_instruction || ''); 
-            setSentiment(algorithmCode.sentiment ?? 0);
-            setSimilarity(algorithmCode.similarity ?? 0);
-            setStartTime(algorithmCode.startTime || '00:00');
-            setEndTime(algorithmCode.endTime || '23:59');
-            setStrength(algorithmCode.strength ?? 1);
-            setTemplate(algorithmCode.template || 'none');
-            setWordBoost((algorithmCode.wordBoost || []).join(','));
-            setWordSuppress((algorithmCode.wordSuppress || []).join(','));
-            setDateFrom(algorithmCode.dateFrom || '');
-            setDateTo(algorithmCode.dateTo || '');
-            setSpecificDate(algorithmCode.specificDate || '');
-            setActiveDays(algorithmCode.activeDays || { monday: true, tuesday: true, wednesday: true, thursday: true, friday: true, saturday: true, sunday: true });
-        }
-    }, [editingAlgorithm]);
-
     const submitAlgorithm = async () => {
         try {
             setError(null);
@@ -142,13 +119,38 @@ const AddAlgorithm = ({ algorithms = [], editingAlgorithm = null, locationId, on
         setStrength(1);
         setTemplate('none');
         setWordBoost('');
-        setWordSuppress();
+        setWordSuppress('');
         setDateFrom('');
         setDateTo('');
         setSpecificDate('');
         setActiveDays({ monday: true, tuesday: true, wednesday: true, thursday: true, friday: true, saturday: true, sunday: true });
         setEditingAlgorithm(null);
     }
+
+    useEffect(() => {
+        if (editingAlgorithm) {
+            const { algorithm_code = '', algorithm_name = '' } = editingAlgorithm;
+            setAlgorithmCode(algorithm_code);
+            setAlgorithmName(algorithm_name);
+            setChronology(algorithmCode.chronology || 'newest');
+            setContentType(algorithmCode.contentType || { images: true, text: true, videos: true, interactive: true });
+            setCustomInstruction(editingAlgorithm.custom_instruction || ''); 
+            setSentiment(algorithmCode.sentiment ?? 0);
+            setSimilarity(algorithmCode.similarity ?? 0);
+            setStartTime(algorithmCode.startTime || '00:00');
+            setEndTime(algorithmCode.endTime || '23:59');
+            setStrength(algorithmCode.strength ?? 1);
+            setTemplate(algorithmCode.template || 'none');
+            setWordBoost((algorithmCode.wordBoost || []).join(','));
+            setWordSuppress((algorithmCode.wordSuppress || []).join(','));
+            setDateFrom(algorithmCode.dateFrom || '');
+            setDateTo(algorithmCode.dateTo || '');
+            setSpecificDate(algorithmCode.specificDate || '');
+            setActiveDays(algorithmCode.activeDays || { monday: true, tuesday: true, wednesday: true, thursday: true, friday: true, saturday: true, sunday: true });
+        } else {
+            startCreatingNew();
+        }
+    }, [editingAlgorithm]);
 
     return (
         <div className="create-algorithm">
