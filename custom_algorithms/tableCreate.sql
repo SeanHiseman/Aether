@@ -26,5 +26,5 @@ CREATE TABLE `algorithm_locations` (
 	`user_id` CHAR(36) NOT NULL,
 	INDEX `idx_algorithmlocations_location` (`location_id`),
 	INDEX `idx_algorithmlocations_user` (`user_id`),
-	UNIQUE KEY `uniq_user_algorithm` (`user_id`, `location_id`, `algorithm_id`)
+	UNIQUE KEY `uniq_user_algorithm` (`user_id`, `location_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

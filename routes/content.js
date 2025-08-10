@@ -51,20 +51,16 @@ const checkStorageLimit = async (req, res, next) => {
 
 //Project code
 function analyseSentiment(htmlContent) {
-	console.log("Analyzing sentiment for content:", htmlContent);
     if (!htmlContent) return 0;
     const $ = cheerio.load(htmlContent);
-    //Remove script and style tags completely
     $('script, style').remove();
     const cleanText = $.text()
         .trim()
         .replace(/\s+/g, ' ') //Replace multiple whitespace with single space
         .replace(/[^\w\s.,!?-]/g, '') //Remove special characters except basic punctuation
         .toLowerCase();
-    console.log("Cleaned text for sentiment analysis:", cleanText);
     if (!cleanText) return 0;
     const result = sentiment.analyze(cleanText);
-	console.log("Sentiment analysis result:", result);
     let normalisedScore = 0;
     if (result.tokens.length > 0) {
 		const avgSentiment = result.score / result.tokens.length; //Sentiment per token
@@ -161,7 +157,7 @@ router.get('/channel_posts', async (req, res) => {
 			return res.status(200).json([]);
 		}
 		const { strength = 1, scoring = {}, rules = [] } = algorithm;
-		console.log("APPLYING ALGORITHM:", JSON.stringify(algorithm, null, 2));
+		//console.log("APPLYING ALGORITHM:", JSON.stringify(algorithm, null, 2));
 		const evaluateCondition = (postContext, condition) => {
 			const { field, operator, value } = condition;
 			const { post, has_images, has_videos, has_text, text_body, post_time_str } = postContext;
@@ -203,7 +199,7 @@ router.get('/channel_posts', async (req, res) => {
 				post_time_str: `${String(createdAt.getHours()).padStart(2, '0')}:${String(createdAt.getMinutes()).padStart(2, '0')}`
 			};
 			const sentimentScore = analyseSentiment(postContext.text_body);
-			console.log("postId:", post.post_id, "sentimentScore:", sentimentScore);
+			//console.log("postId:", post.post_id, "sentimentScore:", sentimentScore);
 			post.dataValues.sentiment = sentimentScore; //Fix
 			let isSuppressed = false;
 			let score = 0;

@@ -234,9 +234,9 @@
 }
 .settings-feed-photo {
     border-radius: var(--xl-margin);
-    height: calc(10 * var(--large-margin));
-    margin: var(--large-margin);
-    width: calc(10 * var(--large-margin));
+    height: calc(5 * var(--xl-margin));
+    margin: var(--medium-margin);
+    width: calc(5 * var(--xl-margin));
 }
 .theme-box {
     border: 1px solid var(--border);

@@ -21,7 +21,7 @@ function InfoIconWithTooltip({ info }) {
     );
 }
 
-const AddAlgorithm = ({ algorithms = [], editingAlgorithm = null, locationId, onCreated, onUpdated }) => {
+const AddAlgorithm = ({ algorithms = [], editingAlgorithm = null, locationId, onCreated, onUpdated, setEditingAlgorithm }) => {
     console.log("algorithms:", algorithms);    
     const [activeDays, setActiveDays] = useState({ monday: true, tuesday: true, wednesday: true, thursday: true, friday: true, saturday: true, sunday: true });
     const [algorithmCode, setAlgorithmCode] = useState('');
@@ -70,8 +70,17 @@ const AddAlgorithm = ({ algorithms = [], editingAlgorithm = null, locationId, on
     const submitAlgorithm = async () => {
         try {
             setError(null);
-            setLoading(true);
             const nameToUse = algorithmName.trim() || `Algorithm ${algorithms.length + 1}`;
+            const duplicate = algorithms.some(
+                a => a.algorithm_name.toLowerCase() === nameToUse.toLowerCase() &&
+                a.algorithm_id !== editingAlgorithm?.algorithm_id
+            );
+            if (duplicate) {
+                setError("You already have an algorithm with this name");
+                setTimeout(() => { setError('') }, 5000);
+                return;
+            }
+            setLoading(true);
             const payload = {
                 algorithmId: editingAlgorithm?.algorithm_id,
                 algorithmName: nameToUse,
@@ -120,15 +129,49 @@ const AddAlgorithm = ({ algorithms = [], editingAlgorithm = null, locationId, on
         return ['from_date', 'until_date', 'between_dates'].includes(chronology);
     };
 
+    const startCreatingNew = () => {
+        setAlgorithmCode('');
+        setAlgorithmName('');
+        setChronology('');
+        setContentType({ images: true, text: true, videos: true, interactive: true });
+        setCustomInstruction(''); 
+        setSentiment(0);
+        setSimilarity(0);
+        setStartTime('00:00');
+        setEndTime('23:59');
+        setStrength(1);
+        setTemplate('none');
+        setWordBoost('');
+        setWordSuppress();
+        setDateFrom('');
+        setDateTo('');
+        setSpecificDate('');
+        setActiveDays({ monday: true, tuesday: true, wednesday: true, thursday: true, friday: true, saturday: true, sunday: true });
+        setEditingAlgorithm(null);
+    }
+
     return (
         <div className="create-algorithm">
+            <div className="error-state">{error}</div>
             <div className="create-header">
                 <p className="medium-text">{editingAlgorithm ? 'Edit Algorithm' : 'Create New Algorithm'}</p>
-                <button className="button button--success" onClick={submitAlgorithm} type="button" disabled={loading}>
-                    {loading
-                        ? editingAlgorithm ? 'Saving...' : 'Creating...'
-                        : editingAlgorithm ? 'Save Changes' : 'Create'}
-                </button>
+		        <div>
+                    {editingAlgorithm && (
+                        <button 
+                            className="button button--secondary" 
+                            onClick={startCreatingNew} 
+                            type="button"
+                            style={{ marginRight: '8px' }}
+                        >
+                            Create New
+                        </button>
+                    )}
+                    <button className="button button--success" onClick={submitAlgorithm} type="button" disabled={loading}>
+                        {loading
+                            ? editingAlgorithm ? 'Saving...' : 'Creating...'
+                            : editingAlgorithm ? 'Save Changes' : 'Create'}
+                    </button>
+                </div>
             </div>
             <div className="form hide-scrollbar">
                 <div className="form-row">
@@ -348,7 +391,6 @@ const AddAlgorithm = ({ algorithms = [], editingAlgorithm = null, locationId, on
                         </div>
                     </>
                 )}
-                {error && <div className="error-state">{error}</div>}
             </div>
         </div>
     );

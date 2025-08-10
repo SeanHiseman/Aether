@@ -65,7 +65,7 @@ const ContentWidget = ({ canRemove, feed, isDraft, isGroup, onEditClick, onPostR
 		async (postId) => {
 			if (!isAuthenticated) return; //Only count views if user is logged in
 			try {
-				if (!hasViewed && (!isAuthenticated || (isAuthenticated && viewer?.feed_id !== post.poster_id))) {
+				if (!hasViewed && (!isAuthenticated || (isAuthenticated && viewer?.feed_id !== post.poster_id))) { //Do not add views for own content
 					const response = await axios.post('/api/increment_views', { postId });
 					if (response.data.success) {
 						setViews((prev) => prev + 1);
@@ -312,6 +312,7 @@ const ContentWidget = ({ canRemove, feed, isDraft, isGroup, onEditClick, onPostR
 				</span>
 			</Link>
 			<div ref={fullscreenRef}
+				onClick={() => incrementViews(post.post_id)}
 				style={{
 					position: 'relative',
 					width: '100%',

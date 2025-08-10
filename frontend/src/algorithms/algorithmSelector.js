@@ -14,35 +14,40 @@ const AlgorithmSelector = ({ locationId }) => {
 	const [optionsOpen, setOptionsOpen] = useState(false);
 
 	const assignAlgorithm = async (algorithmId) => {
-		if (assignedAlgorithmId === algorithmId) return;
 		try {
+			if (loading || assignedAlgorithmId === algorithmId) return;
+			setLoading(true);
 			setAssignError(null);
-			if (assignedAlgorithmId) {
-				await axios.delete('/api/remove_algorithm', {
-					data: { algorithmId: assignedAlgorithmId, locationId }
-				});
-			}
 			if (algorithmId) {
+				console.log("Assigning algorithm:", algorithmId, "to location:", locationId);
 				const response = await axios.post('/api/assign_algorithm', {
 					algorithmId,
 					locationId
 				});
 				if (!response.data.success) throw new Error(response.data.message || 'Failed to assign algorithm.');
+				setAssignedAlgorithmId(algorithmId);
+			} else {
+				console.log("Unassigning algorithm:", assignedAlgorithmId, "from location:", locationId);
+				await axios.delete('/api/remove_algorithm', {
+					data: { algorithmId: assignedAlgorithmId, locationId }
+				});
+				setAssignedAlgorithmId('');
+				setEditingAlgorithm(null);
 			}
-			setAssignedAlgorithmId(algorithmId);
 			setAlgorithms(prev => {
 				const updated = prev.map(algo => ({
 					...algo,
 					algorithm_locations: algo.algorithm_id === algorithmId 
 						? [...(algo.algorithm_locations || []), { location_id: locationId }]
 						: (algo.algorithm_locations || []).filter(loc => loc.location_id !== locationId)
-				}))
-				//Manually move assigned algorithm to top of the list, so that fetchAlgorithms() does not need to be called again
+				}));
 				updated.sort((a, b) => a.algorithm_name.localeCompare(b.algorithm_name));
-				const index = updated.findIndex(a => a.algorithm_id === algorithmId);
-				if (index > 0) {
-					const [assigned] = updated.splice(index, 1);
-					updated.unshift(assigned);
+				if (algorithmId) {
+					const index = updated.findIndex(a => a.algorithm_id === algorithmId);
+					if (index > 0) {
+						const [assigned] = updated.splice(index, 1);
+						updated.unshift(assigned);
+					}
 				}
 				return updated;
 			});
@@ -50,7 +55,9 @@ const AlgorithmSelector = ({ locationId }) => {
 			console.error('Error assigning algorithm:', error);
 			setAssignError('Failed to assign algorithm');
 			setTimeout(() => { setAssignError('') }, 3000);
-		} 
+		} finally {
+			setLoading(false);
+		}
 	};
 
 	const unassignAlgorithm = async () => {
@@ -66,6 +73,7 @@ const AlgorithmSelector = ({ locationId }) => {
 				...algo,
 				algorithm_locations: (algo.algorithm_locations || []).filter(loc => loc.location_id !== locationId)
 			})));
+			setEditingAlgorithm(null);
 		} catch (error) {
 			console.error('Error unassigning algorithm:', error);
 			setAssignError('Failed to unassign algorithm');
@@ -88,6 +96,7 @@ const AlgorithmSelector = ({ locationId }) => {
 			});
 			setAlgorithms(prev => prev.filter(a => a.algorithm_id !== algorithmId));
 			if (algorithmId === assignedAlgorithmId) setAssignedAlgorithmId('');
+			if (editingAlgorithm?.algorithm_id === algorithmId) setEditingAlgorithm(null);
 		} catch (error) {
 			setError('Failed to delete algorithm');
 			setTimeout(() => { setError('') }, 3000);
@@ -114,6 +123,9 @@ const AlgorithmSelector = ({ locationId }) => {
 			}
 			setAlgorithms(sorted);
 			setAssignedAlgorithmId(assignedId);
+			if (assigned) {
+				setEditingAlgorithm(assigned);
+			}
 		} catch (error) {
 			setError('Failed to load algorithms');
 			setTimeout(() => { setError('') }, 3000);
@@ -146,11 +158,13 @@ const AlgorithmSelector = ({ locationId }) => {
 		const isAlreadyAssigned = algorithm?.algorithm_locations?.some(fa => fa.location_id === locationId);
 		if (isAlreadyAssigned) return;
 		assignAlgorithm(algorithmId);
+		setEditingAlgorithm(algorithm || null);
 	};
 
 	const selectRadio = algorithmId => {
-		if (assignedAlgorithmId === algorithmId) {
+		if (algorithmId === '') {
 			unassignAlgorithm();
+			setEditingAlgorithm(null);
 		} else {
 			selectAlgorithm(algorithmId);
 		}
@@ -193,7 +207,7 @@ const AlgorithmSelector = ({ locationId }) => {
 										>
 											{assignedAlgorithmId
 												? `Assigned algorithm: ${algorithms.find(a => a.algorithm_id === assignedAlgorithmId)?.algorithm_name}`
-												: 'Choose an algorithm...'}
+												: algorithms.length !== 0 ? 'Choose an algorithm...' : 'No algorithms assigned'}
 										</div>
 										{optionsOpen && (
 											<ul className="algorithm-options">
@@ -253,7 +267,14 @@ const AlgorithmSelector = ({ locationId }) => {
 										)}
 									</div>
 								</div>
-								<AddAlgorithm algorithms={algorithms} editingAlgorithm={editingAlgorithm} locationId={locationId} onCreated={handleCreated} onUpdated={updateAlgorithms} />
+								<AddAlgorithm 
+									algorithms={algorithms} 
+									editingAlgorithm={editingAlgorithm} 
+									locationId={locationId} 
+									onCreated={handleCreated} 
+									onUpdated={updateAlgorithms} 
+									setEditingAlgorithm={setEditingAlgorithm}
+								/>
 							</>
 						)}
 						<div className="error-message">{error}</div>

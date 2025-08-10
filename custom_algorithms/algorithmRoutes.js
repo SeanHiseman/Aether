@@ -10,18 +10,23 @@ const openai = new OpenAI();
 const router = Router();
 
 router.post('/assign_algorithm', authenticateCheck, async (req, res) => {
+	let transaction;
 	try {
+		transaction = await sequelize.transaction();
 		const { algorithmId, locationId } = req.body;
 		const userId = req.session.user_id;
-		const existing = await AlgorithmLocations.findOne({
-			where: { algorithm_id: algorithmId, location_id: locationId, user_id: userId }
+		const [record, created] = await AlgorithmLocations.findOrCreate({
+			where: { location_id: locationId, user_id: userId },
+			defaults: { id: v4(), algorithm_id: algorithmId },
+			transaction
 		});
-		if (existing) {
-			return res.status(200).json({ success: true, message: 'Algorithm already assigned to this feed.' });
-		}
-		await AlgorithmLocations.create({ id: v4(), algorithm_id: algorithmId, location_id: locationId, user_id: userId });
+		if (!created) {
+			await record.update({ algorithm_id: algorithmId }, { transaction });
+		} 
+		await transaction.commit();
 		res.status(200).json({ success: true });
 	} catch (error) {
+		if (transaction) await transaction.rollback();
 		res.status(500).json({ success: false, message: 'Failed to assign algorithm.' });
 	}
 });
@@ -106,7 +111,7 @@ router.post('/create_algorithm', authenticateCheck, async (req, res) => {
 			const assistant = await openai.beta.assistants.create({
 				name: "Algorithm Creator",
 				instructions: systemPrompt,
-				model: "gpt-4o-mini",
+				model: "gpt-5-mini",
 			});
 			const thread = await openai.beta.threads.create();
 			await openai.beta.threads.messages.create(thread.id, {
@@ -258,17 +263,13 @@ router.get('/get_user_algorithms', authenticateCheck, async (req, res) => {
 router.delete('/remove_algorithm', authenticateCheck, async (req, res) => {
 	try {
 		const { algorithmId, locationId } = req.body;
+		console.log("req.body:", req.body);
 		const userId = req.session.user_id;
-		const existing = await AlgorithmLocations.findOne({
-			where: { algorithm_id: algorithmId, location_id: locationId, user_id: userId }
-		});
-		if (!existing) {
-			console.log("not existing")
-			return res.status(400).json({ success: false, message: 'Algorithm not assigned to this feed.' });
-		}
-		await AlgorithmLocations.destroy({ where: { algorithm_id: algorithmId, location_id: locationId, user_id: userId } });
+		console.log("userId:", userId);
+		await AlgorithmLocations.destroy({ where: { location_id: locationId, user_id: userId } });
 		res.status(200).json({ success: true });
 	} catch (error) {
+		console.log("error removing algorithm:", error);
 		res.status(500).json({ success: false, message: 'Failed to remove algorithm.' });
 	}
 });

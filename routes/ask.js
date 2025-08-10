@@ -129,8 +129,11 @@ router.get('/get_ask_chats', authenticateCheck, async (req, res) => {
 router.post('/generate_content', authenticateCheck, async (req, res) => {
     try {
         const { currentCode, request, parentCode, senderId } = req.body;
-        const model = req.session.has_membership ? 'o4-mini' : 'gpt-4.1-mini'; 
-        const tokenMultiplier = req.session.has_membership ? 11 : 4; //o4-mini 11x more than 4.1-nano baseline
+        const hasMembership = req.session.has_membership || false;
+        const model = hasMembership ? 'gpt-5-mini' : 'gpt-5-nano'; 
+        //GPT-5-mini 0.25/2.00, GPT-5 nano 0.05/0.40
+        const inputMultiplier = hasMembership ? 2.5 : 0.5;
+        const outputMultiplier = hasMembership ? 20 : 4; 
         const normalizedRequest = request.toLowerCase().trim();
         const commonWords = ['a', 'an', 'the', 'and', 'or', 'but', 'is', 'are', 'was', 'were', 'to', 'of', 'in', 'with', 'for', 'on', 'at', 'by'];
         const tokens = normalizedRequest.split(/\s+/)
@@ -217,7 +220,7 @@ router.post('/generate_content', authenticateCheck, async (req, res) => {
             Current Code: ${currentCode}
             IMPORTANT: Return ONLY the raw HTML/Javascript code without any explanations, comments, introductory text, or markdown formatting.
             Do not include \`\`\`html, \`\`\`
-            Body background #232527 (unless specified), height 300px minimum
+            Body background #232527 (unless specified), height 300px minimum. No body padding, main width 100% with no border.
             Use styles: --border: #3e3f41;--darkest: #0f0f0f; --dark: #232527; --light: #737484; --lightest: #dddddd;
             White text as default
             Ensure all interactions work on mobile and desktop.
@@ -230,7 +233,7 @@ router.post('/generate_content', authenticateCheck, async (req, res) => {
                     content: assistantInstructions
                 }
             ],
-            max_completion_tokens: req.session.has_membership ? 100000 : 32768,
+            max_completion_tokens: hasMembership ? 128000 : 64000,
         });
         aiReply = completion.choices[0].message.content.trim();
         const doctypeIndex = aiReply.indexOf('<!DOCTYPE html>');
@@ -241,7 +244,7 @@ router.post('/generate_content', authenticateCheck, async (req, res) => {
         await Prompts.create({ prompt_id: v4(), prompt_content: request, response_content: aiReply});
         const inputTokens = completion.usage?.prompt_tokens || 0;
         const outputTokens = completion.usage?.completion_tokens || 0;
-        const totalTokens = (inputTokens + (outputTokens * 4)) * tokenMultiplier; //Multiplier adjustst for more expensive models, output tokens are 4x the cost of input tokens
+        const totalTokens = (inputTokens * inputMultiplier) + (outputTokens * outputMultiplier); 
 		await Users.increment('usage_count', { by: totalTokens, where: { user_id: senderId } });
         res.status(201).json({ success: true, generatedContent: aiReply, fromCache: false });
     } catch (error) {
@@ -267,9 +270,10 @@ router.post('/send_ask_message', authenticateCheck, async (req, res) => {
     try {
         const { chatId, messageContent, senderId, timestamp } = req.body;
         const chat = await AskChats.findOne({ where: { chat_id: chatId } });
-        const user = await Users.findOne({ where: { user_id: senderId } }); //Perhaps use session user_id
-        const model = user.has_membership ? 'gpt-4.1-mini' : 'gpt-4.1-nano';
-        const tokenMultiplier = user.has_membership ? 4 : 1;
+        const userId = req.session.user_id
+        const hasMembership = req.session.has_membership || false;
+        const model = hasMembership ? 'gpt-4.1-mini' : 'gpt-4.1-nano';
+        const tokenMultiplier = hasMembership ? 4 : 1;
         if (!chat) {
             return res.status(404).json({ success: false, message: 'Chat not found' });
         }

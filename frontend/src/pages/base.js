@@ -299,7 +299,7 @@ const BaseLayout = () => {
             }
             catch {
                 setDeepFeeds([]);
-                setAsideErrorMessage("Error fetching deep feeds");
+                setAsideErrorMessage("Error fetching combined feeds");
                 setTimeout(() => setAsideErrorMessage(""), 5000);
             }
         })();
