@@ -239,6 +239,7 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onEdit
         formData.append('build', file)
         try {
             const { data } = await axios.post('/api/upload_build', formData)
+            console.log("app upload data:", data);
             if (data.success) {
                 updateBlock({
                     id: blockId,
@@ -255,7 +256,8 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onEdit
                 setPostErrorMessage('App upload failed.')
                 setTimeout(() => setPostErrorMessage(''), 5000)
             }
-        } catch {
+        } catch (error) {
+            console.log("app upload fail error:", error);
             setPostErrorMessage('App upload failed.')
             setTimeout(() => setPostErrorMessage(''), 5000)
         }

@@ -783,8 +783,10 @@ router.get('/post_replies/:postId', async (req, res) => {
 });
 
 //Protect against zip bombs
-const MAX_ENTRIES = 1000
-const MAX_TOTAL_UNCOMPRESSED = 500 * 1024 * 1024 
+//const MAX_ENTRIES = 1000
+//const MAX_TOTAL_UNCOMPRESSED = 500 * 1024 * 1024 
+const MAX_ENTRIES = 1000000000000000
+const MAX_TOTAL_UNCOMPRESSED = 5000000000000 * 1024 * 1024 
 
 const isValidZip = filePath => new Promise((resolve, reject) => {
 	yauzl.open(filePath, { lazyEntries: true }, (err, zipfile) => {
@@ -840,6 +842,7 @@ router.post('/upload_build', authenticateCheck, upload.single('build'), async (r
 		if (!req.file) throw new Error('No file uploaded')
 		buildId = v4()
 		tmpZip = req.file.path
+		console.log("tmpZip:", tmpZip);
 		await isValidZip(tmpZip)
 		targetDir = path.join(buildsDir, buildId)
 		await fs.promises.mkdir(targetDir, { recursive: true })
@@ -857,6 +860,7 @@ router.post('/upload_build', authenticateCheck, upload.single('build'), async (r
 				.replace(/<head>/, `<head><base href="${baseUrl}/">`)
 			await fs.promises.writeFile(htmlPath, patched)
 		}
+		console.log("Adding to app builds, buildID:", buildId, "path", baseUrl);
 		await AppBuilds.create({ build_id: buildId, kind, path: baseUrl })
 		return res.status(201).json({ buildId, kind, path: baseUrl, success: true })
 	} catch (error) {
