@@ -21,6 +21,109 @@ function InfoIconWithTooltip({ info }) {
     );
 }
 
+const ALGORITHM_TEMPLATES = {
+    "breaking_news": {
+        name: "Breaking News",
+        chronology: "newest",
+        strength: 0.8,
+        sentiment: 0,
+        similarity: 0.6,
+        wordBoost: "breaking,news,update,urgent,developing,alert",
+        wordSuppress: "rumor,unconfirmed",
+        customInstruction: "Show me the latest breaking news and current events. Prioritize recent, verified news updates and urgent developments. Suppress unconfirmed rumors."
+    },
+    "educational": {
+        name: "Educational Content",
+        chronology: "newest",
+        strength: 0.7,
+        sentiment: 0.3,
+        similarity: 0.5,
+        wordBoost: "tutorial,learn,how-to,guide,explain,education,course,lesson",
+        wordSuppress: "clickbait,drama",
+        customInstruction: "Focus on educational and learning content including tutorials, guides, and explanations. Boost helpful educational material while reducing clickbait and drama."
+    },
+    "entertainment": {
+        name: "Entertainment & Fun",
+        chronology: "mixed",
+        strength: 0.4,
+        sentiment: 0.6,
+        similarity: 0.3,
+        wordBoost: "funny,meme,comedy,entertainment,viral,cute,amazing",
+        wordSuppress: "serious,political,depressing",
+        customInstruction: "Show entertaining and fun content that's light-hearted and positive. Prioritize funny, cute, and amazing content while filtering out serious or depressing material."
+    },
+    "professional": {
+        name: "Professional Network",
+        chronology: "newest",
+        strength: 0.8,
+        sentiment: 0.2,
+        similarity: 0.7,
+        wordBoost: "career,professional,industry,business,networking,leadership,startup,innovation",
+        wordSuppress: "personal,casual",
+        customInstruction: "Focus on professional and career-related content. Show industry insights, business news, networking opportunities, and leadership content. Boost during business hours on weekdays."
+    },
+    "positive_vibes": {
+        name: "Positive Vibes Only",
+        chronology: "newest",
+        strength: 0.6,
+        sentiment: 0.8,
+        similarity: 0.4,
+        wordBoost: "positive,inspiration,motivation,success,achievement,grateful,happiness,love",
+        wordSuppress: "negative,problem,crisis,drama,toxic",
+        customInstruction: "Show only positive, uplifting, and motivational content. Strongly suppress negative, toxic, or crisis-related content. Focus on inspiration, success stories, and happiness."
+    },
+    "tech_innovation": {
+        name: "Tech & Innovation",
+        chronology: "newest",
+        strength: 0.7,
+        sentiment: 0.1,
+        similarity: 0.8,
+        wordBoost: "technology,AI,innovation,startup,coding,software,digital,tech",
+        wordSuppress: "outdated,legacy",
+        customInstruction: "Focus on the latest technology trends and innovations. Prioritize AI, software development, digital innovation, and startup news. Suppress outdated or legacy technology content."
+    },
+    "local_community": {
+        name: "Local Community",
+        chronology: "newest",
+        strength: 0.6,
+        sentiment: 0.2,
+        similarity: 0.5,
+        wordBoost: "local,community,neighborhood,event,meetup,volunteer,charity",
+        wordSuppress: "global,international",
+        customInstruction: "Show local community content including neighborhood events, meetups, volunteer opportunities, and local news. Suppress global or international content to focus on local community."
+    },
+    "sports_fitness": {
+        name: "Sports & Fitness",
+        chronology: "newest",
+        strength: 0.7,
+        sentiment: 0.3,
+        similarity: 0.8,
+        wordBoost: "sports,fitness,workout,training,athlete,game,team,health",
+        wordSuppress: "",
+        customInstruction: "Focus on sports, fitness, and health content. Show sports updates, workout tips, training advice, and athletic content. Boost content especially on weekends for game days."
+    },
+    "creative_arts": {
+        name: "Creative Arts",
+        chronology: "mixed",
+        strength: 0.5,
+        sentiment: 0.4,
+        similarity: 0.6,
+        wordBoost: "art,creative,design,music,artist,painting,photography,inspiration",
+        wordSuppress: "",
+        customInstruction: "Show creative and artistic content including art, design, music, and photography. Prioritize visual content and creative inspiration from artists and designers."
+    },
+    "deep_focus": {
+        name: "Deep Focus",
+        chronology: "oldest",
+        strength: 0.9,
+        sentiment: 0,
+        similarity: 0.9,
+        wordBoost: "analysis,research,study,insight,deep,detailed,comprehensive",
+        wordSuppress: "quick,brief,summary",
+        customInstruction: "Focus on long-form, analytical content perfect for deep reading sessions. Prioritize research, detailed analysis, and comprehensive studies. Suppress quick tips and brief summaries."
+    }
+};
+
 const AddAlgorithm = ({ algorithms = [], editingAlgorithm = null, locationId, onCreated, onUpdated, setEditingAlgorithm }) => {
     console.log("algorithms:", algorithms);    
     const [activeDays, setActiveDays] = useState({ monday: true, tuesday: true, wednesday: true, thursday: true, friday: true, saturday: true, sunday: true });
@@ -127,6 +230,33 @@ const AddAlgorithm = ({ algorithms = [], editingAlgorithm = null, locationId, on
         setEditingAlgorithm(null);
     }
 
+    const templateChange = (templateKey) => {
+        setTemplate(templateKey);
+        if (templateKey === 'none') {
+            setChronology('newest');
+            setStrength(0.5);
+            setSentiment(0);
+            setSimilarity(0);
+            setWordBoost('');
+            setWordSuppress('');
+            setCustomInstruction('');
+            return;
+        }
+        const templateConfig = ALGORITHM_TEMPLATES[templateKey];
+        if (templateConfig) {
+            setChronology(templateConfig.chronology);
+            setStrength(templateConfig.strength);
+            setSentiment(templateConfig.sentiment);
+            setSimilarity(templateConfig.similarity);
+            setWordBoost(templateConfig.wordBoost);
+            setWordSuppress(templateConfig.wordSuppress);
+            setCustomInstruction(templateConfig.customInstruction);
+            if (!algorithmName || Object.values(ALGORITHM_TEMPLATES).some(t => t.name === algorithmName)) {
+                setAlgorithmName(templateConfig.name);
+            }
+        }
+    };
+
     useEffect(() => {
         if (editingAlgorithm) {
             const { algorithm_code = '', algorithm_name = '' } = editingAlgorithm;
@@ -196,7 +326,7 @@ const AddAlgorithm = ({ algorithms = [], editingAlgorithm = null, locationId, on
                         onChange={e => setCustomInstruction(e.target.value)}
                     />
                 </div>
-                <div className="form-row">
+                <div className="form-row border-bottom">
                     <div className="form-group">
                         <div className="form-label-with-info">
                             <label className="small-text">Template</label>
@@ -205,12 +335,19 @@ const AddAlgorithm = ({ algorithms = [], editingAlgorithm = null, locationId, on
                         <select
                             className="form-select"
                             value={template}
-                            onChange={e => setTemplate(e.target.value)}
+                            onChange={e => templateChange(e.target.value)}
                         >
                             <option value="none">None</option>
-                            <option value="work">Work Focus</option>
-                            <option value="weekend">Weekend Leisure</option>
-                            <option value="news">News Only</option>
+                            <option value="breaking_news">Breaking News</option>
+                            <option value="educational">Educational Content</option>
+                            <option value="entertainment">Entertainment & Fun</option>
+                            <option value="professional">Professional Network</option>
+                            <option value="positive_vibes">Positive Vibes Only</option>
+                            <option value="tech_innovation">Tech & Innovation</option>
+                            <option value="local_community">Local Community</option>
+                            <option value="sports_fitness">Sports & Fitness</option>
+                            <option value="creative_arts">Creative Arts</option>
+                            <option value="deep_focus">Deep Focus</option>
                         </select>
                     </div>
                 </div>

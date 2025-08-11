@@ -859,14 +859,15 @@ router.post('/upload_build', authenticateCheck, upload.single('build'), async (r
 		}
 		await AppBuilds.create({ build_id: buildId, kind, path: baseUrl })
 		return res.status(201).json({ buildId, kind, path: baseUrl, success: true })
-	} catch (err) {
+	} catch (error) {
+		console.log("error uploading build:", error);
 		if (tmpZip) {
 			try { await fs.promises.unlink(tmpZip) } catch {}
 		}
 		if (targetDir) {
 			try { await fs.promises.rm(targetDir, { recursive: true, force: true }) } catch {}
 		}
-		return res.status(400).json({ message: err.message, success: false })
+		return res.status(400).json({ message: error.message, success: false })
 	}
 })
 

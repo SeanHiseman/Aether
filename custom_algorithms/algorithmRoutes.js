@@ -63,15 +63,16 @@ router.post('/create_algorithm', authenticateCheck, async (req, res) => {
 		let algorithmCode;
 		if (customInstruction && customInstruction.trim() !== "") {
 			const systemPrompt = `
-				You are an expert algorithm creation assistant. Your task is to generate a single, valid JSON object that represents a user's content filtering and ranking rules.
-				The user provides settings via a form and a custom natural language instruction. You must synthesize ALL of this information into the final JSON.
+				You are an expert algorithm creation assistant. Your task is to generate a single, valid JSON object representing a user's custom algorithm rules.
+				The user will provide form settings and/or a custom natural language instruction. You must merge both sources into the final JSON, prioritising the custom instruction when there is any conflict.
 
-				**IMPORTANT RULES:**
-				1.  If the user asks to "exclude", "remove", "hide", or "suppress" content, you MUST use a rule with the action type "SUPPRESS". Do NOT use "wordSuppress" or "PENALIZE" for exclusion requests.
-				2.  Prioritize the custom natural language instruction as the primary source of truth for creating "rules".
-				3.  Avoid redundancy. Do not create a "wordSuppress" entry and a "SUPPRESS" rule for the same term. The "SUPPRESS" rule is always preferred for exclusion.
-
-				The JSON output MUST conform to the following schema:
+				Rules for interpretation:
+				1. Broad Topic Expansion: For any mentioned topic, expand into the most exhaustive set of related terms possible — including synonyms, abbreviations, acronyms, hashtags, nicknames, notable people, brands, teams, events, locations, and common misspellings. Use real-world domain knowledge. Example: “Formula 1” must include “F1”, “#F1”, “Grand Prix”, all circuit names, and major team/principal names.
+				2. Exclusions: If the instruction says to exclude, remove, hide, or suppress content, always use a "SUPPRESS" rule. Never duplicate this exclusion in wordSuppress.
+				3. Temporal Restrictions: If the instruction specifies a day of the week, specific time, or date range, treat it as a hard requirement. Do not allow matching content outside that period. If your schema supports only post_time (HH:MM) or day_of_week (string), map appropriately. Example: “on Sundays” means "day_of_week": "Sunday" as a required condition in the rule.
+				4. Combining Conditions: When multiple restrictions apply to the same requirement (e.g., topic + day), place them in the same conditions array for that rule.
+				5. Scoring Defaults: Unless explicitly provided, default wordBoost values to 10 and wordSuppress to -10.
+				6. Output format: The JSON must strictly follow this schema:
 				{
 				"chronology": "newest" | "oldest",
 				"strength": number,
@@ -81,24 +82,19 @@ router.post('/create_algorithm', authenticateCheck, async (req, res) => {
 					"wordBoost": [{ "word": string, "value": number }],
 					"wordSuppress": [{ "word": string, "value": number }]
 				},
-				"rules": [
-					{
-					"ruleName": "A descriptive name for the rule",
+				"rules": [{
+					"ruleName": string,
 					"action": { "type": "SUPPRESS" | "BOOST" | "PENALIZE", "value": number },
 					"conditions": [
 						{
-						"field": "post_time" | "body" | "category" | "sentiment_score" | "has_images" | "has_videos" | "has_text",
+						"field": "post_time" | "day_of_week" | "body" | "category" | "sentiment_score" | "has_images" | "has_videos" | "has_text",
 						"operator": "AFTER" | "BEFORE" | "EQUALS" | "CONTAINS" | "CONTAINS_ANY" | "GREATER_THAN" | "LESS_THAN",
 						"value": string | number | boolean | string[]
 						}
 					],
 					"exceptions": [ { "condition": { ... } } ]
-					}
-				]
-				}
-				- For "post_time", use "HH:MM".
-				- "has_images", "has_videos", "has_text" are booleans.
-				- wordBoost/suppress can default to value 10 / -10 respectively.
+				}]}
+				7. Validation: All terms, conditions, and rules must be valid per this schema. No extra text outside the JSON.
 			`;
 			const userContent = `
 				Please create the algorithm JSON based on the following combination of settings.

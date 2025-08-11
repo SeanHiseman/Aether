@@ -24,7 +24,7 @@ const Posts = sequelize.define('posts', {
     created_at: { type: DataTypes.DATE(3), defaultValue: sequelize.literal('CURRENT_TIMESTAMP(3)') },
     updated_at: { type: DataTypes.DATE(3), defaultValue: sequelize.literal('CURRENT_TIMESTAMP(3)') },
     poster_id: { type: STRING(36), allowNull: false },
-}, { tableName: 'posts', timestamps: false });
+}, { tableName: 'posts', timestamps: false, indexes: [{ fields: ['channel_id'] }] });
 
 const PostDrafts = sequelize.define('post_drafts', {
     draft_id: { type: STRING(36), primaryKey: true },
@@ -36,7 +36,7 @@ const PostDrafts = sequelize.define('post_drafts', {
     poster_id: { type: STRING(36), allowNull: false },
     created_at: { type: DataTypes.DATE(3), defaultValue: sequelize.literal('CURRENT_TIMESTAMP(3)') },
     updated_at: { type: DataTypes.DATE(3), defaultValue: sequelize.literal('CURRENT_TIMESTAMP(3)'), onUpdate : sequelize.literal('CURRENT_TIMESTAMP(3)') },
-}, { tableName: 'post_drafts', timestamps: false });
+}, { tableName: 'post_drafts', timestamps: false, indexes: [{ fields: ['channel_id'] }] });
 
 const PostNotes = sequelize.define('post_notes', {
     note_id: { type: STRING(36), primaryKey: true },

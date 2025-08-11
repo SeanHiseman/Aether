@@ -1,6 +1,6 @@
 import axios from 'axios';
 import { useEffect, useState } from 'react';
-import { FaEdit, FaRegEye, FaTrash } from 'react-icons/fa';
+import { FaEdit, FaTrash } from 'react-icons/fa';
 import AddAlgorithm from './addAlgorithm';
 
 const AlgorithmSelector = ({ locationId }) => {
@@ -19,7 +19,6 @@ const AlgorithmSelector = ({ locationId }) => {
 			setLoading(true);
 			setAssignError(null);
 			if (algorithmId) {
-				console.log("Assigning algorithm:", algorithmId, "to location:", locationId);
 				const response = await axios.post('/api/assign_algorithm', {
 					algorithmId,
 					locationId
@@ -27,7 +26,6 @@ const AlgorithmSelector = ({ locationId }) => {
 				if (!response.data.success) throw new Error(response.data.message || 'Failed to assign algorithm.');
 				setAssignedAlgorithmId(algorithmId);
 			} else {
-				console.log("Unassigning algorithm:", assignedAlgorithmId, "from location:", locationId);
 				await axios.delete('/api/remove_algorithm', {
 					data: { algorithmId: assignedAlgorithmId, locationId }
 				});
@@ -52,7 +50,6 @@ const AlgorithmSelector = ({ locationId }) => {
 				return updated;
 			});
 		} catch (error) {
-			console.error('Error assigning algorithm:', error);
 			setAssignError('Failed to assign algorithm');
 			setTimeout(() => { setAssignError('') }, 3000);
 		} finally {
@@ -75,7 +72,6 @@ const AlgorithmSelector = ({ locationId }) => {
 			})));
 			setEditingAlgorithm(null);
 		} catch (error) {
-			console.error('Error unassigning algorithm:', error);
 			setAssignError('Failed to unassign algorithm');
 			setTimeout(() => { setAssignError('') }, 3000);
 		};

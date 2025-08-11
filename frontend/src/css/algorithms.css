@@ -121,6 +121,9 @@
 	font-size: var(--small-text);
 	padding: var(--small-margin);
 }
+.border-bottom {
+	border-bottom: 1px solid var(--border);
+}
 .choose-algorithm {
 	border-bottom: 1px solid var(--border);
 	padding-bottom: var(--medium-margin);
@@ -251,7 +254,7 @@
 	align-items: center;
 	display: flex;
 	gap: var(--medium-margin);
-	margin-bottom: var(--large-margin);
+	padding-bottom: var(--large-margin);
 }
 .form-row .form-group {
 	flex: 1;
@@ -268,7 +271,7 @@
 	width: 100%;
 }
 .form-textarea {
-	min-height: calc(3 * var(--large-margin));
+	height: calc(5 * var(--large-margin));
 	resize: vertical;
 }
 .info-icon {
