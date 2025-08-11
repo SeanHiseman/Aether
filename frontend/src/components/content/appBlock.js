@@ -3,14 +3,7 @@ import { useRef } from 'react'
 
 const AppBlock = ({ appPath }) => {
     const iframeRef = useRef(null)
-    const MIN_HEIGHT = 300
-    const onLoad = e => {
-        try {
-            const doc = e.target.contentWindow.document
-            const h = Math.max(doc.body.scrollHeight, MIN_HEIGHT)
-            e.target.style.height = `${h}px`
-        } catch {}
-    }
+
     return (
         <iframe
             key={appPath}
@@ -19,7 +12,6 @@ const AppBlock = ({ appPath }) => {
             src={`${appPath}/index.html`}
             style={{ border: 'none', width: '100%', height: '100%', minHeight: '300px' }}
             title={`app-block-${appPath}`}
-            onLoad={onLoad}
         />
     )
 }
