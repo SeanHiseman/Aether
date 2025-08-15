@@ -25,9 +25,9 @@ const ALGORITHM_TEMPLATES = {
     "breaking_news": {
         name: "Breaking News",
         chronology: "newest",
-        strength: 0.8,
         sentiment: 0,
-        similarity: 0.6,
+        variety: 0.9,
+        voteImpact: 1,
         wordBoost: "breaking,news,update,urgent,developing,alert",
         wordSuppress: "rumor,unconfirmed",
         customInstruction: "Show me the latest breaking news and current events. Prioritize recent, verified news updates and urgent developments. Suppress unconfirmed rumors."
@@ -35,9 +35,9 @@ const ALGORITHM_TEMPLATES = {
     "educational": {
         name: "Educational Content",
         chronology: "newest",
-        strength: 0.7,
         sentiment: 0.3,
-        similarity: 0.5,
+        variety: 0.9,
+        voteImpact: 1,
         wordBoost: "tutorial,learn,how-to,guide,explain,education,course,lesson",
         wordSuppress: "clickbait,drama",
         customInstruction: "Focus on educational and learning content including tutorials, guides, and explanations. Boost helpful educational material while reducing clickbait and drama."
@@ -45,9 +45,9 @@ const ALGORITHM_TEMPLATES = {
     "entertainment": {
         name: "Entertainment & Fun",
         chronology: "mixed",
-        strength: 0.4,
         sentiment: 0.6,
-        similarity: 0.3,
+        variety: 0.9,
+        voteImpact: 1,
         wordBoost: "funny,meme,comedy,entertainment,viral,cute,amazing",
         wordSuppress: "serious,political,depressing",
         customInstruction: "Show entertaining and fun content that's light-hearted and positive. Prioritize funny, cute, and amazing content while filtering out serious or depressing material."
@@ -55,19 +55,19 @@ const ALGORITHM_TEMPLATES = {
     "professional": {
         name: "Professional Network",
         chronology: "newest",
-        strength: 0.8,
         sentiment: 0.2,
-        similarity: 0.7,
+        variety: 0.9,
+        voteImpact: 1,
         wordBoost: "career,professional,industry,business,networking,leadership,startup,innovation",
         wordSuppress: "personal,casual",
         customInstruction: "Focus on professional and career-related content. Show industry insights, business news, networking opportunities, and leadership content. Boost during business hours on weekdays."
     },
     "positive_vibes": {
-        name: "Positive Vibes Only",
+        name: "Positive Vibes",
         chronology: "newest",
-        strength: 0.6,
         sentiment: 0.8,
-        similarity: 0.4,
+        variety: 0.9,
+        voteImpact: 1,
         wordBoost: "positive,inspiration,motivation,success,achievement,grateful,happiness,love",
         wordSuppress: "negative,problem,crisis,drama,toxic",
         customInstruction: "Show only positive, uplifting, and motivational content. Strongly suppress negative, toxic, or crisis-related content. Focus on inspiration, success stories, and happiness."
@@ -75,9 +75,9 @@ const ALGORITHM_TEMPLATES = {
     "tech_innovation": {
         name: "Tech & Innovation",
         chronology: "newest",
-        strength: 0.7,
         sentiment: 0.1,
-        similarity: 0.8,
+        variety: 0.9,
+        voteImpact: 1,
         wordBoost: "technology,AI,innovation,startup,coding,software,digital,tech",
         wordSuppress: "outdated,legacy",
         customInstruction: "Focus on the latest technology trends and innovations. Prioritize AI, software development, digital innovation, and startup news. Suppress outdated or legacy technology content."
@@ -85,9 +85,9 @@ const ALGORITHM_TEMPLATES = {
     "local_community": {
         name: "Local Community",
         chronology: "newest",
-        strength: 0.6,
         sentiment: 0.2,
-        similarity: 0.5,
+        variety: 0.9,
+        voteImpact: 1,
         wordBoost: "local,community,neighborhood,event,meetup,volunteer,charity",
         wordSuppress: "global,international",
         customInstruction: "Show local community content including neighborhood events, meetups, volunteer opportunities, and local news. Suppress global or international content to focus on local community."
@@ -95,9 +95,9 @@ const ALGORITHM_TEMPLATES = {
     "sports_fitness": {
         name: "Sports & Fitness",
         chronology: "newest",
-        strength: 0.7,
         sentiment: 0.3,
-        similarity: 0.8,
+        variety: 0.9,
+        voteImpact: 1,
         wordBoost: "sports,fitness,workout,training,athlete,game,team,health",
         wordSuppress: "",
         customInstruction: "Focus on sports, fitness, and health content. Show sports updates, workout tips, training advice, and athletic content. Boost content especially on weekends for game days."
@@ -105,9 +105,9 @@ const ALGORITHM_TEMPLATES = {
     "creative_arts": {
         name: "Creative Arts",
         chronology: "mixed",
-        strength: 0.5,
         sentiment: 0.4,
-        similarity: 0.6,
+        variety: 0.9,
+        voteImpact: 1,
         wordBoost: "art,creative,design,music,artist,painting,photography,inspiration",
         wordSuppress: "",
         customInstruction: "Show creative and artistic content including art, design, music, and photography. Prioritize visual content and creative inspiration from artists and designers."
@@ -115,9 +115,9 @@ const ALGORITHM_TEMPLATES = {
     "deep_focus": {
         name: "Deep Focus",
         chronology: "oldest",
-        strength: 0.9,
         sentiment: 0,
-        similarity: 0.9,
+        variety: 0.9,
+        voteImpact: 1,
         wordBoost: "analysis,research,study,insight,deep,detailed,comprehensive",
         wordSuppress: "quick,brief,summary",
         customInstruction: "Focus on long-form, analytical content perfect for deep reading sessions. Prioritize research, detailed analysis, and comprehensive studies. Suppress quick tips and brief summaries."
@@ -127,25 +127,27 @@ const ALGORITHM_TEMPLATES = {
 const AddAlgorithm = ({ algorithms = [], editingAlgorithm = null, locationId, onCreated, onUpdated, setEditingAlgorithm }) => {
     console.log("algorithms:", algorithms);    
     const [activeDays, setActiveDays] = useState({ monday: true, tuesday: true, wednesday: true, thursday: true, friday: true, saturday: true, sunday: true });
+    const [advancedChronology, setAdvancedChronology] = useState('');
     const [algorithmCode, setAlgorithmCode] = useState('');
     const [algorithmName, setAlgorithmName] = useState('');
-    const [chronology, setChronology] = useState('newest');
+    const [chronology, setChronology] = useState(0.8);
     const [contentType, setContentType] = useState({ images: true, text: true, videos: true, interactive: true });
     const [customInstruction, setCustomInstruction] = useState('');
+    const [dateFrom, setDateFrom] = useState('');
+    const [dateTo, setDateTo] = useState('');
     const [endTime, setEndTime] = useState('23:59');
     const [error, setError] = useState(null);
     const [loading, setLoading] = useState(false);
     const [sentiment, setSentiment] = useState(0);
-    const [similarity, setSimilarity] = useState(0);
+    const [showAdvancedOptions, setShowAdvancedOptions] = useState(false);
+    const [showMoreOptions, setShowMoreOptions] = useState(false);
+    const [specificDate, setSpecificDate] = useState('');
     const [startTime, setStartTime] = useState('00:00');
-    const [strength, setStrength] = useState(0.5);
     const [template, setTemplate] = useState('none');
+    const [variety, setVariety] = useState(0.5);
+    const [voteImpact, setVoteImpact] = useState(1);
     const [wordBoost, setWordBoost] = useState('');
     const [wordSuppress, setWordSuppress] = useState('');
-    const [dateFrom, setDateFrom] = useState('');
-    const [dateTo, setDateTo] = useState('');
-    const [specificDate, setSpecificDate] = useState('');
-    const [showMoreOptions, setShowMoreOptions] = useState(false);
 
     const submitAlgorithm = async () => {
         try {
@@ -164,36 +166,35 @@ const AddAlgorithm = ({ algorithms = [], editingAlgorithm = null, locationId, on
             const payload = {
                 algorithmId: editingAlgorithm?.algorithm_id,
                 algorithmName: nameToUse,
+                activeDays,
+                advancedChronology,
                 chronology,
                 contentType,
                 customInstruction,
+                dateFrom,
+                dateTo,
                 locationId,
                 sentiment,
-                similarity,
+                specificDate,
                 startTime,
                 endTime,
-                strength,
                 template,
                 wordBoost: wordBoost.split(',').map(w => w.trim()).filter(Boolean),
                 wordSuppress: wordSuppress.split(',').map(w => w.trim()).filter(Boolean),
-                dateFrom,
-                dateTo,
-                specificDate,
-                activeDays
+                variety,
+                voteImpact,
             };
             const { data } = editingAlgorithm
                 ? await axios.put('/api/edit_algorithm', payload)
                 : await axios.post('/api/create_algorithm', payload);
             if (data.success) {
                 const saved = data.updatedAlgorithm || data.newAlgorithm;
-                editingAlgorithm ? onUpdated && onUpdated(saved) : onCreated && onCreated(saved);
-                setAlgorithmName('');
-                setCustomInstruction('');
-                setWordBoost('');
-                setWordSuppress('');
-                setDateFrom('');
-                setDateTo('');
-                setSpecificDate('');
+                if (editingAlgorithm) {
+                    onUpdated && onUpdated(saved);
+                } else {
+                    setEditingAlgorithm(saved);
+                    onCreated && onCreated(saved);
+                }
             } else {
                 throw new Error(data.message || 'Failed to save algorithm.');
             }
@@ -206,50 +207,53 @@ const AddAlgorithm = ({ algorithms = [], editingAlgorithm = null, locationId, on
     };
 
     const shouldShowDateInputs = () => {
-        return ['from_date', 'until_date', 'between_dates'].includes(chronology);
+        return ['from_date', 'until_date', 'between_dates'].includes(advancedChronology);
     };
 
     const startCreatingNew = () => {
+        setActiveDays({ monday: true, tuesday: true, wednesday: true, thursday: true, friday: true, saturday: true, sunday: true });
+        setAdvancedChronology('');
         setAlgorithmCode('');
         setAlgorithmName('');
-        setChronology('');
+        setChronology(0.8);
         setContentType({ images: true, text: true, videos: true, interactive: true });
         setCustomInstruction(''); 
+        setDateFrom('');
+        setDateTo('');        
+        setEditingAlgorithm(null);
         setSentiment(0);
-        setSimilarity(0);
         setStartTime('00:00');
         setEndTime('23:59');
-        setStrength(1);
         setTemplate('none');
         setWordBoost('');
         setWordSuppress('');
-        setDateFrom('');
-        setDateTo('');
         setSpecificDate('');
-        setActiveDays({ monday: true, tuesday: true, wednesday: true, thursday: true, friday: true, saturday: true, sunday: true });
-        setEditingAlgorithm(null);
+        setVariety(0.5);
+        setVoteImpact(0);
     }
 
     const templateChange = (templateKey) => {
         setTemplate(templateKey);
         if (templateKey === 'none') {
-            setChronology('newest');
-            setStrength(0.5);
+            setAdvancedChronology('');
+            setChronology(0.8);
             setSentiment(0);
-            setSimilarity(0);
+            setVoteImpact(1);
             setWordBoost('');
             setWordSuppress('');
+            setVariety(0.5);
             setCustomInstruction('');
             return;
         }
         const templateConfig = ALGORITHM_TEMPLATES[templateKey];
         if (templateConfig) {
+            setActiveDays({ monday: true, tuesday: true, wednesday: true, thursday: true, friday: true, saturday: true, sunday: true });
             setChronology(templateConfig.chronology);
-            setStrength(templateConfig.strength);
             setSentiment(templateConfig.sentiment);
-            setSimilarity(templateConfig.similarity);
+            setVoteImpact(templateConfig.voteImpact);
             setWordBoost(templateConfig.wordBoost);
             setWordSuppress(templateConfig.wordSuppress);
+            setVariety(templateConfig.variety);
             setCustomInstruction(templateConfig.customInstruction);
             if (!algorithmName || Object.values(ALGORITHM_TEMPLATES).some(t => t.name === algorithmName)) {
                 setAlgorithmName(templateConfig.name);
@@ -260,23 +264,36 @@ const AddAlgorithm = ({ algorithms = [], editingAlgorithm = null, locationId, on
     useEffect(() => {
         if (editingAlgorithm) {
             const { algorithm_code = '', algorithm_name = '' } = editingAlgorithm;
-            setAlgorithmCode(algorithm_code);
+            let parsedAlgorithmCode = algorithm_code;
+            if (typeof algorithm_code === 'string' && algorithm_code) {
+                try {
+                    parsedAlgorithmCode = JSON.parse(algorithm_code);
+                } catch (e) {
+                    console.error("Failed to parse algorithm_code:", e);
+                    parsedAlgorithmCode = {};
+                }
+            }
+            setActiveDays(parsedAlgorithmCode.activeDays || { monday: true, tuesday: true, wednesday: true, thursday: true, friday: true, saturday: true, sunday: true });
+            setAlgorithmCode(parsedAlgorithmCode);
             setAlgorithmName(algorithm_name);
-            setChronology(algorithmCode.chronology || 'newest');
-            setContentType(algorithmCode.contentType || { images: true, text: true, videos: true, interactive: true });
+            setChronology(parsedAlgorithmCode.chronology || 0.8);
+            setContentType(parsedAlgorithmCode.contentType || { images: true, text: true, videos: true, interactive: true });
             setCustomInstruction(editingAlgorithm.custom_instruction || ''); 
-            setSentiment(algorithmCode.sentiment ?? 0);
-            setSimilarity(algorithmCode.similarity ?? 0);
-            setStartTime(algorithmCode.startTime || '00:00');
-            setEndTime(algorithmCode.endTime || '23:59');
-            setStrength(algorithmCode.strength ?? 1);
-            setTemplate(algorithmCode.template || 'none');
-            setWordBoost((algorithmCode.wordBoost || []).join(','));
-            setWordSuppress((algorithmCode.wordSuppress || []).join(','));
-            setDateFrom(algorithmCode.dateFrom || '');
-            setDateTo(algorithmCode.dateTo || '');
-            setSpecificDate(algorithmCode.specificDate || '');
-            setActiveDays(algorithmCode.activeDays || { monday: true, tuesday: true, wednesday: true, thursday: true, friday: true, saturday: true, sunday: true });
+            setSentiment(parsedAlgorithmCode.scoring?.sentiment ?? 0);
+            setVoteImpact(parsedAlgorithmCode.scoring?.voteImpact ?? 0);
+            setStartTime(parsedAlgorithmCode.startTime || '00:00');
+            setEndTime(parsedAlgorithmCode.endTime || '23:59');
+            setTemplate(parsedAlgorithmCode.template || 'none');
+            const wordBoostArray = parsedAlgorithmCode.scoring?.wordBoost || [];
+            const wordSuppressArray = parsedAlgorithmCode.scoring?.wordSuppress || [];
+            const wordBoostWords = wordBoostArray.map(item => item.word).join(',');
+            const wordSuppressWords = wordSuppressArray.map(item => item.word).join(',');
+            setWordBoost(() => wordBoostWords);
+            setWordSuppress(() => wordSuppressWords);
+            setDateFrom(parsedAlgorithmCode.dateFrom || '');
+            setDateTo(parsedAlgorithmCode.dateTo || '');
+            setSpecificDate(parsedAlgorithmCode.specificDate || '');
+            setVariety(parsedAlgorithmCode.variety ?? 1);
         } else {
             startCreatingNew();
         }
@@ -342,7 +359,7 @@ const AddAlgorithm = ({ algorithms = [], editingAlgorithm = null, locationId, on
                             <option value="educational">Educational Content</option>
                             <option value="entertainment">Entertainment & Fun</option>
                             <option value="professional">Professional Network</option>
-                            <option value="positive_vibes">Positive Vibes Only</option>
+                            <option value="positive_vibes">Positive Vibes</option>
                             <option value="tech_innovation">Tech & Innovation</option>
                             <option value="local_community">Local Community</option>
                             <option value="sports_fitness">Sports & Fitness</option>
@@ -354,54 +371,55 @@ const AddAlgorithm = ({ algorithms = [], editingAlgorithm = null, locationId, on
                 <button className="button" onClick={() => setShowMoreOptions(!showMoreOptions)} type="button">
                     {showMoreOptions ? 'Fewer Options' : 'More Options'}
                 </button>
+                <button className="button" onClick={() => setShowAdvancedOptions(!showAdvancedOptions)} type="button">
+                    {showAdvancedOptions ? 'Hide Advanced Options' : 'Advanced Options'}
+                </button>
                 {showMoreOptions && (
                     <>
                         <div className="form-row">
                             <div className="form-group">
                                 <div className="form-label-with-info">
                                     <label className="small-text">Chronology</label>
-                                    <InfoIconWithTooltip info="Controls the time ordering and date range of posts shown." />
+                                    <InfoIconWithTooltip info="Prioritise older or newer posts. Fully newest means pure chronological order." />
                                 </div>
-                                <select
-                                    className="form-select"
+                                <input
+                                    className="form-input"
+                                    required
+                                    step="0.1"
+                                    type="range"
+                                    min="-1"
+                                    max="1"
                                     value={chronology}
-                                    onChange={e => setChronology(e.target.value)}
-                                >
-                                    <option value="newest">Newest First</option>
-                                    <option value="oldest">Oldest First</option>
-                                    <option value="mixed">Mixed Chronology</option>
-                                    <option value="from_date">From Date</option>
-                                    <option value="until_date">Until Date</option>
-                                    <option value="between_dates">Between Dates</option>
-                                </select>
+                                    onChange={e => setChronology(parseFloat(e.target.value))}
+                                />
+                                <div className="slider-labels">
+                                    <span className="tiny-text">Oldest</span>
+                                    <span className="tiny-text">Neutral</span>
+                                    <span className="tiny-text">Newest</span>
+                                </div>
+                            </div>
+                            <div className="form-group">
+                                <div className="form-label-with-info">
+                                    <label className="small-text">Vote Impact</label>
+                                    <InfoIconWithTooltip info="None ignores votes, heavy makes votes strongly influence what you see." />
+                                </div>
+                                <input
+                                    className="form-input"
+                                    required
+                                    step="0.1"
+                                    type="range"
+                                    min="-1"
+                                    max="1"
+                                    value={voteImpact}
+                                    onChange={e => setVoteImpact(parseFloat(e.target.value))}
+                                />
+                                <div className="slider-labels">
+                                    <span className="tiny-text">None</span>
+                                    <span className="tiny-text">Mild</span>
+                                    <span className="tiny-text">Heavy</span>
+                                </div>
                             </div>
                         </div>
-                        {shouldShowDateInputs() && (
-                            <div className="form-row">
-                                {(chronology === 'from_date' || chronology === 'between_dates') && (
-                                    <div className="form-group">
-                                        <label className="small-text">From Date</label>
-                                        <input
-                                            className="form-input"
-                                            type="date"
-                                            value={dateFrom}
-                                            onChange={e => setDateFrom(e.target.value)}
-                                        />
-                                    </div>
-                                )}
-                                {(chronology === 'until_date' || chronology === 'between_dates') && (
-                                    <div className="form-group">
-                                        <label className="small-text">Until Date</label>
-                                        <input
-                                            className="form-input"
-                                            type="date"
-                                            value={dateTo}
-                                            onChange={e => setDateTo(e.target.value)}
-                                        />
-                                    </div>
-                                )}
-                            </div>
-                        )}
                         <div className="form-row">
                             <div className="form-group">
                                 <div className="form-label-with-info">
@@ -436,8 +454,8 @@ const AddAlgorithm = ({ algorithms = [], editingAlgorithm = null, locationId, on
                                     type="range"
                                     min="0"
                                     max="1"
-                                    value={strength}
-                                    onChange={e => setStrength(parseFloat(e.target.value))}
+                                    value={variety}
+                                    onChange={e => setVariety(parseFloat(e.target.value))}
                                 />
                                 <div className="slider-labels">
                                     <span className="tiny-text">Random</span>
@@ -447,6 +465,34 @@ const AddAlgorithm = ({ algorithms = [], editingAlgorithm = null, locationId, on
                             </div>
                         </div>
                         <div className="form-row">
+                            <div className="form-group">
+                                <div className="form-label-with-info">
+                                    <label className="small-text">Boost Words</label>
+                                    <InfoIconWithTooltip info="Type words, separated by commas, that you wish to see more of." />
+                                </div>
+                                <textarea
+                                    className="form-textarea"
+                                    type="text"
+                                    value={wordBoost}
+                                    onChange={e => setWordBoost(e.target.value)}
+                                    placeholder="e.g. sports,tech"
+                                />
+                            </div>
+                            <div className="form-group">
+                                <div className="form-label-with-info">
+                                    <label className="small-text">Suppress Words</label>
+                                    <InfoIconWithTooltip info="Type words, separated by commas, that you wish to see less of." />
+                                </div>
+                                <textarea
+                                    className="form-textarea"
+                                    type="text"
+                                    value={wordSuppress}
+                                    onChange={e => setWordSuppress(e.target.value)}
+                                    placeholder="e.g. politics"
+                                />
+                            </div>
+                        </div>
+                        <div className="form-row border-bottom">
                             <div className="form-label-with-info">
                                 <label className="small-text">Content Types</label>
                                 <InfoIconWithTooltip info="Unchecking a box will filter out all forms of that content." />
@@ -466,66 +512,106 @@ const AddAlgorithm = ({ algorithms = [], editingAlgorithm = null, locationId, on
                                 </label>
                             </div>
                         </div>
+                    </>
+                )}
+                {showAdvancedOptions && (
+                    <>
                         <div className="form-row">
                             <div className="form-group">
                                 <div className="form-label-with-info">
-                                    <label className="small-text">Boost Words</label>
-                                    <InfoIconWithTooltip info="Type words, separated by commas, that you wish to see more of." />
+                                    <label className="small-text">Advanced chronology</label>
+                                    <InfoIconWithTooltip info="Controls the date range of posts shown." />
                                 </div>
-                                <input
-                                    className="form-input"
-                                    type="text"
-                                    value={wordBoost}
-                                    onChange={e => setWordBoost(e.target.value)}
-                                    placeholder="e.g. sports,tech"
-                                />
-                            </div>
-                            <div className="form-group">
-                                <div className="form-label-with-info">
-                                    <label className="small-text">Suppress Words</label>
-                                    <InfoIconWithTooltip info="Type words, separated by commas, that you wish to see less of." />
+                                <div>
+                                    <select
+                                        className="form-select"
+                                        value={advancedChronology}
+                                        onChange={e => setAdvancedChronology(e.target.value)}
+                                    >
+                                        <option value="">None</option>
+                                        <option value="from_date">From Date</option>
+                                        <option value="until_date">Until Date</option>
+                                        <option value="between_dates">Between Dates</option>
+                                    </select>
                                 </div>
-                                <input
-                                    className="form-input"
-                                    type="text"
-                                    value={wordSuppress}
-                                    onChange={e => setWordSuppress(e.target.value)}
-                                    placeholder="e.g. politics"
-                                />
+                                {shouldShowDateInputs() && (
+                                    <div className="form-row" style={{ marginTop: '10px' }}>
+                                        {(advancedChronology === 'from_date' || advancedChronology === 'between_dates') && (
+                                            <div className="form-group">
+                                                <label className="small-text">From Date</label>
+                                                <input
+                                                    className="form-input"
+                                                    type="date"
+                                                    value={dateFrom}
+                                                    onChange={e => setDateFrom(e.target.value)}
+                                                />
+                                            </div>
+                                        )}
+                                        {(advancedChronology === 'until_date' || advancedChronology === 'between_dates') && (
+                                            <div className="form-group">
+                                                <label className="small-text">Until Date</label>
+                                                <input
+                                                    className="form-input"
+                                                    type="date"
+                                                    value={dateTo}
+                                                    onChange={e => setDateTo(e.target.value)}
+                                                />
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
                             </div>
-                        </div>
-                        <div className="form-row">
-                            <div className="form-group">
+                            <div className="form-group" style={{ alignItems: 'center', display: 'flex', flexDirection: 'column' }}>
                                 <div className="form-label-with-info">
                                     <label className="small-text">Active Hours</label>
                                     <InfoIconWithTooltip info="This algorithm will only be applied at these times of day." />
                                 </div>
-                                <div>
-                                    <input type="time" value={startTime} onChange={e => setStartTime(e.target.value)} />
-                                    -
-                                    <input type="time" value={endTime} onChange={e => setEndTime(e.target.value)} />
+                                <div className="time-range-container">
+                                    <input 
+                                        type="time" 
+                                        className="time-input"
+                                        value={startTime} 
+                                        onChange={e => setStartTime(e.target.value)} 
+                                    />
+                                    <span className="time-separator">—</span>
+                                    <input 
+                                        type="time" 
+                                        className="time-input"
+                                        value={endTime} 
+                                        onChange={e => setEndTime(e.target.value)} 
+                                    />
                                 </div>
                             </div>
-                            <div className="form-group">
-                                <div className="form-label-with-info">
-                                    <label className="small-text">Vote Impact</label>
-                                    <InfoIconWithTooltip info="None ignores votes, heavy makes votes strongly influence what you see." />
-                                </div>
-                                <input
-                                    className="form-input"
-                                    required
-                                    step="0.1"
-                                    type="range"
-                                    min="-1"
-                                    max="1"
-                                    value={similarity}
-                                    onChange={e => setSimilarity(parseFloat(e.target.value))}
-                                />
-                                <div className="slider-labels">
-                                    <span className="tiny-text">None</span>
-                                    <span className="tiny-text">Mild</span>
-                                    <span className="tiny-text">Heavy</span>
-                                </div>
+                        </div>
+                        <div className="form-row" style={{ paddingBottom: '0' }}>
+                            <div className="form-label-with-info">
+                                <label className="small-text">Specific Days</label>
+                                <InfoIconWithTooltip info="Days of the week that the algorithm will apply to." />
+                            </div>
+                        </div>
+                        <div className="form-row">
+                            <div>
+                                <label>
+                                    <input type="checkbox" checked={activeDays.monday} onChange={e => setActiveDays(prev => ({ ...prev, monday: e.target.checked }))} /> Mon
+                                </label>
+                                <label>
+                                    <input type="checkbox" checked={activeDays.tuesday} onChange={e => setActiveDays(prev => ({ ...prev, tuesday: e.target.checked }))} /> Tue
+                                </label>
+                                <label>
+                                    <input type="checkbox" checked={activeDays.wednesday} onChange={e => setActiveDays(prev => ({ ...prev, wednesday: e.target.checked }))} /> Wed
+                                </label>
+                                <label>
+                                    <input type="checkbox" checked={activeDays.thursday} onChange={e => setActiveDays(prev => ({ ...prev, thursday: e.target.checked }))} /> Thur
+                                </label>
+                                <label>
+                                    <input type="checkbox" checked={activeDays.friday} onChange={e => setActiveDays(prev => ({ ...prev, friday: e.target.checked }))} /> Fri
+                                </label>
+                                <label>
+                                    <input type="checkbox" checked={activeDays.saturday} onChange={e => setActiveDays(prev => ({ ...prev, saturday: e.target.checked }))} /> Sat
+                                </label>
+                                <label>
+                                    <input type="checkbox" checked={activeDays.sunday} onChange={e => setActiveDays(prev => ({ ...prev, sunday: e.target.checked }))} /> Sun
+                                </label>
                             </div>
                         </div>
                     </>

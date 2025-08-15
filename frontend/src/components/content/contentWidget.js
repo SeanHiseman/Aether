@@ -205,7 +205,7 @@ const ContentWidget = ({ canRemove, feed, isDraft, isGroup, onEditClick, onPostR
 					setDownvoteLimit(response.data.reachedDownvoteLimit);
 				}
 			} catch (error) { 
-				setPostErrorMessage('Error checking vote limit');
+				setPostErrorMessage('Please reload the page');
 			}
 		};
 		checkVoteLimit();

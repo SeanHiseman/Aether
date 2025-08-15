@@ -156,7 +156,7 @@ router.get('/channel_posts', async (req, res) => {
 		if (!posts.length) {
 			return res.status(200).json([]);
 		}
-		const { strength = 1, scoring = {}, rules = [] } = algorithm;
+		const { variety = 1, scoring = {}, rules = [] } = algorithm;
 		//console.log("APPLYING ALGORITHM:", JSON.stringify(algorithm, null, 2));
 		const evaluateCondition = (postContext, condition) => {
 			const { field, operator, value } = condition;
@@ -217,7 +217,7 @@ router.get('/channel_posts', async (req, res) => {
 				if (isSuppressed) break;
 			}
 			if (isSuppressed) continue;
-			const { sentiment = 0, similarity = 0, wordBoost = [], wordSuppress = [] } = scoring;
+			const { sentiment = 0, voteImpact = 0, wordBoost = [], wordSuppress = [] } = scoring;
 			if (wordBoost) wordBoost.forEach(item => { 
 				if (postContext.text_body.toLowerCase().includes(item.word.toLowerCase())) 
 					score += item.value || 10; 
@@ -230,10 +230,10 @@ router.get('/channel_posts', async (req, res) => {
 				const sentimentDistance = Math.abs(post.dataValues.sentiment - sentiment);
 				score += (1 - sentimentDistance) * 10; //Boost for closeness to target sentiment
 			}
-			if (similarity && typeof post.dataValues.similarity_score === 'number') {
-				score += post.dataValues.similarity_score * similarity;
+			if (voteImpact && typeof post.dataValues.vote_impact === 'number') {
+				score = score * (post.upvotes / post.downvotes) * ((post.upvotes + post.downvotes) / post.views) * voteImpact;
 			} 
-			processedPosts.push({ ...post.dataValues, score: score * strength });
+			processedPosts.push({ ...post.dataValues, score: score * variety });
 		}
 		processedPosts.sort((a, b) => {
 			if (b.score !== a.score) return b.score - a.score;

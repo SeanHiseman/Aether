@@ -40,10 +40,10 @@ router.post('/create_algorithm', authenticateCheck, async (req, res) => {
 			contentType,
 			customInstruction,
 			sentiment,
-			strength,
 			startTime,
 			endTime,
-			similarity,
+			variety,
+			voteImpact,
 			wordBoost,
 			wordSuppress,
 		} = req.body;
@@ -53,10 +53,10 @@ router.post('/create_algorithm', authenticateCheck, async (req, res) => {
 			chronology,
 			contentType,
 			sentiment,
-			strength,
 			startTime,
 			endTime,
-			similarity,
+			variety,
+			voteImpact,
 			wordBoost,
 			wordSuppress
 		};
@@ -75,10 +75,10 @@ router.post('/create_algorithm', authenticateCheck, async (req, res) => {
 				6. Output format: The JSON must strictly follow this schema:
 				{
 				"chronology": "newest" | "oldest",
-				"strength": number,
+				"variety": number,
 				"scoring": {
 					"sentiment": number,
-					"similarity": number,
+					"voteImpact": number,
 					"wordBoost": [{ "word": string, "value": number }],
 					"wordSuppress": [{ "word": string, "value": number }]
 				},
@@ -107,7 +107,7 @@ router.post('/create_algorithm', authenticateCheck, async (req, res) => {
 			const assistant = await openai.beta.assistants.create({
 				name: "Algorithm Creator",
 				instructions: systemPrompt,
-				model: "gpt-5-mini",
+				model: "gpt-4.1-mini",
 			});
 			const thread = await openai.beta.threads.create();
 			await openai.beta.threads.messages.create(thread.id, {
@@ -132,10 +132,10 @@ router.post('/create_algorithm', authenticateCheck, async (req, res) => {
 		} else {
 			algorithmCode = JSON.stringify({ //Construct JSON if no custom instruction
 				chronology,
-				strength,
+				variety,
 				scoring: {
 					sentiment,
-					similarity,
+					voteImpact,
 					wordBoost: Array.isArray(wordBoost) ? wordBoost.map(word =>
 						typeof word === 'string' ? { word, value: 10 } : word
 					) : [],
@@ -195,16 +195,17 @@ router.put('/edit_algorithm', authenticateCheck, async (req, res) => {
 			algorithmDescription,
 			algorithmId,
 			algorithmName,
+			advancedChronology,
 			chronology,
 			contentType,
 			engagement,
 			endTime,
 			personalRuleInput,
 			sentiment,
-			similarity,
 			startTime,
-			strength,
 			template,
+			variety,
+			voteImpact,
 			wordBoost,
 			wordSuppress
 		} = req.body;
@@ -215,16 +216,17 @@ router.put('/edit_algorithm', authenticateCheck, async (req, res) => {
 			algorithm_description: algorithmDescription || null,
 			algorithm_name: algorithmName,
 			algorithm_code: JSON.stringify({
+				advancedChronology,
 				chronology,
 				contentType,
 				engagement,
 				personalRuleInput,
 				sentiment,
-				similarity,
 				startTime,
 				endTime,
-				strength,
 				template,
+				variety,
+				voteImpact,
 				wordBoost,
 				wordSuppress
 			})
@@ -258,14 +260,11 @@ router.get('/get_user_algorithms', authenticateCheck, async (req, res) => {
 
 router.delete('/remove_algorithm', authenticateCheck, async (req, res) => {
 	try {
-		const { algorithmId, locationId } = req.body;
-		console.log("req.body:", req.body);
+		const { locationId } = req.body;
 		const userId = req.session.user_id;
-		console.log("userId:", userId);
 		await AlgorithmLocations.destroy({ where: { location_id: locationId, user_id: userId } });
 		res.status(200).json({ success: true });
 	} catch (error) {
-		console.log("error removing algorithm:", error);
 		res.status(500).json({ success: false, message: 'Failed to remove algorithm.' });
 	}
 });

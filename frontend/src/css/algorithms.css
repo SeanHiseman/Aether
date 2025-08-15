@@ -219,6 +219,10 @@
 	padding: var(--medium-margin);
 	width: 100%;
 }
+.form-input[type="date"]::-webkit-calendar-picker-indicator {
+    filter: invert(1);
+    cursor: pointer;
+}
 .form-input[type="range"] {
 	-webkit-appearance: none;
 	appearance: none;
@@ -304,6 +308,50 @@
 .text-center {
 	text-align: center;
 }
+
+/* Container for the time inputs */
+.time-range-container {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 8px;
+}
+
+/* Individual time input styling */
+.time-input {
+    background: var(--darkest);
+    border: 1px solid var(--border);
+    border-radius: var(--medium-margin);
+    color: var(--lightest);
+    font-size: var(--small-text);
+    padding: 10px 12px;
+    min-width: 120px;
+    transition: border-color 0.2s ease;
+}
+
+/* Style the time picker icons */
+.time-input::-webkit-calendar-picker-indicator {
+    filter: invert(1);
+    cursor: pointer;
+    margin-left: 8px;
+}
+
+/* Separator styling */
+.time-separator {
+    color: var(--lightest);
+    font-weight: 500;
+    font-size: 16px;
+    user-select: none;
+}
+
+/* Label container improvements */
+.form-label-with-info {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 8px;
+}
+
 @media (max-width: 768px) {
 	.algorithm-content {
 		width: calc(90vw - 2*var(--medium-margin));

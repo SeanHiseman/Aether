@@ -594,7 +594,7 @@ const BaseLayout = () => {
                             </div>
                             <nav className="feed-list">
                                 <p className="text16 faded-text">
-                                    Drag and drop feeds together 
+                                    Drag and drop to combine feeds
                                 </p>
                                 <SortableContext 
                                     items={feeds.map(f => `sidebar-feed-${f.feed_id}`)} 
