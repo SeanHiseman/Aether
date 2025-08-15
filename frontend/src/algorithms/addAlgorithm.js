@@ -130,7 +130,7 @@ const AddAlgorithm = ({ algorithms = [], editingAlgorithm = null, locationId, on
     const [advancedChronology, setAdvancedChronology] = useState('');
     const [algorithmCode, setAlgorithmCode] = useState('');
     const [algorithmName, setAlgorithmName] = useState('');
-    const [chronology, setChronology] = useState(0.8);
+    const [chronology, setChronology] = useState(1);
     const [contentType, setContentType] = useState({ images: true, text: true, videos: true, interactive: true });
     const [customInstruction, setCustomInstruction] = useState('');
     const [dateFrom, setDateFrom] = useState('');
@@ -145,7 +145,7 @@ const AddAlgorithm = ({ algorithms = [], editingAlgorithm = null, locationId, on
     const [startTime, setStartTime] = useState('00:00');
     const [template, setTemplate] = useState('none');
     const [variety, setVariety] = useState(0.5);
-    const [voteImpact, setVoteImpact] = useState(1);
+    const [voteImpact, setVoteImpact] = useState(0);
     const [wordBoost, setWordBoost] = useState('');
     const [wordSuppress, setWordSuppress] = useState('');
 
