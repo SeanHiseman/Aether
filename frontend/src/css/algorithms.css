@@ -110,6 +110,7 @@
 	z-index: 1000;
 }
 .algorithm-selector {
+	margin: var(--medium-margin);
 	position: relative;
 }
 .algorithm-selector__trigger {
@@ -299,6 +300,7 @@
 .selector-header {
 	align-items: center;
 	display: flex;
+	justify-content: space-between;
 }
 .slider-labels {
 	display: flex;

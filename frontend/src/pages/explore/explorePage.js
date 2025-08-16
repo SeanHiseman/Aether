@@ -4,6 +4,7 @@ import axios from "axios";
 import SmallContentWidget from "../../components/content/smallContentWidget";
 import FeedWidget from "../../components/content/feedWidget";
 import { useOutletContext } from "react-router-dom";
+import AlgorithmSelector from "../../algorithms/algorithmSelector";
 
 function chunkFeedsToPairs(feeds) {
 	const pairs = [];
@@ -289,6 +290,7 @@ const ExplorePage = () => {
 						</li>
 					</ul>
 				</nav>
+				<AlgorithmSelector locationId={"explore_page"} /> {/* Project code */}
 			</aside>
 		</div>
 	);

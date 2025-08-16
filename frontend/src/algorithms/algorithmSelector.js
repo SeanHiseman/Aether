@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { FaEdit, FaTrash } from 'react-icons/fa';
 import AddAlgorithm from './addAlgorithm';
 
-const AlgorithmSelector = ({ locationId }) => {
+const AlgorithmSelector = ({ locationId, refreshPosts }) => {
 	const [algorithms, setAlgorithms] = useState([]);
 	const [assignedAlgorithmId, setAssignedAlgorithmId] = useState('');
 	const [assignError, setAssignError] = useState(null);
@@ -32,6 +32,7 @@ const AlgorithmSelector = ({ locationId }) => {
 				setAssignedAlgorithmId('');
 				setEditingAlgorithm(null);
 			}
+			refreshPosts(); 
 			setAlgorithms(prev => {
 				const updated = prev.map(algo => ({
 					...algo,
@@ -55,26 +56,6 @@ const AlgorithmSelector = ({ locationId }) => {
 		} finally {
 			setLoading(false);
 		}
-	};
-
-	const unassignAlgorithm = async () => {
-		try {
-			setAssignError(null);
-			if (assignedAlgorithmId) {
-				await axios.delete('/api/remove_algorithm', {
-					data: { algorithmId: assignedAlgorithmId, locationId }
-				});	
-			}
-			setAssignedAlgorithmId('');
-			setAlgorithms(prev => prev.map(algo => ({
-				...algo,
-				algorithm_locations: (algo.algorithm_locations || []).filter(loc => loc.location_id !== locationId)
-			})));
-			setEditingAlgorithm(null);
-		} catch (error) {
-			setAssignError('Failed to unassign algorithm');
-			setTimeout(() => { setAssignError('') }, 3000);
-		};
 	};
 
 	const closeModal = () => {
@@ -147,6 +128,7 @@ const AlgorithmSelector = ({ locationId }) => {
 			return updated;
 		});
 		assignAlgorithm(newAlgo.algorithm_id);
+		refreshPosts(); 
 	};
 
 	const selectAlgorithm = algorithmId => {
@@ -164,6 +146,27 @@ const AlgorithmSelector = ({ locationId }) => {
 		} else {
 			selectAlgorithm(algorithmId);
 		}
+	};
+
+	const unassignAlgorithm = async () => {
+		try {
+			setAssignError(null);
+			if (assignedAlgorithmId) {
+				await axios.delete('/api/remove_algorithm', {
+					data: { algorithmId: assignedAlgorithmId, locationId }
+				});	
+			}
+			setAssignedAlgorithmId('');
+			setAlgorithms(prev => prev.map(algo => ({
+				...algo,
+				algorithm_locations: (algo.algorithm_locations || []).filter(loc => loc.location_id !== locationId)
+			})));
+			setEditingAlgorithm(null);
+			refreshPosts();
+		} catch (error) {
+			setAssignError('Failed to unassign algorithm');
+			setTimeout(() => { setAssignError('') }, 3000);
+		};
 	};
 
 	const updateAlgorithms = updatedAlgo => {
@@ -191,6 +194,7 @@ const AlgorithmSelector = ({ locationId }) => {
 						<div className="selector-header">
 							<button className="button" onClick={closeModal} title="Close">✕</button>
 							<div className="error-message">{assignError}</div>
+							<p className="tiny-text">Changing the algorithm will reload posts</p>
 						</div>
 						{loading && <div className="loading-state">Loading algorithms...</div>}
 						{!loading && (

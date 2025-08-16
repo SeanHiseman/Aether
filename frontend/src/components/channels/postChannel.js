@@ -5,7 +5,7 @@ import { useInfiniteQuery, useQuery, useQueryClient } from '@tanstack/react-quer
 import { AuthContext } from '../../components/authContext';
 import ContentWidget from '../content/contentWidget';
 
-const PostChannel = ({ channelId, channelName, feed, isDraft, isGroup, onEditClick, onReplyClick }) => {
+const PostChannel = ({ channelId, channelName, feed, isDraft, isGroup, onEditClick, onReplyClick, refreshTrigger }) => {
 	const channelReady = !!channelId;
 	const feedId = feed.feed_id;
 	const loaderRef = useRef(null);
@@ -15,6 +15,15 @@ const PostChannel = ({ channelId, channelName, feed, isDraft, isGroup, onEditCli
 	const isMain = channel_name === 'Main';
 	const navigate = useNavigate();
 	const PAGE_SIZE = 20;
+
+	useEffect(() => {
+		if (refreshTrigger !== undefined) {
+			queryClient.invalidateQueries(['posts', channelId, channelName, feedId, isGroup]);
+			if (post_id) {
+				queryClient.invalidateQueries(['singlePost', post_id]);
+			}
+		}
+	}, [refreshTrigger, queryClient, channelId, channelName, feedId, isGroup, post_id]);
 
 	useEffect(() => {
 		if (isDraft && !isGroup && viewer?.feed_id !== feedId) {

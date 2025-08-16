@@ -32,6 +32,7 @@ const FeedHome = () => {
     const [newChannelName, setNewChannelName] = useState(''); 
     const [postErrorMessage, setPostErrorMessage] = useState('');
     const [postToEdit, setPostToEdit] = useState(null);
+    const [refreshTrigger, setRefreshTrigger] = useState(false);
     const [replyingToPost, setReplyingToPost] = useState(null); 
     const [showChannelForm, setShowChannelForm] = useState(false);
     const [showPostForm, setShowPostForm] = useState(false);
@@ -275,6 +276,7 @@ const FeedHome = () => {
                 });     
             }
             setShowPostForm(false);
+            refreshPosts();
         } catch (error) {
             if (error.response && error.response.status === 413) {
                 setPostErrorMessage(error.response.data.message + (!user.has_membership ? ". Get membership for more" : ""));
@@ -284,6 +286,10 @@ const FeedHome = () => {
                 setTimeout(() => { setFeedErrorMessage(''); }, 3000);
             }
         }
+    };
+
+    const refreshPosts = () => {
+        setRefreshTrigger(!refreshTrigger);
     };
 
     const toggleDrafts = () => {
@@ -393,6 +399,7 @@ const FeedHome = () => {
                             feed={feed}
                             isDraft={false}
                             isGroup={feed.is_group}
+                            refreshTrigger={refreshTrigger} 
                             onEditClick={(post) => { setShowPostForm(true); setIsEdit(true); setPostToEdit(post); }}
                             onReplyClick={(post) => { setReplyingToPost(post); }}
                         />
@@ -508,7 +515,7 @@ const FeedHome = () => {
                                         </button>
                                     )}
                                 </div>
-                                {isAuthenticated && (<AlgorithmSelector locationId={channelRender.channel_id} />)}
+                                {isAuthenticated && (<AlgorithmSelector locationId={channelRender.channel_id} refreshPosts={refreshPosts} />)} {/*Project code*/}
                                 {showChannelForm && (
                                     <form className="add-channel-form" onSubmit={AddChannel}>
                                         <input 

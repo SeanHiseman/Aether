@@ -327,7 +327,6 @@ const AddAlgorithm = ({ algorithms = [], editingAlgorithm = null, locationId, on
                     <input
                         className="form-input"
                         placeholder="Enter name"
-                        required
                         type="text"
                         value={algorithmName}
                         onChange={e => setAlgorithmName(e.target.value)}
@@ -337,7 +336,6 @@ const AddAlgorithm = ({ algorithms = [], editingAlgorithm = null, locationId, on
                     <textarea
                         className="form-textarea"
                         placeholder={customInstruction ? customInstruction : "Describe your algorithm..."}
-                        required
                         type="text"
                         value={customInstruction}
                         onChange={e => setCustomInstruction(e.target.value)}

@@ -132,6 +132,7 @@ router.post('/create_algorithm', authenticateCheck, async (req, res) => {
 		} else {
 			algorithmCode = JSON.stringify({ //Construct JSON if no custom instruction
 				chronology,
+				contentType,
 				variety,
 				scoring: {
 					sentiment,

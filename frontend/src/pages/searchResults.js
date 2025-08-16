@@ -1,3 +1,4 @@
+import AlgorithmSelector from '../algorithms/algorithmSelector';
 import { AuthContext } from '../components/authContext';
 import axios from 'axios';
 import { useContext, useEffect, useRef, useState, useMemo } from 'react';
@@ -245,6 +246,7 @@ const SearchResults = () => {
                         )}
                     </ul>
                 </nav>
+				<AlgorithmSelector locationId={"explore_page"} /> {/* Project code */}
             </aside>
         </div>
     );
