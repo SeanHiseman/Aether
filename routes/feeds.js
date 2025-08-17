@@ -603,6 +603,12 @@ router.get("/explore_feeds", async (req, res) => {
 				type: "public",
 				is_locked: false,
                 feed_id: { [Op.notIn]: exclude },
+				[Op.not]: {
+					[Op.and]: [
+						{ is_private: true },
+						{ is_group: false }
+					]
+				}
 			},
 			order: sequelize.literal("RAND()"),
 			attributes: feedAttributes,
