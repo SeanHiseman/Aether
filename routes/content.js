@@ -628,12 +628,12 @@ router.get("/explore_posts", async (req, res) => {
 		const { exclude = [] } = req.query;
 		const saverId = req.session.viewer_id;
 		const limit = parseInt(req.query.limit, 20) || 6;
-		// The where clause now filters for top-level posts only (parent_id is null).
-		const where = { parent_id: null, post_id: { [Op.notIn]: exclude } };
-		// The 'filter' query parameter is available for future expansion.
+		//Only top level posts, exclude posts by the viewer
+		const where = { parent_id: null, post_id: { [Op.notIn]: exclude }, poster_id: { [Op.ne]: saverId } }; 
+		//'filter' query parameter is available for future expansion.
 		const { filter = "all" } = req.query;
 		if (filter === "posts") {
-			// Custom logic for post-specific filtering can be added here.
+			//Custom logic for post-specific filtering can be added here.
 		}
 		const { rows } = await Posts.findAndCountAll({
 			attributes: postAttributes,

@@ -14,6 +14,7 @@ import { Router } from 'express';
 import sequelize from '../databaseSetup.js';
 import { v4 } from 'uuid';
 import { ConnectRequests, DeepFeeds, DeepFeedContent, Feeds, FeedChannels, FeedChannelMessages, Followers, FollowRequests, Posts, PostNotes, PostVotes, SavedPosts, SavedPostChannels, Users } from '../models/relationships.js';
+import { type } from 'os';
 
 const app = express();
 dotenv.config();
@@ -598,22 +599,17 @@ router.get("/explore_feeds", async (req, res) => {
         const { exclude = [] } = req.query;
 		const viewerId = req.session.viewer_id;
 		const limit = parseInt(req.query.limit, 10) || 6;
-		const { rows: feeds } = await Feeds.findAndCountAll({
-			where: {
-				type: "public",
-				is_locked: false,
-                feed_id: { [Op.notIn]: exclude },
-				[Op.not]: {
-					[Op.and]: [
-						{ is_private: true },
-						{ is_group: false }
-					]
-				}
-			},
-			order: sequelize.literal("RAND()"),
-			attributes: feedAttributes,
-			limit,
-		});
+        const { rows: feeds } = await Feeds.findAndCountAll({
+            where: {
+                type: { [Op.notIn]: ["private", "hidden"] },
+                is_locked: false,
+                is_group: false,
+                feed_id: { [Op.notIn]: [...exclude, viewerId] }
+            },
+            order: sequelize.literal("RAND()"),
+            attributes: feedAttributes,
+            limit
+        });
 		const feedData = await Promise.all(feeds.map(async (feed) => {
 			const feedJSON = feed.toJSON();
 			const response = {

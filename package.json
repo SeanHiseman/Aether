@@ -65,5 +65,8 @@
     "ws": "^8.11.0",
     "xmlhttprequest-ssl": "^2.0.0",
     "yauzl": "^3.2.0"
+  },
+  "devDependencies": {
+    "@faker-js/faker": "^9.9.0"
   }
 }
