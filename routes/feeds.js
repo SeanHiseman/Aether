@@ -14,7 +14,7 @@ import { Router } from 'express';
 import sequelize from '../databaseSetup.js';
 import { v4 } from 'uuid';
 import { ConnectRequests, DeepFeeds, DeepFeedContent, Feeds, FeedChannels, FeedChannelMessages, Followers, FollowRequests, Posts, PostNotes, PostVotes, SavedPosts, SavedPostChannels, Users } from '../models/relationships.js';
-import { type } from 'os';
+import { ValidateTextInput } from '../functions/validateTextInput.js'
 
 const app = express();
 dotenv.config();
@@ -72,6 +72,10 @@ router.post('/add_feed_channel', authenticateCheck, async (req, res) => {
     try {
         transaction = await sequelize.transaction();
         let { channelName, feedId, isChat, isPosts, isSaved } = req.body;
+        const nameCheck = ValidateTextInput(channelName, 3, 30);
+        if (!nameCheck.valid) {
+            return res.status(400).json({ message: nameCheck.error });
+        }
         //If channel types are not specified
         if (isPosts === false && isChat === false) {
             isPosts = true;
@@ -161,6 +165,10 @@ router.post('/add_to_deep_feed', async (req, res) => {
 router.post('/change_channel_name', authenticateCheck, async (req, res) => {
     try {
         const { channelId, newChannelName } = req.body;
+        const nameCheck = ValidateTextInput(newChannelName, 3, 30);
+        if (!nameCheck.valid) {
+            return res.status(400).json({ message: nameCheck.error });
+        }
         if (newChannelName === 'Main') {
             res.status(401).json({ success: false, message: "Channel can't be called main" })
         } else { 
@@ -178,6 +186,10 @@ router.post('/change_channel_name', authenticateCheck, async (req, res) => {
 router.post('/change_deep_feed_name', authenticateCheck, async (req, res) => {
     try {
         const { deepFeedId, newName } = req.body;
+        const nameCheck = ValidateTextInput(newName, 3, 30);
+        if (!nameCheck.valid) {
+            return res.status(400).json({ message: nameCheck.error });
+        }
         if (newName === 'Following') {
             res.status(401).json({ success: false, message: "Can't be called Following" })
         } else { 
@@ -195,6 +207,10 @@ router.post('/change_deep_feed_name', authenticateCheck, async (req, res) => {
 router.post('/change_description', authenticateCheck, async (req, res) => {
     try {
         const { description, feedId } = req.body;
+        const descriptionCheck = ValidateTextInput(description, 0, 1000);
+        if (!descriptionCheck.valid) {
+            return res.status(400).json({ message: descriptionCheck.error });
+        }
         const feed = await Feeds.findOne({ where: { feed_id: feedId } });
         feed.description = description;
         await feed.save();
@@ -207,6 +223,10 @@ router.post('/change_description', authenticateCheck, async (req, res) => {
 router.post('/change_feed_name', authenticateCheck, async (req, res) => {
     try {
         const { feed_id, newName } = req.body;
+        const nameCheck = ValidateTextInput(newName, 3, 30);
+        if (!nameCheck.valid) {
+            return res.status(400).json({ message: nameCheck.error });
+        }
         const feed = await Feeds.findOne({ where: { feed_id } });
         if (feed.feed_name.toLowerCase() === newName.toLowerCase()) {
             return res.status(200).json({ success: true, message: 'Name is unchanged' });
@@ -232,23 +252,28 @@ router.post('/change_feed_name', authenticateCheck, async (req, res) => {
 router.post('/create_feed', authenticateCheck, checkProfileStorageLimit, async (req, res) => {
     feedProfileUpload(req, res, async function (error) {
         if (error instanceof multer.MulterError) {
-            //A Multer error occurred when uploading
             if (error.code === 'LIMIT_FILE_SIZE') {
-                return res.status(413).json({ error: 'File cannot be more than 100MB' });
+                return res.status(413).json({ success: false, message: 'File cannot be more than 100MB' });
             }
-            return res.status(500).json({ success: false });
+            return res.status(500).json({ success: false, message: 'Upload error occurred' });
         } else if (error) {
-            return res.status(500).json({ success: false });
+            return res.status(500).json({ success: false, message: 'Upload failed' });
         }
         try {
             const { feedName, type, isGroup, feedOwner, viewerFeedId } = req.body;
-            //Prevents duplicate group names
+            const nameCheck = ValidateTextInput(feedName, 3, 30);
+            if (!nameCheck.valid) {
+                return res.status(400).json({ success: false, message: nameCheck.error });
+            }
             const existingFeed = await Feeds.findOne({ where: { feed_name: feedName } });
             if (existingFeed) {
                 if (req.file) {
                     fs.unlinkSync(path.join(process.cwd(), '/media/feed_images', req.file.filename));
                 }
-                return res.status(400).json({ error: 'Name taken' });
+                return res.status(400).json({ 
+                    success: false, 
+                    message: 'Name taken' 
+                });
             }
             let feed_photo = "media/site_images/blank-group-icon.jpg";
             if (req.file) {
@@ -289,16 +314,16 @@ router.post('/create_feed', authenticateCheck, checkProfileStorageLimit, async (
                 is_mod: true,
                 is_admin: true,
             });
-            res.status(201).json({ success: true, feed });
+            res.status(201).json({ success: true, feed }); 
         } catch (error) {
             if (req.file) {
                 try {
                     fs.unlinkSync(path.join(process.cwd(), '/media/feed_images', req.file.filename));
                 } catch (err) {
-                    res.status(500).json({ success: false, error: 'Failed to delete uploaded file' });
+                    console.error('Failed to delete uploaded file:', err);
                 }
             }
-            res.status(500).json({ success: false });
+            res.status(500).json({ success: false, message: 'Failed to create feed' });
         }
     });
 });
@@ -306,6 +331,10 @@ router.post('/create_feed', authenticateCheck, checkProfileStorageLimit, async (
 router.post('/create_deep_feed', authenticateCheck, async (req, res) => {
     try {
         const { deepFeedName, feedsToInclude, parentDeepFeedId, viewerId } = req.body;
+        const nameCheck = ValidateTextInput(deepFeedName, 1, 30);
+        if (!nameCheck.valid) {
+            return res.status(400).json({ message: nameCheck.error });
+        }
         if (!feedsToInclude || feedsToInclude.length < 2) {
             return res.status(400).json({ success: false, message: 'At least two feeds are required' });
         }

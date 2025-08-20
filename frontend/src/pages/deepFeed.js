@@ -9,6 +9,7 @@ import ContentForm from '../components/content/contentForm';
 import ContentWidget from '../components/content/contentWidget';
 import DeepFeedItem from '../components/channels/deepFeedItem';
 import { useInfiniteQuery } from '@tanstack/react-query';
+import { ValidateTextInput } from '../functions/validateTextInput';
 
 const DeepFeed = () => {
     const [activeEditPost, setActiveEditPost] = useState(null);
@@ -66,16 +67,6 @@ const DeepFeed = () => {
     const changeDeepFeedName = async (event) => {
         event.preventDefault();
         try {
-            if (newName.length === 0) {
-                setErrorMessage("Needs a name");
-                setTimeout(() => { setErrorMessage(''); }, 5000);
-                return;
-            }
-            if (newName.trim() === 'following') {
-                setErrorMessage("Cannot be named 'Following'");
-                setTimeout(() => { setErrorMessage(''); }, 5000);
-                return;
-            } 
             const response = await axios.post('/api/change_deep_feed_name', {
                 deepFeedId: deep_feed_id,
                 newName
@@ -86,6 +77,9 @@ const DeepFeed = () => {
                 setNewName('');
                 setDeepFeed((prev) => ({ ...prev, name: newName }));
                 document.title = newName;
+            } else {
+                setErrorMessage(response.data.message || 'Error changing name');
+                setTimeout(() => { setErrorMessage(''); }, 5000);
             }
         } catch (error) {
             setErrorMessage("Error changing name");
@@ -122,6 +116,7 @@ const DeepFeed = () => {
         }
     };
 
+    //For creating replies
     const postSubmit = async (formData) => {
         if (!isAuthenticated) return;
         if (!formData) {
@@ -248,17 +243,25 @@ const DeepFeed = () => {
                             <textarea
                                 className="change-name-area"
                                 onChange={(e) => {
-                                    e.preventDefault();
                                     const input = e.target.value;
                                     if (input.length <= 30) {
                                         setNewName(input);
-                                        if (input.trim() === 'following') {
-                                            setErrorMessage("Cannot be named 'Following'");
+                                        if (input) {
+                                            if (input.trim() === 'following') {
+                                                setErrorMessage("Cannot be named 'Following'");
+                                            } else {
+                                                const result = ValidateTextInput(input, 3, 30);
+                                                if (result.valid) {
+                                                    setErrorMessage("");
+                                                } else {
+                                                    setErrorMessage(result.error);
+                                                }
+                                            }
                                         } else {
-                                            setErrorMessage(""); 
+                                            setErrorMessage("");
                                         }
                                     } else {
-                                        setErrorMessage("Name too long");
+                                        setErrorMessage("Username cannot exceed 30 characters");
                                     }
                                 }}
                                 placeholder="New name"

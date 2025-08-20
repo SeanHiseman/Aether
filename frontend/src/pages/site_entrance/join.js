@@ -2,6 +2,8 @@ import axios from 'axios';
 import { useState } from 'react';
 import { FaEye, FaEyeSlash } from 'react-icons/fa';
 import { Link, useNavigate } from 'react-router-dom';
+import { ValidateEmail } from '../../functions/validateEmail';
+import { ValidateTextInput } from '../../functions/validateTextInput';
 import '../../css/authentication.css'; 
 import '../../css/basicStyles.css';
 
@@ -14,31 +16,23 @@ const Join = () => {
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [username, setUsername] = useState('');
     const navigate = useNavigate();
-    const validateEmail = (email) => {
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        return emailRegex.test(email);
-    };
-    const isDisabled = !confirmPassword || !email || !password || !username || !validateEmail(email) || password !== confirmPassword || Boolean(errorMessage);
+    const emailValidation = ValidateEmail(email);
+    const isDisabled = !confirmPassword || !email || !password || !username || !emailValidation.valid || password !== confirmPassword || Boolean(errorMessage);
 
     const handleJoin = async (event) => {
         event.preventDefault();
         const email = event.target.email.value;
         const username = event.target.username.value;
-        if (!validateEmail(email) || password !== confirmPassword || errorMessage) { //Redundant check
-            return;
-        }
         try {
             const response = await axios.post('/api/join', { email, password, username });
-            console.log('Join response:', response.data);
             if (response.data.success) {
                 setErrorMessage('');
                 navigate('/verify-email');
             } else {
-                setErrorMessage('Joining failed, please try again');
-                setTimeout(() => { setErrorMessage(''); }, 3000);
+                setErrorMessage(response.data.message || 'Joining failed, please try again');
+                setTimeout(() => { setErrorMessage(''); }, 5000);
             }
         } catch (error) {
-            console.error('Error joining:', error);
             if (error.response?.status === 409) {
                 setErrorMessage(error.response.data.message);
             } else if (error.response?.status === 400) {
@@ -68,22 +62,31 @@ const Join = () => {
                 </div>
                 <p className="error-message">{errorMessage}</p>
                 <form method="post" onSubmit={handleJoin}>
-                    <input
-                        className="authentication-input-box"
-                        name="username"
-                        placeholder="Username"
-                        required
-                        value={username}
-                        onChange={(e) => {
-                            const input = e.target.value;
-                            if (input.length <= 30) {
-                                setUsername(input);
-                                setErrorMessage(""); 
+                <input
+                    className="authentication-input-box"
+                    name="username"
+                    placeholder="Username"
+                    required
+                    value={username}
+                    onChange={(e) => {
+                        const input = e.target.value;
+                        if (input.length <= 30) {
+                            setUsername(input);
+                            if (input) {
+                                const result = ValidateTextInput(input, 3, 30);
+                                if (result.valid) {
+                                    setErrorMessage("");
+                                } else {
+                                    setErrorMessage(result.error);
+                                }
                             } else {
-                                setErrorMessage("Username cannot exceed 30 characters");
+                                setErrorMessage("");
                             }
-                        }}
-                    />
+                        } else {
+                            setErrorMessage("Username cannot exceed 30 characters");
+                        }
+                    }}
+                />
                     <input
                         type="email"
                         className="authentication-input-box"
@@ -93,18 +96,28 @@ const Join = () => {
                         value={email}
                         onChange={(e) => {
                             const input = e.target.value;
-                            if (input.length <= 500) {
+                            if (input.length <= 320) {
                                 setEmail(input);
-                                if (input && validateEmail(input)) {
+                                if (input) {
+                                    const result = ValidateEmail(input);
+                                    if (result.valid) {
+                                        setErrorMessage("");
+                                    } else {
+                                        setErrorMessage(result.error);
+                                    }
+                                } else {
                                     setErrorMessage("");
                                 }
                             } else {
-                                setErrorMessage("Email cannot exceed 500 characters");
+                                setErrorMessage("Email cannot exceed 320 characters");
                             }
                         }}
                         onBlur={(e) => {
-                            if (e.target.value && !validateEmail(e.target.value)) {
-                                setErrorMessage("Please enter a valid email address");
+                            if (e.target.value) {
+                                const result = ValidateEmail(e.target.value);
+                                if (!result.valid) {
+                                    setErrorMessage(result.error);
+                                }
                             }
                         }}
                     />

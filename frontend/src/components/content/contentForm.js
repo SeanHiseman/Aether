@@ -834,7 +834,7 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onEdit
                             <label htmlFor="media-input" className="small-icon" title="Add media">
                                 <FaPhotoVideo />
                             </label>
-                            <button className="small-icon" type="button" onClick={() => handleAddBlock(BLOCK_TYPES.CODE)} title="Add custom">
+                            <button className="small-icon" type="button" onClick={() => handleAddBlock(BLOCK_TYPES.CODE)} title="Add interactive">
                                 <FaToolbox />
                             </button>
                             <label htmlFor="app-input" className="small-icon" title="Add app">

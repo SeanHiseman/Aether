@@ -5,6 +5,7 @@ import { FaCog, FaEdit, FaFeatherAlt, FaFolder, FaFolderOpen, FaMinus, FaPlus, F
 import { Tooltip } from 'react-tooltip';
 import { useContext, useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate, useOutletContext, useParams } from 'react-router-dom';
+import { ValidateTextInput } from '../../functions/validateTextInput';
 import ChannelList from '../../components/channels/channelList';
 import ChatChannel from '../../components/channels/chatChannel';
 import ContentForm from '../../components/content/contentForm';
@@ -126,16 +127,6 @@ const FeedHome = () => {
                     return;
                 }
             }
-            if (finalChannelName === "Main") {
-                setFeedErrorMessage("Cannot be named Main");
-                setTimeout(() => { setFeedErrorMessage(''); }, 3000);
-                return;
-            }
-            if (finalChannelName.length >= 30) {
-                setFeedErrorMessage("Name too long");
-                setTimeout(() => { setFeedErrorMessage(''); }, 3000);
-                return;
-            }
             const response = await axios.post('/api/add_feed_channel', {
                 channelName: finalChannelName,
                 feedId: feed.feed_id,
@@ -151,8 +142,8 @@ const FeedHome = () => {
                 setShowChannelForm(false);
                 navigate(`/${urlLetter}/${feed_name}/${finalChannelName}`);
             } else {
-                setFeedErrorMessage('Failed to add channel');
-                setTimeout(() => { setFeedErrorMessage(''); }, 3000);
+                setFeedErrorMessage(response.data.message || 'Failed to add channel');
+                setTimeout(() => { setFeedErrorMessage(''); }, 5000);
             }
         } catch (error) {
             setFeedErrorMessage('Failed to add channel');
@@ -181,16 +172,6 @@ const FeedHome = () => {
     const changeChannelName = async (event) => {
         event.preventDefault();
         try {
-            if (newChannelName.length === 0) {
-                setFeedErrorMessage("Channel needs a name");
-                setTimeout(() => { setFeedErrorMessage(''); }, 3000);
-                return;
-            }
-            if (newChannelName === 'Main') {
-                setFeedErrorMessage("Cannot be named Main");
-                setTimeout(() => { setFeedErrorMessage(''); }, 3000);
-                return;
-            } 
             const channelId = channelRender.channel_id;
             const response = await axios.post('/api/change_channel_name', {
                 channelId,
@@ -206,8 +187,11 @@ const FeedHome = () => {
                     )
                 );
                 navigate(`/${urlPrefix}/${feed_name}/${newChannelName}`);
+            } else {
+                setFeedErrorMessage(response.data.message || 'Error changing channel name');
+                setTimeout(() => { setFeedErrorMessage(''); }, 5000);
             }
-        } catch {
+        } catch (error) {
             setFeedErrorMessage("Error changing channel name");
             setTimeout(() => { setFeedErrorMessage(''); }, 3000);
         }
@@ -443,17 +427,21 @@ const FeedHome = () => {
                                 <textarea
                                     className="change-name-area"
                                     onChange={(e) => {
-                                        e.preventDefault();
                                         const input = e.target.value;
-                                        if (input.length <= 30) {
-                                            setNewChannelName(input);
+                                        setNewChannelName(input);
+                                        if (input) {
                                             if (input.trim() === 'main') {
                                                 setFeedErrorMessage("Cannot be named 'Main'");
                                             } else {
-                                                setFeedErrorMessage(""); 
+                                                const result = ValidateTextInput(input, 3, 30);
+                                                if (result.valid) {
+                                                    setFeedErrorMessage("");
+                                                } else {
+                                                    setFeedErrorMessage(result.error);
+                                                }
                                             }
                                         } else {
-                                            setFeedErrorMessage("Name too long");
+                                            setFeedErrorMessage("");
                                         }
                                     }}
                                     placeholder="New name"
@@ -521,19 +509,23 @@ const FeedHome = () => {
                                         <input 
                                             className="name-input" 
                                             onChange={(e) => {
-                                                e.preventDefault();
                                                 const input = e.target.value;
-                                                if (input.length <= 30) {
-                                                    setNewChannelName(input);
+                                                setNewChannelName(input);
+                                                if (input) {
                                                     if (input.trim() === 'main') {
                                                         setFeedErrorMessage("Cannot be named 'Main'");
                                                     } else {
-                                                        setFeedErrorMessage(""); 
+                                                        const result = ValidateTextInput(input, 3, 30);
+                                                        if (result.valid) {
+                                                            setFeedErrorMessage("");
+                                                        } else {
+                                                            setFeedErrorMessage(result.error);
+                                                        }
                                                     }
                                                 } else {
-                                                    setFeedErrorMessage("Name too long");
+                                                    setFeedErrorMessage("");
                                                 }
-                                            }} 
+                                            }}
                                             placeholder="Channel name..." 
                                             type="text" 
                                             value={newChannelName} />

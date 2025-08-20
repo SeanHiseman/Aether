@@ -3,30 +3,31 @@ import { useContext, useState } from 'react';
 import { FaEye, FaEyeSlash } from 'react-icons/fa';
 import { Link, useNavigate } from 'react-router-dom';
 import { ThemeContext } from '../../themeProvider';
+import { ValidateEmail } from '../../functions/validateEmail';
+import { ValidateTextInput } from '../../functions/validateTextInput';
 import '../../css/authentication.css';
 import '../../css/basicStyles.css';
 
 const Login = () => {
-    const [username, setUsername] = useState('');
+    const [usernameOrEmail, setUsernameOrEmail] = useState('');
     const [password, setPassword] = useState('');
     const [errorMessage, setErrorMessage] = useState('');
     const { refreshTheme } = useContext(ThemeContext);
     const [showPassword, setShowPassword] = useState(false);
     const navigate = useNavigate();
-    const isDisabled = !password || !username;
+    const isDisabled = !password || !usernameOrEmail;
 
     const handleLogin = async (event) => {
         event.preventDefault();
         try {
-            const response = await axios.post('/api/login', { password, username }); //Username can also be email
+            const response = await axios.post('/api/login', { password, usernameOrEmail }); //Username can also be email
             if (response.status === 200) {
                 await refreshTheme();
-                console.log("Navigating to explore page after successful login");
                 navigate('/explore'); 
             }
         } catch (error) {
             if (error.response && error.response.status === 401) {
-                setErrorMessage(error.response.data?.message || 'Invalid username or password');
+                setErrorMessage(error.response.data?.message || 'Invalid username, email, or password');
                 setTimeout(() => { setErrorMessage(''); }, 5000);
             } else {
                 setErrorMessage('Failed to login, please try again');
@@ -57,14 +58,14 @@ const Login = () => {
                         name="username"
                         placeholder="Username or email"
                         required
-                        value={username}
+                        value={usernameOrEmail}
                         onChange={(e) => {
                             const input = e.target.value;
-                            if (input.length <= 500) {
-                                setUsername(input);
+                            if (input.length <= 320) {
+                                setUsernameOrEmail(input);
                                 setErrorMessage('');
                             } else {
-                                setErrorMessage('Cannot exceed 500 characters');
+                                setErrorMessage('Cannot exceed 320 characters');
                             }
                         }}
                     />

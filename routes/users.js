@@ -5,6 +5,8 @@ import Stripe from 'stripe';
 import { Feeds, Users } from '../models/relationships.js';
 import { Router } from 'express';
 import { Op } from 'sequelize';
+import { ValidateEmail } from '../functions/validateEmail.js';
+import { ValidateTextInput } from '../functions/validateTextInput.js';
 
 dotenv.config();
 const router = Router();
@@ -29,9 +31,9 @@ const stripe = new Stripe(stripeConfig.secretKey);
 router.post('/change_email', authenticateCheck, async (req, res) => {
     try {
         const { email, userId } = req.body;
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        if (!emailRegex.test(email)) {
-            return res.status(400).json({ success: false, error: 'Invalid email format' });
+        const emailCheck = ValidateEmail(email);
+        if (!emailCheck.valid) {
+            return res.status(400).json({ message: emailCheck.error });
         }
         const existingEmail = await Users.findOne({ where: { email } });
         if (existingEmail) {
@@ -78,10 +80,11 @@ router.post('/change_theme', authenticateCheck, async (req, res) => {
 router.post('/change_username', authenticateCheck, async (req, res) => {
     try {
         const { feed_id, newName, user_id } = req.body;
-        const trimmedName = newName.trim();
-        if (!trimmedName || trimmedName.length < 3) {
-            return res.status(400).json({ success: false, error: 'Username must be at least 3 characters' });
+        const usernameCheck = ValidateTextInput(newName, 3, 30);
+        if (!usernameCheck.valid) {
+            return res.status(400).json({ message: usernameCheck.error });
         }
+        const trimmedName = newName.trim();
         const user = await Users.findOne({ where: { user_id } });
         if (!user) {
             return res.status(404).json({ success: false, error: 'User not found' });

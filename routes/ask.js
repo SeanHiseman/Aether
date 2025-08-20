@@ -248,6 +248,7 @@ router.post('/generate_content', authenticateCheck, async (req, res) => {
 		await Users.increment('usage_count', { by: totalTokens, where: { user_id: senderId } });
         res.status(201).json({ success: true, generatedContent: aiReply, fromCache: false });
     } catch (error) {
+        console.error('Error generating content:', error);
         res.status(500).json({ success: false, error: error.message });
     }
 });

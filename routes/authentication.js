@@ -12,6 +12,8 @@ import { Op } from 'sequelize';
 import { v4 } from 'uuid';
 import { Connections, ConnectRequests, Feeds, FeedChannels, Followers, FeedChats, Messages, Posts, PostDrafts, PostNotes, PostVotes, SavedPostChannels, Users } from '../models/relationships.js'; 
 import { generateVerificationToken, sendPasswordResetEmail, sendVerificationEmail } from '../functions/emailService.js';
+import { ValidateEmail } from '../functions/validateEmail.js';
+import { ValidateTextInput } from '../functions/validateTextInput.js';
 import sequelize from '../databaseSetup.js';
 
 dotenv.config();
@@ -175,9 +177,13 @@ router.post('/join', async (req, res) => {
 		});
         const email = req.body.email;
         const username = req.body.username;
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/; //Checked in frontend too
-        if (!emailRegex.test(email)) {
-            return res.status(400).json({ message: 'Invalid email format' });
+        const emailCheck = ValidateEmail(email);
+        if (!emailCheck.valid) {
+            return res.status(400).json({ message: emailCheck.error });
+        }
+        const usernameCheck = ValidateTextInput(username, 3, 30);
+        if (!usernameCheck.valid) {
+            return res.status(400).json({ message: usernameCheck.error });
         }
         const existingEmail = await Users.findOne({ where: { email } });
         if (existingEmail) {
@@ -237,8 +243,8 @@ router.post('/login', async (req, res) => {
 				else resolve();
 			});
 		});
-        const { password, username } = req.body;
-        const user = await Users.findOne({ where: { [Op.or]: [{ email: username }, { username }] } });
+        const { password, usernameOrEmail } = req.body;
+        const user = await Users.findOne({ where: { [Op.or]: [{ email: usernameOrEmail }, { username: usernameOrEmail }] } });
         if (!user) {
             return res.status(401).json({ success: false, message: 'Invalid credentials' });
         }
@@ -262,7 +268,6 @@ router.post('/login', async (req, res) => {
         }
     }
     catch (error) {
-        console.error('Login error:', error);
         res.status(500).json({ success: false });
     }
 });

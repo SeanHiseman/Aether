@@ -4,6 +4,7 @@ import axios from 'axios';
 import Cropper from 'react-easy-crop';
 import GetCroppedImg from '../../../components/getCroppedImg'; 
 import { FaEdit, FaRegWindowClose, FaSave, FaFileUpload, FaPencilAlt, FaLock, FaUnlock } from 'react-icons/fa';
+import { ValidateTextInput } from '../../../functions/validateTextInput';
 
 const FeedInfoView = () => {
     const [crop, setCrop] = useState({ x: 0, y: 0 });
@@ -45,11 +46,16 @@ const FeedInfoView = () => {
             const response = await axios.put(`/api/update_feed_photo/${feed.feed_id}`, formData, {
                 headers: { 'Content-Type': 'multipart/form-data' },
             });
-            setFeed(prev => ({ ...prev, feed_photo: response.data.newPhotoPath }));
-            setIsPhotoFormVisible(false);
-            setImageSrc(null);
-            setIsFileSelected(false);
-            setErrorMessage('');
+            if (response.status.success) {
+                setFeed(prev => ({ ...prev, feed_photo: response.data.newPhotoPath }));
+                setIsPhotoFormVisible(false);
+                setImageSrc(null);
+                setIsFileSelected(false);
+                setErrorMessage('');
+            } else {
+                setErrorMessage(response.data.message || 'Failed to update feed photo');    
+                setTimeout(() => { setErrorMessage(''); }, 5000);
+            }
         } catch (error) {
             if (error.response?.status === 413) {
                 setErrorMessage(error.response.data.message + (!user.has_membership ? ". Get membership for more" : ""));
@@ -87,7 +93,7 @@ const FeedInfoView = () => {
         try {
             const response = await axios.post('/api/toggle_lock', { feedId: feed.feed_id });
             setFeed(prev => ({ ...prev, is_locked: response.data.is_locked }));
-        } catch {
+        } catch (error) {
             setErrorMessage('Error changing lock status');
             setTimeout(() => { setErrorMessage(''); }, 5000);
         }
@@ -107,7 +113,7 @@ const FeedInfoView = () => {
         try {
             const response = await axios.post('/api/toggle_private', { feedId: feed.feed_id });
             setFeed(prev => ({ ...prev, type: response.data.type }));
-        } catch {
+        } catch (error){
             setErrorMessage('Error changing status');
             setTimeout(() => { setErrorMessage(''); }, 5000);
         }
@@ -115,39 +121,44 @@ const FeedInfoView = () => {
 
     const updateDescription = async () => {
         try {
-            await axios.post('/api/change_description', {
+            const response  = await axios.post('/api/change_description', {
                 description: newDescription,
                 feedId: feed.feed_id
             });
-            setFeed({ ...feed, description: newDescription });
-            setIsEditingDescription(false);
-        } catch {
+            if (response.data.success) {
+                setFeed({ ...feed, description: newDescription });
+                setIsEditingDescription(false);
+            } else {
+                setErrorMessage(response.data.message || 'Failed to update description');
+                setTimeout(() => { setErrorMessage(''); }, 5000);
+            }
+        } catch (error){
             setErrorMessage('Error changing description');
             setTimeout(() => { setErrorMessage(''); }, 5000);
         }
     };
 
     const updateName = async () => {
-        if (!newName) {
-            setErrorMessage('Name cannot be empty');
-            return;
-        }
         if (newName.toLowerCase() === feed.feed_name.toLowerCase()) {
             setErrorMessage('Name is unchanged');
             return;
         }
         try {
             const route = feed.is_group ? 'change_feed_name' : 'change_username';
-            await axios.post(`/api/${route}`, {
+            const response = await axios.post(`/api/${route}`, {
                 feed_id: feed.feed_id,
                 newName,
                 user_id: user.user_id
             });
-            setFeed({ ...feed, feed_name: newName });
-            setIsEditingName(false);
-            navigate(`/settings/${newName}`);
+            if (response.data.success) {
+                setFeed({ ...feed, feed_name: newName });
+                setIsEditingName(false);
+                navigate(`/settings/${newName}`);
+            } else {
+                setErrorMessage(response.data.message || 'Failed to update name');  
+                setTimeout(() => { setErrorMessage(''); }, 5000);
+            }
         } catch (error) {
-            console.error('Error updating feed name:', error);
 		    setErrorMessage(error.response?.data?.message || 'Error changing name');
             setTimeout(() => { setErrorMessage(''); }, 5000);
         }
@@ -188,11 +199,22 @@ const FeedInfoView = () => {
                 <div className="settings-feed-info">
                     {isEditingName ? (
                         <div className="change-name-settings">
-                            <textarea className="change-name-area" style={{ fontSize: '36px', height: '42px' }} value={newName} placeholder="Feed name..." onChange={(e) => {
-                                const input = e.target.value;
-                                if (input.length <= 30) setName(input);
-                                else setErrorMessage('Name cannot exceed 30 characters');
-                            }} />
+                            <textarea className="change-name-area" style={{ fontSize: '36px', height: '42px' }} value={newName} placeholder="Feed name..." 
+                                onChange={(e) => {
+                                    const input = e.target.value;
+                                    setName(input);
+                                    if (input) {
+                                        const result = ValidateTextInput(input, 0, 30);
+                                        if (result.valid) {
+                                            setErrorMessage("");
+                                        } else {
+                                            setErrorMessage(result.error);
+                                        }
+                                    } else {
+                                        setErrorMessage("");
+                                    }
+                                }}
+                            />
                             <div className="cancel-save-vertical">
                                 <button className="small-icon" onClick={() => { setIsEditingName(false); setName(''); setErrorMessage(''); }} title="Cancel"><FaRegWindowClose /></button>
                                 <button className="small-icon" onClick={(e) => { e.preventDefault(); updateName(); }} title="Save"><FaSave /></button>
@@ -206,11 +228,22 @@ const FeedInfoView = () => {
                     )}
                     {isEditingDescription ? (
                         <div className="change-name-settings">
-                            <textarea className="change-name-area" value={newDescription} placeholder="Description..." onChange={(e) => {
-                                const input = e.target.value;
-                                if (input.length <= 1000) setDescription(input);
-                                else setErrorMessage('Description cannot exceed 1000 characters');
-                            }} />
+                            <textarea className="change-name-area" value={newDescription} placeholder="Description..." 
+                                onChange={(e) => {
+                                    const input = e.target.value;
+                                    setDescription(input);
+                                    if (input) {
+                                        const result = ValidateTextInput(input, 0, 1000);
+                                        if (result.valid) {
+                                            setErrorMessage("");
+                                        } else {
+                                            setErrorMessage(result.error);
+                                        }
+                                    } else {
+                                        setErrorMessage("");
+                                    }
+                                }}
+                            />
                             <div className="cancel-save-vertical">
                                 <button className="small-icon" onClick={() => { setIsEditingDescription(false); setDescription(''); setErrorMessage(''); }} title="Cancel"><FaRegWindowClose /></button>
                                 <button className="small-icon" onClick={(e) => { e.preventDefault(); updateDescription(); }} title="Save"><FaSave /></button>

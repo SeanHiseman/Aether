@@ -14,6 +14,7 @@ import GetCroppedImg from "../components/getCroppedImg";
 import { ThemeContext } from "../themeProvider";
 import { Tooltip } from "react-tooltip";
 import { UnreadContext } from "../components/connections/unreadContext";
+import { ValidateTextInput } from "../functions/validateTextInput";
 import "../css/algorithms.css"; //Project code
 import "../css/baseLayout.css";
 import "../css/basicStyles.css";
@@ -358,12 +359,12 @@ const BaseLayout = () => {
         }
     };
 
-    const createFeed = async e => {
+    const createFeed = async event => {
         if (!isAuthenticated) {
             return;
         }
         try {
-            e.preventDefault();
+            event.preventDefault();
             if (!feedName) {
                 setAsideErrorMessage("Feed needs a name");
                 return;
@@ -379,7 +380,7 @@ const BaseLayout = () => {
                     const blob = await GetCroppedImg(imageSrc, croppedAreaPixels);
                     form.append("new_feed_photo", blob, "cropped.jpg");
                 }
-                catch {
+                catch (error) {
                     setAsideErrorMessage("Failed to crop image");
                     return;
                 }
@@ -390,6 +391,7 @@ const BaseLayout = () => {
             const response = await axios.post("/api/create_feed", form, {
                 headers: { "Content-Type": "multipart/form-data" }
             });
+            console.log("Create feed response:", response.data);
             if (response.data.success) {
                 const created = response.data.feed;
                 setFeeds(prev => [
@@ -411,9 +413,14 @@ const BaseLayout = () => {
                 setZoom(1);
                 setCroppedAreaPixels(null);
                 navigate(`/g/${created.feed_name}`);
+            } else {
+                console.error("Inside error:", response.data.message);
+                setAsideErrorMessage(response.data.message || "Error creating feed");
+                setTimeout(() => setAsideErrorMessage(""), 5000);
             }
         }
         catch (error) {
+            console.error("Outside:", error);
             if (error.response?.status === 413) {
                 setAsideErrorMessage(
                     error.response.data.message +
@@ -428,8 +435,8 @@ const BaseLayout = () => {
         }
     };
 
-    const handleFileChange = e => {
-        const file = e.target.files[0];
+    const handleFileChange = event => {
+        const file = event.target.files[0];
         if (file) {
             if (file.size > MAX_FILE_SIZE) {
                 setAsideErrorMessage(
@@ -535,14 +542,18 @@ const BaseLayout = () => {
                                             name="Name"
                                             placeholder="Feed name..."
                                             value={feedName}
-                                            onChange={e => {
-                                                e.preventDefault();
+                                            onChange={(e) => {
                                                 const input = e.target.value;
-                                                if (input.length <= 30) {
-                                                    setFeedName(input);
-                                                    setAsideErrorMessage("");
+                                                setFeedName(input);
+                                                if (input) {
+                                                    const result = ValidateTextInput(input, 0, 30);
+                                                    if (result.valid) {
+                                                        setAsideErrorMessage("");
+                                                    } else {
+                                                        setAsideErrorMessage(result.error);
+                                                    }
                                                 } else {
-                                                    setAsideErrorMessage("Name too long");
+                                                    setAsideErrorMessage("");
                                                 }
                                             }}
                                         />
@@ -586,9 +597,6 @@ const BaseLayout = () => {
                                         <button className={feedName.length === 0 ? "small-icon disabled" : "small-icon"} disabled={feedName.length === 0} title={feedName.length === 0 ? "Enter a name" : "Create"} type="submit" value="Create">
                                             <FaPlus />
                                         </button>
-                                        {asideErrorMessage && (
-                                            <div className="error-message">{asideErrorMessage}</div>
-                                        )}
                                     </form>
                                 )}
                             </div>

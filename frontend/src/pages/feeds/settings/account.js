@@ -2,6 +2,7 @@ import axios from 'axios';
 import { useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import { FaEye, FaEyeSlash } from 'react-icons/fa';
+import { ValidateEmail } from '../../../functions/validateEmail';
 
 const Account = () => {
     const [confirmEmail, setConfirmEmail] = useState('');
@@ -18,14 +19,9 @@ const Account = () => {
     const maxEmailLength = 500;
     const maxPasswordLength = 120;
 
-    const validateEmail = (email) => {
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        return emailRegex.test(email);
-    };
-
     const changeEmail = async (event) => {
         event.preventDefault();
-        if (!validateEmail(email) || email !== confirmEmail || email === user.email || emailMessage) { //Redundant check
+        if (!ValidateEmail(email) || email !== confirmEmail || email === user.email || emailMessage) { //Redundant check
             return;
         }
         try {
@@ -151,7 +147,7 @@ const Account = () => {
                             const input = e.target.value;
                             if (input.length <= maxEmailLength) {
                                 setEmail(input);
-                                if (input && validateEmail(input) && input !== user.email) {
+                                if (input && ValidateEmail(input) && input !== user.email) {
                                     setEmailMessage("");
                                 }
                                 if (confirmEmail && input !== confirmEmail) {
@@ -163,7 +159,7 @@ const Account = () => {
                         }}
                         onBlur={(e) => {
                             if (e.target.value) {
-                                if (!validateEmail(e.target.value)) {
+                                if (!ValidateEmail(e.target.value)) {
                                     setEmailMessage("Please enter a valid email address");
                                 } else if (e.target.value === user.email) {
                                     setEmailMessage("Must use a different email to the current");
@@ -184,7 +180,7 @@ const Account = () => {
                                 setConfirmEmail(input);
                                 if (email && input !== email) {
                                     setEmailMessage("Emails do not match");
-                                } else if (email && input === email && validateEmail(email) && email !== user.email) {
+                                } else if (email && input === email && ValidateEmail(email) && email !== user.email) {
                                     setEmailMessage("");
                                 }
                             } else {
