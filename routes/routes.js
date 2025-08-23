@@ -105,7 +105,6 @@ router.get('/search/:searcherId', async (req, res) => {
             const parentChannel = await FeedChannels.findByPk(post.channel_id, {
                 attributes: ['channel_id', 'channel_name']
             });
-            console.log("post", post);
             const poster = await Feeds.findByPk(post.poster_id, {
                 attributes: posterAttributes
             });
@@ -122,18 +121,10 @@ router.get('/search/:searcherId', async (req, res) => {
                 postVotes,
             };
         }));
-        res.status(200).json({ 
-            feeds: feedData, 
-            posts: processedPosts,
-            success: true 
-        });
+        res.status(200).json({ feeds: feedData, posts: processedPosts, success: true });
     } catch (error) {
-        console.error('Error in search route:', error);
         res.status(500).json({ success: false });
     }
 });
 
 export default router;
-
-
-

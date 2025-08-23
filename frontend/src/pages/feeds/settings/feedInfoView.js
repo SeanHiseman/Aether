@@ -15,6 +15,8 @@ const FeedInfoView = () => {
     const [isEditingDescription, setIsEditingDescription] = useState(false);
     const [isEditingName, setIsEditingName] = useState(false);
     const [isFileSelected, setIsFileSelected] = useState(false);
+    const [isNewDescriptionValid, setIsNewDescriptionValid] = useState(true);
+    const [isNewNameValid, setIsNewNameValid] = useState(true);
     const [isPhotoFormVisible, setIsPhotoFormVisible] = useState(false);
     const [newDescription, setDescription] = useState('');
     const [newName, setName] = useState('');
@@ -128,12 +130,9 @@ const FeedInfoView = () => {
             if (response.data.success) {
                 setFeed({ ...feed, description: newDescription });
                 setIsEditingDescription(false);
-            } else {
-                setErrorMessage(response.data.message || 'Failed to update description');
-                setTimeout(() => { setErrorMessage(''); }, 5000);
-            }
+            } 
         } catch (error){
-            setErrorMessage('Error changing description');
+            setErrorMessage(error.response?.data?.message || 'Error changing description');
             setTimeout(() => { setErrorMessage(''); }, 5000);
         }
     };
@@ -154,10 +153,7 @@ const FeedInfoView = () => {
                 setFeed({ ...feed, feed_name: newName });
                 setIsEditingName(false);
                 navigate(`/settings/${newName}`);
-            } else {
-                setErrorMessage(response.data.message || 'Failed to update name');  
-                setTimeout(() => { setErrorMessage(''); }, 5000);
-            }
+            } 
         } catch (error) {
 		    setErrorMessage(error.response?.data?.message || 'Error changing name');
             setTimeout(() => { setErrorMessage(''); }, 5000);
@@ -207,17 +203,20 @@ const FeedInfoView = () => {
                                         const result = ValidateTextInput(input, 0, 30);
                                         if (result.valid) {
                                             setErrorMessage("");
+                                            setIsNewNameValid(true);
                                         } else {
                                             setErrorMessage(result.error);
+                                            setIsNewNameValid(false);
                                         }
                                     } else {
                                         setErrorMessage("");
+                                        setIsNewNameValid(false);
                                     }
                                 }}
                             />
                             <div className="cancel-save-vertical">
                                 <button className="small-icon" onClick={() => { setIsEditingName(false); setName(''); setErrorMessage(''); }} title="Cancel"><FaRegWindowClose /></button>
-                                <button className="small-icon" onClick={(e) => { e.preventDefault(); updateName(); }} title="Save"><FaSave /></button>
+                                <button className={!isNewNameValid ? "small-icon disabled" : "small-icon"}  onClick={(e) => { e.preventDefault(); updateName(); }} title="Save"><FaSave /></button>
                             </div>
                         </div>
                     ) : (
@@ -236,17 +235,20 @@ const FeedInfoView = () => {
                                         const result = ValidateTextInput(input, 0, 1000);
                                         if (result.valid) {
                                             setErrorMessage("");
+                                            setIsNewDescriptionValid(true);
                                         } else {
                                             setErrorMessage(result.error);
+                                            setIsNewDescriptionValid(false);
                                         }
                                     } else {
                                         setErrorMessage("");
+                                        setIsNewDescriptionValid(false);
                                     }
                                 }}
                             />
                             <div className="cancel-save-vertical">
                                 <button className="small-icon" onClick={() => { setIsEditingDescription(false); setDescription(''); setErrorMessage(''); }} title="Cancel"><FaRegWindowClose /></button>
-                                <button className="small-icon" onClick={(e) => { e.preventDefault(); updateDescription(); }} title="Save"><FaSave /></button>
+                                <button className={!isNewDescriptionValid ? "small-icon disabled" : "small-icon"} onClick={(e) => { e.preventDefault(); updateDescription(); }} title="Save"><FaSave /></button>
                             </div>
                         </div>
                     ) : (

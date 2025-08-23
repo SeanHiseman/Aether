@@ -251,7 +251,7 @@ router.get('/channel_posts', async (req, res) => {
 					score,
 					text_body: postContext.text_body
 				});
-				console.log("processed post:", processedPosts);
+				//console.log("processed post:", processedPosts);
 			}
 			processedPosts.sort((a, b) => {
 				if (b.score !== a.score) return b.score - a.score;
@@ -321,7 +321,7 @@ router.get('/channel_posts', async (req, res) => {
 				const { score, ...rest } = p;
 				return { ...rest, is_saved: savedSet.has(p.post_id) };
 			});
-			console.log("results:", results);
+			//console.log("results:", results);
 			return res.status(200).json(results);
 		} else {
 			const selectionLimit = limit ? parseInt(limit, 20) : 20;
@@ -688,7 +688,7 @@ router.get("/explore_posts", async (req, res) => {
 		}));
 		res.status(200).json({ posts: formatted, hasMore: rows.length >= limit });
 	} catch (error) {
-        console.log("error:", error);
+        //console.log("error:", error);
 		res.status(500).json({ success: false, error: error.message });
 	}
 });

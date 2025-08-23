@@ -28,15 +28,12 @@ const Join = () => {
             if (response.data.success) {
                 setErrorMessage('');
                 navigate('/verify-email');
-            } else {
-                setErrorMessage(response.data.message || 'Joining failed, please try again');
-                setTimeout(() => { setErrorMessage(''); }, 5000);
-            }
+            } 
         } catch (error) {
             if (error.response?.status === 409) {
-                setErrorMessage(error.response.data.message);
+                setErrorMessage(error.response.data?.message);
             } else if (error.response?.status === 400) {
-                setErrorMessage(error.response.data.message || 'Invalid input');
+                setErrorMessage(error.response?.data?.message || 'Invalid input');
             } else {
                 setErrorMessage('Joining failed, please try again');
             }

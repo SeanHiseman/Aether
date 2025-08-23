@@ -16,7 +16,6 @@ const Account = () => {
     const { user } = useOutletContext();
     const isEmailDisabled = !email || !confirmEmail || email !== confirmEmail;
 	const isPasswordDisabled = !password || !confirmPassword || password !== confirmPassword;
-    const maxEmailLength = 500;
     const maxPasswordLength = 120;
 
     const changeEmail = async (event) => {
@@ -55,7 +54,7 @@ const Account = () => {
             setPasswordMessage(response.data.success ? 'Password changed' : 'Password change error, please try again');
             setTimeout(() => { setPasswordMessage(''); }, 5000);
         } catch (error) {
-            setPasswordMessage('Password change error, please try again');
+            setPasswordMessage(error.response?.data?.message || 'Password change error, please try again');
             setTimeout(() => { setPasswordMessage(''); }, 5000);
         }
     };
@@ -145,23 +144,26 @@ const Account = () => {
                         value={email} 
                         onChange={(e) => {
                             const input = e.target.value;
-                            if (input.length <= maxEmailLength) {
-                                setEmail(input);
-                                if (input && ValidateEmail(input) && input !== user.email) {
-                                    setEmailMessage("");
-                                }
-                                if (confirmEmail && input !== confirmEmail) {
-                                    setEmailMessage("Emails do not match");
-                                }
+                            setEmail(input);
+                            const { valid, error } = ValidateEmail(input);
+                            
+                            if (!valid) {
+                                setEmailMessage(error);
+                            } else if (input === user.email) {
+                                setEmailMessage("Must use a different email to the current");
+                            } else if (confirmEmail && input !== confirmEmail) {
+                                setEmailMessage("Emails do not match");
                             } else {
-                                setEmailMessage(`Email cannot exceed ${maxEmailLength} characters`);
+                                setEmailMessage("");
                             }
                         }}
                         onBlur={(e) => {
-                            if (e.target.value) {
-                                if (!ValidateEmail(e.target.value)) {
-                                    setEmailMessage("Please enter a valid email address");
-                                } else if (e.target.value === user.email) {
+                            const input = e.target.value;
+                            if (input) {
+                                const { valid, error } = ValidateEmail(input);
+                                if (!valid) {
+                                    setEmailMessage(error);
+                                } else if (input === user.email) {
                                     setEmailMessage("Must use a different email to the current");
                                 }
                             }
@@ -176,25 +178,22 @@ const Account = () => {
                         value={confirmEmail} 
                         onChange={(e) => {
                             const input = e.target.value;
-                            if (input.length <= maxEmailLength) {
-                                setConfirmEmail(input);
-                                if (email && input !== email) {
-                                    setEmailMessage("Emails do not match");
-                                } else if (email && input === email && ValidateEmail(email) && email !== user.email) {
-                                    setEmailMessage("");
-                                }
-                            } else {
-                                setEmailMessage(`Email cannot exceed ${maxEmailLength} characters`);
+                            setConfirmEmail(input);
+                            const { valid } = ValidateEmail(email);
+                            if (email && input !== email) {
+                                setEmailMessage("Emails do not match");
+                            } else if (email && input === email && valid && email !== user.email) {
+                                setEmailMessage("");
                             }
                         }} 
                     />
-					<input 
-						className={'submit' + (isEmailDisabled ? ' disabled' : '')}
-						disabled={isEmailDisabled}
-						title={emailMessage}
-						type="submit" 
-						value="Change email" 
-					/>
+                    <input 
+                        className={'submit' + (isEmailDisabled ? ' disabled' : '')}
+                        disabled={isEmailDisabled}
+                        title={emailMessage}
+                        type="submit" 
+                        value="Change email" 
+                    />
                 </form>
             </div>
         </div>

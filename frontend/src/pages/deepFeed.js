@@ -18,6 +18,7 @@ const DeepFeed = () => {
     const { deep_feed_id } = useParams();
     const [deepFeed, setDeepFeed] = useState({ deep_feed_id: null, name: '', owner_id: null, parent_id: null });
     const [isEditingName, setIsEditingName] = useState(false);
+    const [isNewNameValid, setIsNewNameValid] = useState(false);
     const [newName, setNewName] = useState('');
     const [postErrorMessage, setPostErrorMessage] = useState('');
     const { isAuthenticated, user, viewer } = useContext(AuthContext);
@@ -77,12 +78,9 @@ const DeepFeed = () => {
                 setNewName('');
                 setDeepFeed((prev) => ({ ...prev, name: newName }));
                 document.title = newName;
-            } else {
-                setErrorMessage(response.data.message || 'Error changing name');
-                setTimeout(() => { setErrorMessage(''); }, 5000);
-            }
+            } 
         } catch (error) {
-            setErrorMessage("Error changing name");
+            setErrorMessage(error.response?.data?.message || "Error changing name");
             setTimeout(() => { setErrorMessage(''); }, 5000);
         }
     };
@@ -110,7 +108,7 @@ const DeepFeed = () => {
                     navigate('/d/following');
                 }
             } catch (error) {
-                setErrorMessage('Error deleting deep feed');
+                setErrorMessage(error.response?.data?.message || 'Error deleting deep feed');
                 setTimeout(() => { setErrorMessage(''); }, 5000);
             }
         }
@@ -173,7 +171,7 @@ const DeepFeed = () => {
             await axios.post('/api/edit_post', formData);
             setActiveEditPost(null);
         } catch (error) {
-            setErrorMessage('Error editing post');
+            setErrorMessage(error.response?.data?.message || 'Error editing post');
             setTimeout(() => { setErrorMessage('') }, 3000);
         }
     };
@@ -244,24 +242,23 @@ const DeepFeed = () => {
                                 className="change-name-area"
                                 onChange={(e) => {
                                     const input = e.target.value;
-                                    if (input.length <= 30) {
-                                        setNewName(input);
-                                        if (input) {
-                                            if (input.trim() === 'following') {
-                                                setErrorMessage("Cannot be named 'Following'");
-                                            } else {
-                                                const result = ValidateTextInput(input, 3, 30);
-                                                if (result.valid) {
-                                                    setErrorMessage("");
-                                                } else {
-                                                    setErrorMessage(result.error);
-                                                }
-                                            }
+                                    setNewName(input);
+                                    if (input) {
+                                        if (input.trim() === 'following') {
+                                            setErrorMessage("Cannot be named 'Following'");
                                         } else {
-                                            setErrorMessage("");
+                                            const result = ValidateTextInput(input, 1, 30);
+                                            if (result.valid) {
+                                                setErrorMessage("");
+                                                setIsNewNameValid(true);
+                                            } else {
+                                                setErrorMessage(result.error);
+                                                setIsNewNameValid(true);
+                                            }
                                         }
                                     } else {
-                                        setErrorMessage("Username cannot exceed 30 characters");
+                                        setErrorMessage("");
+                                        setIsNewNameValid(true);
                                     }
                                 }}
                                 placeholder="New name"
@@ -270,7 +267,7 @@ const DeepFeed = () => {
                                 <button className="small-icon" onClick={() => {setIsEditingName(false); setNewName(""); setErrorMessage("");}} title="Cancel">
                                     <FaRegWindowClose />
                                 </button>
-                                <button className="small-icon" onClick={changeDeepFeedName} title="Save">
+                                <button className={!isNewNameValid ? "small-icon disabled" : "small-icon"} onClick={changeDeepFeedName} title="Save">
                                     <FaSave />
                                 </button>
                             </div>

@@ -27,7 +27,6 @@ const router = Router();
 	try {
 		tutorialContent = await fs.readFile(tutorialTemplatePath, 'utf8');
 	} catch (error) {
-		console.log('Error reading tutorial template:', error);
 		tutorialContent = '';
 	}
 })();
@@ -147,24 +146,33 @@ router.delete('/delete_account', authenticateCheck, async (req, res) => {
 });
 
 router.post('/forgot-password', resendLimiter, async (req, res) => {
-	try {
-		const { email } = req.body;
-		const user = await Users.findOne({ where: { email } });
-		if (!user) {
-			return res.status(200).json({ success: true });
-		}
-		const resetToken = jwt.sign(
-			{ email, type: 'password_reset', userId: user.user_id },
-			process.env.JWT_SECRET,
-			{ expiresIn: '1h' }
-		);
-		const resetExpires = new Date(Date.now() + 60 * 60 * 1000);
-		await user.update({ reset_token: resetToken, reset_token_expires: resetExpires });
-		await sendPasswordResetEmail(email, user.username, resetToken);
-		return res.status(200).json({ success: true });
-	} catch (error) { 
-		return res.status(500).json({ success: false });
-	}
+    try {
+        const { email } = req.body;
+        const { valid, error } = ValidateEmail(email);
+        if (!valid) {
+            return res.status(400).json({ message: error });
+        }
+        const user = await Users.findOne({ where: { email } });
+        if (!user) {
+            //Always return success to avoid exposing user existence
+            return res.status(200).json({ success: true });
+        }
+        const resetToken = jwt.sign(
+            { email, type: 'password_reset', userId: user.user_id },
+            process.env.JWT_SECRET,
+            { expiresIn: '1h' }
+        );
+        const resetExpires = new Date(Date.now() + 60 * 60 * 1000);
+        await user.update({
+            reset_token: resetToken,
+            reset_token_expires: resetExpires
+        });
+        await sendPasswordResetEmail(email, user.username, resetToken);
+        return res.status(200).json({ success: true });
+    } catch (error) {
+        console.error('Error in /forgot-password:', error);
+        return res.status(500).json({ success: false, message: 'An error occurred. Please try again later.' });
+    }
 });
 
 router.post('/join', async (req, res) => {
@@ -283,17 +291,31 @@ router.post('/logout', (req, res) => {
 });
 
 router.post('/resend-verification', resendLimiter, async (req, res) => {
-		const { email } = req.body;
-		const user = await Users.findOne({ where: { email } });
-		if (!user) return res.status(404).json({ message: 'User not found' });
-		if (user.email_verified) return res.status(400).json({ message: 'Email already verified' });
-		const verificationToken = generateVerificationToken(user.user_id, email);
-		const verificationTokenExpires = new Date(Date.now() + 24 * 60 * 60 * 1000);
-		await user.update({ verification_token: verificationToken, verification_token_expires: verificationTokenExpires });
-		await sendVerificationEmail(email, user.username, verificationToken);
-		return res.status(200).json({ success: true, message: 'Verification email sent' });
-	}
-);
+    try {
+        const { email } = req.body;
+        const { valid, error } = ValidateEmail(email);
+        if (!valid) {
+            return res.status(400).json({ message: error });
+        }
+        const user = await Users.findOne({ where: { email } });
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+        if (user.email_verified) {
+            return res.status(400).json({ message: 'Email already verified' });
+        }
+        const verificationToken = generateVerificationToken(user.user_id, email);
+        const verificationTokenExpires = new Date(Date.now() + 24 * 60 * 60 * 1000);
+        await user.update({
+            verification_token: verificationToken,
+            verification_token_expires: verificationTokenExpires
+        });
+        await sendVerificationEmail(email, user.username, verificationToken);
+        return res.status(200).json({ success: true, message: 'Verification email sent' });
+    } catch (error) {
+        return res.status(500).json({ message: 'An error occurred. Please try again later.' });
+    }
+});
 
 router.post('/reset-password', async (req, res) => { //For users who have forgotten their password
 	const { password, token } = req.body;

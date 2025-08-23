@@ -45,6 +45,7 @@ const BaseLayout = () => {
 	const [hasMoreFeeds, setHasMoreFeeds] = useState(true);
 	const [headerErrorMessage, setHeaderErrorMessage] = useState("");
 	const [imageSrc, setImageSrc] = useState(null);
+    const [isFeedNameValid, setIsFeedNameValid] = useState(true);  
 	const [mobileOpen, setMobileOpen] = useState(null);
 	const [showForm, setShowForm] = useState(false);
 	const [zoom, setZoom] = useState(1);
@@ -391,7 +392,6 @@ const BaseLayout = () => {
             const response = await axios.post("/api/create_feed", form, {
                 headers: { "Content-Type": "multipart/form-data" }
             });
-            console.log("Create feed response:", response.data);
             if (response.data.success) {
                 const created = response.data.feed;
                 setFeeds(prev => [
@@ -413,23 +413,18 @@ const BaseLayout = () => {
                 setZoom(1);
                 setCroppedAreaPixels(null);
                 navigate(`/g/${created.feed_name}`);
-            } else {
-                console.error("Inside error:", response.data.message);
-                setAsideErrorMessage(response.data.message || "Error creating feed");
-                setTimeout(() => setAsideErrorMessage(""), 5000);
-            }
+            } 
         }
         catch (error) {
-            console.error("Outside:", error);
             if (error.response?.status === 413) {
                 setAsideErrorMessage(
-                    error.response.data.message +
+                    (error.response.data?.message || "File too large") +
                     (!user.has_membership ? ". Get membership for more" : "")
                 );
                 setTimeout(() => setAsideErrorMessage(""), 10000);
             }
             else {
-                setAsideErrorMessage("Error creating feed");
+                setAsideErrorMessage(error.response?.data?.message || "Error creating feed");
                 setTimeout(() => setAsideErrorMessage(""), 5000);
             }
         }
@@ -549,11 +544,14 @@ const BaseLayout = () => {
                                                     const result = ValidateTextInput(input, 0, 30);
                                                     if (result.valid) {
                                                         setAsideErrorMessage("");
+                                                        setIsFeedNameValid(true);
                                                     } else {
                                                         setAsideErrorMessage(result.error);
+                                                        setIsFeedNameValid(false);
                                                     }
                                                 } else {
                                                     setAsideErrorMessage("");
+                                                    setIsFeedNameValid(false);
                                                 }
                                             }}
                                         />
@@ -594,7 +592,13 @@ const BaseLayout = () => {
                                                 Private
                                             </button>
                                         </div>
-                                        <button className={feedName.length === 0 ? "small-icon disabled" : "small-icon"} disabled={feedName.length === 0} title={feedName.length === 0 ? "Enter a name" : "Create"} type="submit" value="Create">
+                                        <button
+                                            className={!isFeedNameValid ? "small-icon disabled" : "small-icon"}
+                                            disabled={!isFeedNameValid}
+                                            title={!isFeedNameValid ? "Fix input error" : "Create"}
+                                            type="submit"
+                                            value="Create"
+                                        >
                                             <FaPlus />
                                         </button>
                                     </form>

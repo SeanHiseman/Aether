@@ -258,7 +258,7 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onEdit
             }
         } catch (error) {
             console.log("app upload fail error:", error);
-            setPostErrorMessage('App upload failed.')
+            setPostErrorMessage(error.response?.data?.message || 'App upload failed.')
             setTimeout(() => setPostErrorMessage(''), 5000)
         }
     }, [])
@@ -305,7 +305,7 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onEdit
                 return newState;
             });
         } catch (error) {
-            setPostErrorMessage('Failed to crop image. Please try again.');
+            setPostErrorMessage(error.response?.data?.message || 'Failed to crop image. Please try again.');
             setTimeout(() => setPostErrorMessage(''), 5000)
         }
     }, [blocks, cropState, updateBlock]);
@@ -437,8 +437,8 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onEdit
             }
             setShowForm(false)
             setTimeout(() => setPostErrorMessage(''), 3000)
-        } catch (err) {
-            setPostErrorMessage(`Error deleting ${isDraft ? 'draft' : 'post'}`)
+        } catch (error) {
+            setPostErrorMessage(error.response?.data?.message || `Error deleting ${isDraft ? 'draft' : 'post'}`)
             setTimeout(() => setPostErrorMessage(''), 3000)
         }
     }, [channel_name, draftId, feed_name, isDraft, navigate, post, setDraftId, setShowForm, setPostErrorMessage, urlPrefix,])  
@@ -465,112 +465,6 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onEdit
             setBlocks([])
         }
     }, [isEdit])
-
-    const getIframeSrcDoc = useCallback((id, code, isEditing) => {
-        const trimmedCode = code.trim();
-        const scriptToInject = `<script>
-            function sendHeight() {
-                var newHeight = document.documentElement.scrollHeight;
-                parent.postMessage({ blockId: '${id}', height: newHeight }, '*');
-            }
-            window.addEventListener('load', sendHeight);
-            var observer = new MutationObserver(sendHeight);
-            observer.observe(document.body, { childList: true, subtree: true, characterData: true });
-            sendHeight();
-        </script>`;
-        const editorScripts = scriptToInject;
-        let srcDoc = '';
-        if (/<html[\s>]/i.test(trimmedCode)) {
-            if (/<\/body>/i.test(trimmedCode)) {
-                srcDoc = trimmedCode.replace(/<\/body>/i, editorScripts + '</body>');
-            } else {
-                srcDoc = trimmedCode + editorScripts;
-            }
-        } else {
-            srcDoc = `<!DOCTYPE html><html><head><style>html,body { margin:0; padding:0; }</style></head><body><div id="content">${code}</div>${editorScripts}</body></html>`;
-        }
-        return srcDoc;
-    }, []);
-
-    useEffect(() => {
-        function handleIframeMessage(event) {
-            const { blockId, height, action, editedContent } = event.data;
-            if (blockId && height) {
-                const iframe = iframeRefs.current[blockId];
-                if (iframe) iframe.style.height = `${height}px`;}
-                if (action === 'editedContentReady' && blockId && editedContent) {
-                    let cleanedContent = editedContent;
-                    if (editedContent.includes('<html')) {
-                    try {
-                        const parser = new DOMParser();
-                        const doc = parser.parseFromString(editedContent, 'text/html');
-                        const scripts = doc.querySelectorAll('script');
-                        scripts.forEach(script => {
-                        if (script.textContent.includes('editor-controls') || 
-                            script.textContent.includes('resize-container') ||
-                            script.textContent.includes('sendHeight')) {
-                            script.remove();
-                        }
-                        });
-                        const editorElements = [
-                            '#editor-controls',
-                            '#toggle-editor', 
-                            '#editor-instructions',
-                            '.resize-container',
-                            '.resize-handle'
-                        ];
-                        editorElements.forEach(selector => {
-                            const elements = doc.querySelectorAll(selector);
-                            elements.forEach(el => el.remove());
-                        });
-                        const allElements = doc.querySelectorAll('*');
-                        allElements.forEach(el => {
-                            if (el.hasAttribute('contenteditable')) {
-                                el.removeAttribute('contenteditable');
-                            }
-                            //Remove data attributes related to the editor
-                            const attributesToRemove = [];
-                            for (let i = 0; i < el.attributes.length; i++) {
-                                const attr = el.attributes[i];
-                                if (attr.name.startsWith('data-original') || 
-                                    attr.name === 'data-mce-selected' ||
-                                    attr.name.includes('editor')) {
-                                attributesToRemove.push(attr.name);
-                                }
-                            }
-                            attributesToRemove.forEach(attr => el.removeAttribute(attr));
-                        });
-                        cleanedContent = '<!DOCTYPE html>\n<html>\n';
-                        cleanedContent += '<head>' + doc.head.innerHTML + '</head>\n';
-                        cleanedContent += '<body>';
-                        Array.from(doc.body.childNodes).forEach(node => {
-                        if (!node.id || 
-                            !['editor-controls', 'toggle-editor', 'editor-instructions'].includes(node.id)) {
-                            if (node.nodeType === Node.ELEMENT_NODE) {
-                                cleanedContent += node.outerHTML;
-                            } else if (node.nodeType === Node.TEXT_NODE) {
-                                cleanedContent += node.textContent;
-                            }
-                        }
-                        });
-                        cleanedContent += '</body>\n</html>';
-                        cleanedContent = cleanedContent.replace(/ xmlns="http:\/\/www\.w3\.org\/1999\/xhtml"/g, '');
-                    } catch (err) {
-                        setPostErrorMessage("Error cleaning content");
-                    }
-                    }
-                    setBlocks(prev => 
-                    prev.map(block => 
-                        block.id === blockId
-                        ? { ...block, data: { ...block.data, code: cleanedContent } }
-                        : block
-                    )
-                    );
-                }
-            }
-        window.addEventListener('message', handleIframeMessage);
-        return () => window.removeEventListener('message', handleIframeMessage);
-    }, []);
 
     const generateCodeBlock = useCallback(async block => {
         if (limitReached) {
@@ -607,12 +501,12 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onEdit
             });
             } else {
                 updateBlock({ ...block, data: { ...block.data, isBlockLoading: false, _tempAiPrompt: '' } });
-                setPostErrorMessage('Error creating content.');
+                setPostErrorMessage(response.data?.error || 'Creation error.');
                 setTimeout(() => { setPostErrorMessage(''); }, 5000);
             }
-        } catch {
+        } catch (error){
             updateBlock({ ...block, data: { ...block.data, isBlockLoading: false, _tempAiPrompt: '' } });
-            setPostErrorMessage('Error creating content.');
+            setPostErrorMessage(error.response?.data?.message || 'Error creating content.');
             setTimeout(() => { setPostErrorMessage(''); }, 5000);
         }
     }, [hasMembership, post, updateBlock]);
@@ -637,9 +531,9 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onEdit
             if (response.data && response.status === 201) {
                 const { generatedContent } = response.data
                 setBlocks([{ data: { code: generatedContent, isBlockLoading: false, showPrompt: true }, id: v4(), isEditing: false, type: BLOCK_TYPES.CODE }])
-            } else setPostErrorMessage('Creation error.'); setTimeout(() => { setPostErrorMessage(''); }, 5000);
-        } catch {
-            setPostErrorMessage('Error creating content.')
+            } 
+        } catch (error) {
+            setPostErrorMessage(error.response?.data?.message || 'Error creating content.');
             setTimeout(() => { setPostErrorMessage(''); }, 5000);
         } finally {
             setIsGlobalLoading(false)
@@ -759,8 +653,8 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onEdit
                 const [savedDraft] = response.data.draft
                 setDraftId(savedDraft.draft_id)
             }
-        } catch (error){
-            setPostErrorMessage('Error saving draft.')
+        } catch (error) {
+            setPostErrorMessage(error.response?.data?.message || 'Error saving draft.')
             setTimeout(() => { setPostErrorMessage('') }, 5000)
         }
     }, [blocks, channelId, compileFinalHTML, draftId, feed.feed_id, isContentEmpty, isReply, post, title, viewer.feed_id])
@@ -803,7 +697,7 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onEdit
             const channelName = post?.parentChannel?.channel_name || channel_name
             navigate(`/${urlPrefix}/${feedName}/${channelName}/${isReply ? post.post_id : postId}`)
         } catch (error) {
-            setPostErrorMessage('Error submitting the form.')
+            setPostErrorMessage(error.response?.data?.message || 'Error submitting the form.')
             setTimeout(() => { setPostErrorMessage('') }, 5000)
         }
     }, [blocks, channelId, compileFinalHTML, compileFinalHTML, draftId, feed.feed_id, isContentEmpty, isDraft, isEdit, isPostingDraft, isReply, navigate, onEditSubmit, onPostSubmit, post, title, urlPrefix])
@@ -1145,7 +1039,7 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onEdit
                                                                     )}
                                                                     {data.code.trim() ? (
                                                                         <div className="code-preview">
-                                                                            <iframe ref={el => { iframeRefs.current[id] = el }} sandbox="allow-scripts allow-same-origin" srcDoc={getIframeSrcDoc(id, data.code, isEditing)} style={{ border: 'none', width: '100%', height: '50vh' }} title={`code-preview-${id}`} />
+                                                                            <iframe ref={el => { iframeRefs.current[id] = el }} sandbox="allow-scripts allow-same-origin" srcDoc={data.code} style={{ border: 'none', width: '100%', height: '50vh' }} title={`code-preview-${id}`} />
                                                                         </div>
                                                                     ) : (
                                                                         <p>Nothing to preview</p>
@@ -1249,7 +1143,7 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onEdit
                                     if (type === BLOCK_TYPES.CODE) {
                                         return data.code.trim() ? (
                                             <div key={i}>
-                                                <iframe ref={el => { iframeRefs.current[block.id] = el }} sandbox="allow-scripts allow-same-origin" srcDoc={getIframeSrcDoc(block.id, data.code, false)} style={{ border: 'none', width: '100%', height: '0px' }} title={`live-preview-${i}`} />
+                                                <iframe ref={el => { iframeRefs.current[block.id] = el }} sandbox="allow-scripts allow-same-origin" srcDoc={data.code} style={{ border: 'none', width: '100%', height: '0px' }} title={`live-preview-${i}`} />
                                             </div>
                                         ) : null
                                     }

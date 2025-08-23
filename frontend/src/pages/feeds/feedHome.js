@@ -29,6 +29,7 @@ const FeedHome = () => {
     const [isEditingChannelName, setIsEditingChannelName] = useState(false);
     const [isLocked, setIsLocked] = useState(false);
     const [isModerator, setIsModerator] = useState(false);
+    const [isNewNameValid, setIsNewNameValid] = useState(false);
     const [isPostChannel, setIsPostChannel] = useState(true);
     const [newChannelName, setNewChannelName] = useState(''); 
     const [postErrorMessage, setPostErrorMessage] = useState('');
@@ -433,15 +434,18 @@ const FeedHome = () => {
                                             if (input.trim() === 'main') {
                                                 setFeedErrorMessage("Cannot be named 'Main'");
                                             } else {
-                                                const result = ValidateTextInput(input, 3, 30);
+                                                const result = ValidateTextInput(input, 1, 30);
                                                 if (result.valid) {
                                                     setFeedErrorMessage("");
+                                                    setIsNewNameValid(true);    
                                                 } else {
                                                     setFeedErrorMessage(result.error);
+                                                    setIsNewNameValid(false);
                                                 }
                                             }
                                         } else {
                                             setFeedErrorMessage("");
+                                            setIsNewNameValid(false);
                                         }
                                     }}
                                     placeholder="New name"
@@ -450,7 +454,7 @@ const FeedHome = () => {
                                     <button className="small-icon" onClick={() => {setIsEditingChannelName(false); setNewChannelName(""); setFeedErrorMessage("");}} title="Cancel">
                                         <FaRegWindowClose />
                                     </button>
-                                    <button className="small-icon" onClick={changeChannelName} title="Save">
+                                    <button className={!isNewNameValid ? "small-icon disabled" : "small-icon"} onClick={changeChannelName} title="Save">
                                         <FaSave />
                                     </button>
                                 </div>
@@ -515,15 +519,18 @@ const FeedHome = () => {
                                                     if (input.trim() === 'main') {
                                                         setFeedErrorMessage("Cannot be named 'Main'");
                                                     } else {
-                                                        const result = ValidateTextInput(input, 3, 30);
+                                                        const result = ValidateTextInput(input, 0, 30);
                                                         if (result.valid) {
                                                             setFeedErrorMessage("");
+                                                            setIsNewNameValid(true);
                                                         } else {
                                                             setFeedErrorMessage(result.error);
+                                                            setIsNewNameValid(false);
                                                         }
                                                     }
                                                 } else {
                                                     setFeedErrorMessage("");
+                                                    setIsNewNameValid(false);
                                                 }
                                             }}
                                             placeholder="Channel name..." 

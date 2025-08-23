@@ -233,3 +233,109 @@ const interactiveEditorScript = `
         }
     })();
 </script>`;
+
+    const getIframeSrcDoc = useCallback((id, code, isEditing) => {
+        const trimmedCode = code.trim();
+        const scriptToInject = `<script>
+            function sendHeight() {
+                var newHeight = document.documentElement.scrollHeight;
+                parent.postMessage({ blockId: '${id}', height: newHeight }, '*');
+            }
+            window.addEventListener('load', sendHeight);
+            var observer = new MutationObserver(sendHeight);
+            observer.observe(document.body, { childList: true, subtree: true, characterData: true });
+            sendHeight();
+        </script>`;
+        const editorScripts = scriptToInject;
+        let srcDoc = '';
+        if (/<html[\s>]/i.test(trimmedCode)) {
+            if (/<\/body>/i.test(trimmedCode)) {
+                srcDoc = trimmedCode.replace(/<\/body>/i, editorScripts + '</body>');
+            } else {
+                srcDoc = trimmedCode + editorScripts;
+            }
+        } else {
+            srcDoc = `<!DOCTYPE html><html><head><style>html,body { margin:0; padding:0; }</style></head><body><div id="content">${code}</div>${editorScripts}</body></html>`;
+        }
+        return srcDoc;
+    }, []);
+
+useEffect(() => {
+    function handleIframeMessage(event) {
+        const { blockId, height, action, editedContent } = event.data;
+        if (blockId && height) {
+            const iframe = iframeRefs.current[blockId];
+            if (iframe) iframe.style.height = `${height}px`;}
+            if (action === 'editedContentReady' && blockId && editedContent) {
+                let cleanedContent = editedContent;
+                if (editedContent.includes('<html')) {
+                try {
+                    const parser = new DOMParser();
+                    const doc = parser.parseFromString(editedContent, 'text/html');
+                    const scripts = doc.querySelectorAll('script');
+                    scripts.forEach(script => {
+                    if (script.textContent.includes('editor-controls') || 
+                        script.textContent.includes('resize-container') ||
+                        script.textContent.includes('sendHeight')) {
+                        script.remove();
+                    }
+                    });
+                    const editorElements = [
+                        '#editor-controls',
+                        '#toggle-editor', 
+                        '#editor-instructions',
+                        '.resize-container',
+                        '.resize-handle'
+                    ];
+                    editorElements.forEach(selector => {
+                        const elements = doc.querySelectorAll(selector);
+                        elements.forEach(el => el.remove());
+                    });
+                    const allElements = doc.querySelectorAll('*');
+                    allElements.forEach(el => {
+                        if (el.hasAttribute('contenteditable')) {
+                            el.removeAttribute('contenteditable');
+                        }
+                        //Remove data attributes related to the editor
+                        const attributesToRemove = [];
+                        for (let i = 0; i < el.attributes.length; i++) {
+                            const attr = el.attributes[i];
+                            if (attr.name.startsWith('data-original') || 
+                                attr.name === 'data-mce-selected' ||
+                                attr.name.includes('editor')) {
+                            attributesToRemove.push(attr.name);
+                            }
+                        }
+                        attributesToRemove.forEach(attr => el.removeAttribute(attr));
+                    });
+                    cleanedContent = '<!DOCTYPE html>\n<html>\n';
+                    cleanedContent += '<head>' + doc.head.innerHTML + '</head>\n';
+                    cleanedContent += '<body>';
+                    Array.from(doc.body.childNodes).forEach(node => {
+                    if (!node.id || 
+                        !['editor-controls', 'toggle-editor', 'editor-instructions'].includes(node.id)) {
+                        if (node.nodeType === Node.ELEMENT_NODE) {
+                            cleanedContent += node.outerHTML;
+                        } else if (node.nodeType === Node.TEXT_NODE) {
+                            cleanedContent += node.textContent;
+                        }
+                    }
+                    });
+                    cleanedContent += '</body>\n</html>';
+                    cleanedContent = cleanedContent.replace(/ xmlns="http:\/\/www\.w3\.org\/1999\/xhtml"/g, '');
+                } catch (err) {
+                    setPostErrorMessage("Error cleaning content");
+                }
+                }
+                setBlocks(prev => 
+                prev.map(block => 
+                    block.id === blockId
+                    ? { ...block, data: { ...block.data, code: cleanedContent } }
+                    : block
+                )
+                );
+            }
+        }
+    window.addEventListener('message', handleIframeMessage);
+    return () => window.removeEventListener('message', handleIframeMessage);
+}, []);
