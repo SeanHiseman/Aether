@@ -15,7 +15,7 @@ const FeedWidget = ({ feed }) => {
 				<img className="w-full h-full object-cover feed-img" src={imageUrl} alt={`${feed.feed_name} profile`} />
 			</Link>
 			{feed.feed_id !== viewer.feed_id && (
-				<FollowerChangeButton feed={feed} showFollowers={false} showName={true} showVertical={false} viewerId={viewer.feed_id} />
+				<FollowerChangeButton feed={feed} showFollowers={false} showName={true} showVertical={true} viewerId={viewer.feed_id} />
 			)}
 			{feed.feed_id === viewer.feed_id && (
 				<p className="text-lg font-bold text-white truncate mt-1">
