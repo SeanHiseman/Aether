@@ -356,7 +356,7 @@
 
 @media (max-width: 768px) {
 	.algorithm-content {
-		width: calc(90vw - 2*var(--medium-margin));
+		width: 90vw;
 	}
 	.form-input[type="time"] {
 		width: calc(50% - 10px);

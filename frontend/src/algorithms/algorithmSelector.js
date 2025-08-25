@@ -1,6 +1,7 @@
 import axios from 'axios';
-import { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { FaEdit, FaTrash } from 'react-icons/fa';
+import { useEffect, useState } from 'react';
 import AddAlgorithm from './addAlgorithm';
 
 const AlgorithmSelector = ({ locationId, refreshPosts }) => {
@@ -51,7 +52,7 @@ const AlgorithmSelector = ({ locationId, refreshPosts }) => {
 				return updated;
 			});
 		} catch (error) {
-			setAssignError('Failed to assign algorithm');
+			setAssignError(error.response?.data?.message || 'Failed to assign algorithm');
 			setTimeout(() => { setAssignError('') }, 3000);
 		} finally {
 			setLoading(false);
@@ -75,7 +76,7 @@ const AlgorithmSelector = ({ locationId, refreshPosts }) => {
 			if (algorithmId === assignedAlgorithmId) setAssignedAlgorithmId('');
 			if (editingAlgorithm?.algorithm_id === algorithmId) setEditingAlgorithm(null);
 		} catch (error) {
-			setError('Failed to delete algorithm');
+			setError(error.response?.data?.message || 'Failed to delete algorithm');
 			setTimeout(() => { setError('') }, 3000);
 		}
 	};
@@ -104,7 +105,7 @@ const AlgorithmSelector = ({ locationId, refreshPosts }) => {
 				setEditingAlgorithm(assigned);
 			}
 		} catch (error) {
-			setError('Failed to load algorithms');
+			setError(error.response?.data?.message || 'Failed to load algorithms');
 			setTimeout(() => { setError('') }, 3000);
 		} finally {
 			setLoading(false);
@@ -164,7 +165,7 @@ const AlgorithmSelector = ({ locationId, refreshPosts }) => {
 			setEditingAlgorithm(null);
 			refreshPosts();
 		} catch (error) {
-			setAssignError('Failed to unassign algorithm');
+			setAssignError(error.response?.data?.message || 'Failed to unassign algorithm');
 			setTimeout(() => { setAssignError('') }, 3000);
 		};
 	};
@@ -188,7 +189,7 @@ const AlgorithmSelector = ({ locationId, refreshPosts }) => {
 			>
 				Choose Algorithm
 			</button>
-			{modalOpen && (
+			{modalOpen && createPortal(
 				<div className="algorithm-overlay" onClick={closeModal}>
 					<div className="algorithm-content" onClick={e => e.stopPropagation()}>
 						<div className="selector-header">
@@ -279,7 +280,8 @@ const AlgorithmSelector = ({ locationId, refreshPosts }) => {
 						)}
 						<div className="error-message">{error}</div>
 					</div>
-				</div>
+				</div>,
+				document.body 
 			)}
 		</div>
 	);
