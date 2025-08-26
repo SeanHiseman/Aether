@@ -293,7 +293,7 @@ const DeepFeed = () => {
                                         </button>
                                     </>
                                 )}
-                                <AlgorithmSelector feedId={deepFeed.deep_feed_id} />
+                                <AlgorithmSelector locationId={deepFeed.deep_feed_id} />
                             </div>
                         </div>
                     )}
