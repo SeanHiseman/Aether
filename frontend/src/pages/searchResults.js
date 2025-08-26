@@ -8,12 +8,12 @@ import { useOutletContext, useSearchParams } from 'react-router-dom';
 import SmallContentWidget from '../components/content/smallContentWidget';
 import FeedWidget from '../components/content/feedWidget';
 
-function chunkFeedsToPairs(feeds) {
-	const pairs = [];
-	for (let i = 0; i < feeds.length; i += 2) {
-		pairs.push(feeds.slice(i, i + 2));
+function chunkFeedsToQuads(feeds) {
+	const quads = [];
+	for (let i = 0; i < feeds.length; i += 4) {
+		quads.push(feeds.slice(i, i + 4));
 	}
-	return pairs;
+	return quads;
 }
 
 function shuffleArray(arr) {
@@ -47,7 +47,6 @@ const SearchResults = () => {
 
     //Infinite query to handle pagination
     const { data, error, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading, isError } = useInfiniteQuery({
-        // FIX: Removed feedTypeFilter from queryKey to prevent unnecessary re-fetching
         queryKey: ['searchResults', keyword, viewer?.feed_id],
         queryFn: fetchSearchResults,
         getNextPageParam: (lastPage, allPages) => {
@@ -97,41 +96,14 @@ const SearchResults = () => {
 
     const combinedItems = useMemo(() => {
 		if (selectedView !== "combined") return [];
-		const feedPairs = chunkFeedsToPairs(feeds);
+		const feedQuads = chunkFeedsToQuads(feeds);
 		const postItems = posts.map(p => ({ type: "post", data: p }));
-		const feedPairItems = feedPairs.map(f => ({ type: "feedPair", data: f }));
-		const allItems = [...postItems, ...feedPairItems];
+		const feedQuadItems = feedQuads.map(f => ({ type: "feedQuad", data: f }));
+		const allItems = [...postItems, ...feedQuadItems];
 		return shuffleArray(allItems.slice());
 	}, [selectedView, posts, feeds]);
 
-	const [column1, column2] = useMemo(() => {
-		if (selectedView !== "combined") return [[], []];
-		const col1 = [], col2 = [];
-		combinedItems.forEach((item, i) => {
-			(i % 2 === 0 ? col1 : col2).push(item);
-		});
-		return [col1, col2];
-	}, [combinedItems, selectedView]);
-
-	const [postsCol1, postsCol2] = useMemo(() => {
-		if (selectedView !== "posts") return [[], []];
-		const col1 = [], col2 = [];
-		posts.forEach((post, i) => {
-			(i % 2 === 0 ? col1 : col2).push(post);
-		});
-		return [col1, col2];
-	}, [posts, selectedView]);
-
-	const feedPairs = useMemo(() => chunkFeedsToPairs(feeds), [feeds]);
-
-	const [feedCol1, feedCol2] = useMemo(() => {
-		if (selectedView !== "feeds") return [[], []];
-		const col1 = [], col2 = [];
-		feedPairs.forEach((pair, i) => {
-			(i % 2 === 0 ? col1 : col2).push(pair);
-		});
-		return [col1, col2];
-	}, [feedPairs, selectedView]);
+	const feedQuads = useMemo(() => chunkFeedsToQuads(feeds), [feeds]);
 
     useEffect(() => {
         if (error) {
@@ -161,61 +133,47 @@ const SearchResults = () => {
                 ) : (
                     <>
 						{selectedView === "combined" && (
-							<div className="flex flex-row gap-3">
-								{[column1, column2].map((column, colIdx) => (
-									<div key={colIdx} className="flex flex-col flex-1 gap-3">
-										{column.map((item, idx) =>
-											item.type === "post" ? (
-												<div key={`post-${item.data.post_id}`} className="bg-gray-800 rounded-xl">
-													<SmallContentWidget post={item.data} />
-												</div>
-											) : (
-												<div key={`feedpair-${idx}`} className="grid grid-cols-2 gap-3">
-													{item.data.map(feed => (
-														<FeedWidget
-															key={feed.feed_id}
-															feed={feed}
-															isAuthenticated={isAuthenticated}
-															viewerId={viewer?.feed_id}
-														/>
-													))}
-                                                    {item.data.length === 1 && <div key="empty-cell"></div>}
-												</div>
-											)
-										)}
-									</div>
-								))}
+							<div className="flex flex-col gap-3 w-99">
+								{combinedItems.map((item, idx) =>
+									item.type === "post" ? (
+										<div key={`post-${item.data.post_id}`} className="bg-gray-800 rounded-xl w-full">
+											<SmallContentWidget post={item.data} showFullContent={true} showScrollBar={false} />
+										</div>
+									) : (
+										<div key={`feedquad-${idx}`} className="grid grid-cols-4 gap-3 w-full">
+											{item.data.map(feed => (
+												<FeedWidget
+													key={feed.feed_id}
+													feed={feed}
+													isAuthenticated={isAuthenticated}
+													viewerId={viewer?.feed_id}
+												/>
+											))}
+										</div>
+									)
+								)}
 							</div>
 						)}
 						{selectedView === "posts" && (
-							<div className="flex flex-row gap-3">
-								{[postsCol1, postsCol2].map((column, colIdx) => (
-									<div key={colIdx} className="flex flex-col flex-1">
-										{column.map(post => (
-											<div key={post.post_id} className="bg-gray-800 rounded-xl break-inside-avoid mb-3">
-												<SmallContentWidget post={post} showFullContent={true} showScrollBar={false} />
-											</div>
-										))}
+							<div className="flex flex-col gap-3 w-99">
+								{posts.map(post => (
+									<div key={post.post_id} className="bg-gray-800 rounded-xl w-full">
+										<SmallContentWidget post={post} showFullContent={true} showScrollBar={false} />
 									</div>
 								))}
 							</div>
 						)}
 						{selectedView === "feeds" && (
-							<div className="flex flex-row">
-								{[feedCol1, feedCol2].map((column, colIdx) => (
-									<div key={colIdx} className="flex flex-col flex-1 gap-3">
-										{column.map((feedPair, idx) => (
-											<div key={idx} className="grid grid-cols-2 gap-3">
-												{feedPair.map(feed => (
-													<FeedWidget
-														key={feed.feed_id}
-														feed={feed}
-														isAuthenticated={isAuthenticated}
-														viewerId={viewer?.feed_id}
-													/>
-												))}
-												{feedPair.length === 1 && <div key="empty-cell"></div>}
-											</div>
+							<div className="flex flex-col gap-3 w-99">
+								{feedQuads.map((feedQuad, idx) => (
+									<div key={idx} className="grid grid-cols-4 gap-3 w-full">
+										{feedQuad.map(feed => (
+											<FeedWidget
+												key={feed.feed_id}
+												feed={feed}
+												isAuthenticated={isAuthenticated}
+												viewerId={viewer?.feed_id}
+											/>
 										))}
 									</div>
 								))}

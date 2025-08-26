@@ -48,8 +48,8 @@ const SmallContentWidget = ({ post }) => {
                     }
                     setHasViewed(true);
                 }
-            } catch {
-                setPostErrorMessage('Error incrementing views');
+            } catch (error){
+                setPostErrorMessage(error.response?.data?.message || 'Error incrementing views');
                 setTimeout(() => setPostErrorMessage(""), 3000);
             }
         },
@@ -224,8 +224,8 @@ const SmallContentWidget = ({ post }) => {
                         <p className="feed-list-text">{post.poster?.feed_name ?? 'Anonymous'}</p>
                     </Link>
                 </div>
-                <Link to={`/${urlPrefix}/${feedName}/${channelName}`}>
-                    <p className="medium-text clickable">{feedName}/{channelName}</p>
+                <Link to={`/${urlPrefix}/${post.parentChannel?.feed?.feed_name}/${post.parentChannel?.channel_name}/${post.post_id}`} onClick={() => incrementViews(post.post_id)}>
+                    <p className="small-text clickable">{feedName}/{channelName}</p>
                 </Link>
                 <div className="vote-container">
                     {isAuthenticated ? (

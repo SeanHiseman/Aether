@@ -319,6 +319,9 @@
   .w-80 {
     width: calc(var(--spacing) * 80);
   }
+  .w-99 {
+    width: 99%;
+  }
   .flex-1 {
     flex: 1;
   }

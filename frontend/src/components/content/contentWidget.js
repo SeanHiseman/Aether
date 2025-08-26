@@ -73,7 +73,7 @@ const ContentWidget = ({ canRemove, feed, isDraft, isGroup, onEditClick, onPostR
 					setHasViewed(true);
 				}
 			} catch (error) {
-				setPostErrorMessage('Error incrementing views');
+				setPostErrorMessage(error.response?.data?.message || 'Error incrementing views');
 				setTimeout(() => setPostErrorMessage(""), 3000);
 			}
 		},
@@ -103,7 +103,7 @@ const ContentWidget = ({ canRemove, feed, isDraft, isGroup, onEditClick, onPostR
 			if (!hasViewed) {
 				await incrementViews(postId);
 			}
-		} catch (error){
+		} catch (error) {
 			setPostErrorMessage('Error voting');
 			setTimeout(() => setPostErrorMessage(""), 3000);
 		}
@@ -351,7 +351,7 @@ const ContentWidget = ({ canRemove, feed, isDraft, isGroup, onEditClick, onPostR
 						<p className="feed-list-text">{post.poster?.feed_name ?? 'Anonymous'}</p>
 					</Link>
 				</div>)}
-				{!isDraft && <Link to={`/${urlPrefix}/${feedName}/${channelName}`}>
+				{!isDraft && <Link to={`/${urlPrefix}/${feedName}/${channelName}`} onClick={() => incrementViews(post.post_id)}>
 					<p className="small-text clickable">{feedName}/{channelName}</p>
 				</Link>}
 				{!isDraft && (<div className="vote-container">

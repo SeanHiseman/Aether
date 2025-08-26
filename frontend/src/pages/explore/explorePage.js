@@ -1,10 +1,10 @@
-import { useMemo, useCallback, useContext, useEffect, useRef, useState } from "react";
+import AlgorithmSelector from "../../algorithms/algorithmSelector";
 import { AuthContext } from "../../components/authContext";
 import axios from "axios";
+import { useMemo, useCallback, useContext, useEffect, useRef, useState } from "react";
 import SmallContentWidget from "../../components/content/smallContentWidget";
 import FeedWidget from "../../components/content/feedWidget";
 import { useOutletContext } from "react-router-dom";
-import AlgorithmSelector from "../../algorithms/algorithmSelector";
 
 function chunkFeedsToQuads(feeds) {
 	const quads = [];
@@ -154,7 +154,7 @@ const ExplorePage = () => {
 				) : (
 					<>
 						{filter === "all" && (
-							<div className="flex flex-col gap-3 w-full">
+							<div className="flex flex-col gap-3 w-99">
 								{combinedItems.map((item, idx) =>
 									item.type === "post" ? (
 										<div key={`post-${item.data.post_id}`} className="bg-gray-800 rounded-xl">
@@ -176,7 +176,7 @@ const ExplorePage = () => {
 							</div>
 						)}
 						{filter === "posts" && (
-							<div className="flex flex-col gap-3 w-full">
+							<div className="flex flex-col gap-3 w-99">
 								{posts.map(post => (
 									<div key={post.post_id} className="bg-gray-800 rounded-xl">
 										<SmallContentWidget post={post} showFullContent={true} showScrollBar={false} />
@@ -185,7 +185,7 @@ const ExplorePage = () => {
 							</div>
 						)}
 						{filter === "feeds" && (
-							<div className="flex flex-col gap-3 w-full">
+							<div className="flex flex-col gap-3 w-99">
 								{feedQuads.map((feedQuad, idx) => (
 									<div key={idx} className="grid grid-cols-4 gap-3 w-full">
 										{feedQuad.map(feed => (
