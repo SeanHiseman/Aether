@@ -234,13 +234,13 @@ const SmallContentWidget = ({ post }) => {
                                 <button className={`large-icon ${upvoteClass}`} disabled={upvoteLimit} onClick={() => postVote(post.post_id, 'upvote')} title={upvoteLimit ? (user.has_membership ? 'Vote limit reached' : 'Get membership for more votes') : 'Upvote'}>
                                     <FaArrowUp />
                                 </button>
-                                <span className="total-votes">{upvotes - downvotes}</span>      
+                                <p className="small-text">{upvotes - downvotes}</p>      
                                 <button className={`large-icon ${downvoteClass}`} disabled={downvoteLimit} onClick={() => postVote(post.post_id, 'downvote')} title={downvoteLimit ? (user.has_membership ? 'Vote limit reached' : 'Get membership for more votes') : 'Downvote'}>
                                     <FaArrowDown />
                                 </button>
                             </div>
                         ) : (
-                            <span className="total-votes">{upvotes - downvotes} {Math.abs(upvotes - downvotes) === 1 ? 'vote' : 'votes'}</span>
+                            <p className="small-text">{upvotes - downvotes} {Math.abs(upvotes - downvotes) === 1 ? 'vote' : 'votes'}</p>
                         )
                     ) : (
                         <div className="post-button-group">

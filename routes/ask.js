@@ -14,7 +14,8 @@ const router = Router();
 //const anthropic = new Anthropic({ 
     //apiKey: process.env.ANTHROPIC_API_KEY
 //});
- 
+
+//ASSITANTS TO BE DEPRECATED
 router.post('/ask_button', authenticateCheck, async (req, res) => {
     try {
         const { postTitle, postContent, id } = req.body;
@@ -266,6 +267,7 @@ router.get('/get_ask_messages', authenticateCheck, async (req, res) => {
     }
 });
 
+//ASSITANTS TO BE DEPRECATED
 router.post('/send_ask_message', authenticateCheck, async (req, res) => {
     try {
         const { chatId, messageContent, senderId, timestamp } = req.body;

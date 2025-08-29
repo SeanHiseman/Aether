@@ -204,7 +204,7 @@ const SearchResults = () => {
                         )}
                     </ul>
                 </nav>
-				<AlgorithmSelector locationId={"explore_page"} /> {/* Project code */}
+				<AlgorithmSelector locationId={"search"} /> {/* Project code */}
             </aside>
         </div>
     );

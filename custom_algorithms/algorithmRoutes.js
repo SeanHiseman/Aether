@@ -3,7 +3,6 @@ import OpenAI from 'openai';
 import { Router } from 'express';
 import { v4 } from 'uuid';
 import { Algorithms, AlgorithmLocations} from './algorithmRelationships.js';
-import { Feeds, Users } from '../models/relationships.js';
 import sequelize from '../databaseSetup.js';
 
 const openai = new OpenAI();

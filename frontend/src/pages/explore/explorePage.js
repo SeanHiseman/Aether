@@ -42,26 +42,32 @@ const ExplorePage = () => {
 
 	const fetchPosts = useCallback(async () => {
 		try {
+			console.log("fetching posts")
 			const response = await axios.get("/api/explore_posts", {
-				params: { filter, limit: FETCH_LIMIT, exclude: shownPostIds },
+				params: { filter, limit: FETCH_LIMIT, exclude: shownPostIds.join(',') },
 			});
+			console.log("fetched posts", response.data)
 			const newPosts = response.data.posts;
 			setPosts(prev => [...prev, ...newPosts]);
 			setShownPostIds(prev => [...prev, ...newPosts.map(p => p.post_id)]);
 		} catch (error) {
+			console.error("Error fetching posts:", error);
 			setErrorMessage("Failed to fetch posts");
 		}
 	}, [filter, shownPostIds]);
 
 	const fetchFeeds = useCallback(async () => {
 		try {
-			const res = await axios.get("/api/explore_feeds", {
-				params: { limit: FETCH_LIMIT, exclude: shownFeedIds },
+			console.log("fetching feeds")
+			const response = await axios.get("/api/explore_feeds", {
+				params: { limit: FETCH_LIMIT, exclude: shownFeedIds.join(',') },
 			});
-			const newFeeds = res.data.feeds;
+			console.log("fetched feeds", response.data)
+			const newFeeds = response.data.feeds;
 			setFeeds(prev => [...prev, ...newFeeds]);
 			setShownFeedIds(prev => [...prev, ...newFeeds.map(f => f.feed_id)]);
 		} catch (error) {
+			console.error("Error fetching feeds:", error);
 			setErrorMessage("Failed to fetch feeds");
 		}
 	}, [shownFeedIds]);
@@ -89,7 +95,7 @@ const ExplorePage = () => {
 			setFeedPage(nextFeedPage);
 		}
 		setLoadingMore(false);
-	}, [loading, loadingMore, filter, postPage, feedPage, fetchPosts, fetchFeeds, posts.length, feeds.length]);
+	}, [loading, loadingMore, filter, fetchPosts, fetchFeeds, posts.length, feeds.length]);
 
 	const handleScroll = useCallback(() => {
 		const element = scrollRef.current;

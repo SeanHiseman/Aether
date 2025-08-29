@@ -1,3 +1,4 @@
+import { ApplyAlgorithm } from '../custom_algorithms/applyAlgorithm.js';
 import authenticateCheck from '../functions/checks/authenticateCheck.js';
 import deleteMedia from '../functions/media_handling/deleteMedia.js';
 import cheerio from 'cheerio';
@@ -5,15 +6,14 @@ import dotenv from 'dotenv';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
 import { AppBuilds, Feeds, FeedChannels, Posts, PostDrafts, PostNotes, PostVotes, SavedPosts, Users, ViewedPosts } from '../models/relationships.js';
-import { ApplyAlgorithm } from '../custom_algorithms/applyAlgorithm.js';
 import multer from 'multer';
 import { Router } from 'express';
 import path from 'path';
+import sequelize from '../databaseSetup.js';
 import { Op, Sequelize } from 'sequelize';
 import unzipper from 'unzipper'
 import { v4 } from 'uuid';
 import yauzl from 'yauzl'
-import sequelize from '../databaseSetup.js';
 
 dotenv.config();
 const __filename = fileURLToPath(import.meta.url);
@@ -95,7 +95,7 @@ router.get('/channel_posts', async (req, res) => {
 			singlePost.dataValues.is_saved = Boolean(existing);
 			return res.status(200).json({ success: true, post: singlePost });
 		}
-		const results = await ApplyAlgorithm({channelId, excludedPostIds, feedId, includeOptions, isMain, limit, offset, saverId, userId});
+		const results = await ApplyAlgorithm({locationId: channelId, excludedPostIds, feedId, includeOptions, isMain, limit, offset, saverId, userId});
 		if (!results.length) return res.status(200).json([]);
 		return res.status(200).json(results);
 	} catch (error) {
@@ -383,39 +383,45 @@ router.post('/edit_post', authenticateCheck, checkStorageLimit, postUpload.array
 });
 
 router.get("/explore_posts", async (req, res) => {
-	try {
-		const { exclude = [] } = req.query;
-		const saverId = req.session.viewer_id;
-		const limit = parseInt(req.query.limit, 20) || 6;
-		//Only top level posts, exclude posts by the viewer
-		const where = { parent_id: null, post_id: { [Op.notIn]: exclude }, poster_id: { [Op.ne]: saverId } }; 
-		//'filter' query parameter is available for future expansion.
-		const { filter = "all" } = req.query;
-		if (filter === "posts") {
-			//Custom logic for post-specific filtering can be added here.
-		}
-		const { rows } = await Posts.findAndCountAll({
-			attributes: postAttributes,
-			include: [{
+    try {
+        const { exclude = [] } = req.query;
+        const saverId = req.session.viewer_id;
+        const userId = req.session.viewer_id;
+        const limit = parseInt(req.query.limit, 10) || 6;
+        const offset = parseInt(req.query.offset, 10) || 0;
+        const publicFeeds = await Feeds.findAll({
+            where: {
+                type: { [Op.ne]: "private" }
+            },
+            attributes: ['feed_id']
+        });
+        if (publicFeeds.length === 0) {
+            return res.status(200).json({ posts: [], hasMore: false });
+        }
+        const feedIds = publicFeeds.map(feed => feed.feed_id);
+        let allPosts = [];
+        const feedsToCheck = feedIds.slice(0, 10); 
+        for (const feedId of feedsToCheck) {
+            const includeOptions = [{
                 model: Feeds,
                 as: "poster",
                 attributes: feedAttributes,
-			},{
-				model: FeedChannels,
-				as: "parentChannel",
-				attributes: ["channel_id", "channel_name"],
-				include: [{
-					attributes: feedAttributes,
-					model: Feeds,
-					required: true,
-					where: {
-						type: {
+            },{
+                model: FeedChannels,
+                as: "parentChannel",
+                attributes: ["channel_id", "channel_name"],
+                include: [{
+                    attributes: feedAttributes,
+                    model: Feeds,
+                    required: true,
+                    where: {
+                        type: {
 							[Op.ne]: "private" //Excludes posts in private feeds
-						}
-					}
-				}],
-				required: true
-			},{
+                        }
+                    }
+                }],
+                required: true
+            },{
                 model: PostNotes,
                 as: "note",
                 attributes: noteAttributes,
@@ -425,31 +431,35 @@ router.get("/explore_posts", async (req, res) => {
                 as: "votes",
                 attributes: ["upvotes", "downvotes"],
                 required: false,
-            }],
-			where,
-			limit,
-			order: sequelize.random
-				? sequelize.random()
-				: [sequelize.literal("RAND()")],
-		});
-		const postIds = rows.map(p => p.post_id);
-		const savedRows = saverId
-			? await SavedPosts.findAll({
-				attributes: ['post_id'],
-				raw: true,
-				where: { post_id: postIds, saver_id: saverId }
-			})
-			: [];
-		const savedSet = new Set(savedRows.map(s => s.post_id));
-		const formatted = rows.map(post => ({
-			...post.dataValues,
-			is_saved: savedSet.has(post.post_id)
-		}));
-		res.status(200).json({ posts: formatted, hasMore: rows.length >= limit });
-	} catch (error) {
-        //console.log("error:", error);
-		res.status(500).json({ success: false, error: error.message });
-	}
+            }];
+            const excludedPostIds = Array.isArray(exclude) ? exclude.join(',') : (exclude || '').toString();
+            const posterExclude = saverId ? (excludedPostIds ? `${excludedPostIds},${saverId}` : saverId.toString()) : excludedPostIds;
+            const feedPosts = await ApplyAlgorithm({
+                locationId: 'explore',
+                excludedPostIds: posterExclude,
+                feedId: feedId,
+                includeOptions: includeOptions,
+                isMain: 'false',
+                limit: Math.ceil(limit / feedsToCheck.length),
+                offset: 0,
+                saverId: saverId,
+                userId: userId
+            });
+            
+            allPosts.push(...feedPosts);
+        }
+        allPosts.sort((a, b) => {
+            if (b.score !== undefined && a.score !== undefined && b.score !== a.score) {
+                return b.score - a.score;
+            }
+            return new Date(b.created_at) - new Date(a.created_at);
+        });
+        const finalPosts = allPosts.slice(offset, offset + limit);
+        res.status(200).json({ posts: finalPosts, hasMore: allPosts.length > offset + limit });
+    } catch (error) {
+        console.error("Error in /explore_posts:", error);
+        res.status(500).json({ success: false, error: error.message });
+    }
 });
 
 router.get('/get_post_drafts', authenticateCheck, async (req, res) => {

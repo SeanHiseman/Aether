@@ -423,9 +423,6 @@ main {
   width: var(--medium-text);
   transition: background-color var(--transition-regular);
 }
-.total-votes {
-  font-size: var(--medium-text);
-}
 #upload-form {
   display: flex;
   flex-direction: column;

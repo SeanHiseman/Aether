@@ -1,3 +1,4 @@
+import { ApplyAlgorithm } from '../custom_algorithms/applyAlgorithm.js';
 import authenticateCheck from '../functions/checks/authenticateCheck.js';
 import ConnectCheck from '../functions/checks/connectCheck.js';
 import FollowerCheck from '../functions/checks/followerCheck.js';
@@ -386,6 +387,7 @@ router.get('/deep_feeds/:viewerId', authenticateCheck, async (req, res) => {
 
 router.get('/deep_feed_contents/:deepFeedId', authenticateCheck, async (req, res) => {
     try {
+        //Nested deep feeds no longer used
         const { deepFeedId } = req.params;
         const contents = await DeepFeedContent.findAll({
             where: { deep_feed_id: deepFeedId },
@@ -405,29 +407,26 @@ router.get('/deep_feed_contents/:deepFeedId', authenticateCheck, async (req, res
 });
 
 router.get('/deep_feed_posts', authenticateCheck, async (req, res) => {
-	try {
-		const { deepFeedId, limit = 10, offset = 0 } = req.query;
+    try {
+        const { deepFeedId, limit = 10, offset = 0 } = req.query;
         const saverId = req.session.viewer_id;
-		if (deepFeedId === 'following') { //Following deep feed is a special case
-			const followerId = req.session.feed_id;
-			if (!followerId) {
-				return res.status(401).json({ error: 'Unauthorized' });
-			}
-			const followedFeeds = await Followers.findAll({
-				where: { follower_id: followerId },
-				attributes: ['feed_id']
-			});
-			if (followedFeeds.length === 0) {
-				return res.status(200).json({ success: true, posts: [] });
-			}
-			const feedIds = followedFeeds.map(follow => follow.feed_id);
-			const posts = await Posts.findAll({
-				where: {
-					feed_id: { [Op.in]: feedIds },
-					poster_id: { [Op.ne]: followerId },
-					parent_id: null
-				},
-				include: [{ 
+        const userId = req.session.viewer_id;
+        if (deepFeedId === 'following') { //Following deep feed is a special case
+            const followerId = req.session.feed_id;
+            if (!followerId) {
+                return res.status(401).json({ error: 'Unauthorized' });
+            }
+            const followedFeeds = await Followers.findAll({
+                where: { follower_id: followerId },
+                attributes: ['feed_id']
+            });
+            if (followedFeeds.length === 0) {
+                return res.status(200).json({ success: true, posts: [] });
+            }
+            const feedIds = followedFeeds.map(follow => follow.feed_id);
+            let allPosts = [];
+            for (const feedId of feedIds) {
+                const includeOptions = [{ 
                     model: FeedChannels,
                     as: 'parentChannel',
                     attributes: ['channel_id','channel_name','feed_id'],
@@ -439,57 +438,55 @@ router.get('/deep_feed_posts', authenticateCheck, async (req, res) => {
                     model: Feeds,
                     as: 'poster',
                     attributes: feedAttributes
-                }],
-				order: [['created_at', 'DESC']],
-				limit: parseInt(limit),
-				offset: parseInt(offset)
-			});
-			const ids = posts.map(p => p.post_id);
-            const savedRows = await SavedPosts.findAll({
-                attributes: ['post_id'],
-                raw: true,
-                where: { saver_id: saverId, post_id: ids }
-            });
-            const savedSet = new Set(savedRows.map(s => s.post_id));
-            const finalResults = posts.map(p => ({
-                ...p.dataValues,
-                is_saved: savedSet.has(p.post_id)
-            }));
-            return res.status(200).json({ success: true, posts: finalResults });
-		} else {
-			const deepFeed = await DeepFeeds.findByPk(deepFeedId);
-			if (!deepFeed) {
-				return res.status(404).json({ error: 'Deep feed not found' });
-			}
-			const getAllFeedIdsInDeepFeed = async (deepFeedId, visited = new Set()) => {
-				if (visited.has(deepFeedId)) return [];
-				visited.add(deepFeedId);
-				const contents = await DeepFeedContent.findAll({
-					where: { deep_feed_id: deepFeedId },
-					attributes: ['feed_id','nested_deep_feed_id']
-				});
-				const feedIds = [];
-				for (const content of contents) {
-					if (content.feed_id) {
-						feedIds.push(content.feed_id);
-					}
-					if (content.nested_deep_feed_id) {
-						const nested = await getAllFeedIdsInDeepFeed(content.nested_deep_feed_id, visited);
-						feedIds.push(...nested);
-					}
-				}
-				return feedIds;
-			};
-			const allFeedIds = await getAllFeedIdsInDeepFeed(deepFeedId);
-			if (allFeedIds.length === 0) {
-				return res.status(200).json({ success: true, deepFeed, posts: [] });
-			}
-			const posts = await Posts.findAll({
-				where: {
-					feed_id:   { [Op.in]: allFeedIds },
-					parent_id: null
-				},
-				include: [{
+                }];
+                const feedPosts = await ApplyAlgorithm({
+                    locationId: deepFeedId, 
+                    excludedPostIds: followerId ? followerId.toString() : '', //Exclude poster's own posts
+                    feedId: feedId,
+                    includeOptions: includeOptions,
+                    isMain: 'false',
+                    limit: Math.ceil(limit / feedIds.length), 
+                    offset: 0,
+                    saverId: saverId,
+                    userId: userId
+                });
+                
+                allPosts.push(...feedPosts);
+            }
+            allPosts.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+            const finalPosts = allPosts.slice(parseInt(offset), parseInt(offset) + parseInt(limit));
+            return res.status(200).json({ success: true, posts: finalPosts });
+        } else {
+            const deepFeed = await DeepFeeds.findByPk(deepFeedId);
+            if (!deepFeed) {
+                return res.status(404).json({ error: 'Deep feed not found' });
+            }
+            const getAllFeedIdsInDeepFeed = async (deepFeedId, visited = new Set()) => {
+                if (visited.has(deepFeedId)) return [];
+                visited.add(deepFeedId);
+                const contents = await DeepFeedContent.findAll({
+                    where: { deep_feed_id: deepFeedId },
+                    attributes: ['feed_id','nested_deep_feed_id']
+                });
+                const feedIds = [];
+                for (const content of contents) {
+                    if (content.feed_id) {
+                        feedIds.push(content.feed_id);
+                    }
+                    if (content.nested_deep_feed_id) {
+                        const nested = await getAllFeedIdsInDeepFeed(content.nested_deep_feed_id, visited);
+                        feedIds.push(...nested);
+                    }
+                }
+                return feedIds;
+            };
+            const allFeedIds = await getAllFeedIdsInDeepFeed(deepFeedId);
+            if (allFeedIds.length === 0) {
+                return res.status(200).json({ success: true, deepFeed, posts: [] });
+            }
+            let allPosts = [];
+            for (const feedId of allFeedIds) {
+                const includeOptions = [{
                     model: FeedChannels,
                     as: 'parentChannel',
                     attributes: ['channel_id','channel_name','feed_id'],
@@ -501,27 +498,30 @@ router.get('/deep_feed_posts', authenticateCheck, async (req, res) => {
                     model: Feeds,
                     as: 'poster',
                     attributes: feedAttributes
-                }],
-				order: [['created_at', 'DESC']],
-				limit: parseInt(limit),
-				offset: parseInt(offset)
-			});
-            const ids = posts.map(p => p.post_id);
-            const savedRows = await SavedPosts.findAll({
-                where: { saver_id: saverId, post_id: ids },
-                attributes: ['post_id'],
-                raw: true
-            });
-            const savedSet = new Set(savedRows.map(s => s.post_id));
-			const finalResults = posts.map(p => ({
-				...p.dataValues,
-				is_saved: savedSet.has(p.post_id)
-			}));
-			return res.status(200).json({ deepFeed, posts: finalResults, success: true });
-		}
-	} catch (error) {
-		res.status(500).json({ success: false, error: error.message });
-	}
+                }];
+                const feedPosts = await ApplyAlgorithm({
+                    locationId: deepFeedId,
+                    excludedPostIds: '',
+                    feedId: feedId,
+                    includeOptions: includeOptions,
+                    isMain: 'false',
+                    limit: Math.ceil(limit / allFeedIds.length),
+                    offset: 0,
+                    saverId: saverId,
+                    userId: userId
+                });
+                
+                allPosts.push(...feedPosts);
+            }
+            allPosts.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+            const finalPosts = allPosts.slice(parseInt(offset), parseInt(offset) + parseInt(limit));
+            
+            return res.status(200).json({ deepFeed, posts: finalPosts, success: true });
+        }
+    } catch (error) {
+        console.error('Error fetching deep feed posts:', error);
+        res.status(500).json({ success: false, error: error.message });
+    }
 });
 
 router.delete('/delete_deep_feed', authenticateCheck, async (req, res) => {
@@ -626,14 +626,16 @@ router.delete('/delete_feed_channel', authenticateCheck, async (req, res) => {
 router.get("/explore_feeds", async (req, res) => {
 	try {
         const { exclude = [] } = req.query;
+        console.log('Exclude parameter:', exclude);
 		const viewerId = req.session.viewer_id;
 		const limit = parseInt(req.query.limit, 10) || 6;
+        const excludeArray = Array.isArray(exclude) ? exclude : (exclude ? exclude.split(',') : []);
         const { rows: feeds } = await Feeds.findAndCountAll({
             where: {
                 type: { [Op.notIn]: ["private", "hidden"] },
                 is_locked: false,
                 is_group: false,
-                feed_id: { [Op.notIn]: [...exclude, viewerId] }
+                feed_id: { [Op.notIn]: [...excludeArray, viewerId] }
             },
             order: sequelize.literal("RAND()"),
             attributes: feedAttributes,
@@ -659,6 +661,7 @@ router.get("/explore_feeds", async (req, res) => {
 			}
 			return response;
 		}));
+        console.log('Fetched feeds:', feedData);
 		res.status(200).json({ success: true, feeds: feedData, hasMore: feedData.length >= limit });
 	} catch (error) {
 		console.error("Error fetching explore feeds:", error);

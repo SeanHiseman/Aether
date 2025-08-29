@@ -1,8 +1,7 @@
+import { ApplyAlgorithm } from '../custom_algorithms/applyAlgorithm.js';
 import ConnectCheck from '../functions/checks/connectCheck.js';
 import FollowerCheck from '../functions/checks/followerCheck.js';
-import sequelize from '../databaseSetup.js';
 import { ConnectRequests, Feeds, FeedChannels, FollowRequests, PostNotes, PostVotes } from '../models/relationships.js'; 
-import { Users } from '../models/users.js'; 
 import { Op } from 'sequelize';
 import { Router } from 'express';
 
@@ -18,6 +17,7 @@ router.get('/search/:searcherId', async (req, res) => {
         const keyword = req.query.keyword ? req.query.keyword.toLowerCase() : '';
         const limit = req.query.limit ? parseInt(req.query.limit, 10) : 10;
         const offset = req.query.offset ? parseInt(req.query.offset, 10) : 0;
+        const userId = searcherId; 
         const feeds = await Feeds.findAll({
             where: { feed_name: { [Op.like]: `%${keyword}%` } },
             attributes: feedAttributes, 
@@ -36,7 +36,7 @@ router.get('/search/:searcherId', async (req, res) => {
             response.isAdmin = followStatus?.isAdmin || false;
             response.isMod = followStatus?.isMod || false;
             response.isFollower = followStatus?.following || false;
-            if (!feed.is_group) {
+            if (!feed.is_group) { //Can only send connect requests to individuals
                 const [connectStatus, connectRequest] = await Promise.all([
                     ConnectCheck(searcherId, feed.feed_id),
                     ConnectRequests.findOne({
@@ -59,70 +59,62 @@ router.get('/search/:searcherId', async (req, res) => {
             }
             return response;
         }));
-        //Needs adjusting
-        const postResults = await sequelize.query(`
-            SELECT p.*, 
-                REGEXP_REPLACE(
-                    REGEXP_REPLACE(
-                        REGEXP_REPLACE(
-                            REGEXP_REPLACE(p.content, '<head>.*?</head>', ''),
-                            '<title>.*?</title>', ''
-                        ), 
-                        '<script.*?</script>', ''
-                    ), 
-                    '<[^>]*>', ''
-                ) AS clean_content
-            FROM posts p
-            JOIN feeds f ON p.feed_id = f.feed_id
-            WHERE 
-                (p.title LIKE :keyword
-                OR REGEXP_REPLACE(
-                    REGEXP_REPLACE(
-                        REGEXP_REPLACE(p.content, '<title>.*?</title>', ''), 
-                        '<script.*?</script>', ''
-                    ), 
-                    '<[^>]*>', ''
-                ) LIKE :keyword)
-                AND f.type != 'private'
-            ORDER BY p.created_at DESC
-            LIMIT :limit OFFSET :offset
-        `, {
-            replacements: { 
-                keyword: `%${keyword}%`,
-                limit: limit,
-                offset: offset
-            },
-            type: sequelize.QueryTypes.SELECT
-        });       
-        const processedPosts = await Promise.all(postResults.map(async (post) => {
-            const feed = await Feeds.findByPk(post.feed_id, {
+        const publicFeeds = await Feeds.findAll({
+            where: { type: { [Op.ne]: 'private' } },
+            attributes: ['feed_id']
+        });
+        let allPosts = [];
+        for (const feed of publicFeeds.slice(0, 20)) { 
+            const includeOptions = [{
+                model: Feeds,
+                as: 'poster',
                 attributes: feedAttributes
-            });
-            const note = await PostNotes.findOne({
-                where: { post_id: post.post_id },
+            }, {
+                model: PostNotes,
+                as: 'note',
                 attributes: notesAttributes
-            });
-            const parentChannel = await FeedChannels.findByPk(post.channel_id, {
+            }, {
+                model: FeedChannels,
+                as: 'parentChannel',
                 attributes: ['channel_id', 'channel_name']
-            });
-            const poster = await Feeds.findByPk(post.poster_id, {
+            }, {
+                model: Feeds,
+                as: 'poster',
                 attributes: posterAttributes
-            });
-            const postVotes = await PostVotes.findAll({
-                where: { post_id: post.post_id },
+            }, {
+                model: PostVotes,
+                as: 'votes',
                 attributes: ['upvotes', 'downvotes']
+            }];
+            const feedPosts = await ApplyAlgorithm({
+                locationId: 'search',
+                excludedPostIds: '',
+                feedId: feed.feed_id,
+                includeOptions: includeOptions,
+                isMain: 'false',
+                limit: Math.ceil(limit / Math.min(publicFeeds.length, 20)),
+                offset: 0,
+                saverId: searcherId,
+                userId: userId
             });
-            return {
-                ...post,
-                feed,
-                note,
-                parentChannel,
-                poster,
-                postVotes,
-            };
-        }));
+            const filteredPosts = feedPosts.filter(post => {
+                const titleMatch = post.title && post.title.toLowerCase().includes(keyword);
+                const contentMatch = post.text_body && post.text_body.toLowerCase().includes(keyword);
+                return titleMatch || contentMatch;
+            });
+            allPosts.push(...filteredPosts);
+        }
+        allPosts.sort((a, b) => {
+            const aInTitle = a.title && a.title.toLowerCase().includes(keyword);
+            const bInTitle = b.title && b.title.toLowerCase().includes(keyword);
+            if (aInTitle && !bInTitle) return -1;
+            if (!aInTitle && bInTitle) return 1;
+            return new Date(b.created_at) - new Date(a.created_at);
+        });
+        const processedPosts = allPosts.slice(offset, offset + limit);
         res.status(200).json({ feeds: feedData, posts: processedPosts, success: true });
     } catch (error) {
+        console.error('Search error:', error);
         res.status(500).json({ success: false });
     }
 });
