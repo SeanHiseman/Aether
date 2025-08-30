@@ -1,70 +1,186 @@
 import { faker } from '@faker-js/faker';
+import fs from 'fs';
+import { parse } from 'csv-parse/sync';
+import { v4 } from 'uuid';
 import sequelize from '../databaseSetup.js';
 import { Feeds, FeedChannels, Posts, Users } from '../models/relationships.js';
 
-//Special id's to distinguish fake posts
+//Special ID's for fake data
 function generateSpecialId() {
 	return '111111111111' + faker.string.alphanumeric({ length: 24 });
 }
 
+const topics = [
+	'Technology', 'Sports', 'Finance', 'Movies', 'Politics',
+	'Fitness', 'Travel', 'Science', 'Gaming', 'Food'
+];
+
+const templates = {
+	Technology: [
+		`Latest update in tech: ${faker.commerce.productName()} is changing the game.`,
+		`Is AI going too far? ${faker.word.adjective()} ${faker.word.noun()} could be the reason.`,
+		`${faker.company.name()} just launched a new gadget that might replace your phone.`,
+		`5 things you need to know about ${faker.word.noun()} in technology today.`
+	],
+	Sports: [
+		`Can ${faker.person.firstName()} lead ${faker.location.city()} to victory this season?`,
+		`${faker.word.adjective()} performance by ${faker.person.lastName()} last night.`,
+		`Top 10 moments in ${faker.helpers.arrayElement(['football', 'basketball', 'tennis'])} history.`,
+		`Big upset in last night's game! ${faker.company.catchPhrase()}`
+	],
+	Finance: [
+		`Markets are volatile again. ${faker.finance.accountName()} reports major losses.`,
+		`Is ${faker.finance.currencyName()} still a good investment?`,
+		`Experts predict a rise in ${faker.commerce.department()} sector stocks.`,
+		`Here’s why ${faker.company.name()} stock is trending this week.`
+	],
+	Movies: [
+		`${faker.person.firstName()} stars in the new blockbuster "${faker.word.adjective()} ${faker.word.noun()}".`,
+		`Is "${faker.word.noun()}" the best film of the year?`,
+		`Box office hits: "${faker.word.adjective()} ${faker.word.noun()}" dominates charts.`,
+		`Here are the top 5 films to watch this weekend.`
+	],
+	Politics: [
+		`${faker.person.firstName()} makes a shocking policy announcement.`,
+		`Elections in ${faker.location.country()}: voter turnout hits record high.`,
+		`Policy changes are coming: ${faker.word.adjective()} reforms announced.`,
+		`Why everyone’s talking about ${faker.word.noun()} in politics this week.`
+	],
+	Fitness: [
+		`Top tips for building muscle this summer without expensive equipment.`,
+		`${faker.number.int({ min: 10, max: 30 })}-minute workout to burn fat fast.`,
+		`Is ${faker.commerce.productName()} the best supplement for fitness?`,
+		`How to stay fit and healthy without going to the gym.`
+	],
+	Travel: [
+		`You won’t believe these hidden spots in ${faker.location.country()}.`,
+		`Top destinations for ${new Date().getFullYear()}.`,
+		`Budget travel tips for ${faker.location.city()} you need to know.`,
+		`Here’s why you should visit ${faker.location.country()} this year.`
+	],
+	Science: [
+		`New breakthrough in ${faker.science.chemicalElement().name}.`,
+		`Why ${faker.word.noun()} could change everything in modern science.`,
+		`Latest research from ${faker.company.name()} scientists.`,
+		`Space discovery shocks experts: ${faker.word.adjective()} results revealed.`
+	],
+	Gaming: [
+		`Best strategy to win in the game ${faker.word.noun()}.`,
+		`Is this the most addictive game ever? Find out now.`,
+		`${faker.person.firstName()} just broke the world record in gaming.`,
+		`Top 10 games you should play right now before everyone else does.`
+	],
+	Food: [
+		`Why everyone loves ${faker.food.dish()} and how to make it.`,
+		`Top recipes for ${faker.food.adjective()} meals this week.`,
+		`${faker.food.ingredient()} is trending in the food world right now.`,
+		`Is ${faker.food.dish()} the ultimate comfort food?`
+	]
+};
+
+function generatePost(topic) {
+	const contentTemplate = faker.helpers.arrayElement(templates[topic]);
+	const emojis = faker.helpers.multiple(() => faker.internet.emoji(), { count: 2 }).join(' ');
+	const hashtags = `#${faker.word.noun()} #${topic.toLowerCase()}`;
+	return `${contentTemplate} ${emojis}\n\n${hashtags}`;
+}
+
 async function generateData() {
 	try {
-		const NUM_FEEDS = 200;      
-		const POSTS_PER_CHANNEL = 100; 
+		const NUM_FEEDS = 750;
+		const POSTS_PER_CHANNEL = 100;
 		const feedsData = [];
 		const channelsData = [];
 		const postsData = [];
-        const usersData = [];
+		const usersData = [];
+		const channelMap = new Map();
 		for (let i = 0; i < NUM_FEEDS; i++) {
 			const userId = generateSpecialId();
-			const username = faker.internet.userName();
+			const username = faker.internet.username();
 			usersData.push({
 				user_id: userId,
 				username: username,
-				password: faker.internet.password(), 
+				password: faker.internet.password(),
 				email: faker.internet.email(),
-				email_verified: true,
+				email_verified: true
 			});
 			const feedId = generateSpecialId();
 			feedsData.push({
 				feed_id: feedId,
 				feed_name: username,
-				description: faker.lorem.sentence(),
-				feed_photo: faker.image.avatar(),
-				follower_count: faker.number.int({ min: 0, max: 10000 }),
+				description: `${faker.helpers.arrayElement(['Tech enthusiast', 'Sports fan', 'Finance guru', 'Movie buff', 'Globetrotter', 'Fitness addict'])} sharing updates.`,
+				feed_photo: `media/profile_picture_dataset/img-${i}.jpg`,
+				follower_count: faker.number.int({ min: 0, max: 100000 }),
 				type: 'public',
 				is_group: false,
 				feed_owner: userId,
-				is_locked: faker.datatype.boolean(),
-				created_at: new Date(),
-				updated_at: new Date()
+				is_locked: false
 			});
-			const channelId = generateSpecialId();
+			const mainChannelId = generateSpecialId();
 			channelsData.push({
-				channel_id: channelId,
+				channel_id: mainChannelId,
 				channel_name: 'Main Channel',
-				description: faker.lorem.sentence(),
 				feed_id: feedId,
 				is_posts: true,
-				is_chat: true,
-				display_order: 0,
-				created_at: new Date(),
-				updated_at: new Date()
+				is_chat: false
 			});
-			for (let j = 0; j < POSTS_PER_CHANNEL; j++) {
-				postsData.push({
-					post_id: generateSpecialId(),
-					feed_id: feedId,
+			const topicChannels = {};
+			for (const topic of topics) {
+				const channelId = generateSpecialId();
+				channelsData.push({
 					channel_id: channelId,
-					title: faker.datatype.boolean() ? faker.lorem.sentence({ min: 3, max: 8 }) : null,
-					content: faker.lorem.paragraphs({ min: 1, max: 3 }, '\n\n'),
-					replies: faker.number.int({ min: 0, max: 100 }),
-					views: faker.number.int({ min: 10, max: 10000 }),
-					upvotes: faker.number.int({ min: 0, max: 500 }),
-					downvotes: faker.number.int({ min: 0, max: 100 }),
-					created_at: faker.date.recent({ days: 30 }),
-					poster_id: feedId
+					channel_name: topic,
+					feed_id: feedId,
+					is_posts: true,
+					is_chat: false
 				});
+				topicChannels[topic] = channelId;
+			}
+			channelMap.set(feedId, { main: mainChannelId, topics: topicChannels });
+			const tweetCSV = fs.readFileSync('custom_algorithms/twitter_validation.csv', 'utf8');
+			const tweetRows = parse(tweetCSV, { columns: false, skip_empty_lines: true });
+			for (let j = 0; j < POSTS_PER_CHANNEL; j++) {
+				const topic = faker.helpers.arrayElement(topics);
+				const channelId = topicChannels[topic];
+				if (tweetRows.length > 0 && Math.random() < 0.5) {
+					//Use a tweet-based post
+					const tweet = tweetRows[Math.floor(Math.random() * tweetRows.length)];
+					const tweetContent = tweet[3];				
+					console.log("Using tweetContent:", tweetContent);
+					postsData.push({
+						post_id: generateSpecialId(),
+						feed_id: feedId,
+						channel_id: channelId,
+						title: null,
+						content: `<html><head></head><body><div class="content-block text-block" data-blockid="${v4()}"><p>${tweetContent}</p></div></body></html>`,
+						replies: faker.number.int({ min: 0, max: 100 }),
+						views: faker.number.int({ min: 10, max: 10000 }),
+						upvotes: faker.number.int({ min: 0, max: 500 }),
+						downvotes: faker.number.int({ min: 0, max: 100 }),
+						created_at: faker.date.recent({ days: 30 }),
+						poster_id: feedId
+					});
+				} else {
+					//Use a generated post
+					const postTitle = faker.helpers.arrayElement([
+						`${topic} Insights: ${faker.word.adjective()} ${faker.word.noun()}`,
+						`Breaking ${topic} News: ${faker.company.catchPhrase()}`,
+						`Top ${faker.number.int({ min: 5, max: 15 })} ${topic} Tips`
+					]);
+					postsData.push({
+						post_id: generateSpecialId(),
+						feed_id: feedId,
+						channel_id: channelId,
+						title: faker.datatype.boolean() ? postTitle : null,
+						content: `<html><head></head><body><div class="content-block text-block" data-blockid="${v4()}"><p>${generatePost(topic)}</p></div></body></html>`,
+						replies: faker.number.int({ min: 0, max: 100 }),
+						views: faker.number.int({ min: 10, max: 10000 }),
+						upvotes: faker.number.int({ min: 0, max: 500 }),
+						downvotes: faker.number.int({ min: 0, max: 100 }),
+						created_at: faker.date.recent({ days: 30 }),
+						poster_id: feedId
+					});
+				}
 			}
 		}
 		await sequelize.transaction(async (t) => {

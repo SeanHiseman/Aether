@@ -1,5 +1,5 @@
 import { Algorithms, AlgorithmLocations } from "./algorithms.js";
-import { Posts, SavedPosts, ViewedPosts } from "../models/relationships.js";
+import { Followers, Posts, SavedPosts, ViewedPosts } from "../models/relationships.js";
 import cheerio from 'cheerio';
 import { Op } from 'sequelize';
 import Sentiment from 'sentiment';
@@ -26,14 +26,16 @@ function analyseSentiment(htmlContent) {
     return normalisedScore;
 }
 
-async function ApplyAlgorithm({ locationId, excludedPostIds, feedId, includeOptions, isMain, limit, offset, saverId, userId }) {
+async function ApplyAlgorithm({ locationId, excludedPostIds, feedId, includeOptions, isMain, limit, offset, saverId, userId, keyword = '' }) {
     try {
         console.log("Applying algorithm for location:", locationId, "feedId:", feedId, "userId:", userId);
         const excludedIds = excludedPostIds ? excludedPostIds.split(',') : [];
         let algorithm = {};
         let algorithmLocation = null;
         if (userId && locationId) {
-            algorithmLocation = await AlgorithmLocations.findOne({ where: { location_id: locationId, user_id: userId } });
+            algorithmLocation = await AlgorithmLocations.findOne({ 
+                where: { location_id: locationId, user_id: userId } 
+            });
             console.log("User-specific algorithm location:", algorithmLocation);
             if (algorithmLocation) {
                 const algorithmRow = await Algorithms.findOne({
@@ -50,22 +52,119 @@ async function ApplyAlgorithm({ locationId, excludedPostIds, feedId, includeOpti
                 }
             }
         }
-        const whereChannel = {
-            ...(isMain !== 'true' && locationId ? { channel_id: locationId } : {}),
-            feed_id: feedId,
-            parent_id: null,
-            post_id: { [Op.notIn]: excludedIds }
-        };
-        const initialLimit = (limit ? parseInt(limit, 20) : 20) * 3;
-        const { chronology = 'newest' } = algorithm;
-        const posts = await Posts.findAll({
-            attributes: postAttributes,
-            include: includeOptions,
-            limit: initialLimit,
-            offset: offset ? parseInt(offset, 20) : 0,
-            where: whereChannel,
-            order: [['created_at', chronology === 'oldest' ? 'ASC' : 'DESC']]
-        });
+        let posts = [];
+        if (locationId === 'search' && keyword) {
+            const publicFeeds = await Feeds.findAll({
+                where: { type: { [Op.ne]: 'private' } },
+                attributes: ['feed_id']
+            });
+            posts = await Posts.findAll({
+                attributes: postAttributes,
+                include: includeOptions,
+                where: {
+                    feed_id: { [Op.in]: publicFeeds.map(f => f.feed_id) },
+                    parent_id: null,
+                    post_id: { [Op.notIn]: excludedIds },
+                    [Op.or]: [
+                        { title: { [Op.like]: `%${keyword}%` } },
+                        { content: { [Op.like]: `%${keyword}%` } }
+                    ]
+                },
+                limit: (limit ? parseInt(limit, 20) : 20) * 3,
+                offset: offset ? parseInt(offset, 20) : 0,
+                order: [['created_at', 'DESC']]
+            });
+        } else if (locationId === 'following' && userId) {
+            const followedFeeds = await Followers.findAll({
+                where: { follower_id: userId },
+                attributes: ['feed_id']
+            });
+            if (followedFeeds.length === 0) return [];
+            const followedFeedIds = followedFeeds.map(f => f.feed_id);
+            posts = await Posts.findAll({
+                attributes: postAttributes,
+                include: includeOptions,
+                where: {
+                    feed_id: { [Op.in]: followedFeedIds },
+                    parent_id: null,
+                    post_id: { [Op.notIn]: excludedIds }
+                },
+                limit: (limit ? parseInt(limit, 20) : 20) * 3,
+                offset: offset ? parseInt(offset, 20) : 0,
+                order: [['created_at', 'DESC']]
+            });
+        } else if (locationId === 'explore') {
+            const { Feeds } = await import('../models/relationships.js');
+            const publicFeeds = await Feeds.findAll({
+                where: { type: { [Op.ne]: 'private' } },
+                attributes: ['feed_id']
+            });
+            posts = await Posts.findAll({
+                attributes: postAttributes,
+                include: includeOptions,
+                where: {
+                    feed_id: { [Op.in]: publicFeeds.map(f => f.feed_id).slice(0, 10) }, 
+                    parent_id: null,
+                    post_id: { [Op.notIn]: excludedIds }
+                },
+                limit: (limit ? parseInt(limit, 20) : 20) * 3,
+                offset: offset ? parseInt(offset, 20) : 0,
+                order: [['created_at', 'DESC']]
+            });
+        } else if (typeof locationId === 'string' && locationId.startsWith('deep_')) {
+            const { DeepFeedContent } = await import('../models/relationships.js');
+            const getAllFeedIdsInDeepFeed = async (deepFeedId, visited = new Set()) => {
+                if (visited.has(deepFeedId)) return [];
+                visited.add(deepFeedId);
+                const contents = await DeepFeedContent.findAll({
+                    where: { deep_feed_id: deepFeedId },
+                    attributes: ['feed_id', 'nested_deep_feed_id']
+                });
+                const feedIds = [];
+                for (const content of contents) {
+                    if (content.feed_id) {
+                        feedIds.push(content.feed_id);
+                    }
+                    if (content.nested_deep_feed_id) {
+                        const nested = await getAllFeedIdsInDeepFeed(content.nested_deep_feed_id, visited);
+                        feedIds.push(...nested);
+                    }
+                }
+                return feedIds;
+            };
+            const deepFeedId = locationId.replace('deep_', '');
+            const allFeedIds = await getAllFeedIdsInDeepFeed(deepFeedId);
+            if (allFeedIds.length === 0) return [];
+            posts = await Posts.findAll({
+                attributes: postAttributes,
+                include: includeOptions,
+                where: {
+                    feed_id: { [Op.in]: allFeedIds },
+                    parent_id: null,
+                    post_id: { [Op.notIn]: excludedIds }
+                },
+                limit: (limit ? parseInt(limit, 20) : 20) * 3,
+                offset: offset ? parseInt(offset, 20) : 0,
+                order: [['created_at', 'DESC']]
+            });
+        } else {
+            const whereChannel = {
+                ...(isMain !== 'true' && locationId ? { channel_id: locationId } : {}),
+                feed_id: feedId,
+                parent_id: null,
+                post_id: { [Op.notIn]: excludedIds }
+            };
+            const initialLimit = (limit ? parseInt(limit, 20) : 20) * 3;
+            const { chronology = 'newest' } = algorithm;
+            posts = await Posts.findAll({
+                attributes: postAttributes,
+                include: includeOptions,
+                limit: initialLimit,
+                offset: offset ? parseInt(offset, 20) : 0,
+                where: whereChannel,
+                order: [['created_at', chronology === 'oldest' ? 'ASC' : 'DESC']]
+            });
+        }
         if (!posts.length) return [];
         if (!algorithmLocation) {
             const selectionLimit = limit ? parseInt(limit, 20) : 20;
@@ -177,6 +276,7 @@ async function ApplyAlgorithm({ locationId, excludedPostIds, feedId, includeOpti
             if (b.score !== a.score) return b.score - a.score;
             const dateA = new Date(a.created_at);
             const dateB = new Date(b.created_at);
+            const { chronology = 'newest' } = algorithm;
             return chronology === 'oldest' ? dateA - dateB : dateB - dateA;
         });
         const selectionLimit = limit ? parseInt(limit, 20) : 20;
