@@ -33,32 +33,10 @@ router.post('/assign_algorithm', authenticateCheck, async (req, res) => {
 router.post('/create_algorithm', authenticateCheck, async (req, res) => {
 	let transaction;
 	try {
-		const {
-			algorithmName,
-			chronology,
-			contentType,
-			customInstruction,
-			sentiment,
-			startTime,
-			endTime,
-			variety,
-			voteImpact,
-			wordBoost,
-			wordSuppress,
-		} = req.body;
+		const { algorithmName, chronology, contentType, customInstruction, sentiment, startTime, endTime, variety, voteImpact, wordBoost, wordSuppress, textMin, textMax, videoMin, videoMax } = req.body;
 		console.log("create_algorithm req.body:", req.body);
 		const userId = req.session.user_id;
-		const userSettings = {
-			chronology,
-			contentType,
-			sentiment,
-			startTime,
-			endTime,
-			variety,
-			voteImpact,
-			wordBoost,
-			wordSuppress
-		};
+		const userSettings = { chronology, contentType, sentiment, startTime, endTime, variety, voteImpact, wordBoost, wordSuppress };
 		let algorithmCode;
 		if (customInstruction && customInstruction.trim() !== "") {
 			const systemPrompt = `

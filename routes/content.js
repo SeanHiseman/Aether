@@ -290,15 +290,7 @@ router.post('/create_post', authenticateCheck, checkStorageLimit, postUpload.arr
             });
         }
         const modifiedContent = $.html();
-        const post = await Posts.create({
-            channel_id,
-            content: modifiedContent,
-            feed_id,
-            parent_id,
-            post_id,
-            poster_id,
-            title
-        });
+        const post = await Posts.create({ channel_id, content: modifiedContent, feed_id, parent_id, post_id, poster_id, title });
         if (parent_id) { //parent_id means post is a reply
             const parentPost = await Posts.findOne({ where: { post_id: parent_id } });
             if (parentPost) {

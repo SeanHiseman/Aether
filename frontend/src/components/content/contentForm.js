@@ -160,7 +160,7 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onEdit
                 const updatedBlocks = blocks.map(block => {
                     if (block.id === blockId && block.type === BLOCK_TYPES.CODE) {
                         const iframeCode = `<div style="width:100%; height:100vh">
-                            <iframe src="${parsedUrl.href}" style="width:100%; height:100%; border:none;" sandbox="allow-scripts allow-same-origin" referrerpolicy="no-referrer"></iframe>
+                            <iframe class="embedded-website" src="${parsedUrl.href}" style="width:100%; height:100%; border:none;" sandbox="allow-scripts allow-same-origin" referrerpolicy="no-referrer"></iframe>
                             </div>`;
                         return { 
                             ...block, 
@@ -196,7 +196,7 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onEdit
                     }
                     embedCode = `<a href="${parsed.href}" target="_blank" rel="noopener noreferrer">${parsed.href}</a>`;
                 }
-                catch (e) {
+                catch (error) {
                     alert('Please enter a valid URL or embed code');
                     return block;
                 }

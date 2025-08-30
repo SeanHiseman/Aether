@@ -189,6 +189,44 @@
 .dropdown.open .dropdown-trigger::after {
 	transform: rotate(180deg);
 }
+.dual-slider {
+    position: relative;
+    width: 94%;
+    height: 40px;
+}
+.dual-slider__track {
+    position: absolute;
+    top: 16px;
+    width: 100%;
+    height: 8px;
+    background: #e0e0e0;
+    cursor: pointer;
+}
+.dual-slider__range {
+    position: absolute;
+    height: 100%;
+    background: #007bff;
+}
+.dual-slider__handle {
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    background: white;
+    border: 2px solid #007bff;
+    border-radius: 50%;
+    cursor: pointer;
+    top: 10px;
+    transform: translate(-50%, 0);
+    z-index: 2;
+}
+.dual-slider__values {
+    position: absolute;
+    top: 35px;
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+}
 .form-group input[type="checkbox"] {
 	appearance: none;
 	background: var(--darkest);
@@ -310,16 +348,12 @@
 .text-center {
 	text-align: center;
 }
-
-/* Container for the time inputs */
 .time-range-container {
     display: flex;
     align-items: center;
     gap: 12px;
     margin-top: 8px;
 }
-
-/* Individual time input styling */
 .time-input {
     background: var(--darkest);
     border: 1px solid var(--border);
@@ -330,23 +364,17 @@
     min-width: 120px;
     transition: border-color 0.2s ease;
 }
-
-/* Style the time picker icons */
 .time-input::-webkit-calendar-picker-indicator {
     filter: invert(1);
     cursor: pointer;
     margin-left: 8px;
 }
-
-/* Separator styling */
 .time-separator {
     color: var(--lightest);
     font-weight: 500;
     font-size: 16px;
     user-select: none;
 }
-
-/* Label container improvements */
 .form-label-with-info {
     display: flex;
     align-items: center;

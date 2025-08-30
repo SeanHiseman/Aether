@@ -1,6 +1,7 @@
+import React from 'react';
 import axios from 'axios';
 import { FaInfoCircle } from 'react-icons/fa';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 function InfoIconWithTooltip({ info }) {
     const [visible, setVisible] = useState(false);
@@ -13,13 +14,90 @@ function InfoIconWithTooltip({ info }) {
         >
             <FaInfoCircle />
             {visible && (
-                <div className="custom-tooltip">
+                <div className="custom-tooltip" style={{ zIndex: 9999 }}>
                     {info}
                 </div>
             )}
         </div>
     );
 }
+
+const DualRangeSlider = ({ min = 0, max = 100, value = [25, 75], onChange, formatValue = (val) => val }) => {
+    const [isDragging, setIsDragging] = useState(false);
+    const [activeHandle, setActiveHandle] = useState(null);
+    const trackRef = useRef(null);
+
+    const handleMouseDown = useCallback((e, handle) => {
+        e.preventDefault();
+        setIsDragging(true);
+        setActiveHandle(handle);
+    }, []);
+
+    const handleMouseMove = useCallback((e) => {
+        if (!isDragging || !activeHandle || !trackRef.current) return;
+        const rect = trackRef.current.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const percentage = Math.max(0, Math.min(100, (x / rect.width) * 100));
+        const newValue = Math.round((percentage / 100) * (max - min) + min);
+        if (activeHandle === 'min') {
+            const newMin = Math.min(newValue, value[1] - 1);
+            onChange([newMin, value[1]]);
+        } else {
+            const newMax = Math.max(newValue, value[0] + 1);
+            onChange([value[0], newMax]);
+        }
+    }, [isDragging, activeHandle, min, max, value, onChange]);
+
+    const handleMouseUp = useCallback(() => {
+        setIsDragging(false);
+        setActiveHandle(null);
+    }, []);
+
+    const handleTrackClick = useCallback((e) => {
+        if (isDragging) return;
+        const rect = trackRef.current.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const percentage = (x / rect.width) * 100;
+        const clickValue = Math.round((percentage / 100) * (max - min) + min);
+        const minDistance = Math.abs(clickValue - value[0]);
+        const maxDistance = Math.abs(clickValue - value[1]);
+        if (minDistance < maxDistance) {
+            const newMin = Math.min(clickValue, value[1] - 1);
+            onChange([newMin, value[1]]);
+        } else {
+            const newMax = Math.max(clickValue, value[0] + 1);
+            onChange([value[0], newMax]);
+        }
+    }, [isDragging, min, max, value, onChange]);
+
+    React.useEffect(() => {
+        if (isDragging) {
+            document.addEventListener('mousemove', handleMouseMove);
+            document.addEventListener('mouseup', handleMouseUp);
+            return () => {
+                document.removeEventListener('mousemove', handleMouseMove);
+                document.removeEventListener('mouseup', handleMouseUp);
+            };
+        }
+    }, [isDragging, handleMouseMove, handleMouseUp]);
+
+    const minPercent = ((value[0] - min) / (max - min)) * 100;
+    const maxPercent = ((value[1] - min) / (max - min)) * 100;
+
+    return (
+        <div className="dual-slider">
+            <div ref={trackRef} className="dual-slider__track" onClick={handleTrackClick}>
+                <div className="dual-slider__range" style={{ left: `${minPercent}%`, width: `${maxPercent - minPercent}%` }} />
+            </div>
+            <div className="dual-slider__handle" style={{ left: `${minPercent}%` }} onMouseDown={(e) => handleMouseDown(e, 'min')} />
+            <div className="dual-slider__handle" style={{ left: `${maxPercent}%` }} onMouseDown={(e) => handleMouseDown(e, 'max')} />
+            <div className="dual-slider__values">
+                <span>{formatValue(value[0], 'min')}</span>
+                <span>{formatValue(value[1], 'max')}</span>
+            </div>
+        </div>
+    );
+};
 
 const ALGORITHM_TEMPLATES = {
     "breaking_news": {
@@ -82,16 +160,6 @@ const ALGORITHM_TEMPLATES = {
         wordSuppress: "outdated,legacy",
         customInstruction: "Focus on the latest technology trends and innovations. Prioritize AI, software development, digital innovation, and startup news. Suppress outdated or legacy technology content."
     },
-    "local_community": {
-        name: "Local Community",
-        chronology: "newest",
-        sentiment: 0.2,
-        variety: 0.9,
-        voteImpact: 1,
-        wordBoost: "local,community,neighborhood,event,meetup,volunteer,charity",
-        wordSuppress: "global,international",
-        customInstruction: "Show local community content including neighborhood events, meetups, volunteer opportunities, and local news. Suppress global or international content to focus on local community."
-    },
     "sports_fitness": {
         name: "Sports & Fitness",
         chronology: "newest",
@@ -131,7 +199,7 @@ const AddAlgorithm = ({ algorithms = [], editingAlgorithm = null, locationId, on
     const [algorithmCode, setAlgorithmCode] = useState('');
     const [algorithmName, setAlgorithmName] = useState('');
     const [chronology, setChronology] = useState(1);
-    const [contentType, setContentType] = useState({ images: true, text: true, videos: true, interactive: true });
+    const [contentType, setContentType] = useState({ images: true, text: true, videos: true, interactive: true, externalPosts: true, embeddedWebsites: true});
     const [customInstruction, setCustomInstruction] = useState('');
     const [dateFrom, setDateFrom] = useState('');
     const [dateTo, setDateTo] = useState('');
@@ -144,10 +212,18 @@ const AddAlgorithm = ({ algorithms = [], editingAlgorithm = null, locationId, on
     const [specificDate, setSpecificDate] = useState('');
     const [startTime, setStartTime] = useState('00:00');
     const [template, setTemplate] = useState('none');
+    const [textRange, setTextRange] = useState([0, 100]);
+    const [videoRange, setVideoRange] = useState([0, 100]);
     const [variety, setVariety] = useState(0.5);
     const [voteImpact, setVoteImpact] = useState(0);
     const [wordBoost, setWordBoost] = useState('');
     const [wordSuppress, setWordSuppress] = useState('');
+
+    const logScale = (value, min, max) => {
+        const logMin = Math.log10(min);
+        const logMax = Math.log10(max);
+        return Math.pow(10, logMin + (value / 100) * (logMax - logMin));
+    };
 
     const submitAlgorithm = async () => {
         try {
@@ -158,7 +234,7 @@ const AddAlgorithm = ({ algorithms = [], editingAlgorithm = null, locationId, on
                 a.algorithm_id !== editingAlgorithm?.algorithm_id
             );
             if (duplicate) {
-                setError("You already have an algorithm with this name");
+                setError("Name taken, please choose another.");
                 setTimeout(() => { setError('') }, 5000);
                 return;
             }
@@ -174,6 +250,10 @@ const AddAlgorithm = ({ algorithms = [], editingAlgorithm = null, locationId, on
                 dateFrom,
                 dateTo,
                 locationId,
+                minText: textRange[0],
+                maxText: textRange[1],
+                minVideo: videoRange[0],
+                maxVideo: videoRange[1],
                 sentiment,
                 specificDate,
                 startTime,
@@ -216,11 +296,13 @@ const AddAlgorithm = ({ algorithms = [], editingAlgorithm = null, locationId, on
         setAlgorithmCode('');
         setAlgorithmName('');
         setChronology(0.8);
-        setContentType({ images: true, text: true, videos: true, interactive: true });
+        setContentType({ images: true, text: true, videos: true, interactive: true, externalPosts: true, embeddedWebsites: true });
         setCustomInstruction(''); 
         setDateFrom('');
         setDateTo('');        
         setEditingAlgorithm(null);
+        setTextRange([0, 100]);
+        setVideoRange([0, 100]);
         setSentiment(0);
         setStartTime('00:00');
         setEndTime('23:59');
@@ -277,13 +359,15 @@ const AddAlgorithm = ({ algorithms = [], editingAlgorithm = null, locationId, on
             setAlgorithmCode(parsedAlgorithmCode);
             setAlgorithmName(algorithm_name);
             setChronology(parsedAlgorithmCode.chronology || 0.8);
-            setContentType(parsedAlgorithmCode.contentType || { images: true, text: true, videos: true, interactive: true });
+            setContentType(parsedAlgorithmCode.contentType || { images: true, text: true, videos: true, interactive: true, externalPosts: true, embeddedWebsites: true });
             setCustomInstruction(editingAlgorithm.custom_instruction || ''); 
             setSentiment(parsedAlgorithmCode.scoring?.sentiment ?? 0);
             setVoteImpact(parsedAlgorithmCode.scoring?.voteImpact ?? 0);
             setStartTime(parsedAlgorithmCode.startTime || '00:00');
             setEndTime(parsedAlgorithmCode.endTime || '23:59');
             setTemplate(parsedAlgorithmCode.template || 'none');
+            setTextRange([parsedAlgorithmCode.minText || 0, parsedAlgorithmCode.maxText || 100]);
+            setVideoRange([parsedAlgorithmCode.minVideo || 0, parsedAlgorithmCode.maxVideo || 100]);
             const wordBoostArray = parsedAlgorithmCode.scoring?.wordBoost || [];
             const wordSuppressArray = parsedAlgorithmCode.scoring?.wordSuppress || [];
             const wordBoostWords = wordBoostArray.map(item => item.word).join(',');
@@ -359,7 +443,6 @@ const AddAlgorithm = ({ algorithms = [], editingAlgorithm = null, locationId, on
                             <option value="professional">Professional Network</option>
                             <option value="positive_vibes">Positive Vibes</option>
                             <option value="tech_innovation">Tech & Innovation</option>
-                            <option value="local_community">Local Community</option>
                             <option value="sports_fitness">Sports & Fitness</option>
                             <option value="creative_arts">Creative Arts</option>
                             <option value="deep_focus">Deep Focus</option>
@@ -490,6 +573,38 @@ const AddAlgorithm = ({ algorithms = [], editingAlgorithm = null, locationId, on
                                 />
                             </div>
                         </div>
+                        <div className="form-row">
+                            <div className="form-group">
+                                <div className="form-label-with-info">
+                                    <label className="small-text">Video length (sec)</label>
+                                    <InfoIconWithTooltip info="Set minimum and maximum video duration. Set both to 0 for no limit." />
+                                </div>
+                                <DualRangeSlider
+                                    value={videoRange}
+                                    onChange={setVideoRange}
+                                    formatValue={(val, type) => 
+                                        val === 0 && type === 'min' ? 'No min' :
+                                        val === 100 && type === 'max' ? 'No max' :
+                                        `${Math.round(logScale(val, 1, 3600))} sec`
+                                    }
+                                />
+                            </div>
+                            <div className="form-group">
+                                <div className="form-label-with-info">
+                                    <label className="small-text">Text length (words)</label>
+                                    <InfoIconWithTooltip info="Set minimum and maximum text length. Set both to 0 for no limit." />
+                                </div>
+                                <DualRangeSlider
+                                    value={textRange}
+                                    onChange={setTextRange}
+                                    formatValue={(val, type) => 
+                                        val === 0 && type === 'min' ? 'No min' :
+                                        val === 100 && type === 'max' ? 'No max' :
+                                        `${Math.round(logScale(val, 1, 5000))} words`
+                                    }
+                                />
+                            </div>
+                        </div>
                         <div className="form-row border-bottom">
                             <div className="form-label-with-info">
                                 <label className="small-text">Content Types</label>
@@ -514,6 +629,20 @@ const AddAlgorithm = ({ algorithms = [], editingAlgorithm = null, locationId, on
                 )}
                 {showAdvancedOptions && (
                     <>
+                        <div className="form-row">
+                            <div className="form-label-with-info">
+                                <label className="small-text">More Content Types</label>
+                                <InfoIconWithTooltip info="Allow other websites, and posts from other sites to be embedded in posts." />
+                            </div>
+                            <div>
+                                <label>
+                                    <input type="checkbox" checked={contentType.externalPosts} onChange={e => setContentType(prev => ({ ...prev, externalPosts: e.target.checked }))} /> External posts
+                                </label>
+                                <label>
+                                    <input type="checkbox" checked={contentType.embeddedWebsites} onChange={e => setContentType(prev => ({ ...prev, embeddedWebsites: e.target.checked }))} /> Websites
+                                </label>
+                            </div>
+                        </div>
                         <div className="form-row">
                             <div className="form-group">
                                 <div className="form-label-with-info">
