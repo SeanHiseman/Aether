@@ -42,6 +42,8 @@ class ContentAnalyser {
             has_images: images > 0,
             has_videos: videos > 0,
             has_interactive: interactive > 0,
+            image_count: images,
+            video_count: videos,
             video_length: totalVideoLength,
             has_text: $.text().trim().length > 0
         };

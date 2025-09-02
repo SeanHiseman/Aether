@@ -33,12 +33,12 @@ router.post('/assign_algorithm', authenticateCheck, async (req, res) => {
 router.post('/create_algorithm', authenticateCheck, async (req, res) => {
 	let transaction;
 	try {
-		const { algorithmName, chronology, contentType, customInstruction, sentiment, startTime, endTime, variety, voteImpact, wordBoost, wordSuppress, textMin, textMax, videoMin, videoMax } = req.body;
+		const { algorithmName, activeDays, chronology, contentType, customInstruction, dateFrom, dateTo, generateCode, locationId, minText, maxText, minVideo, maxVideo, sentiment, startTime, endTime, variety, voteImpact, wordBoost, wordSuppress } = req.body;
 		console.log("create_algorithm req.body:", req.body);
 		const userId = req.session.user_id;
 		const userSettings = { chronology, contentType, sentiment, startTime, endTime, variety, voteImpact, wordBoost, wordSuppress };
 		let algorithmCode;
-		if (customInstruction && customInstruction.trim() !== "") {
+		if (generateCode && customInstruction && customInstruction.trim() !== "") {
 			const systemPrompt = `
 				You are an expert algorithm creation assistant. Your task is to generate a single, valid JSON object representing a user's custom algorithm rules.
 				The user will provide form settings and/or a custom natural language instruction. You must merge both sources into the final JSON, prioritising the custom instruction when there is any conflict.
@@ -107,7 +107,7 @@ router.post('/create_algorithm', authenticateCheck, async (req, res) => {
 			algorithmCode = aiReply.replace(/```json\n|```/g, '').trim();
 			console.log("AI generated algorithmCode:", algorithmCode);
 		} else {
-			algorithmCode = JSON.stringify({ //Construct JSON if no custom instruction
+			algorithmCode = JSON.stringify({
 				chronology,
 				contentType,
 				variety,
@@ -125,20 +125,31 @@ router.post('/create_algorithm', authenticateCheck, async (req, res) => {
 			});
 		}
 		transaction = await sequelize.transaction();
-		const newAlgorithm = await Algorithms.create({
-			algorithm_id: v4(),
-			algorithm_name: algorithmName,
-			algorithm_code: algorithmCode,
-			custom_instruction: customInstruction || null,
-			user_id: userId
-		}, { transaction });
-		console.log("newAlgorithm:", newAlgorithm);
+		const existingAlgorithm = await Algorithms.findOne({
+			where: { algorithm_name: algorithmName, user_id: userId },
+			transaction
+		});
+		let algorithm;
+		if (existingAlgorithm) {
+			algorithm = await existingAlgorithm.update({
+				algorithm_code: algorithmCode,
+				custom_instruction: customInstruction || null
+			}, { transaction });
+		} else {
+			algorithm = await Algorithms.create({
+				algorithm_id: v4(),
+				algorithm_name: algorithmName,
+				algorithm_code: algorithmCode,
+				custom_instruction: customInstruction || null,
+				user_id: userId
+			}, { transaction });
+		}
 		await transaction.commit();
-		res.status(201).json({ success: true, newAlgorithm });
+		res.status(201).json({ success: true, algorithm });
 	} catch (error) {
 		if (transaction) await transaction.rollback();
-		console.error("error creating algorithm:", error);
-		res.status(500).json({ success: false, message: 'Failed to create algorithm.' });
+		console.error("error creating/updating algorithm:", error);
+		res.status(500).json({ success: false, message: 'Failed to create or update algorithm.' });
 	}
 });
 
@@ -162,59 +173,6 @@ router.delete('/delete_algorithm', authenticateCheck, async (req, res) => {
 		if (transaction) await transaction.rollback();
 		console.error(error);
 		res.status(500).json({ success: false, message: 'Failed to remove algorithm.' });
-	}
-});
-
-router.put('/edit_algorithm', authenticateCheck, async (req, res) => {
-	let transaction;
-	try {
-		transaction = await sequelize.transaction();
-		const {
-			algorithmDescription,
-			algorithmId,
-			algorithmName,
-			advancedChronology,
-			chronology,
-			contentType,
-			engagement,
-			endTime,
-			personalRuleInput,
-			sentiment,
-			startTime,
-			template,
-			variety,
-			voteImpact,
-			wordBoost,
-			wordSuppress
-		} = req.body;
-		const userId = req.session.user_id;
-		const algorithm = await Algorithms.findOne({ where: { algorithm_id: algorithmId, user_id: userId } });
-		if (!algorithm) throw new Error('Algorithm not found.');
-		await algorithm.update({
-			algorithm_description: algorithmDescription || null,
-			algorithm_name: algorithmName,
-			algorithm_code: JSON.stringify({
-				advancedChronology,
-				chronology,
-				contentType,
-				engagement,
-				personalRuleInput,
-				sentiment,
-				startTime,
-				endTime,
-				template,
-				variety,
-				voteImpact,
-				wordBoost,
-				wordSuppress
-			})
-		}, { transaction });
-		await transaction.commit();
-		res.status(200).json({ success: true, updatedAlgorithm: algorithm });
-	} catch (error) {
-		if (transaction) await transaction.rollback();
-		console.error(error);
-		res.status(500).json({ success: false, message: 'Failed to edit algorithm.' });
 	}
 });
 

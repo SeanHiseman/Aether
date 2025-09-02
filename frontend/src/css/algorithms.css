@@ -291,13 +291,12 @@
 	align-items: center;
 	display: flex;
 	gap: var(--small-margin);
-	margin-bottom: var(--small-margin);
 }
 .form-row {
 	align-items: center;
 	display: flex;
 	gap: var(--medium-margin);
-	padding-bottom: var(--large-margin);
+	padding-bottom: var(--medium-margin);
 }
 .form-row .form-group {
 	flex: 1;
@@ -352,7 +351,6 @@
     display: flex;
     align-items: center;
     gap: 12px;
-    margin-top: 8px;
 }
 .time-input {
     background: var(--darkest);
@@ -378,8 +376,6 @@
 .form-label-with-info {
     display: flex;
     align-items: center;
-    gap: 6px;
-    margin-bottom: 8px;
 }
 
 @media (max-width: 768px) {

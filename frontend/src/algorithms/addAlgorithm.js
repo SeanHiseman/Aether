@@ -2,6 +2,7 @@ import React from 'react';
 import axios from 'axios';
 import { FaInfoCircle } from 'react-icons/fa';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { ALGORITHM_TEMPLATES } from './algorithmTemplates';
 
 function InfoIconWithTooltip({ info }) {
     const [visible, setVisible] = useState(false);
@@ -99,90 +100,6 @@ const DualRangeSlider = ({ min = 0, max = 100, value = [25, 75], onChange, forma
     );
 };
 
-const ALGORITHM_TEMPLATES = {
-    "breaking_news": {
-        name: "Breaking News",
-        chronology: "newest",
-        sentiment: 0,
-        variety: 0.9,
-        wordBoost: "breaking,news,update,urgent,developing,alert",
-        wordSuppress: "rumor,unconfirmed",
-        customInstruction: "Show me the latest breaking news and current events. Prioritize recent, verified news updates and urgent developments. Suppress unconfirmed rumors."
-    },
-    "educational": {
-        name: "Educational Content",
-        chronology: "newest",
-        sentiment: 0.3,
-        variety: 0.9,
-        wordBoost: "tutorial,learn,how-to,guide,explain,education,course,lesson",
-        wordSuppress: "clickbait,drama",
-        customInstruction: "Focus on educational and learning content including tutorials, guides, and explanations. Boost helpful educational material while reducing clickbait and drama."
-    },
-    "entertainment": {
-        name: "Entertainment & Fun",
-        chronology: "mixed",
-        sentiment: 0.6,
-        variety: 0.9,
-        wordBoost: "funny,meme,comedy,entertainment,viral,cute,amazing",
-        wordSuppress: "serious,political,depressing",
-        customInstruction: "Show entertaining and fun content that's light-hearted and positive. Prioritize funny, cute, and amazing content while filtering out serious or depressing material."
-    },
-    "professional": {
-        name: "Professional Network",
-        chronology: "newest",
-        sentiment: 0.2,
-        variety: 0.9,
-        wordBoost: "career,professional,industry,business,networking,leadership,startup,innovation",
-        wordSuppress: "personal,casual",
-        customInstruction: "Focus on professional and career-related content. Show industry insights, business news, networking opportunities, and leadership content. Boost during business hours on weekdays."
-    },
-    "positive_vibes": {
-        name: "Positive Vibes",
-        chronology: "newest",
-        sentiment: 0.8,
-        variety: 0.9,
-        wordBoost: "positive,inspiration,motivation,success,achievement,grateful,happiness,love",
-        wordSuppress: "negative,problem,crisis,drama,toxic",
-        customInstruction: "Show only positive, uplifting, and motivational content. Strongly suppress negative, toxic, or crisis-related content. Focus on inspiration, success stories, and happiness."
-    },
-    "tech_innovation": {
-        name: "Tech & Innovation",
-        chronology: "newest",
-        sentiment: 0.1,
-        variety: 0.9,
-        wordBoost: "technology,AI,innovation,startup,coding,software,digital,tech",
-        wordSuppress: "outdated,legacy",
-        customInstruction: "Focus on the latest technology trends and innovations. Prioritize AI, software development, digital innovation, and startup news. Suppress outdated or legacy technology content."
-    },
-    "sports_fitness": {
-        name: "Sports & Fitness",
-        chronology: "newest",
-        sentiment: 0.3,
-        variety: 0.9,
-        wordBoost: "sports,fitness,workout,training,athlete,game,team,health",
-        wordSuppress: "",
-        customInstruction: "Focus on sports, fitness, and health content. Show sports updates, workout tips, training advice, and athletic content. Boost content especially on weekends for game days."
-    },
-    "creative_arts": {
-        name: "Creative Arts",
-        chronology: "mixed",
-        sentiment: 0.4,
-        variety: 0.9,
-        wordBoost: "art,creative,design,music,artist,painting,photography,inspiration",
-        wordSuppress: "",
-        customInstruction: "Show creative and artistic content including art, design, music, and photography. Prioritize visual content and creative inspiration from artists and designers."
-    },
-    "deep_focus": {
-        name: "Deep Focus",
-        chronology: "oldest",
-        sentiment: 0,
-        variety: 0.9,
-        wordBoost: "analysis,research,study,insight,deep,detailed,comprehensive",
-        wordSuppress: "quick,brief,summary",
-        customInstruction: "Focus on long-form, analytical content perfect for deep reading sessions. Prioritize research, detailed analysis, and comprehensive studies. Suppress quick tips and brief summaries."
-    }
-};
-
 const AddAlgorithm = ({ algorithms = [], editingAlgorithm = null, locationId, onCreated, onUpdated, setEditingAlgorithm }) => {
     console.log("algorithms:", algorithms);    
     const [activeDays, setActiveDays] = useState({ monday: true, tuesday: true, wednesday: true, thursday: true, friday: true, saturday: true, sunday: true });
@@ -196,11 +113,11 @@ const AddAlgorithm = ({ algorithms = [], editingAlgorithm = null, locationId, on
     const [dateTo, setDateTo] = useState('');
     const [endTime, setEndTime] = useState('23:59');
     const [error, setError] = useState(null);
+    const [generateCode, setGenerateCode] = useState(false); //Tells backend if LLM should be used to generate JSON
     const [loading, setLoading] = useState(false);
     const [sentiment, setSentiment] = useState(0);
     const [showAdvancedOptions, setShowAdvancedOptions] = useState(false);
     const [showMoreOptions, setShowMoreOptions] = useState(false);
-    const [specificDate, setSpecificDate] = useState('');
     const [startTime, setStartTime] = useState('00:00');
     const [template, setTemplate] = useState('none');
     const [textRange, setTextRange] = useState([0, 100]);
@@ -234,30 +151,26 @@ const AddAlgorithm = ({ algorithms = [], editingAlgorithm = null, locationId, on
                 algorithmId: editingAlgorithm?.algorithm_id,
                 algorithmName: nameToUse,
                 activeDays,
-                advancedChronology,
                 chronology,
                 contentType,
                 customInstruction,
                 dateFrom,
                 dateTo,
+                generateCode,
                 locationId,
                 minText: textRange[0],
                 maxText: textRange[1],
                 minVideo: videoRange[0],
                 maxVideo: videoRange[1],
                 sentiment,
-                specificDate,
                 startTime,
                 endTime,
-                template,
-                wordBoost: wordBoost.split(',').map(w => w.trim()).filter(Boolean),
-                wordSuppress: wordSuppress.split(',').map(w => w.trim()).filter(Boolean),
                 variety,
                 voteImpact,
+                wordBoost: wordBoost.split(',').map(w => w.trim()).filter(Boolean),
+                wordSuppress: wordSuppress.split(',').map(w => w.trim()).filter(Boolean),
             };
-            const { data } = editingAlgorithm
-                ? await axios.put('/api/edit_algorithm', payload)
-                : await axios.post('/api/create_algorithm', payload);
+            const { data } = await axios.post('/api/create_algorithm', payload);
             if (data.success) {
                 const saved = data.updatedAlgorithm || data.newAlgorithm;
                 if (editingAlgorithm) {
@@ -283,7 +196,6 @@ const AddAlgorithm = ({ algorithms = [], editingAlgorithm = null, locationId, on
 
     const startCreatingNew = () => {
         setActiveDays({ monday: true, tuesday: true, wednesday: true, thursday: true, friday: true, saturday: true, sunday: true });
-        setAdvancedChronology('');
         setAlgorithmCode('');
         setAlgorithmName('');
         setChronology(0.8);
@@ -300,7 +212,6 @@ const AddAlgorithm = ({ algorithms = [], editingAlgorithm = null, locationId, on
         setTemplate('none');
         setWordBoost('');
         setWordSuppress('');
-        setSpecificDate('');
         setVariety(0.5);
         setVoteImpact(0);
     }
@@ -308,19 +219,20 @@ const AddAlgorithm = ({ algorithms = [], editingAlgorithm = null, locationId, on
     const templateChange = (templateKey) => {
         setTemplate(templateKey);
         if (templateKey === 'none') {
-            setAdvancedChronology('');
             setChronology(0.8);
             setSentiment(0);
-            setVoteImpact(1);
+            setVoteImpact(0);
             setWordBoost('');
             setWordSuppress('');
             setVariety(0.5);
             setCustomInstruction('');
+            setTextRange([0, 100]);
+            setVideoRange([0, 100]);
+            setContentType({ images: true, text: true, videos: true, interactive: true, externalPosts: true, embeddedWebsites: true });
             return;
         }
         const templateConfig = ALGORITHM_TEMPLATES[templateKey];
         if (templateConfig) {
-            setActiveDays({ monday: true, tuesday: true, wednesday: true, thursday: true, friday: true, saturday: true, sunday: true });
             setChronology(templateConfig.chronology);
             setSentiment(templateConfig.sentiment);
             setVoteImpact(templateConfig.voteImpact);
@@ -328,11 +240,24 @@ const AddAlgorithm = ({ algorithms = [], editingAlgorithm = null, locationId, on
             setWordSuppress(templateConfig.wordSuppress);
             setVariety(templateConfig.variety);
             setCustomInstruction(templateConfig.customInstruction);
+            setTextRange([templateConfig.minText, templateConfig.maxText]);
+            setVideoRange([templateConfig.minVideo, templateConfig.maxVideo]);
+            setContentType(templateConfig.contentType);
             if (!algorithmName || Object.values(ALGORITHM_TEMPLATES).some(t => t.name === algorithmName)) {
                 setAlgorithmName(templateConfig.name);
             }
         }
     };
+
+    useEffect(() => {
+        if (customInstruction.trim()) {
+            if (template === 'none') {
+                setGenerateCode(true);
+            }
+        } else {
+            setGenerateCode(false);
+        }
+    }, [customInstruction, template]);
 
     useEffect(() => {
         if (editingAlgorithm) {
@@ -341,8 +266,8 @@ const AddAlgorithm = ({ algorithms = [], editingAlgorithm = null, locationId, on
             if (typeof algorithm_code === 'string' && algorithm_code) {
                 try {
                     parsedAlgorithmCode = JSON.parse(algorithm_code);
-                } catch (e) {
-                    console.error("Failed to parse algorithm_code:", e);
+                } catch (error) {
+                    setError(error.response?.data?.message || "Error getting algorithm");
                     parsedAlgorithmCode = {};
                 }
             }
@@ -367,7 +292,6 @@ const AddAlgorithm = ({ algorithms = [], editingAlgorithm = null, locationId, on
             setWordSuppress(() => wordSuppressWords);
             setDateFrom(parsedAlgorithmCode.dateFrom || '');
             setDateTo(parsedAlgorithmCode.dateTo || '');
-            setSpecificDate(parsedAlgorithmCode.specificDate || '');
             setVariety(parsedAlgorithmCode.variety ?? 1);
         } else {
             startCreatingNew();
@@ -409,7 +333,7 @@ const AddAlgorithm = ({ algorithms = [], editingAlgorithm = null, locationId, on
                 </div>
                 <div className="form-row">
                     <textarea
-                        className="form-textarea"
+                        className="form-textarea tiny-text"
                         placeholder={customInstruction ? customInstruction : "Describe your algorithm..."}
                         type="text"
                         value={customInstruction}
@@ -428,15 +352,18 @@ const AddAlgorithm = ({ algorithms = [], editingAlgorithm = null, locationId, on
                             onChange={e => templateChange(e.target.value)}
                         >
                             <option value="none">None</option>
+                            <option value="trending_discussions">Trending</option>
+                            <option value="shortform_viral">Shortform</option>
+                            <option value="longform_deep">Longform</option>
                             <option value="breaking_news">Breaking News</option>
-                            <option value="educational">Educational Content</option>
+                            <option value="educational">Educational</option>
                             <option value="entertainment">Entertainment & Fun</option>
                             <option value="professional">Professional Network</option>
                             <option value="positive_vibes">Positive Vibes</option>
                             <option value="tech_innovation">Tech & Innovation</option>
                             <option value="sports_fitness">Sports & Fitness</option>
                             <option value="creative_arts">Creative Arts</option>
-                            <option value="deep_focus">Deep Focus</option>
+                            <option value="high_quality">High quality</option>
                         </select>
                     </div>
                 </div>
@@ -567,23 +494,32 @@ const AddAlgorithm = ({ algorithms = [], editingAlgorithm = null, locationId, on
                         <div className="form-row">
                             <div className="form-group">
                                 <div className="form-label-with-info">
-                                    <label className="small-text">Video length (sec)</label>
-                                    <InfoIconWithTooltip info="Set minimum and maximum video duration. Set both to 0 for no limit." />
+                                    <label className="small-text">Video length</label>
+                                    <InfoIconWithTooltip info="Set minimum and maximum video duration." />
                                 </div>
                                 <DualRangeSlider
                                     value={videoRange}
                                     onChange={setVideoRange}
-                                    formatValue={(val, type) => 
-                                        val === 0 && type === 'min' ? 'No min' :
-                                        val === 100 && type === 'max' ? 'No max' :
-                                        `${Math.round(logScale(val, 1, 3600))} sec`
-                                    }
+                                    formatValue={(val, type) => {
+                                        if (val === 0 && type === 'min') return 'No min';
+                                        if (val === 100 && type === 'max') return 'No max';
+                                        const seconds = Math.round(logScale(val, 5, 3600));
+                                        const minutes = Math.floor(seconds / 60);
+                                        const remainingSeconds = seconds % 60;
+                                        if (seconds < 60) {
+                                            return `${seconds} sec`;
+                                        } else if (remainingSeconds === 0) {
+                                            return `${minutes} min`;
+                                        } else {
+                                            return `${minutes}:${remainingSeconds.toString().padStart(2, '0')} min`;
+                                        }
+                                    }}
                                 />
                             </div>
                             <div className="form-group">
                                 <div className="form-label-with-info">
                                     <label className="small-text">Text length (words)</label>
-                                    <InfoIconWithTooltip info="Set minimum and maximum text length. Set both to 0 for no limit." />
+                                    <InfoIconWithTooltip info="Set minimum and maximum text length." />
                                 </div>
                                 <DualRangeSlider
                                     value={textRange}
@@ -640,46 +576,30 @@ const AddAlgorithm = ({ algorithms = [], editingAlgorithm = null, locationId, on
                                     <label className="small-text">Advanced chronology</label>
                                     <InfoIconWithTooltip info="Controls the date range of posts shown." />
                                 </div>
-                                <div>
-                                    <select
-                                        className="form-select"
-                                        value={advancedChronology}
-                                        onChange={e => setAdvancedChronology(e.target.value)}
-                                    >
-                                        <option value="">None</option>
-                                        <option value="from_date">From Date</option>
-                                        <option value="until_date">Until Date</option>
-                                        <option value="between_dates">Between Dates</option>
-                                    </select>
-                                </div>
-                                {shouldShowDateInputs() && (
-                                    <div className="form-row" style={{ marginTop: '10px' }}>
-                                        {(advancedChronology === 'from_date' || advancedChronology === 'between_dates') && (
-                                            <div className="form-group">
-                                                <label className="small-text">From Date</label>
-                                                <input
-                                                    className="form-input"
-                                                    type="date"
-                                                    value={dateFrom}
-                                                    onChange={e => setDateFrom(e.target.value)}
-                                                />
-                                            </div>
-                                        )}
-                                        {(advancedChronology === 'until_date' || advancedChronology === 'between_dates') && (
-                                            <div className="form-group">
-                                                <label className="small-text">Until Date</label>
-                                                <input
-                                                    className="form-input"
-                                                    type="date"
-                                                    value={dateTo}
-                                                    onChange={e => setDateTo(e.target.value)}
-                                                />
-                                            </div>
-                                        )}
+                                <div className="form-row">
+                                    <div className="form-group">
+                                        <label className="small-text">From Date</label>
+                                        <input
+                                            className="form-input"
+                                            type="date"
+                                            value={dateFrom}
+                                            onChange={e => setDateFrom(e.target.value)}
+                                        />
                                     </div>
-                                )}
+                                    <div className="form-group">
+                                        <label className="small-text">Until Date</label>
+                                        <input
+                                            className="form-input"
+                                            type="date"
+                                            value={dateTo}
+                                            onChange={e => setDateTo(e.target.value)}
+                                        />
+                                    </div>
+                                </div>
                             </div>
-                            <div className="form-group" style={{ alignItems: 'center', display: 'flex', flexDirection: 'column' }}>
+                        </div>
+                        <div className="form-row">
+                            <div className="form-group" style={{ display: 'flex', flexDirection: 'column' }}>
                                 <div className="form-label-with-info">
                                     <label className="small-text">Active Hours</label>
                                     <InfoIconWithTooltip info="This algorithm will only be applied at these times of day." />
