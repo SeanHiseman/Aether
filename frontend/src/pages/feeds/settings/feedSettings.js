@@ -96,7 +96,7 @@ const FeedSettings = () => {
                 <nav id="channel-list">
                     <ul>
                         <Link id="feed-summary" to={`/g/${feed_name}`}>
-                            <img className="large-feed-photo" src={`/${feed.feed_photo}`} alt={feed.feed_name} />
+                            <img className="large-feed-photo" src={`/${feed.feed_photo}`} onError={(e) => e.currentTarget.src = '/media/site_images/blank-profile.png'} />
                             <p className="text36">{feed_name}</p>
                         </Link>
                         <div className="error-message">{errorMessage}</div>

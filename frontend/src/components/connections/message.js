@@ -33,7 +33,7 @@ const Message = ({ canRemove, deleteMessage, isGroup, isOutgoing, isRead, messag
             <div className="message-content">
                 {!isOutgoing && message.feed && isGroup && (
                     <Link to={`/u/${message.feed.feed_name}`}>
-                        <img className="small-feed-photo" src={`/${message.feed.feed_photo}`} alt="Feed" />
+                        <img className="small-feed-photo" src={`/${message.feed.feed_photo}`} onError={(e) => e.currentTarget.src = '/media/site_images/blank-profile.png'} />
                     </Link>
                 )}
                 {canRemove ? (

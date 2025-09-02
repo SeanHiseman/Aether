@@ -169,7 +169,7 @@ const ConnectionsPage = () => {
 									<li key={c.connection_id}>
 										<div className="result-widget">
 											<Link className="feed-link" to={`/u/${c.feed_name}`}>
-												<img className="large-feed-photo" src={`/${c.feed_photo}`} alt="Feed" />
+												<img className="large-feed-photo" src={`/${c.feed_photo}`} onError={(e) => e.currentTarget.src = '/media/site_images/blank-profile.png'} />
 												<p className="text36 feed-name">{c.feed_name}</p>
 											</Link>
 											<div className="remove-connection-box">
@@ -188,7 +188,7 @@ const ConnectionsPage = () => {
 								<li key={index}>
 									<div className="result-widget">
 										<Link className="feed-link" to={`/u/${request.sender.feed_name}`}>
-											<img className="large-feed-photo" src={`/${request.sender.feed_photo}`} alt="Profile" />
+											<img className="large-feed-photo" src={`/${request.sender.feed_photo}`} onError={(e) => e.currentTarget.src = '/media/site_images/blank-profile.png'} />
 											<p className="text36 feed-name">{request.sender.feed_name}</p>
 										</Link>
 										<ManageConnectionButton connectRequest={request} feed={request.sender} isConnected={false} onRequestUpdate={handleRequestUpdate} viewerId={viewer.feed_id} />

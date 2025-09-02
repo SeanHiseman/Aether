@@ -27,7 +27,8 @@ const DeepFeedItem = ({ deepFeed, onFeedAdded, showHeader }) => {
 		try {
 			const { data } = await axios.get(`/api/deep_feed_contents/${deepFeed.deep_feed_id}`);
 			setContents(data.contents || []);
-		} catch {
+		} catch (error) {
+			setErrorMessage(error.response?.data?.message || 'Failed to load deep feed contents.');
 			setContents([]);
 		} finally {
 			setLoading(false);
@@ -51,21 +52,26 @@ const DeepFeedItem = ({ deepFeed, onFeedAdded, showHeader }) => {
 	}, [deepFeed.deep_feed_id, onFeedAdded]);
 
 	const handleAddFeed = useCallback((feed) => {
-		if (feed.type === 'UPDATE_CONTENTS') {
-			fetchContents();
-			return;
+		try {
+			if (feed.type === 'UPDATE_CONTENTS') {
+				fetchContents();
+				return;
+			}
+			setContents(prev => {
+				if (prev.some(item => item.feed && item.feed.feed_id === feed.feed_id)) return prev;
+				return [...prev, {
+					feed: {
+						feed_id: feed.feed_id,
+						feed_name: feed.feed_name,
+						feed_photo: feed.feed_photo,
+						is_group: feed.is_group
+					}
+				}];
+			});
+		} catch (error) {
+			setErrorMessage('Failed to add feed to deep feed.');
+			setTimeout(() => setErrorMessage(''), 5000);
 		}
-		setContents(prev => {
-			if (prev.some(item => item.feed && item.feed.feed_id === feed.feed_id)) return prev;
-			return [...prev, {
-				feed: {
-					feed_id: feed.feed_id,
-					feed_name: feed.feed_name,
-					feed_photo: feed.feed_photo,
-					is_group: feed.is_group
-				}
-			}];
-		});
 	}, []);
 
 	const handleExpand = useCallback((e) => {

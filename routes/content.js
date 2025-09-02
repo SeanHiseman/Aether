@@ -2,6 +2,7 @@ import { ApplyAlgorithm } from '../custom_algorithms/applyAlgorithm.js';
 import authenticateCheck from '../functions/checks/authenticateCheck.js';
 import deleteMedia from '../functions/media_handling/deleteMedia.js';
 import cheerio from 'cheerio';
+import ContentAnalyser from '../functions/contentAnalyser.js';
 import dotenv from 'dotenv';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
@@ -21,8 +22,9 @@ const __dirname = path.dirname(__filename);
 const buildsDir = path.join(process.cwd(), process.env.APP_BUILD_DIR);
 const mediaDir = path.join(__dirname, '..', 'media', 'content');
 const feedAttributes = ['feed_id', 'parent_id', 'feed_name', 'description', 'feed_photo', 'follower_count', 'created_at', 'updated_at', 'type', 'is_group', 'feed_owner', 'is_locked'];
-const noteAttributes = ['note_id', 'note_content', 'created_at', 'updated_at', 'is_misinfo']
-const postAttributes = ['post_id', 'parent_id', 'feed_id', 'channel_id', 'title', 'content', 'replies', 'views', 'upvotes', 'downvotes', 'created_at', 'updated_at', 'poster_id']
+const noteAttributes = ['note_id', 'note_content', 'created_at', 'updated_at', 'is_misinfo'];
+const postAttributes = ['post_id', 'parent_id', 'feed_id', 'channel_id', 'title', 'content', 'replies', 'views', 'upvotes', 'downvotes', 'created_at', 'updated_at', 'poster_id'];
+const contentAnalyser = new ContentAnalyser();
 const router = Router();
 if (!fs.existsSync(mediaDir)) fs.mkdirSync(mediaDir, { recursive: true });
 const calculateFileSizes = files => files.reduce((total, file) => total + file.size, 0) / (1024 * 1024);
@@ -49,7 +51,7 @@ const checkStorageLimit = async (req, res, next) => {
 
 router.get('/channel_posts', async (req, res) => {
 	try {
-		const { channelId, excludedPostIds, feedId, isMain, isSingle, limit, offset, postId } = req.query;
+		const { channelId, excludedPostIds, feedId, isGroup, isMain, isSingle, limit, offset, postId } = req.query;
 		const saverId = req.session.viewer_id;
 		const userId = req.session.user_id;
 		const includeOptions = [{
@@ -95,7 +97,7 @@ router.get('/channel_posts', async (req, res) => {
 			singlePost.dataValues.is_saved = Boolean(existing);
 			return res.status(200).json({ success: true, post: singlePost });
 		}
-		const results = await ApplyAlgorithm({locationId: channelId, excludedPostIds, feedId, includeOptions, isMain, limit, offset, saverId, userId});
+		const results = await ApplyAlgorithm({locationId: channelId, excludedPostIds, feedId, includeOptions, isGroup, isMain, limit, offset, saverId, userId});
 		if (!results.length) return res.status(200).json([]);
 		return res.status(200).json(results);
 	} catch (error) {
@@ -260,7 +262,7 @@ router.post('/create_post', authenticateCheck, checkStorageLimit, postUpload.arr
         if (req.files && req.files.length > 0) {
             const totalFileSize = calculateFileSizes(req.files);
             const user = req.currentUser;
-            const maxStorage = user.has_membership ? 100 * 1024 : 100; //100GB for members, 100MB for non-members
+            const maxStorage = user.has_membership ? 100 * 1024 : 100;
             if (user.storage_count + totalFileSize > maxStorage) {
                 req.files.forEach(file => {
                     fs.unlinkSync(path.join(mediaDir, file.filename));
@@ -290,22 +292,36 @@ router.post('/create_post', authenticateCheck, checkStorageLimit, postUpload.arr
             });
         }
         const modifiedContent = $.html();
-        const post = await Posts.create({ channel_id, content: modifiedContent, feed_id, parent_id, post_id, poster_id, title });
-        if (parent_id) { //parent_id means post is a reply
+        console.log('Analyzing content for algorithmic features...');
+        const analysisResults = contentAnalyser.analyseContent(modifiedContent, title);
+        const postData = {
+            channel_id, 
+            content: modifiedContent, 
+            feed_id, 
+            parent_id, 
+            post_id, 
+            poster_id, 
+            title,
+            ...analysisResults 
+        };
+        const post = await Posts.create(postData);
+        if (parent_id) {
             const parentPost = await Posts.findOne({ where: { post_id: parent_id } });
             if (parentPost) {
                 parentPost.replies += 1;
                 await parentPost.save();
             }
         }
+        console.log("post:", post)
         return res.status(200).json({ success: true, post });
     } catch (error) {
+        console.error('Error creating post with analysis:', error);
         if (req.files && req.files.length > 0) {
             req.files.forEach(file => {
                 try {
                     fs.unlinkSync(path.join(mediaDir, file.filename));
-                } catch (error) {
-                    return res.status(500).json({ success: false, error: error.message });
+                } catch (cleanupError) {
+                    console.error('Error cleaning up file:', cleanupError);
                 }
             });
         }
@@ -377,77 +393,53 @@ router.post('/edit_post', authenticateCheck, checkStorageLimit, postUpload.array
 router.get("/explore_posts", async (req, res) => {
     try {
         const { exclude = [] } = req.query;
+        const excludeArray = Array.isArray(exclude) ? exclude : exclude.split(',').filter(Boolean);
         const saverId = req.session.viewer_id;
         const userId = req.session.viewer_id;
         const limit = parseInt(req.query.limit, 10) || 6;
         const offset = parseInt(req.query.offset, 10) || 0;
-        const publicFeeds = await Feeds.findAll({
-            where: {
-                type: { [Op.ne]: "private" }
-            },
-            attributes: ['feed_id']
-        });
-        if (publicFeeds.length === 0) {
-            return res.status(200).json({ posts: [], hasMore: false });
-        }
-        const feedIds = publicFeeds.map(feed => feed.feed_id);
-        let allPosts = [];
-        const feedsToCheck = feedIds.slice(0, 10); 
-        for (const feedId of feedsToCheck) {
-            const includeOptions = [{
-                model: Feeds,
-                as: "poster",
+        const includeOptions = [{
+            model: Feeds,
+            as: "poster",
+            attributes: feedAttributes,
+        },{
+            model: FeedChannels,
+            as: "parentChannel",
+            attributes: ["channel_id", "channel_name"],
+            include: [{
                 attributes: feedAttributes,
-            },{
-                model: FeedChannels,
-                as: "parentChannel",
-                attributes: ["channel_id", "channel_name"],
-                include: [{
-                    attributes: feedAttributes,
-                    model: Feeds,
-                    required: true,
-                    where: {
-                        type: {
-							[Op.ne]: "private" //Excludes posts in private feeds
-                        }
+                model: Feeds,
+                required: true,
+                where: {
+                    type: {
+                        [Op.ne]: "private"
                     }
-                }],
-                required: true
-            },{
-                model: PostNotes,
-                as: "note",
-                attributes: noteAttributes,
-                required: false,
-            },{
-                model: PostVotes,
-                as: "votes",
-                attributes: ["upvotes", "downvotes"],
-                required: false,
-            }];
-            const excludedPostIds = Array.isArray(exclude) ? exclude.join(',') : (exclude || '').toString();
-            const posterExclude = saverId ? (excludedPostIds ? `${excludedPostIds},${saverId}` : saverId.toString()) : excludedPostIds;
-            const feedPosts = await ApplyAlgorithm({
-                locationId: 'explore',
-                excludedPostIds: posterExclude,
-                feedId: feedId,
-                includeOptions: includeOptions,
-                isMain: 'false',
-                limit: Math.ceil(limit / feedsToCheck.length),
-                offset: 0,
-                saverId: saverId,
-                userId: userId
-            });
-            
-            allPosts.push(...feedPosts);
-        }
-        allPosts.sort((a, b) => {
-            if (b.score !== undefined && a.score !== undefined && b.score !== a.score) {
-                return b.score - a.score;
-            }
-            return new Date(b.created_at) - new Date(a.created_at);
+                }
+            }],
+            required: true
+        },{
+            model: PostNotes,
+            as: "note",
+            attributes: noteAttributes,
+            required: false,
+        },{
+            model: PostVotes,
+            as: "votes",
+            attributes: ["upvotes", "downvotes"],
+            required: false,
+        }];
+        const posts = await ApplyAlgorithm({
+            locationId: 'explore',
+            excludedPostIds: excludeArray,
+            feedId: null,
+            includeOptions: includeOptions,
+            isMain: 'false',
+            limit: limit,
+            offset: offset,
+            saverId: saverId,
+            userId: userId
         });
-        const finalPosts = allPosts.slice(offset, offset + limit);
-        res.status(200).json({ posts: finalPosts, hasMore: allPosts.length > offset + limit });
+        res.status(200).json({ posts: posts, hasMore: posts.length === limit });
     } catch (error) {
         console.error("Error in /explore_posts:", error);
         res.status(500).json({ success: false, error: error.message });

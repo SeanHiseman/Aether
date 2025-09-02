@@ -9,7 +9,6 @@ import BaseLayout from './pages/base';
 import ChatPage from './pages/connections/chatPage';
 import ConnectionsPage from './pages/connections/connectionsPage';
 import Content from './pages/welcome/content';
-import ThumbnailRouter from './components/content/thumbnails/thumbnailRouter';
 import ContentWidget from './components/content/contentWidget';
 import DeepFeed from './pages/deepFeed';
 import EmailVerification from './pages/site_entrance/verification';
@@ -121,7 +120,6 @@ const App = () => {
 										<Route path=":post_id" element={<ContentWidget />} />
 									</Route>
 								</Route>
-								<Route path="thumbnail/:post_id" element={<ThumbnailRouter />} />
 								<Route path="*" element={<NotFound />} />
 							</Route>
 						</Routes>

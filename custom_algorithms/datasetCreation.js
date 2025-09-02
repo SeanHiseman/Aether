@@ -87,8 +87,8 @@ function generatePost(topic) {
 
 async function generateData() {
 	try {
-		const NUM_FEEDS = 750;
-		const POSTS_PER_CHANNEL = 100;
+		const NUM_FEEDS = 75;
+		const POSTS_PER_CHANNEL = 10;
 		const feedsData = [];
 		const channelsData = [];
 		const postsData = [];
@@ -119,7 +119,7 @@ async function generateData() {
 			const mainChannelId = generateSpecialId();
 			channelsData.push({
 				channel_id: mainChannelId,
-				channel_name: 'Main Channel',
+				channel_name: 'Main',
 				feed_id: feedId,
 				is_posts: true,
 				is_chat: false

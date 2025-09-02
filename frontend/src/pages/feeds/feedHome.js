@@ -396,7 +396,7 @@ const FeedHome = () => {
             <aside className={rightClasses}>
                 <div id="feed-summary">
                     <Link to={`/${urlLetter}/${feed_name}/Main`}>
-                        <img className="large-feed-photo" src={`/${feed.feed_photo}`} alt={feed.feed_name} />
+                        <img className="large-feed-photo" src={`/${feed.feed_photo}`} onError={(e) => e.currentTarget.src = '/media/site_images/blank-profile.png'} />
                     </Link>
                     <div className="feed-name">
                         <Link to={`/${urlLetter}/${feed_name}/Main`}>

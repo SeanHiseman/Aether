@@ -105,7 +105,6 @@ const ALGORITHM_TEMPLATES = {
         chronology: "newest",
         sentiment: 0,
         variety: 0.9,
-        voteImpact: 1,
         wordBoost: "breaking,news,update,urgent,developing,alert",
         wordSuppress: "rumor,unconfirmed",
         customInstruction: "Show me the latest breaking news and current events. Prioritize recent, verified news updates and urgent developments. Suppress unconfirmed rumors."
@@ -115,7 +114,6 @@ const ALGORITHM_TEMPLATES = {
         chronology: "newest",
         sentiment: 0.3,
         variety: 0.9,
-        voteImpact: 1,
         wordBoost: "tutorial,learn,how-to,guide,explain,education,course,lesson",
         wordSuppress: "clickbait,drama",
         customInstruction: "Focus on educational and learning content including tutorials, guides, and explanations. Boost helpful educational material while reducing clickbait and drama."
@@ -125,7 +123,6 @@ const ALGORITHM_TEMPLATES = {
         chronology: "mixed",
         sentiment: 0.6,
         variety: 0.9,
-        voteImpact: 1,
         wordBoost: "funny,meme,comedy,entertainment,viral,cute,amazing",
         wordSuppress: "serious,political,depressing",
         customInstruction: "Show entertaining and fun content that's light-hearted and positive. Prioritize funny, cute, and amazing content while filtering out serious or depressing material."
@@ -135,7 +132,6 @@ const ALGORITHM_TEMPLATES = {
         chronology: "newest",
         sentiment: 0.2,
         variety: 0.9,
-        voteImpact: 1,
         wordBoost: "career,professional,industry,business,networking,leadership,startup,innovation",
         wordSuppress: "personal,casual",
         customInstruction: "Focus on professional and career-related content. Show industry insights, business news, networking opportunities, and leadership content. Boost during business hours on weekdays."
@@ -145,7 +141,6 @@ const ALGORITHM_TEMPLATES = {
         chronology: "newest",
         sentiment: 0.8,
         variety: 0.9,
-        voteImpact: 1,
         wordBoost: "positive,inspiration,motivation,success,achievement,grateful,happiness,love",
         wordSuppress: "negative,problem,crisis,drama,toxic",
         customInstruction: "Show only positive, uplifting, and motivational content. Strongly suppress negative, toxic, or crisis-related content. Focus on inspiration, success stories, and happiness."
@@ -155,7 +150,6 @@ const ALGORITHM_TEMPLATES = {
         chronology: "newest",
         sentiment: 0.1,
         variety: 0.9,
-        voteImpact: 1,
         wordBoost: "technology,AI,innovation,startup,coding,software,digital,tech",
         wordSuppress: "outdated,legacy",
         customInstruction: "Focus on the latest technology trends and innovations. Prioritize AI, software development, digital innovation, and startup news. Suppress outdated or legacy technology content."
@@ -165,7 +159,6 @@ const ALGORITHM_TEMPLATES = {
         chronology: "newest",
         sentiment: 0.3,
         variety: 0.9,
-        voteImpact: 1,
         wordBoost: "sports,fitness,workout,training,athlete,game,team,health",
         wordSuppress: "",
         customInstruction: "Focus on sports, fitness, and health content. Show sports updates, workout tips, training advice, and athletic content. Boost content especially on weekends for game days."
@@ -175,7 +168,6 @@ const ALGORITHM_TEMPLATES = {
         chronology: "mixed",
         sentiment: 0.4,
         variety: 0.9,
-        voteImpact: 1,
         wordBoost: "art,creative,design,music,artist,painting,photography,inspiration",
         wordSuppress: "",
         customInstruction: "Show creative and artistic content including art, design, music, and photography. Prioritize visual content and creative inspiration from artists and designers."
@@ -185,7 +177,6 @@ const ALGORITHM_TEMPLATES = {
         chronology: "oldest",
         sentiment: 0,
         variety: 0.9,
-        voteImpact: 1,
         wordBoost: "analysis,research,study,insight,deep,detailed,comprehensive",
         wordSuppress: "quick,brief,summary",
         customInstruction: "Focus on long-form, analytical content perfect for deep reading sessions. Prioritize research, detailed analysis, and comprehensive studies. Suppress quick tips and brief summaries."

@@ -481,7 +481,7 @@ const BaseLayout = () => {
                     <div className="left-aside-feed-info">
                         {isAuthenticated && (
                             <><Link className="feed-link" to={`/u/${feed.feed_name}`}>
-                                <img className="small-feed-photo" src={`/${feed.feed_photo}`} alt="Feed" />
+                                <img className="small-feed-photo" src={`/${feed.feed_photo}`} onError={(e) => e.currentTarget.src = '/media/site_images/blank-profile.png'} />
                                 <p className="feed-list-text">{feed.feed_name}</p>
                             </Link>
                             <Link className="small-icon" to={`/settings/${feed.feed_name}`} title="Settings">

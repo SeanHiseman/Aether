@@ -12,8 +12,8 @@ const AppBuilds = sequelize.define('app_builds', {
 
 const Posts = sequelize.define('posts', {
     post_id: { type: STRING(36), primaryKey: true },
-    parent_id: { type: STRING(36), allowNull: true }, 
-    feed_id: { type: STRING(36), allowNull: false }, 
+    parent_id: { type: STRING(36), allowNull: true },
+    feed_id: { type: STRING(36), allowNull: false },
     channel_id: { type: STRING(36), allowNull: false },
     title: { type: STRING(120), allowNull: true },
     content: { type: TEXT, allowNull: false },
@@ -24,7 +24,37 @@ const Posts = sequelize.define('posts', {
     created_at: { type: DataTypes.DATE(3), defaultValue: sequelize.literal('CURRENT_TIMESTAMP(3)') },
     updated_at: { type: DataTypes.DATE(3), defaultValue: sequelize.literal('CURRENT_TIMESTAMP(3)') },
     poster_id: { type: STRING(36), allowNull: false },
-}, { tableName: 'posts', timestamps: false, indexes: [{ fields: ['channel_id'] }] });
+    text_body: { type: TEXT, allowNull: true },
+    text_length: { type: INTEGER, defaultValue: 0 }, //Character count
+    word_count: { type: INTEGER, defaultValue: 0 }, 
+    video_length: { type: INTEGER, defaultValue: 0 },
+    sentence_count: { type: INTEGER, defaultValue: 0 },
+    has_images: { type: BOOLEAN, defaultValue: false },
+    has_videos: { type: BOOLEAN, defaultValue: false },
+    has_interactive: { type: BOOLEAN, defaultValue: false },
+    has_text: { type: BOOLEAN, defaultValue: false },
+    image_count: { type: INTEGER, defaultValue: 0 },
+    video_count: { type: INTEGER, defaultValue: 0 },
+    sentiment_score: { type: FLOAT, defaultValue: 0.0 }, 
+    tokens: { type: TEXT, allowNull: true }, 
+    bigrams: { type: TEXT, allowNull: true }, 
+    trigrams: { type: TEXT, allowNull: true }, 
+    keywords: { type: TEXT, allowNull: true },
+    language: { type: STRING(20), defaultValue: 'en' },
+    term_frequencies: { type: TEXT, allowNull: true }, 
+    feature_hash: { type: STRING(64), allowNull: true }, 
+}, {
+    tableName: 'posts',
+    timestamps: false,
+    indexes: [
+        { fields: ['channel_id'] },
+        { fields: ['feed_id'] },
+        { fields: ['has_images', 'has_videos', 'has_interactive'] },
+        { fields: ['sentiment_score'] },
+        { fields: ['created_at'] }, 
+        { fields: ['feature_hash'] }
+    ]
+});
 
 const PostDrafts = sequelize.define('post_drafts', {
     draft_id: { type: STRING(36), primaryKey: true },

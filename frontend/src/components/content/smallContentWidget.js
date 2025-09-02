@@ -9,27 +9,27 @@ import useTimeAgo from '../../useTimeAgo';
 
 const SmallContentWidget = ({ post }) => {
     const [downvoteLimit, setDownvoteLimit] = useState(false);
-    const [downvotes, setDownvotes] = useState(post.downvotes);
+    const [downvotes, setDownvotes] = useState(post?.downvotes);
     const { post_id } = useParams();
     const fullscreenRef = useRef(null);
     const [hasCodeOrApp, setHasCodeOrApp] = useState(false); //To prevent images and text having the fullscreen button
     const [hasViewed, setHasViewed] = useState(false);
     const [isFullscreenMode, setIsFullscreenMode] = useState(false)
     const [isOverflowing, setIsOverflowing] = useState(false);
-    const [isSaved, setIsSaved] = useState(post.is_saved);
+    const [isSaved, setIsSaved] = useState(post?.is_saved);
     const navigate = useNavigate();
     const [postErrorMessage, setPostErrorMessage] = useState('');
     const [savedText, setSavedText] = useState('');
     const [showFullContent, setShowFullContent] = useState(false);
     const [upvoteLimit, setUpvoteLimit] = useState(false);
-    const [upvotes, setUpvotes] = useState(post.upvotes);
-    const [views, setViews] = useState(post.views);
+    const [upvotes, setUpvotes] = useState(post?.upvotes);
+    const [views, setViews] = useState(post?.views);
     const { isAuthenticated, viewer, user } = useContext(AuthContext);
-    const channelName = post.parentChannel?.channel_name;
-    const feedName = post.parentChannel?.feed?.feed_name;
-    const isViewingOwnPost = post.poster_id === viewer?.feed_id;
-    const timeAgo = useTimeAgo(post.created_at);
-    const urlPrefix = (post.parentChannel?.feed?.is_group) ? 'g' : 'u';
+    const channelName = post?.parentChannel?.channel_name;
+    const feedName = post?.parentChannel?.feed?.feed_name;
+    const isViewingOwnPost = post?.poster_id === viewer?.feed_id;
+    const timeAgo = useTimeAgo(post?.created_at || null);
+    const urlPrefix = (post?.parentChannel?.feed?.is_group) ? 'g' : 'u';
 
     const handleLoginRedirect = () => {
         if (window.confirm ('Login to vote.')) {
@@ -39,9 +39,9 @@ const SmallContentWidget = ({ post }) => {
 
     const incrementViews = useCallback(
         async (postId) => {
-            if (!isAuthenticated) return; //Only count views if user is logged in
+            if (!isAuthenticated || !postId || !viewer?.feed_id) return; 
             try {
-                if (!hasViewed && (!isAuthenticated || (isAuthenticated && viewer?.feed_id !== post.poster_id))) {
+                if (!hasViewed && viewer?.feed_id !== post?.poster_id) {
                     const response = await axios.post('/api/increment_views', { postId });
                     if (response.data.success) {
                         setViews((prev) => prev + 1);
@@ -53,20 +53,20 @@ const SmallContentWidget = ({ post }) => {
                 setTimeout(() => setPostErrorMessage(""), 3000);
             }
         },
-        [hasViewed, post.poster_id, viewer?.feed_id]
+        [hasViewed, post?.poster_id, viewer?.feed_id, isAuthenticated]
     );
 
     const postVote = async (postId, voteType) => {
-        if (!isAuthenticated) return;
+        if (!isAuthenticated || !postId || !viewer?.feed_id || !voteType) return;
         try {
             const response = await axios.post('/api/content_vote', {
-                postId: postId,
+                postId,
                 feedId: viewer.feed_id,
                 voteType,
             });
             if (response.data.success) {
-                setUpvotes(response.data.upvotes);
-                setDownvotes(response.data.downvotes);
+                setUpvotes(response.data.upvotes ?? 0);
+                setDownvotes(response.data.downvotes ?? 0);
                 setUpvoteLimit(response.data.reachedUpvoteLimit);
                 setDownvoteLimit(response.data.reachedDownvoteLimit);
             } else {
@@ -79,45 +79,47 @@ const SmallContentWidget = ({ post }) => {
             if (!hasViewed) {
                 await incrementViews(postId);
             }
-        } catch {
-            setPostErrorMessage('Error voting');
+        } catch (error){
+            setPostErrorMessage(error.response?.data?.error || 'Error voting');
             setTimeout(() => setPostErrorMessage(""), 3000);
         }
     };
   
     const savePost = async () => {
+        const channelId = post?.parentChannel?.channel_id;
+        const feedId = viewer?.feed_id;
+        const postId = post?.post_id;
+        if (!channelId || !feedId || !postId) {
+            setSavedText('Error saving post');
+            setTimeout(() => setSavedText(""), 3000);
+            return;
+        }
         try {
             if (isSaved) {
                 await axios.delete('/api/remove_saved_post', {
-                    data: {
-                        channelId: post.parentChannel.channel_id,
-                        feedId: viewer.feed_id,
-                        postId: post.post_id
-                    }
+                    data: { channelId, feedId, postId }
                 });
             } else {
                 await axios.post('/api/save_post', {
-                    channelId: post.parentChannel.channel_id,
-                    feedId: viewer.feed_id,
-                    postId: post.post_id
+                    channelId, feedId, postId
                 });
             }
             setIsSaved(!isSaved);
             setSavedText(isSaved ? "Unsaved" : "Saved");
             setTimeout(() => setSavedText(""), 3000);
         } catch (error) {
-            setSavedText('Error');
+            setSavedText(error.response?.data?.error || 'Error saving post');
             setTimeout(() => setSavedText(""), 3000);
         }
     };
 
     useEffect(() => {
-        if (!isAuthenticated) return;
+        if (!isAuthenticated || !post?.post_id || !viewer?.feed_id) return;
         const checkVoteLimit = async () => {
             try {
                 const response = await axios.post('/api/content_vote', {
                     postId: post.post_id,
-                    feedId: viewer?.feed_id,
+                    feedId: viewer.feed_id,
                     voteType: 'check_vote',
                 });
                 if (response.data.success) {
@@ -125,11 +127,12 @@ const SmallContentWidget = ({ post }) => {
                     setDownvoteLimit(response.data.reachedDownvoteLimit);
                 }
             } catch (error) { 
-                setPostErrorMessage('Error checking vote limit');
+                setPostErrorMessage(error.response?.data?.error || 'Error checking vote limit');
+                setTimeout(() => setPostErrorMessage(""), 3000);
             }
         };
         checkVoteLimit();
-    }, [isAuthenticated, post.post_id, viewer?.feed_id]);
+    }, [isAuthenticated, post?.post_id, viewer?.feed_id]);
 
     const toggleFullscreen = () => {
         const element = fullscreenRef.current
@@ -220,7 +223,7 @@ const SmallContentWidget = ({ post }) => {
             <div className="content-metadata">
                 <div className="feed-info">
                     <Link className="feed-link" onClick={() => incrementViews(post.post_id)} to={`/u/${post.poster?.feed_name}`}>
-                        <img className="small-feed-photo" src={`/${post.poster?.feed_photo}`} alt={'/media/site_images/blank-profile.png'} />
+                        <img className="small-feed-photo" src={`/${post.poster?.feed_photo}`} onError={(e) => e.currentTarget.src = '/media/site_images/blank-profile.png'} />
                         <p className="feed-list-text">{post.poster?.feed_name ?? 'Anonymous'}</p>
                     </Link>
                 </div>

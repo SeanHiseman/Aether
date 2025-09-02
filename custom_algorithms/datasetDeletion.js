@@ -1,11 +1,15 @@
 import sequelize from '../databaseSetup.js';
-import { Feeds, FeedChannels, Posts, PostVotes, Users, ViewedPosts } from '../models/relationships.js';
+import { Feeds, FeedChannels, Posts, PostVotes, SavedPosts, Users, ViewedPosts } from '../models/relationships.js';
 import { Op } from 'sequelize';
 
 async function cleanupTestData() {
 	try {
         await sequelize.transaction(async (t) => {
             await PostVotes.destroy({
+                where: { post_id: { [Op.like]: '111111111111%' } },
+                transaction: t
+            });
+            await SavedPosts.destroy({
                 where: { post_id: { [Op.like]: '111111111111%' } },
                 transaction: t
             });

@@ -82,6 +82,7 @@ const parseContentBlocks = htmlString => {
 				result.push({
 					data: {
 						align,
+                        duration: video.getAttribute('data-duration') || null,
 						file: null,
 						fileType: source?.getAttribute('type') || '',
 						isImage: false,
@@ -239,7 +240,6 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onEdit
         formData.append('build', file)
         try {
             const { data } = await axios.post('/api/upload_build', formData)
-            console.log("app upload data:", data);
             if (data.success) {
                 updateBlock({
                     id: blockId,
@@ -257,7 +257,6 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onEdit
                 setTimeout(() => setPostErrorMessage(''), 5000)
             }
         } catch (error) {
-            console.log("app upload fail error:", error);
             setPostErrorMessage(error.response?.data?.message || 'App upload failed.')
             setTimeout(() => setPostErrorMessage(''), 5000)
         }
@@ -388,6 +387,7 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onEdit
                             ` data-blockid="${block.id}"` +
                             ` data-align="${align}">` +
                             `<video controls` +
+                            `${block.data.duration ? ` data-duration="${block.data.duration}"` : ''}` +
                             ` style="max-width:100%;height:auto;display:${align==='center'?'block':'inline'};margin:${align==='center'?'0 auto':''}">` +
                             `<source src="${url}" type="${fileType}" />` +
                             `</video></div>`
@@ -581,13 +581,63 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onEdit
             const uniqueName = `${Date.now()}-${v4()}${ext}`
             return new File([file], uniqueName, { type: file.type })
         })
-        const mediaBlocks = uniqueFiles.map(file => ({
-            data: { file, fileType: file.type, isImage: file.type.startsWith('image/'), isVideo: file.type.startsWith('video/'), url: URL.createObjectURL(file), align: 'center' },
-            id: v4(),
-            isEditing: false,
-            type: BLOCK_TYPES.MEDIA
-        }))
-        setBlocks(prev => [...prev, ...mediaBlocks])
+        uniqueFiles.forEach(file => {
+            const blockId = v4()
+            const url = URL.createObjectURL(file)
+            if (file.type.startsWith('video/')) {
+                const video = document.createElement('video')
+                video.preload = 'metadata'
+                video.onloadedmetadata = function() {
+                    const duration = video.duration
+                    setBlocks(prev => [...prev, {
+                        data: { 
+                            file, 
+                            fileType: file.type, 
+                            isImage: false, 
+                            isVideo: true, 
+                            url, 
+                            align: 'center',
+                            duration: duration //Duration in seconds
+                        },
+                        id: blockId,
+                        isEditing: false,
+                        type: BLOCK_TYPES.MEDIA
+                    }])
+                    URL.revokeObjectURL(url)
+                }
+                video.onerror = function() {
+                    setBlocks(prev => [...prev, {
+                        data: { 
+                            file, 
+                            fileType: file.type, 
+                            isImage: false, 
+                            isVideo: true, 
+                            url, 
+                            align: 'center',
+                            duration: null
+                        },
+                        id: blockId,
+                        isEditing: false,
+                        type: BLOCK_TYPES.MEDIA
+                    }])
+                }
+                video.src = url
+            } else {
+                setBlocks(prev => [...prev, {
+                    data: { 
+                        file, 
+                        fileType: file.type, 
+                        isImage: file.type.startsWith('image/'), 
+                        isVideo: false, 
+                        url, 
+                        align: 'center' 
+                    },
+                    id: blockId,
+                    isEditing: false,
+                    type: BLOCK_TYPES.MEDIA
+                }])
+            }
+        })
     }, [MAX_FILE_SIZE, BLOCK_LIMIT, blocks.length, hasMembership])
 
     const onDragEnd = useCallback(result => {

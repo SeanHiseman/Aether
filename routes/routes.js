@@ -59,51 +59,39 @@ router.get('/search/:searcherId', async (req, res) => {
             }
             return response;
         }));
-        const publicFeeds = await Feeds.findAll({
-            where: { type: { [Op.ne]: 'private' } },
-            attributes: ['feed_id']
+        const includeOptions = [{
+            model: Feeds,
+            as: 'poster',
+            attributes: feedAttributes
+        }, {
+            model: PostNotes,
+            as: 'note',
+            attributes: notesAttributes
+        }, {
+            model: FeedChannels,
+            as: 'parentChannel',
+            attributes: ['channel_id', 'channel_name']
+        }, {
+            model: Feeds,
+            as: 'poster',
+            attributes: posterAttributes
+        }, {
+            model: PostVotes,
+            as: 'votes',
+            attributes: ['upvotes', 'downvotes']
+        }];
+        const allPosts = await ApplyAlgorithm({
+            locationId: 'search',
+            excludedPostIds: '',
+            feedId: null, //Not used when locationId is 'search'
+            includeOptions: includeOptions,
+            isMain: 'false',
+            limit: limit,
+            offset: offset,
+            saverId: searcherId,
+            userId: userId,
+            keyword: keyword
         });
-        let allPosts = [];
-        for (const feed of publicFeeds.slice(0, 20)) { 
-            const includeOptions = [{
-                model: Feeds,
-                as: 'poster',
-                attributes: feedAttributes
-            }, {
-                model: PostNotes,
-                as: 'note',
-                attributes: notesAttributes
-            }, {
-                model: FeedChannels,
-                as: 'parentChannel',
-                attributes: ['channel_id', 'channel_name']
-            }, {
-                model: Feeds,
-                as: 'poster',
-                attributes: posterAttributes
-            }, {
-                model: PostVotes,
-                as: 'votes',
-                attributes: ['upvotes', 'downvotes']
-            }];
-            const feedPosts = await ApplyAlgorithm({
-                locationId: 'search',
-                excludedPostIds: '',
-                feedId: feed.feed_id,
-                includeOptions: includeOptions,
-                isMain: 'false',
-                limit: Math.ceil(limit / Math.min(publicFeeds.length, 20)),
-                offset: 0,
-                saverId: searcherId,
-                userId: userId
-            });
-            const filteredPosts = feedPosts.filter(post => {
-                const titleMatch = post.title && post.title.toLowerCase().includes(keyword);
-                const contentMatch = post.text_body && post.text_body.toLowerCase().includes(keyword);
-                return titleMatch || contentMatch;
-            });
-            allPosts.push(...filteredPosts);
-        }
         allPosts.sort((a, b) => {
             const aInTitle = a.title && a.title.toLowerCase().includes(keyword);
             const bInTitle = b.title && b.title.toLowerCase().includes(keyword);
@@ -112,6 +100,7 @@ router.get('/search/:searcherId', async (req, res) => {
             return new Date(b.created_at) - new Date(a.created_at);
         });
         const processedPosts = allPosts.slice(offset, offset + limit);
+        console.log("processedPosts search route:", processedPosts);
         res.status(200).json({ feeds: feedData, posts: processedPosts, success: true });
     } catch (error) {
         console.error('Search error:', error);

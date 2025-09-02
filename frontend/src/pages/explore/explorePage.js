@@ -44,7 +44,7 @@ const ExplorePage = () => {
 		try {
 			console.log("fetching posts")
 			const response = await axios.get("/api/explore_posts", {
-				params: { filter, limit: FETCH_LIMIT, exclude: shownPostIds.join(',') },
+				params: { filter, limit: FETCH_LIMIT, exclude: shownPostIds },
 			});
 			console.log("fetched posts", response.data)
 			const newPosts = response.data.posts;

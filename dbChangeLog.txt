@@ -94,3 +94,30 @@ CREATE TABLE viewed_posts (
 
 ALTER TABLE posts
 ADD INDEX idx_channel_id (channel_id);
+
+ALTER TABLE posts
+	ADD COLUMN text_body TEXT NULL,
+	ADD COLUMN text_length INT DEFAULT 0,
+	ADD COLUMN word_count INT DEFAULT 0,
+	ADD COLUMN sentence_count INT DEFAULT 0,
+	ADD COLUMN has_images BOOLEAN DEFAULT FALSE,
+	ADD COLUMN has_videos BOOLEAN DEFAULT FALSE,
+	ADD COLUMN has_interactive BOOLEAN DEFAULT FALSE,
+	ADD COLUMN has_text BOOLEAN DEFAULT FALSE,
+	ADD COLUMN image_count INT DEFAULT 0,
+	ADD COLUMN video_count INT DEFAULT 0,
+	ADD COLUMN video_length FLOAT DEFAULT 0.0,
+	ADD COLUMN sentiment_score FLOAT DEFAULT 0.0,
+	ADD COLUMN tokens TEXT NULL,
+	ADD COLUMN bigrams TEXT NULL,
+	ADD COLUMN trigrams TEXT NULL,
+	ADD COLUMN keywords TEXT NULL,
+	ADD COLUMN `language` VARCHAR(20) DEFAULT 'en',
+	ADD COLUMN term_frequencies TEXT NULL,
+	ADD COLUMN feature_hash VARCHAR(64) NULL,
+CREATE INDEX idx_media_flags ON posts (has_images, has_videos, has_interactive);
+CREATE INDEX idx_sentiment ON posts (sentiment_score);
+CREATE INDEX idx_feature_hash ON posts (feature_hash);
+CREATE INDEX idx_composite_quality ON posts (created_at, sentiment_score);
+CREATE INDEX idx_video_content ON posts (has_videos, video_lengths);
+CREATE INDEX idx_text_analysis ON posts (word_count, text_length);

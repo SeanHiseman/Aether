@@ -1,35 +1,22 @@
 import { Algorithms, AlgorithmLocations } from "./algorithms.js";
-import { Followers, Posts, SavedPosts, ViewedPosts } from "../models/relationships.js";
-import cheerio from 'cheerio';
+import { DeepFeedContent, Feeds, Followers, Posts, SavedPosts, ViewedPosts } from "../models/relationships.js";
 import { Op } from 'sequelize';
-import Sentiment from 'sentiment';
 
 const postAttributes = ['post_id', 'parent_id', 'feed_id', 'channel_id', 'title', 'content', 'replies', 'views', 'upvotes', 'downvotes', 'created_at', 'updated_at', 'poster_id']
-const sentiment = new Sentiment();
 
-function analyseSentiment(htmlContent) {
-    if (!htmlContent) return 0;
-    const $ = cheerio.load(htmlContent);
-    $('script, style').remove();
-    const cleanText = $.text()
-        .trim()
-        .replace(/\s+/g, ' ') //Replace multiple whitespace with single space
-        .replace(/[^\w\s.,!?-]/g, '') //Remove special characters except basic punctuation
-        .toLowerCase();
-    if (!cleanText) return 0;
-    const result = sentiment.analyze(cleanText);
-    let normalisedScore = 0;
-    if (result.tokens.length > 0) {
-		const avgSentiment = result.score / result.tokens.length; //Sentiment per token
-		normalisedScore = Math.tanh(avgSentiment) //Normalise to range [-1, 1]
-    }
-    return normalisedScore;
-}
-
-async function ApplyAlgorithm({ locationId, excludedPostIds, feedId, includeOptions, isMain, limit, offset, saverId, userId, keyword = '' }) {
+async function ApplyAlgorithm({ locationId, excludedPostIds, feedId, includeOptions, isGroup = true, isMain, limit, offset, saverId, userId, keyword = '' }) {
     try {
         console.log("Applying algorithm for location:", locationId, "feedId:", feedId, "userId:", userId);
-        const excludedIds = excludedPostIds ? excludedPostIds.split(',') : [];
+        console.log("search keyword:", keyword);
+        let excludedIds = [];
+        if (excludedPostIds) {
+            if (Array.isArray(excludedPostIds)) {
+                excludedIds = excludedPostIds;
+            } else if (typeof excludedPostIds === 'string') {
+                excludedIds = excludedPostIds.split(',').map(id => id.trim()).filter(Boolean);
+            }
+        }
+        console.log("Excluded IDs:", excludedIds);
         let algorithm = {};
         let algorithmLocation = null;
         if (userId && locationId) {
@@ -53,6 +40,8 @@ async function ApplyAlgorithm({ locationId, excludedPostIds, feedId, includeOpti
             }
         }
         let posts = [];
+        const baseLimit = (limit ? parseInt(limit, 10) : 20) * 3;
+        const baseOffset = offset ? parseInt(offset, 10) : 0;
         if (locationId === 'search' && keyword) {
             const publicFeeds = await Feeds.findAll({
                 where: { type: { [Op.ne]: 'private' } },
@@ -67,11 +56,11 @@ async function ApplyAlgorithm({ locationId, excludedPostIds, feedId, includeOpti
                     post_id: { [Op.notIn]: excludedIds },
                     [Op.or]: [
                         { title: { [Op.like]: `%${keyword}%` } },
-                        { content: { [Op.like]: `%${keyword}%` } }
+                        { text_body: { [Op.like]: `%${keyword}%` } }
                     ]
                 },
-                limit: (limit ? parseInt(limit, 20) : 20) * 3,
-                offset: offset ? parseInt(offset, 20) : 0,
+                limit: baseLimit,
+                offset: baseOffset,
                 order: [['created_at', 'DESC']]
             });
         } else if (locationId === 'following' && userId) {
@@ -79,47 +68,49 @@ async function ApplyAlgorithm({ locationId, excludedPostIds, feedId, includeOpti
                 where: { follower_id: userId },
                 attributes: ['feed_id']
             });
+            
             if (followedFeeds.length === 0) return [];
-            const followedFeedIds = followedFeeds.map(f => f.feed_id);
+            
             posts = await Posts.findAll({
                 attributes: postAttributes,
                 include: includeOptions,
                 where: {
-                    feed_id: { [Op.in]: followedFeedIds },
+                    feed_id: { [Op.in]: followedFeeds.map(f => f.feed_id) },
                     parent_id: null,
                     post_id: { [Op.notIn]: excludedIds }
                 },
-                limit: (limit ? parseInt(limit, 20) : 20) * 3,
-                offset: offset ? parseInt(offset, 20) : 0,
+                limit: baseLimit,
+                offset: baseOffset,
                 order: [['created_at', 'DESC']]
             });
         } else if (locationId === 'explore') {
-            const { Feeds } = await import('../models/relationships.js');
             const publicFeeds = await Feeds.findAll({
                 where: { type: { [Op.ne]: 'private' } },
                 attributes: ['feed_id']
             });
+            
             posts = await Posts.findAll({
                 attributes: postAttributes,
                 include: includeOptions,
                 where: {
-                    feed_id: { [Op.in]: publicFeeds.map(f => f.feed_id).slice(0, 10) }, 
+                    feed_id: { [Op.in]: publicFeeds.map(f => f.feed_id) },
                     parent_id: null,
                     post_id: { [Op.notIn]: excludedIds }
                 },
-                limit: (limit ? parseInt(limit, 20) : 20) * 3,
-                offset: offset ? parseInt(offset, 20) : 0,
+                limit: baseLimit,
+                offset: baseOffset,
                 order: [['created_at', 'DESC']]
             });
         } else if (typeof locationId === 'string' && locationId.startsWith('deep_')) {
-            const { DeepFeedContent } = await import('../models/relationships.js');
             const getAllFeedIdsInDeepFeed = async (deepFeedId, visited = new Set()) => {
                 if (visited.has(deepFeedId)) return [];
                 visited.add(deepFeedId);
+                
                 const contents = await DeepFeedContent.findAll({
                     where: { deep_feed_id: deepFeedId },
                     attributes: ['feed_id', 'nested_deep_feed_id']
                 });
+                
                 const feedIds = [];
                 for (const content of contents) {
                     if (content.feed_id) {
@@ -143,8 +134,8 @@ async function ApplyAlgorithm({ locationId, excludedPostIds, feedId, includeOpti
                     parent_id: null,
                     post_id: { [Op.notIn]: excludedIds }
                 },
-                limit: (limit ? parseInt(limit, 20) : 20) * 3,
-                offset: offset ? parseInt(offset, 20) : 0,
+                limit: baseLimit,
+                offset: baseOffset,
                 order: [['created_at', 'DESC']]
             });
         } else {
@@ -154,20 +145,20 @@ async function ApplyAlgorithm({ locationId, excludedPostIds, feedId, includeOpti
                 parent_id: null,
                 post_id: { [Op.notIn]: excludedIds }
             };
-            const initialLimit = (limit ? parseInt(limit, 20) : 20) * 3;
             const { chronology = 'newest' } = algorithm;
             posts = await Posts.findAll({
                 attributes: postAttributes,
                 include: includeOptions,
-                limit: initialLimit,
-                offset: offset ? parseInt(offset, 20) : 0,
                 where: whereChannel,
+                limit: baseLimit,
+                offset: baseOffset,
                 order: [['created_at', chronology === 'oldest' ? 'ASC' : 'DESC']]
             });
         }
         if (!posts.length) return [];
-        if (!algorithmLocation) {
-            const selectionLimit = limit ? parseInt(limit, 20) : 20;
+        const selectionLimit = limit ? parseInt(limit, 10) : 20;
+        const shouldUseChronological = !isGroup || (algorithm.chronology === 1);
+        if (shouldUseChronological) {
             const paginated = posts.slice(0, selectionLimit);
             const ids = paginated.map(p => p.post_id);
             const savedRows = saverId ? await SavedPosts.findAll({
@@ -181,60 +172,98 @@ async function ApplyAlgorithm({ locationId, excludedPostIds, feedId, includeOpti
                 is_saved: savedSet.has(post.post_id)
             }));
         }
-        const { variety = 1, scoring = {}, rules = [] } = algorithm;
-        const evaluateCondition = (postContext, condition) => {
-            const { field, operator, value } = condition;
-            const { post, has_images, has_videos, has_text, text_body, post_time_str } = postContext;
-            let subject;
-            switch (field) {
-                case 'post_time': subject = post_time_str; break;
-                case 'body': subject = text_body; break;
-                case 'category': subject = post.category; break;
-                case 'sentiment_score': subject = post.sentiment; break;
-                case 'has_images': subject = has_images; break;
-                case 'has_videos': subject = has_videos; break;
-                case 'has_text': subject = has_text; break;
-                default: return false;
-            }
-            if (subject === undefined || subject === null) return false;
-            switch (operator) {
-                case 'AFTER': return subject > value;
-                case 'BEFORE': return subject < value;
-                case 'EQUALS': return subject === value;
-                case 'CONTAINS': return typeof subject === 'string' && subject.toLowerCase().includes(String(value).toLowerCase());
-                case 'CONTAINS_ANY': return Array.isArray(value) && typeof subject === 'string' && value.some(v => subject.toLowerCase().includes(String(v).toLowerCase()));
-                case 'GREATER_THAN': return subject > value;
-                case 'LESS_THAN': return subject < value;
-                default: return false;
-            }
-        };
+        if (!algorithmLocation && isGroup) {
+            const postsWithScores = posts.map(post => {
+                const totalVotes = (post.upvotes || 0) + (post.downvotes || 0);
+                const qualityScore = totalVotes > 0 ? (post.upvotes || 0) / totalVotes : 0.5;
+                const engagementScore = (post.views || 0) > 0 ? totalVotes / (post.views || 1) : 0;
+                const ageInHours = (Date.now() - new Date(post.created_at)) / (1000 * 60 * 60);
+                const timeScore = Math.exp(-ageInHours / 72);
+                const defaultScore = (qualityScore * 0.4) + (engagementScore * 0.4) + (timeScore * 0.2);
+                return {
+                    ...post.dataValues,
+                    score: defaultScore
+                };
+            });
+            postsWithScores.sort((a, b) => b.score - a.score);
+            const paginated = postsWithScores.slice(0, selectionLimit);
+            const ids = paginated.map(p => p.post_id);
+            const savedRows = saverId ? await SavedPosts.findAll({
+                attributes: ['post_id'],
+                raw: true,
+                where: { post_id: { [Op.in]: ids }, saver_id: saverId }
+            }) : [];
+            const savedSet = new Set(savedRows.map(s => s.post_id));
+            return paginated.map(post => ({
+                ...post,
+                is_saved: savedSet.has(post.post_id)
+            }));
+        }
+        const { variety = 1, scoring = {}, rules = [], contentType = { images: true, interactive: true, text: true, videos: true } } = algorithm;
         let processedPosts = [];
         for (const post of posts) {
-            const $ = cheerio.load(post.content || '');
-            $('script, style').remove();
+            if (contentType.images === false && post.has_images) continue;
+            if (contentType.interactive === false && post.has_interactive) continue;
+            if (contentType.text === false && post.has_text) continue;
+            if (contentType.videos === false && post.has_videos) continue;
             const createdAt = new Date(post.created_at);
-            const postContext = {
-                has_images: $('img').length > 0,
-                has_interactive: $('.content-block.code-block, .content-block.app-block, pre, iframe').length > 0,
-                has_text: $.text().trim().length > 0,
-                has_videos: $('video').length > 0,
-                post: post.dataValues,
-                post_time_str: `${String(createdAt.getHours()).padStart(2, '0')}:${String(createdAt.getMinutes()).padStart(2, '0')}`,
-                text_body: $.text().trim()
-            };
-            const { contentType = { images: true, interactive: true, text: true, videos: true } } = algorithm;
-            if (contentType.images === false && postContext.has_images) continue;
-            if (contentType.interactive === false && postContext.has_interactive) continue;
-            if (contentType.text === false && postContext.has_text) continue;
-            if (contentType.videos === false && postContext.has_videos) continue;
-            const sentimentScore = analyseSentiment(postContext.text_body);
-            post.dataValues.sentiment = sentimentScore;
+            const postTimeStr = `${String(createdAt.getHours()).padStart(2, '0')}:${String(createdAt.getMinutes()).padStart(2, '0')}`;
             let isSuppressed = false;
             let score = 0;
             for (const rule of rules) {
-                const conditionsMet = rule.conditions.every(cond => evaluateCondition(postContext, cond));
+                const conditionsMet = rule.conditions.every(condition => {
+                    const { field, operator, value } = condition;
+                    let subject;
+                    switch (field) {
+                        case 'post_time': subject = postTimeStr; break;
+                        case 'body': subject = post.text_body; break;
+                        case 'sentiment_score': subject = post.sentiment_score; break;
+                        case 'has_images': subject = post.has_images; break;
+                        case 'has_videos': subject = post.has_videos; break;
+                        case 'has_text': subject = post.has_text; break;
+                        default: return false;
+                    }
+                    if (subject === undefined || subject === null) return false;
+                    switch (operator) {
+                        case 'AFTER': return subject > value;
+                        case 'BEFORE': return subject < value;
+                        case 'EQUALS': return subject === value;
+                        case 'CONTAINS': 
+                            return typeof subject === 'string' && 
+                                   subject.toLowerCase().includes(String(value).toLowerCase());
+                        case 'CONTAINS_ANY': 
+                            return Array.isArray(value) && typeof subject === 'string' && 
+                                   value.some(v => subject.toLowerCase().includes(String(v).toLowerCase()));
+                        case 'GREATER_THAN': return subject > value;
+                        case 'LESS_THAN': return subject < value;
+                        default: return false;
+                    }
+                });
                 if (conditionsMet) {
-                    const exceptionMet = rule.exceptions?.some(exc => evaluateCondition(postContext, exc.condition));
+                    const exceptionMet = rule.exceptions?.some(exc => {
+                        const { field, operator, value } = exc.condition;
+                        let subject;
+                        switch (field) {
+                            case 'post_time': subject = postTimeStr; break;
+                            case 'body': subject = post.text_body; break;
+                            case 'sentiment_score': subject = post.sentiment_score; break;
+                            case 'has_images': subject = post.has_images; break;
+                            case 'has_videos': subject = post.has_videos; break;
+                            case 'has_text': subject = post.has_text; break;
+                            default: return false;
+                        }
+                        switch (operator) {
+                            case 'AFTER': return subject > value;
+                            case 'BEFORE': return subject < value;
+                            case 'EQUALS': return subject === value;
+                            case 'CONTAINS': 
+                                return typeof subject === 'string' && 
+                                       subject.toLowerCase().includes(String(value).toLowerCase());
+                            case 'GREATER_THAN': return subject > value;
+                            case 'LESS_THAN': return subject < value;
+                            default: return false;
+                        }
+                    });
                     if (exceptionMet) continue;
                     switch (rule.action.type) {
                         case 'SUPPRESS': isSuppressed = true; break;
@@ -245,31 +274,28 @@ async function ApplyAlgorithm({ locationId, excludedPostIds, feedId, includeOpti
                 if (isSuppressed) break;
             }
             if (isSuppressed) continue;
-            const { sentiment = 0, voteImpact = 0, wordBoost = [], wordSuppress = [] } = scoring;
-            if (wordBoost) wordBoost.forEach(item => {
-                if (postContext.text_body.toLowerCase().includes(item.word.toLowerCase()))
-                    score += item.value || 10;
-            });
-            if (wordSuppress) wordSuppress.forEach(item => {
-                if (postContext.text_body.toLowerCase().includes(item.word.toLowerCase()))
-                    score += item.value || -10;
-            });
-            if (sentiment !== undefined && typeof post.dataValues.sentiment === 'number') {
-                const sentimentDistance = Math.abs(post.dataValues.sentiment - sentiment);
-                score += (1 - sentimentDistance) * 10;
+            const { sentiment = 0, wordBoost = [], wordSuppress = [] } = scoring;
+            if (wordBoost) {
+                wordBoost.forEach(item => {
+                    if (post.text_body && post.text_body.toLowerCase().includes(item.word.toLowerCase())) {
+                        score += item.value || 10;
+                    }
+                });
             }
-            if (voteImpact && typeof post.dataValues.vote_impact === 'number') {
-                score = score * (post.upvotes / post.downvotes) * ((post.upvotes + post.downvotes) / post.views) * voteImpact;
+            if (wordSuppress) {
+                wordSuppress.forEach(item => {
+                    if (post.text_body && post.text_body.toLowerCase().includes(item.word.toLowerCase())) {
+                        score += item.value || -10;
+                    }
+                });
+            }
+            if (sentiment !== undefined && typeof post.sentiment_score === 'number') {
+                const sentimentDistance = Math.abs(post.sentiment_score - sentiment);
+                score += (1 - sentimentDistance) * 10;
             }
             processedPosts.push({
                 ...post.dataValues,
-                created_at: post.created_at,
-                has_images: postContext.has_images,
-                has_interactive: postContext.has_interactive,
-                has_text: postContext.has_text,
-                has_videos: postContext.has_videos,
-                score,
-                text_body: postContext.text_body
+                score
             });
         }
         processedPosts.sort((a, b) => {
@@ -279,70 +305,110 @@ async function ApplyAlgorithm({ locationId, excludedPostIds, feedId, includeOpti
             const { chronology = 'newest' } = algorithm;
             return chronology === 'oldest' ? dateA - dateB : dateB - dateA;
         });
-        const selectionLimit = limit ? parseInt(limit, 20) : 20;
-        const normalizeScores = (items) => {
-            const maxScore = Math.max(...items.map(i => i.score), 0);
-            return items.map(i => ({ ...i, normScore: maxScore > 0 ? i.score / maxScore : 0 }));
-        };
-        const getTokens = (text) => (String(text || '').toLowerCase().split(/\W+/).filter(Boolean));
-        const jaccardSimilarity = (aTokens, bTokens) => {
-            const aSet = new Set(aTokens);
-            const bSet = new Set(bTokens);
-            const intersection = [...aSet].filter(x => bSet.has(x)).length;
-            const unionSize = new Set([...aSet, ...bSet]).size;
-            return unionSize === 0 ? 0 : intersection / unionSize;
-        };
-        const similarityBetween = (p1, p2) => {
-            const textSim = jaccardSimilarity(getTokens(p1.text_body), getTokens(p2.text_body));
-            const mediaTypes = ['has_images', 'has_interactive', 'has_text', 'has_videos'];
-            let sameCount = 0;
-            for (const t of mediaTypes) if (p1[t] && p2[t]) sameCount++;
-            const mediaSim = sameCount / mediaTypes.length;
-            return 0.7 * textSim + 0.3 * mediaSim;
-        };
-        const mmrSelect = (candidates, k, varietyVal) => {
-            const candNorm = normalizeScores(candidates);
-            const selected = [];
-            while (selected.length < k && candNorm.length) {
-                if (!selected.length) {
-                    let bestIdx = 0;
-                    for (let i = 1; i < candNorm.length; i++) if (candNorm[i].normScore > candNorm[bestIdx].normScore) bestIdx = i;
-                    selected.push(candNorm.splice(bestIdx, 1)[0]);
-                    continue;
-                }
+        const normalizedPosts = processedPosts.map(post => {
+            const maxScore = Math.max(...processedPosts.map(p => p.score), 0);
+            return {
+                ...post,
+                normScore: maxScore > 0 ? post.score / maxScore : 0
+            };
+        });
+        const selected = [];
+        const candidates = [...normalizedPosts];
+        while (selected.length < selectionLimit && candidates.length > 0) {
+            if (selected.length === 0) {
                 let bestIdx = 0;
-                let bestScore = -Infinity;
-                for (let i = 0; i < candNorm.length; i++) {
-                    const cand = candNorm[i];
-                    let maxSim = 0;
-                    for (const s of selected) {
-                        const sim = similarityBetween(cand, s);
-                        if (sim > maxSim) maxSim = sim;
+                for (let i = 1; i < candidates.length; i++) {
+                    if (candidates[i].normScore > candidates[bestIdx].normScore) {
+                        bestIdx = i;
                     }
-                    const relevanceWeight = 1 - varietyVal;
-                    const diversityWeight = varietyVal;
-                    const mmrScore = relevanceWeight * cand.normScore - diversityWeight * maxSim;
-                    if (mmrScore > bestScore) { bestScore = mmrScore; bestIdx = i; }
                 }
-                selected.push(candNorm.splice(bestIdx, 1)[0]);
+                selected.push(candidates.splice(bestIdx, 1)[0]);
+                continue;
             }
-            return selected;
-        };
-        const finalPosts = mmrSelect(processedPosts, selectionLimit, Math.max(0, Math.min(1, variety)));
-        console.log("Final selected posts", finalPosts);
-        if (!finalPosts.length) return [];
-        const finalIds = finalPosts.map(p => p.post_id);
+            let bestIdx = 0;
+            let bestScore = -Infinity;
+            for (let i = 0; i < candidates.length; i++) {
+                const candidate = candidates[i];
+                let maxSimilarity = 0;
+                for (const selectedPost of selected) {
+                    let candVector = candidate.tfidf_vector ? 
+                        (typeof candidate.tfidf_vector === 'string' ? 
+                            JSON.parse(candidate.tfidf_vector) : candidate.tfidf_vector) : {};
+                    let selVector = selectedPost.tfidf_vector ? 
+                        (typeof selectedPost.tfidf_vector === 'string' ? 
+                            JSON.parse(selectedPost.tfidf_vector) : selectedPost.tfidf_vector) : {};
+                    const allKeys = new Set([...Object.keys(candVector), ...Object.keys(selVector)]);
+                    let dotProduct = 0;
+                    let candMagnitude = 0;
+                    let selMagnitude = 0;
+                    for (const key of allKeys) {
+                        const candVal = candVector[key] || 0;
+                        const selVal = selVector[key] || 0;
+                        dotProduct += candVal * selVal;
+                        candMagnitude += candVal * candVal;
+                        selMagnitude += selVal * selVal;
+                    }
+                    const tfidfSim = (candMagnitude > 0 && selMagnitude > 0) ? 
+                        dotProduct / (Math.sqrt(candMagnitude) * Math.sqrt(selMagnitude)) : 0;
+                    const candBigrams = candidate.bigrams ? 
+                        new Set(candidate.bigrams.split(',').map(b => b.trim())) : new Set();
+                    const selBigrams = selectedPost.bigrams ? 
+                        new Set(selectedPost.bigrams.split(',').map(b => b.trim())) : new Set();
+                    const bigramIntersection = [...candBigrams].filter(x => selBigrams.has(x)).length;
+                    const bigramUnion = new Set([...candBigrams, ...selBigrams]).size;
+                    const bigramSim = bigramUnion > 0 ? bigramIntersection / bigramUnion : 0;
+                    const candTrigrams = candidate.trigrams ? 
+                        new Set(candidate.trigrams.split(',').map(t => t.trim())) : new Set();
+                    const selTrigrams = selectedPost.trigrams ? 
+                        new Set(selectedPost.trigrams.split(',').map(t => t.trim())) : new Set();
+                    const trigramIntersection = [...candTrigrams].filter(x => selTrigrams.has(x)).length;
+                    const trigramUnion = new Set([...candTrigrams, ...selTrigrams]).size;
+                    const trigramSim = trigramUnion > 0 ? trigramIntersection / trigramUnion : 0;
+                    const candKeywords = candidate.keywords ? 
+                        new Set(candidate.keywords.split(',').map(k => k.trim().toLowerCase())) : new Set();
+                    const selKeywords = selectedPost.keywords ? 
+                        new Set(selectedPost.keywords.split(',').map(k => k.trim().toLowerCase())) : new Set();
+                    const keywordIntersection = [...candKeywords].filter(x => selKeywords.has(x)).length;
+                    const keywordUnion = new Set([...candKeywords, ...selKeywords]).size;
+                    const keywordSim = keywordUnion > 0 ? keywordIntersection / keywordUnion : 0;
+                    const sentimentDiff = Math.abs(candidate.sentiment_score - selectedPost.sentiment_score);
+                    const sentimentSim = 1 - (sentimentDiff / 2); //Normalize to 0-1
+                    const similarity = (tfidfSim * 0.4) + 
+                                     (bigramSim * 0.15) + 
+                                     (trigramSim * 0.15) + 
+                                     (keywordSim * 0.2) + 
+                                     (sentimentSim * 0.1);
+                    if (similarity > maxSimilarity) {
+                        maxSimilarity = similarity;
+                    }
+                }
+                const relevanceWeight = 1 - variety;
+                const diversityWeight = variety;
+                const mmrScore = (relevanceWeight * candidate.normScore) - (diversityWeight * maxSimilarity);
+                if (mmrScore > bestScore) {
+                    bestScore = mmrScore;
+                    bestIdx = i;
+                }
+            }
+            selected.push(candidates.splice(bestIdx, 1)[0]);
+        }
+        console.log("Final selected posts:", selected.length);
+        if (!selected.length) return [];
+        const finalIds = selected.map(p => p.post_id);
         const savedRows = saverId ? await SavedPosts.findAll({
             attributes: ['post_id'],
             raw: true,
             where: { post_id: { [Op.in]: finalIds }, saver_id: saverId }
         }) : [];
         const savedSet = new Set(savedRows.map(s => s.post_id));
-        return finalPosts.map(p => {
-            const { score, ...rest } = p;
-            return { ...rest, is_saved: savedSet.has(p.post_id) };
+        return selected.map(p => {
+            const { score, normScore, ...rest } = p;
+            return {
+                ...rest,
+                is_saved: savedSet.has(p.post_id)
+            };
         });
-    } catch (error){
+    } catch (error) {
         console.error("Error in ApplyAlgorithm:", error);
         return [];
     }

@@ -186,7 +186,7 @@ const ChatPage = () => {
                 {connection && (
                     <div id="feed-summary">
                         <Link className="chat-feed-link" to={`/u/${connection_name}`}>
-                            <img className="small-feed-photo" src={`/${connection.feed_photo}`} alt="Feed" />
+                            <img className="small-feed-photo" src={`/${connection.feed_photo}`} onError={(e) => e.currentTarget.src = '/media/site_images/blank-profile.png'} />
                             <p className="feed-list-text">{connection_name}</p>
                         </Link>
                         <div className="channel-name-section">
