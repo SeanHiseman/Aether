@@ -1,4 +1,4 @@
-import { BOOLEAN, STRING, DataTypes, INTEGER, TEXT } from 'sequelize';
+import { BOOLEAN, DataTypes, FLOAT, INTEGER, STRING, TEXT } from 'sequelize';
 import { Feeds } from './feeds.js';
 import sequelize from '../databaseSetup.js';
 
@@ -36,13 +36,9 @@ const Posts = sequelize.define('posts', {
     image_count: { type: INTEGER, defaultValue: 0 },
     video_count: { type: INTEGER, defaultValue: 0 },
     sentiment_score: { type: FLOAT, defaultValue: 0.0 }, 
-    tokens: { type: TEXT, allowNull: true }, 
-    bigrams: { type: TEXT, allowNull: true }, 
-    trigrams: { type: TEXT, allowNull: true }, 
-    keywords: { type: TEXT, allowNull: true },
     language: { type: STRING(20), defaultValue: 'en' },
-    term_frequencies: { type: TEXT, allowNull: true }, 
-    feature_hash: { type: STRING(64), allowNull: true }, 
+    tokens: { type: TEXT, allowNull: true }, 
+    embeddings: { type: TEXT, allowNull: true }, 
 }, {
     tableName: 'posts',
     timestamps: false,
@@ -52,7 +48,6 @@ const Posts = sequelize.define('posts', {
         { fields: ['has_images', 'has_videos', 'has_interactive'] },
         { fields: ['sentiment_score'] },
         { fields: ['created_at'] }, 
-        { fields: ['feature_hash'] }
     ]
 });
 

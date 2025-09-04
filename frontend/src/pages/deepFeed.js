@@ -293,7 +293,7 @@ const DeepFeed = () => {
                                         </button>
                                     </>
                                 )}
-                                <AlgorithmSelector locationId={deepFeed.deep_feed_id} />
+                                {isAuthenticated && <AlgorithmSelector locationId={deepFeed.deep_feed_id} />} {/*Project code*/}
                             </div>
                         </div>
                     )}

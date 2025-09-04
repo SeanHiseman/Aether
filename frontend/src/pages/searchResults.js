@@ -38,11 +38,20 @@ const SearchResults = () => {
 
     //Gets results depending on which type is being viewed
     const fetchSearchResults = async ({ pageParam = 0 }) => {
-        const searcherId = viewer?.feed_id;
-        const response = await axios.get(
-            `/api/search/${searcherId}?keyword=${keyword}&limit=24&offset=${pageParam}`
-        );
-        return response.data;
+        try {
+            console.log("fetching search results");
+            const response = await axios.get(
+                `/api/search/?keyword=${keyword}&limit=24&offset=${pageParam}`
+            );
+            console.log("search response:", response);
+            return response.data || { feeds: [], posts: [] };
+        } catch (error) {
+            console.log("error:", error);
+            const message = error.response?.data?.message || "Error getting search results";
+            setErrorMessage(message);
+            // Return safe empty structure so react-query doesn't crash
+            return { feeds: [], posts: [] };
+        }
     };
 
     //Infinite query to handle pagination
@@ -50,7 +59,7 @@ const SearchResults = () => {
         queryKey: ['searchResults', keyword, viewer?.feed_id],
         queryFn: fetchSearchResults,
         getNextPageParam: (lastPage, allPages) => {
-            const fetchedCount = (lastPage.feeds?.length || 0) + (lastPage.posts?.length || 0);
+            const fetchedCount = ((lastPage?.feeds?.length || 0) + (lastPage?.posts?.length || 0));
             return fetchedCount > 0 ? (allPages.length * 24) : undefined;
         },
         enabled: !!keyword
@@ -204,7 +213,7 @@ const SearchResults = () => {
                         )}
                     </ul>
                 </nav>
-				<AlgorithmSelector locationId={"search"} /> {/* Project code */}
+				{isAuthenticated && <AlgorithmSelector locationId={"search"} />} {/* Project code */}
             </aside>
         </div>
     );

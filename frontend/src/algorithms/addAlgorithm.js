@@ -100,10 +100,8 @@ const DualRangeSlider = ({ min = 0, max = 100, value = [25, 75], onChange, forma
     );
 };
 
-const AddAlgorithm = ({ algorithms = [], editingAlgorithm = null, locationId, onCreated, onUpdated, setEditingAlgorithm }) => {
-    console.log("algorithms:", algorithms);    
+const AddAlgorithm = ({ algorithms = [], editingAlgorithm = null, locationId, onCreated, onUpdated, setEditingAlgorithm }) => {  
     const [activeDays, setActiveDays] = useState({ monday: true, tuesday: true, wednesday: true, thursday: true, friday: true, saturday: true, sunday: true });
-    const [advancedChronology, setAdvancedChronology] = useState('');
     const [algorithmCode, setAlgorithmCode] = useState('');
     const [algorithmName, setAlgorithmName] = useState('');
     const [chronology, setChronology] = useState(1);
@@ -188,10 +186,6 @@ const AddAlgorithm = ({ algorithms = [], editingAlgorithm = null, locationId, on
         } finally {
             setLoading(false);
         }
-    };
-
-    const shouldShowDateInputs = () => {
-        return ['from_date', 'until_date', 'between_dates'].includes(advancedChronology);
     };
 
     const startCreatingNew = () => {
@@ -337,7 +331,7 @@ const AddAlgorithm = ({ algorithms = [], editingAlgorithm = null, locationId, on
                         placeholder={customInstruction ? customInstruction : "Describe your algorithm..."}
                         type="text"
                         value={customInstruction}
-                        onChange={e => setCustomInstruction(e.target.value)}
+                        onChange={e => {setCustomInstruction(e.target.value); setTemplate('none')}}
                     />
                 </div>
                 <div className="form-row border-bottom">
@@ -444,7 +438,7 @@ const AddAlgorithm = ({ algorithms = [], editingAlgorithm = null, locationId, on
                             <div className="form-group">
                                 <div className="form-label-with-info">
                                     <label className="small-text">Content Variety</label>
-                                    <InfoIconWithTooltip info="Random shows completely varied content, similar shows more consistent content types." />
+                                    <InfoIconWithTooltip info="Compares posts similarity to your previously viewed posts." />
                                 </div>
                                 <input
                                     className="form-input"
@@ -457,7 +451,7 @@ const AddAlgorithm = ({ algorithms = [], editingAlgorithm = null, locationId, on
                                     onChange={e => setVariety(parseFloat(e.target.value))}
                                 />
                                 <div className="slider-labels">
-                                    <span className="tiny-text">Random</span>
+                                    <span className="tiny-text">Varied</span>
                                     <span className="tiny-text">Mixed</span>
                                     <span className="tiny-text">Similar</span>
                                 </div>

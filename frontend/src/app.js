@@ -97,7 +97,7 @@ const App = () => {
 									<Route index element={<Navigate to="Main" replace />} />
 									<Route path=":channel_name" element={<ProtectedRoute><SavedPosts /></ProtectedRoute>} />
 								</Route>
-								<Route path="explore" element={<ProtectedRoute><ExplorePage /></ProtectedRoute>}/>
+								<Route path="explore" element={<ExplorePage/>} />
 								<Route path="settings/:feed_name" element={<ProtectedRoute><FeedSettings /></ProtectedRoute>}>
 									<Route index element={<Navigate to="info" replace />} />
 									<Route path="deletion" element={<FeedDeletion />} />

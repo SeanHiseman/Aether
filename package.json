@@ -23,6 +23,7 @@
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.0",
     "@mui/material": "^6.3.0",
+    "@xenova/transformers": "^2.17.2",
     "axios": "^1.6.3",
     "bcrypt": "^5.1.1",
     "cheerio": "^1.0.0-rc.12",
@@ -66,6 +67,8 @@
     "stripe": "^18.1.1",
     "unzipper": "^0.12.3",
     "uuid": "^9.0.1",
+    "wink-eng-lite-web-model": "^1.8.1",
+    "wink-nlp": "^2.4.0",
     "ws": "^8.11.0",
     "xmlhttprequest-ssl": "^2.0.0",
     "yauzl": "^3.2.0"

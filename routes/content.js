@@ -2,7 +2,7 @@ import { ApplyAlgorithm } from '../custom_algorithms/applyAlgorithm.js';
 import authenticateCheck from '../functions/checks/authenticateCheck.js';
 import deleteMedia from '../functions/media_handling/deleteMedia.js';
 import cheerio from 'cheerio';
-import ContentAnalyser from '../functions/contentAnalyser.js';
+import { ContentAnalyser } from '../functions/contentAnalyser.js';
 import dotenv from 'dotenv';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
@@ -52,8 +52,7 @@ const checkStorageLimit = async (req, res, next) => {
 router.get('/channel_posts', async (req, res) => {
 	try {
 		const { channelId, excludedPostIds, feedId, isGroup, isMain, isSingle, limit, offset, postId } = req.query;
-		const saverId = req.session.viewer_id;
-		const userId = req.session.user_id;
+		const viewerId = req.session.viewer_id;
 		const includeOptions = [{
 			as: 'note',
 			attributes: noteAttributes,
@@ -89,15 +88,25 @@ router.get('/channel_posts', async (req, res) => {
 				}
 			});
 			if (!singlePost) return res.status(404).json({ success: false });
-			const existing = saverId
+			const existing = viewerId
 				? await SavedPosts.findOne({
-						where: { post_id: postId, saver_id: saverId }
+						where: { post_id: postId, saver_id: viewerId }
 				  })
 				: null;
 			singlePost.dataValues.is_saved = Boolean(existing);
 			return res.status(200).json({ success: true, post: singlePost });
 		}
-		const results = await ApplyAlgorithm({locationId: channelId, excludedPostIds, feedId, includeOptions, isGroup, isMain, limit, offset, saverId, userId});
+		const results = await ApplyAlgorithm({ 
+            locationId: channelId,
+            excludedPostIds, 
+            feedId, 
+            includeOptions, 
+            isGroup, 
+            isMain, 
+            limit, 
+            offset, 
+            viewerId,
+        });
 		if (!results.length) return res.status(200).json([]);
 		return res.status(200).json(results);
 	} catch (error) {
@@ -292,8 +301,8 @@ router.post('/create_post', authenticateCheck, checkStorageLimit, postUpload.arr
             });
         }
         const modifiedContent = $.html();
-        console.log('Analyzing content for algorithmic features...');
-        const analysisResults = contentAnalyser.analyseContent(modifiedContent, title);
+        const analysisResults = await contentAnalyser.analyseContent(modifiedContent, title);
+        console.log("analysis results:", analysisResults);
         const postData = {
             channel_id, 
             content: modifiedContent, 
@@ -394,8 +403,7 @@ router.get("/explore_posts", async (req, res) => {
     try {
         const { exclude = [] } = req.query;
         const excludeArray = Array.isArray(exclude) ? exclude : exclude.split(',').filter(Boolean);
-        const saverId = req.session.viewer_id;
-        const userId = req.session.viewer_id;
+        const viewerId = req.session.viewer_id;
         const limit = parseInt(req.query.limit, 10) || 6;
         const offset = parseInt(req.query.offset, 10) || 0;
         const includeOptions = [{
@@ -436,8 +444,7 @@ router.get("/explore_posts", async (req, res) => {
             isMain: 'false',
             limit: limit,
             offset: offset,
-            saverId: saverId,
-            userId: userId
+            viewerId,
         });
         res.status(200).json({ posts: posts, hasMore: posts.length === limit });
     } catch (error) {

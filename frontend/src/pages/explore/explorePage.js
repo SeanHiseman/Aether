@@ -219,7 +219,7 @@ const ExplorePage = () => {
 						<li className="channel-link" onClick={() => setFilter("feeds")}>Feeds</li>
 					</ul>
 				</nav>
-				<AlgorithmSelector locationId={"explore_page"} /> {/*Project code*/}
+				{isAuthenticated && <AlgorithmSelector locationId={"explore_page"} />} {/*Project code*/}
 			</aside>
 		</div>
 	);

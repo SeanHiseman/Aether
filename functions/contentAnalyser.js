@@ -1,8 +1,21 @@
 import cheerio from 'cheerio';
 import natural from 'natural';
-import Sentiment from 'sentiment';
+import { pipeline } from '@xenova/transformers';
+import winkNLP from 'wink-nlp';
+import model from 'wink-eng-lite-web-model';
 
-class ContentAnalyser {
+let embedder = null;
+const nlp = winkNLP(model);
+const its = nlp.its;
+
+async function getEmbedder() {
+    if (!embedder) {
+        embedder = await pipeline('feature-extraction', 'Xenova/all-MiniLM-L6-v2');
+    }
+    return embedder;
+}
+
+export class ContentAnalyser {
     constructor() {
         this.stemmer = natural.PorterStemmer;
         this.tokenizer = new natural.WordTokenizer();
@@ -14,7 +27,7 @@ class ContentAnalyser {
         ]);
     }
 
-    extractTextBody(htmlContent) {
+    async extractTextBody(htmlContent) {
         const $ = cheerio.load(htmlContent || '', { decodeEntities: true });
         $('script, style, noscript').remove();
         const textBody = $.text()
@@ -23,7 +36,7 @@ class ContentAnalyser {
         return textBody;
     }
 
-    analyseMedia(htmlContent) {
+    async analyseMedia(htmlContent) {
         const $ = cheerio.load(htmlContent || '');
         const images = $('img').length;
         const videos = $('video').length;
@@ -49,13 +62,10 @@ class ContentAnalyser {
         };
     }
 
-    processText(text) {
+    async processText(text) {
         if (!text || text.trim().length === 0) {
             return {
                 tokens: [],
-                bigrams: [],
-                trigrams: [],
-                keywords: []
             };
         }
         const rawTokens = this.tokenizer.tokenize(text.toLowerCase()) || [];
@@ -67,75 +77,42 @@ class ContentAnalyser {
                 !/^\d+$/.test(token)
             )
             .map(token => this.stemmer.stem(token));
-        const bigrams = this.generateNgrams(tokens, 2);
-        const trigrams = this.generateNgrams(tokens, 3);
-        const keywords = this.extractKeywords(tokens);
-        return { tokens, bigrams, trigrams, keywords };
+        return { tokens };
     }
 
-    generateNgrams(tokens, n) {
-        if (tokens.length < n) return [];
-        const ngrams = [];
-        for (let i = 0; i <= tokens.length - n; i++) {
-            ngrams.push(tokens.slice(i, i + n).join('_'));
-        }
-        return ngrams;
-    }
-
-    extractKeywords(tokens) {
-        const termFreq = this.calculateTermFrequencies(tokens);
-        const keywords = Object.entries(termFreq)
-            .filter(([word, freq]) => freq > 0.02 && word.length > 3) //at least 2% frequency
-            .sort((a, b) => b[1] - a[1])
-            .slice(0, 10)
-            .map(([word]) => word);
-        return keywords;
-    }
-
-    calculateTermFrequencies(tokens) {
-        if (!tokens || tokens.length === 0) {
-            return {};
-        }
-        const freq = {};
-        const totalTokens = tokens.length;
-        tokens.forEach(token => {
-            freq[token] = (freq[token] || 0) + 1;
-        });
-        Object.keys(freq).forEach(term => {
-            freq[term] = freq[term] / totalTokens;
-        });
-        return freq;
-    }
-
-    calculateSentiment(tokens) {
-        if (!tokens || tokens.length === 0) return 0;
+    async generateEmbedding(text) {
         try {
-            const sentiment = new Sentiment();
-            const result = sentiment.analyze(tokens.join(' '));
-            return Math.max(-1, Math.min(1, Math.tanh(result.score))); //tanh normalisation to between -1 and 1
+            //console.log("generating embedding for text:", text)
+            const embedder = await getEmbedder();
+            const output = await embedder(text, { pooling: 'mean', normalize: true });
+            //console.log("embedding output:", output);
+            return Array.from(output.data); // Convert to plain JS array for storage
+        } catch (error) {
+            console.error('Embedding generation failed:', error);
+            return [];
+        }
+    }
+
+    async calculateSentiment(text) {
+        if (!text || text.trim().length === 0) return 0;
+        try {
+            const doc = nlp.readDoc(text);
+            const score = doc.out(its.sentiment) //Scaled between -1 and 1
+            console.log("text:", text);
+            console.log("raw score:", score);
+            return score; 
         } catch (error) {
             console.warn('Sentiment analysis failed:', error);
             return 0;
         }
     }
 
-    //What does a feature hash do?
-    generateFeatureHash(content, title) {
-        const combined = `${title || ''}|||${content}`;
-        let hash = 0;
-        for (let i = 0; i < combined.length; i++) {
-            const char = combined.charCodeAt(i);
-            hash = ((hash << 5) - hash) + char;
-            hash = hash & hash;
-        }
-        return Math.abs(hash).toString(16);
-    }
-
-    analyseContent(content, title) {
-        const textBody = this.extractTextBody(content);
-        const mediaAnalysis = this.analyseMedia(content);
-        const textProcessing = this.processText(textBody);
-        const sentimentScore = this.calculateSentiment(textProcessing.tokens);
+    async analyseContent(content, title) {
+        const textBody = await this.extractTextBody(content);
+        const mediaAnalysis = await this.analyseMedia(content);
+        const embedding = await this.generateEmbedding(textBody);
+        const textProcessing = await this.processText(textBody);
+        const sentimentScore = await this.calculateSentiment(textBody);
         const words = textBody.split(/\s+/).filter(w => w.length > 0);
         const sentences = textBody.split(/[.!?]+/).filter(s => s.trim().length > 0);
         return {
@@ -144,16 +121,10 @@ class ContentAnalyser {
             word_count: words.length,
             sentence_count: sentences.length,
             ...mediaAnalysis,
-            tokens: JSON.stringify(textProcessing.tokens),
-            bigrams: JSON.stringify(textProcessing.bigrams),
-            trigrams: JSON.stringify(textProcessing.trigrams),
-            keywords: JSON.stringify(textProcessing.keywords),
             sentiment_score: sentimentScore,
-            term_frequencies: JSON.stringify(this.calculateTermFrequencies(textProcessing.tokens)),
-            feature_hash: this.generateFeatureHash(content, title),
+            tokens: JSON.stringify(textProcessing.tokens),
+            embeddings: JSON.stringify(embedding),
             processed_at: new Date()
         };
     }
 }
-
-module.exports = ContentAnalyser;

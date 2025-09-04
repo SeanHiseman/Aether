@@ -11,13 +11,12 @@ const notesAttributes = ['note_id', 'note_content', 'created_at', 'updated_at', 
 const posterAttributes = ['feed_id', 'feed_name', 'description', 'feed_photo', 'type', 'is_group'];
 
 //Searches posts and feeds together
-router.get('/search/:searcherId', async (req, res) => { 
+router.get('/search', async (req, res) => { 
     try {
-        const searcherId = req.params.searcherId;
+        const searcherId = req.session.viewer_id;
         const keyword = req.query.keyword ? req.query.keyword.toLowerCase() : '';
         const limit = req.query.limit ? parseInt(req.query.limit, 10) : 10;
         const offset = req.query.offset ? parseInt(req.query.offset, 10) : 0;
-        const userId = searcherId; 
         const feeds = await Feeds.findAll({
             where: { feed_name: { [Op.like]: `%${keyword}%` } },
             attributes: feedAttributes, 
@@ -36,7 +35,7 @@ router.get('/search/:searcherId', async (req, res) => {
             response.isAdmin = followStatus?.isAdmin || false;
             response.isMod = followStatus?.isMod || false;
             response.isFollower = followStatus?.following || false;
-            if (!feed.is_group) { //Can only send connect requests to individuals
+            if (!feed.is_group && searcherId) { //Can only send connect requests to individuals
                 const [connectStatus, connectRequest] = await Promise.all([
                     ConnectCheck(searcherId, feed.feed_id),
                     ConnectRequests.findOne({
@@ -51,7 +50,7 @@ router.get('/search/:searcherId', async (req, res) => {
                 response.isConnected = connectStatus?.connected || false;
                 response.connectRequest = connectRequest || null;
             }
-            if (feed.type === 'private') {
+            if (feed.type === 'private' && searcherId) {
                 const followRequest = await FollowRequests.findOne({
                     where: { sender_id: searcherId, receiver_id: feed.feed_id }
                 });
@@ -80,7 +79,7 @@ router.get('/search/:searcherId', async (req, res) => {
             as: 'votes',
             attributes: ['upvotes', 'downvotes']
         }];
-        const allPosts = await ApplyAlgorithm({
+        const postResults = await ApplyAlgorithm({
             locationId: 'search',
             excludedPostIds: '',
             feedId: null, //Not used when locationId is 'search'
@@ -88,20 +87,10 @@ router.get('/search/:searcherId', async (req, res) => {
             isMain: 'false',
             limit: limit,
             offset: offset,
-            saverId: searcherId,
-            userId: userId,
+            viewerId: searcherId,
             keyword: keyword
         });
-        allPosts.sort((a, b) => {
-            const aInTitle = a.title && a.title.toLowerCase().includes(keyword);
-            const bInTitle = b.title && b.title.toLowerCase().includes(keyword);
-            if (aInTitle && !bInTitle) return -1;
-            if (!aInTitle && bInTitle) return 1;
-            return new Date(b.created_at) - new Date(a.created_at);
-        });
-        const processedPosts = allPosts.slice(offset, offset + limit);
-        console.log("processedPosts search route:", processedPosts);
-        res.status(200).json({ feeds: feedData, posts: processedPosts, success: true });
+        res.status(200).json({ feeds: feedData, posts: postResults, success: true });
     } catch (error) {
         console.error('Search error:', error);
         res.status(500).json({ success: false });

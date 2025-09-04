@@ -1,9 +1,12 @@
+import { ContentAnalyser } from '../functions/contentAnalyser.js';
 import { faker } from '@faker-js/faker';
 import fs from 'fs';
 import { parse } from 'csv-parse/sync';
 import { v4 } from 'uuid';
 import sequelize from '../databaseSetup.js';
 import { Feeds, FeedChannels, Posts, Users } from '../models/relationships.js';
+
+const contentAnalyser = new ContentAnalyser();
 
 //Special ID's for fake data
 function generateSpecialId() {
@@ -146,8 +149,8 @@ async function generateData() {
 					//Use a tweet-based post
 					const tweet = tweetRows[Math.floor(Math.random() * tweetRows.length)];
 					const tweetContent = tweet[3];				
-					console.log("Using tweetContent:", tweetContent);
-					postsData.push({
+					//console.log("Using tweetContent:", tweetContent);
+					const post = {
 						post_id: generateSpecialId(),
 						feed_id: feedId,
 						channel_id: channelId,
@@ -159,7 +162,10 @@ async function generateData() {
 						downvotes: faker.number.int({ min: 0, max: 100 }),
 						created_at: faker.date.recent({ days: 30 }),
 						poster_id: feedId
-					});
+					};
+					const analysisResults = await contentAnalyser.analyseContent(post.content, post.title);
+					//console.log("tweet analysis results:", analysisResults);
+					postsData.push({ ...post, ...analysisResults });
 				} else {
 					//Use a generated post
 					const postTitle = faker.helpers.arrayElement([
@@ -167,7 +173,7 @@ async function generateData() {
 						`Breaking ${topic} News: ${faker.company.catchPhrase()}`,
 						`Top ${faker.number.int({ min: 5, max: 15 })} ${topic} Tips`
 					]);
-					postsData.push({
+					const post = {
 						post_id: generateSpecialId(),
 						feed_id: feedId,
 						channel_id: channelId,
@@ -179,7 +185,10 @@ async function generateData() {
 						downvotes: faker.number.int({ min: 0, max: 100 }),
 						created_at: faker.date.recent({ days: 30 }),
 						poster_id: feedId
-					});
+					};
+					const analysisResults = await contentAnalyser.analyseContent(post.content, post.title);
+					console.log("generated analysis results:", analysisResults);
+					postsData.push({ ...post, ...analysisResults });
 				}
 			}
 		}

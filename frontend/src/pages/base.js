@@ -454,6 +454,7 @@ const BaseLayout = () => {
     }, []);
 
     const searchClick = e => {
+        console.log("search click with keyword:", currentQuery);
         e.preventDefault();
         navigate(`/search?keyword=${currentQuery}`);
     };

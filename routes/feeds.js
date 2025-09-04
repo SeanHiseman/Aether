@@ -409,8 +409,7 @@ router.get('/deep_feed_contents/:deepFeedId', authenticateCheck, async (req, res
 router.get('/deep_feed_posts', authenticateCheck, async (req, res) => {
     try {
         const { deepFeedId, limit = 10, offset = 0 } = req.query;
-        const saverId = req.session.viewer_id;
-        const userId = req.session.viewer_id;
+        const viewerId = req.session.viewer_id;
         if (deepFeedId === 'following') { //Following deep feed is a special case
             const followerId = req.session.feed_id;
             if (!followerId) {
@@ -447,8 +446,7 @@ router.get('/deep_feed_posts', authenticateCheck, async (req, res) => {
                     isMain: 'false',
                     limit: Math.ceil(limit / feedIds.length), 
                     offset: 0,
-                    saverId: saverId,
-                    userId: userId
+                    viewerId,
                 });
                 
                 allPosts.push(...feedPosts);
@@ -507,8 +505,7 @@ router.get('/deep_feed_posts', authenticateCheck, async (req, res) => {
                     isMain: 'false',
                     limit: Math.ceil(limit / allFeedIds.length),
                     offset: 0,
-                    saverId: saverId,
-                    userId: userId
+                    viewerId,
                 });
                 
                 allPosts.push(...feedPosts);
@@ -626,8 +623,7 @@ router.delete('/delete_feed_channel', authenticateCheck, async (req, res) => {
 router.get("/explore_feeds", async (req, res) => {
 	try {
         const { exclude = [] } = req.query;
-        console.log('Exclude parameter:', exclude);
-		const viewerId = req.session.viewer_id;
+		const viewerId = req.session?.viewer_id;
 		const limit = parseInt(req.query.limit, 10) || 6;
         const excludeArray = Array.isArray(exclude) ? exclude : (exclude ? exclude.split(',') : []);
         const { rows: feeds } = await Feeds.findAndCountAll({
@@ -635,7 +631,7 @@ router.get("/explore_feeds", async (req, res) => {
                 type: { [Op.notIn]: ["private", "hidden"] },
                 is_locked: false,
                 is_group: false,
-                feed_id: { [Op.notIn]: [...excludeArray, viewerId] }
+                feed_id: { [Op.notIn]: [...excludeArray, ...(viewerId ? [viewerId] : [])] }
             },
             order: sequelize.literal("RAND()"),
             attributes: feedAttributes,
@@ -649,11 +645,11 @@ router.get("/explore_feeds", async (req, res) => {
 				isMod: false,
 				isFollower: false,
 			};
-			const followStatus = await FollowerCheck(viewerId, feed.feed_id);
+			const followStatus = viewerId ? await FollowerCheck(viewerId, feed.feed_id) : null;
 			response.isAdmin = followStatus?.isAdmin || false;
 			response.isMod = followStatus?.isMod || false;
 			response.isFollower = followStatus?.following || false;
-			if (feed.type === "private") {
+			if (viewerId && feed.type === "private") {
 				const followRequest = await FollowRequests.findOne({
 					where: { sender_id: viewerId, receiver_id: feed.feed_id }
 				});
@@ -661,7 +657,6 @@ router.get("/explore_feeds", async (req, res) => {
 			}
 			return response;
 		}));
-        console.log('Fetched feeds:', feedData);
 		res.status(200).json({ success: true, feeds: feedData, hasMore: feedData.length >= limit });
 	} catch (error) {
 		console.error("Error fetching explore feeds:", error);
