@@ -13,9 +13,9 @@ router.post('/assign_algorithm', authenticateCheck, async (req, res) => {
 	try {
 		transaction = await sequelize.transaction();
 		const { algorithmId, locationId } = req.body;
-		const userId = req.session.user_id;
+		const viewerId = req.session.viewer_id;
 		const [record, created] = await AlgorithmLocations.findOrCreate({
-			where: { location_id: locationId, user_id: userId },
+			where: { location_id: locationId, viewer_id: viewerId },
 			defaults: { id: v4(), algorithm_id: algorithmId },
 			transaction
 		});
@@ -26,6 +26,7 @@ router.post('/assign_algorithm', authenticateCheck, async (req, res) => {
 		res.status(200).json({ success: true });
 	} catch (error) {
 		if (transaction) await transaction.rollback();
+		console.log("error assigning algorithm:", error);
 		res.status(500).json({ success: false, message: 'Failed to assign algorithm.' });
 	}
 });
@@ -35,7 +36,7 @@ router.post('/create_algorithm', authenticateCheck, async (req, res) => {
 	try {
 		const { algorithmName, activeDays, chronology, contentType, customInstruction, dateFrom, dateTo, generateCode, locationId, minText, maxText, minVideo, maxVideo, sentiment, startTime, endTime, variety, voteImpact, wordBoost, wordSuppress } = req.body;
 		console.log("create_algorithm req.body:", req.body);
-		const userId = req.session.user_id;
+		const viewerId = req.session.viewer_id;
 		const userSettings = { chronology, contentType, sentiment, startTime, endTime, variety, voteImpact, wordBoost, wordSuppress };
 		let algorithmCode;
 		if (generateCode && customInstruction && customInstruction.trim() !== "") {
@@ -126,7 +127,7 @@ router.post('/create_algorithm', authenticateCheck, async (req, res) => {
 		}
 		transaction = await sequelize.transaction();
 		const existingAlgorithm = await Algorithms.findOne({
-			where: { algorithm_name: algorithmName, user_id: userId },
+			where: { algorithm_name: algorithmName, viewer_id: viewerId },
 			transaction
 		});
 		let algorithm;
@@ -141,7 +142,7 @@ router.post('/create_algorithm', authenticateCheck, async (req, res) => {
 				algorithm_name: algorithmName,
 				algorithm_code: algorithmCode,
 				custom_instruction: customInstruction || null,
-				user_id: userId
+				viewer_id: viewerId
 			}, { transaction });
 		}
 		await transaction.commit();
@@ -158,27 +159,26 @@ router.delete('/delete_algorithm', authenticateCheck, async (req, res) => {
 	try {
 		transaction = await sequelize.transaction();
 		const { algorithmId, locationId } = req.body;
-		const userId = req.session.user_id;
+		const viewerId = req.session.viewer_id;
 		const existing = await Algorithms.findOne({
 			where: { algorithm_id: algorithmId }
 		});
 		if (!existing) {
 			return res.status(400).json({ success: false, message: 'Algorithm not found.' });
 		}
-		await AlgorithmLocations.destroy({ where: { algorithm_id: algorithmId, location_id: locationId, user_id: userId }, transaction });
+		await AlgorithmLocations.destroy({ where: { algorithm_id: algorithmId, location_id: locationId, viewer_id: viewerId }, transaction });
 		await Algorithms.destroy({ where: { algorithm_id: algorithmId }, transaction });		
 		await transaction.commit();
 		res.status(200).json({ success: true });
 	} catch (error) {
 		if (transaction) await transaction.rollback();
-		console.error(error);
 		res.status(500).json({ success: false, message: 'Failed to remove algorithm.' });
 	}
 });
 
-router.get('/get_user_algorithms', authenticateCheck, async (req, res) => {
+router.get('/get_viewer_algorithms', authenticateCheck, async (req, res) => {
 	try {
-		const userId = req.session.user_id;
+		const viewerId = req.session.viewer_id;
 		const algorithms = await Algorithms.findAll({
 			include: [{
 				attributes: ['location_id'],
@@ -186,7 +186,7 @@ router.get('/get_user_algorithms', authenticateCheck, async (req, res) => {
 				model: AlgorithmLocations,
 				required: false
 			}],
-			where: { user_id: userId }
+			where: { viewer_id: viewerId }
 		});
 		res.status(200).json({ success: true, algorithms });
 	} catch (error) {
@@ -197,8 +197,8 @@ router.get('/get_user_algorithms', authenticateCheck, async (req, res) => {
 router.delete('/remove_algorithm', authenticateCheck, async (req, res) => {
 	try {
 		const { locationId } = req.body;
-		const userId = req.session.user_id;
-		await AlgorithmLocations.destroy({ where: { location_id: locationId, user_id: userId } });
+		const viewerId = req.session.viewer_id;
+		await AlgorithmLocations.destroy({ where: { location_id: locationId, viewer_id: viewerId } });
 		res.status(200).json({ success: true });
 	} catch (error) {
 		res.status(500).json({ success: false, message: 'Failed to remove algorithm.' });

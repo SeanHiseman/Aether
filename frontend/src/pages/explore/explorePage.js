@@ -37,6 +37,7 @@ const ExplorePage = () => {
 	const [shownPostIds, setShownPostIds] = useState([]);
 	const { isAuthenticated, viewer } = useContext(AuthContext);
 	const { rightClasses } = useOutletContext();
+	const [refreshTrigger, setRefreshTrigger] = useState(false);
 	const scrollRef = useRef(null);
 	const CLEANUP_THRESHOLD = 100;
 
@@ -114,6 +115,10 @@ const ExplorePage = () => {
 		const allItems = [...postItems, ...feedQuadItems];
 		return shuffleArray(allItems.slice());
 	}, [filter, posts, feeds]);
+
+	const refreshPosts = () => {
+        setRefreshTrigger(!refreshTrigger);
+    };
 
 	//For feeds-only filter, chunk into groups of 4
 	const feedQuads = useMemo(() => chunkFeedsToQuads(feeds), [feeds]);
@@ -219,7 +224,7 @@ const ExplorePage = () => {
 						<li className="channel-link" onClick={() => setFilter("feeds")}>Feeds</li>
 					</ul>
 				</nav>
-				{isAuthenticated && <AlgorithmSelector locationId={"explore_page"} />} {/*Project code*/}
+				{isAuthenticated && <AlgorithmSelector locationId={"explore_page"} refreshPosts={refreshPosts} />} {/*Project code*/}
 			</aside>
 		</div>
 	);

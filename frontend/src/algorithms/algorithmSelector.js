@@ -24,10 +24,10 @@ const AlgorithmSelector = ({ locationId, refreshPosts }) => {
 					algorithmId,
 					locationId
 				});
-				if (!response.data.success) throw new Error(response.data.message || 'Failed to assign algorithm.');
+				if (!response?.data?.success) throw new Error(response?.data?.message || 'Failed to assign algorithm.');
 				setAssignedAlgorithmId(algorithmId);
 			} else {
-				await axios.delete('/api/remove_algorithm', {
+				const response = await axios.delete('/api/remove_algorithm', {
 					data: { algorithmId: assignedAlgorithmId, locationId }
 				});
 				setAssignedAlgorithmId('');
@@ -37,13 +37,13 @@ const AlgorithmSelector = ({ locationId, refreshPosts }) => {
 			setAlgorithms(prev => {
 				const updated = prev.map(algo => ({
 					...algo,
-					algorithm_locations: algo.algorithm_id === algorithmId 
-						? [...(algo.algorithm_locations || []), { location_id: locationId }]
-						: (algo.algorithm_locations || []).filter(loc => loc.location_id !== locationId)
+					algorithm_locations: algo?.algorithm_id === algorithmId 
+						? [...(algo?.algorithm_locations || []), { location_id: locationId }]
+						: (algo?.algorithm_locations || []).filter(loc => loc?.location_id !== locationId)
 				}));
-				updated.sort((a, b) => a.algorithm_name.localeCompare(b.algorithm_name));
+				updated.sort((a, b) => a?.algorithm_name?.localeCompare(b?.algorithm_name));
 				if (algorithmId) {
-					const index = updated.findIndex(a => a.algorithm_id === algorithmId);
+					const index = updated.findIndex(a => a?.algorithm_id === algorithmId);
 					if (index > 0) {
 						const [assigned] = updated.splice(index, 1);
 						updated.unshift(assigned);
@@ -72,7 +72,7 @@ const AlgorithmSelector = ({ locationId, refreshPosts }) => {
 			await axios.delete('/api/delete_algorithm', {
 				data: { algorithmId, locationId }
 			});
-			setAlgorithms(prev => prev.filter(a => a.algorithm_id !== algorithmId));
+			setAlgorithms(prev => prev.filter(a => a?.algorithm_id !== algorithmId));
 			if (algorithmId === assignedAlgorithmId) setAssignedAlgorithmId('');
 			if (editingAlgorithm?.algorithm_id === algorithmId) setEditingAlgorithm(null);
 		} catch (error) {
@@ -85,56 +85,62 @@ const AlgorithmSelector = ({ locationId, refreshPosts }) => {
 		try {
 			setError(null);
 			setLoading(true);
-			const { data } = await axios.get('/api/get_user_algorithms');
-			if (!data.success) throw new Error(data.message || 'Failed to load algorithms.');
-			const assigned = data.algorithms.find(a =>
-				a.algorithm_locations?.some(fa => fa.location_id === locationId)
-			);
-			const assignedId = assigned ? assigned.algorithm_id : '';
-			const sorted = [...data.algorithms].sort((a, b) => a.algorithm_name.localeCompare(b.algorithm_name));
-			if (assignedId) {
-				const assignedIndex = sorted.findIndex(a => a.algorithm_id === assignedId);
-				if (assignedIndex > 0) {
-					const [assignedAlgo] = sorted.splice(assignedIndex, 1);
-					sorted.unshift(assignedAlgo);
+			const response = await axios.get('/api/get_viewer_algorithms');
+			if (response.data.success) {
+				const assigned = response.data.algorithms.find(a =>
+					a?.algorithm_locations?.some(fa => fa?.location_id === locationId)
+				);
+				const assignedId = assigned ? assigned?.algorithm_id : '';
+				const sorted = [...response?.data?.algorithms].sort((a, b) => a?.algorithm_name?.localeCompare(b?.algorithm_name));
+				if (assignedId) {
+					const assignedIndex = sorted.findIndex(a => a?.algorithm_id === assignedId);
+					if (assignedIndex > 0) {
+						const [assignedAlgo] = sorted.splice(assignedIndex, 1);
+						sorted.unshift(assignedAlgo);
+					}
 				}
-			}
-			setAlgorithms(sorted);
-			setAssignedAlgorithmId(assignedId);
-			if (assigned) {
-				setEditingAlgorithm(assigned);
+				setAlgorithms(sorted);
+				setAssignedAlgorithmId(assignedId);
+				if (assigned) {
+					setEditingAlgorithm(assigned);
+				}
 			}
 		} catch (error) {
 			setError(error.response?.data?.message || 'Failed to load algorithms');
-			setTimeout(() => { setError('') }, 3000);
+			setTimeout(() => { setError('') }, 5000);
 		} finally {
 			setLoading(false);
 		}
 	};
 
 	const handleCreated = newAlgo => {
-		const newAlgoWithLocation = {
-			...newAlgo,
-			algorithm_locations: [{ location_id: locationId }]
-		};
-		//Manually move assigned algorithm to top of the list, so that fetchAlgorithms() does not need to be called again
-		setAlgorithms(prev => {
-			const updated = [...prev, newAlgoWithLocation]
-			updated.sort((a, b) => a.algorithm_name.localeCompare(b.algorithm_name));
-			const index = updated.findIndex(a => a.algorithm_id === newAlgo.algorithm_id);
-			if (index > 0) {
-				const [created] = updated.splice(index, 1);
-				updated.unshift(created);
-			}
-			return updated;
-		});
-		assignAlgorithm(newAlgo.algorithm_id);
-		refreshPosts(); 
+		try {
+			const newAlgoWithLocation = {
+				...newAlgo,
+				algorithm_locations: [{ location_id: locationId }]
+			};
+			//Manually move assigned algorithm to top of the list, so that fetchAlgorithms() does not need to be called again
+			setAlgorithms(prev => {
+				const updated = [...prev, newAlgoWithLocation]
+				updated.sort((a, b) => a?.algorithm_name?.localeCompare(b?.algorithm_name));
+				const index = updated.findIndex(a => a?.algorithm_id === newAlgo?.algorithm_id);
+				if (index > 0) {
+					const [created] = updated.splice(index, 1);
+					updated.unshift(created);
+				}
+				return updated;
+			});
+			assignAlgorithm(newAlgo?.algorithm_id);
+			refreshPosts(); 
+		} catch (error) {
+			setError(error.response?.data?.message || 'Failed to update algorithms');
+			setTimeout(() => { setError('') }, 5000);
+		}
 	};
 
 	const selectAlgorithm = algorithmId => {
-		const algorithm = algorithms.find(a => a.algorithm_id === algorithmId);
-		const isAlreadyAssigned = algorithm?.algorithm_locations?.some(fa => fa.location_id === locationId);
+		const algorithm = algorithms.find(a => a?.algorithm_id === algorithmId);
+		const isAlreadyAssigned = algorithm?.algorithm_locations?.some(fa => fa?.location_id === locationId);
 		if (isAlreadyAssigned) return;
 		assignAlgorithm(algorithmId);
 		setEditingAlgorithm(algorithm || null);
@@ -160,7 +166,7 @@ const AlgorithmSelector = ({ locationId, refreshPosts }) => {
 			setAssignedAlgorithmId('');
 			setAlgorithms(prev => prev.map(algo => ({
 				...algo,
-				algorithm_locations: (algo.algorithm_locations || []).filter(loc => loc.location_id !== locationId)
+				algorithm_locations: (algo?.algorithm_locations || []).filter(loc => loc?.location_id !== locationId)
 			})));
 			setEditingAlgorithm(null);
 			refreshPosts();
@@ -171,7 +177,7 @@ const AlgorithmSelector = ({ locationId, refreshPosts }) => {
 	};
 
 	const updateAlgorithms = updatedAlgo => {
-		setAlgorithms(prev => prev.map(a => a.algorithm_id === updatedAlgo.algorithm_id ? updatedAlgo : a));
+		setAlgorithms(prev => prev.map(a => a?.algorithm_id === updatedAlgo?.algorithm_id ? updatedAlgo : a));
 		setEditingAlgorithm(null);
 	};
 

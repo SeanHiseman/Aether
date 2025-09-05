@@ -60,7 +60,7 @@ router.get('/channel_posts', async (req, res) => {
 			required: false
 		},{
 			as: 'parentChannel',
-			attributes: ['channel_id', 'channel_name'],
+			attributes: ['channel_id', 'channel_name', 'feed_id'],
 			include: [{
 				attributes: feedAttributes,
 				model: Feeds
@@ -110,7 +110,6 @@ router.get('/channel_posts', async (req, res) => {
 		if (!results.length) return res.status(200).json([]);
 		return res.status(200).json(results);
 	} catch (error) {
-		console.error("Error in /channel_posts:", error);
 		return res.status(500).json({ success: false, message: 'Error getting posts.' });
 	}
 });
@@ -302,7 +301,6 @@ router.post('/create_post', authenticateCheck, checkStorageLimit, postUpload.arr
         }
         const modifiedContent = $.html();
         const analysisResults = await contentAnalyser.analyseContent(modifiedContent, title);
-        console.log("analysis results:", analysisResults);
         const postData = {
             channel_id, 
             content: modifiedContent, 
@@ -321,16 +319,14 @@ router.post('/create_post', authenticateCheck, checkStorageLimit, postUpload.arr
                 await parentPost.save();
             }
         }
-        console.log("post:", post)
         return res.status(200).json({ success: true, post });
     } catch (error) {
-        console.error('Error creating post with analysis:', error);
         if (req.files && req.files.length > 0) {
             req.files.forEach(file => {
                 try {
                     fs.unlinkSync(path.join(mediaDir, file.filename));
                 } catch (cleanupError) {
-                    console.error('Error cleaning up file:', cleanupError);
+                    return res.status(500).json({ success: false, error: cleanupError });
                 }
             });
         }

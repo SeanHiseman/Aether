@@ -71,7 +71,7 @@ async function ApplyAlgorithm({ locationId, excludedPostIds, feedId, includeOpti
 
         //Fetch posts according to location
         let posts = [];
-        if (locationId === 'search' && keyword) { //Search results
+        if (locationId === "search" && keyword) { //Search results
             const publicFeeds = await Feeds.findAll({
                 where: { type: { [Op.ne]: 'private' } },
                 attributes: ['feed_id'],
@@ -93,25 +93,30 @@ async function ApplyAlgorithm({ locationId, excludedPostIds, feedId, includeOpti
                 offset: offset,
                 order: [['created_at', 'DESC']]
             });
-        } else if (locationId === 'following' && viewerId) { //Followed feeds
+        } else if (locationId === "following") { //Followed feeds
             const followedFeeds = await Followers.findAll({
                 where: { follower_id: viewerId },
                 attributes: ['feed_id']
             });
             if (followedFeeds.length === 0) return [];
-            posts = await Posts.findAll({
-                attributes: postAttributes,
-                include: includeOptions,
-                where: {
-                    feed_id: { [Op.in]: followedFeeds.map(f => f.feed_id) },
-                    parent_id: null,
-                    post_id: { [Op.notIn]: excludedIds }
-                },
-                limit: limit,
-                offset: offset,
-                order: [['created_at', 'DESC']]
-            });
-        } else if (locationId === 'explore') { //Explore page
+            try {
+                posts = await Posts.findAll({
+                    attributes: postAttributes,
+                    include: includeOptions,
+                    where: {
+                        feed_id: { [Op.in]: followedFeeds.map(f => f.feed_id) },
+                        parent_id: null,
+                        post_id: { [Op.notIn]: excludedIds }
+                    },
+                    limit: limit,
+                    offset: offset,
+                    order: [['created_at', 'DESC']]
+                });
+                console.log("posts.length:", posts.length);
+            } catch (error) {
+                console.log("error getting following posts:", error);
+            }
+        } else if (locationId === "explore") { //Explore page
             const publicFeeds = await Feeds.findAll({
                 where: { type: { [Op.ne]: 'private' } },
                 attributes: ['feed_id']
@@ -165,7 +170,7 @@ async function ApplyAlgorithm({ locationId, excludedPostIds, feedId, includeOpti
             });
         } else { //Feed channel
             const whereChannel = {
-                ...(isMain !== 'true' && locationId ? { channel_id: locationId } : {}),
+                ...(isMain !== true && locationId ? { channel_id: locationId } : {}),
                 feed_id: feedId,
                 parent_id: null,
                 post_id: { [Op.notIn]: excludedIds }
@@ -356,26 +361,26 @@ async function ApplyAlgorithm({ locationId, excludedPostIds, feedId, includeOpti
                 _maxSimilarity: maxSimilarity
             });
         }
-		if (!finalPosts.length) return [];
+
+        if (!finalPosts.length) return [];
         finalPosts.sort((a, b) => b.score - a.score); //Sort posts by score
-
         //Add saved info to posts
-		const finalIds = finalPosts.map(p => p.post_id);
-		const savedRows = saverId ? await SavedPosts.findAll({ 
-			attributes: ['post_id'],
-			raw: true,
-			where: { post_id: { [Op.in]: finalIds }, saver_id: saverId }
-		}) : [];
-		const savedSet = new Set(savedRows.map(s => s.post_id));
-
+        const finalIds = finalPosts.map(p => p.post_id);
+        const savedRows = viewerId ? await SavedPosts.findAll({ 
+            attributes: ['post_id'],
+            raw: true,
+            where: { post_id: { [Op.in]: finalIds }, saver_id: viewerId }
+        }) : [];
+        const savedSet = new Set(savedRows.map(s => s.post_id));
         //Return final selection of posts
-		return finalPosts.map(post => {
-			const { score, _maxSimilarity, ...rest } = post;
-			return {
-				...rest,
-				is_saved: savedSet.has(post.post_id)
-			};
-		});
+        
+        return finalPosts.map(post => {
+            const { score, _maxSimilarity, ...rest } = post;
+            return {
+                ...rest,
+                is_saved: savedSet.has(post.post_id)
+            };
+        });
 	} catch (error) {
 		return [];
 	}

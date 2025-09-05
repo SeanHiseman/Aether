@@ -34,19 +34,17 @@ const SearchResults = () => {
     const { isAuthenticated, viewer } = useContext(AuthContext);
     const loaderRef = useRef(null);
     const { rightClasses } = useOutletContext();
+    const [refreshTrigger, setRefreshTrigger] = useState(false);
     const scrollRef = useRef(null);
 
     //Gets results depending on which type is being viewed
     const fetchSearchResults = async ({ pageParam = 0 }) => {
         try {
-            console.log("fetching search results");
             const response = await axios.get(
                 `/api/search/?keyword=${keyword}&limit=24&offset=${pageParam}`
             );
-            console.log("search response:", response);
             return response.data || { feeds: [], posts: [] };
         } catch (error) {
-            console.log("error:", error);
             const message = error.response?.data?.message || "Error getting search results";
             setErrorMessage(message);
             // Return safe empty structure so react-query doesn't crash
@@ -119,6 +117,10 @@ const SearchResults = () => {
             setErrorMessage('Failed to load results. Please try again.');
         }
     }, [error]);
+
+    const refreshPosts = () => {
+        setRefreshTrigger(!refreshTrigger);
+    };
 
     document.title = 'Search';
     return (
@@ -213,7 +215,7 @@ const SearchResults = () => {
                         )}
                     </ul>
                 </nav>
-				{isAuthenticated && <AlgorithmSelector locationId={"search"} />} {/* Project code */}
+				{isAuthenticated && <AlgorithmSelector locationId={"search"} refreshPosts={refreshPosts} />} {/* Project code */}
             </aside>
         </div>
     );

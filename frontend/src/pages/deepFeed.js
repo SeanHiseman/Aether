@@ -21,6 +21,7 @@ const DeepFeed = () => {
     const [isNewNameValid, setIsNewNameValid] = useState(false);
     const [newName, setNewName] = useState('');
     const [postErrorMessage, setPostErrorMessage] = useState('');
+    const [refreshTrigger, setRefreshTrigger] = useState(false);
     const { isAuthenticated, user, viewer } = useContext(AuthContext);
     const navigate = useNavigate();
     const { rightClasses } = useOutletContext(); 
@@ -59,6 +60,7 @@ const DeepFeed = () => {
         queryKey: ['deepFeedPosts', deep_feed_id],
         queryFn: getPosts,
         getNextPageParam: (lastPage, allPages) => {
+            if (!Array.isArray(lastPage)) return undefined;
             return lastPage.length === 10 ? allPages.length * 10 : undefined;
         }
     });
@@ -162,7 +164,7 @@ const DeepFeed = () => {
         };
     }, [loaderRef, hasNextPage, isFetchingNextPage, fetchNextPage]);
 
-    const allPosts = data ? data.pages.flatMap(page => page) : [];
+    const allPosts = Array.isArray(data?.pages) ? data.pages.flatMap(page => Array.isArray(page) ? page : []) : [];
 
     const editSubmit = async (formData) => {
         if (!activeEditPost) return;
@@ -174,6 +176,10 @@ const DeepFeed = () => {
             setErrorMessage(error.response?.data?.message || 'Error editing post');
             setTimeout(() => { setErrorMessage('') }, 3000);
         }
+    };
+
+    const refreshPosts = () => {
+        setRefreshTrigger(!refreshTrigger);
     };
 
     return (
@@ -213,16 +219,18 @@ const DeepFeed = () => {
                         <>
                             <ul className="content-list">
                                 {allPosts.map((post) => (
-                                    <ContentWidget
-                                        key={post.post_id}
-                                        canRemove={false}
-                                        feed={post.poster}
-                                        isGroup={post.is_group}
-                                        onEditClick={setActiveEditPost}
-                                        onPostRemoved={() => {}}
-                                        onReplyClick={setActiveReplyPost}
-                                        post={post}
-                                    />
+                                    post ? (
+                                        <ContentWidget
+                                            key={post.post_id || Math.random()}
+                                            canRemove={false}
+                                            feed={post.poster || {}}
+                                            isGroup={!!post.is_group}
+                                            onEditClick={setActiveEditPost}
+                                            onPostRemoved={() => {}}
+                                            onReplyClick={setActiveReplyPost}
+                                            post={post}
+                                        />
+                                    ) : null
                                 ))}
                             </ul>
                             <div ref={loaderRef}>
@@ -293,7 +301,7 @@ const DeepFeed = () => {
                                         </button>
                                     </>
                                 )}
-                                {isAuthenticated && <AlgorithmSelector locationId={deepFeed.deep_feed_id} />} {/*Project code*/}
+                                {isAuthenticated && <AlgorithmSelector locationId={deepFeed.deep_feed_id} refreshPosts={refreshPosts} />} {/*Project code*/}
                             </div>
                         </div>
                     )}
