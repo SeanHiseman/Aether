@@ -1,3 +1,4 @@
+//Project code
 import cheerio from 'cheerio';
 import natural from 'natural';
 import { pipeline } from '@xenova/transformers';
@@ -37,10 +38,12 @@ export class ContentAnalyser {
     }
 
     async analyseMedia(htmlContent) {
-        const $ = cheerio.load(htmlContent || '');
-        const images = $('img').length;
-        const videos = $('video').length;
+        const $ = cheerio.load(htmlContent || ''); //Change to detecting text blocks
+        const images = $('img').length; //Change to detecting images in media blocks
+        const videos = $('video').length; //Change to detecting videos in media blocks
         const interactive = $('.content-block.code-block, .content-block.app-block, pre, iframe, canvas').length;
+        const externalPosts = $('div.social-media-embed').length;
+        const embeddedWebsites = $('iframe.embedded-website').length;
         let totalVideoLength = 0;
         $('video').each((_, el) => {
             const durationAttr = $(el).attr('data-duration');
@@ -55,6 +58,8 @@ export class ContentAnalyser {
             has_images: images > 0,
             has_videos: videos > 0,
             has_interactive: interactive > 0,
+            has_external_posts: externalPosts > 0,
+            has_embedded_websites: embeddedWebsites > 0,
             image_count: images,
             video_count: videos,
             video_length: totalVideoLength,
@@ -82,13 +87,10 @@ export class ContentAnalyser {
 
     async generateEmbedding(text) {
         try {
-            //console.log("generating embedding for text:", text)
             const embedder = await getEmbedder();
             const output = await embedder(text, { pooling: 'mean', normalize: true });
-            //console.log("embedding output:", output);
             return Array.from(output.data); // Convert to plain JS array for storage
         } catch (error) {
-            console.error('Embedding generation failed:', error);
             return [];
         }
     }
@@ -97,12 +99,11 @@ export class ContentAnalyser {
         if (!text || text.trim().length === 0) return 0;
         try {
             const doc = nlp.readDoc(text);
-            const score = doc.out(its.sentiment) //Scaled between -1 and 1
-            console.log("text:", text);
-            console.log("raw score:", score);
-            return score; 
+            const rawScore = doc.out(its.sentiment); //between -1 and 1
+            //Exponential scaling to push values further from 0
+            const weightedScore = Math.sign(rawScore) * Math.pow(Math.abs(rawScore), 0.5); 
+            return weightedScore;
         } catch (error) {
-            console.warn('Sentiment analysis failed:', error);
             return 0;
         }
     }

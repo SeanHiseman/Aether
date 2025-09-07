@@ -39,7 +39,7 @@ const ALGORITHM_TEMPLATES = {
         maxText: 100, 
         minVideo: 0,
         maxVideo: 100,
-        contentType: { images: false, text: true, videos: false, interactive: false, externalPosts: false, embeddedWebsites: true },
+        contentType: { images: false, text: true, videos: true, interactive: true, externalPosts: true, embeddedWebsites: true },
         wordBoost: "analysis,comprehensive,detailed,research,study,investigation,deep,thorough,complete",
         wordSuppress: "quick,brief,summary,tldr,short",
         customInstruction: "Prioritise comprehensive, well-researched longform content. Focus on detailed analysis and thorough investigations. Minimal visual distractions."

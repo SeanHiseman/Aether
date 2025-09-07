@@ -248,12 +248,10 @@
   justify-content: center;
 }
 .icon-button.ask {
-  background-color: var(--dark);
   border-top-right-radius: calc(clamp(4px, 1vw, 10px) + var(--medium-margin));
   border-bottom-right-radius: calc(clamp(4px, 1vw, 10px) + var(--medium-margin));
 }
 .icon-button.search {
-  background-color: var(--dark);
   border-top-right-radius: calc(clamp(4px, 1vw, 10px) + var(--medium-margin));
   border-bottom-right-radius: calc(clamp(4px, 1vw, 10px) + var(--medium-margin));
 }
@@ -357,7 +355,6 @@ main {
   padding: 0;
 }
 .search-form {
-  background-color: var(--dark);
   border: 1px solid var(--border);
   border-radius: calc(clamp(4px, 1vw, 10px) + var(--medium-margin));
   height: 90%;

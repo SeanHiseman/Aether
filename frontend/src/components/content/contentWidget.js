@@ -449,7 +449,7 @@ const ContentWidget = ({ canRemove, feed, isDraft, isGroup, onEditClick, onPostR
 								/>
 							))
 						) : (
-							<p className="medium-text">No replies</p>
+							<p className="small-text">No replies</p>
 						)
 					)}
 					{replies.length > 0 && !treeViewMode && (

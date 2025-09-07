@@ -262,7 +262,6 @@
     -webkit-line-clamp: 4;
   }
   .explore-block {
-    background-color: var(--dark);
     border: 1px solid var(--border);
     border-radius: var(--medium-margin);
     box-sizing: border-box;

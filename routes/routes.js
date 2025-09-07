@@ -6,20 +6,16 @@ import { Op } from 'sequelize';
 import { Router } from 'express';
 
 const router = Router();
-const feedAttributes = ['feed_id', 'parent_id', 'feed_name', 'description', 'feed_photo', 'follower_count', 'created_at', 'updated_at', 'type', 'is_group', 'feed_owner', 'is_locked'];
-const notesAttributes = ['note_id', 'note_content', 'created_at', 'updated_at', 'is_misinfo'];
-const posterAttributes = ['feed_id', 'feed_name', 'description', 'feed_photo', 'type', 'is_group'];
 
 //Searches posts and feeds together
 router.get('/search', async (req, res) => { 
     try {
         const searcherId = req.session.viewer_id;
         const keyword = req.query.keyword ? req.query.keyword.toLowerCase() : '';
-        const limit = req.query.limit ? parseInt(req.query.limit, 10) : 10;
-        const offset = req.query.offset ? parseInt(req.query.offset, 10) : 0;
+        const limit = parseInt(req.query.limit, 10) || 10;
+        const offset = parseInt(req.query.offset, 10) || 0;
         const feeds = await Feeds.findAll({
             where: { feed_name: { [Op.like]: `%${keyword}%` } },
-            attributes: feedAttributes, 
             limit,
             offset
         });
@@ -61,11 +57,9 @@ router.get('/search', async (req, res) => {
         const includeOptions = [{
             model: Feeds,
             as: 'poster',
-            attributes: feedAttributes
         }, {
             model: PostNotes,
             as: 'note',
-            attributes: notesAttributes
         }, {
             model: FeedChannels,
             as: 'parentChannel',
@@ -73,7 +67,6 @@ router.get('/search', async (req, res) => {
         }, {
             model: Feeds,
             as: 'poster',
-            attributes: posterAttributes
         }, {
             model: PostVotes,
             as: 'votes',

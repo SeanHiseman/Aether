@@ -101,7 +101,7 @@ const DualRangeSlider = ({ min = 0, max = 100, value = [25, 75], onChange, forma
 };
 
 const AddAlgorithm = ({ algorithms = [], editingAlgorithm = null, locationId, onCreated, onUpdated, setEditingAlgorithm }) => {  
-    const [activeDays, setActiveDays] = useState({ monday: true, tuesday: true, wednesday: true, thursday: true, friday: true, saturday: true, sunday: true });
+    const [activeDays, setActiveDays] = useState(['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']);
     const [algorithmCode, setAlgorithmCode] = useState('');
     const [algorithmName, setAlgorithmName] = useState('');
     const [chronology, setChronology] = useState(1);
@@ -125,6 +125,8 @@ const AddAlgorithm = ({ algorithms = [], editingAlgorithm = null, locationId, on
     const [wordBoost, setWordBoost] = useState('');
     const [wordSuppress, setWordSuppress] = useState('');
 
+    const isDayActive = (day) => activeDays.includes(day);
+
     const logScale = (value, min, max) => {
         const logMin = Math.log10(min);
         const logMax = Math.log10(max);
@@ -136,8 +138,8 @@ const AddAlgorithm = ({ algorithms = [], editingAlgorithm = null, locationId, on
             setError(null);
             const nameToUse = algorithmName.trim() || `Algorithm ${algorithms.length + 1}`;
             const duplicate = algorithms.some(
-                a => a.algorithm_name.toLowerCase() === nameToUse.toLowerCase() &&
-                a.algorithm_id !== editingAlgorithm?.algorithm_id
+                a => a?.algorithm_name.toLowerCase() === nameToUse.toLowerCase() &&
+                a?.algorithm_id !== editingAlgorithm?.algorithm_id
             );
             if (duplicate) {
                 setError("Name taken, please choose another.");
@@ -170,26 +172,26 @@ const AddAlgorithm = ({ algorithms = [], editingAlgorithm = null, locationId, on
             };
             const { data } = await axios.post('/api/create_algorithm', payload);
             if (data.success) {
-                const saved = data.updatedAlgorithm || data.newAlgorithm;
+                const saved = data?.updatedAlgorithm || data?.newAlgorithm;
                 if (editingAlgorithm) {
                     onUpdated && onUpdated(saved);
                 } else {
                     setEditingAlgorithm(saved);
-                    onCreated && onCreated(saved);
+                    onCreated && onCreated({ ...saved, algorithm_name: nameToUse });
                 }
             } else {
                 throw new Error(data.message || 'Failed to save algorithm.');
             }
         } catch (error) {
             setError("Error submitting algorithm");
-            setTimeout(() => { setError('') }, 3000);
+            setTimeout(() => { setError('') }, 5000);
         } finally {
             setLoading(false);
         }
     };
 
     const startCreatingNew = () => {
-        setActiveDays({ monday: true, tuesday: true, wednesday: true, thursday: true, friday: true, saturday: true, sunday: true });
+        setActiveDays(['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']);
         setAlgorithmCode('');
         setAlgorithmName('');
         setChronology(0.8);
@@ -213,6 +215,7 @@ const AddAlgorithm = ({ algorithms = [], editingAlgorithm = null, locationId, on
     const templateChange = (templateKey) => {
         setTemplate(templateKey);
         if (templateKey === 'none') {
+            setActiveDays(['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']);
             setChronology(0.8);
             setSentiment(0);
             setVoteImpact(0);
@@ -227,6 +230,7 @@ const AddAlgorithm = ({ algorithms = [], editingAlgorithm = null, locationId, on
         }
         const templateConfig = ALGORITHM_TEMPLATES[templateKey];
         if (templateConfig) {
+            setActiveDays(['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']); //Templates don't yet specify days
             setChronology(templateConfig.chronology);
             setSentiment(templateConfig.sentiment);
             setVoteImpact(templateConfig.voteImpact);
@@ -242,6 +246,14 @@ const AddAlgorithm = ({ algorithms = [], editingAlgorithm = null, locationId, on
             }
         }
     };
+
+    const toggleDay = (day) => {
+        setActiveDays(prev => 
+            prev.includes(day) 
+                ? prev.filter(d => d !== day)  //Remove if active
+                : [...prev, day]               //Add if inactive
+        );
+    }
 
     useEffect(() => {
         if (customInstruction.trim()) {
@@ -265,7 +277,7 @@ const AddAlgorithm = ({ algorithms = [], editingAlgorithm = null, locationId, on
                     parsedAlgorithmCode = {};
                 }
             }
-            setActiveDays(parsedAlgorithmCode.activeDays || { monday: true, tuesday: true, wednesday: true, thursday: true, friday: true, saturday: true, sunday: true });
+            setActiveDays(parsedAlgorithmCode.activeDays || ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']);
             setAlgorithmCode(parsedAlgorithmCode);
             setAlgorithmName(algorithm_name);
             setChronology(parsedAlgorithmCode.chronology || 0.8);
@@ -438,7 +450,7 @@ const AddAlgorithm = ({ algorithms = [], editingAlgorithm = null, locationId, on
                             <div className="form-group">
                                 <div className="form-label-with-info">
                                     <label className="small-text">Content Variety</label>
-                                    <InfoIconWithTooltip info="Compares posts similarity to your previously viewed posts." />
+                                    <InfoIconWithTooltip info="Compares post similarity to your previously viewed posts." />
                                 </div>
                                 <input
                                     className="form-input"
@@ -451,9 +463,9 @@ const AddAlgorithm = ({ algorithms = [], editingAlgorithm = null, locationId, on
                                     onChange={e => setVariety(parseFloat(e.target.value))}
                                 />
                                 <div className="slider-labels">
-                                    <span className="tiny-text">Varied</span>
-                                    <span className="tiny-text">Mixed</span>
                                     <span className="tiny-text">Similar</span>
+                                    <span className="tiny-text">Mixed</span>
+                                    <span className="tiny-text">Varied</span>
                                 </div>
                             </div>
                         </div>
@@ -624,25 +636,53 @@ const AddAlgorithm = ({ algorithms = [], editingAlgorithm = null, locationId, on
                         <div className="form-row">
                             <div>
                                 <label>
-                                    <input type="checkbox" checked={activeDays.monday} onChange={e => setActiveDays(prev => ({ ...prev, monday: e.target.checked }))} /> Mon
+                                    <input 
+                                        type="checkbox" 
+                                        checked={isDayActive('monday')} 
+                                        onChange={() => toggleDay('monday')} 
+                                    /> Mon
                                 </label>
                                 <label>
-                                    <input type="checkbox" checked={activeDays.tuesday} onChange={e => setActiveDays(prev => ({ ...prev, tuesday: e.target.checked }))} /> Tue
+                                    <input 
+                                        type="checkbox" 
+                                        checked={isDayActive('tuesday')} 
+                                        onChange={() => toggleDay('tuesday')} 
+                                    /> Tue
                                 </label>
                                 <label>
-                                    <input type="checkbox" checked={activeDays.wednesday} onChange={e => setActiveDays(prev => ({ ...prev, wednesday: e.target.checked }))} /> Wed
+                                    <input 
+                                        type="checkbox" 
+                                        checked={isDayActive('wednesday')} 
+                                        onChange={() => toggleDay('wednesday')} 
+                                    /> Wed
                                 </label>
                                 <label>
-                                    <input type="checkbox" checked={activeDays.thursday} onChange={e => setActiveDays(prev => ({ ...prev, thursday: e.target.checked }))} /> Thur
+                                    <input 
+                                        type="checkbox" 
+                                        checked={isDayActive('thursday')} 
+                                        onChange={() => toggleDay('thursday')} 
+                                    /> Thur
                                 </label>
                                 <label>
-                                    <input type="checkbox" checked={activeDays.friday} onChange={e => setActiveDays(prev => ({ ...prev, friday: e.target.checked }))} /> Fri
+                                    <input 
+                                        type="checkbox" 
+                                        checked={isDayActive('friday')} 
+                                        onChange={() => toggleDay('friday')} 
+                                    /> Fri
                                 </label>
                                 <label>
-                                    <input type="checkbox" checked={activeDays.saturday} onChange={e => setActiveDays(prev => ({ ...prev, saturday: e.target.checked }))} /> Sat
+                                    <input 
+                                        type="checkbox" 
+                                        checked={isDayActive('saturday')} 
+                                        onChange={() => toggleDay('saturday')} 
+                                    /> Sat
                                 </label>
                                 <label>
-                                    <input type="checkbox" checked={activeDays.sunday} onChange={e => setActiveDays(prev => ({ ...prev, sunday: e.target.checked }))} /> Sun
+                                    <input 
+                                        type="checkbox" 
+                                        checked={isDayActive('sunday')} 
+                                        onChange={() => toggleDay('sunday')} 
+                                    /> Sun
                                 </label>
                             </div>
                         </div>

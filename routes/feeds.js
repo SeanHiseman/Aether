@@ -25,8 +25,6 @@ app.use(express.static(join(__dirname, 'static')));
 const feedProfileUpload = imageUpload('/media/feed_images', 'new_feed_photo');
 
 const defaultImages = [process.env.DEFAULT_USER_IMAGE, process.env.DEFAULT_GROUP_IMAGE];
-const feedAttributes = ['feed_id', 'parent_id', 'feed_name', 'description', 'feed_photo', 'follower_count', 'created_at', 'updated_at', 'type', 'is_group', 'feed_owner', 'is_locked'];
-const noteAttributes = ['note_id', 'note_content', 'created_at', 'updated_at', 'is_misinfo'];
 
 const calculateFileSize = (file) => {
     return file.size / (1024 * 1024);
@@ -393,7 +391,7 @@ router.get('/deep_feed_contents/:deepFeedId', authenticateCheck, async (req, res
             where: { deep_feed_id: deepFeedId },
             include: [
                 { model: DeepFeeds, as: 'nestedDeepFeed' },
-                { model: Feeds, as: 'feed', attributes: feedAttributes }
+                { model: Feeds, as: 'feed' }
             ],
             order: [
                 [{ model: DeepFeeds, as: 'nestedDeepFeed' }, 'name', 'ASC'],
@@ -422,21 +420,18 @@ router.get('/deep_feed_posts', authenticateCheck, async (req, res) => {
         }
         const includeOptions = [{
             as: 'note',
-            attributes: noteAttributes,
             model: PostNotes,
             required: false
         },{
             as: 'parentChannel',
             attributes: ['channel_id', 'channel_name', 'feed_id'],
             include: [{
-                attributes: feedAttributes,
                 model: Feeds
             }],
             model: FeedChannels,
             required: false
         },{
             as: 'poster',
-            attributes: feedAttributes,
             model: Feeds
         },{
             as: 'votes',
@@ -573,7 +568,6 @@ router.get("/explore_feeds", async (req, res) => {
                 feed_id: { [Op.notIn]: [...excludeArray, ...(viewerId ? [viewerId] : [])] }
             },
             order: sequelize.literal("RAND()"),
-            attributes: feedAttributes,
             limit
         });
 		const feedData = await Promise.all(feeds.map(async (feed) => {
@@ -672,7 +666,7 @@ router.get('/feed_channel_messages', async (req, res) => {
         const { channelId, limit, offset } = req.query;
         const messages = await FeedChannelMessages.findAll({
             where: { channel_id: channelId },
-            include: [{ attributes: feedAttributes, model: Feeds }],
+            include: [{ model: Feeds }],
             order: [['timestamp', 'ASC']],
             limit: parseInt(limit) || 20,
             offset: parseInt(offset) || 0,
@@ -692,7 +686,6 @@ router.get('/feed_list', authenticateCheck, async (req, res) => {
             include: [{
                 model: Feeds,
                 as: 'followedFeed',
-                attributes: feedAttributes,
             }],
             order: [['followedFeed', 'feed_name', 'ASC']],
             limit: 30,
@@ -735,7 +728,6 @@ router.get('/follow_requests/:feedId', authenticateCheck, async (req, res) => {
                 model: Feeds, 
                 as: 'sender',
                 required: true,
-                attributes: feedAttributes,
             }],
         }); 
         res.status(200).json({ success: true, requests });
@@ -754,7 +746,6 @@ router.get('/get_feed_channels/:feedId', async (req, res) => {
                 include: [{
                     model: Feeds,
                     as: 'feed',
-                    attributes: feedAttributes,
                 }],
                 order: [['display_order', 'ASC'], ['channel_name', 'ASC']] 
             });
@@ -765,7 +756,6 @@ router.get('/get_feed_channels/:feedId', async (req, res) => {
             include: [{
                 model: Feeds,
                 as: 'feed',
-                attributes: feedAttributes,
             }],
             order: [['display_order', 'ASC'], ['channel_name', 'ASC']] //Secondary in case of same display order
         });
@@ -784,7 +774,6 @@ router.get('/get_feed_followers/:feedId', authenticateCheck, async (req, res) =>
                 model: Feeds,
                 as: 'followerFeed',
                 required: true,
-                attributes: feedAttributes,
             }],
             attributes: ['follow_id', 'follower_id', 'is_mod', 'is_admin', 'created_at']
         });
@@ -980,7 +969,7 @@ router.put('/update_feed_photo/:feedId', authenticateCheck, checkProfileStorageL
             if (error.code === 'LIMIT_FILE_SIZE') {
                 return res.status(413).json({ error: 'File cannot be more than 5MB' });
             }
-            return res.status(400).json({ success: false });
+            return res.status(400).json({ success: false, message: 'Upload error' });
         } else if (error) {
             return res.status(400).json({ success: false });
         }
@@ -1009,7 +998,7 @@ router.put('/update_feed_photo/:feedId', authenticateCheck, checkProfileStorageL
             await user.save();
             feed.feed_photo = newPhotoPath;
             await feed.save();
-            return res.status(200).json({ newPhotoPath: newPhotoPath });
+            return res.status(200).json({ success: true, newPhotoPath: newPhotoPath });
         } catch (error) {
             if (req.file) {
                 try {

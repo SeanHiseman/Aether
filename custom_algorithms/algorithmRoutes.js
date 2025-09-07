@@ -36,95 +36,75 @@ router.post('/create_algorithm', authenticateCheck, async (req, res) => {
 	try {
 		const { algorithmName, activeDays, chronology, contentType, customInstruction, dateFrom, dateTo, generateCode, locationId, minText, maxText, minVideo, maxVideo, sentiment, startTime, endTime, variety, voteImpact, wordBoost, wordSuppress } = req.body;
 		console.log("create_algorithm req.body:", req.body);
+		console.log("create algorithm active days:", activeDays);
 		const viewerId = req.session.viewer_id;
-		const userSettings = { chronology, contentType, sentiment, startTime, endTime, variety, voteImpact, wordBoost, wordSuppress };
+		const algorithmJson = {
+			chronology,
+			contentType,
+			variety,
+			activeDays: Array.isArray(activeDays) ? activeDays : Object.keys(activeDays).filter(day => activeDays[day]),
+			textLimits: { min: minText || null, max: maxText || null },
+			videoLimits: { min: minVideo || null, max: maxVideo || null },
+			timeLimits: { startTime: startTime || null, endTime: endTime || null },
+			dateLimits: { from: dateFrom || null, to: dateTo || null },
+			scoring: {
+				sentiment,
+				voteImpact,
+				wordBoost: Array.isArray(wordBoost) ? wordBoost.map(word =>
+					typeof word === 'string' ? { word, value: 10 } : word
+				) : [],
+				wordSuppress: Array.isArray(wordSuppress) ? wordSuppress.map(word =>
+					typeof word === 'string' ? { word, value: -10 } : word
+				) : []
+			}
+		};
+		console.log("algorithmJson:", algorithmJson);
 		let algorithmCode;
 		if (generateCode && customInstruction && customInstruction.trim() !== "") {
 			const systemPrompt = `
-				You are an expert algorithm creation assistant. Your task is to generate a single, valid JSON object representing a user's custom algorithm rules.
-				The user will provide form settings and/or a custom natural language instruction. You must merge both sources into the final JSON, prioritising the custom instruction when there is any conflict.
-
-				Rules for interpretation:
-				1. Broad Topic Expansion: For any mentioned topic, expand into the most exhaustive set of related terms possible — including synonyms, abbreviations, acronyms, hashtags, nicknames, notable people, brands, teams, events, locations, and common misspellings. Use real-world domain knowledge. Example: “Formula 1” must include “F1”, “#F1”, “Grand Prix”, all circuit names, and major team/principal names.
-				2. Exclusions: If the instruction says to exclude, remove, hide, or suppress content, always use a "SUPPRESS" rule. Never duplicate this exclusion in wordSuppress.
-				3. Temporal Restrictions: If the instruction specifies a day of the week, specific time, or date range, treat it as a hard requirement. Do not allow matching content outside that period. If your schema supports only post_time (HH:MM) or day_of_week (string), map appropriately. Example: “on Sundays” means "day_of_week": "Sunday" as a required condition in the rule.
-				4. Combining Conditions: When multiple restrictions apply to the same requirement (e.g., topic + day), place them in the same conditions array for that rule.
-				5. Scoring Defaults: Unless explicitly provided, default wordBoost values to 10 and wordSuppress to -10.
-				6. Output format: The JSON must strictly follow this schema:
+				You are an expert algorithm creation assistant. 
+				Output a single, valid JSON object strictly following this schema:
 				{
-				"chronology": "newest" | "oldest",
-				"variety": number,
-				"scoring": {
-					"sentiment": number,
-					"voteImpact": number,
-					"wordBoost": [{ "word": string, "value": number }],
-					"wordSuppress": [{ "word": string, "value": number }]
-				},
-				"rules": [{
-					"ruleName": string,
-					"action": { "type": "SUPPRESS" | "BOOST" | "PENALIZE", "value": number },
-					"conditions": [
-						{
-						"field": "post_time" | "day_of_week" | "body" | "category" | "sentiment_score" | "has_images" | "has_videos" | "has_text",
-						"operator": "AFTER" | "BEFORE" | "EQUALS" | "CONTAINS" | "CONTAINS_ANY" | "GREATER_THAN" | "LESS_THAN",
-						"value": string | number | boolean | string[]
-						}
-					],
-					"exceptions": [ { "condition": { ... } } ]
-				}]}
-				7. Validation: All terms, conditions, and rules must be valid per this schema. No extra text outside the JSON.
+					"chronology": number (-1 to 1),
+					"variety": number (0 to 1),
+					"contentType": { "images": boolean, "videos": boolean, "text": boolean, "interactive": boolean, "externalPosts": boolean, "embeddedWebsites": boolean },
+					"activeDays": string[] (each must be a lowercase full weekday name, e.g. "monday", "tuesday"),
+					"textLimits": { "min": number | null, "max": number | null },
+					"videoLimits": { "min": number | null, "max": number | null },
+					"timeLimits": { "startTime": string | null, "endTime": string | null },
+					"dateLimits": { "from": string | null, "to": string | null },
+					"scoring": {
+						"sentiment": number (0 to 1),
+						"voteImpact": number (0 to 1),
+						"wordBoost": [],
+						"wordSuppress": []
+					}
+				}
+				Merge the form settings with the user's custom instruction. If contradiction, prioritise following custom instruction.  
+				If conflicts occur, the custom instruction takes priority.
+				No text outside the JSON.
 			`;
 			const userContent = `
-				Please create the algorithm JSON based on the following combination of settings.
-				**Form Settings:**
-				${JSON.stringify(userSettings, null, 2)}
-				**Custom Natural Language Instruction:**
+				Form Settings:
+				${JSON.stringify(algorithmJson, null, 2)}
+				Custom Instruction:
 				"${customInstruction}"
 			`;
 			console.log("userContent:", userContent);
-			const assistant = await openai.beta.assistants.create({
-				name: "Algorithm Creator",
-				instructions: systemPrompt,
-				model: "gpt-4.1-mini",
+			const response = await openai.chat.completions.create({
+				model: "gpt-5-mini",
+				messages: [
+					{ role: "system", content: systemPrompt },
+					{ role: "user", content: userContent }
+				]
 			});
-			const thread = await openai.beta.threads.create();
-			await openai.beta.threads.messages.create(thread.id, {
-				role: "user",
-				content: userContent
-			});
-			const run = await openai.beta.threads.runs.create(thread.id, {
-				assistant_id: assistant.id,
-			});
-			let runStatus = await openai.beta.threads.runs.retrieve(thread.id, run.id);
-			while (runStatus.status === "queued" || runStatus.status === "in_progress") {
-				await new Promise(resolve => setTimeout(resolve, 1000));
-				runStatus = await openai.beta.threads.runs.retrieve(thread.id, run.id);
-			}
-			if (runStatus.status !== "completed") {
-				throw new Error(`AI run failed with status: ${runStatus.status}`);
-			}
-			const messages = await openai.beta.threads.messages.list(thread.id);
-			const aiReply = messages.data.find(msg => msg.role === 'assistant').content[0].text.value;
+			const aiReply = response.choices[0].message.content;
 			algorithmCode = aiReply.replace(/```json\n|```/g, '').trim();
 			console.log("AI generated algorithmCode:", algorithmCode);
 		} else {
-			algorithmCode = JSON.stringify({
-				chronology,
-				contentType,
-				variety,
-				scoring: {
-					sentiment,
-					voteImpact,
-					wordBoost: Array.isArray(wordBoost) ? wordBoost.map(word =>
-						typeof word === 'string' ? { word, value: 10 } : word
-					) : [],
-					wordSuppress: Array.isArray(wordSuppress) ? wordSuppress.map(word =>
-						typeof word === 'string' ? { word, value: -10 } : word
-					) : []
-				},
-				rules: []
-			});
+			algorithmCode = JSON.stringify(algorithmJson);
 		}
+		console.log("algorithmCode:", algorithmCode);
 		transaction = await sequelize.transaction();
 		const existingAlgorithm = await Algorithms.findOne({
 			where: { algorithm_name: algorithmName, viewer_id: viewerId },
@@ -146,7 +126,11 @@ router.post('/create_algorithm', authenticateCheck, async (req, res) => {
 			}, { transaction });
 		}
 		await transaction.commit();
-		res.status(201).json({ success: true, algorithm });
+		res.status(201).json({ success: true, newAlgorithm: {
+				...algorithm.toJSON(),
+				algorithm_locations: [{ location_id: locationId }]
+			}
+		});
 	} catch (error) {
 		if (transaction) await transaction.rollback();
 		console.error("error creating/updating algorithm:", error);

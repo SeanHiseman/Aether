@@ -11,8 +11,6 @@ dotenv.config();
 const router = Router();
 const SECRET_KEY = process.env.ENCRYPTION_SECRET_KEY;
 
-const feedAttributes = ['feed_id', 'parent_id', 'feed_name', 'description', 'feed_photo', 'follower_count', 'created_at', 'updated_at', 'type', 'is_group', 'feed_owner', 'is_locked'];
-
 router.post('/accept_connect_request', authenticateCheck, async (req, res) => {
     try {
         const { receiverId, senderId } = req.body;
@@ -149,7 +147,7 @@ router.get('/get_chat_messages', authenticateCheck, async (req, res) => {
         const { channelId, limit, offset } = req.query;
         const messages = await Messages.findAll({
             where: { chat_id: channelId },
-            include: [{ attributes: feedAttributes, model: Feeds }],
+            include: [{ model: Feeds }],
             order: [['created_at', 'ASC']],
             limit: parseInt(limit) || 20,
             offset: parseInt(offset) || 0,
@@ -166,7 +164,6 @@ router.get('/get_chats/:feedId', authenticateCheck, async (req, res) => {
         const { connectionName } = req.query;
         const connectionFeed = await Feeds.findOne({
             where: { feed_name: connectionName },
-            attributes: feedAttributes
         });
         if (!connectionFeed) {
             return res.status(404).json({ success: false, message: 'Connection not found' });
@@ -205,7 +202,6 @@ router.get('/get_connection/:connectionName', authenticateCheck, async (req, res
         const connectionName = req.params.connectionName;
         const connectionFeed = await Feeds.findOne({
             where: { feed_name: connectionName },
-            attributes: feedAttributes
         });
         if (!connectionFeed) {
             return res.status(404).json({ success: false, message: 'Connection not found' });
@@ -229,11 +225,9 @@ router.get('/get_connections', authenticateCheck, async (req, res) => {
             include: [{
                 model: Feeds,
                 as: 'Feed1',
-                attributes: feedAttributes
             }, {
                 model: Feeds,
                 as: 'Feed2',
-                attributes: feedAttributes
             }],
             where: {
                 [Op.or]: [
@@ -273,7 +267,6 @@ router.get('/get_connect_requests', authenticateCheck, async (req, res) => {
                 model: Feeds, 
                 as: 'sender',
                 required: true,
-                attributes: feedAttributes,
             }],
             limit: 10,
             offset: parsedOffset

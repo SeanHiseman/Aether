@@ -3,7 +3,7 @@ import { AuthContext } from '../components/authContext';
 import axios from 'axios';
 import { useContext, useEffect, useRef, useState, useMemo } from 'react';
 import { FaChevronDown, FaChevronUp } from 'react-icons/fa';
-import { useInfiniteQuery } from '@tanstack/react-query';
+import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
 import { useOutletContext, useSearchParams } from 'react-router-dom';
 import SmallContentWidget from '../components/content/smallContentWidget';
 import FeedWidget from '../components/content/feedWidget';
@@ -33,6 +33,7 @@ const SearchResults = () => {
     const keyword = (searchParams.get('keyword') || '').trim();
     const { isAuthenticated, viewer } = useContext(AuthContext);
     const loaderRef = useRef(null);
+    const queryClient = useQueryClient();
     const { rightClasses } = useOutletContext();
     const [refreshTrigger, setRefreshTrigger] = useState(false);
     const scrollRef = useRef(null);
@@ -121,6 +122,12 @@ const SearchResults = () => {
     const refreshPosts = () => {
         setRefreshTrigger(!refreshTrigger);
     };
+
+    //Refresh posts upon algorithm change
+    useEffect(() => {
+        if (refreshTrigger === false) return; 
+        queryClient.invalidateQueries(['searchResults', keyword, viewer?.feed_id]);
+    }, [refreshTrigger, queryClient, keyword, viewer?.feed_id]);
 
     document.title = 'Search';
     return (

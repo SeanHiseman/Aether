@@ -32,6 +32,8 @@ const Posts = sequelize.define('posts', {
     has_images: { type: BOOLEAN, defaultValue: false },
     has_videos: { type: BOOLEAN, defaultValue: false },
     has_interactive: { type: BOOLEAN, defaultValue: false },
+    has_external_posts: { type: BOOLEAN, defaultValue: false },
+    has_embedded_websites: { type: BOOLEAN, defaultValue: false },
     has_text: { type: BOOLEAN, defaultValue: false },
     image_count: { type: INTEGER, defaultValue: 0 },
     video_count: { type: INTEGER, defaultValue: 0 },
@@ -45,7 +47,7 @@ const Posts = sequelize.define('posts', {
     indexes: [
         { fields: ['channel_id'] },
         { fields: ['feed_id'] },
-        { fields: ['has_images', 'has_videos', 'has_interactive'] },
+        { fields: ['has_images', 'has_videos', 'has_interactive', 'has_external_posts', 'has_embedded_websites'] },
         { fields: ['sentiment_score'] },
         { fields: ['created_at'] }, 
     ]

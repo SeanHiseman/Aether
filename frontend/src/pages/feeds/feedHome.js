@@ -274,6 +274,7 @@ const FeedHome = () => {
     };
 
     const refreshPosts = () => {
+        console.log("refresh trigger");
         setRefreshTrigger(!refreshTrigger);
     };
 

@@ -22,7 +22,7 @@ function shuffleArray(arr) {
 	return arr;
 }
 
-const FETCH_LIMIT = 24;
+const FETCH_LIMIT = 20;
 
 const ExplorePage = () => {
 	const [errorMessage, setErrorMessage] = useState("");
@@ -117,6 +117,7 @@ const ExplorePage = () => {
 	}, [filter, posts, feeds]);
 
 	const refreshPosts = () => {
+		console.log("refresh trigger");
         setRefreshTrigger(!refreshTrigger);
     };
 
@@ -143,6 +144,22 @@ const ExplorePage = () => {
 		if (filter === "all" || filter === "feeds") fetches.push(fetchFeeds(0));
 		Promise.all(fetches).then(() => setLoading(false));
 	}, [filter]);
+
+	//Refresh posts (merge with previous useEffect?)
+	useEffect(() => {
+		if (refreshTrigger === false) return; 
+		setLoading(true);
+		setFeedPage(0);
+		setPostPage(0);
+		setFeeds([]);
+		setPosts([]);
+		setShownFeedIds([]);
+		setShownPostIds([]);
+		const fetches = [];
+		if (filter === "all" || filter === "posts") fetches.push(fetchPosts());
+		if (filter === "all" || filter === "feeds") fetches.push(fetchFeeds());
+		Promise.all(fetches).then(() => setLoading(false));
+	}, [refreshTrigger]);
 
 	//Auto-load until scroll area is filled, or no more data is being fetched
 	useEffect(() => {
@@ -216,7 +233,7 @@ const ExplorePage = () => {
 			</div>
 			<aside className={`${rightClasses} w-80 bg-white`}>
 				<p className="error-message">{errorMessage}</p>
-				<p className="large-text">Filters</p>
+				<p className="large-text">Explore</p>
 				<nav className="channel-list">
 					<ul>
 						<li className="channel-link" onClick={() => setFilter("all")}>All</li>
@@ -224,7 +241,7 @@ const ExplorePage = () => {
 						<li className="channel-link" onClick={() => setFilter("feeds")}>Feeds</li>
 					</ul>
 				</nav>
-				{isAuthenticated && <AlgorithmSelector locationId={"explore_page"} refreshPosts={refreshPosts} />} {/*Project code*/}
+				{isAuthenticated && <AlgorithmSelector locationId={"explore"} refreshPosts={refreshPosts} />} {/*Project code*/}
 			</aside>
 		</div>
 	);

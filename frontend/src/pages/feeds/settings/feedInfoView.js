@@ -48,12 +48,13 @@ const FeedInfoView = () => {
             const response = await axios.put(`/api/update_feed_photo/${feed.feed_id}`, formData, {
                 headers: { 'Content-Type': 'multipart/form-data' },
             });
-            if (response.status.success) {
+            if (response.data.success) {
                 setFeed(prev => ({ ...prev, feed_photo: response.data.newPhotoPath }));
                 setIsPhotoFormVisible(false);
                 setImageSrc(null);
                 setIsFileSelected(false);
                 setErrorMessage('');
+                window.location.reload();
             } else {
                 setErrorMessage(response.data.message || 'Failed to update feed photo');    
                 setTimeout(() => { setErrorMessage(''); }, 5000);
@@ -152,7 +153,7 @@ const FeedInfoView = () => {
             if (response.data.success) {
                 setFeed({ ...feed, feed_name: newName });
                 setIsEditingName(false);
-                navigate(`/settings/${newName}`);
+                window.location.reload();
             } 
         } catch (error) {
 		    setErrorMessage(error.response?.data?.message || 'Error changing name');
@@ -195,7 +196,7 @@ const FeedInfoView = () => {
                 <div className="settings-feed-info">
                     {isEditingName ? (
                         <div className="change-name-settings">
-                            <textarea className="change-name-area" style={{ fontSize: '36px', height: '42px' }} value={newName} placeholder="Feed name..." 
+                            <textarea className="change-name-area large-text" value={newName} placeholder="Feed name..." 
                                 onChange={(e) => {
                                     const input = e.target.value;
                                     setName(input);
@@ -221,7 +222,7 @@ const FeedInfoView = () => {
                         </div>
                     ) : (
                         <div className="channel-name-settings">
-                            <p className="text36">{feed.feed_name}</p>
+                            <p className="large-text">{feed.feed_name}</p>
                             <button className="small-icon" onClick={() => { setIsEditingName(true); setName(feed.feed_name); }} title="Change name"><FaPencilAlt /></button>
                         </div>
                     )}

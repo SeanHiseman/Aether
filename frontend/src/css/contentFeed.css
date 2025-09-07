@@ -22,7 +22,6 @@
     justify-content: space-between;
 }
 .content-item, .result-widget {
-    background-color: var(--dark);
     border-radius: calc(clamp(4px, 1vw, 10px) + var(--medium-margin));
     border: 1px solid var(--border);
     cursor: pointer;
@@ -61,11 +60,41 @@
     box-sizing: border-box;
 }
 .content-metadata {
+    display: grid;
+    grid-template-areas: "user channel spacer votes replies actions save datetime";
+    grid-template-columns: minmax(200px, max-content) minmax(120px, max-content) 1fr max-content max-content max-content max-content max-content;
+    gap: 1rem;
     align-items: center;
-    display: flex;
     font-size: var(--medium-text);
-    justify-content: space-between;
     margin: var(--medium-margin);
+}
+.content-metadata .feed-info {
+    grid-area: user;
+}
+.content-metadata > a:not(.feed-link) {
+    grid-area: channel;
+}
+.content-metadata .vote-container {
+    grid-area: votes;
+}
+.content-metadata:has(.vote-container) .post-button-group:first-of-type {
+    grid-area: replies;
+}
+.content-metadata:has(.vote-container) .post-button-group:last-of-type {
+    grid-area: actions;
+}
+.content-metadata:not(:has(.vote-container)) .post-button-group:first-of-type {
+    grid-area: votes;
+}
+.content-metadata:not(:has(.vote-container)) .post-button-group:last-of-type {
+    grid-area: replies;
+}
+.content-metadata .button-text-bottom {
+    grid-area: save;
+}
+.content-metadata .view-date-container {
+    grid-area: datetime;
+    justify-self: end;
 }
 .custom-theme-container {
     align-items: center;

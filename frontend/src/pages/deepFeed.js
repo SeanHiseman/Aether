@@ -8,7 +8,7 @@ import { AuthContext } from '../components/authContext';
 import ContentForm from '../components/content/contentForm';
 import ContentWidget from '../components/content/contentWidget';
 import DeepFeedItem from '../components/channels/deepFeedItem';
-import { useInfiniteQuery } from '@tanstack/react-query';
+import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
 import { ValidateTextInput } from '../functions/validateTextInput';
 
 const DeepFeed = () => {
@@ -25,6 +25,7 @@ const DeepFeed = () => {
     const { isAuthenticated, user, viewer } = useContext(AuthContext);
     const navigate = useNavigate();
     const { rightClasses } = useOutletContext(); 
+    const queryClient = useQueryClient();
     const CLEANUP_THRESHOLD = 100; //Remove old posts and feeds from rendered list
 
     const getPosts = async ({ pageParam = 0 }) => {
@@ -182,6 +183,13 @@ const DeepFeed = () => {
         setRefreshTrigger(!refreshTrigger);
     };
 
+    //Refresh posts upon algorithm change
+    useEffect(() => {
+        if (refreshTrigger === false) return;
+        queryClient.invalidateQueries(['deepFeedPosts', deep_feed_id]);
+        queryClient.refetchQueries(['deepFeedPosts', deep_feed_id]);
+    }, [refreshTrigger, queryClient, deep_feed_id]);
+
     return (
         <div className="standard-container">
             <div className="channel-feed">
@@ -301,8 +309,8 @@ const DeepFeed = () => {
                                         </button>
                                     </>
                                 )}
-                                {isAuthenticated && <AlgorithmSelector locationId={deepFeed.deep_feed_id} refreshPosts={refreshPosts} />} {/*Project code*/}
                             </div>
+                            {isAuthenticated && <AlgorithmSelector locationId={deepFeed.deep_feed_id} refreshPosts={refreshPosts} />} {/*Project code*/}
                         </div>
                     )}
                     <div className="error-message">{errorMessage}</div>

@@ -21,9 +21,6 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const buildsDir = path.join(process.cwd(), process.env.APP_BUILD_DIR);
 const mediaDir = path.join(__dirname, '..', 'media', 'content');
-const feedAttributes = ['feed_id', 'parent_id', 'feed_name', 'description', 'feed_photo', 'follower_count', 'created_at', 'updated_at', 'type', 'is_group', 'feed_owner', 'is_locked'];
-const noteAttributes = ['note_id', 'note_content', 'created_at', 'updated_at', 'is_misinfo'];
-const postAttributes = ['post_id', 'parent_id', 'feed_id', 'channel_id', 'title', 'content', 'replies', 'views', 'upvotes', 'downvotes', 'created_at', 'updated_at', 'poster_id'];
 const contentAnalyser = new ContentAnalyser();
 const router = Router();
 if (!fs.existsSync(mediaDir)) fs.mkdirSync(mediaDir, { recursive: true });
@@ -51,25 +48,25 @@ const checkStorageLimit = async (req, res, next) => {
 
 router.get('/channel_posts', async (req, res) => {
 	try {
-		const { channelId, excludedPostIds, feedId, isGroup, isMain, isSingle, limit, offset, postId } = req.query;
+		const { channelId, excludedPostIds, feedId, isGroup, isMain, isSingle, postId } = req.query;
+        console.log("channel posts isMain:", isMain);
+        const limit = parseInt(req.query.limit, 10) || 10;
+        const offset = parseInt(req.query.offset, 10) || 0;
 		const viewerId = req.session.viewer_id;
 		const includeOptions = [{
 			as: 'note',
-			attributes: noteAttributes,
 			model: PostNotes,
 			required: false
 		},{
 			as: 'parentChannel',
 			attributes: ['channel_id', 'channel_name', 'feed_id'],
 			include: [{
-				attributes: feedAttributes,
 				model: Feeds
 			}],
 			model: FeedChannels,
 			required: false
 		},{
 			as: 'poster',
-			attributes: feedAttributes,
 			model: Feeds
 		},{
 			as: 'votes',
@@ -79,7 +76,6 @@ router.get('/channel_posts', async (req, res) => {
 		}];
 		if (isSingle === 'true') {
 			const singlePost = await Posts.findOne({
-				attributes: postAttributes,
 				include: includeOptions,
 				where: {
 					...(channelId ? { channel_id: channelId } : {}),
@@ -311,6 +307,7 @@ router.post('/create_post', authenticateCheck, checkStorageLimit, postUpload.arr
             title,
             ...analysisResults 
         };
+        console.log("analysisResults:", analysisResults);
         const post = await Posts.create(postData);
         if (parent_id) {
             const parentPost = await Posts.findOne({ where: { post_id: parent_id } });
@@ -400,18 +397,16 @@ router.get("/explore_posts", async (req, res) => {
         const { exclude = [] } = req.query;
         const excludeArray = Array.isArray(exclude) ? exclude : exclude.split(',').filter(Boolean);
         const viewerId = req.session.viewer_id;
-        const limit = parseInt(req.query.limit, 10) || 6;
+        const limit = parseInt(req.query.limit, 10) || 10;
         const offset = parseInt(req.query.offset, 10) || 0;
         const includeOptions = [{
             model: Feeds,
             as: "poster",
-            attributes: feedAttributes,
         },{
             model: FeedChannels,
             as: "parentChannel",
             attributes: ["channel_id", "channel_name"],
             include: [{
-                attributes: feedAttributes,
                 model: Feeds,
                 required: true,
                 where: {
@@ -424,7 +419,6 @@ router.get("/explore_posts", async (req, res) => {
         },{
             model: PostNotes,
             as: "note",
-            attributes: noteAttributes,
             required: false,
         },{
             model: PostVotes,
@@ -578,7 +572,6 @@ router.get('/post_replies/:postId', async (req, res) => {
         const includeOptions = [{
                 model: Feeds,
                 as: 'poster',
-                attributes: feedAttributes,
             },{
                 model: PostVotes,
                 as: 'votes',
@@ -587,7 +580,6 @@ router.get('/post_replies/:postId', async (req, res) => {
             },{
                 model: PostNotes,
                 as: 'note',
-                attributes: noteAttributes,
                 required: false
             },{
                 model: FeedChannels,
@@ -596,7 +588,6 @@ router.get('/post_replies/:postId', async (req, res) => {
                 required: false,
                 include: [{
                     model: Feeds,
-                    attributes: feedAttributes
                 }]
             }
         ];
@@ -610,7 +601,6 @@ router.get('/post_replies/:postId', async (req, res) => {
         const replies = await Posts.findAll({
             where: whereClause,
             include: includeOptions,
-            attributes: postAttributes,
             order: [['created_at', 'DESC']],
         });
         const formattedReplies = replies.map(reply => ({

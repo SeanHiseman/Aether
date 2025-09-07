@@ -1,12 +1,11 @@
 import { Algorithms, AlgorithmLocations } from "./algorithms.js";
-import { DeepFeedContent, Feeds, Followers, Posts, SavedPosts, ViewedPosts } from "../models/relationships.js";
+import { DeepFeedContent, Feeds, Followers, Posts, PostVotes, SavedPosts, ViewedPosts } from "../models/relationships.js";
 import { CosineSimilarity } from "../functions/calculation/cosineSimilarity.js";
 import { Op } from 'sequelize';
 
-const postAttributes = ['post_id', 'parent_id', 'feed_id', 'channel_id', 'title', 'content', 'replies', 'views', 'upvotes', 'downvotes', 'created_at', 'updated_at', 'poster_id']
-
 async function ApplyAlgorithm({ locationId, excludedPostIds, feedId, includeOptions, isGroup = true, isMain, limit, offset, viewerId, keyword = '' }) {
     try {
+        //Already returned posts are excluded
         let excludedIds = [];
         if (excludedPostIds) {
             if (Array.isArray(excludedPostIds)) {
@@ -37,7 +36,7 @@ async function ApplyAlgorithm({ locationId, excludedPostIds, feedId, includeOpti
                 }
             }
         }
-
+        console.log("algorithm:", algorithm);
         //Merge already returned (exluded) posts with viewedPosts 
         let varietyPostIds = [...excludedIds];
         if (viewerId) {
@@ -46,10 +45,17 @@ async function ApplyAlgorithm({ locationId, excludedPostIds, feedId, includeOpti
                 where: { viewer_id: viewerId },
                 order: [['updated_at', 'DESC']], //Most recent view
                 limit: 100, //100 most recently viewed posts
-                raw: true
             });
             varietyPostIds.push(...recentViewed.map(row => row.post_id));
         }
+
+        const recentUpvoted = await PostVotes.findAll({
+            attributes: ['post_id'],
+            where: { voter_id: { viewerId }, upvotes: { [Op.gt]: 0 }, downvotes: { [Op.lte]: 0 } }, //Only get upvotes
+            order: [['updated_at', 'DESC']], //Most recent view
+            limit: 100, //100 most recently viewed posts
+        });
+
         const uniqueVarietyIds = [...new Set(varietyPostIds)];
         let varietyEmbeddings = [];
         if (uniqueVarietyIds.length > 0) {
@@ -78,7 +84,6 @@ async function ApplyAlgorithm({ locationId, excludedPostIds, feedId, includeOpti
                 limit: limit,
             });
             posts = await Posts.findAll({
-                attributes: postAttributes,
                 include: includeOptions,
                 where: {
                     feed_id: { [Op.in]: publicFeeds.map(f => f.feed_id) },
@@ -101,12 +106,12 @@ async function ApplyAlgorithm({ locationId, excludedPostIds, feedId, includeOpti
             if (followedFeeds.length === 0) return [];
             try {
                 posts = await Posts.findAll({
-                    attributes: postAttributes,
                     include: includeOptions,
                     where: {
                         feed_id: { [Op.in]: followedFeeds.map(f => f.feed_id) },
                         parent_id: null,
-                        post_id: { [Op.notIn]: excludedIds }
+                        post_id: { [Op.notIn]: excludedIds },
+                        poster_id: { [Op.not]: viewerId }
                     },
                     limit: limit,
                     offset: offset,
@@ -122,12 +127,12 @@ async function ApplyAlgorithm({ locationId, excludedPostIds, feedId, includeOpti
                 attributes: ['feed_id']
             });
             posts = await Posts.findAll({
-                attributes: postAttributes,
                 include: includeOptions,
                 where: {
                     feed_id: { [Op.in]: publicFeeds.map(f => f.feed_id) },
                     parent_id: null,
-                    post_id: { [Op.notIn]: excludedIds }
+                    post_id: { [Op.notIn]: excludedIds },
+                    poster_id: { [Op.not]: viewerId }
                 },
                 limit: limit,
                 offset: offset,
@@ -157,7 +162,6 @@ async function ApplyAlgorithm({ locationId, excludedPostIds, feedId, includeOpti
             const allFeedIds = await getAllFeedIdsInDeepFeed(deepFeedId);
             if (allFeedIds.length === 0) return [];
             posts = await Posts.findAll({
-                attributes: postAttributes,
                 include: includeOptions,
                 where: {
                     feed_id: { [Op.in]: allFeedIds },
@@ -170,27 +174,38 @@ async function ApplyAlgorithm({ locationId, excludedPostIds, feedId, includeOpti
             });
         } else { //Feed channel
             const whereChannel = {
-                ...(isMain !== true && locationId ? { channel_id: locationId } : {}),
+                ...(isMain !== 'true' && locationId ? { channel_id: locationId } : {}), //True from query is a string
                 feed_id: feedId,
                 parent_id: null,
                 post_id: { [Op.notIn]: excludedIds }
             };
-            const { chronology = 'newest' } = algorithm;
             posts = await Posts.findAll({
-                attributes: postAttributes,
                 include: includeOptions,
                 where: whereChannel,
                 limit: limit,
                 offset: offset,
-                order: [['created_at', chronology === 'oldest' ? 'ASC' : 'DESC']]
+                order: [['created_at', 'DESC']]
             });
+            console.log("channel posts length:", posts.length);
         }
         if (!posts.length) return [];
 
-        //Return posts when no algorithm is found
+        //Check if algorithm is active today
+        let isActiveToday = false;
+        if (algorithmLocation) {
+            const today = new Date().toLocaleDateString("en-US", { weekday: "long" }).toLowerCase();
+            console.log("algorithm:", algorithm);
+            console.log("today:", today);
+            console.log("algorithm.activeDays:", algorithm.activeDays);
+            isActiveToday = algorithm.activeDays && algorithm.activeDays.length > 0 ? algorithm.activeDays.map(d => d.toLowerCase()).includes(today) : true;
+        }
+        console.log("isActiveToday:", isActiveToday);
+        //Standard scoring for posts when no active algorithm is found 
         const selectionLimit = limit ? parseInt(limit, 10) : 20;
-        const shouldUseChronological = (!isGroup && !algorithmLocation) || (algorithm.chronology === 1); //User feeds without algorithms and 1 chronology should be in time order only
-        if (shouldUseChronological) { //Pure chronological order
+        const useChronological = (!isGroup && !algorithmLocation) || (!isActiveToday && !isGroup) || (algorithm.chronology === 1); //User feeds without active algorithms or 1 chronology should be in time order only
+        const useStandardScore = (!algorithmLocation && isGroup) || (!isActiveToday && isGroup);
+        //Pure chronological order
+        if (useChronological) { 
             const paginated = posts.slice(0, selectionLimit);
             const ids = paginated.map(p => p.post_id);
             const savedRows = viewerId ? await SavedPosts.findAll({
@@ -204,7 +219,8 @@ async function ApplyAlgorithm({ locationId, excludedPostIds, feedId, includeOpti
                 is_saved: savedSet.has(post.post_id)
             }));
         }
-        if (!algorithmLocation && isGroup) { //Weighted by views, votes, and time
+        //Weighted only by time-vote score
+        if (useStandardScore) { 
             const postsWithScores = posts.map(post => {
                 const totalVotes = (post.upvotes || 0) + (post.downvotes || 0);
                 const qualityScore = totalVotes > 0 ? (post.upvotes || 0) / totalVotes : 0.5;
@@ -234,109 +250,76 @@ async function ApplyAlgorithm({ locationId, excludedPostIds, feedId, includeOpti
 
         //Filter out posts, then apply scoring
         const finalPosts = [];
-		const { chronology = 0, contentType = { images: true, interactive: true, text: true, videos: true }, rules = [], scoring = {}, timeScaleHours = 72, variety = 1 } = algorithm;
-		const { sentiment = 0, timeWeight = 5, wordBoost = [], wordSuppress = [] } = scoring;
-        const chronoPref = Math.max(-1, Math.min(1, chronology)); //Is preference for older or newer posts
+        const { chronology = "newest", contentType = {}, variety = 1, textLimits = {}, videoLimits = {}, timeLimits = {}, dateLimits = {}, scoring = {} } = algorithm;
+        const { sentiment = 0, voteImpact = 1, wordBoost = [], wordSuppress = [] } = scoring;
+        const chronoPref = chronology === "oldest" ? -1 : 1;
+
         for (const post of posts) {
+            //Content type filtering
             if (contentType.images === false && post.has_images) continue;
-            if (contentType.interactive === false && post.has_interactive) continue;
-            if (contentType.text === false && post.has_text) continue;
             if (contentType.videos === false && post.has_videos) continue;
-            const createdAt = new Date(post.created_at);
-            const postTimeStr = `${String(createdAt.getHours()).padStart(2, '0')}:${String(createdAt.getMinutes()).padStart(2, '0')}`;
-            let isSuppressed = false;
+            if (contentType.text === false && post.has_text) continue;
+            if (contentType.interactive === false && post.has_interactive) continue;
+            if (contentType.has_embedded_websites === false && post.has_embedded_websites) continue;
+            if (contentType.has_external_posts === false && post.has_external_posts) continue;
+
+            //Text length filtering
+            if (textLimits.min && post.text_length < textLimits.min) continue;
+            if (textLimits.max && post.text_length > textLimits.max) continue;
+
+            //Video length filtering
+            if (videoLimits.min && post.video_length < videoLimits.min) continue;
+            if (videoLimits.max && post.video_length > videoLimits.max) continue;
+
+            //Time of day filtering
+            if (timeLimits.startTime && timeLimits.endTime) {
+                const createdAt = new Date(post.created_at);
+                const postTime = `${String(createdAt.getHours()).padStart(2, "0")}:${String(createdAt.getMinutes()).padStart(2, "0")}`;
+                if (postTime < timeLimits.startTime || postTime > timeLimits.endTime) continue;
+            }
+
+            //Date range filtering
+            if (dateLimits.from && new Date(post.created_at) < new Date(dateLimits.from)) continue;
+            if (dateLimits.to && new Date(post.created_at) > new Date(dateLimits.to)) continue;
+
+            //Filtering complete, assign score to passed posts
             let score = 0;
 
-            //Apply chronological adjustments
+            //Chronology scoring
             const ageInHours = (Date.now() - new Date(post.created_at)) / (1000 * 60 * 60);
-            const scale = typeof timeScaleHours === 'number' ? timeScaleHours : 72;
-            const k = 4 / scale;
-            const ageFactor = 1 - 2 / (1 + Math.exp(-k * (ageInHours - scale / 2)));
-            score += chronoPref * (ageFactor * timeWeight);
+            score += chronoPref * ageInHours;
 
-            //Iterate though every filter condition
-            for (const rule of rules) {
-                const conditionsMet = rule.conditions.every(condition => {
-                    const { field, operator, value } = condition;
-                    let subject;
-                    switch (field) {
-                        case 'post_time': subject = postTimeStr; break;
-                        case 'body': subject = post.text_body; break;
-                        case 'sentiment_score': subject = post.sentiment_score; break;
-                        case 'has_images': subject = post.has_images; break;
-                        case 'has_videos': subject = post.has_videos; break;
-                        case 'has_text': subject = post.has_text; break;
-                        case 'word_count': subject = post.word_count; break;
-                        case 'text_length': subject = post.text_length; break;
-                        case 'video_length': subject = post.video_length; break;
-                        default: return false;
-                    }
-                    if (subject === undefined || subject === null) return false;
-                    switch (operator) {
-                        case 'AFTER': return subject > value;
-                        case 'BEFORE': return subject < value;
-                        case 'EQUALS': return subject === value;
-                        case 'CONTAINS': return typeof subject === 'string' && subject.toLowerCase().includes(String(value).toLowerCase());
-                        case 'CONTAINS_ANY': return Array.isArray(value) && typeof subject === 'string' && value.some(v => subject.toLowerCase().includes(String(v).toLowerCase()));
-                        case 'GREATER_THAN': return subject > value;
-                        case 'LESS_THAN': return subject < value;
-                        default: return false;
-                    }
-                });
+            //Vote impact (quality ratio × engagement ratio)
+            const totalVotes = (post.upvotes || 0) + (post.downvotes || 0);
+            const qualityRatio = totalVotes > 0 ? (post.upvotes || 0) / totalVotes : 0.5;
+            const engagementRatio = (post.views || 0) > 0 ? totalVotes / post.views : 0;
+            score += voteImpact * qualityRatio * engagementRatio;
 
-                //Post has passed the fitler
-                if (conditionsMet) {
-                    const exceptionMet = rule.exceptions?.some(exc => {
-                        const { field, operator, value } = exc.condition;
-                        let subject;
-                        switch (field) {
-                            case 'post_time': subject = postTimeStr; break;
-                            case 'body': subject = post.text_body; break;
-                            case 'sentiment_score': subject = post.sentiment_score; break;
-                            case 'has_images': subject = post.has_images; break;
-                            case 'has_videos': subject = post.has_videos; break;
-                            case 'has_text': subject = post.has_text; break;
-                            default: return false;
-                        }
-                        switch (operator) {
-                            case 'AFTER': return subject > value;
-                            case 'BEFORE': return subject < value;
-                            case 'EQUALS': return subject === value;
-                            case 'CONTAINS': return typeof subject === 'string' && subject.toLowerCase().includes(String(value).toLowerCase());
-                            case 'GREATER_THAN': return subject > value;
-                            case 'LESS_THAN': return subject < value;
-                            default: return false;
-                        }
-                    });
-                    if (exceptionMet) continue;
-                    switch (rule.action.type) {
-                        case 'SUPPRESS': isSuppressed = true; break;
-                        case 'BOOST': score += rule.action.value || 0; break;
-                        case 'PENALIZE': score -= rule.action.value || 0; break;
-                    }
+            //Word boosts/suppressions
+            wordBoost.forEach(({ word, value }) => {
+                if (post.text_body && post.text_body.toLowerCase().includes(word.toLowerCase())) {
+                    score += value;
                 }
-                if (isSuppressed) break;
-            }
-            if (isSuppressed) continue;
+            });
+            wordSuppress.forEach(({ word, value }) => {
+                if (post.text_body && post.text_body.toLowerCase().includes(word.toLowerCase())) {
+                    score += value;
+                }
+            });
 
-            if (Array.isArray(wordBoost)) {
-                wordBoost.forEach(item => {
-                    if (post.text_body && post.text_body.toLowerCase().includes(item.word.toLowerCase())) {
-                        score += item.value || 10;
-                    }
-                });
-            }
-            if (Array.isArray(wordSuppress)) {
-                wordSuppress.forEach(item => {
-                    if (post.text_body && post.text_body.toLowerCase().includes(item.word.toLowerCase())) {
-                        score += item.value || -10;
-                    }
-                });
-            }
-            if (sentiment !== undefined && typeof post.sentiment_score === 'number') {
+            //Sentiment comparison
+            if (typeof post.sentiment_score === "number") {
+                console.log("post.sentiment_score:", post.sentiment_score);
                 const sentimentDistance = Math.abs(post.sentiment_score - sentiment);
-                score += (1 - sentimentDistance) * 10;
+                console.log("sentiment distance:", sentimentDistance);
+                console.log("score before:", score);
+                const sentimentBoost = (0.5 - sentimentDistance) * 20; 
+                score += sentimentBoost;
+                console.log("sentiment boost:", sentimentBoost);
+                console.log("score after:", score);
             }
+
+            //Variety scoring (cosine similarity against recent views)
             let postEmbedding = null;
             try {
                 postEmbedding = post.embeddings ? JSON.parse(post.embeddings) : null;
@@ -352,13 +335,12 @@ async function ApplyAlgorithm({ locationId, excludedPostIds, feedId, includeOpti
                     }
                 }
             }
-            const v = (typeof variety === 'number') ? variety : 1;
-            const similarityComponent = ((1 - maxSimilarity) * v * 10) + (maxSimilarity * (1 - v) * 5);
+            const similarityComponent = ((1 - maxSimilarity) * variety * 10) + (maxSimilarity * (1 - variety) * 5);
             score += similarityComponent;
+            //console.log("score:", score);
             finalPosts.push({
                 ...post.dataValues,
-                score,
-                _maxSimilarity: maxSimilarity
+                score
             });
         }
 
@@ -373,7 +355,6 @@ async function ApplyAlgorithm({ locationId, excludedPostIds, feedId, includeOpti
         }) : [];
         const savedSet = new Set(savedRows.map(s => s.post_id));
         //Return final selection of posts
-        
         return finalPosts.map(post => {
             const { score, _maxSimilarity, ...rest } = post;
             return {

@@ -27,7 +27,7 @@ const AlgorithmSelector = ({ locationId, refreshPosts }) => {
 				if (!response?.data?.success) throw new Error(response?.data?.message || 'Failed to assign algorithm.');
 				setAssignedAlgorithmId(algorithmId);
 			} else {
-				const response = await axios.delete('/api/remove_algorithm', {
+				await axios.delete('/api/remove_algorithm', {
 					data: { algorithmId: assignedAlgorithmId, locationId }
 				});
 				setAssignedAlgorithmId('');
@@ -130,8 +130,9 @@ const AlgorithmSelector = ({ locationId, refreshPosts }) => {
 				}
 				return updated;
 			});
-			assignAlgorithm(newAlgo?.algorithm_id);
-			refreshPosts(); 
+			setAssignedAlgorithmId(newAlgo?.algorithm_id);
+			setEditingAlgorithm(newAlgo);
+			refreshPosts();
 		} catch (error) {
 			setError(error.response?.data?.message || 'Failed to update algorithms');
 			setTimeout(() => { setError('') }, 5000);
