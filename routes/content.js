@@ -49,7 +49,6 @@ const checkStorageLimit = async (req, res, next) => {
 router.get('/channel_posts', async (req, res) => {
 	try {
 		const { channelId, excludedPostIds, feedId, isGroup, isMain, isSingle, postId } = req.query;
-        console.log("channel posts isMain:", isMain);
         const limit = parseInt(req.query.limit, 10) || 10;
         const offset = parseInt(req.query.offset, 10) || 0;
 		const viewerId = req.session.viewer_id;
@@ -307,7 +306,6 @@ router.post('/create_post', authenticateCheck, checkStorageLimit, postUpload.arr
             title,
             ...analysisResults 
         };
-        console.log("analysisResults:", analysisResults);
         const post = await Posts.create(postData);
         if (parent_id) {
             const parentPost = await Posts.findOne({ where: { post_id: parent_id } });

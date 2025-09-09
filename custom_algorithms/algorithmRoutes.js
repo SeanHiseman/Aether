@@ -78,10 +78,16 @@ router.post('/create_algorithm', authenticateCheck, async (req, res) => {
 						"voteImpact": number (0 to 1),
 						"wordBoost": [],
 						"wordSuppress": []
-					}
+					}, 
+					"customFilters": [],
+					"customScoring": []
 				}
+				Posts are made to feeds. Each poster_id references a user feed who made the post.
+				Database schemas for custom filters/scoring:
+				    Post fields: post_id, parent_id, feed_id, channel_id, poster_id, title, content, text_body, replies, views, upvotes, downvotes, text_length, word_count, video_length, sentence_count, image_count, video_count, has_images, has_videos, has_interactive, has_external_posts, has_embedded_websites, has_text, sentiment_score, language, created_at, updated_at
+					Feed fields: feed_id, feed_name, decription, follower_count, is_group
+					Channel fields: channel_id, channel_name 
 				Merge the form settings with the user's custom instruction. If contradiction, prioritise following custom instruction.  
-				If conflicts occur, the custom instruction takes priority.
 				No text outside the JSON.
 			`;
 			const userContent = `
@@ -156,7 +162,7 @@ router.delete('/delete_algorithm', authenticateCheck, async (req, res) => {
 		res.status(200).json({ success: true });
 	} catch (error) {
 		if (transaction) await transaction.rollback();
-		res.status(500).json({ success: false, message: 'Failed to remove algorithm.' });
+		res.status(500).json({ success: false, message: 'Failed to delete algorithm.' });
 	}
 });
 

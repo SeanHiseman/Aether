@@ -7,7 +7,7 @@ import { useSortable } from '@dnd-kit/sortable';
 const FeedItem = ({ feed, id, isChat, parentDeepFeedId, unreadCount }) => {
     const [dropdownOpen, setDropdownOpen] = useState(false);
     const [feedChannels, setFeedChannels] = useState([]);
-    const linkType = feed.is_group ? 'g' : 'u';
+    const linkType = feed?.is_group ? 'g' : 'u';
 
     const uniqueId = parentDeepFeedId 
         ? `df-${parentDeepFeedId}-feed-${id}` 
@@ -42,9 +42,9 @@ const FeedItem = ({ feed, id, isChat, parentDeepFeedId, unreadCount }) => {
     return (
         <li ref={setNodeRef} style={style} className={`feed-list-item ${isDragging ? 'dragging' : ''}`} data-parent-deep-feed-id={parentDeepFeedId}>
             <div className="feed-list-link-container" {...attributes} {...listeners}>
-                <Link className="feed-list-link" to={isChat ? `/connections/${feed.feed_name}/Main` : `/${linkType}/${feed.feed_name}/Main`}>
-                    <img className="small-feed-photo" src={`/${feed.feed_photo}`} onError={(e) => e.currentTarget.src = '/media/site_images/blank-profile.png'} />
-                    <p className="text16">{feed.feed_name}</p>
+                <Link className="feed-list-link" to={isChat ? `/connections/${feed?.feed_name}/Main` : `/${linkType}/${feed?.feed_name}/Main`}>
+                    <img className="small-feed-photo" src={`/${feed?.feed_photo}`} onError={(e) => e.currentTarget.src = '/media/site_images/blank-profile.png'} />
+                    <p className="text16">{feed?.feed_name}</p>
                     {isChat && unreadCount > 0 && (
                         <div className="unread-count">{unreadCount}</div>
                     )}
@@ -56,10 +56,10 @@ const FeedItem = ({ feed, id, isChat, parentDeepFeedId, unreadCount }) => {
             {dropdownOpen && (
                 <ChannelList
                     channels={feedChannels}
-                    feedId={feed.feed_id}
-                    feedName={feed.feed_name}
+                    feedId={feed?.feed_id}
+                    feedName={feed?.feed_name}
                     isChat={isChat}
-                    isGroup={feed.is_group}
+                    isGroup={feed?.is_group}
                     setChannels={updateFeedChannels}
                 />
             )}

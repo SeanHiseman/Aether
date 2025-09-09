@@ -49,12 +49,12 @@ async function ApplyAlgorithm({ locationId, excludedPostIds, feedId, includeOpti
             varietyPostIds.push(...recentViewed.map(row => row.post_id));
         }
 
-        const recentUpvoted = await PostVotes.findAll({
-            attributes: ['post_id'],
-            where: { voter_id: { viewerId }, upvotes: { [Op.gt]: 0 }, downvotes: { [Op.lte]: 0 } }, //Only get upvotes
-            order: [['updated_at', 'DESC']], //Most recent view
-            limit: 100, //100 most recently viewed posts
-        });
+        //const recentUpvoted = await PostVotes.findAll({
+            //attributes: ['post_id'],
+            //where: { voter_id: { viewerId }, upvotes: { [Op.gt]: 0 }, downvotes: { [Op.lte]: 0 } }, //Only get upvotes
+            //order: [['updated_at', 'DESC']], //Most recent upvotes
+            //limit: 100, //100 most recently upvoted posts
+        //});
 
         const uniqueVarietyIds = [...new Set(varietyPostIds)];
         let varietyEmbeddings = [];
@@ -186,7 +186,6 @@ async function ApplyAlgorithm({ locationId, excludedPostIds, feedId, includeOpti
                 offset: offset,
                 order: [['created_at', 'DESC']]
             });
-            console.log("channel posts length:", posts.length);
         }
         if (!posts.length) return [];
 
@@ -194,12 +193,8 @@ async function ApplyAlgorithm({ locationId, excludedPostIds, feedId, includeOpti
         let isActiveToday = false;
         if (algorithmLocation) {
             const today = new Date().toLocaleDateString("en-US", { weekday: "long" }).toLowerCase();
-            console.log("algorithm:", algorithm);
-            console.log("today:", today);
-            console.log("algorithm.activeDays:", algorithm.activeDays);
             isActiveToday = algorithm.activeDays && algorithm.activeDays.length > 0 ? algorithm.activeDays.map(d => d.toLowerCase()).includes(today) : true;
         }
-        console.log("isActiveToday:", isActiveToday);
         //Standard scoring for posts when no active algorithm is found 
         const selectionLimit = limit ? parseInt(limit, 10) : 20;
         const useChronological = (!isGroup && !algorithmLocation) || (!isActiveToday && !isGroup) || (algorithm.chronology === 1); //User feeds without active algorithms or 1 chronology should be in time order only

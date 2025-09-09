@@ -13,10 +13,10 @@ const DeepFeedItem = ({ deepFeed, onFeedAdded, showHeader }) => {
 	const [loading, setLoading] = useState(false);
 
 	const { setNodeRef, isOver } = useDroppable({
-		id: deepFeed.deep_feed_id.toString(), 
+		id: deepFeed?.deep_feed_id.toString(), 
 		data: { 
 			type: 'deepFeed',
-			deepFeedId: deepFeed.deep_feed_id,
+			deepFeedId: deepFeed?.deep_feed_id,
 			isDeepFeed: true 
 		}
 	});
@@ -25,8 +25,8 @@ const DeepFeedItem = ({ deepFeed, onFeedAdded, showHeader }) => {
 		if (contents.length > 0) return;
 		setLoading(true);
 		try {
-			const { data } = await axios.get(`/api/deep_feed_contents/${deepFeed.deep_feed_id}`);
-			setContents(data.contents || []);
+			const { data } = await axios.get(`/api/deep_feed_contents/${deepFeed?.deep_feed_id}`);
+			setContents(data?.contents || []);
 		} catch (error) {
 			setErrorMessage(error.response?.data?.message || 'Failed to load deep feed contents.');
 			setContents([]);
@@ -41,15 +41,15 @@ const DeepFeedItem = ({ deepFeed, onFeedAdded, showHeader }) => {
 
 	useEffect(() => {
 		if (!isExpanded) return;
-		if (deepFeed.feeds && contents.length === 0) setContents(deepFeed.feeds);
-	}, [deepFeed.feeds, isExpanded, contents.length]);
+		if (deepFeed?.feeds && contents.length === 0) setContents(deepFeed?.feeds);
+	}, [deepFeed?.feeds, isExpanded, contents.length]);
 
 	useEffect(() => {
-		if (onFeedAdded) onFeedAdded(deepFeed.deep_feed_id, handleAddFeed);
+		if (onFeedAdded) onFeedAdded(deepFeed?.deep_feed_id, handleAddFeed);
 		return () => {
-			if (onFeedAdded) onFeedAdded(deepFeed.deep_feed_id, null);
+			if (onFeedAdded) onFeedAdded(deepFeed?.deep_feed_id, null);
 		};
-	}, [deepFeed.deep_feed_id, onFeedAdded]);
+	}, [deepFeed?.deep_feed_id, onFeedAdded]);
 
 	const handleAddFeed = useCallback((feed) => {
 		try {
@@ -58,13 +58,13 @@ const DeepFeedItem = ({ deepFeed, onFeedAdded, showHeader }) => {
 				return;
 			}
 			setContents(prev => {
-				if (prev.some(item => item.feed && item.feed.feed_id === feed.feed_id)) return prev;
+				if (prev.some(item => item?.feed && item?.feed?.feed_id === feed?.feed_id)) return prev;
 				return [...prev, {
 					feed: {
-						feed_id: feed.feed_id,
-						feed_name: feed.feed_name,
-						feed_photo: feed.feed_photo,
-						is_group: feed.is_group
+						feed_id: feed?.feed_id,
+						feed_name: feed?.feed_name,
+						feed_photo: feed?.feed_photo,
+						is_group: feed?.is_group
 					}
 				}];
 			});
@@ -82,11 +82,11 @@ const DeepFeedItem = ({ deepFeed, onFeedAdded, showHeader }) => {
 	}, [isExpanded, showHeader]);
 
 	return (
-		<div ref={setNodeRef} className={`deep-feed-container ${isOver ? 'drop-target-active' : ''}`} data-deep-feed-id={deepFeed.deep_feed_id}>
+		<div ref={setNodeRef} className={`deep-feed-container ${isOver ? 'drop-target-active' : ''}`} data-deep-feed-id={deepFeed?.deep_feed_id}>
 			{showHeader && (
 				<div className="channel-link deep-feed-header">
-					<Link to={`/d/${deepFeed.deep_feed_id}`}>
-						<p style={{ margin: '0' }}>{deepFeed.name}</p>
+					<Link to={`/d/${deepFeed?.deep_feed_id}`}>
+						<p style={{ margin: '0' }}>{deepFeed?.name}</p>
 					</Link>
 					<div onClick={handleExpand}>
 						{isExpanded ? <FaChevronUp /> : <FaChevronDown />}
@@ -101,17 +101,17 @@ const DeepFeedItem = ({ deepFeed, onFeedAdded, showHeader }) => {
 					) : (
 						<SortableContext 
 							items={contents.filter(item => item.feed).map(item => 
-								`df-${deepFeed.deep_feed_id}-feed-${item.feed.feed_id}`
+								`df-${deepFeed?.deep_feed_id}-feed-${item?.feed?.feed_id}`
 							)} 
 							strategy={verticalListSortingStrategy}
 						>
 							{contents.map(item => (
 								<FeedItem 
-									key={item.feed.feed_id} 
-									id={item.feed.feed_id.toString()} 
-									feed={item.feed} 
+									key={item?.feed?.feed_id} 
+									id={item?.feed?.feed_id.toString()} 
+									feed={item?.feed} 
 									isChat={false} 
-									parentDeepFeedId={deepFeed.deep_feed_id} 
+									parentDeepFeedId={deepFeed?.deep_feed_id} 
 								/>
 							))}
 						</SortableContext>

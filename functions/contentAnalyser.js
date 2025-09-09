@@ -101,7 +101,7 @@ export class ContentAnalyser {
             const doc = nlp.readDoc(text);
             const rawScore = doc.out(its.sentiment); //between -1 and 1
             //Exponential scaling to push values further from 0
-            const weightedScore = Math.sign(rawScore) * Math.pow(Math.abs(rawScore), 0.5); 
+            const weightedScore = Math.sign(rawScore) * Math.pow(Math.abs(rawScore), 0.3); 
             return weightedScore;
         } catch (error) {
             return 0;
