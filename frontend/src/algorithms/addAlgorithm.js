@@ -1,8 +1,9 @@
 import React from 'react';
 import axios from 'axios';
 import { FaInfoCircle } from 'react-icons/fa';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { ALGORITHM_TEMPLATES } from './algorithmTemplates';
+import { AuthContext } from '../components/authContext';
 
 function InfoIconWithTooltip({ info }) {
     const [visible, setVisible] = useState(false);
@@ -124,6 +125,8 @@ const AddAlgorithm = ({ algorithms = [], editingAlgorithm = null, locationId, on
     const [voteImpact, setVoteImpact] = useState(0);
     const [wordBoost, setWordBoost] = useState('');
     const [wordSuppress, setWordSuppress] = useState('');
+    const { user } = useContext(AuthContext);
+    const hasMembership = user.has_membership
 
     const isDayActive = (day) => activeDays.includes(day);
 

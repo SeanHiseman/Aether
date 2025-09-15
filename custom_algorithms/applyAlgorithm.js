@@ -36,7 +36,6 @@ async function ApplyAlgorithm({ locationId, excludedPostIds, feedId, includeOpti
                 }
             }
         }
-        console.log("algorithm:", algorithm);
         //Merge already returned (exluded) posts with viewedPosts 
         let varietyPostIds = [...excludedIds];
         if (viewerId) {
@@ -104,23 +103,18 @@ async function ApplyAlgorithm({ locationId, excludedPostIds, feedId, includeOpti
                 attributes: ['feed_id']
             });
             if (followedFeeds.length === 0) return [];
-            try {
-                posts = await Posts.findAll({
-                    include: includeOptions,
-                    where: {
-                        feed_id: { [Op.in]: followedFeeds.map(f => f.feed_id) },
-                        parent_id: null,
-                        post_id: { [Op.notIn]: excludedIds },
-                        poster_id: { [Op.not]: viewerId }
-                    },
-                    limit: limit,
-                    offset: offset,
-                    order: [['created_at', 'DESC']]
-                });
-                console.log("posts.length:", posts.length);
-            } catch (error) {
-                console.log("error getting following posts:", error);
-            }
+            posts = await Posts.findAll({
+                include: includeOptions,
+                where: {
+                    feed_id: { [Op.in]: followedFeeds.map(f => f.feed_id) },
+                    parent_id: null,
+                    post_id: { [Op.notIn]: excludedIds },
+                    poster_id: { [Op.not]: viewerId }
+                },
+                limit: limit,
+                offset: offset,
+                order: [['created_at', 'DESC']]
+            });
         } else if (locationId === "explore") { //Explore page
             const publicFeeds = await Feeds.findAll({
                 where: { type: { [Op.ne]: 'private' } },
@@ -304,14 +298,9 @@ async function ApplyAlgorithm({ locationId, excludedPostIds, feedId, includeOpti
 
             //Sentiment comparison
             if (typeof post.sentiment_score === "number") {
-                console.log("post.sentiment_score:", post.sentiment_score);
                 const sentimentDistance = Math.abs(post.sentiment_score - sentiment);
-                console.log("sentiment distance:", sentimentDistance);
-                console.log("score before:", score);
                 const sentimentBoost = (0.5 - sentimentDistance) * 20; 
                 score += sentimentBoost;
-                console.log("sentiment boost:", sentimentBoost);
-                console.log("score after:", score);
             }
 
             //Variety scoring (cosine similarity against recent views)

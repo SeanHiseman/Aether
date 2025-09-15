@@ -26,7 +26,6 @@ router.post('/assign_algorithm', authenticateCheck, async (req, res) => {
 		res.status(200).json({ success: true });
 	} catch (error) {
 		if (transaction) await transaction.rollback();
-		console.log("error assigning algorithm:", error);
 		res.status(500).json({ success: false, message: 'Failed to assign algorithm.' });
 	}
 });
@@ -35,8 +34,6 @@ router.post('/create_algorithm', authenticateCheck, async (req, res) => {
 	let transaction;
 	try {
 		const { algorithmName, activeDays, chronology, contentType, customInstruction, dateFrom, dateTo, generateCode, locationId, minText, maxText, minVideo, maxVideo, sentiment, startTime, endTime, variety, voteImpact, wordBoost, wordSuppress } = req.body;
-		console.log("create_algorithm req.body:", req.body);
-		console.log("create algorithm active days:", activeDays);
 		const viewerId = req.session.viewer_id;
 		const algorithmJson = {
 			chronology,
@@ -58,7 +55,6 @@ router.post('/create_algorithm', authenticateCheck, async (req, res) => {
 				) : []
 			}
 		};
-		console.log("algorithmJson:", algorithmJson);
 		let algorithmCode;
 		if (generateCode && customInstruction && customInstruction.trim() !== "") {
 			const systemPrompt = `
@@ -96,7 +92,6 @@ router.post('/create_algorithm', authenticateCheck, async (req, res) => {
 				Custom Instruction:
 				"${customInstruction}"
 			`;
-			console.log("userContent:", userContent);
 			const response = await openai.chat.completions.create({
 				model: "gpt-5-mini",
 				messages: [
@@ -106,11 +101,9 @@ router.post('/create_algorithm', authenticateCheck, async (req, res) => {
 			});
 			const aiReply = response.choices[0].message.content;
 			algorithmCode = aiReply.replace(/```json\n|```/g, '').trim();
-			console.log("AI generated algorithmCode:", algorithmCode);
 		} else {
 			algorithmCode = JSON.stringify(algorithmJson);
 		}
-		console.log("algorithmCode:", algorithmCode);
 		transaction = await sequelize.transaction();
 		const existingAlgorithm = await Algorithms.findOne({
 			where: { algorithm_name: algorithmName, viewer_id: viewerId },
@@ -139,7 +132,6 @@ router.post('/create_algorithm', authenticateCheck, async (req, res) => {
 		});
 	} catch (error) {
 		if (transaction) await transaction.rollback();
-		console.error("error creating/updating algorithm:", error);
 		res.status(500).json({ success: false, message: 'Failed to create or update algorithm.' });
 	}
 });

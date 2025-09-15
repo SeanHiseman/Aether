@@ -471,6 +471,7 @@ router.delete('/delete_deep_feed', authenticateCheck, async (req, res) => {
         await transaction.commit();
         res.status(200).json({ success: true });
     } catch (error) {
+        console.log("Error deleting deep feed:", error);
         if (transaction) await transaction.rollback();
         res.status(500).json({ success: false });
     }
@@ -495,11 +496,8 @@ router.delete('/delete_feed', authenticateCheck, async (req, res) => {
         const { feedId } = req.body;
         const feed = await Feeds.findOne({ where: { feed_id: feedId } });
         if (!feed) {
+            await transaction.rollback();
             return res.status(404).json({ success: false });
-        }
-        const feedPhoto = feed.feed_photo;
-        if (feedPhoto && !defaultImages.includes(feedPhoto)) {
-            deleteMedia(feedPhoto);
         }
         const feedPosts = await Posts.findAll({
             where: { feed_id: feedId },
@@ -524,6 +522,10 @@ router.delete('/delete_feed', authenticateCheck, async (req, res) => {
         await FeedChannels.destroy({ where: { feed_id: feedId }, transaction });
         await Feeds.destroy({ where: { feed_id: feedId }, transaction });
         await transaction.commit();
+        const feedPhoto = feed.feed_photo;
+        if (feedPhoto && !defaultImages.includes(feedPhoto)) {
+            deleteMedia(feedPhoto);
+        }
         res.status(200).json({ success: true });
     } catch (error) {
         if (transaction) await transaction.rollback();
