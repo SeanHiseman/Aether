@@ -280,7 +280,7 @@ const BaseLayout = () => {
                 });
                 setFeeds(prev => [...prev, ...normalized]);
             }
-            catch {
+            catch (error){
                 setFeeds([]);
             }
         })();
@@ -454,7 +454,6 @@ const BaseLayout = () => {
     }, []);
 
     const searchClick = e => {
-        console.log("search click with keyword:", currentQuery);
         e.preventDefault();
         navigate(`/search?keyword=${currentQuery}`);
     };
@@ -661,16 +660,29 @@ const BaseLayout = () => {
                             </DragOverlay>
                         </DndContext></>
                     ) : (
-                        <div style={{ marginTop: "64px" }}>
-                            <Link to="/join" className="large-icon">
-                                <FaArrowRight />
-                                <p className="icon-text">Join</p>
-                            </Link>
-                            <Link to="/login" className="large-icon">
-                                <FaSignInAlt />
-                                <p className="icon-text">Login</p>
-                            </Link>
-                            <p style={{ marginTop: "20px" }}>Join or login for more</p>
+                        <div style={{ 
+                            alignItems: "center", 
+                            display: "flex", 
+                            flexDirection: "column",
+                            justifyContent: "space-between",
+                            height: "80%" 
+                        }}>
+                            <Link to="/welcome">
+                                <p className="large-text faded-text" style={{ fontWeight: 'bold' }}>Aether</p>
+                                <p className="large-text faded-text" style={{ fontWeight: 'bold' }}>Social</p>
+                            </Link> 
+                            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "10px" }}>
+                                <Link to="/join" className="large-icon">
+                                    <FaArrowRight />
+                                    <p className="icon-text">Join</p>
+                                </Link>
+                                <Link to="/login" className="large-icon">
+                                    <FaSignInAlt />
+                                    <p className="icon-text">Login</p>
+                                </Link>
+                                <p style={{ marginTop: "20px" }}>Join or login for more</p>
+                            </div>
+                            <div></div>
                         </div>
                     )}
                 </aside>
