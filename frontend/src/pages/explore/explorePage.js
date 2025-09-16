@@ -119,7 +119,7 @@ const ExplorePage = () => {
 
 	useEffect(() => {
 		return () => {
-			if (scrollRef.current.scrollTimeout) clearTimeout(scrollRef.current.scrollTimeout);
+			if (scrollRef.current?.scrollTimeout) clearTimeout(scrollRef.current.scrollTimeout);
 		};
 	}, []);
 
