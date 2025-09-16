@@ -15,14 +15,14 @@ const FeedWidget = ({ feed }) => {
 				<img className="w-full h-full object-cover feed-img" src={imageUrl} onError={(e) => e.currentTarget.src = '/media/site_images/blank-profile.png'} />
 			</Link>
 			{(feed?.feed_id === viewer?.feed_id || !viewer) && (
-				<p className="text-lg font-bold text-white truncate mt-1">
-					{feed?.feed_name}
+				<p className={`text-lg font-bold text-white truncate mt-1 ${!feed?.feed_name ? 'faded-text' : ''}`}>
+					{feed?.feed_name || '(Unknown Feed)'}
 				</p>
 			)}
 			{viewer && feed?.feed_id !== viewer?.feed_id ? (
 				<FollowerChangeButton feed={feed} showFollowers={false} showName={true} showVertical={true} viewerId={viewer?.feed_id} />
 			) : (
-				<p className="small-text">{feed.follower_count} {feed.follower_count === 1 ? 'follower' : 'followers'}</p>
+				<p className="small-text">{feed?.follower_count || '0'} {feed?.follower_count === 1 ? 'follower' : 'followers'}</p>
 			)}
 		</div>
 	);

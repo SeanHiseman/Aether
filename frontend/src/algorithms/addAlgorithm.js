@@ -126,7 +126,7 @@ const AddAlgorithm = ({ algorithms = [], editingAlgorithm = null, locationId, on
     const [wordBoost, setWordBoost] = useState('');
     const [wordSuppress, setWordSuppress] = useState('');
     const { user } = useContext(AuthContext);
-    const hasMembership = user.has_membership
+    const hasMembership = user?.has_membership
 
     const isDayActive = (day) => activeDays.includes(day);
 
@@ -226,6 +226,7 @@ const AddAlgorithm = ({ algorithms = [], editingAlgorithm = null, locationId, on
             setWordSuppress('');
             setVariety(0.5);
             setCustomInstruction('');
+            setGenerateCode(true);
             setTextRange([0, 100]);
             setVideoRange([0, 100]);
             setContentType({ images: true, text: true, videos: true, interactive: true, externalPosts: true, embeddedWebsites: true });
@@ -241,6 +242,7 @@ const AddAlgorithm = ({ algorithms = [], editingAlgorithm = null, locationId, on
             setWordSuppress(templateConfig.wordSuppress);
             setVariety(templateConfig.variety);
             setCustomInstruction(templateConfig.customInstruction);
+            setGenerateCode(false);
             setTextRange([templateConfig.minText, templateConfig.maxText]);
             setVideoRange([templateConfig.minVideo, templateConfig.maxVideo]);
             setContentType(templateConfig.contentType);
@@ -259,14 +261,16 @@ const AddAlgorithm = ({ algorithms = [], editingAlgorithm = null, locationId, on
     }
 
     useEffect(() => {
-        if (customInstruction.trim()) {
+        if (customInstruction.trim() && hasMembership) {
             if (template === 'none') {
                 setGenerateCode(true);
+            } else {
+                setGenerateCode(false);
             }
         } else {
             setGenerateCode(false);
         }
-    }, [customInstruction, template]);
+    }, [customInstruction, template, hasMembership]);
 
     useEffect(() => {
         if (editingAlgorithm) {
@@ -343,7 +347,8 @@ const AddAlgorithm = ({ algorithms = [], editingAlgorithm = null, locationId, on
                 <div className="form-row">
                     <textarea
                         className="form-textarea tiny-text"
-                        placeholder={customInstruction ? customInstruction : "Describe your algorithm..."}
+                        disabled={!hasMembership}
+                        placeholder={hasMembership ? (customInstruction ? customInstruction : "Describe your algorithm...") : "Custom instructions require membership"}
                         type="text"
                         value={customInstruction}
                         onChange={e => {setCustomInstruction(e.target.value); setTemplate('none')}}

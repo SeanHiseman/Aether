@@ -97,7 +97,6 @@ const DeepFeed = () => {
                     return;
                 }
                 const response = await axios.delete('/api/delete_deep_feed', { data: { deepFeedId: deep_feed_id } });
-                console.log("Delete response:", response);
                 if (response.data.success) {
                     setDeepFeed((prev) => {
                         const updated = { name: 'Following' };
@@ -112,7 +111,6 @@ const DeepFeed = () => {
                     navigate('/d/following');
                 }
             } catch (error) {
-                console.error("Error deleting deep feed:", error);
                 setErrorMessage(error.response?.data?.message || 'Error deleting combined feed');
                 setTimeout(() => { setErrorMessage(''); }, 5000);
             }

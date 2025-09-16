@@ -31,7 +31,7 @@ const MembershipSettings = () => {
                     'Authorization': `Bearer ${localStorage.getItem('token')}`
                 }
             });
-            setSubscriptionStatus(response.data);
+            setSubscriptionStatus(response?.data);
         } catch (error) {
             setErrorMessage('Error fetching subscription status');
         }
@@ -53,11 +53,11 @@ const MembershipSettings = () => {
             if (response.data.url) {
                 window.location.href = response.data.url;
             } else {
-                setErrorMessage(response.data.error || 'Failed to initiate payment. Please try again.');
+                setErrorMessage(response?.data?.error || 'Failed to initiate payment. Please try again.');
             }
         } catch (error) {
             if (error.response) {
-                setErrorMessage(error.response.data.error || 'Failed to initiate payment. Please try again.');
+                setErrorMessage(error?.response?.data?.error || 'Failed to initiate payment. Please try again.');
             } else if (error.request) {
                 setErrorMessage('Network error. Please check your connection and try again.');
             } else {
@@ -82,11 +82,11 @@ const MembershipSettings = () => {
                     'Authorization': `Bearer ${localStorage.getItem('token')}`
                 }
             });
-            setSuccessMessage(response.data.message || 'Subscription cancelled successfully.');
+            setSuccessMessage(response?.data?.message || 'Subscription cancelled successfully.');
             fetchSubscriptionStatus(); 
         } catch (error) {
             if (error.response) {
-                setErrorMessage(error.response.data.error || 'Failed to cancel membership. Please contact support.');
+                setErrorMessage(error?.response?.data?.error || 'Failed to cancel membership. Please contact support.');
             } else if (error.request) {
                 setErrorMessage('Network error. Please try again.');
             } else {
@@ -99,7 +99,7 @@ const MembershipSettings = () => {
 
     const features = [
         { icon: <Zap className="feature-icon" />, text: "Highest quality post generation" },
-        { icon: <Star className="feature-icon" />, text: "Unlimited access to all features" },
+        { icon: <Star className="feature-icon" />, text: "Custom algorithm instructions" },
         //{ icon: <Shield className="feature-icon" />, text: "Access all posts for free" },
         //{ icon: <Crown className="feature-icon" />, text: "Premium features" },
         //{ icon: <Check className="feature-icon" />, text: "Improved customisation" },
@@ -114,7 +114,7 @@ const MembershipSettings = () => {
                         <Crown />
                     </div>
                     <h1 className="welcome-title">Welcome {user.username}!</h1>
-                    <p className="welcome-subtitle">Thank you for supporting Aether</p>
+                    <p className="welcome-subtitle">Thank you for supporting Aether Social</p>
                     <div className="status-card">
                         <p className="status-text">
                             Your membership is active and all premium features are unlocked
@@ -183,9 +183,9 @@ const MembershipSettings = () => {
     return (
         <div className="membership-container">
             <div className="header-section">
-                <h1 className="main-title">Get Membership</h1>
+                <p className="main-title">Get Membership</p>
                 <p className="main-subtitle">
-                    Experience the best of Aether 
+                    Experience the best of Aether Social
                 </p>
             </div>
             <div className="features-grid">

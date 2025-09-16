@@ -521,6 +521,7 @@ router.delete('/delete_feed', authenticateCheck, async (req, res) => {
         await Followers.destroy({ where: { feed_id: feedId }, transaction });
         await FeedChannels.destroy({ where: { feed_id: feedId }, transaction });
         await Feeds.destroy({ where: { feed_id: feedId }, transaction });
+        await DeepFeedContent.destroy({ where: { feed_id: feedId }, transaction });
         await transaction.commit();
         const feedPhoto = feed.feed_photo;
         if (feedPhoto && !defaultImages.includes(feedPhoto)) {
@@ -785,7 +786,6 @@ router.get('/get_feed_followers/:feedId', authenticateCheck, async (req, res) =>
     }
 });
 
-//router.get('/get_saved_posts/:channelId?', authenticateCheck, async (req, res) => { 
 router.get('/get_saved_posts', authenticateCheck, async (req, res) => {
     try {
         const saverId = req.session.viewer_id;

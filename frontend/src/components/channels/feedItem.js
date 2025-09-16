@@ -44,7 +44,7 @@ const FeedItem = ({ feed, id, isChat, parentDeepFeedId, unreadCount }) => {
             <div className="feed-list-link-container" {...attributes} {...listeners}>
                 <Link className="feed-list-link" to={isChat ? `/connections/${feed?.feed_name}/Main` : `/${linkType}/${feed?.feed_name}/Main`}>
                     <img className="small-feed-photo" src={`/${feed?.feed_photo}`} onError={(e) => e.currentTarget.src = '/media/site_images/blank-profile.png'} />
-                    <p className="text16">{feed?.feed_name || '(Feed not found)'}</p>
+                    <p className={`small-text ${feed?.feed_name ? "" : "faded-text"}`}>{feed?.feed_name || '(Feed not found)'}</p>
                     {isChat && unreadCount > 0 && (
                         <div className="unread-count">{unreadCount}</div>
                     )}

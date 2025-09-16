@@ -84,7 +84,6 @@
     transition: var(--transition-regular);
 }
 .feature-card:hover {
-    opacity: 0.8;
     transform: translateY(calc(-1 * var(--small-margin)));
 }
 .feature-content {
@@ -126,7 +125,7 @@
     font-size: var(--xl-text);
     font-weight: 700;
     margin-bottom: var(--medium-margin);
-    background: linear-gradient(135deg, var(--color-accent-purple), #ec4899);
+    background: var(--color-accent-purple);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -199,11 +198,11 @@
     color: #111827;
 }
 .monthly-button {
-    background: linear-gradient(135deg, var(--color-accent-purple), var(--color-accent-blue));
+    background: var(--color-accent-purple);
     color: var(--color-white);
 }
 .monthly-button:hover:not(:disabled) {
-    background: linear-gradient(135deg, #9333ea, #2563eb);
+    background: var(--color-accent-purple);
     transform: translateY(calc(-1 * var(--small-margin)));
     box-shadow: var(--shadow-lg);
 }
@@ -359,7 +358,7 @@
     box-shadow: var(--shadow-lg);
 }
 .yearly-plan {
-    background: linear-gradient(135deg, var(--color-accent-purple), var(--color-accent-blue));
+    background: var(--color-accent-purple);
     border-color: transparent;
 }
 .yearly-plan .plan-description {

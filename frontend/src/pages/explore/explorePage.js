@@ -39,36 +39,30 @@ const ExplorePage = () => {
 	const { rightClasses } = useOutletContext();
 	const [refreshTrigger, setRefreshTrigger] = useState(false);
 	const scrollRef = useRef(null);
-	const CLEANUP_THRESHOLD = 100;
+	const CLEANUP_THRESHOLD = 1000;
 
 	const fetchPosts = useCallback(async () => {
 		try {
-			console.log("fetching posts")
 			const response = await axios.get("/api/explore_posts", {
 				params: { filter, limit: FETCH_LIMIT, exclude: shownPostIds },
 			});
-			console.log("fetched posts", response.data)
-			const newPosts = response.data.posts;
+			const newPosts = response?.data?.posts;
 			setPosts(prev => [...prev, ...newPosts]);
-			setShownPostIds(prev => [...prev, ...newPosts.map(p => p.post_id)]);
+			setShownPostIds(prev => [...prev, ...newPosts.map(p => p?.post_id)]);
 		} catch (error) {
-			console.error("Error fetching posts:", error);
 			setErrorMessage("Failed to fetch posts");
 		}
 	}, [filter, shownPostIds]);
 
 	const fetchFeeds = useCallback(async () => {
 		try {
-			console.log("fetching feeds")
 			const response = await axios.get("/api/explore_feeds", {
 				params: { limit: FETCH_LIMIT, exclude: shownFeedIds.join(',') },
 			});
-			console.log("fetched feeds", response.data)
-			const newFeeds = response.data.feeds;
+			const newFeeds = response?.data?.feeds;
 			setFeeds(prev => [...prev, ...newFeeds]);
-			setShownFeedIds(prev => [...prev, ...newFeeds.map(f => f.feed_id)]);
+			setShownFeedIds(prev => [...prev, ...newFeeds.map(f => f?.feed_id)]);
 		} catch (error) {
-			console.error("Error fetching feeds:", error);
 			setErrorMessage("Failed to fetch feeds");
 		}
 	}, [shownFeedIds]);
@@ -117,7 +111,6 @@ const ExplorePage = () => {
 	}, [filter, posts, feeds]);
 
 	const refreshPosts = () => {
-		console.log("refresh trigger");
         setRefreshTrigger(!refreshTrigger);
     };
 
@@ -126,7 +119,7 @@ const ExplorePage = () => {
 
 	useEffect(() => {
 		return () => {
-			if (scrollRef.current?.scrollTimeout) clearTimeout(scrollRef.current.scrollTimeout);
+			if (scrollRef.current.scrollTimeout) clearTimeout(scrollRef.current.scrollTimeout);
 		};
 	}, []);
 
@@ -170,7 +163,7 @@ const ExplorePage = () => {
 			if (element.scrollHeight <= element.clientHeight && !loadingMore) loadMore();
 		}, 50);
 		return () => clearTimeout(timeout);
-	}, [loading, loadingMore, feeds.length, posts.length]);
+	}, [loading, loadingMore]);
 
 	return (
 		<div className="standard-container">
