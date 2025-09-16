@@ -149,9 +149,8 @@
     flex-direction: column;
 }
 .followers-header {
-    background-color: var(--darkest);
     text-align: left;
-    width: 80%;
+    width: 100%;
 }
 #feed-summary {
     align-items: center;

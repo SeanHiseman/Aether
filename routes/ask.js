@@ -113,7 +113,6 @@ router.delete('/delete_ask_chat', authenticateCheck, async (req, res) => {
     }
 });
 
-//Returns all of a users chats with Ask
 router.get('/get_ask_chats', authenticateCheck, async (req, res) => {
     try {
         const userId = req.session.user_id;
@@ -129,7 +128,7 @@ router.get('/get_ask_chats', authenticateCheck, async (req, res) => {
 
 router.post('/generate_content', authenticateCheck, async (req, res) => {
     try {
-        const { currentCode, request, parentCode, senderId } = req.body;
+        const { currentCode, request, senderId } = req.body;
         const hasMembership = req.session.has_membership || false;
         const model = hasMembership ? 'gpt-5-mini' : 'gpt-5-nano'; 
         //GPT-5-mini 0.25/2.00, GPT-5 nano 0.05/0.40
@@ -204,24 +203,12 @@ router.post('/generate_content', authenticateCheck, async (req, res) => {
             });
         }
         const assistantInstructions = 
-            //parentCode ? `Generate or improve HTML code based on the following context:
-            //Request: ${request}
-            //Current Code: ${currentCode}
-            //Parent Code: ${parentCode}
-            //IMPORTANT: Return ONLY the raw HTML/Javascript  code without any explanations, comments, introductory text, or markdown formatting.
-            //Do not include \`\`\`html, \`\`\`
-            //Body background #232527 (unless specified), height 300px minimum. 
-            //Use styles: --border: #3e3f41;--darkest: #0f0f0f; --dark: #232527; --light: #737484; --lightest: #dddddd;
-            //White text as default
-            //Ensure all interactions work on mobile and desktop.
-            //If the request cannot be fulfilled with code, return nothing`
-            //:
             `Generate or improve HTML code based on the following context:
             Request: ${request}
             Current Code: ${currentCode}
             IMPORTANT: Return ONLY the raw HTML/Javascript code without any explanations, comments, introductory text, or markdown formatting.
             Do not include \`\`\`html, \`\`\`
-            Body background #232527 (unless specified), height 300px minimum. No body padding, main width 100% with no border.
+            Body background #0f0f0f (unless specified), height 300px minimum. No body padding, main width 100% with no border.
             Use styles: --border: #3e3f41;--darkest: #0f0f0f; --dark: #232527; --light: #737484; --lightest: #dddddd;
             White text as default
             Ensure all interactions work on mobile and desktop.

@@ -353,4 +353,20 @@
     .content-list {
         width: 100%;
     }
+    .content-metadata {
+        gap: 0;
+        grid-template-areas: 
+            "user votes replies actions save"
+            "channel datetime datetime datetime datetime";
+        grid-template-columns: 1fr max-content max-content max-content max-content;
+        grid-template-rows: auto auto;
+        margin-bottom: 0;
+    }
+    .content-metadata .view-date-container {
+        flex-direction: row;
+        justify-self: start;
+    }
+    .view-date-container {
+        gap: var(--large-margin);
+    }
 }

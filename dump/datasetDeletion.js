@@ -1,5 +1,5 @@
 import sequelize from '../databaseSetup.js';
-import { Feeds, FeedChannels, Posts, PostVotes, SavedPosts, Users, ViewedPosts } from '../models/relationships.js';
+import { Feeds, FeedChannels, Followers, Posts, PostVotes, SavedPosts, Users, ViewedPosts } from '../models/relationships.js';
 import { Op } from 'sequelize';
 
 async function cleanupTestData() {
@@ -23,6 +23,10 @@ async function cleanupTestData() {
             });
             await FeedChannels.destroy({
                 where: { channel_id: { [Op.like]: '111111111111%' } },
+                transaction: t
+            });
+            await Followers.destroy({
+                where: { feed_id: { [Op.like]: '111111111111%' } },
                 transaction: t
             });
             await Feeds.destroy({

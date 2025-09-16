@@ -30,12 +30,14 @@ body, html {
     font-size: var(--small-text);
 }
 .clickable {
+    border: 1px solid transparent;
     border-radius: var(--small-margin);
     cursor: pointer;
-    padding: var(--small-margin);
+    margin: 0 !important;
+    padding: 2px;
 }
 .clickable:hover {
-    background-color: var(--light);
+    border: 1px solid var(--light);
 }
 .dark-text {
     color: var(--darkest);
@@ -80,7 +82,7 @@ p, .channel-link {
     white-space: normal;
 }
 p, h1, h2, h3, h4, h5, h6 {
-    margin: var(--medium-margin);
+    margin: var(--small-margin);
 }
 .small-icon {
     font-size: var(--small-text)
@@ -120,7 +122,7 @@ p, h1, h2, h3, h4, h5, h6 {
     font-size: var(--xl-text);
 }
 .text16, .text24, .text36, .text48, .small-text, .medium-text, .large-text, .xl-text {
-    margin: clamp(2px, 2vw, 8px);
+    margin: clamp(2px, 1vw, 4px);
 }
 @keyframes spin {
   from { transform: rotate(0deg); }
