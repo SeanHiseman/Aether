@@ -1,19 +1,15 @@
 import { Navigate, Outlet, BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ProtectedRoute, PublicAuthProvider } from './components/authContext';
-import About from './pages/welcome/about';
 import Account from './pages/feeds/settings/account';
-import Algorithm from './pages/welcome/algorithm';
 import AskChannel from './pages/ask/askChannel';
 import BaseLayout from './pages/base';
 import ChatPage from './pages/connections/chatPage';
 import ConnectionsPage from './pages/connections/connectionsPage';
-import Content from './pages/welcome/content';
 import ContentWidget from './components/content/contentWidget';
 import DeepFeed from './pages/deepFeed';
 import EmailVerification from './pages/site_entrance/verification';
 import ExplorePage from './pages/explore/explorePage';
-import Feeds from './pages/welcome/feeds';
 import FeedDeletion from './pages/feeds/settings/feedDeletion';
 import FeedFollowers from './pages/feeds/settings/feedFollowers';
 import FeedInfoView from './pages/feeds/settings/feedInfoView';
@@ -24,12 +20,10 @@ import FollowRequests from './pages/feeds/settings/followRequests';
 import ForgotPassword from './pages/site_entrance/forgotPassword';
 import Join from './pages/site_entrance/join';
 import Login from './pages/site_entrance/login';
-import Membership from './pages/welcome/membership';
 import MembershipSettings from './pages/feeds/settings/membershipSettings';
 import NotFound from './notFound';
 import SavedPosts from './pages/feeds/savedPosts';
 import Placeholder from './pages/welcome/placeholder';
-import Privacy from './pages/welcome/privacy';
 import ResetPassword from './pages/site_entrance/resetPassword';
 import Team from './pages/welcome/team';
 import Theme from './pages/feeds/settings/theme';
@@ -64,15 +58,9 @@ const App = () => {
 							<Route path="/" element={<Navigate to="/welcome" replace />} />
 							<Route path="/welcome" element={<Outlet />}>
 								<Route index element={<WelcomeHome />} />
-								<Route path="about" element={<About />} />
-								<Route path="algorithm" element={<Algorithm />} />
-								<Route path="content" element={<Content />} />
-								<Route path="feeds" element={<Feeds />} />
-								<Route path="membership" element={<Membership />} />
 								<Route path="contact" element={<Placeholder />} />
 								<Route path="licenses" element={<Placeholder />} />
 								<Route path="private-policy" element={<Placeholder />} />
-								<Route path="privacy" element={<Privacy />} />
 								<Route path="support" element={<Placeholder />} />
 								<Route path="team" element={<Team />} />
 								<Route path="terms" element={<Placeholder />} />

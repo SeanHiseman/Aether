@@ -117,14 +117,6 @@
     margin-bottom: var(--text36);
     margin-top: clamp(3px, 1.2vw, 6px);
 }
-#welcome-center {
-    display: grid;
-    grid-template-columns: repeat(2, calc(50% - var(--large-margin))); 
-    gap: clamp(16px, 3.2vw, 32px);
-    margin-bottom: clamp(16px, 3.2vw, 32px);
-    margin-top: var(--medium-margin);
-    width: 90%;
-}
 #welcome-container {
     align-items: center;
     background-color: var(--darkest);
@@ -132,18 +124,16 @@
     flex-direction: column;
     margin: 0;
 }
-#welcome-text {
+.welcome-posts {
+    width: 60%;
+}
+.welcome-text {
     font-size: clamp(6px, 6vw, 48px);
     margin-bottom: var(--medium-margin);
     margin-top: var(--text36);
     position: relative;
 }
 @media (max-width: 768px) {
-    #welcome-center {
-        grid-template-columns: 1fr;
-        gap: 1.5rem;
-        width: 95%;
-    }
     .welcome-box {
         min-height: clamp(120px, 18vw, 180px);
     }
@@ -169,6 +159,9 @@
     }
     .social-links {
         justify-content: center;
+    }
+    .welcome-posts {
+        width: 99%;
     }
 }
 @media (max-width: 480px) {

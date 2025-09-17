@@ -111,6 +111,10 @@
     justify-content: space-around;
     width: 100%;
 }
+.display-div {
+    border-top-left-radius: calc(clamp(4px, 1vw, 10px) + var(--medium-margin));
+    border-top-right-radius: calc(clamp(4px, 1vw, 10px) + var(--medium-margin));
+}
 .feed-photo {
     width: var(--xl-margin);
     height: var(--xl-margin);

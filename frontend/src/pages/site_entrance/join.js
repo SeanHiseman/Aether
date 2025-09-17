@@ -48,7 +48,7 @@ const Join = () => {
     return (
         <div className="authentication-container">
             <Link to="/welcome">
-                <p className="welcome-text pointer">Welcome to Aether</p>
+                <p className="welcome-text pointer">Welcome to Aether Social</p>
             </Link>
             <div className="authentication-box">
                 <div className="login-register">

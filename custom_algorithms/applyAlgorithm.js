@@ -3,6 +3,15 @@ import { DeepFeedContent, Feeds, Followers, Posts, PostVotes, SavedPosts, Viewed
 import { CosineSimilarity } from "../functions/calculation/cosineSimilarity.js";
 import { Op } from 'sequelize';
 
+function shapePost(post, savedSet = new Set()) {
+	const { score, _maxSimilarity, ...rest } = post;
+	const { channel_id, content, created_at, downvotes, feed_id, parent_id, poster_id, post_id, replies, title, updated_at, upvotes, views } = rest;
+	return { post_id, parent_id, feed_id, channel_id, title, content, replies, views, upvotes, downvotes, created_at, updated_at, poster_id, is_saved: savedSet.has(post.post_id) };
+}
+//return paginated.map(post => shapePost(post.dataValues, savedSet));
+//return paginated.map(post => shapePost(post, savedSet));
+//return finalPosts.map(post => shapePost(post, savedSet));
+
 async function ApplyAlgorithm({ locationId, excludedPostIds, feedId, includeOptions, isGroup = true, isMain, limit, offset, viewerId, keyword = '' }) {
     try {
         //Already returned posts are excluded

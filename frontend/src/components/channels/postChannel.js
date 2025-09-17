@@ -144,7 +144,6 @@ const PostChannel = ({ channelId, channelName, feed, isDraft, isGroup, onEditCli
 				key={post.post_id}
 				feed={feed}
 				isDraft={isDraft}
-				isGroup={isGroup}
 				onEditClick={onEditClick}
 				onPostRemoved={handlePostRemoved}
 				onReplyClick={onReplyClick}
@@ -162,7 +161,6 @@ const PostChannel = ({ channelId, channelName, feed, isDraft, isGroup, onEditCli
 						<ContentWidget
 							feed={feed}
 							isDraft={isDraft}
-							isGroup={isGroup}
 							onEditClick={onEditClick}
 							onPostRemoved={handlePostRemoved}
 							onReplyClick={onReplyClick}

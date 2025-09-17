@@ -1,21 +1,16 @@
 import { Link } from 'react-router-dom';
-import { useEffect, useState } from 'react';
 import '../../css/welcome.css';
 import AlgorithmSelector from '../../algorithms/algorithmSelector';
-import SmallContentWidget from '../../components/content/smallContentWidget';
-import { loadWelcomeContent } from './welcomeContent';
+import ContentWidget from '../../components/content/contentWidget';
 
 const WelcomeHome = () => {
-    const [welcomePosts, setWelcomePosts] = useState([]);
-	useEffect(() => {
-		document.title = "Welcome to Aether Social";
-		loadWelcomeContent().then(setWelcomePosts);
-	}, []);
+    document.title = "Welcome to Aether Social";
     
     return (
         <>
             <div id="welcome-container">
-                <p className="welcome-text">Welcome to Aether Social</p>
+                <p id="welcome-text">Welcome to Aether Social</p>
+                <p className="medium-text">Better social media</p>
                 <div id="join-login">
                     <Link to="/login">
                         <button className="button join welcome">Login</button>
@@ -24,14 +19,68 @@ const WelcomeHome = () => {
                         <button className="button join welcome">Join</button>
                     </Link>
                 </div>
-                <p className="medium-text">The only social media platform with interactive content:</p>
-				<div className="welcome-posts">
-					{welcomePosts.map((post) => (
-						<SmallContentWidget key={post.post_id} display={true} post={post} />
-					))}
-				</div>
-                <p className="medium-text">Customise the algorithm that shows you content:</p>
-                <AlgorithmSelector display={true} locationId={'display'} />
+                <div id="welcome-center">
+                    <Link to="/welcome/about">
+                        <div className="welcome-box">
+                            <div className="left-aligned-text">
+                                <p className="welcome-box-header">About Aether</p>
+                                <p>The world's only platform for sharing dynamic content</p>
+                                <p>Control your content with custom algorithms and deep feeds</p>
+                                <p>Built for usefulness, not attention</p>
+                            </div>
+                        </div>
+                    </Link>
+                    <Link to="/welcome/content">
+                        <div className="welcome-box">
+                            <div className="left-aligned-text">
+                                <p className="welcome-box-header">Content</p>
+                                <p>Dynamic, interactive posts</p>
+                                <p>Infinitely customizable experiences</p>
+                                <p>Generate or build content yourself</p>
+                            </div>
+                        </div>
+                    </Link>
+                    <Link to="/welcome/feeds">
+                        <div className="welcome-box">
+                            <div className="left-aligned-text">
+                                <p className="welcome-box-header">Feeds</p>
+                                <p>Create and follow feeds for any topic</p>
+                                <p>Organized into channels for posts and chats</p>
+                                <p>Combined feeds help you to organise content</p>
+                            </div>
+                        </div>
+                    </Link>
+                    <Link to="/welcome/algorithm">
+                        <div className="welcome-box">
+                            <div className="left-aligned-text">
+                                <p className="welcome-box-header">Algorithm</p>
+                                <p>Adjust your algorithm - you are in control</p>
+                                <p>Content delivery is fully customizable</p>
+                                <p>Save and reuse algorithms across feeds</p>
+                            </div>
+                        </div>
+                    </Link>
+                    <Link to="/welcome/membership">
+                        <div className="welcome-box">
+                            <div className="left-aligned-text">
+                                <p className="welcome-box-header">Membership</p>
+                                <p>Create longer, more detailed posts</p>
+                                <p>Access to highest quality AI models</p>
+                                <p>Enhanced limits and premium features</p>
+                            </div>
+                        </div>
+                    </Link>
+                    <Link to="/welcome/privacy">
+                        <div className="welcome-box">
+                            <div className="left-aligned-text">
+                                <p className="welcome-box-header">Privacy</p>
+                                <p>Personal data encrypted, never leaves Aether</p>
+                                <p>Your data belongs to you, not us</p>
+                                <p>Control how data personalizes your content</p>
+                            </div>
+                        </div>
+                    </Link>
+                </div>
             </div>
             <footer className="footer">
                 <div className="footer-content">

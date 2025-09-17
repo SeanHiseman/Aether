@@ -41,12 +41,12 @@ export const sendVerificationEmail = async (email, username, verificationToken) 
             <p>This link will expire in 24 hours.</p>
             <hr style="border: 1px solid #eee; margin: 30px 0;">
             <p style="color: #666; font-size: 12px;">
-            If you didn't create an account on Aether, you can safely ignore this email.
+            If you didn't create an account on Aether Social, you can safely ignore this email.
             </p>
         </div>
         `,
         text: `
-        Welcome to Aether, ${username}!
+        Welcome to Aether Social, ${username}!
         
         Please verify your email address by visiting this link:
         ${verificationUrl}
@@ -64,7 +64,7 @@ export const sendPasswordResetEmail = async (email, username, resetToken) => {
     const mailOptions = {
         from: `"Aether" <no-reply@aether.cool>`,
         to: email,
-        subject: 'Reset your Aether password',
+        subject: 'Reset your Aether Social password',
         html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
             <h2 style="color: #333;">Password Reset Request</h2>

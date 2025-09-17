@@ -4,14 +4,14 @@ import { FaEdit, FaTrash } from 'react-icons/fa';
 import { useEffect, useState } from 'react';
 import AddAlgorithm from './addAlgorithm';
 
-const AlgorithmSelector = ({ locationId, refreshPosts }) => {
+const AlgorithmSelector = ({ display, locationId, refreshPosts }) => {
 	const [algorithms, setAlgorithms] = useState([]);
 	const [assignedAlgorithmId, setAssignedAlgorithmId] = useState('');
 	const [assignError, setAssignError] = useState(null);
 	const [editingAlgorithm, setEditingAlgorithm] = useState(null);
 	const [error, setError] = useState(null);
 	const [loading, setLoading] = useState(false);
-	const [modalOpen, setModalOpen] = useState(false);
+	const [modalOpen, setModalOpen] = useState(display || false);
 	const [optionsOpen, setOptionsOpen] = useState(false);
 
 	const assignAlgorithm = async (algorithmId) => {
@@ -182,113 +182,124 @@ const AlgorithmSelector = ({ locationId, refreshPosts }) => {
 		setEditingAlgorithm(null);
 	};
 
+	const renderContent = () => (
+		<div className="algorithm-content" onClick={display ? undefined : e => e.stopPropagation()}>
+			<div className="selector-header">
+				{!display && <button className="button" onClick={closeModal} title="Close">✕</button>}
+				<div className="error-message">{assignError}</div>
+				<p className="tiny-text">Changing the algorithm will reload posts</p>
+			</div>
+			{loading && <div className="loading-state">Loading algorithms...</div>}
+			{!loading && (
+				<>
+					<div className="choose-algorithm">
+						<div className={`dropdown${optionsOpen ? ' open' : ''}`}>
+							<div
+								className="form-select dropdown-trigger"
+								onClick={() => setOptionsOpen(o => !o)}
+							>
+								{assignedAlgorithmId
+									? `Assigned algorithm: ${algorithms.find(a => a.algorithm_id === assignedAlgorithmId)?.algorithm_name}`
+									: algorithms.length !== 0 ? 'Choose an algorithm...' : 'No algorithms assigned'}
+							</div>
+							{optionsOpen && (
+								<ul className="algorithm-options">
+									<li key="unassign">
+										<label
+											onClick={() => selectRadio('')}
+											style={{
+												cursor: assignedAlgorithmId ? 'pointer' : 'not-allowed',
+												opacity: assignedAlgorithmId ? 1 : 0.6,
+											}}
+										>	
+											<input
+												name="algorithm"
+												readOnly
+												type="radio"
+												value=""
+												checked={assignedAlgorithmId === ''}
+												disabled={!assignedAlgorithmId}
+											/>
+											No algorithm
+										</label>
+									</li>
+									{algorithms.map(a => {
+										const isCurrentlyAssigned = a.algorithm_id === assignedAlgorithmId;
+										return (
+											<li key={a.algorithm_id} className={isCurrentlyAssigned ? 'assigned' : ''}>
+												<label onClick={() => selectRadio(a.algorithm_id)} style={{ cursor:'pointer' }}>
+													<input
+														checked={isCurrentlyAssigned}
+														name="algorithm"
+														readOnly
+														type="radio"
+														value={a.algorithm_id}
+													/>
+													{a.algorithm_name}{isCurrentlyAssigned ? ' (assigned)' : ''}
+												</label>
+												<button
+													className="small-icon"
+													onClick={e => {
+														e.stopPropagation();
+														setEditingAlgorithm(a);
+													}}
+													title="Edit algorithm"
+												><FaEdit /></button>
+												<button
+													className="small-icon"
+													onClick={e => {
+														e.stopPropagation();
+														deleteAlgorithm(a.algorithm_id);
+													}}
+													title="Delete algorithm"
+												><FaTrash /></button>
+											</li>
+										);
+									})}
+								</ul>
+							)}
+						</div>
+					</div>
+					<AddAlgorithm 
+						algorithms={algorithms} 
+						display={display}
+						editingAlgorithm={editingAlgorithm} 
+						locationId={locationId} 
+						onCreated={handleCreated} 
+						onUpdated={updateAlgorithms} 
+						setEditingAlgorithm={setEditingAlgorithm}
+					/>
+				</>
+			)}
+			<div className="error-message">{error}</div>
+		</div>
+	);
+
 	useEffect(() => {
-		if (modalOpen) fetchAlgorithms();
-	}, [modalOpen]);
+		if (modalOpen || display) fetchAlgorithms();
+	}, [modalOpen, display]);
 
 	if (!locationId) return null;
 
 	return (
 		<div className="algorithm-selector">
-			<button
-				className="algorithm-selector__trigger"
-				onClick={() => setModalOpen(true)}
-			>
-				Choose Algorithm
-			</button>
-			{modalOpen && createPortal(
-				<div className="algorithm-overlay" onClick={closeModal}>
-					<div className="algorithm-content" onClick={e => e.stopPropagation()}>
-						<div className="selector-header">
-							<button className="button" onClick={closeModal} title="Close">✕</button>
-							<div className="error-message">{assignError}</div>
-							<p className="tiny-text">Changing the algorithm will reload posts</p>
-						</div>
-						{loading && <div className="loading-state">Loading algorithms...</div>}
-						{!loading && (
-							<>
-								<div className="choose-algorithm">
-									<div className={`dropdown${optionsOpen ? ' open' : ''}`}>
-										<div
-											className="form-select dropdown-trigger"
-											onClick={() => setOptionsOpen(o => !o)}
-										>
-											{assignedAlgorithmId
-												? `Assigned algorithm: ${algorithms.find(a => a.algorithm_id === assignedAlgorithmId)?.algorithm_name}`
-												: algorithms.length !== 0 ? 'Choose an algorithm...' : 'No algorithms assigned'}
-										</div>
-										{optionsOpen && (
-											<ul className="algorithm-options">
-												<li key="unassign">
-													<label
-														onClick={() => selectRadio('')}
-														style={{
-															cursor: assignedAlgorithmId ? 'pointer' : 'not-allowed',
-															opacity: assignedAlgorithmId ? 1 : 0.6,
-														}}
-													>	
-														<input
-															name="algorithm"
-															readOnly
-															type="radio"
-															value=""
-															checked={assignedAlgorithmId === ''}
-															disabled={!assignedAlgorithmId}
-														/>
-														No algorithm
-													</label>
-												</li>
-												{algorithms.map(a => {
-													const isCurrentlyAssigned = a.algorithm_id === assignedAlgorithmId;
-													return (
-														<li key={a.algorithm_id} className={isCurrentlyAssigned ? 'assigned' : ''}>
-															<label onClick={() => selectRadio(a.algorithm_id)} style={{ cursor:'pointer' }}>
-																<input
-																	checked={isCurrentlyAssigned}
-																	name="algorithm"
-																	readOnly
-																	type="radio"
-																	value={a.algorithm_id}
-																/>
-																{a.algorithm_name}{isCurrentlyAssigned ? ' (assigned)' : ''}
-															</label>
-															<button
-																className="small-icon"
-																onClick={e => {
-																	e.stopPropagation();
-																	setEditingAlgorithm(a);
-																}}
-																title="Edit algorithm"
-															><FaEdit /></button>
-															<button
-																className="small-icon"
-																onClick={e => {
-																	e.stopPropagation();
-																	deleteAlgorithm(a.algorithm_id);
-																}}
-																title="Delete algorithm"
-															><FaTrash /></button>
-														</li>
-													);
-												})}
-											</ul>
-										)}
-									</div>
-								</div>
-								<AddAlgorithm 
-									algorithms={algorithms} 
-									editingAlgorithm={editingAlgorithm} 
-									locationId={locationId} 
-									onCreated={handleCreated} 
-									onUpdated={updateAlgorithms} 
-									setEditingAlgorithm={setEditingAlgorithm}
-								/>
-							</>
-						)}
-						<div className="error-message">{error}</div>
-					</div>
-				</div>,
-				document.body 
+			{!display && (
+				<button
+					className="algorithm-selector__trigger"
+					onClick={() => setModalOpen(true)}
+				>
+					Choose Algorithm
+				</button>
+			)}
+			{(display || modalOpen) && (
+				display ? 
+					renderContent() : 
+					createPortal(
+						<div className="algorithm-overlay" onClick={closeModal}>
+							{renderContent()}
+						</div>,
+						document.body 
+					)
 			)}
 		</div>
 	);

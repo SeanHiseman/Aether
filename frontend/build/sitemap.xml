@@ -7,36 +7,6 @@
 		<priority>1.0</priority>
 	</url>
 	<url>
-		<loc>https://aether.cool/welcome/about</loc>
-		<lastmod>2025-06-23</lastmod>
-		<changefreq>monthly</changefreq>
-		<priority>0.8</priority>
-	</url>
-	<url>
-		<loc>https://aether.cool/welcome/algorithm</loc>
-		<lastmod>2025-06-23</lastmod>
-		<changefreq>monthly</changefreq>
-		<priority>0.8</priority>
-	</url>
-	<url>
-		<loc>https://aether.cool/welcome/content</loc>
-		<lastmod>2025-06-23</lastmod>
-		<changefreq>monthly</changefreq>
-		<priority>0.8</priority>
-	</url>
-	<url>
-		<loc>https://aether.cool/welcome/feeds</loc>
-		<lastmod>2025-06-23</lastmod>
-		<changefreq>monthly</changefreq>
-		<priority>0.8</priority>
-	</url>
-	<url>
-		<loc>https://aether.cool/welcome/membership</loc>
-		<lastmod>2025-06-23</lastmod>
-		<changefreq>monthly</changefreq>
-		<priority>0.8</priority>
-	</url>
-	<url>
 		<loc>https://aether.cool/welcome/contact</loc>
 		<lastmod>2025-06-23</lastmod>
 		<changefreq>monthly</changefreq>
@@ -50,12 +20,6 @@
 	</url>
 	<url>
 		<loc>https://aether.cool/welcome/private-policy</loc>
-		<lastmod>2025-06-23</lastmod>
-		<changefreq>yearly</changefreq>
-		<priority>0.5</priority>
-	</url>
-	<url>
-		<loc>https://aether.cool/welcome/privacy</loc>
 		<lastmod>2025-06-23</lastmod>
 		<changefreq>yearly</changefreq>
 		<priority>0.5</priority>

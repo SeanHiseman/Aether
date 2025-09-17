@@ -233,10 +233,10 @@ const BaseLayout = () => {
         const fetchViewerFeed = async () => {
             if (isAuthenticated && viewer) {
                 try {
-                    const res = await axios.get(`/api/feed/${viewer.feed_name}`);
-                    setFeed(res.data.feedResult);
+                    const response = await axios.get(`/api/feed/${viewer?.feed_name}`);
+                    setFeed(response.data?.feedResult);
                     const themeRes = await axios.get("/api/get_theme");
-                    setTheme(themeRes.data.theme);
+                    setTheme(themeRes.data?.theme);
                 }
                 catch (error) {
                     if (error.response?.status === 401) {
@@ -254,14 +254,14 @@ const BaseLayout = () => {
         }
         (async () => {
             try {
-                const res = await axios.get("/api/feed_list", {
+                const response = await axios.get("/api/feed_list", {
                     params: {
-                        followerId: viewer.feed_id,
+                        followerId: viewer?.feed_id,
                         offset: feedsOffset,
                         limit: 30
                     }
                 });
-                const newFeeds = res.data.formattedFeeds;
+                const newFeeds = response.data?.formattedFeeds;
                 if (newFeeds.length < 30) {
                     setHasMoreFeeds(false);
                 }
@@ -296,8 +296,8 @@ const BaseLayout = () => {
         }
         (async () => {
             try {
-                const res = await axios.get(`/api/deep_feeds/${viewer.feed_id}`);
-                setDeepFeeds(res.data.deepFeeds);
+                const response = await axios.get(`/api/deep_feeds/${viewer?.feed_id}`);
+                setDeepFeeds(response.data?.deepFeeds);
             }
             catch {
                 setDeepFeeds([]);

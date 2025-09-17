@@ -87,6 +87,10 @@ const ContentDisplay = ({ content, onCodeAppChange = () => {}, onOverflowChange 
 		onCodeAppChange(blocks.some(b => b.type === 'app' || b.type === 'code'))
 	}, [blocks, onCodeAppChange])
 
+	if (!content) {
+		return <p className="small-text faded-text">Content not found</p>
+	}
+
 	return (
 		<div ref={contentRef} style={{ height: heightStyle, overflow: showScrollBar ? 'auto' : 'hidden', position: 'relative' }}>
 			{blocks.map((block, i) => {
@@ -131,11 +135,11 @@ const ContentDisplay = ({ content, onCodeAppChange = () => {}, onOverflowChange 
 }
 
 ContentDisplay.propTypes = {
-	content: PropTypes.string.isRequired,
+	content: PropTypes.string,
 	onCodeAppChange: PropTypes.func,
 	onOverflowChange: PropTypes.func,
-	showFullContent: PropTypes.bool.isRequired,
-	showScrollBar: PropTypes.bool.isRequired,
+	showFullContent: PropTypes.bool,
+	showScrollBar: PropTypes.bool,
 }
 
-export default ContentDisplay
+export default ContentDisplay;

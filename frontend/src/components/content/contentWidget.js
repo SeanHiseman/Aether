@@ -9,7 +9,9 @@ import ReplyTreeView from './replyTreeView';
 import PropTypes from 'prop-types';
 import useTimeAgo from '../../useTimeAgo';
 
-const ContentWidget = ({ canRemove, feed, isDraft, isGroup, onEditClick, onPostRemoved, onReplyClick, onSaveToggle = () => {}, parent, post, readOnly = false }) => {
+const ContentWidget = ({ canRemove = false, feed, isDraft = false, onEditClick, onPostRemoved, onReplyClick, onSaveToggle = () => {}, parent, post, readOnly = false }) => {
+	const authContext = useContext(AuthContext);
+	const { isAuthenticated = false, viewer = null, user = null } = authContext || {};
 	const [canRemoveState, setCanRemoveState] = useState(canRemove);
 	const [downvoteLimit, setDownvoteLimit] = useState(false);
 	const [downvotes, setDownvotes] = useState(post?.downvotes);
@@ -32,10 +34,9 @@ const ContentWidget = ({ canRemove, feed, isDraft, isGroup, onEditClick, onPostR
 	const [upvoteLimit, setUpvoteLimit] = useState(false);
 	const [upvotes, setUpvotes] = useState(post?.upvotes);
 	const [views, setViews] = useState(post?.views);
-	const { isAuthenticated, viewer, user } = useContext(AuthContext);
     const channelName = post?.parentChannel?.channel_name;
     const feedName = post?.parentChannel?.feed?.feed_name;
-	const isReply = readOnly ? false : post.parent_id !== null; //Read only means not displaying widget as a reply
+	const isReply = readOnly ? false : post?.parent_id !== null; //Read only means not displaying widget as a reply
 	const isViewingOwnPost = post?.poster_id === viewer?.feed_id;
 	const timeAgo = useTimeAgo(post?.created_at);
 	const urlPrefix = (post?.parentChannel?.feed?.is_group) ? 'g' : 'u';
@@ -67,7 +68,7 @@ const ContentWidget = ({ canRemove, feed, isDraft, isGroup, onEditClick, onPostR
 			try {
 				if (!hasViewed && (!isAuthenticated || (isAuthenticated && viewer?.feed_id !== post?.poster_id))) { //Do not add views for own content
 					const response = await axios.post('/api/increment_views', { postId });
-					if (response?.data?.success) {
+					if (response.data?.success) {
 						setViews((prev) => prev + 1);
 					}
 					setHasViewed(true);
@@ -88,15 +89,15 @@ const ContentWidget = ({ canRemove, feed, isDraft, isGroup, onEditClick, onPostR
 				feedId: viewer?.feed_id,
 				voteType,
 			});
-			if (response?.data?.success) {
-				setUpvotes(response?.data?.upvotes);
-				setDownvotes(response?.data?.downvotes);
-				setUpvoteLimit(response?.data?.reachedUpvoteLimit);
-				setDownvoteLimit(response?.data?.reachedDownvoteLimit);
+			if (response.data?.success) {
+				setUpvotes(response.data?.upvotes);
+				setDownvotes(response.data?.downvotes);
+				setUpvoteLimit(response.data?.reachedUpvoteLimit);
+				setDownvoteLimit(response.data?.reachedDownvoteLimit);
 			} else {
-				if (response?.data?.message === 'upvote limit') {
+				if (response.data?.message === 'upvote limit') {
 					setUpvoteLimit(true);
-				} else if (response?.data?.message === 'downvote limit') {
+				} else if (response.data?.message === 'downvote limit') {
 					setDownvoteLimit(true);
 				}
 			}
@@ -136,7 +137,7 @@ const ContentWidget = ({ canRemove, feed, isDraft, isGroup, onEditClick, onPostR
 				};
 			}
 			const response = await axios.delete(url, { data: dataPayload });
-			if (response?.data?.success) {
+			if (response.data?.success) {
 				onPostRemoved(isDraft ? post?.draft_id : post?.post_id)
 				if (!isDraft) {
 					if (post.parent_id) {
@@ -201,8 +202,8 @@ const ContentWidget = ({ canRemove, feed, isDraft, isGroup, onEditClick, onPostR
 					voteType: 'check_vote',
 				});
 				if (response?.data?.success) {
-					setUpvoteLimit(response?.data?.reachedUpvoteLimit);
-					setDownvoteLimit(response?.data?.reachedDownvoteLimit);
+					setUpvoteLimit(response.data?.reachedUpvoteLimit);
+					setDownvoteLimit(response.data?.reachedDownvoteLimit);
 				}
 			} catch (error) { 
 				setPostErrorMessage('Please reload the page');
@@ -328,7 +329,7 @@ const ContentWidget = ({ canRemove, feed, isDraft, isGroup, onEditClick, onPostR
 				}}
 			>
 				<div id="test-div" style={isFullscreenMode ? { flex: 1, overflowY: 'auto' } : { height: '100%' }}>
-					<ContentDisplay content={post.content} onCodeAppChange={setHasCodeOrApp} onOverflowChange={handleOverflowChange} showFullContent={showFullContent} showScrollBar={false} />
+					<ContentDisplay content={post?.content} onCodeAppChange={setHasCodeOrApp} onOverflowChange={handleOverflowChange} showFullContent={showFullContent} showScrollBar={false} />
 				</div>
 				<div className="content-footer">
 					{(fullscreenRef.current?.requestFullscreen || fullscreenRef.current?.webkitRequestFullscreen) && hasCodeOrApp && (
@@ -358,11 +359,11 @@ const ContentWidget = ({ canRemove, feed, isDraft, isGroup, onEditClick, onPostR
 					{isAuthenticated ? (
 						!isViewingOwnPost ? (   
 							<div className="post-button-group">
-								<button className={`large-icon ${upvoteClass}`} disabled={upvoteLimit} onClick={() => postVote(post?.post_id, 'upvote')} title={upvoteLimit ? (user?.has_membership ? 'Vote limit reached' : 'Get membership for more votes') : 'Upvote'}>
+								<button className={`large-icon ${upvoteClass}`} disabled={upvoteLimit} onClick={() => postVote(post?.post_id, 'upvote')} title={upvoteLimit ? 'Vote limit reached' : 'Upvote'}>
 									<FaArrowUp />
 								</button>
-								<p className="small-text">{upvotes - downvotes}</p>      
-								<button className={`large-icon ${downvoteClass}`} disabled={downvoteLimit} onClick={() => postVote(post?.post_id, 'downvote')} title={downvoteLimit ? (user?.has_membership ? 'Vote limit reached' : 'Get membership for more votes') : 'Downvote'}>
+								<p className="small-text">{upvotes - downvotes || 0}</p>      
+								<button className={`large-icon ${downvoteClass}`} disabled={downvoteLimit} onClick={() => postVote(post?.post_id, 'downvote')} title={downvoteLimit ? 'Vote limit reached' : 'Downvote'}>
 									<FaArrowDown />
 								</button>
 							</div>
@@ -374,7 +375,7 @@ const ContentWidget = ({ canRemove, feed, isDraft, isGroup, onEditClick, onPostR
 							<button className="large-icon" onClick={handleLoginRedirect} title="Login to vote">
 								<FaArrowUp />
 							</button>
-							<p className="small-text">{upvotes - downvotes}</p>
+							<p className="small-text">{upvotes - downvotes || 0}</p>
 							<button className="large-icon" onClick={handleLoginRedirect} title="Login to vote">
 								<FaArrowDown />
 							</button>
@@ -412,7 +413,7 @@ const ContentWidget = ({ canRemove, feed, isDraft, isGroup, onEditClick, onPostR
 					)}
 				</div>
 				{/*{isAuthenticated && !post.note?.is_misinfo && !isDraft && (
-					<AskButton content={post} isGroup={isGroup} isReply={false} note={note} setNote={setNote} setPostErrorMessage={setPostErrorMessage} setShowNote={setShowNote} showNote={showNote} />
+					<AskButton content={post} isReply={false} note={note} setNote={setNote} setPostErrorMessage={setPostErrorMessage} setShowNote={setShowNote} showNote={showNote} />
 				)}*/}
 				{!isDraft && isAuthenticated && (<div className="button-text-bottom">
 					<button className="large-icon" title={isSaved ? 'Unsave post' : 'Save post'} onClick={savePost}>
@@ -422,7 +423,7 @@ const ContentWidget = ({ canRemove, feed, isDraft, isGroup, onEditClick, onPostR
 				</div>)}
 				<div className="view-date-container">
 					<p className="small-text faded-text" style={{ margin: '0px' }}>{post_id ? new Date(post?.created_at).toLocaleDateString() : timeAgo}</p>
-					{!isDraft && (<p className="small-text faded-text" style={{ margin: '0px' }}>{views} {views === 1 ? 'view' : 'views'}</p>)}
+					{!isDraft && (<p className="small-text faded-text" style={{ margin: '0px' }}>{views || 0} {views === 1 ? 'view' : 'views'}</p>)}
 				</div>
 			</div>
 			{showReplies && (
@@ -439,7 +440,6 @@ const ContentWidget = ({ canRemove, feed, isDraft, isGroup, onEditClick, onPostR
 								<ContentWidget 
 									canRemove={canRemoveState} 
 									feed={feed} 
-									isGroup={isGroup} 
 									key={reply?.post_id} 
 									onEditClick={onEditClick} 
 									onPostRemoved={replyRemoved} 
@@ -468,7 +468,6 @@ const ContentWidget = ({ canRemove, feed, isDraft, isGroup, onEditClick, onPostR
 ContentWidget.propTypes = {
 	canRemove: PropTypes.bool.isRequired,
 	feed: PropTypes.object.isRequired,
-	isGroup: PropTypes.bool.isRequired,
 	onEditClick: PropTypes.func.isRequired,
 	onPostRemoved: PropTypes.func.isRequired,
 	onReplyClick: PropTypes.func.isRequired, 

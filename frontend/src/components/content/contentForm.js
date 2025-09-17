@@ -686,7 +686,7 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onEdit
         blocks
             .filter(b => b.type==='MEDIA' && b.data.file)
             .forEach(b => formData.append('files', b.data.file));
-        formData.append('feed_id',   feed.feed_id);
+        formData.append('feed_id', feed.feed_id);
         formData.append('channel_id',channelId);
         formData.append('poster_id', viewer.feed_id);
         let id = draftId;
@@ -765,7 +765,7 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onEdit
             {isReply && <p className="text24">Reply</p>}
             {isReply && post && (
                 <div className="post-reply-preview">
-                    <ContentWidget canRemove={false} feed={feed} isGroup={isGroup} onEditClick={() => {}} onPostRemoved={() => {}} onReplyClick={() => {}} post={post} readOnly />
+                    <ContentWidget canRemove={false} feed={feed} onEditClick={() => {}} onPostRemoved={() => {}} onReplyClick={() => {}} post={post} readOnly />
                 </div>
             )}
             <form className="post-form" id="post-form" onSubmit={submitForm}>

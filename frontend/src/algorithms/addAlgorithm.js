@@ -101,7 +101,9 @@ const DualRangeSlider = ({ min = 0, max = 100, value = [25, 75], onChange, forma
     );
 };
 
-const AddAlgorithm = ({ algorithms = [], editingAlgorithm = null, locationId, onCreated, onUpdated, setEditingAlgorithm }) => {  
+const AddAlgorithm = ({ algorithms = [], display, editingAlgorithm = null, locationId, onCreated, onUpdated, setEditingAlgorithm }) => {  
+    const authContext = useContext(AuthContext);
+	const { user = null } = authContext || {};
     const [activeDays, setActiveDays] = useState(['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']);
     const [algorithmCode, setAlgorithmCode] = useState('');
     const [algorithmName, setAlgorithmName] = useState('');
@@ -125,7 +127,6 @@ const AddAlgorithm = ({ algorithms = [], editingAlgorithm = null, locationId, on
     const [voteImpact, setVoteImpact] = useState(0);
     const [wordBoost, setWordBoost] = useState('');
     const [wordSuppress, setWordSuppress] = useState('');
-    const { user } = useContext(AuthContext);
     const hasMembership = user?.has_membership
 
     const isDayActive = (day) => activeDays.includes(day);
@@ -316,7 +317,7 @@ const AddAlgorithm = ({ algorithms = [], editingAlgorithm = null, locationId, on
             <div className="error-state">{error}</div>
             <div className="create-header">
                 <p className="medium-text">{editingAlgorithm ? 'Edit Algorithm' : 'Create New Algorithm'}</p>
-		        <div>
+		        {!display && <div>
                     {editingAlgorithm && (
                         <button 
                             className="button button--secondary" 
@@ -332,7 +333,7 @@ const AddAlgorithm = ({ algorithms = [], editingAlgorithm = null, locationId, on
                             ? editingAlgorithm ? 'Saving...' : 'Creating...'
                             : editingAlgorithm ? 'Save Changes' : 'Create'}
                     </button>
-                </div>
+                </div>}
             </div>
             <div className="form hide-scrollbar">
                 <div className="form-row">

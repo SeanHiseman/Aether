@@ -23,8 +23,8 @@ export const PublicAuthProvider = ({ children }) => {
                     setIsAuthenticated(true);
                     setUser(user);
                     if (feeds && currentFeed) {
-                        const selectedFeed = feeds.find(feed => feed.feed_id === currentFeed);
-                        if (selectedFeed && (!viewer || viewer.feed_id !== selectedFeed.feed_id)) {
+                        const selectedFeed = feeds.find(feed => feed?.feed_id === currentFeed);
+                        if (selectedFeed && (!viewer || viewer?.feed_id !== selectedFeed?.feed_id)) {
                             setViewer(selectedFeed);
                         }
                     }

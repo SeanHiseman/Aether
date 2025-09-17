@@ -25,7 +25,7 @@ const ForgotPassword = () => {
 		<div className="authentication-container">
 			<p className="welcome-text">Forgot password</p>
 			<div className="authentication-box">
-				<p className="error-message">{message || emailError}</p>
+				<p className="small-text">{message || emailError}</p>
 				<form onSubmit={handleSubmit}>
 					<input
 						className="authentication-input-box"

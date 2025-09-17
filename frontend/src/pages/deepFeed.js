@@ -232,7 +232,6 @@ const DeepFeed = () => {
                                             key={post.post_id || Math.random()}
                                             canRemove={false}
                                             feed={post.poster || {}}
-                                            isGroup={!!post.is_group}
                                             onEditClick={setActiveEditPost}
                                             onPostRemoved={() => {}}
                                             onReplyClick={setActiveReplyPost}

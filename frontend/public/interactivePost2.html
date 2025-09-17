@@ -1,0 +1,899 @@
+<html><head></head><body><div class="content-block code-block" data-blockid="c4f46fc8-4a1d-46a7-8b28-245f5b80098c" data-code="<!DOCTYPE html>
+ <html lang=&quot;en&quot;>
+ <head>
+     <meta charset=&quot;UTF-8&quot;>
+     <meta name=&quot;viewport&quot; content=&quot;width=device-width, initial-scale=1.0&quot;>
+     <title>Français Facile - Learn French</title>
+     <style>
+         * {
+             margin: 0;
+             padding: 0;
+             box-sizing: border-box;
+         }
+ 
+         body {
+             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+             background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+             color: #ffffff;
+             min-height: 100vh;
+             line-height: 1.6;
+         }
+ 
+         .container {
+             max-width: 1200px;
+             margin: 0 auto;
+             padding: 20px;
+         }
+ 
+         header {
+             text-align: center;
+             margin-bottom: 30px;
+             padding: 20px;
+             background: linear-gradient(45deg, #667eea 0%, #764ba2 100%);
+             border-radius: 15px;
+             box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
+         }
+ 
+         h1 {
+             font-size: 2.5rem;
+             margin-bottom: 10px;
+             text-shadow: 0 2px 10px rgba(0,0,0,0.3);
+         }
+ 
+         .subtitle {
+             font-size: 1.1rem;
+             opacity: 0.9;
+         }
+ 
+         .nav-buttons {
+             display: flex;
+             justify-content: center;
+             gap: 15px;
+             margin: 30px 0;
+             flex-wrap: wrap;
+         }
+ 
+         .nav-btn {
+             padding: 12px 25px;
+             background: linear-gradient(45deg, #ff6b6b, #ee5a24);
+             color: white;
+             border: none;
+             border-radius: 25px;
+             cursor: pointer;
+             font-size: 1rem;
+             font-weight: 600;
+             transition: all 0.3s ease;
+             box-shadow: 0 5px 15px rgba(255, 107, 107, 0.3);
+         }
+ 
+         .nav-btn:hover {
+             transform: translateY(-2px);
+             box-shadow: 0 8px 25px rgba(255, 107, 107, 0.4);
+         }
+ 
+         .nav-btn.active {
+             background: linear-gradient(45deg, #10ac84, #00d2d3);
+             box-shadow: 0 5px 15px rgba(16, 172, 132, 0.3);
+         }
+ 
+         .section {
+             display: none;
+             background: rgba(255, 255, 255, 0.05);
+             backdrop-filter: blur(10px);
+             padding: 30px;
+             border-radius: 20px;
+             margin: 20px 0;
+             border: 1px solid rgba(255, 255, 255, 0.1);
+             box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+         }
+ 
+         .section.active {
+             display: block;
+             animation: fadeInUp 0.5s ease;
+         }
+ 
+         @keyframes fadeInUp {
+             from {
+                 opacity: 0;
+                 transform: translateY(30px);
+             }
+             to {
+                 opacity: 1;
+                 transform: translateY(0);
+             }
+         }
+ 
+         .lesson-grid {
+             display: grid;
+             grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+             gap: 20px;
+             margin: 20px 0;
+         }
+ 
+         .lesson-card {
+             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+             padding: 25px;
+             border-radius: 15px;
+             cursor: pointer;
+             transition: all 0.3s ease;
+             border: 1px solid rgba(255, 255, 255, 0.1);
+         }
+ 
+         .lesson-card:hover {
+             transform: translateY(-5px);
+             box-shadow: 0 15px 35px rgba(102, 126, 234, 0.3);
+         }
+ 
+         .lesson-title {
+             font-size: 1.3rem;
+             font-weight: 600;
+             margin-bottom: 10px;
+             color: #ffffff;
+         }
+ 
+         .lesson-desc {
+             opacity: 0.9;
+             font-size: 0.95rem;
+         }
+ 
+         .tutorial-content {
+             background: rgba(16, 172, 132, 0.1);
+             padding: 25px;
+             border-radius: 15px;
+             border-left: 4px solid #10ac84;
+             margin: 20px 0;
+         }
+ 
+         .vocab-item {
+             display: flex;
+             justify-content: space-between;
+             align-items: center;
+             padding: 15px;
+             margin: 10px 0;
+             background: rgba(255, 255, 255, 0.05);
+             border-radius: 10px;
+             border: 1px solid rgba(255, 255, 255, 0.1);
+             transition: all 0.3s ease;
+         }
+ 
+         .vocab-item:hover {
+             background: rgba(255, 255, 255, 0.1);
+             transform: translateX(5px);
+         }
+ 
+         .french-word {
+             font-weight: 600;
+             font-size: 1.1rem;
+             color: #00d2d3;
+         }
+ 
+         .english-word {
+             color: #ff9ff3;
+             font-weight: 500;
+         }
+ 
+         .pronunciation {
+             font-style: italic;
+             color: #feca57;
+             font-size: 0.9rem;
+         }
+ 
+         .quiz-container {
+             background: rgba(255, 107, 107, 0.1);
+             padding: 25px;
+             border-radius: 15px;
+             border-left: 4px solid #ff6b6b;
+         }
+ 
+         .question {
+             font-size: 1.2rem;
+             margin-bottom: 20px;
+             color: #ffffff;
+             font-weight: 500;
+         }
+ 
+         .options {
+             display: grid;
+             gap: 10px;
+             margin: 20px 0;
+         }
+ 
+         .option {
+             padding: 12px 20px;
+             background: rgba(255, 255, 255, 0.05);
+             border: 2px solid transparent;
+             border-radius: 10px;
+             cursor: pointer;
+             transition: all 0.3s ease;
+             color: #ffffff;
+         }
+ 
+         .option:hover {
+             background: rgba(255, 255, 255, 0.1);
+             border-color: #00d2d3;
+         }
+ 
+         .option.correct {
+             background: rgba(16, 172, 132, 0.3);
+             border-color: #10ac84;
+         }
+ 
+         .option.incorrect {
+             background: rgba(255, 107, 107, 0.3);
+             border-color: #ff6b6b;
+         }
+ 
+         .quiz-controls {
+             display: flex;
+             justify-content: space-between;
+             align-items: center;
+             margin: 20px 0;
+             flex-wrap: wrap;
+             gap: 15px;
+         }
+ 
+         .btn {
+             padding: 10px 20px;
+             border: none;
+             border-radius: 8px;
+             cursor: pointer;
+             font-size: 1rem;
+             font-weight: 600;
+             transition: all 0.3s ease;
+         }
+ 
+         .btn-primary {
+             background: linear-gradient(45deg, #10ac84, #00d2d3);
+             color: white;
+         }
+ 
+         .btn-primary:hover {
+             transform: translateY(-2px);
+             box-shadow: 0 5px 15px rgba(16, 172, 132, 0.3);
+         }
+ 
+         .btn-secondary {
+             background: linear-gradient(45deg, #667eea, #764ba2);
+             color: white;
+         }
+ 
+         .score {
+             font-size: 1.1rem;
+             font-weight: 600;
+             padding: 10px 20px;
+             background: rgba(254, 202, 87, 0.2);
+             border-radius: 10px;
+             color: #feca57;
+         }
+ 
+         .progress-bar {
+             width: 100%;
+             height: 8px;
+             background: rgba(255, 255, 255, 0.1);
+             border-radius: 4px;
+             overflow: hidden;
+             margin: 20px 0;
+         }
+ 
+         .progress-fill {
+             height: 100%;
+             background: linear-gradient(90deg, #10ac84, #00d2d3);
+             border-radius: 4px;
+             transition: width 0.5s ease;
+         }
+ 
+         .back-btn {
+             background: rgba(255, 255, 255, 0.1);
+             color: white;
+             border: 1px solid rgba(255, 255, 255, 0.2);
+             padding: 8px 15px;
+             border-radius: 6px;
+             cursor: pointer;
+             margin-bottom: 20px;
+             font-size: 0.9rem;
+             transition: all 0.3s ease;
+         }
+ 
+         .back-btn:hover {
+             background: rgba(255, 255, 255, 0.2);
+         }
+ 
+         @media (max-width: 768px) {
+             .container {
+                 padding: 15px;
+             }
+             
+             h1 {
+                 font-size: 2rem;
+             }
+             
+             .nav-buttons {
+                 flex-direction: column;
+                 align-items: center;
+             }
+             
+             .nav-btn {
+                 width: 100%;
+                 max-width: 250px;
+             }
+             
+             .lesson-grid {
+                 grid-template-columns: 1fr;
+             }
+         }
+     </style>
+ </head>
+ <body>
+     <div class=&quot;container&quot;>
+         <header>
+             <h1>🇫🇷 Français Facile</h1>
+             <p class=&quot;subtitle&quot;>Master French with Interactive Lessons &amp; Quizzes</p>
+         </header>
+ 
+         <div class=&quot;nav-buttons&quot;>
+             <button class=&quot;nav-btn active&quot; onclick=&quot;showSection('home')&quot;>Home</button>
+             <button class=&quot;nav-btn&quot; onclick=&quot;showSection('tutorials')&quot;>Tutorials</button>
+             <button class=&quot;nav-btn&quot; onclick=&quot;showSection('quizzes')&quot;>Quizzes</button>
+             <button class=&quot;nav-btn&quot; onclick=&quot;showSection('progress')&quot;>Progress</button>
+         </div>
+ 
+         <!-- Home Section -->
+         <div id=&quot;home&quot; class=&quot;section active&quot;>
+             <h2>Welcome to Your French Learning Journey!</h2>
+             <div class=&quot;lesson-grid&quot;>
+                 <div class=&quot;lesson-card&quot; onclick=&quot;showTutorial('basics')&quot;>
+                     <div class=&quot;lesson-title&quot;>Basic Greetings</div>
+                     <div class=&quot;lesson-desc&quot;>Learn essential French greetings and polite expressions</div>
+                 </div>
+                 <div class=&quot;lesson-card&quot; onclick=&quot;showTutorial('numbers')&quot;>
+                     <div class=&quot;lesson-title&quot;>Numbers 1-20</div>
+                     <div class=&quot;lesson-desc&quot;>Master French numbers with pronunciation guides</div>
+                 </div>
+                 <div class=&quot;lesson-card&quot; onclick=&quot;showTutorial('family')&quot;>
+                     <div class=&quot;lesson-title&quot;>Family Members</div>
+                     <div class=&quot;lesson-desc&quot;>Vocabulary for describing your family in French</div>
+                 </div>
+                 <div class=&quot;lesson-card&quot; onclick=&quot;showTutorial('colors')&quot;>
+                     <div class=&quot;lesson-title&quot;>Colors</div>
+                     <div class=&quot;lesson-desc&quot;>Learn all the essential colors in French</div>
+                 </div>
+                 <div class=&quot;lesson-card&quot; onclick=&quot;showQuiz('mixed')&quot;>
+                     <div class=&quot;lesson-title&quot;>🎯 Mixed Quiz</div>
+                     <div class=&quot;lesson-desc&quot;>Test your knowledge across all topics</div>
+                 </div>
+                 <div class=&quot;lesson-card&quot; onclick=&quot;showTutorial('phrases')&quot;>
+                     <div class=&quot;lesson-title&quot;>Common Phrases</div>
+                     <div class=&quot;lesson-desc&quot;>Useful everyday expressions and phrases</div>
+                 </div>
+             </div>
+         </div>
+ 
+         <!-- Tutorials Section -->
+         <div id=&quot;tutorials&quot; class=&quot;section&quot;>
+             <h2>French Tutorials</h2>
+             <div class=&quot;lesson-grid&quot;>
+                 <div class=&quot;lesson-card&quot; onclick=&quot;showTutorial('basics')&quot;>
+                     <div class=&quot;lesson-title&quot;>Basic Greetings</div>
+                     <div class=&quot;lesson-desc&quot;>Bonjour, bonsoir, and more!</div>
+                 </div>
+                 <div class=&quot;lesson-card&quot; onclick=&quot;showTutorial('numbers')&quot;>
+                     <div class=&quot;lesson-title&quot;>Numbers 1-20</div>
+                     <div class=&quot;lesson-desc&quot;>Count in French with confidence</div>
+                 </div>
+                 <div class=&quot;lesson-card&quot; onclick=&quot;showTutorial('family')&quot;>
+                     <div class=&quot;lesson-title&quot;>Family Members</div>
+                     <div class=&quot;lesson-desc&quot;>Père, mère, frère, sœur...</div>
+                 </div>
+                 <div class=&quot;lesson-card&quot; onclick=&quot;showTutorial('colors')&quot;>
+                     <div class=&quot;lesson-title&quot;>Colors</div>
+                     <div class=&quot;lesson-desc&quot;>Rouge, bleu, vert, jaune...</div>
+                 </div>
+                 <div class=&quot;lesson-card&quot; onclick=&quot;showTutorial('phrases')&quot;>
+                     <div class=&quot;lesson-title&quot;>Common Phrases</div>
+                     <div class=&quot;lesson-desc&quot;>Essential daily expressions</div>
+                 </div>
+             </div>
+         </div>
+ 
+         <!-- Quizzes Section -->
+         <div id=&quot;quizzes&quot; class=&quot;section&quot;>
+             <h2>Practice Quizzes</h2>
+             <div class=&quot;lesson-grid&quot;>
+                 <div class=&quot;lesson-card&quot; onclick=&quot;startQuiz('greetings')&quot;>
+                     <div class=&quot;lesson-title&quot;>🎯 Greetings Quiz</div>
+                     <div class=&quot;lesson-desc&quot;>Test your knowledge of French greetings</div>
+                 </div>
+                 <div class=&quot;lesson-card&quot; onclick=&quot;startQuiz('numbers')&quot;>
+                     <div class=&quot;lesson-title&quot;>🔢 Numbers Quiz</div>
+                     <div class=&quot;lesson-desc&quot;>Practice French numbers 1-20</div>
+                 </div>
+                 <div class=&quot;lesson-card&quot; onclick=&quot;startQuiz('family')&quot;>
+                     <div class=&quot;lesson-title&quot;>👨‍👩‍👧‍👦 Family Quiz</div>
+                     <div class=&quot;lesson-desc&quot;>Family member vocabulary quiz</div>
+                 </div>
+                 <div class=&quot;lesson-card&quot; onclick=&quot;startQuiz('colors')&quot;>
+                     <div class=&quot;lesson-title&quot;>🌈 Colors Quiz</div>
+                     <div class=&quot;lesson-desc&quot;>Test your knowledge of French colors</div>
+                 </div>
+                 <div class=&quot;lesson-card&quot; onclick=&quot;startQuiz('mixed')&quot;>
+                     <div class=&quot;lesson-title&quot;>🎲 Mixed Quiz</div>
+                     <div class=&quot;lesson-desc&quot;>Challenge yourself with all topics</div>
+                 </div>
+             </div>
+         </div>
+ 
+         <!-- Progress Section -->
+         <div id=&quot;progress&quot; class=&quot;section&quot;>
+             <h2>Your Learning Progress</h2>
+             <div class=&quot;tutorial-content&quot;>
+                 <h3>Quiz Scores</h3>
+                 <div id=&quot;progressDisplay&quot;></div>
+             </div>
+         </div>
+ 
+         <!-- Tutorial Content -->
+         <div id=&quot;tutorialContent&quot; class=&quot;section&quot;>
+             <button class=&quot;back-btn&quot; onclick=&quot;showSection('tutorials')&quot;>← Back to Tutorials</button>
+             <div id=&quot;tutorialData&quot;></div>
+         </div>
+ 
+         <!-- Quiz Content -->
+         <div id=&quot;quizContent&quot; class=&quot;section&quot;>
+             <button class=&quot;back-btn&quot; onclick=&quot;showSection('quizzes')&quot;>← Back to Quizzes</button>
+             <div class=&quot;quiz-container&quot;>
+                 <div class=&quot;progress-bar&quot;>
+                     <div class=&quot;progress-fill&quot; id=&quot;progressBar&quot;></div>
+                 </div>
+                 <div class=&quot;quiz-controls&quot;>
+                     <div class=&quot;score&quot; id=&quot;scoreDisplay&quot;>Score: 0/0</div>
+                     <div>Question <span id=&quot;questionNumber&quot;>1</span> of <span id=&quot;totalQuestions&quot;>10</span></div>
+                 </div>
+                 <div class=&quot;question&quot; id=&quot;questionText&quot;></div>
+                 <div class=&quot;options&quot; id=&quot;optionsContainer&quot;></div>
+                 <div class=&quot;quiz-controls&quot;>
+                     <button class=&quot;btn btn-primary&quot; id=&quot;nextBtn&quot; onclick=&quot;nextQuestion()&quot; style=&quot;display:none;&quot;>Next Question</button>
+                     <button class=&quot;btn btn-secondary&quot; id=&quot;finishBtn&quot; onclick=&quot;finishQuiz()&quot; style=&quot;display:none;&quot;>Finish Quiz</button>
+                 </div>
+             </div>
+         </div>
+     </div>
+ 
+     <script>
+         // Tutorial data
+         const tutorials = {
+             basics: {
+                 title: &quot;Basic Greetings&quot;,
+                 content: [
+                     { french: &quot;Bonjour&quot;, english: &quot;Hello/Good morning&quot;, pronunciation: &quot;bon-ZHOOR&quot; },
+                     { french: &quot;Bonsoir&quot;, english: &quot;Good evening&quot;, pronunciation: &quot;bon-SWAHR&quot; },
+                     { french: &quot;Salut&quot;, english: &quot;Hi/Bye (informal)&quot;, pronunciation: &quot;sah-LUU&quot; },
+                     { french: &quot;Au revoir&quot;, english: &quot;Goodbye&quot;, pronunciation: &quot;oh ruh-VWAHR&quot; },
+                     { french: &quot;À bientôt&quot;, english: &quot;See you soon&quot;, pronunciation: &quot;ah bee-ahn-TOH&quot; },
+                     { french: &quot;Comment allez-vous?&quot;, english: &quot;How are you? (formal)&quot;, pronunciation: &quot;koh-mahn tah-lay VOO&quot; },
+                     { french: &quot;Comment ça va?&quot;, english: &quot;How's it going? (informal)&quot;, pronunciation: &quot;koh-mahn sah VAH&quot; },
+                     { french: &quot;Ça va bien&quot;, english: &quot;I'm doing well&quot;, pronunciation: &quot;sah vah bee-AHN&quot; },
+                     { french: &quot;Merci&quot;, english: &quot;Thank you&quot;, pronunciation: &quot;mer-SEE&quot; },
+                     { french: &quot;De rien&quot;, english: &quot;You're welcome&quot;, pronunciation: &quot;duh ree-AHN&quot; }
+                 ]
+             },
+             numbers: {
+                 title: &quot;Numbers 1-20&quot;,
+                 content: [
+                     { french: &quot;un&quot;, english: &quot;one&quot;, pronunciation: &quot;ahn&quot; },
+                     { french: &quot;deux&quot;, english: &quot;two&quot;, pronunciation: &quot;duh&quot; },
+                     { french: &quot;trois&quot;, english: &quot;three&quot;, pronunciation: &quot;twah&quot; },
+                     { french: &quot;quatre&quot;, english: &quot;four&quot;, pronunciation: &quot;KAH-truh&quot; },
+                     { french: &quot;cinq&quot;, english: &quot;five&quot;, pronunciation: &quot;sank&quot; },
+                     { french: &quot;six&quot;, english: &quot;six&quot;, pronunciation: &quot;sees&quot; },
+                     { french: &quot;sept&quot;, english: &quot;seven&quot;, pronunciation: &quot;set&quot; },
+                     { french: &quot;huit&quot;, english: &quot;eight&quot;, pronunciation: &quot;weet&quot; },
+                     { french: &quot;neuf&quot;, english: &quot;nine&quot;, pronunciation: &quot;nuhf&quot; },
+                     { french: &quot;dix&quot;, english: &quot;ten&quot;, pronunciation: &quot;dees&quot; },
+                     { french: &quot;onze&quot;, english: &quot;eleven&quot;, pronunciation: &quot;ohnz&quot; },
+                     { french: &quot;douze&quot;, english: &quot;twelve&quot;, pronunciation: &quot;dooz&quot; },
+                     { french: &quot;treize&quot;, english: &quot;thirteen&quot;, pronunciation: &quot;trehz&quot; },
+                     { french: &quot;quatorze&quot;, english: &quot;fourteen&quot;, pronunciation: &quot;kah-TOHRZ&quot; },
+                     { french: &quot;quinze&quot;, english: &quot;fifteen&quot;, pronunciation: &quot;kanz&quot; },
+                     { french: &quot;seize&quot;, english: &quot;sixteen&quot;, pronunciation: &quot;sehz&quot; },
+                     { french: &quot;dix-sept&quot;, english: &quot;seventeen&quot;, pronunciation: &quot;dee-SET&quot; },
+                     { french: &quot;dix-huit&quot;, english: &quot;eighteen&quot;, pronunciation: &quot;dee-ZWEET&quot; },
+                     { french: &quot;dix-neuf&quot;, english: &quot;nineteen&quot;, pronunciation: &quot;dee-ZNUHF&quot; },
+                     { french: &quot;vingt&quot;, english: &quot;twenty&quot;, pronunciation: &quot;van&quot; }
+                 ]
+             },
+             family: {
+                 title: &quot;Family Members&quot;,
+                 content: [
+                     { french: &quot;la famille&quot;, english: &quot;family&quot;, pronunciation: &quot;lah fah-MEEL&quot; },
+                     { french: &quot;le père&quot;, english: &quot;father&quot;, pronunciation: &quot;luh pehr&quot; },
+                     { french: &quot;la mère&quot;, english: &quot;mother&quot;, pronunciation: &quot;lah mehr&quot; },
+                     { french: &quot;le fils&quot;, english: &quot;son&quot;, pronunciation: &quot;luh fees&quot; },
+                     { french: &quot;la fille&quot;, english: &quot;daughter&quot;, pronunciation: &quot;lah fee&quot; },
+                     { french: &quot;le frère&quot;, english: &quot;brother&quot;, pronunciation: &quot;luh frehr&quot; },
+                     { french: &quot;la sœur&quot;, english: &quot;sister&quot;, pronunciation: &quot;lah suur&quot; },
+                     { french: &quot;le grand-père&quot;, english: &quot;grandfather&quot;, pronunciation: &quot;luh grahn-PEHR&quot; },
+                     { french: &quot;la grand-mère&quot;, english: &quot;grandmother&quot;, pronunciation: &quot;lah grahn-MEHR&quot; },
+                     { french: &quot;l'oncle&quot;, english: &quot;uncle&quot;, pronunciation: &quot;lohn-kluh&quot; },
+                     { french: &quot;la tante&quot;, english: &quot;aunt&quot;, pronunciation: &quot;lah tahnt&quot; },
+                     { french: &quot;le cousin&quot;, english: &quot;cousin (male)&quot;, pronunciation: &quot;luh koo-ZAN&quot; },
+                     { french: &quot;la cousine&quot;, english: &quot;cousin (female)&quot;, pronunciation: &quot;lah koo-ZEEN&quot; }
+                 ]
+             },
+             colors: {
+                 title: &quot;Colors&quot;,
+                 content: [
+                     { french: &quot;rouge&quot;, english: &quot;red&quot;, pronunciation: &quot;roozh&quot; },
+                     { french: &quot;bleu&quot;, english: &quot;blue&quot;, pronunciation: &quot;bluh&quot; },
+                     { french: &quot;vert&quot;, english: &quot;green&quot;, pronunciation: &quot;vehr&quot; },
+                     { french: &quot;jaune&quot;, english: &quot;yellow&quot;, pronunciation: &quot;zhohn&quot; },
+                     { french: &quot;orange&quot;, english: &quot;orange&quot;, pronunciation: &quot;oh-RAHNZH&quot; },
+                     { french: &quot;violet&quot;, english: &quot;purple&quot;, pronunciation: &quot;vee-oh-LEH&quot; },
+                     { french: &quot;rose&quot;, english: &quot;pink&quot;, pronunciation: &quot;rohz&quot; },
+                     { french: &quot;noir&quot;, english: &quot;black&quot;, pronunciation: &quot;nwahr&quot; },
+                     { french: &quot;blanc&quot;, english: &quot;white&quot;, pronunciation: &quot;blahn&quot; },
+                     { french: &quot;gris&quot;, english: &quot;gray&quot;, pronunciation: &quot;gree&quot; },
+                     { french: &quot;marron&quot;, english: &quot;brown&quot;, pronunciation: &quot;mah-ROHN&quot; }
+                 ]
+             },
+             phrases: {
+                 title: &quot;Common Phrases&quot;,
+                 content: [
+                     { french: &quot;Excusez-moi&quot;, english: &quot;Excuse me&quot;, pronunciation: &quot;ehks-ku-zay MWAH&quot; },
+                     { french: &quot;Pardon&quot;, english: &quot;Sorry/Pardon&quot;, pronunciation: &quot;par-DOHN&quot; },
+                     { french: &quot;S'il vous plaît&quot;, english: &quot;Please (formal)&quot;, pronunciation: &quot;seel voo PLEH&quot; },
+                     { french: &quot;S'il te plaît&quot;, english: &quot;Please (informal)&quot;, pronunciation: &quot;seel tuh PLEH&quot; },
+                     { french: &quot;Je ne comprends pas&quot;, english: &quot;I don't understand&quot;, pronunciation: &quot;zhuh nuh kom-prahn PAH&quot; },
+                     { french: &quot;Pouvez-vous répéter?&quot;, english: &quot;Can you repeat?&quot;, pronunciation: &quot;poo-vay voo ray-pay-TAY&quot; },
+                     { french: &quot;Où est...?&quot;, english: &quot;Where is...?&quot;, pronunciation: &quot;oo eh&quot; },
+                     { french: &quot;Combien ça coûte?&quot;, english: &quot;How much does it cost?&quot;, pronunciation: &quot;kom-bee-AHN sah KOOT&quot; },
+                     { french: &quot;Je voudrais...&quot;, english: &quot;I would like...&quot;, pronunciation: &quot;zhuh voo-DREH&quot; },
+                     { french: &quot;L'addition, s'il vous plaît&quot;, english: &quot;The check, please&quot;, pronunciation: &quot;lah-dee-see-OHN seel voo PLEH&quot; }
+                 ]
+             }
+         };
+ 
+         // Quiz questions
+         const quizData = {
+             greetings: [
+                 {
+                     question: &quot;How do you say 'Hello' in French?&quot;,
+                     options: [&quot;Bonjour&quot;, &quot;Bonsoir&quot;, &quot;Salut&quot;, &quot;Au revoir&quot;],
+                     correct: 0
+                 },
+                 {
+                     question: &quot;What does 'Comment ça va?' mean?&quot;,
+                     options: [&quot;Goodbye&quot;, &quot;Thank you&quot;, &quot;How's it going?&quot;, &quot;Excuse me&quot;],
+                     correct: 2
+                 },
+                 {
+                     question: &quot;How do you say 'Thank you' in French?&quot;,
+                     options: [&quot;De rien&quot;, &quot;Merci&quot;, &quot;Pardon&quot;, &quot;Salut&quot;],
+                     correct: 1
+                 },
+                 {
+                     question: &quot;What is the formal way to say 'How are you?' in French?&quot;,
+                     options: [&quot;Comment ça va?&quot;, &quot;Comment allez-vous?&quot;, &quot;Ça va bien&quot;, &quot;À bientôt&quot;],
+                     correct: 1
+                 },
+                 {
+                     question: &quot;How do you say 'Good evening' in French?&quot;,
+                     options: [&quot;Bonjour&quot;, &quot;Bonsoir&quot;, &quot;Bonne nuit&quot;, &quot;Bon après-midi&quot;],
+                     correct: 1
+                 }
+             ],
+             numbers: [
+                 {
+                     question: &quot;How do you say '5' in French?&quot;,
+                     options: [&quot;quatre&quot;, &quot;cinq&quot;, &quot;six&quot;, &quot;sept&quot;],
+                     correct: 1
+                 },
+                 {
+                     question: &quot;What number is 'douze'?&quot;,
+                     options: [&quot;10&quot;, &quot;11&quot;, &quot;12&quot;, &quot;13&quot;],
+                     correct: 2
+                 },
+                 {
+                     question: &quot;How do you say '17' in French?&quot;,
+                     options: [&quot;seize&quot;, &quot;dix-sept&quot;, &quot;dix-huit&quot;, &quot;quinze&quot;],
+                     correct: 1
+                 },
+                 {
+                     question: &quot;What does 'vingt' mean?&quot;,
+                     options: [&quot;18&quot;, &quot;19&quot;, &quot;20&quot;, &quot;21&quot;],
+                     correct: 2
+                 },
+                 {
+                     question: &quot;How do you say '3' in French?&quot;,
+                     options: [&quot;deux&quot;, &quot;trois&quot;, &quot;quatre&quot;, &quot;cinq&quot;],
+                     correct: 1
+                 }
+             ],
+             family: [
+                 {
+                     question: &quot;How do you say 'mother' in French?&quot;,
+                     options: [&quot;la mère&quot;, &quot;le père&quot;, &quot;la sœur&quot;, &quot;la fille&quot;],
+                     correct: 0
+                 },
+                 {
+                     question: &quot;What does 'le frère' mean?&quot;,
+                     options: [&quot;father&quot;, &quot;brother&quot;, &quot;son&quot;, &quot;uncle&quot;],
+                     correct: 1
+                 },
+                 {
+                     question: &quot;How do you say 'grandmother' in French?&quot;,
+                     options: [&quot;la grand-mère&quot;, &quot;la mère&quot;, &quot;la tante&quot;, &quot;la sœur&quot;],
+                     correct: 0
+                 },
+                 {
+                     question: &quot;What is 'la famille' in English?&quot;,
+                     options: [&quot;father&quot;, &quot;mother&quot;, &quot;family&quot;, &quot;daughter&quot;],
+                     correct: 2
+                 },
+                 {
+                     question: &quot;How do you say 'uncle' in French?&quot;,
+                     options: [&quot;le père&quot;, &quot;l'oncle&quot;, &quot;le cousin&quot;, &quot;le grand-père&quot;],
+                     correct: 1
+                 }
+             ],
+             colors: [
+                 {
+                     question: &quot;How do you say 'red' in French?&quot;,
+                     options: [&quot;rouge&quot;, &quot;bleu&quot;, &quot;vert&quot;, &quot;jaune&quot;],
+                     correct: 0
+                 },
+                 {
+                     question: &quot;What color is 'bleu'?&quot;,
+                     options: [&quot;green&quot;, &quot;blue&quot;, &quot;yellow&quot;, &quot;purple&quot;],
+                     correct: 1
+                 },
+                 {
+                     question: &quot;How do you say 'black' in French?&quot;,
+                     options: [&quot;blanc&quot;, &quot;gris&quot;, &quot;noir&quot;, &quot;marron&quot;],
+                     correct: 2
+                 },
+                 {
+                     question: &quot;What does 'jaune' mean?&quot;,
+                     options: [&quot;orange&quot;, &quot;yellow&quot;, &quot;pink&quot;, &quot;green&quot;],
+                     correct: 1
+                 },
+                 {
+                     question: &quot;How do you say 'white' in French?&quot;,
+                     options: [&quot;noir&quot;, &quot;gris&quot;, &quot;blanc&quot;, &quot;rose&quot;],
+                     correct: 2
+                 }
+             ]
+         };
+ 
+         // Create mixed quiz from all categories
+         function createMixedQuiz() {
+             const mixed = [];
+             Object.values(quizData).forEach(category => {
+                 mixed.push(...category);
+             });
+             return mixed.sort(() => Math.random() - 0.5).slice(0, 15);
+         }
+ 
+         // Current quiz state
+         let currentQuiz = [];
+         let currentQuestion = 0;
+         let score = 0;
+         let answeredQuestions = [];
+ 
+         // Progress tracking
+         let progress = JSON.parse(localStorage.getItem('frenchProgress') || '{}');
+ 
+         function showSection(sectionName) {
+             // Hide all sections
+             document.querySelectorAll('.section').forEach(section => {
+                 section.classList.remove('active');
+             });
+             
+             // Show selected section
+             document.getElementById(sectionName).classList.add('active');
+             
+             // Update nav buttons
+             document.querySelectorAll('.nav-btn').forEach(btn => {
+                 btn.classList.remove('active');
+             });
+             event.target.classList.add('active');
+ 
+             // Update progress display if viewing progress section
+             if (sectionName === 'progress') {
+                 updateProgressDisplay();
+             }
+         }
+ 
+         function showTutorial(tutorialName) {
+             const tutorial = tutorials[tutorialName];
+             if (!tutorial) return;
+ 
+             const tutorialData = document.getElementById('tutorialData');
+             tutorialData.innerHTML = `
+                 <h2>${tutorial.title}</h2>
+                 <div class=&quot;tutorial-content&quot;>
+                     ${tutorial.content.map(item => `
+                         <div class=&quot;vocab-item&quot;>
+                             <div>
+                                 <div class=&quot;french-word&quot;>${item.french}</div>
+                                 <div class=&quot;pronunciation&quot;>[${item.pronunciation}]</div>
+                             </div>
+                             <div class=&quot;english-word&quot;>${item.english}</div>
+                         </div>
+                     `).join('')}
+                 </div>
+             `;
+ 
+             showSection('tutorialContent');
+         }
+ 
+         function startQuiz(quizType) {
+             if (quizType === 'mixed') {
+                 currentQuiz = createMixedQuiz();
+             } else {
+                 currentQuiz = [...quizData[quizType]].sort(() => Math.random() - 0.5);
+             }
+             
+             currentQuestion = 0;
+             score = 0;
+             answeredQuestions = [];
+             
+             document.getElementById('totalQuestions').textContent = currentQuiz.length;
+             document.getElementById('scoreDisplay').textContent = `Score: 0/${currentQuiz.length}`;
+             document.getElementById('progressBar').style.width = '0%';
+             
+             displayQuestion();
+             showSection('quizContent');
+         }
+ 
+         function displayQuestion() {
+             if (currentQuestion >= currentQuiz.length) {
+                 finishQuiz();
+                 return;
+             }
+ 
+             const question = currentQuiz[currentQuestion];
+             document.getElementById('questionNumber').textContent = currentQuestion + 1;
+             document.getElementById('questionText').textContent = question.question;
+             
+             const optionsContainer = document.getElementById('optionsContainer');
+             optionsContainer.innerHTML = '';
+             
+             question.options.forEach((option, index) => {
+                 const optionDiv = document.createElement('div');
+                 optionDiv.className = 'option';
+                 optionDiv.textContent = option;
+                 optionDiv.onclick = () => selectAnswer(index);
+                 optionsContainer.appendChild(optionDiv);
+             });
+             
+             document.getElementById('nextBtn').style.display = 'none';
+             document.getElementById('finishBtn').style.display = 'none';
+         }
+ 
+         function selectAnswer(selectedIndex) {
+             const question = currentQuiz[currentQuestion];
+             const options = document.querySelectorAll('.option');
+             
+             // Disable all options
+             options.forEach(option => {
+                 option.style.pointerEvents = 'none';
+             });
+             
+             // Show correct/incorrect
+             options[question.correct].classList.add('correct');
+             if (selectedIndex !== question.correct) {
+                 options[selectedIndex].classList.add('incorrect');
+             } else {
+                 score++;
+             }
+             
+             answeredQuestions.push({
+                 question: question.question,
+                 selected: selectedIndex,
+                 correct: question.correct,
+                 isCorrect: selectedIndex === question.correct
+             });
+             
+             // Update score display
+             document.getElementById('scoreDisplay').textContent = `Score: ${score}/${currentQuiz.length}`;
+             
+             // Update progress bar
+             const progress = ((currentQuestion + 1) / currentQuiz.length) * 100;
+             document.getElementById('progressBar').style.width = progress + '%';
+             
+             // Show next button or finish button
+             if (currentQuestion < currentQuiz.length - 1) {
+                 document.getElementById('nextBtn').style.display = 'block';
+             } else {
+                 document.getElementById('finishBtn').style.display = 'block';
+             }
+         }
+ 
+         function nextQuestion() {
+             currentQuestion++;
+             displayQuestion();
+         }
+ 
+         function finishQuiz() {
+             const percentage = Math.round((score / currentQuiz.length) * 100);
+             const quizType = getCurrentQuizType();
+             
+             // Save progress
+             if (!progress[quizType]) progress[quizType] = [];
+             progress[quizType].push({
+                 date: new Date().toLocaleDateString(),
+                 score: score,
+                 total: currentQuiz.length,
+                 percentage: percentage
+             });
+             
+             localStorage.setItem('frenchProgress', JSON.stringify(progress));
+             
+             // Show results
+             let message = '';
+             if (percentage >= 90) {
+                 message = '🎉 Excellent! You\'re mastering French!';
+             } else if (percentage >= 70) {
+                 message = '👍 Great job! Keep practicing!';
+             } else if (percentage >= 50) {
+                 message = '👌 Good effort! Review the tutorials and try again.';
+             } else {
+                 message = '📚 Keep studying! Practice makes perfect.';
+             }
+             
+             alert(`Quiz Complete!\n\nScore: ${score}/${currentQuiz.length} (${percentage}%)\n${message}`);
+             
+             showSection('quizzes');
+         }
+ 
+         function getCurrentQuizType() {
+             // Try to determine quiz type from current questions
+             if (currentQuiz.length > 10) return 'mixed';
+             
+             const firstQuestion = currentQuiz[0].question.toLowerCase();
+             if (firstQuestion.includes('hello') || firstQuestion.includes('thank')) return 'greetings';
+             if (firstQuestion.includes('say') &amp;&amp; (firstQuestion.includes(&quot;'&quot;) || firstQuestion.includes('number'))) return 'numbers';
+             if (firstQuestion.includes('mother') || firstQuestion.includes('family')) return 'family';
+             if (firstQuestion.includes('red') || firstQuestion.includes('color')) return 'colors';
+             
+             return 'mixed';
+         }
+ 
+         function updateProgressDisplay() {
+             const progressDisplay = document.getElementById('progressDisplay');
+             
+             if (Object.keys(progress).length === 0) {
+                 progressDisplay.innerHTML = '<p>No quiz attempts yet. Start taking quizzes to track your progress!</p>';
+                 return;
+             }
+             
+             let html = '';
+             Object.entries(progress).forEach(([quizType, attempts]) => {
+                 const latest = attempts[attempts.length - 1];
+                 const average = Math.round(attempts.reduce((sum, attempt) => sum + attempt.percentage, 0) / attempts.length);
+                 
+                 html += `
+                     <div class=&quot;vocab-item&quot;>
+                         <div>
+                             <div class=&quot;french-word&quot;>${quizType.charAt(0).toUpperCase() + quizType.slice(1)} Quiz</div>
+                             <div class=&quot;pronunciation&quot;>Attempts: ${attempts.length} | Average: ${average}%</div>
+                         </div>
+                         <div class=&quot;english-word&quot;>Latest: ${latest.percentage}%</div>
+                     </div>
+                 `;
+             });
+             
+             progressDisplay.innerHTML = html;
+         }
+ 
+         function showQuiz(quizType) {
+             startQuiz(quizType);
+         }
+ 
+         // Initialize the app
+         document.addEventListener('DOMContentLoaded', function() {
+             showSection('home');
+         });
+     </script>
+ </body>
+ </html>"></div></body></html>
