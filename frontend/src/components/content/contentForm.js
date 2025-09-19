@@ -160,9 +160,22 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onEdit
                 }
                 const updatedBlocks = blocks.map(block => {
                     if (block.id === blockId && block.type === BLOCK_TYPES.CODE) {
-                        const iframeCode = `<div style="width:100%; height:100vh">
-                            <iframe class="embedded-website" src="${parsedUrl.href}" style="width:100%; height:100%; border:none;" sandbox="allow-scripts allow-same-origin" referrerpolicy="no-referrer"></iframe>
-                            </div>`;
+                        const iframeCode = `<html style="height:100%">
+                            <head>
+                                <style>
+                                    html, body {
+                                        margin: 0;
+                                        height: 100%;
+                                        overflow: hidden;
+                                    }
+                                </style>
+                            </head>
+                            <body>
+                                <div style="width:100%; height:100vh">
+                                    <iframe class="embedded-website" src="${parsedUrl.href}" style="width:100%; height:100%; border:none;" sandbox="allow-scripts allow-same-origin" referrerpolicy="no-referrer"></iframe>
+                                </div>
+                            </body>
+                        </html>`;
                         return { 
                             ...block, 
                             data: { 
@@ -205,7 +218,7 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onEdit
             if (!embedCode.startsWith('<div class="social-media-embed"')) {
                 embedCode =
                 `<div class="social-media-embed" ` +
-                `style="width:100%;display:flex;justify-content:center;overflow:hidden;">` +
+                `style="width:100%;display:flex;justify-content:center;">` +
                     embedCode +
                 `</div>`;
             }

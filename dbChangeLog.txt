@@ -118,3 +118,12 @@ CREATE INDEX idx_sentiment ON posts (sentiment_score);
 CREATE INDEX idx_composite_quality ON posts (created_at, sentiment_score);
 CREATE INDEX idx_video_content ON posts (has_videos, video_length);
 CREATE INDEX idx_text_analysis ON posts (word_count, text_length);
+
+ALTER TABLE posts 
+    MODIFY content LONGTEXT NOT NULL,
+	MODIFY text_body LONGTEXT NOT NULL,
+	MODIFY embeddings LONGTEXT NOT NULL,
+	MOIUFY tokens LONGTEXT NOT NULL;
+
+ALTER TABLE feeds
+	DROP COLUMN parent_id;

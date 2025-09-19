@@ -20,7 +20,7 @@ async function runAnalysis() {
             await Posts.update(
                 {
                     ...analysis,
-                    created_at: randomCreatedAt,
+                    //created_at: randomCreatedAt,
                     updated_at: new Date()
                 },
                 { where: { post_id: post.post_id } }

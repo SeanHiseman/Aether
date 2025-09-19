@@ -16,7 +16,7 @@ const Posts = sequelize.define('posts', {
     feed_id: { type: STRING(36), allowNull: false },
     channel_id: { type: STRING(36), allowNull: false },
     title: { type: STRING(120), allowNull: true },
-    content: { type: TEXT, allowNull: false },
+    content: { type: DataTypes.TEXT('long'), allowNull: false },
     replies: { type: INTEGER, allowNull: false, defaultValue: 0 },
     views: { type: INTEGER, allowNull: false, defaultValue: 0 },
     upvotes: { type: INTEGER, allowNull: false, defaultValue: 0 },
@@ -24,7 +24,7 @@ const Posts = sequelize.define('posts', {
     created_at: { type: DataTypes.DATE(3), defaultValue: sequelize.literal('CURRENT_TIMESTAMP(3)') },
     updated_at: { type: DataTypes.DATE(3), defaultValue: sequelize.literal('CURRENT_TIMESTAMP(3)') },
     poster_id: { type: STRING(36), allowNull: false },
-    text_body: { type: TEXT, allowNull: true },
+    text_body: { type: DataTypes.TEXT('long'), allowNull: true },
     text_length: { type: INTEGER, defaultValue: 0 }, //Character count
     word_count: { type: INTEGER, defaultValue: 0 }, 
     video_length: { type: INTEGER, defaultValue: 0 },
@@ -39,8 +39,8 @@ const Posts = sequelize.define('posts', {
     video_count: { type: INTEGER, defaultValue: 0 },
     sentiment_score: { type: FLOAT, defaultValue: 0.0 }, 
     language: { type: STRING(20), defaultValue: 'en' },
-    tokens: { type: TEXT, allowNull: true }, 
-    embeddings: { type: TEXT, allowNull: true }, 
+    tokens: { type: DataTypes.TEXT('long'), allowNull: true }, 
+    embeddings: { type: DataTypes.TEXT('long'), allowNull: true }, 
 }, {
     tableName: 'posts',
     timestamps: false,

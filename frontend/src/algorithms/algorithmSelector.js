@@ -81,7 +81,8 @@ const AlgorithmSelector = ({ display, locationId, refreshPosts }) => {
 		}
 	};
 
-	const fetchAlgorithms = async () => {
+	const fetchAlgorithms = async () => { 
+		if (display) return;
 		try {
 			setError(null);
 			setLoading(true);
@@ -187,7 +188,7 @@ const AlgorithmSelector = ({ display, locationId, refreshPosts }) => {
 			<div className="selector-header">
 				{!display && <button className="button" onClick={closeModal} title="Close">✕</button>}
 				<div className="error-message">{assignError}</div>
-				<p className="tiny-text">Changing the algorithm will reload posts</p>
+				{!display && <p className="tiny-text">Changing the algorithm will reload posts</p>}
 			</div>
 			{loading && <div className="loading-state">Loading algorithms...</div>}
 			{!loading && (

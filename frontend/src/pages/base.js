@@ -680,7 +680,7 @@ const BaseLayout = () => {
                                     <FaSignInAlt />
                                     <p className="icon-text">Login</p>
                                 </Link>
-                                <p style={{ marginTop: "20px" }}>Join or login for more</p>
+                                <p className="faded-text" style={{ marginTop: "20px" }}>Join or login for more</p>
                             </div>
                             <div></div>
                         </div>

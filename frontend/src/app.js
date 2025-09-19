@@ -62,7 +62,7 @@ const App = () => {
 								<Route path="licenses" element={<Placeholder />} />
 								<Route path="private-policy" element={<Placeholder />} />
 								<Route path="support" element={<Placeholder />} />
-								<Route path="team" element={<Team />} />
+								<Route path="team" element={<Placeholder />} />
 								<Route path="terms" element={<Placeholder />} />
 							</Route>
 							<Route path="/forgot-password" element={<ForgotPassword />}/>

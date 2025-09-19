@@ -138,6 +138,7 @@ const AddAlgorithm = ({ algorithms = [], display, editingAlgorithm = null, locat
     };
 
     const submitAlgorithm = async () => {
+        if (display) return;
         try {
             setError(null);
             const nameToUse = algorithmName.trim() || `Algorithm ${algorithms.length + 1}`;
@@ -349,7 +350,7 @@ const AddAlgorithm = ({ algorithms = [], display, editingAlgorithm = null, locat
                     <textarea
                         className="form-textarea tiny-text"
                         disabled={!hasMembership}
-                        placeholder={hasMembership ? (customInstruction ? customInstruction : "Describe your algorithm...") : "Custom instructions require membership"}
+                        placeholder={(hasMembership || display) ? (customInstruction ? customInstruction : "Describe your algorithm...") : "Custom instructions require membership"}
                         type="text"
                         value={customInstruction}
                         onChange={e => {setCustomInstruction(e.target.value); setTemplate('none')}}

@@ -1,39 +1,127 @@
 async function loadWelcomeContent() {
-	const [post1, post2] = await Promise.all([
+	const [post1, post2, post3, post4, post5, post6] = await Promise.all([
 		fetch('/interactivePost1.html').then(r => r.text()),
-		fetch('/interactivePost2.html').then(r => r.text())
+		fetch('/interactivePost2.html').then(r => r.text()),
+		fetch('/interactivePost3.html').then(r => r.text()),
+		fetch('/interactivePost4.html').then(r => r.text()),
+		fetch('/interactivePost5.html').then(r => r.text()),
+		fetch('/interactivePost6.html').then(r => r.text()),
 	]);
 
 	return [
 		{
-			channel_id: "59a908c2-e904-499e-9107-f6d22b634182",
+			channel_id: "1a",
 			content: post1,
 			created_at: "2025-09-17T10:00:00.000Z",
 			downvotes: 0,
-			feed_id: "e8f76404-a0bd-4745-b9ac-e9344fb9b9c2",
+			feed_id: "1b",
 			is_saved: false,
 			parent_id: null,
-			post_id: "83a550b6-e703-45d3-8568-c64615fcd385",
-			poster_id: "e8f76404-a0bd-4745-b9ac-e9344fb9b9c2",
-			replies: 12,
+			post_id: "1c",
+			poster: {
+				feed_name: "Welcome",
+				feed_photo: "media/site_images/Logo.png"
+			},
+			poster_id: "1d",
+			replies: 25712,
 			updated_at: "2025-09-17T10:00:30.000Z",
-			upvotes: 42,
-			views: 156
+			upvotes: 42646,
+			views: 152356
 		},
 		{
-			channel_id: "59a908c2-e904-499e-9107-f6d22b634182",
+			channel_id: "2a",
 			content: post2,
 			created_at: "2025-09-17T09:30:00.000Z",
 			downvotes: 1,
-			feed_id: "e8f76404-a0bd-4745-b9ac-e9344fb9b9c2",
+			feed_id: "2",
 			is_saved: false,
 			parent_id: null,
-			post_id: "94b661c7-f814-56e4-9679-d75726ede496",
-			poster_id: "f9g87505-b1ce-5856-ca4d-fa455gc0c0d3",
-			replies: 8,
+			post_id: "2c",
+			poster: {
+				feed_name: "iLearnLanguages",
+				feed_photo: "media/site_images/welcomeUsers/languageUser.png"
+			},
+			poster_id: "2d",
+			replies: 8346,
 			updated_at: "2025-09-17T09:35:15.000Z",
-			upvotes: 28,
-			views: 89
+			upvotes: 28364,
+			views: 89325
+		},
+		{
+			channel_id: "3a",
+			content: post3,
+			created_at: "2025-09-18T10:00:00.000Z",
+			downvotes: 0,
+			feed_id: "3b",
+			poster: {
+				feed_name: "ProGamer99",
+				feed_photo: "media/site_images/welcomeUsers/gamingUser.png"
+			},
+			is_saved: false,
+			parent_id: null,
+			post_id: "3c",
+			poster_id: "3d",
+			replies: 32426,
+			updated_at: "2025-09-17T10:00:30.000Z",
+			upvotes: 91521,
+			views: 712643
+		},
+		{
+			channel_id: "4a",
+			content: post4,
+			created_at: "2025-09-18T09:30:00.000Z",
+			downvotes: 3,
+			feed_id: "4b",
+			poster: {
+				feed_name: "Machine Learning Learner",
+				feed_photo: "media/site_images/welcomeUsers/mlUser.png"
+			},
+			is_saved: false,
+			parent_id: null,
+			post_id: "4c",
+			poster_id: "4d",
+			replies: 11576,
+			updated_at: "2025-09-17T09:35:15.000Z",
+			upvotes: 25355,
+			views: 78164
+		},
+		{
+			channel_id: "5a",
+			content: post5,
+			created_at: "2025-09-18T10:00:00.000Z",
+			downvotes: 0,
+			feed_id: "5b",
+			poster: {
+				feed_name: "UserAbc123",
+				feed_photo: "media/site_images/welcomeUsers/socialUser.png"
+			},
+			is_saved: false,
+			parent_id: null,
+			post_id: "5c",
+			poster_id: "5d",
+			replies: 32426,
+			updated_at: "2025-09-17T10:00:30.000Z",
+			upvotes: 82628,
+			views: 217583
+		},
+		{
+			channel_id: "6a",
+			content: post6,
+			created_at: "2025-09-18T09:30:00.000Z",
+			downvotes: 3,
+			feed_id: "6b",
+			poster: {
+				feed_name: "CasualWikipedian",
+				feed_photo: "media/site_images/welcomeUsers/wikiUser.png"
+			},
+			is_saved: false,
+			parent_id: null,
+			post_id: "6c",
+			poster_id: "6d",
+			replies: 12576,
+			updated_at: "2025-09-18T09:35:15.000Z",
+			upvotes: 22655,
+			views: 85464
 		}
 	];
 }

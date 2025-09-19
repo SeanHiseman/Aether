@@ -66,6 +66,45 @@
     color: #6a6aff;
     transform: translateX(clamp(1px, 0.8vw, 4px));
 }
+.slideshow-controls {
+    display: flex;
+    justify-content: center;
+    gap: var(--large-margin);
+    margin: var(--medium-margin);
+}
+.slideshow-btn {
+    background: #007bff;
+    border: none;
+    color: white;
+    width: var(--xl-margin);
+    height: var(--xl-margin);
+    border-radius: 50%;
+    font-size: var(--large-margin);
+    font-weight: bold;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.3s ease;
+}
+.slideshow-btn:hover {
+    background: #0056b3;
+}
+.slideshow-btn:active {
+    transform: scale(0.95);
+}
+.slideshow-container {
+    position: relative;
+    width: 100%;
+    overflow: hidden;
+}
+.slide {
+    display: none;
+    width: 100%;
+}
+.slide.active {
+    display: block;
+}
 .social-links {
     display: flex;
     gap: var(--large-margin);
@@ -117,14 +156,15 @@
     margin-bottom: var(--text36);
     margin-top: clamp(3px, 1.2vw, 6px);
 }
-#welcome-container {
+.welcome-container {
     align-items: center;
     background-color: var(--darkest);
     display: flex;
     flex-direction: column;
     margin: 0;
 }
-.welcome-posts {
+.welcome-posts-slideshow {
+    position: relative;
     width: 60%;
 }
 .welcome-text {
@@ -160,7 +200,7 @@
     .social-links {
         justify-content: center;
     }
-    .welcome-posts {
+    .welcome-posts-slideshow {
         width: 99%;
     }
 }

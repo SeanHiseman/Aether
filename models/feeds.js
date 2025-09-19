@@ -18,7 +18,6 @@ const DeepFeedContent = sequelize.define('deep_feed_content', {
 
 const Feeds = sequelize.define('feeds', {
     feed_id: { type: STRING(36), primaryKey: true },
-    parent_id: { type: STRING(36), allowNull: true }, //Unused
     feed_name: { type: STRING(100), allowNull: false },
     description: { type: STRING(1000), allowNull: true },
     feed_photo: { type: TEXT, allowNull: true },

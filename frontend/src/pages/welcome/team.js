@@ -5,9 +5,8 @@ const Team = () => {
     document.title = "Aether Team";
     
     return (
-        <div id="welcome-container">
-            <p id="welcome-text">Welcome to Aether</p>
-            <p className="text24">Better social media</p>
+        <div className="welcome-container">
+            <p className="welcome-text">Welcome to Aether</p>
             <div id="join-login">
                 <Link to="/welcome">
                     <button className="button join welcome">Back</button>

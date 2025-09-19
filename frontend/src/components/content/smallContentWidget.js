@@ -8,7 +8,6 @@ import PropTypes from 'prop-types';
 import useTimeAgo from '../../useTimeAgo';
 
 const SmallContentWidget = ({ display, post }) => {
-    console.log("post:", post);
     const authContext = useContext(AuthContext);
 	const { isAuthenticated = false, viewer = null } = authContext || {};
     const [downvoteLimit, setDownvoteLimit] = useState(false);
@@ -266,10 +265,10 @@ const SmallContentWidget = ({ display, post }) => {
                     </button>
                     <p className="tiny-text">{savedText}</p>
                 </div>)}
-                {!display && <div className="view-date-container">
-                    <p className="small-text faded-text" style={{ margin: '0px' }}>{post_id ? new Date(post?.created_at).toLocaleDateString() : timeAgo}</p>
+                <div className="view-date-container">
+                    {!display && <p className="small-text faded-text" style={{ margin: '0px' }}>{post_id ? new Date(post?.created_at).toLocaleDateString() : timeAgo}</p>}
                     <p className="small-text faded-text" style={{ margin: '0px' }}>{views || 0} {views === 1 ? 'view' : 'views'}</p>
-                </div>}
+                </div>
             </div>
         </div>
     );

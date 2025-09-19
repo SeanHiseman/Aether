@@ -6,15 +6,25 @@ import SmallContentWidget from '../../components/content/smallContentWidget';
 import { loadWelcomeContent } from './welcomeContent';
 
 const WelcomeHome = () => {
+    const [currentSlide, setCurrentSlide] = useState(0);
     const [welcomePosts, setWelcomePosts] = useState([]);
+    
 	useEffect(() => {
 		document.title = "Welcome to Aether Social";
 		loadWelcomeContent().then(setWelcomePosts);
 	}, []);
+
+    const nextSlide = () => {
+        setCurrentSlide((prev) => (prev + 1) % welcomePosts.length);
+    };
+
+    const prevSlide = () => {
+        setCurrentSlide((prev) => (prev - 1 + welcomePosts.length) % welcomePosts.length);
+    };
     
     return (
         <>
-            <div id="welcome-container">
+            <div className="welcome-container">
                 <p className="welcome-text">Welcome to Aether Social</p>
                 <div id="join-login">
                     <Link to="/login">
@@ -24,13 +34,30 @@ const WelcomeHome = () => {
                         <button className="button join welcome">Join</button>
                     </Link>
                 </div>
-                <p className="medium-text">The only social media platform with interactive content:</p>
-				<div className="welcome-posts">
-					{welcomePosts.map((post) => (
-						<SmallContentWidget key={post.post_id} display={true} post={post} />
-					))}
+                <p className="medium-text">The first social media platform with interactive content:</p>
+				<div className="welcome-posts-slideshow">
+                    {welcomePosts.length > 1 && (
+                        <div className="slideshow-controls">
+                            <button className="slideshow-btn prev" onClick={prevSlide}>
+                                ‹
+                            </button>
+                            <button className="slideshow-btn next" onClick={nextSlide}>
+                                ›
+                            </button>
+                        </div>
+                    )}
+                    <div className="slideshow-container">
+                        {welcomePosts.map((post, index) => (
+                            <div 
+                                key={post.post_id} 
+                                className={`slide ${index === currentSlide ? 'active' : ''}`}
+                            >
+                                <SmallContentWidget display={true} post={post} />
+                            </div>
+                        ))}
+                    </div>
 				</div>
-                <p className="medium-text">Customise the algorithm that shows you content:</p>
+                <p className="medium-text" style={{ marginTop: '20px' }}>Customise the algorithms that shows you content:</p>
                 <AlgorithmSelector display={true} locationId={'display'} />
             </div>
             <footer className="footer">
