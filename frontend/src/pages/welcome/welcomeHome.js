@@ -26,7 +26,7 @@ const WelcomeHome = () => {
         <>
             <div className="welcome-container">
                 <p className="welcome-text">Welcome to Aether Social</p>
-                <div id="join-login">
+                <div className="join-login">
                     <Link to="/login">
                         <button className="button join welcome">Login</button>
                     </Link>

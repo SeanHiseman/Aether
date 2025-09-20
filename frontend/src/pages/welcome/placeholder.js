@@ -7,7 +7,7 @@ const Placeholder = () => {
     return (
         <div className="welcome-container">
             <p className="welcome-text">Welcome to Aether</p>
-            <div id="join-login">
+            <div className="join-login">
                 <Link to="/welcome">
                     <button className="button join welcome">Back</button>
                 </Link>

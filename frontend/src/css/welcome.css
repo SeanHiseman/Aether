@@ -1,5 +1,5 @@
 @import url('variables.css');
-#join-login {
+.join-login {
     margin-top: var(--medium-margin);
 }
 .left-aligned-text {
@@ -182,12 +182,6 @@
     }
     .welcome-box-header {
         font-size: clamp(6px, 3.5vw, 28px);
-    }
-    #join-login {
-        align-items: center;
-        display: flex;
-        flex-direction: column;
-        gap: clamp(3px, 1.5vw, 12px);
     }
     .button.join.welcome {
         width: clamp(150px, 25vw, 200px);

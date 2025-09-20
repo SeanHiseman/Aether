@@ -105,6 +105,7 @@ router.get('/channel_posts', async (req, res) => {
 		if (!results.length) return res.status(200).json([]);
 		return res.status(200).json(results);
 	} catch (error) {
+        console.error("Error in /channel_posts:", error);
 		return res.status(500).json({ success: false, message: 'Error getting posts.' });
 	}
 });
@@ -184,6 +185,7 @@ router.post('/content_vote', authenticateCheck, async (req, res) => {
 			reachedDownvoteLimit: newNetVote <= -voteLimit
 		});
 	} catch (error) {
+        console.error("Error in /content_vote:", error);
 		return res.status(500).json({ success: false });
 	}
 });
@@ -245,6 +247,7 @@ router.post('/create_draft', authenticateCheck, checkStorageLimit, postUpload.ar
         });
         return res.status(200).json({ success: true, draft: draft })
     } catch(error) {
+        console.error("Error in /create_draft:", error);
         if (req.files) {
             req.files.forEach(f => {
                 fs.unlinkSync(path.join(__dirname,'../media/content',f.filename))
@@ -316,6 +319,7 @@ router.post('/create_post', authenticateCheck, checkStorageLimit, postUpload.arr
         }
         return res.status(200).json({ success: true, post });
     } catch (error) {
+        console.error("Error in /create_post:", error);
         if (req.files && req.files.length > 0) {
             req.files.forEach(file => {
                 try {
@@ -377,6 +381,7 @@ router.post('/edit_post', authenticateCheck, checkStorageLimit, postUpload.array
         await foundPost.save();
         return res.status(201).json({ success: true });
     } catch (error) {
+        console.error("Error in /edit_post:", error);
         if (req.files && req.files.length > 0) {
             req.files.forEach(file => {
                 try {
@@ -394,7 +399,7 @@ router.get("/explore_posts", async (req, res) => {
     try {
         const { exclude = [] } = req.query;
         const excludeArray = Array.isArray(exclude) ? exclude : exclude.split(',').filter(Boolean);
-        const viewerId = req.session.viewer_id;
+        const viewerId = req?.session?.viewer_id || null;
         const limit = parseInt(req.query.limit, 10) || 10;
         const offset = parseInt(req.query.offset, 10) || 0;
         const includeOptions = [{

@@ -1,16 +1,35 @@
 import { Algorithms, AlgorithmLocations } from "./algorithms.js";
-import { DeepFeedContent, Feeds, Followers, Posts, PostVotes, SavedPosts, ViewedPosts } from "../models/relationships.js";
+import { DeepFeedContent, Feeds, Followers, Posts, PostVotes, SavedPosts } from "../models/relationships.js";
 import { CosineSimilarity } from "../functions/calculation/cosineSimilarity.js";
 import { Op } from 'sequelize';
 
-function shapePost(post, savedSet = new Set()) {
-	const { score, _maxSimilarity, ...rest } = post;
-	const { channel_id, content, created_at, downvotes, feed_id, parent_id, poster_id, post_id, replies, title, updated_at, upvotes, views } = rest;
-	return { post_id, parent_id, feed_id, channel_id, title, content, replies, views, upvotes, downvotes, created_at, updated_at, poster_id, is_saved: savedSet.has(post.post_id) };
+const excludedAttrs = [
+    'text_body',
+    'text_length',
+    'word_count',
+    'video_length',
+    'sentence_count',
+    'has_images',
+    'has_videos',
+    'has_interactive',
+    'has_external_posts',
+    'has_embedded_websites',
+    'has_text',
+    'image_count',
+    'video_count',
+    'sentiment_score',
+    'language',
+    'tokens',
+    'embeddings'
+];
+
+function stripExcludedAttributes(posts) {
+    return posts.map(p => {
+        const obj = p.dataValues ? { ...p.dataValues } : { ...p };
+        excludedAttrs.forEach(attr => delete obj[attr]);
+        return obj;
+    });
 }
-//return paginated.map(post => shapePost(post.dataValues, savedSet));
-//return paginated.map(post => shapePost(post, savedSet));
-//return finalPosts.map(post => shapePost(post, savedSet));
 
 async function ApplyAlgorithm({ locationId, excludedPostIds, feedId, includeOptions, isGroup = true, isMain, limit, offset, viewerId, keyword = '' }) {
     try {
@@ -45,24 +64,35 @@ async function ApplyAlgorithm({ locationId, excludedPostIds, feedId, includeOpti
                 }
             }
         }
-        //Merge already returned (exluded) posts with viewedPosts 
-        let varietyPostIds = [...excludedIds];
-        if (viewerId) {
-            const recentViewed = await ViewedPosts.findAll({
-                attributes: ['post_id'],
-                where: { viewer_id: viewerId },
-                order: [['updated_at', 'DESC']], //Most recent view
-                limit: 100, //100 most recently viewed posts
-            });
-            varietyPostIds.push(...recentViewed.map(row => row.post_id));
+
+        //Check if algorithm is active today
+        let isActiveToday = false;
+        if (algorithmLocation) {
+            const today = new Date().toLocaleDateString("en-US", { weekday: "long" }).toLowerCase();
+            isActiveToday = algorithm.activeDays && algorithm.activeDays.length > 0 ? algorithm.activeDays.map(d => d.toLowerCase()).includes(today) : true;
         }
 
-        //const recentUpvoted = await PostVotes.findAll({
-            //attributes: ['post_id'],
-            //where: { voter_id: { viewerId }, upvotes: { [Op.gt]: 0 }, downvotes: { [Op.lte]: 0 } }, //Only get upvotes
-            //order: [['updated_at', 'DESC']], //Most recent upvotes
-            //limit: 100, //100 most recently upvoted posts
-        //});
+        const useChronological = (!isGroup && !algorithmLocation) || (!isActiveToday && !isGroup) || (algorithm.chronology === 1); //User feeds without active algorithms or 1 chronology should be in time order only
+        const useStandardScore = (!algorithmLocation && isGroup) || (!isActiveToday && isGroup);
+
+        //Decide whether to fetch with all attributes or exclude them up front
+        const fetchFullAttributes = !useChronological && !useStandardScore;
+
+        //Merge already returned (excluded) posts with recentUpvoted
+        let varietyPostIds = [...excludedIds];
+        if (viewerId) {
+            const recentUpvoted = await PostVotes.findAll({
+                attributes: ['post_id'],
+                where: { 
+                    voter_id: viewerId,
+                    upvotes: { [Op.gt]: 0 },
+                    downvotes: { [Op.lte]: 0 }
+                },
+                order: [['updated_at', 'DESC']], //Most recent upvotes
+                limit: 100
+            });
+            varietyPostIds.push(...recentUpvoted.map(row => row.post_id));
+        }
 
         const uniqueVarietyIds = [...new Set(varietyPostIds)];
         let varietyEmbeddings = [];
@@ -85,6 +115,8 @@ async function ApplyAlgorithm({ locationId, excludedPostIds, feedId, includeOpti
 
         //Fetch posts according to location
         let posts = [];
+        const attrOption = fetchFullAttributes ? undefined : { exclude: excludedAttrs };
+
         if (locationId === "search" && keyword) { //Search results
             const publicFeeds = await Feeds.findAll({
                 where: { type: { [Op.ne]: 'private' } },
@@ -93,6 +125,7 @@ async function ApplyAlgorithm({ locationId, excludedPostIds, feedId, includeOpti
             });
             posts = await Posts.findAll({
                 include: includeOptions,
+                attributes: attrOption,
                 where: {
                     feed_id: { [Op.in]: publicFeeds.map(f => f.feed_id) },
                     parent_id: null,
@@ -114,6 +147,7 @@ async function ApplyAlgorithm({ locationId, excludedPostIds, feedId, includeOpti
             if (followedFeeds.length === 0) return [];
             posts = await Posts.findAll({
                 include: includeOptions,
+                attributes: attrOption,
                 where: {
                     feed_id: { [Op.in]: followedFeeds.map(f => f.feed_id) },
                     parent_id: null,
@@ -131,11 +165,12 @@ async function ApplyAlgorithm({ locationId, excludedPostIds, feedId, includeOpti
             });
             posts = await Posts.findAll({
                 include: includeOptions,
+                attributes: attrOption,
                 where: {
                     feed_id: { [Op.in]: publicFeeds.map(f => f.feed_id) },
                     parent_id: null,
                     post_id: { [Op.notIn]: excludedIds },
-                    poster_id: { [Op.not]: viewerId }
+                    ...(viewerId ? { poster_id: { [Op.not]: viewerId } } : {})
                 },
                 limit: limit,
                 offset: offset,
@@ -166,6 +201,7 @@ async function ApplyAlgorithm({ locationId, excludedPostIds, feedId, includeOpti
             if (allFeedIds.length === 0) return [];
             posts = await Posts.findAll({
                 include: includeOptions,
+                attributes: attrOption,
                 where: {
                     feed_id: { [Op.in]: allFeedIds },
                     parent_id: null,
@@ -184,6 +220,7 @@ async function ApplyAlgorithm({ locationId, excludedPostIds, feedId, includeOpti
             };
             posts = await Posts.findAll({
                 include: includeOptions,
+                attributes: attrOption,
                 where: whereChannel,
                 limit: limit,
                 offset: offset,
@@ -192,17 +229,8 @@ async function ApplyAlgorithm({ locationId, excludedPostIds, feedId, includeOpti
         }
         if (!posts.length) return [];
 
-        //Check if algorithm is active today
-        let isActiveToday = false;
-        if (algorithmLocation) {
-            const today = new Date().toLocaleDateString("en-US", { weekday: "long" }).toLowerCase();
-            isActiveToday = algorithm.activeDays && algorithm.activeDays.length > 0 ? algorithm.activeDays.map(d => d.toLowerCase()).includes(today) : true;
-        }
-        //Standard scoring for posts when no active algorithm is found 
-        const selectionLimit = limit ? parseInt(limit, 10) : 20;
-        const useChronological = (!isGroup && !algorithmLocation) || (!isActiveToday && !isGroup) || (algorithm.chronology === 1); //User feeds without active algorithms or 1 chronology should be in time order only
-        const useStandardScore = (!algorithmLocation && isGroup) || (!isActiveToday && isGroup);
         //Pure chronological order
+        const selectionLimit = limit ? parseInt(limit, 10) : 20;
         if (useChronological) { 
             const paginated = posts.slice(0, selectionLimit);
             const ids = paginated.map(p => p.post_id);
@@ -212,11 +240,12 @@ async function ApplyAlgorithm({ locationId, excludedPostIds, feedId, includeOpti
                 where: { post_id: { [Op.in]: ids }, saver_id: viewerId }
             }) : [];
             const savedSet = new Set(savedRows.map(s => s.post_id));
-            return paginated.map(post => ({
-                ...post.dataValues,
+            return stripExcludedAttributes(paginated).map(post => ({
+                ...post,
                 is_saved: savedSet.has(post.post_id)
             }));
         }
+
         //Weighted only by time-vote score
         if (useStandardScore) { 
             const postsWithScores = posts.map(post => {
@@ -240,7 +269,7 @@ async function ApplyAlgorithm({ locationId, excludedPostIds, feedId, includeOpti
                 where: { post_id: { [Op.in]: ids }, saver_id: viewerId }
             }) : [];
             const savedSet = new Set(savedRows.map(s => s.post_id));
-            return paginated.map(post => ({
+            return stripExcludedAttributes(paginated).map(post => ({
                 ...post,
                 is_saved: savedSet.has(post.post_id)
             }));
@@ -330,7 +359,6 @@ async function ApplyAlgorithm({ locationId, excludedPostIds, feedId, includeOpti
             }
             const similarityComponent = ((1 - maxSimilarity) * variety * 10) + (maxSimilarity * (1 - variety) * 5);
             score += similarityComponent;
-            //console.log("score:", score);
             finalPosts.push({
                 ...post.dataValues,
                 score
@@ -348,7 +376,7 @@ async function ApplyAlgorithm({ locationId, excludedPostIds, feedId, includeOpti
         }) : [];
         const savedSet = new Set(savedRows.map(s => s.post_id));
         //Return final selection of posts
-        return finalPosts.map(post => {
+        return stripExcludedAttributes(finalPosts).map(post => {
             const { score, _maxSimilarity, ...rest } = post;
             return {
                 ...rest,

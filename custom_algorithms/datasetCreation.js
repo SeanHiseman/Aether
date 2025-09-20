@@ -90,8 +90,8 @@ function generatePost(topic) {
 
 async function generateData() {
 	try {
-		const NUM_FEEDS = 75;
-		const POSTS_PER_CHANNEL = 10;
+		const NUM_FEEDS = 100;
+		const POSTS_PER_CHANNEL = 100;
 		const feedsData = [];
 		const channelsData = [];
 		const postsData = [];
@@ -112,7 +112,7 @@ async function generateData() {
 				feed_id: feedId,
 				feed_name: username,
 				description: `${faker.helpers.arrayElement(['Tech enthusiast', 'Sports fan', 'Finance guru', 'Movie buff', 'Globetrotter', 'Fitness addict'])} sharing updates.`,
-				feed_photo: `media/profile_picture_dataset/img-${i}.jpg`,
+				feed_photo: `media/site_images/Logo.png`,
 				follower_count: faker.number.int({ min: 0, max: 100000 }),
 				type: 'public',
 				is_group: false,
@@ -149,7 +149,6 @@ async function generateData() {
 					//Use a tweet-based post
 					const tweet = tweetRows[Math.floor(Math.random() * tweetRows.length)];
 					const tweetContent = tweet[3];				
-					//console.log("Using tweetContent:", tweetContent);
 					const post = {
 						post_id: generateSpecialId(),
 						feed_id: feedId,
@@ -164,7 +163,6 @@ async function generateData() {
 						poster_id: feedId
 					};
 					const analysisResults = await contentAnalyser.analyseContent(post.content, post.title);
-					//console.log("tweet analysis results:", analysisResults);
 					postsData.push({ ...post, ...analysisResults });
 				} else {
 					//Use a generated post
@@ -187,17 +185,20 @@ async function generateData() {
 						poster_id: feedId
 					};
 					const analysisResults = await contentAnalyser.analyseContent(post.content, post.title);
-					console.log("generated analysis results:", analysisResults);
 					postsData.push({ ...post, ...analysisResults });
 				}
 			}
 		}
-		await sequelize.transaction(async (t) => {
-			await Users.bulkCreate(usersData, { transaction: t });
-			await Feeds.bulkCreate(feedsData, { transaction: t });
-			await FeedChannels.bulkCreate(channelsData, { transaction: t });
-			await Posts.bulkCreate(postsData, { transaction: t });
-		});
+		await Users.bulkCreate(usersData);
+		await Feeds.bulkCreate(feedsData);
+		await FeedChannels.bulkCreate(channelsData);
+		const BATCH_SIZE = 100;
+		for (let i = 0; i < postsData.length; i += BATCH_SIZE) {
+			const batch = postsData.slice(i, i + BATCH_SIZE);
+			await Posts.bulkCreate(batch);
+			console.log(`Inserted posts ${i + 1}–${i + batch.length} of ${postsData.length}`);
+		}
+
 		console.log(`Created ${usersData.length} users, ${feedsData.length} feeds, ${channelsData.length} channels, and ${postsData.length} posts.`);
 	} catch (error) {
 		console.error('Error generating data:', error);
