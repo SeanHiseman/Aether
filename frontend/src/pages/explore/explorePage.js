@@ -14,16 +14,7 @@ function chunkFeedsToQuads(feeds) {
 	return quads;
 }
 
-function shuffleArray(arr) {
-	for (let i = arr.length - 1; i > 0; i--) {
-		const j = Math.floor(Math.random() * (i + 1));
-		[arr[i], arr[j]] = [arr[j], arr[i]];
-	}
-	return arr;
-}
-
-const FETCH_LIMIT = 20;
-const RENDER_BUFFER = 10; // Number of items to render outside visible area
+const FETCH_LIMIT = 48;
 
 const ExplorePage = () => {
 	const [errorMessage, setErrorMessage] = useState("");
@@ -34,60 +25,52 @@ const ExplorePage = () => {
 	const [loadingMore, setLoadingMore] = useState(false);
 	const [postPage, setPostPage] = useState(0);
 	const [posts, setPosts] = useState([]);
-	
-	// Track all fetched IDs (never cleared)
-	const [allFetchedPostIds, setAllFetchedPostIds] = useState([]);
-	const [allFetchedFeedIds, setAllFetchedFeedIds] = useState([]);
-	
-	// Track element heights and positions for virtual scrolling
-	const [itemRefs, setItemRefs] = useState(new Map());
-	const [visibleRange, setVisibleRange] = useState({ start: 0, end: 50 });
-	
+	const [shownFeedIds, setShownFeedIds] = useState([]);
+	const [shownPostIds, setShownPostIds] = useState([]);
 	const { isAuthenticated, viewer } = useContext(AuthContext);
 	const { rightClasses } = useOutletContext();
 	const [refreshTrigger, setRefreshTrigger] = useState(false);
 	const scrollRef = useRef(null);
 
-	const fetchPosts = useCallback(async () => {
+	const fetchPosts = useCallback(async (page = 0) => {
 		try {
 			const response = await axios.get("/api/explore_posts", {
-				params: { filter, limit: FETCH_LIMIT, exclude: allFetchedPostIds },
+				params: { filter, limit: FETCH_LIMIT, offset: page * FETCH_LIMIT, exclude: shownPostIds.join(',')},
 			});
 			const newPosts = response?.data?.posts || [];
-			
-			setPosts(prev => [...prev, ...newPosts]);
-			
-			// Always track all fetched IDs
-			const newPostIds = newPosts.map(p => p?.post_id).filter(Boolean);
-			setAllFetchedPostIds(prev => [...prev, ...newPostIds]);
-			
+			if (page === 0) { //Initial load
+				setPosts(newPosts);
+				setShownPostIds(newPosts.map(p => p?.post_id));
+			} else { //Append to existing posts
+				setPosts(prev => [...prev, ...newPosts]);
+				setShownPostIds(prev => [...prev, ...newPosts.map(p => p?.post_id)]);
+			}
 		} catch (error) {
 			setErrorMessage("Failed to fetch posts");
 		}
-	}, [filter, allFetchedPostIds]);
+	}, [filter, shownPostIds]);
 
-	const fetchFeeds = useCallback(async () => {
+	const fetchFeeds = useCallback(async (page = 0) => {
 		try {
 			const response = await axios.get("/api/explore_feeds", {
-				params: { limit: FETCH_LIMIT, exclude: allFetchedFeedIds },
+				params: { limit: FETCH_LIMIT, offset: page * FETCH_LIMIT, exclude: shownFeedIds.join(',') },
 			});
 			const newFeeds = response?.data?.feeds || [];
-			
-			setFeeds(prev => [...prev, ...newFeeds]);
-			
-			// Always track all fetched IDs
-			const newFeedIds = newFeeds.map(f => f?.feed_id).filter(Boolean);
-			setAllFetchedFeedIds(prev => [...prev, ...newFeedIds]);
-			
+			if (page === 0) {
+				setFeeds(newFeeds);
+				setShownFeedIds(newFeeds.map(f => f?.feed_id));
+			} else {
+				setFeeds(prev => [...prev, ...newFeeds]);
+				setShownFeedIds(prev => [...prev, ...newFeeds.map(f => f?.feed_id)]);
+			}
 		} catch (error) {
 			setErrorMessage("Failed to fetch feeds");
 		}
-	}, [allFetchedFeedIds]);
+	}, [shownFeedIds]);
 
 	const loadMore = useCallback(async () => {
 		if (loading || loadingMore) return;
 		setLoadingMore(true);
-		
 		if (filter === "all") {
 			const nextPostPage = postPage + 1;
 			const nextFeedPage = feedPage + 1;
@@ -104,58 +87,36 @@ const ExplorePage = () => {
 			setFeedPage(nextFeedPage);
 		}
 		setLoadingMore(false);
-	}, [loading, loadingMore, filter, fetchPosts, fetchFeeds, postPage, feedPage]);
-
-	// Update visible range based on scroll position
-	const updateVisibleRange = useCallback(() => {
-		const element = scrollRef.current;
-		if (!element) return;
-
-		const scrollTop = element.scrollTop;
-		const containerHeight = element.clientHeight;
-		
-		// Simple approach: estimate based on total items and scroll position
-		let totalItems = 0;
-		if (filter === "all") {
-			totalItems = combinedItems.length;
-		} else if (filter === "posts") {
-			totalItems = posts.length;
-		} else if (filter === "feeds") {
-			totalItems = Math.ceil(feeds.length / 4); // Feed quads
-		}
-
-		if (totalItems === 0) return;
-
-		// Rough estimation - adjust these values based on your average item heights
-		const avgItemHeight = 250;
-		const estimatedStart = Math.max(0, Math.floor(scrollTop / avgItemHeight) - RENDER_BUFFER);
-		const estimatedEnd = Math.min(totalItems - 1, 
-			Math.floor((scrollTop + containerHeight) / avgItemHeight) + RENDER_BUFFER);
-
-		setVisibleRange({ start: estimatedStart, end: estimatedEnd });
-	}, [filter, posts.length, feeds.length]);
+	}, [loading, loadingMore, filter, fetchPosts, fetchFeeds, posts.length, feeds.length]);
 
 	const handleScroll = useCallback(() => {
 		const element = scrollRef.current;
 		if (!element) return;
-		
-		updateVisibleRange();
-		
-		if (element.scrollTimeout) clearTimeout(element.scrollTimeout);
-		element.scrollTimeout = setTimeout(() => {
-			if (element.scrollTop + element.clientHeight >= element.scrollHeight - 200) {
-				loadMore();
-			}
+		if (scrollRef.current.scrollTimeout) clearTimeout(scrollRef.current.scrollTimeout);
+		scrollRef.current.scrollTimeout = setTimeout(() => {
+			if (element.scrollTop + element.clientHeight >= element.scrollHeight - 200) loadMore();
 		}, 100);
-	}, [loadMore, updateVisibleRange]);
+	}, [loadMore]);
 
 	const combinedItems = useMemo(() => {
 		if (filter !== "all") return [];
-		const feedQuads = chunkFeedsToQuads(feeds);
+		const feedQuads = chunkFeedsToQuads(feeds).map(f => ({ type: "feedQuad", data: f }));
 		const postItems = posts.map(p => ({ type: "post", data: p }));
-		const feedQuadItems = feedQuads.map(f => ({ type: "feedQuad", data: f }));
-		const allItems = [...postItems, ...feedQuadItems];
-		return shuffleArray(allItems.slice());
+		const interspersed = [];
+		const POSTS_PER_BLOCK = 5; 
+		let postIndex = 0;
+		let feedIndex = 0;
+		while (postIndex < postItems.length || feedIndex < feedQuads.length) {
+			for (let i = 0; i < POSTS_PER_BLOCK && postIndex < postItems.length; i++) {
+				interspersed.push(postItems[postIndex]);
+				postIndex++;
+			}
+			if (feedIndex < feedQuads.length) {
+				interspersed.push(feedQuads[feedIndex]);
+				feedIndex++;
+			}
+		}
+		return interspersed;
 	}, [filter, posts, feeds]);
 
 	const refreshPosts = () => {
@@ -164,26 +125,6 @@ const ExplorePage = () => {
 
 	//For feeds-only filter, chunk into groups of 4
 	const feedQuads = useMemo(() => chunkFeedsToQuads(feeds), [feeds]);
-
-	// Get visible items based on current range
-	const visibleCombinedItems = useMemo(() => {
-		if (filter !== "all") return [];
-		return combinedItems.slice(visibleRange.start, visibleRange.end + 1);
-	}, [combinedItems, visibleRange, filter]);
-
-	const visiblePosts = useMemo(() => {
-		if (filter !== "posts") return [];
-		return posts.slice(visibleRange.start, visibleRange.end + 1);
-	}, [posts, visibleRange, filter]);
-
-	const visibleFeedQuads = useMemo(() => {
-		if (filter !== "feeds") return [];
-		return feedQuads.slice(visibleRange.start, visibleRange.end + 1);
-	}, [feedQuads, visibleRange, filter]);
-
-	useEffect(() => {
-		updateVisibleRange();
-	}, [updateVisibleRange, posts.length, feeds.length, filter]);
 
 	useEffect(() => {
 		return () => {
@@ -198,17 +139,15 @@ const ExplorePage = () => {
 		setPostPage(0);
 		setFeeds([]);
 		setPosts([]);
-		setAllFetchedFeedIds([]);
-		setAllFetchedPostIds([]);
-		setVisibleRange({ start: 0, end: 50 });
-		
+		setShownFeedIds([]);
+		setShownPostIds([]);
 		const fetches = [];
-		if (filter === "all" || filter === "posts") fetches.push(fetchPosts());
-		if (filter === "all" || filter === "feeds") fetches.push(fetchFeeds());
+		if (filter === "all" || filter === "posts") fetches.push(fetchPosts(0));
+		if (filter === "all" || filter === "feeds") fetches.push(fetchFeeds(0));
 		Promise.all(fetches).then(() => setLoading(false));
 	}, [filter]);
 
-	//Refresh posts
+	//Refresh posts (merge with previous useEffect?)
 	useEffect(() => {
 		if (refreshTrigger === false) return; 
 		setLoading(true);
@@ -216,10 +155,8 @@ const ExplorePage = () => {
 		setPostPage(0);
 		setFeeds([]);
 		setPosts([]);
-		setAllFetchedFeedIds([]);
-		setAllFetchedPostIds([]);
-		setVisibleRange({ start: 0, end: 50 });
-		
+		setShownFeedIds([]);
+		setShownPostIds([]);
 		const fetches = [];
 		if (filter === "all" || filter === "posts") fetches.push(fetchPosts());
 		if (filter === "all" || filter === "feeds") fetches.push(fetchFeeds());
@@ -237,15 +174,6 @@ const ExplorePage = () => {
 		return () => clearTimeout(timeout);
 	}, [loading, loadingMore]);
 
-	// Create spacers to maintain scroll position
-	const createSpacer = (height, key) => (
-		<div key={key} style={{ height: `${height}px` }} />
-	);
-
-	// Estimate heights for spacers (adjust these based on your actual content)
-	const estimatedPostHeight = 200;
-	const estimatedFeedQuadHeight = 250;
-
 	return (
 		<div className="standard-container">
 			<div ref={scrollRef} onScroll={handleScroll} className="channel-feed">
@@ -257,21 +185,13 @@ const ExplorePage = () => {
 					<>
 						{filter === "all" && (
 							<div className="flex flex-col gap-3 w-99">
-								{/* Top spacer */}
-								{visibleRange.start > 0 && createSpacer(
-									visibleRange.start * (estimatedPostHeight + estimatedFeedQuadHeight) / 2,
-									"top-spacer"
-								)}
-								
-								{/* Visible items */}
-								{visibleCombinedItems.map((item, idx) => {
-									const actualIndex = visibleRange.start + idx;
-									return item.type === "post" ? (
+								{combinedItems.map((item, idx) =>
+									item.type === "post" ? (
 										<div key={`post-${item.data.post_id}`} className="bg-gray-800 rounded-xl">
 											<SmallContentWidget post={item.data} />
 										</div>
 									) : (
-										<div key={`feedquad-${actualIndex}`} className="grid grid-cols-4 gap-3 w-full">
+										<div key={`feedquad-${idx}`} className="grid grid-cols-4 gap-3 w-full">
 											{item.data.map(feed => (
 												<FeedWidget
 													key={feed.feed_id}
@@ -281,49 +201,23 @@ const ExplorePage = () => {
 												/>
 											))}
 										</div>
-									);
-								})}
-								
-								{/* Bottom spacer */}
-								{visibleRange.end < combinedItems.length - 1 && createSpacer(
-									(combinedItems.length - 1 - visibleRange.end) * (estimatedPostHeight + estimatedFeedQuadHeight) / 2,
-									"bottom-spacer"
+									)
 								)}
 							</div>
 						)}
 						{filter === "posts" && (
 							<div className="flex flex-col gap-3 w-99">
-								{/* Top spacer */}
-								{visibleRange.start > 0 && createSpacer(
-									visibleRange.start * estimatedPostHeight,
-									"top-spacer"
-								)}
-								
-								{/* Visible posts */}
-								{visiblePosts.map((post, idx) => (
+								{posts.map(post => (
 									<div key={post.post_id} className="bg-gray-800 rounded-xl">
 										<SmallContentWidget post={post} showFullContent={true} showScrollBar={false} />
 									</div>
 								))}
-								
-								{/* Bottom spacer */}
-								{visibleRange.end < posts.length - 1 && createSpacer(
-									(posts.length - 1 - visibleRange.end) * estimatedPostHeight,
-									"bottom-spacer"
-								)}
 							</div>
 						)}
 						{filter === "feeds" && (
 							<div className="flex flex-col gap-3 w-99">
-								{/* Top spacer */}
-								{visibleRange.start > 0 && createSpacer(
-									visibleRange.start * estimatedFeedQuadHeight,
-									"top-spacer"
-								)}
-								
-								{/* Visible feed quads */}
-								{visibleFeedQuads.map((feedQuad, idx) => (
-									<div key={visibleRange.start + idx} className="grid grid-cols-4 gap-3 w-full">
+								{feedQuads.map((feedQuad, idx) => (
+									<div key={idx} className="grid grid-cols-4 gap-3 w-full">
 										{feedQuad.map(feed => (
 											<FeedWidget
 												key={feed.feed_id}
@@ -334,12 +228,6 @@ const ExplorePage = () => {
 										))}
 									</div>
 								))}
-								
-								{/* Bottom spacer */}
-								{visibleRange.end < feedQuads.length - 1 && createSpacer(
-									(feedQuads.length - 1 - visibleRange.end) * estimatedFeedQuadHeight,
-									"bottom-spacer"
-								)}
 							</div>
 						)}
 					</>

@@ -12,12 +12,13 @@ router.get('/search', async (req, res) => {
     try {
         const searcherId = req.session.viewer_id;
         const keyword = req.query.keyword ? req.query.keyword.toLowerCase() : '';
-        const limit = parseInt(req.query.limit, 10) || 10;
-        const offset = parseInt(req.query.offset, 10) || 0;
+        const limit = parseInt(req.query.limit, 10) || 48;
+        const feedOffset = parseInt(req.query.feedOffset, 10) || 0;
+        const postOffset = parseInt(req.query.postOffset, 10) || 0;
         const feeds = await Feeds.findAll({
             where: { feed_name: { [Op.like]: `%${keyword}%` } },
             limit,
-            offset
+            offset: feedOffset
         });
         const feedData = await Promise.all(feeds.map(async (feed) => {
             const feedJSON = feed.toJSON();
@@ -79,7 +80,7 @@ router.get('/search', async (req, res) => {
             includeOptions: includeOptions,
             isMain: 'false',
             limit: limit,
-            offset: offset,
+            offset: postOffset,
             viewerId: searcherId,
             keyword: keyword
         });

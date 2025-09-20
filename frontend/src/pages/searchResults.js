@@ -16,18 +16,12 @@ function chunkFeedsToQuads(feeds) {
 	return quads;
 }
 
-function shuffleArray(arr) {
-	for (let i = arr.length - 1; i > 0; i--) {
-		const j = Math.floor(Math.random() * (i + 1));
-		[arr[i], arr[j]] = [arr[j], arr[i]];
-	}
-	return arr;
-}
-
 const SearchResults = () => {
     const [dropdownOpen, setDropdownOpen] = useState(false);
     const [errorMessage, setErrorMessage] = useState('');
     const [feedTypeFilter, setFeedTypeFilter] = useState('all');
+    const [feedPage, setFeedPage] = useState(0);
+    const [postPage, setPostPage] = useState(0);
     const [selectedView, setSelectedView] = useState('combined');
     const [searchParams] = useSearchParams();
     const keyword = (searchParams.get('keyword') || '').trim();
@@ -39,16 +33,17 @@ const SearchResults = () => {
     const scrollRef = useRef(null);
 
     //Gets results depending on which type is being viewed
-    const fetchSearchResults = async ({ pageParam = 0 }) => {
+    const fetchSearchResults = async ({ pageParam = {} }) => {
         try {
+            const feedOffset = pageParam.feedOffset || feedPage * 50;
+            const postOffset = pageParam.postOffset || postPage * 50;
             const response = await axios.get(
-                `/api/search/?keyword=${keyword}&limit=24&offset=${pageParam}`
+                `/api/search/?keyword=${keyword}&limit=50&feedOffset=${feedOffset}&postOffset=${postOffset}`
             );
             return response.data || { feeds: [], posts: [] };
         } catch (error) {
             const message = error.response?.data?.message || "Error getting search results";
             setErrorMessage(message);
-            // Return safe empty structure so react-query doesn't crash
             return { feeds: [], posts: [] };
         }
     };
@@ -58,8 +53,14 @@ const SearchResults = () => {
         queryKey: ['searchResults', keyword, viewer?.feed_id],
         queryFn: fetchSearchResults,
         getNextPageParam: (lastPage, allPages) => {
-            const fetchedCount = ((lastPage?.feeds?.length || 0) + (lastPage?.posts?.length || 0));
-            return fetchedCount > 0 ? (allPages.length * 24) : undefined;
+            if (!lastPage) return undefined;
+            const feedCount = lastPage.feeds?.length || 0;
+            const postCount = lastPage.posts?.length || 0;
+            if (feedCount === 0 && postCount === 0) return undefined;
+            return {
+                feedOffset: feedPage * 48 + feedCount,
+                postOffset: postPage * 48 + postCount
+            };
         },
         enabled: !!keyword
     });
@@ -68,7 +69,14 @@ const SearchResults = () => {
     useEffect(() => {
         const observer = new IntersectionObserver((entries) => {
             if (entries[0].isIntersecting && hasNextPage && !isFetchingNextPage) {
-                fetchNextPage();
+                fetchNextPage({
+                    pageParam: {
+                        feedOffset: feedPage * 48,
+                        postOffset: postPage * 48
+                    }
+                });
+                setFeedPage(prev => prev + 1);
+                setPostPage(prev => prev + 1);
             }
         });
         const currentLoader = loaderRef.current;
@@ -92,24 +100,34 @@ const SearchResults = () => {
         if (!data) return { feeds: [], posts: [] };
         let allFeeds = data.pages.flatMap(page => page.feeds || []);
         let allPosts = data.pages.flatMap(page => page.posts || []);
-        
         if (feedTypeFilter !== 'all') {
             allFeeds = allFeeds.filter(feed => (feedTypeFilter === 'group' ? feed.is_group : !feed.is_group));
         }
-        
         return { feeds: allFeeds, posts: allPosts };
     }, [data, feedTypeFilter]);
     
     const { feeds, posts } = filteredResults;
 
     const combinedItems = useMemo(() => {
-		if (selectedView !== "combined") return [];
-		const feedQuads = chunkFeedsToQuads(feeds);
-		const postItems = posts.map(p => ({ type: "post", data: p }));
-		const feedQuadItems = feedQuads.map(f => ({ type: "feedQuad", data: f }));
-		const allItems = [...postItems, ...feedQuadItems];
-		return shuffleArray(allItems.slice());
-	}, [selectedView, posts, feeds]);
+        if (selectedView !== "combined") return [];
+        const feedQuads = chunkFeedsToQuads(feeds).map(f => ({ type: "feedQuad", data: f }));
+        const postItems = posts.map(p => ({ type: "post", data: p }));
+        const interspersed = [];
+        const POSTS_PER_BLOCK = 5; 
+        let postIndex = 0;
+        let feedIndex = 0;
+        while (postIndex < postItems.length || feedIndex < feedQuads.length) {
+            for (let i = 0; i < POSTS_PER_BLOCK && postIndex < postItems.length; i++) {
+                interspersed.push(postItems[postIndex]);
+                postIndex++;
+            }
+            if (feedIndex < feedQuads.length) {
+                interspersed.push(feedQuads[feedIndex]);
+                feedIndex++;
+            }
+        }
+        return interspersed;
+    }, [selectedView, posts, feeds]);
 
 	const feedQuads = useMemo(() => chunkFeedsToQuads(feeds), [feeds]);
 

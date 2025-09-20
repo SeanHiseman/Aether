@@ -32,6 +32,7 @@ function stripExcludedAttributes(posts) {
 }
 
 async function ApplyAlgorithm({ locationId, excludedPostIds, feedId, includeOptions, isGroup = true, isMain, limit, offset, viewerId, keyword = '' }) {
+    console.log("limit", limit, "offset", offset);
     try {
         //Already returned posts are excluded
         let excludedIds = [];
@@ -122,6 +123,7 @@ async function ApplyAlgorithm({ locationId, excludedPostIds, feedId, includeOpti
                 where: { type: { [Op.ne]: 'private' } },
                 attributes: ['feed_id'],
                 limit: limit,
+                offset: offset
             });
             posts = await Posts.findAll({
                 include: includeOptions,
