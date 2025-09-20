@@ -302,7 +302,7 @@ const ContentWidget = ({ canRemove = false, feed, isDraft = false, onEditClick, 
 	return (
 		<div className={`content-item ${isReply ? 'reply' : ''}`}>
 			{postErrorMessage && <div className="error-message">{postErrorMessage}</div>}
-			{/*<Link
+			{post?.title && <Link
 				className="title-container"
 				onClick={() => incrementViews(post?.post_id)}
 				style={{ display: 'block' }}
@@ -311,7 +311,7 @@ const ContentWidget = ({ canRemove = false, feed, isDraft = false, onEditClick, 
 				<span className="large-text" style={{ marginLeft: 0 }}>
 					{post?.title || '\u00A0'}
 				</span>
-			</Link>*/}
+			</Link>}
 			<div ref={fullscreenRef}
 				onClick={() => incrementViews(post?.post_id)}
 				style={{

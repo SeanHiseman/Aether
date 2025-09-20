@@ -121,7 +121,7 @@ const reorder = (list, startIndex, endIndex) => {
 }
 
 //Post is either the post being edited or replied to
-const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onEditSubmit, onPostSubmit, post = null, postErrorMessage, setPostErrorMessage, setShowForm }) => {
+const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPostSubmit, post = null, postErrorMessage, setPostErrorMessage, setShowForm }) => {
     const blocksRef = useRef([]) 
     const [blocks, setBlocks] = useState([])
     const [blockLimitError, setBlockLimitError] = useState('')
@@ -735,21 +735,25 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onEdit
             const formData = new FormData()
             let postId
             if (!isEdit || isDraft) {
+                console.log("generating post id")
                 postId = v4()
-                formData.append('post_id', postId)
-            } else postId = post.post_id
+            } else { 
+                //Editing an existing post
+                postId = post?.post_id
+            }
+            formData.append('post_id', postId)
             formData.append('content', finalHTML)
-            formData.append('feed_id', feed.feed_id);
+            formData.append('feed_id', feed?.feed_id);
             if (!post || draftId) { 
                 formData.append('draft_id', draftId);
             } 
             if (!isReply) formData.append('title', title)
             if (channelId) formData.append('channel_id', channelId)
-            if (isReply && post) formData.append('parent_id', post.post_id)
+            if (isReply && post) formData.append('parent_id', post?.post_id)
             blocks
                 .filter(b => b.type === BLOCK_TYPES.MEDIA && b.data.file)
                 .forEach(mediaBlock => formData.append('files', mediaBlock.data.file))
-            await (isEdit && !isPostingDraft ? onEditSubmit(formData) : onPostSubmit(formData))
+            await (onPostSubmit(formData))
             setIsPostingDraft(false)
             setTitle('')
             setBlocks([])
@@ -758,12 +762,12 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onEdit
             setPostErrorMessage('')
             const feedName = feed?.feed_name || feed_name
             const channelName = post?.parentChannel?.channel_name || channel_name
-            navigate(`/${urlPrefix}/${feedName}/${channelName}/${isReply ? post.post_id : postId}`)
+            navigate(`/${urlPrefix}/${feedName}/${channelName}/${isReply ? post?.post_id : postId}`)
         } catch (error) {
             setPostErrorMessage(error.response?.data?.message || 'Error submitting the form.')
             setTimeout(() => { setPostErrorMessage('') }, 5000)
         }
-    }, [blocks, channelId, compileFinalHTML, compileFinalHTML, draftId, feed.feed_id, isContentEmpty, isDraft, isEdit, isPostingDraft, isReply, navigate, onEditSubmit, onPostSubmit, post, title, urlPrefix])
+    }, [blocks, channelId, compileFinalHTML, compileFinalHTML, draftId, feed?.feed_id, isContentEmpty, isDraft, isEdit, isPostingDraft, isReply, navigate, onPostSubmit, post, title, urlPrefix])
 
     const toggleMediaAlignment = useCallback(block => {
         let newAlign;

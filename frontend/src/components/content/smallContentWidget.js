@@ -185,7 +185,7 @@ const SmallContentWidget = ({ display, post }) => {
     return (
         <div className="content-item">
             {postErrorMessage && <div className="error-message">{postErrorMessage}</div>}
-            {/*!display && <Link
+            {post?.title && <Link
                 className="title-container"
                 onClick={() => incrementViews(post?.post_id)}
                 style={{ display: 'block' }}
@@ -194,7 +194,7 @@ const SmallContentWidget = ({ display, post }) => {
                 <span className="large-text" style={{ marginLeft: 0 }}>
                     {post?.title || '\u00A0'}
                 </span>
-            </Link>*/}
+            </Link>}
             <div ref={fullscreenRef} 
                 className="display-div"
                 style={{

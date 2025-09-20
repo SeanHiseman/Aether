@@ -219,21 +219,6 @@ const FeedHome = () => {
         }
     };
 
-    const editSubmit = async (formData) => {
-        try {
-            formData.append('post_id', postToEdit.post_id);
-            await axios.post('/api/edit_post', formData);
-            setIsEdit(false);
-            setPostToEdit(null);
-            setShowPostForm(false);
-        } catch (error) {
-            setFeedErrorMessage('Error editing post');
-            setTimeout(() => {
-                setFeedErrorMessage('');
-            }, 3000);
-        }
-    };
-
     //Set channels to contain either posts or chats, or both
     const handleChatClick = () => setIsChatChannel((prev) => !prev);
     const handlePostClick = () => setIsPostChannel((prev) => !prev);
@@ -246,11 +231,12 @@ const FeedHome = () => {
             return;
         }
         try {
-            formData.append('poster_id', viewer.feed_id);
+            formData.append('poster_id', viewer?.feed_id);
             await axios.post('/api/create_post', formData, {
                 headers: { 'Content-Type': 'multipart/form-data' },
             });
             const draftId = formData.get('draft_id')
+            //Delete if posting from a draft
             if (draftId !== null && draftId !== '') {
                 await axios.delete('/api/remove_draft', {
                     headers: { 'Content-Type': 'application/json' },
@@ -274,7 +260,6 @@ const FeedHome = () => {
     };
 
     const refreshPosts = () => {
-        console.log("refresh trigger");
         setRefreshTrigger(!refreshTrigger);
     };
 
@@ -355,7 +340,6 @@ const FeedHome = () => {
                         feed={feed} 
                         isEdit={isEdit} 
                         isReply={false} 
-                        onEditSubmit={editSubmit} 
                         onPostSubmit={postSubmit}
                         populateFromPost={Boolean(postToEdit)}
                         post={postToEdit} 
@@ -370,7 +354,6 @@ const FeedHome = () => {
                         isEdit={false}
                         isGroup={feed.is_group} 
                         isReply={true} 
-                        onEditSubmit={editSubmit}
                         onPostSubmit={postSubmit} 
                         post={replyingToPost} 
                         postErrorMessage={postErrorMessage} 

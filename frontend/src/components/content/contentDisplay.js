@@ -95,7 +95,7 @@ const ContentDisplay = ({ content, onCodeAppChange = () => {}, onOverflowChange 
 		<div ref={contentRef} style={{ height: heightStyle, overflow: showScrollBar ? 'auto' : 'hidden', position: 'relative' }}>
 			{blocks.map((block, i) => {
 				if (block.type === 'text') {
-					return <div dangerouslySetInnerHTML={{ __html: block.html }} key={i} />
+					return <div dangerouslySetInnerHTML={{ __html: block.html }} key={i} style={{ paddingTop: 5, paddingLeft: 5, paddingRight: 5 }} />
 				}
 				if (block.type === 'code') {
 					return (
