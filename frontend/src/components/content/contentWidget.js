@@ -383,7 +383,7 @@ const ContentWidget = ({ canRemove = false, feed, isDraft = false, onEditClick, 
 					)}
 				</div>)}
 				{!readOnly && !isDraft && (
-					<div className="post-button-group">
+					<div className="post-button-group reply-buttons">
 						<button className="large-icon" data-content-id={post?.post_id} onClick={toggleReplies} title={showReplies ? "Close Replies" : "Show Replies"}>
 							{showReplies ? <FaCommentSlash /> : <FaComments />}
 							<p className="small-text" id={`reply-count-${post?.post_id}`}>{post?.replies}</p>

@@ -77,9 +77,6 @@
 .content-metadata .vote-container {
     grid-area: votes;
 }
-.content-metadata:has(.vote-container) .post-button-group:first-of-type {
-    grid-area: replies;
-}
 .content-metadata:has(.vote-container) .post-button-group:last-of-type {
     grid-area: actions;
 }
@@ -89,12 +86,23 @@
 .content-metadata:not(:has(.vote-container)) .post-button-group:last-of-type {
     grid-area: replies;
 }
+.content-metadata:has(.vote-container) .post-button-group:nth-of-type(2) {
+    grid-area: replies;
+    justify-self: center;
+}
 .content-metadata .button-text-bottom {
     grid-area: save;
 }
 .content-metadata .view-date-container {
     grid-area: datetime;
     justify-self: end;
+}
+.content-metadata .post-button-group.reply-buttons {
+    grid-area: replies;
+    justify-self: center;
+}
+.content-metadata .vote-container {
+    padding-right: calc(2 * var(--xl-margin));
 }
 .custom-theme-container {
     align-items: center;
@@ -167,6 +175,11 @@
 .post-button-group {
     align-items: center;
     display: flex;
+}
+.post-button-group p.small-text {
+    display: inline-block;
+    width: 6ch; 
+    text-align: center;
 }
 .post-list {
     margin: 0px;
@@ -353,6 +366,7 @@
     stroke-dashoffset: 1000;
     animation: drawLine 1s ease forwards;
 }
+
 @media (max-width: 768px) {
     .content-list {
         width: 100%;
@@ -368,7 +382,7 @@
     }
     .content-metadata .view-date-container {
         flex-direction: row;
-        justify-self: start;
+        justify-self: end;
     }
     .view-date-container {
         gap: var(--large-margin);
