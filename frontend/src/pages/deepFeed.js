@@ -5,24 +5,20 @@ import { useContext, useEffect, useRef, useState } from 'react';
 import { FaEdit, FaRegWindowClose, FaSave, FaTrash } from 'react-icons/fa';
 import { useNavigate, useOutletContext, useParams } from 'react-router-dom';
 import { AuthContext } from '../components/authContext';
-import ContentForm from '../components/content/contentForm';
 import ContentWidget from '../components/content/contentWidget';
 import DeepFeedItem from '../components/channels/deepFeedItem';
 import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
 import { ValidateTextInput } from '../functions/validateTextInput';
 
 const DeepFeed = () => {
-    const [activeEditPost, setActiveEditPost] = useState(null);
-    const [activeReplyPost,	setActiveReplyPost]	= useState(null);
     const [errorMessage, setErrorMessage] = useState('');
     const { deep_feed_id } = useParams();
     const [deepFeed, setDeepFeed] = useState({ deep_feed_id: null, name: '', owner_id: null, parent_id: null });
     const [isEditingName, setIsEditingName] = useState(false);
     const [isNewNameValid, setIsNewNameValid] = useState(false);
     const [newName, setNewName] = useState('');
-    const [postErrorMessage, setPostErrorMessage] = useState('');
     const [refreshTrigger, setRefreshTrigger] = useState(false);
-    const { isAuthenticated, user, viewer } = useContext(AuthContext);
+    const { isAuthenticated } = useContext(AuthContext);
     const navigate = useNavigate();
     const { rightClasses } = useOutletContext(); 
     const queryClient = useQueryClient();
@@ -116,38 +112,6 @@ const DeepFeed = () => {
         }
     };
 
-    //For creating replies
-    const postSubmit = async (formData) => {
-        if (!isAuthenticated) return;
-        if (!formData) {
-            setPostErrorMessage("Post cannot be empty");
-            setTimeout(() => { setPostErrorMessage(''); }, 3000);
-            return;
-        }
-        try {
-            formData.append('poster_id', viewer?.feed_id);
-            await axios.post('/api/create_post', formData, {
-                headers: { 'Content-Type': 'multipart/form-data' },
-            });
-            const draftId = formData.get('draft_id');
-            if (draftId) {
-                await axios.delete('/api/remove_draft', {
-                    headers: { 'Content-Type': 'application/json' },
-                    data: { draft: { draft_id: draftId } }
-                });   
-            }    
-            setActiveReplyPost(null);
-        } catch (error) {
-            if (error.response && error.response?.status === 413) {
-                setPostErrorMessage(error.response.data?.message + (!user?.has_membership ? ". Get membership for more" : ""));
-                setTimeout(() => { setPostErrorMessage(''); }, 10000);
-            } else {
-                setPostErrorMessage(error.response.data?.message || "Error creating post");
-                setTimeout(() => { setPostErrorMessage(''); }, 3000);
-            }
-        }
-    };
-
     useEffect(() => {
         const observer = new IntersectionObserver((entries) => {
             if (entries[0].isIntersecting && hasNextPage && !isFetchingNextPage) {
@@ -166,18 +130,6 @@ const DeepFeed = () => {
 
     const allPosts = Array.isArray(data?.pages) ? data.pages.flatMap(page => Array.isArray(page) ? page : []) : [];
 
-    const editSubmit = async (formData) => {
-        if (!activeEditPost) return;
-        try {
-            formData.append('post_id', activeEditPost?.post_id);
-            await axios.post('/api/edit_post', formData);
-            setActiveEditPost(null);
-        } catch (error) {
-            setErrorMessage(error.response.data?.message || 'Error editing post');
-            setTimeout(() => { setErrorMessage('') }, 3000);
-        }
-    };
-
     const refreshPosts = () => {
         setRefreshTrigger(!refreshTrigger);
     };
@@ -193,36 +145,7 @@ const DeepFeed = () => {
         <div className="standard-container">
             <div className="channel-feed">
                 <div className="channel-content">
-                    {activeEditPost ? (
-						<ContentForm
-							key={`edit-${activeEditPost?.post_id}`}
-							channelId={activeEditPost?.parentChannel?.channel_id}
-							feed={activeEditPost?.parentChannel?.feed}
-							isEdit={true}
-							isGroup={activeEditPost?.poster?.feed_id !== activeEditPost?.feed_id}
-							isReply={false}
-							onEditSubmit={editSubmit}
-							post={activeEditPost}
-							postErrorMessage={postErrorMessage}
-							setPostErrorMessage={setPostErrorMessage}
-							setShowForm={() => setActiveEditPost(null)}
-						/>
-                    ) : activeReplyPost ? (
-                        <ContentForm
-                            key={`reply-${activeReplyPost?.post_id}`}
-                            channelId={activeReplyPost?.parentChannel?.channel_id}
-                            feed={activeReplyPost?.parentChannel?.feed}
-                            isEdit={false}
-                            isGroup={activeReplyPost?.poster?.feed_id === activeReplyPost?.feed_id ? false : true}
-                            isReply={true}
-                            onEditSubmit={editSubmit}
-                            onPostSubmit={postSubmit}
-                            post={activeReplyPost}
-                            postErrorMessage={postErrorMessage}
-                            setPostErrorMessage={setPostErrorMessage}
-                            setShowForm={() => setActiveReplyPost(null)}
-                        />
-                    ) : allPosts.length > 0 ? (
+                    {allPosts.length > 0 ? (
                         <>
                             <ul className="content-list">
                                 {allPosts.map((post) => (
@@ -231,9 +154,7 @@ const DeepFeed = () => {
                                             key={post?.post_id || Math.random()}
                                             canRemove={false}
                                             feed={post?.poster || {}}
-                                            onEditClick={setActiveEditPost}
                                             onPostRemoved={() => {}}
-                                            onReplyClick={setActiveReplyPost}
                                             post={post}
                                         />
                                     ) : null

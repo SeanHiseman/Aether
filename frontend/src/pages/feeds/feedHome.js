@@ -5,6 +5,7 @@ import { FaCog, FaEdit, FaFeatherAlt, FaFolder, FaFolderOpen, FaMinus, FaPlus, F
 import { Tooltip } from 'react-tooltip';
 import { useContext, useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate, useOutletContext, useParams } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import { FormatNumber } from '../../functions/formatNumber';
 import { ValidateTextInput } from '../../functions/validateTextInput';
 import ChannelList from '../../components/channels/channelList';
@@ -15,7 +16,6 @@ import ManageConnectionButton from '../../components/connections/manageConnectio
 import PostChannel from '../../components/channels/postChannel';
 
 const FeedHome = () => {
-    const { feed_name, channel_name } = useParams();
     const [canRemove, setCanRemove] = useState(false);
     const [channelMode, setChannelMode] = useState('post');
     const [channels, setChannels] = useState([]);
@@ -41,7 +41,11 @@ const FeedHome = () => {
     const [showPostForm, setShowPostForm] = useState(false);
     const { isAuthenticated, user, viewer } = useContext(AuthContext);
     const location = useLocation();
+    const { feed_name, channel_name, post_id } = useParams();
+    const isReplyMode = location.pathname.endsWith('/reply');
+    const isEditMode = location.pathname.endsWith('/edit');
     const navigate = useNavigate();
+    const queryClient = useQueryClient();
     const { rightClasses } = useOutletContext(); 
     const showDrafts = location.pathname.endsWith('/drafts');
     const urlPrefix = feed?.is_group ? 'g' : 'u';
@@ -105,6 +109,66 @@ const FeedHome = () => {
             setDraftPosts([]);
         }
     }, [feed_name, channel_name, showDrafts]);
+
+    useEffect(() => {
+        if (isEditMode && post_id) {
+            const fetchPost = async () => {
+                let cachedPost = queryClient.getQueryData(['singlePost', post_id]);
+                if (cachedPost) {
+                    setShowPostForm(true);
+                    setIsEdit(true);
+                    setPostToEdit(cachedPost);
+                    return;
+                }
+                try {
+                    const response = await axios.get('/api/channel_posts', { params: { isSingle: true, feedId: feed?.feed_id, postId: post_id } });
+                    const post = response.data?.post;
+                    if (post) {
+                        queryClient.setQueryData(['singlePost', post_id], post);
+                        setShowPostForm(true);
+                        setIsEdit(true);
+                        setPostToEdit(post);
+                    } else {
+                    }
+                } catch (e) {
+                    setPostErrorMessage("Error fetching post to edit");
+                }
+            };
+            fetchPost();
+        }
+        else if (!isEditMode) {
+            setShowPostForm(false);
+            setIsEdit(false);
+            setPostToEdit(null);
+        }
+    }, [isEditMode, post_id, queryClient]);
+
+    useEffect(() => {
+        if (!isReplyMode || !post_id || !feed?.feed_id) return;
+        let cachedPost = queryClient.getQueryData(['singlePost', post_id]);
+        if (cachedPost) {
+            setReplyingToPost(cachedPost);
+            return;
+        }
+        const fetchPost = async () => {
+            try {
+                const response = await axios.get('/api/channel_posts', {
+                    params: { isSingle: true, feedId: feed.feed_id, postId: post_id },
+                });
+                const post = response.data?.post;
+                if (post) {
+                    queryClient.setQueryData(['singlePost', post_id], post);
+                    setReplyingToPost(post);
+                } else {
+                    setReplyingToPost({ error: true }); 
+                }
+            } catch (e) {
+                setReplyingToPost({ error: true });
+            }
+        };
+        fetchPost();
+
+    }, [isReplyMode, post_id, feed?.feed_id, queryClient]);
 
     const AddChannel = async (event) => {
         event.preventDefault();
@@ -275,6 +339,67 @@ const FeedHome = () => {
     //Toggles display of create channel form after button is pressed
     const toggleChannelForm = () => { setShowChannelForm((prev) => !prev) };
 
+    //Decides contents of feed
+    const renderContentForm = (isReply = false) => (
+        <ContentForm 
+            channelId={channelRender?.channel_id} 
+            feed={feed} 
+            isEdit={isReply ? false : isEdit} 
+            isGroup={feed?.is_group}
+            isReply={isReply} 
+            onPostSubmit={postSubmit}
+            populateFromPost={isReply ? false : Boolean(postToEdit)}
+            post={isReply ? replyingToPost : postToEdit} 
+            postErrorMessage={postErrorMessage} 
+            setPostErrorMessage={setPostErrorMessage} 
+            setShowForm={isReply ? () => {
+                setReplyingToPost(null);
+                navigate(`/${urlPrefix}/${feed_name}/${channel_name}${replyingToPost?.post_id ? `/${replyingToPost.post_id}` : ''}`);
+            } : () => {
+                setShowPostForm(false);
+                setIsEdit(false);
+                setPostToEdit(null);
+                if (isEditMode && post_id) {
+                    navigate(`/${urlPrefix}/${feed_name}/${channel_name}/${post_id}`);
+                } else {
+                    navigate(`/${urlPrefix}/${feed_name}/${channel_name}`);
+                }
+            }}
+        />
+    );
+    const renderPostChannel = (isDraft = false) => (
+        <PostChannel
+            channelId={channelRender?.channel_id}
+            channelName={isDraft ? channel_name : channelRender?.channel_name}
+            feed={feed}
+            isDraft={isDraft}
+            isEditMode={isEditMode}
+            isGroup={feed?.is_group}
+            refreshTrigger={isDraft ? undefined : refreshTrigger}
+            posts={isDraft ? draftPosts : undefined}
+        />
+    );
+    const renderChannelContent = () => {
+        if (isEditMode && showPostForm) return renderContentForm(false);
+        if (isReplyMode) { return renderContentForm(true); }
+        if (showDrafts) return renderPostChannel(true);
+        if (replyingToPost) return renderContentForm(true);
+        if (showPostForm) return renderContentForm(false);  
+        if (!channelRender) return null;
+        const isPostMode = channelRender?.is_posts && (channelMode === 'post' || !channelRender?.is_chat);
+        return isPostMode ? renderPostChannel(false) : (
+            <ChatChannel 
+                canAdd={isAdmin} 
+                canRemove={canRemove} 
+                channelId={channelRender?.channel_id} 
+                feedId={feed?.feed_id} 
+                isGroup={true} 
+                isLocked={isLocked} 
+                setErrorMessage={setFeedErrorMessage}
+            /> 
+        );
+    };
+
     //Checks following if feed is private
     const privateNoView = feed?.type === 'private' && !feed?.isFollower && !feed?.isConnected;
     document.title = feed?.feed_name || 'Feed not found';
@@ -283,7 +408,7 @@ const FeedHome = () => {
         return (
             <div className="standard-container">
                 <div className="channel-feed">
-                    <div className="large-text">Loading...</div>
+                    <div className="large-text faded-text">Loading...</div>
                 </div>
                 <aside className="right-aside"/>
             </div>
@@ -293,7 +418,7 @@ const FeedHome = () => {
         return (
             <div className="standard-container"> 
                 <div className="channel-feed">            
-                    <div className="large-text">Feed not found</div>
+                    <div className="large-text faded-text">Feed not found</div>
                 </div>
                 <aside className="right-aside"/>
             </div>
@@ -303,7 +428,7 @@ const FeedHome = () => {
         return (
             <div className="standard-container">
                 <div className="channel-feed">
-                    <p className="large-text">This feed is private</p>
+                    <p className="large-text faded-text">This feed is private</p>
                 </div>
                 <aside className="right-aside">
                     <div id="feed-summary">
@@ -324,59 +449,7 @@ const FeedHome = () => {
     return (    
         <div className="standard-container">  
             <div className="channel-feed">
-                {showDrafts ? (
-                    <PostChannel
-                        channelId={channelRender?.channel_id}
-                        channelName={channel_name}
-                        feed={feed}
-                        isDraft={true}
-                        isGroup={feed?.is_group}
-                        onEditClick={(post) => { setShowPostForm(true); setIsEdit(true); setPostToEdit(post); toggleDrafts(); }}
-                        onReplyClick={null}
-                        posts={draftPosts}
-                    />
-                ) : showPostForm ? (
-                    <ContentForm 
-                        channelId={channelRender?.channel_id} 
-                        feed={feed} 
-                        isEdit={isEdit} 
-                        isReply={false} 
-                        onPostSubmit={postSubmit}
-                        populateFromPost={Boolean(postToEdit)}
-                        post={postToEdit} 
-                        postErrorMessage={postErrorMessage} 
-                        setPostErrorMessage={setPostErrorMessage} 
-                        setShowForm={setShowPostForm}
-                    />
-                ) : replyingToPost ? (
-                    <ContentForm 
-                        channelId={channelRender?.channel_id} 
-                        feed={feed} 
-                        isEdit={false}
-                        isGroup={feed?.is_group} 
-                        isReply={true} 
-                        onPostSubmit={postSubmit} 
-                        post={replyingToPost} 
-                        postErrorMessage={postErrorMessage} 
-                        setPostErrorMessage={setPostErrorMessage} 
-                        setShowForm={() => setReplyingToPost(null)}
-                    />
-                ) : channelRender ? (
-                        channelRender?.is_posts && (channelMode === 'post' || !channelRender?.is_chat) ? (
-                        <PostChannel
-                            channelId={channelRender?.channel_id}
-                            channelName={channelRender?.channel_name}
-                            feed={feed}
-                            isDraft={false}
-                            isGroup={feed?.is_group}
-                            refreshTrigger={refreshTrigger} 
-                            onEditClick={(post) => { setShowPostForm(true); setIsEdit(true); setPostToEdit(post); }}
-                            onReplyClick={(post) => { setReplyingToPost(post); }}
-                        />
-                    ) : (
-                        <ChatChannel canAdd={isAdmin} canRemove={canRemove} channelId={channelRender?.channel_id} feedId={feed?.feed_id} isGroup={true} isLocked={isLocked} setErrorMessage={setFeedErrorMessage}/> 
-                    )
-                ) : null}
+                {renderChannelContent()}
             </div> 
             <aside className={rightClasses}>
                 <div id="feed-summary">

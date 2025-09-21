@@ -347,7 +347,6 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
     }, [blocks])
 
     const closeForm = () => {
-        setShowForm(false);
         if (!draftId && !isEdit && !submittedRef.current) {
             blocksRef.current.forEach(b => {
                 if (b.type === BLOCK_TYPES.APP && b.data.buildId) {
@@ -356,6 +355,7 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
                 }
             });
         }
+        setShowForm(false);
     };
 
     const compileFinalHTML = useCallback(allBlocks => {
@@ -779,13 +779,12 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
 
     return (
         <div className="create-post-container" style={{ paddingTop: isReply ? '0px' : '20px' }}>
-            {isReply && <p className="medium-text">Reply</p>}
             {isReply && post && (
                 <div className="post-reply-preview">
-                    <ContentWidget canRemove={false} feed={feed} onEditClick={() => {}} onPostRemoved={() => {}} onReplyClick={() => {}} post={post} readOnly />
+                    <ContentWidget canRemove={false} feed={feed} onPostRemoved={() => {}} post={post} readOnly />
                 </div>
             )}
-            <form className="post-form" id="post-form" onSubmit={submitForm}>
+            <form id="post-form" className="post-form" onSubmit={submitForm}>
                 <div className="action-buttons-sticky" style={{ width: '100%' }}>
                     <div className="action-buttons" style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-start', position: 'relative' }}>
                         <div className="left-buttons" style={{ display: 'flex', gap: '10px' }}>

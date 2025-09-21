@@ -1,6 +1,6 @@
 import axios from 'axios';
 import { FaArrowDown, FaArrowUp, FaBookmark, FaChevronDown, FaChevronUp, FaComments, FaCommentSlash, FaEdit, FaEllipsisV, FaCompress, FaExpand, FaRegBookmark,  FaReply, FaTrash, FaTree, FaListUl } from 'react-icons/fa';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { AuthContext } from '../authContext';
 import AskButton from '../askButton';
@@ -10,13 +10,15 @@ import ReplyTreeView from './replyTreeView';
 import PropTypes from 'prop-types';
 import useTimeAgo from '../../functions/useTimeAgo';
 
-const ContentWidget = ({ canRemove = false, feed, isDraft = false, onEditClick, onPostRemoved, onReplyClick, onSaveToggle = () => {}, parent, post, readOnly = false }) => {
+const ContentWidget = ({ canRemove = false, display = false, feed, isDraft = false, onPostRemoved, onSaveToggle = () => {}, parent, post, readOnly = false }) => {
 	const authContext = useContext(AuthContext);
 	const { isAuthenticated = false, viewer = null, user = null } = authContext || {};
 	const [canRemoveState, setCanRemoveState] = useState(canRemove);
 	const [downvoteLimit, setDownvoteLimit] = useState(false);
 	const [downvotes, setDownvotes] = useState(post?.downvotes);
 	const { post_id } = useParams();
+	const location = useLocation();
+	const isReplyMode = location.pathname.endsWith('/reply');
 	const fullscreenRef = useRef(null);
 	const [hasCodeOrApp, setHasCodeOrApp] = useState(false); //To prevent images and text having the fullscreen button
 	const [hasViewed, setHasViewed] = useState(false);
@@ -286,9 +288,11 @@ const ContentWidget = ({ canRemove = false, feed, isDraft = false, onEditClick, 
 				<ContentDisplay content={reply?.content} onCodeAppChange={setHasCodeOrApp} showFullContent={false} showScrollBar={false} treeViewMode={true} />
 				<div className="tree-reply-footer">
 					<p className="small-text">{reply?.upvotes - reply?.downvotes} votes</p>
-					<button className="small-icon" onClick={() => onReplyClick(reply)} title="Reply">
-						<FaReply />
-					</button>
+					<Link to={`/${urlPrefix}/${post?.parentChannel?.feed?.feed_name}/${post?.parentChannel?.channel_name}/${post?.post_id}/reply`}>
+						<button className="small-icon" title="Reply">
+							<FaReply />
+						</button>
+					</Link>
 					{reply?.replies > 0 && (
 						<p className="small-text" style={{ margin: 0 }}>{reply?.replies} {reply?.replies === 1 ? 'reply' : 'replies'}</p>
 					)}
@@ -320,7 +324,7 @@ const ContentWidget = ({ canRemove = false, feed, isDraft = false, onEditClick, 
 						: isOverflowing
 							? (showFullContent
 								? { height: 'auto', overflow: 'visible' }
-								: post_id ? { height: '76vh', overflow: 'hidden' } : { height: '60vh', overflow: 'hidden' })
+								: { height: '60vh', overflow: 'hidden' })
 							: { height: 'auto', overflow: 'visible' })
 				}}
 			>
@@ -348,7 +352,7 @@ const ContentWidget = ({ canRemove = false, feed, isDraft = false, onEditClick, 
 						<p className="feed-list-text">{post?.poster?.feed_name ?? 'Anonymous'}</p>
 					</Link>
 				</div>)}
-				{!isDraft && <Link to={`/${urlPrefix}/${post?.parentChannel?.feed?.feed_name}/${post?.parentChannel?.channel_name}/${post?.post_id}`} onClick={() => incrementViews(post?.post_id)}>
+				{!isDraft && !display && <Link to={`/${urlPrefix}/${post?.parentChannel?.feed?.feed_name}/${post?.parentChannel?.channel_name}/${post?.post_id}`} onClick={() => incrementViews(post?.post_id)}>
 					<p className="small-text clickable faded-text">{feedName}/{channelName}</p>
 				</Link>}
 				{!isDraft && (<div className="vote-container">
@@ -371,14 +375,14 @@ const ContentWidget = ({ canRemove = false, feed, isDraft = false, onEditClick, 
 							<button className="large-icon" onClick={handleLoginRedirect} title="Login to vote">
 								<FaArrowUp />
 							</button>
-							<p className="small-text">{upvotes - downvotes || 0}</p>
+							<p className="small-text">{FormatNumber(upvotes - downvotes || 0)}</p>
 							<button className="large-icon" onClick={handleLoginRedirect} title="Login to vote">
 								<FaArrowDown />
 							</button>
 						</div>
 					)}
 				</div>)}
-				{!readOnly && !isDraft && (
+				{!readOnly && !isDraft && !display && (
 					<div className="post-button-group reply-buttons">
 						<button className="large-icon" data-content-id={post?.post_id} onClick={toggleReplies} title={showReplies ? "Close Replies" : "Show Replies"}>
 							{showReplies ? <FaCommentSlash /> : <FaComments />}
@@ -390,7 +394,12 @@ const ContentWidget = ({ canRemove = false, feed, isDraft = false, onEditClick, 
 							</button>
 						)}*/}
 						{isAuthenticated && !feed?.is_locked && (
-							<button className="large-icon" onClick={() => onReplyClick(post)} disabled={readOnly} title="Reply">
+							<button 
+								className="large-icon" 
+								disabled={readOnly} 
+								onClick={() => navigate(`/${urlPrefix}/${post?.parentChannel?.feed?.feed_name}/${post?.parentChannel?.channel_name}/${post?.post_id}/reply`)}
+								title="Reply"
+							>
 								<FaReply />
 							</button>
 						)}
@@ -398,7 +407,11 @@ const ContentWidget = ({ canRemove = false, feed, isDraft = false, onEditClick, 
 				)}
 				<div className="post-button-group">
 					{isAuthenticated && post?.poster_id === viewer?.feed_id && !readOnly && (
-						<button className="large-icon" onClick={() => onEditClick(post)} title={isReply ? "Edit Reply" : isDraft ? "Edit draft" : "Edit Post"}>
+						<button 
+							className="large-icon" 
+							onClick={() => navigate(`/${urlPrefix}/${post?.parentChannel?.feed?.feed_name}/${post?.parentChannel?.channel_name}/${post?.post_id}/edit`)}
+							title={isReply ? "Edit Reply" : isDraft ? "Edit draft" : "Edit Post"}
+						>
 							<FaEdit />
 						</button>
 					)}
@@ -420,9 +433,9 @@ const ContentWidget = ({ canRemove = false, feed, isDraft = false, onEditClick, 
 					</div>
 				)}
 				<div className="view-date-container" style={{ fontFamily: 'monospace' }}>
-					<p className="small-text faded-text" style={{ margin: '0px', textAlign: 'right' }}>
+					{!display && <p className="small-text faded-text" style={{ margin: '0px', textAlign: 'right' }}>
 						{post_id ? new Date(post?.created_at).toLocaleDateString() : timeAgo}
-					</p>
+					</p>}
 					{!isDraft && (
 						<p className="small-text faded-text" style={{ margin: '0px', width: '10ch', textAlign: 'right' }}>
 							{FormatNumber(views)} {views === 1 ? 'view' : 'views'}
@@ -430,12 +443,11 @@ const ContentWidget = ({ canRemove = false, feed, isDraft = false, onEditClick, 
 					)}
 				</div>
 			</div>
-			{showReplies && (
+			{!isReplyMode && showReplies && (
 				<div className="reply-section">
 					{treeViewMode ? (
 						<ReplyTreeView 
 							replies={replies} 
-							onReplyClick={onReplyClick}
 							renderReplyContent={renderReplyContent}
 						/>
 					) : (
@@ -445,15 +457,13 @@ const ContentWidget = ({ canRemove = false, feed, isDraft = false, onEditClick, 
 									canRemove={canRemoveState} 
 									feed={feed} 
 									key={reply?.post_id} 
-									onEditClick={onEditClick} 
 									onPostRemoved={replyRemoved} 
-									onReplyClick={onReplyClick} 
 									post={reply} 
 									readOnly={readOnly} 
 								/>
 							))
 						) : (
-							<p className="small-text faded-text">No replies</p>
+							<p className="small-text faded-text" style={{ marginLeft: '5px' }}>No replies</p>
 						)
 					)}
 					{replies.length > 0 && !treeViewMode && (

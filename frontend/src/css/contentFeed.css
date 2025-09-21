@@ -28,8 +28,9 @@
     margin-top: var(--medium-margin);
 }
 .content-item.reply {
+    border-right: none;
+    border-radius: 0;
     box-shadow: none;
-    margin-bottom: 0;
     margin-left: var(--large-margin);
     margin-right: 0;
     margin-top: 0;
@@ -179,7 +180,7 @@
 }
 .post-button-group p.small-text {
     display: inline-block;
-    width: 5ch; 
+    width: 4ch; 
     text-align: center;
 }
 .post-list {

@@ -5,7 +5,7 @@ import { useInfiniteQuery, useQuery, useQueryClient } from '@tanstack/react-quer
 import { AuthContext } from '../../components/authContext';
 import ContentWidget from '../content/contentWidget';
 
-const PostChannel = ({ channelId, channelName, feed, isDraft, isGroup, onEditClick, onReplyClick, refreshTrigger }) => {
+const PostChannel = ({ channelId, channelName, feed, isDraft, isEditMode, isGroup, refreshTrigger }) => {
 	const channelReady = !!channelId;
 	const feedId = feed?.feed_id;
 	const loaderRef = useRef(null);
@@ -110,17 +110,17 @@ const PostChannel = ({ channelId, channelName, feed, isDraft, isGroup, onEditCli
 
 	let channelMessage = '';
 
-	if (!channelReady) {
-		channelMessage = 'Loading channel...';
-	} else if (post_id) {
-		if (singlePostLoading) {
-			channelMessage = 'Loading post...';
-		} else if (singlePostError) {
-			channelMessage = singlePostError.response?.status === 404 ? 'Post not found. Please check the URL.' : 'Error fetching the post. Please try again later.';
-		} else if (!singlePost) {
-			channelMessage = 'No post available';
-		}
-	} else if (isDraft) {
+    if (!channelReady) {
+        channelMessage = 'Loading channel...';
+    } else if (post_id && !isEditMode) {
+        if (singlePostLoading) {
+            channelMessage = 'Loading post...';
+        } else if (singlePostError) {
+            channelMessage = singlePostError.response?.status === 404 ? 'Post not found. Please check the URL.' : 'Error fetching the post. Please try again later.';
+        } else if (!singlePost) {
+            channelMessage = 'No post available';
+        }
+    } else if (isDraft) {
 		if (draftsLoading) {
 			channelMessage = 'Loading drafts...';
 		} else if (draftsError) {
@@ -144,37 +144,33 @@ const PostChannel = ({ channelId, channelName, feed, isDraft, isGroup, onEditCli
 				key={post?.post_id}
 				feed={feed}
 				isDraft={isDraft}
-				onEditClick={onEditClick}
 				onPostRemoved={handlePostRemoved}
-				onReplyClick={onReplyClick}
 				post={post}
 			/>
 		));
 
-	return (
-		<div className="channel">
-			<div className="channel-content">
-				{channelMessage ? (
-					<p className="large-text faded-text">{channelMessage}</p>
-				) : post_id ? (
-					<ul className="content-list">
-						<ContentWidget
-							feed={feed}
-							isDraft={isDraft}
-							onEditClick={onEditClick}
-							onPostRemoved={handlePostRemoved}
-							onReplyClick={onReplyClick}
-							post={singlePost}
-						/>
-					</ul>
-				) : isDraft ? (
-					<ul className="content-list">
-						<p className="large-text">Drafts</p>
-						{renderList(draftsData.pages.flat())}
-					</ul>
-				) : (
-					<ul className="content-list">{renderList(postsData.pages.flat())}</ul>
-				)}
+    return (
+        <div className="channel">
+            <div className="channel-content">
+                {channelMessage ? (
+                    <p className="large-text faded-text">{channelMessage}</p>
+                ) : (post_id && !isEditMode) ? (
+                    <ul className="content-list">
+                        <ContentWidget
+                            feed={feed}
+                            isDraft={isDraft}
+                            onPostRemoved={handlePostRemoved}
+                            post={singlePost}
+                        />
+                    </ul>
+                ) : isDraft ? (
+                    <ul className="content-list">
+                        <p className="large-text">Drafts</p>
+                        {renderList(draftsData.pages.flat())}
+                    </ul>
+                ) : (
+                    <ul className="content-list">{renderList(postsData.pages.flat())}</ul>
+                )}
 				<div ref={loaderRef}>
 					{((isDraft && isFetchingDrafts) || (!isDraft && isFetchingNextPage)) && (
 						<p className="large-text faded-text">Loading more {isDraft ? 'drafts' : 'posts'}...</p>

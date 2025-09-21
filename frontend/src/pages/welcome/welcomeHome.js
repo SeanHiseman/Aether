@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import '../../css/welcome.css';
 import AlgorithmSelector from '../../algorithms/algorithmSelector';
-import SmallContentWidget from '../../components/content/smallContentWidget';
+import ContentWidget from '../../components/content/contentWidget';
 import { loadWelcomeContent } from './welcomeContent';
 
 const WelcomeHome = () => {
@@ -48,11 +48,8 @@ const WelcomeHome = () => {
                     )}
                     <div className="slideshow-container">
                         {welcomePosts.map((post, index) => (
-                            <div 
-                                key={post.post_id} 
-                                className={`slide ${index === currentSlide ? 'active' : ''}`}
-                            >
-                                <SmallContentWidget display={true} post={post} />
+                            <div key={post?.post_id} className={`slide ${index === currentSlide ? 'active' : ''}`}>
+                                <ContentWidget display={true} post={post} />
                             </div>
                         ))}
                     </div>

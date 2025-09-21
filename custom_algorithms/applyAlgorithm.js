@@ -32,7 +32,6 @@ function stripExcludedAttributes(posts) {
 }
 
 async function ApplyAlgorithm({ locationId, excludedPostIds, feedId, includeOptions, isGroup = true, isMain, limit, offset, viewerId, keyword = '' }) {
-    console.log("limit", limit, "offset", offset);
     try {
         //Already returned posts are excluded
         let excludedIds = [];

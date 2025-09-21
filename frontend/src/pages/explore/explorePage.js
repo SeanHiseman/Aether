@@ -2,7 +2,7 @@ import AlgorithmSelector from "../../algorithms/algorithmSelector";
 import { AuthContext } from "../../components/authContext";
 import axios from "axios";
 import { useMemo, useCallback, useContext, useEffect, useRef, useState } from "react";
-import SmallContentWidget from "../../components/content/smallContentWidget";
+import ContentWidget from "../../components/content/contentWidget";
 import FeedWidget from "../../components/content/feedWidget";
 import { useOutletContext } from "react-router-dom";
 
@@ -186,15 +186,15 @@ const ExplorePage = () => {
 						{filter === "all" && (
 							<div className="flex flex-col gap-3 w-99">
 								{combinedItems.map((item, idx) =>
-									item.type === "post" ? (
-										<div key={`post-${item.data.post_id}`} className="bg-gray-800 rounded-xl">
-											<SmallContentWidget post={item.data} />
+									item?.type === "post" ? (
+										<div key={`post-${item?.data?.post_id}`} className="bg-gray-800 rounded-xl">
+											<ContentWidget post={item?.data} />
 										</div>
 									) : (
 										<div key={`feedquad-${idx}`} className="grid grid-cols-4 gap-3 w-full">
 											{item.data.map(feed => (
 												<FeedWidget
-													key={feed.feed_id}
+													key={feed?.feed_id}
 													feed={feed}
 													isAuthenticated={isAuthenticated}
 													viewerId={viewer?.feed_id}
@@ -209,7 +209,7 @@ const ExplorePage = () => {
 							<div className="flex flex-col gap-3 w-99">
 								{posts.map(post => (
 									<div key={post.post_id} className="bg-gray-800 rounded-xl">
-										<SmallContentWidget post={post} showFullContent={true} showScrollBar={false} />
+										<ContentWidget post={post} />
 									</div>
 								))}
 							</div>
@@ -220,7 +220,7 @@ const ExplorePage = () => {
 									<div key={idx} className="grid grid-cols-4 gap-3 w-full">
 										{feedQuad.map(feed => (
 											<FeedWidget
-												key={feed.feed_id}
+												key={feed?.feed_id}
 												feed={feed}
 												isAuthenticated={isAuthenticated}
 												viewerId={viewer?.feed_id}

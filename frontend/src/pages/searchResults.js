@@ -5,7 +5,7 @@ import { useContext, useEffect, useRef, useState, useMemo } from 'react';
 import { FaChevronDown, FaChevronUp } from 'react-icons/fa';
 import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
 import { useOutletContext, useSearchParams } from 'react-router-dom';
-import SmallContentWidget from '../components/content/smallContentWidget';
+import ContentWidget from '../components/content/contentWidget';
 import FeedWidget from '../components/content/feedWidget';
 
 function chunkFeedsToQuads(feeds) {
@@ -155,15 +155,15 @@ const SearchResults = () => {
 			>
                 {isLoading ? (
                     <div className="flex justify-center items-center h-64">
-						<span className="text-xl text-gray-400">Loading results...</span>
+						<span className="text-xl faded-text">Loading results...</span>
 					</div>
                 ) : isError ? (
                     <div className="flex justify-center items-center h-64">
-						<span className="text-xl text-gray-400">Failed to load results. Please try again.</span>
+						<span className="text-xl faded-text">Failed to load results. Please try again.</span>
 					</div>
                 ) : (posts.length === 0 && feeds.length === 0) ? (
                     <div className="flex justify-center items-center h-64">
-						<span className="text-xl text-gray-400">No results found</span>
+						<span className="text-xl faded-text">No results found</span>
 					</div>
                 ) : (
                     <>
@@ -172,7 +172,7 @@ const SearchResults = () => {
 								{combinedItems.map((item, idx) =>
 									item.type === "post" ? (
 										<div key={`post-${item.data.post_id}`} className="bg-gray-800 rounded-xl w-full">
-											<SmallContentWidget post={item.data} showFullContent={true} showScrollBar={false} />
+											<ContentWidget post={item.data} />
 										</div>
 									) : (
 										<div key={`feedquad-${idx}`} className="grid grid-cols-4 gap-3 w-full">
@@ -192,8 +192,8 @@ const SearchResults = () => {
 						{selectedView === "posts" && (
 							<div className="flex flex-col gap-3 w-99">
 								{posts.map(post => (
-									<div key={post.post_id} className="bg-gray-800 rounded-xl w-full">
-										<SmallContentWidget post={post} showFullContent={true} showScrollBar={false} />
+									<div key={post?.post_id} className="bg-gray-800 rounded-xl w-full">
+										<ContentWidget post={post} />
 									</div>
 								))}
 							</div>
@@ -204,7 +204,7 @@ const SearchResults = () => {
 									<div key={idx} className="grid grid-cols-4 gap-3 w-full">
 										{feedQuad.map(feed => (
 											<FeedWidget
-												key={feed.feed_id}
+												key={feed?.feed_id}
 												feed={feed}
 												isAuthenticated={isAuthenticated}
 												viewerId={viewer?.feed_id}
@@ -215,7 +215,7 @@ const SearchResults = () => {
 							</div>
 						)}
                         <div ref={loaderRef} className="h-20 flex justify-center items-center">
-                            {isFetchingNextPage && <p className="text-lg text-gray-400">Loading more...</p>}
+                            {isFetchingNextPage && <p className="text-lg faded-text">Loading more...</p>}
                         </div>
 					</>
                 )}
