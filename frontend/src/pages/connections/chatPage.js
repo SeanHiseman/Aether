@@ -220,7 +220,7 @@ const ChatPage = () => {
                                     </div>
                                 ) : (
                                     <>
-                                        <p className="text36">{title}</p>
+                                        <p className="large-text">{title}</p>
                                         <div className="button-group">
                                             <button className="small-icon" onClick={() => {setIsEditingChatName(true); setNewChatName(title);}} title="Edit chat name">
                                                 <FaEdit />
@@ -237,7 +237,7 @@ const ChatPage = () => {
                             </>
                             ) : (
                                 <>
-                                    <p className="text36">Main</p>
+                                    <p className="large-text">Main</p>
                                     <div className="button-group">
                                         <button className="small-icon" onClick={toggleForm} title={showForm ? "Close" : "Create chat"} >
                                             {showForm ? <FaMinus /> : <FaPlus />}

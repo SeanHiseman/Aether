@@ -5,6 +5,7 @@ import { FaCog, FaEdit, FaFeatherAlt, FaFolder, FaFolderOpen, FaMinus, FaPlus, F
 import { Tooltip } from 'react-tooltip';
 import { useContext, useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate, useOutletContext, useParams } from 'react-router-dom';
+import { FormatNumber } from '../../functions/formatNumber';
 import { ValidateTextInput } from '../../functions/validateTextInput';
 import ChannelList from '../../components/channels/channelList';
 import ChatChannel from '../../components/channels/chatChannel';
@@ -43,25 +44,25 @@ const FeedHome = () => {
     const navigate = useNavigate();
     const { rightClasses } = useOutletContext(); 
     const showDrafts = location.pathname.endsWith('/drafts');
-    const urlPrefix = feed.is_group ? 'g' : 'u';
+    const urlPrefix = feed?.is_group ? 'g' : 'u';
 
     useEffect(() => {
         const fetchFeedData = async () => {
             setLoading(true);
             try {
                 const response = await axios.get(`/api/feed/${feed_name}`);
-                const fetchedFeed = response.data.feedResult;
-                setIsAdmin(fetchedFeed.isAdmin);
-                setIsModerator(fetchedFeed.isMod);
-                setIsLocked(fetchedFeed.is_locked);
-                if (viewer?.feed_id === fetchedFeed.feed_id){
+                const fetchedFeed = response.data?.feedResult;
+                setIsAdmin(fetchedFeed?.isAdmin);
+                setIsModerator(fetchedFeed?.isMod);
+                setIsLocked(fetchedFeed?.is_locked);
+                if (viewer?.feed_id === fetchedFeed?.feed_id){
                     setIsAdmin(true);
                     setIsModerator(true);
                 }
                 setFeed(fetchedFeed);
                 setFeedNotFound(false);
             } catch (error) {
-                if (error.response && error.response.status === 404) {
+                if (error.response && error.response?.status === 404) {
                     setFeedNotFound(true);
                 } else {
                     setFeedErrorMessage('Failed to load feed');
@@ -74,7 +75,7 @@ const FeedHome = () => {
         fetchFeedData();
     }, [feed_name, viewer]);
 
-    const urlLetter = feed.isGroup ? 'g' : 'u';
+    const urlLetter = feed?.isGroup ? 'g' : 'u';
 
     //Moderators and admins can remove content
     useEffect(() => {
@@ -88,9 +89,9 @@ const FeedHome = () => {
             const fetchDrafts = async () => {
                 try {
                     const response = await axios.get('/api/get_post_drafts', {
-                        params: { channel_id: channelRender.channel_id, poster_id: viewer.feed_id }
+                        params: { channel_id: channelRender?.channel_id, poster_id: viewer?.feed_id }
                     })
-                    setDraftPosts(response.data.drafts)
+                    setDraftPosts(response.data?.drafts)
                 } catch (error) {
                     setFeedErrorMessage("Error getting drafts");
                 }
@@ -111,18 +112,18 @@ const FeedHome = () => {
             const baseName = "New channel";
             let finalChannelName = "";
             if (newChannelName.length === 0) {
-                if (!channels.some(channel => channel.channel_name === baseName)) {
+                if (!channels.some(channel => channel?.channel_name === baseName)) {
                     finalChannelName = baseName;
                 } else {
                     let counter = 2;
-                while (channels.some(channel => channel.channel_name === `${baseName} ${counter}`)) {
+                while (channels.some(channel => channel?.channel_name === `${baseName} ${counter}`)) {
                     counter++;
                 }
                 finalChannelName = `${baseName} ${counter}`;
                 }
             } else {
                 finalChannelName = newChannelName;
-                if (channels.some(channel => channel.channel_name === finalChannelName)) {
+                if (channels.some(channel => channel?.channel_name === finalChannelName)) {
                     setFeedErrorMessage("Name already used");
                     setTimeout(() => { setFeedErrorMessage(''); }, 3000);
                     return;
@@ -130,12 +131,12 @@ const FeedHome = () => {
             }
             const response = await axios.post('/api/add_feed_channel', {
                 channelName: finalChannelName,
-                feedId: feed.feed_id,
-                isChat: feed.is_group ? isChatChannel : false,
-                isPosts: feed.is_group ? isPostChannel : true
+                feedId: feed?.feed_id,
+                isChat: feed?.is_group ? isChatChannel : false,
+                isPosts: feed?.is_group ? isPostChannel : true
             });
             if (response.data && response.status === 201) {
-                const newChannel = response.data.newChannel;
+                const newChannel = response.data?.newChannel;
                 const updatedChannels = [newChannel, ...channels];
                 setChannels(updatedChannels);
                 setFeedErrorMessage('');
@@ -143,7 +144,7 @@ const FeedHome = () => {
                 setShowChannelForm(false);
                 navigate(`/${urlLetter}/${feed_name}/${finalChannelName}`);
             } else {
-                setFeedErrorMessage(response.data.message || 'Failed to add channel');
+                setFeedErrorMessage(response.data?.message || 'Failed to add channel');
                 setTimeout(() => { setFeedErrorMessage(''); }, 5000);
             }
         } catch (error) {
@@ -152,7 +153,7 @@ const FeedHome = () => {
         }
     };
     
-    const channelRender = channels.find(c => c.channel_name === channel_name);
+    const channelRender = channels.find(c => c?.channel_name === channel_name);
 
     useEffect(() => {
         if (!channelRender && channels.length > 0) {
@@ -173,7 +174,7 @@ const FeedHome = () => {
     const changeChannelName = async (event) => {
         event.preventDefault();
         try {
-            const channelId = channelRender.channel_id;
+            const channelId = channelRender?.channel_id;
             const response = await axios.post('/api/change_channel_name', {
                 channelId,
                 newChannelName
@@ -184,12 +185,12 @@ const FeedHome = () => {
                 setNewChannelName('');
                 setChannels(prevChannels => 
                     prevChannels.map(channel =>
-                        channel.channel_id === channelId ? {...channel, channel_name: newChannelName} : channel
+                        channel?.channel_id === channelId ? {...channel, channel_name: newChannelName} : channel
                     )
                 );
                 navigate(`/${urlPrefix}/${feed_name}/${newChannelName}`);
             } else {
-                setFeedErrorMessage(response.data.message || 'Error changing channel name');
+                setFeedErrorMessage(response.data?.message || 'Error changing channel name');
                 setTimeout(() => { setFeedErrorMessage(''); }, 5000);
             }
         } catch (error) {
@@ -206,10 +207,10 @@ const FeedHome = () => {
                     setTimeout(() => { setFeedErrorMessage(''); }, 3000);
                     return;
                 }
-                const channelId = channelRender.channel_id;
+                const channelId = channelRender?.channel_id;
                 const response = await axios.delete('/api/delete_feed_channel', { data: { channelId } });
-                if (response.data.success) {
-                    setChannels(prevChannels => prevChannels.filter(channel => channel.channel_id !== channelId));
+                if (response.data?.success) {
+                    setChannels(prevChannels => prevChannels.filter(channel => channel?.channel_id !== channelId));
                     navigate(`/${urlPrefix}/${feed_name}/Main`);
                 }
             } catch (error) {
@@ -249,11 +250,11 @@ const FeedHome = () => {
             setShowPostForm(false);
             refreshPosts();
         } catch (error) {
-            if (error.response && error.response.status === 413) {
-                setPostErrorMessage(error.response.data.message + (!user.has_membership ? ". Get membership for more" : ""));
+            if (error.response && error.response?.status === 413) {
+                setPostErrorMessage(error.response.data?.message + (!user?.has_membership ? ". Get membership for more" : ""));
                 setTimeout(() => { setFeedErrorMessage(''); }, 10000); //Longer timeout for membership message
             } else {
-                setPostErrorMessage(error.response.data.message || "Error creating post");
+                setPostErrorMessage(error.response.data?.message || "Error creating post");
                 setTimeout(() => { setFeedErrorMessage(''); }, 3000);
             }
         }
@@ -282,7 +283,7 @@ const FeedHome = () => {
         return (
             <div className="standard-container">
                 <div className="channel-feed">
-                    <div className="text36">Loading...</div>
+                    <div className="large-text">Loading...</div>
                 </div>
                 <aside className="right-aside"/>
             </div>
@@ -292,7 +293,7 @@ const FeedHome = () => {
         return (
             <div className="standard-container"> 
                 <div className="channel-feed">            
-                    <div className="text36">Feed not found</div>
+                    <div className="large-text">Feed not found</div>
                 </div>
                 <aside className="right-aside"/>
             </div>
@@ -302,15 +303,15 @@ const FeedHome = () => {
         return (
             <div className="standard-container">
                 <div className="channel-feed">
-                    <p className="text36">This feed is private</p>
+                    <p className="large-text">This feed is private</p>
                 </div>
                 <aside className="right-aside">
                     <div id="feed-summary">
-                        <img className="large-feed-photo" src={`/${feed.feed_photo}`} alt={feed.feed_name} />
-                        <p className="text36">{feed.feed_name}</p>
-                        <p className="description" >{feed.description}</p>
+                        <img className="large-feed-photo" src={`/${feed?.feed_photo}`} alt={feed?.feed_name} />
+                        <p className="large-text">{feed?.feed_name}</p>
+                        <p className="description" >{feed?.description}</p>
                         {viewer && isAuthenticated && (
-                            <FollowerChangeButton feed={feed} viewerId={viewer.feed_id} />
+                            <FollowerChangeButton feed={feed} viewerId={viewer?.feed_id} />
                         )}
                         {/*{!isViewingSelf && !feed.is_group && (
                             <ManageConnectionButton feed={feed} viewerId={viewer.feed_id} />
@@ -329,14 +330,14 @@ const FeedHome = () => {
                         channelName={channel_name}
                         feed={feed}
                         isDraft={true}
-                        isGroup={feed.is_group}
+                        isGroup={feed?.is_group}
                         onEditClick={(post) => { setShowPostForm(true); setIsEdit(true); setPostToEdit(post); toggleDrafts(); }}
                         onReplyClick={null}
                         posts={draftPosts}
                     />
                 ) : showPostForm ? (
                     <ContentForm 
-                        channelId={channelRender.channel_id} 
+                        channelId={channelRender?.channel_id} 
                         feed={feed} 
                         isEdit={isEdit} 
                         isReply={false} 
@@ -349,10 +350,10 @@ const FeedHome = () => {
                     />
                 ) : replyingToPost ? (
                     <ContentForm 
-                        channelId={channelRender.channel_id} 
+                        channelId={channelRender?.channel_id} 
                         feed={feed} 
                         isEdit={false}
-                        isGroup={feed.is_group} 
+                        isGroup={feed?.is_group} 
                         isReply={true} 
                         onPostSubmit={postSubmit} 
                         post={replyingToPost} 
@@ -361,30 +362,30 @@ const FeedHome = () => {
                         setShowForm={() => setReplyingToPost(null)}
                     />
                 ) : channelRender ? (
-                        channelRender.is_posts && (channelMode === 'post' || !channelRender.is_chat) ? (
+                        channelRender?.is_posts && (channelMode === 'post' || !channelRender?.is_chat) ? (
                         <PostChannel
-                            channelId={channelRender.channel_id}
-                            channelName={channelRender.channel_name}
+                            channelId={channelRender?.channel_id}
+                            channelName={channelRender?.channel_name}
                             feed={feed}
                             isDraft={false}
-                            isGroup={feed.is_group}
+                            isGroup={feed?.is_group}
                             refreshTrigger={refreshTrigger} 
                             onEditClick={(post) => { setShowPostForm(true); setIsEdit(true); setPostToEdit(post); }}
                             onReplyClick={(post) => { setReplyingToPost(post); }}
                         />
                     ) : (
-                        <ChatChannel canAdd={isAdmin} canRemove={canRemove} channelId={channelRender.channel_id} feedId={feed.feed_id} isGroup={true} isLocked={isLocked} setErrorMessage={setFeedErrorMessage}/> 
+                        <ChatChannel canAdd={isAdmin} canRemove={canRemove} channelId={channelRender?.channel_id} feedId={feed?.feed_id} isGroup={true} isLocked={isLocked} setErrorMessage={setFeedErrorMessage}/> 
                     )
                 ) : null}
             </div> 
             <aside className={rightClasses}>
                 <div id="feed-summary">
                     <Link to={`/${urlLetter}/${feed_name}/Main`}>
-                        <img className="large-feed-photo" src={`/${feed.feed_photo}`} onError={(e) => e.currentTarget.src = '/media/site_images/blank-profile.png'} />
+                        <img className="large-feed-photo" src={`/${feed?.feed_photo}`} onError={(e) => e.currentTarget.src = '/media/site_images/blank-profile.png'} />
                     </Link>
                     <div className="feed-name">
                         <Link to={`/${urlLetter}/${feed_name}/Main`}>
-                            <p className="text36">{feed.feed_name}</p>
+                            <p className="large-text">{feed?.feed_name}</p>
                         </Link>
                         {(isModerator || isAdmin) && (
                             <Link to={`/settings/${feed_name}`}>
@@ -394,11 +395,11 @@ const FeedHome = () => {
                             </Link>
                         )}
                     </div>
-                    <p className="description" >{feed.description}</p>
-                    {(user?.user_id !== feed.feed_owner || feed.is_group) && isAuthenticated && viewer ? (
-                        <FollowerChangeButton feed={feed} showName={false} showVertical={true} viewerId={viewer.feed_id} />
+                    <p className="description" >{feed?.description}</p>
+                    {(user?.user_id !== feed?.feed_owner || feed?.is_group) && isAuthenticated && viewer ? (
+                        <FollowerChangeButton feed={feed} showName={false} showVertical={true} viewerId={viewer?.feed_id} />
                     ) : (
-                        <p className="icon-text">{feed.follower_count} {(feed.follower_count) === 1 ? 'follower' : 'followers'}</p>
+                        <p className="icon-text">{FormatNumber(feed?.follower_count)} {(feed?.follower_count) === 1 ? 'follower' : 'followers'}</p>
                     )}
                     {/*{!isViewingSelf && !feed.is_group && (
                         <ManageConnectionButton feed={feed} viewerId={viewer.feed_id} />
@@ -471,7 +472,7 @@ const FeedHome = () => {
                                             {showChannelForm ? <FaMinus /> : <FaPlus />}
                                         </button>
                                     )}
-                                    {channelMode === 'post' && !showPostForm && (feed.is_group || feed.feed_owner === user?.user_id) && (!isLocked || isAdmin) && isAuthenticated && (
+                                    {channelMode === 'post' && !showPostForm && (feed?.is_group || feed?.feed_owner === user?.user_id) && (!isLocked || isAdmin) && isAuthenticated && (
                                         <button
                                             className="small-icon"
                                             onClick={() => {
@@ -491,7 +492,7 @@ const FeedHome = () => {
                                         </button>
                                     )}
                                 </div>
-                                {isAuthenticated && (<AlgorithmSelector locationId={channelRender.channel_id} refreshPosts={refreshPosts} />)} {/*Project code*/}
+                                {isAuthenticated && (<AlgorithmSelector locationId={channelRender?.channel_id} refreshPosts={refreshPosts} />)} {/*Project code*/}
                                 {showChannelForm && (
                                     <form className="add-channel-form" onSubmit={AddChannel}>
                                         <input 
@@ -547,7 +548,7 @@ const FeedHome = () => {
                         <button className={channelMode === 'chat' ? 'active-mode' : 'passive-mode'} onClick={() => setChannelMode('chat')}>Chat</button>
                     </div>
                 )}*/}
-                <ChannelList canReorder={isAdmin} channels={channels} feedId={feed.feed_id} feedName={feed.feed_name} isChat={false} isGroup={feed.is_group} setChannels={setChannels} />
+                <ChannelList canReorder={isAdmin} channels={channels} feedId={feed?.feed_id} feedName={feed?.feed_name} isChat={false} isGroup={feed?.is_group} setChannels={setChannels} />
             </aside>
         </div>
     );

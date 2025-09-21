@@ -26,7 +26,6 @@ const DeepFeed = () => {
     const navigate = useNavigate();
     const { rightClasses } = useOutletContext(); 
     const queryClient = useQueryClient();
-    const CLEANUP_THRESHOLD = 100; //Remove old posts and feeds from rendered list
 
     const getPosts = async ({ pageParam = 0 }) => {
         try {
@@ -37,9 +36,9 @@ const DeepFeed = () => {
                     offset: pageParam
                 }
             });
-            if (pageParam === 0 && response.data.deepFeed) {
-                setDeepFeed(response.data.deepFeed);
-                document.title = response.data.deepFeed.name;
+            if (pageParam === 0 && response.data?.deepFeed) {
+                setDeepFeed(response.data?.deepFeed);
+                document.title = response.data?.deepFeed?.name;
             } else if (deep_feed_id === 'following') {
                 setDeepFeed({
                     deep_feed_id: 'following',
@@ -49,7 +48,7 @@ const DeepFeed = () => {
                 });
                 document.title = 'Following';
             }
-            return response.data.posts;
+            return response.data?.posts;
         } catch (error) {
             setErrorMessage('Error fetching posts');
             setTimeout(() => { setErrorMessage(''); }, 5000);
@@ -75,7 +74,7 @@ const DeepFeed = () => {
                 deepFeedId: deep_feed_id,
                 newName
             });
-            if (response.status === 200) {
+            if (response?.status === 200) {
                 setErrorMessage('');
                 setIsEditingName(false);
                 setNewName('');
@@ -83,13 +82,13 @@ const DeepFeed = () => {
                 document.title = newName;
             } 
         } catch (error) {
-            setErrorMessage(error.response?.data?.message || "Error changing name");
+            setErrorMessage(error.response.data?.message || "Error changing name");
             setTimeout(() => { setErrorMessage(''); }, 5000);
         }
     };
 
     const deletePost = async () => {
-        if (window.confirm(`Are you sure you want to delete ${deepFeed.name}?`)) {
+        if (window.confirm(`Are you sure you want to delete ${deepFeed?.name}?`)) {
             try {
                 if (deepFeed.name === 'Following') {
                     setErrorMessage("Following cannot be deleted.");
@@ -97,7 +96,7 @@ const DeepFeed = () => {
                     return;
                 }
                 const response = await axios.delete('/api/delete_deep_feed', { data: { deepFeedId: deep_feed_id } });
-                if (response.data.success) {
+                if (response.data?.success) {
                     setDeepFeed((prev) => {
                         const updated = { name: 'Following' };
                         for (const key in prev) {
@@ -111,7 +110,7 @@ const DeepFeed = () => {
                     navigate('/d/following');
                 }
             } catch (error) {
-                setErrorMessage(error.response?.data?.message || 'Error deleting combined feed');
+                setErrorMessage(error.response.data?.message || 'Error deleting combined feed');
                 setTimeout(() => { setErrorMessage(''); }, 5000);
             }
         }
@@ -139,8 +138,8 @@ const DeepFeed = () => {
             }    
             setActiveReplyPost(null);
         } catch (error) {
-            if (error.response && error.response.status === 413) {
-                setPostErrorMessage(error.response.data.message + (!user.has_membership ? ". Get membership for more" : ""));
+            if (error.response && error.response?.status === 413) {
+                setPostErrorMessage(error.response.data?.message + (!user?.has_membership ? ". Get membership for more" : ""));
                 setTimeout(() => { setPostErrorMessage(''); }, 10000);
             } else {
                 setPostErrorMessage(error.response.data?.message || "Error creating post");
@@ -170,11 +169,11 @@ const DeepFeed = () => {
     const editSubmit = async (formData) => {
         if (!activeEditPost) return;
         try {
-            formData.append('post_id', activeEditPost.post_id);
+            formData.append('post_id', activeEditPost?.post_id);
             await axios.post('/api/edit_post', formData);
             setActiveEditPost(null);
         } catch (error) {
-            setErrorMessage(error.response?.data?.message || 'Error editing post');
+            setErrorMessage(error.response.data?.message || 'Error editing post');
             setTimeout(() => { setErrorMessage('') }, 3000);
         }
     };
@@ -196,11 +195,11 @@ const DeepFeed = () => {
                 <div className="channel-content">
                     {activeEditPost ? (
 						<ContentForm
-							key={`edit-${activeEditPost.post_id}`}
-							channelId={activeEditPost.parentChannel?.channel_id}
-							feed={activeEditPost.parentChannel?.feed}
+							key={`edit-${activeEditPost?.post_id}`}
+							channelId={activeEditPost?.parentChannel?.channel_id}
+							feed={activeEditPost?.parentChannel?.feed}
 							isEdit={true}
-							isGroup={activeEditPost.poster?.feed_id !== activeEditPost.feed_id}
+							isGroup={activeEditPost?.poster?.feed_id !== activeEditPost?.feed_id}
 							isReply={false}
 							onEditSubmit={editSubmit}
 							post={activeEditPost}
@@ -210,11 +209,11 @@ const DeepFeed = () => {
 						/>
                     ) : activeReplyPost ? (
                         <ContentForm
-                            key={`reply-${activeReplyPost.post_id}`}
-                            channelId={activeReplyPost.parentChannel?.channel_id}
-                            feed={activeReplyPost.parentChannel?.feed}
+                            key={`reply-${activeReplyPost?.post_id}`}
+                            channelId={activeReplyPost?.parentChannel?.channel_id}
+                            feed={activeReplyPost?.parentChannel?.feed}
                             isEdit={false}
-                            isGroup={activeReplyPost.poster?.feed_id === activeReplyPost.feed_id ? false : true}
+                            isGroup={activeReplyPost?.poster?.feed_id === activeReplyPost?.feed_id ? false : true}
                             isReply={true}
                             onEditSubmit={editSubmit}
                             onPostSubmit={postSubmit}
@@ -229,9 +228,9 @@ const DeepFeed = () => {
                                 {allPosts.map((post) => (
                                     post ? (
                                         <ContentWidget
-                                            key={post.post_id || Math.random()}
+                                            key={post?.post_id || Math.random()}
                                             canRemove={false}
-                                            feed={post.poster || {}}
+                                            feed={post?.poster || {}}
                                             onEditClick={setActiveEditPost}
                                             onPostRemoved={() => {}}
                                             onReplyClick={setActiveReplyPost}
@@ -241,11 +240,11 @@ const DeepFeed = () => {
                                 ))}
                             </ul>
                             <div ref={loaderRef}>
-                                {isFetchingNextPage && <p className="text36">Loading more posts...</p>}
+                                {isFetchingNextPage && <p className="large-text">Loading more posts...</p>}
                             </div>
                         </>
                     ) : (
-                        <p className="text36">No posts yet</p>
+                        <p className="large-text faded-text">No posts yet</p>
                     )}
                 </div>
             </div>
@@ -289,7 +288,7 @@ const DeepFeed = () => {
                         </div>
                     ) : (
                         <div className="channel-name">
-                            <p className="text36">{deepFeed.name}</p>
+                            <p className="large-text">{deepFeed?.name}</p>
                             <div className="button-group">
                                 {deepFeed?.name !== "Following" && ( 
                                     <>
@@ -297,7 +296,7 @@ const DeepFeed = () => {
                                             className="small-icon"
                                             onClick={() => {
                                                 setIsEditingName(true);
-                                                setNewName(deepFeed.name);
+                                                setNewName(deepFeed?.name);
                                             }}
                                             title="Edit name"
                                         >
@@ -309,7 +308,7 @@ const DeepFeed = () => {
                                     </>
                                 )}
                             </div>
-                            {isAuthenticated && <AlgorithmSelector locationId={deepFeed.deep_feed_id} refreshPosts={refreshPosts} />} {/*Project code*/}
+                            {isAuthenticated && <AlgorithmSelector locationId={deepFeed?.deep_feed_id} refreshPosts={refreshPosts} />} {/*Project code*/}
                         </div>
                     )}
                     <div className="error-message">{errorMessage}</div>

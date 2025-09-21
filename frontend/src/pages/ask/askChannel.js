@@ -260,7 +260,7 @@ const AskChannel = () => {
                     {isHome ? (
                         <div className="channel">
                             <div className="channel-content">
-                                <p className="text36">Ask anything...</p>
+                                <p className="large-text">Ask anything...</p>
                             </div>
                             <div className="messages-channel-footer">
                                 <input 
@@ -325,7 +325,7 @@ const AskChannel = () => {
                 <div className="error-message">{errorMessage}</div>
                 {chatName !== 'Ask' ? (
                     <div id="chat-change">
-                        <p className="text36">{chatName}</p>
+                        <p className="large-text">{chatName}</p>
                         {isEditingChatName ? (
                             <div className="change-name">
                                 <textarea 
@@ -367,7 +367,7 @@ const AskChannel = () => {
                     </div>
                 ) : (
                     <>
-                        <p className="text36">{chatName}</p>
+                        <p className="large-text">{chatName}</p>
                         <div className="button-group">
                             <button className="small-icon" onClick={toggleNewChatForm}>
                                 {showNewChatForm ? <FaMinus /> : <FaPlus />}

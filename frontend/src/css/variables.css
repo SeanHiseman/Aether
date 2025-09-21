@@ -11,11 +11,11 @@
     --medium-margin: clamp(6px, 2vw, 10px);
     --small-margin: clamp(3px, 1vw, 5px);
 
-    --xl-text: clamp(18px, 6vw, 48px);
-    --large-text: clamp(16px, 5vw, 40px);
-    --medium-text: clamp(14px, 4vw, 32px);
-    --small-text: clamp(12px, 3vw, 24px);
-    --tiny-text: clamp(10px, 2vw, 16px);
+    --xl-text: clamp(26px, 3.5vw, 32px);
+    --large-text: clamp(22px, 3vw, 28px);
+    --medium-text: clamp(18px, 2.5vw, 24px);
+    --small-text: clamp(14px, 2vw, 20px);
+    --tiny-text: clamp(10px, 1.5vw, 16px);
 
     --transition-regular: 0.3s ease;
     --left-width: 16vw;

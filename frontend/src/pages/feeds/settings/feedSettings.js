@@ -3,6 +3,7 @@ import axios from 'axios';
 import { FaSignOutAlt } from 'react-icons/fa';
 import { useContext, useEffect, useState } from 'react';
 import { Link, useNavigate, useOutletContext, useParams, Outlet } from 'react-router-dom';
+import { FormatNumber } from '../../../functions/formatNumber';
 
 const FeedSettings = () => {
     const [errorMessage, setErrorMessage] = useState('');
@@ -22,17 +23,17 @@ const FeedSettings = () => {
             try {
                 setIsLoading(true);
                 const response = await axios.get(`/api/feed/${feed_name}`);
-                const feedData = response.data.feedResult;
+                const feedData = response.data?.feedResult;
                 setFeed(feedData);
                 setFeedNotFound(false);
-                if (feedData.isOwner || feedData.isAdmin || feedData.isMod) {
+                if (feedData.isOwner || feedData?.isAdmin || feedData?.isMod) {
                     setIsAuthorized(true);
                 } else {
                     setIsAuthorized(false);
-                    navigate(`/${feed.is_group ? 'g' : 'u'}/${feed_name}`);
+                    navigate(`/${feed?.is_group ? 'g' : 'u'}/${feed_name}`);
                 }
             } catch (error) {
-                if (error.response && error.response.status === 404) {
+                if (error.response && error.response?.status === 404) {
                     setFeedNotFound(true);
                 } else {
                     setErrorMessage('Error loading feed data');
@@ -47,8 +48,8 @@ const FeedSettings = () => {
     useEffect(() => {
         const getFollowRequests = async () => {
             try {
-                const response = await axios.get(`/api/follow_requests/${feed.feed_id}`);
-                const requests = response.data.requests || [];
+                const response = await axios.get(`/api/follow_requests/${feed?.feed_id}`);
+                const requests = response.data?.requests || [];
                 setFollowRequests(requests);
                 setFollowRequestCount(requests.length);
             } catch (error) {
@@ -96,11 +97,11 @@ const FeedSettings = () => {
                 <nav id="channel-list">
                     <ul>
                         <Link id="feed-summary" to={`/g/${feed_name}`}>
-                            <img className="large-feed-photo" src={`/${feed.feed_photo}`} onError={(e) => e.currentTarget.src = '/media/site_images/blank-profile.png'} />
-                            <p className="text36">{feed_name}</p>
+                            <img className="large-feed-photo" src={`/${feed?.feed_photo}`} onError={(e) => e.currentTarget.src = '/media/site_images/blank-profile.png'} />
+                            <p className="large-text">{feed_name}</p>
                         </Link>
                         <div className="error-message">{errorMessage}</div>
-                        {!feed.is_group && (
+                        {!feed?.is_group && (
                             <form id="logout-form" action="/api/logout" method="post" onSubmit={handleLogout}>
                                 <button className="small-icon" type="submit">
                                     <FaSignOutAlt />
@@ -108,42 +109,42 @@ const FeedSettings = () => {
                                 </button>
                             </form>
                         )}
-                        {feed.isAdmin && (
+                        {feed?.isAdmin && (
                             <li className="channel-link">
                                 <Link to={`/settings/${feed_name}/info`}>Feed info</Link>
                             </li>
                         )}
-                        {!feed.is_group && (
+                        {!feed?.is_group && (
                             <li className="channel-link">
                                 <Link to={`/settings/${feed_name}/account`}>Account</Link>
                             </li>
                         )}
                         <li className="channel-link">
                             <Link to={`/settings/${feed_name}/followers`}>
-                                {feed.follower_count} {feed.follower_count === 1 ? 'Follower' : 'Followers'}
+                                {FormatNumber(feed?.follower_count)} {feed.follower_count === 1 ? 'Follower' : 'Followers'}
                             </Link>
                         </li>
-                        {feed.type === 'private' && (
+                        {feed?.type === 'private' && (
                             <li className="channel-link">
                                 <Link to={`/settings/${feed_name}/follow_requests`}>
-                                    {followRequestCount} {followRequestCount === 1 ? 'Follow request' : 'Follow requests'}
+                                    {FormatNumber(followRequestCount)} {followRequestCount === 1 ? 'Follow request' : 'Follow requests'}
                                 </Link>
                             </li>
                         )}
-                        {!feed.is_group && (
+                        {!feed?.is_group && (
                             <li className="channel-link">
                                 <Link to={`/settings/${feed_name}/membership`}>Membership</Link>
                             </li>
                         )}
-                        {!feed.is_group && (
+                        {!feed?.is_group && (
                             <li className="channel-link">
                                 <Link to={`/settings/${feed_name}/theme`}>Theme</Link>
                             </li>
                         )}
-                        {feed.isOwner && (
+                        {feed?.isOwner && (
                             <li className="channel-link">
                                 <Link to={`/settings/${feed_name}/deletion`} style={{color: 'red'}}>
-                                    {feed.is_group ? 'Delete feed' : 'Delete account'}
+                                    {feed?.is_group ? 'Delete feed' : 'Delete account'}
                                 </Link>
                             </li>
                         )}

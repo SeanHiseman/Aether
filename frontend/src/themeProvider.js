@@ -40,7 +40,7 @@ export const ThemeProvider = ({ children }) => {
 	const fetchTheme = async () => {
 		try {
 			const response = await axios.get('/api/get_theme');
-			let fetchedTheme = response.data.theme;
+			let fetchedTheme = response.data?.theme;
 			try {
 				const parsedTheme = JSON.parse(fetchedTheme);
 				setTheme(parsedTheme);

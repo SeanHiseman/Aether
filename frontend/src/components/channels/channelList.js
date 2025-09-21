@@ -32,9 +32,9 @@ const ChannelList = ({ canReorder = false, channels, feedId, feedName, isChat, i
             if (!isChat) {
                 const response = await axios.get(`/api/get_feed_channels/${feedId}`);
                 if (response.data.success) {
-                    setChannels(response.data.channels || []);
+                    setChannels(response.data?.channels || []);
                 } else {
-                    setErrorMessage(response.data.message || 'Error getting channels from API');
+                    setErrorMessage(response.data?.message || 'Error getting channels');
                     setChannels([]);
                 }
             } else {
@@ -42,7 +42,7 @@ const ChannelList = ({ canReorder = false, channels, feedId, feedName, isChat, i
                     params: { connectionName: feedName }
                 });
                 if (response.data.success) {
-                    const decryptedChats = response.data.chats.map((chat) => {
+                    const decryptedChats = response.data?.chats.map((chat) => {
                         return {
                             ...chat,
                             title: decrypt(chat.title)
@@ -50,12 +50,12 @@ const ChannelList = ({ canReorder = false, channels, feedId, feedName, isChat, i
                     });
                     setChannels(decryptedChats || []);
                 } else {
-                    setErrorMessage(response.data.message || 'Error getting chats from API');
+                    setErrorMessage(response.data?.message || 'Error getting chats from API');
                     setChannels([]);
                 }
             }
         } catch (error) {
-            setErrorMessage('Error getting channels');
+            setErrorMessage(error.response?.data?.message || 'Error getting channels');
             setTimeout(() => { setErrorMessage(''); }, 5000);
             setChannels([]);
         }
@@ -90,17 +90,12 @@ const ChannelList = ({ canReorder = false, channels, feedId, feedName, isChat, i
         setChannels(reorderedChannels);
         const orderedChannelIds = reorderedChannels.map(channel => channel.channel_id);
         try {
-            const response = await axios.put('/api/reorder_feed_channels', {
+            await axios.put('/api/reorder_feed_channels', {
                 feed_id: feedId,
                 orderedChannelIds: orderedChannelIds
             });
-            if (!response.data.success) {
-                setErrorMessage(response.data.message || 'Failed to save order. Reverting.');
-                setTimeout(() => { setErrorMessage(''); }, 5000);
-                getFeedChannels(); 
-            }
         } catch (error) {
-            setErrorMessage('Error saving order');
+            setErrorMessage(error.response.data?.message || 'Error saving order');
             setTimeout(() => { setErrorMessage(''); }, 5000);
             getFeedChannels(); 
         }
@@ -109,8 +104,8 @@ const ChannelList = ({ canReorder = false, channels, feedId, feedName, isChat, i
     const currentChannels = Array.isArray(channels) ? channels : [];
 
     if (!isChat) {
-        const validFeedChannels = currentChannels.filter(channel => channel && typeof channel.channel_id === 'string');
-        const channelIdsForDnd = validFeedChannels.map(channel => channel.channel_id);
+        const validFeedChannels = currentChannels.filter(channel => channel && typeof channel?.channel_id === 'string');
+        const channelIdsForDnd = validFeedChannels.map(channel => channel?.channel_id);
         if (canReorder) {
             return (
                 <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
@@ -120,10 +115,10 @@ const ChannelList = ({ canReorder = false, channels, feedId, feedName, isChat, i
                             <ul>
                                 {validFeedChannels.map(channel => (
                                     <SortableFeedChannelItem
-                                        key={channel.channel_id} 
-                                        id={channel.channel_id}   
+                                        key={channel?.channel_id} 
+                                        id={channel?.channel_id}   
                                         channel={channel}
-                                        url={isSaved ? `/saved/${channel.channel_name}` : `/${urlLetter}/${feedName}/${channel.channel_name}`}
+                                        url={isSaved ? `/saved/${channel?.channel_name}` : `/${urlLetter}/${feedName}/${channel?.channel_name}`}
                                     />
                                 ))}
                             </ul>
@@ -137,9 +132,9 @@ const ChannelList = ({ canReorder = false, channels, feedId, feedName, isChat, i
                     {errorMessage && <div className="error-message">{errorMessage}</div>}
                     <ul>
                         {currentChannels.map(channel => (
-                            <li key={channel.channel_id || channel.channelId} className="channel-item">
-                                <Link to={`/${urlLetter}/${feedName}/${channel.channel_name}`}>
-                                    <div className="channel-link">{channel.channel_name}</div>
+                            <li key={channel?.channel_id || channel?.channelId} className="channel-item">
+                                <Link to={`/${urlLetter}/${feedName}/${channel?.channel_name}`}>
+                                    <div className="channel-link">{channel?.channel_name}</div>
                                 </Link>
                             </li>
                         ))}
@@ -153,13 +148,13 @@ const ChannelList = ({ canReorder = false, channels, feedId, feedName, isChat, i
                 {errorMessage && <div className="error-message">{errorMessage}</div>}
                 <ul>
                     {currentChannels.map(channel => (
-                        <li key={channel.chat_id} className="channel-item">
-                            <Link to={`/connections/${feedName}/${channel.title}`}>
+                        <li key={channel?.chat_id} className="channel-item">
+                            <Link to={`/connections/${feedName}/${channel?.title}`}>
                                 <div className="channel-link">
-                                    {channel.title}
-                                    {unreadState.chatCounts[channel.chat_id] > 0 && (
+                                    {channel?.title}
+                                    {unreadState.chatCounts[channel?.chat_id] > 0 && (
                                         <span className="unread-count">
-                                            {unreadState.chatCounts[channel.chat_id]}
+                                            {unreadState.chatCounts[channel?.chat_id]}
                                         </span>
                                     )}
                                 </div>

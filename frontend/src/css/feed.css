@@ -149,7 +149,7 @@
     flex-direction: column;
 }
 .followers-header {
-    text-align: left;
+    text-align: center;
     width: 100%;
 }
 #feed-summary {

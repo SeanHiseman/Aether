@@ -42,8 +42,7 @@ const SearchResults = () => {
             );
             return response.data || { feeds: [], posts: [] };
         } catch (error) {
-            const message = error.response?.data?.message || "Error getting search results";
-            setErrorMessage(message);
+            setErrorMessage(error.response?.data?.message || "Error getting search results");
             return { feeds: [], posts: [] };
         }
     };

@@ -5,9 +5,10 @@ import { useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { AuthContext } from '../authContext';
 import AskButton from '../askButton';
 import ContentDisplay from './contentDisplay';
+import { FormatNumber } from '../../functions/formatNumber';
 import ReplyTreeView from './replyTreeView';
 import PropTypes from 'prop-types';
-import useTimeAgo from '../../useTimeAgo';
+import useTimeAgo from '../../functions/useTimeAgo';
 
 const ContentWidget = ({ canRemove = false, feed, isDraft = false, onEditClick, onPostRemoved, onReplyClick, onSaveToggle = () => {}, parent, post, readOnly = false }) => {
 	const authContext = useContext(AuthContext);
@@ -302,16 +303,11 @@ const ContentWidget = ({ canRemove = false, feed, isDraft = false, onEditClick, 
 	return (
 		<div className={`content-item ${isReply ? 'reply' : ''}`}>
 			{postErrorMessage && <div className="error-message">{postErrorMessage}</div>}
-			{post?.title && <Link
-				className="title-container"
-				onClick={() => incrementViews(post?.post_id)}
-				style={{ display: 'block' }}
-				to={`/${urlPrefix}/${post?.parentChannel?.feed?.feed_name}/${post?.parentChannel?.channel_name}/${post?.post_id}`}
-			>
+			{post?.title && <div className="title-container" onClick={() => incrementViews(post?.post_id)} style={{ display: 'block' }}>
 				<span className="large-text" style={{ marginLeft: 0 }}>
 					{post?.title || '\u00A0'}
 				</span>
-			</Link>}
+			</div>}
 			<div ref={fullscreenRef}
 				onClick={() => incrementViews(post?.post_id)}
 				style={{
@@ -352,7 +348,7 @@ const ContentWidget = ({ canRemove = false, feed, isDraft = false, onEditClick, 
 						<p className="feed-list-text">{post?.poster?.feed_name ?? 'Anonymous'}</p>
 					</Link>
 				</div>)}
-				{!isDraft && <Link to={`/${urlPrefix}/${feedName}/${channelName}`} onClick={() => incrementViews(post?.post_id)}>
+				{!isDraft && <Link to={`/${urlPrefix}/${post?.parentChannel?.feed?.feed_name}/${post?.parentChannel?.channel_name}/${post?.post_id}`} onClick={() => incrementViews(post?.post_id)}>
 					<p className="small-text clickable faded-text">{feedName}/{channelName}</p>
 				</Link>}
 				{!isDraft && (<div className="vote-container">
@@ -415,15 +411,23 @@ const ContentWidget = ({ canRemove = false, feed, isDraft = false, onEditClick, 
 				{/*{isAuthenticated && !post.note?.is_misinfo && !isDraft && (
 					<AskButton content={post} isReply={false} note={note} setNote={setNote} setPostErrorMessage={setPostErrorMessage} setShowNote={setShowNote} showNote={showNote} />
 				)}*/}
-				{!isDraft && isAuthenticated && (<div className="button-text-bottom">
-					<button className="large-icon" title={isSaved ? 'Unsave post' : 'Save post'} onClick={savePost}>
-						{isSaved ? <FaBookmark /> : <FaRegBookmark />}
-					</button>
-					<p className="tiny-text">{savedText}</p>
-				</div>)}
-				<div className="view-date-container">
-					<p className="small-text faded-text" style={{ margin: '0px' }}>{post_id ? new Date(post?.created_at).toLocaleDateString() : timeAgo}</p>
-					{!isDraft && (<p className="small-text faded-text" style={{ margin: '0px' }}>{views || 0} {views === 1 ? 'view' : 'views'}</p>)}
+				{!isDraft && isAuthenticated && (
+					<div className="button-text-bottom">
+						<button className="large-icon" title={isSaved ? 'Unsave post' : 'Save post'} onClick={savePost}>
+							{isSaved ? <FaBookmark /> : <FaRegBookmark />}
+						</button>
+						<p className="tiny-text">{savedText}</p>
+					</div>
+				)}
+				<div className="view-date-container" style={{ fontFamily: 'monospace' }}>
+					<p className="small-text faded-text" style={{ margin: '0px', textAlign: 'right' }}>
+						{post_id ? new Date(post?.created_at).toLocaleDateString() : timeAgo}
+					</p>
+					{!isDraft && (
+						<p className="small-text faded-text" style={{ margin: '0px', width: '10ch', textAlign: 'right' }}>
+							{FormatNumber(views)} {views === 1 ? 'view' : 'views'}
+						</p>
+					)}
 				</div>
 			</div>
 			{showReplies && (
@@ -449,7 +453,7 @@ const ContentWidget = ({ canRemove = false, feed, isDraft = false, onEditClick, 
 								/>
 							))
 						) : (
-							<p className="small-text">No replies</p>
+							<p className="small-text faded-text">No replies</p>
 						)
 					)}
 					{replies.length > 0 && !treeViewMode && (

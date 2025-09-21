@@ -4,8 +4,9 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { AuthContext } from '../authContext';
 import ContentDisplay from './contentDisplay';
+import { FormatNumber } from '../../functions/formatNumber';
 import PropTypes from 'prop-types';
-import useTimeAgo from '../../useTimeAgo';
+import useTimeAgo from '../../functions/useTimeAgo';
 
 const SmallContentWidget = ({ display, post }) => {
     const authContext = useContext(AuthContext);
@@ -185,16 +186,11 @@ const SmallContentWidget = ({ display, post }) => {
     return (
         <div className="content-item">
             {postErrorMessage && <div className="error-message">{postErrorMessage}</div>}
-            {post?.title && <Link
-                className="title-container"
-                onClick={() => incrementViews(post?.post_id)}
-                style={{ display: 'block' }}
-                to={`/${urlPrefix}/${post?.parentChannel?.feed?.feed_name}/${post?.parentChannel?.channel_name}/${post?.post_id}`}
-            >
+            {post?.title && <div className="title-container" onClick={() => incrementViews(post?.post_id)} style={{ display: 'block' }}>
                 <span className="large-text" style={{ marginLeft: 0 }}>
                     {post?.title || '\u00A0'}
                 </span>
-            </Link>}
+            </div>}
             <div ref={fullscreenRef} 
                 className="display-div"
                 style={{
@@ -265,9 +261,13 @@ const SmallContentWidget = ({ display, post }) => {
                     </button>
                     <p className="tiny-text">{savedText}</p>
                 </div>)}
-                <div className="view-date-container">
-                    {!display && <p className="small-text faded-text" style={{ margin: '0px' }}>{post_id ? new Date(post?.created_at).toLocaleDateString() : timeAgo}</p>}
-                    <p className="small-text faded-text" style={{ margin: '0px' }}>{views || 0} {views === 1 ? 'view' : 'views'}</p>
+                <div className="view-date-container" style={{ fontFamily: 'monospace' }}>
+                    {!display && <p className="small-text faded-text" style={{ margin: '0px', textAlign: 'right' }}>
+                        {post_id ? new Date(post?.created_at).toLocaleDateString() : timeAgo}
+                    </p>}
+                    <p className="small-text faded-text" style={{ margin: '0px', width: '10ch', textAlign: 'right' }}>
+                        {FormatNumber(views)} {views === 1 ? 'view' : 'views'}
+                    </p>
                 </div>
             </div>
         </div>

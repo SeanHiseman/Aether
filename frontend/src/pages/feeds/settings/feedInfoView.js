@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useNavigate, useOutletContext } from 'react-router-dom';
+import { useOutletContext } from 'react-router-dom';
 import axios from 'axios';
 import Cropper from 'react-easy-crop';
 import GetCroppedImg from '../../../components/getCroppedImg'; 
@@ -21,17 +21,16 @@ const FeedInfoView = () => {
     const [newDescription, setDescription] = useState('');
     const [newName, setName] = useState('');
     const [zoom, setZoom] = useState(1);
-    const navigate = useNavigate();
     const { feed, setFeed, user } = useOutletContext();
     const hasMembership = user?.has_membership;
     const MAX_FILE_SIZE = hasMembership ? 100 * 1024 * 1024 : 1 * 1024 * 1024;
 
     useEffect(() => {
-        if (isEditingName) setName(feed.feed_name);
-    }, [isEditingName, feed.feed_name]);
+        if (isEditingName) setName(feed?.feed_name);
+    }, [isEditingName, feed?.feed_name]);
 
     useEffect(() => {
-        if (isEditingDescription) setDescription(feed.description);
+        if (isEditingDescription) setDescription(feed?.description);
     }, [isEditingDescription, feed.description]);
 
     const changeFeedPhoto = async (event) => {
@@ -45,11 +44,11 @@ const FeedInfoView = () => {
             const croppedBlob = await GetCroppedImg(imageSrc, croppedAreaPixels);
             const formData = new FormData();
             formData.append('new_feed_photo', croppedBlob, 'cropped.jpg');
-            const response = await axios.put(`/api/update_feed_photo/${feed.feed_id}`, formData, {
+            const response = await axios.put(`/api/update_feed_photo/${feed?.feed_id}`, formData, {
                 headers: { 'Content-Type': 'multipart/form-data' },
             });
             if (response.data.success) {
-                setFeed(prev => ({ ...prev, feed_photo: response.data.newPhotoPath }));
+                setFeed(prev => ({ ...prev, feed_photo: response.data?.newPhotoPath }));
                 setIsPhotoFormVisible(false);
                 setImageSrc(null);
                 setIsFileSelected(false);
@@ -61,9 +60,9 @@ const FeedInfoView = () => {
             }
         } catch (error) {
             if (error.response?.status === 413) {
-                setErrorMessage(error.response.data.message + (!user.has_membership ? ". Get membership for more" : ""));
+                setErrorMessage(error.response.data?.message + (!user?.has_membership ? ". Get membership for more" : ""));
             } else {
-                setErrorMessage(error.response?.data?.message || "Error, please try again");
+                setErrorMessage(error.response.data?.message || "Error, please try again");
             }
             setTimeout(() => { setErrorMessage(''); }, 10000);
         }
@@ -94,8 +93,8 @@ const FeedInfoView = () => {
 
     const toggleLock = async () => {
         try {
-            const response = await axios.post('/api/toggle_lock', { feedId: feed.feed_id });
-            setFeed(prev => ({ ...prev, is_locked: response.data.is_locked }));
+            const response = await axios.post('/api/toggle_lock', { feedId: feed?.feed_id });
+            setFeed(prev => ({ ...prev, is_locked: response.data?.is_locked }));
         } catch (error) {
             setErrorMessage('Error changing lock status');
             setTimeout(() => { setErrorMessage(''); }, 5000);
@@ -114,8 +113,8 @@ const FeedInfoView = () => {
 
     const togglePrivate = async () => {
         try {
-            const response = await axios.post('/api/toggle_private', { feedId: feed.feed_id });
-            setFeed(prev => ({ ...prev, type: response.data.type }));
+            const response = await axios.post('/api/toggle_private', { feedId: feed?.feed_id });
+            setFeed(prev => ({ ...prev, type: response.data?.type }));
         } catch (error){
             setErrorMessage('Error changing status');
             setTimeout(() => { setErrorMessage(''); }, 5000);
@@ -126,37 +125,37 @@ const FeedInfoView = () => {
         try {
             const response  = await axios.post('/api/change_description', {
                 description: newDescription,
-                feedId: feed.feed_id
+                feedId: feed?.feed_id
             });
             if (response.data.success) {
                 setFeed({ ...feed, description: newDescription });
                 setIsEditingDescription(false);
             } 
         } catch (error){
-            setErrorMessage(error.response?.data?.message || 'Error changing description');
+            setErrorMessage(error.response.data?.message || 'Error changing description');
             setTimeout(() => { setErrorMessage(''); }, 5000);
         }
     };
 
     const updateName = async () => {
-        if (newName.toLowerCase() === feed.feed_name.toLowerCase()) {
+        if (newName.toLowerCase() === feed?.feed_name.toLowerCase()) {
             setErrorMessage('Name is unchanged');
             return;
         }
         try {
-            const route = feed.is_group ? 'change_feed_name' : 'change_username';
+            const route = feed?.is_group ? 'change_feed_name' : 'change_username';
             const response = await axios.post(`/api/${route}`, {
-                feed_id: feed.feed_id,
+                feed_id: feed?.feed_id,
                 newName,
-                user_id: user.user_id
+                user_id: user?.user_id
             });
-            if (response.data.success) {
+            if (response.data?.success) {
                 setFeed({ ...feed, feed_name: newName });
                 setIsEditingName(false);
                 window.location.reload();
             } 
         } catch (error) {
-		    setErrorMessage(error.response?.data?.message || 'Error changing name');
+		    setErrorMessage(error.response.data?.message || 'Error changing name');
             setTimeout(() => { setErrorMessage(''); }, 5000);
         }
     };
@@ -165,7 +164,7 @@ const FeedInfoView = () => {
         <div className="feed-settings short">
             <div className="name-photo-area">
                 <div className="feed-header-photo">
-                    <img className="settings-feed-photo" src={`/${feed.feed_photo}`} alt={feed.feed_name} />
+                    <img className="settings-feed-photo" src={`/${feed?.feed_photo}`} alt={feed?.feed_name} />
                     <button className="small-icon" onClick={togglePhotoForm} title={isPhotoFormVisible ? "Close" : "Change feed photo"}>
                         {isPhotoFormVisible ? <><FaRegWindowClose /><p className="icon-text">Close</p></> : <><FaEdit /><p className="icon-text">Change photo</p></>}
                     </button>
@@ -174,7 +173,7 @@ const FeedInfoView = () => {
                             <div className="file-input">
                                 <label htmlFor="new-feed-photo" className="small-icon"><FaFileUpload /><p className="icon-text">Choose photo</p></label>
                                 <input type="file" id="new-feed-photo" name="new_feed_photo" accept="image/*" onChange={handleFileChange} hidden />
-                                <p className="text16">{feedPhotoFile}</p>
+                                <p className="small-text">{feedPhotoFile}</p>
                             </div>
                             {imageSrc && (
                                 <div className="crop-container" style={{ position: 'relative', width: '100%', height:100 }}>
@@ -222,8 +221,8 @@ const FeedInfoView = () => {
                         </div>
                     ) : (
                         <div className="channel-name-settings">
-                            <p className="large-text">{feed.feed_name}</p>
-                            <button className="small-icon" onClick={() => { setIsEditingName(true); setName(feed.feed_name); }} title="Change name"><FaPencilAlt /></button>
+                            <p className="large-text">{feed?.feed_name}</p>
+                            <button className="small-icon" onClick={() => { setIsEditingName(true); setName(feed?.feed_name); }} title="Change name"><FaPencilAlt /></button>
                         </div>
                     )}
                     {isEditingDescription ? (
@@ -254,18 +253,18 @@ const FeedInfoView = () => {
                         </div>
                     ) : (
                         <div className="channel-name-settings">
-                            <p className="text24">{feed.description || <span className="faded-text">Description...</span>}</p>
-                            <button className="small-icon" onClick={() => { setIsEditingDescription(true); setDescription(feed.description); }} title="Change description"><FaPencilAlt /></button>
+                            <p className="medium-text">{feed.description || <span className="faded-text">Description...</span>}</p>
+                            <button className="small-icon" onClick={() => { setIsEditingDescription(true); setDescription(feed?.description); }} title="Change description"><FaPencilAlt /></button>
                         </div>
                     )}
                     <div className="option-toggle">
-                        <button className={feed.type === 'public' ? 'active-mode' : 'passive-mode'} onClick={(e) => { e.preventDefault(); togglePrivate(); }} disabled={feed.type === 'public'} title="Visible to everyone">Public</button>
-                        <button className={feed.type === 'private' ? 'active-mode' : 'passive-mode'} onClick={(e) => { e.preventDefault(); togglePrivate(); }} disabled={feed.type === 'private'} title={feed.is_group ? "Visible only to followers" : "Visible only to connections"}>Private</button>
+                        <button className={feed?.type === 'public' ? 'active-mode' : 'passive-mode'} onClick={(e) => { e.preventDefault(); togglePrivate(); }} disabled={feed?.type === 'public'} title="Visible to everyone">Public</button>
+                        <button className={feed?.type === 'private' ? 'active-mode' : 'passive-mode'} onClick={(e) => { e.preventDefault(); togglePrivate(); }} disabled={feed?.type === 'private'} title={feed?.is_group ? "Visible only to followers" : "Visible only to connections"}>Private</button>
                     </div>
-                    {feed.is_group && (
+                    {feed?.is_group && (
                         <div>
-                            <button className="small-icon" onClick={toggleLock} title={feed.is_locked ? "Allow regular followers to post" : "Prevent regular followers from posting"}>
-                                {feed.is_locked ? <><FaUnlock /><p className="icon-text">Unlock feed</p></> : <><FaLock /><p className="icon-text">Lock feed</p></>}
+                            <button className="small-icon" onClick={toggleLock} title={feed?.is_locked ? "Allow regular followers to post" : "Prevent regular followers from posting"}>
+                                {feed?.is_locked ? <><FaUnlock /><p className="icon-text">Unlock feed</p></> : <><FaLock /><p className="icon-text">Lock feed</p></>}
                             </button>
                         </div>
                     )}

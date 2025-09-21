@@ -7,7 +7,7 @@ import ContentWidget from '../content/contentWidget';
 
 const PostChannel = ({ channelId, channelName, feed, isDraft, isGroup, onEditClick, onReplyClick, refreshTrigger }) => {
 	const channelReady = !!channelId;
-	const feedId = feed.feed_id;
+	const feedId = feed?.feed_id;
 	const loaderRef = useRef(null);
 	const queryClient = useQueryClient();
 	const { channel_name, post_id } = useParams();
@@ -42,7 +42,7 @@ const PostChannel = ({ channelId, channelName, feed, isDraft, isGroup, onEditCli
 
 	const getPosts = async ({ pageParam = 0 }) => {
 		try {
-			const response = await axios.get('/api/channel_posts', { params: { channelId, feedId, isMain, isGroup: feed.is_group, isSingle: false, limit: 10, offset: pageParam } });
+			const response = await axios.get('/api/channel_posts', { params: { channelId, feedId, isMain, isGroup: feed?.is_group, isSingle: false, limit: 10, offset: pageParam } });
 			return response.data;
 		} catch (error) {
 			if (error.response?.status === 404) {
@@ -55,7 +55,7 @@ const PostChannel = ({ channelId, channelName, feed, isDraft, isGroup, onEditCli
 	const getDrafts = async ({ pageParam = 0 }) => {
 		try {
 			const response = await axios.get('/api/get_post_drafts', { params: { channel_id: channelId, poster_id: viewer?.feed_id, limit: PAGE_SIZE, offset: pageParam } });
-			return response.data.drafts;
+			return response.data?.drafts;
 		} catch (error) {
 			throw error;
 		}
@@ -141,7 +141,7 @@ const PostChannel = ({ channelId, channelName, feed, isDraft, isGroup, onEditCli
 	const renderList = (items) =>
 		items.map((post) => (
 			<ContentWidget
-				key={post.post_id}
+				key={post?.post_id}
 				feed={feed}
 				isDraft={isDraft}
 				onEditClick={onEditClick}
@@ -155,7 +155,7 @@ const PostChannel = ({ channelId, channelName, feed, isDraft, isGroup, onEditCli
 		<div className="channel">
 			<div className="channel-content">
 				{channelMessage ? (
-					<p className="text36">{channelMessage}</p>
+					<p className="large-text faded-text">{channelMessage}</p>
 				) : post_id ? (
 					<ul className="content-list">
 						<ContentWidget
@@ -169,7 +169,7 @@ const PostChannel = ({ channelId, channelName, feed, isDraft, isGroup, onEditCli
 					</ul>
 				) : isDraft ? (
 					<ul className="content-list">
-						<p className="text36">Drafts</p>
+						<p className="large-text">Drafts</p>
 						{renderList(draftsData.pages.flat())}
 					</ul>
 				) : (
@@ -177,7 +177,7 @@ const PostChannel = ({ channelId, channelName, feed, isDraft, isGroup, onEditCli
 				)}
 				<div ref={loaderRef}>
 					{((isDraft && isFetchingDrafts) || (!isDraft && isFetchingNextPage)) && (
-						<p className="text36">Loading more {isDraft ? 'drafts' : 'posts'}...</p>
+						<p className="large-text faded-text">Loading more {isDraft ? 'drafts' : 'posts'}...</p>
 					)}
 				</div>
 			</div>

@@ -341,7 +341,7 @@ const BaseLayout = () => {
             const trimmed = currentQuery.trim();
             const newChatId = v4();
             if (trimmed) {
-                if (user.has_membership) {
+                if (user?.has_membership) {
                     await axios.post("/api/create_ask_chat", {
                         chatId: newChatId,
                         chatName: "New chat"
@@ -374,8 +374,8 @@ const BaseLayout = () => {
             form.append("feedName", feedName);
             form.append("type", feedType);
             form.append("isGroup", true);
-            form.append("feedOwner", user.user_id);
-            form.append("viewerFeedId", viewer.feed_id);
+            form.append("feedOwner", user?.user_id);
+            form.append("viewerFeedId", viewer?.feed_id);
             if (imageSrc && croppedAreaPixels) {
                 try {
                     const blob = await GetCroppedImg(imageSrc, croppedAreaPixels);
@@ -392,15 +392,15 @@ const BaseLayout = () => {
             const response = await axios.post("/api/create_feed", form, {
                 headers: { "Content-Type": "multipart/form-data" }
             });
-            if (response.data.success) {
-                const created = response.data.feed;
+            if (response.data?.success) {
+                const created = response.data?.feed;
                 setFeeds(prev => [
                     ...prev,
                     {
-                        feed_id: created.feed_id,
+                        feed_id: created?.feed_id,
                         followedFeed: {
-                            feed_name: created.feed_name,
-                            feed_photo: created.feed_photo
+                            feed_name: created?.feed_name,
+                            feed_photo: created?.feed_photo
                         },
                         link_type: "g"
                     }
@@ -412,19 +412,19 @@ const BaseLayout = () => {
                 setCrop({ x: 0, y: 0 });
                 setZoom(1);
                 setCroppedAreaPixels(null);
-                navigate(`/g/${created.feed_name}`);
+                navigate(`/g/${created?.feed_name}`);
             } 
         }
         catch (error) {
             if (error.response?.status === 413) {
                 setAsideErrorMessage(
                     (error.response.data?.message || "File too large") +
-                    (!user.has_membership ? ". Get membership for more" : "")
+                    (!user?.has_membership ? ". Get membership for more" : "")
                 );
                 setTimeout(() => setAsideErrorMessage(""), 10000);
             }
             else {
-                setAsideErrorMessage(error.response?.data?.message || "Error creating feed");
+                setAsideErrorMessage(error.response.data?.message || "Error creating feed");
                 setTimeout(() => setAsideErrorMessage(""), 5000);
             }
         }
@@ -480,11 +480,11 @@ const BaseLayout = () => {
                 <aside className={leftClasses} ref={feedContainerRef}>
                     <div className="left-aside-feed-info">
                         {isAuthenticated && (
-                            <><Link className="feed-link" to={`/u/${feed.feed_name}`}>
-                                <img className="small-feed-photo" src={`/${feed.feed_photo}`} onError={(e) => e.currentTarget.src = '/media/site_images/blank-profile.png'} />
-                                <p className="feed-list-text">{feed.feed_name}</p>
+                            <><Link className="feed-link" to={`/u/${feed?.feed_name}`}>
+                                <img className="small-feed-photo" src={`/${feed?.feed_photo}`} onError={(e) => e.currentTarget.src = '/media/site_images/blank-profile.png'} />
+                                <p className="feed-list-text">{feed?.feed_name}</p>
                             </Link>
-                            <Link className="small-icon" to={`/settings/${feed.feed_name}`} title="Settings">
+                            <Link className="small-icon" to={`/settings/${feed?.feed_name}`} title="Settings">
                                 <FaCog />
                             </Link></>
                         )}
@@ -505,9 +505,9 @@ const BaseLayout = () => {
                                 </ul>
                             </nav>
                             <div className="deep-feeds-container">
-                                <SortableContext items={feeds.map(f => f.feed_id.toString())} strategy={verticalListSortingStrategy}>
+                                <SortableContext items={feeds.map(f => f?.feed_id.toString())} strategy={verticalListSortingStrategy}>
                                     {deepFeeds.map(deepFeed => (
-                                        <DeepFeedItem key={deepFeed.deep_feed_id} deepFeed={deepFeed} handleDragStart={dragStart} handleDragEnd={dragEnd} onFeedAdded={registerFeedCallback} showHeader={true}/>
+                                        <DeepFeedItem key={deepFeed?.deep_feed_id} deepFeed={deepFeed} handleDragStart={dragStart} handleDragEnd={dragEnd} onFeedAdded={registerFeedCallback} showHeader={true}/>
                                     ))}
                                 </SortableContext>
                             </div>
@@ -561,7 +561,7 @@ const BaseLayout = () => {
                                                 <p className="icon-text">Choose feed photo</p>
                                             </label>
                                             <input type="file" id="feed-photo-input" name="Feed photo" accept="image/*" onChange={handleFileChange} hidden/>
-                                            <p className="text16">
+                                            <p className="small-text faded-text">
                                                 {feedPhotoFile ? feedPhotoFile.name : "No file chosen"}
                                             </p>
                                         </div>
@@ -605,19 +605,19 @@ const BaseLayout = () => {
                                 )}
                             </div>
                             <nav className="feed-list">
-                                <p className="text16 faded-text">
+                                <p className="small-text faded-text">
                                     Drag and drop to combine feeds
                                 </p>
                                 <SortableContext 
-                                    items={feeds.map(f => `sidebar-feed-${f.feed_id}`)} 
+                                    items={feeds.map(f => `sidebar-feed-${f?.feed_id}`)} 
                                     strategy={verticalListSortingStrategy}
                                 >
                                     <ul className="feeds-list">
                                         {feeds.map(f => (
                                             <FeedItem 
-                                                key={f.feed_id} 
-                                                feed={f.followedFeed} 
-                                                id={f.feed_id.toString()} 
+                                                key={f?.feed_id} 
+                                                feed={f?.followedFeed} 
+                                                id={f?.feed_id.toString()} 
                                                 isChat={false}
                                             />
                                         ))}
@@ -631,11 +631,11 @@ const BaseLayout = () => {
                                             <div className="feed-list-link">
                                                 <img
                                                     className="small-feed-photo"
-                                                    src={`/${activeDragItem.followedFeed.feed_photo}`}
+                                                    src={`/${activeDragItem?.followedFeed?.feed_photo}`}
                                                     alt="Feed"
                                                 />
                                                 <p className="feed-list-text">
-                                                    {activeDragItem.followedFeed.feed_name}
+                                                    {activeDragItem?.followedFeed?.feed_name}
                                                 </p>
                                             </div>
                                         </div>
@@ -647,11 +647,11 @@ const BaseLayout = () => {
                                             <div className="feed-list-link">
                                                 <img
                                                     className="small-feed-photo"
-                                                    src={`/${activeDragItem.feed.feed_photo}`}
+                                                    src={`/${activeDragItem?.feed?.feed_photo}`}
                                                     alt="Feed"
                                                 />
                                                 <p className="feed-list-text">
-                                                    {activeDragItem.feed.feed_name}
+                                                    {activeDragItem?.feed?.feed_name}
                                                 </p>
                                             </div>
                                         </div>

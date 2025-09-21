@@ -18,7 +18,7 @@ const ResetPassword = () => {
 			setMessage(data.message);
 		} catch (error) {
 			if (error.response?.status === 400) {
-				setMessage(error.response.data.message);
+				setMessage(error.response.data?.message);
 			} else {
 				setMessage('Failed to reset password. Please try again.');
 			}
@@ -82,7 +82,7 @@ const ResetPassword = () => {
 					/>
 				</form>
 				<Link to="/login">
-                    <p className="text16">Back to Login</p>
+                    <p className="small-text">Back to Login</p>
                 </Link>
 			</div>
 		</div>

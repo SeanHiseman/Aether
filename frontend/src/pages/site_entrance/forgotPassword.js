@@ -17,7 +17,7 @@ const ForgotPassword = () => {
 			await axios.post('/api/forgot-password', { email });
 			setMessage(`Password reset sent to ${email}.`);
 		} catch (error) {
-			setMessage(error.response?.data?.message || 'Failed to send reset instructions. Please try again.');
+			setMessage(error.response.data?.message || 'Failed to send reset instructions. Please try again.');
 		}
 	};
 
@@ -55,7 +55,7 @@ const ForgotPassword = () => {
 					/>
 				</form>
 				<Link to="/login">
-					<p className="text16">Back to Login</p>
+					<p className="small-text">Back to Login</p>
 				</Link>
 			</div>
 		</div>

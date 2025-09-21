@@ -779,7 +779,7 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
 
     return (
         <div className="create-post-container" style={{ paddingTop: isReply ? '0px' : '20px' }}>
-            {isReply && <p className="text24">Reply</p>}
+            {isReply && <p className="medium-text">Reply</p>}
             {isReply && post && (
                 <div className="post-reply-preview">
                     <ContentWidget canRemove={false} feed={feed} onEditClick={() => {}} onPostRemoved={() => {}} onReplyClick={() => {}} post={post} readOnly />
@@ -900,8 +900,8 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
                 <input accept=".zip" hidden id="app-input" onChange={appFileChange} type="file" />
                 {editMode && 
                     <div style={{width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
-                        <p className="text24" style={{marginLeft: 0, marginTop: 0}}>{isReply ? 'Reply' : 'Editing'}</p>
-                        <p className="text16 faded-text">Drag and drop blocks to reorder</p>
+                        <p className="medium-text" style={{marginLeft: 0, marginTop: 0}}>{isReply ? 'Reply' : 'Editing'}</p>
+                        <p className="small-text faded-text">Drag and drop blocks to reorder</p>
                     </div>
                 }
                 <div className={editMode ? 'single-container edit' : 'single-container'}>
@@ -910,7 +910,7 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
                             <Droppable droppableId="blocks-droppable">
                                 {provided => (
                                     <div ref={provided.innerRef} {...provided.droppableProps}>
-                                        {!blocks.length && <p className="text24 faded-text" style={{ marginLeft: '0px' }}>Add content using the buttons above</p>}
+                                        {!blocks.length && <p className="medium-text faded-text" style={{ marginLeft: '0px' }}>Add content using the buttons above</p>}
                                         {blocks.map((block, index) => {
                                             const { data, id, isEditing, type } = block
                                             const toggleEdit = () => updateBlock({ ...block, isEditing: !isEditing })
@@ -1043,7 +1043,7 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
                                                             )}
                                                             {type === BLOCK_TYPES.CODE && (
                                                                 <div className="block-content">
-                                                                    {!data.showPrompt && <p className="text16" style={{color: '#7b7b7b', marginLeft: '0px'}}>For now, only one HTML file with inline JavaScript and CSS can be created.</p>}
+                                                                    {!data.showPrompt && <p className="small-text" style={{color: '#7b7b7b', marginLeft: '0px'}}>For now, only one HTML file with inline JavaScript and CSS can be created.</p>}
                                                                     {isEditing && (
                                                                         <>
                                                                             {data.showPrompt ? (
@@ -1200,7 +1200,7 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
                         </DragDropContext>
                     ) : (
                         <>
-                            <p className="text24" style={{ marginLeft: 0, marginTop: 0 }}>Preview</p>
+                            <p className="medium-text" style={{ marginLeft: 0, marginTop: 0 }}>Preview</p>
                             <div className="live-preview-container">
                                 {blocks.map((block, i) => {
                                     const { data, type } = block

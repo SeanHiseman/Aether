@@ -97,7 +97,7 @@ const DeepFeedItem = ({ deepFeed, onFeedAdded, showHeader }) => {
 			{isExpanded && (
 				<div className="feed-list deep-feed-content">
 					{loading ? (
-						<p className="text16">Loading...</p>
+						<p className="small-text faded-text">Loading...</p>
 					) : (
 						<SortableContext 
 							items={contents.filter(item => item.feed).map(item => 

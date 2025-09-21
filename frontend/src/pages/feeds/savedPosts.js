@@ -23,7 +23,7 @@ const SavedPosts = () => {
             try {
                 //const response = await axios.get(`/api/get_saved_posts/${current?.channel_id}`);
 				const response = await axios.get(`/api/get_saved_posts`);
-                setPosts(response.data.posts);
+                setPosts(response.data?.posts);
             } catch (error) {
                 setSavedError('Error loading posts');
             }
@@ -48,14 +48,14 @@ const SavedPosts = () => {
 	const saveToggle = (postId, isSaved) => {
 		try {
 			if (!isSaved) {
-				setPosts(prev => prev.filter(p => p.post_id !== postId));
+				setPosts(prev => prev.filter(p => p?.post_id !== postId));
 			}
 		} catch (error) {
 			setSavedError("Error")
 		}
 	};
 
-	const currentChannel = channels.find(c => c.channel_name === channel_name);
+	const currentChannel = channels.find(c => c?.channel_name === channel_name);
 
 	return (
 		<div className="standard-container">
@@ -66,7 +66,7 @@ const SavedPosts = () => {
 							{posts.map((post) => (
 								<ContentWidget
 									canRemove={false}
-									feed={{ feed_id: viewer.feed_id, is_group: false }}
+									feed={{ feed_id: viewer?.feed_id, is_group: false }}
 									isDraft={false}
 									isGroup={false}
 									key={post.post_id}
@@ -78,12 +78,12 @@ const SavedPosts = () => {
 								/>
 							))}
 						</ul>
-						: <p className="text36">No posts yet</p>}
+						: <p className="large-text faded-text">No posts yet</p>}
 				{/*})}*/}
 				{/*{!currentChannel && <p className="text36">Choose a channel</p>}*/}
 			</div>
 			<aside className="right-aside">
-				<p className="text36">Saved posts</p>
+				<p className="large-text">Saved posts</p>
 				{/*<button className="small-icon" onClick={addChannel} title="New channel">
 					<FaPlus />
 				</button>*/}

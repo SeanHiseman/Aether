@@ -46,7 +46,7 @@ const ExplorePage = () => {
 				setShownPostIds(prev => [...prev, ...newPosts.map(p => p?.post_id)]);
 			}
 		} catch (error) {
-			setErrorMessage("Failed to fetch posts");
+			setErrorMessage(error.response.data?.message || "Failed to fetch posts");
 		}
 	}, [filter, shownPostIds]);
 
@@ -64,7 +64,7 @@ const ExplorePage = () => {
 				setShownFeedIds(prev => [...prev, ...newFeeds.map(f => f?.feed_id)]);
 			}
 		} catch (error) {
-			setErrorMessage("Failed to fetch feeds");
+			setErrorMessage(error.response.data?.message || "Failed to fetch feeds");
 		}
 	}, [shownFeedIds]);
 
@@ -179,7 +179,7 @@ const ExplorePage = () => {
 			<div ref={scrollRef} onScroll={handleScroll} className="channel-feed">
 				{loading ? (
 					<div className="flex justify-center items-center h-64">
-						<span className="text-xl text-gray-400">Loading...</span>
+						<span className="text-xl faded-text">Loading...</span>
 					</div>
 				) : (
 					<>

@@ -24,13 +24,13 @@ const EmailVerification = () => {
             try {
                 const response = await axios.get(`/api/verify-email?token=${token}`);
                 setStatus('success');
-                setMessage(response.data.message);
+                setMessage(response.data?.message);
                 setTimeout(() => {
                     navigate('/g/Welcome');
                 }, 3000);
             } catch (error) {
                 setStatus('error');
-                setMessage(error.response?.data?.message || 'Verification failed');
+                setMessage(error.response.data?.message || 'Verification failed');
             }
         };
         verifyEmail();
@@ -41,11 +41,11 @@ const EmailVerification = () => {
         try {
             const response = await axios.post('/api/resend-verification', { email });
             setStatus('info');
-            setMessage(response.data.message);
+            setMessage(response.data?.message);
         } catch (error) {
             let msg = 'Resend failed';
             if (error.response) {
-                if (error.response.status === 429) {
+                if (error.response?.status === 429) {
                     msg = error.response.data || msg;
                 } else {
                     msg = error.response.data?.message || msg;

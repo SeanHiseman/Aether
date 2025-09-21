@@ -31,7 +31,7 @@ const MembershipSettings = () => {
                     'Authorization': `Bearer ${localStorage.getItem('token')}`
                 }
             });
-            setSubscriptionStatus(response?.data);
+            setSubscriptionStatus(response.data);
         } catch (error) {
             setErrorMessage('Error fetching subscription status');
         }
@@ -53,11 +53,11 @@ const MembershipSettings = () => {
             if (response.data.url) {
                 window.location.href = response.data.url;
             } else {
-                setErrorMessage(response?.data?.error || 'Failed to initiate payment. Please try again.');
+                setErrorMessage(response.data.error || 'Failed to initiate payment. Please try again.');
             }
         } catch (error) {
             if (error.response) {
-                setErrorMessage(error?.response?.data?.error || 'Failed to initiate payment. Please try again.');
+                setErrorMessage(error.response.data?.error || 'Failed to initiate payment. Please try again.');
             } else if (error.request) {
                 setErrorMessage('Network error. Please check your connection and try again.');
             } else {
@@ -82,11 +82,11 @@ const MembershipSettings = () => {
                     'Authorization': `Bearer ${localStorage.getItem('token')}`
                 }
             });
-            setSuccessMessage(response?.data?.message || 'Subscription cancelled successfully.');
+            setSuccessMessage(response.data?.message || 'Subscription cancelled successfully.');
             fetchSubscriptionStatus(); 
         } catch (error) {
             if (error.response) {
-                setErrorMessage(error?.response?.data?.error || 'Failed to cancel membership. Please contact support.');
+                setErrorMessage(error.response.data?.error || 'Failed to cancel membership. Please contact support.');
             } else if (error.request) {
                 setErrorMessage('Network error. Please try again.');
             } else {
@@ -113,7 +113,7 @@ const MembershipSettings = () => {
                     <div className="crown-icon">
                         <Crown />
                     </div>
-                    <h1 className="welcome-title">Welcome {user.username}!</h1>
+                    <h1 className="welcome-title">Welcome {user?.username}!</h1>
                     <p className="welcome-subtitle">Thank you for supporting Aether Social</p>
                     <div className="status-card">
                         <p className="status-text">
@@ -121,7 +121,7 @@ const MembershipSettings = () => {
                         </p>
                         {subscriptionStatus?.expires_at && (
                             <p className="expiry-text">
-                                Expires: {new Date(subscriptionStatus.expires_at).toLocaleDateString()}
+                                Expires: {new Date(subscriptionStatus?.expires_at).toLocaleDateString()}
                             </p>
                         )}
                         {subscriptionStatus?.subscription?.cancel_at_period_end && (
@@ -192,8 +192,8 @@ const MembershipSettings = () => {
                 {features.map((feature, index) => (
                     <div key={index} className="feature-card">
                         <div className="feature-content">
-                            {feature.icon}
-                            <p className="feature-text">{feature.text}</p>
+                            {feature?.icon}
+                            <p className="feature-text">{feature?.text}</p>
                         </div>
                     </div>
                 ))}

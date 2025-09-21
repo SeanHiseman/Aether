@@ -26,7 +26,7 @@ const Login = () => {
                 navigate('/explore'); 
             }
         } catch (error) {
-            if (error.response && error.response.status === 401) {
+            if (error.response && error.response?.status === 401) {
                 setErrorMessage(error.response.data?.message || 'Invalid username, email, or password');
                 setTimeout(() => { setErrorMessage(''); }, 5000);
             } else {
@@ -46,7 +46,7 @@ const Login = () => {
             <p className="welcome-text">Welcome back</p>
             <div className="authentication-box">
                 <div className="login-register">
-                    <p className="text36">Login</p>
+                    <p className="large-text">Login</p>
                     <Link to="/join">
                         <p className="link">Join</p>
                     </Link>
@@ -103,7 +103,7 @@ const Login = () => {
                         value="Login"
                     />
                     <Link to="/forgot-password">
-                        <p className="text16">Forgot password?</p>
+                        <p className="small-text">Forgot password?</p>
                     </Link>
                 </form>
             </div>

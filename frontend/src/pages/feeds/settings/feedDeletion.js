@@ -15,11 +15,11 @@ const FeedDeletion = () => {
 
     const deleteFeed = async () => {
         try {
-            const response = feed.is_group ? 
-                await axios.delete('/api/delete_feed', { data: { feedId: feed.feed_id } }) : 
-                await axios.delete('/api/delete_account', { data: { userId: feed.feed_owner } });
-            if (response.data.success) {
-                const route = feed.is_group ? '/d/following' : '/join';
+            const response = feed?.is_group ? 
+                await axios.delete('/api/delete_feed', { data: { feedId: feed?.feed_id } }) : 
+                await axios.delete('/api/delete_account', { data: { userId: feed?.feed_owner } });
+            if (response.data?.success) {
+                const route = feed?.is_group ? '/d/following' : '/join';
                 navigate(route);
             }
         } catch (error) {
@@ -38,19 +38,19 @@ const FeedDeletion = () => {
     return (
         <div className="feed-settings short">
             <div className="display-area">
-                <p className="text36">{feed.is_group ? 'Are you sure you wish to delete this feed?' : 'Are you sure you wish to delete your account?'}</p>
-                <p className="text24">This action cannot be reversed</p>
-                <p className="text24">All posts, channels, followers and feed information will be lost</p>
+                <p className="large-text">{feed?.is_group ? 'Are you sure you wish to delete this feed?' : 'Are you sure you wish to delete your account?'}</p>
+                <p className="medium-text">This action cannot be reversed</p>
+                <p className="medium-text">All posts, channels, followers and feed information will be lost</p>
                 {!showConfirmation ? (
                     <button className="button delete" onClick={handleDeleteClick}>
-                        {feed.is_group ? 'Delete Feed' : 'Delete Account'}
+                        {feed?.is_group ? 'Delete Feed' : 'Delete Account'}
                     </button>
                 ) : (
                     <div className="confirmation-dialog">
-                        <p className="text20" style={{ color: '#ff4444', fontWeight: 'bold', marginBottom: '15px' }}>
+                        <p className="medium-text" style={{ color: '#ff4444', fontWeight: 'bold', marginBottom: '15px' }}>
                             Final Confirmation Required
                         </p>
-                        <p className="text18" style={{ marginBottom: '20px' }}>
+                        <p className="small-text" style={{ marginBottom: '20px' }}>
                             Type "DELETE" to confirm this permanent action:
                         </p>
                         <input 
@@ -68,7 +68,7 @@ const FeedDeletion = () => {
                                 disabled={confirmText !== 'DELETE'}
                                 style={{ opacity: confirmText !== 'DELETE' ? 0.5 : 1 }}
                             >
-                                Confirm {feed.is_group ? 'Delete Feed' : 'Delete Account'}
+                                Confirm {feed?.is_group ? 'Delete Feed' : 'Delete Account'}
                             </button>
                             <button className="button" onClick={cancelDeletion}>
                                 Cancel

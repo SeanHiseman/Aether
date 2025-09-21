@@ -66,7 +66,8 @@
     gap: 1rem;
     align-items: center;
     font-size: var(--medium-text);
-    margin: var(--medium-margin);
+    margin-left: var(--medium-margin);
+    margin-right: var(--medium-margin);
 }
 .content-metadata .feed-info {
     grid-area: user;
@@ -178,7 +179,7 @@
 }
 .post-button-group p.small-text {
     display: inline-block;
-    width: 6ch; 
+    width: 5ch; 
     text-align: center;
 }
 .post-list {

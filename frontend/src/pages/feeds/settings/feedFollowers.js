@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState, useContext } from 'react';
 import { Link, useOutletContext } from 'react-router-dom';
 import { AuthContext } from '../../../components/authContext';
 import { FaCrown, FaMinus, FaMinusCircle, FaPlusCircle } from 'react-icons/fa';
+import { FormatNumber } from '../../../functions/formatNumber';
 
 function chunkFollowersToQuads(followers) {
     const quads = [];
@@ -166,7 +167,7 @@ const FeedFollowers = () => {
                 feedId: feed?.feed_id,
                 newOwnerId: follower?.followerFeed?.feed_owner,
             });
-            if (response.status === 200) {
+            if (response?.status === 200) {
                 setFeed((prevFeed) => ({ ...prevFeed, feed_owner: follower?.follower_id }));
             }
         } catch (error) {
@@ -181,15 +182,13 @@ const FeedFollowers = () => {
     return (
         <div className="channel-content">
             <div className="followers-header">
-                <p className="large-text">{followerCount} {followerCount === 1 ? 'follower' : 'followers'}</p>
+                <p className="large-text">{FormatNumber(followerCount)} {followerCount === 1 ? 'follower' : 'followers'}</p>
                 {feed?.is_group && <p className="small-text">Moderators remove content and followers</p>}
                 {feed?.is_group && <p className="small-text">Admins remove content, appoint and dismiss mods, and make feed changes</p>}
             </div>
-            
             {errorMessage && <div className="error-message">{errorMessage}</div>}
-            
             {followers.length === 0 ? (
-                <p className="medium-text">No followers</p>
+                <p className="medium-text faded-text">No followers</p>
             ) : (
                 <div className="flex flex-col gap-3 w-full">
                     {followerQuads.map((followerQuad, idx) => (

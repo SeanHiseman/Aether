@@ -44,7 +44,7 @@ const Theme = () => {
 	
 	return (
 		<div className="feed-settings">
-			<p className="text36">Choose your theme</p>
+			<p className="large-text">Choose your theme</p>
 			<div className="display-area" style={{ display: 'grid', gap: '10px', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))' }}>
 				{themes.map((themeName) => (
 					<ThemeButton key={themeName} colors={defaultThemeColors[themeName]} onThemeSelect={handleDefaultThemeSelect} themeName={themeName} />
@@ -52,7 +52,7 @@ const Theme = () => {
 			</div>
 			{errorMessage && <p className="error-message">{errorMessage}</p>}
 			<div className="custom-theme-container">
-				<p className="text24">Custom Theme</p>
+				<p className="medium-text">Custom Theme</p>
 				<div className="custom-theme-preview">
 					{['darkest','dark','light','lightest','border'].map((key) => (
 						<div key={key} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>

@@ -20,12 +20,12 @@ const Account = () => {
 
     const changeEmail = async (event) => {
         event.preventDefault();
-        if (!ValidateEmail(email) || email !== confirmEmail || email === user.email || emailMessage) { //Redundant check
+        if (!ValidateEmail(email) || email !== confirmEmail || email === user?.email || emailMessage) { //Redundant check
             return;
         }
         try {
-            const response = await axios.post('/api/change_email', { email, userId: user.user_id });
-            if (response.data.success) {
+            const response = await axios.post('/api/change_email', { email, userId: user?.user_id });
+            if (response.data?.success) {
                 setEmail('');
                 setConfirmEmail('');
                 setEmailMessage('Verification email sent! Please check your new email address.');
@@ -34,7 +34,7 @@ const Account = () => {
             if (error.response?.status === 409) {
                 setEmailMessage('This email is already in use');
             } else if (error.response?.status === 400) {
-                setEmailMessage(error.response.data.error || 'Invalid email');
+                setEmailMessage(error.response.data?.error || 'Invalid email');
             } else {
                 setEmailMessage('Email change error, please try again');
             }
@@ -48,13 +48,13 @@ const Account = () => {
             return;
         }
         try {
-            const response = await axios.post('/api/change_password', { password, user_id: user.user_id });
+            const response = await axios.post('/api/change_password', { password, user_id: user?.user_id });
             setPassword('');
             setConfirmPassword('');
-            setPasswordMessage(response.data.success ? 'Password changed' : 'Password change error, please try again');
+            setPasswordMessage(response.data?.success ? 'Password changed' : 'Password change error, please try again');
             setTimeout(() => { setPasswordMessage(''); }, 5000);
         } catch (error) {
-            setPasswordMessage(error.response?.data?.message || 'Password change error, please try again');
+            setPasswordMessage(error.response.data?.message || 'Password change error, please try again');
             setTimeout(() => { setPasswordMessage(''); }, 5000);
         }
     };
@@ -66,7 +66,7 @@ const Account = () => {
     return (
         <div className="feed-settings">
             <div className="display-area">
-                <p className="text36">Change password</p>
+                <p className="large-text">Change password</p>
                 <p className="error-message">{passwordMessage}</p>
                 <form method="post" onSubmit={changePassword} style={{ width: "60%" }}>
                     <div className="password-container">
@@ -131,8 +131,8 @@ const Account = () => {
                 </form>
             </div>
             <div className="display-area">
-                <p className="text36">Change email</p>
-                <p className="text16 faded-text">Current email: {user.email}</p>
+                <p className="large-text">Change email</p>
+                <p className="medium-text faded-text">Current email: {user?.email}</p>
                 <p className="error-message">{emailMessage}</p>
                 <form method="post" onSubmit={changeEmail} style={{ width: "60%" }}>
                     <input 
@@ -149,7 +149,7 @@ const Account = () => {
                             
                             if (!valid) {
                                 setEmailMessage(error);
-                            } else if (input === user.email) {
+                            } else if (input === user?.email) {
                                 setEmailMessage("Must use a different email to the current");
                             } else if (confirmEmail && input !== confirmEmail) {
                                 setEmailMessage("Emails do not match");
@@ -163,7 +163,7 @@ const Account = () => {
                                 const { valid, error } = ValidateEmail(input);
                                 if (!valid) {
                                     setEmailMessage(error);
-                                } else if (input === user.email) {
+                                } else if (input === user?.email) {
                                     setEmailMessage("Must use a different email to the current");
                                 }
                             }
@@ -182,7 +182,7 @@ const Account = () => {
                             const { valid } = ValidateEmail(email);
                             if (email && input !== email) {
                                 setEmailMessage("Emails do not match");
-                            } else if (email && input === email && valid && email !== user.email) {
+                            } else if (email && input === email && valid && email !== user?.email) {
                                 setEmailMessage("");
                             }
                         }} 

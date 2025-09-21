@@ -33,7 +33,7 @@ const Join = () => {
             if (error.response?.status === 409) {
                 setErrorMessage(error.response.data?.message);
             } else if (error.response?.status === 400) {
-                setErrorMessage(error.response?.data?.message || 'Invalid input');
+                setErrorMessage(error.response.data?.message || 'Invalid input');
             } else {
                 setErrorMessage('Joining failed, please try again');
             }
@@ -52,7 +52,7 @@ const Join = () => {
             </Link>
             <div className="authentication-box">
                 <div className="login-register">
-                    <p className="text36">Join</p>
+                    <p className="large-text">Join</p>
                     <Link to="/login">
                         <p className="link">Login</p>
                     </Link>
