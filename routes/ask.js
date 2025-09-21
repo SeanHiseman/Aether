@@ -11,9 +11,9 @@ import sequelize from '../databaseSetup.js';
 dotenv.config();
 const openai = new OpenAI();
 const router = Router();
-//const anthropic = new Anthropic({ 
-    //apiKey: process.env.ANTHROPIC_API_KEY
-//});
+const anthropic = new Anthropic({ 
+    apiKey: process.env.ANTHROPIC_API_KEY
+});
 
 //ASSITANTS TO BE DEPRECATED
 router.post('/ask_button', authenticateCheck, async (req, res) => {
@@ -129,79 +129,11 @@ router.get('/get_ask_chats', authenticateCheck, async (req, res) => {
 router.post('/generate_content', authenticateCheck, async (req, res) => {
     try {
         const { currentCode, request, senderId } = req.body;
+        console.log('Received request:', { currentCode, request, senderId });
         const hasMembership = req.session.has_membership || false;
-        const model = hasMembership ? 'gpt-5-mini' : 'gpt-5-nano'; 
-        //GPT-5-mini 0.25/2.00, GPT-5 nano 0.05/0.40
-        const inputMultiplier = hasMembership ? 2.5 : 0.5;
-        const outputMultiplier = hasMembership ? 20 : 4; 
-        const normalizedRequest = request.toLowerCase().trim();
-        const commonWords = ['a', 'an', 'the', 'and', 'or', 'but', 'is', 'are', 'was', 'were', 'to', 'of', 'in', 'with', 'for', 'on', 'at', 'by'];
-        const tokens = normalizedRequest.split(/\s+/)
-            .filter(word => word.length > 2 && !commonWords.includes(word))
-            .map(word => word.replace(/[^\w]/g, ''));
-        let similarPrompt = null;
-        if (tokens.length > 0) {
-            const whereConditions = [];
-            const significantTokens = tokens.slice(0, Math.min(tokens.length, 20));
-            for (const token of significantTokens) {
-                if (token.length > 2) {
-                    whereConditions.push({
-                        prompt_content: {
-                            [Sequelize.Op.like]: `%${token}%`
-                        }
-                    });
-                }
-            }
-            if (whereConditions.length > 0) {
-                const potentialMatches = await Prompts.findAll({
-                    where: {
-                        [Sequelize.Op.or]: whereConditions
-                    },
-                    limit: 10
-                });
-                if (potentialMatches.length > 0) {
-                    let bestMatch = null;
-                    let bestScore = 0;
-                    for (const prompt of potentialMatches) {
-                        const promptText = prompt.prompt_content.toLowerCase();
-                        const promptTokens = promptText.split(/\s+/)
-                            .filter(word => word.length > 2 && !commonWords.includes(word))
-                            .map(word => word.replace(/[^\w]/g, ''));
-                        let matchingTokens = 0;
-                        let totalTokens = new Set([...significantTokens, ...promptTokens]).size;
-                        for (const token of significantTokens) {
-                            if (promptTokens.includes(token)) {
-                                matchingTokens++;
-                            }
-                        }
-                        const jaccardSimilarity = matchingTokens / totalTokens;
-                        const lengthRatio = Math.min(normalizedRequest.length, promptText.length) /
-                                            Math.max(normalizedRequest.length, promptText.length);
-                        const wordCountRatio = Math.min(normalizedRequest.split(/\s+/).length, promptText.split(/\s+/).length) /
-                                                Math.max(normalizedRequest.split(/\s+/).length, promptText.split(/\s+/).length);
-                        const combinedScore = (jaccardSimilarity * 0.6) + (lengthRatio * 0.2) + (wordCountRatio * 0.2);
-                        if (combinedScore > 0.85 && (matchingTokens / significantTokens.length) >= 0.5 && combinedScore > bestScore) {
-                            bestScore = combinedScore;
-                            bestMatch = prompt;
-                        }
-                    }
-                    if (bestMatch) {
-                        similarPrompt = bestMatch;
-                    }
-                }
-            }
-        }
-        let aiReply;
-        let fromCache = false;
-        if (similarPrompt) {
-            aiReply = similarPrompt.response_content;
-            fromCache = true;
-            return res.status(201).json({
-                success: true,
-                generatedContent: aiReply,
-                fromCache: true
-            });
-        }
+        const model = hasMembership ? 'claude-sonnet-4-20250514' : 'claude-3-5-haiku-20241022';
+        const inputMultiplier = hasMembership ? 3.0 : 0.25;
+        const outputMultiplier = hasMembership ? 15.0 : 1.25;
         const assistantInstructions = 
             `Generate or improve HTML code based on the following context:
             Request: ${request}
@@ -213,29 +145,33 @@ router.post('/generate_content', authenticateCheck, async (req, res) => {
             White text as default
             Ensure all interactions work on mobile and desktop.
             If the request cannot be fulfilled with code, return nothing`;
-        const completion = await openai.chat.completions.create({
+        const completion = await anthropic.messages.create({
             model: model,
+            max_tokens: hasMembership ? 16384 : 8192,
             messages: [
                 {
                     role: 'user',
                     content: assistantInstructions
                 }
             ],
-            max_completion_tokens: hasMembership ? 128000 : 64000,
         });
-        aiReply = completion.choices[0].message.content.trim();
+        let aiReply = completion.content[0].text.trim();
+        console.log('AI Reply before processing:', aiReply);
         const doctypeIndex = aiReply.indexOf('<!DOCTYPE html>');
         if (doctypeIndex !== -1) {
             aiReply = aiReply.substring(doctypeIndex);
         }
         aiReply = aiReply.replace(/^```[a-zA-Z]*\s*|```$/g, '').trim();
-        await Prompts.create({ prompt_id: v4(), prompt_content: request, response_content: aiReply});
-        const inputTokens = completion.usage?.prompt_tokens || 0;
-        const outputTokens = completion.usage?.completion_tokens || 0;
-        const totalTokens = (inputTokens * inputMultiplier) + (outputTokens * outputMultiplier); 
-		await Users.increment('usage_count', { by: totalTokens, where: { user_id: senderId } });
-        res.status(201).json({ success: true, generatedContent: aiReply, fromCache: false });
+        const inputTokens = completion.usage?.input_tokens || 0;
+        const outputTokens = completion.usage?.output_tokens || 0;
+        const totalTokens = (inputTokens * inputMultiplier) + (outputTokens * outputMultiplier);
+        await Users.increment('usage_count', { 
+            by: totalTokens, 
+            where: { user_id: senderId } 
+        });
+        res.status(201).json({ success: true, generatedContent: aiReply});
     } catch (error) {
+        console.error('Error generating content:', error);
         res.status(500).json({ success: false, error: error.message });
     }
 });

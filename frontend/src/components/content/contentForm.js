@@ -1036,19 +1036,19 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
                                                                     ) : data.html.trim() ? (
                                                                         <div className="text-preview" dangerouslySetInnerHTML={{ __html: data.html }} />
                                                                     ) : (
-                                                                        <p>Nothing to preview</p>
+                                                                        <p className="small-text faded-text">Nothing to preview</p>
                                                                     )}
                                                                 </div>
                                                             )}
                                                             {type === BLOCK_TYPES.CODE && (
                                                                 <div className="block-content">
-                                                                    {!data.showPrompt && <p className="small-text" style={{color: '#7b7b7b', marginLeft: '0px'}}>For now, only one HTML file with inline JavaScript and CSS can be created.</p>}
+                                                                    {!data.showPrompt && <p className="small-text faded-text">For now, only one HTML file with inline JavaScript and CSS can be created.</p>}
                                                                     {isEditing && (
                                                                         <>
                                                                             {data.showPrompt ? (
                                                                                 <div className="ai-generator">
                                                                                     <textarea className="ai-prompt" 
-                                                                                        disabled={limitReached} 
+                                                                                        disabled={limitReached || data.isBlockLoading}  
                                                                                         onChange={(e) => {
                                                                                             const input = e.target.value;
                                                                                             if (input.length <= TEXT_CHAR_LIMIT) {
@@ -1056,20 +1056,21 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
                                                                                                 setPostErrorMessage('');
                                                                                             } else {
                                                                                                 updateBlock({ ...block, data: { ...data, _tempAiPrompt: input } });
-                                                                                                setPostErrorMessage('Prompt exceeds character limit.', !user.has_membership && 'Get membership for more.');
+                                                                                                setPostErrorMessage('Prompt exceeds character limit.', !user?.has_membership && 'Get membership for more.');
                                                                                             }
                                                                                         }}
-                                                                                        placeholder={limitReached ? (user.has_membership ? "Usage limit reached. Buy new membership to reset" 
+                                                                                        placeholder={limitReached ? (user?.has_membership ? "Usage limit reached. Buy new membership to reset" 
                                                                                             : "Usage limit reached. Get membership for more.") 
-                                                                                            : data.isBlockLoading ? "Creating..." 
-                                                                                            : user.has_membership ? "Describe your content..."
+                                                                                            : data.isBlockLoading ? "Generating post... this may take up to a minute" 
+                                                                                            : user?.has_membership ? "Describe your post..."
                                                                                             : "Describe your content... (Get membership for the best responses)"
                                                                                         }
-                                                                                        value={data._tempAiPrompt || ''}/>
+                                                                                        value={data.isBlockLoading ? '' : (data._tempAiPrompt || '')}
+                                                                                    />
                                                                                     <button className={data.isBlockLoading || !data._tempAiPrompt?.trim() || limitReached ? 'small-icon disabled' : 'small-icon'} 
                                                                                         disabled={data.isBlockLoading || !data._tempAiPrompt?.trim() || limitReached} 
                                                                                         onClick={() => generateCodeBlock(block)} 
-                                                                                        title={limitReached ? (user.has_membership ? "Usage limit reached" 
+                                                                                        title={limitReached ? (user?.has_membership ? "Usage limit reached" 
                                                                                             : "Usage limit reached. Get membership for more.") 
                                                                                             : data.isBlockLoading ? 'Creating...' 
                                                                                             : !data._tempAiPrompt?.trim() ? 'Enter a prompt' 
@@ -1108,7 +1109,7 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
                                                                             <iframe ref={el => { iframeRefs.current[id] = el }} sandbox="allow-scripts allow-same-origin" srcDoc={data.code} style={{ border: 'none', width: '100%', height: '50vh' }} title={`code-preview-${id}`} />
                                                                         </div>
                                                                     ) : (
-                                                                        <p>Nothing to preview</p>
+                                                                        <p className="small-text faded-text">Nothing to preview</p>
                                                                     )}
                                                                 </div>
                                                             )}
