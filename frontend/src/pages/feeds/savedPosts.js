@@ -66,7 +66,7 @@ const SavedPosts = () => {
 							{posts.map((post) => (
 								<ContentWidget
 									canRemove={false}
-									feed={{ feed_id: viewer?.feed_id, is_group: false }}
+									feed={post.parentChannel?.feed}
 									isDraft={false}
 									isGroup={false}
 									key={post.post_id}

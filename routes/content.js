@@ -42,6 +42,7 @@ const checkStorageLimit = async (req, res, next) => {
         req.currentUser = user;
         next();
     } catch (error) {
+		console.error("Error checking storage limit:", error);
         return res.status(500).json({ success: false, error: error.message });
     }
 };
@@ -449,6 +450,7 @@ router.delete('/remove_draft', authenticateCheck, async (req, res) => {
 		return res.status(200).json({ success: true });
 	} catch (error) {
         if (transaction) await transaction.rollback();
+		console.error("Error in /remove_draft:", error);
 		return res.status(500).json({ success: false });
 	}
 });
@@ -475,6 +477,7 @@ router.delete('/remove_post', authenticateCheck, async (req, res) => {
 		return res.status(200).json({ success: true });
 	} catch (error) {
 		if (transaction) await transaction.rollback();
+		console.error("Error in /remove_post:", error);
 		return res.status(500).json({ success: false });
 	}
 });
@@ -505,6 +508,7 @@ router.post('/increment_views', authenticateCheck, async (req, res) => {
         res.status(200).json({ success: true });
     } catch (error) {
 		if (transaction) await transaction.rollback();
+		console.error("Error in /increment_views:", error);
         res.status(500).json({ success: false });   
     }
 });

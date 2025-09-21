@@ -797,7 +797,7 @@ router.get('/get_saved_posts', authenticateCheck, async (req, res) => {
                 model: Posts,
                 include: [
                     { model: Feeds, as: 'poster' },
-                    { model: FeedChannels, as: 'parentChannel' }
+                    { model: FeedChannels, as: 'parentChannel', include: [{ model: Feeds }] },
                 ]
             }]
         });
