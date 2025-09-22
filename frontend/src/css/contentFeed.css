@@ -22,7 +22,7 @@
     justify-content: space-between;
 }
 .content-item, .result-widget {
-    border-radius: calc(clamp(4px, 1vw, 10px) + var(--medium-margin));
+    border-radius: calc(clamp(4px, 1vw, 10px) + var(--small-margin));
     border: 1px solid var(--border);
     cursor: pointer;
     margin-top: var(--medium-margin);
@@ -67,8 +67,9 @@
     gap: 1rem;
     align-items: center;
     font-size: var(--medium-text);
-    margin-left: var(--medium-margin);
-    margin-right: var(--medium-margin);
+    margin-bottom: var(--small-margin);
+    margin-left: var(--small-margin);
+    margin-right: var(--small-margin);
 }
 .content-metadata .feed-info {
     grid-area: user;
@@ -121,9 +122,13 @@
     justify-content: space-around;
     width: 100%;
 }
+.display-container {
+    border-top-left-radius: calc(clamp(4px, 1vw, 10px) + var(--small-margin));
+    border-top-right-radius: calc(clamp(4px, 1vw, 10px) + var(--small-margin));
+} 
 .display-div {
-    border-top-left-radius: calc(clamp(4px, 1vw, 10px) + var(--medium-margin));
-    border-top-right-radius: calc(clamp(4px, 1vw, 10px) + var(--medium-margin));
+    border-top-left-radius: calc(clamp(4px, 1vw, 10px) + var(--small-margin));
+    border-top-right-radius: calc(clamp(4px, 1vw, 10px) + var(--small-margin));
 }
 .feed-photo {
     width: var(--xl-margin);

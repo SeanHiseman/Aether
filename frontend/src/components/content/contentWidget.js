@@ -347,7 +347,7 @@ const ContentWidget = ({ canRemove = false, display = false, feed, isDraft = fal
 			{showNote && <div className="ask-note"><p className="ask-note-text">{note}</p></div>}
 			<div className="content-metadata">
 				{!isDraft && (<div className="feed-info">
-					<Link className="feed-link" onClick={() => incrementViews(post?.post_id)} to={`/u/${post?.poster?.feed_name}`}>
+					<Link className="feed-link" onClick={() => incrementViews(post?.post_id)} to={display ? '/welcome' : `/u/${post?.poster?.feed_name}`}>
 						<img className="small-feed-photo" src={`/${post?.poster?.feed_photo}`} onError={(e) => e.currentTarget.src = '/media/site_images/blank-profile.png'} />
 						<p className="feed-list-text">{post?.poster?.feed_name ?? 'Anonymous'}</p>
 					</Link>
@@ -356,26 +356,26 @@ const ContentWidget = ({ canRemove = false, display = false, feed, isDraft = fal
 					<p className="small-text clickable faded-text">{feedName}/{channelName}</p>
 				</Link>}
 				{!isDraft && (<div className="vote-container">
-					{isAuthenticated ? (
+					{(isAuthenticated || display) ? (
 						!isViewingOwnPost ? (   
 							<div className="post-button-group">
 								<button className={`large-icon ${upvoteClass}`} disabled={upvoteLimit} onClick={() => postVote(post?.post_id, 'upvote')} title={upvoteLimit ? 'Vote limit reached' : 'Upvote'}>
 									<FaArrowUp />
 								</button>
-								<p className="small-text">{upvotes - downvotes || 0}</p>      
+								<p className="small-text">{FormatNumber(upvotes - downvotes)}</p>      
 								<button className={`large-icon ${downvoteClass}`} disabled={downvoteLimit} onClick={() => postVote(post?.post_id, 'downvote')} title={downvoteLimit ? 'Vote limit reached' : 'Downvote'}>
 									<FaArrowDown />
 								</button>
 							</div>
 						) : (
-							<p className="small-text">{upvotes - downvotes} {Math.abs(upvotes - downvotes) === 1 ? 'vote' : 'votes'}</p>
+							<p className="small-text">{FormatNumber(upvotes - downvotes)} {Math.abs(upvotes - downvotes) === 1 ? 'vote' : 'votes'}</p>
 						)
 					) : (
 						<div className="post-button-group">
 							<button className="large-icon" onClick={handleLoginRedirect} title="Login to vote">
 								<FaArrowUp />
 							</button>
-							<p className="small-text">{FormatNumber(upvotes - downvotes || 0)}</p>
+							<p className="small-text">{FormatNumber(upvotes - downvotes)}</p>
 							<button className="large-icon" onClick={handleLoginRedirect} title="Login to vote">
 								<FaArrowDown />
 							</button>

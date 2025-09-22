@@ -92,7 +92,7 @@ const ContentDisplay = ({ content, onCodeAppChange = () => {}, onOverflowChange 
 	}
 
 	return (
-		<div ref={contentRef} style={{ height: heightStyle, overflow: showScrollBar ? 'auto' : 'hidden', position: 'relative' }}>
+		<div ref={contentRef} className="display-container" style={{ height: heightStyle, overflow: showScrollBar ? 'auto' : 'hidden', position: 'relative' }}>
 			{blocks.map((block, i) => {
 				if (block.type === 'text') {
 					return <div dangerouslySetInnerHTML={{ __html: block.html }} key={i} style={{ paddingTop: 5, paddingLeft: 5, paddingRight: 5 }} />
