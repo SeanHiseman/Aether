@@ -1,4 +1,4 @@
-<html><head></head><body><div class="content-block code-block" data-blockid="fd44e6da-79a4-47eb-a798-be60394a4124" data-code="<!DOCTYPE html>
+<html><head></head><body><div class="content-block code-block" data-blockid="c3e76942-542d-4b53-b9ab-8cbbe00d7916" data-code="<!DOCTYPE html>
  <html lang=&quot;en&quot;>
  <head>
      <meta charset=&quot;UTF-8&quot;>
@@ -27,8 +27,9 @@
              background-color: var(--darkest);
              color: var(--lightest);
              min-height: 100vh;
-             padding: 20px;
+             padding: 2vw;
              line-height: 1.6;
+             font-size: calc(14px + 0.2vw);
          }
  
          .container {
@@ -38,30 +39,46 @@
  
          h1 {
              text-align: center;
-             margin-bottom: 30px;
+             margin-bottom: 3vh;
              color: var(--lightest);
-             font-size: 2.5em;
+             font-size: calc(1.5em + 1.5vw);
+         }
+ 
+         h2 {
+             font-size: calc(1.2em + 0.5vw);
+             margin-bottom: 1vh;
          }
  
          .tutorial-section {
              background-color: var(--dark);
              border: 1px solid var(--border);
              border-radius: 8px;
-             padding: 20px;
-             margin-bottom: 30px;
+             padding: calc(15px + 1vw);
+             margin-bottom: 3vh;
+         }
+ 
+         .tutorial-section p {
+             font-size: calc(14px + 0.3vw);
+             margin-bottom: 0.5em;
          }
  
          .neural-network-container {
              display: flex;
              justify-content: center;
              align-items: center;
-             min-height: 400px;
+             min-height: 50vh;
              background-color: var(--darkest);
              border: 1px solid var(--border);
              border-radius: 8px;
-             padding: 40px;
+             padding: calc(20px + 2vw);
              position: relative;
              overflow: hidden;
+         }
+ 
+         .layers-wrapper {
+             display: flex;
+             gap: calc(50px + 8vw);
+             align-items: center;
          }
  
          .layer {
@@ -69,13 +86,13 @@
              flex-direction: column;
              justify-content: center;
              align-items: center;
-             gap: 40px;
+             gap: calc(20px + 2vh);
              z-index: 10;
          }
  
          .neuron {
-             width: 60px;
-             height: 60px;
+             width: calc(40px + 3vw);
+             height: calc(40px + 3vw);
              border-radius: 50%;
              background-color: var(--dark);
              border: 3px solid var(--accent);
@@ -83,6 +100,7 @@
              align-items: center;
              justify-content: center;
              font-weight: bold;
+             font-size: calc(11px + 0.4vw);
              position: relative;
              cursor: pointer;
              transition: all 0.3s ease;
@@ -100,35 +118,10 @@
              box-shadow: 0 0 30px var(--accent);
          }
  
-         .weight-line {
-             position: absolute;
-             height: 2px;
-             background-color: var(--light);
-             transform-origin: left center;
-             z-index: 1;
-             transition: all 0.5s ease;
-         }
- 
-         .weight-line.active {
-             background-color: var(--accent);
-             height: 3px;
-             box-shadow: 0 0 10px var(--accent);
-         }
- 
-         .weight-label {
-             position: absolute;
-             background-color: var(--dark);
-             padding: 2px 6px;
-             border-radius: 4px;
-             font-size: 0.8em;
-             border: 1px solid var(--border);
-             z-index: 15;
-         }
- 
          .controls {
-             margin-top: 30px;
+             margin-top: 3vh;
              display: flex;
-             gap: 20px;
+             gap: 2vw;
              flex-wrap: wrap;
              justify-content: center;
          }
@@ -136,36 +129,40 @@
          .input-control {
              display: flex;
              align-items: center;
-             gap: 10px;
+             gap: calc(5px + 0.5vw);
              background-color: var(--dark);
-             padding: 10px 20px;
+             padding: calc(8px + 0.5vw) calc(15px + 1vw);
              border-radius: 6px;
              border: 1px solid var(--border);
+             font-size: calc(13px + 0.3vw);
          }
  
          input[type=&quot;range&quot;] {
-             width: 100px;
+             width: calc(80px + 2vw);
              accent-color: var(--accent);
          }
  
          input[type=&quot;number&quot;] {
-             width: 60px;
-             padding: 5px;
+             width: calc(50px + 1vw);
+             padding: calc(3px + 0.2vw);
              background-color: var(--darkest);
              color: var(--lightest);
              border: 1px solid var(--border);
              border-radius: 4px;
+             font-size: calc(12px + 0.3vw);
          }
  
          button {
-             padding: 10px 20px;
+             padding: calc(8px + 0.5vw) calc(15px + 1vw);
              background-color: var(--accent);
              color: var(--darkest);
              border: none;
              border-radius: 6px;
              font-weight: bold;
+             font-size: calc(13px + 0.3vw);
              cursor: pointer;
              transition: all 0.3s ease;
+             white-space: nowrap;
          }
  
          button:hover {
@@ -174,21 +171,24 @@
          }
  
          .info-panel {
-             margin-top: 20px;
-             padding: 15px;
+             margin-top: 2vh;
+             padding: calc(12px + 1vw);
              background-color: var(--darkest);
              border: 1px solid var(--border);
              border-radius: 6px;
              font-family: 'Courier New', monospace;
-             font-size: 0.9em;
+             font-size: calc(12px + 0.3vw);
+             line-height: 1.5;
+             overflow-x: auto;
          }
  
          .layer-label {
-             margin-bottom: 10px;
+             margin-bottom: 1vh;
              color: var(--light);
-             font-size: 0.9em;
+             font-size: calc(11px + 0.3vw);
              text-transform: uppercase;
-             letter-spacing: 1px;
+             letter-spacing: 0.05em;
+             text-align: center;
          }
  
          #network-svg {
@@ -214,13 +214,111 @@
          .pulsing {
              animation: pulse 1s ease-in-out;
          }
+ 
+         /* Mobile specific styles */
+         @media (max-width: 768px) {
+             body {
+                 padding: 3vw;
+             }
+ 
+             h1 {
+                 font-size: calc(1.3em + 2vw);
+                 margin-bottom: 2vh;
+             }
+ 
+             .neural-network-container {
+                 min-height: 40vh;
+                 padding: calc(10px + 2vw);
+             }
+ 
+             .layers-wrapper {
+                 gap: calc(30px + 5vw);
+             }
+ 
+             .layer {
+                 gap: calc(15px + 1.5vh);
+             }
+ 
+             .neuron {
+                 width: calc(35px + 4vw);
+                 height: calc(35px + 4vw);
+                 font-size: calc(10px + 0.5vw);
+             }
+ 
+             .controls {
+                 gap: 1.5vw;
+             }
+ 
+             .input-control {
+                 flex-direction: column;
+                 align-items: stretch;
+                 width: 100%;
+                 max-width: 200px;
+             }
+ 
+             .input-control label {
+                 text-align: center;
+             }
+ 
+             input[type=&quot;range&quot;] {
+                 width: 100%;
+             }
+ 
+             input[type=&quot;number&quot;] {
+                 width: 100%;
+                 text-align: center;
+             }
+ 
+             button {
+                 width: 100%;
+                 max-width: 200px;
+             }
+ 
+             .info-panel {
+                 font-size: calc(11px + 0.4vw);
+             }
+         }
+ 
+         /* Extra small devices */
+         @media (max-width: 480px) {
+             .layers-wrapper {
+                 gap: calc(20px + 3vw);
+             }
+ 
+             .neuron {
+                 width: calc(30px + 5vw);
+                 height: calc(30px + 5vw);
+                 border-width: 2px;
+             }
+ 
+             .layer-label {
+                 font-size: calc(10px + 0.4vw);
+             }
+ 
+             .controls {
+                 flex-direction: column;
+                 align-items: center;
+             }
+ 
+             .input-control,
+             button {
+                 width: 90%;
+                 max-width: none;
+             }
+         }
+ 
+         /* SVG text responsiveness */
+         #network-svg text {
+             font-size: calc(10px + 0.3vw);
+         }
      </style>
  </head>
  <body>
      <div class=&quot;container&quot;>
-              <h1>Deep dive into informative content</h1>
+         <h1>Hands-on learning</h1>
+         
          <div class=&quot;tutorial-section&quot;>
-             <h2>Here's an interactive tutorial on neural networks</h2>
+             <h2>Here's an interactive tutorial on how neural networks work</h2>
              <p>A neural network processes information by passing inputs through layers of connected neurons. Each connection has a <span class=&quot;highlight&quot;>weight</span> that determines how much influence one neuron has on another.</p>
              <p>Try adjusting the inputs below and watch how the signal flows through the network!</p>
          </div>
@@ -228,22 +326,24 @@
          <div class=&quot;neural-network-container&quot;>
              <svg id=&quot;network-svg&quot;></svg>
              
-             <div class=&quot;layer&quot; style=&quot;margin-right: 150px;&quot;>
-                 <div class=&quot;layer-label&quot;>Input Layer</div>
-                 <div class=&quot;neuron&quot; id=&quot;input1&quot; data-layer=&quot;input&quot; data-index=&quot;0&quot;>0.5</div>
-                 <div class=&quot;neuron&quot; id=&quot;input2&quot; data-layer=&quot;input&quot; data-index=&quot;1&quot;>0.5</div>
-             </div>
-             
-             <div class=&quot;layer&quot; style=&quot;margin-right: 150px;&quot;>
-                 <div class=&quot;layer-label&quot;>Hidden Layer</div>
-                 <div class=&quot;neuron&quot; id=&quot;hidden1&quot; data-layer=&quot;hidden&quot; data-index=&quot;0&quot;>0</div>
-                 <div class=&quot;neuron&quot; id=&quot;hidden2&quot; data-layer=&quot;hidden&quot; data-index=&quot;1&quot;>0</div>
-                 <div class=&quot;neuron&quot; id=&quot;hidden3&quot; data-layer=&quot;hidden&quot; data-index=&quot;2&quot;>0</div>
-             </div>
-             
-             <div class=&quot;layer&quot;>
-                 <div class=&quot;layer-label&quot;>Output Layer</div>
-                 <div class=&quot;neuron&quot; id=&quot;output1&quot; data-layer=&quot;output&quot; data-index=&quot;0&quot;>0</div>
+             <div class=&quot;layers-wrapper&quot;>
+                 <div class=&quot;layer&quot;>
+                     <div class=&quot;layer-label&quot;>Input Layer</div>
+                     <div class=&quot;neuron&quot; id=&quot;input1&quot; data-layer=&quot;input&quot; data-index=&quot;0&quot;>0.5</div>
+                     <div class=&quot;neuron&quot; id=&quot;input2&quot; data-layer=&quot;input&quot; data-index=&quot;1&quot;>0.5</div>
+                 </div>
+                 
+                 <div class=&quot;layer&quot;>
+                     <div class=&quot;layer-label&quot;>Hidden Layer</div>
+                     <div class=&quot;neuron&quot; id=&quot;hidden1&quot; data-layer=&quot;hidden&quot; data-index=&quot;0&quot;>0</div>
+                     <div class=&quot;neuron&quot; id=&quot;hidden2&quot; data-layer=&quot;hidden&quot; data-index=&quot;1&quot;>0</div>
+                     <div class=&quot;neuron&quot; id=&quot;hidden3&quot; data-layer=&quot;hidden&quot; data-index=&quot;2&quot;>0</div>
+                 </div>
+                 
+                 <div class=&quot;layer&quot;>
+                     <div class=&quot;layer-label&quot;>Output Layer</div>
+                     <div class=&quot;neuron&quot; id=&quot;output1&quot; data-layer=&quot;output&quot; data-index=&quot;0&quot;>0</div>
+                 </div>
              </div>
          </div>
  
@@ -358,7 +458,7 @@
              line.setAttribute('x2', x2);
              line.setAttribute('y2', y2);
              line.setAttribute('stroke', weight >= 0 ? '#52c41a' : '#ff4d4f');
-             line.setAttribute('stroke-width', Math.abs(weight) * 3 + 1);
+             line.setAttribute('stroke-width', Math.max(1, Math.abs(weight) * 3));
              line.setAttribute('opacity', 0.6);
              line.setAttribute('id', id);
              
@@ -367,7 +467,6 @@
              text.setAttribute('y', (y1 + y2) / 2 - 5);
              text.setAttribute('text-anchor', 'middle');
              text.setAttribute('fill', '#dddddd');
-             text.setAttribute('font-size', '12px');
              text.setAttribute('font-weight', 'bold');
              text.textContent = weight.toFixed(2);
              
@@ -456,7 +555,14 @@
                  
                  let calculation = `<div><strong>Output Neuron</strong></div>`;
                  calculation += `<div>Calculation:</div>`;
-                 calculation += `<div>Sum = bias + (hidden1 × weight1) + (hidden2 × weight2) + (hidden3 × weight3)</div>`;
+                 
+                 // For mobile, use shorter format if screen is small
+                 if (window.innerWidth <= 480) {
+                     calculation += `<div>Sum = bias + Σ(hidden × weight)</div>`;
+                 } else {
+                     calculation += `<div>Sum = bias + (hidden1 × weight1) + (hidden2 × weight2) + (hidden3 × weight3)</div>`;
+                 }
+                 
                  calculation += `<div>Sum = ${network.biases.output[0].toFixed(2)} + `;
                  calculation += `(${hidden[0].toFixed(3)} × ${network.weights.hiddenToOutput[0].toFixed(2)}) + `;
                  calculation += `(${hidden[1].toFixed(3)} × ${network.weights.hiddenToOutput[1].toFixed(2)}) + `;
@@ -533,10 +639,28 @@
              forwardPass();
          });
  
-         // Redraw connections on window resize
+         // Redraw connections on window resize with debouncing
+         let resizeTimeout;
          window.addEventListener('resize', function() {
-             drawConnections();
+             clearTimeout(resizeTimeout);
+             resizeTimeout = setTimeout(function() {
+                 drawConnections();
+             }, 250);
          });
+ 
+         // Touch event support for mobile
+         let touchStartY = 0;
+         
+         document.addEventListener('touchstart', function(e) {
+             touchStartY = e.touches[0].clientY;
+         }, { passive: true });
+         
+         document.addEventListener('touchmove', function(e) {
+             // Prevent pull-to-refresh on mobile
+             if (e.touches[0].clientY > touchStartY) {
+                 e.preventDefault();
+             }
+         }, { passive: false });
      </script>
  </body>
  </html>"></div></body></html>

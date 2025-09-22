@@ -1,6 +1,6 @@
 import axios from 'axios';
 import { useEffect, useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { ValidateEmail } from '../../functions/validateEmail';
 import '../../css/authentication.css';
 import '../../css/basicStyles.css';
@@ -118,6 +118,9 @@ const EmailVerification = () => {
                         </button>
                     </div>
                 )}
+                <Link to="/login">
+                    <p className="small-text">Back to Login</p>
+                </Link>
             </div>
         </div>
     );
