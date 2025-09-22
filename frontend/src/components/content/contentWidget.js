@@ -353,7 +353,7 @@ const ContentWidget = ({ canRemove = false, display = false, feed, isDraft = fal
 					</Link>
 				</div>)}
 				{!isDraft && !display && <Link to={`/${urlPrefix}/${post?.parentChannel?.feed?.feed_name}/${post?.parentChannel?.channel_name}/${post?.post_id}`} onClick={() => incrementViews(post?.post_id)}>
-					<p className="small-text clickable faded-text">{feedName}/{channelName}</p>
+					<p className="small-text feed-channel-link faded-text">{feedName}/{channelName}</p>
 				</Link>}
 				{!isDraft && (<div className="vote-container">
 					{(isAuthenticated || display) ? (
@@ -437,7 +437,7 @@ const ContentWidget = ({ canRemove = false, display = false, feed, isDraft = fal
 						{post_id ? new Date(post?.created_at).toLocaleDateString() : timeAgo}
 					</p>}
 					{!isDraft && (
-						<p className="small-text faded-text" style={{ margin: '0px', width: '10ch', textAlign: 'right' }}>
+						<p className="small-text faded-text" style={{ margin: '0px', width: '12ch', textAlign: 'right' }}>
 							{FormatNumber(views)} {views === 1 ? 'view' : 'views'}
 						</p>
 					)}

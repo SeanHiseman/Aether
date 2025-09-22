@@ -14,6 +14,8 @@ body, html {
     font-size: var(--small-text);
     height: 100%;
     margin: 0;
+    overflow-x: hidden;
+	overflow-y: auto;
     padding: 0;
     scrollbar-width: none;
 }
@@ -28,16 +30,6 @@ body, html {
 }
 .button, .dark-button, .dark-button-disabled {
     font-size: var(--small-text);
-}
-.clickable {
-    border: 1px solid transparent;
-    border-radius: var(--small-margin);
-    cursor: pointer;
-    margin: 0 !important;
-    padding: 2px;
-}
-.clickable:hover {
-    border: 1px solid var(--light);
 }
 .dark-text {
     color: var(--darkest);

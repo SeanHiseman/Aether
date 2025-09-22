@@ -146,7 +146,6 @@ const Account = () => {
                             const input = e.target.value;
                             setEmail(input);
                             const { valid, error } = ValidateEmail(input);
-                            
                             if (!valid) {
                                 setEmailMessage(error);
                             } else if (input === user?.email) {

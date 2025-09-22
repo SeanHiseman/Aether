@@ -478,7 +478,7 @@ const FeedHome = () => {
                         <ManageConnectionButton feed={feed} viewerId={viewer.feed_id} />
                     )}*/}
                 </div>
-                <div className="error-message">{feedErrorMessage}</div>
+                <div className="tiny-text faded-text">{feedErrorMessage}</div>
                 {channelRender && (
                     <div className="channel-name-section">
                         {isEditingChannelName ? (
@@ -487,27 +487,33 @@ const FeedHome = () => {
                                     className="change-name-area"
                                     onChange={(e) => {
                                         const input = e.target.value;
-                                        setNewChannelName(input);
-                                        if (input) {
-                                            if (input.trim() === 'main') {
-                                                setFeedErrorMessage("Cannot be named 'Main'");
-                                            } else {
-                                                const result = ValidateTextInput(input, 1, 30);
-                                                if (result.valid) {
-                                                    setFeedErrorMessage("");
-                                                    setIsNewNameValid(true);    
+                                        if (input.length <= 30) {  
+                                            setNewChannelName(input);
+                                            if (input) {
+                                                if (input.trim() === 'main') {
+                                                    setFeedErrorMessage("Cannot be named 'Main'");
                                                 } else {
-                                                    setFeedErrorMessage(result.error);
-                                                    setIsNewNameValid(false);
+                                                    const result = ValidateTextInput(input, 1, 30);
+                                                    if (result.valid) {
+                                                        setFeedErrorMessage("");
+                                                        setIsNewNameValid(true);    
+                                                    } else {
+                                                        setFeedErrorMessage(result.error);
+                                                        setIsNewNameValid(false);
+                                                    }
                                                 }
+                                            } else {
+                                                setFeedErrorMessage("");
+                                                setIsNewNameValid(false);
                                             }
                                         } else {
-                                            setFeedErrorMessage("");
+                                            setFeedErrorMessage("No more than 30 characters");
                                             setIsNewNameValid(false);
                                         }
                                     }}
                                     placeholder="New name"
-                                    value={newChannelName} />
+                                    value={newChannelName} 
+                                />
                                 <div className="cancel-save">
                                     <button className="small-icon" onClick={() => {setIsEditingChannelName(false); setNewChannelName(""); setFeedErrorMessage("");}} title="Cancel">
                                         <FaRegWindowClose />
@@ -520,7 +526,7 @@ const FeedHome = () => {
                         ) : (
                             <div className="channel-name">
                                 <Link to={`/${urlLetter}/${feed_name}/${channel_name}`}>
-                                    <p className="text24">{channel_name}</p>
+                                    <p className="medium-text">{channel_name}</p>
                                 </Link>
                                 <div className="button-group">
                                     {channel_name !== "Main" && isAdmin && ( 
@@ -572,22 +578,27 @@ const FeedHome = () => {
                                             className="name-input" 
                                             onChange={(e) => {
                                                 const input = e.target.value;
-                                                setNewChannelName(input);
-                                                if (input) {
-                                                    if (input.trim() === 'main') {
-                                                        setFeedErrorMessage("Cannot be named 'Main'");
-                                                    } else {
-                                                        const result = ValidateTextInput(input, 0, 30);
-                                                        if (result.valid) {
-                                                            setFeedErrorMessage("");
-                                                            setIsNewNameValid(true);
+                                                if (input.length <= 30) {  
+                                                    setNewChannelName(input);
+                                                    if (input) {
+                                                        if (input.trim() === 'main') {
+                                                            setFeedErrorMessage("Cannot be named 'Main'");
                                                         } else {
-                                                            setFeedErrorMessage(result.error);
-                                                            setIsNewNameValid(false);
+                                                            const result = ValidateTextInput(input, 1, 30);
+                                                            if (result.valid) {
+                                                                setFeedErrorMessage("");
+                                                                setIsNewNameValid(true);    
+                                                            } else {
+                                                                setFeedErrorMessage(result.error);
+                                                                setIsNewNameValid(false);
+                                                            }
                                                         }
+                                                    } else {
+                                                        setFeedErrorMessage("");
+                                                        setIsNewNameValid(false);
                                                     }
                                                 } else {
-                                                    setFeedErrorMessage("");
+                                                    setFeedErrorMessage("No more than 30 characters");
                                                     setIsNewNameValid(false);
                                                 }
                                             }}

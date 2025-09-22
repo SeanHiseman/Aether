@@ -3,10 +3,10 @@ function ValidateTextInput(textInput, minLength = 0, maxLength = 9999999) {
         return { valid: false, error: 'Must be a string.' };
     }
     if (textInput.length < minLength) {
-        return { valid: false, error: `Must be at least ${minLength} characters.` };
+        return { valid: false, error: `At least ${minLength} characters.` };
     }
     if (textInput.length > maxLength) {
-        return { valid: false, error: `Must be no more than ${maxLength} characters.` };
+        return { valid: false, error: `No more than ${maxLength} characters.` };
     }
     const characterRegex = /^[\p{L}\p{N}_\s-]+$/u;
     if (!characterRegex.test(textInput)) {

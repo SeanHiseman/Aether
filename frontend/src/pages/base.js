@@ -511,7 +511,7 @@ const BaseLayout = () => {
                                     ))}
                                 </SortableContext>
                             </div>
-                            <p className="error-message">{asideErrorMessage}</p>
+                            <p className="tiny-text faded-text">{asideErrorMessage}</p>
                             <div id="create-feed-section">
                                 <button className="small-icon" onClick={toggleForm} style={{alignSelf: "flex-start", marginLeft: "calc(5% + 10px)"}}>
                                     {showForm ? (
@@ -539,18 +539,23 @@ const BaseLayout = () => {
                                             value={feedName}
                                             onChange={(e) => {
                                                 const input = e.target.value;
-                                                setFeedName(input);
-                                                if (input) {
-                                                    const result = ValidateTextInput(input, 0, 30);
-                                                    if (result.valid) {
-                                                        setAsideErrorMessage("");
-                                                        setIsFeedNameValid(true);
+                                                if (input.length <= 30) {  
+                                                    setFeedName(input);
+                                                    if (input) {
+                                                        const result = ValidateTextInput(input, 0, 30);
+                                                        if (result.valid) {
+                                                            setAsideErrorMessage("");
+                                                            setIsFeedNameValid(true);
+                                                        } else {
+                                                            setAsideErrorMessage(result.error);
+                                                            setIsFeedNameValid(false);
+                                                        }
                                                     } else {
-                                                        setAsideErrorMessage(result.error);
+                                                        setAsideErrorMessage("");
                                                         setIsFeedNameValid(false);
                                                     }
                                                 } else {
-                                                    setAsideErrorMessage("");
+                                                    setAsideErrorMessage("Feed name too long");
                                                     setIsFeedNameValid(false);
                                                 }
                                             }}
@@ -762,7 +767,6 @@ const BaseLayout = () => {
             </div>
         </>
     );
-
 };
 
 export default BaseLayout;

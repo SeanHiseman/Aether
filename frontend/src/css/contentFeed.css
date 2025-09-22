@@ -63,13 +63,21 @@
 .content-metadata {
     display: grid;
     grid-template-areas: "user channel spacer votes replies actions save datetime";
-    grid-template-columns: minmax(200px, max-content) minmax(120px, max-content) 1fr max-content max-content max-content max-content max-content;
+    grid-template-columns: minmax(0, auto) minmax(0, auto) 1fr minmax(0, auto) minmax(0, auto) minmax(0, auto) minmax(0, auto) minmax(0, auto);
     gap: 1rem;
     align-items: center;
     font-size: var(--medium-text);
     margin-bottom: var(--small-margin);
     margin-left: var(--small-margin);
     margin-right: var(--small-margin);
+}
+.content-metadata p,
+.content-metadata .feed-list-text,
+.content-metadata .feed-channel-link {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 .content-metadata .feed-info {
     grid-area: user;
@@ -129,6 +137,19 @@
 .display-div {
     border-top-left-radius: calc(clamp(4px, 1vw, 10px) + var(--small-margin));
     border-top-right-radius: calc(clamp(4px, 1vw, 10px) + var(--small-margin));
+}
+.feed-channel-link {
+    border: 1px solid transparent;
+    border-radius: var(--small-margin);
+    cursor: pointer;
+    margin: 0 !important;
+    overflow: hidden;
+    padding: 2px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.feed-channel-link:hover {
+    border: 1px solid var(--light);
 }
 .feed-photo {
     width: var(--xl-margin);
@@ -215,6 +236,7 @@
 .view-date-container {
     display: flex;
     flex-direction: column;
+    margin-right: var(--medium-margin);
 }
 
 /* Tree View Styles */
@@ -379,19 +401,44 @@
         width: 100%;
     }
     .content-metadata {
-        gap: 0;
+        gap: var(--tiny-margin);
         grid-template-areas: 
             "user votes replies actions save"
             "channel datetime datetime datetime datetime";
-        grid-template-columns: 1fr max-content max-content max-content max-content;
+        grid-template-columns: minmax(0, 1fr) minmax(0, auto) minmax(0, auto) minmax(0, auto) minmax(0, auto);
         grid-template-rows: auto auto;
         margin-bottom: 0;
+        width: 100%;
     }
-    .content-metadata .view-date-container {
-        flex-direction: row;
-        justify-self: end;
+    .content-metadata .feed-list-text {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+    .feed-channel-link {
+        max-width: 100%;    
+        overflow: visible;    
+        white-space: nowrap;  
+        text-overflow: clip; 
+    }
+    .view-date-container,
+    .content-metadata .button-text-bottom {
+        min-width: auto; 
+        overflow: visible;
     }
     .view-date-container {
-        gap: var(--large-margin);
+        flex-direction: row;  
+        justify-self: end;   
+        gap: var(--small-margin);  
+        align-items: center; 
+        min-width: auto;       
+        overflow: visible;     
+    }
+    .vote-container {
+        justify-self: start;
+        display: flex;
+        align-items: center;
+        gap: var(--small-margin);
+        padding-right: 0;
     }
 }

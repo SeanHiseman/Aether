@@ -198,18 +198,23 @@ const FeedInfoView = () => {
                             <textarea className="change-name-area large-text" value={newName} placeholder="Feed name..." 
                                 onChange={(e) => {
                                     const input = e.target.value;
-                                    setName(input);
-                                    if (input) {
-                                        const result = ValidateTextInput(input, 0, 30);
-                                        if (result.valid) {
-                                            setErrorMessage("");
-                                            setIsNewNameValid(true);
+                                    if (input.length <= 30) {
+                                        setName(input);
+                                        if (input) {
+                                            const result = ValidateTextInput(input, 0, 30);
+                                            if (result.valid) {
+                                                setErrorMessage("");
+                                                setIsNewNameValid(true);
+                                            } else {
+                                                setErrorMessage(result.error);
+                                                setIsNewNameValid(false);
+                                            }
                                         } else {
-                                            setErrorMessage(result.error);
+                                            setErrorMessage("");
                                             setIsNewNameValid(false);
                                         }
                                     } else {
-                                        setErrorMessage("");
+                                        setErrorMessage("No more than 30 characters");
                                         setIsNewNameValid(false);
                                     }
                                 }}
@@ -230,18 +235,23 @@ const FeedInfoView = () => {
                             <textarea className="change-name-area" value={newDescription} placeholder="Description..." 
                                 onChange={(e) => {
                                     const input = e.target.value;
-                                    setDescription(input);
-                                    if (input) {
-                                        const result = ValidateTextInput(input, 0, 1000);
-                                        if (result.valid) {
-                                            setErrorMessage("");
-                                            setIsNewDescriptionValid(true);
+                                    if (input.length <= 1000) {
+                                        setDescription(input);
+                                        if (input) {
+                                            const result = ValidateTextInput(input, 0, 1000);
+                                            if (result.valid) {
+                                                setErrorMessage("");
+                                                setIsNewDescriptionValid(true);
+                                            } else {
+                                                setErrorMessage(result.error);
+                                                setIsNewDescriptionValid(false);
+                                            }
                                         } else {
-                                            setErrorMessage(result.error);
+                                            setErrorMessage("");
                                             setIsNewDescriptionValid(false);
                                         }
                                     } else {
-                                        setErrorMessage("");
+                                        setErrorMessage("No more than 1000 characters");
                                         setIsNewDescriptionValid(false);
                                     }
                                 }}

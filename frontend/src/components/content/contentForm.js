@@ -1230,7 +1230,7 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
                                                 </div>
                                             )
                                         }
-                                        return <p key={i}>Unsupported</p>
+                                        return <p className="small-text faded-text" key={i}>Unsupported</p>
                                     }
                                     return null
                                 })}
