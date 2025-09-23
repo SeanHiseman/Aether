@@ -112,9 +112,6 @@
     grid-area: replies;
     justify-self: center;
 }
-.content-metadata .vote-container {
-    padding-right: calc(2 * var(--xl-margin));
-}
 .custom-theme-container {
     align-items: center;
     display: flex;
