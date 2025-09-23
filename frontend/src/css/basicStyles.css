@@ -3,10 +3,6 @@ a {
     color: inherit;
     text-decoration: none;
 }
-.button.active, .button:hover, .button.selected:focus, .chat-channel-button:hover, .conversation-button:hover, .dark-button:hover, .follow-button:hover, .icon-button:hover, .large-icon:hover, #messages-button:hover, .posts-channel-button:hover, .small-icon:hover {
-    background-color: var(--light);
-    cursor: pointer;
-}
 body, html {
 	background-color: var(--darkest);
 	color: var(--lightest);
@@ -22,6 +18,13 @@ body, html {
 	max-width: 100%;
 	overscroll-behavior-x: none;
 	touch-action: pan-y; 
+}
+input, textarea, select {
+	font-size: 16px;
+}
+.button.active, .button:hover, .button.selected:focus, .chat-channel-button:hover, .conversation-button:hover, .dark-button:hover, .follow-button:hover, .icon-button:hover, .large-icon:hover, #messages-button:hover, .posts-channel-button:hover, .small-icon:hover {
+    background-color: var(--light);
+    cursor: pointer;
 }
 .button, .dark-button {
     background-color: var(--darkest);

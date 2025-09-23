@@ -217,6 +217,11 @@
     display: flex;
     justify-content: center;
 }
+.standard-containter, .channel-feed, .channel, .channel-content {
+    max-width: 100%;
+	overflow-x: hidden;
+	touch-action: pan-y;
+}
 .title-container {
     align-items: center;
     display: flex;
