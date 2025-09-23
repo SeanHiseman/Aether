@@ -4,8 +4,8 @@ async function loadWelcomeContent() {
 		fetch('/interactivePost2.html').then(r => r.text()),
 		fetch('/interactivePost3.html').then(r => r.text()),
 		fetch('/interactivePost4.html').then(r => r.text()),
-		//fetch('/interactivePost5.html').then(r => r.text()),
-		fetch('/interactivePost6.html').then(r => r.text()),
+		fetch('/interactivePost5.html').then(r => r.text()),
+		//fetch('/interactivePost6.html').then(r => r.text()),
 	]);
 
 	return [
@@ -85,44 +85,44 @@ async function loadWelcomeContent() {
 			upvotes: 25355,
 			views: 78164
 		},
-		//{
-			//channel_id: "5a",
-			//content: post5,
-			//created_at: "2025-09-18T10:00:00.000Z",
-			//downvotes: 0,
-			//feed_id: "5b",
-			//poster: {
-				//feed_name: "UserAbc123",
-				//feed_photo: "media/site_images/welcomeUsers/socialUser.png"
-			//},
-			//is_saved: false,
-			//parent_id: null,
-			//post_id: "5c",
-			//poster_id: "5d",
-			//replies: 32426,
-			//updated_at: "2025-09-17T10:00:30.000Z",
-			//upvotes: 82628,
-			//views: 217583
-		//},
 		{
 			channel_id: "6a",
-			content: post6,
-			created_at: "2025-09-18T09:30:00.000Z",
-			downvotes: 3,
+			content: post5,
+			created_at: "2025-09-18T10:00:00.000Z",
+			downvotes: 0,
 			feed_id: "6b",
 			poster: {
-				feed_name: "CasualWikipedian",
-				feed_photo: "media/site_images/welcomeUsers/wikiUser.png"
+				feed_name: "UserAbc123",
+				feed_photo: "media/site_images/welcomeUsers/socialUser.png"
 			},
 			is_saved: false,
 			parent_id: null,
 			post_id: "6c",
 			poster_id: "6d",
-			replies: 12576,
-			updated_at: "2025-09-18T09:35:15.000Z",
-			upvotes: 22655,
-			views: 85464
-		}
+			replies: 32426,
+			updated_at: "2025-09-17T10:00:30.000Z",
+			upvotes: 82628,
+			views: 217583
+		},
+		//{
+			//channel_id: "5a",
+			//content: post5,
+			//created_at: "2025-09-18T09:30:00.000Z",
+			//downvotes: 3,
+			//feed_id: "5b",
+			//poster: {
+				//feed_name: "CasualWikipedian",
+				//feed_photo: "media/site_images/welcomeUsers/wikiUser.png"
+			//},
+			//is_saved: false,
+			//parent_id: null,
+			//post_id: "5c",
+			//poster_id: "5d",
+			//replies: 12576,
+			//updated_at: "2025-09-18T09:35:15.000Z",
+			//upvotes: 22655,
+			//views: 85464
+		//},
 	];
 }
 
