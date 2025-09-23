@@ -4,7 +4,7 @@ async function loadWelcomeContent() {
 		fetch('/interactivePost2.html').then(r => r.text()),
 		fetch('/interactivePost3.html').then(r => r.text()),
 		fetch('/interactivePost4.html').then(r => r.text()),
-		fetch('/interactivePost5.html').then(r => r.text()),
+		//fetch('/interactivePost5.html').then(r => r.text()),
 		fetch('/interactivePost6.html').then(r => r.text()),
 	]);
 
@@ -85,25 +85,25 @@ async function loadWelcomeContent() {
 			upvotes: 25355,
 			views: 78164
 		},
-		{
-			channel_id: "5a",
-			content: post5,
-			created_at: "2025-09-18T10:00:00.000Z",
-			downvotes: 0,
-			feed_id: "5b",
-			poster: {
-				feed_name: "UserAbc123",
-				feed_photo: "media/site_images/welcomeUsers/socialUser.png"
-			},
-			is_saved: false,
-			parent_id: null,
-			post_id: "5c",
-			poster_id: "5d",
-			replies: 32426,
-			updated_at: "2025-09-17T10:00:30.000Z",
-			upvotes: 82628,
-			views: 217583
-		},
+		//{
+			//channel_id: "5a",
+			//content: post5,
+			//created_at: "2025-09-18T10:00:00.000Z",
+			//downvotes: 0,
+			//feed_id: "5b",
+			//poster: {
+				//feed_name: "UserAbc123",
+				//feed_photo: "media/site_images/welcomeUsers/socialUser.png"
+			//},
+			//is_saved: false,
+			//parent_id: null,
+			//post_id: "5c",
+			//poster_id: "5d",
+			//replies: 32426,
+			//updated_at: "2025-09-17T10:00:30.000Z",
+			//upvotes: 82628,
+			//views: 217583
+		//},
 		{
 			channel_id: "6a",
 			content: post6,

@@ -564,17 +564,25 @@ router.get("/explore_feeds", async (req, res) => {
 		const limit = parseInt(req.query.limit, 10) || 6;
         const offset = parseInt(req.query.offset, 10) || 0;
         const excludeArray = Array.isArray(exclude) ? exclude : (exclude ? exclude.split(',') : []);
+        const followedFeeds = viewerId 
+            ? await Followers.findAll({
+                attributes: ["feed_id"],
+                where: { follower_id: viewerId }
+            })
+            : [];
+        const followedIds = followedFeeds.map(f => f.feed_id);
         const { rows: feeds } = await Feeds.findAndCountAll({
             where: {
                 type: { [Op.notIn]: ["private", "hidden"] },
                 is_locked: false,
                 is_group: false,
-                feed_id: { [Op.notIn]: [...excludeArray, ...(viewerId ? [viewerId] : [])] }
+                feed_id: { [Op.notIn]: [...excludeArray, ...followedIds] }
             },
             order: sequelize.literal("RAND()"),
             limit,
             offset
         });
+
 		const feedData = await Promise.all(feeds.map(async (feed) => {
 			const feedJSON = feed.toJSON();
 			const response = {

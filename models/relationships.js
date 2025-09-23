@@ -1,4 +1,3 @@
-import { View } from "lucide-react";
 import { AppBuilds, Posts, PostDrafts, PostNotes, PostVotes, Prompts, ViewedPosts } from "./content.js";
 import { DeepFeeds, DeepFeedContent, Feeds, FeedChannels, FeedChannelMessages, Followers, FollowRequests, SavedPosts, SavedPostChannels } from "./feeds.js";
 import { AskChats, AskMessages, Chats, ConnectRequests, Connections, FeedChats, Messages } from "./messages.js";
@@ -88,6 +87,12 @@ SavedPosts.belongsTo(Feeds,	{ foreignKey: 'feed_id' });
 SavedPosts.belongsTo(SavedPostChannels, { foreignKey: 'channel_id' });
 SavedPostChannels.belongsTo(Feeds, { foreignKey: 'saver_id' });
 SavedPostChannels.hasMany(SavedPosts, { foreignKey: 'channel_id' });
+
+PostDrafts.belongsTo(FeedChannels, { as: 'parentChannel', foreignKey: 'channel_id' });
+FeedChannels.hasMany(PostDrafts, { as: 'drafts', foreignKey: 'channel_id' });
+
+PostDrafts.belongsTo(Feeds, { as: 'feed', foreignKey: 'feed_id' });
+Feeds.hasMany(PostDrafts, { as: 'drafts', foreignKey: 'feed_id' });
 
 export {
     AppBuilds,

@@ -6,12 +6,12 @@ import ContentWidget from "../../components/content/contentWidget";
 import FeedWidget from "../../components/content/feedWidget";
 import { useOutletContext } from "react-router-dom";
 
-function chunkFeedsToQuads(feeds) {
-	const quads = [];
-	for (let i = 0; i < feeds.length; i += 4) {
-		quads.push(feeds.slice(i, i + 4));
+function chunkFeedsToTriplets(feeds) {
+	const triplets = [];
+	for (let i = 0; i < feeds.length; i += 3) {
+		triplets.push(feeds.slice(i, i + 3));
 	}
-	return quads;
+	return triplets;
 }
 
 const FETCH_LIMIT = 48;
@@ -100,19 +100,19 @@ const ExplorePage = () => {
 
 	const combinedItems = useMemo(() => {
 		if (filter !== "all") return [];
-		const feedQuads = chunkFeedsToQuads(feeds).map(f => ({ type: "feedQuad", data: f }));
+		const feedTriplets = chunkFeedsToTriplets(feeds).map(f => ({ type: "feedTriplet", data: f }));
 		const postItems = posts.map(p => ({ type: "post", data: p }));
 		const interspersed = [];
 		const POSTS_PER_BLOCK = 5; 
 		let postIndex = 0;
 		let feedIndex = 0;
-		while (postIndex < postItems.length || feedIndex < feedQuads.length) {
+		while (postIndex < postItems.length || feedIndex < feedTriplets.length) {
 			for (let i = 0; i < POSTS_PER_BLOCK && postIndex < postItems.length; i++) {
 				interspersed.push(postItems[postIndex]);
 				postIndex++;
 			}
-			if (feedIndex < feedQuads.length) {
-				interspersed.push(feedQuads[feedIndex]);
+			if (feedIndex < feedTriplets.length) {
+				interspersed.push(feedTriplets[feedIndex]);
 				feedIndex++;
 			}
 		}
@@ -123,8 +123,7 @@ const ExplorePage = () => {
         setRefreshTrigger(!refreshTrigger);
     };
 
-	//For feeds-only filter, chunk into groups of 4
-	const feedQuads = useMemo(() => chunkFeedsToQuads(feeds), [feeds]);
+	const feedTriplets = useMemo(() => chunkFeedsToTriplets(feeds), [feeds]);
 
 	useEffect(() => {
 		return () => {
@@ -191,7 +190,7 @@ const ExplorePage = () => {
 											<ContentWidget post={item?.data} />
 										</div>
 									) : (
-										<div key={`feedquad-${idx}`} className="grid grid-cols-4 gap-3 w-full">
+										<div key={`feedquad-${idx}`} className="grid grid-cols-3 gap-3 w-full">
 											{item.data.map(feed => (
 												<FeedWidget
 													key={feed?.feed_id}
@@ -216,9 +215,9 @@ const ExplorePage = () => {
 						)}
 						{filter === "feeds" && (
 							<div className="flex flex-col gap-3 w-99">
-								{feedQuads.map((feedQuad, idx) => (
-									<div key={idx} className="grid grid-cols-4 gap-3 w-full">
-										{feedQuad.map(feed => (
+								{feedTriplets.map((feedTriplet, idx) => (
+									<div key={idx} className="grid grid-cols-3 gap-3 w-full">
+										{feedTriplet.map(feed => (
 											<FeedWidget
 												key={feed?.feed_id}
 												feed={feed}

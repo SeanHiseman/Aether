@@ -130,8 +130,8 @@ const FeedHome = () => {
                         setPostToEdit(post);
                     } else {
                     }
-                } catch (e) {
-                    setPostErrorMessage("Error fetching post to edit");
+                } catch (error) {
+                    setPostErrorMessage(error.response.data?.message || "Error fetching post to edit");
                 }
             };
             fetchPost();

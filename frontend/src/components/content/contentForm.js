@@ -122,10 +122,10 @@ const reorder = (list, startIndex, endIndex) => {
 
 //Post is either the post being edited or replied to
 const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPostSubmit, post = null, postErrorMessage, setPostErrorMessage, setShowForm }) => {
+    const [addContentDropdownOpen, setAddContentDropdownOpen] = useState(false);
     const blocksRef = useRef([]) 
     const [blocks, setBlocks] = useState([])
     const [blockLimitError, setBlockLimitError] = useState('')
-    const [codeBlockDropdown, setCodeBlockDropdown] = useState(false)
     const [cropState, setCropState] = useState({})
     const [draftId, setDraftId] = useState(post?.draft_id || null)
     const [editMode, setEditMode] = useState(true)
@@ -146,93 +146,77 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
     const MAX_FILE_SIZE = hasMembership ? 100 * 1024 * 1024 : 1 * 1024 * 1024
     const TEXT_CHAR_LIMIT = hasMembership ? 100000 : 1000
     const TITLE_CHAR_LIMIT = hasMembership ? 1000 : 100
-    const usageLimit = user.has_membership ? 25000000 : 2500000
-    const limitReached = user.usage_count >= usageLimit
+    const usageLimit = user?.has_membership ? 25000000 : 2500000
+    const limitReached = user?.usage_count >= usageLimit
 
-    const addIframe = (blockId) => {
+    const addIframe = () => {
         const url = prompt('Enter the website URL:');
         if (url) {
             try {
-                const parsedUrl = new URL(url);	//Validate URL format
+                const parsedUrl = new URL(url); //Validate URL format
                 if (parsedUrl.protocol !== 'http:' && parsedUrl.protocol !== 'https:') {
                     alert('Please enter a valid http or https URL');
                     return;
                 }
-                const updatedBlocks = blocks.map(block => {
-                    if (block.id === blockId && block.type === BLOCK_TYPES.CODE) {
-                        const iframeCode = `<html style="height:100%">
-                            <head>
-                                <style>
-                                    html, body {
-                                        margin: 0;
-                                        height: 100%;
-                                        overflow: hidden;
-                                    }
-                                </style>
-                            </head>
-                            <body>
-                                <div style="width:100%; height:100vh">
-                                    <iframe class="embedded-website" src="${parsedUrl.href}" style="width:100%; height:100%; border:none;" sandbox="allow-scripts allow-same-origin" referrerpolicy="no-referrer"></iframe>
-                                </div>
-                            </body>
-                        </html>`;
-                        return { 
-                            ...block, 
-                            data: { 
-                            ...block.data, 
-                            code: block.data.code ? block.data.code + '\n\n' + iframeCode : iframeCode 
-                            } 
-                        };
-                    }
-                    return block;
-                });
-                setBlocks(updatedBlocks);
+                const iframeCode = `<html style="height:100%">
+                    <head>
+                        <style>
+                            html, body {
+                                margin: 0;
+                                height: 100%;
+                                overflow: hidden;
+                            }
+                        </style>
+                    </head>
+                    <body>
+                        <div style="width:100%; height:100vh">
+                            <iframe class="embedded-website" src="${parsedUrl.href}" style="width:100%; height:100%; border:none;" sandbox="allow-scripts allow-same-origin" referrerpolicy="no-referrer"></iframe>
+                        </div>
+                    </body>
+                </html>`;
+                const newBlock = {
+                    data: { code: iframeCode, isBlockLoading: false, showPrompt: true },
+                    id: v4(),
+                    isEditing: true,
+                    type: BLOCK_TYPES.CODE,
+                };
+                setBlocks(prev => [newBlock, ...prev]);
             } catch (error) {
                 alert('Please enter a valid URL (e.g., https://example.com)');
             }
         }
-    }
-        
-    const addSocialMedia = (blockId) => {
+    };
+
+    const addSocialMedia = () => {
         const input = prompt('Enter the social media embed code or URL:');
         if (!input) return;
-        const updatedBlocks = blocks.map(block => {
-            if (block.id !== blockId || block.type !== BLOCK_TYPES.CODE) {
-                return block;
-            }
-            let embedCode = input.trim();
-            if (embedCode.startsWith('http') && !embedCode.includes('<')) {
-                try {
-                    const parsed = new URL(embedCode);
-                    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
-                        alert('Please enter a valid http or https URL');
-                        return block;
-                    }
-                    embedCode = `<a href="${parsed.href}" target="_blank" rel="noopener noreferrer">${parsed.href}</a>`;
+        let embedCode = input.trim();
+        if (embedCode.startsWith('http') && !embedCode.includes('<')) {
+            try {
+                const parsed = new URL(embedCode);
+                if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+                    alert('Please enter a valid http or https URL');
+                    return;
                 }
-                catch (error) {
-                    alert('Please enter a valid URL or embed code');
-                    return block;
-                }
+                embedCode = `<a href="${parsed.href}" target="_blank" rel="noopener noreferrer">${parsed.href}</a>`;
+            } catch (error) {
+                alert('Please enter a valid URL or embed code');
+                return;
             }
-            if (!embedCode.startsWith('<div class="social-media-embed"')) {
-                embedCode =
-                `<div class="social-media-embed" ` +
-                `style="width:100%;display:flex;justify-content:center;">` +
-                    embedCode +
+        }
+        if (!embedCode.startsWith('<div class="social-media-embed"')) {
+            embedCode =
+                `<div class="social-media-embed" style="width:100%;display:flex;justify-content:center;">` +
+                embedCode +
                 `</div>`;
-            }
-            return {
-                ...block,
-                data: {
-                ...block.data,
-                code: block.data.code
-                    ? block.data.code + '\n\n' + embedCode
-                    : embedCode
-                }
-            };
-        });
-        setBlocks(updatedBlocks);
+        }
+        const newBlock = {
+            data: { code: embedCode, isBlockLoading: false, showPrompt: true },
+            id: v4(),
+            isEditing: true,
+            type: BLOCK_TYPES.CODE,
+        };
+        setBlocks(prev => [newBlock, ...prev]);
     };
 
     const appFileChange = useCallback(async e => {
@@ -446,7 +430,8 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
                     },
                 })
                 setPostErrorMessage('Post deleted')
-                navigate(`/${urlPrefix}/${feed_name}/${channel_name}`)
+                const navigateUrl = isReply ? `/${urlPrefix}/${feed_name}/${channel_name}/${post.post_id}` : `/${urlPrefix}/${feed_name}/${channel_name}`
+                navigate(navigateUrl);
             }
             setShowForm(false)
             setTimeout(() => setPostErrorMessage(''), 3000)
@@ -787,21 +772,34 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
             <form id="post-form" className="post-form" onSubmit={submitForm}>
                 <div className="action-buttons-sticky" style={{ width: '100%' }}>
                     <div className="action-buttons" style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-start', position: 'relative' }}>
-                        <div className="left-buttons" style={{ display: 'flex', gap: '10px' }}>
-                            <button className="small-icon" type="button" onClick={() => handleAddBlock(BLOCK_TYPES.TEXT)} title="Add text">
-                                <FaFont />
+                        <div className="dropdown" style={{ position: 'relative' }}>
+                            <button className="small-icon" type="button" onClick={() => setAddContentDropdownOpen(!addContentDropdownOpen)} title="Add content">
+                                <FaEllipsisV /><span className="icon-text">Add content</span>
                             </button>
-                            <label htmlFor="media-input" className="small-icon" title="Add media">
-                                <FaPhotoVideo />
-                            </label>
-                            <button className="small-icon" type="button" onClick={() => handleAddBlock(BLOCK_TYPES.CODE)} title="Add interactive">
-                                <FaToolbox />
-                            </button>
-                            <label htmlFor="app-input" className="small-icon" title="Add app">
-                                <FaCube />
-                            </label>
+                            {addContentDropdownOpen && (
+                                <div className="dropdown-menu" style={{ position: 'absolute', zIndex: 100, left: 0, top: '100%' }}>
+                                    <button className="small-icon" type="button" onClick={() => { setAddContentDropdownOpen(false); handleAddBlock(BLOCK_TYPES.TEXT); }}>
+                                        <FaFont /><span className="icon-text">Text</span>
+                                    </button>
+                                    <button className="small-icon" type="button" onClick={() => { setAddContentDropdownOpen(false); document.getElementById('media-input').click(); }}>
+                                        <FaPhotoVideo /><span className="icon-text">Media</span>
+                                    </button>
+                                    <button className="small-icon" type="button" onClick={() => { setAddContentDropdownOpen(false); handleAddBlock(BLOCK_TYPES.CODE); }}>
+                                        <FaToolbox /><span className="icon-text">Interactive</span>
+                                    </button>
+                                    <button className="small-icon" type="button" onClick={() => { setAddContentDropdownOpen(false); document.getElementById('app-input').click(); }}>
+                                        <FaCube /><span className="icon-text">App</span>
+                                    </button>
+                                    <button className="small-icon" type="button" onClick={() => { setAddContentDropdownOpen(false); addIframe(); }}>
+                                        <FaLink /><span className="icon-text">Website</span>
+                                    </button>
+                                    <button className="small-icon" type="button" onClick={() => { setAddContentDropdownOpen(false); addSocialMedia(); }}>
+                                        <FaShareAlt /><span className="icon-text">External Post</span>
+                                    </button>
+                                </div>
+                            )}
                         </div>
-                        <div className="center-buttons" style={{ display: 'flex', gap: '10px', position: 'absolute', left: '50%', transform: 'translateX(-50%)' }}>
+                        <div className="center-buttons" style={{ display: 'flex', position: 'absolute', left: '50%', transform: 'translateX(-50%)' }}>
                             {!showGlobalAiPrompt ? (
                                 <button className="small-icon" type="button" onClick={() => setShowGlobalAiPrompt(true)} title="Assistance">
                                     <FaRegLightbulb />
@@ -819,7 +817,7 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
                             <button className="small-icon" type="button" onClick={closeForm} title="Close">
                                 <FaWindowClose />
                             </button>
-                            {!isReply && (
+                            {isEdit && (
                                 <button className="small-icon" type="button" onClick={deleteHandler} title={isDraft ? 'Delete draft' : isEdit ? 'Delete post' : 'Delete'}>
                                     <FaTrash />
                                 </button>
@@ -953,10 +951,6 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
                                                                                     setPostErrorMessage('Copied')
                                                                                     setTimeout(() => setPostErrorMessage(''), 2000)
                                                                                 })
-                                                                                setCodeBlockDropdown({
-                                                                                    ...codeBlockDropdown,
-                                                                                    [id]: false
-                                                                                })
                                                                             }}
                                                                             title="Copy"
                                                                             type="button"
@@ -990,23 +984,6 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
                                                                                 <FaAlignCenter />
                                                                             </button>
                                                                         </div>
-                                                                    )}
-                                                                    {type === BLOCK_TYPES.CODE && (
-                                                                        <>
-                                                                            <button className="small-icon" onClick={() => setCodeBlockDropdown({...codeBlockDropdown, [id]: !codeBlockDropdown[id]})} type="button">
-                                                                                <FaEllipsisV /><p style={{ fontSize: '14px', margin: '0px'}}>Add content</p>
-                                                                            </button>
-                                                                            {codeBlockDropdown[id] && (
-                                                                            <div className="dropdown-menu">
-                                                                                <button className="small-icon" onClick={() => {setCodeBlockDropdown({...codeBlockDropdown, [id]: false}); addIframe(id);}}>
-                                                                                    <FaLink /><p className="icon-text">Embed website</p>
-                                                                                </button>
-                                                                                <button className="small-icon" onClick={() => {setCodeBlockDropdown({...codeBlockDropdown, [id]: false});addSocialMedia(id);}}>
-                                                                                    <FaShareAlt /><p className="icon-text">Insert Social Media Post</p>
-                                                                                </button>
-                                                                            </div>
-                                                                            )}
-                                                                        </>
                                                                     )}
                                                                 </div>
                                                             </div>
