@@ -5,16 +5,9 @@ import { useContext, useEffect, useRef, useState, useMemo } from 'react';
 import { FaChevronDown, FaChevronUp } from 'react-icons/fa';
 import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
 import { useOutletContext, useSearchParams } from 'react-router-dom';
+import { ChunkFeeds } from '../functions/chunkFeeds';
 import ContentWidget from '../components/content/contentWidget';
 import FeedWidget from '../components/content/feedWidget';
-
-function chunkFeedsToQuads(feeds) {
-	const quads = [];
-	for (let i = 0; i < feeds.length; i += 4) {
-		quads.push(feeds.slice(i, i + 4));
-	}
-	return quads;
-}
 
 const SearchResults = () => {
     const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -109,7 +102,7 @@ const SearchResults = () => {
 
     const combinedItems = useMemo(() => {
         if (selectedView !== "combined") return [];
-        const feedQuads = chunkFeedsToQuads(feeds).map(f => ({ type: "feedQuad", data: f }));
+        const feedQuads = ChunkFeeds(feeds, 3).map(f => ({ type: "feedTriplet", data: f }));
         const postItems = posts.map(p => ({ type: "post", data: p }));
         const interspersed = [];
         const POSTS_PER_BLOCK = 5; 
@@ -128,7 +121,7 @@ const SearchResults = () => {
         return interspersed;
     }, [selectedView, posts, feeds]);
 
-	const feedQuads = useMemo(() => chunkFeedsToQuads(feeds), [feeds]);
+	const feedQuads = useMemo(() => ChunkFeeds(feeds, 3), [feeds]);
 
     useEffect(() => {
         if (error) {
@@ -175,7 +168,7 @@ const SearchResults = () => {
 											<ContentWidget post={item.data} />
 										</div>
 									) : (
-										<div key={`feedquad-${idx}`} className="grid grid-cols-4 gap-3 w-full">
+										<div key={`feedquad-${idx}`} className="grid grid-cols-3 gap-3 w-full">
 											{item.data.map(feed => (
 												<FeedWidget
 													key={feed.feed_id}
@@ -201,7 +194,7 @@ const SearchResults = () => {
 						{selectedView === "feeds" && (
 							<div className="flex flex-col gap-3 w-99">
 								{feedQuads.map((feedQuad, idx) => (
-									<div key={idx} className="grid grid-cols-4 gap-3 w-full">
+									<div key={idx} className="grid grid-cols-3 gap-3 w-full">
 										{feedQuad.map(feed => (
 											<FeedWidget
 												key={feed?.feed_id}

@@ -392,26 +392,13 @@ router.get("/explore_posts", async (req, res) => {
 
 router.get('/get_post_drafts', authenticateCheck, async (req, res) => {
     try {
-        const { channel_id, poster_id, limit = 10, offset = 0 } = req.query;
-		const drafts = await PostDrafts.findAll({
-			where: { channel_id, poster_id },
-			order: [['updated_at','DESC']],
-			include: [{ 
-				as: 'parentChannel',
-				model: FeedChannels,
-				attributes: ['channel_id', 'channel_name', 'feed_id'],
-				include: [{
-					model: Feeds,
-					attributes: ['feed_id', 'feed_name'],
-				}]
-			},{
-				as: 'feed',
-				model: Feeds,
-				attributes: ['feed_id', 'feed_name']
-			}],
-			limit: parseInt(limit,  10),
-			offset: parseInt(offset, 10)
-		});
+        const { channel_id, poster_id, limit = 20, offset = 0 } = req.query;
+        const drafts = await PostDrafts.findAll({
+            where: { channel_id, poster_id },
+            order: [['updated_at','DESC']],
+            limit: parseInt(limit,  10),
+            offset: parseInt(offset, 10)
+        });
         return res.status(200).json({ drafts });
     } catch (error) {
         console.error("Error in /get_post_drafts:", error);   

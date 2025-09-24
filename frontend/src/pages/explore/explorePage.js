@@ -2,18 +2,10 @@ import AlgorithmSelector from "../../algorithms/algorithmSelector";
 import { AuthContext } from "../../components/authContext";
 import axios from "axios";
 import { useMemo, useCallback, useContext, useEffect, useRef, useState } from "react";
+import { ChunkFeeds } from "../../functions/chunkFeeds";
 import ContentWidget from "../../components/content/contentWidget";
 import FeedWidget from "../../components/content/feedWidget";
 import { useOutletContext } from "react-router-dom";
-
-function chunkFeedsToTriplets(feeds) {
-	const triplets = [];
-	for (let i = 0; i < feeds.length; i += 3) {
-		triplets.push(feeds.slice(i, i + 3));
-	}
-	return triplets;
-}
-
 const FETCH_LIMIT = 48;
 
 const ExplorePage = () => {
@@ -100,7 +92,7 @@ const ExplorePage = () => {
 
 	const combinedItems = useMemo(() => {
 		if (filter !== "all") return [];
-		const feedTriplets = chunkFeedsToTriplets(feeds).map(f => ({ type: "feedTriplet", data: f }));
+		const feedTriplets = ChunkFeeds(feeds, 3).map(f => ({ type: "feedTriplet", data: f }));
 		const postItems = posts.map(p => ({ type: "post", data: p }));
 		const interspersed = [];
 		const POSTS_PER_BLOCK = 5; 
@@ -123,7 +115,7 @@ const ExplorePage = () => {
         setRefreshTrigger(!refreshTrigger);
     };
 
-	const feedTriplets = useMemo(() => chunkFeedsToTriplets(feeds), [feeds]);
+	const feedTriplets = useMemo(() => ChunkFeeds(feeds, 3), [feeds]);
 
 	useEffect(() => {
 		return () => {

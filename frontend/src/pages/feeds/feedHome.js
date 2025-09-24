@@ -97,7 +97,7 @@ const FeedHome = () => {
                     })
                     setDraftPosts(response.data?.drafts)
                 } catch (error) {
-                    setFeedErrorMessage("Error getting drafts");
+                    setFeedErrorMessage(error.response.data?.message || "Error getting drafts");
                 }
             }
             fetchDrafts()
@@ -112,7 +112,25 @@ const FeedHome = () => {
 
     useEffect(() => {
         if (isEditMode && post_id) {
+            const editData = location.state?.editData;
+            const isDraftEdit = location.state?.isDraft;
+            if (editData) {
+                setShowPostForm(true);
+                setIsEdit(true);
+                setPostToEdit(editData);
+                return;
+            }
             const fetchPost = async () => {
+                const isDraftPath = location.pathname.includes('/drafts/');
+                if (isDraftPath) {
+                    const draft = draftPosts.find(d => d.draft_id === post_id);
+                    if (draft) {
+                        setShowPostForm(true);
+                        setIsEdit(true);
+                        setPostToEdit(draft);
+                        return;
+                    }
+                }
                 let cachedPost = queryClient.getQueryData(['singlePost', post_id]);
                 if (cachedPost) {
                     setShowPostForm(true);
@@ -121,14 +139,15 @@ const FeedHome = () => {
                     return;
                 }
                 try {
-                    const response = await axios.get('/api/channel_posts', { params: { isSingle: true, feedId: feed?.feed_id, postId: post_id } });
+                    const response = await axios.get('/api/channel_posts', { 
+                        params: { isSingle: true, feedId: feed?.feed_id, postId: post_id } 
+                    });
                     const post = response.data?.post;
                     if (post) {
                         queryClient.setQueryData(['singlePost', post_id], post);
                         setShowPostForm(true);
                         setIsEdit(true);
                         setPostToEdit(post);
-                    } else {
                     }
                 } catch (error) {
                     setPostErrorMessage(error.response.data?.message || "Error fetching post to edit");
@@ -141,7 +160,7 @@ const FeedHome = () => {
             setIsEdit(false);
             setPostToEdit(null);
         }
-    }, [isEditMode, post_id, queryClient]);
+    }, [isEditMode, post_id, queryClient, location.state, draftPosts]);
 
     useEffect(() => {
         if (!isReplyMode || !post_id || !feed?.feed_id) return;
@@ -360,7 +379,12 @@ const FeedHome = () => {
                 setIsEdit(false);
                 setPostToEdit(null);
                 if (isEditMode && post_id) {
-                    navigate(`/${urlPrefix}/${feed_name}/${channel_name}/${post_id}`);
+                    const isDraftEdit = location.state?.isDraft || postToEdit?.draft_id;
+                    if (isDraftEdit) {
+                        navigate(`/${urlPrefix}/${feed_name}/${channel_name}/drafts`);
+                    } else {
+                        navigate(`/${urlPrefix}/${feed_name}/${channel_name}/${post_id}`);
+                    }
                 } else {
                     navigate(`/${urlPrefix}/${feed_name}/${channel_name}`);
                 }

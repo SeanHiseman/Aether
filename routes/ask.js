@@ -156,7 +156,7 @@ router.post('/generate_content', authenticateCheck, async (req, res) => {
             ],
         });
         let aiReply = completion.content[0].text.trim();
-        console.log('AI Reply before processing:', aiReply);
+        console.log('AI Reply before processing length:', aiReply.length);
         const doctypeIndex = aiReply.indexOf('<!DOCTYPE html>');
         if (doctypeIndex !== -1) {
             aiReply = aiReply.substring(doctypeIndex);

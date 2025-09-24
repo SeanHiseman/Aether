@@ -140,7 +140,8 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
     const navigate = useNavigate()
     const submittedRef = useRef(false)
     const urlPrefix = isGroup ? 'g' : 'u'
-    const { user, viewer } = useContext(AuthContext)
+    const { isAuthenticated, user, viewer } = useContext(AuthContext)
+    console.log("viewer:", viewer);
     const hasMembership = user?.has_membership
     const BLOCK_LIMIT = hasMembership ? 10000 : 10
     const MAX_FILE_SIZE = hasMembership ? 100 * 1024 * 1024 : 1 * 1024 * 1024
@@ -813,7 +814,7 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
                                 {editMode ? <FaEye /> : <FaEdit />}
                             </button>
                         </div>
-                        <div className="right-buttons" style={{ display: 'flex', gap: '10px', position: 'absolute', right: '0' }}>
+                        <div className="right-buttons" style={{ display: 'flex', position: 'absolute', right: '0' }}>
                             <button className="small-icon" type="button" onClick={closeForm} title="Close">
                                 <FaWindowClose />
                             </button>
@@ -862,7 +863,7 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
                                 setTitle(input);
                                 setPostErrorMessage('');
                             } else {
-                                setPostErrorMessage('Title exceeds character limit.', !user.has_membership && 'Get membership for more.');
+                                setPostErrorMessage('Title exceeds character limit.', !user?.has_membership && 'Get membership for more.');
                             }
                         }}
                         placeholder="Add title (optional)..." 
@@ -879,10 +880,10 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
                                     setGlobalAiPrompt(input);
                                     setPostErrorMessage('');
                                 } else {
-                                    setPostErrorMessage('Prompt exceeds character limit.', !user.has_membership && 'Get membership for more.');
+                                    setPostErrorMessage('Prompt exceeds character limit.', !user?.has_membership && 'Get membership for more.');
                                 }
                             }}
-                            placeholder={limitReached ? user.has_membership ? "Usage limit reached. Buy new membership to reset" : "Usage limit reached. Get membership for more." : "Describe changes for post..."} 
+                            placeholder={limitReached ? user?.has_membership ? "Usage limit reached. Buy new membership to reset" : "Usage limit reached. Get membership for more." : "Describe changes for post..."} 
                             value={globalAiPrompt}/>
                         <button className={isGlobalLoading || !globalAiPrompt.trim() || limitReached ? 'large-icon disabled' : 'large-icon'} 
                             disabled={isGlobalLoading || !globalAiPrompt.trim() || limitReached} 
@@ -898,7 +899,7 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
                 {editMode && 
                     <div style={{width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
                         <p className="medium-text" style={{marginLeft: 0, marginTop: 0}}>{isReply ? 'Reply' : 'Editing'}</p>
-                        <p className="small-text faded-text">Drag and drop blocks to reorder</p>
+                        {blocks.length > 1 && <p className="small-text faded-text">Drag and drop blocks to reorder</p>}
                     </div>
                 }
                 <div className={editMode ? 'single-container edit' : 'single-container'}>
@@ -907,7 +908,7 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
                             <Droppable droppableId="blocks-droppable">
                                 {provided => (
                                     <div ref={provided.innerRef} {...provided.droppableProps}>
-                                        {!blocks.length && <p className="medium-text faded-text" style={{ marginLeft: '0px' }}>Add content using the buttons above</p>}
+                                        {!blocks.length && <p className="small-text faded-text" style={{ marginLeft: '0px' }}>Add content using the buttons above</p>}
                                         {blocks.map((block, index) => {
                                             const { data, id, isEditing, type } = block
                                             const toggleEdit = () => updateBlock({ ...block, isEditing: !isEditing })

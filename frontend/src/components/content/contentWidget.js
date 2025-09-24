@@ -16,7 +16,7 @@ const ContentWidget = ({ canRemove = false, display = false, feed, isDraft = fal
 	const [canRemoveState, setCanRemoveState] = useState(canRemove);
 	const [downvoteLimit, setDownvoteLimit] = useState(false);
 	const [downvotes, setDownvotes] = useState(post?.downvotes);
-	const { post_id } = useParams();
+	const { feed_name, channel_name, post_id } = useParams();
 	const location = useLocation();
 	const isReplyMode = location.pathname.endsWith('/reply');
 	const fullscreenRef = useRef(null);
@@ -409,7 +409,12 @@ const ContentWidget = ({ canRemove = false, display = false, feed, isDraft = fal
 					{isAuthenticated && post?.poster_id === viewer?.feed_id && !readOnly && (
 						<button 
 							className="large-icon" 
-							onClick={() => navigate(`/${urlPrefix}/${post?.parentChannel?.feed?.feed_name}/${post?.parentChannel?.channel_name}/${post?.post_id}/edit`)}
+							onClick={() => navigate(
+								isDraft 
+									? `/${urlPrefix}/${feed_name}/${channel_name}/${post?.draft_id}/edit` 
+									: `/${urlPrefix}/${post?.parentChannel?.feed?.feed_name}/${post?.parentChannel?.channel_name}/${post?.post_id}/edit`,
+								{ state: { editData: post, isDraft: isDraft } }  
+							)}
 							title={isReply ? "Edit Reply" : isDraft ? "Edit draft" : "Edit Post"}
 						>
 							<FaEdit />
