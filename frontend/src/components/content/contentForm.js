@@ -141,7 +141,6 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
     const submittedRef = useRef(false)
     const urlPrefix = isGroup ? 'g' : 'u'
     const { isAuthenticated, user, viewer } = useContext(AuthContext)
-    console.log("viewer:", viewer);
     const hasMembership = user?.has_membership
     const BLOCK_LIMIT = hasMembership ? 10000 : 10
     const MAX_FILE_SIZE = hasMembership ? 100 * 1024 * 1024 : 1 * 1024 * 1024
@@ -482,10 +481,10 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
             setPostErrorMessage('');
             const response = await axios.post('/api/generate_content', { 
                 currentCode: block.data.code, 
-                //parentCode: isReply ? post.content : null, 
                 request: prompt, 
-                senderId: user.user_id,
+                senderId: user?.user_id,
             });
+            console.log('Response from generate_content:', response);
             if (response.data && response.status === 201) {
                 const { generatedContent } = response.data;
                 updateBlock({ 
@@ -499,11 +498,13 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
                 isEditing: false 
             });
             } else {
+                console.log('Unexpected response:', response);
                 updateBlock({ ...block, data: { ...block.data, isBlockLoading: false, _tempAiPrompt: '' } });
                 setPostErrorMessage(response.data?.error || 'Creation error.');
                 setTimeout(() => { setPostErrorMessage(''); }, 5000);
             }
-        } catch (error){
+        } catch (error) {
+            console.log('Error generating code block:', error);
             updateBlock({ ...block, data: { ...block.data, isBlockLoading: false, _tempAiPrompt: '' } });
             setPostErrorMessage(error.response?.data?.message || 'Error creating content.');
             setTimeout(() => { setPostErrorMessage(''); }, 5000);
