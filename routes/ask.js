@@ -127,6 +127,11 @@ router.get('/get_ask_chats', authenticateCheck, async (req, res) => {
 });
 
 router.post('/generate_content', authenticateCheck, async (req, res) => {
+    const timeout = setTimeout(() => {
+        if (!res.headersSent) {
+            res.status(408).json({ success: false, error: 'Request timeout' });
+        }
+    }, 120000); //2 minute timeout
     try {
         const { currentCode, request, senderId } = req.body;
         console.log('Received request:', { currentCode, request, senderId });
@@ -155,6 +160,7 @@ router.post('/generate_content', authenticateCheck, async (req, res) => {
                 }
             ],
         });
+        clearTimeout(timeout);
         let aiReply = completion.content[0].text.trim();
         console.log('AI Reply before processing length:', aiReply.length);
         const doctypeIndex = aiReply.indexOf('<!DOCTYPE html>');
@@ -171,8 +177,11 @@ router.post('/generate_content', authenticateCheck, async (req, res) => {
         });
         res.status(201).json({ success: true, generatedContent: aiReply});
     } catch (error) {
+        clearTimeout(timeout);
         console.error('Error generating content:', error);
-        res.status(500).json({ success: false, error: error.message });
+        if (!res.headersSent) {
+            res.status(500).json({ success: false, error: error.message });
+        }
     }
 });
 

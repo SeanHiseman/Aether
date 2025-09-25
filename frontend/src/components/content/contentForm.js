@@ -483,8 +483,9 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
                 currentCode: block.data.code, 
                 request: prompt, 
                 senderId: user?.user_id,
+            }, {
+                timeout: 120000, //2 minute timeout
             });
-            console.log('Response from generate_content:', response);
             if (response.data && response.status === 201) {
                 const { generatedContent } = response.data;
                 updateBlock({ 
@@ -498,18 +499,24 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
                 isEditing: false 
             });
             } else {
-                console.log('Unexpected response:', response);
                 updateBlock({ ...block, data: { ...block.data, isBlockLoading: false, _tempAiPrompt: '' } });
                 setPostErrorMessage(response.data?.error || 'Creation error.');
                 setTimeout(() => { setPostErrorMessage(''); }, 5000);
             }
         } catch (error) {
-            console.log('Error generating code block:', error);
             updateBlock({ ...block, data: { ...block.data, isBlockLoading: false, _tempAiPrompt: '' } });
-            setPostErrorMessage(error.response?.data?.message || 'Error creating content.');
+            let errorMessage = 'Error creating content.';
+            if (error.code === 'ECONNABORTED' || error.message.includes('timeout')) {
+                errorMessage = 'Request timed out. Please try again.';
+            } else if (error.response?.status === 504) {
+                errorMessage = 'Server timeout. Please try again.';
+            } else if (error.response?.data?.message) {
+                errorMessage = error.response.data.message;
+            }
+            setPostErrorMessage(errorMessage);
             setTimeout(() => { setPostErrorMessage(''); }, 5000);
         }
-    }, [hasMembership, post, updateBlock]);
+    }, [hasMembership, limitReached, user, updateBlock, setPostErrorMessage]);
 
     const generateFullContent = useCallback(async () => {
         if (limitReached) {
