@@ -34,7 +34,7 @@ const WelcomeHome = () => {
                         <button className="button join welcome">Join</button>
                     </Link>
                 </div>
-                <p className="medium-text">The first social media platform with interactive content:</p>
+                <p className="medium-text">The first social media platform for interactive content:</p>
 				<div className="welcome-posts-slideshow">
                     {welcomePosts.length > 1 && (
                         <div className="slideshow-controls">

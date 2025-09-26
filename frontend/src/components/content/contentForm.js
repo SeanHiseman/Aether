@@ -122,6 +122,7 @@ const reorder = (list, startIndex, endIndex) => {
 
 //Post is either the post being edited or replied to
 const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPostSubmit, post = null, postErrorMessage, setPostErrorMessage, setShowForm }) => {
+    console.log("post:", post);
     const [addContentDropdownOpen, setAddContentDropdownOpen] = useState(false);
     const blocksRef = useRef([]) 
     const [blocks, setBlocks] = useState([])
@@ -424,13 +425,12 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
                 await axios.delete('/api/remove_post', {
                     data: {
                         post: {
-                            post_id: post.post_id,
-                            parent_id: post.parent_id,
+                            post_id: post?.post_id,
+                            parent_id: post?.parent_id,
                         },
                     },
                 })
-                setPostErrorMessage('Post deleted')
-                const navigateUrl = isReply ? `/${urlPrefix}/${feed_name}/${channel_name}/${post.post_id}` : `/${urlPrefix}/${feed_name}/${channel_name}`
+                const navigateUrl = isReply ? `/${urlPrefix}/${feed_name}/${channel_name}/${post?.post_id}` : `/${urlPrefix}/${feed_name}/${channel_name}`
                 navigate(navigateUrl);
             }
             setShowForm(false)
@@ -449,14 +449,27 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
         return false
     }), [])
 
+    //Get content blocks from post url
     useEffect(() => {
-        if (isEdit && post) {
-            setTitle(post.title || '')
-            const existingBlocks = parseContentBlocks(post.content || '')
-            if (existingBlocks.length) setBlocks(existingBlocks)
-            else setBlocks([{ data: { html: post.content }, id: v4(), isEditing: true, type: BLOCK_TYPES.TEXT }])
+        async function fetchAndSetBlocks() { 
+            if (isEdit && post) {
+                setTitle(post?.title || '')
+                //Check if post.content is a path to html file
+                if (typeof post?.content === 'string' && post?.content.endsWith('.html')) {
+                    try {
+                        const res = await fetch(post?.content) //Get raw HTML from URL
+                        const html = await res.text()
+                        const existingBlocks = parseContentBlocks(html) //parse fetched HTML
+                        if (existingBlocks.length) setBlocks(existingBlocks)
+                        else setBlocks([{ data: { html }, id: v4(), isEditing: true, type: BLOCK_TYPES.TEXT }])
+                    } catch (error) {
+                        setPostErrorMessage('Could not fetch post HTML')
+                    }
+                } 
+            }
         }
-    }, [isEdit, post])
+        fetchAndSetBlocks();
+    }, [isEdit, post, setPostErrorMessage])
 
     useEffect(() => {
         if (!isEdit) {
@@ -693,9 +706,9 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
         blocks
             .filter(b => b.type==='MEDIA' && b.data.file)
             .forEach(b => formData.append('files', b.data.file));
-        formData.append('feed_id', feed.feed_id);
+        formData.append('feed_id', feed?.feed_id);
         formData.append('channel_id',channelId);
-        formData.append('poster_id', viewer.feed_id);
+        formData.append('poster_id', viewer?.feed_id);
         let id = draftId;
         if (!id) {
             id = v4();
@@ -703,7 +716,7 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
         }
         formData.append('draft_id', id);
         try {
-            const response = await axios.post('/api/create_draft', formData, { headers: { 'Content-Type': 'multipart/form-data' }});
+            const response = await axios.post('/api/create_post', formData, { headers: { 'Content-Type': 'multipart/form-data' }});
             if (response.data.success) {
                 setPostErrorMessage('Draft saved')
                 setTimeout(() => { setPostErrorMessage('') }, 3000)
@@ -714,7 +727,7 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
             setPostErrorMessage(error.response?.data?.message || 'Error saving draft.')
             setTimeout(() => { setPostErrorMessage('') }, 5000)
         }
-    }, [blocks, channelId, compileFinalHTML, draftId, feed.feed_id, isContentEmpty, isReply, post, title, viewer.feed_id])
+    }, [blocks, channelId, compileFinalHTML, draftId, feed.feed_id, isContentEmpty, isReply, post, title, viewer?.feed_id])
 
     const submitForm = useCallback(async e => {
         e.preventDefault()
@@ -727,14 +740,7 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
         try {
             const finalHTML = compileFinalHTML(blocks)
             const formData = new FormData()
-            let postId
-            if (!isEdit || isDraft) {
-                console.log("generating post id")
-                postId = v4()
-            } else { 
-                //Editing an existing post
-                postId = post?.post_id
-            }
+            const postId = post?.post_id;
             formData.append('post_id', postId)
             formData.append('content', finalHTML)
             formData.append('feed_id', feed?.feed_id);
@@ -754,14 +760,11 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
             setGlobalAiPrompt('')
             setShowForm(false)
             setPostErrorMessage('')
-            const feedName = feed?.feed_name || feed_name
-            const channelName = post?.parentChannel?.channel_name || channel_name
-            navigate(`/${urlPrefix}/${feedName}/${channelName}/${isReply ? post?.post_id : postId}`)
         } catch (error) {
             setPostErrorMessage(error.response?.data?.message || 'Error submitting the form.')
             setTimeout(() => { setPostErrorMessage('') }, 5000)
         }
-    }, [blocks, channelId, compileFinalHTML, compileFinalHTML, draftId, feed?.feed_id, isContentEmpty, isDraft, isEdit, isPostingDraft, isReply, navigate, onPostSubmit, post, title, urlPrefix])
+    }, [blocks, channelId, compileFinalHTML, compileFinalHTML, draftId, feed?.feed_id, isContentEmpty, isDraft, isEdit, isPostingDraft, isReply, onPostSubmit, post, title, urlPrefix])
 
     const toggleMediaAlignment = useCallback(block => {
         let newAlign;
@@ -796,9 +799,9 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
                                     <button className="small-icon" type="button" onClick={() => { setAddContentDropdownOpen(false); handleAddBlock(BLOCK_TYPES.CODE); }}>
                                         <FaToolbox /><span className="icon-text">Interactive</span>
                                     </button>
-                                    <button className="small-icon" type="button" onClick={() => { setAddContentDropdownOpen(false); document.getElementById('app-input').click(); }}>
+                                    {/*<button className="small-icon" type="button" onClick={() => { setAddContentDropdownOpen(false); document.getElementById('app-input').click(); }}>
                                         <FaCube /><span className="icon-text">App</span>
-                                    </button>
+                                    </button>*/}
                                     <button className="small-icon" type="button" onClick={() => { setAddContentDropdownOpen(false); addIframe(); }}>
                                         <FaLink /><span className="icon-text">Website</span>
                                     </button>
@@ -1148,9 +1151,9 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
                                                                     ) : (
                                                                         <>
                                                                             {data.isImage ? (
-                                                                                <img alt="Uploaded Media" src={data.url} style={data.align === 'center' ? { display: 'block', margin: '0 auto', maxWidth: '100%', height: 'auto' } : { maxWidth: '100%', height: 'auto' }} />
+                                                                                <img alt="Uploaded Media" src={data.url} style={data.align === 'center' ? { display: 'block', margin: '0 auto', maxWidth: '100%', maxHeight: '60vh' } : { maxWidth: '100%', maxHeight: '60vh' }} />
                                                                             ) : data.isVideo ? (
-                                                                                <video controls src={data.url} style={data.align === 'center' ? { display: 'block', margin: '0 auto', maxWidth: '100%', height: 'auto' } : { maxWidth: '100%', height: 'auto' }} />
+                                                                                <video controls src={data.url} style={data.align === 'center' ? { display: 'block', margin: '0 auto', maxWidth: '100%', maxHeight: '60vh' } : { maxWidth: '100%', maxHeight: '60vh' }} />
                                                                             ) : (
                                                                                 <p>Unsupported</p>
                                                                             )}
@@ -1204,13 +1207,13 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
                                         if (data.isImage) {
                                             return (
                                                 <div key={i}>
-                                                    <img alt="Uploaded Media" src={data.url} style={data.align === 'center' ? { display: 'block', margin: '0 auto', maxWidth: '100%', height: 'auto' } : { maxWidth: '100%', height: 'auto' }} />
+                                                    <img alt="Uploaded Media" src={data.url} style={data.align === 'center' ? { display: 'block', margin: '0 auto', maxWidth: '100%', height: 'auto' } : { maxWidth: '100%', maxHeight: '60vh' }} />
                                                 </div>
                                             )
                                         } else if (data.isVideo) {
                                             return (
                                                 <div key={i}>
-                                                    <video controls style={data.align === 'center' ? { display: 'block', margin: '0 auto', maxWidth: '100%', height: 'auto' } : { maxWidth: '100%', height: 'auto' }}>
+                                                    <video controls style={data.align === 'center' ? { display: 'block', margin: '0 auto', maxWidth: '100%', height: 'auto' } : { maxWidth: '100%', maxHeight: '60vh' }}>
                                                         <source src={data.url} type={data.fileType} />
                                                     </video>
                                                 </div>

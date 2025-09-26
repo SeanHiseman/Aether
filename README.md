@@ -7,9 +7,9 @@ File names use camelCase, beginning with lowercase, e.g. fileName.js. Folders ar
 Run the commands in dbStructure.sql to create a local version of the MySQL database
 
 Currently paused features:
+App build uploads
 Ask chatbot
 Ask notes
-Deep feeds
 Multi voting
 Clicking to edit dynamic content
 Connections

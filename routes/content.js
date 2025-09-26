@@ -1,30 +1,35 @@
 import { ApplyAlgorithm } from '../custom_algorithms/applyAlgorithm.js';
 import authenticateCheck from '../functions/checks/authenticateCheck.js';
-import deleteMedia from '../functions/media_handling/deleteMedia.js';
+import DeleteMedia from '../functions/media_handling/deleteMedia.js';
 import cheerio from 'cheerio';
 import { ContentAnalyser } from '../functions/contentAnalyser.js';
 import dotenv from 'dotenv';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
 import { AppBuilds, Feeds, FeedChannels, Posts, PostDrafts, PostNotes, PostVotes, SavedPosts, Users, ViewedPosts } from '../models/relationships.js';
+import { GenerateFileName } from '../functions/media_handling/generateFileName.js';
 import multer from 'multer';
 import { Router } from 'express';
 import path from 'path';
 import sequelize from '../databaseSetup.js';
 import { Op, Sequelize } from 'sequelize';
-import unzipper from 'unzipper'
+import unzipper from 'unzipper';
+import UpdateMediaFiles from '../functions/media_handling/updateMediaFiles.js';
+import { UploadToS3, DeleteFromS3 } from '../functions/media_handling/s3Handling.js';
 import { v4 } from 'uuid';
-import yauzl from 'yauzl'
+import yauzl from 'yauzl';
 
 dotenv.config();
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const buildsDir = path.join(process.cwd(), process.env.APP_BUILD_DIR);
 const mediaDir = path.join(__dirname, '..', 'media', 'content');
+const postsDir = path.join(__dirname, '..', 'media', 'posts');
+if (!fs.existsSync(mediaDir)) fs.mkdirSync(mediaDir, { recursive: true });
+if (!fs.existsSync(postsDir)) fs.mkdirSync(postsDir, { recursive: true });
 const contentAnalyser = new ContentAnalyser();
 const router = Router();
-if (!fs.existsSync(mediaDir)) fs.mkdirSync(mediaDir, { recursive: true });
-const calculateFileSizes = files => files.reduce((total, file) => total + file.size, 0) / (1024 * 1024);
+//const calculateFileSizes = files => files.reduce((total, file) => total + file.size, 0) / (1024 * 1024);
 
 const checkStorageLimit = async (req, res, next) => {
     try {
@@ -32,7 +37,7 @@ const checkStorageLimit = async (req, res, next) => {
         if (!user) {
             return res.status(404).json({ success: false, message: 'User not found' });
         }
-        const maxStorage = user.has_membership ? 100 * 1024 : 100; //100GB for members, 100MB for non-members
+        const maxStorage = user.has_membership ? 50 * 1024 : 100; //25GB for members, 100MB for non-members
         if (user.storage_count >= maxStorage) {
             return res.status(413).json({ 
                 success: false, 
@@ -205,136 +210,155 @@ const postFilter = (req, file, cb) => {
     cb(null, true);
 };
 
-const postStorage = multer.diskStorage({
-    destination: (req, file, cb) => {
-        cb(null, mediaDir);
-    },
-    filename: (req, file, cb) => {
-        const uniqueFilename = `${v4()}${path.extname(file.originalname).toLowerCase()}`;
-        cb(null, uniqueFilename);
-    }
-});
+let postUpload
+if (process.env.NODE_ENV === 'production') {
+	postUpload = multer({
+		fileFilter: postFilter,
+		storage: multer.memoryStorage()
+	})
+} else {
+	const postStorage = multer.diskStorage({
+		destination: (req, file, cb) => {
+			cb(null, mediaDir)
+		},
+		filename: (req, file, cb) => {
+			const uniqueFilename = `${v4()}${path.extname(file.originalname).toLowerCase()}`
+			cb(null, uniqueFilename)
+		}
+	})
+	postUpload = multer({
+		fileFilter: postFilter,
+		storage: postStorage
+	})
+}
 
-const postUpload = multer({
-    fileFilter: postFilter,
-    storage: postStorage
-});
-
-router.post('/create_draft', authenticateCheck, checkStorageLimit, postUpload.array('files'), async (req, res) => {
-    try {
-        let { draft_id, feed_id, channel_id, parent_id, content, title, poster_id } = req.body
-        if (!draft_id) draft_id = v4()
-        const $ = cheerio.load(content, { decodeEntities:false })
-        let fileIdx = 0
-        $('img[src^="blob:"], video[src^="blob:"]').each((i, el) => {
-            const file = req.files[fileIdx++]
-            if (!file) return
-            const src = `/media/content/${file.filename}`
-            if (el.tagName==='img') {
-                $(el).attr('src', src)
-                .removeAttr('blob:')
-            } else {
-                $(el).empty()
-                .append(`<source src="${src}" type="${file.mimetype}">`)
-            }
-        })
-        const modifiedContent = $.html()
-        const draft = await PostDrafts.upsert({
-            draft_id, feed_id, channel_id,
-            parent_id: parent_id||null,
-            content: modifiedContent,
-            title: title||null,
-            poster_id
-        });
-        return res.status(200).json({ success: true, draft: draft })
-    } catch(error) {
-        console.error("Error in /create_draft:", error);
-        if (req.files) {
-            req.files.forEach(f => {
-                fs.unlinkSync(path.join(__dirname,'../media/content',f.filename))
-            })
-        }
-        return res.status(500).json({ success: false, error: error.message })
-    }
-});
-
-router.post('/create_post', authenticateCheck, checkStorageLimit, postUpload.array('files'), async (req, res) => {
+//Unified route for creating and editing posts and drafts
+router.post("/create_post", authenticateCheck, checkStorageLimit, postUpload.array("files"), async (req, res) => {
 	try {
-		let { channel_id, content, feed_id, parent_id, post_id, poster_id, title } = req.body;
-		content = content || '';
+		let { channel_id, content, draft_id, feed_id, parent_id, post_id, poster_id, title } = req.body;
+        if (draft_id === 'null' || draft_id === 'undefined') { //If draft_id is received as the string 'null'
+            draft_id = null;        
+		}
+		if (post_id === 'null' || post_id === 'undefined') { //If post_id is received as the string 'null'
+            post_id = null;        
+		}
+		content = content || "";
 		const $ = cheerio.load(content, { decodeEntities: false });
-		if (req.files && req.files.length > 0) {
-			const totalFileSize = calculateFileSizes(req.files);
-			const user = req.currentUser;
-			const maxStorage = user?.has_membership ? 100 * 1024 : 100;
-			if (user.storage_count + totalFileSize > maxStorage) {
-				req.files.forEach(file => fs.unlinkSync(path.join(mediaDir, file.filename)));
-				return res.status(413).json({ success: false, message: `Weekly limit of ${maxStorage}MB exceeded` });
-			}
-			user.storage_count += totalFileSize;
-			await user.save();
-			let index = 0;
-			$('img[src^="blob:"], video[src^="blob:"]').each((i, el) => {
-				if (index < req.files.length) {
-					const file = req.files[index];
-					const fileType = file.mimetype.startsWith('image/') ? 'img' : 'video';
-					if (fileType === 'img') {
-						$(el).attr('src', `/media/content/${file.filename}`);
-						$(el).removeAttr('blob:');
-						$(el).attr('alt', 'Uploaded Image');
-					} else {
-						$(el).empty();
-						$(el).append(`<source src="/media/content/${file.filename}" type="${file.mimetype}">`);
-					}
-					index++;
+		//Extract and store image and video contents from html, then adjust html with new url
+		const mediaElements = $("img[src^='blob:'], video[src^='blob:']").toArray();
+		for (let i = 0; i < mediaElements.length; i++) {
+			const el = mediaElements[i];
+			const file = req.files[i];
+			if (!file) continue;
+			if (process.env.NODE_ENV === "production") {
+				const fileName = GenerateFileName(file, "media");
+				const s3Key = `content/${fileName}`;
+				await UploadToS3(s3Key, file.buffer, file.mimetype);
+				const src = `https://${process.env.AWS_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${s3Key}`;
+				if (el.tagName === "img") {
+					$(el).attr("src", src).removeAttr("blob:");
+				} else {
+					$(el).empty().append(`<source src="${src}" type="${file.mimetype}">`);
 				}
-			});
+			} else {
+				const fileName = file.filename; 
+				const localPath = path.join(mediaDir, fileName);
+				if (file.path !== localPath) {
+					fs.copyFileSync(file.path, localPath);
+				}
+				const src = "/" + path.join("media", "content", fileName).replace(/\\/g, "/"); 
+				if (el.tagName === "img") {
+					$(el).attr("src", src).removeAttr("blob:");
+				} else {
+					$(el).empty().append(`<source src="${src}" type="${file.mimetype}">`);
+				}
+			}
 		}
-		const modifiedContent = $.html();
-		const analysisResults = await contentAnalyser.analyseContent(modifiedContent, title);
-		let post = null;
-		if (post_id) {
-			post = await Posts.findByPk(post_id);
-		}
-		if (post) {
-			//Update existing post
-			post.content = modifiedContent;
-			if (title) post.title = title;
-			if (channel_id) post.channel_id = channel_id;
-			if (feed_id) post.feed_id = feed_id;
-			if (parent_id) post.parent_id = parent_id;
-			post.updated_at = Sequelize.literal('CURRENT_TIMESTAMP(3)');
-			await post.save();
+		const finalHtml = $.html();
+		let contentUrl;
+		//Storage location depends on production or testing
+		if (process.env.NODE_ENV === "production") {
+			const htmlFileName = GenerateFileName({ originalname: "post.html" }, "post");
+			const s3Key = `posts/${htmlFileName}`;
+			await UploadToS3(s3Key, Buffer.from(finalHtml), "text/html");
+			contentUrl = `https://${process.env.AWS_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${s3Key}`;
 		} else {
-			if (!post_id) post_id = v4();
-			const postData = {
-				post_id,
-				channel_id,
-				content: modifiedContent,
+			const htmlFileName = GenerateFileName({ originalname: "post.html" }, "post");
+			const localPath = path.join(postsDir, htmlFileName);
+			fs.writeFileSync(localPath, finalHtml);
+			contentUrl = `/media/posts/${htmlFileName}`;
+		}
+		let result;
+		if (draft_id) {
+			const existingDraft = await PostDrafts.findByPk(draft_id);
+			if (existingDraft && existingDraft.content) {
+				await UpdateMediaFiles(existingDraft.content, contentUrl);
+			}
+			result = await PostDrafts.upsert({
+				draft_id,
 				feed_id,
-				parent_id,
-				poster_id,
-				title,
-				...analysisResults
-			};
-			post = await Posts.create(postData);
-			if (parent_id) {
-				const parentPost = await Posts.findOne({ where: { post_id: parent_id } });
-				if (parentPost) {
-					parentPost.replies += 1;
-					await parentPost.save();
+				channel_id,
+				parent_id: parent_id || null,
+				content: contentUrl,
+				title: title || null,
+				poster_id
+			});
+		} else {
+			const analysisResults = await contentAnalyser.analyseContent(finalHtml, title); //Post analysis for use in recommendation algorithms
+			let post = null;
+			if (post_id) {
+				post = await Posts.findByPk(post_id);
+			}
+			if (post) {
+				if (post.content) {
+					await UpdateMediaFiles(post.content, contentUrl);
+				}
+				post.content = contentUrl;
+				if (title) post.title = title;
+				if (channel_id) post.channel_id = channel_id;
+				if (feed_id) post.feed_id = feed_id;
+				if (parent_id) post.parent_id = parent_id;
+				post.updated_at = Sequelize.literal("CURRENT_TIMESTAMP(3)");
+				await post.save();
+			} else {
+				if (!post_id) post_id = v4();
+				const postData = {
+					post_id,
+					channel_id,
+					content: contentUrl,
+					feed_id,
+					parent_id,
+					poster_id,
+					title,
+					...analysisResults
+				};
+				post = await Posts.create(postData);
+				if (parent_id) {
+					const parentPost = await Posts.findOne({ where: { post_id: parent_id } });
+					if (parentPost) {
+						parentPost.replies += 1;
+						await parentPost.save();
+					}
+				}
+			}
+			result = post;
+		}
+		return res.status(200).json({ success: true, result });
+	} catch (error) {
+		if (req.files && req.files.length > 0) {
+			for (const file of req.files) {
+				try {
+					if (process.env.NODE_ENV === "production") {
+						await DeleteFromS3(`content/${file.filename}`);
+					} else {
+						fs.existsSync(file.path) && fs.unlinkSync(file.path);
+					}
+				} catch (cleanupErr) {
+					console.error("Failed to cleanup file:", cleanupErr);
 				}
 			}
 		}
-		return res.status(200).json({ success: true, post });
-	} catch (error) {
 		console.error("Error in /create_post:", error);
-		if (req.files && req.files.length > 0) {
-			req.files.forEach(file => {
-				try { fs.unlinkSync(path.join(mediaDir, file.filename)); } 
-				catch {}
-			});
-		}
 		return res.status(500).json({ success: false, error: error.message });
 	}
 });
@@ -406,7 +430,7 @@ router.get('/get_post_drafts', authenticateCheck, async (req, res) => {
     }
 });
 
-const deleteBuilds = async html => {
+const DeleteBuilds = async html => {
 	const buildsDir	= path.resolve(process.cwd(), 'app_builds');
 	const ids = new Set();
 	const regexAttr	= /data-buildid="([0-9a-fA-F-]{36})"/g;
@@ -427,7 +451,7 @@ router.delete('/remove_build', authenticateCheck, async (req, res) => {
 			return res.status(400).json({ success: false, message: 'Missing buildId' });
 		}
 		try {
-			await deleteBuilds(`<div data-buildid="${buildId}"></div>`);
+			await DeleteBuilds(`<div data-buildid="${buildId}"></div>`);
 			return res.status(200).json({ success: true });
 		} catch (error) {
 			return res.status(500).json({ success: false });
@@ -442,8 +466,8 @@ router.delete('/remove_draft', authenticateCheck, async (req, res) => {
 		const { draft, isPosting } = req.body;
 		const foundDraft = await PostDrafts.findByPk(draft.draft_id);
 		if (foundDraft) {
-			deleteMedia(foundDraft.content);
-			if (!isPosting) await deleteBuilds(foundDraft.content, { transaction }); //Prevents build removal when posting drafts
+			await DeleteMedia(foundDraft.content);
+			if (!isPosting) await DeleteBuilds(foundDraft.content, { transaction }); //Prevents build removal when posting drafts
 			await PostDrafts.destroy({ where: { draft_id: draft.draft_id } });
 		}
         await transaction.commit();
@@ -462,8 +486,8 @@ router.delete('/remove_post', authenticateCheck, async (req, res) => {
 		const { post } = req.body;
 		const foundPost = await Posts.findByPk(post.post_id);
 		if (foundPost) {
-			deleteMedia(foundPost.content);
-			await deleteBuilds(foundPost.content, { transaction });
+			await DeleteMedia(foundPost.content);
+			await DeleteBuilds(foundPost.content, { transaction });
 			if (post.parent_id) {
 				const parentPost = await Posts.findByPk(post.parent_id);
 				parentPost.replies -= 1;

@@ -1,5 +1,5 @@
 import authenticateCheck from '../functions/checks/authenticateCheck.js';
-import deleteMedia from '../functions/media_handling/deleteMedia.js';
+import DeleteMedia from '../functions/media_handling/deleteMedia.js';
 import dotenv from 'dotenv';
 import { fileURLToPath } from 'url';
 import jwt from 'jsonwebtoken';
@@ -114,7 +114,7 @@ router.delete('/delete_account', authenticateCheck, async (req, res) => {
             );
         }
         if (feed.feed_photo !== process.env.DEFAULT_USER_IMAGE) {
-            await deleteMedia(feed.feed_photo)
+            await DeleteMedia(feed.feed_photo)
         }
         await FeedChannels.destroy({ where: { feed_id: id }, transaction });
         const userPosts = await Posts.findAll({

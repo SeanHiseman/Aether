@@ -1,5 +1,6 @@
 /app_builds
 /media/content
+/media/posts
 /media/feed_images
 /node_modules
 .env

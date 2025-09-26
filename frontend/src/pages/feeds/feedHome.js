@@ -190,6 +190,7 @@ const FeedHome = () => {
     }, [isReplyMode, post_id, feed?.feed_id, queryClient]);
 
     const AddChannel = async (event) => {
+        if (!isAuthenticated) return;
         event.preventDefault();
         try {
             const baseName = "New channel";
@@ -255,6 +256,7 @@ const FeedHome = () => {
     }, [channel_name, feed_name]);
 
     const changeChannelName = async (event) => {
+        if (!isAuthenticated) return;
         event.preventDefault();
         try {
             const channelId = channelRender?.channel_id;
@@ -283,6 +285,7 @@ const FeedHome = () => {
     };
 
     const deleteChannel = async () => {
+        if (!isAuthenticated) return;
         if (window.confirm(`Are you sure you want to delete ${channel_name}? All content will be lost.`)) {
             try {
                 if (channel_name === 'Main') {
@@ -316,7 +319,7 @@ const FeedHome = () => {
         }
         try {
             formData.append('poster_id', viewer?.feed_id);
-            await axios.post('/api/create_post', formData, {
+            const response = await axios.post('/api/create_post', formData, {
                 headers: { 'Content-Type': 'multipart/form-data' },
             });
             const draftId = formData.get('draft_id')
@@ -330,8 +333,13 @@ const FeedHome = () => {
                     }
                 });     
             }
+            console.log("response:", response);
+            const postId = response.data?.result?.post_id;
+            console.log("postId:", postId);
+            const navigationUrl = `/${urlPrefix}/${feed_name}/${channel_name}/${postId}`;
+            console.log("navigating to:", navigationUrl);
+            navigate(navigationUrl);
             setShowPostForm(false);
-            refreshPosts();
         } catch (error) {
             if (error.response && error.response?.status === 413) {
                 setPostErrorMessage(error.response.data?.message + (!user?.has_membership ? ". Get membership for more" : ""));

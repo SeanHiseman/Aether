@@ -2,7 +2,7 @@ import { ApplyAlgorithm } from '../custom_algorithms/applyAlgorithm.js';
 import authenticateCheck from '../functions/checks/authenticateCheck.js';
 import ConnectCheck from '../functions/checks/connectCheck.js';
 import FollowerCheck from '../functions/checks/followerCheck.js';
-import deleteMedia from '../functions/media_handling/deleteMedia.js';
+import DeleteMedia from '../functions/media_handling/deleteMedia.js';
 import dotenv from 'dotenv';
 import imageUpload from '../functions/media_handling/imageUpload.js';
 import express from 'express';
@@ -525,7 +525,7 @@ router.delete('/delete_feed', authenticateCheck, async (req, res) => {
         await transaction.commit();
         const feedPhoto = feed.feed_photo;
         if (feedPhoto && !defaultImages.includes(feedPhoto)) {
-            deleteMedia(feedPhoto);
+            DeleteMedia(feedPhoto);
         }
         res.status(200).json({ success: true });
     } catch (error) {
@@ -1004,7 +1004,7 @@ router.put('/update_feed_photo/:feedId', authenticateCheck, checkProfileStorageL
             const newPhotoPath = `media/feed_images/${file.filename}`;
             const feed = await Feeds.findOne({ where: { feed_id } });
             if (feed.feed_photo && !defaultImages.includes(feed.feed_photo)) {
-                deleteMedia(feed.feed_photo);
+                DeleteMedia(feed.feed_photo);
             };
             user.storage_count += fileSize;
             await user.save();

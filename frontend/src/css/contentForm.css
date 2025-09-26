@@ -110,6 +110,7 @@
 }
 .dropdown-menu {
   background-color: var(--dark);
+  border: 1px solid var(--border);
   border-radius: var(--small-margin);
   color: var(--lightest);
   padding: var(--small-margin);

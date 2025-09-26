@@ -163,6 +163,7 @@ const ContentWidget = ({ canRemove = false, display = false, feed, isDraft = fal
 	};
   
 	const savePost = async () => {
+		if (!isAuthenticated) return;
         try {
             if (isSaved) {
                 await axios.delete('/api/remove_saved_post', {
@@ -306,7 +307,7 @@ const ContentWidget = ({ canRemove = false, display = false, feed, isDraft = fal
 
 	return (
 		<div className={`content-item ${isReply ? 'reply' : ''}`}>
-			{postErrorMessage && <div className="error-message">{postErrorMessage}</div>}
+			{postErrorMessage && <div className="small-text faded-text">{postErrorMessage}</div>}
 			{post?.title && <div className="title-container" onClick={() => incrementViews(post?.post_id)} style={{ display: 'block' }}>
 				<span className="large-text" style={{ marginLeft: 0 }}>
 					{post?.title || '\u00A0'}
@@ -329,7 +330,7 @@ const ContentWidget = ({ canRemove = false, display = false, feed, isDraft = fal
 				}}
 			>
 				<div className="display-div" style={isFullscreenMode ? { flex: 1, overflowY: 'auto' } : { height: '100%' }}>
-					<ContentDisplay content={post?.content} onCodeAppChange={setHasCodeOrApp} onOverflowChange={handleOverflowChange} showFullContent={showFullContent} showScrollBar={false} />
+					<ContentDisplay post={post} onCodeAppChange={setHasCodeOrApp} onOverflowChange={handleOverflowChange} showFullContent={showFullContent} showScrollBar={false} />
 				</div>
 				<div className="content-footer">
 					{(fullscreenRef.current?.requestFullscreen || fullscreenRef.current?.webkitRequestFullscreen) && hasCodeOrApp && (
