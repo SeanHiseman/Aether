@@ -53,7 +53,7 @@ router.post('/change_password', authenticateCheck, async (req, res) => { //For l
 router.get('/check_authentication', async (req, res) => {
     try {
         if (!req.session || !req.session.user_id) {
-            return res.status(200).json({
+            return res.status(403).json({
                 authenticated: false,
                 feeds: null,
                 user: null,
@@ -62,7 +62,7 @@ router.get('/check_authentication', async (req, res) => {
         }
         const user = await Users.findByPk(req.session.user_id);
         if (!user) {
-            return res.status(200).json({
+            return res.status(403).json({
                 authenticated: false,
                 feeds: null,
                 user: null,

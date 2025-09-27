@@ -4,8 +4,9 @@ import ConnectCheck from '../functions/checks/connectCheck.js';
 import FollowerCheck from '../functions/checks/followerCheck.js';
 import DeleteMedia from '../functions/media_handling/deleteMedia.js';
 import dotenv from 'dotenv';
+import { fileURLToPath } from 'url';
+import { GenerateFileName } from '../functions/media_handling/generateFileName.js';
 import imageUpload from '../functions/media_handling/imageUpload.js';
-import express from 'express';
 import fs from 'fs';
 import multer from 'multer';
 import { Op } from 'sequelize';
@@ -17,11 +18,11 @@ import { v4 } from 'uuid';
 import { ConnectRequests, DeepFeeds, DeepFeedContent, Feeds, FeedChannels, FeedChannelMessages, Followers, FollowRequests, Posts, PostNotes, PostVotes, SavedPosts, SavedPostChannels, Users } from '../models/relationships.js';
 import { ValidateTextInput } from '../functions/validateTextInput.js'
 
-const app = express();
 dotenv.config();
 const router = Router();
-const __dirname = path.dirname(import.meta.url);
-app.use(express.static(join(__dirname, 'static')));
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const mediaDir = path.join(__dirname, '..', 'media', 'feed_images');
 const feedProfileUpload = imageUpload('/media/feed_images', 'new_feed_photo');
 
 const defaultImages = [process.env.DEFAULT_USER_IMAGE, process.env.DEFAULT_GROUP_IMAGE];
@@ -268,7 +269,12 @@ router.post('/create_feed', authenticateCheck, checkProfileStorageLimit, async (
             const existingFeed = await Feeds.findOne({ where: { feed_name: feedName } });
             if (existingFeed) {
                 if (req.file) {
-                    fs.unlinkSync(path.join(process.cwd(), '/media/feed_images', req.file.filename));
+                    if (process.env.NODE_ENV === "production") {
+                        const fileName = GenerateFileName(req.file, "feed-image");
+                        await DeleteFromS3(`media/${fileName}`);
+                    } else {
+                        fs.unlinkSync(req.file.path);
+                    }
                 }
                 return res.status(400).json({ 
                     success: false, 
@@ -277,16 +283,38 @@ router.post('/create_feed', authenticateCheck, checkProfileStorageLimit, async (
             }
             let feed_photo = "media/site_images/blank-group-icon.jpg";
             if (req.file) {
-                feed_photo = `media/feed_images/${req.file.filename}`;
                 const fileSize = calculateFileSize(req.file);
                 const user = req.currentUser;
                 const maxStorage = user.has_membership ? 100 * 1024 : 100;
                 if (user.storage_count + fileSize > maxStorage) {
-                    fs.unlinkSync(path.join(process.cwd(), '/media/feed_images', req.file.filename));
+                    if (process.env.NODE_ENV === "production") {
+                        const fileName = GenerateFileName(req.file, "feed-image");
+                        await DeleteFromS3(`media/${fileName}`);
+                    } else {
+                        fs.unlinkSync(req.file.path);
+                    }
                     return res.status(413).json({ 
                         success: false, 
                         message: `Weekly limit of ${maxStorage}MB exceeded` 
                     });
+                }
+                if (process.env.NODE_ENV === "production") {
+                    const fileName = GenerateFileName(req.file, "feed-image");
+                    const s3Key = `feed-image/${fileName}`;
+                    await UploadToS3(s3Key, req.file.buffer, req.file.mimetype);
+                    feed_photo = `https://${process.env.AWS_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${s3Key}`;
+                } else {
+                    const fileName = GenerateFileName(req.file, "feed-image");
+                    console.log("fileName:", fileName);
+                    const localPath = path.join(mediaDir, fileName);
+                    console.log("localPath:", localPath);
+                    console.log("req.file.path:", req.file.path);
+                    if (req.file.path !== localPath) {
+                        fs.copyFileSync(req.file.path, localPath);
+                    } else {
+                        console.log("req.file.path and localPath are the same");
+                    }
+                    feed_photo = path.join("media", "feed_images", fileName).replace(/\\/g, "/");
                 }
                 user.storage_count += fileSize;
                 await user.save();
@@ -314,13 +342,19 @@ router.post('/create_feed', authenticateCheck, checkProfileStorageLimit, async (
                 is_mod: true,
                 is_admin: true,
             });
-            res.status(201).json({ success: true, feed }); 
+            res.status(201).json({ success: true, feed });
         } catch (error) {
+            console.log("error creating feed:", error);
             if (req.file) {
                 try {
-                    fs.unlinkSync(path.join(process.cwd(), '/media/feed_images', req.file.filename));
-                } catch (err) {
-                    res.status(500).json({ success: false, message: 'Failed to create feed' })
+                    if (process.env.NODE_ENV === "production") {
+                        const fileName = GenerateFileName(req.file, "feed-image");
+                        await DeleteFromS3(`content/${fileName}`);
+                    } else {
+                        fs.unlinkSync(req.file.path);
+                    }
+                } catch (cleanupErr) {
+                    console.error("Failed to cleanup file:", cleanupErr);
                 }
             }
             res.status(500).json({ success: false, message: 'Failed to create feed' });
@@ -977,7 +1011,6 @@ router.post('/transfer_ownership', authenticateCheck, async (req, res) => {
 router.put('/update_feed_photo/:feedId', authenticateCheck, checkProfileStorageLimit, async (req, res) => {
     feedProfileUpload(req, res, async function (error) {
         if (error instanceof multer.MulterError) {
-            //A Multer error occurred when uploading
             if (error.code === 'LIMIT_FILE_SIZE') {
                 return res.status(413).json({ error: 'File cannot be more than 5MB' });
             }
@@ -995,17 +1028,44 @@ router.put('/update_feed_photo/:feedId', authenticateCheck, checkProfileStorageL
             const user = req.currentUser;
             const maxStorage = user.has_membership ? 100 * 1024 : 100;
             if (user.storage_count + fileSize > maxStorage) {
-                fs.unlinkSync(path.join(process.cwd(), '/media/feed_images', file.filename));
+                if (process.env.NODE_ENV === "production") {
+                    const fileName = GenerateFileName(file, "feed-image");
+                    await DeleteFromS3(`media/${fileName}`);
+                } else {
+                    fs.unlinkSync(file.path);
+                }
                 return res.status(413).json({ 
                     success: false, 
                     message: `Weekly limit of ${maxStorage}MB exceeded` 
                 });
             }
-            const newPhotoPath = `media/feed_images/${file.filename}`;
+            let newPhotoPath;
+            if (process.env.NODE_ENV === "production") {
+                const fileName = GenerateFileName(file, "feed-image");
+                const s3Key = `content/${fileName}`;
+                await UploadToS3(s3Key, file.buffer, file.mimetype);
+                newPhotoPath = `https://${process.env.AWS_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${s3Key}`;
+            } else {
+                const fileName = GenerateFileName(file, "feed-image");
+                const localPath = path.join(mediaDir, fileName);
+                if (file.path !== localPath) {
+                    fs.copyFileSync(file.path, localPath);
+                }
+                newPhotoPath = path.join("media", "feed_images", fileName).replace(/\\/g, "/");
+            }
             const feed = await Feeds.findOne({ where: { feed_id } });
             if (feed.feed_photo && !defaultImages.includes(feed.feed_photo)) {
-                DeleteMedia(feed.feed_photo);
-            };
+                if (process.env.NODE_ENV === "production") {
+                    const urlParts = feed.feed_photo.split('/');
+                    const s3Key = urlParts.slice(-2).join('/');
+                    await DeleteFromS3(s3Key);
+                } else {
+                    const oldPath = path.join(process.cwd(), feed.feed_photo);
+                    if (fs.existsSync(oldPath)) {
+                        fs.unlinkSync(oldPath);
+                    }
+                }
+            }
             user.storage_count += fileSize;
             await user.save();
             feed.feed_photo = newPhotoPath;
@@ -1014,13 +1074,18 @@ router.put('/update_feed_photo/:feedId', authenticateCheck, checkProfileStorageL
         } catch (error) {
             if (req.file) {
                 try {
-                    fs.unlinkSync(path.join(process.cwd(), '/media/feed_images', req.file.filename));
-                } catch (err) {
-                    res.status(500).json({ success: false, error: 'Failed to delete uploaded file' });
+                    if (process.env.NODE_ENV === "production") {
+                        const fileName = GenerateFileName(req.file, "feed-image");
+                        await DeleteFromS3(`media/${fileName}`);
+                    } else {
+                        fs.unlinkSync(req.file.path);
+                    }
+                } catch (cleanupErr) {
+                    console.error("Failed to cleanup file:", cleanupErr);
                 }
             }
             res.status(500).json({ success: false });
-        };
+        }
     });
 });
 

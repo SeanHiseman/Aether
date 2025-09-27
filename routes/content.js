@@ -15,7 +15,7 @@ import sequelize from '../databaseSetup.js';
 import { Op, Sequelize } from 'sequelize';
 import unzipper from 'unzipper';
 import UpdateMediaFiles from '../functions/media_handling/updateMediaFiles.js';
-import { UploadToS3, DeleteFromS3 } from '../functions/media_handling/s3Handling.js';
+import { DeleteFromS3, UploadToS3 } from '../functions/media_handling/s3Handling.js';
 import { v4 } from 'uuid';
 import yauzl from 'yauzl';
 
