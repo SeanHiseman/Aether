@@ -13,7 +13,6 @@ export async function UploadToS3(key, body, contentType) {
 		Key: key,
 		Body: body,
 		ContentType: contentType,
-		ACL: "public-read"
 	});
 	await s3.send(command);
 	return `https://${process.env.AWS_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${key}`;

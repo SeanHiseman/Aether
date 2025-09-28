@@ -1,17 +1,9 @@
 async function loadWelcomeContent() {
-	const [post1, post2, post3, post4, post5, post6] = await Promise.all([
-		fetch('/interactivePost1.html').then(r => r.text()),
-		fetch('/interactivePost2.html').then(r => r.text()),
-		fetch('/interactivePost3.html').then(r => r.text()),
-		fetch('/interactivePost4.html').then(r => r.text()),
-		fetch('/interactivePost5.html').then(r => r.text()),
-		//fetch('/interactivePost6.html').then(r => r.text()),
-	]);
 
 	return [
 		{
 			channel_id: "1a",
-			content: post1,
+			content: '/interactivePost1.html',
 			created_at: "2025-09-17T10:00:00.000Z",
 			downvotes: 0,
 			feed_id: "1b",
@@ -30,7 +22,7 @@ async function loadWelcomeContent() {
 		},
 		{
 			channel_id: "2a",
-			content: post2,
+			content: '/interactivePost2.html',
 			created_at: "2025-09-17T09:30:00.000Z",
 			downvotes: 1,
 			feed_id: "2",
@@ -49,7 +41,7 @@ async function loadWelcomeContent() {
 		},
 		{
 			channel_id: "3a",
-			content: post3,
+			content: '/interactivePost3.html',
 			created_at: "2025-09-18T10:00:00.000Z",
 			downvotes: 0,
 			feed_id: "3b",
@@ -68,7 +60,7 @@ async function loadWelcomeContent() {
 		},
 		{
 			channel_id: "4a",
-			content: post4,
+			content: '/interactivePost4.html',
 			created_at: "2025-09-18T09:30:00.000Z",
 			downvotes: 3,
 			feed_id: "4b",
@@ -86,42 +78,42 @@ async function loadWelcomeContent() {
 			views: 78164
 		},
 		{
-			channel_id: "6a",
-			content: post5,
-			created_at: "2025-09-18T10:00:00.000Z",
-			downvotes: 0,
-			feed_id: "6b",
+			channel_id: "5a",
+			content: '/interactivePost5.html',
+			created_at: "2025-09-18T09:30:00.000Z",
+			downvotes: 3,
+			feed_id: "5b",
 			poster: {
-				feed_name: "UserAbc123",
-				feed_photo: "media/site_images/welcomeUsers/socialUser.png"
+				feed_name: "CasualWikipedian",
+				feed_photo: "media/site_images/welcomeUsers/wikiUser.png"
 			},
 			is_saved: false,
 			parent_id: null,
-			post_id: "6c",
-			poster_id: "6d",
-			replies: 32426,
-			updated_at: "2025-09-17T10:00:30.000Z",
-			upvotes: 82628,
-			views: 217583
+			post_id: "5c",
+			poster_id: "5d",
+			replies: 12576,
+			updated_at: "2025-09-18T09:35:15.000Z",
+			upvotes: 22655,
+			views: 85464
 		},
 		//{
-			//channel_id: "5a",
-			//content: post5,
-			//created_at: "2025-09-18T09:30:00.000Z",
-			//downvotes: 3,
-			//feed_id: "5b",
+			//channel_id: "6a",
+			//content: '/interactivePost6.html',
+			//created_at: "2025-09-18T10:00:00.000Z",
+			//downvotes: 0,
+			//feed_id: "6b",
 			//poster: {
-				//feed_name: "CasualWikipedian",
-				//feed_photo: "media/site_images/welcomeUsers/wikiUser.png"
+				//feed_name: "UserAbc123",
+				//feed_photo: "media/site_images/welcomeUsers/socialUser.png"
 			//},
 			//is_saved: false,
 			//parent_id: null,
-			//post_id: "5c",
-			//poster_id: "5d",
-			//replies: 12576,
-			//updated_at: "2025-09-18T09:35:15.000Z",
-			//upvotes: 22655,
-			//views: 85464
+			//post_id: "6c",
+			//poster_id: "6d",
+			//replies: 32426,
+			//updated_at: "2025-09-17T10:00:30.000Z",
+			//upvotes: 82628,
+			//views: 217583
 		//},
 	];
 }
