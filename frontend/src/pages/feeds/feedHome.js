@@ -79,8 +79,6 @@ const FeedHome = () => {
         fetchFeedData();
     }, [feed_name, viewer]);
 
-    const urlLetter = feed?.isGroup ? 'g' : 'u';
-
     //Moderators and admins can remove content
     useEffect(() => {
         if (isAdmin || isModerator) {
@@ -226,7 +224,7 @@ const FeedHome = () => {
                 setFeedErrorMessage('');
                 setNewChannelName('');
                 setShowChannelForm(false);
-                navigate(`/${urlLetter}/${feed_name}/${finalChannelName}`);
+                navigate(`/${urlPrefix}/${feed_name}/${finalChannelName}`);
             } else {
                 setFeedErrorMessage(response.data?.message || 'Failed to add channel');
                 setTimeout(() => { setFeedErrorMessage(''); }, 5000);
@@ -357,9 +355,9 @@ const FeedHome = () => {
 
     const toggleDrafts = () => {
         if (showDrafts) {
-            navigate(`/${urlLetter}/${feed_name}/${channel_name}`);
+            navigate(`/${urlPrefix}/${feed_name}/${channel_name}`);
         } else {
-            navigate(`/${urlLetter}/${feed_name}/${channel_name}/drafts`);
+            navigate(`/${urlPrefix}/${feed_name}/${channel_name}/drafts`);
         }
     };
 
@@ -464,7 +462,7 @@ const FeedHome = () => {
                 </div>
                 <aside className="right-aside">
                     <div id="feed-summary">
-                        <img className="large-feed-photo" src={`/${feed?.feed_photo}`} alt={feed?.feed_name} />
+                        <img className="large-feed-photo" src={`/${feed?.feed_photo}`} onError={(e) => e.currentTarget.src = '/media/site_images/blank-profile.png'} />
                         <p className="large-text">{feed?.feed_name}</p>
                         <p className="description" >{feed?.description}</p>
                         {viewer && isAuthenticated && (
@@ -485,11 +483,11 @@ const FeedHome = () => {
             </div> 
             <aside className={rightClasses}>
                 <div id="feed-summary">
-                    <Link to={`/${urlLetter}/${feed_name}/Main`}>
+                    <Link to={`/${urlPrefix}/${feed_name}/Main`}>
                         <img className="large-feed-photo" src={`/${feed?.feed_photo}`} onError={(e) => e.currentTarget.src = '/media/site_images/blank-profile.png'} />
                     </Link>
                     <div className="feed-name">
-                        <Link to={`/${urlLetter}/${feed_name}/Main`}>
+                        <Link to={`/${urlPrefix}/${feed_name}/Main`}>
                             <p className="large-text">{feed?.feed_name}</p>
                         </Link>
                         {(isModerator || isAdmin) && (
@@ -557,7 +555,7 @@ const FeedHome = () => {
                             </div>
                         ) : (
                             <div className="channel-name">
-                                <Link to={`/${urlLetter}/${feed_name}/${channel_name}`}>
+                                <Link to={`/${urlPrefix}/${feed_name}/${channel_name}`}>
                                     <p className="medium-text">{channel_name}</p>
                                 </Link>
                                 <div className="button-group">

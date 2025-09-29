@@ -271,15 +271,12 @@ router.post('/create_feed', authenticateCheck, checkProfileStorageLimit, async (
                 if (req.file) {
                     if (process.env.NODE_ENV === "production") {
                         const fileName = GenerateFileName(req.file, "feed-image");
-                        await DeleteFromS3(`media/${fileName}`);
+                        await DeleteFromS3(`feed-images/${fileName}`);
                     } else {
                         fs.unlinkSync(req.file.path);
                     }
                 }
-                return res.status(400).json({ 
-                    success: false, 
-                    message: 'Name taken' 
-                });
+                return res.status(400).json({ success: false, message: 'Name taken' });
             }
             let feed_photo = "media/site_images/blank-group-icon.jpg";
             if (req.file) {
@@ -289,18 +286,15 @@ router.post('/create_feed', authenticateCheck, checkProfileStorageLimit, async (
                 if (user.storage_count + fileSize > maxStorage) {
                     if (process.env.NODE_ENV === "production") {
                         const fileName = GenerateFileName(req.file, "feed-image");
-                        await DeleteFromS3(`media/${fileName}`);
+                        await DeleteFromS3(`feed-images/${fileName}`);
                     } else {
                         fs.unlinkSync(req.file.path);
                     }
-                    return res.status(413).json({ 
-                        success: false, 
-                        message: `Weekly limit of ${maxStorage}MB exceeded` 
-                    });
+                    return res.status(413).json({ success: false, message: `Weekly limit of ${maxStorage}MB exceeded` });
                 }
                 if (process.env.NODE_ENV === "production") {
                     const fileName = GenerateFileName(req.file, "feed-image");
-                    const s3Key = `feed-image/${fileName}`;
+                    const s3Key = `feed-images/${fileName}`;
                     await UploadToS3(s3Key, req.file.buffer, req.file.mimetype);
                     feed_photo = `https://${process.env.AWS_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${s3Key}`;
                 } else {
@@ -349,7 +343,7 @@ router.post('/create_feed', authenticateCheck, checkProfileStorageLimit, async (
                 try {
                     if (process.env.NODE_ENV === "production") {
                         const fileName = GenerateFileName(req.file, "feed-image");
-                        await DeleteFromS3(`content/${fileName}`);
+                        await DeleteFromS3(`feed-images/${fileName}`);
                     } else {
                         fs.unlinkSync(req.file.path);
                     }
@@ -1030,19 +1024,16 @@ router.put('/update_feed_photo/:feedId', authenticateCheck, checkProfileStorageL
             if (user.storage_count + fileSize > maxStorage) {
                 if (process.env.NODE_ENV === "production") {
                     const fileName = GenerateFileName(file, "feed-image");
-                    await DeleteFromS3(`media/${fileName}`);
+                    await DeleteFromS3(`feed-images/${fileName}`);
                 } else {
                     fs.unlinkSync(file.path);
                 }
-                return res.status(413).json({ 
-                    success: false, 
-                    message: `Weekly limit of ${maxStorage}MB exceeded` 
-                });
+                return res.status(413).json({ success: false, message: `Weekly limit of ${maxStorage}MB exceeded`});
             }
             let newPhotoPath;
             if (process.env.NODE_ENV === "production") {
                 const fileName = GenerateFileName(file, "feed-image");
-                const s3Key = `content/${fileName}`;
+                const s3Key = `feed-images/${fileName}`;
                 await UploadToS3(s3Key, file.buffer, file.mimetype);
                 newPhotoPath = `https://${process.env.AWS_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${s3Key}`;
             } else {
@@ -1076,7 +1067,7 @@ router.put('/update_feed_photo/:feedId', authenticateCheck, checkProfileStorageL
                 try {
                     if (process.env.NODE_ENV === "production") {
                         const fileName = GenerateFileName(req.file, "feed-image");
-                        await DeleteFromS3(`media/${fileName}`);
+                        await DeleteFromS3(`feed-images/${fileName}`);
                     } else {
                         fs.unlinkSync(req.file.path);
                     }
