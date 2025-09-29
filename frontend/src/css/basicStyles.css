@@ -22,6 +22,9 @@ body, html {
 input, textarea, select {
 	font-size: 16px;
 }
+.bold {
+    font-weight: bold;
+}
 .button.active, .button:hover, .button.selected:focus, .chat-channel-button:hover, .conversation-button:hover, .dark-button:hover, .follow-button:hover, .icon-button:hover, .large-icon:hover, #messages-button:hover, .posts-channel-button:hover, .small-icon:hover {
     background-color: var(--light);
     cursor: pointer;

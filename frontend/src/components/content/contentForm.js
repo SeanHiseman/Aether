@@ -430,7 +430,7 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
                         },
                     },
                 })
-                const navigateUrl = isReply ? `/${urlPrefix}/${feed_name}/${channel_name}/${post?.post_id}` : `/${urlPrefix}/${feed_name}/${channel_name}`
+                const navigateUrl = isReply ? `/${urlPrefix}/${feed_name}/${channel_name}/${post?.post_id}` : `/${urlPrefix}/${feed_name}/${channel_name}`;
                 navigate(navigateUrl);
             }
             setShowForm(false)
@@ -690,6 +690,7 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
         if (iframeRefs.current[blockId]) delete iframeRefs.current[blockId]
     }, [blocks])
 
+    //Separate from submitForm since saving does not close the form
     const saveDraft = useCallback(async e => {
         e.preventDefault()
         submittedRef.current = true //Redundant backup
@@ -716,6 +717,7 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
         }
         formData.append('draft_id', id);
         try {
+            //Drafts created and updated through create_post route
             const response = await axios.post('/api/create_post', formData, { headers: { 'Content-Type': 'multipart/form-data' }});
             if (response.data.success) {
                 setPostErrorMessage('Draft saved')
@@ -741,25 +743,24 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
             const finalHTML = compileFinalHTML(blocks)
             const formData = new FormData()
             const postId = post?.post_id;
-            formData.append('post_id', postId)
-            formData.append('content', finalHTML)
+            formData.append('post_id', postId);
+            formData.append('content', finalHTML);
             formData.append('feed_id', feed?.feed_id);
             if (!post || draftId) { 
                 formData.append('draft_id', draftId);
             } 
-            if (!isReply) formData.append('title', title)
-            if (channelId) formData.append('channel_id', channelId)
-            if (isReply && post) formData.append('parent_id', post?.post_id)
+            if (!isReply) formData.append('title', title);
+            if (channelId) formData.append('channel_id', channelId);
+            if (isReply && post) formData.append('parent_id', post?.post_id);
             blocks
                 .filter(b => b.type === BLOCK_TYPES.MEDIA && b.data.file)
                 .forEach(mediaBlock => formData.append('files', mediaBlock.data.file))
-            await (onPostSubmit(formData))
-            setIsPostingDraft(false)
-            setTitle('')
-            setBlocks([])
-            setGlobalAiPrompt('')
-            setShowForm(false)
-            setPostErrorMessage('')
+            await (onPostSubmit(formData));
+            setIsPostingDraft(false);
+            setTitle('');
+            setBlocks([]);
+            setGlobalAiPrompt('');
+            setPostErrorMessage('');
         } catch (error) {
             setPostErrorMessage(error.response?.data?.message || 'Error submitting the form.')
             setTimeout(() => { setPostErrorMessage('') }, 5000)
@@ -909,7 +910,7 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
                 <input accept=".zip" hidden id="app-input" onChange={appFileChange} type="file" />
                 {editMode && 
                     <div style={{width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
-                        <p className="medium-text" style={{marginLeft: 0, marginTop: 0}}>{isReply ? 'Reply' : 'Editing'}</p>
+                        <p className="medium-text bold" style={{marginLeft: 0, marginTop: 0}}>{isReply ? 'Reply' : 'Editing'}</p>
                         {blocks.length > 1 && <p className="small-text faded-text">Drag and drop blocks to reorder</p>}
                     </div>
                 }

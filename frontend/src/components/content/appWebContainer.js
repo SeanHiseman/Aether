@@ -24,7 +24,7 @@ const AppWebContainer = ({ buildId }) => {
 	return (
 		<iframe
 			ref={iframeRef}
-			sandbox="allow-downloads allow-forms allow-modals allow-pointer-lock allow-popups allow-same-origin allow-scripts"
+			sandbox="allow-downloads allow-forms allow-modals allow-popups allow-scripts"
 			style={{ border: 'none', width: '100%', height: '100%', minHeight: '300px' }}
 			title={`app-block-${buildId}`}
 		/>

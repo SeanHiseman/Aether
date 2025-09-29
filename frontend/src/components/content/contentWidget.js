@@ -325,7 +325,7 @@ const ContentWidget = ({ canRemove = false, display = false, feed, isDraft = fal
 						: isOverflowing
 							? (showFullContent
 								? { height: 'auto', overflow: 'visible' }
-								: { height: '60vh', overflow: 'hidden' })
+								: { height: '80vh', overflow: 'hidden' })
 							: { height: 'auto', overflow: 'visible' })
 				}}
 			>

@@ -163,6 +163,7 @@
   width: 100%;
 }
 .post-reply-preview {
+  margin-bottom: var(--medium-margin);
    width: 100%; 
 }
 .preview-prompt-container { 

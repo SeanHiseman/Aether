@@ -111,7 +111,7 @@ const ContentDisplay = ({ post, onCodeAppChange = () => {}, onOverflowChange = (
 					return (
 						<iframe
 							key={i}
-							sandbox="allow-scripts allow-same-origin allow-downloads"
+							sandbox="allow-downloads allow-forms allow-modals allow-popups allow-scripts"
 							srcDoc={block.code}
 							style={{ border: 'none', height: '100%', width: '100%' }}
 							title={`code-block-${block.id}`}

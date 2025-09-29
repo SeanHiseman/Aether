@@ -111,7 +111,6 @@ const FeedHome = () => {
     useEffect(() => {
         if (isEditMode && post_id) {
             const editData = location.state?.editData;
-            const isDraftEdit = location.state?.isDraft;
             if (editData) {
                 setShowPostForm(true);
                 setIsEdit(true);
@@ -308,6 +307,7 @@ const FeedHome = () => {
     const handleChatClick = () => setIsChatChannel((prev) => !prev);
     const handlePostClick = () => setIsPostChannel((prev) => !prev);
 
+    //Could move to contentForm
     const postSubmit = async (formData) => {
         if (!isAuthenticated) return;
         if (!formData) {
@@ -331,11 +331,8 @@ const FeedHome = () => {
                     }
                 });     
             }
-            console.log("response:", response);
             const postId = response.data?.result?.post_id;
-            console.log("postId:", postId);
             const navigationUrl = `/${urlPrefix}/${feed_name}/${channel_name}/${postId}`;
-            console.log("navigating to:", navigationUrl);
             navigate(navigationUrl);
             setShowPostForm(false);
         } catch (error) {
@@ -463,7 +460,7 @@ const FeedHome = () => {
                 <aside className="right-aside">
                     <div id="feed-summary">
                         <img className="large-feed-photo" src={`/${feed?.feed_photo}`} onError={(e) => e.currentTarget.src = '/media/site_images/blank-profile.png'} />
-                        <p className="large-text">{feed?.feed_name}</p>
+                        <p className="large-text bold">{feed?.feed_name}</p>
                         <p className="description" >{feed?.description}</p>
                         {viewer && isAuthenticated && (
                             <FollowerChangeButton feed={feed} viewerId={viewer?.feed_id} />
@@ -488,7 +485,7 @@ const FeedHome = () => {
                     </Link>
                     <div className="feed-name">
                         <Link to={`/${urlPrefix}/${feed_name}/Main`}>
-                            <p className="large-text">{feed?.feed_name}</p>
+                            <p className="large-text bold">{feed?.feed_name}</p>
                         </Link>
                         {(isModerator || isAdmin) && (
                             <Link to={`/settings/${feed_name}`}>

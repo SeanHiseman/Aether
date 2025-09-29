@@ -141,13 +141,15 @@ router.post('/generate_content', authenticateCheck, async (req, res) => {
         const outputMultiplier = hasMembership ? 15.0 : 1.25;
         const assistantInstructions = 
             `Generate or improve HTML code based on the following context:
-            Request: ${request}
-            Current Code: ${currentCode}
+            Request: ${request},
+            Current Code: ${currentCode},
             IMPORTANT: Return ONLY the raw HTML/Javascript code without any explanations, comments, introductory text, or markdown formatting.
-            Do not include \`\`\`html, \`\`\`
-            Body background #0f0f0f (unless specified), height 300px minimum. No body padding, main width 100% with no border.
-            Use styles: --border: #3e3f41;--darkest: #0f0f0f; --dark: #232527; --light: #737484; --lightest: #dddddd;
-            White text as default
+            Do not include \`\`\`html, \`\`\`.
+
+            DEFAULT STYLES:
+            Body background #0f0f0f, height 300px minimum, no body padding, main width 100% with no border, minimal padding and margins, no colour gradients, white text.,
+            IGNORE THESE STYLES IF REQUEST SPECIFIES OTHERWISE.
+
             Ensure all interactions work on mobile and desktop.
             If the request cannot be fulfilled with code, return nothing`;
         const completion = await anthropic.messages.create({

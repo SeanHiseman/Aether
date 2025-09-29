@@ -36,11 +36,11 @@ const FeedDeletion = () => {
     };
 
     return (
-        <div className="feed-settings short">
-            <div className="display-area">
-                <p className="large-text">{feed?.is_group ? 'Are you sure you wish to delete this feed?' : 'Are you sure you wish to delete your account?'}</p>
-                <p className="medium-text">This action cannot be reversed</p>
-                <p className="medium-text">All posts, channels, followers and feed information will be lost</p>
+        <div className="feed-settings">
+            <div className="display-area" style={{ alignItems: 'start' }}>
+                <p className="large-text" style={{ fontWeight: 'bold', marginBottom: '20px' }}>{feed?.is_group ? 'Are you sure you wish to delete this feed?' : 'Are you sure you wish to delete your account?'}</p>
+                <p className="medium-text" style={{ alignSelf: 'start' }}>This action cannot be reversed</p>
+                <p className="medium-text" style={{ alignSelf: 'start', marginBottom: '20px' }}>All posts, channels, followers and feed information will be lost</p>
                 {!showConfirmation ? (
                     <button className="button delete" onClick={handleDeleteClick}>
                         {feed?.is_group ? 'Delete Feed' : 'Delete Account'}
@@ -58,19 +58,19 @@ const FeedDeletion = () => {
                             className="name-input"
                             placeholder="Type DELETE to confirm"
                             value={confirmText}
-                            style={{ marginBottom: '15px', padding: '8px', width: '200px' }}
+                            style={{ marginBottom: '15px', padding: '8px', maxWidth: '300px', width: '90vw' }}
                             onChange={(e) => setConfirmText(e.target.value)}
                         />
                         <div style={{ display: 'flex', gap: '10px' }}>
                             <button 
                                 className="button delete" 
                                 onClick={deleteFeed}
-                                disabled={confirmText !== 'DELETE'}
-                                style={{ opacity: confirmText !== 'DELETE' ? 0.5 : 1 }}
+                                disabled={confirmText.toLowerCase() !== 'delete'}
+                                style={{ opacity: confirmText.toLowerCase() !== 'delete' ? 0.5 : 1 }}
                             >
                                 Confirm {feed?.is_group ? 'Delete Feed' : 'Delete Account'}
                             </button>
-                            <button className="button" onClick={cancelDeletion}>
+                            <button className="large-icon" onClick={cancelDeletion}>
                                 Cancel
                             </button>
                         </div>

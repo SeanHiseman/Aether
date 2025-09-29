@@ -816,7 +816,8 @@ router.get('/get_feed_followers/:feedId', authenticateCheck, async (req, res) =>
                 as: 'followerFeed',
                 required: true,
             }],
-            attributes: ['follow_id', 'follower_id', 'is_mod', 'is_admin', 'created_at']
+            attributes: ['follow_id', 'follower_id', 'is_mod', 'is_admin', 'created_at'],
+            order: [{ model: Feeds, as: 'followerFeed' }, 'feed_name', 'ASC']
         });
         res.status(200).json({ success: true, followers });
     } catch (error) {

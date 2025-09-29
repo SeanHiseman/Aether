@@ -5,15 +5,7 @@ import { AuthContext } from '../../../components/authContext';
 import { FaCrown, FaMinus, FaMinusCircle, FaPlusCircle } from 'react-icons/fa';
 import { FormatNumber } from '../../../functions/formatNumber';
 
-function chunkFollowersToQuads(followers) {
-    const quads = [];
-    for (let i = 0; i < followers.length; i += 4) {
-        quads.push(followers.slice(i, i + 4));
-    }
-    return quads;
-}
-
-const FollowerWidget = ({ follower, feed, user, viewer, onRemoveFollower, onToggleAdmin, onToggleModerator, onTransferOwnership }) => {
+const FollowerWidget = ({ follower, feed, user, onRemoveFollower, onToggleAdmin, onToggleModerator, onTransferOwnership }) => {
     const imageUrl = follower?.followerFeed?.feed_photo
         ? `/${follower?.followerFeed?.feed_photo}`
         : "/media/site_images/blank-profile.png";
@@ -25,26 +17,15 @@ const FollowerWidget = ({ follower, feed, user, viewer, onRemoveFollower, onTogg
 
     return (
         <div className="explore-block bg-gray-800 rounded-lg flex flex-col items-center p-4">
-            <Link 
-                to={`/u/${follower?.followerFeed?.feed_name}`} 
-                className="w-20 h-20 rounded-full overflow-hidden mb-2"
-            >
-                <img 
-                    className="w-full h-full object-cover feed-img" 
-                    src={imageUrl} 
-                    onError={(e) => e.currentTarget.src = '/media/site_images/blank-profile.png'} 
-                    alt="Feed"
-                />
+            <Link to={`/u/${follower?.followerFeed?.feed_name}`} className="w-20 h-20 rounded-full overflow-hidden mb-2">
+                <img className="w-full h-full object-cover feed-img" src={imageUrl} onError={(e) => e.currentTarget.src = '/media/site_images/blank-profile.png'} />
             </Link>
-            
             <p className="text-lg font-bold text-white truncate mt-1 text-center">
                 {follower?.followerFeed?.feed_name}
             </p>
-            
             {feed?.is_group && (
                 <p className="text-sm text-gray-300 mb-2">{role}</p>
             )}
-
             {/* Action buttons - only show if not the current user */}
             {user?.user_id !== follower?.follower_id && (
                 <div className="flex flex-col gap-1 mt-2 w-full">
@@ -176,37 +157,30 @@ const FeedFollowers = () => {
         }
     };
 
-    //Chunk followers into groups of 4
-    const followerQuads = chunkFollowersToQuads(followers);
-
     return (
         <div className="channel-content">
             <div className="followers-header">
-                <p className="large-text">{FormatNumber(followerCount)} {followerCount === 1 ? 'follower' : 'followers'}</p>
+                <p className="large-text bold">{FormatNumber(followerCount)} {followerCount === 1 ? 'follower' : 'followers'}</p>
                 {feed?.is_group && <p className="small-text">Moderators remove content and followers</p>}
                 {feed?.is_group && <p className="small-text">Admins remove content, appoint and dismiss mods, and make feed changes</p>}
             </div>
             {errorMessage && <div className="error-message">{errorMessage}</div>}
-            {followers.length === 0 ? (
+           {followers.length === 0 ? (
                 <p className="medium-text faded-text">No followers</p>
-            ) : (
-                <div className="flex flex-col gap-3 w-full">
-                    {followerQuads.map((followerQuad, idx) => (
-                        <div key={idx} className="grid grid-cols-4 gap-3 w-full">
-                            {followerQuad.map((follower, followerIdx) => (
-                                <FollowerWidget
-                                    key={follower?.follower_id || `follower-${idx}-${followerIdx}`}
-                                    follower={follower}
-                                    feed={feed}
-                                    user={user}
-                                    viewer={viewer}
-                                    onRemoveFollower={removeFollower}
-                                    onToggleAdmin={toggleAdminStatus}
-                                    onToggleModerator={toggleModeratorStatus}
-                                    onTransferOwnership={transferOwnership}
-                                />
-                            ))}
-                        </div>
+           ) : (
+                <div className="grid grid-cols-3 md:grid-cols-4 gap-3 w-full">
+                    {followers.map((follower, idx) => (
+                        <FollowerWidget
+                            key={follower?.follower_id || `follower-${idx}`}
+                            follower={follower}
+                            feed={feed}
+                            user={user}
+                            viewer={viewer}
+                            onRemoveFollower={removeFollower}
+                            onToggleAdmin={toggleAdminStatus}
+                            onToggleModerator={toggleModeratorStatus}
+                            onTransferOwnership={transferOwnership}
+                        />
                     ))}
                 </div>
             )}
