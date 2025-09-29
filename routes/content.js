@@ -37,7 +37,7 @@ const checkStorageLimit = async (req, res, next) => {
         if (!user) {
             return res.status(404).json({ success: false, message: 'User not found' });
         }
-        const maxStorage = user.has_membership ? 50 * 1024 : 100; //25GB for members, 100MB for non-members
+        const maxStorage = user.has_membership ? 25 * 1024 : 100; //25GB for members, 100MB for non-members
         if (user.storage_count >= maxStorage) {
             return res.status(413).json({ 
                 success: false, 

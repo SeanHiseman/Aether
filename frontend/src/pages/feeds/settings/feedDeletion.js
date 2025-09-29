@@ -19,7 +19,7 @@ const FeedDeletion = () => {
                 await axios.delete('/api/delete_feed', { data: { feedId: feed?.feed_id } }) : 
                 await axios.delete('/api/delete_account', { data: { userId: feed?.feed_owner } });
             if (response.data?.success) {
-                const route = feed?.is_group ? '/d/following' : '/join';
+                const route = feed?.is_group ? '/explore' : '/join';
                 navigate(route);
             }
         } catch (error) {
@@ -38,9 +38,9 @@ const FeedDeletion = () => {
     return (
         <div className="feed-settings">
             <div className="display-area" style={{ alignItems: 'start' }}>
-                <p className="large-text" style={{ fontWeight: 'bold', marginBottom: '20px' }}>{feed?.is_group ? 'Are you sure you wish to delete this feed?' : 'Are you sure you wish to delete your account?'}</p>
+                <p className="large-text" style={{ fontWeight: 'bold', marginBottom: '30px' }}>{feed?.is_group ? 'Are you sure you wish to delete this feed?' : 'Are you sure you wish to delete your account?'}</p>
                 <p className="medium-text" style={{ alignSelf: 'start' }}>This action cannot be reversed</p>
-                <p className="medium-text" style={{ alignSelf: 'start', marginBottom: '20px' }}>All posts, channels, followers and feed information will be lost</p>
+                <p className="medium-text" style={{ alignSelf: 'start', marginBottom: '30px' }}>All posts, channels, followers and feed information will be lost</p>
                 {!showConfirmation ? (
                     <button className="button delete" onClick={handleDeleteClick}>
                         {feed?.is_group ? 'Delete Feed' : 'Delete Account'}

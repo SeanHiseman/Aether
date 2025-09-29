@@ -17,6 +17,7 @@ const FeedSettings = () => {
     const navigate = useNavigate();
     const { rightClasses } = useOutletContext(); 
     const { user } = useContext(AuthContext);
+    const urlPrefix = feed?.is_group ? 'g' : 'u';
 
     useEffect(() => {
         const fetchFeedData = async () => {
@@ -96,7 +97,7 @@ const FeedSettings = () => {
             <aside className={rightClasses}>
                 <nav id="channel-list">
                     <ul>
-                        <Link id="feed-summary" to={`/g/${feed_name}`}>
+                        <Link id="feed-summary" to={`/${urlPrefix}/${feed_name}/Main`}>
                             <img className="large-feed-photo" src={`${feed?.feed_photo}`} onError={(e) => e.currentTarget.src = '/media/site_images/blank-profile.png'} />
                             <p className="large-text">{feed_name}</p>
                         </Link>
