@@ -1,21 +1,21 @@
 import { ApplyAlgorithm } from '../custom_algorithms/applyAlgorithm.js';
 import authenticateCheck from '../functions/checks/authenticateCheck.js';
 import ConnectCheck from '../functions/checks/connectCheck.js';
-import FollowerCheck from '../functions/checks/followerCheck.js';
+import { ConnectRequests, DeepFeeds, DeepFeedContent, Feeds, FeedChannels, FeedChannelMessages, Followers, FollowRequests, Posts, PostNotes, PostVotes, SavedPosts, SavedPostChannels, Users } from '../models/relationships.js';
 import DeleteMedia from '../functions/media_handling/deleteMedia.js';
+import { DeleteFromS3, UploadToS3 } from '../functions/media_handling/s3Handling.js';
 import dotenv from 'dotenv';
+import FollowerCheck from '../functions/checks/followerCheck.js';
 import { fileURLToPath } from 'url';
 import { GenerateFileName } from '../functions/media_handling/generateFileName.js';
 import imageUpload from '../functions/media_handling/imageUpload.js';
 import fs from 'fs';
 import multer from 'multer';
 import { Op } from 'sequelize';
-import { join } from 'path';
 import path from 'path';
 import { Router } from 'express';
 import sequelize from '../databaseSetup.js';
 import { v4 } from 'uuid';
-import { ConnectRequests, DeepFeeds, DeepFeedContent, Feeds, FeedChannels, FeedChannelMessages, Followers, FollowRequests, Posts, PostNotes, PostVotes, SavedPosts, SavedPostChannels, Users } from '../models/relationships.js';
 import { ValidateTextInput } from '../functions/validateTextInput.js'
 
 dotenv.config();
