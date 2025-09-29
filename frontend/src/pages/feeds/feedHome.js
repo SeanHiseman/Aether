@@ -459,7 +459,7 @@ const FeedHome = () => {
                 </div>
                 <aside className="right-aside">
                     <div id="feed-summary">
-                        <img className="large-feed-photo" src={`/${feed?.feed_photo}`} onError={(e) => e.currentTarget.src = '/media/site_images/blank-profile.png'} />
+                        <img className="large-feed-photo" src={`${feed?.feed_photo}`} onError={(e) => e.currentTarget.src = '/media/site_images/blank-profile.png'} />
                         <p className="large-text bold">{feed?.feed_name}</p>
                         <p className="description" >{feed?.description}</p>
                         {viewer && isAuthenticated && (
@@ -481,7 +481,7 @@ const FeedHome = () => {
             <aside className={rightClasses}>
                 <div id="feed-summary">
                     <Link to={`/${urlPrefix}/${feed_name}/Main`}>
-                        <img className="large-feed-photo" src={`/${feed?.feed_photo}`} onError={(e) => e.currentTarget.src = '/media/site_images/blank-profile.png'} />
+                        <img className="large-feed-photo" src={`${feed?.feed_photo}`} onError={(e) => e.currentTarget.src = '/media/site_images/blank-profile.png'} />
                     </Link>
                     <div className="feed-name">
                         <Link to={`/${urlPrefix}/${feed_name}/Main`}>

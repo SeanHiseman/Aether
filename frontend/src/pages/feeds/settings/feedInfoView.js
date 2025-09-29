@@ -164,7 +164,7 @@ const FeedInfoView = () => {
         <div className="feed-settings short">
             <div className="name-photo-area">
                 <div className="feed-header-photo">
-                    <img className="settings-feed-photo" src={`/${feed?.feed_photo}`} onError={(e) => e.currentTarget.src = '/media/site_images/blank-profile.png'} />
+                    <img className="settings-feed-photo" src={`${feed?.feed_photo}`} onError={(e) => e.currentTarget.src = '/media/site_images/blank-profile.png'} />
                     <button className="small-icon" onClick={togglePhotoForm} title={isPhotoFormVisible ? "Close" : "Change feed photo"}>
                         {isPhotoFormVisible ? <><FaRegWindowClose /><p className="icon-text">Close</p></> : <><FaEdit /><p className="icon-text">Change photo</p></>}
                     </button>

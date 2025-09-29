@@ -6,7 +6,7 @@ import FollowerChangeButton from "../followerChangeButton";
 const FeedWidget = ({ feed }) => {
 	const { viewer } = useContext(AuthContext);
 	const imageUrl = feed?.feed_photo
-		? `/${feed?.feed_photo}`
+		? `${feed?.feed_photo}`
 		: "/media/site_images/blank-group-icon.jpg";
 
 	return (

@@ -481,7 +481,7 @@ const BaseLayout = () => {
                     <div className="left-aside-feed-info">
                         {isAuthenticated && (
                             <><Link className="feed-link" to={`/u/${feed?.feed_name}`}>
-                                <img className="small-feed-photo" src={`/${feed?.feed_photo}`} onError={(e) => e.currentTarget.src = '/media/site_images/blank-profile.png'} />
+                                <img className="small-feed-photo" src={`${feed?.feed_photo}`} onError={(e) => e.currentTarget.src = '/media/site_images/blank-profile.png'} />
                                 <p className="feed-list-text">{feed?.feed_name}</p>
                             </Link>
                             <Link className="small-icon" to={`/settings/${feed?.feed_name}`} title="Settings">
@@ -613,18 +613,10 @@ const BaseLayout = () => {
                                 <p className="small-text faded-text">
                                     Drag and drop to combine feeds
                                 </p>
-                                <SortableContext 
-                                    items={feeds.map(f => `sidebar-feed-${f?.feed_id}`)} 
-                                    strategy={verticalListSortingStrategy}
-                                >
+                                <SortableContext items={feeds.map(f => `sidebar-feed-${f?.feed_id}`)} strategy={verticalListSortingStrategy}>
                                     <ul className="feeds-list">
                                         {feeds.map(f => (
-                                            <FeedItem 
-                                                key={f?.feed_id} 
-                                                feed={f?.followedFeed} 
-                                                id={f?.feed_id.toString()} 
-                                                isChat={false}
-                                            />
+                                            <FeedItem key={f?.feed_id} feed={f?.followedFeed} id={f?.feed_id.toString()} isChat={false} />
                                         ))}
                                     </ul>
                                 </SortableContext>
@@ -634,11 +626,7 @@ const BaseLayout = () => {
                                     <div className="feed-list-item feed-drag-overlay">
                                         <div className="feed-list-link-container">
                                             <div className="feed-list-link">
-                                                <img
-                                                    className="small-feed-photo"
-                                                    src={`/${activeDragItem?.followedFeed?.feed_photo}`}
-                                                    alt="Feed"
-                                                />
+                                                <img className="small-feed-photo" src={`${activeDragItem?.followedFeed?.feed_photo}`} onError={(e) => e.currentTarget.src = '/media/site_images/blank-profile.png'} />
                                                 <p className="feed-list-text">
                                                     {activeDragItem?.followedFeed?.feed_name}
                                                 </p>
@@ -650,11 +638,7 @@ const BaseLayout = () => {
                                     <div className="feed-list-item feed-drag-overlay">
                                         <div className="feed-list-link-container">
                                             <div className="feed-list-link">
-                                                <img
-                                                    className="small-feed-photo"
-                                                    src={`/${activeDragItem?.feed?.feed_photo}`}
-                                                    alt="Feed"
-                                                />
+                                                <img className="small-feed-photo" src={`${activeDragItem?.feed?.feed_photo}`} onError={(e) => e.currentTarget.src = '/media/site_images/blank-profile.png'} />
                                                 <p className="feed-list-text">
                                                     {activeDragItem?.feed?.feed_name}
                                                 </p>
@@ -665,13 +649,7 @@ const BaseLayout = () => {
                             </DragOverlay>
                         </DndContext></>
                     ) : (
-                        <div style={{ 
-                            alignItems: "center", 
-                            display: "flex", 
-                            flexDirection: "column",
-                            justifyContent: "space-between",
-                            height: "80%" 
-                        }}>
+                        <div style={{ alignItems: "center", display: "flex", flexDirection: "column", justifyContent: "space-between", height: "80%" }}>
                             <Link to="/welcome">
                                 <p className="large-text faded-text" style={{ fontWeight: 'bold' }}>Aether</p>
                                 <p className="large-text faded-text" style={{ fontWeight: 'bold' }}>Social</p>

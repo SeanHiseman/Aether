@@ -7,7 +7,7 @@ import { FormatNumber } from '../../../functions/formatNumber';
 
 const FollowerWidget = ({ follower, feed, user, onRemoveFollower, onToggleAdmin, onToggleModerator, onTransferOwnership }) => {
     const imageUrl = follower?.followerFeed?.feed_photo
-        ? `/${follower?.followerFeed?.feed_photo}`
+        ? `${follower?.followerFeed?.feed_photo}`
         : "/media/site_images/blank-profile.png";
 
     let role = "Follower";

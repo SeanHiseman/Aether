@@ -278,7 +278,7 @@ router.post('/create_feed', authenticateCheck, checkProfileStorageLimit, async (
                 }
                 return res.status(400).json({ success: false, message: 'Name taken' });
             }
-            let feed_photo = "media/site_images/blank-group-icon.jpg";
+            let feed_photo = process.env.DEFAULT_GROUP_IMAGE;
             if (req.file) {
                 const fileSize = calculateFileSize(req.file);
                 const user = req.currentUser;

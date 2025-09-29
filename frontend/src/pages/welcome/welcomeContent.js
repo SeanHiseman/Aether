@@ -12,7 +12,7 @@ async function loadWelcomeContent() {
 			post_id: "1c",
 			poster: {
 				feed_name: "Welcome",
-				feed_photo: "media/site_images/Logo.png"
+				feed_photo: "/media/site_images/Logo.png"
 			},
 			poster_id: "1d",
 			replies: 25712,
@@ -31,7 +31,7 @@ async function loadWelcomeContent() {
 			post_id: "2c",
 			poster: {
 				feed_name: "iLearnLanguages",
-				feed_photo: "media/site_images/welcomeUsers/languageUser.png"
+				feed_photo: "/media/site_images/welcomeUsers/languageUser.png"
 			},
 			poster_id: "2d",
 			replies: 8346,
@@ -47,7 +47,7 @@ async function loadWelcomeContent() {
 			feed_id: "3b",
 			poster: {
 				feed_name: "ProGamer99",
-				feed_photo: "media/site_images/welcomeUsers/gamingUser.png"
+				feed_photo: "/media/site_images/welcomeUsers/gamingUser.png"
 			},
 			is_saved: false,
 			parent_id: null,
@@ -66,7 +66,7 @@ async function loadWelcomeContent() {
 			feed_id: "4b",
 			poster: {
 				feed_name: "Machine Learning Learner",
-				feed_photo: "media/site_images/welcomeUsers/mlUser.png"
+				feed_photo: "/media/site_images/welcomeUsers/mlUser.png"
 			},
 			is_saved: false,
 			parent_id: null,
@@ -85,7 +85,7 @@ async function loadWelcomeContent() {
 			feed_id: "5b",
 			poster: {
 				feed_name: "CasualWikipedian",
-				feed_photo: "media/site_images/welcomeUsers/wikiUser.png"
+				feed_photo: "/media/site_images/welcomeUsers/wikiUser.png"
 			},
 			is_saved: false,
 			parent_id: null,
@@ -104,7 +104,7 @@ async function loadWelcomeContent() {
 			//feed_id: "6b",
 			//poster: {
 				//feed_name: "UserAbc123",
-				//feed_photo: "media/site_images/welcomeUsers/socialUser.png"
+				//feed_photo: "/media/site_images/welcomeUsers/socialUser.png"
 			//},
 			//is_saved: false,
 			//parent_id: null,
