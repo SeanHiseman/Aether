@@ -13,6 +13,8 @@ const ExplorePage = () => {
 	const [feedPage, setFeedPage] = useState(0);
 	const [feeds, setFeeds] = useState([]);
 	const [filter, setFilter] = useState("all");
+	const [hasMoreFeeds, setHasMoreFeeds] = useState(true);
+	const [hasMorePosts, setHasMorePosts] = useState(true);
 	const [loading, setLoading] = useState(true);
 	const [loadingMore, setLoadingMore] = useState(false);
 	const [postPage, setPostPage] = useState(0);
@@ -30,6 +32,7 @@ const ExplorePage = () => {
 				params: { filter, limit: FETCH_LIMIT, offset: page * FETCH_LIMIT, exclude: shownPostIds.join(',')},
 			});
 			const newPosts = response?.data?.posts || [];
+			setHasMorePosts(response?.data?.hasMore ?? false);
 			if (page === 0) { //Initial load
 				setPosts(newPosts);
 				setShownPostIds(newPosts.map(p => p?.post_id));
@@ -48,38 +51,45 @@ const ExplorePage = () => {
 				params: { limit: FETCH_LIMIT, offset: page * FETCH_LIMIT, exclude: shownFeedIds.join(',') },
 			});
 			const newFeeds = response?.data?.feeds || [];
+			setHasMoreFeeds(response?.data?.hasMore ?? false);
 			if (page === 0) {
 				setFeeds(newFeeds);
 				setShownFeedIds(newFeeds.map(f => f?.feed_id));
 			} else {
 				setFeeds(prev => [...prev, ...newFeeds]);
-				setShownFeedIds(prev => [...prev, ...newFeeds.map(f => f?.feed_id)]);
+				setShownFeedIds(prev => [...prev, ...newFeeds.map(f => f?.feed_id)]);		
 			}
 		} catch (error) {
 			setErrorMessage(error.response.data?.message || "Failed to fetch feeds");
 		}
-	}, [shownFeedIds]);
+	}, []);
 
 	const loadMore = useCallback(async () => {
 		if (loading || loadingMore) return;
-		setLoadingMore(true);
 		if (filter === "all") {
+			if (!hasMorePosts && !hasMoreFeeds) return;
+			setLoadingMore(true);
 			const nextPostPage = postPage + 1;
 			const nextFeedPage = feedPage + 1;
-			await Promise.all([fetchPosts(nextPostPage), fetchFeeds(nextFeedPage)]);
-			setPostPage(nextPostPage);
-			setFeedPage(nextFeedPage);
-		} else if (filter === "posts") {
+			if (hasMorePosts) await fetchPosts(nextPostPage);
+			if (hasMoreFeeds) await fetchFeeds(nextFeedPage);
+			if (hasMorePosts) setPostPage(nextPostPage);
+			if (hasMoreFeeds) setFeedPage(nextFeedPage);
+			setLoadingMore(false);
+		} else if (filter === "posts" && hasMorePosts) {
+			setLoadingMore(true);
 			const nextPostPage = postPage + 1;
 			await fetchPosts(nextPostPage);
 			setPostPage(nextPostPage);
-		} else if (filter === "feeds") {
+			setLoadingMore(false);
+		} else if (filter === "feeds" && hasMoreFeeds) {
+			setLoadingMore(true);
 			const nextFeedPage = feedPage + 1;
 			await fetchFeeds(nextFeedPage);
 			setFeedPage(nextFeedPage);
+			setLoadingMore(false);
 		}
-		setLoadingMore(false);
-	}, [loading, loadingMore, filter, fetchPosts, fetchFeeds, posts.length, feeds.length]);
+	}, [loading, loadingMore, filter, fetchPosts, fetchFeeds, postPage, feedPage, hasMorePosts, hasMoreFeeds]);
 
 	const handleScroll = useCallback(() => {
 		const element = scrollRef.current;
@@ -114,8 +124,6 @@ const ExplorePage = () => {
 	const refreshPosts = () => {
         setRefreshTrigger(!refreshTrigger);
     };
-
-	const feedTriplets = useMemo(() => ChunkFeeds(feeds, 3), [feeds]);
 
 	useEffect(() => {
 		return () => {
@@ -170,7 +178,7 @@ const ExplorePage = () => {
 			<div ref={scrollRef} onScroll={handleScroll} className="channel-feed">
 				{loading ? (
 					<div className="flex justify-center items-center h-64">
-						<span className="text-xl faded-text">Loading...</span>
+						<span className="large-text faded-text">Loading...</span>
 					</div>
 				) : (
 					<>
@@ -182,14 +190,9 @@ const ExplorePage = () => {
 											<ContentWidget post={item?.data} />
 										</div>
 									) : (
-										<div key={`feedquad-${idx}`} className="grid grid-cols-3 gap-3 w-full">
+										<div key={`feedtriplet-${idx}`} className="grid grid-cols-3 gap-3 w-full">
 											{item.data.map(feed => (
-												<FeedWidget
-													key={feed?.feed_id}
-													feed={feed}
-													isAuthenticated={isAuthenticated}
-													viewerId={viewer?.feed_id}
-												/>
+												<FeedWidget key={feed?.feed_id} feed={feed} isAuthenticated={isAuthenticated} viewerId={viewer?.feed_id} />
 											))}
 										</div>
 									)
@@ -207,18 +210,11 @@ const ExplorePage = () => {
 						)}
 						{filter === "feeds" && (
 							<div className="flex flex-col gap-3 w-99">
-								{feedTriplets.map((feedTriplet, idx) => (
-									<div key={idx} className="grid grid-cols-3 gap-3 w-full">
-										{feedTriplet.map(feed => (
-											<FeedWidget
-												key={feed?.feed_id}
-												feed={feed}
-												isAuthenticated={isAuthenticated}
-												viewerId={viewer?.feed_id}
-											/>
-										))}
-									</div>
-								))}
+								<div className="grid grid-cols-3 md:grid-cols-4 gap-3 w-full">
+									{feeds.map(feed => (
+										<FeedWidget key={feed?.feed_id} feed={feed} isAuthenticated={isAuthenticated} viewerId={viewer?.feed_id} />     
+									))}
+								</div>
 							</div>
 						)}
 					</>
@@ -226,7 +222,7 @@ const ExplorePage = () => {
 			</div>
 			<aside className={`${rightClasses} w-80 bg-white`}>
 				<p className="error-message">{errorMessage}</p>
-				<p className="large-text">Explore</p>
+				<p className="large-text bold">Explore</p>
 				<nav className="channel-list">
 					<ul>
 						<li className="channel-link" onClick={() => setFilter("all")}>All</li>

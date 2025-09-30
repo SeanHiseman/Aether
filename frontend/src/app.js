@@ -61,6 +61,7 @@ const App = () => {
 								<Route path="contact" element={<Placeholder />} />
 								<Route path="licenses" element={<Placeholder />} />
 								<Route path="private-policy" element={<Placeholder />} />
+								<Route path="security" element={<Placeholder />} />
 								<Route path="support" element={<Placeholder />} />
 								<Route path="team" element={<Placeholder />} />
 								<Route path="terms" element={<Placeholder />} />

@@ -102,26 +102,24 @@ const SearchResults = () => {
 
     const combinedItems = useMemo(() => {
         if (selectedView !== "combined") return [];
-        const feedQuads = ChunkFeeds(feeds, 3).map(f => ({ type: "feedTriplet", data: f }));
+        const feedTriplets = ChunkFeeds(feeds, 3).map(f => ({ type: "feedTriplet", data: f }));
         const postItems = posts.map(p => ({ type: "post", data: p }));
         const interspersed = [];
         const POSTS_PER_BLOCK = 5; 
         let postIndex = 0;
         let feedIndex = 0;
-        while (postIndex < postItems.length || feedIndex < feedQuads.length) {
+        while (postIndex < postItems.length || feedIndex < feedTriplets.length) {
             for (let i = 0; i < POSTS_PER_BLOCK && postIndex < postItems.length; i++) {
                 interspersed.push(postItems[postIndex]);
                 postIndex++;
             }
-            if (feedIndex < feedQuads.length) {
-                interspersed.push(feedQuads[feedIndex]);
+            if (feedIndex < feedTriplets.length) {
+                interspersed.push(feedTriplets[feedIndex]);
                 feedIndex++;
             }
         }
         return interspersed;
     }, [selectedView, posts, feeds]);
-
-	const feedQuads = useMemo(() => ChunkFeeds(feeds, 3), [feeds]);
 
     useEffect(() => {
         if (error) {
@@ -142,10 +140,7 @@ const SearchResults = () => {
     document.title = 'Search';
     return (
         <div className="standard-container">
-            <div
-				ref={scrollRef}
-				className="channel-feed"
-			>
+            <div ref={scrollRef} className="channel-feed">
                 {isLoading ? (
                     <div className="flex justify-center items-center h-64">
 						<span className="text-xl faded-text">Loading results...</span>
@@ -168,14 +163,9 @@ const SearchResults = () => {
 											<ContentWidget post={item.data} />
 										</div>
 									) : (
-										<div key={`feedquad-${idx}`} className="grid grid-cols-3 gap-3 w-full">
+										<div key={`feedtriplet-${idx}`} className="grid grid-cols-3 gap-3 w-full">
 											{item.data.map(feed => (
-												<FeedWidget
-													key={feed.feed_id}
-													feed={feed}
-													isAuthenticated={isAuthenticated}
-													viewerId={viewer?.feed_id}
-												/>
+												<FeedWidget key={feed.feed_id} feed={feed} isAuthenticated={isAuthenticated} viewerId={viewer?.feed_id} />
 											))}
 										</div>
 									)
@@ -193,18 +183,11 @@ const SearchResults = () => {
 						)}
 						{selectedView === "feeds" && (
 							<div className="flex flex-col gap-3 w-99">
-								{feedQuads.map((feedQuad, idx) => (
-									<div key={idx} className="grid grid-cols-3 gap-3 w-full">
-										{feedQuad.map(feed => (
-											<FeedWidget
-												key={feed?.feed_id}
-												feed={feed}
-												isAuthenticated={isAuthenticated}
-												viewerId={viewer?.feed_id}
-											/>
-										))}
-									</div>
-								))}
+                                <div className="grid grid-cols-3 md:grid-cols-4 gap-3 w-full">
+                                    {feeds.map(feed => (
+                                        <FeedWidget key={feed?.feed_id} feed={feed} isAuthenticated={isAuthenticated} viewerId={viewer?.feed_id} />
+                                    ))}
+                                </div>
 							</div>
 						)}
                         <div ref={loaderRef} className="h-20 flex justify-center items-center">
@@ -214,7 +197,7 @@ const SearchResults = () => {
                 )}
             </div>
             <aside className={rightClasses}>
-                <p className="large-text">Results for "{keyword}"</p>
+                <p className="large-text bold">Results for "{keyword}"</p>
                 <div className="error-message">{errorMessage}</div>
                 <nav className="channel-list">
                     <ul>

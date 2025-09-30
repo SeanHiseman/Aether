@@ -582,6 +582,7 @@ router.delete('/delete_feed_channel', authenticateCheck, async (req, res) => {
 
 router.get("/explore_feeds", async (req, res) => {
 	try {
+        console.log("getting explore feeds");
         const { exclude = [] } = req.query;
 		const viewerId = req.session?.viewer_id;
 		const limit = parseInt(req.query.limit, 10) || 6;
@@ -594,18 +595,21 @@ router.get("/explore_feeds", async (req, res) => {
             })
             : [];
         const followedIds = followedFeeds.map(f => f.feed_id);
+        const idsToExclude = [...excludeArray, ...followedIds];
+        if (viewerId) {
+            idsToExclude.push(viewerId);
+        }
+        console.log("ids to exclude:", idsToExclude);
         const { rows: feeds } = await Feeds.findAndCountAll({
             where: {
                 type: { [Op.notIn]: ["private", "hidden"] },
                 is_locked: false,
-                is_group: false,
-                feed_id: { [Op.notIn]: [...excludeArray, ...followedIds] }
+                feed_id: { [Op.notIn]: idsToExclude }
             },
             order: sequelize.literal("RAND()"),
             limit,
             offset
         });
-
 		const feedData = await Promise.all(feeds.map(async (feed) => {
 			const feedJSON = feed.toJSON();
 			const response = {
@@ -626,6 +630,7 @@ router.get("/explore_feeds", async (req, res) => {
 			}
 			return response;
 		}));
+        console.log("feedData.length:", feedData.length);
 		res.status(200).json({ success: true, feeds: feedData, hasMore: feedData.length >= limit });
 	} catch (error) {
 		res.status(500).json({ success: false, message: "Error while fetching feeds." });

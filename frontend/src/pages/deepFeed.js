@@ -150,18 +150,12 @@ const DeepFeed = () => {
                             <ul className="content-list">
                                 {allPosts.map((post) => (
                                     post ? (
-                                        <ContentWidget
-                                            key={post?.post_id || Math.random()}
-                                            canRemove={false}
-                                            feed={post?.poster || {}}
-                                            onPostRemoved={() => {}}
-                                            post={post}
-                                        />
+                                        <ContentWidget key={post?.post_id || Math.random()} canRemove={false} feed={post?.poster || {}} onPostRemoved={() => {}} post={post} />
                                     ) : null
                                 ))}
                             </ul>
                             <div ref={loaderRef}>
-                                {isFetchingNextPage && <p className="large-text">Loading more posts...</p>}
+                                {isFetchingNextPage && <p className="large-text faded-text">Loading more posts...</p>}
                             </div>
                         </>
                     ) : (
@@ -209,7 +203,7 @@ const DeepFeed = () => {
                         </div>
                     ) : (
                         <div className="channel-name">
-                            <p className="large-text">{deepFeed?.name}</p>
+                            <p className="large-text bold">{deepFeed?.name}</p>
                             <div className="button-group">
                                 {deepFeed?.name !== "Following" && ( 
                                     <>

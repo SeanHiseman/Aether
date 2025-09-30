@@ -64,6 +64,7 @@ const WelcomeHome = () => {
                         <div className="footer-links">
                             <Link to="/welcome/team">Team</Link>
                             <Link to="/welcome/support">Support</Link>
+                            <Link to="/welcome/security">Security</Link>
                         </div>
                     </div>
                     <div className="footer-section">

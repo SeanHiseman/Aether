@@ -226,7 +226,7 @@ const FeedInfoView = () => {
                         </div>
                     ) : (
                         <div className="channel-name-settings">
-                            <p className="large-text">{feed?.feed_name}</p>
+                            <p className="large-text bold">{feed?.feed_name}</p>
                             <button className="small-icon" onClick={() => { setIsEditingName(true); setName(feed?.feed_name); }} title="Change name"><FaPencilAlt /></button>
                         </div>
                     )}
