@@ -22,14 +22,21 @@ const ExplorePage = () => {
 	const [shownFeedIds, setShownFeedIds] = useState([]);
 	const [shownPostIds, setShownPostIds] = useState([]);
 	const { isAuthenticated, viewer } = useContext(AuthContext);
-	const { rightClasses } = useOutletContext();
+	const { rightClasses, updateFeeds } = useOutletContext();
 	const [refreshTrigger, setRefreshTrigger] = useState(false);
 	const scrollRef = useRef(null);
 
 	const fetchPosts = useCallback(async (page = 0) => {
 		try {
+			const followedFeeds = JSON.parse(localStorage.getItem("followedFeeds") || "[]");
+			const followedFeedIds = followedFeeds.map(f => f.feed_id);
 			const response = await axios.get("/api/explore_posts", {
-				params: { filter, limit: FETCH_LIMIT, offset: page * FETCH_LIMIT, exclude: shownPostIds.join(',')},
+				params: {
+					limit: FETCH_LIMIT,
+					offset: page * FETCH_LIMIT,
+					exclude: shownPostIds.join(','),
+					followedFeedIds: followedFeedIds.join(',')
+				}
 			});
 			const newPosts = response?.data?.posts || [];
 			setHasMorePosts(response?.data?.hasMore ?? false);
@@ -41,16 +48,28 @@ const ExplorePage = () => {
 				setShownPostIds(prev => [...prev, ...newPosts.map(p => p?.post_id)]);
 			}
 		} catch (error) {
+			console.log("error fetching explore posts:", error);
 			setErrorMessage(error.response.data?.message || "Failed to fetch posts");
 		}
 	}, [filter, shownPostIds]);
 
 	const fetchFeeds = useCallback(async (page = 0) => {
 		try {
+			//Get followed feeds from localStorage
+			const cached = localStorage.getItem("followedFeeds");
+			const excludedFeedIds = cached ? JSON.parse(cached) : [];
 			const response = await axios.get("/api/explore_feeds", {
-				params: { limit: FETCH_LIMIT, offset: page * FETCH_LIMIT, exclude: shownFeedIds.join(',') },
+				params: { 
+					limit: FETCH_LIMIT, 
+					offset: page * FETCH_LIMIT, 
+					exclude: [...shownFeedIds, ...excludedFeedIds].join(',') // exclude shown + followed
+				},
 			});
 			const newFeeds = response?.data?.feeds || [];
+			if (newFeeds.length === 0) {
+				setHasMoreFeeds(false);
+				return;
+			}
 			setHasMoreFeeds(response?.data?.hasMore ?? false);
 			if (page === 0) {
 				setFeeds(newFeeds);
@@ -60,9 +79,10 @@ const ExplorePage = () => {
 				setShownFeedIds(prev => [...prev, ...newFeeds.map(f => f?.feed_id)]);		
 			}
 		} catch (error) {
-			setErrorMessage(error.response.data?.message || "Failed to fetch feeds");
+			setErrorMessage(error.response?.data?.message || "Failed to fetch feeds");
+			setHasMoreFeeds(false);
 		}
-	}, []);
+	}, [shownFeedIds]);
 
 	const loadMore = useCallback(async () => {
 		if (loading || loadingMore) return;
@@ -192,7 +212,7 @@ const ExplorePage = () => {
 									) : (
 										<div key={`feedtriplet-${idx}`} className="grid grid-cols-3 gap-3 w-full">
 											{item.data.map(feed => (
-												<FeedWidget key={feed?.feed_id} feed={feed} isAuthenticated={isAuthenticated} viewerId={viewer?.feed_id} />
+												<FeedWidget key={feed?.feed_id} feed={feed} isAuthenticated={isAuthenticated} updateFeeds={updateFeeds} viewerId={viewer?.feed_id} />
 											))}
 										</div>
 									)
@@ -212,7 +232,7 @@ const ExplorePage = () => {
 							<div className="flex flex-col gap-3 w-99">
 								<div className="grid grid-cols-3 md:grid-cols-4 gap-3 w-full">
 									{feeds.map(feed => (
-										<FeedWidget key={feed?.feed_id} feed={feed} isAuthenticated={isAuthenticated} viewerId={viewer?.feed_id} />     
+										<FeedWidget key={feed?.feed_id} feed={feed} isAuthenticated={isAuthenticated} updateFeeds={updateFeeds} viewerId={viewer?.feed_id} />     
 									))}
 								</div>
 							</div>

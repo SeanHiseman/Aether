@@ -431,6 +431,7 @@ router.get('/deep_feed_posts', authenticateCheck, async (req, res) => {
     try {
         const { deepFeedId } = req.query;
         //Convert to integers from url strings
+        const followedFeedIds = req.query.followedFeedIds;
         const limit = parseInt(req.query.limit, 10) || 10;
         const offset = parseInt(req.query.offset, 10) || 0;
         const viewerId = req.session.viewer_id;
@@ -465,6 +466,7 @@ router.get('/deep_feed_posts', authenticateCheck, async (req, res) => {
         const deepFeedPosts = await ApplyAlgorithm({
             locationId: deepFeedId,
             excludedPostIds: '',
+            followedFeedIds,
             includeOptions: includeOptions,
             isGroup: false,
             isMain: false,
@@ -582,34 +584,24 @@ router.delete('/delete_feed_channel', authenticateCheck, async (req, res) => {
 
 router.get("/explore_feeds", async (req, res) => {
 	try {
-        console.log("getting explore feeds");
-        const { exclude = [] } = req.query;
+		const { exclude = [] } = req.query;
 		const viewerId = req.session?.viewer_id;
 		const limit = parseInt(req.query.limit, 10) || 6;
-        const offset = parseInt(req.query.offset, 10) || 0;
-        const excludeArray = Array.isArray(exclude) ? exclude : (exclude ? exclude.split(',') : []);
-        const followedFeeds = viewerId 
-            ? await Followers.findAll({
-                attributes: ["feed_id"],
-                where: { follower_id: viewerId }
-            })
-            : [];
-        const followedIds = followedFeeds.map(f => f.feed_id);
-        const idsToExclude = [...excludeArray, ...followedIds];
-        if (viewerId) {
-            idsToExclude.push(viewerId);
-        }
-        console.log("ids to exclude:", idsToExclude);
-        const { rows: feeds } = await Feeds.findAndCountAll({
-            where: {
-                type: { [Op.notIn]: ["private", "hidden"] },
-                is_locked: false,
-                feed_id: { [Op.notIn]: idsToExclude }
-            },
-            order: sequelize.literal("RAND()"),
-            limit,
-            offset
-        });
+		const offset = parseInt(req.query.offset, 10) || 0;
+		let excludeArray = Array.isArray(exclude) ? exclude : (exclude ? exclude.split(',') : []);
+		if (viewerId) {
+			excludeArray.push(viewerId); 
+		}
+		const { rows: feeds } = await Feeds.findAndCountAll({
+			where: {
+				type: { [Op.notIn]: ["private", "hidden"] },
+				is_locked: false,
+				feed_id: { [Op.notIn]: excludeArray }
+			},
+			order: sequelize.literal("RAND()"),
+			limit,
+			offset
+		});
 		const feedData = await Promise.all(feeds.map(async (feed) => {
 			const feedJSON = feed.toJSON();
 			const response = {
@@ -630,9 +622,9 @@ router.get("/explore_feeds", async (req, res) => {
 			}
 			return response;
 		}));
-        console.log("feedData.length:", feedData.length);
 		res.status(200).json({ success: true, feeds: feedData, hasMore: feedData.length >= limit });
 	} catch (error) {
+        console.log("Error getting explore feeds:", error);
 		res.status(500).json({ success: false, message: "Error while fetching feeds." });
 	}
 });
@@ -715,30 +707,6 @@ router.get('/feed_channel_messages', async (req, res) => {
         res.status(200).json({ messages, success: true });
     } catch (error) {
         res.status(500).json({ success: false });   
-    }
-});
-
-router.get('/feed_list', authenticateCheck, async (req, res) => {
-    try {
-        const { followerId, offset } = req.query;
-        const parsedOffset = parseInt(offset) || 0;
-        const feeds = await Followers.findAll({
-            where: { follower_id: followerId },
-            include: [{
-                model: Feeds,
-                as: 'followedFeed',
-            }],
-            order: [['followedFeed', 'feed_name', 'ASC']],
-            limit: 30,
-            offset: parsedOffset
-        });;
-        const formattedFeeds = feeds.map(feed => ({
-            ...feed.dataValues,
-            link_type: feed.followedFeed.is_group ? 'g' : 'u', 
-        }));
-        res.status(200).json({ success: true, formattedFeeds });
-    } catch (error) {
-        res.status(500).json({ success: false });
     }
 });
 

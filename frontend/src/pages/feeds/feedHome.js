@@ -46,7 +46,7 @@ const FeedHome = () => {
     const isEditMode = location.pathname.endsWith('/edit');
     const navigate = useNavigate();
     const queryClient = useQueryClient();
-    const { rightClasses } = useOutletContext(); 
+    const { rightClasses, updateFeeds } = useOutletContext(); 
     const showDrafts = location.pathname.endsWith('/drafts');
     const urlPrefix = feed?.is_group ? 'g' : 'u';
 
@@ -463,7 +463,7 @@ const FeedHome = () => {
                         <p className="large-text bold">{feed?.feed_name}</p>
                         <p className="description" >{feed?.description}</p>
                         {viewer && isAuthenticated && (
-                            <FollowerChangeButton feed={feed} viewerId={viewer?.feed_id} />
+                            <FollowerChangeButton feed={feed} updateFeeds={updateFeeds} viewerId={viewer?.feed_id} />
                         )}
                         {/*{!isViewingSelf && !feed.is_group && (
                             <ManageConnectionButton feed={feed} viewerId={viewer.feed_id} />
@@ -497,7 +497,7 @@ const FeedHome = () => {
                     </div>
                     <p className="description" >{feed?.description}</p>
                     {(user?.user_id !== feed?.feed_owner || feed?.is_group) && isAuthenticated && viewer ? (
-                        <FollowerChangeButton feed={feed} showName={false} showVertical={true} viewerId={viewer?.feed_id} />
+                        <FollowerChangeButton feed={feed} showName={false} showVertical={true} updateFeeds={updateFeeds} viewerId={viewer?.feed_id} />
                     ) : (
                         <p className="icon-text">{FormatNumber(feed?.follower_count)} {(feed?.follower_count) === 1 ? 'follower' : 'followers'}</p>
                     )}

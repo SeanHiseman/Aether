@@ -21,18 +21,14 @@ const Login = () => {
         event.preventDefault();
         try {
             const response = await axios.post('/api/login', { password, usernameOrEmail }); //Username can also be email
-            if (response.status === 200) {
+            if (response.data?.success) {
+                localStorage.setItem("followedFeeds", JSON.stringify(response.data?.followedFeeds));
                 await refreshTheme();
                 navigate('/explore'); 
             }
         } catch (error) {
-            if (error.response && error.response?.status === 401) {
-                setErrorMessage(error.response.data?.message || 'Invalid username, email, or password');
-                setTimeout(() => { setErrorMessage(''); }, 5000);
-            } else {
-                setErrorMessage('Failed to login, please try again');
-                setTimeout(() => { setErrorMessage(''); }, 5000);
-            }
+            setErrorMessage(error.response.data?.message || 'Error logging in');
+            setTimeout(() => { setErrorMessage(''); }, 5000);
         }
     };
 

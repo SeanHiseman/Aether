@@ -25,9 +25,21 @@ const DeepFeed = () => {
 
     const getPosts = async ({ pageParam = 0 }) => {
         try {
+            let followedFeedIds;
+            let normalisedDeepFeedId = deep_feed_id;
+            if (deep_feed_id !== 'following' && !deep_feed_id.startsWith('deep_')) {
+                normalisedDeepFeedId = `deep_${deep_feed_id}`;
+            }
+            if (deep_feed_id === 'following') {
+                const followedFeeds = JSON.parse(localStorage.getItem("followedFeeds") || "[]");
+                followedFeedIds = followedFeeds.map(f => f.feed_id);
+            } else {
+                followedFeedIds = [];
+            }
             const response = await axios.get('/api/deep_feed_posts', {
                 params: {
-                    deepFeedId: deep_feed_id,
+                    deepFeedId: normalisedDeepFeedId,
+                    followedFeedIds: followedFeedIds.join(','),
                     limit: 10,
                     offset: pageParam
                 }
@@ -145,12 +157,20 @@ const DeepFeed = () => {
         <div className="standard-container">
             <div className="channel-feed">
                 <div className="channel-content">
-                    {allPosts.length > 0 ? (
+                    {isLoading ? (
+                        <p className="large-text faded-text">Loading...</p>
+                    ) : allPosts.length > 0 ? (
                         <>
                             <ul className="content-list">
                                 {allPosts.map((post) => (
                                     post ? (
-                                        <ContentWidget key={post?.post_id || Math.random()} canRemove={false} feed={post?.poster || {}} onPostRemoved={() => {}} post={post} />
+                                        <ContentWidget
+                                            key={post?.post_id || Math.random()}
+                                            canRemove={false}
+                                            feed={post?.poster || {}}
+                                            onPostRemoved={() => {}}
+                                            post={post}
+                                        />
                                     ) : null
                                 ))}
                             </ul>

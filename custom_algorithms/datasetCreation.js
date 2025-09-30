@@ -90,8 +90,8 @@ function generatePost(topic) {
 
 async function generateData() {
 	try {
-		const NUM_FEEDS = 100;
-		const POSTS_PER_CHANNEL = 10;
+		const NUM_FEEDS = 200;
+		const POSTS_PER_CHANNEL = 350;
 		const feedsData = [];
 		const channelsData = [];
 		const postsData = [];

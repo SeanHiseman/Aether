@@ -21,7 +21,7 @@ const SearchResults = () => {
     const { isAuthenticated, viewer } = useContext(AuthContext);
     const loaderRef = useRef(null);
     const queryClient = useQueryClient();
-    const { rightClasses } = useOutletContext();
+    const { rightClasses, updateFeeds } = useOutletContext();
     const [refreshTrigger, setRefreshTrigger] = useState(false);
     const scrollRef = useRef(null);
 
@@ -165,7 +165,7 @@ const SearchResults = () => {
 									) : (
 										<div key={`feedtriplet-${idx}`} className="grid grid-cols-3 gap-3 w-full">
 											{item.data.map(feed => (
-												<FeedWidget key={feed.feed_id} feed={feed} isAuthenticated={isAuthenticated} viewerId={viewer?.feed_id} />
+												<FeedWidget key={feed.feed_id} feed={feed} isAuthenticated={isAuthenticated} updateFeeds={updateFeeds} viewerId={viewer?.feed_id} />
 											))}
 										</div>
 									)
@@ -185,7 +185,7 @@ const SearchResults = () => {
 							<div className="flex flex-col gap-3 w-99">
                                 <div className="grid grid-cols-3 md:grid-cols-4 gap-3 w-full">
                                     {feeds.map(feed => (
-                                        <FeedWidget key={feed?.feed_id} feed={feed} isAuthenticated={isAuthenticated} viewerId={viewer?.feed_id} />
+                                        <FeedWidget key={feed?.feed_id} feed={feed} isAuthenticated={isAuthenticated} updateFeeds={updateFeeds} viewerId={viewer?.feed_id} />
                                     ))}
                                 </div>
 							</div>

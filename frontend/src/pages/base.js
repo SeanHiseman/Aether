@@ -254,14 +254,9 @@ const BaseLayout = () => {
         }
         (async () => {
             try {
-                const response = await axios.get("/api/feed_list", {
-                    params: {
-                        followerId: viewer?.feed_id,
-                        offset: feedsOffset,
-                        limit: 30
-                    }
-                });
-                const newFeeds = response.data?.formattedFeeds;
+                const storedFeeds = JSON.parse(localStorage.getItem("followedFeeds")) || [];
+                console.log("storedFeeds:", storedFeeds);
+                const newFeeds = storedFeeds.slice(feedsOffset, feedsOffset + 30);
                 if (newFeeds.length < 30) {
                     setHasMoreFeeds(false);
                 }
@@ -278,9 +273,16 @@ const BaseLayout = () => {
                         link_type: f.link_type
                     };
                 });
-                setFeeds(prev => [...prev, ...normalized]);
+                setFeeds(prev => {
+                    const combined = [...prev, ...normalized];
+                    combined.sort((a, b) =>
+                        a.followedFeed.feed_name.localeCompare(b.followedFeed.feed_name)
+                    );
+                    return combined;
+                });
             }
-            catch (error){
+            catch (error) {
+                console.log("error:", error);
                 setFeeds([]);
             }
         })();
@@ -470,6 +472,30 @@ const BaseLayout = () => {
         setShowForm(!showForm);
         setAsideErrorMessage("");
     };
+
+    const updateFeeds = useCallback(() => {
+        try {
+            const storedFeeds = JSON.parse(localStorage.getItem("followedFeeds")) || [];
+            setFeeds(
+                storedFeeds.map(f => f.followedFeed
+                    ? f
+                    : {
+                        feed_id: f.feed_id,
+                        followedFeed: {
+                            feed_name: f.feed_name,
+                            feed_photo: f.feed_photo
+                        },
+                        link_type: f.link_type
+                    }
+                ).sort((a, b) => 
+                    a.followedFeed.feed_name.localeCompare(b.followedFeed.feed_name)
+                )
+            );
+        } catch (error) {
+            setAsideErrorMessage(error.response.data?.message || "Error updating feeds");
+            setFeeds([]);
+        }
+    }, []);
 
     return (
         <>
@@ -739,7 +765,7 @@ const BaseLayout = () => {
                         </button>
                     </header>
                     <div className={contentClasses}>
-                        <Outlet context={{ rightClasses }} />
+                        <Outlet context={{ rightClasses, updateFeeds }} />
                     </div>
                 </main>
             </div>

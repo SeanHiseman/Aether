@@ -31,8 +31,13 @@ function stripExcludedAttributes(posts) {
     });
 }
 
-async function ApplyAlgorithm({ locationId, excludedPostIds, feedId, includeOptions, isGroup = true, isMain, limit, offset, viewerId, keyword = '' }) {
+async function ApplyAlgorithm({ locationId, excludedPostIds, feedId, followedFeedIds, includeOptions, isGroup = true, isMain, limit, offset, viewerId, keyword = '' }) {
     try {
+        //Followed feeds are a received as a string
+        const followedFeedIdsSafe = (typeof followedFeedIds === "string")
+            ? followedFeedIds.split(",")
+            : (Array.isArray(followedFeedIds) ? followedFeedIds : []);
+
         //Already returned posts are excluded
         let excludedIds = [];
         if (excludedPostIds) {
@@ -141,19 +146,15 @@ async function ApplyAlgorithm({ locationId, excludedPostIds, feedId, includeOpti
                 order: [['created_at', 'DESC']]
             });
         } else if (locationId === "following") { //Followed feeds
-            const followedFeeds = await Followers.findAll({
-                where: { follower_id: viewerId },
-                attributes: ['feed_id']
-            });
-            if (followedFeeds.length === 0) return [];
+            if (followedFeedIdsSafe.length === 0) return [];
             posts = await Posts.findAll({
                 include: includeOptions,
                 attributes: attrOption,
                 where: {
-                    feed_id: { [Op.in]: followedFeeds.map(f => f.feed_id) },
+                    feed_id: { [Op.in]: followedFeedIdsSafe },
                     parent_id: null,
                     post_id: { [Op.notIn]: excludedIds },
-                    poster_id: { [Op.not]: viewerId }
+                    ...(viewerId ? { poster_id: { [Op.not]: viewerId } } : {})
                 },
                 limit: limit,
                 offset: offset,
@@ -164,11 +165,13 @@ async function ApplyAlgorithm({ locationId, excludedPostIds, feedId, includeOpti
                 where: { type: { [Op.ne]: 'private' } },
                 attributes: ['feed_id']
             });
+            //Exclude followed feeds
+            const allowedFeeds = publicFeeds.map(f => f.feed_id).filter(id => !followedFeedIdsSafe.includes(id));
             posts = await Posts.findAll({
                 include: includeOptions,
                 attributes: attrOption,
                 where: {
-                    feed_id: { [Op.in]: publicFeeds.map(f => f.feed_id) },
+                    feed_id: { [Op.in]: allowedFeeds },
                     parent_id: null,
                     post_id: { [Op.notIn]: excludedIds },
                     ...(viewerId ? { poster_id: { [Op.not]: viewerId } } : {})
@@ -190,14 +193,10 @@ async function ApplyAlgorithm({ locationId, excludedPostIds, feedId, includeOpti
                     if (content.feed_id) {
                         feedIds.push(content.feed_id);
                     }
-                    if (content.nested_deep_feed_id) {
-                        const nested = await getAllFeedIdsInDeepFeed(content.nested_deep_feed_id, visited);
-                        feedIds.push(...nested);
-                    }
                 }
                 return feedIds;
             };
-            const deepFeedId = locationId.replace('deep_', '');
+            const deepFeedId = locationId.replace(/^deep_/, ''); //strip prefix
             const allFeedIds = await getAllFeedIdsInDeepFeed(deepFeedId);
             if (allFeedIds.length === 0) return [];
             posts = await Posts.findAll({

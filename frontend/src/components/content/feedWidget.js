@@ -3,7 +3,7 @@ import { useContext } from "react";
 import { AuthContext } from "../authContext";
 import FollowerChangeButton from "../followerChangeButton";
 
-const FeedWidget = ({ feed }) => {
+const FeedWidget = ({ feed, updateFeeds }) => {
 	const { viewer } = useContext(AuthContext);
 	const imageUrl = feed?.feed_photo
 		? `${feed?.feed_photo}`
@@ -20,7 +20,7 @@ const FeedWidget = ({ feed }) => {
 				</p>
 			)}
 			{viewer && feed?.feed_id !== viewer?.feed_id ? (
-				<FollowerChangeButton feed={feed} showFollowers={false} showName={true} showVertical={true} viewerId={viewer?.feed_id} />
+				<FollowerChangeButton feed={feed} showFollowers={false} showName={true} showVertical={true} updateFeeds={updateFeeds} viewerId={viewer?.feed_id} />
 			) : (
 				<p className="small-text">{feed?.follower_count || '0'} {feed?.follower_count === 1 ? 'follower' : 'followers'}</p>
 			)}

@@ -246,8 +246,8 @@ router.post('/join', async (req, res) => {
 router.post('/login', async (req, res) => {
     try {
 		await new Promise((resolve, reject) => {
-			req.session.regenerate(err => {
-				if (err) reject(err);
+			req.session.regenerate(error => {
+				if (error) reject(error);
 				else resolve();
 			});
 		});
@@ -269,14 +269,31 @@ router.post('/login', async (req, res) => {
             req.usage_count = user.usage_count;
             req.storage_count = user.storage_count;
             req.session.viewer_id = feed.feed_id;
-            res.status(200).json({ success: true });
+            //Fetch followed feeds for use in frontend local storage
+            const followedFeeds = await Followers.findAll({
+                where: { follower_id: feed.feed_id },
+                include: [{
+                    model: Feeds,
+                    as: 'followedFeed', // this is the alias used in your feed_list route!
+                }],
+                order: [['followedFeed', 'feed_name', 'ASC']]
+            });
+            const formattedFeeds = followedFeeds.map(f => ({
+                feed_id: f.feed_id,
+                followedFeed: {
+                    feed_name: f.followedFeed.feed_name,
+                    feed_photo: f.followedFeed.feed_photo,
+                },
+                link_type: f.followedFeed.is_group ? 'g' : 'u',
+            }));
+            res.status(200).json({ success: true, followedFeeds: formattedFeeds });
         }
         else {
             res.status(401).json({ success: false, message: 'Invalid credentials' });
         }
     }
     catch (error) {
-        res.status(500).json({ success: false });
+        res.status(500).json({ success: false, message: 'Failed login' });
     }
 });
 

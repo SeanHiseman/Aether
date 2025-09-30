@@ -367,6 +367,7 @@ router.get("/explore_posts", async (req, res) => {
     try {
         const { exclude = [] } = req.query;
         const excludeArray = Array.isArray(exclude) ? exclude : exclude.split(',').filter(Boolean);
+		const followedFeedIds = req.query.followedFeedIds;
         const viewerId = req?.session?.viewer_id || null;
         const limit = parseInt(req.query.limit, 10) || 10;
         const offset = parseInt(req.query.offset, 10) || 0;
@@ -401,6 +402,7 @@ router.get("/explore_posts", async (req, res) => {
             locationId: 'explore',
             excludedPostIds: excludeArray,
             feedId: null,
+			followedFeedIds,
             includeOptions: includeOptions,
             isMain: 'false',
             limit: limit,
