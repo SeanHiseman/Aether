@@ -127,3 +127,40 @@ ALTER TABLE posts
 
 ALTER TABLE feeds
 	DROP COLUMN parent_id;
+
+CREATE INDEX idx_posts_feed_id ON posts(feed_id);
+CREATE INDEX idx_postnotes_post_id ON post_notes(post_id);
+CREATE INDEX idx_postvotes_post_id ON post_votes(post_id);
+CREATE INDEX idx_followers_feed_id ON followers(feed_id);
+CREATE INDEX idx_feedchannels_feed_id ON feed_channels(feed_id);
+CREATE INDEX idx_deepfeedcontent_feed_id ON deep_feed_content(feed_id);
+
+-- Feed Channels
+ALTER TABLE feed_channels DROP FOREIGN KEY feed_channels_ibfk_1;
+ALTER TABLE feed_channels ADD CONSTRAINT feed_channels_ibfk_1 
+FOREIGN KEY (feed_id) REFERENCES feeds(feed_id) ON DELETE CASCADE;
+
+-- Posts (if it exists without CASCADE)
+ALTER TABLE posts DROP FOREIGN KEY posts_ibfk_1;
+ALTER TABLE posts ADD CONSTRAINT posts_ibfk_1 
+FOREIGN KEY (feed_id) REFERENCES feeds(feed_id) ON DELETE CASCADE;
+
+-- Followers (if it exists)
+ALTER TABLE followers DROP FOREIGN KEY followers_ibfk_1;
+ALTER TABLE followers ADD CONSTRAINT followers_ibfk_1 
+FOREIGN KEY (feed_id) REFERENCES feeds(feed_id) ON DELETE CASCADE;
+
+-- Post Notes
+ALTER TABLE post_notes DROP FOREIGN KEY post_notes_ibfk_1;
+ALTER TABLE post_notes ADD CONSTRAINT post_notes_ibfk_1 
+FOREIGN KEY (post_id) REFERENCES posts(post_id) ON DELETE CASCADE;
+
+-- Post Votes
+ALTER TABLE post_votes DROP FOREIGN KEY post_votes_ibfk_1;
+ALTER TABLE post_votes ADD CONSTRAINT post_votes_ibfk_1 
+FOREIGN KEY (post_id) REFERENCES posts(post_id) ON DELETE CASCADE;
+
+-- Viewed Posts
+ALTER TABLE viewed_posts DROP FOREIGN KEY viewed_posts_ibfk_1;
+ALTER TABLE viewed_posts ADD CONSTRAINT viewed_posts_ibfk_1 
+FOREIGN KEY (post_id) REFERENCES posts(post_id) ON DELETE CASCADE;

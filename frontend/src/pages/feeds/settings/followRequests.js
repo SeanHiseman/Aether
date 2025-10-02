@@ -3,6 +3,7 @@ import { FaPlusCircle, FaMinusCircle } from 'react-icons/fa';
 import { useState } from 'react';
 import { Link, useOutletContext } from 'react-router-dom';
 import { FormatNumber } from '../../../functions/formatNumber';
+import FollowerWidget from './followerWidget';
 
 const FollowRequests = () => {
     const [errorMessage, setErrorMessage] = useState('');
@@ -29,32 +30,25 @@ const FollowRequests = () => {
 
     return (
         <div className="channel-content">
-            <p className="large-text">{FormatNumber(followRequests.length)} {followRequests.length === 1 ? 'follow request' : 'follow requests'}</p>
-            {!followRequests || followRequests.length === 0 ? (
+            <p className="large-text bold">{FormatNumber(followRequests.length)} {followRequests.length === 1 ? 'follow request' : 'follow requests'}</p>
+            {(!followRequests || followRequests.length === 0) ? (
                 <p className="medium-text faded-text">No pending requests</p>
             ) : (
-                <ul className="content-list">
-                    <div className="error-message">{errorMessage}</div>
-                    {followRequests.map((request, index) => (
-                        <li key={index}>
-                            <div className="result-widget">
-                                <Link className="feed-link" to={`/u/${request?.sender?.feed_name}`}>
-                                    <img className="large-feed-photo" src={`/${request?.sender?.feed_photo}`} onError={(e) => e.currentTarget.src = '/media/site_images/blank-profile.png'} />
-                                    <p className="large-text feed-name">{request?.sender?.feed_name}</p>
-                                </Link>
-                                <div>
-                                    <button className="small-icon" onClick={() => handleRequestAction(request, 'accept')}>
-                                        <FaPlusCircle /><p className="icon-text">Accept</p>
-                                    </button>
-                                    <button className="small-icon" onClick={() => handleRequestAction(request, 'reject')}>
-                                        <FaMinusCircle /><p className="icon-text">Reject</p>
-                                    </button>
-                                    {errorMessage && <div className="error-message">{errorMessage}</div>}
-                                </div>
-                            </div>
-                        </li>
+                <div className="grid grid-cols-3 md:grid-cols-4 gap-3 w-full">
+                    {followRequests.map((request, idx) => (
+                        <FollowerWidget
+                            key={request?.request_id || `request-${idx}`}
+                            follower={{
+                                followerFeed: request?.sender,
+                                follower_id: request?.sender_id
+                            }}
+                            feed={feed}
+                            user={{}} 
+                            acceptRequest={() => handleRequestAction(request, 'accept')}
+                            rejectRequest={() => handleRequestAction(request, 'reject')}
+                        />
                     ))}
-                </ul>
+                </div>
             )}
         </div>
     );

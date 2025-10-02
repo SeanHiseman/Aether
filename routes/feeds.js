@@ -519,35 +519,13 @@ router.delete('/delete_feed', authenticateCheck, async (req, res) => {
     try {
         transaction = await sequelize.transaction();
         const { feedId } = req.body;
-        console.log("delete_feed feedId:", feedId);
         const feed = await Feeds.findOne({ where: { feed_id: feedId } });
         if (!feed) {
             await transaction.rollback();
-            return res.status(404).json({ success: false });
+            return res.status(404).json({ success: false, message: 'Feed not found' });
         }
-        const feedPosts = await Posts.findAll({
-            where: { feed_id: feedId },
-            attributes: ['post_id'],
-            transaction,
-        });
-        const feedPostIds = feedPosts.map(p => p.post_id);
-        if (feedPostIds.length > 0) {
-            await PostNotes.destroy({ where: { post_id: { [Op.in]: feedPostIds } }, transaction });
-            await PostVotes.destroy({ where: { post_id: { [Op.in]: feedPostIds } }, transaction });
-        }
-        await Posts.destroy({ where: { feed_id: feedId }, transaction });
-        await FollowRequests.destroy({
-            where: {
-                [Op.or]: [
-                    { receiver_id: feedId },
-                    { sender_id: feedId }
-                ]
-            }, transaction
-        });
-        await Followers.destroy({ where: { feed_id: feedId }, transaction });
-        await FeedChannels.destroy({ where: { feed_id: feedId }, transaction });
+        //With cascade, just delete the feed
         await Feeds.destroy({ where: { feed_id: feedId }, transaction });
-        await DeepFeedContent.destroy({ where: { feed_id: feedId }, transaction });
         await transaction.commit();
         const feedPhoto = feed.feed_photo;
         if (feedPhoto && !defaultImages.includes(feedPhoto)) {
@@ -793,7 +771,7 @@ router.get('/get_feed_followers/:feedId', authenticateCheck, async (req, res) =>
                 required: true,
             }],
             attributes: ['follow_id', 'follower_id', 'is_mod', 'is_admin', 'created_at'],
-            order: [{ model: Feeds, as: 'followerFeed' }, 'feed_name', 'ASC']
+            order: [[{ model: Feeds, as: 'followerFeed' }, 'feed_name', 'ASC']]
         });
         res.status(200).json({ success: true, followers });
     } catch (error) {

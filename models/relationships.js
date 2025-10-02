@@ -6,7 +6,7 @@ import { Users } from "./users.js";
 Users.hasMany(Feeds, { foreignKey: 'feed_owner' });
 Feeds.belongsTo(Users, { foreignKey: 'feed_owner' });
 
-Feeds.hasMany(FeedChannels, { foreignKey: 'feed_id', as: 'channels' });
+Feeds.hasMany(FeedChannels, { foreignKey: 'feed_id', as: 'channels', onDelete: 'CASCADE' });
 FeedChannels.belongsTo(Feeds, { foreignKey: 'feed_id' });
 
 DeepFeeds.hasMany(DeepFeeds, { foreignKey: 'parent_id', as: 'children' });
@@ -24,9 +24,9 @@ Feeds.belongsToMany(Feeds, { through: Followers, foreignKey: 'feed_id', otherKey
 Feeds.belongsToMany(Feeds, { through: Followers, foreignKey: 'follower_id', otherKey: 'feed_id', as: 'followingFeeds' });
 Followers.belongsTo(Feeds, { foreignKey: 'feed_id', as: 'followedFeed' });
 Followers.belongsTo(Feeds, { foreignKey: 'follower_id', as: 'followerFeed' });
-Feeds.hasMany(Followers, { foreignKey: 'feed_id', as: 'followersList' });
+Feeds.hasMany(Followers, { foreignKey: 'feed_id', as: 'followersList', onDelete: 'CASCADE' });
 
-Feeds.hasMany(Posts, { as: 'poster', foreignKey: 'poster_id' });
+Feeds.hasMany(Posts, { as: 'poster', foreignKey: 'poster_id', onDelete: 'CASCADE' });
 Posts.belongsTo(Feeds, { as: 'poster', foreignKey: 'poster_id', targetKey: 'feed_id' });
 Posts.belongsTo(FeedChannels, { as: 'parentChannel', foreignKey: 'channel_id' });
 FeedChannels.hasMany(Posts, { as: 'posts', foreignKey: 'channel_id' });
@@ -35,7 +35,7 @@ Posts.hasMany(Posts, { as: 'parentPost', foreignKey: 'post_id' });
 Posts.belongsTo(Posts, { as: 'reply', foreignKey: 'post_id' });
 
 ViewedPosts.belongsTo(Posts, { foreignKey: 'post_id' });
-Posts.hasMany(ViewedPosts, { foreignKey: 'post_id' });
+Posts.hasMany(ViewedPosts, { foreignKey: 'post_id', onDelete: 'CASCADE' });
 
 ViewedPosts.belongsTo(Feeds, { foreignKey: 'viewer_id', as: 'viewer' });
 Feeds.hasMany(ViewedPosts, { foreignKey: 'viewer_id', as: 'viewedPosts' });
@@ -47,7 +47,7 @@ Feeds.hasMany(FollowRequests, { as: 'receivedFollowRequests', foreignKey: 'recei
 FollowRequests.belongsTo(Feeds, { as: 'sender', foreignKey: 'sender_id' });
 FollowRequests.belongsTo(Feeds, { as: 'receiver', foreignKey: 'receiver_id' });
 
-Posts.hasMany(PostVotes, { as: 'votes', foreignKey: 'post_id' });
+Posts.hasMany(PostVotes, { as: 'votes', foreignKey: 'post_id', onDelete: 'CASCADE' });
 PostVotes.belongsTo(Posts, { as: 'parentPost', foreignKey: 'post_id' });
 
 Feeds.belongsToMany(Feeds, { as: 'feedConnections', through: Connections, foreignKey: 'feed1_id', otherKey: 'feed2_id' });
@@ -79,8 +79,8 @@ AskMessages.belongsTo(AskChats, { foreignKey: 'chat_id', as: 'chat' });
 Users.hasMany(AskMessages, { foreignKey: 'sender_id', as: 'sentMessages' });
 AskMessages.belongsTo(Users, { foreignKey: 'sender_id', as: 'sender' });
 
-PostNotes.belongsTo(Posts, { foreignKey: 'post_id', as: 'parentPost'});
-Posts.hasOne(PostNotes, { foreignKey: 'post_id', as: 'note'});
+PostNotes.belongsTo(Posts, { foreignKey: 'post_id', as: 'parentPost' });
+Posts.hasOne(PostNotes, { foreignKey: 'post_id', as: 'note', onDelete: 'CASCADE' });
 
 SavedPosts.belongsTo(Posts, { foreignKey: 'post_id' });
 SavedPosts.belongsTo(Feeds,	{ foreignKey: 'feed_id' });

@@ -147,7 +147,7 @@ router.post('/generate_content', authenticateCheck, async (req, res) => {
             Do not include \`\`\`html, \`\`\`.
 
             DEFAULT STYLES:
-            Body background #0f0f0f, height 300px minimum, no body padding, main width 100% with no border, minimal padding and margins, no colour gradients, white text.,
+            Min-height 100vh, no body padding, main width 100% with no border, minimal padding and margins, no colour gradients, white text. Modern, sleek styling. 
             IGNORE THESE STYLES IF REQUEST SPECIFIES OTHERWISE.
 
             Ensure all interactions work on mobile and desktop.
@@ -176,6 +176,11 @@ router.post('/generate_content', authenticateCheck, async (req, res) => {
         await Users.increment('usage_count', { 
             by: totalTokens, 
             where: { user_id: senderId } 
+        });
+        await Prompts.create({
+            prompt_id: v4(),
+            prompt_content: request,
+            response_content: aiReply
         });
         res.status(201).json({ success: true, generatedContent: aiReply});
     } catch (error) {
