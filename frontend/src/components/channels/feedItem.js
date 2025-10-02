@@ -4,14 +4,14 @@ import { Link } from 'react-router-dom';
 import ChannelList from './channelList';
 import { useSortable } from '@dnd-kit/sortable';
 
-const FeedItem = ({ feed, id, isChat, parentDeepFeedId, unreadCount }) => {
+const FeedItem = ({ dragged, feed, isChat, parentDeepFeedId, unreadCount }) => {
     const [dropdownOpen, setDropdownOpen] = useState(false);
     const [feedChannels, setFeedChannels] = useState([]);
     const linkType = feed?.is_group ? 'g' : 'u';
 
     const uniqueId = parentDeepFeedId 
-        ? `df-${parentDeepFeedId}-feed-${id}` 
-        : `sidebar-feed-${id}`;
+        ? `df-${parentDeepFeedId}-feed-${feed?.feed_id}` 
+        : `sidebar-feed-${feed?.feed_id}`;
 
     const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
         id: uniqueId,  
@@ -19,7 +19,7 @@ const FeedItem = ({ feed, id, isChat, parentDeepFeedId, unreadCount }) => {
             parentDeepFeedId,
             type: 'feed',
             feed: feed,
-            originalId: id  
+            originalId: feed?.feed_id  
         }
     });
 
@@ -42,13 +42,21 @@ const FeedItem = ({ feed, id, isChat, parentDeepFeedId, unreadCount }) => {
     return (
         <li ref={setNodeRef} style={style} className={`feed-list-item ${isDragging ? 'dragging' : ''}`} data-parent-deep-feed-id={parentDeepFeedId}>
             <div className="feed-list-link-container" {...attributes} {...listeners}>
-                <Link className="feed-list-link" to={isChat ? `/connections/${feed?.feed_name}/Main` : `/${linkType}/${feed?.feed_name}/Main`}>
-                    <img className="small-feed-photo" src={`${feed?.feed_photo}`} onError={(e) => e.currentTarget.src = '/media/site_images/blank-profile.png'} />
+                <div className="feed-list-link" >
+                    {dragged ? (
+                        <div>
+                            <img className="small-feed-photo" src={`${feed?.feed_photo}`} onError={(e) => e.currentTarget.src = '/media/site_images/blank-profile.png'} />
+                        </div>
+                    ) : (
+                        <Link to={isChat ? `/connections/${feed?.feed_name}/Main` : `/${linkType}/${feed?.feed_name}`} title={`Go to ${feed?.feed_name}`}>
+                            <img className="small-feed-photo" src={`${feed?.feed_photo}`} onError={(e) => e.currentTarget.src = '/media/site_images/blank-profile.png'} />
+                        </Link>
+                    )}
                     <p className={`small-text ${feed?.feed_name ? "" : "faded-text"}`}>{feed?.feed_name || '(Feed not found)'}</p>
                     {isChat && unreadCount > 0 && (
                         <div className="unread-count">{unreadCount}</div>
                     )}
-                </Link>
+                </div>
                 <div className="channel-dropdown" onClick={dropdownToggle}>
                     {dropdownOpen ? <FaChevronUp /> : <FaChevronDown />}
                 </div>

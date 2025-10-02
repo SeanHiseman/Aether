@@ -23,6 +23,7 @@ const Login = () => {
             const response = await axios.post('/api/login', { password, usernameOrEmail }); //Username can also be email
             if (response.data?.success) {
                 localStorage.setItem("followedFeeds", JSON.stringify(response.data?.followedFeeds));
+                localStorage.setItem("deepFeeds", JSON.stringify(response.data?.deepFeeds || []));
                 await refreshTheme();
                 navigate('/explore'); 
             }
@@ -75,11 +76,11 @@ const Login = () => {
                             value={password}
                             onChange={(e) => {
                                 const input = e.target.value;
-                                if (input.length <= 120) {
+                                if (input.length <= 50) {
                                     setPassword(input);
                                     setErrorMessage('');
                                 } else {
-                                    setErrorMessage('Password cannot exceed 120 characters');
+                                    setErrorMessage('Password cannot exceed 50 characters');
                                 }
                             }}
                         />

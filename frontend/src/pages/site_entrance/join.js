@@ -128,7 +128,7 @@ const Join = () => {
                             value={password}
                             onChange={(e) => {
                                 const input = e.target.value;
-                                if (input.length <= 120) {
+                                if (input.length <= 50) {
                                     setPassword(input);
                                     if (confirmPassword && input !== confirmPassword) {
                                         setErrorMessage("Passwords do not match");
@@ -136,7 +136,7 @@ const Join = () => {
                                         setErrorMessage("");
                                     }
                                 } else {
-                                    setErrorMessage("Password cannot exceed 120 characters");
+                                    setErrorMessage("Password cannot exceed 50 characters");
                                 }
                             }} 
                         />
@@ -154,7 +154,7 @@ const Join = () => {
                             value={confirmPassword}
                             onChange={(e) => {
                                 const input = e.target.value;
-                                if (input.length <= 120) {
+                                if (input.length <= 50) {
                                     setConfirmPassword(input);
                                     if (password && input !== password) {
                                         setErrorMessage("Passwords do not match");
@@ -162,7 +162,7 @@ const Join = () => {
                                         setErrorMessage("");
                                     }
                                 } else {
-                                    setErrorMessage("Password cannot exceed 120 characters");
+                                    setErrorMessage("Password cannot exceed 50 characters");
                                 }
                             }} 
                         />

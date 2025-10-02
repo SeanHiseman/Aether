@@ -34,6 +34,7 @@ const BaseLayout = () => {
 	const [deepFeedCallbacks, setDeepFeedCallbacks] = useState({});
 	const [deepFeeds, setDeepFeeds] = useState([]);
 	const [desk, setDesk] = useState({ left: false, right: false });
+    const [dragged, setDragged] = useState(false);
 	const [dragType, setDragType] = useState(null);
 	const [feed, setFeed] = useState([]);
 	const feedContainerRef = useRef(null);
@@ -44,7 +45,7 @@ const BaseLayout = () => {
 	const [feedsOffset, setFeedsOffset] = useState(0);
 	const [hasMoreFeeds, setHasMoreFeeds] = useState(true);
 	const [headerErrorMessage, setHeaderErrorMessage] = useState("");
-	const [imageSrc, setImageSrc] = useState(null);
+	const [imageSrc, setImageSrc] = useState(null);   
     const [isFeedNameValid, setIsFeedNameValid] = useState(true);  
 	const [mobileOpen, setMobileOpen] = useState(null);
 	const [showForm, setShowForm] = useState(false);
@@ -65,6 +66,7 @@ const BaseLayout = () => {
 	const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
 
     const dragStart = event => {
+        setDragged(true);
         const { active } = event;
         const activeId = active.id;
         const dragData = active.data.current;
@@ -98,16 +100,16 @@ const BaseLayout = () => {
 
     const dragEnd = async event => {
         const { active, over } = event;
-        //If dropped outside any droppable area, remove from deep feed
+        // If dropped outside any droppable area, remove from deep feed
         if (!over) {
             if (dragType === "feedInDeepFeed" && activeDragItem) {
                 try {
                     const payload = {
-                        deepFeedId: activeDragItem.parentDeepFeedId,
-                        feedId: activeDragItem.feed.feed_id
+                        deepFeedId: activeDragItem?.parentDeepFeedId,
+                        feedId: activeDragItem?.feed?.feed_id
                     };
                     const { data } = await axios.post("/api/remove_from_deep_feed", payload);
-                    if (data.success && deepFeedCallbacks[activeDragItem.parentDeepFeedId]) {
+                    if (data.success && deepFeedCallbacks[activeDragItem?.parentDeepFeedId]) {
                         deepFeedCallbacks[activeDragItem.parentDeepFeedId]({ type: "UPDATE_CONTENTS" });
                     }
                 }
@@ -153,7 +155,7 @@ const BaseLayout = () => {
                 if (sourceFeed) {
                     const payload = {
                         deepFeedId: targetDeepFeedId,
-                        feedId: sourceFeed.feed_id
+                        feedId: sourceFeed?.feed_id
                     };
                     const { data } = await axios.post("/api/add_to_deep_feed", payload);
                     if (data.success && deepFeedCallbacks[targetDeepFeedId]) {
@@ -192,34 +194,37 @@ const BaseLayout = () => {
             //Case 3: Two regular feeds from sidebar combine to create new deep feed
             else if (dragType === "feed" && !isOverDeepFeed && targetFeedId) {
                 const sourceFeed = activeDragItem;
-                const targetFeed = feeds.find(f => f.feed_id.toString() === targetFeedId);
-                if (sourceFeed && targetFeed && sourceFeed.feed_id !== targetFeed.feed_id) {
+                const targetFeed = feeds.find(f => f?.feed_id.toString() === targetFeedId);
+                if (sourceFeed && targetFeed && sourceFeed?.feed_id !== targetFeed?.feed_id) {
                     const deepFeedName = prompt("Enter name for combined feed:");
                     if (deepFeedName) {
                         const payload = {
-                            viewerId: viewer.feed_id,
+                            viewerId: viewer?.feed_id,
                             deepFeedName,
-                            feedsToInclude: [sourceFeed.feed_id, targetFeed.feed_id]
+                            feedsToInclude: [sourceFeed?.feed_id, targetFeed?.feed_id]
                         };
                         const { data } = await axios.post("/api/create_deep_feed", payload);
-                        if (data.success && data.deepFeed) {
+                        if (data.success && data?.deepFeed) {
                             const newDeepFeed = {
                                 ...data.deepFeed,
                                 feeds: data.feedsToInclude.map(id => ({ 
-                                    feed: feeds.find(f => f.feed_id === id) 
+                                    feed: feeds.find(f => f?.feed_id === id) 
                                 }))
                             };
-                            setDeepFeeds(prev => [...prev, newDeepFeed]);
-                            navigate(`/d/${data.deepFeed.deep_feed_id}`);
+                            const storedDeepFeeds = JSON.parse(localStorage.getItem("deepFeeds") || "[]");
+                            storedDeepFeeds.push(newDeepFeed);
+                            localStorage.setItem("deepFeeds", JSON.stringify(storedDeepFeeds));
+                            updateFeeds();
                         }
                     }
                 }
             }
+            setTimeout(() => setDragged(false), 0);
         } catch (error) {
-            console.log("Error in drag operation:", error);
-            setAsideErrorMessage("Error in drag operation");
+            setAsideErrorMessage(error.response?.data?.message || "Error in drag operation");
             setTimeout(() => setAsideErrorMessage(""), 5000);
         }
+        setTimeout(() => setDragged(false), 0);
         resetDragState();
     };
 
@@ -260,29 +265,19 @@ const BaseLayout = () => {
                 if (newFeeds.length < 30) {
                     setHasMoreFeeds(false);
                 }
-                const normalized = newFeeds.map(f => {
-                    if (f.followedFeed) {
-                        return f;
-                    }
-                    return {
-                        feed_id: f.feed_id,
-                        followedFeed: {
-                            feed_name: f.feed_name,
-                            feed_photo: f.feed_photo
-                        },
-                        link_type: f.link_type
-                    };
-                });
                 setFeeds(prev => {
-                    const combined = [...prev, ...normalized];
+                    const combined = [...prev, ...newFeeds];
                     combined.sort((a, b) =>
-                        a.followedFeed.feed_name.localeCompare(b.followedFeed.feed_name)
+                        a?.feed_name?.localeCompare(b?.feed_name)
                     );
                     return combined;
                 });
+                const storedDeepFeeds = JSON.parse(localStorage.getItem("deepFeeds")) || [];
+                setDeepFeeds(storedDeepFeeds);
             }
             catch (error) {
                 console.log("error:", error);
+                setDeepFeeds([]);
                 setFeeds([]);
             }
         })();
@@ -291,23 +286,6 @@ const BaseLayout = () => {
     const registerFeedCallback = useCallback((deepFeedId, callback) => {
         setDeepFeedCallbacks(prev => ({ ...prev, [deepFeedId]: callback }));
     }, []);
-
-    useEffect(() => {
-        if (!isAuthenticated || !viewer?.feed_id) {
-            return;
-        }
-        (async () => {
-            try {
-                const response = await axios.get(`/api/deep_feeds/${viewer?.feed_id}`);
-                setDeepFeeds(response.data?.deepFeeds);
-            }
-            catch {
-                setDeepFeeds([]);
-                setAsideErrorMessage("Error fetching combined feeds");
-                setTimeout(() => setAsideErrorMessage(""), 5000);
-            }
-        })();
-    }, [isAuthenticated, viewer?.feed_id]);
 
     useEffect(() => {
         const handleScroll = () => {
@@ -394,19 +372,19 @@ const BaseLayout = () => {
             const response = await axios.post("/api/create_feed", form, {
                 headers: { "Content-Type": "multipart/form-data" }
             });
+            console.log("create feed response:", response);
             if (response.data?.success) {
                 const created = response.data?.feed;
-                setFeeds(prev => [
-                    ...prev,
-                    {
-                        feed_id: created?.feed_id,
-                        followedFeed: {
-                            feed_name: created?.feed_name,
-                            feed_photo: created?.feed_photo
-                        },
-                        link_type: "g"
-                    }
-                ]);
+                const newFeed = {
+                    feed_id: created?.feed_id,
+                    feed_name: created?.feed_name,
+                    feed_photo: created?.feed_photo,
+                    link_type: "g"
+                };
+                const followedFeeds = JSON.parse(localStorage.getItem("followedFeeds") || "[]");
+                const updated = [...followedFeeds, newFeed];
+                localStorage.setItem("followedFeeds", JSON.stringify(updated));
+                updateFeeds();
                 setFeedName("");
                 setShowForm(false);
                 setFeedPhotoFile(null);
@@ -415,9 +393,10 @@ const BaseLayout = () => {
                 setZoom(1);
                 setCroppedAreaPixels(null);
                 navigate(`/g/${created?.feed_name}`);
-            } 
+            }
         }
         catch (error) {
+            console.log("create feed error:", error);
             if (error.response?.status === 413) {
                 setAsideErrorMessage(
                     (error.response.data?.message || "File too large") +
@@ -476,24 +455,15 @@ const BaseLayout = () => {
     const updateFeeds = useCallback(() => {
         try {
             const storedFeeds = JSON.parse(localStorage.getItem("followedFeeds")) || [];
-            setFeeds(
-                storedFeeds.map(f => f.followedFeed
-                    ? f
-                    : {
-                        feed_id: f.feed_id,
-                        followedFeed: {
-                            feed_name: f.feed_name,
-                            feed_photo: f.feed_photo
-                        },
-                        link_type: f.link_type
-                    }
-                ).sort((a, b) => 
-                    a.followedFeed.feed_name.localeCompare(b.followedFeed.feed_name)
-                )
-            );
+            const storedDeepFeeds = JSON.parse(localStorage.getItem("deepFeeds")) || [];
+            setFeeds(storedFeeds.sort((a, b) => 
+                a.feed_name.localeCompare(b.feed_name)
+            ));
+            setDeepFeeds(storedDeepFeeds);
         } catch (error) {
-            setAsideErrorMessage(error.response.data?.message || "Error updating feeds");
+            setAsideErrorMessage(error.response?.data?.message || "Error updating feeds");
             setFeeds([]);
+            setDeepFeeds([]);
         }
     }, []);
 
@@ -531,8 +501,8 @@ const BaseLayout = () => {
                                 </ul>
                             </nav>
                             <div className="deep-feeds-container">
-                                <SortableContext items={feeds.map(f => f?.feed_id.toString())} strategy={verticalListSortingStrategy}>
-                                    {deepFeeds.map(deepFeed => (
+                                <SortableContext items={feeds?.map(f => f?.feed_id.toString())} strategy={verticalListSortingStrategy}>
+                                    {deepFeeds?.map(deepFeed => (
                                         <DeepFeedItem key={deepFeed?.deep_feed_id} deepFeed={deepFeed} handleDragStart={dragStart} handleDragEnd={dragEnd} onFeedAdded={registerFeedCallback} showHeader={true}/>
                                     ))}
                                 </SortableContext>
@@ -639,10 +609,10 @@ const BaseLayout = () => {
                                 <p className="small-text faded-text">
                                     Drag and drop to combine feeds
                                 </p>
-                                <SortableContext items={feeds.map(f => `sidebar-feed-${f?.feed_id}`)} strategy={verticalListSortingStrategy}>
+                                <SortableContext items={feeds?.map(f => `sidebar-feed-${f?.feed_id}`)} strategy={verticalListSortingStrategy}>
                                     <ul className="feeds-list">
-                                        {feeds.map(f => (
-                                            <FeedItem key={f?.feed_id} feed={f?.followedFeed} id={f?.feed_id.toString()} isChat={false} />
+                                        {feeds?.map(feed => (
+                                            <FeedItem key={feed?.feed_id} dragged={dragged} feed={feed} isChat={false} />
                                         ))}
                                     </ul>
                                 </SortableContext>

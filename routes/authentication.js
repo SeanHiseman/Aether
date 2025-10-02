@@ -10,7 +10,7 @@ import { Router } from 'express';
 import { compare, hash } from 'bcrypt';
 import { Op } from 'sequelize';
 import { v4 } from 'uuid';
-import { Connections, ConnectRequests, Feeds, FeedChannels, Followers, FeedChats, Messages, Posts, PostDrafts, PostNotes, PostVotes, SavedPostChannels, Users } from '../models/relationships.js'; 
+import { Connections, ConnectRequests, DeepFeeds, Feeds, FeedChannels, Followers, FeedChats, Messages, Posts, PostDrafts, PostNotes, PostVotes, SavedPostChannels, Users } from '../models/relationships.js'; 
 import { generateVerificationToken, sendPasswordResetEmail, sendVerificationEmail } from '../functions/emailService.js';
 import { ValidateEmail } from '../functions/validateEmail.js';
 import { ValidateTextInput } from '../functions/validateTextInput.js';
@@ -245,12 +245,12 @@ router.post('/join', async (req, res) => {
 
 router.post('/login', async (req, res) => {
     try {
-		await new Promise((resolve, reject) => {
-			req.session.regenerate(error => {
-				if (error) reject(error);
-				else resolve();
-			});
-		});
+        await new Promise((resolve, reject) => {
+            req.session.regenerate(error => {
+                if (error) reject(error);
+                else resolve();
+            });
+        });
         const { password, usernameOrEmail } = req.body;
         const user = await Users.findOne({ where: { [Op.or]: [{ email: usernameOrEmail }, { username: usernameOrEmail }] } });
         if (!user) {
@@ -269,30 +269,34 @@ router.post('/login', async (req, res) => {
             req.usage_count = user.usage_count;
             req.storage_count = user.storage_count;
             req.session.viewer_id = feed.feed_id;
-            //Fetch followed feeds for use in frontend local storage
             const followedFeeds = await Followers.findAll({
                 where: { follower_id: feed.feed_id },
                 include: [{
                     model: Feeds,
-                    as: 'followedFeed', // this is the alias used in your feed_list route!
+                    as: 'followedFeed',
                 }],
                 order: [['followedFeed', 'feed_name', 'ASC']]
             });
-            const formattedFeeds = followedFeeds.map(f => ({
-                feed_id: f.feed_id,
-                followedFeed: {
-                    feed_name: f.followedFeed.feed_name,
-                    feed_photo: f.followedFeed.feed_photo,
-                },
-                link_type: f.followedFeed.is_group ? 'g' : 'u',
+            //Normalise to flat structure
+            const normalizedFollowedFeeds = followedFeeds.map(follow => ({
+                feed_id: follow.followedFeed.feed_id,
+                feed_name: follow.followedFeed.feed_name,
+                feed_photo: follow.followedFeed.feed_photo,
+                link_type: follow.link_type,
+                is_group: follow.followedFeed.is_group
             }));
-            res.status(200).json({ success: true, followedFeeds: formattedFeeds });
+            const deepFeeds = await DeepFeeds.findAll({
+                where: { owner_id: feed.feed_id, parent_id: null },
+                order: [['name', 'ASC']]
+            });
+            res.status(200).json({ success: true, followedFeeds: normalizedFollowedFeeds, deepFeeds });
         }
         else {
             res.status(401).json({ success: false, message: 'Invalid credentials' });
         }
     }
     catch (error) {
+        console.log("error logging in:", error);
         res.status(500).json({ success: false, message: 'Failed login' });
     }
 });

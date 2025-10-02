@@ -20,7 +20,7 @@ const DeepFeed = () => {
     const [refreshTrigger, setRefreshTrigger] = useState(false);
     const { isAuthenticated } = useContext(AuthContext);
     const navigate = useNavigate();
-    const { rightClasses } = useOutletContext(); 
+    const { rightClasses, updateFeeds } = useOutletContext(); 
     const queryClient = useQueryClient();
 
     const getPosts = async ({ pageParam = 0 }) => {
@@ -88,14 +88,20 @@ const DeepFeed = () => {
                 setNewName('');
                 setDeepFeed((prev) => ({ ...prev, name: newName }));
                 document.title = newName;
-            } 
+                const storedDeepFeeds = JSON.parse(localStorage.getItem("deepFeeds") || "[]");
+                const updatedDeepFeeds = storedDeepFeeds.map(df =>
+                    df.deep_feed_id === deep_feed_id ? { ...df, name: newName } : df
+                );
+                localStorage.setItem("deepFeeds", JSON.stringify(updatedDeepFeeds));
+                updateFeeds();
+            }
         } catch (error) {
             setErrorMessage(error.response.data?.message || "Error changing name");
             setTimeout(() => { setErrorMessage(''); }, 5000);
         }
     };
 
-    const deletePost = async () => {
+    const deleteDeepFeed = async () => {
         if (window.confirm(`Are you sure you want to delete ${deepFeed?.name}?`)) {
             try {
                 if (deepFeed.name === 'Following') {
@@ -115,7 +121,11 @@ const DeepFeed = () => {
                         return updated;
                     });                    
                     setErrorMessage('');
-                    navigate('/d/following');
+                    const storedDeepFeeds = JSON.parse(localStorage.getItem("deepFeeds") || "[]");
+                    const updatedDeepFeeds = storedDeepFeeds.filter(df => df.deep_feed_id !== deep_feed_id);
+                    localStorage.setItem("deepFeeds", JSON.stringify(updatedDeepFeeds));
+                    updateFeeds();
+                    navigate('/explore');
                 }
             } catch (error) {
                 setErrorMessage(error.response.data?.message || 'Error deleting combined feed');
@@ -237,7 +247,7 @@ const DeepFeed = () => {
                                         >
                                             <FaEdit />
                                         </button>
-                                        <button className="small-icon" onClick={deletePost} title="Delete Deep Feed">
+                                        <button className="small-icon" onClick={deleteDeepFeed} title="Delete Combined Feed">
                                             <FaTrash />
                                         </button>
                                     </>

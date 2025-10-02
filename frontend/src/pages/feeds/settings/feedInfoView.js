@@ -1,10 +1,11 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useOutletContext } from 'react-router-dom';
+import { useNavigate, useOutletContext } from 'react-router-dom';
 import axios from 'axios';
 import Cropper from 'react-easy-crop';
 import GetCroppedImg from '../../../components/getCroppedImg'; 
 import { FaEdit, FaRegWindowClose, FaSave, FaFileUpload, FaPencilAlt, FaLock, FaUnlock } from 'react-icons/fa';
 import { ValidateTextInput } from '../../../functions/validateTextInput';
+import FeedDeletion from './feedDeletion';
 
 const FeedInfoView = () => {
     const [crop, setCrop] = useState({ x: 0, y: 0 });
@@ -18,10 +19,11 @@ const FeedInfoView = () => {
     const [isNewDescriptionValid, setIsNewDescriptionValid] = useState(true);
     const [isNewNameValid, setIsNewNameValid] = useState(true);
     const [isPhotoFormVisible, setIsPhotoFormVisible] = useState(false);
+    const navigate = useNavigate();
     const [newDescription, setDescription] = useState('');
     const [newName, setName] = useState('');
     const [zoom, setZoom] = useState(1);
-    const { feed, setFeed, user } = useOutletContext();
+    const { feed, setFeed, user, updateFeeds } = useOutletContext();
     const hasMembership = user?.has_membership;
     const MAX_FILE_SIZE = hasMembership ? 100 * 1024 * 1024 : 1 * 1024 * 1024;
 
@@ -49,11 +51,14 @@ const FeedInfoView = () => {
             });
             if (response.data.success) {
                 setFeed(prev => ({ ...prev, feed_photo: response.data?.newPhotoPath }));
+                const stored = JSON.parse(localStorage.getItem("followedFeeds")) || [];
+                const updated = stored.map(f => f.feed_id === feed?.feed_id ? { ...f, feed_photo: response.data?.newPhotoPath } : f);
+                localStorage.setItem("followedFeeds", JSON.stringify(updated));
+                updateFeeds();
                 setIsPhotoFormVisible(false);
                 setImageSrc(null);
                 setIsFileSelected(false);
                 setErrorMessage('');
-                window.location.reload();
             } else {
                 setErrorMessage(response.data.message || 'Failed to update feed photo');    
                 setTimeout(() => { setErrorMessage(''); }, 5000);
@@ -150,10 +155,14 @@ const FeedInfoView = () => {
                 user_id: user?.user_id
             });
             if (response.data?.success) {
+                const stored = JSON.parse(localStorage.getItem("followedFeeds")) || [];
+                const updated = stored.map(f => f.feed_id === feed?.feed_id ? { ...f, feed_name: newName } : f);
+                localStorage.setItem("followedFeeds", JSON.stringify(updated));
                 setFeed({ ...feed, feed_name: newName });
                 setIsEditingName(false);
-                window.location.reload();
-            } 
+                updateFeeds(); 
+                setTimeout(() => navigate(`/settings/${newName}/info`), 0); //ensures navigation happens after state updates
+            }
         } catch (error) {
 		    setErrorMessage(error.response.data?.message || 'Error changing name');
             setTimeout(() => { setErrorMessage(''); }, 5000);

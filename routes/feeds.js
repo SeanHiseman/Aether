@@ -47,7 +47,8 @@ const checkProfileStorageLimit = async (req, res, next) => {
         req.currentUser = user;
         next();
     } catch (error) {
-        return res.status(500).json({ success: false, error: error.message });
+        console.log("checkProfileStorageLimit error:", error);
+        return res.status(500).json({ success: false, message: 'Error checking storage limit' });
     }
 };
 
@@ -64,7 +65,8 @@ router.post('/accept_follow_request', authenticateCheck, async (req, res) => {
         await follow_request.destroy();
         res.status(200).json({ success: true });
     } catch (error) {
-        res.status(500).json({ success: false });
+        console.log("/accept_follow_request error:", error);
+        res.status(500).json({ success: false, message: 'Error accepting request' });
     }
 });
 
@@ -121,7 +123,8 @@ router.post('/add_feed_channel', authenticateCheck, async (req, res) => {
         res.status(201).json({ success: true, newChannel });
     } catch (error) {
         if (transaction) await transaction.rollback();
-        res.status(500).json({ success: false });
+        console.log("/add_feed_channel error:", error);
+        res.status(500).json({ success: false, message: 'Error adding channel' });
     }
 });
 
@@ -159,7 +162,8 @@ router.post('/add_to_deep_feed', async (req, res) => {
         }
         res.status(201).json({ success: true, content });
     } catch (error) {
-        res.status(500).json({ success: false, error: error.message });
+        console.log("/add_to_deep_feed error:", error);
+        res.status(500).json({ success: false, message: 'Error adding to feed' });
     }
 });
 
@@ -180,7 +184,8 @@ router.post('/change_channel_name', authenticateCheck, async (req, res) => {
             res.status(200).json({ success: true });
         }
     } catch (error) {
-        res.status(500).json({ success: false });
+        console.log("/change_channel_name error:", error);
+        res.status(500).json({ success: false, message: 'Error changing name' });
     }
 });
 
@@ -201,7 +206,8 @@ router.post('/change_deep_feed_name', authenticateCheck, async (req, res) => {
             res.status(200).json({ success: true });
         }
     } catch (error) {
-        res.status(500).json({ success: false });
+        console.log("/change_deep_feed_name error:", error);
+        res.status(500).json({ success: false, message: 'Error changing name' });
     }
 });
 
@@ -217,7 +223,8 @@ router.post('/change_description', authenticateCheck, async (req, res) => {
         await feed.save();
         res.status(200).json({ success: true });
     } catch (error) {
-        res.status(500).json({ success: false });
+        console.log("/change_description error:", error);
+        res.status(500).json({ success: false, message: 'Error changing description' });
     }
 });
 
@@ -245,8 +252,8 @@ router.post('/change_feed_name', authenticateCheck, async (req, res) => {
         await feed.save();
         res.status(200).json({ success: true });
     } catch (error) {
-
-        res.status(500).json({ success: false });
+        console.log("/change_feed_name error:", error);
+        res.status(500).json({ success: false, message: 'Error changing name' });
     }
 });
 
@@ -262,7 +269,7 @@ router.post('/create_feed', authenticateCheck, checkProfileStorageLimit, async (
         }
         try {
             const { feedName, type, isGroup, feedOwner, viewerFeedId } = req.body;
-            const nameCheck = ValidateTextInput(feedName, 3, 30);
+            const nameCheck = ValidateTextInput(feedName, 3, 30); //Warning: do not change to 32 or over, or users could name feeds using uuids
             if (!nameCheck.valid) {
                 return res.status(400).json({ success: false, message: nameCheck.error });
             }
@@ -343,7 +350,7 @@ router.post('/create_feed', authenticateCheck, checkProfileStorageLimit, async (
                         fs.unlinkSync(req.file.path);
                     }
                 } catch (cleanupErr) {
-                    console.error("Failed to cleanup file:", cleanupErr);
+                    console.log("Failed to cleanup file:", cleanupErr);
                 }
             }
             res.status(500).json({ success: false, message: 'Failed to create feed' });
@@ -389,20 +396,8 @@ router.post('/create_deep_feed', authenticateCheck, async (req, res) => {
         }
         res.status(201).json({ success: true, deepFeed, feedsToInclude });
     } catch (error) {
-        res.status(500).json({ success: false, error: error.message });
-    }
-});
-
-router.get('/deep_feeds/:viewerId', authenticateCheck, async (req, res) => {
-    try {
-        const { viewerId } = req.params;
-        const deepFeeds = await DeepFeeds.findAll({
-            where: { owner_id: viewerId, parent_id: null },
-            order: [['name', 'ASC']]
-        });
-        res.status(200).json({ success: true, deepFeeds });
-    } catch (error) {
-        res.status(500).json({ success: false, error: error.message });
+        console.log("/create_deep_feed error:", error);
+        res.status(500).json({ success: false, message: 'Error creating feed' });
     }
 });
 
@@ -423,7 +418,8 @@ router.get('/deep_feed_contents/:deepFeedId', authenticateCheck, async (req, res
         });
         res.status(200).json({ success: true, contents });
     } catch (error) {
-        res.status(500).json({ success: false, error: error.message });
+        console.log("error getting deep feed contents:", error);
+        res.status(500).json({ success: false, message: 'Error getting contents' });
     }
 });
 
@@ -436,11 +432,13 @@ router.get('/deep_feed_posts', authenticateCheck, async (req, res) => {
         const offset = parseInt(req.query.offset, 10) || 0;
         const viewerId = req.session.viewer_id;
         let deepFeed = null;
-        if (deepFeedId !== 'following') {
-            deepFeed = await DeepFeeds.findByPk(deepFeedId);
-            if (!deepFeed) {
-                return res.status(404).json({ error: 'Deep feed not found' });
-            }
+        let lookupDeepFeedId = deepFeedId; //To not include deep_ prefix
+        if (deepFeedId !== 'following' && deepFeedId.startsWith('deep_')) {
+            lookupDeepFeedId = deepFeedId.replace('deep_', '');
+        }
+        deepFeed = await DeepFeeds.findByPk(lookupDeepFeedId);
+        if (!deepFeed) {
+            return res.status(404).json({ error: 'Deep feed not found' });
         }
         const includeOptions = [{
             as: 'note',
@@ -476,6 +474,7 @@ router.get('/deep_feed_posts', authenticateCheck, async (req, res) => {
         });
         return res.status(200).json({ deepFeed, posts: deepFeedPosts, success: true });
     } catch (error) {
+        console.log("error getting deep feed posts:", error);
         res.status(500).json({ success: false, error: error.message });
     }
 });
@@ -496,9 +495,9 @@ router.delete('/delete_deep_feed', authenticateCheck, async (req, res) => {
         await transaction.commit();
         res.status(200).json({ success: true });
     } catch (error) {
-        console.log("Error deleting deep feed:", error);
         if (transaction) await transaction.rollback();
-        res.status(500).json({ success: false });
+        console.log("/delete_deep_feed error:", error);
+        res.status(500).json({ success: false, message: 'Error deleting feed' });
     }
 });
 
@@ -510,7 +509,8 @@ router.delete('/delete_follow_request', authenticateCheck, async (req, res) => {
         });
         res.status(200).json({ success: false });
     } catch (error) {
-        res.status(500).json({ success: false });
+        console.log("/delete_follow_request error:", error);
+        res.status(500).json({ success: false, message: 'Error deleting request' });
     }
 });
 
@@ -519,6 +519,7 @@ router.delete('/delete_feed', authenticateCheck, async (req, res) => {
     try {
         transaction = await sequelize.transaction();
         const { feedId } = req.body;
+        console.log("delete_feed feedId:", feedId);
         const feed = await Feeds.findOne({ where: { feed_id: feedId } });
         if (!feed) {
             await transaction.rollback();
@@ -555,7 +556,8 @@ router.delete('/delete_feed', authenticateCheck, async (req, res) => {
         res.status(200).json({ success: true });
     } catch (error) {
         if (transaction) await transaction.rollback();
-        res.status(500).json({ success: false });
+        console.log("/delete_feed error:", error);
+        res.status(500).json({ success: false, message: 'Error deleting feed' });
     }
 });
 
@@ -565,20 +567,21 @@ router.delete('/delete_feed_channel', authenticateCheck, async (req, res) => {
         transaction = await sequelize.transaction();
         const { channelId } = req.body;
         if (!channelId) {
-            return res.status(400).json({ success: false, message: "Channel ID is required." });
+            return res.status(400).json({ success: false, message: 'Channel ID is required' });
         }
         await FeedChannelMessages.destroy({ where: { channel_id: channelId }, transaction });
         await Posts.destroy({ where: { channel_id: channelId }, transaction });
         const deletedCount = await FeedChannels.destroy({ where: { channel_id: channelId }, transaction });
         if (deletedCount === 0) {
             await transaction.rollback(); 
-            return res.status(404).json({ success: false, message: "Channel not found." });
+            return res.status(404).json({ success: false, message: 'Channel not found' });
         }
         await transaction.commit();
-        res.status(200).json({ success: true, message: "Channel deleted successfully." });
+        res.status(200).json({ success: true });
     } catch (error) {
         if (transaction) await transaction.rollback();
-        res.status(500).json({ success: false, message: error.message || "Failed to delete channel." });
+        console.log("/delete_feed_channel error:", error);
+        res.status(500).json({ success: false, message: 'Failed to delete channel.' });
     }
 });
 
@@ -624,8 +627,8 @@ router.get("/explore_feeds", async (req, res) => {
 		}));
 		res.status(200).json({ success: true, feeds: feedData, hasMore: feedData.length >= limit });
 	} catch (error) {
-        console.log("Error getting explore feeds:", error);
-		res.status(500).json({ success: false, message: "Error while fetching feeds." });
+        console.log("/explore_feeds error:", error);
+		res.status(500).json({ success: false, message: "Error while fetching feeds" });
 	}
 });
 
@@ -642,7 +645,7 @@ router.get('/feed/:feedName', async (req, res) => {
         let followRequest = null;  
         const feed = await Feeds.findOne({ where: { feed_name: feedName } });
         if (!feed) {
-            return res.status(404).json({ success: false, message: "Feed not found." }); 
+            return res.status(404).json({ success: false, message: 'Feed not found' }); 
         }
         //If user is logged in and is the owner
         if (userId && userId === feed.feed_owner) {
@@ -690,7 +693,8 @@ router.get('/feed/:feedName', async (req, res) => {
         }
         res.status(200).json({ success: true, feedResult });
     } catch (error) {
-        res.status(500).json({ success: false, message: "An error occurred while retrieving the feed." });
+        console.log("/feed_error:", error);
+        res.status(500).json({ success: false, message: 'Error retrieving the feed' });
     }
 });
 
@@ -706,7 +710,8 @@ router.get('/feed_channel_messages', async (req, res) => {
         });
         res.status(200).json({ messages, success: true });
     } catch (error) {
-        res.status(500).json({ success: false });   
+        console.log("/feed_channel_messages error:", error);
+        res.status(500).json({ success: false, message: 'Error getting messages' });   
     }
 });
 
@@ -724,7 +729,8 @@ router.post('/follow_feed', authenticateCheck, async (req, res) => {
         await feed.increment('follower_count');
         res.status(200).json({ success: true });
     } catch (error) {
-        res.status(500).json({ success: false });
+        console.log("/follow_feed error:", error);
+        res.status(500).json({ success: false, message: 'Error following feed' });
     }
 });
 
@@ -741,7 +747,8 @@ router.get('/follow_requests/:feedId', authenticateCheck, async (req, res) => {
         }); 
         res.status(200).json({ success: true, requests });
     } catch (error) {
-        res.status(500).json({ success: false });
+        console.log("/follow_requests error:", error);
+        res.status(500).json({ success: false, message: 'Error getting requests' });
     }
 });
 
@@ -770,7 +777,8 @@ router.get('/get_feed_channels/:feedId', async (req, res) => {
         });
         res.status(200).json({ success: true, channels });
     } catch (error) {
-        res.status(500).json({ success: false });
+        console.log("/get_feed_channels error:", error);
+        res.status(500).json({ success: false, message: 'Error getting channels' });
     }
 });
 
@@ -789,7 +797,8 @@ router.get('/get_feed_followers/:feedId', authenticateCheck, async (req, res) =>
         });
         res.status(200).json({ success: true, followers });
     } catch (error) {
-        res.status(500).json({ success: false });
+        console.log("/get_feed_followers error:", error);
+        res.status(500).json({ success: false, message: 'Error getting followers' });
     }
 });
 
@@ -812,7 +821,8 @@ router.get('/get_saved_posts', authenticateCheck, async (req, res) => {
         });
         res.status(200).json({ posts });
     } catch (error) {
-        res.status(500).json({ posts: [] });
+        console.log("/get_saved_posts error:", error);
+        res.status(500).json({ posts: [], message: 'Error getting posts' });
     }
 });
 
@@ -830,8 +840,8 @@ router.post('/remove_from_deep_feed', authenticateCheck, async (req, res) => {
         await DeepFeedContent.destroy({ where });
         res.status(200).json({ success: true });
     } catch (error) {
-        console.error('Error removing from deep feed:', error);
-        res.status(500).json({ success: false, error: error.message });
+        console.error('/remove_from_deep_feed error:', error);
+        res.status(500).json({ success: false, message: 'Error removing from feed' });
     }
 });
 
@@ -844,7 +854,8 @@ router.delete('/remove_saved_post', authenticateCheck, async (req, res) => {
         if (!count) return res.status(404).json({ success: false, message: 'Not saved' });
         res.status(200).json({ success: true });
     } catch {
-        res.status(500).json({ success: false });
+        console.log("/remove_saved_post error:", error);
+        res.status(500).json({ success: false, message: 'Error removing saved post' });
     }
 });
 
@@ -873,7 +884,8 @@ router.put('/reorder_feed_channels', async (req, res) => {
         res.status(200).json({ success: true, message: 'Channels reordered successfully.' });
     } catch (error) {
         if (transaction) await transaction.rollback();
-        res.status(500).json({ success: false, message: 'Failed to reorder channels.', error: error.message });
+        console.log("/reorder_feed_channels error:", error);
+        res.status(500).json({ success: false, message: 'Failed to reorder channels.' });
     }
 });
 
@@ -893,7 +905,8 @@ router.post('/save_post', authenticateCheck, async (req, res) => {
 		await SavedPosts.create({ ...where, feed_id: feedId, saved_channel_id: mainChannel.channel_id });
 		res.status(200).json({ saved: true });
 	} catch (error) {
-		res.status(500).json({ success: false });
+        console.log("/save_post error:", error);
+		res.status(500).json({ success: false, message: 'Error saving post' });
 	}
 });
 
@@ -907,7 +920,8 @@ router.post('/send_follow_request', authenticateCheck, async (req, res) => {``
         });
         res.status(200).json({ success: true });
     } catch (error) {
-        res.status(500).send({ success: false });
+        console.log("/send_follow_request error:", error);
+        res.status(500).send({ success: false, message: 'Failed to send request.' });
     }
 });
 
@@ -917,7 +931,8 @@ router.post('/toggle_admin', authenticateCheck, async (req, res) => {
         await Followers.update({ is_admin: isAdmin }, { where: { feed_id: feedId, follower_id: followerId } });
         res.status(200).json({ success: true });
     } catch (error) {
-        res.status(500).json({ success: false });
+        console.log("/toggle_admin error:", error);
+        res.status(500).json({ success: false, message: 'Failed to set admin.' });
     }
 });
 
@@ -930,9 +945,10 @@ router.post('/toggle_lock', authenticateCheck, async (req, res) => {
         }
         feed.is_locked = !feed.is_locked;
         await feed.save();
-        return res.status(200).json({ is_locked: feed.is_locked });
+        return res.status(200).json({ success: false, is_locked: feed.is_locked });
     } catch (error) {
-        return res.status(500).json({ error: 'Internal server error' });
+        console.log("/toggle_lock error:", error);
+        return res.status(500).json({ success: false, message: 'Failed to set lock' });
     }
 });
 
@@ -945,7 +961,8 @@ router.post('/toggle_moderator', authenticateCheck, async (req, res) => {
         );
         res.status(200).json({ success: true });
     } catch (error) {
-        res.status(500).json({ success: false });
+        console.log("/toggle_moderator error:", error);
+        res.status(500).json({ success: false, message: 'Failed to set mod' });
     }
 });
 
@@ -957,7 +974,8 @@ router.post('/toggle_private', authenticateCheck, async (req, res) => {
         await feed.update({ type: newType });
         res.status(200).json({ success: true, type: newType });
     } catch (error) {
-        res.status(500).json({ success: false });
+        console.log("/toggle_private error:", error);
+        res.status(500).json({ success: false, message: 'Failed to set mode' });
     }
 });
 
@@ -967,7 +985,8 @@ router.post('/transfer_ownership', authenticateCheck, async (req, res) => {
         await Feeds.update({ feed_owner: newOwnerId }, { where: { feed_id: feedId } });
         res.status(200).json({ success: true });
     } catch (error) {
-        res.status(500).json({ success: false });
+        console.log("/transfer_ownership:", error);
+        res.status(500).json({ success: false, message: 'Failed to transfer ownership' });
     }
 });
 
@@ -1041,10 +1060,10 @@ router.put('/update_feed_photo/:feedId', authenticateCheck, checkProfileStorageL
                         fs.unlinkSync(req.file.path);
                     }
                 } catch (cleanupErr) {
-                    console.error("Failed to cleanup file:", cleanupErr);
+                    console.log("Failed to cleanup file:", cleanupErr);
                 }
             }
-            res.status(500).json({ success: false });
+            res.status(500).json({ success: false, message: 'Failed to update photo' });
         }
     });
 });
@@ -1059,7 +1078,8 @@ router.post('/unfollow_feed', authenticateCheck, async (req, res) => {
         await feed.decrement('follower_count');
         res.status(200).json({ success: true });
     } catch (error) {
-        res.status(500).json({ success: false });
+        console.log("/unfollow_feed error:", error);
+        res.status(500).json({ success: false, message: 'Failed to unfollow feed' });
     }
 });
 
@@ -1078,7 +1098,8 @@ router.post('/update_current_feed', async (req, res) => {
         req.session.feed_id = feed_id;
         res.status(200).json({ success: true, currentFeed: req.session.feed_id });
     } catch (error) {
-        res.status(500).json({ success: false });
+        console.log("/update_current_feed error:", error);
+        res.status(500).json({ success: false, message: 'Failed to update feed' });
     }
 });
 

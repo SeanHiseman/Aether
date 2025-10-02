@@ -41,11 +41,11 @@ const ResetPassword = () => {
 						value={password}
 						onChange={e => {
 							const input = e.target.value;
-							if (input.length <= 120) {
+							if (input.length <= 50) {
 								setPassword(input);
 								setMessage('');
 							} else {
-								setMessage('Password cannot exceed 120 characters');
+								setMessage('Password cannot exceed 50 characters');
 							}
 						}}
 					/>
@@ -58,7 +58,7 @@ const ResetPassword = () => {
 						value={confirmPassword}
 						onChange={e => {
 							const input = e.target.value;
-							if (input.length <= 120) {
+							if (input.length <= 50) {
 								setConfirmPassword(input);
 								if (password && input !== password) {
 									setMessage('Passwords do not match');
@@ -66,7 +66,7 @@ const ResetPassword = () => {
 									setMessage('');
 								}
 							} else {
-								setMessage('Password cannot exceed 120 characters');
+								setMessage('Password cannot exceed 50 characters');
 							}
 						}}
 					/>

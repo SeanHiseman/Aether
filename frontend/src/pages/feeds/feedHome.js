@@ -59,7 +59,7 @@ const FeedHome = () => {
                 setIsAdmin(fetchedFeed?.isAdmin);
                 setIsModerator(fetchedFeed?.isMod);
                 setIsLocked(fetchedFeed?.is_locked);
-                if (viewer?.feed_id === fetchedFeed?.feed_id){
+                if (viewer?.feed_id === fetchedFeed?.feed_id) {
                     setIsAdmin(true);
                     setIsModerator(true);
                 }
@@ -75,7 +75,7 @@ const FeedHome = () => {
             } finally {
                 setLoading(false);
             }
-        }; 
+        };
         fetchFeedData();
     }, [feed_name, viewer]);
 

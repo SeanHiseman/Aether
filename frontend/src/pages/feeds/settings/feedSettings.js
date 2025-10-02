@@ -15,7 +15,7 @@ const FeedSettings = () => {
     const [isAuthorized, setIsAuthorized] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
     const navigate = useNavigate();
-    const { rightClasses } = useOutletContext(); 
+    const { rightClasses, updateFeeds } = useOutletContext(); 
     const { user } = useContext(AuthContext);
     const urlPrefix = feed?.is_group ? 'g' : 'u';
 
@@ -92,7 +92,7 @@ const FeedSettings = () => {
     return (
         <div className="standard-container">  
             <div className="settings-area">
-                <Outlet context={{ feed, setFeed, user, followRequests, setFollowRequests, setFollowRequestCount }} />
+                <Outlet context={{ feed, setFeed, user, followRequests, setFollowRequests, setFollowRequestCount, updateFeeds }} />
             </div>  
             <aside className={rightClasses}>
                 <nav id="channel-list">
