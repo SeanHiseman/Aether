@@ -13,7 +13,6 @@ const DeepFeedContent = sequelize.define('deep_feed_content', {
     content_id: { type: STRING(36), primaryKey: true },
     deep_feed_id: { type: STRING(36), allowNull: false, references: { model: 'DeepFeeds', key: 'deep_feed_id' } },
     feed_id: { type: STRING(36), allowNull: true },  
-    nested_deep_feed_id: { type: STRING(36), allowNull: true } 
 }, { tableName: 'deep_feed_content', timestamps: false });
 
 const Feeds = sequelize.define('feeds', {

@@ -376,7 +376,7 @@ const ContentWidget = ({ canRemove = false, display = false, feed, isDraft = fal
 							<button className="large-icon" onClick={handleLoginRedirect} title="Login to vote">
 								<FaArrowUp />
 							</button>
-							<p className="small-text">{FormatNumber(upvotes - downvotes)}</p>
+							<p className="small-text" style={{ margin: 0 }}>{FormatNumber(upvotes - downvotes)}</p>
 							<button className="large-icon" onClick={handleLoginRedirect} title="Login to vote">
 								<FaArrowDown />
 							</button>
@@ -394,16 +394,6 @@ const ContentWidget = ({ canRemove = false, display = false, feed, isDraft = fal
 								{treeViewMode ? <FaListUl /> : <FaTree />}
 							</button>
 						)}*/}
-						{isAuthenticated && !feed?.is_locked && (
-							<button 
-								className="large-icon" 
-								disabled={readOnly} 
-								onClick={() => navigate(`/${urlPrefix}/${post?.parentChannel?.feed?.feed_name}/${post?.parentChannel?.channel_name}/${post?.post_id}/reply`)}
-								title="Reply"
-							>
-								<FaReply />
-							</button>
-						)}
 					</div>
 				)}
 				<div className="post-button-group">
@@ -451,6 +441,18 @@ const ContentWidget = ({ canRemove = false, display = false, feed, isDraft = fal
 			</div>
 			{!isReplyMode && showReplies && (
 				<div className="reply-section">
+					{isAuthenticated && !feed?.is_locked && (
+						<div>
+							<button 
+								className="large-icon" 
+								disabled={readOnly} 
+								onClick={() => navigate(`/${urlPrefix}/${post?.parentChannel?.feed?.feed_name}/${post?.parentChannel?.channel_name}/${post?.post_id}/reply`)}
+								title="Reply"
+							>
+								<FaReply /><p className="icon-text">Reply</p>
+							</button>
+						</div>
+					)}
 					{treeViewMode ? (
 						<ReplyTreeView 
 							replies={replies} 

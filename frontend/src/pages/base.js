@@ -163,40 +163,12 @@ const BaseLayout = () => {
                     }
                 }
             }
-            //Case 2: Feed from deep feed dropped on another deep feed
-            else if (dragType === "feedInDeepFeed" && isOverDeepFeed && targetDeepFeedId) {
-                const sourceFeedId = activeDragItem.feed.feed_id;
-                const sourceDeepFeedId = activeDragItem.parentDeepFeedId;
-                //Only proceed if dropping on a different deep feed
-                if (sourceDeepFeedId !== targetDeepFeedId) {
-                    const addPayload = {
-                        deepFeedId: targetDeepFeedId,
-                        feedId: sourceFeedId
-                    };
-                    const { data: addData } = await axios.post("/api/add_to_deep_feed", addPayload);
-                    if (addData.success) {
-                        const removePayload = {
-                            deepFeedId: sourceDeepFeedId,
-                            feedId: sourceFeedId
-                        };
-                        const { data: removeData } = await axios.post("/api/remove_from_deep_feed", removePayload);
-                        if (removeData.success) {
-                            if (deepFeedCallbacks[targetDeepFeedId]) {
-                                deepFeedCallbacks[targetDeepFeedId]({ type: "UPDATE_CONTENTS" });
-                            }
-                            if (deepFeedCallbacks[sourceDeepFeedId]) {
-                                deepFeedCallbacks[sourceDeepFeedId]({ type: "UPDATE_CONTENTS" });
-                            }
-                        }
-                    }
-                }
-            }
-            //Case 3: Two regular feeds from sidebar combine to create new deep feed
+            //Case 2: Two regular feeds from sidebar combine to create new deep feed
             else if (dragType === "feed" && !isOverDeepFeed && targetFeedId) {
                 const sourceFeed = activeDragItem;
                 const targetFeed = feeds.find(f => f?.feed_id.toString() === targetFeedId);
                 if (sourceFeed && targetFeed && sourceFeed?.feed_id !== targetFeed?.feed_id) {
-                    const deepFeedName = prompt("Enter name for combined feed:");
+                    const deepFeedName = prompt(`Name for feed combing ${sourceFeed?.feed_name} and ${targetFeed?.feed_name}:`);
                     if (deepFeedName) {
                         const payload = {
                             viewerId: viewer?.feed_id,
@@ -260,7 +232,6 @@ const BaseLayout = () => {
         (async () => {
             try {
                 const storedFeeds = JSON.parse(localStorage.getItem("followedFeeds")) || [];
-                console.log("storedFeeds:", storedFeeds);
                 const newFeeds = storedFeeds.slice(feedsOffset, feedsOffset + 30);
                 if (newFeeds.length < 30) {
                     setHasMoreFeeds(false);
@@ -276,7 +247,6 @@ const BaseLayout = () => {
                 setDeepFeeds(storedDeepFeeds);
             }
             catch (error) {
-                console.log("error:", error);
                 setDeepFeeds([]);
                 setFeeds([]);
             }
@@ -436,7 +406,11 @@ const BaseLayout = () => {
 
     const searchClick = e => {
         e.preventDefault();
-        navigate(`/search?keyword=${currentQuery}`);
+        if (currentQuery.trim().length !== 0) {
+            navigate(`/search?keyword=${currentQuery}`);
+        } else {
+            return;
+        }
     };
 
     const toggleForm = () => {
@@ -456,12 +430,21 @@ const BaseLayout = () => {
         try {
             const storedFeeds = JSON.parse(localStorage.getItem("followedFeeds")) || [];
             const storedDeepFeeds = JSON.parse(localStorage.getItem("deepFeeds")) || [];
+            const deepFeedsWithContents = storedDeepFeeds.map(df => {
+                const cachedContents = JSON.parse(
+                    localStorage.getItem(`deepFeedContents_${df?.deep_feed_id}`)
+                ) || [];
+                return {
+                    ...df,
+                    contents: cachedContents
+                };
+            });
             setFeeds(storedFeeds.sort((a, b) => 
-                a.feed_name.localeCompare(b.feed_name)
+                a?.feed_name.localeCompare(b?.feed_name)
             ));
-            setDeepFeeds(storedDeepFeeds);
+            setDeepFeeds(deepFeedsWithContents);
         } catch (error) {
-            setAsideErrorMessage(error.response?.data?.message || "Error updating feeds");
+            setAsideErrorMessage(error.response.data?.message || "Error updating feeds");
             setFeeds([]);
             setDeepFeeds([]);
         }

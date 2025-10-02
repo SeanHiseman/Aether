@@ -1,19 +1,19 @@
 import axios from 'axios';
 import AlgorithmSelector from '../algorithms/algorithmSelector'; //Project code
-import { DragDropContext } from 'react-beautiful-dnd';
 import { useContext, useEffect, useRef, useState } from 'react';
-import { FaEdit, FaRegWindowClose, FaSave, FaTrash } from 'react-icons/fa';
+import { FaEdit, FaMinus, FaRegWindowClose, FaSave, FaTrash } from 'react-icons/fa';
 import { useNavigate, useOutletContext, useParams } from 'react-router-dom';
 import { AuthContext } from '../components/authContext';
 import ContentWidget from '../components/content/contentWidget';
-import DeepFeedItem from '../components/channels/deepFeedItem';
+import FeedItem from '../components/channels/feedItem';
 import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
 import { ValidateTextInput } from '../functions/validateTextInput';
 
 const DeepFeed = () => {
-    const [errorMessage, setErrorMessage] = useState('');
+    const [contents, setContents] = useState([]);
     const { deep_feed_id } = useParams();
     const [deepFeed, setDeepFeed] = useState({ deep_feed_id: null, name: '', owner_id: null, parent_id: null });
+    const [errorMessage, setErrorMessage] = useState('');
     const [isEditingName, setIsEditingName] = useState(false);
     const [isNewNameValid, setIsNewNameValid] = useState(false);
     const [newName, setNewName] = useState('');
@@ -23,57 +23,35 @@ const DeepFeed = () => {
     const { rightClasses, updateFeeds } = useOutletContext(); 
     const queryClient = useQueryClient();
 
-    const getPosts = async ({ pageParam = 0 }) => {
-        try {
-            let followedFeedIds;
-            let normalisedDeepFeedId = deep_feed_id;
-            if (deep_feed_id !== 'following' && !deep_feed_id.startsWith('deep_')) {
-                normalisedDeepFeedId = `deep_${deep_feed_id}`;
-            }
-            if (deep_feed_id === 'following') {
-                const followedFeeds = JSON.parse(localStorage.getItem("followedFeeds") || "[]");
-                followedFeedIds = followedFeeds.map(f => f.feed_id);
-            } else {
-                followedFeedIds = [];
-            }
-            const response = await axios.get('/api/deep_feed_posts', {
-                params: {
-                    deepFeedId: normalisedDeepFeedId,
-                    followedFeedIds: followedFeedIds.join(','),
-                    limit: 10,
-                    offset: pageParam
-                }
-            });
-            if (pageParam === 0 && response.data?.deepFeed) {
-                setDeepFeed(response.data?.deepFeed);
-                document.title = response.data?.deepFeed?.name;
-            } else if (deep_feed_id === 'following') {
-                setDeepFeed({
-                    deep_feed_id: 'following',
-                    name: 'Following',
-                    owner_id: 'system',
-                    parent_id: null,
-                });
-                document.title = 'Following';
-            }
-            return response.data?.posts;
-        } catch (error) {
-            setErrorMessage('Error fetching posts');
-            setTimeout(() => { setErrorMessage(''); }, 5000);
-            return [];
+    useEffect(() => {
+        if (!deep_feed_id) return;
+        const cached = localStorage.getItem(`deepFeedContents_${deep_feed_id}`);
+        if (cached) {
+            console.log("deepFeed using cached data:", cached);
+            setContents(JSON.parse(cached));
+            return;
         }
-    };
+        const fetchContents = async () => {
+            try {
+                const { data } = await axios.get(`/api/deep_feed_contents/${deep_feed_id}`);
+			    console.log("deepFeedItem data loaded from backend:", data);
+                const fetched = data?.contents || [];
+                setContents(fetched);
+                localStorage.setItem(`deepFeedContents_${deep_feed_id}`, JSON.stringify(fetched));
+            } catch (error) {
+                setErrorMessage('Failed to load deep feed contents.');
+                setContents([]);
+                setTimeout(() => setErrorMessage(''), 5000);
+            }
+        };
+        fetchContents();
+    }, [deep_feed_id]);
 
-    const { data, error, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading, status } = useInfiniteQuery({
-        queryKey: ['deepFeedPosts', deep_feed_id],
-        queryFn: getPosts,
-        getNextPageParam: (lastPage, allPages) => {
-            if (!Array.isArray(lastPage)) return undefined;
-            return lastPage.length === 10 ? allPages.length * 10 : undefined;
-        }
-    });
+    const sortedContents = [...contents].sort((a, b) =>
+        (a?.feed?.feed_name || '').localeCompare(b?.feed?.feed_name || '')
+    );
 
-    const loaderRef = useRef(null);
+        const loaderRef = useRef(null);
 
     const changeDeepFeedName = async (event) => {
         event.preventDefault();
@@ -131,6 +109,80 @@ const DeepFeed = () => {
                 setErrorMessage(error.response.data?.message || 'Error deleting combined feed');
                 setTimeout(() => { setErrorMessage(''); }, 5000);
             }
+        }
+    };
+
+    const getPosts = async ({ pageParam = 0 }) => {
+        try {
+            let followedFeedIds;
+            let normalisedDeepFeedId = deep_feed_id;
+            if (deep_feed_id !== 'following' && !deep_feed_id.startsWith('deep_')) {
+                normalisedDeepFeedId = `deep_${deep_feed_id}`;
+            }
+            if (deep_feed_id === 'following') {
+                const followedFeeds = JSON.parse(localStorage.getItem("followedFeeds") || "[]");
+                followedFeedIds = followedFeeds.map(f => f.feed_id);
+            } else {
+                followedFeedIds = [];
+            }
+            const response = await axios.get('/api/deep_feed_posts', {
+                params: {
+                    deepFeedId: normalisedDeepFeedId,
+                    followedFeedIds: followedFeedIds.join(','),
+                    limit: 10,
+                    offset: pageParam
+                }
+            });
+            if (pageParam === 0 && response.data?.deepFeed) {
+                setDeepFeed(response.data?.deepFeed);
+                document.title = response.data?.deepFeed?.name;
+            } else if (deep_feed_id === 'following') {
+                setDeepFeed({
+                    deep_feed_id: 'following',
+                    name: 'Following',
+                    owner_id: 'system',
+                    parent_id: null,
+                });
+                document.title = 'Following';
+            }
+            return response.data?.posts;
+        } catch (error) {
+            setErrorMessage('Error fetching posts');
+            setTimeout(() => { setErrorMessage(''); }, 5000);
+            return [];
+        }
+    };
+
+    const { data, error, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading, status } = useInfiniteQuery({
+        queryKey: ['deepFeedPosts', deep_feed_id],
+        queryFn: getPosts,
+        getNextPageParam: (lastPage, allPages) => {
+            if (!Array.isArray(lastPage)) return undefined;
+            return lastPage.length === 10 ? allPages.length * 10 : undefined;
+        }
+    });
+
+    const removeFeed = async (feedId) => {
+        try {
+            const response = await axios.post('/api/remove_from_deep_feed', {
+                deepFeedId: deep_feed_id,
+                feedId
+            });
+            if (response.data?.success) {
+                const updated = contents.filter(item => item?.feed?.feed_id !== feedId);
+                setContents(updated);
+                localStorage.setItem(
+                    `deepFeedContents_${deep_feed_id}`,
+                    JSON.stringify(updated)
+                );
+                updateFeeds();
+            } else {
+                setErrorMessage('Failed to remove feed');
+                setTimeout(() => setErrorMessage(''), 5000);
+            }
+        } catch (error) {
+            setErrorMessage(error.response?.data?.message || 'Error removing feed');
+            setTimeout(() => setErrorMessage(''), 5000);
         }
     };
 
@@ -256,7 +308,19 @@ const DeepFeed = () => {
                             {isAuthenticated && <AlgorithmSelector locationId={deepFeed?.deep_feed_id} refreshPosts={refreshPosts} />} {/*Project code*/}
                         </div>
                     )}
-                    <div className="error-message">{errorMessage}</div>
+                    <div className="small-text faded-text">{errorMessage}</div>
+                    {sortedContents.length > 0 && (
+                        <div className="deep-feed-aside-list">
+                            {sortedContents.map(item => (
+                                <div key={item?.feed?.feed_id} className="deep-feed-aside-item" style={{ display: 'flex', alignItems: 'center' }}>
+                                    <button className="small-icon" onClick={() => removeFeed(item?.feed?.feed_id)} title="Remove from combined feed">
+                                        <FaMinus />
+                                    </button>
+                                    <FeedItem id={item?.feed?.feed_id.toString()} feed={item?.feed} isChat={false} parentDeepFeedId={deep_feed_id} />
+                                </div>
+                            ))}
+                        </div>
+                    )}
                 </div>
             </aside>
         </div>

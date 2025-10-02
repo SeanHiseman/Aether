@@ -130,36 +130,15 @@ router.post('/add_feed_channel', authenticateCheck, async (req, res) => {
 
 router.post('/add_to_deep_feed', async (req, res) => {
     try {
-        const { deepFeedId, feedId, nestedDeepFeedId } = req.body;
-        if (!feedId && !nestedDeepFeedId) {
-            return res.status(400).json({ success: false, message: 'Must provide either a feedId or nestedDeepFeedId' });
-        }
-        if (nestedDeepFeedId) {
-            const checkDestinationInSource = await DeepFeedContent.findOne({
-                where: {
-                    deep_feed_id: nestedDeepFeedId,
-                    nested_deep_feed_id: deepFeedId
-                }
-            });
-            if (checkDestinationInSource) {
-                return res.status(400).json({ 
-                    success: false, 
-                    message: 'Cannot create circular reference between deep feeds' 
-                });
-            }
+        const { deepFeedId, feedId } = req.body;
+        if (!feedId) {
+            return res.status(400).json({ success: false, message: 'Id missing' });
         }
         const content = await DeepFeedContent.create({
             content_id: v4(),
             deep_feed_id: deepFeedId,
             feed_id: feedId || null,
-            nested_deep_feed_id: nestedDeepFeedId || null
         });
-        if (nestedDeepFeedId) {
-            await DeepFeeds.update(
-                { parent_id: deepFeedId },
-                { where: { deep_feed_id: nestedDeepFeedId } }
-            );
-        }
         res.status(201).json({ success: true, content });
     } catch (error) {
         console.log("/add_to_deep_feed error:", error);
@@ -390,7 +369,6 @@ router.post('/create_deep_feed', authenticateCheck, async (req, res) => {
             await DeepFeedContent.create({
                 content_id: v4(),
                 deep_feed_id: parentDeepFeedId,
-                nested_deep_feed_id: deepFeed.deep_feed_id,
                 feed_id: null
             });
         }
@@ -403,18 +381,11 @@ router.post('/create_deep_feed', authenticateCheck, async (req, res) => {
 
 router.get('/deep_feed_contents/:deepFeedId', authenticateCheck, async (req, res) => {
     try {
-        //Nested deep feeds no longer used
         const { deepFeedId } = req.params;
         const contents = await DeepFeedContent.findAll({
             where: { deep_feed_id: deepFeedId },
-            include: [
-                { model: DeepFeeds, as: 'nestedDeepFeed' },
-                { model: Feeds, as: 'feed' }
-            ],
-            order: [
-                [{ model: DeepFeeds, as: 'nestedDeepFeed' }, 'name', 'ASC'],
-                [{ model: Feeds, as: 'feed' }, 'feed_name', 'ASC'] 
-            ]
+            include: [{ model: Feeds, as: 'feed' }],
+            order: [[{ model: Feeds, as: 'feed' }, 'feed_name', 'ASC']]
         });
         res.status(200).json({ success: true, contents });
     } catch (error) {
@@ -806,14 +777,13 @@ router.get('/get_saved_posts', authenticateCheck, async (req, res) => {
 
 router.post('/remove_from_deep_feed', authenticateCheck, async (req, res) => {
     try {
-        const { deepFeedId, feedId, nestedDeepFeedId } = req.body;
-        console.log("removing from deep feed:", "deepFeedId:", deepFeedId, "feedId:", feedId, "nestedDeepFeedId:", nestedDeepFeedId);
-        if (!feedId && !nestedDeepFeedId) {
-            return res.status(400).json({ success: false, message: 'Must provide either a feedId or nestedDeepFeedId' });
+        const { deepFeedId, feedId } = req.body;
+        if (!feedId) {
+            return res.status(400).json({ success: false, message: 'Id missing' });
         }
         const where = {
             deep_feed_id: deepFeedId,
-            ...(feedId ? { feed_id: feedId } : { nested_deep_feed_id: nestedDeepFeedId })
+            feed_id: feedId
         };
         await DeepFeedContent.destroy({ where });
         res.status(200).json({ success: true });

@@ -164,3 +164,5 @@ FOREIGN KEY (post_id) REFERENCES posts(post_id) ON DELETE CASCADE;
 ALTER TABLE viewed_posts DROP FOREIGN KEY viewed_posts_ibfk_1;
 ALTER TABLE viewed_posts ADD CONSTRAINT viewed_posts_ibfk_1 
 FOREIGN KEY (post_id) REFERENCES posts(post_id) ON DELETE CASCADE;
+
+alter table deep_feed_content drop column nested_deep_feed_id

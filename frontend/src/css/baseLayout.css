@@ -124,6 +124,7 @@
   align-items: center;
   display: flex;
   flex-direction: column;
+  margin-top: var(--large-margin);
   width: 100%;
 }
 .chat-channel-button, .conversation-button, .posts-channel-button {

@@ -136,7 +136,7 @@ router.post('/generate_content', authenticateCheck, async (req, res) => {
         const { currentCode, request, senderId } = req.body;
         console.log('Received request:', { currentCode, request, senderId });
         const hasMembership = req.session.has_membership || false;
-        const model = hasMembership ? 'claude-sonnet-4-20250514' : 'claude-3-5-haiku-20241022';
+        const model = hasMembership ? 'claude-sonnet-4-5-20250929' : 'claude-3-5-haiku-20241022';
         const inputMultiplier = hasMembership ? 3.0 : 0.25;
         const outputMultiplier = hasMembership ? 15.0 : 1.25;
         const assistantInstructions = 

@@ -64,7 +64,6 @@ CREATE TABLE `deep_feed_content` (
   `content_id` varchar(36) NOT NULL,
   `deep_feed_id` varchar(36) NOT NULL,
   `feed_id` varchar(36) DEFAULT NULL,
-  `nested_deep_feed_id` varchar(36) DEFAULT NULL,
   PRIMARY KEY (`content_id`),
   KEY `deep_feed_id` (`deep_feed_id`),
   CONSTRAINT `deep_feed_content_ibfk_1` FOREIGN KEY (`deep_feed_id`) REFERENCES `deep_feeds` (`deep_feed_id`) ON DELETE CASCADE,

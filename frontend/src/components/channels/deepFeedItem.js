@@ -21,14 +21,54 @@ const DeepFeedItem = ({ deepFeed, onFeedAdded, showHeader }) => {
 		}
 	});
 
+	const addFeed = useCallback((feed) => {
+		try {
+			if (feed.type === 'UPDATE_CONTENTS') {
+				fetchContents();
+				return;
+			}
+			setContents(prev => {
+				if (prev.some(item => item?.feed && item?.feed?.feed_id === feed?.feed_id)) return prev;
+				const updated = [...prev, {
+					feed: {
+						feed_id: feed?.feed_id,
+						feed_name: feed?.feed_name,
+						feed_photo: feed?.feed_photo,
+						is_group: feed?.is_group
+					}
+				}];
+				localStorage.setItem(
+					`deepFeedContents_${deepFeed?.deep_feed_id}`,
+					JSON.stringify(updated)
+				);
+				return updated;
+			});
+		} catch (error) {
+			setErrorMessage(error.response.data?.message || 'Failed to add feed to deep feed.');
+			setTimeout(() => setErrorMessage(''), 5000);
+		}
+	}, []);
+
 	const fetchContents = async () => {
 		if (contents.length > 0) return;
+		const cached = localStorage.getItem(`deepFeedContents_${deepFeed?.deep_feed_id}`);
+		if (cached) {
+			console.log("deepFeedItem using cached data:", cached);
+			setContents(JSON.parse(cached));
+			return;
+		}
 		setLoading(true);
 		try {
+			//If loading for the first time
 			const { data } = await axios.get(`/api/deep_feed_contents/${deepFeed?.deep_feed_id}`);
+			console.log("deepFeedItem data loaded from backend:", data);
 			setContents(data?.contents || []);
+			localStorage.setItem(
+				`deepFeedContents_${deepFeed?.deep_feed_id}`,
+				JSON.stringify(data?.contents || [])
+			);
 		} catch (error) {
-			setErrorMessage(error.response?.data?.message || 'Failed to load deep feed contents.');
+			setErrorMessage(error.response.data?.message || 'Failed to load deep feed contents.');
 			setContents([]);
 		} finally {
 			setLoading(false);
@@ -45,34 +85,11 @@ const DeepFeedItem = ({ deepFeed, onFeedAdded, showHeader }) => {
 	}, [deepFeed?.feeds, isExpanded, contents.length]);
 
 	useEffect(() => {
-		if (onFeedAdded) onFeedAdded(deepFeed?.deep_feed_id, handleAddFeed);
+		if (onFeedAdded) onFeedAdded(deepFeed?.deep_feed_id, addFeed);
 		return () => {
 			if (onFeedAdded) onFeedAdded(deepFeed?.deep_feed_id, null);
 		};
 	}, [deepFeed?.deep_feed_id, onFeedAdded]);
-
-	const handleAddFeed = useCallback((feed) => {
-		try {
-			if (feed.type === 'UPDATE_CONTENTS') {
-				fetchContents();
-				return;
-			}
-			setContents(prev => {
-				if (prev.some(item => item?.feed && item?.feed?.feed_id === feed?.feed_id)) return prev;
-				return [...prev, {
-					feed: {
-						feed_id: feed?.feed_id,
-						feed_name: feed?.feed_name,
-						feed_photo: feed?.feed_photo,
-						is_group: feed?.is_group
-					}
-				}];
-			});
-		} catch (error) {
-			setErrorMessage('Failed to add feed to deep feed.');
-			setTimeout(() => setErrorMessage(''), 5000);
-		}
-	}, []);
 
 	const handleExpand = useCallback((e) => {
 		e.stopPropagation();
@@ -100,7 +117,7 @@ const DeepFeedItem = ({ deepFeed, onFeedAdded, showHeader }) => {
 						<p className="small-text faded-text">Loading...</p>
 					) : (
 						<SortableContext 
-							items={contents.filter(item => item.feed).map(item => 
+							items={contents.filter(item => item?.feed).map(item => 
 								`df-${deepFeed?.deep_feed_id}-feed-${item?.feed?.feed_id}`
 							)} 
 							strategy={verticalListSortingStrategy}

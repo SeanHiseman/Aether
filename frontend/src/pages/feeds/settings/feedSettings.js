@@ -61,13 +61,14 @@ const FeedSettings = () => {
         if (feed.feed_id) {
             getFollowRequests();
         }
-    }, [feed.feed_id]); 
+    }, [feed?.feed_id]); 
 
     const handleLogout = async (event) => {
         event.preventDefault();
         try {
             const response = await axios.post('/api/logout');
-            if (response.data.success) {
+            if (response.data?.success) {
+                localStorage.clear();
                 navigate('/login');
             } else {
                 setErrorMessage('Logout failed');
@@ -84,7 +85,7 @@ const FeedSettings = () => {
         return (
             <div className="standard-container">
                 <div className="settings-area">
-                    <p>Loading...</p>
+                    <p className="large-text faded-text">Loading...</p>
                 </div>
             </div>
         );
