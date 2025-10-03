@@ -289,7 +289,22 @@ router.post('/login', async (req, res) => {
                 where: { owner_id: feed.feed_id, parent_id: null },
                 order: [['name', 'ASC']]
             });
-            res.status(200).json({ success: true, followedFeeds: normalizedFollowedFeeds, deepFeeds });
+            res.status(200).json({ 
+                success: true, 
+                user: {
+                    user_id: user.user_id,
+                    feed_name: user.username,
+                    email: user.email,
+                    has_membership: user.has_membership,
+                    theme: user.theme,
+                    usage_count: user.usage_count,
+                    storage_count: user.storage_count,
+                    viewer_id: feed.feed_id,
+                    feed_photo: feed.feed_photo,
+                },
+                followedFeeds: normalizedFollowedFeeds, 
+                deepFeeds 
+            });
         }
         else {
             res.status(401).json({ success: false, message: 'Invalid credentials' });

@@ -53,9 +53,10 @@
     cursor: inherit;
 }
 .content-list {
-    margin: 0;
+    margin-left: var(--small-margin);
+    margin-right: var(--small-margin);
     padding-top: var(--medium-margin);
-    width: 96%;
+    width: 98%;
 }
 .content-item, .content-list {
     box-sizing: border-box;
@@ -87,6 +88,7 @@
 }
 .content-metadata .vote-container {
     grid-area: votes;
+    margin-right: calc(2 * var(--xl-margin));
 }
 .content-metadata:has(.vote-container) .post-button-group:last-of-type {
     grid-area: actions;
@@ -199,7 +201,7 @@
 }
 .post-button-group p.small-text {
     display: inline-block;
-    width: 3ch; 
+    width: 4ch; 
     text-align: center;
 }
 .post-list {
@@ -395,9 +397,6 @@
 }
 
 @media (max-width: 768px) {
-    .content-list {
-        width: 100%;
-    }
     .content-metadata {
         gap: var(--tiny-margin);
         grid-template-areas: 

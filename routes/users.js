@@ -112,26 +112,6 @@ router.post('/change_username', authenticateCheck, async (req, res) => {
     }
 });
 
-router.get('/get_theme', async (req, res) => {
-    try {
-        const userId = req.session?.user_id;
-        if (!userId) {
-            return res.status(200).json({ theme: 'dark' });
-        }
-        const user = await Users.findOne({
-            where: { user_id: userId },
-            attributes: ['theme']
-        });
-        if (!user) {
-            return res.status(200).json({ theme: 'dark' });
-        }
-        res.status(200).json({ success: true, theme: user.theme || 'dark' });
-    } catch (error) {
-        console.error('Error getting theme:', error);
-        res.status(500).json({ success: false, theme: 'dark' });
-    }
-});
-
 router.post('/create-checkout-session', authenticateCheck, async (req, res) => {
     try {
         const { planType } = req.body;

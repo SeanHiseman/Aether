@@ -49,16 +49,23 @@ const FeedInfoView = () => {
             const response = await axios.put(`/api/update_feed_photo/${feed?.feed_id}`, formData, {
                 headers: { 'Content-Type': 'multipart/form-data' },
             });
-            if (response.data.success) {
+            if (response.data?.success) {
                 setFeed(prev => ({ ...prev, feed_photo: response.data?.newPhotoPath }));
-                const stored = JSON.parse(localStorage.getItem("followedFeeds")) || [];
-                const updated = stored.map(f => f.feed_id === feed?.feed_id ? { ...f, feed_photo: response.data?.newPhotoPath } : f);
-                localStorage.setItem("followedFeeds", JSON.stringify(updated));
-                updateFeeds();
+                if (feed?.is_group) {
+                    const stored = JSON.parse(localStorage.getItem("followedFeeds")) || [];
+                    const updated = stored.map(f => f.feed_id === feed?.feed_id ? { ...f, feed_photo: response.data?.newPhotoPath } : f);
+                    localStorage.setItem("followedFeeds", JSON.stringify(updated));
+                } else if (!feed?.is_group) {
+                    const storedUser = JSON.parse(localStorage.getItem("user")) || {};
+                    const updatedUser = { ...storedUser, feed_photo: response.data?.newPhotoPath };
+                    localStorage.setItem("user", JSON.stringify(updatedUser));
+                    setFeed(prev => ({ ...prev, feed_photo: response.data?.newPhotoPath }));
+                }
                 setIsPhotoFormVisible(false);
                 setImageSrc(null);
                 setIsFileSelected(false);
                 setErrorMessage('');
+                updateFeeds();
             } else {
                 setErrorMessage(response.data.message || 'Failed to update feed photo');    
                 setTimeout(() => { setErrorMessage(''); }, 5000);
@@ -155,9 +162,15 @@ const FeedInfoView = () => {
                 user_id: user?.user_id
             });
             if (response.data?.success) {
-                const stored = JSON.parse(localStorage.getItem("followedFeeds")) || [];
-                const updated = stored.map(f => f.feed_id === feed?.feed_id ? { ...f, feed_name: newName } : f);
-                localStorage.setItem("followedFeeds", JSON.stringify(updated));
+                if (feed?.is_group) {
+                    const stored = JSON.parse(localStorage.getItem("followedFeeds")) || [];
+                    const updated = stored.map(f => f.feed_id === feed?.feed_id ? { ...f, feed_name: newName } : f);
+                    localStorage.setItem("followedFeeds", JSON.stringify(updated));
+                } else if (!feed?.is_group) {
+                    const storedUser = JSON.parse(localStorage.getItem("user")) || {};
+                    const updatedUser = { ...storedUser, feed_name: newName };
+                    localStorage.setItem("user", JSON.stringify(updatedUser));
+                }
                 setFeed({ ...feed, feed_name: newName });
                 setIsEditingName(false);
                 updateFeeds(); 

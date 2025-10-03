@@ -24,6 +24,7 @@ const Login = () => {
             if (response.data?.success) {
                 localStorage.setItem("followedFeeds", JSON.stringify(response.data?.followedFeeds));
                 localStorage.setItem("deepFeeds", JSON.stringify(response.data?.deepFeeds || []));
+                localStorage.setItem("user", JSON.stringify(response.data?.user));
                 await refreshTheme();
                 navigate('/explore'); 
             }

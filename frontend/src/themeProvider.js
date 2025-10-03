@@ -28,41 +28,38 @@ const applyTheme = (theme) => {
 };
 
 export const ThemeProvider = ({ children }) => {
-	const [theme, setTheme] = useState(DEFAULT_THEME);
+	const [theme, setTheme] = useState(() => {
+		try {
+			const user = JSON.parse(localStorage.getItem("user"));
+			return user?.theme || DEFAULT_THEME;
+		} catch {
+			return DEFAULT_THEME;
+		}
+	});
 	
-	useEffect(() => {
-		fetchTheme();
-	}, []);
 	useEffect(() => {
 		applyTheme(theme);
 	}, [theme]);
 
-	const fetchTheme = async () => {
+	const refreshTheme = () => {
 		try {
-			const response = await axios.get('/api/get_theme');
-			let fetchedTheme = response.data?.theme;
-			try {
-				const parsedTheme = JSON.parse(fetchedTheme);
-				setTheme(parsedTheme);
-			} catch {
-				if (DEFAULT_THEMES.includes(fetchedTheme)) {
-					setTheme(fetchedTheme);
-				} else {
-					setTheme(DEFAULT_THEME);
-				}
+			const user = JSON.parse(localStorage.getItem("user"));
+			if (user?.theme) {
+				setTheme(user.theme);
+			} else {
+				setTheme(DEFAULT_THEME);
 			}
 		} catch {
 			setTheme(DEFAULT_THEME);
 		}
 	};
 
-	const refreshTheme = async () => {
-		await fetchTheme();
-	};
-
 	const updateTheme = async (newTheme) => {
 		try {
 			await axios.post('/api/change_theme', { theme: newTheme });
+			const user = JSON.parse(localStorage.getItem("user")) || {};
+			user.theme = newTheme;
+			localStorage.setItem("user", JSON.stringify(user));
 			setTheme(newTheme);
 		} catch (error) {
 			console.error('Error updating theme');

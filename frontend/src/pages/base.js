@@ -207,30 +207,15 @@ const BaseLayout = () => {
     };
 
     useEffect(() => {
-        const fetchViewerFeed = async () => {
-            if (isAuthenticated && viewer) {
-                try {
-                    const response = await axios.get(`/api/feed/${viewer?.feed_name}`);
-                    setFeed(response.data?.feedResult);
-                    const themeRes = await axios.get("/api/get_theme");
-                    setTheme(themeRes.data?.theme);
-                }
-                catch (error) {
-                    if (error.response?.status === 401) {
-                        navigate("/login");
-                    }
-                }
-            }
-        };
-        fetchViewerFeed();
-    }, [isAuthenticated, navigate, setTheme, viewer]);
-
-    useEffect(() => {
         if (!isAuthenticated || !viewer?.feed_id || !hasMoreFeeds) {
             return;
         }
         (async () => {
             try {
+                //Feed info of logged in user
+                const userFeed = JSON.parse(localStorage.getItem("user")) || [];
+                setFeed(userFeed);
+                setTheme(userFeed?.theme);
                 const storedFeeds = JSON.parse(localStorage.getItem("followedFeeds")) || [];
                 const newFeeds = storedFeeds.slice(feedsOffset, feedsOffset + 30);
                 if (newFeeds.length < 30) {
@@ -430,6 +415,7 @@ const BaseLayout = () => {
         try {
             const storedFeeds = JSON.parse(localStorage.getItem("followedFeeds")) || [];
             const storedDeepFeeds = JSON.parse(localStorage.getItem("deepFeeds")) || [];
+            const storedUser = JSON.parse(localStorage.getItem("user")) || [];
             const deepFeedsWithContents = storedDeepFeeds.map(df => {
                 const cachedContents = JSON.parse(
                     localStorage.getItem(`deepFeedContents_${df?.deep_feed_id}`)
@@ -443,6 +429,7 @@ const BaseLayout = () => {
                 a?.feed_name.localeCompare(b?.feed_name)
             ));
             setDeepFeeds(deepFeedsWithContents);
+            setFeed(storedUser);
         } catch (error) {
             setAsideErrorMessage(error.response.data?.message || "Error updating feeds");
             setFeeds([]);

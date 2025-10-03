@@ -18,7 +18,12 @@ async function cleanupTestData() {
                 transaction: t
             });
             await Posts.destroy({
-                where: { post_id: { [Op.like]: '111111111111%' } },
+                where: {
+                    [Op.or]: [
+                        { post_id: { [Op.like]: '111111111111%' } },
+                        { parent_id: { [Op.like]: '111111111111%' } }
+                    ]
+                },
                 transaction: t
             });
             await FeedChannels.destroy({

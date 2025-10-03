@@ -373,11 +373,11 @@ const ContentWidget = ({ canRemove = false, display = false, feed, isDraft = fal
 						)
 					) : (
 						<div className="post-button-group">
-							<button className="large-icon" onClick={handleLoginRedirect} title="Login to vote">
+							<button className="large-icon" onClick={handleLoginRedirect} style={{ padding: 0 }} title="Login to vote">
 								<FaArrowUp />
 							</button>
 							<p className="small-text" style={{ margin: 0 }}>{FormatNumber(upvotes - downvotes)}</p>
-							<button className="large-icon" onClick={handleLoginRedirect} title="Login to vote">
+							<button className="large-icon" onClick={handleLoginRedirect} style={{ padding: 0 }} title="Login to vote">
 								<FaArrowDown />
 							</button>
 						</div>
