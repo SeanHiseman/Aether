@@ -282,6 +282,7 @@
   display: flex;
   flex-direction: column;
   overflow-y: auto;
+  transform: translateZ(0); /*Needed for drag and drop rendering to work*/
 }
 .left-aside {
   height: 100%;

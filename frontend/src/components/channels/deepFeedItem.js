@@ -24,7 +24,7 @@ const DeepFeedItem = ({ deepFeed, onFeedAdded, showHeader }) => {
 	const addFeed = useCallback((feed) => {
 		try {
 			if (feed.type === 'UPDATE_CONTENTS') {
-				fetchContents();
+				fetchContents(true);
 				return;
 			}
 			setContents(prev => {
@@ -49,10 +49,10 @@ const DeepFeedItem = ({ deepFeed, onFeedAdded, showHeader }) => {
 		}
 	}, []);
 
-	const fetchContents = async () => {
-		if (contents.length > 0) return;
+	const fetchContents = async (forceRefresh = false) => {
+		if (contents.length > 0 && !forceRefresh) return;
 		const cached = localStorage.getItem(`deepFeedContents_${deepFeed?.deep_feed_id}`);
-		if (cached) {
+		if (cached && !forceRefresh) {
 			console.log("deepFeedItem using cached data:", cached);
 			setContents(JSON.parse(cached));
 			return;
@@ -116,22 +116,15 @@ const DeepFeedItem = ({ deepFeed, onFeedAdded, showHeader }) => {
 					{loading ? (
 						<p className="small-text faded-text">Loading...</p>
 					) : (
-						<SortableContext 
-							items={contents.filter(item => item?.feed).map(item => 
-								`df-${deepFeed?.deep_feed_id}-feed-${item?.feed?.feed_id}`
-							)} 
-							strategy={verticalListSortingStrategy}
-						>
-							{contents.map(item => (
-								<FeedItem 
-									key={item?.feed?.feed_id} 
-									id={item?.feed?.feed_id.toString()} 
-									feed={item?.feed} 
-									isChat={false} 
-									parentDeepFeedId={deepFeed?.deep_feed_id} 
-								/>
-							))}
-						</SortableContext>
+						contents.map(item => (
+							<FeedItem 
+								key={item?.feed?.feed_id} 
+								id={item?.feed?.feed_id.toString()} 
+								feed={item?.feed} 
+								isChat={false} 
+								parentDeepFeedId={deepFeed?.deep_feed_id} 
+							/>
+						))
 					)}
 				</div>
 			)}
