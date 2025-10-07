@@ -2,7 +2,8 @@ import { FaChevronDown, FaChevronUp } from 'react-icons/fa';
 import { useCallback, useState } from 'react';
 import { Link } from 'react-router-dom';
 import ChannelList from './channelList';
-import { useSortable } from '@dnd-kit/sortable';
+import { useDraggable, useDroppable } from '@dnd-kit/core';
+import { CSS } from '@dnd-kit/utilities';
 
 const FeedItem = ({ dragged, feed, isChat, parentDeepFeedId, unreadCount }) => {
     const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -13,7 +14,7 @@ const FeedItem = ({ dragged, feed, isChat, parentDeepFeedId, unreadCount }) => {
         ? `df-${parentDeepFeedId}-feed-${feed?.feed_id}` 
         : `sidebar-feed-${feed?.feed_id}`;
 
-    const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    const { attributes, listeners, setNodeRef: setDraggableRef, transform, isDragging } = useDraggable({
         id: uniqueId,  
         data: {
             parentDeepFeedId,
@@ -23,13 +24,20 @@ const FeedItem = ({ dragged, feed, isChat, parentDeepFeedId, unreadCount }) => {
         }
     });
 
-    const style = transform ? {
-        transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
-        transition,
-        zIndex: isDragging ? 1000 : 1,
+    const setNodeRef = (element) => {
+        setDraggableRef(element);
+        setDroppableRef(element);
+    };
+    const { setNodeRef: setDroppableRef, isOver } = useDroppable({ id: uniqueId, disabled: !!parentDeepFeedId });
+
+    const style = {
+        cursor: dragged ? (isDragging ? 'grabbing' : 'grab') : 'pointer',
+        opacity: isDragging ? 0.8 : 1,
         position: 'relative',
-        opacity: isDragging ? 0.5 : 1,
-    } : {};
+        transform: CSS.Translate.toString(transform),
+        transition: 'none',
+        zIndex: isDragging ? 1000 : 1,
+    };
 
     const dropdownToggle = () => {
         setDropdownOpen((prevOpen) => !prevOpen);
@@ -40,12 +48,14 @@ const FeedItem = ({ dragged, feed, isChat, parentDeepFeedId, unreadCount }) => {
     }, []);
 
     return (
-        <li ref={setNodeRef} style={style} className={`feed-list-item ${isDragging ? 'dragging' : ''}`} data-parent-deep-feed-id={parentDeepFeedId}>
+        <li ref={setNodeRef} style={style} className={`feed-list-item ${isDragging ? 'dragging' : ''} ${isOver && !parentDeepFeedId ? 'drop-target' : ''}`} data-parent-deep-feed-id={parentDeepFeedId}>
             {(() => {
                 const feedContent = (
-                    <div className="feed-list-link">
-                        <img className="small-feed-photo" src={feed?.feed_photo} onError={(e) => e.currentTarget.src = '/media/site_images/blank-profile.png'} />
-                        <p className={`small-text ${feed?.feed_name ? '' : 'faded-text'}`}>{feed?.feed_name || '(Feed not found)'}</p>
+                    <div className="feed-list-link" {...(dragged ? { ...attributes, ...listeners } : {})}>
+                        <img className="small-feed-photo" src={feed?.feed_photo} onError={(e) => e.currentTarget.src = '/media/site_images/blank-profile.png'} draggable={false} />
+                        <p className={`small-text ${feed?.feed_name ? '' : 'faded-text'}`}>
+                            {feed?.feed_name || '(Feed not found)'}
+                        </p>
                         {isChat && unreadCount > 0 && <div className="unread-count">{unreadCount}</div>}
                     </div>
                 );
@@ -54,16 +64,19 @@ const FeedItem = ({ dragged, feed, isChat, parentDeepFeedId, unreadCount }) => {
                         {dropdownOpen ? <FaChevronUp /> : <FaChevronDown />}
                     </div>
                 );
-                return dragged ? (
-                    <div className="feed-list-link-container" {...attributes} {...listeners}>
-                        {feedContent}
-                        {dropdownButton}
-                    </div>
-                ) : (
-                    <div className="feed-list-link-container" {...attributes} {...listeners}>
-                        <Link to={isChat ? `/connections/${feed?.feed_name}/Main` : `/${linkType}/${feed?.feed_name}`} title={`Go to ${feed?.feed_name}`}>
-                            {feedContent}
-                        </Link>
+                return (
+                    <div className="feed-list-link-container">
+                        {!dragged ? (
+                            <Link 
+                                to={isChat ? `/connections/${feed?.feed_name}/Main` : `/${linkType}/${feed?.feed_name}`} 
+                                title={`Go to ${feed?.feed_name}`} 
+                                draggable={false}
+                            >
+                                {feedContent}
+                            </Link>
+                        ) : (
+                            feedContent
+                        )}
                         {dropdownButton}
                     </div>
                 );

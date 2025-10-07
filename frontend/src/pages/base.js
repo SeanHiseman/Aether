@@ -1,6 +1,6 @@
 import axios from "axios";
 import Cropper from "react-easy-crop";
-import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, DragOverlay } from "@dnd-kit/core";
+import { DndContext, PointerSensor, pointerWithin, rectIntersection, useSensor, useSensors, DragOverlay } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { FaArrowRight, FaCog, FaFileUpload, FaMinus, FaPlus, FaPlusCircle, FaSignInAlt } from "react-icons/fa";
 import { MagnifyingGlassIcon } from "@radix-ui/react-icons";
@@ -64,6 +64,14 @@ const BaseLayout = () => {
 	const leftClasses = ["left-aside", desk.left ? "collapsed" : "", isMobile() && mobileOpen === "left" ? "open" : ""].join(" ");
 	const rightClasses = ["right-aside", desk.right ? "collapsed" : "", isMobile() && mobileOpen === "right" ? "open" : ""].join(" ");
 	const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
+
+    const customCollisionDetection = useCallback((args) => {
+        const pointerCollisions = pointerWithin(args);
+        if (pointerCollisions.length > 0) {
+            return pointerCollisions;
+        }
+        return rectIntersection(args);
+    }, []);
 
     const dragStart = event => {
         setDragged(true);
@@ -472,7 +480,7 @@ const BaseLayout = () => {
                         )}
                     </div>
                     {isAuthenticated ? (
-                        <><DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={dragStart} onDragEnd={dragEnd}>
+                        <><DndContext sensors={sensors} collisionDetection={customCollisionDetection} onDragStart={dragStart} onDragEnd={dragEnd}>
                             <nav id="personal-feeds">
                                 <ul>     
                                     <li className="channel-link">
@@ -487,11 +495,14 @@ const BaseLayout = () => {
                                 </ul>
                             </nav>
                             <div className="deep-feeds-container">
-                                <SortableContext items={feeds?.map(f => f?.feed_id.toString())} strategy={verticalListSortingStrategy}>
-                                    {deepFeeds?.map(deepFeed => (
-                                        <DeepFeedItem key={deepFeed?.deep_feed_id} deepFeed={deepFeed} handleDragStart={dragStart} handleDragEnd={dragEnd} onFeedAdded={registerFeedCallback} showHeader={true}/>
-                                    ))}
-                                </SortableContext>
+                                {deepFeeds?.map(deepFeed => (
+                                    <DeepFeedItem 
+                                        key={deepFeed?.deep_feed_id} 
+                                        deepFeed={deepFeed} 
+                                        onFeedAdded={registerFeedCallback} 
+                                        showHeader={true}
+                                    />
+                                ))}
                             </div>
                             <p className="tiny-text faded-text">{asideErrorMessage}</p>
                             <div id="create-feed-section">
@@ -595,40 +606,17 @@ const BaseLayout = () => {
                                 <p className="small-text faded-text">
                                     Drag and drop to combine feeds
                                 </p>
-                                <SortableContext items={feeds?.map(f => `sidebar-feed-${f?.feed_id}`)} strategy={verticalListSortingStrategy}>
-                                    <ul className="feeds-list">
-                                        {feeds?.map(feed => (
-                                            <FeedItem key={feed?.feed_id} dragged={dragged} feed={feed} isChat={false} />
-                                        ))}
-                                    </ul>
-                                </SortableContext>
+                                <ul className="feeds-list">
+                                    {feeds?.map(feed => (
+                                        <FeedItem 
+                                            key={feed?.feed_id} 
+                                            dragged={true}
+                                            feed={feed} 
+                                            isChat={false} 
+                                        />
+                                    ))}
+                                </ul>
                             </nav>
-                            <DragOverlay>
-                                {activeId && activeDragItem && dragType === "feed" && (
-                                    <div className="feed-list-item feed-drag-overlay">
-                                        <div className="feed-list-link-container">
-                                            <div className="feed-list-link">
-                                                <img className="small-feed-photo" src={`${activeDragItem?.followedFeed?.feed_photo}`} onError={(e) => e.currentTarget.src = '/media/site_images/blank-profile.png'} />
-                                                <p className="feed-list-text">
-                                                    {activeDragItem?.followedFeed?.feed_name}
-                                                </p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                )}
-                                {activeId && activeDragItem && dragType === "feedInDeepFeed" && (
-                                    <div className="feed-list-item feed-drag-overlay">
-                                        <div className="feed-list-link-container">
-                                            <div className="feed-list-link">
-                                                <img className="small-feed-photo" src={`${activeDragItem?.feed?.feed_photo}`} onError={(e) => e.currentTarget.src = '/media/site_images/blank-profile.png'} />
-                                                <p className="feed-list-text">
-                                                    {activeDragItem?.feed?.feed_name}
-                                                </p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                )}
-                            </DragOverlay>
                         </DndContext></>
                     ) : (
                         <div style={{ alignItems: "center", display: "flex", flexDirection: "column", justifyContent: "space-between", height: "80%" }}>

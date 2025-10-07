@@ -52,7 +52,6 @@ const DeepFeedItem = ({ deepFeed, onFeedAdded, showHeader }) => {
 		if (contents.length > 0 && !forceRefresh) return;
 		const cached = localStorage.getItem(`deepFeedContents_${deepFeed?.deep_feed_id}`);
 		if (cached && !forceRefresh) {
-			console.log("deepFeedItem using cached data:", cached);
 			setContents(JSON.parse(cached));
 			return;
 		}
@@ -60,7 +59,6 @@ const DeepFeedItem = ({ deepFeed, onFeedAdded, showHeader }) => {
 		try {
 			//If loading for the first time
 			const { data } = await axios.get(`/api/deep_feed_contents/${deepFeed?.deep_feed_id}`);
-			console.log("deepFeedItem data loaded from backend:", data);
 			setContents(data?.contents || []);
 			localStorage.setItem(
 				`deepFeedContents_${deepFeed?.deep_feed_id}`,

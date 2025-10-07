@@ -1,5 +1,5 @@
 import axios from 'axios';
-import AlgorithmSelector from '../algorithms/algorithmSelector'; //Project code
+import AlgorithmSelector from '../algorithms/algorithmSelector';
 import { useContext, useEffect, useRef, useState } from 'react';
 import { FaEdit, FaMinus, FaRegWindowClose, FaSave, FaTrash } from 'react-icons/fa';
 import { useNavigate, useOutletContext, useParams } from 'react-router-dom';
@@ -10,6 +10,7 @@ import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
 import { ValidateTextInput } from '../functions/validateTextInput';
 
 const DeepFeed = () => {
+    const { isAuthenticated } = useContext(AuthContext);
     const [contents, setContents] = useState([]);
     const { deep_feed_id } = useParams();
     const [deepFeed, setDeepFeed] = useState({ deep_feed_id: null, name: '', owner_id: null, parent_id: null });
@@ -18,40 +19,38 @@ const DeepFeed = () => {
     const [isNewNameValid, setIsNewNameValid] = useState(false);
     const [newName, setNewName] = useState('');
     const [refreshTrigger, setRefreshTrigger] = useState(false);
-    const { isAuthenticated } = useContext(AuthContext);
+    const loaderRef = useRef(null);
     const navigate = useNavigate();
     const { rightClasses, updateFeeds } = useOutletContext(); 
     const queryClient = useQueryClient();
 
     useEffect(() => {
         if (!deep_feed_id) return;
-        const cached = localStorage.getItem(`deepFeedContents_${deep_feed_id}`);
-        if (cached) {
-            console.log("deepFeed using cached data:", cached);
-            setContents(JSON.parse(cached));
-            return;
-        }
         const fetchContents = async () => {
             try {
                 const { data } = await axios.get(`/api/deep_feed_contents/${deep_feed_id}`);
-			    console.log("deepFeedItem data loaded from backend:", data);
                 const fetched = data?.contents || [];
                 setContents(fetched);
                 localStorage.setItem(`deepFeedContents_${deep_feed_id}`, JSON.stringify(fetched));
             } catch (error) {
-                setErrorMessage('Failed to load deep feed contents.');
-                setContents([]);
+                const cached = localStorage.getItem(`deepFeedContents_${deep_feed_id}`);
+                if (cached) {
+                    console.log("Using cached data due to error:", error);
+                    setContents(JSON.parse(cached));
+                } else {
+                    setErrorMessage('Failed to load deep feed contents.');
+                    setContents([]);
+                }
                 setTimeout(() => setErrorMessage(''), 5000);
             }
         };
+        
         fetchContents();
     }, [deep_feed_id]);
 
     const sortedContents = [...contents].sort((a, b) =>
         (a?.feed?.feed_name || '').localeCompare(b?.feed?.feed_name || '')
     );
-
-        const loaderRef = useRef(null);
 
     const changeDeepFeedName = async (event) => {
         event.preventDefault();
@@ -200,17 +199,26 @@ const DeepFeed = () => {
     };
 
     useEffect(() => {
-        const handleUpdate = (event) => {
+        const handleUpdate = async (event) => {
             if (event.detail.deepFeedId === deep_feed_id) {
-                const cached = localStorage.getItem(`deepFeedContents_${deep_feed_id}`);
-                if (cached) {
-                    setContents(JSON.parse(cached));
+                try {
+                    const { data } = await axios.get(`/api/deep_feed_contents/${deep_feed_id}`);
+                    const fetched = data?.contents || [];
+                    setContents(fetched);
+                    localStorage.setItem(`deepFeedContents_${deep_feed_id}`, JSON.stringify(fetched));
+                    queryClient.invalidateQueries(['deepFeedPosts', deep_feed_id]);
+                } catch (error) {
+                    console.error('Error fetching updated contents:', error);
+                    const cached = localStorage.getItem(`deepFeedContents_${deep_feed_id}`);
+                    if (cached) {
+                        setContents(JSON.parse(cached));
+                    }
                 }
             }
         };
         window.addEventListener('deepFeedUpdated', handleUpdate);
         return () => window.removeEventListener('deepFeedUpdated', handleUpdate);
-    }, [deep_feed_id]);
+    }, [deep_feed_id, queryClient]);
 
     useEffect(() => {
         const observer = new IntersectionObserver((entries) => {
