@@ -15,7 +15,7 @@ import { ThemeContext } from "../themeProvider";
 import { Tooltip } from "react-tooltip";
 import { UnreadContext } from "../components/connections/unreadContext";
 import { ValidateTextInput } from "../functions/validateTextInput";
-import "../css/algorithms.css"; //Project code
+import "../css/algorithms.css";
 import "../css/baseLayout.css";
 import "../css/basicStyles.css";
 import "../css/contentFeed.css";
@@ -153,6 +153,19 @@ const BaseLayout = () => {
             if (dragType === "feed" && isOverDeepFeed && targetDeepFeedId) {
                 const sourceFeed = activeDragItem;
                 if (sourceFeed) {
+                    //Check for duplicate
+                    const cachedContents = JSON.parse(
+                        localStorage.getItem(`deepFeedContents_${targetDeepFeedId}`)
+                    ) || [];
+                    const alreadyExists = cachedContents.some(
+                        item => item?.feed?.feed_id === sourceFeed?.feed_id
+                    );
+                    if (alreadyExists) {
+                        setAsideErrorMessage("Already in this combined feed");
+                        setTimeout(() => setAsideErrorMessage(""), 5000);
+                        resetDragState();
+                        return;
+                    }
                     const payload = {
                         deepFeedId: targetDeepFeedId,
                         feedId: sourceFeed?.feed_id
@@ -161,6 +174,9 @@ const BaseLayout = () => {
                     if (data.success && deepFeedCallbacks[targetDeepFeedId]) {
                         deepFeedCallbacks[targetDeepFeedId]({ type: "UPDATE_CONTENTS" });
                     }
+                    window.dispatchEvent(new CustomEvent('deepFeedUpdated', { 
+                        detail: { deepFeedId: targetDeepFeedId } 
+                    }));
                 }
             }
             //Case 2: Two regular feeds from sidebar combine to create new deep feed
@@ -422,7 +438,7 @@ const BaseLayout = () => {
                 ) || [];
                 return {
                     ...df,
-                    contents: cachedContents
+                    feeds: cachedContents, 
                 };
             });
             setFeeds(storedFeeds.sort((a, b) => 

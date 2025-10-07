@@ -1,7 +1,6 @@
 import axios from 'axios';
 import { useCallback, useEffect, useState } from 'react';
 import { useDroppable } from '@dnd-kit/core';
-import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { FaChevronDown, FaChevronUp } from 'react-icons/fa';
 import { Link } from 'react-router-dom';
 import FeedItem from './feedItem';
@@ -13,7 +12,7 @@ const DeepFeedItem = ({ deepFeed, onFeedAdded, showHeader }) => {
 	const [loading, setLoading] = useState(false);
 
 	const { setNodeRef, isOver } = useDroppable({
-		id: deepFeed?.deep_feed_id.toString(), 
+		id: `df-${deepFeed?.deep_feed_id}`,
 		data: { 
 			type: 'deepFeed',
 			deepFeedId: deepFeed?.deep_feed_id,
@@ -47,7 +46,7 @@ const DeepFeedItem = ({ deepFeed, onFeedAdded, showHeader }) => {
 			setErrorMessage(error.response.data?.message || 'Failed to add feed to deep feed.');
 			setTimeout(() => setErrorMessage(''), 5000);
 		}
-	}, []);
+	}, [deepFeed?.deep_feed_id]);
 
 	const fetchContents = async (forceRefresh = false) => {
 		if (contents.length > 0 && !forceRefresh) return;
@@ -89,14 +88,24 @@ const DeepFeedItem = ({ deepFeed, onFeedAdded, showHeader }) => {
 		return () => {
 			if (onFeedAdded) onFeedAdded(deepFeed?.deep_feed_id, null);
 		};
-	}, [deepFeed?.deep_feed_id, onFeedAdded]);
+	}, [deepFeed?.deep_feed_id, onFeedAdded, addFeed]);
+
+	useEffect(() => {
+		const handleUpdate = (event) => {
+			if (event.detail.deepFeedId === deepFeed?.deep_feed_id) {
+				fetchContents(true);
+			}
+		};
+		window.addEventListener('deepFeedUpdated', handleUpdate);
+		return () => window.removeEventListener('deepFeedUpdated', handleUpdate);
+	}, [deepFeed?.deep_feed_id]);
 
 	const handleExpand = useCallback((e) => {
 		e.stopPropagation();
 		if (!showHeader) return;
 		if (!isExpanded) fetchContents();
 		setIsExpanded(prev => !prev);
-	}, [isExpanded, showHeader]);
+	}, [isExpanded, showHeader, fetchContents]);
 
 	return (
 		<div ref={setNodeRef} className={`deep-feed-container ${isOver ? 'drop-target-active' : ''}`} data-deep-feed-id={deepFeed?.deep_feed_id}>

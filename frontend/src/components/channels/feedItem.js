@@ -41,26 +41,33 @@ const FeedItem = ({ dragged, feed, isChat, parentDeepFeedId, unreadCount }) => {
 
     return (
         <li ref={setNodeRef} style={style} className={`feed-list-item ${isDragging ? 'dragging' : ''}`} data-parent-deep-feed-id={parentDeepFeedId}>
-            <div className="feed-list-link-container" {...attributes} {...listeners}>
-                <div className="feed-list-link" >
-                    {dragged ? (
-                        <div>
-                            <img className="small-feed-photo" src={`${feed?.feed_photo}`} onError={(e) => e.currentTarget.src = '/media/site_images/blank-profile.png'} />
-                        </div>
-                    ) : (
+            {(() => {
+                const feedContent = (
+                    <div className="feed-list-link">
+                        <img className="small-feed-photo" src={feed?.feed_photo} onError={(e) => e.currentTarget.src = '/media/site_images/blank-profile.png'} />
+                        <p className={`small-text ${feed?.feed_name ? '' : 'faded-text'}`}>{feed?.feed_name || '(Feed not found)'}</p>
+                        {isChat && unreadCount > 0 && <div className="unread-count">{unreadCount}</div>}
+                    </div>
+                );
+                const dropdownButton = (
+                    <div className="channel-dropdown" onClick={(e) => { e.stopPropagation(); e.preventDefault(); dropdownToggle(); }}>
+                        {dropdownOpen ? <FaChevronUp /> : <FaChevronDown />}
+                    </div>
+                );
+                return dragged ? (
+                    <div className="feed-list-link-container" {...attributes} {...listeners}>
+                        {feedContent}
+                        {dropdownButton}
+                    </div>
+                ) : (
+                    <div className="feed-list-link-container" {...attributes} {...listeners}>
                         <Link to={isChat ? `/connections/${feed?.feed_name}/Main` : `/${linkType}/${feed?.feed_name}`} title={`Go to ${feed?.feed_name}`}>
-                            <img className="small-feed-photo" src={`${feed?.feed_photo}`} onError={(e) => e.currentTarget.src = '/media/site_images/blank-profile.png'} />
+                            {feedContent}
                         </Link>
-                    )}
-                    <p className={`small-text ${feed?.feed_name ? "" : "faded-text"}`}>{feed?.feed_name || '(Feed not found)'}</p>
-                    {isChat && unreadCount > 0 && (
-                        <div className="unread-count">{unreadCount}</div>
-                    )}
-                </div>
-                <div className="channel-dropdown" onClick={dropdownToggle}>
-                    {dropdownOpen ? <FaChevronUp /> : <FaChevronDown />}
-                </div>
-            </div>
+                        {dropdownButton}
+                    </div>
+                );
+            })()}
             {dropdownOpen && (
                 <ChannelList
                     channels={feedChannels}

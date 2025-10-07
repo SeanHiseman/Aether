@@ -207,6 +207,14 @@
   display: flex;
   flex-direction: column;
 }
+.feed-list-item.dragging {
+    background-color: var(--dark);
+}
+.feed-list-item {    
+    transition: var(--transition-regular);
+    user-select: none;
+    width: 100%;
+}
 .feed-list-link {
   align-items: center;
   display: flex;

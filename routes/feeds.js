@@ -942,11 +942,11 @@ router.put('/update_feed_photo/:feedId', authenticateCheck, checkProfileStorageL
     feedProfileUpload(req, res, async function (error) {
         if (error instanceof multer.MulterError) {
             if (error.code === 'LIMIT_FILE_SIZE') {
-                return res.status(413).json({ error: 'File cannot be more than 5MB' });
+                return res.status(413).json({ error: 'File cannot be more than 100MB' });
             }
-            return res.status(400).json({ success: false, message: 'Upload error' });
+            return res.status(400).json({ success: false, message: 'File too large' });
         } else if (error) {
-            return res.status(400).json({ success: false });
+            return res.status(400).json({ success: false, message: 'Upload error' });
         }
         try {
             const feed_id = req.params.feedId; 

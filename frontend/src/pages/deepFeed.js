@@ -175,7 +175,20 @@ const DeepFeed = () => {
                     `deepFeedContents_${deep_feed_id}`,
                     JSON.stringify(updated)
                 );
-                updateFeeds();
+                const storedDeepFeeds = JSON.parse(localStorage.getItem("deepFeeds") || "[]");
+                const updatedDeepFeeds = storedDeepFeeds.map(df => {
+                    if (df.deep_feed_id === deep_feed_id) {
+                        return {
+                            ...df,
+                            feeds: updated
+                        };
+                    }
+                    return df;
+                });
+                localStorage.setItem("deepFeeds", JSON.stringify(updatedDeepFeeds));
+                window.dispatchEvent(new CustomEvent('deepFeedUpdated', { 
+                    detail: { deepFeedId: deep_feed_id } 
+                }));
             } else {
                 setErrorMessage('Failed to remove feed');
                 setTimeout(() => setErrorMessage(''), 5000);
@@ -185,6 +198,19 @@ const DeepFeed = () => {
             setTimeout(() => setErrorMessage(''), 5000);
         }
     };
+
+    useEffect(() => {
+        const handleUpdate = (event) => {
+            if (event.detail.deepFeedId === deep_feed_id) {
+                const cached = localStorage.getItem(`deepFeedContents_${deep_feed_id}`);
+                if (cached) {
+                    setContents(JSON.parse(cached));
+                }
+            }
+        };
+        window.addEventListener('deepFeedUpdated', handleUpdate);
+        return () => window.removeEventListener('deepFeedUpdated', handleUpdate);
+    }, [deep_feed_id]);
 
     useEffect(() => {
         const observer = new IntersectionObserver((entries) => {
@@ -305,21 +331,21 @@ const DeepFeed = () => {
                                     </>
                                 )}
                             </div>
-                            {isAuthenticated && <AlgorithmSelector locationId={deepFeed?.deep_feed_id} refreshPosts={refreshPosts} />} {/*Project code*/}
+                            {isAuthenticated && <AlgorithmSelector locationId={deepFeed?.deep_feed_id} refreshPosts={refreshPosts} />}
                         </div>
                     )}
                     <div className="small-text faded-text">{errorMessage}</div>
                     {sortedContents.length > 0 && (
-                        <div className="deep-feed-aside-list">
+                        <ul className="feed-list">
                             {sortedContents.map(item => (
-                                <div key={item?.feed?.feed_id} className="deep-feed-aside-item" style={{ display: 'flex', alignItems: 'center' }}>
+                                <li key={item?.feed?.feed_id} style={{ display: 'flex', alignItems: 'center' }}>
                                     <button className="small-icon" onClick={() => removeFeed(item?.feed?.feed_id)} title="Remove from combined feed">
                                         <FaMinus />
                                     </button>
                                     <FeedItem id={item?.feed?.feed_id.toString()} feed={item?.feed} isChat={false} parentDeepFeedId={deep_feed_id} />
-                                </div>
+                                </li>
                             ))}
-                        </div>
+                        </ul>
                     )}
                 </div>
             </aside>
