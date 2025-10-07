@@ -332,9 +332,14 @@ const FeedHome = () => {
                 });     
             }
             const postId = response.data?.result?.post_id;
-            const navigationUrl = `/${urlPrefix}/${feed_name}/${channel_name}/${postId}`;
-            navigate(navigationUrl);
+            const parentId = response.data?.result?.parent_id; //If post is a reply
+            const navId = parentId ? parentId : postId; //Navigate to parent if reply
+            const navigationUrl = `/${urlPrefix}/${feed_name}/${channel_name}/${navId}`;
             setShowPostForm(false);
+            setReplyingToPost(null);  
+            setPostToEdit(null);     
+            setIsEdit(false); 
+            navigate(navigationUrl);
         } catch (error) {
             if (error.response && error.response?.status === 413) {
                 setPostErrorMessage(error.response.data?.message + (!user?.has_membership ? ". Get membership for more" : ""));

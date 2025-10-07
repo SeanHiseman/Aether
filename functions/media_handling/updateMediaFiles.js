@@ -45,7 +45,6 @@ export default async function UpdateMediaFiles(oldContentUrl, newContentUrl) {
                 .map((_, el) => old$(el).attr("src"))
                 .get()
         );
-        console.log("oldSources:", oldSources);
         const newSources = new Set(
             new$("img[src], video source[src]")
                 .map((_, el) => new$(el).attr("src"))

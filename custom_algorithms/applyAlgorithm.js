@@ -32,6 +32,7 @@ function stripExcludedAttributes(posts) {
 }
 
 async function ApplyAlgorithm({ locationId, excludedPostIds, feedId, followedFeedIds, includeOptions, isGroup = true, isMain, limit, offset, viewerId, keyword = '' }) {
+    console.log("locationId:", locationId);
     try {
         //Followed feeds are a received as a string
         const followedFeedIdsSafe = (typeof followedFeedIds === "string")
@@ -186,7 +187,7 @@ async function ApplyAlgorithm({ locationId, excludedPostIds, feedId, followedFee
                 visited.add(deepFeedId);
                 const contents = await DeepFeedContent.findAll({
                     where: { deep_feed_id: deepFeedId },
-                    attributes: ['feed_id', 'nested_deep_feed_id']
+                    attributes: ['feed_id']
                 });
                 const feedIds = [];
                 for (const content of contents) {

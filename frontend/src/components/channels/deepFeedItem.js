@@ -109,7 +109,7 @@ const DeepFeedItem = ({ deepFeed, onFeedAdded, showHeader }) => {
 		<div ref={setNodeRef} className={`deep-feed-container ${isOver ? 'drop-target-active' : ''}`} data-deep-feed-id={deepFeed?.deep_feed_id}>
 			{showHeader && (
 				<div className="channel-link deep-feed-header">
-					<Link to={`/d/${deepFeed?.deep_feed_id}`}>
+					<Link to={`/d/${deepFeed?.deep_feed_id}`} title={`Go to ${deepFeed?.deep_feed_name}`}>
 						<p style={{ margin: '0' }}>{deepFeed?.name}</p>
 					</Link>
 					<div onClick={handleExpand}>

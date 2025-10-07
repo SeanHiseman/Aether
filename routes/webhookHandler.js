@@ -75,7 +75,7 @@ async function handleSuccessfulRenewal(invoice) {
     console.log('Handling successful renewal/payment for invoice:', invoice.id);
     const subscriptionId = invoice.subscription || invoice.parent?.subscription_details?.subscription;
     if (!subscriptionId) {
-        console.log('No subscription ID found in invoice');
+        console.log('No subscription ID found in invoice:', invoice);
         return;
     }
     const periodEndUnix = invoice.lines?.data?.[0]?.period?.end;

@@ -122,7 +122,6 @@ const reorder = (list, startIndex, endIndex) => {
 
 //Post is either the post being edited or replied to
 const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPostSubmit, post = null, postErrorMessage, setPostErrorMessage, setShowForm }) => {
-    console.log("post:", post);
     const [addContentDropdownOpen, setAddContentDropdownOpen] = useState(false);
     const blocksRef = useRef([]) 
     const [blocks, setBlocks] = useState([])
@@ -743,12 +742,10 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
             const finalHTML = compileFinalHTML(blocks)
             const formData = new FormData()
             const postId = post?.post_id;
-            formData.append('post_id', postId);
             formData.append('content', finalHTML);
             formData.append('feed_id', feed?.feed_id);
-            if (!post || draftId) { 
-                formData.append('draft_id', draftId);
-            } 
+            if (!post || draftId) formData.append('draft_id', draftId);
+            if (!isReply) formData.append('post_id', postId); //Post object is that of parent post
             if (!isReply) formData.append('title', title);
             if (channelId) formData.append('channel_id', channelId);
             if (isReply && post) formData.append('parent_id', post?.post_id);

@@ -351,7 +351,6 @@ const BaseLayout = () => {
             const response = await axios.post("/api/create_feed", form, {
                 headers: { "Content-Type": "multipart/form-data" }
             });
-            console.log("create feed response:", response);
             if (response.data?.success) {
                 const created = response.data?.feed;
                 const newFeed = {
@@ -375,7 +374,6 @@ const BaseLayout = () => {
             }
         }
         catch (error) {
-            console.log("create feed error:", error);
             if (error.response?.status === 413) {
                 setAsideErrorMessage(
                     (error.response.data?.message || "File too large") +
