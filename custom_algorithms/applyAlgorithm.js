@@ -32,7 +32,6 @@ function stripExcludedAttributes(posts) {
 }
 
 async function ApplyAlgorithm({ locationId, excludedPostIds, feedId, followedFeedIds, includeOptions, isGroup = true, isMain, limit, offset, viewerId, keyword = '' }) {
-    console.log("locationId:", locationId);
     try {
         //Followed feeds are a received as a string
         const followedFeedIdsSafe = (typeof followedFeedIds === "string")

@@ -80,6 +80,8 @@ const App = () => {
 										<Route path=":channel_name" element={<FeedHome />}>
 										<Route path="drafts" element={<FeedHome />} />
 										<Route path=":post_id" element={<ContentWidget />} />
+										<Route path=":post_id/reply" element={<FeedHome />} />
+										<Route path=":post_id/edit" element={<FeedHome />} />
 									</Route>
 								</Route>
 								<Route path="saved">
