@@ -57,12 +57,12 @@ const ExplorePage = () => {
 		try {
 			//Get followed feeds from localStorage
 			const cached = localStorage.getItem("followedFeeds");
-			const excludedFeedIds = cached ? JSON.parse(cached) : [];
+			const excludedFeedIds = cached ? JSON.parse(cached).map(f => f.feed_id) : [];
 			const response = await axios.get("/api/explore_feeds", {
 				params: { 
 					limit: FETCH_LIMIT, 
 					offset: page * FETCH_LIMIT, 
-					exclude: [...shownFeedIds, ...excludedFeedIds].join(',') // exclude shown + followed
+					exclude: [...shownFeedIds, ...excludedFeedIds].join(',')
 				},
 			});
 			const newFeeds = response?.data?.feeds || [];

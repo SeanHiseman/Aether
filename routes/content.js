@@ -88,7 +88,7 @@ router.get('/channel_posts', async (req, res) => {
 					post_id: postId
 				}
 			});
-			if (!singlePost) return res.status(404).json({ success: false });
+			if (!singlePost) return res.status(404).json({ success: false, message: 'Post not found' });
 			const existing = viewerId
 				? await SavedPosts.findOne({
 						where: { post_id: postId, saver_id: viewerId }
