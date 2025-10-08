@@ -398,19 +398,32 @@ router.get('/deep_feed_posts', authenticateCheck, async (req, res) => {
     try {
         const { deepFeedId } = req.query;
         //Convert to integers from url strings
-        const followedFeedIds = req.query.followedFeedIds;
+		let followedFeedIds = req.query.followedFeedIds || [];
+		if (!Array.isArray(followedFeedIds)) {
+			followedFeedIds = [followedFeedIds];
+		}
+		followedFeedIds = followedFeedIds.map(id => parseInt(id, 10)).filter(Boolean);
         const limit = parseInt(req.query.limit, 10) || 10;
         const offset = parseInt(req.query.offset, 10) || 0;
         const viewerId = req.session.viewer_id;
-        let deepFeed = null;
-        let lookupDeepFeedId = deepFeedId; //To not include deep_ prefix
-        if (deepFeedId !== 'following' && deepFeedId.startsWith('deep_')) {
-            lookupDeepFeedId = deepFeedId.replace('deep_', '');
-        }
-        deepFeed = await DeepFeeds.findByPk(lookupDeepFeedId);
-        if (!deepFeed) {
-            return res.status(404).json({ error: 'Deep feed not found' });
-        }
+		let deepFeed = null;
+		if (deepFeedId === 'following') {
+			deepFeed = {
+				deep_feed_id: 'following',
+				name: 'Following',
+				owner_id: 'system',
+				parent_id: null,
+			};
+		} else {
+			let lookupDeepFeedId = deepFeedId;
+			if (deepFeedId.startsWith('deep_')) {
+				lookupDeepFeedId = deepFeedId.replace('deep_', '');
+			}
+			deepFeed = await DeepFeeds.findByPk(lookupDeepFeedId);
+			if (!deepFeed) {
+				return res.status(404).json({ error: 'Deep feed not found' });
+			}
+		}
         const includeOptions = [{
             as: 'note',
             model: PostNotes,

@@ -115,6 +115,7 @@ const DeepFeed = () => {
         try {
             let followedFeedIds;
             let normalisedDeepFeedId = deep_feed_id;
+            console.log("deep_feed_id:", deep_feed_id);
             if (deep_feed_id !== 'following' && !deep_feed_id.startsWith('deep_')) {
                 normalisedDeepFeedId = `deep_${deep_feed_id}`;
             }
@@ -127,7 +128,7 @@ const DeepFeed = () => {
             const response = await axios.get('/api/deep_feed_posts', {
                 params: {
                     deepFeedId: normalisedDeepFeedId,
-                    followedFeedIds: followedFeedIds.join(','),
+                    followedFeedIds: followedFeedIds,
                     limit: 10,
                     offset: pageParam
                 }
@@ -146,6 +147,7 @@ const DeepFeed = () => {
             }
             return response.data?.posts;
         } catch (error) {
+            console.log("error fetching posts:", error);
             setErrorMessage('Error fetching posts');
             setTimeout(() => { setErrorMessage(''); }, 5000);
             return [];

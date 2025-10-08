@@ -64,10 +64,17 @@ router.get('/search', async (req, res) => {
         }, {
             model: FeedChannels,
             as: 'parentChannel',
-            attributes: ['channel_id', 'channel_name']
-        }, {
-            model: Feeds,
-            as: 'poster',
+            attributes: ['channel_id', 'channel_name'],
+            include: [{
+                model: Feeds,
+                required: true,
+                where: {
+                    type: {
+                        [Op.ne]: 'private'
+                    }
+                }
+            }],
+            required: true
         }, {
             model: PostVotes,
             as: 'votes',

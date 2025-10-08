@@ -3,8 +3,6 @@ import { useContext, useState } from 'react';
 import { FaEye, FaEyeSlash } from 'react-icons/fa';
 import { Link, useNavigate } from 'react-router-dom';
 import { ThemeContext } from '../../themeProvider';
-import { ValidateEmail } from '../../functions/validateEmail';
-import { ValidateTextInput } from '../../functions/validateTextInput';
 import '../../css/authentication.css';
 import '../../css/basicStyles.css';
 
