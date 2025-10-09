@@ -11,7 +11,6 @@ import PropTypes from 'prop-types';
 import useTimeAgo from '../../functions/useTimeAgo';
 
 const ContentWidget = ({ canRemove = false, display = false, feed, isDraft = false, onPostRemoved, onSaveToggle = () => {}, parent, post, readOnly = false }) => {
-	console.log("post:", post);
 	const authContext = useContext(AuthContext);
 	const { isAuthenticated = false, viewer = null, user = null } = authContext || {};
 	const [canRemoveState, setCanRemoveState] = useState(canRemove);
@@ -326,7 +325,7 @@ const ContentWidget = ({ canRemove = false, display = false, feed, isDraft = fal
 						: isOverflowing
 							? (showFullContent
 								? { height: 'auto', overflow: 'visible' }
-								: { height: '80vh', overflow: 'hidden' })
+								: { height: '70vh', overflow: 'hidden' })
 							: { height: 'auto', overflow: 'visible' })
 				}}
 			>

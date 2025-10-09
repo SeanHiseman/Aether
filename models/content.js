@@ -41,6 +41,7 @@ const Posts = sequelize.define('posts', {
     language: { type: STRING(20), defaultValue: 'en' },
     tokens: { type: DataTypes.TEXT('long'), allowNull: true }, 
     embeddings: { type: DataTypes.TEXT('long'), allowNull: true }, 
+    is_private: { type: BOOLEAN, defaultValue: false },
 }, {
     tableName: 'posts',
     timestamps: false,

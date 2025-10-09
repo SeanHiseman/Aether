@@ -123,23 +123,17 @@ async function ApplyAlgorithm({ locationId, excludedPostIds, feedId, followedFee
         const attrOption = fetchFullAttributes ? undefined : { exclude: excludedAttrs };
 
         if (locationId === "search" && keyword) { //Search results
-            const publicFeeds = await Feeds.findAll({
-                where: { type: { [Op.ne]: 'private' } },
-                attributes: ['feed_id'],
-                limit: limit,
-                offset: offset
-            });
             posts = await Posts.findAll({
                 include: includeOptions,
                 attributes: attrOption,
                 where: {
-                    feed_id: { [Op.in]: publicFeeds.map(f => f.feed_id) },
                     parent_id: null,
                     post_id: { [Op.notIn]: excludedIds },
                     [Op.or]: [
                         { title: { [Op.like]: `%${keyword}%` } },
                         { text_body: { [Op.like]: `%${keyword}%` } }
-                    ]
+                    ],
+                    is_private: false
                 },
                 limit: limit,
                 offset: offset,
@@ -161,17 +155,11 @@ async function ApplyAlgorithm({ locationId, excludedPostIds, feedId, followedFee
                 order: [['created_at', 'DESC']]
             });
         } else if (locationId === "explore") { //Explore page
-            const publicFeeds = await Feeds.findAll({
-                where: { type: { [Op.ne]: 'private' } },
-                attributes: ['feed_id']
-            });
-            //Exclude followed feeds
-            const allowedFeeds = publicFeeds.map(f => f.feed_id).filter(id => !followedFeedIdsSafe.includes(id));
             posts = await Posts.findAll({
                 include: includeOptions,
                 attributes: attrOption,
                 where: {
-                    feed_id: { [Op.in]: allowedFeeds },
+                    feed_id: { [Op.notIn]: followedFeedIdsSafe }, //Excluded followed feeds
                     parent_id: null,
                     post_id: { [Op.notIn]: excludedIds },
                     ...(viewerId ? { poster_id: { [Op.not]: viewerId } } : {})

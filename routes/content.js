@@ -235,7 +235,7 @@ if (process.env.NODE_ENV === 'production') {
 //Unified route for creating and editing posts and drafts
 router.post("/create_post", authenticateCheck, checkStorageLimit, postUpload.array("files"), async (req, res) => {
 	try {
-		let { channel_id, content, draft_id, feed_id, parent_id, post_id, poster_id, title } = req.body;
+		let { channel_id, content, draft_id, feed_id, is_private, parent_id, post_id, poster_id, title } = req.body;
         if (draft_id === 'null' || draft_id === 'undefined') { //If draft_id is received as the string 'null'
             draft_id = null;        
 		}
@@ -327,6 +327,7 @@ router.post("/create_post", authenticateCheck, checkStorageLimit, postUpload.arr
 					channel_id,
 					content: contentUrl,
 					feed_id,
+					is_private,
 					parent_id,
 					poster_id,
 					title,

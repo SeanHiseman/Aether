@@ -290,8 +290,8 @@ const FeedInfoView = () => {
                         </div>
                     )}
                     <div className="option-toggle">
-                        <button className={feed?.type === 'public' ? 'active-mode' : 'passive-mode'} onClick={(e) => { e.preventDefault(); togglePrivate(); }} disabled={feed?.type === 'public'} title="Visible to everyone">Public</button>
-                        <button className={feed?.type === 'private' ? 'active-mode' : 'passive-mode'} onClick={(e) => { e.preventDefault(); togglePrivate(); }} disabled={feed?.type === 'private'} title={feed?.is_group ? "Visible only to followers" : "Visible only to connections"}>Private</button>
+                        <button className={feed?.type === 'public' ? 'active-mode' : 'passive-mode'} onClick={(e) => { e.preventDefault(); togglePrivate(); }} disabled={feed?.type === 'public'} title={`Visible to everyone${feed?.type === 'public' ? ' (current)' : ''}`}>Public</button>
+                        <button className={feed?.type === 'private' ? 'active-mode' : 'passive-mode'} onClick={(e) => { e.preventDefault(); togglePrivate(); }} disabled={feed?.type === 'private'} title={`${feed?.is_group ? "Visible only to followers" : "Visible only to connections"}${feed?.type === 'private' ? ' (current)' : ''}`}>Private</button>
                     </div>
                     {feed?.is_group && (
                         <div>

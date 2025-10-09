@@ -19,11 +19,12 @@ FeedChannels.hasMany(FeedChannelMessages, { foreignKey: 'channel_id' });
 FeedChannelMessages.belongsTo(Feeds, { foreignKey: 'sender_id' });
 Feeds.hasMany(FeedChannelMessages, { foreignKey: 'sender_id' });
 
-Feeds.belongsToMany(Feeds, { through: Followers, foreignKey: 'feed_id', otherKey: 'follower_id', as: 'feedFollowers' });
-Feeds.belongsToMany(Feeds, { through: Followers, foreignKey: 'follower_id', otherKey: 'feed_id', as: 'followingFeeds' });
-Followers.belongsTo(Feeds, { foreignKey: 'feed_id', as: 'followedFeed' });
-Followers.belongsTo(Feeds, { foreignKey: 'follower_id', as: 'followerFeed' });
-Feeds.hasMany(Followers, { foreignKey: 'feed_id', as: 'followersList', onDelete: 'CASCADE' });
+Feeds.belongsToMany(Feeds, { through: Followers, foreignKey: 'feed_id', otherKey: 'follower_id', as: 'feedFollowers', onDelete: 'CASCADE', onUpdate: 'CASCADE' });
+Feeds.belongsToMany(Feeds, { through: Followers, foreignKey: 'follower_id', otherKey: 'feed_id', as: 'followingFeeds', onDelete: 'CASCADE', onUpdate: 'CASCADE' });
+Followers.belongsTo(Feeds, { foreignKey: 'feed_id', as: 'followedFeed', onDelete: 'CASCADE', onUpdate: 'CASCADE' });
+Followers.belongsTo(Feeds, { foreignKey: 'follower_id', as: 'followerFeed', onDelete: 'CASCADE', onUpdate: 'CASCADE' });
+Feeds.hasMany(Followers, { foreignKey: 'feed_id', as: 'followersList', onDelete: 'CASCADE', onUpdate: 'CASCADE' });
+Feeds.hasMany(Followers, { foreignKey: 'follower_id', as: 'followingList', onDelete: 'CASCADE', onUpdate: 'CASCADE' });
 
 Feeds.hasMany(Posts, { as: 'poster', foreignKey: 'poster_id', onDelete: 'CASCADE' });
 Posts.belongsTo(Feeds, { as: 'poster', foreignKey: 'poster_id', targetKey: 'feed_id' });

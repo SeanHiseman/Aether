@@ -166,3 +166,8 @@ ALTER TABLE viewed_posts ADD CONSTRAINT viewed_posts_ibfk_1
 FOREIGN KEY (post_id) REFERENCES posts(post_id) ON DELETE CASCADE;
 
 alter table deep_feed_content drop column nested_deep_feed_id
+
+ALTER TABLE posts
+ADD COLUMN is_private BOOLEAN NOT NULL DEFAULT FALSE;
+
+CREATE INDEX idx_feed_id ON posts(feed_id);

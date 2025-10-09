@@ -18,18 +18,15 @@ const FeedDeletion = () => {
             const response = feed?.is_group ? 
                 await axios.delete('/api/delete_feed', { data: { feedId: feed?.feed_id } }) : 
                 await axios.delete('/api/delete_account', { data: { userId: feed?.feed_owner } });
-            console.log("delete feed response:", response);
             if (response.data?.success) {
                 const stored = JSON.parse(localStorage.getItem("followedFeeds")) || [];
                 const updated = stored.filter(f => f.feed_id !== feed?.feed_id);
                 localStorage.setItem("followedFeeds", JSON.stringify(updated));
                 const route = feed?.is_group ? '/explore' : '/join';
-                console.log("delete feed route:", route);
                 updateFeeds();
                 setTimeout(() => navigate(route), 0); //ensure navigation runs after state updates
             }
         } catch (error) {
-            console.log("error deleting feed:", error);
             setErrorMessage('Error deleting feed');
             setTimeout(() => { setErrorMessage(''); }, 5000);
         }

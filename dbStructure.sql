@@ -256,14 +256,16 @@ CREATE TABLE `posts` (
 	`language` VARCHAR(20) DEFAULT 'en',
   'tokens' LONGTEXT NULL,
   'embeddings' LONGTEXT NULL,
+  `is_private` BOOLEAN DEFAULT FALSE,
 	PRIMARY KEY (`post_id`),
+	KEY `idx_feed_id` (`feed_id`),
 	KEY `idx_channel_id` (`channel_id`),
-	KEY `idx_media_flags` (`has_images`, `has_videos`, `has_interactive`, 'has_external_posts', 'has_embedded_websites'),
+	KEY `idx_media_flags` (`has_images`, `has_videos`, `has_interactive`, `has_external_posts`, `has_embedded_websites`),
 	KEY `idx_sentiment` (`sentiment_score`),
 	KEY `idx_composite_quality` (`created_at`, `sentiment_score`),
-	KEY `idx_video_content` (`has_videos`, `video_lengths`),
+	KEY `idx_video_content` (`has_videos`, `video_length`),
 	KEY `idx_text_analysis` (`word_count`, `text_length`),
-  CONSTRAINT `posts_ibfk_1` FOREIGN KEY (`feed_id`) REFERENCES `feeds` (`feed_id`) ON DELETE CASCADE
+	CONSTRAINT `posts_ibfk_1` FOREIGN KEY (`feed_id`) REFERENCES `feeds` (`feed_id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 DROP TABLE IF EXISTS `app_builds`;

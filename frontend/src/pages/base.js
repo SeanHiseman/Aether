@@ -459,6 +459,12 @@ const BaseLayout = () => {
         }
     }, []);
 
+    useEffect(() => {
+        if (!isAuthenticated) {
+            localStorage.clear();
+        }
+    }, [isAuthenticated]);
+
     return (
         <>
             {mobileOpen && (

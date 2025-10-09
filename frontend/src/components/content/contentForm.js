@@ -744,6 +744,7 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
             const postId = post?.post_id;
             formData.append('content', finalHTML);
             formData.append('feed_id', feed?.feed_id);
+            formData.append('is_private', feed?.type === 'public' ? false : true); //Feeds can also have type 'hidden', meaning such posts should be private too
             if (!post || draftId) formData.append('draft_id', draftId);
             if (!isReply) formData.append('post_id', postId); //Post object is that of parent post
             if (!isReply) formData.append('title', title);

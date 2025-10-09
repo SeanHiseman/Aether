@@ -928,16 +928,26 @@ router.post('/toggle_moderator', authenticateCheck, async (req, res) => {
 });
 
 router.post('/toggle_private', authenticateCheck, async (req, res) => {
-    try {
-        const { feedId } = req.body;
-        const feed = await Feeds.findOne({ where: { feed_id: feedId } });
-        const newType = feed.type === 'public' ? 'private' : 'public';
-        await feed.update({ type: newType });
-        res.status(200).json({ success: true, type: newType });
-    } catch (error) {
-        console.log("/toggle_private error:", error);
-        res.status(500).json({ success: false, message: 'Failed to set mode' });
-    }
+	let transaction;
+	try {
+		transaction = await sequelize.transaction();
+		const { feedId } = req.body;
+		const feed = await Feeds.findOne({ where: { feed_id: feedId }, transaction });
+		if (!feed) {
+			await transaction.rollback();
+			return res.status(404).json({ success: false, message: 'Feed not found' });
+		}
+		const newType = feed.type === 'public' ? 'private' : 'public';
+		const isPrivate = newType === 'private';
+		await feed.update({ type: newType }, { transaction });
+		await Posts.update({ is_private: isPrivate }, { where: { feed_id: feedId }, transaction });
+		await transaction.commit();
+		res.status(200).json({ success: true, type: newType });
+	} catch (error) {
+		if (transaction) await transaction.rollback();
+		console.log("/toggle_private error:", error);
+		res.status(500).json({ success: false, message: 'Failed to toggle feed privacy' });
+	}
 });
 
 router.post('/transfer_ownership', authenticateCheck, async (req, res) => {
