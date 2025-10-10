@@ -97,6 +97,13 @@ const ContentWidget = ({ canRemove = false, display = false, feed, isDraft = fal
 				setDownvotes(response.data?.downvotes);
 				setUpvoteLimit(response.data?.reachedUpvoteLimit);
 				setDownvoteLimit(response.data?.reachedDownvoteLimit);
+				if (voteType === 'upvote') {
+					console.log("incrementing stored upvotes");
+					const storedUpvotes = JSON.parse(localStorage.getItem('recentUpvotes') || '[]');
+					const updatedUpvotes = [{ post_id: postId }, ...storedUpvotes];
+					const trimmedUpvotes = updatedUpvotes.slice(0, 100);
+					localStorage.setItem('recentUpvotes', JSON.stringify(trimmedUpvotes));
+				}
 			} else {
 				if (response.data?.message === 'upvote limit') {
 					setUpvoteLimit(true);

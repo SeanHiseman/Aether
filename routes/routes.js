@@ -12,6 +12,7 @@ router.get('/search', async (req, res) => {
     try {
         const searcherId = req.session.viewer_id;
         const keyword = req.query.keyword ? req.query.keyword.toLowerCase() : '';
+        const recentUpvotes = req.query.recentUpvotes;
         const limit = parseInt(req.query.limit, 10) || 48;
         const feedOffset = parseInt(req.query.feedOffset, 10) || 0;
         const postOffset = parseInt(req.query.postOffset, 10) || 0;
@@ -88,6 +89,7 @@ router.get('/search', async (req, res) => {
             isMain: 'false',
             limit: limit,
             offset: postOffset,
+            recentUpvotes,
             viewerId: searcherId,
             keyword: keyword
         });

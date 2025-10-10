@@ -11,7 +11,7 @@ const PostChannel = ({ channelId, channelName, feed, isDraft, isEditMode, isGrou
 	const loaderRef = useRef(null);
 	const queryClient = useQueryClient();
 	const { channel_name, post_id } = useParams();
-	const { isAuthenticated, user, viewer } = useContext(AuthContext);
+	const { user, viewer } = useContext(AuthContext);
 	const isMain = channel_name === 'Main';
 	const navigate = useNavigate();
 	const PAGE_SIZE = 20;
@@ -42,7 +42,8 @@ const PostChannel = ({ channelId, channelName, feed, isDraft, isEditMode, isGrou
 
 	const getPosts = async ({ pageParam = 0 }) => {
 		try {
-			const response = await axios.get('/api/channel_posts', { params: { channelId, feedId, isMain, isGroup: feed?.is_group, isSingle: false, limit: 10, offset: pageParam } });
+			const recentUpvotes = JSON.parse(localStorage.getItem("recentUpvotes") || "[]");
+			const response = await axios.get('/api/channel_posts', { params: { channelId, feedId, isMain, isGroup: feed?.is_group, isSingle: false, limit: 48, offset: pageParam, recentUpvotes } });
 			return response.data;
 		} catch (error) {
 			if (error.response?.status === 404) {

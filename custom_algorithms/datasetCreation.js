@@ -91,7 +91,7 @@ function generatePost(topic) {
 async function generateData() {
 	try {
 		const NUM_FEEDS = 200;
-		const POSTS_PER_CHANNEL = 30;
+		const POSTS_PER_CHANNEL = 100;
 		const feedsData = [];
 		const channelsData = [];
 		const postsData = [];
@@ -145,48 +145,38 @@ async function generateData() {
 			for (let j = 0; j < POSTS_PER_CHANNEL; j++) {
 				const topic = faker.helpers.arrayElement(topics);
 				const channelId = topicChannels[topic];
+				let htmlContent;
 				if (tweetRows.length > 0 && Math.random() < 0.5) {
-					//Use a tweet-based post
 					const tweet = tweetRows[Math.floor(Math.random() * tweetRows.length)];
-					const tweetContent = tweet[3];				
-					const post = {
-						post_id: generateSpecialId(),
-						feed_id: feedId,
-						channel_id: channelId,
-						title: null,
-						content: `<html><head></head><body><div class="content-block text-block" data-blockid="${v4()}"><p>${tweetContent}</p></div></body></html>`,
-						replies: faker.number.int({ min: 0, max: 100 }),
-						views: faker.number.int({ min: 10, max: 10000 }),
-						upvotes: faker.number.int({ min: 0, max: 500 }),
-						downvotes: faker.number.int({ min: 0, max: 100 }),
-						created_at: faker.date.recent({ days: 30 }),
-						poster_id: feedId
-					};
-					const analysisResults = await contentAnalyser.analyseContent(post.content, post.title);
-					postsData.push({ ...post, ...analysisResults });
+					const tweetContent = tweet[3];
+					htmlContent = `<html><head></head><body><div class="content-block text-block" data-blockid="${v4()}"><p>${tweetContent}</p></div></body></html>`;
 				} else {
-					//Use a generated post
 					const postTitle = faker.helpers.arrayElement([
 						`${topic} Insights: ${faker.word.adjective()} ${faker.word.noun()}`,
 						`Breaking ${topic} News: ${faker.company.catchPhrase()}`,
 						`Top ${faker.number.int({ min: 5, max: 15 })} ${topic} Tips`
 					]);
-					const post = {
-						post_id: generateSpecialId(),
-						feed_id: feedId,
-						channel_id: channelId,
-						title: faker.datatype.boolean() ? postTitle : null,
-						content: `<html><head></head><body><div class="content-block text-block" data-blockid="${v4()}"><p>${generatePost(topic)}</p></div></body></html>`,
-						replies: faker.number.int({ min: 0, max: 100 }),
-						views: faker.number.int({ min: 10, max: 10000 }),
-						upvotes: faker.number.int({ min: 0, max: 500 }),
-						downvotes: faker.number.int({ min: 0, max: 100 }),
-						created_at: faker.date.recent({ days: 30 }),
-						poster_id: feedId
-					};
-					const analysisResults = await contentAnalyser.analyseContent(post.content, post.title);
-					postsData.push({ ...post, ...analysisResults });
+					htmlContent = `<html><head></head><body><div class="content-block text-block" data-blockid="${v4()}"><p>${generatePost(topic)}</p></div></body></html>`;
 				}
+				const postId = generateSpecialId();
+				const filePath = `/media/posts/post-${v4()}.html`;
+				fs.writeFileSync(`.${filePath}`, htmlContent, 'utf8');
+				const analysisResults = await contentAnalyser.analyseContent(htmlContent, null);
+				const post = {
+					post_id: postId,
+					feed_id: feedId,
+					channel_id: channelId,
+					title: null,
+					content: filePath, // store only path in DB
+					replies: faker.number.int({ min: 0, max: 100 }),
+					views: faker.number.int({ min: 10, max: 10000 }),
+					upvotes: faker.number.int({ min: 0, max: 500 }),
+					downvotes: faker.number.int({ min: 0, max: 100 }),
+					created_at: faker.date.recent({ days: 30 }),
+					poster_id: feedId,
+					...analysisResults
+				};
+				postsData.push(post);
 			}
 		}
 		await Users.bulkCreate(usersData);

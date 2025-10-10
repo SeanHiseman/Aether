@@ -31,7 +31,7 @@ function stripExcludedAttributes(posts) {
     });
 }
 
-async function ApplyAlgorithm({ locationId, excludedPostIds, feedId, followedFeedIds, includeOptions, isGroup = true, isMain, limit, offset, viewerId, keyword = '' }) {
+async function ApplyAlgorithm({ locationId, excludedPostIds, feedId, followedFeedIds, includeOptions, isGroup = true, isMain, limit, offset, recentUpvotes, viewerId, keyword = '' }) {
     try {
         //Followed feeds are a received as a string
         const followedFeedIdsSafe = (typeof followedFeedIds === "string")
@@ -83,31 +83,32 @@ async function ApplyAlgorithm({ locationId, excludedPostIds, feedId, followedFee
         //Decide whether to fetch with all attributes or exclude them up front
         const fetchFullAttributes = !useChronological && !useStandardScore;
 
-        //Merge already returned (excluded) posts with recentUpvoted
-        let varietyPostIds = [...excludedIds];
-        if (viewerId) {
-            const recentUpvoted = await PostVotes.findAll({
+        //Collect recent upvoted posts for variety comparison
+        let recentUpvoteIds = [];
+        let recentUpvoteEmbeddings = []
+        if (viewerId && !recentUpvotes) {
+            const foundRecentUpvotes = await PostVotes.findAll({
                 attributes: ['post_id'],
                 where: { 
                     voter_id: viewerId,
                     upvotes: { [Op.gt]: 0 },
                     downvotes: { [Op.lte]: 0 }
                 },
-                order: [['updated_at', 'DESC']], //Most recent upvotes
+                order: [['updated_at', 'DESC']],
                 limit: 100
             });
-            varietyPostIds.push(...recentUpvoted.map(row => row.post_id));
+            recentUpvoteIds = foundRecentUpvotes.map(row => row.post_id);
+        } else if (recentUpvotes) {
+            recentUpvoteIds = recentUpvotes.map(row => row.post_id);
         }
 
-        const uniqueVarietyIds = [...new Set(varietyPostIds)];
-        let varietyEmbeddings = [];
-        if (uniqueVarietyIds.length > 0) {
-            const varietyPosts = await Posts.findAll({
+        if (recentUpvoteIds.length > 0) {
+            const recentUpvotePosts = await Posts.findAll({
                 attributes: ['embeddings'],
-                where: { post_id: { [Op.in]: uniqueVarietyIds } },
+                where: { post_id: { [Op.in]: recentUpvoteIds } },
                 raw: true
             });
-            varietyEmbeddings = varietyPosts
+            recentUpvoteEmbeddings = recentUpvotePosts
                 .map(p => {
                     try {
                         return p.embeddings ? JSON.parse(p.embeddings) : null;
@@ -337,8 +338,8 @@ async function ApplyAlgorithm({ locationId, excludedPostIds, feedId, followedFee
                 postEmbedding = null;
             }
             let maxSimilarity = 0;
-            if (postEmbedding && Array.isArray(postEmbedding) && varietyEmbeddings.length > 0) {
-                for (const ve of varietyEmbeddings) {
+            if (postEmbedding && Array.isArray(postEmbedding) && recentUpvoteEmbeddings.length > 0) {
+                for (const ve of recentUpvoteEmbeddings) {
                     if (Array.isArray(ve) && ve.length === postEmbedding.length) {
                         const similarity = CosineSimilarity(postEmbedding, ve);
                         if (similarity > maxSimilarity) maxSimilarity = similarity;

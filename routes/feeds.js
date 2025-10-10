@@ -397,6 +397,7 @@ router.get('/deep_feed_contents/:deepFeedId', authenticateCheck, async (req, res
 router.get('/deep_feed_posts', authenticateCheck, async (req, res) => {
     try {
         const { deepFeedId } = req.query;
+        const recentUpvotes = req.query.recentUpvotes;
         //Convert to integers from url strings
 		let followedFeedIds = req.query.followedFeedIds || [];
 		if (!Array.isArray(followedFeedIds)) {
@@ -454,6 +455,7 @@ router.get('/deep_feed_posts', authenticateCheck, async (req, res) => {
             isMain: false,
             limit,
             offset,
+            recentUpvotes,
             viewerId,
         });
         return res.status(200).json({ deepFeed, posts: deepFeedPosts, success: true });

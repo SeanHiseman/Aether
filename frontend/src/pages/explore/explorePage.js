@@ -29,13 +29,15 @@ const ExplorePage = () => {
 	const fetchPosts = useCallback(async (page = 0) => {
 		try {
 			const followedFeeds = JSON.parse(localStorage.getItem("followedFeeds") || "[]");
+			const recentUpvotes = JSON.parse(localStorage.getItem("recentUpvotes") || "[]");
 			const followedFeedIds = followedFeeds.map(f => f.feed_id);
 			const response = await axios.get("/api/explore_posts", {
 				params: {
 					limit: FETCH_LIMIT,
 					offset: page * FETCH_LIMIT,
 					exclude: shownPostIds.join(','),
-					followedFeedIds: followedFeedIds.join(',')
+					followedFeedIds: followedFeedIds.join(','),
+					recentUpvotes
 				}
 			});
 			const newPosts = response?.data?.posts || [];

@@ -289,6 +289,16 @@ router.post('/login', async (req, res) => {
                 where: { owner_id: feed.feed_id, parent_id: null },
                 order: [['name', 'ASC']]
             });
+            const recentUpvotes = await PostVotes.findAll({
+                attributes: ['post_id'],
+                where: { 
+                    voter_id: feed.feed_id,
+                    upvotes: { [Op.gt]: 0 },
+                    downvotes: { [Op.lte]: 0 }
+                },
+                order: [['updated_at', 'DESC']], //Most recent upvotes
+                limit: 100
+            });
             res.status(200).json({ 
                 success: true, 
                 user: {
@@ -303,7 +313,8 @@ router.post('/login', async (req, res) => {
                     feed_photo: feed.feed_photo,
                 },
                 followedFeeds: normalizedFollowedFeeds, 
-                deepFeeds 
+                deepFeeds ,
+                recentUpvotes
             });
         }
         else {

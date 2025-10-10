@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { useContext, useState } from 'react';
+import { useContext, useEffect, useState } from 'react';
 import { FaEye, FaEyeSlash } from 'react-icons/fa';
 import { Link, useNavigate } from 'react-router-dom';
 import { ThemeContext } from '../../themeProvider';
@@ -23,6 +23,7 @@ const Login = () => {
                 localStorage.setItem("followedFeeds", JSON.stringify(response.data?.followedFeeds));
                 localStorage.setItem("deepFeeds", JSON.stringify(response.data?.deepFeeds || []));
                 localStorage.setItem("user", JSON.stringify(response.data?.user));
+                localStorage.setItem("recentUpvotes", JSON.stringify(response.data?.recentUpvotes));
                 await refreshTheme();
                 navigate('/explore'); 
             }
@@ -36,6 +37,16 @@ const Login = () => {
         setShowPassword(!showPassword);
     };
 
+    //Helps with autofill
+    useEffect(() => {
+        const usernameInput = document.querySelector('input[name="username"]');
+        const passwordInput = document.querySelector('input[name="password"]');
+        setTimeout(() => {
+            if (usernameInput?.value && !usernameOrEmail) setUsernameOrEmail(usernameInput.value);
+            if (passwordInput?.value && !password) setPassword(passwordInput.value);
+        }, 300);
+    }, []);
+
     document.title = "Login";
     return (
         <div className="authentication-container">
@@ -48,10 +59,11 @@ const Login = () => {
                     </Link>
                 </div>
                 <p className="error-message">{errorMessage}</p>
-                <form method="post" onSubmit={handleLogin}>
+                <form method="post" autoComplete="on" onSubmit={handleLogin}>
                     <input
                         className="authentication-input-box"
                         name="username"
+                        autoComplete="username"
                         placeholder="Username or email"
                         required
                         value={usernameOrEmail}
@@ -70,6 +82,7 @@ const Login = () => {
                             type={showPassword ? "text" : "password"}
                             className="authentication-input-box"
                             name="password"
+                            autoComplete="current-password"
                             placeholder="Password"
                             required
                             value={password}

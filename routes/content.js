@@ -55,8 +55,9 @@ const checkStorageLimit = async (req, res, next) => {
 router.get('/channel_posts', async (req, res) => {
 	try {
 		const { channelId, excludedPostIds, feedId, isGroup, isMain, isSingle, postId } = req.query;
-        const limit = parseInt(req.query.limit, 10) || 10;
+        const limit = parseInt(req.query.limit, 10) || 48;
         const offset = parseInt(req.query.offset, 10) || 0;
+		const recentUpvotes = req.query.recentUpvotes;
 		const viewerId = req.session.viewer_id;
 		const includeOptions = [{
 			as: 'note',
@@ -106,6 +107,7 @@ router.get('/channel_posts', async (req, res) => {
             isMain, 
             limit, 
             offset, 
+			recentUpvotes,
             viewerId,
         });
 		if (!results.length) return res.status(200).json([]);
@@ -369,8 +371,9 @@ router.get("/explore_posts", async (req, res) => {
         const { exclude = [] } = req.query;
         const excludeArray = Array.isArray(exclude) ? exclude : exclude.split(',').filter(Boolean);
 		const followedFeedIds = req.query.followedFeedIds;
+		const recentUpvotes = req.query.recentUpvotes;
         const viewerId = req?.session?.viewer_id || null;
-        const limit = parseInt(req.query.limit, 10) || 10;
+        const limit = parseInt(req.query.limit, 10) || 48;
         const offset = parseInt(req.query.offset, 10) || 0;
         const includeOptions = [{
             model: Feeds,
@@ -408,6 +411,7 @@ router.get("/explore_posts", async (req, res) => {
             isMain: 'false',
             limit: limit,
             offset: offset,
+			recentUpvotes,
             viewerId,
         });
         res.status(200).json({ posts: posts, hasMore: posts.length === limit });
@@ -523,7 +527,7 @@ router.post('/increment_views', authenticateCheck, async (req, res) => {
 		});
 		if (existingView) {
 			existingView.views += 1;
-			await existingView.save({ transaction});
+			await existingView.save({ transaction });
 		} else {
 			await ViewedPosts.create({
 				post_id: postId,
