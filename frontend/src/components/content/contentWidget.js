@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { FaArrowDown, FaArrowUp, FaBookmark, FaChevronDown, FaChevronUp, FaComments, FaCommentSlash, FaEdit, FaEllipsisV, FaCompress, FaExpand, FaRegBookmark,  FaReply, FaTrash, FaTree, FaListUl } from 'react-icons/fa';
+import { FaArrowDown, FaArrowUp, FaBookmark, FaChevronDown, FaChevronUp, FaComments, FaCommentSlash, FaEdit, FaCompress, FaExpand, FaRegBookmark,  FaReply, FaTrash, FaTree, FaListUl } from 'react-icons/fa';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { AuthContext } from '../authContext';
@@ -98,7 +98,6 @@ const ContentWidget = ({ canRemove = false, display = false, feed, isDraft = fal
 				setUpvoteLimit(response.data?.reachedUpvoteLimit);
 				setDownvoteLimit(response.data?.reachedDownvoteLimit);
 				if (voteType === 'upvote') {
-					console.log("incrementing stored upvotes");
 					const storedUpvotes = JSON.parse(localStorage.getItem('recentUpvotes') || '[]');
 					const updatedUpvotes = [{ post_id: postId }, ...storedUpvotes];
 					const trimmedUpvotes = updatedUpvotes.slice(0, 100);
@@ -115,7 +114,7 @@ const ContentWidget = ({ canRemove = false, display = false, feed, isDraft = fal
 				await incrementViews(postId);
 			}
 		} catch (error) {
-			setPostErrorMessage('Error voting');
+			setPostErrorMessage(error.response.data?.message || 'Error voting');
 			setTimeout(() => setPostErrorMessage(""), 3000);
 		}
 	};
@@ -166,6 +165,7 @@ const ContentWidget = ({ canRemove = false, display = false, feed, isDraft = fal
 	};
 
 	const replyRemoved = (replyId) => {
+		if (!isAuthenticated) return;
 		setReplies((prevReplies) => prevReplies.filter((r) => r?.post_id !== replyId));
 	};
   

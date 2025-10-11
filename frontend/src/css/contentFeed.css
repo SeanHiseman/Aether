@@ -114,21 +114,6 @@
     grid-area: replies;
     justify-self: center;
 }
-.custom-theme-container {
-    align-items: center;
-    display: flex;
-    flex-direction: column;
-    width: 100%;
-}
-.custom-theme-input {
-    height: var(--xl-margin);
-    width: var(--xl-margin);
-}
-.custom-theme-preview {
-    display: flex;
-    justify-content: space-around;
-    width: 100%;
-}
 .display-container {
     border-top-left-radius: calc(clamp(4px, 1vw, 10px) + var(--small-margin));
     border-top-right-radius: calc(clamp(4px, 1vw, 10px) + var(--small-margin));

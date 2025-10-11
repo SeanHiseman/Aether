@@ -12,7 +12,7 @@ const Users = sequelize.define('users', {
     has_membership: { type: BOOLEAN, defaultValue: false }, 
     stripe_subscription_id: { type: STRING(255), allowNull: true }, 
     subscription_expires_at: { type: DataTypes.DATE(3), allowNull: true },
-    theme: { type: STRING(1000), allowNull: true, defaultValue: '{"border":"#323437","dark":"#232527","darkest":"#0f0f0f","light":"#737484",lightest:"#dddddd"}' },
+    theme: { type: STRING(1000), allowNull: true, defaultValue: '{"border":"#3e3f41","dark":"#232527","darkest":"#0f0f0f","light":"#737484",lightest:"#dddddd"}' },
     usage_count: { type: INTEGER, allowNull: false, defaultValue: 0 }, 
     storage_count: { type: FLOAT, allowNull: false, defaultValue: 0 }, 
     email_verified: { type: DataTypes.BOOLEAN, defaultValue: false},

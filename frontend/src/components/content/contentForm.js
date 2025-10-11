@@ -1,6 +1,7 @@
 import axios from 'axios'
+import { Crown } from 'lucide-react';
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd'
-import { useNavigate, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 import PropTypes from 'prop-types'
 import { useCallback, useContext, useEffect, useRef, useState } from 'react'
 import { FaAlignCenter, FaArrowCircleUp, FaArrowRight, FaCircleNotch, FaCommentAlt, FaCopy, FaCube, FaCrop, FaEdit, FaEllipsisV, FaEye, FaFont, FaLink, FaPhotoVideo, FaRegLightbulb, FaReply, FaSave, FaShareAlt, FaTerminal, FaTimes, FaToolbox, FaTrash, FaWindowClose } from 'react-icons/fa'
@@ -410,6 +411,7 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
     }, [])
 
     const deleteHandler = useCallback(async () => {
+		if (!isAuthenticated) return;
         if (isDraft && !draftId) return
         if (!isDraft && !post) return
         if (!window.confirm(`Are you sure you want to delete this ${isDraft ? 'Draft' : 'Post'}?`)) return
@@ -477,6 +479,7 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
     }, [isEdit])
 
     const generateCodeBlock = useCallback(async block => {
+		if (!isAuthenticated) return;
         if (limitReached) {
             setPostErrorMessage(hasMembership ? "Usage limit reached" : "Usage limit reached. Get membership for more.");
             setTimeout(() => { setPostErrorMessage(''); }, 10000);
@@ -531,6 +534,7 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
     }, [hasMembership, limitReached, user, updateBlock, setPostErrorMessage]);
 
     const generateFullContent = useCallback(async () => {
+		if (!isAuthenticated) return;
         if (limitReached) {
             setPostErrorMessage(hasMembership ? "Usage limit reached" : "Usage limit reached. Get membership for more.");
             setTimeout(() => { setPostErrorMessage(''); }, 10000);
@@ -560,6 +564,7 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
     }, [blocks, compileFinalHTML, globalAiPrompt, hasMembership, post])
 
     const handleAddBlock = useCallback(type => {
+		if (!isAuthenticated) return;
         setBlockLimitError('')
         if (blocks.length >= BLOCK_LIMIT) {
             setBlockLimitError(hasMembership ? `Block limit (${BLOCK_LIMIT}) reached.` : `Free block limit (${BLOCK_LIMIT}) reached. Get membership to add more:`)
@@ -575,6 +580,7 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
     }, [blocks.length, BLOCK_LIMIT, hasMembership])
 
     const handleFilesChange = useCallback(event => {
+		if (!isAuthenticated) return;
         setBlockLimitError('')
         if (blocks.length >= BLOCK_LIMIT) {
             setBlockLimitError(hasMembership ? `Block limit (${BLOCK_LIMIT}) reached.` : `Free block limit (${BLOCK_LIMIT}) reached. Get membership to add more:`)
@@ -691,6 +697,7 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
 
     //Separate from submitForm since saving does not close the form
     const saveDraft = useCallback(async e => {
+		if (!isAuthenticated) return;
         e.preventDefault()
         submittedRef.current = true //Redundant backup
         if (isContentEmpty(blocks)) {
@@ -731,6 +738,7 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
     }, [blocks, channelId, compileFinalHTML, draftId, feed.feed_id, isContentEmpty, isReply, post, title, viewer?.feed_id])
 
     const submitForm = useCallback(async e => {
+		if (!isAuthenticated) return;
         e.preventDefault()
         submittedRef.current = true //Prevents cleanup from deleting builds
         if (isContentEmpty(blocks)) {
@@ -855,14 +863,15 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
                         </div>
                     </div>
                 </div>
-                <p className="error-message">
-                    {blockLimitError || postErrorMessage}
-                    {blockLimitError && (
-                        <button className="small-icon" onClick={() => navigate('/settings/membership')} type="button" style={{ marginLeft: '5px' }} title="Get Membership">
-                            <FaArrowCircleUp />
-                        </button>
-                    )}
-                </p>
+                <div style={{ alignItems: 'center', display: 'flex', justifyContent: 'space-between' }}>
+                    <Link className="small-icon" to={`/settings/${user?.username}/membership`} type="button" style={{ marginLeft: '5px' }} title="View Membership">
+                        <Crown />
+                        <p className="icon-text">{blockLimitError ? blockLimitError : "Get membership for longer posts"}</p>
+                    </Link>
+                    <p className="error-message">
+                        {postErrorMessage}
+                    </p>
+                </div>
                 {!isReply && (
                     <input 
                         className="title-input" 

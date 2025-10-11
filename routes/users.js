@@ -51,15 +51,13 @@ router.post('/change_email', authenticateCheck, async (req, res) => {
         });
         try {
             await sendEmailChangeVerification(email, user.username, verificationToken, user.email);
-            res.status(200).json({ 
-                success: true, 
-                message: 'Verification email sent to your new email address' 
-            });
+            res.status(200).json({ success: true, message: 'Verification email sent to your new email address' });
         } catch (emailError) {
             res.status(500).json({ success: false, error: 'Failed to send verification email' });
         }
     } catch (error) {
-        res.status(500).json({ success: false, error: 'Failed to update email' });
+        console.log("error changing email:", error);
+        res.status(500).json({ success: false, message: 'Error changing email' });
     }
 });
 
@@ -73,7 +71,8 @@ router.post('/change_theme', authenticateCheck, async (req, res) => {
         await Users.update({ theme: theme }, { where: { user_id: userId } });
         res.status(200).json({ success: true });
     } catch (error) {
-        res.status(500).json({ success: false });
+        console.log("error changing theme:", error);
+        res.status(500).json({ success: false, message: 'Error changing theme' });
     }
 });
 
@@ -108,6 +107,7 @@ router.post('/change_username', authenticateCheck, async (req, res) => {
         await user.save();
         res.status(200).json({ success: true });
     } catch (error) {
+        console.log("error changing username:", error);
         res.status(500).json({ success: false, error: 'Failed to update username' });
     }
 });

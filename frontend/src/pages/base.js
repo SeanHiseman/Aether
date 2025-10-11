@@ -1,7 +1,7 @@
 import axios from "axios";
 import Cropper from "react-easy-crop";
-import { DndContext, PointerSensor, pointerWithin, rectIntersection, useSensor, useSensors, DragOverlay } from "@dnd-kit/core";
-import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
+import { Crown } from 'lucide-react';
+import { DndContext, PointerSensor, pointerWithin, rectIntersection, useSensor, useSensors } from "@dnd-kit/core";
 import { FaArrowRight, FaCog, FaFileUpload, FaMinus, FaPlus, FaPlusCircle, FaSignInAlt } from "react-icons/fa";
 import { MagnifyingGlassIcon } from "@radix-ui/react-icons";
 import { useCallback, useContext, useEffect, useRef, useState } from "react";
@@ -38,6 +38,7 @@ const BaseLayout = () => {
 	const [dragType, setDragType] = useState(null);
 	const [feed, setFeed] = useState([]);
 	const feedContainerRef = useRef(null);
+    const [feedLimitReached, setFeedLimitReached] = useState(false);
 	const [feedName, setFeedName] = useState("");
 	const [feedPhotoFile, setFeedPhotoFile] = useState(null);
 	const [feedType, setFeedType] = useState("public");
@@ -108,28 +109,6 @@ const BaseLayout = () => {
 
     const dragEnd = async event => {
         const { active, over } = event;
-        // If dropped outside any droppable area, remove from deep feed
-        if (!over) {
-            if (dragType === "feedInDeepFeed" && activeDragItem) {
-                try {
-                    const payload = {
-                        deepFeedId: activeDragItem?.parentDeepFeedId,
-                        feedId: activeDragItem?.feed?.feed_id
-                    };
-                    const { data } = await axios.post("/api/remove_from_deep_feed", payload);
-                    if (data.success && deepFeedCallbacks[activeDragItem?.parentDeepFeedId]) {
-                        deepFeedCallbacks[activeDragItem.parentDeepFeedId]({ type: "UPDATE_CONTENTS" });
-                    }
-                }
-                catch (error) {
-                    console.log("Error removing from combined feed:", error);
-                    setAsideErrorMessage("Error removing from combined feed");
-                    setTimeout(() => setAsideErrorMessage(""), 5000);
-                }
-            }
-            resetDragState();
-            return;
-        }
         const activeId = active.id;
         const overId = over.id;
         const overData = over.data.current;
@@ -189,28 +168,33 @@ const BaseLayout = () => {
             }
             //Case 2: Two regular feeds from sidebar combine to create new deep feed
             else if (dragType === "feed" && !isOverDeepFeed && targetFeedId) {
-                const sourceFeed = activeDragItem;
-                const targetFeed = feeds.find(f => f?.feed_id.toString() === targetFeedId);
-                if (sourceFeed && targetFeed && sourceFeed?.feed_id !== targetFeed?.feed_id) {
-                    const deepFeedName = prompt(`Name for feed combing ${sourceFeed?.feed_name} and ${targetFeed?.feed_name}:`);
-                    if (deepFeedName) {
-                        const payload = {
-                            viewerId: viewer?.feed_id,
-                            deepFeedName,
-                            feedsToInclude: [sourceFeed?.feed_id, targetFeed?.feed_id]
-                        };
-                        const { data } = await axios.post("/api/create_deep_feed", payload);
-                        if (data.success && data?.deepFeed) {
-                            const newDeepFeed = {
-                                ...data.deepFeed,
-                                feeds: data.feedsToInclude.map(id => ({ 
-                                    feed: feeds.find(f => f?.feed_id === id) 
-                                }))
+                const storedDeepFeeds = JSON.parse(localStorage.getItem("deepFeeds") || "[]");
+                if (storedDeepFeeds.length === (hasMembership ? 500 : 5)) { //Members get more combined feeds
+                    setFeedLimitReached(true);
+                    setTimeout(() => setFeedLimitReached(false), 20000); //Disappear after 20 seconds
+                } else {
+                    const sourceFeed = activeDragItem;
+                    const targetFeed = feeds.find(f => f?.feed_id.toString() === targetFeedId);
+                    if (sourceFeed && targetFeed && sourceFeed?.feed_id !== targetFeed?.feed_id) {
+                        const deepFeedName = prompt(`Name for feed combing ${sourceFeed?.feed_name} and ${targetFeed?.feed_name}:`);
+                        if (deepFeedName) {
+                            const payload = {
+                                viewerId: viewer?.feed_id,
+                                deepFeedName,
+                                feedsToInclude: [sourceFeed?.feed_id, targetFeed?.feed_id]
                             };
-                            const storedDeepFeeds = JSON.parse(localStorage.getItem("deepFeeds") || "[]");
-                            storedDeepFeeds.push(newDeepFeed);
-                            localStorage.setItem("deepFeeds", JSON.stringify(storedDeepFeeds));
-                            updateFeeds();
+                            const { data } = await axios.post("/api/create_deep_feed", payload);
+                            if (data.success && data?.deepFeed) {
+                                const newDeepFeed = {
+                                    ...data.deepFeed,
+                                    feeds: data.feedsToInclude.map(id => ({ 
+                                        feed: feeds.find(f => f?.feed_id === id) 
+                                    }))
+                                };
+                                storedDeepFeeds.push(newDeepFeed);
+                                localStorage.setItem("deepFeeds", JSON.stringify(storedDeepFeeds));
+                                updateFeeds();
+                            }
                         }
                     }
                 }
@@ -508,6 +492,12 @@ const BaseLayout = () => {
                                     />
                                 ))}
                             </div>
+                            {feedLimitReached && (
+                                <Link className="small-icon" to={`/settings/${user?.username}/membership`} type="button" style={{ marginLeft: '5px' }} title="View Membership">
+                                    <Crown />
+                                    <p className="icon-text">Get membership for more</p>
+                                </Link>
+                            )}
                             <p className="tiny-text faded-text">{asideErrorMessage}</p>
                             <div id="create-feed-section">
                                 <button className="small-icon" onClick={toggleForm} style={{alignSelf: "flex-start", marginLeft: "calc(5% + 10px)"}}>

@@ -35,10 +35,9 @@ const DeepFeed = () => {
             } catch (error) {
                 const cached = localStorage.getItem(`deepFeedContents_${deep_feed_id}`);
                 if (cached) {
-                    console.log("Using cached data due to error:", error);
                     setContents(JSON.parse(cached));
                 } else {
-                    setErrorMessage('Failed to load deep feed contents.');
+                    setErrorMessage(error.response.data?.message || 'Failed to load contents.');
                     setContents([]);
                 }
                 setTimeout(() => setErrorMessage(''), 5000);
@@ -262,13 +261,7 @@ const DeepFeed = () => {
                             <ul className="content-list">
                                 {allPosts.map((post) => (
                                     post ? (
-                                        <ContentWidget
-                                            key={post?.post_id || Math.random()}
-                                            canRemove={false}
-                                            feed={post?.poster || {}}
-                                            onPostRemoved={() => {}}
-                                            post={post}
-                                        />
+                                        <ContentWidget key={post?.post_id || Math.random()} post={post} />
                                     ) : null
                                 ))}
                             </ul>

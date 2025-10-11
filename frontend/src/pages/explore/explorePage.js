@@ -50,7 +50,6 @@ const ExplorePage = () => {
 				setShownPostIds(prev => [...prev, ...newPosts.map(p => p?.post_id)]);
 			}
 		} catch (error) {
-			console.log("error fetching explore posts:", error);
 			setErrorMessage(error.response.data?.message || "Failed to fetch posts");
 		}
 	}, [filter, shownPostIds]);
