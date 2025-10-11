@@ -313,7 +313,7 @@ router.post('/login', async (req, res) => {
                     feed_photo: feed.feed_photo,
                 },
                 followedFeeds: normalizedFollowedFeeds, 
-                deepFeeds ,
+                deepFeeds,
                 recentUpvotes
             });
         }

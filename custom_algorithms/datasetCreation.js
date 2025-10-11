@@ -112,7 +112,7 @@ async function generateData() {
 				feed_id: feedId,
 				feed_name: username,
 				description: `${faker.helpers.arrayElement(['Tech enthusiast', 'Sports fan', 'Finance guru', 'Movie buff', 'Globetrotter', 'Fitness addict'])} sharing updates.`,
-				feed_photo: `media/site_images/Logo.png`,
+				feed_photo: `/media/site_images/Logo.png`,
 				follower_count: faker.number.int({ min: 0, max: 100000 }),
 				type: 'public',
 				is_group: false,

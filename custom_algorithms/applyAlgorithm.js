@@ -83,7 +83,7 @@ async function ApplyAlgorithm({ locationId, excludedPostIds, feedId, followedFee
         //Decide whether to fetch with all attributes or exclude them up front
         const fetchFullAttributes = !useChronological && !useStandardScore;
 
-        //Collect recent upvoted posts for variety comparison
+        //Collect recent upvoted posts for similarity comparison
         let recentUpvoteIds = [];
         let recentUpvoteEmbeddings = []
         if (viewerId && !recentUpvotes) {
@@ -194,7 +194,8 @@ async function ApplyAlgorithm({ locationId, excludedPostIds, feedId, followedFee
                 where: {
                     feed_id: { [Op.in]: allFeedIds },
                     parent_id: null,
-                    post_id: { [Op.notIn]: excludedIds }
+                    post_id: { [Op.notIn]: excludedIds },
+                    ...(viewerId ? { poster_id: { [Op.not]: viewerId } } : {})
                 },
                 limit: limit,
                 offset: offset,

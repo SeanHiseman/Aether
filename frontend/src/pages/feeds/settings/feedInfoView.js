@@ -5,7 +5,6 @@ import Cropper from 'react-easy-crop';
 import GetCroppedImg from '../../../components/getCroppedImg'; 
 import { FaEdit, FaRegWindowClose, FaSave, FaFileUpload, FaPencilAlt, FaLock, FaUnlock } from 'react-icons/fa';
 import { ValidateTextInput } from '../../../functions/validateTextInput';
-import FeedDeletion from './feedDeletion';
 
 const FeedInfoView = () => {
     const [crop, setCrop] = useState({ x: 0, y: 0 });

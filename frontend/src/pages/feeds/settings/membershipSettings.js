@@ -1,6 +1,7 @@
+import { AuthContext } from '../../../components/authContext';
 import axios from 'axios';
-import { useState, useEffect } from 'react';
-import { Check, Star, Zap, Shield, Crown, ListFilter } from 'lucide-react';
+import { useContext, useEffect, useState } from 'react';
+import { Check, Crown, ListFilter, Shield, Star, Zap } from 'lucide-react';
 import { useOutletContext } from 'react-router-dom';
 
 const MembershipSettings = () => {
@@ -10,6 +11,7 @@ const MembershipSettings = () => {
     const [selectedPlan, setSelectedPlan] = useState('monthly');
     const [showConfirm, setShowConfirm] = useState(false);
     const [subscriptionStatus, setSubscriptionStatus] = useState(null);
+    const { isAuthenticated } = useContext(AuthContext);
     const { user } = useOutletContext();
 
     useEffect(() => {
@@ -25,6 +27,7 @@ const MembershipSettings = () => {
     }, [user]);
 
     const fetchSubscriptionStatus = async () => {
+        if (!isAuthenticated) return;
         try {
             const response = await axios.get('/api/subscription-status', {
                 headers: {
@@ -38,6 +41,7 @@ const MembershipSettings = () => {
     };
 
     const handleSubscribe = async (planType) => {
+        if (!isAuthenticated) return;
         setLoading(true);
         setErrorMessage('');
         setSuccessMessage('');
@@ -69,10 +73,12 @@ const MembershipSettings = () => {
     };
 
     const handleCancelMembership = () => {
+        if (!isAuthenticated) return;
         setShowConfirm(true);
     };
 
-    const proceedCancel = async () => {            
+    const proceedCancel = async () => {      
+        if (!isAuthenticated) return;      
         setShowConfirm(false);
         setLoading(true);
         setErrorMessage('');
@@ -100,10 +106,9 @@ const MembershipSettings = () => {
     const features = [
         { icon: <Zap className="feature-icon" />, text: "Highest quality post generation" },
         { icon: <Star className="feature-icon" />, text: "Custom algorithm instructions" },
-        //{ icon: <Shield className="feature-icon" />, text: "Access all posts for free" },
-        //{ icon: <Crown className="feature-icon" />, text: "Premium features" },
-        //{ icon: <Check className="feature-icon" />, text: "Improved customisation" },
-        { icon: <ListFilter className="feature-icon" />, text: "Create longer posts" }
+        { icon: <Check className="feature-icon" />, text: "Improved customisation" },
+        { icon: <ListFilter className="feature-icon" />, text: "Create longer posts" },
+        { icon: <Shield className="feature-icon" />, text: "Higher use limits" }
     ];
 
     if (user?.has_membership) {
