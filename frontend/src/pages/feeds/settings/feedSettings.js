@@ -1,46 +1,38 @@
 import { AuthContext } from '../../../components/authContext';
 import axios from 'axios';
 import { FaSignOutAlt } from 'react-icons/fa';
-import { useContext, useEffect, useState } from 'react';
-import { Link, useNavigate, useOutletContext, useParams, Outlet } from 'react-router-dom';
 import { FormatNumber } from '../../../functions/formatNumber';
+import { Link, useNavigate, useOutletContext, useParams, Outlet } from 'react-router-dom';
+import { applyTheme, DEFAULT_THEME_COLORS, ThemeContext } from '../../../themeProvider';
+import { useContext, useEffect, useState } from 'react';
 
 const FeedSettings = () => {
     const [errorMessage, setErrorMessage] = useState('');
-    const [feedNotFound, setFeedNotFound] = useState(true);
     const [feed, setFeed] = useState('');
     const { feed_name } = useParams();
     const [followRequests, setFollowRequests] = useState([]);
     const [followRequestCount, setFollowRequestCount] = useState(0);
-    const [isAuthorized, setIsAuthorized] = useState(false);
-    const [isLoading, setIsLoading] = useState(true);
+    const [isAuthorised, setIsAuthorised] = useState(false);
     const navigate = useNavigate();
     const { rightClasses, updateFeeds } = useOutletContext(); 
+    const { setTheme } = useContext(ThemeContext);
     const { user } = useContext(AuthContext);
     const urlPrefix = feed?.is_group ? 'g' : 'u';
 
     useEffect(() => {
         const fetchFeedData = async () => {
             try {
-                setIsLoading(true);
                 const response = await axios.get(`/api/feed/${feed_name}`);
                 const feedData = response.data?.feedResult;
                 setFeed(feedData);
-                setFeedNotFound(false);
                 if (feedData.isOwner || feedData?.isAdmin || feedData?.isMod) {
-                    setIsAuthorized(true);
+                    setIsAuthorised(true);
                 } else {
-                    setIsAuthorized(false);
+                    setIsAuthorised(false);
                     navigate(`/${feed?.is_group ? 'g' : 'u'}/${feed_name}`);
                 }
             } catch (error) {
-                if (error.response && error.response?.status === 404) {
-                    setFeedNotFound(true);
-                } else {
-                    setErrorMessage('Error loading feed data');
-                }
-            } finally {
-                setIsLoading(false);
+                setErrorMessage(error.response.data?.message || 'Error loading feed data');
             }
         };
         fetchFeedData();
@@ -54,7 +46,7 @@ const FeedSettings = () => {
                 setFollowRequests(requests);
                 setFollowRequestCount(requests.length);
             } catch (error) {
-                setErrorMessage('Error getting requests');
+                setErrorMessage(error.response.data?.message || 'Error getting requests');
                 setTimeout(() => { setErrorMessage(''); }, 5000);
             } 
         };
@@ -69,27 +61,22 @@ const FeedSettings = () => {
             const response = await axios.post('/api/logout');
             if (response.data?.success) {
                 localStorage.clear();
+                const defaultTheme = DEFAULT_THEME_COLORS.dark;
+                setTheme(defaultTheme);
+                applyTheme(defaultTheme);
                 navigate('/login');
+                setTimeout(() => window.location.reload(), 0);
             } else {
                 setErrorMessage('Logout failed');
                 setTimeout(() => { setErrorMessage(''); }, 5000);
             }
         } catch (error) {
-            setErrorMessage('Logout failed');
+            setErrorMessage(error.response?.data?.message || 'Logout failed');
             setTimeout(() => { setErrorMessage(''); }, 5000);
         }
     };
 
     document.title = "Settings";
-    if (isLoading) {
-        return (
-            <div className="standard-container">
-                <div className="settings-area">
-                    <p className="large-text faded-text">Loading...</p>
-                </div>
-            </div>
-        );
-    }
     return (
         <div className="standard-container">  
             <div className="settings-area">

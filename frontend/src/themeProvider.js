@@ -5,12 +5,12 @@ export const ThemeContext = createContext();
 const DEFAULT_THEME = 'dark';
 const DEFAULT_THEMES = ['blue','dark','green','white','purple','red'];
 const DEFAULT_THEME_COLORS = {
-	blue: { border: '#dddddd', dark: '#273049', darkest: '#0b132b', light: '#3d52a0' },
-	dark: { border: '#dddddd', dark: '#2c2e31', darkest: '#0f0f0f', light: '#737484' },
-	green: { border: '#dddddd', dark: '#003325', darkest: '#001a0c', light: '#5a8a6c' },
-	red: { border: '#dddddd', dark: '#312626', darkest: '#210303', light: '#873333' },
-	purple: { border: '#dddddd', dark: '#240343', darkest: '#13001c', light: '#5b1e7a' },
-	white: { border: '#2f2f2f', dark: '#e1e1e1', darkest: '#c7c7c7', light: '#ffffff' }
+    blue: { border: '#dddddd', dark: '#273049', darkest: '#0b132b', light: '#3d52a0', lightest: '#dddddd' },
+    dark: { border: '#3e3f41', dark: '#232527', darkest: '#0f0f0f', light: '#737484', lightest: '#dddddd' },
+    green: { border: '#dddddd', dark: '#003325', darkest: '#001a0c', light: '#5a8a6c', lightest: '#dddddd' },
+    red: { border: '#dddddd', dark: '#312626', darkest: '#210303', light: '#873333', lightest: '#dddddd' },
+    purple: { border: '#dddddd', dark: '#240343', darkest: '#13001c', light: '#5b1e7a', lightest: '#dddddd' },
+    white: { border: '#2f2f2f', dark: '#e1e1e1', darkest: '#c7c7c7', light: '#ffffff', lightest: '#dddddd' }
 };
 
 const applyTheme = (theme) => {
@@ -72,3 +72,5 @@ export const ThemeProvider = ({ children }) => {
 		</ThemeContext.Provider>
 	);
 };
+
+export { DEFAULT_THEME_COLORS, DEFAULT_THEME, applyTheme };

@@ -254,9 +254,7 @@ const DeepFeed = () => {
         <div className="standard-container">
             <div className="channel-feed">
                 <div className="channel-content">
-                    {isLoading ? (
-                        <p className="large-text faded-text">Loading...</p>
-                    ) : allPosts.length > 0 ? (
+                    {allPosts.length > 0 ? (
                         <>
                             <ul className="content-list">
                                 {allPosts.map((post) => (
@@ -270,7 +268,7 @@ const DeepFeed = () => {
                             </div>
                         </>
                     ) : (
-                        <p className="large-text faded-text">No posts yet</p>
+                        !isLoading && <p className="large-text faded-text">No posts yet</p>
                     )}
                 </div>
             </div>

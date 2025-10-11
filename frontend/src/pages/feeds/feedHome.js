@@ -436,16 +436,6 @@ const FeedHome = () => {
     const privateNoView = feed?.type === 'private' && !feed?.isFollower && !feed?.isConnected;
     document.title = feed?.feed_name || 'Feed not found';
 
-    if (loading) {
-        return (
-            <div className="standard-container">
-                <div className="channel-feed">
-                    <div className="large-text faded-text">Loading...</div>
-                </div>
-                <aside className="right-aside"/>
-            </div>
-        );
-    }
     if (feedNotFound) {
         return (
             <div className="standard-container"> 

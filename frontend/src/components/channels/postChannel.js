@@ -111,36 +111,28 @@ const PostChannel = ({ channelId, channelName, feed, isDraft, isEditMode, isGrou
 
 	let channelMessage = '';
 
-    if (!channelReady) {
-        channelMessage = 'Loading channel...';
-    } else if (post_id && !isEditMode) {
-        if (singlePostLoading) {
-            channelMessage = 'Loading post...';
-        } else if (singlePostError) {
+	if (post_id && !isEditMode) {
+		if (singlePostError) {
             channelMessage = singlePostError.response?.status === 404 ? 'Post not found. Please check the URL.' : 'Error fetching the post. Please try again later.';
-        } else if (!singlePost) {
+        } else if (!singlePost && !singlePostLoading) {
             channelMessage = 'No post available';
         }
     } else if (isDraft) {
-		if (draftsLoading) {
-			channelMessage = 'Loading drafts...';
-		} else if (draftsError) {
-			channelMessage = 'Error fetching drafts. Please try again later.';
+		if (draftsError) {
+			channelMessage = 'Error fetching drafts. Please try again.';
 		} else if (!draftsData?.pages.flat().length) {
 			channelMessage = 'No drafts yet';
 		}
 	} else {
-		if (postsLoading) {
-			channelMessage = 'Loading posts...';
-		} else if (postsError) {
-			channelMessage = 'Error fetching posts. Please try again later.';
-		} else if (!postsData?.pages.flat().length) {
+		if (postsError) {
+			channelMessage = 'Error fetching posts. Please try again.';
+		} else if (!postsData?.pages.flat().length && !postsLoading) {
 			channelMessage = 'No posts yet';
 		}
 	}
 
 	const renderList = (items) =>
-		items.map((post) => (
+		items?.map((post) => (
 			<ContentWidget
 				key={post?.post_id}
 				feed={feed}
@@ -170,7 +162,7 @@ const PostChannel = ({ channelId, channelName, feed, isDraft, isEditMode, isGrou
                         {renderList(draftsData.pages.flat())}
                     </ul>
                 ) : (
-                    <ul className="content-list">{renderList(postsData.pages.flat())}</ul>
+                    <ul className="content-list">{renderList(postsData?.pages.flat())}</ul>
                 )}
 				<div ref={loaderRef}>
 					{((isDraft && isFetchingDrafts) || (!isDraft && isFetchingNextPage)) && (
