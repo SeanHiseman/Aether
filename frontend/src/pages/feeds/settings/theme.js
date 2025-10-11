@@ -7,17 +7,51 @@ import { useContext, useEffect, useState } from 'react';
 
 const Theme = () => {
     const { defaultThemeColors, setTheme: updateTheme, theme, themes } = useContext(ThemeContext);
-    console.log("theme:", theme);
     const { isAuthenticated, user } = useContext(AuthContext);
-    const [customTheme, setCustomTheme] = useState(theme || defaultThemeColors['dark']);
+    
+	const getInitialTheme = () => {
+		if (theme) {
+			//Theme can be string or object
+			if (typeof theme === 'string' && theme.startsWith('{')) {
+				try {
+					return JSON.parse(theme);
+				} catch (e) {
+					console.error('Failed to parse theme JSON:', e);
+					return defaultThemeColors[theme] || defaultThemeColors['dark'];
+				}
+			}
+			if (typeof theme === 'string') {
+				return defaultThemeColors[theme] || defaultThemeColors['dark'];
+			}
+			if (typeof theme === 'object') {
+				return theme;
+			}
+		}
+		return defaultThemeColors['dark'];
+	};
+    
+    const [customTheme, setCustomTheme] = useState(getInitialTheme);
     const [errorMessage, setErrorMessage] = useState('');
     const [feedbackMessage, setFeedbackMessage] = useState('');
 
-    useEffect(() => {
-        if (theme) {
-            setCustomTheme(theme);
-        }
-    }, [theme]);
+	useEffect(() => {
+		if (theme) {
+			if (typeof theme === 'string' && theme.startsWith('{')) {
+				try {
+					const parsedTheme = JSON.parse(theme);
+					setCustomTheme(parsedTheme);
+				} catch (error) {
+					setCustomTheme(defaultThemeColors['dark']);
+				}
+			}
+			else if (typeof theme === 'string') {
+				setCustomTheme(defaultThemeColors[theme] || defaultThemeColors['dark']);
+			}
+			else if (typeof theme === 'object') {
+				setCustomTheme(theme);
+			}
+		}
+	}, [theme, defaultThemeColors]);
 
     const handleColorChange = (key, value) => {
         if (!customTheme) return;
@@ -43,13 +77,13 @@ const Theme = () => {
         try {
             const themeColors = defaultThemeColors[themeName];
             await updateTheme(themeColors);
-            setCustomTheme(themeColors); // Update local state immediately
+            setCustomTheme(themeColors); 
         } catch (error) {
             setErrorMessage(error.response.data?.message || 'Error changing theme');
             setTimeout(() => { setErrorMessage(''); }, 5000);
         }
     };
-    console.log("customTheme:", customTheme);
+    
     return (
         <div className="feed-settings">
             <p className="large-text">Choose your theme</p>

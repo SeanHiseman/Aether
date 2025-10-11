@@ -10,13 +10,13 @@ const DEFAULT_THEME_COLORS = {
     green: { border: '#dddddd', dark: '#003325', darkest: '#001a0c', light: '#5a8a6c', lightest: '#dddddd' },
     red: { border: '#dddddd', dark: '#312626', darkest: '#210303', light: '#873333', lightest: '#dddddd' },
     purple: { border: '#dddddd', dark: '#240343', darkest: '#13001c', light: '#5b1e7a', lightest: '#dddddd' },
-    white: { border: '#2f2f2f', dark: '#e1e1e1', darkest: '#c7c7c7', light: '#ffffff', lightest: '#dddddd' }
+    white: { border: '#2f2f2f', dark: '#e1e1e1', darkest: '#c7c7c7', light: '#9b9b9bff', lightest: '#171717ff' }
 };
 
 const applyTheme = (theme) => {
 	if (typeof theme === 'string' && DEFAULT_THEMES.includes(theme)) {
 		document.body.className = theme;
-		['border','dark','darkest','light'].forEach((key) => {
+		['border','dark','darkest','light','lightest'].forEach((key) => {
 			document.documentElement.style.removeProperty(`--${key}`);
 		});
 	} else if (theme && typeof theme === 'object') {
@@ -31,7 +31,11 @@ export const ThemeProvider = ({ children }) => {
 	const [theme, setTheme] = useState(() => {
 		try {
 			const user = JSON.parse(localStorage.getItem("user"));
-			return user?.theme || DEFAULT_THEME;
+			const userTheme = user?.theme;
+			if (typeof userTheme === 'string' && userTheme.startsWith('{')) {
+				return JSON.parse(userTheme);
+			}
+			return userTheme || DEFAULT_THEME;
 		} catch {
 			return DEFAULT_THEME;
 		}
@@ -45,12 +49,18 @@ export const ThemeProvider = ({ children }) => {
 		try {
 			const user = JSON.parse(localStorage.getItem("user"));
 			if (user?.theme) {
-				setTheme(user.theme);
+				const themeToApply = typeof user.theme === 'string' && user.theme.startsWith('{') 
+					? JSON.parse(user.theme) 
+					: user.theme;
+				setTheme(themeToApply);
+				applyTheme(themeToApply); 
 			} else {
 				setTheme(DEFAULT_THEME);
+				applyTheme(DEFAULT_THEME);
 			}
 		} catch {
 			setTheme(DEFAULT_THEME);
+			applyTheme(DEFAULT_THEME);
 		}
 	};
 

@@ -2,7 +2,7 @@ import { AuthContext } from '../../../components/authContext';
 import axios from 'axios';
 import { FaSignOutAlt } from 'react-icons/fa';
 import { FormatNumber } from '../../../functions/formatNumber';
-import { Link, useNavigate, useOutletContext, useParams, Outlet } from 'react-router-dom';
+import { Link, Outlet, useNavigate, useOutletContext, useParams } from 'react-router-dom';
 import { applyTheme, DEFAULT_THEME_COLORS, ThemeContext } from '../../../themeProvider';
 import { useContext, useEffect, useState } from 'react';
 
