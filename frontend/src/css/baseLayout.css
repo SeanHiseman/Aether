@@ -383,7 +383,7 @@ main {
   padding: 0;
 }
 .search-form {
-  border: 1px solid var(--border);
+  border: 1px solid var(--light);
   border-radius: calc(clamp(4px, 1vw, 10px) + var(--medium-margin));
   height: 90%;
   overflow: hidden;

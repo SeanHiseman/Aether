@@ -262,7 +262,7 @@
     -webkit-line-clamp: 4;
   }
   .explore-block {
-    border: 1px solid var(--border);
+    border: 1px solid var(--light);
     border-radius: var(--medium-margin);
     box-sizing: border-box;
     padding: var(--small-margin);

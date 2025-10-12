@@ -6,7 +6,7 @@ const ThemeButton = ({ colors, onThemeSelect, themeName }) => {
 				<div className="theme-box" style={{ backgroundColor: colors.darkest }}></div>
 				<div className="theme-box" style={{ backgroundColor: colors.dark }}></div>
 				<div className="theme-box" style={{ backgroundColor: colors.light }}></div>
-				<div className="theme-box" style={{ backgroundColor: colors.border }}></div>
+				<div className="theme-box" style={{ backgroundColor: colors.lightest }}></div>
 			</div>
 		</button>
 	);

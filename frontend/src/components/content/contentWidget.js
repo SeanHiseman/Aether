@@ -363,7 +363,7 @@ const ContentWidget = ({ canRemove = false, display = false, feed, isDraft = fal
 				{!isDraft && !display && <Link to={`/${urlPrefix}/${post?.parentChannel?.feed?.feed_name}/${post?.parentChannel?.channel_name}/${post?.post_id}`} onClick={() => incrementViews(post?.post_id)}>
 					<p className="small-text feed-channel-link faded-text">{feedName}/{channelName}</p>
 				</Link>}
-				{!isDraft && (<div className="vote-container">
+				{!isDraft && (<div className="vote-container" style={{ marginRight: `${display && 0}` }}>
 					{(isAuthenticated || display) ? (
 						!isViewingOwnPost ? (   
 							<div className="post-button-group">

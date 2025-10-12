@@ -98,7 +98,7 @@ const Theme = () => {
                     <>
                         <p className="medium-text">Custom Theme</p>
                         <div className="custom-theme-preview">
-                            {['darkest', 'dark', 'light', 'lightest', 'border'].map((key) => (
+                            {['darkest', 'dark', 'light', 'lightest'].map((key) => (
                                 <div key={key} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                                     <input type="color" className="custom-theme-input" value={customTheme?.[key] || '#000000'} onChange={(e) => handleColorChange(key, e.target.value)} />
                                     <span style={{ margin: '5px' }}>{key.charAt(0).toUpperCase() + key.slice(1)}</span>

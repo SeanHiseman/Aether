@@ -23,7 +23,7 @@
 }
 .content-item, .result-widget {
     border-radius: calc(clamp(4px, 1vw, 10px) + var(--small-margin));
-    border: 1px solid var(--border);
+    border: 1px solid var(--light);
     cursor: pointer;
     margin-top: var(--medium-margin);
 }

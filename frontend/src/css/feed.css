@@ -132,7 +132,7 @@
 .feed-settings {
     align-items: center;
     background-color: var(--dark);
-    border: 1px solid var(--border);
+    border: 1px solid var(--light);
     border-radius: var(--large-margin);
     display: flex;
     flex-direction: column;
@@ -145,7 +145,7 @@
 .follow-button {
     align-items: center;
     background: none;
-    border: 2px solid var(--border);
+    border: 2px solid var(--lightest);
     border-radius: var(--large-margin);
     color: var(--lightest);
     display: flex;
@@ -256,7 +256,7 @@
     width: calc(5 * var(--xl-margin));
 }
 .theme-box {
-    border: 1px solid var(--border);
+    border: 1px solid var(--light);
     height: calc(1.5 * var(--xl-margin));
     margin: var(--small-margin);
     width: calc(1.5 * var(--xl-margin));
@@ -273,7 +273,7 @@
     padding: var(--small-margin);
     background-color: var(--light);
     border-radius: var(--medium-margin);
-    border: 1px solid var(--border);
+    border: 1px solid var(--light);
     max-width: calc(10 * var(--large-margin)); 
     margin: var(--medium-margin);
     max-height: calc(10 * var(--large-margin));
