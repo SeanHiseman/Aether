@@ -397,14 +397,16 @@
         text-overflow: ellipsis;
         white-space: nowrap;
     }
+    .content-metadata .vote-container {
+        margin-right: var(--small-margin);
+    }
     .feed-channel-link {
         max-width: 100%;    
         overflow: visible;    
         white-space: nowrap;  
         text-overflow: clip; 
     }
-    .view-date-container,
-    .content-metadata .button-text-bottom {
+    .view-date-container, .content-metadata .button-text-bottom {
         min-width: auto; 
         overflow: visible;
     }

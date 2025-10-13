@@ -29,7 +29,6 @@ const ContentWidget = ({ canRemove = false, display = false, feed, isDraft = fal
 	const [note, setNote] = useState(post?.note ? post?.note?.note_content : '');
 	const [postErrorMessage, setPostErrorMessage] = useState('');
 	const [replies, setReplies] = useState([]);
-	const [savedText, setSavedText] = useState('');
 	const [showFullContent, setShowFullContent] = useState(false);
 	const [showNote, setShowNote] = useState(post?.note && post?.note?.is_misinfo);
 	const [showReplies, setShowReplies] = useState(post_id ? (post?.replies > 0) : false);
@@ -189,11 +188,11 @@ const ContentWidget = ({ canRemove = false, display = false, feed, isDraft = fal
             }
             setIsSaved(!isSaved);
 			onSaveToggle?.(post?.post_id, !isSaved);
-			setSavedText(isSaved ? "Unsaved" : "Saved");
-			setTimeout(() => setSavedText(""), 3000);
+			setPostErrorMessage(isSaved ? "Unsaved" : "Saved");
+			setTimeout(() => setPostErrorMessage(""), 3000);
         } catch (error) {
-            setSavedText('Error');
-			setTimeout(() => setSavedText(""), 3000);
+            setPostErrorMessage('Error saving post');
+			setTimeout(() => setPostErrorMessage(""), 3000);
         }
     };
 
@@ -432,7 +431,6 @@ const ContentWidget = ({ canRemove = false, display = false, feed, isDraft = fal
 						<button className="large-icon" title={isSaved ? 'Unsave post' : 'Save post'} onClick={savePost}>
 							{isSaved ? <FaBookmark /> : <FaRegBookmark />}
 						</button>
-						<p className="tiny-text">{savedText}</p>
 					</div>
 				)}
 				<div className="view-date-container" style={{ fontFamily: 'monospace' }}>
