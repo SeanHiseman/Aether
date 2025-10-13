@@ -1,5 +1,5 @@
 import { Algorithms, AlgorithmLocations } from "./algorithms.js";
-import { DeepFeedContent, Feeds, Followers, Posts, PostVotes, SavedPosts } from "../models/relationships.js";
+import { DeepFeedContent, Posts, PostVotes, SavedPosts } from "../models/relationships.js";
 import { CosineSimilarity } from "../functions/calculation/cosineSimilarity.js";
 import { Op } from 'sequelize';
 
@@ -83,7 +83,7 @@ async function ApplyAlgorithm({ locationId, excludedPostIds, feedId, followedFee
         //Decide whether to fetch with all attributes or exclude them up front
         const fetchFullAttributes = !useChronological && !useStandardScore;
 
-        //Collect recent upvoted posts for similarity comparison
+        //Collect recent upvoted posts for similarity comparison from local storage or database
         let recentUpvoteIds = [];
         let recentUpvoteEmbeddings = []
         if (viewerId && !recentUpvotes) {
@@ -219,18 +219,57 @@ async function ApplyAlgorithm({ locationId, excludedPostIds, feedId, followedFee
         }
         if (!posts.length) return [];
 
+        const selectionLimit = limit ? parseInt(limit, 10) : 48;
+        const addUserVoteStatus = async (posts, viewerId) => {
+            if (!viewerId || posts.length === 0) return posts;
+            const postIds = posts.map(p => p.post_id || p.dataValues?.post_id).filter(Boolean);
+            const userVotes = await PostVotes.findAll({
+                attributes: ['post_id', 'upvotes', 'downvotes'],
+                where: {
+                    post_id: { [Op.in]: postIds },
+                    voter_id: viewerId
+                },
+                raw: true
+            });
+            const voteMap = new Map();
+            userVotes.forEach(vote => {
+                voteMap.set(vote.post_id, {
+                    has_upvoted: vote.upvotes > 0,
+                    has_downvoted: vote.downvotes > 0
+                });
+            });
+            return posts.map(post => {
+                const postId = post.post_id || post.dataValues?.post_id;
+                const voteStatus = voteMap.get(postId) || {
+                    has_upvoted: false,
+                    has_downvoted: false
+                };
+                if (post.dataValues) {
+                    return {
+                        ...post.dataValues,
+                        ...voteStatus
+                    };
+                } else {
+                    return {
+                        ...post,
+                        ...voteStatus
+                    };
+                }
+            });
+        };
+
         //Pure chronological order
-        const selectionLimit = limit ? parseInt(limit, 10) : 20;
         if (useChronological) { 
             const paginated = posts.slice(0, selectionLimit);
-            const ids = paginated.map(p => p.post_id);
+            const postsWithVotes = await addUserVoteStatus(paginated, viewerId);
+            const ids = postsWithVotes.map(p => p.post_id);
             const savedRows = viewerId ? await SavedPosts.findAll({
                 attributes: ['post_id'],
                 raw: true,
                 where: { post_id: { [Op.in]: ids }, saver_id: viewerId }
             }) : [];
             const savedSet = new Set(savedRows.map(s => s.post_id));
-            return stripExcludedAttributes(paginated).map(post => ({
+            return stripExcludedAttributes(postsWithVotes).map(post => ({
                 ...post,
                 is_saved: savedSet.has(post.post_id)
             }));
@@ -252,14 +291,15 @@ async function ApplyAlgorithm({ locationId, excludedPostIds, feedId, followedFee
             });
             postsWithScores.sort((a, b) => b.score - a.score);
             const paginated = postsWithScores.slice(0, selectionLimit);
-            const ids = paginated.map(p => p.post_id);
+            const postsWithVotes = await addUserVoteStatus(paginated, viewerId);
+            const ids = postsWithVotes.map(p => p.post_id);
             const savedRows = viewerId ? await SavedPosts.findAll({
                 attributes: ['post_id'],
                 raw: true,
                 where: { post_id: { [Op.in]: ids }, saver_id: viewerId }
             }) : [];
             const savedSet = new Set(savedRows.map(s => s.post_id));
-            return stripExcludedAttributes(paginated).map(post => ({
+            return stripExcludedAttributes(postsWithVotes).map(post => ({
                 ...post,
                 is_saved: savedSet.has(post.post_id)
             }));
@@ -279,7 +319,6 @@ async function ApplyAlgorithm({ locationId, excludedPostIds, feedId, followedFee
             if (contentType.interactive === false && post.has_interactive) continue;
             if (contentType.has_embedded_websites === false && post.has_embedded_websites) continue;
             if (contentType.has_external_posts === false && post.has_external_posts) continue;
-
             //Text length filtering
             if (textLimits.min && post.text_length < textLimits.min) continue;
             if (textLimits.max && post.text_length > textLimits.max) continue;
@@ -357,25 +396,26 @@ async function ApplyAlgorithm({ locationId, excludedPostIds, feedId, followedFee
 
         if (!finalPosts.length) return [];
         finalPosts.sort((a, b) => b.score - a.score); //Sort posts by score
-        //Add saved info to posts
-        const finalIds = finalPosts.map(p => p.post_id);
+        const paginatedFinalPosts = finalPosts.slice(0, selectionLimit);
+        const postsWithVotes = await addUserVoteStatus(paginatedFinalPosts, viewerId);
+        const finalIds = postsWithVotes.map(p => p.post_id);
         const savedRows = viewerId ? await SavedPosts.findAll({ 
             attributes: ['post_id'],
             raw: true,
             where: { post_id: { [Op.in]: finalIds }, saver_id: viewerId }
         }) : [];
         const savedSet = new Set(savedRows.map(s => s.post_id));
-        //Return final selection of posts
-        return stripExcludedAttributes(finalPosts).map(post => {
+        return stripExcludedAttributes(postsWithVotes).map(post => {
             const { score, _maxSimilarity, ...rest } = post;
             return {
                 ...rest,
                 is_saved: savedSet.has(post.post_id)
             };
         });
-	} catch (error) {
-		return [];
-	}
+    } catch (error) {
+        console.error('Error in ApplyAlgorithm:', error);
+        return [];
+    }
 }
 
 export { ApplyAlgorithm };

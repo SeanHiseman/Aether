@@ -12,7 +12,7 @@ Currently paused features:
 App build uploads
 Ask chatbot
 Ask notes
-Multi voting
+Multi voting (i.e. more than one up/down vote per post)
 Clicking to edit dynamic content
 Connections
 Messaging

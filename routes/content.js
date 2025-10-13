@@ -120,82 +120,57 @@ router.get('/channel_posts', async (req, res) => {
 
 router.post('/content_vote', authenticateCheck, async (req, res) => {
     try {
-        const { postId, feedId, voteType } = req.body; //feedId refers to the user who is voting
-        const voteLimit = 1; //Changed from 10
+        const { postId, feedId, voteType } = req.body;
         const content = await Posts.findByPk(postId);
         if (!content) {
             return res.status(404).json({ success: false, message: 'Content not found' });
         }
-		const [vote, created] = await PostVotes.findOrCreate({
-			where: { post_id: postId, voter_id: feedId },
-			defaults: {
-				vote_id: v4(),
-				upvotes: 0,
-				downvotes: 0,
-			}
-		});
-		const currentNetVote = vote.upvotes - vote.downvotes;
-		if (voteType === 'check_vote') {
-			return res.status(200).json({
-				success: true,
-				message: 'vote status',
-				reachedUpvoteLimit: currentNetVote >= voteLimit,
-				reachedDownvoteLimit: currentNetVote <= -voteLimit,
-				currentUpvotes: vote.upvotes,
-				currentDownvotes: vote.downvotes,
-				netVote: currentNetVote
-			});
-		}
-		if (voteType === 'upvote') {
-			if (currentNetVote < voteLimit) {
-				if (vote.downvotes > 0) {
-					vote.downvotes -= 1;
-					content.downvotes -= 1;
-				} else {
-					vote.upvotes += 1;
-					content.upvotes += 1;
-				}
-			} else {
-				return res.status(200).json({
-					success: false,
-					message: 'upvote limit',
-					reachedUpvoteLimit: true,
-					reachedDownvoteLimit: currentNetVote <= -voteLimit
-				});
-			}
-		} else if (voteType === 'downvote') {
-			if (currentNetVote > -voteLimit) {
-				if (vote.upvotes > 0) {
-					vote.upvotes -= 1;
-					content.upvotes -= 1;
-				} else {
-					vote.downvotes += 1;
-					content.downvotes += 1;
-				}
-			} else {
-				return res.status(200).json({
-					success: false,
-					message: 'downvote limit',
-					reachedUpvoteLimit: currentNetVote >= voteLimit,
-					reachedDownvoteLimit: true
-				});
-			}
-		}
-		await vote.save();
-		await content.save();
-		const newNetVote = vote.upvotes - vote.downvotes;
-		return res.status(200).json({
-			success: true,
-			upvotes: content.upvotes,
-			downvotes: content.downvotes,
-			netVote: newNetVote,
-			reachedUpvoteLimit: newNetVote >= voteLimit,
-			reachedDownvoteLimit: newNetVote <= -voteLimit
-		});
-	} catch (error) {
+        const [vote, created] = await PostVotes.findOrCreate({
+            where: { post_id: postId, voter_id: feedId },
+            defaults: {
+                vote_id: v4(),
+                upvotes: 0,
+                downvotes: 0,
+            }
+        });
+        if (voteType === 'upvote') {
+            if (vote.upvotes > 0) {
+                vote.upvotes = 0;
+                content.upvotes -= 1;
+            } else {
+                if (vote.downvotes > 0) {
+                    vote.downvotes = 0;
+                    content.downvotes -= 1;
+                }
+                vote.upvotes = 1;
+                content.upvotes += 1;
+            }
+        } else if (voteType === 'downvote') {
+            if (vote.downvotes > 0) {
+                vote.downvotes = 0;
+                content.downvotes -= 1;
+            } else {
+                if (vote.upvotes > 0) {
+                    vote.upvotes = 0;
+                    content.upvotes -= 1;
+                }
+                vote.downvotes = 1;
+                content.downvotes += 1;
+            }
+        }
+        await vote.save();
+        await content.save();
+        return res.status(200).json({
+            success: true,
+            upvotes: content.upvotes,
+            downvotes: content.downvotes,
+            hasUpvoted: vote.upvotes > 0,
+            hasDownvoted: vote.downvotes > 0
+        }); 
+    } catch (error) {
         console.error("Error in /content_vote:", error);
-		return res.status(500).json({ success: false });
-	}
+        return res.status(500).json({ success: false });
+    }
 });
 
 const postFilter = (req, file, cb) => {

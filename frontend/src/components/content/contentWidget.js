@@ -14,13 +14,14 @@ const ContentWidget = ({ canRemove = false, display = false, feed, isDraft = fal
 	const authContext = useContext(AuthContext);
 	const { isAuthenticated = false, viewer = null, user = null } = authContext || {};
 	const [canRemoveState, setCanRemoveState] = useState(canRemove);
-	const [downvoteLimit, setDownvoteLimit] = useState(false);
 	const [downvotes, setDownvotes] = useState(post?.downvotes);
 	const { feed_name, channel_name, post_id } = useParams();
 	const location = useLocation();
 	const isReplyMode = location.pathname.endsWith('/reply');
 	const fullscreenRef = useRef(null);
 	const [hasCodeOrApp, setHasCodeOrApp] = useState(false); //To prevent images and text having the fullscreen button
+	const [hasUpvoted, setHasUpvoted] = useState(post?.has_upvoted || false);
+    const [hasDownvoted, setHasDownvoted] = useState(post?.has_downvoted || false);
 	const [hasViewed, setHasViewed] = useState(false);
 	const [isFullscreenMode, setIsFullscreenMode] = useState(false)
 	const [isOverflowing, setIsOverflowing] = useState(false);
@@ -33,7 +34,6 @@ const ContentWidget = ({ canRemove = false, display = false, feed, isDraft = fal
 	const [showNote, setShowNote] = useState(post?.note && post?.note?.is_misinfo);
 	const [showReplies, setShowReplies] = useState(post_id ? (post?.replies > 0) : false);
 	const [treeViewMode, setTreeViewMode] = useState(false);
-	const [upvoteLimit, setUpvoteLimit] = useState(false);
 	const [upvotes, setUpvotes] = useState(post?.upvotes);
 	const [views, setViews] = useState(post?.views);
     const channelName = post?.parentChannel?.channel_name;
@@ -53,7 +53,7 @@ const ContentWidget = ({ canRemove = false, display = false, feed, isDraft = fal
 			}));
 			setReplies(processedReplies);
 		} catch (error){
-			setPostErrorMessage('Error getting replies');
+			setPostErrorMessage(error.response.data?.message || 'Error getting replies');
 			setTimeout(() => setPostErrorMessage(""), 3000);
 		}
 	}, []);
@@ -83,40 +83,39 @@ const ContentWidget = ({ canRemove = false, display = false, feed, isDraft = fal
 		[hasViewed, post?.poster_id, viewer?.feed_id]
 	);
 
-	const postVote = async (postId, voteType) => {
-		if (!isAuthenticated) return;
-		try {
-			const response = await axios.post('/api/content_vote', {
-				postId: postId,
-				feedId: viewer?.feed_id,
-				voteType,
-			});
-			if (response.data?.success) {
-				setUpvotes(response.data?.upvotes);
-				setDownvotes(response.data?.downvotes);
-				setUpvoteLimit(response.data?.reachedUpvoteLimit);
-				setDownvoteLimit(response.data?.reachedDownvoteLimit);
-				if (voteType === 'upvote') {
-					const storedUpvotes = JSON.parse(localStorage.getItem('recentUpvotes') || '[]');
-					const updatedUpvotes = [{ post_id: postId }, ...storedUpvotes];
-					const trimmedUpvotes = updatedUpvotes.slice(0, 100);
-					localStorage.setItem('recentUpvotes', JSON.stringify(trimmedUpvotes));
-				}
-			} else {
-				if (response.data?.message === 'upvote limit') {
-					setUpvoteLimit(true);
-				} else if (response.data?.message === 'downvote limit') {
-					setDownvoteLimit(true);
-				}
-			}
-			if (!hasViewed) {
-				await incrementViews(postId);
-			}
-		} catch (error) {
-			setPostErrorMessage(error.response.data?.message || 'Error voting');
-			setTimeout(() => setPostErrorMessage(""), 3000);
-		}
-	};
+    const postVote = async (postId, voteType) => {
+        if (!isAuthenticated) return;
+        try {
+            const response = await axios.post('/api/content_vote', {
+                postId: postId,
+                feedId: viewer?.feed_id,
+                voteType,
+            });
+            if (response.data?.success) {
+                setUpvotes(response.data?.upvotes);
+                setDownvotes(response.data?.downvotes);
+                if (voteType === 'upvote') {
+                    setHasUpvoted(!hasUpvoted);
+                    setHasDownvoted(false);
+                } else if (voteType === 'downvote') {
+                    setHasDownvoted(!hasDownvoted);
+                    setHasUpvoted(false);
+                }
+                if (voteType === 'upvote' && !hasUpvoted) {
+                    const storedUpvotes = JSON.parse(localStorage.getItem('recentUpvotes') || '[]');
+                    const updatedUpvotes = [{ post_id: postId }, ...storedUpvotes];
+                    const trimmedUpvotes = updatedUpvotes.slice(0, 100);
+                    localStorage.setItem('recentUpvotes', JSON.stringify(trimmedUpvotes));
+                }
+            }
+            if (!hasViewed) {
+                await incrementViews(postId);
+            }
+        } catch (error) {
+            setPostErrorMessage(error.response.data?.message || 'Error voting');
+            setTimeout(() => setPostErrorMessage(""), 3000);
+        }
+    };
 
 	const removePost = async () => {
 		if (!isAuthenticated) return;
@@ -158,7 +157,7 @@ const ContentWidget = ({ canRemove = false, display = false, feed, isDraft = fal
 				setPostErrorMessage(`Error removing ${item}`);
 			}
 		} catch (error) {
-			setPostErrorMessage(`Error removing ${item}`);
+			setPostErrorMessage(error.response.data?.message || `Error removing ${item}`);
 			setTimeout(() => setPostErrorMessage(""), 3000);
 		}
 	};
@@ -191,7 +190,7 @@ const ContentWidget = ({ canRemove = false, display = false, feed, isDraft = fal
 			setPostErrorMessage(isSaved ? "Unsaved" : "Saved");
 			setTimeout(() => setPostErrorMessage(""), 3000);
         } catch (error) {
-            setPostErrorMessage('Error saving post');
+            setPostErrorMessage(error.response.data?.message || 'Error saving post');
 			setTimeout(() => setPostErrorMessage(""), 3000);
         }
     };
@@ -201,26 +200,6 @@ const ContentWidget = ({ canRemove = false, display = false, feed, isDraft = fal
 			setCanRemoveState(true);
 		}
 	}, [isViewingOwnPost, feed?.isAdmin, feed?.isModerator, canRemoveState, isAuthenticated]);
-
-	useEffect(() => {
-		if (!isAuthenticated || isDraft) return;
-		const checkVoteLimit = async () => {
-			try {
-				const response = await axios.post('/api/content_vote', {
-					postId: post?.post_id,
-					feedId: viewer?.feed_id,
-					voteType: 'check_vote',
-				});
-				if (response?.data?.success) {
-					setUpvoteLimit(response.data?.reachedUpvoteLimit);
-					setDownvoteLimit(response.data?.reachedDownvoteLimit);
-				}
-			} catch (error) { 
-				setPostErrorMessage('Please reload the page');
-			}
-		};
-		checkVoteLimit();
-	}, [isAuthenticated, post?.post_id, viewer?.feed_id]);
 
 	useEffect(() => {
 		if (showReplies) {
@@ -308,8 +287,8 @@ const ContentWidget = ({ canRemove = false, display = false, feed, isDraft = fal
 		);
 	};
 
-	const downvoteClass = downvoteLimit ? 'vote-disabled' : 'vote-enabled';
-	const upvoteClass = upvoteLimit ? 'vote-disabled' : 'vote-enabled';
+	const downvoteClass = hasDownvoted ? 'vote-disabled' : 'vote-enabled';
+	const upvoteClass = hasUpvoted ? 'vote-disabled' : 'vote-enabled';
 
 	return (
 		<div className={`content-item ${isReply ? 'reply' : ''}`}>
@@ -366,11 +345,11 @@ const ContentWidget = ({ canRemove = false, display = false, feed, isDraft = fal
 					{(isAuthenticated || display) ? (
 						!isViewingOwnPost ? (   
 							<div className="post-button-group">
-								<button className={`large-icon ${upvoteClass}`} disabled={upvoteLimit} onClick={() => postVote(post?.post_id, 'upvote')} title={upvoteLimit ? 'Vote limit reached' : 'Upvote'}>
+								<button className={`large-icon ${hasUpvoted ? 'vote-active vote-disabled' : 'vote-enabled'}`} onClick={() => postVote(post?.post_id, 'upvote')} title={hasUpvoted ? 'Remove upvote' : 'Upvote'}>
 									<FaArrowUp />
 								</button>
 								<p className="small-text">{FormatNumber(upvotes - downvotes)}</p>      
-								<button className={`large-icon ${downvoteClass}`} disabled={downvoteLimit} onClick={() => postVote(post?.post_id, 'downvote')} title={downvoteLimit ? 'Vote limit reached' : 'Downvote'}>
+								<button className={`large-icon ${hasDownvoted ? 'vote-active vote-disabled' : 'vote-enabled'}`} onClick={() => postVote(post?.post_id, 'downvote')} title={hasDownvoted ? 'Remove downvote' : 'Downvote'}>
 									<FaArrowDown />
 								</button>
 							</div>
