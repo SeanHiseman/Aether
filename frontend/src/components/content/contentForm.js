@@ -820,7 +820,7 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
                         </div>
                     </div>
                 </div>
-                <div style={{ alignItems: 'center', display: 'flex', justifyContent: 'space-between' }}>
+                <div style={{ alignItems: 'center', alignSelf: 'center', display: 'flex', justifyContent: 'space-between', width: '97%' }}>
                     {!hasMembership ? (<Link className="small-icon" to={`/settings/${user?.username}/membership`} type="button" style={{ marginLeft: '5px' }} title="View Membership">
                         <Crown />
                         <p className="icon-text">{blockLimitError ? blockLimitError : "Get membership"}</p>
@@ -951,6 +951,14 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
                                                                         theme="snow"
                                                                         value={data.html}
                                                                         style={{ flex: 1 }}
+                                                                            modules={{
+                                                                                toolbar: [
+                                                                                    [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
+                                                                                    ['bold', 'italic', 'underline', 'strike'],
+                                                                                    [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                                                                                    [{ 'color': [] }],
+                                                                                ]
+                                                                            }}
                                                                     />
                                                                     <button className="small-icon" onClick={() => removeBlock(id)} title="Delete" type="button">
                                                                         <FaTrash />
@@ -974,14 +982,13 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
                                                                                             setPostErrorMessage('');
                                                                                         } else {
                                                                                             updateBlock({ ...block, data: { ...data, _tempAiPrompt: input } });
-                                                                                            setPostErrorMessage('Prompt exceeds character limit.', !user?.has_membership && 'Get membership for more.');
+                                                                                            setPostErrorMessage('Too long.', !user?.has_membership && 'Get membership for more.');
                                                                                         }
                                                                                     }}
-                                                                                    placeholder={limitReached ? (user?.has_membership ? "Usage limit reached. Buy new membership to reset" 
-                                                                                        : "Usage limit reached. Get membership for more.") 
-                                                                                        : data.isBlockLoading ? "Generating post... this may take up to a minute" 
-                                                                                        : user?.has_membership ? "Describe your post..."
-                                                                                        : "Describe your content... (Get membership for the best responses)"
+                                                                                    placeholder={limitReached ? (user?.has_membership ? "Limit reached. Buy new membership to reset" 
+                                                                                        : "Limit reached. Get membership for more.") 
+                                                                                        : data.isBlockLoading ? "Creating post... may take up to a minute" 
+                                                                                        : "Describe your post..."
                                                                                     }
                                                                                     value={data.isBlockLoading ? '' : (data._tempAiPrompt || '')}
                                                                                 />
@@ -989,7 +996,7 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
                                                                                     disabled={data.isBlockLoading || !data._tempAiPrompt?.trim() || limitReached} 
                                                                                     onClick={() => generateCodeBlock(block)} 
                                                                                     title={limitReached ? (user?.has_membership ? "Usage limit reached" 
-                                                                                        : "Usage limit reached. Get membership for more.") 
+                                                                                        : "Limit reached. Get membership for more.") 
                                                                                         : data.isBlockLoading ? 'Creating...' 
                                                                                         : !data._tempAiPrompt?.trim() ? 'Enter a prompt' 
                                                                                         : 'Create'

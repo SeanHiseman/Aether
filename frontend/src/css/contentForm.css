@@ -150,8 +150,11 @@
   background-color: var(--darkest); 
 }
 .ql-editor.ql-blank::before { 
-  color: var(--border) !important;
+  color: var(--light) !important;
   font-size: var(--small-text) !important;
+}
+.ql-snow .ql-picker.ql-header {
+  width: 80px !important;
 }
 .ql-toolbar.ql-snow, .ql-container.ql-snow { 
   border: none !important;
@@ -179,6 +182,9 @@
   stroke: var(--lightest) !important;
   fill: var(--lightest) !important;
 }
+.ql-toolbar.ql-snow .ql-formats {
+  margin-right: 0 !important;
+}
 .single-container {
   min-height: 46%;
 }
@@ -191,5 +197,5 @@
   color: var(--light);
   margin-bottom: var(--large-margin);
   padding: var(--medium-margin);
-  width: 96%;
+  width: 97%;
 }
