@@ -6,7 +6,7 @@ import { AuthContext } from '../authContext';
 import AskButton from '../askButton';
 import ContentDisplay from './contentDisplay';
 import { FormatNumber } from '../../functions/formatNumber';
-import ConfirmModal from '../confirmModal';
+import ConfirmModal from '../modals/confirmModal';
 import ReplyTreeView from './replyTreeView';
 import PropTypes from 'prop-types';
 import useTimeAgo from '../../functions/useTimeAgo';

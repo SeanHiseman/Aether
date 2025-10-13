@@ -1,4 +1,5 @@
 import axios from "axios";
+import NameModal from "../components/modals/nameModal";
 import Cropper from "react-easy-crop";
 import { Crown } from 'lucide-react';
 import { DndContext, PointerSensor, pointerWithin, rectIntersection, useSensor, useSensors } from "@dnd-kit/core";
@@ -49,6 +50,8 @@ const BaseLayout = () => {
 	const [imageSrc, setImageSrc] = useState(null);   
     const [isFeedNameValid, setIsFeedNameValid] = useState(true);  
 	const [mobileOpen, setMobileOpen] = useState(null);
+    const [nameModalOpen, setNameModalOpen] = useState(false);
+    const [pendingDeepFeed, setPendingDeepFeed] = useState(null);
 	const [showForm, setShowForm] = useState(false);
 	const [zoom, setZoom] = useState(1);
 	const { isAuthenticated, user, viewer } = useContext(AuthContext);
@@ -171,41 +174,58 @@ const BaseLayout = () => {
                 const storedDeepFeeds = JSON.parse(localStorage.getItem("deepFeeds") || "[]");
                 if (storedDeepFeeds.length === (hasMembership ? 500 : 5)) { //Members get more combined feeds
                     setFeedLimitReached(true);
-                    setTimeout(() => setFeedLimitReached(false), 20000); //Disappear after 20 seconds
+                    setTimeout(() => setFeedLimitReached(false), 20000);
                 } else {
                     const sourceFeed = activeDragItem;
                     const targetFeed = feeds.find(f => f?.feed_id.toString() === targetFeedId);
                     if (sourceFeed && targetFeed && sourceFeed?.feed_id !== targetFeed?.feed_id) {
-                        const deepFeedName = prompt(`Name for feed combing ${sourceFeed?.feed_name} and ${targetFeed?.feed_name}:`);
-                        if (deepFeedName) {
-                            const payload = {
-                                viewerId: viewer?.feed_id,
-                                deepFeedName,
-                                feedsToInclude: [sourceFeed?.feed_id, targetFeed?.feed_id]
-                            };
-                            const { data } = await axios.post("/api/create_deep_feed", payload);
-                            if (data.success && data?.deepFeed) {
-                                const newDeepFeed = {
-                                    ...data.deepFeed,
-                                    feeds: data.feedsToInclude.map(id => ({ 
-                                        feed: feeds.find(f => f?.feed_id === id) 
-                                    }))
-                                };
-                                storedDeepFeeds.push(newDeepFeed);
-                                localStorage.setItem("deepFeeds", JSON.stringify(storedDeepFeeds));
-                                updateFeeds();
-                            }
-                        }
+                        setPendingDeepFeed({ sourceFeed, targetFeed });
+                        setNameModalOpen(true);
                     }
                 }
             }
             setTimeout(() => setDragged(false), 0);
-        } catch (error) {
-            setAsideErrorMessage(error.response?.data?.message || "Error in drag operation");
-            setTimeout(() => setAsideErrorMessage(""), 5000);
-        }
+            } catch (error) {
+                setAsideErrorMessage(error.response?.data?.message || "Error in drag operation");
+                setTimeout(() => setAsideErrorMessage(""), 5000);
+            }
         setTimeout(() => setDragged(false), 0);
         resetDragState();
+    };
+
+    const nameModalConfirm = async (deepFeedName) => {
+        if (!pendingDeepFeed) return;
+        const { sourceFeed, targetFeed } = pendingDeepFeed;
+        try {
+            const payload = {
+                viewerId: viewer?.feed_id,
+                deepFeedName,
+                feedsToInclude: [sourceFeed?.feed_id, targetFeed?.feed_id]
+            };
+            const { data } = await axios.post("/api/create_deep_feed", payload);
+            if (data.success && data?.deepFeed) {
+                const newDeepFeed = {
+                    ...data.deepFeed,
+                    feeds: data.feedsToInclude.map(id => ({ 
+                        feed: feeds.find(f => f?.feed_id === id) 
+                    }))
+                };
+                const storedDeepFeeds = JSON.parse(localStorage.getItem("deepFeeds") || "[]");
+                storedDeepFeeds.push(newDeepFeed);
+                localStorage.setItem("deepFeeds", JSON.stringify(storedDeepFeeds));
+                updateFeeds();
+            }
+        } catch (error) {
+            setAsideErrorMessage(error.response?.data?.message || "Error creating deep feed");
+            setTimeout(() => setAsideErrorMessage(""), 5000);
+        }
+        setNameModalOpen(false);
+        setPendingDeepFeed(null);
+    };
+
+    const nameModalCancel = () => {
+        setNameModalOpen(false);
+        setPendingDeepFeed(null);
     };
 
     const resetDragState = () => {
@@ -707,7 +727,12 @@ const BaseLayout = () => {
                     </div>
                 </main>
             </div>
-        </>
+        <NameModal isOpen={nameModalOpen} onConfirm={nameModalConfirm} onCancel={nameModalCancel} title={pendingDeepFeed ? 
+                `Combine ${pendingDeepFeed.sourceFeed?.feed_name} and ${pendingDeepFeed.targetFeed?.feed_name}` : 
+                'Name Your Combined Feed'
+            }
+            placeholder="Enter combined feed name..."
+        /></>
     );
 };
 
