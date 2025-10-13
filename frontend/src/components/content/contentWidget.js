@@ -6,6 +6,7 @@ import { AuthContext } from '../authContext';
 import AskButton from '../askButton';
 import ContentDisplay from './contentDisplay';
 import { FormatNumber } from '../../functions/formatNumber';
+import ConfirmModal from '../confirmModal';
 import ReplyTreeView from './replyTreeView';
 import PropTypes from 'prop-types';
 import useTimeAgo from '../../functions/useTimeAgo';
@@ -28,8 +29,10 @@ const ContentWidget = ({ canRemove = false, display = false, feed, isDraft = fal
 	const [isSaved, setIsSaved] = useState(post?.is_saved);
 	const navigate = useNavigate();
 	const [note, setNote] = useState(post?.note ? post?.note?.note_content : '');
+	const [pendingDeleteAction, setPendingDeleteAction] = useState(null);
 	const [postErrorMessage, setPostErrorMessage] = useState('');
 	const [replies, setReplies] = useState([]);
+	const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 	const [showFullContent, setShowFullContent] = useState(false);
 	const [showNote, setShowNote] = useState(post?.note && post?.note?.is_misinfo);
 	const [showReplies, setShowReplies] = useState(post_id ? (post?.replies > 0) : false);
@@ -117,12 +120,14 @@ const ContentWidget = ({ canRemove = false, display = false, feed, isDraft = fal
         }
     };
 
-	const removePost = async () => {
-		if (!isAuthenticated) return;
+	const deleteClick = () => {
 		const item = isReply ? "Reply" : isDraft ? "Draft" : "Post";
-		if (!window.confirm(`Are you sure you want to delete this ${item}?`)) {
-			return;
-		}
+		setPendingDeleteAction(item);
+		setShowDeleteConfirm(true);
+	};
+
+	const confirmDelete = async () => {
+		setShowDeleteConfirm(false);
 		try {
 			let url;
 			let dataPayload;
@@ -130,16 +135,16 @@ const ContentWidget = ({ canRemove = false, display = false, feed, isDraft = fal
 				url = "/api/remove_draft";
 				dataPayload = {
 					draft: {
-						draft_id: post?.draft_id,
-						isPosting: false
+					draft_id: post?.draft_id,
+					isPosting: false
 					}
 				};
 			} else {
 				url = "/api/remove_post";
 				dataPayload = {
 					post: {
-						post_id: post?.post_id,
-						...(post?.parent_id != null && { parent_id: post?.parent_id })
+					post_id: post?.post_id,
+					...(post?.parent_id != null && { parent_id: post?.parent_id })
 					}
 				};
 			}
@@ -154,12 +159,18 @@ const ContentWidget = ({ canRemove = false, display = false, feed, isDraft = fal
 					}
 				}
 			} else {
-				setPostErrorMessage(`Error removing ${item}`);
+			setPostErrorMessage(`Error removing ${pendingDeleteAction}`);
 			}
 		} catch (error) {
-			setPostErrorMessage(error.response.data?.message || `Error removing ${item}`);
+			setPostErrorMessage(`Error removing ${pendingDeleteAction}`);
 			setTimeout(() => setPostErrorMessage(""), 3000);
 		}
+		setPendingDeleteAction(null);
+	};
+
+	const cancelDelete = () => {
+		setShowDeleteConfirm(false);
+		setPendingDeleteAction(null);
 	};
 
 	const replyRemoved = (replyId) => {
@@ -187,7 +198,6 @@ const ContentWidget = ({ canRemove = false, display = false, feed, isDraft = fal
             }
             setIsSaved(!isSaved);
 			onSaveToggle?.(post?.post_id, !isSaved);
-			setPostErrorMessage(isSaved ? "Unsaved" : "Saved");
 			setTimeout(() => setPostErrorMessage(""), 3000);
         } catch (error) {
             setPostErrorMessage(error.response.data?.message || 'Error saving post');
@@ -287,11 +297,8 @@ const ContentWidget = ({ canRemove = false, display = false, feed, isDraft = fal
 		);
 	};
 
-	const downvoteClass = hasDownvoted ? 'vote-disabled' : 'vote-enabled';
-	const upvoteClass = hasUpvoted ? 'vote-disabled' : 'vote-enabled';
-
 	return (
-		<div className={`content-item ${isReply ? 'reply' : ''}`}>
+		<><div className={`content-item ${isReply ? 'reply' : ''}`}>
 			{postErrorMessage && <div className="small-text faded-text">{postErrorMessage}</div>}
 			{post?.title && <div className="title-container" onClick={() => incrementViews(post?.post_id)} style={{ display: 'block' }}>
 				<span className="large-text" style={{ marginLeft: 0 }}>
@@ -343,12 +350,12 @@ const ContentWidget = ({ canRemove = false, display = false, feed, isDraft = fal
 				</Link>}
 				{!isDraft && (<div className="vote-container" style={{ marginRight: `${display && 0}` }}>
 					{(isAuthenticated || display) ? (
-						!isViewingOwnPost ? (   
+						!isViewingOwnPost ? (
 							<div className="post-button-group">
 								<button className={`large-icon ${hasUpvoted ? 'vote-active vote-disabled' : 'vote-enabled'}`} onClick={() => postVote(post?.post_id, 'upvote')} title={hasUpvoted ? 'Remove upvote' : 'Upvote'}>
 									<FaArrowUp />
 								</button>
-								<p className="small-text">{FormatNumber(upvotes - downvotes)}</p>      
+								<p className="small-text">{FormatNumber(upvotes - downvotes)}</p>
 								<button className={`large-icon ${hasDownvoted ? 'vote-active vote-disabled' : 'vote-enabled'}`} onClick={() => postVote(post?.post_id, 'downvote')} title={hasDownvoted ? 'Remove downvote' : 'Downvote'}>
 									<FaArrowDown />
 								</button>
@@ -383,13 +390,13 @@ const ContentWidget = ({ canRemove = false, display = false, feed, isDraft = fal
 				)}
 				<div className="post-button-group">
 					{isAuthenticated && post?.poster_id === viewer?.feed_id && !readOnly && (
-						<button 
-							className="large-icon" 
+						<button
+							className="large-icon"
 							onClick={() => navigate(
-								isDraft 
-									? `/${urlPrefix}/${feed_name}/${channel_name}/${post?.draft_id}/edit` 
+								isDraft
+									? `/${urlPrefix}/${feed_name}/${channel_name}/${post?.draft_id}/edit`
 									: `/${urlPrefix}/${post?.parentChannel?.feed?.feed_name}/${post?.parentChannel?.channel_name}/${post?.post_id}/edit`,
-								{ state: { editData: post, isDraft: isDraft } }  
+								{ state: { editData: post, isDraft: isDraft } }
 							)}
 							title={isReply ? "Edit Reply" : isDraft ? "Edit draft" : "Edit Post"}
 						>
@@ -397,7 +404,7 @@ const ContentWidget = ({ canRemove = false, display = false, feed, isDraft = fal
 						</button>
 					)}
 					{isAuthenticated && canRemoveState && !readOnly && (
-						<button className="large-icon" onClick={removePost} title={isReply ? "Delete Reply" : isDraft ? "Delete draft" : "Delete Post"}>
+						<button className="large-icon" onClick={deleteClick} title={isReply ? "Delete Reply" : isDraft ? "Delete draft" : "Delete Post"}>
 							<FaTrash />
 						</button>
 					)}
@@ -427,9 +434,9 @@ const ContentWidget = ({ canRemove = false, display = false, feed, isDraft = fal
 				<div className="reply-section">
 					{isAuthenticated && !feed?.is_locked && (
 						<div>
-							<button 
-								className="large-icon" 
-								disabled={readOnly} 
+							<button
+								className="large-icon"
+								disabled={readOnly}
 								onClick={() => navigate(`/${urlPrefix}/${post?.parentChannel?.feed?.feed_name}/${post?.parentChannel?.channel_name}/${post?.post_id}/reply`)}
 								title="Reply"
 							>
@@ -438,21 +445,19 @@ const ContentWidget = ({ canRemove = false, display = false, feed, isDraft = fal
 						</div>
 					)}
 					{treeViewMode ? (
-						<ReplyTreeView 
-							replies={replies} 
-							renderReplyContent={renderReplyContent}
-						/>
+						<ReplyTreeView
+							replies={replies}
+							renderReplyContent={renderReplyContent} />
 					) : (
 						replies.length !== 0 ? (
 							replies.map((reply) => (
-								<ContentWidget 
-									canRemove={canRemoveState} 
-									feed={feed} 
-									key={reply?.post_id} 
-									onPostRemoved={replyRemoved} 
-									post={reply} 
-									readOnly={readOnly} 
-								/>
+								<ContentWidget
+									canRemove={canRemoveState}
+									feed={feed}
+									key={reply?.post_id}
+									onPostRemoved={replyRemoved}
+									post={reply}
+									readOnly={readOnly} />
 							))
 						) : (
 							<p className="small-text faded-text" style={{ marginLeft: '5px' }}>No replies</p>
@@ -468,6 +473,7 @@ const ContentWidget = ({ canRemove = false, display = false, feed, isDraft = fal
 				</div>
 			)}
 		</div>
+		<ConfirmModal isOpen={showDeleteConfirm} onConfirm={confirmDelete} onCancel={cancelDelete} title={`Delete ${pendingDeleteAction}`} message={`Are you sure you want to delete this ${pendingDeleteAction?.toLowerCase()}?`} /></>
 	);
 };
 
