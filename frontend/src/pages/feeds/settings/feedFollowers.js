@@ -51,19 +51,24 @@ const FeedFollowers = () => {
                 setConfirmTitle('Remove Admin Privileges');
                 setConfirmMessage('Are you sure you want to remove yourself as an admin? You will lose admin privileges.');
                 setConfirmAction(() => async () => {
-                    await axios.post('/api/toggle_admin', {
-                        feedId: feed?.feed_id,
-                        followerId: follower?.follower_id,
-                        isAdmin: !follower?.is_admin,
-                    });
-                    setFollowers((prev) =>
-                        prev.map((f) =>
-                            f?.follower_id === follower?.follower_id ? { ...f, is_admin: !f?.is_admin } : f
-                        )
-                    );
+                    try {
+                        await axios.post('/api/toggle_admin', {
+                            feedId: feed?.feed_id,
+                            followerId: follower?.follower_id,
+                            isAdmin: !follower?.is_admin,
+                        });
+                        setFollowers((prev) =>
+                            prev.map((f) =>
+                                f?.follower_id === follower?.follower_id ? { ...f, is_admin: !f?.is_admin } : f
+                            )
+                        );
+                        navigate(`/${urlPrefix}/${feed?.feed_name}/Main`);
+                    } catch (error) {
+                        setErrorMessage(error.response.data?.message || "Error removing admin status");
+                        setTimeout(() => { setErrorMessage(''); }, 5000);
+                    }
                 });
                 setShowConfirmModal(true);
-                navigate(`/${urlPrefix}/${feed?.feed_name}/Main`);
                 return;
             }
             await axios.post('/api/toggle_admin', {
@@ -77,7 +82,7 @@ const FeedFollowers = () => {
                 )
             );
         } catch (error) {
-            setErrorMessage(error?.response?.data?.message || "Error toggling admin status");
+            setErrorMessage(error.response.data?.message || "Error toggling admin status");
             setTimeout(() => { setErrorMessage(''); }, 5000);
         }
     };
