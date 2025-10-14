@@ -102,7 +102,7 @@
   padding: var(--small-margin);
   position: absolute;
   right: 0;
-  width: calc(8 * var(--large-margin));
+  width: calc(9 * var(--large-margin));
   z-index: 10;
 }
 .main-content {

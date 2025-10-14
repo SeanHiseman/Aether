@@ -4,10 +4,12 @@ import { useContext, useEffect, useRef, useState } from 'react';
 import { FaEdit, FaMinus, FaRegWindowClose, FaSave, FaTrash } from 'react-icons/fa';
 import { useNavigate, useOutletContext, useParams } from 'react-router-dom';
 import { AuthContext } from '../components/authContext';
+import ConfirmModal from '../components/modals/confirmModal';
 import ContentWidget from '../components/content/contentWidget';
 import FeedItem from '../components/channels/feedItem';
 import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
 import { ValidateTextInput } from '../functions/validateTextInput';
+import { set } from 'date-fns';
 
 const DeepFeed = () => {
     const { isAuthenticated } = useContext(AuthContext);
@@ -21,8 +23,9 @@ const DeepFeed = () => {
     const [refreshTrigger, setRefreshTrigger] = useState(false);
     const loaderRef = useRef(null);
     const navigate = useNavigate();
-    const { rightClasses, updateFeeds } = useOutletContext(); 
     const queryClient = useQueryClient();
+    const { rightClasses, updateFeeds } = useOutletContext(); 
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
     useEffect(() => {
         if (!deep_feed_id) return;
@@ -51,6 +54,42 @@ const DeepFeed = () => {
         (a?.feed?.feed_name || '').localeCompare(b?.feed?.feed_name || '')
     );
 
+    const cancelDelete = () => { setShowDeleteConfirm(false) };
+
+    const confirmDelete = async () => {
+        setShowDeleteConfirm(false);
+        try {
+            if (deepFeed?.name === 'Following') {
+                setErrorMessage("Following cannot be deleted.");
+                setTimeout(() => { setErrorMessage(''); }, 5000);
+                return;
+            }
+            const response = await axios.delete('/api/delete_deep_feed', { data: { deepFeedId: deep_feed_id } });
+            if (response.data?.success) {
+                setDeepFeed((prev) => {
+                    const updated = { name: 'Following' };
+                    for (const key in prev) {
+                        if (key !== 'name') {
+                            updated[key] = null;
+                        }
+                    }
+                    return updated;
+                });                    
+                setErrorMessage('');
+                const storedDeepFeeds = JSON.parse(localStorage.getItem("deepFeeds") || "[]");
+                const updatedDeepFeeds = storedDeepFeeds.filter(df => df.deep_feed_id !== deep_feed_id);
+                localStorage.setItem("deepFeeds", JSON.stringify(updatedDeepFeeds));
+                updateFeeds();
+                navigate('/explore');
+            }
+        } catch (error) {
+            setErrorMessage(error.response.data?.message || 'Error deleting combined feed');
+            setTimeout(() => { setErrorMessage(''); }, 5000);
+        }
+    };
+
+    const deleteClick = () => { setShowDeleteConfirm(true) };
+
     const changeDeepFeedName = async (event) => {
         event.preventDefault();
         try {
@@ -74,39 +113,6 @@ const DeepFeed = () => {
         } catch (error) {
             setErrorMessage(error.response.data?.message || "Error changing name");
             setTimeout(() => { setErrorMessage(''); }, 5000);
-        }
-    };
-
-    const deleteDeepFeed = async () => {
-        if (window.confirm(`Are you sure you want to delete ${deepFeed?.name}?`)) {
-            try {
-                if (deepFeed.name === 'Following') {
-                    setErrorMessage("Following cannot be deleted.");
-                    setTimeout(() => { setErrorMessage(''); }, 5000);
-                    return;
-                }
-                const response = await axios.delete('/api/delete_deep_feed', { data: { deepFeedId: deep_feed_id } });
-                if (response.data?.success) {
-                    setDeepFeed((prev) => {
-                        const updated = { name: 'Following' };
-                        for (const key in prev) {
-                            if (key !== 'name') {
-                                updated[key] = null;
-                            }
-                        }
-                        return updated;
-                    });                    
-                    setErrorMessage('');
-                    const storedDeepFeeds = JSON.parse(localStorage.getItem("deepFeeds") || "[]");
-                    const updatedDeepFeeds = storedDeepFeeds.filter(df => df.deep_feed_id !== deep_feed_id);
-                    localStorage.setItem("deepFeeds", JSON.stringify(updatedDeepFeeds));
-                    updateFeeds();
-                    navigate('/explore');
-                }
-            } catch (error) {
-                setErrorMessage(error.response.data?.message || 'Error deleting combined feed');
-                setTimeout(() => { setErrorMessage(''); }, 5000);
-            }
         }
     };
 
@@ -251,7 +257,7 @@ const DeepFeed = () => {
     }, [refreshTrigger, queryClient, deep_feed_id]);
 
     return (
-        <div className="standard-container">
+        <><div className="standard-container">
             <div className="channel-feed">
                 <div className="channel-content">
                     {allPosts.length > 0 ? (
@@ -298,11 +304,11 @@ const DeepFeed = () => {
                                         setErrorMessage("");
                                         setIsNewNameValid(true);
                                     }
-                                }}
+                                } }
                                 placeholder="New name"
                                 value={newName} />
                             <div className="cancel-save">
-                                <button className="small-icon" onClick={() => {setIsEditingName(false); setNewName(""); setErrorMessage("");}} title="Cancel">
+                                <button className="small-icon" onClick={() => { setIsEditingName(false); setNewName(""); setErrorMessage(""); } } title="Cancel">
                                     <FaRegWindowClose />
                                 </button>
                                 <button className={!isNewNameValid ? "small-icon disabled" : "small-icon"} onClick={changeDeepFeedName} title="Save">
@@ -314,19 +320,19 @@ const DeepFeed = () => {
                         <div className="channel-name">
                             <p className="large-text bold">{deepFeed?.name}</p>
                             <div className="button-group">
-                                {deepFeed?.name !== "Following" && ( 
+                                {deepFeed?.name !== "Following" && (
                                     <>
                                         <button
                                             className="small-icon"
                                             onClick={() => {
                                                 setIsEditingName(true);
                                                 setNewName(deepFeed?.name);
-                                            }}
+                                            } }
                                             title="Edit name"
                                         >
                                             <FaEdit />
                                         </button>
-                                        <button className="small-icon" onClick={deleteDeepFeed} title="Delete Combined Feed">
+                                        <button className="small-icon" onClick={deleteClick} title="Delete Combined Feed">
                                             <FaTrash />
                                         </button>
                                     </>
@@ -351,6 +357,7 @@ const DeepFeed = () => {
                 </div>
             </aside>
         </div>
+        <ConfirmModal isOpen={showDeleteConfirm} onConfirm={confirmDelete} onCancel={cancelDelete} title={`Delete ${deepFeed?.name}`} message={`Are you sure you want to delete ${deepFeed?.name}?`} /></>
     );
 }
 

@@ -9,7 +9,7 @@ const FollowerWidget = ({ acceptRequest, rejectRequest, follower, feed, user, on
     let role = "Follower";
     if (follower?.is_mod) role = "Moderator";
     if (follower?.is_admin) role = "Admin";
-    if (follower?.followerFeed?.feed_owner === feed?.feed_owner) role = "Leader";
+    if (follower?.followerFeed?.feed_owner === feed?.feed_owner) role = "Owner";
 
     return (
         <div className="explore-block bg-gray-800 rounded-lg flex flex-col items-center">

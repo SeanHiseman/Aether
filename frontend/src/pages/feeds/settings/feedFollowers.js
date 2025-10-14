@@ -1,16 +1,23 @@
 import axios from 'axios';
-import { useCallback, useEffect, useState, useContext } from 'react';
-import { useOutletContext } from 'react-router-dom';
 import { AuthContext } from '../../../components/authContext';
 import { FormatNumber } from '../../../functions/formatNumber';
+import ConfirmModal from '../../../components/modals/confirmModal';
 import FollowerWidget from './followerWidget';
+import { useCallback, useEffect, useState, useContext } from 'react';
+import { useOutletContext, useNavigate } from 'react-router-dom';
 
 const FeedFollowers = () => {
+    const [confirmMessage, setConfirmMessage] = useState('');
+    const [confirmTitle, setConfirmTitle] = useState('Confirm');
+    const [confirmAction, setConfirmAction] = useState(() => () => {})
     const [errorMessage, setErrorMessage] = useState('');
     const [followers, setFollowers] = useState([]);
-    const { user, viewer } = useContext(AuthContext);
     const { feed, setFeed } = useOutletContext();
     const [followerCount, setFollowerCount] = useState(feed?.follower_count || 0);
+    const navigate = useNavigate();
+    const [showConfirmModal, setShowConfirmModal] = useState(false);
+    const urlPrefix = feed?.is_group ? 'g' : 'u';
+    const { user, viewer } = useContext(AuthContext);
 
     const getFeedFollowers = useCallback(async () => {
         try {
@@ -39,30 +46,43 @@ const FeedFollowers = () => {
     };
 
     const toggleAdminStatus = async (follower) => {
-        if (follower?.follower_id === viewer?.feed_id && follower?.is_admin) { //If removing self as admin
-            if (!window.confirm("Are you sure you want to remove yourself as an admin? You will lose admin privileges.")) {
+        try {
+            if (follower?.follower_id === viewer?.feed_id && follower?.is_admin) {
+                setConfirmTitle('Remove Admin Privileges');
+                setConfirmMessage('Are you sure you want to remove yourself as an admin? You will lose admin privileges.');
+                setConfirmAction(() => async () => {
+                    await axios.post('/api/toggle_admin', {
+                        feedId: feed?.feed_id,
+                        followerId: follower?.follower_id,
+                        isAdmin: !follower?.is_admin,
+                    });
+                    setFollowers((prev) =>
+                        prev.map((f) =>
+                            f?.follower_id === follower?.follower_id ? { ...f, is_admin: !f?.is_admin } : f
+                        )
+                    );
+                });
+                setShowConfirmModal(true);
+                navigate(`/${urlPrefix}/${feed?.feed_name}/Main`);
                 return;
             }
-        }
-        try {
-            const response = await axios.post('/api/toggle_admin', {
+            await axios.post('/api/toggle_admin', {
                 feedId: feed?.feed_id,
                 followerId: follower?.follower_id,
                 isAdmin: !follower?.is_admin,
             });
-            if (response.status === 200) {
-                setFollowers((prev) =>
-                    prev.map((f) =>
-                        f?.follower_id === follower?.follower_id ? { ...f, is_admin: !f?.is_admin } : f
-                    )
-                );
-            }
+            setFollowers((prev) =>
+                prev.map((f) =>
+                    f?.follower_id === follower?.follower_id ? { ...f, is_admin: !f?.is_admin } : f
+                )
+            );
         } catch (error) {
             setErrorMessage(error?.response?.data?.message || "Error toggling admin status");
             setTimeout(() => { setErrorMessage(''); }, 5000);
         }
     };
 
+    //Mods can't appoint/dismiss other mods or admins, so no need to check if removing own
     const toggleModeratorStatus = async (follower) => {
         try {
             const response = await axios.post('/api/toggle_moderator', {
@@ -84,8 +104,9 @@ const FeedFollowers = () => {
     };
 
     const transferOwnership = async (follower) => {
-        if (!window.confirm("Are you sure you want to transfer ownership? This action cannot be undone.")) return;
-        try {
+        setConfirmTitle('Transfer Ownership');
+        setConfirmMessage('Are you sure you want to transfer ownership? This action cannot be undone.');
+        setConfirmAction(() => async () => {
             const response = await axios.post('/api/transfer_ownership', {
                 feedId: feed?.feed_id,
                 newOwnerId: follower?.followerFeed?.feed_owner,
@@ -93,23 +114,31 @@ const FeedFollowers = () => {
             if (response?.status === 200) {
                 setFeed((prevFeed) => ({ ...prevFeed, feed_owner: follower?.follower_id }));
             }
-        } catch (error) {
-            setErrorMessage(error?.response?.data?.message || "Error transferring ownership");
-            setTimeout(() => { setErrorMessage(''); }, 5000);
-        }
+        });
+        setShowConfirmModal(true);
+        return;
+    };
+
+    const confirmDelete = async () => {
+        await confirmAction();
+        setShowConfirmModal(false);
+    };
+
+    const cancelDelete = () => {
+        setShowConfirmModal(false);
     };
 
     return (
-        <div className="channel-content">
+        <><div className="channel-content">
             <div className="followers-header">
                 <p className="large-text bold">{FormatNumber(followerCount)} {followerCount === 1 ? 'follower' : 'followers'}</p>
                 {feed?.is_group && <p className="small-text">Moderators remove content and followers</p>}
                 {feed?.is_group && <p className="small-text">Admins remove content, appoint and dismiss mods, and make feed changes</p>}
             </div>
             {errorMessage && <div className="error-message">{errorMessage}</div>}
-           {followers.length === 0 ? (
+            {followers.length === 0 ? (
                 <p className="medium-text faded-text">No followers</p>
-           ) : (
+            ) : (
                 <div className="grid grid-cols-3 md:grid-cols-4 gap-3 w-full">
                     {followers.map((follower, idx) => (
                         <FollowerWidget
@@ -121,12 +150,12 @@ const FeedFollowers = () => {
                             onRemoveFollower={removeFollower}
                             onToggleAdmin={toggleAdminStatus}
                             onToggleModerator={toggleModeratorStatus}
-                            onTransferOwnership={transferOwnership}
-                        />
+                            onTransferOwnership={transferOwnership} />
                     ))}
                 </div>
             )}
         </div>
+        <ConfirmModal isOpen={showConfirmModal} onConfirm={confirmDelete} onCancel={cancelDelete} title={confirmTitle} message={confirmMessage}/></>
     );
 };
 

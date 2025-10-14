@@ -2,7 +2,6 @@ import axios from 'axios';
 import AlgorithmSelector from '../../algorithms/algorithmSelector'; //Project code
 import { AuthContext } from '../../components/authContext';
 import { FaCog, FaEdit, FaFeatherAlt, FaFolder, FaFolderOpen, FaMinus, FaPlus, FaRegWindowClose, FaSave, FaTrash } from 'react-icons/fa';
-import { Tooltip } from 'react-tooltip';
 import { useContext, useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate, useOutletContext, useParams } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
@@ -10,6 +9,7 @@ import { FormatNumber } from '../../functions/formatNumber';
 import { ValidateTextInput } from '../../functions/validateTextInput';
 import ChannelList from '../../components/channels/channelList';
 import ChatChannel from '../../components/channels/chatChannel';
+import ConfirmModal from '../../components/modals/confirmModal';
 import ContentForm from '../../components/content/contentForm';
 import FollowerChangeButton from '../../components/followerChangeButton';
 import ManageConnectionButton from '../../components/connections/manageConnectionButton';
@@ -39,6 +39,8 @@ const FeedHome = () => {
     const [replyingToPost, setReplyingToPost] = useState(null); 
     const [showChannelForm, setShowChannelForm] = useState(false);
     const [showPostForm, setShowPostForm] = useState(false);
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+    const [pendingDeleteAction, setPendingDeleteAction] = useState(null)
     const { isAuthenticated, user, viewer } = useContext(AuthContext);
     const location = useLocation();
     const { feed_name, channel_name, post_id } = useParams();
@@ -281,26 +283,36 @@ const FeedHome = () => {
         }
     };
 
+    const cancelDelete = () => {
+		setShowDeleteConfirm(false);
+		setPendingDeleteAction(null);
+	};
+
+	const deleteClick = () => {;
+		setPendingDeleteAction(channel_name);
+		setShowDeleteConfirm(true);
+	};
+
     const deleteChannel = async () => {
         if (!isAuthenticated) return;
-        if (window.confirm(`Are you sure you want to delete ${channel_name}? All content will be lost.`)) {
-            try {
-                if (channel_name === 'Main') {
-                    setFeedErrorMessage("Main chat cannot be deleted.");
-                    setTimeout(() => { setFeedErrorMessage(''); }, 3000);
-                    return;
-                }
-                const channelId = channelRender?.channel_id;
-                const response = await axios.delete('/api/delete_feed_channel', { data: { channelId } });
-                if (response.data?.success) {
-                    setChannels(prevChannels => prevChannels.filter(channel => channel?.channel_id !== channelId));
-                    navigate(`/${urlPrefix}/${feed_name}/Main`);
-                }
-            } catch (error) {
-                setFeedErrorMessage('Error deleting channel');
+        setShowDeleteConfirm(false);
+        try {
+            if (channel_name === 'Main') {
+                setFeedErrorMessage("Main chat cannot be deleted.");
                 setTimeout(() => { setFeedErrorMessage(''); }, 3000);
+                return;
             }
+            const channelId = channelRender?.channel_id;
+            const response = await axios.delete('/api/delete_feed_channel', { data: { channelId } });
+            if (response.data?.success) {
+                setChannels(prevChannels => prevChannels.filter(channel => channel?.channel_id !== channelId));
+                navigate(`/${urlPrefix}/${feed_name}/Main`);
+            }
+        } catch (error) {
+            setFeedErrorMessage(error.response.data?.response || 'Error deleting channel');
+            setTimeout(() => { setFeedErrorMessage(''); }, 3000);
         }
+        setPendingDeleteAction(null);
     };
 
     //Set channels to contain either posts or chats, or both
@@ -341,7 +353,7 @@ const FeedHome = () => {
             setIsEdit(false); 
             navigate(navigationUrl);
         } catch (error) {
-            if (error.response && error.response?.status === 413) {
+            if (error.response?.status === 413) {
                 setPostErrorMessage(error.response.data?.message + (!user?.has_membership ? ". Get membership for more" : ""));
                 setTimeout(() => { setFeedErrorMessage(''); }, 10000); //Longer timeout for membership message
             } else {
@@ -374,6 +386,13 @@ const FeedHome = () => {
             isEdit={isReply ? false : isEdit} 
             isGroup={feed?.is_group}
             isReply={isReply} 
+            onPostDelete={() => {
+                setShowPostForm(false);
+                setIsEdit(false);
+                setPostToEdit(null);
+                setReplyingToPost(null);
+                navigate(`/${urlPrefix}/${feed_name}/${channel_name}`);
+            }}
             onPostSubmit={postSubmit}
             populateFromPost={isReply ? false : Boolean(postToEdit)}
             post={isReply ? replyingToPost : postToEdit} 
@@ -469,10 +488,10 @@ const FeedHome = () => {
         );
     }
     return (    
-        <div className="standard-container">  
+        <><div className="standard-container">
             <div className="channel-feed">
                 {renderChannelContent()}
-            </div> 
+            </div>
             <aside className={rightClasses}>
                 <div id="feed-summary">
                     <Link to={`/${urlPrefix}/${feed_name}/Main`}>
@@ -490,8 +509,8 @@ const FeedHome = () => {
                             </Link>
                         )}
                     </div>
-                    <p className="description" >{feed?.description}</p>
-                    {(user?.user_id !== feed?.feed_owner || feed?.is_group) && isAuthenticated && viewer ? (
+                    <p className="description">{feed?.description}</p>
+                    {feed && user?.user_id !== feed.feed_owner && isAuthenticated && viewer ? (
                         <FollowerChangeButton feed={feed} showName={false} showVertical={true} updateFeeds={updateFeeds} viewerId={viewer?.feed_id} />
                     ) : (
                         <p className="icon-text">{FormatNumber(feed?.follower_count)} {(feed?.follower_count) === 1 ? 'follower' : 'followers'}</p>
@@ -509,7 +528,7 @@ const FeedHome = () => {
                                     className="change-name-area"
                                     onChange={(e) => {
                                         const input = e.target.value;
-                                        if (input.length <= 30) {  
+                                        if (input.length <= 30) {
                                             setNewChannelName(input);
                                             if (input) {
                                                 if (input.trim() === 'main') {
@@ -518,7 +537,7 @@ const FeedHome = () => {
                                                     const result = ValidateTextInput(input, 1, 30);
                                                     if (result.valid) {
                                                         setFeedErrorMessage("");
-                                                        setIsNewNameValid(true);    
+                                                        setIsNewNameValid(true);
                                                     } else {
                                                         setFeedErrorMessage(result.error);
                                                         setIsNewNameValid(false);
@@ -532,12 +551,11 @@ const FeedHome = () => {
                                             setFeedErrorMessage("No more than 30 characters");
                                             setIsNewNameValid(false);
                                         }
-                                    }}
+                                    } }
                                     placeholder="New name"
-                                    value={newChannelName} 
-                                />
+                                    value={newChannelName} />
                                 <div className="cancel-save">
-                                    <button className="small-icon" onClick={() => {setIsEditingChannelName(false); setNewChannelName(""); setFeedErrorMessage("");}} title="Cancel">
+                                    <button className="small-icon" onClick={() => { setIsEditingChannelName(false); setNewChannelName(""); setFeedErrorMessage(""); } } title="Cancel">
                                         <FaRegWindowClose />
                                     </button>
                                     <button className={!isNewNameValid ? "small-icon disabled" : "small-icon"} onClick={changeChannelName} title="Save">
@@ -551,25 +569,25 @@ const FeedHome = () => {
                                     <p className="medium-text">{channel_name}</p>
                                 </Link>
                                 <div className="button-group">
-                                    {channel_name !== "Main" && isAdmin && ( 
+                                    {channel_name !== "Main" && isAdmin && (
                                         <>
                                             <button
                                                 className="small-icon"
                                                 onClick={() => {
                                                     setIsEditingChannelName(true);
                                                     setNewChannelName(channel_name);
-                                                }}
+                                                } }
                                                 title="Edit name"
                                             >
                                                 <FaEdit />
                                             </button>
-                                            <button className="small-icon" onClick={deleteChannel} title="Delete channel">
+                                            <button className="small-icon" onClick={deleteClick} title="Delete channel">
                                                 <FaTrash />
                                             </button>
                                         </>
                                     )}
                                     {isAdmin && (
-                                        <button className="small-icon" onClick={toggleChannelForm} title={showChannelForm ? 'Close' : 'Create Channel'} >
+                                        <button className="small-icon" onClick={toggleChannelForm} title={showChannelForm ? 'Close' : 'Create Channel'}>
                                             {showChannelForm ? <FaMinus /> : <FaPlus />}
                                         </button>
                                     )}
@@ -578,10 +596,9 @@ const FeedHome = () => {
                                             className="small-icon"
                                             onClick={() => {
                                                 setIsEdit(false);
-                                                //setIsDraftEdit(false);
                                                 setPostToEdit(null);
                                                 setShowPostForm(true);
-                                            }}
+                                            } }
                                             title="Create Post"
                                         >
                                             <FaFeatherAlt />
@@ -596,11 +613,11 @@ const FeedHome = () => {
                                 {isAuthenticated && (<AlgorithmSelector locationId={channelRender?.channel_id} refreshPosts={refreshPosts} />)} {/*Project code*/}
                                 {showChannelForm && (
                                     <form className="add-channel-form" onSubmit={AddChannel}>
-                                        <input 
-                                            className="name-input" 
+                                        <input
+                                            className="name-input"
                                             onChange={(e) => {
                                                 const input = e.target.value;
-                                                if (input.length <= 30) {  
+                                                if (input.length <= 30) {
                                                     setNewChannelName(input);
                                                     if (input) {
                                                         if (input.trim() === 'main') {
@@ -609,7 +626,7 @@ const FeedHome = () => {
                                                             const result = ValidateTextInput(input, 1, 30);
                                                             if (result.valid) {
                                                                 setFeedErrorMessage("");
-                                                                setIsNewNameValid(true);    
+                                                                setIsNewNameValid(true);
                                                             } else {
                                                                 setFeedErrorMessage(result.error);
                                                                 setIsNewNameValid(false);
@@ -623,9 +640,9 @@ const FeedHome = () => {
                                                     setFeedErrorMessage("No more than 30 characters");
                                                     setIsNewNameValid(false);
                                                 }
-                                            }}
-                                            placeholder="Channel name..." 
-                                            type="text" 
+                                            } }
+                                            placeholder="Channel name..."
+                                            type="text"
                                             value={newChannelName} />
                                         {/*{feed.is_group && (
                                             <div className="channel-options">
@@ -657,6 +674,7 @@ const FeedHome = () => {
                 <ChannelList canReorder={isAdmin} channels={channels} feedId={feed?.feed_id} feedName={feed?.feed_name} isChat={false} isGroup={feed?.is_group} setChannels={setChannels} />
             </aside>
         </div>
+        <ConfirmModal isOpen={showDeleteConfirm} onConfirm={deleteChannel} onCancel={cancelDelete} title={`Delete ${pendingDeleteAction}`} message={`Are you sure you want to delete ${pendingDeleteAction}?`} /></>
     );
 }
 

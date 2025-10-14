@@ -9,6 +9,7 @@ import ReactQuill from 'react-quill'
 import 'react-quill/dist/quill.snow.css'
 import { v4 } from 'uuid'
 import { AuthContext } from '../authContext'
+import ConfirmModal from '../modals/confirmModal';
 import ContentWidget from './contentWidget'
 import Cropper from 'react-easy-crop';
 import GetCroppedImg from '../getCroppedImg'
@@ -122,23 +123,26 @@ const reorder = (list, startIndex, endIndex) => {
 }
 
 //Post is either the post being edited or replied to
-const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPostSubmit, post = null, postErrorMessage, setPostErrorMessage, setShowForm }) => {
-    const [addContentDropdownOpen, setAddContentDropdownOpen] = useState(false);
+const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPostDelete, onPostSubmit, post = null, postErrorMessage, setPostErrorMessage, setShowForm }) => {
+    const [addContentDropdownOpen, setAddContentDropdownOpen] = useState(false)
     const blocksRef = useRef([]) 
     const [blocks, setBlocks] = useState([])
     const [blockLimitError, setBlockLimitError] = useState('')
+    const { channel_name, feed_name } = useParams()
     const [cropState, setCropState] = useState({})
     const [draftId, setDraftId] = useState(post?.draft_id || null)
-    const isDraft = Boolean(draftId)
-    const [title, setTitle] = useState('')
-    const iframeRefs = useRef({})
-    const [isPostingDraft, setIsPostingDraft] = useState(false)
-    const { channel_name, feed_name } = useParams()
-    const navigate = useNavigate()
-    const submittedRef = useRef(false)
-    const urlPrefix = isGroup ? 'g' : 'u'
     const { isAuthenticated, user, viewer } = useContext(AuthContext)
     const hasMembership = user?.has_membership
+    const isDraft = Boolean(draftId)
+    const iframeRefs = useRef({})
+    const [isPostingDraft, setIsPostingDraft] = useState(false)
+    const navigate = useNavigate()
+    const submittedRef = useRef(false)
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+    const [pendingDeleteAction, setPendingDeleteAction] = useState(null)
+    const [title, setTitle] = useState('')
+    const urlPrefix = isGroup ? 'g' : 'u'
+
     const BLOCK_LIMIT = hasMembership ? 10000 : 10
     const MAX_FILE_SIZE = hasMembership ? 100 * 1024 * 1024 : 1 * 1024 * 1024
     const TEXT_CHAR_LIMIT = hasMembership ? 100000 : 1000
@@ -406,11 +410,22 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
         return finalHTML
     }, [])
 
-    const deleteHandler = useCallback(async () => {
+    const cancelDelete = () => {
+		setShowDeleteConfirm(false);
+		setPendingDeleteAction(null);
+	};
+
+	const deleteClick = () => {
+		const item = isReply ? "reply" : isDraft ? "draft" : "post";
+		setPendingDeleteAction(item);
+		setShowDeleteConfirm(true);
+	};
+
+    const confirmDelete = useCallback(async () => {
 		if (!isAuthenticated) return;
-        if (isDraft && !draftId) return
-        if (!isDraft && !post) return
-        if (!window.confirm(`Are you sure you want to delete this ${isDraft ? 'Draft' : 'Post'}?`)) return
+        if (isDraft && !draftId) return;
+        if (!isDraft && !post) return;
+        setShowDeleteConfirm(false);
         try {
             if (isDraft) {
                 await axios.delete('/api/remove_draft', {
@@ -421,22 +436,20 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
             } else {
                 await axios.delete('/api/remove_post', {
                     data: {
-                        post: {
-                            post_id: post?.post_id,
-                            parent_id: post?.parent_id,
-                        },
+                        post: { post_id: post?.post_id, parent_id: post?.parent_id },
                     },
                 })
                 const navigateUrl = isReply ? `/${urlPrefix}/${feed_name}/${channel_name}/${post?.post_id}` : `/${urlPrefix}/${feed_name}/${channel_name}`;
                 navigate(navigateUrl);
+                if (onPostDelete) onPostDelete();
             }
-            setShowForm(false)
             setTimeout(() => setPostErrorMessage(''), 3000)
         } catch (error) {
-            setPostErrorMessage(error.response?.data?.message || `Error deleting ${isDraft ? 'draft' : 'post'}`)
+            setPostErrorMessage(error.response.data?.message || `Error deleting ${isDraft ? 'draft' : 'post'}`)
             setTimeout(() => setPostErrorMessage(''), 3000)
         }
-    }, [channel_name, draftId, feed_name, isDraft, navigate, post, setDraftId, setShowForm, setPostErrorMessage, urlPrefix,])  
+        setPendingDeleteAction(null);
+    }, [channel_name, draftId, feed_name, isDraft, navigate, post, setDraftId, setShowForm, setPostErrorMessage, urlPrefix]);
 
     const isContentEmpty = useCallback(blocksArray => !blocksArray.some(block => {
         if (block.type === BLOCK_TYPES.TEXT) return block.data.html && block.data.html.trim() !== ''
@@ -460,7 +473,7 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
                         if (existingBlocks.length) setBlocks(existingBlocks)
                         else setBlocks([{ data: { html }, id: v4(), isEditing: true, type: BLOCK_TYPES.TEXT }])
                     } catch (error) {
-                        setPostErrorMessage('Could not fetch post HTML')
+                        setPostErrorMessage(error.response.data?.message || 'Could not fetch post HTML')
                     }
                 } 
             }
@@ -468,6 +481,7 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
         fetchAndSetBlocks();
     }, [isEdit, post, setPostErrorMessage])
 
+    //Introduces a text block upon first load
     useEffect(() => {
         if (!isEdit) {
             setBlocks([{
@@ -752,10 +766,10 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
     }, [updateBlock])
 
     return (
-        <div className="create-post-container" style={{ paddingTop: isReply ? '0px' : '20px' }}>
+        <><div className="create-post-container" style={{ paddingTop: isReply ? '0px' : '20px' }}>
             {isReply && post && (
                 <div className="post-reply-preview">
-                    <ContentWidget canRemove={false} feed={feed} onPostRemoved={() => {}} post={post} readOnly />
+                    <ContentWidget canRemove={false} feed={feed} onPostRemoved={() => { } } post={post} readOnly />
                 </div>
             )}
             <form id="post-form" className="post-form" onSubmit={submitForm}>
@@ -767,22 +781,22 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
                             </button>
                             {addContentDropdownOpen && (
                                 <div className="dropdown-menu" style={{ position: 'absolute', zIndex: 100, left: 0, top: '100%' }}>
-                                    <button className="small-icon" type="button" onClick={() => { setAddContentDropdownOpen(false); handleAddBlock(BLOCK_TYPES.TEXT); }}>
+                                    <button className="small-icon" type="button" onClick={() => { setAddContentDropdownOpen(false); handleAddBlock(BLOCK_TYPES.TEXT); } }>
                                         <FaFont /><span className="icon-text">Text</span>
                                     </button>
-                                    <button className="small-icon" type="button" onClick={() => { setAddContentDropdownOpen(false); document.getElementById('media-input').click(); }}>
+                                    <button className="small-icon" type="button" onClick={() => { setAddContentDropdownOpen(false); document.getElementById('media-input').click(); } }>
                                         <FaPhotoVideo /><span className="icon-text">Media</span>
                                     </button>
-                                    <button className="small-icon" type="button" onClick={() => { setAddContentDropdownOpen(false); handleAddBlock(BLOCK_TYPES.CODE); }}>
+                                    <button className="small-icon" type="button" onClick={() => { setAddContentDropdownOpen(false); handleAddBlock(BLOCK_TYPES.CODE); } }>
                                         <FaToolbox /><span className="icon-text">Interactive</span>
                                     </button>
                                     {/*<button className="small-icon" type="button" onClick={() => { setAddContentDropdownOpen(false); document.getElementById('app-input').click(); }}>
-                                        <FaCube /><span className="icon-text">App</span>
-                                    </button>*/}
-                                    <button className="small-icon" type="button" onClick={() => { setAddContentDropdownOpen(false); addIframe(); }}>
+                <FaCube /><span className="icon-text">App</span>
+            </button>*/}
+                                    <button className="small-icon" type="button" onClick={() => { setAddContentDropdownOpen(false); addIframe(); } }>
                                         <FaLink /><span className="icon-text">Website</span>
                                     </button>
-                                    <button className="small-icon" type="button" onClick={() => { setAddContentDropdownOpen(false); addSocialMedia(); }}>
+                                    <button className="small-icon" type="button" onClick={() => { setAddContentDropdownOpen(false); addSocialMedia(); } }>
                                         <FaShareAlt /><span className="icon-text">External Post</span>
                                     </button>
                                 </div>
@@ -793,7 +807,7 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
                                 <FaWindowClose />
                             </button>
                             {isEdit && (
-                                <button className="small-icon" type="button" onClick={deleteHandler} title={isDraft ? 'Delete draft' : isEdit ? 'Delete post' : 'Delete'}>
+                                <button className="small-icon" type="button" onClick={deleteClick} title={isDraft ? 'Delete draft' : isEdit ? 'Delete post' : 'Delete'}>
                                     <FaTrash />
                                 </button>
                             )}
@@ -806,22 +820,22 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
                                     <FaSave />
                                 </button>
 
-                        ) : (
-                            <>
-                                <button className="small-icon" type="button" onClick={saveDraft} title="Save draft">
-                                    <FaSave />
-                                </button>
-                                <button className="small-icon" form="post-form" type="submit" title="Post" onClick={() => setIsPostingDraft(true)}>
-                                    <FaArrowRight />
-                                    <p className="icon-text">{isReply ? 'Reply' : 'Create post'}</p>
-                                </button>
-                            </>
-                        )}
+                            ) : (
+                                <>
+                                    <button className="small-icon" type="button" onClick={saveDraft} title="Save draft">
+                                        <FaSave />
+                                    </button>
+                                    <button className="small-icon" form="post-form" type="submit" title="Post" onClick={() => setIsPostingDraft(true)}>
+                                        <FaArrowRight />
+                                        <p className="icon-text">{isReply ? 'Reply' : 'Create post'}</p>
+                                    </button>
+                                </>
+                            )}
                         </div>
                     </div>
                 </div>
                 <div style={{ alignItems: 'center', alignSelf: 'center', display: 'flex', justifyContent: 'space-between', width: '97%' }}>
-                    {!hasMembership ? (<Link className="small-icon" to={`/settings/${user?.username}/membership`} type="button" style={{ marginLeft: '5px' }} title="View Membership">
+                    {!hasMembership ? (<Link className="small-icon" to={`/settings/${user?.username}/membership`} type="button" title="View Membership">
                         <Crown />
                         <p className="icon-text">{blockLimitError ? blockLimitError : "Get membership"}</p>
                     </Link>) : (
@@ -832,9 +846,9 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
                     </p>
                 </div>
                 {!isReply && (
-                    <input 
-                        className="title-input" 
-                        id="title-entry" 
+                    <input
+                        className="title-input"
+                        id="title-entry"
                         onChange={(e) => {
                             const input = e.target.value;
                             if (input.length <= TITLE_CHAR_LIMIT) {
@@ -843,9 +857,9 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
                             } else {
                                 setPostErrorMessage('Title exceeds character limit.', !user?.has_membership && 'Get membership for more.');
                             }
-                        }}
-                        placeholder="Add title (optional)..." 
-                        type="text" 
+                        } }
+                        placeholder="Add title (optional)..."
+                        type="text"
                         value={title} />
                 )}
                 <input accept="image/*,video/*" hidden id="media-input" multiple onChange={handleFilesChange} type="file" />
@@ -857,8 +871,8 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
                                 <div ref={provided.innerRef} {...provided.droppableProps}>
                                     {!blocks.length && <p className="small-text faded-text" style={{ marginLeft: '10px' }}>Add content using the buttons above</p>}
                                     {blocks.map((block, index) => {
-                                        const { data, id, isEditing, type } = block
-                                        const toggleEdit = () => updateBlock({ ...block, isEditing: !isEditing })
+                                        const { data, id, isEditing, type } = block;
+                                        const toggleEdit = () => updateBlock({ ...block, isEditing: !isEditing });
                                         return (
                                             <Draggable key={id} draggableId={id} index={index} isDragDisabled={cropState[id]?.isCropping}>
                                                 {provided2 => (
@@ -882,13 +896,13 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
                                                                             className="small-icon"
                                                                             onClick={() => {
                                                                                 async function doCopy() {
-                                                                                    await navigator.clipboard.writeText(data.code)
+                                                                                    await navigator.clipboard.writeText(data.code);
                                                                                 }
                                                                                 doCopy().then(() => {
-                                                                                    setPostErrorMessage('Copied')
-                                                                                    setTimeout(() => setPostErrorMessage(''), 2000)
-                                                                                })
-                                                                            }}
+                                                                                    setPostErrorMessage('Copied');
+                                                                                    setTimeout(() => setPostErrorMessage(''), 2000);
+                                                                                });
+                                                                            } }
                                                                             title="Copy"
                                                                             type="button"
                                                                         >
@@ -898,18 +912,18 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
                                                                     {type === BLOCK_TYPES.MEDIA && (
                                                                         <>
                                                                             {data.isImage && (
-                                                                                <button 
-                                                                                    className="small-icon" 
+                                                                                <button
+                                                                                    className="small-icon"
                                                                                     onClick={() => setCropState(prev => ({
-                                                                                    ...prev,
-                                                                                    [id]: {
-                                                                                        isCropping: true,
-                                                                                        crop: { x: 0, y: 0 },
-                                                                                        zoom: 1,
-                                                                                        croppedAreaPixels: null
-                                                                                    }
-                                                                                    }))} 
-                                                                                    title="Crop image" 
+                                                                                        ...prev,
+                                                                                        [id]: {
+                                                                                            isCropping: true,
+                                                                                            crop: { x: 0, y: 0 },
+                                                                                            zoom: 1,
+                                                                                            croppedAreaPixels: null
+                                                                                        }
+                                                                                    }))}
+                                                                                    title="Crop image"
                                                                                     type="button"
                                                                                 >
                                                                                     <FaCrop /><p className="icon-text">Crop</p>
@@ -940,26 +954,25 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
                                                                     <ReactQuill
                                                                         className="text-editor"
                                                                         onChange={val => {
-                                                                            const plainText = val.replace(/<[^>]*>/g, '')
+                                                                            const plainText = val.replace(/<[^>]*>/g, '');
                                                                             if (plainText.length < TEXT_CHAR_LIMIT) {
-                                                                                updateBlock({ ...block, data: { ...data, html: val, textError: '' } })
+                                                                                updateBlock({ ...block, data: { ...data, html: val, textError: '' } });
                                                                             } else {
-                                                                                updateBlock({ ...block, data: { ...data, textError: `Exceeded ${TEXT_CHAR_LIMIT} character limit. ${!user.has_membership && 'Get membership for more.'}` } })
+                                                                                updateBlock({ ...block, data: { ...data, textError: `Exceeded ${TEXT_CHAR_LIMIT} character limit. ${!user.has_membership && 'Get membership for more.'}` } });
                                                                             }
-                                                                        }}
+                                                                        } }
                                                                         placeholder="Begin writing..."
                                                                         theme="snow"
                                                                         value={data.html}
                                                                         style={{ flex: 1 }}
-                                                                            modules={{
-                                                                                toolbar: [
-                                                                                    [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
-                                                                                    ['bold', 'italic', 'underline', 'strike'],
-                                                                                    [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-                                                                                    [{ 'color': [] }],
-                                                                                ]
-                                                                            }}
-                                                                    />
+                                                                        modules={{
+                                                                            toolbar: [
+                                                                                [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
+                                                                                ['bold', 'italic', 'underline', 'strike'],
+                                                                                [{ 'list': 'ordered' }, { 'list': 'bullet' }],
+                                                                                [{ 'color': [] }],
+                                                                            ]
+                                                                        }} />
                                                                     <button className="small-icon" onClick={() => removeBlock(id)} title="Delete" type="button">
                                                                         <FaTrash />
                                                                     </button>
@@ -973,8 +986,8 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
                                                                     <>
                                                                         {data.showPrompt ? (
                                                                             <div className="ai-generator">
-                                                                                <textarea className="ai-prompt" 
-                                                                                    disabled={limitReached || data.isBlockLoading}  
+                                                                                <textarea className="ai-prompt"
+                                                                                    disabled={limitReached || data.isBlockLoading}
                                                                                     onChange={(e) => {
                                                                                         const input = e.target.value;
                                                                                         if (input.length <= TEXT_CHAR_LIMIT) {
@@ -984,54 +997,50 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
                                                                                             updateBlock({ ...block, data: { ...data, _tempAiPrompt: input } });
                                                                                             setPostErrorMessage('Too long.', !user?.has_membership && 'Get membership for more.');
                                                                                         }
-                                                                                    }}
-                                                                                    placeholder={limitReached ? (user?.has_membership ? "Limit reached. Buy new membership to reset" 
-                                                                                        : "Limit reached. Get membership for more.") 
-                                                                                        : data.isBlockLoading ? "Creating post... may take up to a minute" 
-                                                                                        : "Describe your post..."
-                                                                                    }
-                                                                                    value={data.isBlockLoading ? '' : (data._tempAiPrompt || '')}
-                                                                                />
-                                                                                <button className={data.isBlockLoading || !data._tempAiPrompt?.trim() || limitReached ? 'small-icon disabled' : 'small-icon'} 
-                                                                                    disabled={data.isBlockLoading || !data._tempAiPrompt?.trim() || limitReached} 
-                                                                                    onClick={() => generateCodeBlock(block)} 
-                                                                                    title={limitReached ? (user?.has_membership ? "Usage limit reached" 
-                                                                                        : "Limit reached. Get membership for more.") 
-                                                                                        : data.isBlockLoading ? 'Creating...' 
-                                                                                        : !data._tempAiPrompt?.trim() ? 'Enter a prompt' 
-                                                                                        : 'Create'
-                                                                                    }
+                                                                                    } }
+                                                                                    placeholder={limitReached ? (user?.has_membership ? "Limit reached. Buy new membership to reset"
+                                                                                        : "Limit reached. Get membership for more.")
+                                                                                        : data.isBlockLoading ? "Creating post... may take up to a minute"
+                                                                                            : "Describe your post..."}
+                                                                                    value={data.isBlockLoading ? '' : (data._tempAiPrompt || '')} />
+                                                                                <button className={data.isBlockLoading || !data._tempAiPrompt?.trim() || limitReached ? 'small-icon disabled' : 'small-icon'}
+                                                                                    disabled={data.isBlockLoading || !data._tempAiPrompt?.trim() || limitReached}
+                                                                                    onClick={() => generateCodeBlock(block)}
+                                                                                    title={limitReached ? (user?.has_membership ? "Usage limit reached"
+                                                                                        : "Limit reached. Get membership for more.")
+                                                                                        : data.isBlockLoading ? 'Creating...'
+                                                                                            : !data._tempAiPrompt?.trim() ? 'Enter a prompt'
+                                                                                                : 'Create'}
                                                                                     type="button">
                                                                                     {data.isBlockLoading ? <FaCircleNotch className="spinner" /> : <FaArrowCircleUp />}
                                                                                 </button>
                                                                             </div>
                                                                         ) : (
-                                                                            <textarea 
-                                                                                className="code-input" 
+                                                                            <textarea
+                                                                                className="code-input"
                                                                                 onChange={e => {
                                                                                     const newValue = e.target.value;
                                                                                     if (newValue.length <= 100 * TEXT_CHAR_LIMIT) {
-                                                                                        updateBlock({ 
-                                                                                            id: block.id, 
-                                                                                            data: { 
-                                                                                                ...data, 
-                                                                                                code: newValue 
+                                                                                        updateBlock({
+                                                                                            id: block.id,
+                                                                                            data: {
+                                                                                                ...data,
+                                                                                                code: newValue
                                                                                             }
                                                                                         });
                                                                                         setPostErrorMessage('');
                                                                                     } else {
                                                                                         setPostErrorMessage('Code exceeds character limit.', !user.has_membership && 'Get membership for more.');
                                                                                     }
-                                                                                }} 
-                                                                                placeholder="Enter code..." 
-                                                                                value={data.code} 
-                                                                            />
+                                                                                } }
+                                                                                placeholder="Enter code..."
+                                                                                value={data.code} />
                                                                         )}
                                                                     </>
                                                                 )}
                                                                 {data.code.trim() ? (
                                                                     <div className="code-preview">
-                                                                        <iframe ref={el => { iframeRefs.current[id] = el }} sandbox="allow-scripts allow-same-origin" srcDoc={data.code} style={{ border: 'none', width: '100%', height: '50vh' }} title={`code-preview-${id}`} />
+                                                                        <iframe ref={el => { iframeRefs.current[id] = el; } } sandbox="allow-scripts allow-same-origin" srcDoc={data.code} style={{ border: 'none', width: '100%', height: '50vh' }} title={`code-preview-${id}`} />
                                                                     </div>
                                                                 ) : (
                                                                     <p className="small-text faded-text">Nothing to preview</p>
@@ -1047,7 +1056,7 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
                                                                                 image={data.url}
                                                                                 crop={cropState[id]?.crop || { x: 0, y: 0 }}
                                                                                 zoom={cropState[id]?.zoom || 1}
-                                                                                aspect={4/3}
+                                                                                aspect={4 / 3}
                                                                                 onCropChange={(crop) => setCropState(prev => ({
                                                                                     ...prev,
                                                                                     [id]: {
@@ -1063,18 +1072,17 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
                                                                                         zoom
                                                                                     }
                                                                                 }))}
-                                                                                onInteractionStart={() => {}}
-                                                                            />
+                                                                                onInteractionStart={() => { } } />
                                                                         </div>
                                                                         <div className="crop-controls" style={{ display: 'flex', justifyContent: 'center', marginTop: 10, gap: 10 }}>
-                                                                            <button 
+                                                                            <button
                                                                                 className="small-icon"
                                                                                 onClick={() => setCropState(prev => {
                                                                                     const newState = { ...prev };
                                                                                     delete newState[id];
                                                                                     return newState;
                                                                                 })}
-                                                                                title="Cancel" 
+                                                                                title="Cancel"
                                                                                 type="button"
                                                                             >
                                                                                 <FaTimes /><p className="icon-text">Cancel</p>
@@ -1100,23 +1108,22 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
                                                         {type === BLOCK_TYPES.APP && (
                                                             data.isUploading
                                                                 ? <div key={id} className="app-placeholder">
-                                                                        <p>{data.fileName}</p>
-                                                                        <FaCircleNotch className="spinner" />
+                                                                    <p>{data.fileName}</p>
+                                                                    <FaCircleNotch className="spinner" />
                                                                 </div>
-                                                            : data.buildId
-                                                                ? <iframe
-                                                                        ref={el => { iframeRefs.current[id] = el }}
+                                                                : data.buildId
+                                                                    ? <iframe
+                                                                        ref={el => { iframeRefs.current[id] = el; } }
                                                                         sandbox="allow-scripts allow-same-origin"
                                                                         src={`/app_builds/${data.buildId}/index.html`}
                                                                         style={{ border: 'none', width: '100%', height: '50vh' }}
-                                                                        title={`app-preview-${id}`}
-                                                                />
-                                                                : null
+                                                                        title={`app-preview-${id}`} />
+                                                                    : null
                                                         )}
                                                     </div>
                                                 )}
                                             </Draggable>
-                                        )
+                                        );
                                     })}
                                     {provided.placeholder}
                                 </div>
@@ -1126,6 +1133,7 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
                 </div>
             </form>
         </div>
+        <ConfirmModal isOpen={showDeleteConfirm} onConfirm={confirmDelete} onCancel={cancelDelete} title={`Delete ${pendingDeleteAction}`} message={`Are you sure you want to delete this ${pendingDeleteAction}?`} /></>
     )
 }
 

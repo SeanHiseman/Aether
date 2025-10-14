@@ -5,8 +5,8 @@ import { useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { AuthContext } from '../authContext';
 import AskButton from '../askButton';
 import ContentDisplay from './contentDisplay';
-import { FormatNumber } from '../../functions/formatNumber';
 import ConfirmModal from '../modals/confirmModal';
+import { FormatNumber } from '../../functions/formatNumber';
 import ReplyTreeView from './replyTreeView';
 import PropTypes from 'prop-types';
 import useTimeAgo from '../../functions/useTimeAgo';
@@ -45,6 +45,53 @@ const ContentWidget = ({ canRemove = false, display = false, feed, isDraft = fal
 	const isViewingOwnPost = post?.poster_id === viewer?.feed_id;
 	const timeAgo = useTimeAgo(post?.created_at);
 	const urlPrefix = (post?.parentChannel?.feed?.is_group) ? 'g' : 'u';
+
+	const confirmDelete = async () => {
+		setShowDeleteConfirm(false);
+		try {
+			let url;
+			let dataPayload;
+			if (isDraft) {
+				url = "/api/remove_draft";
+				dataPayload = {
+					draft: { draft_id: post?.draft_id, isPosting: false }
+				};
+			} else {
+				url = "/api/remove_post";
+				dataPayload = {
+					post: { post_id: post?.post_id, ...(post?.parent_id != null && { parent_id: post?.parent_id })}
+				};
+			}
+			const response = await axios.delete(url, { data: dataPayload });
+			if (response.data?.success) {
+				onPostRemoved(isDraft ? post?.draft_id : post?.post_id)
+				if (!isDraft) {
+					if (post?.parent_id) {
+						navigate(`/${urlPrefix}/${post?.parentChannel?.feed?.feed_name}/${post?.parentChannel?.channel_name}/${post?.parent_id}`);
+					} else {
+						navigate(`/${urlPrefix}/${post?.parentChannel?.feed?.feed_name}/${post?.parentChannel?.channel_name}`);
+					}
+				}
+			} else {
+				setPostErrorMessage(`Error removing ${pendingDeleteAction}`);
+			}
+		} catch (error) {
+			setPostErrorMessage(error.response.data?.message || `Error removing ${pendingDeleteAction}`);
+			setTimeout(() => setPostErrorMessage(""), 3000);
+		}
+		setPendingDeleteAction(null);
+	};
+
+	const cancelDelete = () => {
+		setShowDeleteConfirm(false);
+		setPendingDeleteAction(null);
+	};
+
+	const deleteClick = () => {
+		const item = isReply ? "reply" : isDraft ? "draft" : "post";
+		setPendingDeleteAction(item);
+		setShowDeleteConfirm(true);
+	};
 
 	const getReplies = useCallback(async (postId) => {
 		try {
@@ -119,59 +166,6 @@ const ContentWidget = ({ canRemove = false, display = false, feed, isDraft = fal
             setTimeout(() => setPostErrorMessage(""), 3000);
         }
     };
-
-	const deleteClick = () => {
-		const item = isReply ? "Reply" : isDraft ? "Draft" : "Post";
-		setPendingDeleteAction(item);
-		setShowDeleteConfirm(true);
-	};
-
-	const confirmDelete = async () => {
-		setShowDeleteConfirm(false);
-		try {
-			let url;
-			let dataPayload;
-			if (isDraft) {
-				url = "/api/remove_draft";
-				dataPayload = {
-					draft: {
-					draft_id: post?.draft_id,
-					isPosting: false
-					}
-				};
-			} else {
-				url = "/api/remove_post";
-				dataPayload = {
-					post: {
-					post_id: post?.post_id,
-					...(post?.parent_id != null && { parent_id: post?.parent_id })
-					}
-				};
-			}
-			const response = await axios.delete(url, { data: dataPayload });
-			if (response.data?.success) {
-				onPostRemoved(isDraft ? post?.draft_id : post?.post_id)
-				if (!isDraft) {
-					if (post.parent_id) {
-						navigate(`/${urlPrefix}/${post?.parentChannel?.feed?.feed_name}/${post?.parentChannel?.channel_name}/${post?.parent_id}`);
-					} else {
-						navigate(`/${urlPrefix}/${post?.parentChannel?.feed?.feed_name}/${post?.parentChannel?.channel_name}`);
-					}
-				}
-			} else {
-			setPostErrorMessage(`Error removing ${pendingDeleteAction}`);
-			}
-		} catch (error) {
-			setPostErrorMessage(`Error removing ${pendingDeleteAction}`);
-			setTimeout(() => setPostErrorMessage(""), 3000);
-		}
-		setPendingDeleteAction(null);
-	};
-
-	const cancelDelete = () => {
-		setShowDeleteConfirm(false);
-		setPendingDeleteAction(null);
-	};
 
 	const replyRemoved = (replyId) => {
 		if (!isAuthenticated) return;
@@ -473,7 +467,7 @@ const ContentWidget = ({ canRemove = false, display = false, feed, isDraft = fal
 				</div>
 			)}
 		</div>
-		<ConfirmModal isOpen={showDeleteConfirm} onConfirm={confirmDelete} onCancel={cancelDelete} title={`Delete ${pendingDeleteAction}`} message={`Are you sure you want to delete this ${pendingDeleteAction?.toLowerCase()}?`} /></>
+		<ConfirmModal isOpen={showDeleteConfirm} onConfirm={confirmDelete} onCancel={cancelDelete} title={`Delete ${pendingDeleteAction}`} message={`Are you sure you want to delete this ${pendingDeleteAction}?`} /></>
 	);
 };
 

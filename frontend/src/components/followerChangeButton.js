@@ -1,13 +1,16 @@
 import axios from 'axios';
+import ConfirmModal from './modals/confirmModal';
 import { FaMinus, FaMinusCircle, FaPlusCircle } from 'react-icons/fa';
-import { useEffect, useState } from 'react';
 import { FormatNumber } from '../functions/formatNumber';
+import { useEffect, useState } from 'react';
 
 const FollowerChangeButton = ({ feed, showFollowers = true, showName, showVertical, updateFeeds, viewerId }) => {
     const [errorMessage, setErrorMessage] = useState('');
     const [follower, setFollower] = useState(feed?.isFollower);
     const [followerCount, setFollowerCount] = useState(feed?.follower_count);
     const [request, setRequest] = useState(feed?.followRequest);
+    const [showUnfollowConfirm, setShowUnfollowConfirm] = useState(false);
+    const isAdminOrMod = feed?.isAdmin || feed?.isMod;
     const isPrivate = feed?.type === 'private';
 
     useEffect(() => {
@@ -18,6 +21,10 @@ const FollowerChangeButton = ({ feed, showFollowers = true, showName, showVertic
 
     const handleFollowerChange = async () => {
         try {
+            if (follower && isAdminOrMod && !showUnfollowConfirm) {
+                setShowUnfollowConfirm(true);
+                return;
+            }
             if (isPrivate && !follower && !request) {
                 await axios.post('/api/send_follow_request', { receiverId: feed?.feed_id, senderId: viewerId });
                 setRequest(true);
@@ -45,14 +52,15 @@ const FollowerChangeButton = ({ feed, showFollowers = true, showName, showVertic
                     updateFeeds();
                 }
             }
+            setShowUnfollowConfirm(false);
         } catch (error) {
-            setErrorMessage("Error updating following");
+            setErrorMessage(error.response.data?.message || "Error updating following");
             setTimeout(() => setErrorMessage(''), 5000);
         }
     };
 
     return (
-        <div className={showVertical ? "follow-container vertical" : "follow-container horizontal"}>
+        <><div className={showVertical ? "follow-container vertical" : "follow-container horizontal"}>
             {showName && <p className="font-bold text-white text-lg truncate">{feed.feed_name}</p>}
             {showFollowers && <p className="small-text">{FormatNumber(followerCount)} {followerCount === 1 ? 'follower' : 'followers'}</p>}
             <button className="follow-button" onClick={handleFollowerChange}>
@@ -64,12 +72,21 @@ const FollowerChangeButton = ({ feed, showFollowers = true, showName, showVertic
                             ? request
                                 ? 'Cancel request'
                                 : 'Follow request'
-                            : 'Follow'
-                    }
+                            : 'Follow'}
                 </p>
             </button>
             {errorMessage && <div className="error-message">{errorMessage}</div>}
         </div>
+        <ConfirmModal
+            isOpen={showUnfollowConfirm}
+            onConfirm={() => {
+                setShowUnfollowConfirm(false);
+                handleFollowerChange();
+            } }
+            onCancel={() => setShowUnfollowConfirm(false)}
+            title="Unfollow Confirmation"
+            message={`You are ${feed?.isAdmin ? 'an admin' : 'a moderator'} of this feed. Are you sure you want to unfollow?`} />
+        </>
     )
 }
 
