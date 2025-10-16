@@ -43,6 +43,7 @@ const PostChannel = ({ channelId, channelName, feed, isDraft, isEditMode, isGrou
 	const getPosts = async ({ pageParam = 0 }) => {
 		try {
 			const recentUpvotes = JSON.parse(localStorage.getItem("recentUpvotes") || "[]");
+			console.log(`Fetching posts for channelId: ${channelId}`);
 			const response = await api.get('/channel_posts', { params: { channelId, feedId, isMain, isGroup: feed?.is_group, isSingle: false, limit: 48, offset: pageParam, recentUpvotes } });
 			return response.data;
 		} catch (error) {

@@ -6,7 +6,7 @@ import { ChunkFeeds } from "../../functions/chunkFeeds";
 import ContentWidget from "../../components/content/contentWidget";
 import FeedWidget from "../../components/content/feedWidget";
 import { useOutletContext } from "react-router-dom";
-const FETCH_LIMIT = 48;
+const FETCH_LIMIT = 50;
 
 const ExplorePage = () => {
 	const [errorMessage, setErrorMessage] = useState("");
@@ -15,15 +15,14 @@ const ExplorePage = () => {
 	const [filter, setFilter] = useState("all");
 	const [hasMoreFeeds, setHasMoreFeeds] = useState(true);
 	const [hasMorePosts, setHasMorePosts] = useState(true);
-	const [loading, setLoading] = useState(true);
-	const [loadingMore, setLoadingMore] = useState(false);
+	const [isLoading, setIsLoading] = useState(false);
 	const [postPage, setPostPage] = useState(0);
 	const [posts, setPosts] = useState([]);
-	const [shownFeedIds, setShownFeedIds] = useState([]);
-	const [shownPostIds, setShownPostIds] = useState([]);
 	const { isAuthenticated, viewer } = useContext(AuthContext);
 	const { rightClasses, updateFeeds } = useOutletContext();
 	const [refreshTrigger, setRefreshTrigger] = useState(false);
+	const shownPostIdsRef = useRef([]);
+	const shownFeedIdsRef = useRef([]);
 	const scrollRef = useRef(null);
 
 	const fetchPosts = useCallback(async (page = 0) => {
@@ -31,95 +30,94 @@ const ExplorePage = () => {
 			const followedFeeds = JSON.parse(localStorage.getItem("followedFeeds") || "[]");
 			const recentUpvotes = JSON.parse(localStorage.getItem("recentUpvotes") || "[]");
 			const followedFeedIds = followedFeeds.map(f => f.feed_id);
-			const response = await api.get("/explore_posts", {
-				params: {
-					limit: FETCH_LIMIT,
-					offset: page * FETCH_LIMIT,
-					exclude: shownPostIds.join(','),
-					followedFeedIds: followedFeedIds.join(','),
-					recentUpvotes
-				}
+			const response = await api.post("/explore_posts", {
+				limit: FETCH_LIMIT,
+				offset: page * FETCH_LIMIT,
+				exclude: shownPostIdsRef.current, 
+				followedFeedIds,
+				recentUpvotes
 			});
-			const newPosts = response?.data?.posts || [];
-			setHasMorePosts(response?.data?.hasMore ?? false);
-			if (page === 0) { //Initial load
+			const newPosts = response.data?.posts || [];
+			setHasMorePosts(response.data?.hasMore ?? false);
+			if (page === 0) {
 				setPosts(newPosts);
-				setShownPostIds(newPosts.map(p => p?.post_id));
+				shownPostIdsRef.current = newPosts.map(p => p?.post_id);
 			} else { //Append to existing posts
 				setPosts(prev => [...prev, ...newPosts]);
-				setShownPostIds(prev => [...prev, ...newPosts.map(p => p?.post_id)]);
+				const newIds = newPosts.map(p => p?.post_id);
+				shownPostIdsRef.current = [...shownPostIdsRef.current, ...newIds]; 
 			}
 		} catch (error) {
 			setErrorMessage(error.response.data?.message || "Failed to fetch posts");
+			setHasMorePosts(false);
 		}
-	}, [filter, shownPostIds]);
+	}, []); 
 
 	const fetchFeeds = useCallback(async (page = 0) => {
 		try {
 			//Get followed feeds from localStorage
 			const cached = localStorage.getItem("followedFeeds");
 			const excludedFeedIds = cached ? JSON.parse(cached).map(f => f.feed_id) : [];
-			const response = await api.get("/explore_feeds", {
-				params: { 
-					limit: FETCH_LIMIT, 
-					offset: page * FETCH_LIMIT, 
-					exclude: [...shownFeedIds, ...excludedFeedIds].join(',')
-				},
+			const response = await api.post("/explore_feeds", {
+				limit: 30, 
+				offset: page * 30, 
+				exclude: [...shownFeedIdsRef.current, ...excludedFeedIds] 
 			});
-			const newFeeds = response?.data?.feeds || [];
+			const newFeeds = response.data?.feeds || [];
 			if (newFeeds.length === 0) {
 				setHasMoreFeeds(false);
 				return;
 			}
-			setHasMoreFeeds(response?.data?.hasMore ?? false);
+			setHasMoreFeeds(response.data?.hasMore ?? false);
 			if (page === 0) {
 				setFeeds(newFeeds);
-				setShownFeedIds(newFeeds.map(f => f?.feed_id));
+				const newIds = newFeeds.map(f => f?.feed_id);
+				shownFeedIdsRef.current = newIds; 
 			} else {
 				setFeeds(prev => [...prev, ...newFeeds]);
-				setShownFeedIds(prev => [...prev, ...newFeeds.map(f => f?.feed_id)]);		
+				const newIds = newFeeds.map(f => f?.feed_id);
+				shownFeedIdsRef.current = [...shownFeedIdsRef.current, ...newIds]; 
 			}
 		} catch (error) {
 			setErrorMessage(error.response.data?.message || "Failed to fetch feeds");
 			setHasMoreFeeds(false);
 		}
-	}, [shownFeedIds]);
+	}, []);
 
 	const loadMore = useCallback(async () => {
-		if (loading || loadingMore) return;
+		if (isLoading) return;
 		if (filter === "all") {
 			if (!hasMorePosts && !hasMoreFeeds) return;
-			setLoadingMore(true);
+			setIsLoading(true);
 			const nextPostPage = postPage + 1;
 			const nextFeedPage = feedPage + 1;
 			if (hasMorePosts) await fetchPosts(nextPostPage);
 			if (hasMoreFeeds) await fetchFeeds(nextFeedPage);
 			if (hasMorePosts) setPostPage(nextPostPage);
 			if (hasMoreFeeds) setFeedPage(nextFeedPage);
-			setLoadingMore(false);
+			setIsLoading(false);
 		} else if (filter === "posts" && hasMorePosts) {
-			setLoadingMore(true);
+			setIsLoading(true);
 			const nextPostPage = postPage + 1;
 			await fetchPosts(nextPostPage);
 			setPostPage(nextPostPage);
-			setLoadingMore(false);
+			setIsLoading(false);
 		} else if (filter === "feeds" && hasMoreFeeds) {
-			setLoadingMore(true);
+			setIsLoading(true);
 			const nextFeedPage = feedPage + 1;
 			await fetchFeeds(nextFeedPage);
 			setFeedPage(nextFeedPage);
-			setLoadingMore(false);
+			setIsLoading(false);
 		}
-	}, [loading, loadingMore, filter, fetchPosts, fetchFeeds, postPage, feedPage, hasMorePosts, hasMoreFeeds]);
+	}, [isLoading, filter, fetchPosts, fetchFeeds, postPage, feedPage, hasMorePosts, hasMoreFeeds]);
 
 	const handleScroll = useCallback(() => {
 		const element = scrollRef.current;
-		if (!element) return;
-		if (scrollRef.current.scrollTimeout) clearTimeout(scrollRef.current.scrollTimeout);
-		scrollRef.current.scrollTimeout = setTimeout(() => {
-			if (element.scrollTop + element.clientHeight >= element.scrollHeight - 200) loadMore();
-		}, 100);
-	}, [loadMore]);
+		if (!element || isLoading) return;
+		if (element.scrollTop + element.clientHeight >= element.scrollHeight - 200) {
+			loadMore();
+		}
+	}, [loadMore, isLoading]);
 
 	const combinedItems = useMemo(() => {
 		if (filter !== "all") return [];
@@ -143,61 +141,48 @@ const ExplorePage = () => {
 	}, [filter, posts, feeds]);
 
 	const refreshPosts = () => {
-        setRefreshTrigger(!refreshTrigger);
-    };
+		setRefreshTrigger(!refreshTrigger);
+	};
 
+	//Reset all state on filter change and fetch initial batch
 	useEffect(() => {
-		return () => {
-			if (scrollRef.current?.scrollTimeout) clearTimeout(scrollRef.current.scrollTimeout);
-		};
-	}, []);
-
-	//Reset all state on filter change, and fetch the initial batch for the current filter
-	useEffect(() => {
-		setLoading(true);
+		setIsLoading(true);
 		setFeedPage(0);
 		setPostPage(0);
 		setFeeds([]);
 		setPosts([]);
-		setShownFeedIds([]);
-		setShownPostIds([]);
+		shownPostIdsRef.current = [];
+		shownFeedIdsRef.current = [];
 		const fetches = [];
 		if (filter === "all" || filter === "posts") fetches.push(fetchPosts(0));
 		if (filter === "all" || filter === "feeds") fetches.push(fetchFeeds(0));
-		Promise.all(fetches).then(() => setLoading(false));
-	}, [filter]);
+		Promise.all(fetches).then(() => setIsLoading(false));
+	}, [filter, fetchPosts, fetchFeeds]);
 
-	//Refresh posts (merge with previous useEffect?)
+	//Manual refresh trigger
 	useEffect(() => {
 		if (refreshTrigger === false) return; 
-		setLoading(true);
+		setIsLoading(true);
 		setFeedPage(0);
 		setPostPage(0);
 		setFeeds([]);
 		setPosts([]);
-		setShownFeedIds([]);
-		setShownPostIds([]);
+		shownPostIdsRef.current = [];
+		shownFeedIdsRef.current = [];
+		
 		const fetches = [];
-		if (filter === "all" || filter === "posts") fetches.push(fetchPosts());
-		if (filter === "all" || filter === "feeds") fetches.push(fetchFeeds());
-		Promise.all(fetches).then(() => setLoading(false));
-	}, [refreshTrigger]);
+		if (filter === "all" || filter === "posts") fetches.push(fetchPosts(0));
+		if (filter === "all" || filter === "feeds") fetches.push(fetchFeeds(0));
+		
+		Promise.all(fetches).then(() => setIsLoading(false));
+	}, [refreshTrigger, fetchPosts, fetchFeeds, filter]);
 
-	//Auto-load until scroll area is filled, or no more data is being fetched
-	useEffect(() => {
-		if (loading) return;
-		const element = scrollRef.current;
-		if (!element) return;
-		const timeout = setTimeout(() => {
-			if (element.scrollHeight <= element.clientHeight && !loadingMore) loadMore();
-		}, 50);
-		return () => clearTimeout(timeout);
-	}, [loading, loadingMore]);
+	const isInitialLoad = isLoading && posts.length === 0 && feeds.length === 0;
 
 	return (
 		<div className="standard-container">
 			<div ref={scrollRef} onScroll={handleScroll} className="channel-feed">
-				{loading ? (
+				{isInitialLoad ? (
 					<div className="flex justify-center items-center h-64">
 						<span className="large-text faded-text">Loading...</span>
 					</div>
@@ -251,7 +236,7 @@ const ExplorePage = () => {
 						<li className="channel-link" onClick={() => setFilter("feeds")}>Feeds</li>
 					</ul>
 				</nav>
-				{isAuthenticated && <AlgorithmSelector locationId={"explore"} refreshPosts={refreshPosts} />} {/*Project code*/}
+				{isAuthenticated && <AlgorithmSelector locationId={"explore"} refreshPosts={refreshPosts} />} 
 			</aside>
 		</div>
 	);

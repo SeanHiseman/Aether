@@ -550,13 +550,13 @@ router.delete('/delete_feed_channel', higherLimiter, authenticateCheck, async (r
     }
 });
 
-router.get("/explore_feeds", standardLimiter, async (req, res) => {
+router.post("/explore_feeds", standardLimiter, async (req, res) => {
 	try {
-		const { exclude = [] } = req.query;
+		const { exclude = [], limit: reqLimit, offset: reqOffset } = req.body;
 		const viewerId = req.session?.viewer_id;
-		const limit = parseInt(req.query.limit, 10) || 6;
-		const offset = parseInt(req.query.offset, 10) || 0;
-		let excludeArray = Array.isArray(exclude) ? exclude : (exclude ? exclude.split(',') : []);
+		const limit = parseInt(reqLimit, 10) || 30;
+		const offset = parseInt(reqOffset, 10) || 0;
+		let excludeArray = Array.isArray(exclude) ? exclude : [];
 		if (viewerId) {
 			excludeArray.push(viewerId); 
 		}
@@ -590,9 +590,10 @@ router.get("/explore_feeds", standardLimiter, async (req, res) => {
 			}
 			return response;
 		}));
+        console.log(`Fetched ${feedData.length} feeds for explore.`);
 		res.status(200).json({ success: true, feeds: feedData, hasMore: feedData.length >= limit });
 	} catch (error) {
-        console.log("/explore_feeds error:", error);
+		console.log("/explore_feeds error:", error);
 		res.status(500).json({ success: false, message: "Error while fetching feeds" });
 	}
 });

@@ -338,19 +338,14 @@ router.post("/create_post", standardLimiter, authenticateCheck, checkStorageLimi
 			}
 		}
 		console.error("Error in /create_post:", error);
-		return res.status(500).json({ success: false, error: error.message });
+		return res.status(500).json({ success: false, message: "Error creating post" });
 	}
 });
 
-router.get("/explore_posts", standardLimiter, async (req, res) => {
+router.post("/explore_posts", standardLimiter, async (req, res) => {
     try {
-        const { exclude = [] } = req.query;
-        const excludeArray = Array.isArray(exclude) ? exclude : exclude.split(',').filter(Boolean);
-		const followedFeedIds = req.query.followedFeedIds;
-		const recentUpvotes = req.query.recentUpvotes;
-        const viewerId = req?.session?.viewer_id || null;
-        const limit = parseInt(req.query.limit, 10) || 48;
-        const offset = parseInt(req.query.offset, 10) || 0;
+		const { exclude = [], followedFeedIds, recentUpvotes, limit = 50, offset = 0 } = req.body;
+		const viewerId = req?.session?.viewer_id || null;
         const includeOptions = [{
             model: Feeds,
             as: "poster",
@@ -380,7 +375,7 @@ router.get("/explore_posts", standardLimiter, async (req, res) => {
         }];
         const posts = await ApplyAlgorithm({
             locationId: 'explore',
-            excludedPostIds: excludeArray,
+            excludedPostIds: exclude,
             feedId: null,
 			followedFeedIds,
             includeOptions: includeOptions,
@@ -390,10 +385,11 @@ router.get("/explore_posts", standardLimiter, async (req, res) => {
 			recentUpvotes,
             viewerId,
         });
+		console.log(`Fetched ${posts.length} posts for explore.`);
         res.status(200).json({ posts: posts, hasMore: posts.length === limit });
     } catch (error) {
         console.error("Error in /explore_posts:", error);
-        res.status(500).json({ success: false, error: error.message });
+        res.status(500).json({ success: false, message: 'Error fetching explore posts.' });
     }
 });
 
