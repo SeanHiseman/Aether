@@ -1,4 +1,4 @@
-import axios from 'axios';
+import api from '../../api';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ValidateEmail } from '../../functions/validateEmail';
@@ -14,7 +14,7 @@ const ForgotPassword = () => {
 	const handleSubmit = async event => {
 		event.preventDefault();
 		try {
-			await axios.post('/api/forgot-password', { email });
+			await api.post('/forgot-password', { email });
 			setMessage(`Password reset sent to ${email}.`);
 		} catch (error) {
 			setMessage(error.response.data?.message || 'Failed to send reset instructions. Please try again.');

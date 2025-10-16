@@ -1,4 +1,4 @@
-import axios from 'axios';
+import api from './api';
 import { createContext, useEffect, useState } from 'react';
 export const ThemeContext = createContext();
 
@@ -66,7 +66,7 @@ export const ThemeProvider = ({ children }) => {
 
 	const updateTheme = async (newTheme) => {
 		try {
-			await axios.post('/api/change_theme', { theme: newTheme });
+			await api.post('/change_theme', { theme: newTheme });
 			const user = JSON.parse(localStorage.getItem("user")) || {};
 			user.theme = newTheme;
 			localStorage.setItem("user", JSON.stringify(user));

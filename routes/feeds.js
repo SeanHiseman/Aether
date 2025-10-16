@@ -15,6 +15,7 @@ import { Op } from 'sequelize';
 import path from 'path';
 import { Router } from 'express';
 import sequelize from '../databaseSetup.js';
+import { standardLimiter, higherLimiter } from '../functions/checks/limiters.js';
 import { v4 } from 'uuid';
 import { ValidateTextInput } from '../functions/validateTextInput.js'
 
@@ -52,7 +53,7 @@ const checkProfileStorageLimit = async (req, res, next) => {
     }
 };
 
-router.post('/accept_follow_request', authenticateCheck, async (req, res) => {
+router.post('/accept_follow_request', higherLimiter, authenticateCheck, async (req, res) => {
     try {
         const { request } = req.body;
         const follow_request = await FollowRequests.findByPk(request.request_id);
@@ -70,7 +71,7 @@ router.post('/accept_follow_request', authenticateCheck, async (req, res) => {
     }
 });
 
-router.post('/add_feed_channel', authenticateCheck, async (req, res) => {
+router.post('/add_feed_channel', standardLimiter, authenticateCheck, async (req, res) => {
     let transaction;
     try {
         transaction = await sequelize.transaction();
@@ -128,7 +129,7 @@ router.post('/add_feed_channel', authenticateCheck, async (req, res) => {
     }
 });
 
-router.post('/add_to_deep_feed', async (req, res) => {
+router.post('/add_to_deep_feed', higherLimiter, async (req, res) => {
     try {
         const { deepFeedId, feedId } = req.body;
         if (!feedId) {
@@ -146,7 +147,7 @@ router.post('/add_to_deep_feed', async (req, res) => {
     }
 });
 
-router.post('/change_channel_name', authenticateCheck, async (req, res) => {
+router.post('/change_channel_name', standardLimiter, authenticateCheck, async (req, res) => {
     try {
         const { channelId, newChannelName } = req.body;
         const nameCheck = ValidateTextInput(newChannelName, 3, 30);
@@ -168,7 +169,7 @@ router.post('/change_channel_name', authenticateCheck, async (req, res) => {
     }
 });
 
-router.post('/change_deep_feed_name', authenticateCheck, async (req, res) => {
+router.post('/change_deep_feed_name', standardLimiter, authenticateCheck, async (req, res) => {
     try {
         const { deepFeedId, newName } = req.body;
         const nameCheck = ValidateTextInput(newName, 3, 30);
@@ -190,7 +191,7 @@ router.post('/change_deep_feed_name', authenticateCheck, async (req, res) => {
     }
 });
 
-router.post('/change_description', authenticateCheck, async (req, res) => {
+router.post('/change_description', standardLimiter, authenticateCheck, async (req, res) => {
     try {
         const { description, feedId } = req.body;
         const descriptionCheck = ValidateTextInput(description, 0, 1000);
@@ -207,7 +208,7 @@ router.post('/change_description', authenticateCheck, async (req, res) => {
     }
 });
 
-router.post('/change_feed_name', authenticateCheck, async (req, res) => {
+router.post('/change_feed_name', standardLimiter, authenticateCheck, async (req, res) => {
     try {
         const { feed_id, newName } = req.body;
         const nameCheck = ValidateTextInput(newName, 3, 30);
@@ -236,7 +237,7 @@ router.post('/change_feed_name', authenticateCheck, async (req, res) => {
     }
 });
 
-router.post('/create_feed', authenticateCheck, checkProfileStorageLimit, async (req, res) => {
+router.post('/create_feed', standardLimiter, authenticateCheck, checkProfileStorageLimit, async (req, res) => {
     feedProfileUpload(req, res, async function (error) {
         if (error instanceof multer.MulterError) {
             if (error.code === 'LIMIT_FILE_SIZE') {
@@ -337,7 +338,7 @@ router.post('/create_feed', authenticateCheck, checkProfileStorageLimit, async (
     });
 });
 
-router.post('/create_deep_feed', authenticateCheck, async (req, res) => {
+router.post('/create_deep_feed', standardLimiter, authenticateCheck, async (req, res) => {
     try {
         const { deepFeedName, feedsToInclude, parentDeepFeedId, viewerId } = req.body;
         const nameCheck = ValidateTextInput(deepFeedName, 1, 30);
@@ -379,7 +380,7 @@ router.post('/create_deep_feed', authenticateCheck, async (req, res) => {
     }
 });
 
-router.get('/deep_feed_contents/:deepFeedId', authenticateCheck, async (req, res) => {
+router.get('/deep_feed_contents/:deepFeedId', standardLimiter, authenticateCheck, async (req, res) => {
     try {
         const { deepFeedId } = req.params;
         const contents = await DeepFeedContent.findAll({
@@ -394,7 +395,7 @@ router.get('/deep_feed_contents/:deepFeedId', authenticateCheck, async (req, res
     }
 });
 
-router.get('/deep_feed_posts', authenticateCheck, async (req, res) => {
+router.get('/deep_feed_posts', standardLimiter, authenticateCheck, async (req, res) => {
     try {
         const { deepFeedId } = req.query;
         const recentUpvotes = req.query.recentUpvotes;
@@ -465,7 +466,7 @@ router.get('/deep_feed_posts', authenticateCheck, async (req, res) => {
     }
 });
 
-router.delete('/delete_deep_feed', authenticateCheck, async (req, res) => {
+router.delete('/delete_deep_feed', standardLimiter, authenticateCheck, async (req, res) => {
     let transaction;
     try {
         transaction = await sequelize.transaction();
@@ -487,7 +488,7 @@ router.delete('/delete_deep_feed', authenticateCheck, async (req, res) => {
     }
 });
 
-router.delete('/delete_follow_request', authenticateCheck, async (req, res) => {
+router.delete('/delete_follow_request', higherLimiter, authenticateCheck, async (req, res) => {
     try {
         const { receiverId, senderId } = req.body;
         await FollowRequests.destroy({
@@ -500,7 +501,7 @@ router.delete('/delete_follow_request', authenticateCheck, async (req, res) => {
     }
 });
 
-router.delete('/delete_feed', authenticateCheck, async (req, res) => {
+router.delete('/delete_feed', standardLimiter, authenticateCheck, async (req, res) => {
     let transaction;
     try {
         transaction = await sequelize.transaction();
@@ -525,7 +526,7 @@ router.delete('/delete_feed', authenticateCheck, async (req, res) => {
     }
 });
 
-router.delete('/delete_feed_channel', authenticateCheck, async (req, res) => {
+router.delete('/delete_feed_channel', higherLimiter, authenticateCheck, async (req, res) => {
     let transaction;
     try {
         transaction = await sequelize.transaction();
@@ -549,7 +550,7 @@ router.delete('/delete_feed_channel', authenticateCheck, async (req, res) => {
     }
 });
 
-router.get("/explore_feeds", async (req, res) => {
+router.get("/explore_feeds", standardLimiter, async (req, res) => {
 	try {
 		const { exclude = [] } = req.query;
 		const viewerId = req.session?.viewer_id;
@@ -596,7 +597,7 @@ router.get("/explore_feeds", async (req, res) => {
 	}
 });
 
-router.get('/feed/:feedName', async (req, res) => {
+router.get('/feed/:feedName', standardLimiter, async (req, res) => {
     try {
         const feedName = req.params.feedName;
         const userId = req.session && req.session.user_id;
@@ -662,7 +663,7 @@ router.get('/feed/:feedName', async (req, res) => {
     }
 });
 
-router.get('/feed_channel_messages', async (req, res) => {
+router.get('/feed_channel_messages', higherLimiter, async (req, res) => {
     try {
         const { channelId, limit, offset } = req.query;
         const messages = await FeedChannelMessages.findAll({
@@ -679,7 +680,7 @@ router.get('/feed_channel_messages', async (req, res) => {
     }
 });
 
-router.post('/follow_feed', authenticateCheck, async (req, res) => {
+router.post('/follow_feed', higherLimiter, authenticateCheck, async (req, res) => {
     try {
         const { followerId, followedFeedId } = req.body;
         await Followers.create({
@@ -698,7 +699,7 @@ router.post('/follow_feed', authenticateCheck, async (req, res) => {
     }
 });
 
-router.get('/follow_requests/:feedId', authenticateCheck, async (req, res) => {
+router.get('/follow_requests/:feedId', standardLimiter, authenticateCheck, async (req, res) => {
     try {
         const feedId = req.params.feedId;
         const requests = await FollowRequests.findAll({ 
@@ -716,7 +717,7 @@ router.get('/follow_requests/:feedId', authenticateCheck, async (req, res) => {
     }
 });
 
-router.get('/get_feed_channels/:feedId', async (req, res) => {
+router.get('/get_feed_channels/:feedId', standardLimiter, async (req, res) => {
     try {
         const feedId = req.params.feedId; 
         const saverId = req.session.viewer_id;
@@ -746,7 +747,7 @@ router.get('/get_feed_channels/:feedId', async (req, res) => {
     }
 });
 
-router.get('/get_feed_followers/:feedId', authenticateCheck, async (req, res) => {
+router.get('/get_feed_followers/:feedId', higherLimiter, authenticateCheck, async (req, res) => {
     try {
         const feedId = req.params.feedId;
         const followers = await Followers.findAll({
@@ -766,7 +767,7 @@ router.get('/get_feed_followers/:feedId', authenticateCheck, async (req, res) =>
     }
 });
 
-router.get('/get_saved_posts', authenticateCheck, async (req, res) => {
+router.get('/get_saved_posts', standardLimiter, authenticateCheck, async (req, res) => {
     try {
         const saverId = req.session.viewer_id;
         const rows = await SavedPosts.findAll({
@@ -790,7 +791,7 @@ router.get('/get_saved_posts', authenticateCheck, async (req, res) => {
     }
 });
 
-router.post('/remove_from_deep_feed', authenticateCheck, async (req, res) => {
+router.post('/remove_from_deep_feed', higherLimiter, authenticateCheck, async (req, res) => {
     try {
         const { deepFeedId, feedId } = req.body;
         if (!feedId) {
@@ -808,7 +809,7 @@ router.post('/remove_from_deep_feed', authenticateCheck, async (req, res) => {
     }
 });
 
-router.delete('/remove_saved_post', authenticateCheck, async (req, res) => {
+router.delete('/remove_saved_post', higherLimiter, authenticateCheck, async (req, res) => {
     try {
         const { channelId, feedId, postId } = req.body;
         const count = await SavedPosts.destroy({
@@ -822,7 +823,7 @@ router.delete('/remove_saved_post', authenticateCheck, async (req, res) => {
     }
 });
 
-router.put('/reorder_feed_channels', async (req, res) => {
+router.put('/reorder_feed_channels', higherLimiter, async (req, res) => {
     let transaction;
     try {
         transaction = await sequelize.transaction();
@@ -852,7 +853,7 @@ router.put('/reorder_feed_channels', async (req, res) => {
     }
 });
 
-router.post('/save_post', authenticateCheck, async (req, res) => {
+router.post('/save_post', higherLimiter, authenticateCheck, async (req, res) => {
 	try {
 		const { channelId, feedId, postId } = req.body;
         //const { channelId, feedId, postId, savedChannelId } = req.body; //Upon proper channels implementation
@@ -873,7 +874,7 @@ router.post('/save_post', authenticateCheck, async (req, res) => {
 	}
 });
 
-router.post('/send_follow_request', authenticateCheck, async (req, res) => {``
+router.post('/send_follow_request', higherLimiter, authenticateCheck, async (req, res) => {``
     try {
         const { receiverId, senderId } = req.body;
         await FollowRequests.create({
@@ -888,7 +889,7 @@ router.post('/send_follow_request', authenticateCheck, async (req, res) => {``
     }
 });
 
-router.post('/toggle_admin', authenticateCheck, async (req, res) => {
+router.post('/toggle_admin', higherLimiter, authenticateCheck, async (req, res) => {
     try {
         const { feedId, followerId, isAdmin } = req.body;
         await Followers.update({ is_admin: isAdmin }, { where: { feed_id: feedId, follower_id: followerId } });
@@ -899,7 +900,7 @@ router.post('/toggle_admin', authenticateCheck, async (req, res) => {
     }
 });
 
-router.post('/toggle_lock', authenticateCheck, async (req, res) => {
+router.post('/toggle_lock', standardLimiter, authenticateCheck, async (req, res) => {
     try {
         const { feedId } = req.body;
         const feed = await Feeds.findByPk(feedId);
@@ -915,7 +916,7 @@ router.post('/toggle_lock', authenticateCheck, async (req, res) => {
     }
 });
 
-router.post('/toggle_moderator', authenticateCheck, async (req, res) => {
+router.post('/toggle_moderator', higherLimiter, authenticateCheck, async (req, res) => {
     try {
         const { feedId, followerId, isMod } = req.body;
         await Followers.update(
@@ -929,7 +930,7 @@ router.post('/toggle_moderator', authenticateCheck, async (req, res) => {
     }
 });
 
-router.post('/toggle_private', authenticateCheck, async (req, res) => {
+router.post('/toggle_private', standardLimiter, authenticateCheck, async (req, res) => {
 	let transaction;
 	try {
 		transaction = await sequelize.transaction();
@@ -952,7 +953,7 @@ router.post('/toggle_private', authenticateCheck, async (req, res) => {
 	}
 });
 
-router.post('/transfer_ownership', authenticateCheck, async (req, res) => {
+router.post('/transfer_ownership', standardLimiter, authenticateCheck, async (req, res) => {
     try {
         const { feedId, newOwnerId } = req.body;
         await Feeds.update({ feed_owner: newOwnerId }, { where: { feed_id: feedId } });
@@ -963,7 +964,7 @@ router.post('/transfer_ownership', authenticateCheck, async (req, res) => {
     }
 });
 
-router.put('/update_feed_photo/:feedId', authenticateCheck, checkProfileStorageLimit, async (req, res) => {
+router.put('/update_feed_photo/:feedId', standardLimiter, authenticateCheck, checkProfileStorageLimit, async (req, res) => {
     feedProfileUpload(req, res, async function (error) {
         if (error instanceof multer.MulterError) {
             if (error.code === 'LIMIT_FILE_SIZE') {
@@ -1041,7 +1042,7 @@ router.put('/update_feed_photo/:feedId', authenticateCheck, checkProfileStorageL
     });
 });
 
-router.post('/unfollow_feed', authenticateCheck, async (req, res) => {
+router.post('/unfollow_feed', higherLimiter, authenticateCheck, async (req, res) => {
     try {
         const { followerId, followedFeedId } = req.body;
         await Followers.destroy({
@@ -1053,26 +1054,6 @@ router.post('/unfollow_feed', authenticateCheck, async (req, res) => {
     } catch (error) {
         console.log("/unfollow_feed error:", error);
         res.status(500).json({ success: false, message: 'Failed to unfollow feed' });
-    }
-});
-
-router.post('/update_current_feed', async (req, res) => {
-    try {
-        const { feed_id } = req.body;
-        if (!req.session || !req.session.user_id) {
-            return res.status(401).json({ success: false });
-        }
-        const feed = await Feeds.findOne({
-            where: { feed_id, feed_owner: req.session.user_id }
-        });
-        if (!feed) {
-            return res.status(404).json({ success: false });
-        }
-        req.session.feed_id = feed_id;
-        res.status(200).json({ success: true, currentFeed: req.session.feed_id });
-    } catch (error) {
-        console.log("/update_current_feed error:", error);
-        res.status(500).json({ success: false, message: 'Failed to update feed' });
     }
 });
 

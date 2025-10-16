@@ -1,4 +1,4 @@
-import axios from 'axios';
+import api from '../api';
 import React, { createContext, useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 
@@ -17,7 +17,7 @@ export const PublicAuthProvider = ({ children }) => {
     useEffect(() => {
         const checkAuthentication = async () => {
             try {
-                const response = await axios.get('/api/check_authentication');
+                const response = await api.get('/check_authentication');
                 const { authenticated, feeds, user, currentFeed } = response.data;
                 if (authenticated && user) {
                     setIsAuthenticated(true);

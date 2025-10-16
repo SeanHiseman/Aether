@@ -1,26 +1,27 @@
-import cors from 'cors';
-import { createServer } from 'http';
-import { dirname } from 'path';
-import dotenv from 'dotenv';
-import express from 'express';
-import favicon from 'serve-favicon';
-import { fileURLToPath } from 'url';
-import { handleStripeWebhook } from './routes/webhookHandler.js';
-import history from 'express-history-api-fallback';
-import path from 'path';
-import { Server } from 'socket.io';
-import session from 'express-session';
-import { urlencoded } from 'express';
-import algorithmRoutes from './custom_algorithms/algorithmRoutes.js'; //Project code
+import algorithmRoutes from './custom_algorithms/algorithmRoutes.js'; 
 import ask from './routes/ask.js';
 import authentication from './routes/authentication.js';
 import content from './routes/content.js';
 import { connectRequestsSocket } from './routes/directMessages.js';
+import cors from 'cors';
+import { createServer } from 'http';
 import directMessages, { directMessagesSocket } from './routes/directMessages.js';
+import { dirname } from 'path';
+import dotenv from 'dotenv';
+import express from 'express';
+import favicon from 'serve-favicon';
 import feeds, { feedChatChannelSocket } from './routes/feeds.js';
+import { fileURLToPath } from 'url';
+import { handleStripeWebhook } from './routes/webhookHandler.js';
+import history from 'express-history-api-fallback';
+import path from 'path';
+import rateLimit from 'express-rate-limit';
 import routes from './routes/routes.js';
-import users from './routes/users.js';
+import { Server } from 'socket.io';
+import session from 'express-session';
 import sequelize  from './databaseSetup.js';
+import { urlencoded } from 'express';
+import users from './routes/users.js';
 
 dotenv.config();
 const app = express(); 
@@ -41,6 +42,15 @@ const appBuildPath = path.join(__dirname, process.env.APP_BUILD_DIR);
 const faviconPath = path.join(__dirname, process.env.FAVICON_PATH);
 const root = path.join(__dirname, process.env.FRONTEND_BUILD_DIR);
 const mediaPath = path.join(__dirname, process.env.MEDIA_DIR);
+
+const limiter = rateLimit({ //Highest level limiter
+	windowMs: 15 * 60 * 1000,  //15 minutes
+	max: 3000,                 //limit each IP to 200 requests per minute
+	standardHeaders: true,     
+	legacyHeaders: false,     
+	message: 'Too many requests, please try again later.'
+});
+app.use(limiter);
 
 app.use('/app_builds', express.static(appBuildPath, {
 	setHeaders: res => res.set('Access-Control-Allow-Origin', '*')
@@ -64,7 +74,7 @@ app.use(session({
     saveUninitialized: true,
 }));
 
-app.use('/api/', algorithmRoutes); //Project code
+app.use('/api/', algorithmRoutes); 
 app.use('/api/', ask);
 app.use('/api/', authentication);
 app.use('/api/', content);

@@ -1,4 +1,4 @@
-import axios from 'axios';
+import api from '../api';
 import ConfirmModal from './modals/confirmModal';
 import { FaMinus, FaMinusCircle, FaPlusCircle } from 'react-icons/fa';
 import { FormatNumber } from '../functions/formatNumber';
@@ -26,14 +26,14 @@ const FollowerChangeButton = ({ feed, showFollowers = true, showName, showVertic
                 return;
             }
             if (isPrivate && !follower && !request) {
-                await axios.post('/api/send_follow_request', { receiverId: feed?.feed_id, senderId: viewerId });
+                await api.post('/send_follow_request', { receiverId: feed?.feed_id, senderId: viewerId });
                 setRequest(true);
             } else if (isPrivate && request) {
-                await axios.delete('/api/delete_follow_request', { data: { receiverId: feed?.feed_id, senderId: viewerId } });
+                await api.delete('/delete_follow_request', { data: { receiverId: feed?.feed_id, senderId: viewerId } });
                 setRequest(false);
             } else {
                 const url = follower ? 'unfollow_feed' : 'follow_feed';
-                await axios.post(`/api/${url}`, { followerId: viewerId, followedFeedId: feed?.feed_id });
+                await api.post(`/${url}`, { followerId: viewerId, followedFeedId: feed?.feed_id });
                 const newFollowerState = !follower;
                 setFollower(newFollowerState);
                 setFollowerCount(prev => newFollowerState ? prev + 1 : prev - 1);

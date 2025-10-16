@@ -1,4 +1,4 @@
-import axios from 'axios';
+import api from '../../api';
 import { useContext, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import FeedItem from '../../components/channels/feedItem';
@@ -21,7 +21,7 @@ const ConnectionsPage = () => {
     const loadMoreConnections = async () => {
         try {
             if (viewer.feed_id) {
-                const response = await axios.get('/api/get_connections', { params: { feedId: viewer.feed_id, offset: connectionsOffset } });
+                const response = await api.get('/get_connections', { params: { feedId: viewer.feed_id, offset: connectionsOffset } });
                 const newConnections = response.data;
                 if (newConnections.length < 10) {
                     setHasMoreConnections(false);
@@ -30,7 +30,7 @@ const ConnectionsPage = () => {
                 setConnectionsOffset(prevOffset => prevOffset + newConnections.length);
             }
         } catch (error) {
-            setErrorMessage('Error getting connections');
+            setErrorMessage(error.response.data?.message || 'Error getting connections');
             setTimeout(() => { setErrorMessage(''); }, 5000);
         }
     };
@@ -38,7 +38,7 @@ const ConnectionsPage = () => {
     const loadMoreRequests = async () => {
         try {
             if (viewer.feed_id) {
-                const response = await axios.get('/api/get_connect_requests', { params: { feedId: viewer.feed_id, offset: requestsOffset } });
+                const response = await api.get('/get_connect_requests', { params: { feedId: viewer.feed_id, offset: requestsOffset } });
                 const newRequests = response.data.requests || [];
                 if (newRequests.length < 10) {
                     setHasMoreRequests(false);
@@ -51,7 +51,7 @@ const ConnectionsPage = () => {
                 });
             }
         } catch (error) {
-            setErrorMessage('Error getting connect requests');
+            setErrorMessage(error.response.data?.message || 'Error getting connect requests');
             setTimeout(() => { setErrorMessage(''); }, 5000);
         }
     };
@@ -72,7 +72,7 @@ const ConnectionsPage = () => {
 					setRequestsOffset(0);
 					setHasMoreRequests(true);
 					try {
-						const response = await axios.get('/api/get_connect_requests', { 
+						const response = await api.get('/get_connect_requests', { 
 							params: { feedId: viewer.feed_id, offset: 0 } 
 						});
 						const newRequests = response.data.requests || [];
@@ -83,7 +83,7 @@ const ConnectionsPage = () => {
 							count: newRequests.length 
 						});
 					} catch (error) {
-						setErrorMessage('Error getting connect requests');
+						setErrorMessage(error.response.data?.message || 'Error getting connect requests');
                         setTimeout(() => { setErrorMessage(''); }, 5000);
 					}
 				});

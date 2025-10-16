@@ -1,5 +1,5 @@
-import axios from 'axios';
 import AlgorithmSelector from '../../algorithms/algorithmSelector'; //Project code
+import api from '../../api';
 import { AuthContext } from '../../components/authContext';
 import { FaCog, FaEdit, FaFeatherAlt, FaFolder, FaFolderOpen, FaMinus, FaPlus, FaRegWindowClose, FaSave, FaTrash } from 'react-icons/fa';
 import { useContext, useEffect, useState } from 'react';
@@ -56,7 +56,7 @@ const FeedHome = () => {
         const fetchFeedData = async () => {
             setLoading(true);
             try {
-                const response = await axios.get(`/api/feed/${feed_name}`);
+                const response = await api.get(`/feed/${feed_name}`);
                 const fetchedFeed = response.data?.feedResult;
                 setIsAdmin(fetchedFeed?.isAdmin);
                 setIsModerator(fetchedFeed?.isMod);
@@ -92,7 +92,7 @@ const FeedHome = () => {
         if (showDrafts && channelRender) {
             const fetchDrafts = async () => {
                 try {
-                    const response = await axios.get('/api/get_post_drafts', {
+                    const response = await api.get('/get_post_drafts', {
                         params: { channel_id: channelRender?.channel_id, poster_id: viewer?.feed_id }
                     })
                     setDraftPosts(response.data?.drafts)
@@ -138,7 +138,7 @@ const FeedHome = () => {
                     return;
                 }
                 try {
-                    const response = await axios.get('/api/channel_posts', { 
+                    const response = await api.get('/channel_posts', { 
                         params: { isSingle: true, feedId: feed?.feed_id, postId: post_id } 
                     });
                     const post = response.data?.post;
@@ -170,7 +170,7 @@ const FeedHome = () => {
         }
         const fetchPost = async () => {
             try {
-                const response = await axios.get('/api/channel_posts', {
+                const response = await api.get('/channel_posts', {
                     params: { isSingle: true, feedId: feed.feed_id, postId: post_id },
                 });
                 const post = response.data?.post;
@@ -180,7 +180,7 @@ const FeedHome = () => {
                 } else {
                     setReplyingToPost({ error: true }); 
                 }
-            } catch (e) {
+            } catch (error) {
                 setReplyingToPost({ error: true });
             }
         };
@@ -212,7 +212,7 @@ const FeedHome = () => {
                     return;
                 }
             }
-            const response = await axios.post('/api/add_feed_channel', {
+            const response = await api.post('/add_feed_channel', {
                 channelName: finalChannelName,
                 feedId: feed?.feed_id,
                 isChat: feed?.is_group ? isChatChannel : false,
@@ -231,7 +231,7 @@ const FeedHome = () => {
                 setTimeout(() => { setFeedErrorMessage(''); }, 5000);
             }
         } catch (error) {
-            setFeedErrorMessage('Failed to add channel');
+            setFeedErrorMessage(error.response.data?.message || 'Failed to add channel');
             setTimeout(() => { setFeedErrorMessage(''); }, 3000);
         }
     };
@@ -259,7 +259,7 @@ const FeedHome = () => {
         event.preventDefault();
         try {
             const channelId = channelRender?.channel_id;
-            const response = await axios.post('/api/change_channel_name', {
+            const response = await api.post('/change_channel_name', {
                 channelId,
                 newChannelName
             });
@@ -278,7 +278,7 @@ const FeedHome = () => {
                 setTimeout(() => { setFeedErrorMessage(''); }, 5000);
             }
         } catch (error) {
-            setFeedErrorMessage("Error changing channel name");
+            setFeedErrorMessage(error.response.data?.message || "Error changing channel name");
             setTimeout(() => { setFeedErrorMessage(''); }, 3000);
         }
     };
@@ -303,7 +303,7 @@ const FeedHome = () => {
                 return;
             }
             const channelId = channelRender?.channel_id;
-            const response = await axios.delete('/api/delete_feed_channel', { data: { channelId } });
+            const response = await api.delete('/delete_feed_channel', { data: { channelId } });
             if (response.data?.success) {
                 setChannels(prevChannels => prevChannels.filter(channel => channel?.channel_id !== channelId));
                 navigate(`/${urlPrefix}/${feed_name}/Main`);
@@ -329,13 +329,13 @@ const FeedHome = () => {
         }
         try {
             formData.append('poster_id', viewer?.feed_id);
-            const response = await axios.post('/api/create_post', formData, {
+            const response = await api.post('/create_post', formData, {
                 headers: { 'Content-Type': 'multipart/form-data' },
             });
             const draftId = formData.get('draft_id')
             //Delete if posting from a draft
             if (draftId !== null && draftId !== '') {
-                await axios.delete('/api/remove_draft', {
+                await api.delete('/remove_draft', {
                     headers: { 'Content-Type': 'application/json' },
                     data: {   
                         draft: { draft_id: draftId },
@@ -477,7 +477,7 @@ const FeedHome = () => {
                         <p className="large-text bold">{feed?.feed_name}</p>
                         <p className="description" >{feed?.description}</p>
                         {viewer && isAuthenticated && (
-                            <FollowerChangeButton feed={feed} updateFeeds={updateFeeds} viewerId={viewer?.feed_id} />
+                            <FollowerChangeButton feed={feed} showVertical={true} updateFeeds={updateFeeds} viewerId={viewer?.feed_id} />
                         )}
                         {/*{!isViewingSelf && !feed.is_group && (
                             <ManageConnectionButton feed={feed} viewerId={viewer.feed_id} />
@@ -509,6 +509,7 @@ const FeedHome = () => {
                             </Link>
                         )}
                     </div>
+                    <p className="small-text faded-text">{feed?.is_group ? 'Group' : 'User'}</p>
                     <p className="description">{feed?.description}</p>
                     {feed && user?.user_id !== feed.feed_owner && isAuthenticated && viewer ? (
                         <FollowerChangeButton feed={feed} showName={false} showVertical={true} updateFeeds={updateFeeds} viewerId={viewer?.feed_id} />
@@ -519,7 +520,7 @@ const FeedHome = () => {
                         <ManageConnectionButton feed={feed} viewerId={viewer.feed_id} />
                     )}*/}
                 </div>
-                <div className="tiny-text faded-text">{feedErrorMessage}</div>
+                {feedErrorMessage && <div className="tiny-text faded-text">{feedErrorMessage}</div>}
                 {channelRender && (
                     <div className="channel-name-section">
                         {isEditingChannelName ? (

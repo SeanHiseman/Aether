@@ -1,4 +1,4 @@
-import axios from 'axios';
+import api from '../../api';
 import { FaArrowDown, FaArrowUp, FaBookmark, FaChevronDown, FaChevronUp, FaComments, FaCommentSlash, FaEdit, FaCompress, FaExpand, FaRegBookmark,  FaReply, FaTrash, FaTree, FaListUl } from 'react-icons/fa';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useCallback, useContext, useEffect, useRef, useState } from 'react';
@@ -52,17 +52,17 @@ const ContentWidget = ({ canRemove = false, display = false, feed, isDraft = fal
 			let url;
 			let dataPayload;
 			if (isDraft) {
-				url = "/api/remove_draft";
+				url = "/remove_draft";
 				dataPayload = {
 					draft: { draft_id: post?.draft_id, isPosting: false }
 				};
 			} else {
-				url = "/api/remove_post";
+				url = "/remove_post";
 				dataPayload = {
 					post: { post_id: post?.post_id, ...(post?.parent_id != null && { parent_id: post?.parent_id })}
 				};
 			}
-			const response = await axios.delete(url, { data: dataPayload });
+			const response = await api.delete(url, { data: dataPayload });
 			if (response.data?.success) {
 				onPostRemoved(isDraft ? post?.draft_id : post?.post_id)
 				if (!isDraft) {
@@ -95,7 +95,7 @@ const ContentWidget = ({ canRemove = false, display = false, feed, isDraft = fal
 
 	const getReplies = useCallback(async (postId) => {
 		try {
-			const response = await axios.get(`/api/post_replies/${postId}`);
+			const response = await api.get(`/post_replies/${postId}`);
 			const processedReplies = response.data.map(reply => ({
 				...reply,
 				showSubReplies: false,
@@ -119,14 +119,14 @@ const ContentWidget = ({ canRemove = false, display = false, feed, isDraft = fal
 			if (!isAuthenticated) return; //Only count views if user is logged in
 			try {
 				if (!hasViewed && (!isAuthenticated || (isAuthenticated && viewer?.feed_id !== post?.poster_id))) { //Do not add views for own content
-					const response = await axios.post('/api/increment_views', { postId });
+					const response = await api.post('/increment_views', { postId });
 					if (response.data?.success) {
 						setViews((prev) => prev + 1);
 					}
 					setHasViewed(true);
 				}
 			} catch (error) {
-				setPostErrorMessage(error.response?.data?.message || 'Error incrementing views');
+				setPostErrorMessage(error.response.data?.message || 'Error incrementing views');
 				setTimeout(() => setPostErrorMessage(""), 3000);
 			}
 		},
@@ -136,7 +136,7 @@ const ContentWidget = ({ canRemove = false, display = false, feed, isDraft = fal
     const postVote = async (postId, voteType) => {
         if (!isAuthenticated) return;
         try {
-            const response = await axios.post('/api/content_vote', {
+            const response = await api.post('/content_vote', {
                 postId: postId,
                 feedId: viewer?.feed_id,
                 voteType,
@@ -176,7 +176,7 @@ const ContentWidget = ({ canRemove = false, display = false, feed, isDraft = fal
 		if (!isAuthenticated) return;
         try {
             if (isSaved) {
-                await axios.delete('/api/remove_saved_post', {
+                await api.delete('/remove_saved_post', {
                     data: {
                         channelId: post?.parentChannel?.channel_id,
                         feedId: viewer?.feed_id,
@@ -184,7 +184,7 @@ const ContentWidget = ({ canRemove = false, display = false, feed, isDraft = fal
                     }
                 });
             } else {
-                await axios.post('/api/save_post', {
+                await api.post('/save_post', {
                     channelId: post?.parentChannel?.channel_id,
                     feedId: viewer?.feed_id,
                     postId: post?.post_id

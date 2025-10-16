@@ -198,18 +198,3 @@
         width: 99%;
     }
 }
-@media (max-width: 480px) {
-    .left-aligned-text {
-        margin: var(--large-margin);
-    }
-    .welcome-box-header {
-        font-size: var(--text24);
-        margin-bottom: var(--large-margin);
-    }
-    .left-aligned-text p:not(.welcome-box-header) {
-        font-size: clamp(6px, 1.8vw, 14.4px);
-    }
-    .footer {
-        padding: clamp(8px, 4vw, 32px) var(--large-margin) var(--text24);
-    }
-}

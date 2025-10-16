@@ -1,4 +1,4 @@
-import axios from 'axios';
+import api from "../api";
 import AlgorithmSelector from '../algorithms/algorithmSelector';
 import { useContext, useEffect, useRef, useState } from 'react';
 import { FaEdit, FaMinus, FaRegWindowClose, FaSave, FaTrash } from 'react-icons/fa';
@@ -31,7 +31,7 @@ const DeepFeed = () => {
         if (!deep_feed_id) return;
         const fetchContents = async () => {
             try {
-                const { data } = await axios.get(`/api/deep_feed_contents/${deep_feed_id}`);
+                const { data } = await api.get(`/deep_feed_contents/${deep_feed_id}`);
                 const fetched = data?.contents || [];
                 setContents(fetched);
                 localStorage.setItem(`deepFeedContents_${deep_feed_id}`, JSON.stringify(fetched));
@@ -64,7 +64,7 @@ const DeepFeed = () => {
                 setTimeout(() => { setErrorMessage(''); }, 5000);
                 return;
             }
-            const response = await axios.delete('/api/delete_deep_feed', { data: { deepFeedId: deep_feed_id } });
+            const response = await api.delete('/delete_deep_feed', { data: { deepFeedId: deep_feed_id } });
             if (response.data?.success) {
                 setDeepFeed((prev) => {
                     const updated = { name: 'Following' };
@@ -93,7 +93,7 @@ const DeepFeed = () => {
     const changeDeepFeedName = async (event) => {
         event.preventDefault();
         try {
-            const response = await axios.post('/api/change_deep_feed_name', {
+            const response = await api.post('/change_deep_feed_name', {
                 deepFeedId: deep_feed_id,
                 newName
             });
@@ -130,7 +130,7 @@ const DeepFeed = () => {
                 followedFeedIds = [];
             }
             const recentUpvotes = JSON.parse(localStorage.getItem("recentUpvotes") || "[]");
-            const response = await axios.get('/api/deep_feed_posts', {
+            const response = await api.get('/deep_feed_posts', {
                 params: {
                     deepFeedId: normalisedDeepFeedId,
                     followedFeedIds: followedFeedIds,
@@ -170,7 +170,7 @@ const DeepFeed = () => {
 
     const removeFeed = async (feedId) => {
         try {
-            const response = await axios.post('/api/remove_from_deep_feed', {
+            const response = await api.post('/remove_from_deep_feed', {
                 deepFeedId: deep_feed_id,
                 feedId
             });
@@ -200,7 +200,7 @@ const DeepFeed = () => {
                 setTimeout(() => setErrorMessage(''), 5000);
             }
         } catch (error) {
-            setErrorMessage(error.response?.data?.message || 'Error removing feed');
+            setErrorMessage(error.response.data?.message || 'Error removing feed');
             setTimeout(() => setErrorMessage(''), 5000);
         }
     };
@@ -209,7 +209,7 @@ const DeepFeed = () => {
         const handleUpdate = async (event) => {
             if (event.detail.deepFeedId === deep_feed_id) {
                 try {
-                    const { data } = await axios.get(`/api/deep_feed_contents/${deep_feed_id}`);
+                    const { data } = await api.get(`/deep_feed_contents/${deep_feed_id}`);
                     const fetched = data?.contents || [];
                     setContents(fetched);
                     localStorage.setItem(`deepFeedContents_${deep_feed_id}`, JSON.stringify(fetched));

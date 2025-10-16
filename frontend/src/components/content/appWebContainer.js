@@ -1,4 +1,4 @@
-import axios from 'axios'
+import api from '../../api'
 import { WebContainer }	from '@webcontainer/api'
 import PropTypes from 'prop-types'
 import { useEffect, useRef } from 'react'
@@ -9,7 +9,7 @@ const AppWebContainer = ({ buildId }) => {
 
 	useEffect(() => {
 		(async () => {
-			const { data: buffer } = await axios.get(`/app_builds/${buildId}.zip`, { responseType: 'arraybuffer' })
+			const { data: buffer } = await api.get(`/app_builds/${buildId}.zip`, { responseType: 'arraybuffer' })
 			const vc = await WebContainer.boot()
 			await vc.mount(buffer)
 			const modulesExist = await vc.fs.stat('/node_modules').catch(() => null)

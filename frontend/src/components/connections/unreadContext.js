@@ -1,4 +1,4 @@
-import axios from 'axios';
+import api from '../../api';
 import { createContext, useContext, useEffect, useReducer } from 'react';
 import { AuthContext } from '../authContext';
 
@@ -70,8 +70,8 @@ export const UnreadProvider = ({ children }) => {
         if (!isAuthenticated || !viewer) return;
         const fetchUnreadCounts = async () => {
             try {
-                const messageResponse = await axios.get(`/api/unread_messages_count/${viewer.feed_id}`);
-                const requestResponse = await axios.get('/api/get_connect_requests', { 
+                const messageResponse = await api.get(`/unread_messages_count/${viewer.feed_id}`);
+                const requestResponse = await api.get('/get_connect_requests', { 
                     params: { feedId: viewer.feed_id, offset: 0 } 
                 });
                 

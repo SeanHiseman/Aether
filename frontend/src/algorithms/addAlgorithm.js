@@ -1,5 +1,5 @@
+import api from '../api';
 import React from 'react';
-import axios from 'axios';
 import { FaInfoCircle } from 'react-icons/fa';
 import { useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { ALGORITHM_TEMPLATES } from './algorithmTemplates';
@@ -175,7 +175,7 @@ const AddAlgorithm = ({ algorithms = [], display, editingAlgorithm = null, locat
                 wordBoost: wordBoost.split(',').map(w => w.trim()).filter(Boolean),
                 wordSuppress: wordSuppress.split(',').map(w => w.trim()).filter(Boolean),
             };
-            const { data } = await axios.post('/api/create_algorithm', payload);
+            const { data } = await api.post('/create_algorithm', payload);
             if (data.success) {
                 const saved = data?.updatedAlgorithm || data?.newAlgorithm;
                 if (editingAlgorithm) {

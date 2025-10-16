@@ -1,4 +1,4 @@
-import axios from 'axios';
+import api from '../../api';
 import { useContext, useEffect, useState, useRef } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { v4 } from 'uuid';
@@ -14,7 +14,7 @@ const AskChannel = () => {
 	const [errorMessage, setErrorMessage] = useState('');
 	const [isEditingChatName, setIsEditingChatName] = useState(false);
 	const [isLoading, setIsLoading] = useState(false);
-	const maxLength = user.has_membership ? 100000 : 1000;
+	const maxLength = user?.has_membership ? 100000 : 1000;
 	const [messages, setMessages] = useState([]);
 	const [newChatName, setNewChatName] = useState('');
 	const [showNewChatForm, setShowNewChatForm] = useState(false);
@@ -23,16 +23,16 @@ const AskChannel = () => {
 	const { query, setQuery } = useQueryContext(); 
 	const navigate = useNavigate();
 	const initialMessageRef = useRef(false);
-	const usageLimit = user.has_membership ? 25000000 : 2500000;
-	const limitReached = user.usage_count >= usageLimit ? true : false;
+	const usageLimit = user?.has_membership ? 25000000 : 2500000;
+	const limitReached = user?.usage_count >= usageLimit ? true : false;
 
 	useEffect(() => {
 		const fetchChats = async () => {
 			try {
-				const response = await axios.get('/api/get_ask_chats');
+				const response = await api.get('/get_ask_chats');
 				setChats(response.data.chats);
 			} catch (error) {
-				setErrorMessage('Error fetching chats');
+				setErrorMessage(error.response.data?.message || 'Error fetching chats');
 				setTimeout(() => { setErrorMessage(''); }, 5000);
 			}
 		};
@@ -58,7 +58,7 @@ const AskChannel = () => {
 							return;
 						}
 						setIsLoading(true);
-						await axios.post('/api/send_ask_message', {
+						await api.post('/send_ask_message', {
 							chatId: chatId,
 							messageContent: query,
 							senderId: user.user_id,
@@ -67,12 +67,12 @@ const AskChannel = () => {
 						setIsLoading(false);
 						setQuery('');
 					} else {
-						const response = await axios.get('/api/get_ask_messages', { params: { chatId } });
+						const response = await api.get('/get_ask_messages', { params: { chatId } });
 						setMessages(response.data.messages.reverse());
 					}
 				}
 			} catch (error) {
-				setErrorMessage('Error getting messages');
+				setErrorMessage(error.response.data?.message || 'Error getting messages');
 				setTimeout(() => { setErrorMessage(''); }, 5000);
 			}
 		};
@@ -100,7 +100,7 @@ const AskChannel = () => {
 				setTimeout(() => { setErrorMessage(''); }, 5000);
 				return;
 			}
-			const response = await axios.post('/api/change_ask_chat_name', {
+			const response = await api.post('/change_ask_chat_name', {
 				chatId: chatId,
 				newName: changedChatName.trim()
 			});
@@ -113,7 +113,7 @@ const AskChannel = () => {
 				setErrorMessage('');
 			}
 		} catch (error) {
-			setErrorMessage("Error changing chat name");
+			setErrorMessage(error.response.data?.message || "Error changing chat name");
 			setTimeout(() => { setErrorMessage(''); }, 5000);
 		}
 	};
@@ -146,7 +146,7 @@ const AskChannel = () => {
 				setTimeout(() => { setErrorMessage(''); }, 5000);
 				return;
 			}
-			const response = await axios.post('/api/create_ask_chat', {
+			const response = await api.post('/create_ask_chat', {
 				chatId: newChatId,
 				chatName: finalChatName
 			});
@@ -165,7 +165,7 @@ const AskChannel = () => {
 				setTimeout(() => { setErrorMessage(''); }, 5000);
 			}
 		} catch (error) {
-			setErrorMessage("Error creating chat");
+			setErrorMessage(error.response.data?.message || "Error creating chat");
 			setTimeout(() => { setErrorMessage(''); }, 5000);
 		}
 	};
@@ -173,11 +173,11 @@ const AskChannel = () => {
 	const deleteChat = async () => {
 		if (window.confirm(`Are you sure you want to delete ${chatName}?`)) {
 			try {
-				await axios.delete('/api/delete_ask_chat', { data: { chat_id: chatId } });
+				await api.delete('/delete_ask_chat', { data: { chat_id: chatId } });
 				setChats(prevChats => prevChats.filter(chat => chat.chat_id !== chatId));
 				navigate('/ask/home');
 			} catch (error) {
-				setErrorMessage('Error deleting chat');
+				setErrorMessage(error.response.data?.message || 'Error deleting chat');
 				setTimeout(() => { setErrorMessage(''); }, 5000);
 			}
 		}
@@ -193,7 +193,7 @@ const AskChannel = () => {
 			await createNewAskChat(currentMessage);
 			setCurrentMessage('');
 		} catch (error) {
-			setErrorMessage("Error submitting chat");
+			setErrorMessage(error.response.data?.message || "Error submitting chat");
 			setTimeout(() => { setErrorMessage(''); }, 5000);
 		}
 	};
@@ -214,7 +214,7 @@ const AskChannel = () => {
 				return currentChat ? [currentChat, ...otherChats] : prevChats;
 			});
 			setMessages(prevMessages => [...prevMessages, { content: messageContent, sender_id: user.user_id }]);
-			const response = await axios.post('/api/send_ask_message', {
+			const response = await api.post('/send_ask_message', {
 				chatId: chatId,
 				messageContent: messageContent,
 				senderId: user.user_id, 
@@ -229,7 +229,7 @@ const AskChannel = () => {
 				setTimeout(() => { setErrorMessage(''); }, 5000);
 			}
 		} catch (error) {
-			setErrorMessage("Error sending message");
+			setErrorMessage(error.response.data?.message || "Error sending message");
 			setTimeout(() => { setErrorMessage(''); }, 5000);
 		} finally {
 			setIsLoading(false);

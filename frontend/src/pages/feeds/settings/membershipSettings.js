@@ -1,5 +1,5 @@
+import api from '../../../api';
 import { AuthContext } from '../../../components/authContext';
-import axios from 'axios';
 import { useContext, useEffect, useState } from 'react';
 import { Check, Crown, ListFilter, Shield, Star, Zap } from 'lucide-react';
 import { useOutletContext } from 'react-router-dom';
@@ -29,7 +29,7 @@ const MembershipSettings = () => {
     const fetchSubscriptionStatus = async () => {
         if (!isAuthenticated) return;
         try {
-            const response = await axios.get('/api/subscription-status', {
+            const response = await api.get('/subscription-status', {
                 headers: {
                     'Authorization': `Bearer ${localStorage.getItem('token')}`
                 }
@@ -46,7 +46,7 @@ const MembershipSettings = () => {
         setErrorMessage('');
         setSuccessMessage('');
         try {
-            const response = await axios.post('/api/create-checkout-session', {
+            const response = await api.post('/create-checkout-session', {
                 planType,
                 userId: user?.user_id
             }, {
@@ -83,7 +83,7 @@ const MembershipSettings = () => {
         setLoading(true);
         setErrorMessage('');
         try {
-            const response = await axios.post('/api/cancel-subscription', {}, {
+            const response = await api.post('/cancel-subscription', {}, {
                 headers: {
                     'Authorization': `Bearer ${localStorage.getItem('token')}`
                 }

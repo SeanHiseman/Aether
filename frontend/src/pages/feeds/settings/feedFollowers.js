@@ -1,4 +1,4 @@
-import axios from 'axios';
+import api from '../../../api';
 import { AuthContext } from '../../../components/authContext';
 import { FormatNumber } from '../../../functions/formatNumber';
 import ConfirmModal from '../../../components/modals/confirmModal';
@@ -21,7 +21,7 @@ const FeedFollowers = () => {
 
     const getFeedFollowers = useCallback(async () => {
         try {
-            const response = await axios.get(`/api/get_feed_followers/${feed?.feed_id}`);
+            const response = await api.get(`/get_feed_followers/${feed?.feed_id}`);
             setFollowers(response?.data?.followers);
         } catch (error) {
             setErrorMessage(error?.response?.data?.message || "Error getting followers");
@@ -35,12 +35,12 @@ const FeedFollowers = () => {
 
     const removeFollower = async (follower) => {
         try {
-            await axios.post('/api/unfollow_feed', { followerId: follower?.follower_id, followedFeedId: feed?.feed_id });
+            await api.post('/unfollow_feed', { followerId: follower?.follower_id, followedFeedId: feed?.feed_id });
             setFollowers((prev) => prev.filter((f) => f?.follower_id !== follower?.follower_id));
             setFeed((prevFeed) => ({ ...prevFeed, follower_count: prevFeed?.follower_count - 1 }));
             setFollowerCount(prevCount => prevCount - 1);
         } catch (error) {
-            setErrorMessage(error?.response?.data?.message || "Error removing follower");
+            setErrorMessage(error.response.data?.message || "Error removing follower");
             setTimeout(() => { setErrorMessage(''); }, 5000);
         }
     };
@@ -52,7 +52,7 @@ const FeedFollowers = () => {
                 setConfirmMessage('Are you sure you want to remove yourself as an admin? You will lose admin privileges.');
                 setConfirmAction(() => async () => {
                     try {
-                        await axios.post('/api/toggle_admin', {
+                        await api.post('/toggle_admin', {
                             feedId: feed?.feed_id,
                             followerId: follower?.follower_id,
                             isAdmin: !follower?.is_admin,
@@ -71,7 +71,7 @@ const FeedFollowers = () => {
                 setShowConfirmModal(true);
                 return;
             }
-            await axios.post('/api/toggle_admin', {
+            await api.post('/toggle_admin', {
                 feedId: feed?.feed_id,
                 followerId: follower?.follower_id,
                 isAdmin: !follower?.is_admin,
@@ -90,7 +90,7 @@ const FeedFollowers = () => {
     //Mods can't appoint/dismiss other mods or admins, so no need to check if removing own
     const toggleModeratorStatus = async (follower) => {
         try {
-            const response = await axios.post('/api/toggle_moderator', {
+            const response = await api.post('/toggle_moderator', {
                 feedId: feed?.feed_id,
                 followerId: follower?.follower_id,
                 isMod: !follower?.is_mod,
@@ -103,7 +103,7 @@ const FeedFollowers = () => {
                 );
             }
         } catch (error) {
-            setErrorMessage(error?.response?.data?.message || "Error toggling moderator status");
+            setErrorMessage(error.response.data?.message || "Error toggling moderator status");
             setTimeout(() => { setErrorMessage(''); }, 5000);
         }
     };
@@ -112,7 +112,7 @@ const FeedFollowers = () => {
         setConfirmTitle('Transfer Ownership');
         setConfirmMessage('Are you sure you want to transfer ownership? This action cannot be undone.');
         setConfirmAction(() => async () => {
-            const response = await axios.post('/api/transfer_ownership', {
+            const response = await api.post('/transfer_ownership', {
                 feedId: feed?.feed_id,
                 newOwnerId: follower?.followerFeed?.feed_owner,
             });

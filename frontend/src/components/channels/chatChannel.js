@@ -1,4 +1,4 @@
-import axios from 'axios';
+import api from '../../api';
 import { useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { AuthContext } from '../authContext';
 import { io } from "socket.io-client";
@@ -192,7 +192,7 @@ const ChatChannel = ({ canAdd, canRemove, channelId, connection, isGroup, isLock
     const getChannelMessages = useCallback(async (channelId, currentOffset = 0) => {
         try {
             const route = isGroup ? 'feed_channel_messages' : 'get_chat_messages';
-            const response = await axios.get(`/api/${route}`, { params: { channelId, limit: 20, offset: currentOffset } });
+            const response = await api.get(`/${route}`, { params: { channelId, limit: 20, offset: currentOffset } });
             const messages = response.data.messages.map((m) => ({
                 ...m,
                 content: isGroup ? m.content : decrypt(m.content),

@@ -1,4 +1,4 @@
-import axios from 'axios';
+import api from '../../api';
 import { FaUserMinus, FaUserPlus } from 'react-icons/fa';
 import { useEffect, useState } from 'react';
 
@@ -18,7 +18,7 @@ const ManageConnectionButton = ({ connectRequest, feed, isConnected, viewerId, o
         try {
             let response;
             if (result === 'accept') {
-                response = await axios.post('/api/accept_connect_request', {
+                response = await api.post('/accept_connect_request', {
                     receiverId: viewerId,
                     senderId
                 });
@@ -35,7 +35,7 @@ const ManageConnectionButton = ({ connectRequest, feed, isConnected, viewerId, o
                     }
                 }
             } else if (result === 'reject') {
-                response = await axios.delete('/api/delete_connect_request', {
+                response = await api.delete('/delete_connect_request', {
                     data: { receiverId: viewerId, senderId }
                 });
                 if (response.status === 200) {
@@ -58,13 +58,13 @@ const ManageConnectionButton = ({ connectRequest, feed, isConnected, viewerId, o
             if (hasConnection) {
                 if (window.confirm(`Are you sure you want to delete your connection with ${feed.feed_name}`)) {
                     method = 'delete';
-                    url = '/api/delete_connection';
+                    url = '/delete_connection';
                     requestData = { deleterId: viewerId, feedId: targetFeedId };
                 }
             } 
             else if (request) {
                 method = 'delete';
-                url = '/api/delete_connect_request';
+                url = '/delete_connect_request';
                 requestData = { 
                     receiverId: viewerId === senderId ? receiverId : viewerId, 
                     senderId: viewerId === senderId ? viewerId : senderId 
@@ -72,10 +72,10 @@ const ManageConnectionButton = ({ connectRequest, feed, isConnected, viewerId, o
             } 
             else {
                 method = 'post';
-                url = '/api/send_connect_request';
+                url = '/send_connect_request';
                 requestData = { receiverId, senderId: viewerId };
             }
-            const response = await axios({ 
+            const response = await api({ 
                 method, 
                 url, 
                 data: requestData 

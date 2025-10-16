@@ -1,6 +1,6 @@
 import AlgorithmSelector from "../../algorithms/algorithmSelector";
+import api from '../../api';
 import { AuthContext } from "../../components/authContext";
-import axios from "axios";
 import { useMemo, useCallback, useContext, useEffect, useRef, useState } from "react";
 import { ChunkFeeds } from "../../functions/chunkFeeds";
 import ContentWidget from "../../components/content/contentWidget";
@@ -31,7 +31,7 @@ const ExplorePage = () => {
 			const followedFeeds = JSON.parse(localStorage.getItem("followedFeeds") || "[]");
 			const recentUpvotes = JSON.parse(localStorage.getItem("recentUpvotes") || "[]");
 			const followedFeedIds = followedFeeds.map(f => f.feed_id);
-			const response = await axios.get("/api/explore_posts", {
+			const response = await api.get("/explore_posts", {
 				params: {
 					limit: FETCH_LIMIT,
 					offset: page * FETCH_LIMIT,
@@ -59,7 +59,7 @@ const ExplorePage = () => {
 			//Get followed feeds from localStorage
 			const cached = localStorage.getItem("followedFeeds");
 			const excludedFeedIds = cached ? JSON.parse(cached).map(f => f.feed_id) : [];
-			const response = await axios.get("/api/explore_feeds", {
+			const response = await api.get("/explore_feeds", {
 				params: { 
 					limit: FETCH_LIMIT, 
 					offset: page * FETCH_LIMIT, 
@@ -80,7 +80,7 @@ const ExplorePage = () => {
 				setShownFeedIds(prev => [...prev, ...newFeeds.map(f => f?.feed_id)]);		
 			}
 		} catch (error) {
-			setErrorMessage(error.response?.data?.message || "Failed to fetch feeds");
+			setErrorMessage(error.response.data?.message || "Failed to fetch feeds");
 			setHasMoreFeeds(false);
 		}
 	}, [shownFeedIds]);

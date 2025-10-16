@@ -1,4 +1,4 @@
-import axios from 'axios';
+import api from '../../api';
 import { v4 } from 'uuid';
 import { AuthContext } from '../../components/authContext';
 import { FaPlus } from 'react-icons/fa';
@@ -21,11 +21,11 @@ const SavedPosts = () => {
     	//if (!current) return;
         async function fetchPosts() {
             try {
-                //const response = await axios.get(`/api/get_saved_posts/${current?.channel_id}`);
-				const response = await axios.get(`/api/get_saved_posts`);
+                //const response = await api.get(`/get_saved_posts/${current?.channel_id}`);
+				const response = await api.get(`/get_saved_posts`);
                 setPosts(response.data?.posts);
             } catch (error) {
-                setSavedError('Error loading posts');
+                setSavedError(error.response.data?.message || 'Error loading posts');
             }
         }
         void fetchPosts();
@@ -34,14 +34,14 @@ const SavedPosts = () => {
 	const addChannel = async () => {
 		try {
 			const name = `New channel ${channels.length + 1}`;
-			const { data } = await axios.post('/api/add_feed_channel', {
+			const { data } = await api.post('/add_feed_channel', {
 				channelName: name,
 				isSaved: true
 			});
 			setChannels([data.newChannel, ...channels]);
 			navigate(`/saved/${name}`);
 		} catch (error) {
-			setSavedError('Error creating channel');
+			setSavedError(error.response.data?.message || 'Error creating channel');
 		}
 	};
 
@@ -51,7 +51,7 @@ const SavedPosts = () => {
 				setPosts(prev => prev.filter(p => p?.post_id !== postId));
 			}
 		} catch (error) {
-			setSavedError("Error")
+			setSavedError(error.response.data?.message || "Error toggling");
 		}
 	};
 

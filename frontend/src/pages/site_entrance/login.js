@@ -1,4 +1,4 @@
-import axios from 'axios';
+import api from '../../api';
 import { useContext, useEffect, useState } from 'react';
 import { FaEye, FaEyeSlash } from 'react-icons/fa';
 import { Link, useNavigate } from 'react-router-dom';
@@ -18,7 +18,7 @@ const Login = () => {
     const handleLogin = async (event) => {
         event.preventDefault();
         try {
-            const response = await axios.post('/api/login', { password, usernameOrEmail }); //Username can also be email
+            const response = await api.post('/login', { password, usernameOrEmail }); //Username can also be email
             if (response.data?.success) {
                 localStorage.setItem("followedFeeds", JSON.stringify(response.data?.followedFeeds));
                 localStorage.setItem("deepFeeds", JSON.stringify(response.data?.deepFeeds || []));

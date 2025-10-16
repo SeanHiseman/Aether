@@ -1,6 +1,6 @@
 import AlgorithmSelector from '../algorithms/algorithmSelector';
+import api from '../api';
 import { AuthContext } from '../components/authContext';
-import axios from 'axios';
 import { useCallback, useContext, useEffect, useRef, useState, useMemo } from 'react';
 import { FaChevronDown, FaChevronUp } from 'react-icons/fa';
 import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
@@ -32,7 +32,7 @@ const SearchResults = () => {
             const recentUpvotes = JSON.parse(localStorage.getItem("recentUpvotes") || "[]");
             const feedOffset = pageParam.feedOffset || feedPage * FETCH_LIMIT;
             const postOffset = pageParam.postOffset || postPage * FETCH_LIMIT;
-            const response = await axios.get("/api/search", {
+            const response = await api.get("/search", {
                 params: {
                     keyword,
                     limit: FETCH_LIMIT,

@@ -1,10 +1,11 @@
 import authenticateCheck from '../functions/checks/authenticateCheck.js';
 import cron from 'node-cron';
 import dotenv from 'dotenv';
-import Stripe from 'stripe';
 import { Feeds, Users } from '../models/relationships.js';
-import { Router } from 'express';
 import { Op } from 'sequelize';
+import { Router } from 'express';
+import { standardLimiter, higherLimiter } from '../functions/checks/limiters.js';
+import Stripe from 'stripe';
 import { ValidateEmail } from '../functions/validateEmail.js';
 import { ValidateTextInput } from '../functions/validateTextInput.js';
 
@@ -28,7 +29,7 @@ const stripeConfig = {
 
 const stripe = new Stripe(stripeConfig.secretKey);
 
-router.post('/change_email', authenticateCheck, async (req, res) => {
+router.post('/change_email', standardLimiter, authenticateCheck, async (req, res) => {
     try {
         const { email, userId } = req.body;
         const emailCheck = ValidateEmail(email);
@@ -61,7 +62,7 @@ router.post('/change_email', authenticateCheck, async (req, res) => {
     }
 });
 
-router.post('/change_theme', authenticateCheck, async (req, res) => {
+router.post('/change_theme', standardLimiter, authenticateCheck, async (req, res) => {
     try {
         const userId = req.session?.user_id;
         let { theme } = req.body;
@@ -76,7 +77,7 @@ router.post('/change_theme', authenticateCheck, async (req, res) => {
     }
 });
 
-router.post('/change_username', authenticateCheck, async (req, res) => {
+router.post('/change_username', standardLimiter, authenticateCheck, async (req, res) => {
     try {
         const { feed_id, newName, user_id } = req.body;
         const usernameCheck = ValidateTextInput(newName, 3, 30);
@@ -112,7 +113,7 @@ router.post('/change_username', authenticateCheck, async (req, res) => {
     }
 });
 
-router.post('/create-checkout-session', authenticateCheck, async (req, res) => {
+router.post('/create-checkout-session', standardLimiter, authenticateCheck, async (req, res) => {
     try {
         const { planType } = req.body;
         console.log('Creating checkout session for planType:', planType);
@@ -143,7 +144,7 @@ router.post('/create-checkout-session', authenticateCheck, async (req, res) => {
     }
 });
 
-router.post('/cancel-subscription', authenticateCheck, async (req, res) => {
+router.post('/cancel-subscription', standardLimiter, authenticateCheck, async (req, res) => {
     try {
         console.log('Cancelling subscription for user');
         const userId = req.session?.user_id;
@@ -172,7 +173,7 @@ router.post('/cancel-subscription', authenticateCheck, async (req, res) => {
     }
 });
 
-router.get('/subscription-status', authenticateCheck, async (req, res) => {
+router.get('/subscription-status', standardLimiter, authenticateCheck, async (req, res) => {
     try {
         const userId = req.session?.user_id;
         const user = await Users.findOne({

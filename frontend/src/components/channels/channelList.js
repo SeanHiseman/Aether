@@ -1,4 +1,4 @@
-import axios from 'axios';
+import api from '../../api';
 import { CSS } from '@dnd-kit/utilities'; 
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
@@ -30,7 +30,7 @@ const ChannelList = ({ canReorder = false, channels, feedId, feedName, isChat, i
     const getFeedChannels = useCallback(async () => {
         try {
             if (!isChat) {
-                const response = await axios.get(`/api/get_feed_channels/${feedId}`);
+                const response = await api.get(`/get_feed_channels/${feedId}`);
                 if (response.data.success) {
                     setChannels(response.data?.channels || []);
                 } else {
@@ -38,7 +38,7 @@ const ChannelList = ({ canReorder = false, channels, feedId, feedName, isChat, i
                     setChannels([]);
                 }
             } else {
-                const response = await axios.get(`/api/get_chats/${viewer.feed_id}`, {
+                const response = await api.get(`/get_chats/${viewer.feed_id}`, {
                     params: { connectionName: feedName }
                 });
                 if (response.data.success) {
@@ -55,7 +55,7 @@ const ChannelList = ({ canReorder = false, channels, feedId, feedName, isChat, i
                 }
             }
         } catch (error) {
-            setErrorMessage(error.response?.data?.message || 'Error getting channels');
+            setErrorMessage(error.response.data?.message || 'Error getting channels');
             setTimeout(() => { setErrorMessage(''); }, 5000);
             setChannels([]);
         }
@@ -90,7 +90,7 @@ const ChannelList = ({ canReorder = false, channels, feedId, feedName, isChat, i
         setChannels(reorderedChannels);
         const orderedChannelIds = reorderedChannels.map(channel => channel.channel_id);
         try {
-            await axios.put('/api/reorder_feed_channels', {
+            await api.put('/reorder_feed_channels', {
                 feed_id: feedId,
                 orderedChannelIds: orderedChannelIds
             });

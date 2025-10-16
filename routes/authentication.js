@@ -1,20 +1,20 @@
 import authenticateCheck from '../functions/checks/authenticateCheck.js';
+import { compare, hash } from 'bcrypt';
+import { Connections, ConnectRequests, DeepFeeds, Feeds, FeedChannels, Followers, FeedChats, Messages, Posts, PostDrafts, PostNotes, PostVotes, SavedPostChannels, Users } from '../models/relationships.js'; 
 import DeleteMedia from '../functions/media_handling/deleteMedia.js';
 import dotenv from 'dotenv';
 import { fileURLToPath } from 'url';
+import { generateVerificationToken, sendPasswordResetEmail, sendVerificationEmail } from '../functions/emailService.js';
 import jwt from 'jsonwebtoken';
+import { loginLimiter, resendLimiter } from '../functions/checks/limiters.js';
+import { Op } from 'sequelize';
 import path from 'path';
 import { promises as fs } from 'fs';
-import rateLimit from 'express-rate-limit';
 import { Router } from 'express';
-import { compare, hash } from 'bcrypt';
-import { Op } from 'sequelize';
-import { v4 } from 'uuid';
-import { Connections, ConnectRequests, DeepFeeds, Feeds, FeedChannels, Followers, FeedChats, Messages, Posts, PostDrafts, PostNotes, PostVotes, SavedPostChannels, Users } from '../models/relationships.js'; 
-import { generateVerificationToken, sendPasswordResetEmail, sendVerificationEmail } from '../functions/emailService.js';
+import sequelize from '../databaseSetup.js';
 import { ValidateEmail } from '../functions/validateEmail.js';
 import { ValidateTextInput } from '../functions/validateTextInput.js';
-import sequelize from '../databaseSetup.js';
+import { v4 } from 'uuid';
 
 dotenv.config();
 const __filename = fileURLToPath(import.meta.url);
@@ -31,13 +31,7 @@ const router = Router();
 	}
 })();
 
-const resendLimiter = rateLimit({
-	windowMs: 15 * 60 * 1000,
-	max: 3,
-	message: 'Too many requests – please try again later'
-});
-
-router.post('/change_password', authenticateCheck, async (req, res) => { //For logged in users
+router.post('/change_password', resendLimiter, authenticateCheck, async (req, res) => { //For logged in users
     try {
         const { password, user_id } = req.body;
         const hashedPassword = await hash(password, 10);
@@ -95,7 +89,7 @@ router.get('/check_authentication', async (req, res) => {
 });
 
 //Deletes user account and all associated data
-router.delete('/delete_account', authenticateCheck, async (req, res) => {
+router.delete('/delete_account', resendLimiter, authenticateCheck, async (req, res) => {
     let transaction
     try {
         transaction = await sequelize.transaction();
@@ -175,7 +169,7 @@ router.post('/forgot-password', resendLimiter, async (req, res) => {
     }
 });
 
-router.post('/join', async (req, res) => {
+router.post('/join', loginLimiter, async (req, res) => {
     try {
 		await new Promise((resolve, reject) => {
 			req.session.regenerate(err => {
@@ -243,7 +237,7 @@ router.post('/join', async (req, res) => {
     }
 });
 
-router.post('/login', async (req, res) => {
+router.post('/login', loginLimiter, async (req, res) => {
     try {
         await new Promise((resolve, reject) => {
             req.session.regenerate(error => {
@@ -327,7 +321,7 @@ router.post('/login', async (req, res) => {
     }
 });
 
-router.post('/logout', (req, res) => {
+router.post('/logout', loginLimiter, (req, res) => {
     req.session.destroy( error => {
         if (error) {
             return res.json({ success: false });
@@ -364,7 +358,7 @@ router.post('/resend-verification', resendLimiter, async (req, res) => {
     }
 });
 
-router.post('/reset-password', async (req, res) => { //For users who have forgotten their password
+router.post('/reset-password', resendLimiter, async (req, res) => { //For users who have forgotten their password
 	const { password, token } = req.body;
 	let decoded;
 	try {
@@ -398,7 +392,7 @@ router.post('/reset-password', async (req, res) => { //For users who have forgot
 	}
 });
 
-router.get('/verify-email', async (req, res) => {
+router.get('/verify-email', resendLimiter, async (req, res) => {
 	try {
 		const { token } = req.query;
 		if (!token) {

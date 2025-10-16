@@ -1,4 +1,4 @@
-import axios from 'axios';
+import api from '../../api';
 import { useCallback, useContext, useEffect, useState } from 'react';
 import { Link, useNavigate, useOutletContext, useParams } from 'react-router-dom';
 import { FaEdit, FaMinus, FaPlus, FaRegWindowClose, FaSave, FaTrash } from 'react-icons/fa';
@@ -24,10 +24,10 @@ const ChatPage = () => {
 
     const fetchConnection = async () => {
         try {
-            const response = await axios.get(`/api/get_connection/${connection_name}`);
+            const response = await api.get(`/get_connection/${connection_name}`);
             setConnection(response.data.connection); 
         } catch (error) {
-            setErrorMessage('Error getting connection');
+            setErrorMessage(error.response.data?.message || 'Error getting connection');
             setTimeout(() => { setErrorMessage(''); }, 5000);
         }
     };
@@ -60,7 +60,7 @@ const ChatPage = () => {
             let finalChannelName = newChatName;
             const encryptedChannelName = encrypt(newChatName);
             finalChannelName = encryptedChannelName;
-            const response = await axios.post('/api/change_chat_name', {
+            const response = await api.post('/change_chat_name', {
                 channelId: selectedChatId,
                 newChannelName: finalChannelName,
             });
@@ -75,8 +75,8 @@ const ChatPage = () => {
                 );
                 navigate(`/connections/${connection_name}/${newChatName}`);
             }
-        } catch {
-            setErrorMessage("Error changing channel name");
+        } catch (error){
+            setErrorMessage(error.response.data?.message || "Error changing channel name");
             setTimeout(() => { setErrorMessage(''); }, 5000);
         }
     };
@@ -129,7 +129,7 @@ const ChatPage = () => {
                 return;
             }
             const encryptedChatName = encrypt(finalChatName);
-            const response = await axios.post('/api/create_chat', {
+            const response = await api.post('/create_chat', {
                 participants,
                 title: encryptedChatName
             });
@@ -147,7 +147,7 @@ const ChatPage = () => {
                 setTimeout(() => { setErrorMessage(''); }, 5000);
             }
         } catch (error) {
-            setErrorMessage("Failed to create chat");
+            setErrorMessage(error.response.data?.message || "Failed to create chat");
             setTimeout(() => { setErrorMessage(''); }, 5000);
         }
     };
@@ -160,13 +160,13 @@ const ChatPage = () => {
                     setTimeout(() => { setErrorMessage(''); }, 5000);
                     return;
                 }
-                const response = await axios.delete('/api/delete_chat', { data: { channelId: selectedChatId } });
+                const response = await api.delete('/delete_chat', { data: { channelId: selectedChatId } });
                 if (response.data.success) {
                     setChats(prevChats => prevChats.filter(chat => chat.chat_id !== selectedChatId));
                     navigate(`/connections/${connection_name}/Main`);
                 }
             } catch (error) {
-                setErrorMessage('Error deleting channel');
+                setErrorMessage(error.response.data?.message || 'Error deleting channel');
                 setTimeout(() => { setErrorMessage(''); }, 5000);
             }
         }

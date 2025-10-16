@@ -1,4 +1,4 @@
-import axios from 'axios';
+import api from '../../api';
 import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import '../../css/authentication.css';
@@ -14,7 +14,7 @@ const ResetPassword = () => {
 	const handleSubmit = async event => {
 		event.preventDefault();
 		try {
-			const { data } = await axios.post('/api/reset-password', { password, token });
+			const { data } = await api.post('/reset-password', { password, token });
 			setMessage(data.message);
 		} catch (error) {
 			if (error.response?.status === 400) {

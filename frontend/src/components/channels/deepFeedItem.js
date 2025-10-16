@@ -1,4 +1,4 @@
-import axios from 'axios';
+import api from '../../api';
 import { useCallback, useEffect, useState } from 'react';
 import { useDroppable } from '@dnd-kit/core';
 import { FaChevronDown, FaChevronUp } from 'react-icons/fa';
@@ -58,7 +58,7 @@ const DeepFeedItem = ({ deepFeed, onFeedAdded, showHeader }) => {
 		setLoading(true);
 		try {
 			//If loading for the first time
-			const { data } = await axios.get(`/api/deep_feed_contents/${deepFeed?.deep_feed_id}`);
+			const { data } = await api.get(`/deep_feed_contents/${deepFeed?.deep_feed_id}`);
 			setContents(data?.contents || []);
 			localStorage.setItem(
 				`deepFeedContents_${deepFeed?.deep_feed_id}`,

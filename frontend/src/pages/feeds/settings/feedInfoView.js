@@ -1,8 +1,8 @@
+import api from '../../../api';
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useOutletContext } from 'react-router-dom';
-import axios from 'axios';
 import Cropper from 'react-easy-crop';
-import GetCroppedImg from '../../../components/getCroppedImg'; 
+import GetCroppedImg from '../../../functions/getCroppedImg';
 import { FaEdit, FaRegWindowClose, FaSave, FaFileUpload, FaPencilAlt, FaLock, FaUnlock } from 'react-icons/fa';
 import { ValidateTextInput } from '../../../functions/validateTextInput';
 
@@ -45,7 +45,7 @@ const FeedInfoView = () => {
             const croppedBlob = await GetCroppedImg(imageSrc, croppedAreaPixels);
             const formData = new FormData();
             formData.append('new_feed_photo', croppedBlob, 'cropped.jpg');
-            const response = await axios.put(`/api/update_feed_photo/${feed?.feed_id}`, formData, {
+            const response = await api.put(`/update_feed_photo/${feed?.feed_id}`, formData, {
                 headers: { 'Content-Type': 'multipart/form-data' },
             });
             if (response.data?.success) {
@@ -104,10 +104,10 @@ const FeedInfoView = () => {
 
     const toggleLock = async () => {
         try {
-            const response = await axios.post('/api/toggle_lock', { feedId: feed?.feed_id });
+            const response = await api.post('/toggle_lock', { feedId: feed?.feed_id });
             setFeed(prev => ({ ...prev, is_locked: response.data?.is_locked }));
         } catch (error) {
-            setErrorMessage('Error changing lock status');
+            setErrorMessage(error.response.data?.message || 'Error changing lock status');
             setTimeout(() => { setErrorMessage(''); }, 5000);
         }
     };
@@ -124,17 +124,17 @@ const FeedInfoView = () => {
 
     const togglePrivate = async () => {
         try {
-            const response = await axios.post('/api/toggle_private', { feedId: feed?.feed_id });
+            const response = await api.post('/toggle_private', { feedId: feed?.feed_id });
             setFeed(prev => ({ ...prev, type: response.data?.type }));
         } catch (error){
-            setErrorMessage('Error changing status');
+            setErrorMessage(error.response.data?.message || 'Error changing status');
             setTimeout(() => { setErrorMessage(''); }, 5000);
         }
     };
 
     const updateDescription = async () => {
         try {
-            const response  = await axios.post('/api/change_description', {
+            const response  = await api.post('/change_description', {
                 description: newDescription,
                 feedId: feed?.feed_id
             });
@@ -155,7 +155,7 @@ const FeedInfoView = () => {
         }
         try {
             const route = feed?.is_group ? 'change_feed_name' : 'change_username';
-            const response = await axios.post(`/api/${route}`, {
+            const response = await api.post(`/${route}`, {
                 feed_id: feed?.feed_id,
                 newName,
                 user_id: user?.user_id

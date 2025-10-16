@@ -1,4 +1,4 @@
-import axios from 'axios';
+import api from '../api';
 import { useState } from 'react';
 
 const AskButton = ({ isReply, isGroup, content, showNote, setShowNote, note, setNote, setPostErrorMessage }) => {
@@ -20,7 +20,7 @@ const AskButton = ({ isReply, isGroup, content, showNote, setShowNote, note, set
                     setIsLoading(true);
                     const normalisedContent = stripHtmlTags(content);
                     const id = isReply ? content.reply_id : content.post_id;
-                    const response = await axios.post('/api/ask_button', {
+                    const response = await api.post('/ask_button', {
                         isGroup, isReply, postTitle: content.title, postContent: normalisedContent, id,
                     });
                     const { newNote } = response.data;

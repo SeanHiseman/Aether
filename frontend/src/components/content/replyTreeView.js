@@ -1,7 +1,7 @@
-import React, { useEffect, useRef, useState } from 'react';
+import api from '../../api';
+import { useEffect, useRef, useState } from 'react';
 import PropTypes from 'prop-types';
 import { FaCompress, FaExpand, FaPlus, FaMinus } from 'react-icons/fa';
-import axios from 'axios';
 
 const ReplyTreeView = ({ replies, onReplyClick, renderReplyContent }) => {
   const canvasRef = useRef(null);
@@ -69,7 +69,7 @@ const ReplyTreeView = ({ replies, onReplyClick, renderReplyContent }) => {
   const fetchRepliesForNode = async (replyId) => {
     try {
       setLoadingReplies(prev => ({ ...prev, [replyId]: true }));
-      const response = await axios.get(`/api/post_replies/${replyId}`);
+      const response = await api.get(`/post_replies/${replyId}`);
       const newReplies = response.data;
       setReplyNodes(prev => {
         const updatedNodes = { ...prev };

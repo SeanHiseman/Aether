@@ -1,4 +1,4 @@
-import axios from 'axios';
+import api from '../../../api';
 import { useState } from 'react';
 import { useNavigate, useOutletContext } from 'react-router-dom';
 
@@ -16,8 +16,8 @@ const FeedDeletion = () => {
     const deleteFeed = async () => {
         try {
             const response = feed?.is_group ? 
-                await axios.delete('/api/delete_feed', { data: { feedId: feed?.feed_id } }) : 
-                await axios.delete('/api/delete_account', { data: { userId: feed?.feed_owner } });
+                await api.delete('/delete_feed', { data: { feedId: feed?.feed_id } }) : 
+                await api.delete('/delete_account', { data: { userId: feed?.feed_owner } });
             if (response.data?.success) {
                 const stored = JSON.parse(localStorage.getItem("followedFeeds")) || [];
                 const updated = stored.filter(f => f.feed_id !== feed?.feed_id);
@@ -27,7 +27,7 @@ const FeedDeletion = () => {
                 setTimeout(() => navigate(route), 0); //ensure navigation runs after state updates
             }
         } catch (error) {
-            setErrorMessage('Error deleting feed');
+            setErrorMessage(error.response.data?.message || 'Error deleting feed');
             setTimeout(() => { setErrorMessage(''); }, 5000);
         }
         setShowConfirmation(false);

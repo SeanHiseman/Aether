@@ -1,4 +1,4 @@
-import axios from 'axios'
+import api from '../../api';
 import { Crown } from 'lucide-react';
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd'
 import { Link, useNavigate, useParams } from 'react-router-dom'
@@ -12,7 +12,7 @@ import { AuthContext } from '../authContext'
 import ConfirmModal from '../modals/confirmModal';
 import ContentWidget from './contentWidget'
 import Cropper from 'react-easy-crop';
-import GetCroppedImg from '../getCroppedImg'
+import GetCroppedImg from '../../functions/getCroppedImg';
 
 const BLOCK_TYPES = { APP: 'APP', CODE: 'CODE', MEDIA: 'MEDIA', TEXT: 'TEXT' }
 
@@ -237,7 +237,7 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
         ])
         formData.append('build', file)
         try {
-            const { data } = await axios.post('/api/upload_build', formData)
+            const { data } = await api.post('/upload_build', formData)
             if (data.success) {
                 updateBlock({
                     id: blockId,
@@ -255,7 +255,7 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
                 setTimeout(() => setPostErrorMessage(''), 5000)
             }
         } catch (error) {
-            setPostErrorMessage(error.response?.data?.message || 'App upload failed.')
+            setPostErrorMessage(error.response.data?.message || 'App upload failed.')
             setTimeout(() => setPostErrorMessage(''), 5000)
         }
     }, [])
@@ -315,7 +315,7 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
                     for (const b of blocksRef.current) {
                         if (b.type === BLOCK_TYPES.APP && b.data.buildId) {
                             try {
-                                await axios.delete('/api/remove_build', {
+                                await api.delete('/remove_build', {
                                     data: { buildId: b.data.buildId },
                                 })
                             } catch {}
@@ -335,7 +335,7 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
         if (!draftId && !isEdit && !submittedRef.current) {
             blocksRef.current.forEach(b => {
                 if (b.type === BLOCK_TYPES.APP && b.data.buildId) {
-                    axios.delete('/api/remove_build', { data: { buildId: b.data.buildId } })
+                    api.delete('/remove_build', { data: { buildId: b.data.buildId } })
                         .catch(()=>{});
                 }
             });
@@ -428,13 +428,13 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
         setShowDeleteConfirm(false);
         try {
             if (isDraft) {
-                await axios.delete('/api/remove_draft', {
+                await api.delete('/remove_draft', {
                     data: { draft: { draft_id: draftId } },
                 })
                 setDraftId(null)
                 setPostErrorMessage('Draft deleted')
             } else {
-                await axios.delete('/api/remove_post', {
+                await api.delete('/remove_post', {
                     data: {
                         post: { post_id: post?.post_id, parent_id: post?.parent_id },
                     },
@@ -509,7 +509,7 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
             }
             updateBlock({ ...block, data: { ...block.data, isBlockLoading: true, _tempAiPrompt: '' } });
             setPostErrorMessage('');
-            const response = await axios.post('/api/generate_content', { 
+            const response = await api.post('/generate_content', { 
                 currentCode: block.data.code, 
                 request: prompt, 
                 senderId: user?.user_id,
@@ -671,7 +671,7 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
         const block = blocks.find(b => b.id === blockId)
         if (block?.type === BLOCK_TYPES.APP && block.data.buildId) {
             try {
-                await axios.delete('/api/remove_build', {
+                await api.delete('/remove_build', {
                     data: { buildId: block.data.buildId }
                 })
             } catch {}
@@ -709,7 +709,7 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
         formData.append('draft_id', id);
         try {
             //Drafts created and updated through create_post route
-            const response = await axios.post('/api/create_post', formData, { headers: { 'Content-Type': 'multipart/form-data' }});
+            const response = await api.post('/create_post', formData, { headers: { 'Content-Type': 'multipart/form-data' }});
             if (response.data.success) {
                 setPostErrorMessage('Draft saved')
                 setTimeout(() => { setPostErrorMessage('') }, 3000)

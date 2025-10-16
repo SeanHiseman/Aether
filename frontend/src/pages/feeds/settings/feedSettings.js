@@ -1,5 +1,5 @@
+import api from '../../../api';
 import { AuthContext } from '../../../components/authContext';
-import axios from 'axios';
 import { FaSignOutAlt } from 'react-icons/fa';
 import { FormatNumber } from '../../../functions/formatNumber';
 import { Link, Outlet, useNavigate, useOutletContext, useParams } from 'react-router-dom';
@@ -22,7 +22,7 @@ const FeedSettings = () => {
     useEffect(() => {
         const fetchFeedData = async () => {
             try {
-                const response = await axios.get(`/api/feed/${feed_name}`);
+                const response = await api.get(`/feed/${feed_name}`);
                 const feedData = response.data?.feedResult;
                 setFeed(feedData);
                 if (feedData.isOwner || feedData?.isAdmin || feedData?.isMod) {
@@ -41,7 +41,7 @@ const FeedSettings = () => {
     useEffect(() => {
         const getFollowRequests = async () => {
             try {
-                const response = await axios.get(`/api/follow_requests/${feed?.feed_id}`);
+                const response = await api.get(`/follow_requests/${feed?.feed_id}`);
                 const requests = response.data?.requests || [];
                 setFollowRequests(requests);
                 setFollowRequestCount(requests.length);
@@ -58,7 +58,7 @@ const FeedSettings = () => {
     const handleLogout = async (event) => {
         event.preventDefault();
         try {
-            const response = await axios.post('/api/logout');
+            const response = await api.post('/logout');
             if (response.data?.success) {
                 localStorage.clear();
                 const defaultTheme = DEFAULT_THEME_COLORS.dark;
@@ -71,7 +71,7 @@ const FeedSettings = () => {
                 setTimeout(() => { setErrorMessage(''); }, 5000);
             }
         } catch (error) {
-            setErrorMessage(error.response?.data?.message || 'Logout failed');
+            setErrorMessage(error.response.data?.message || 'Logout failed');
             setTimeout(() => { setErrorMessage(''); }, 5000);
         }
     };

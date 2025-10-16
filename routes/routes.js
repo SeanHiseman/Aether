@@ -4,11 +4,12 @@ import FollowerCheck from '../functions/checks/followerCheck.js';
 import { ConnectRequests, Feeds, FeedChannels, FollowRequests, PostNotes, PostVotes } from '../models/relationships.js'; 
 import { Op } from 'sequelize';
 import { Router } from 'express';
+import { standardLimiter } from '../functions/checks/limiters.js';
 
 const router = Router();
 
 //Searches posts and feeds together
-router.get('/search', async (req, res) => { 
+router.get('/search', standardLimiter, async (req, res) => { 
     try {
         const searcherId = req.session.viewer_id;
         const keyword = req.query.keyword ? req.query.keyword.toLowerCase() : '';

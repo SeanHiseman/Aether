@@ -12,6 +12,7 @@ import multer from 'multer';
 import { Router } from 'express';
 import path from 'path';
 import sequelize from '../databaseSetup.js';
+import { standardLimiter, higherLimiter } from '../functions/checks/limiters.js';
 import { Op, Sequelize } from 'sequelize';
 import unzipper from 'unzipper';
 import UpdateMediaFiles from '../functions/media_handling/updateMediaFiles.js';
@@ -52,7 +53,7 @@ const checkStorageLimit = async (req, res, next) => {
     }
 };
 
-router.get('/channel_posts', async (req, res) => {
+router.get('/channel_posts', standardLimiter, async (req, res) => {
 	try {
 		const { channelId, excludedPostIds, feedId, isGroup, isMain, isSingle, postId } = req.query;
         const limit = parseInt(req.query.limit, 10) || 48;
@@ -118,7 +119,7 @@ router.get('/channel_posts', async (req, res) => {
 	}
 });
 
-router.post('/content_vote', authenticateCheck, async (req, res) => {
+router.post('/content_vote', higherLimiter, authenticateCheck, async (req, res) => {
     try {
         const { postId, feedId, voteType } = req.body;
         const content = await Posts.findByPk(postId);
@@ -210,7 +211,7 @@ if (process.env.NODE_ENV === 'production') {
 }
 
 //Unified route for creating and editing posts and drafts
-router.post("/create_post", authenticateCheck, checkStorageLimit, postUpload.array("files"), async (req, res) => {
+router.post("/create_post", standardLimiter, authenticateCheck, checkStorageLimit, postUpload.array("files"), async (req, res) => {
 	try {
 		let { channel_id, content, draft_id, feed_id, is_private, parent_id, post_id, poster_id, title } = req.body;
         if (draft_id === 'null' || draft_id === 'undefined') { //If draft_id is received as the string 'null'
@@ -341,7 +342,7 @@ router.post("/create_post", authenticateCheck, checkStorageLimit, postUpload.arr
 	}
 });
 
-router.get("/explore_posts", async (req, res) => {
+router.get("/explore_posts", standardLimiter, async (req, res) => {
     try {
         const { exclude = [] } = req.query;
         const excludeArray = Array.isArray(exclude) ? exclude : exclude.split(',').filter(Boolean);
@@ -396,7 +397,7 @@ router.get("/explore_posts", async (req, res) => {
     }
 });
 
-router.get('/get_post_drafts', authenticateCheck, async (req, res) => {
+router.get('/get_post_drafts', standardLimiter, authenticateCheck, async (req, res) => {
     try {
         const { channel_id, poster_id, limit = 20, offset = 0 } = req.query;
         const drafts = await PostDrafts.findAll({
@@ -427,7 +428,7 @@ const DeleteBuilds = async html => {
 	}
 };
 
-router.delete('/remove_build', authenticateCheck, async (req, res) => {
+router.delete('/remove_build', standardLimiter, authenticateCheck, async (req, res) => {
 		const { buildId } = req.body;
 		if (!buildId) {
 			return res.status(400).json({ success: false, message: 'Missing buildId' });
@@ -441,7 +442,7 @@ router.delete('/remove_build', authenticateCheck, async (req, res) => {
 	}
 );
 
-router.delete('/remove_draft', authenticateCheck, async (req, res) => {
+router.delete('/remove_draft', standardLimiter, authenticateCheck, async (req, res) => {
     let transaction;
 	try {
         transaction = await sequelize.transaction();
@@ -461,7 +462,7 @@ router.delete('/remove_draft', authenticateCheck, async (req, res) => {
 	}
 });
 
-router.delete('/remove_post', authenticateCheck, async (req, res) => {
+router.delete('/remove_post', standardLimiter, authenticateCheck, async (req, res) => {
 	let transaction;
 	try {
 		transaction = await sequelize.transaction();
@@ -488,7 +489,7 @@ router.delete('/remove_post', authenticateCheck, async (req, res) => {
 	}
 });
 
-router.post('/increment_views', authenticateCheck, async (req, res) => {
+router.post('/increment_views', higherLimiter, authenticateCheck, async (req, res) => {
 	let transaction;
     try {
 		transaction = await sequelize.transaction();
@@ -519,7 +520,7 @@ router.post('/increment_views', authenticateCheck, async (req, res) => {
     }
 });
 
-router.get('/post_replies/:postId', async (req, res) => {
+router.get('/post_replies/:postId', standardLimiter, async (req, res) => {
     try {
         const { postId } = req.params;
         const parentPost = await Posts.findOne({ where: { post_id: postId } });
@@ -616,7 +617,7 @@ const locateIndexDir = async start => {
 	return null
 }
 
-router.post('/upload_build', authenticateCheck, upload.single('build'), async (req, res) => {
+router.post('/upload_build', standardLimiter, authenticateCheck, upload.single('build'), async (req, res) => {
 	let baseUrl
 	let buildId
 	let indexDir

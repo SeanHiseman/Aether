@@ -1,7 +1,6 @@
-import axios from 'axios';
-import { FaPlusCircle, FaMinusCircle } from 'react-icons/fa';
+import api from '../../../api';
 import { useState } from 'react';
-import { Link, useOutletContext } from 'react-router-dom';
+import { useOutletContext } from 'react-router-dom';
 import { FormatNumber } from '../../../functions/formatNumber';
 import FollowerWidget from './followerWidget';
 
@@ -12,10 +11,10 @@ const FollowRequests = () => {
     const handleRequestAction = async (request, result) => {
         try {
             if (result === 'accept') {
-                await axios.post('/api/accept_follow_request', { request });
+                await api.post('/accept_follow_request', { request });
                 setFeed((prevFeed) => ({ ...prevFeed, follower_count: prevFeed?.follower_count + 1 }));
             } else if (result === 'reject') {
-                await axios.delete('/api/delete_follow_request', { data: { senderId: request.sender_id, receiverId: feed?.feed_id } });
+                await api.delete('/delete_follow_request', { data: { senderId: request.sender_id, receiverId: feed?.feed_id } });
             }
             setFollowRequests((prevRequests) => {
                 const updatedRequests = prevRequests.filter((prevRequest) => prevRequest?.request_id !== request?.request_id);
@@ -23,7 +22,7 @@ const FollowRequests = () => {
                 return updatedRequests;
             });
         } catch (error) {
-            setErrorMessage('Error handling request');
+            setErrorMessage(error.response.data?.message || 'Error handling request');
             setTimeout(() => { setErrorMessage(''); }, 5000);
         }
     };

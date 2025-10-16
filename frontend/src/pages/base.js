@@ -1,4 +1,4 @@
-import axios from "axios";
+import api from "../api";
 import NameModal from "../components/modals/nameModal";
 import Cropper from "react-easy-crop";
 import { Crown } from 'lucide-react';
@@ -11,7 +11,7 @@ import { v4 } from "uuid";
 import { AuthContext } from "../components/authContext";
 import DeepFeedItem from "../components/channels/deepFeedItem";
 import FeedItem from "../components/channels/feedItem";
-import GetCroppedImg from "../components/getCroppedImg";
+import GetCroppedImg from "../functions/getCroppedImg";
 import { ThemeContext } from "../themeProvider";
 import { Tooltip } from "react-tooltip";
 import { UnreadContext } from "../components/connections/unreadContext";
@@ -160,7 +160,7 @@ const BaseLayout = () => {
                         deepFeedId: targetDeepFeedId,
                         feedId: sourceFeed?.feed_id
                     };
-                    const { data } = await axios.post("/api/add_to_deep_feed", payload);
+                    const { data } = await api.post("/add_to_deep_feed", payload);
                     if (data.success && deepFeedCallbacks[targetDeepFeedId]) {
                         deepFeedCallbacks[targetDeepFeedId]({ type: "UPDATE_CONTENTS" });
                     }
@@ -186,7 +186,7 @@ const BaseLayout = () => {
             }
             setTimeout(() => setDragged(false), 0);
             } catch (error) {
-                setAsideErrorMessage(error.response?.data?.message || "Error in drag operation");
+                setAsideErrorMessage(error.response.data?.message || "Error in drag operation");
                 setTimeout(() => setAsideErrorMessage(""), 5000);
             }
         setTimeout(() => setDragged(false), 0);
@@ -202,7 +202,7 @@ const BaseLayout = () => {
                 deepFeedName,
                 feedsToInclude: [sourceFeed?.feed_id, targetFeed?.feed_id]
             };
-            const { data } = await axios.post("/api/create_deep_feed", payload);
+            const { data } = await api.post("/create_deep_feed", payload);
             if (data.success && data?.deepFeed) {
                 const newDeepFeed = {
                     ...data.deepFeed,
@@ -216,7 +216,7 @@ const BaseLayout = () => {
                 updateFeeds();
             }
         } catch (error) {
-            setAsideErrorMessage(error.response?.data?.message || "Error creating deep feed");
+            setAsideErrorMessage(error.response.data?.message || "Error creating deep feed");
             setTimeout(() => setAsideErrorMessage(""), 5000);
         }
         setNameModalOpen(false);
@@ -305,7 +305,7 @@ const BaseLayout = () => {
             const newChatId = v4();
             if (trimmed) {
                 if (user?.has_membership) {
-                    await axios.post("/api/create_ask_chat", {
+                    await api.post("/create_ask_chat", {
                         chatId: newChatId,
                         chatName: "New chat"
                     });
@@ -352,7 +352,7 @@ const BaseLayout = () => {
             else if (feedPhotoFile) {
                 form.append("new_feed_photo", feedPhotoFile);
             }
-            const response = await axios.post("/api/create_feed", form, {
+            const response = await api.post("/create_feed", form, {
                 headers: { "Content-Type": "multipart/form-data" }
             });
             if (response.data?.success) {

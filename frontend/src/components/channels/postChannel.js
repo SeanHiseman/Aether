@@ -1,4 +1,4 @@
-import axios from 'axios';
+import api from '../../api';
 import { useContext, useEffect, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useInfiniteQuery, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -33,7 +33,7 @@ const PostChannel = ({ channelId, channelName, feed, isDraft, isEditMode, isGrou
 
 	const getSinglePost = async () => {
 		try {
-			const response = await axios.get('/api/channel_posts', { params: { feedId, isSingle: true, postId: post_id } });
+			const response = await api.get('/channel_posts', { params: { feedId, isSingle: true, postId: post_id } });
 			return response.data.post;
 		} catch (error) {
 			throw error;
@@ -43,7 +43,7 @@ const PostChannel = ({ channelId, channelName, feed, isDraft, isEditMode, isGrou
 	const getPosts = async ({ pageParam = 0 }) => {
 		try {
 			const recentUpvotes = JSON.parse(localStorage.getItem("recentUpvotes") || "[]");
-			const response = await axios.get('/api/channel_posts', { params: { channelId, feedId, isMain, isGroup: feed?.is_group, isSingle: false, limit: 48, offset: pageParam, recentUpvotes } });
+			const response = await api.get('/channel_posts', { params: { channelId, feedId, isMain, isGroup: feed?.is_group, isSingle: false, limit: 48, offset: pageParam, recentUpvotes } });
 			return response.data;
 		} catch (error) {
 			if (error.response?.status === 404) {
@@ -55,7 +55,7 @@ const PostChannel = ({ channelId, channelName, feed, isDraft, isEditMode, isGrou
 
 	const getDrafts = async ({ pageParam = 0 }) => {
 		try {
-			const response = await axios.get('/api/get_post_drafts', { params: { channel_id: channelId, poster_id: viewer?.feed_id, limit: PAGE_SIZE, offset: pageParam } });
+			const response = await api.get('/get_post_drafts', { params: { channel_id: channelId, poster_id: viewer?.feed_id, limit: PAGE_SIZE, offset: pageParam } });
 			return response.data?.drafts;
 		} catch (error) {
 			throw error;

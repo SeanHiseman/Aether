@@ -1,4 +1,4 @@
-import axios from 'axios';
+import api from '../../api';
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { ValidateEmail } from '../../functions/validateEmail';
@@ -22,7 +22,7 @@ const EmailVerification = () => {
                 return;
             }
             try {
-                const response = await axios.get(`/api/verify-email?token=${token}`);
+                const response = await api.get(`/verify-email?token=${token}`);
                 setStatus('success');
                 setMessage(response.data?.message);
                 setTimeout(() => {
@@ -39,7 +39,7 @@ const EmailVerification = () => {
     const handleResend = async (event) => {
         event.preventDefault();
         try {
-            const response = await axios.post('/api/resend-verification', { email });
+            const response = await api.post('/resend-verification', { email });
             setStatus('info');
             setMessage(response.data?.message);
         } catch (error) {

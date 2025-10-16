@@ -1,4 +1,4 @@
-import axios from 'axios';
+import api from '../api';
 import { createPortal } from 'react-dom';
 import { FaEdit, FaTrash } from 'react-icons/fa';
 import { useEffect, useState } from 'react';
@@ -20,14 +20,14 @@ const AlgorithmSelector = ({ display, locationId, refreshPosts }) => {
 			setLoading(true);
 			setAssignError(null);
 			if (algorithmId) {
-				const response = await axios.post('/api/assign_algorithm', {
+				const response = await api.post('/assign_algorithm', {
 					algorithmId,
 					locationId
 				});
 				if (!response?.data?.success) throw new Error(response?.data?.message || 'Failed to assign algorithm.');
 				setAssignedAlgorithmId(algorithmId);
 			} else {
-				await axios.delete('/api/remove_algorithm', {
+				await api.delete('/remove_algorithm', {
 					data: { algorithmId: assignedAlgorithmId, locationId }
 				});
 				setAssignedAlgorithmId('');
@@ -69,7 +69,7 @@ const AlgorithmSelector = ({ display, locationId, refreshPosts }) => {
 
 	const deleteAlgorithm = async algorithmId => {
 		try {
-			await axios.delete('/api/delete_algorithm', {
+			await api.delete('/delete_algorithm', {
 				data: { algorithmId, locationId }
 			});
 			setAlgorithms(prev => prev.filter(a => a?.algorithm_id !== algorithmId));
@@ -86,7 +86,7 @@ const AlgorithmSelector = ({ display, locationId, refreshPosts }) => {
 		try {
 			setError(null);
 			setLoading(true);
-			const response = await axios.get('/api/get_viewer_algorithms');
+			const response = await api.get('/get_viewer_algorithms');
 			if (response.data.success) {
 				const assigned = response.data.algorithms.find(a =>
 					a?.algorithm_locations?.some(fa => fa?.location_id === locationId)
@@ -161,7 +161,7 @@ const AlgorithmSelector = ({ display, locationId, refreshPosts }) => {
 		try {
 			setAssignError(null);
 			if (assignedAlgorithmId) {
-				await axios.delete('/api/remove_algorithm', {
+				await api.delete('/remove_algorithm', {
 					data: { algorithmId: assignedAlgorithmId, locationId }
 				});	
 			}

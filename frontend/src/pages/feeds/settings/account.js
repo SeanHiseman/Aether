@@ -1,4 +1,4 @@
-import axios from 'axios';
+import api from '../../../api';
 import { useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import { FaEye, FaEyeSlash } from 'react-icons/fa';
@@ -24,7 +24,7 @@ const Account = () => {
             return;
         }
         try {
-            const response = await axios.post('/api/change_email', { email, userId: user?.user_id });
+            const response = await api.post('/change_email', { email, userId: user?.user_id });
             if (response.data?.success) {
                 setEmail('');
                 setConfirmEmail('');
@@ -48,7 +48,7 @@ const Account = () => {
             return;
         }
         try {
-            const response = await axios.post('/api/change_password', { password, user_id: user?.user_id });
+            const response = await api.post('/change_password', { password, user_id: user?.user_id });
             setPassword('');
             setConfirmPassword('');
             setPasswordMessage(response.data?.success ? 'Password changed' : 'Password change error, please try again');

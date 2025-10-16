@@ -1,4 +1,4 @@
-import axios from 'axios';
+import api from '../../api';
 import { useState } from 'react';
 import { FaEye, FaEyeSlash } from 'react-icons/fa';
 import { Link, useNavigate } from 'react-router-dom';
@@ -24,7 +24,7 @@ const Join = () => {
         const email = event.target.email.value;
         const username = event.target.username.value;
         try {
-            const response = await axios.post('/api/join', { email, password, username });
+            const response = await api.post('/join', { email, password, username });
             if (response.data.success) {
                 setErrorMessage('');
                 navigate('/verify-email');
