@@ -395,37 +395,33 @@ router.get('/deep_feed_contents/:deepFeedId', standardLimiter, authenticateCheck
     }
 });
 
-router.get('/deep_feed_posts', standardLimiter, authenticateCheck, async (req, res) => {
+router.post('/deep_feed_posts', standardLimiter, authenticateCheck, async (req, res) => {
     try {
-        const { deepFeedId } = req.query;
-        const recentUpvotes = req.query.recentUpvotes;
-        //Convert to integers from url strings
-		let followedFeedIds = req.query.followedFeedIds || [];
-		if (!Array.isArray(followedFeedIds)) {
-			followedFeedIds = [followedFeedIds];
-		}
-		followedFeedIds = followedFeedIds.map(id => parseInt(id, 10)).filter(Boolean);
-        const limit = parseInt(req.query.limit, 10) || 10;
-        const offset = parseInt(req.query.offset, 10) || 0;
+        const { deepFeedId, followedFeedIds: rawFollowedFeedIds, limit = 50, offset = 0, recentUpvotes } = req.body;
+        let followedFeedIds = rawFollowedFeedIds || [];
+        if (!Array.isArray(followedFeedIds)) {
+            followedFeedIds = [followedFeedIds];
+        }
+        followedFeedIds = followedFeedIds.map(id => parseInt(id, 10)).filter(Boolean);
         const viewerId = req.session.viewer_id;
-		let deepFeed = null;
-		if (deepFeedId === 'following') {
-			deepFeed = {
-				deep_feed_id: 'following',
-				name: 'Following',
-				owner_id: 'system',
-				parent_id: null,
-			};
-		} else {
-			let lookupDeepFeedId = deepFeedId;
-			if (deepFeedId.startsWith('deep_')) {
-				lookupDeepFeedId = deepFeedId.replace('deep_', '');
-			}
-			deepFeed = await DeepFeeds.findByPk(lookupDeepFeedId);
-			if (!deepFeed) {
-				return res.status(404).json({ error: 'Deep feed not found' });
-			}
-		}
+        let deepFeed = null;
+        if (deepFeedId === 'following') {
+            deepFeed = {
+                deep_feed_id: 'following',
+                name: 'Following',
+                owner_id: 'system',
+                parent_id: null,
+            };
+        } else {
+            let lookupDeepFeedId = deepFeedId;
+            if (deepFeedId.startsWith('deep_')) {
+                lookupDeepFeedId = deepFeedId.replace('deep_', '');
+            }
+            deepFeed = await DeepFeeds.findByPk(lookupDeepFeedId);
+            if (!deepFeed) {
+                return res.status(404).json({ error: 'Deep feed not found' });
+            }
+        }
         const includeOptions = [{
             as: 'note',
             model: PostNotes,
@@ -590,7 +586,6 @@ router.post("/explore_feeds", standardLimiter, async (req, res) => {
 			}
 			return response;
 		}));
-        console.log(`Fetched ${feedData.length} feeds for explore.`);
 		res.status(200).json({ success: true, feeds: feedData, hasMore: feedData.length >= limit });
 	} catch (error) {
 		console.log("/explore_feeds error:", error);
@@ -771,6 +766,7 @@ router.get('/get_feed_followers/:feedId', higherLimiter, authenticateCheck, asyn
 router.get('/get_saved_posts', standardLimiter, authenticateCheck, async (req, res) => {
     try {
         const saverId = req.session.viewer_id;
+        const { limit = 50, offset = 0 } = req.query;
         const rows = await SavedPosts.findAll({
             where: { saver_id: saverId },
             include: [{
@@ -779,7 +775,10 @@ router.get('/get_saved_posts', standardLimiter, authenticateCheck, async (req, r
                     { model: Feeds, as: 'poster' },
                     { model: FeedChannels, as: 'parentChannel', include: [{ model: Feeds }] },
                 ]
-            }]
+            }],
+            order: [['created_at', 'DESC']], 
+            limit: parseInt(limit, 10),
+            offset: parseInt(offset, 10)
         });
         const posts = rows.map(r => {
             const post = r.post.dataValues;

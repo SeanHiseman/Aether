@@ -203,7 +203,7 @@ async function ApplyAlgorithm({ locationId, excludedPostIds, feedId, followedFee
             });
         } else { //Feed channel
             const whereChannel = {
-                ...(isMain !== 'true' && locationId ? { channel_id: locationId } : {}), //True from query is a string
+                ...(isMain !== true && locationId ? { channel_id: locationId } : {}), //True from query is a string
                 feed_id: feedId,
                 parent_id: null,
                 post_id: { [Op.notIn]: excludedIds }

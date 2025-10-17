@@ -53,12 +53,9 @@ const checkStorageLimit = async (req, res, next) => {
     }
 };
 
-router.get('/channel_posts', standardLimiter, async (req, res) => {
+router.post('/channel_posts', standardLimiter, async (req, res) => {
 	try {
-		const { channelId, excludedPostIds, feedId, isGroup, isMain, isSingle, postId } = req.query;
-        const limit = parseInt(req.query.limit, 10) || 48;
-        const offset = parseInt(req.query.offset, 10) || 0;
-		const recentUpvotes = req.query.recentUpvotes;
+		const { channelId, excludedPostIds, feedId, isGroup, isMain, isSingle, postId, limit = 50, offset = 0, recentUpvotes } = req.body;
 		const viewerId = req.session.viewer_id;
 		const includeOptions = [{
 			as: 'note',
@@ -67,9 +64,7 @@ router.get('/channel_posts', standardLimiter, async (req, res) => {
 		},{
 			as: 'parentChannel',
 			attributes: ['channel_id', 'channel_name', 'feed_id'],
-			include: [{
-				model: Feeds
-			}],
+			include: [{ model: Feeds }],
 			model: FeedChannels,
 			required: false
 		},{
@@ -81,7 +76,7 @@ router.get('/channel_posts', standardLimiter, async (req, res) => {
 			model: PostVotes,
 			required: false
 		}];
-		if (isSingle === 'true') {
+		if (isSingle === true) { 
 			const singlePost = await Posts.findOne({
 				include: includeOptions,
 				where: {
@@ -92,9 +87,7 @@ router.get('/channel_posts', standardLimiter, async (req, res) => {
 			});
 			if (!singlePost) return res.status(404).json({ success: false, message: 'Post not found' });
 			const existing = viewerId
-				? await SavedPosts.findOne({
-						where: { post_id: postId, saver_id: viewerId }
-				  })
+				? await SavedPosts.findOne({ where: { post_id: postId, saver_id: viewerId } })
 				: null;
 			singlePost.dataValues.is_saved = Boolean(existing);
 			return res.status(200).json({ success: true, post: singlePost });
@@ -111,8 +104,8 @@ router.get('/channel_posts', standardLimiter, async (req, res) => {
 			recentUpvotes,
             viewerId,
         });
-		if (!results.length) return res.status(200).json([]);
-		return res.status(200).json(results);
+		console.log("results.length", results.length);
+		return res.status(200).json({ success: true, posts: results });
 	} catch (error) {
         console.error("Error in /channel_posts:", error);
 		return res.status(500).json({ success: false, message: 'Error getting posts.' });
@@ -385,7 +378,6 @@ router.post("/explore_posts", standardLimiter, async (req, res) => {
 			recentUpvotes,
             viewerId,
         });
-		console.log(`Fetched ${posts.length} posts for explore.`);
         res.status(200).json({ posts: posts, hasMore: posts.length === limit });
     } catch (error) {
         console.error("Error in /explore_posts:", error);
@@ -395,7 +387,7 @@ router.post("/explore_posts", standardLimiter, async (req, res) => {
 
 router.get('/get_post_drafts', standardLimiter, authenticateCheck, async (req, res) => {
     try {
-        const { channel_id, poster_id, limit = 20, offset = 0 } = req.query;
+        const { channel_id, poster_id, limit = 50, offset = 0 } = req.query;
         const drafts = await PostDrafts.findAll({
             where: { channel_id, poster_id },
             order: [['updated_at','DESC']],
@@ -405,7 +397,7 @@ router.get('/get_post_drafts', standardLimiter, authenticateCheck, async (req, r
         return res.status(200).json({ drafts });
     } catch (error) {
         console.error("Error in /get_post_drafts:", error);   
-        return res.status(500).json({ error: 'Failed to load drafts' });
+        return res.status(500).json({ success: false, error: 'Failed to load drafts' });
     }
 });
 
@@ -512,7 +504,7 @@ router.post('/increment_views', higherLimiter, authenticateCheck, async (req, re
     } catch (error) {
 		if (transaction) await transaction.rollback();
 		console.error("Error in /increment_views:", error);
-        res.status(500).json({ success: false });   
+        res.status(500).json({ success: false, message: 'Error incrementing views.' });   
     }
 });
 

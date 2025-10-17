@@ -92,7 +92,7 @@
   display: flex;
   flex: 1;
   flex-direction: column;
-  height: 100vh;
+  height: calc(100vh - var(--header-height));
   overflow-y: auto;
   margin-top: var(--header-height);
   width: 100%;

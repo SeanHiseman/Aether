@@ -1,5 +1,5 @@
-import api from "../api";
 import AlgorithmSelector from '../algorithms/algorithmSelector';
+import api from '../api';
 import { useContext, useEffect, useRef, useState } from 'react';
 import { FaEdit, FaMinus, FaRegWindowClose, FaSave, FaTrash } from 'react-icons/fa';
 import { useNavigate, useOutletContext, useParams } from 'react-router-dom';
@@ -9,7 +9,7 @@ import ContentWidget from '../components/content/contentWidget';
 import FeedItem from '../components/channels/feedItem';
 import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
 import { ValidateTextInput } from '../functions/validateTextInput';
-import { set } from 'date-fns';
+const FETCH_LIMIT = 50;
 
 const DeepFeed = () => {
     const { isAuthenticated } = useContext(AuthContext);
@@ -130,14 +130,12 @@ const DeepFeed = () => {
                 followedFeedIds = [];
             }
             const recentUpvotes = JSON.parse(localStorage.getItem("recentUpvotes") || "[]");
-            const response = await api.get('/deep_feed_posts', {
-                params: {
-                    deepFeedId: normalisedDeepFeedId,
-                    followedFeedIds: followedFeedIds,
-                    limit: 48,
-                    offset: pageParam, 
-                    recentUpvotes
-                }
+            const response = await api.post('/deep_feed_posts', {
+                deepFeedId: normalisedDeepFeedId,
+                followedFeedIds: followedFeedIds,
+                limit: FETCH_LIMIT,
+                offset: pageParam, 
+                recentUpvotes
             });
             if (pageParam === 0 && response.data?.deepFeed) {
                 setDeepFeed(response.data?.deepFeed);
@@ -164,7 +162,7 @@ const DeepFeed = () => {
         queryFn: getPosts,
         getNextPageParam: (lastPage, allPages) => {
             if (!Array.isArray(lastPage)) return undefined;
-            return lastPage.length === 10 ? allPages.length * 10 : undefined;
+            return lastPage.length === FETCH_LIMIT ? allPages.length * FETCH_LIMIT : undefined;
         }
     });
 

@@ -4,6 +4,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useInfiniteQuery, useQuery, useQueryClient } from '@tanstack/react-query';
 import { AuthContext } from '../../components/authContext';
 import ContentWidget from '../content/contentWidget';
+const FETCH_LIMIT = 50;
 
 const PostChannel = ({ channelId, channelName, feed, isDraft, isEditMode, isGroup, refreshTrigger }) => {
 	const channelReady = !!channelId;
@@ -14,7 +15,6 @@ const PostChannel = ({ channelId, channelName, feed, isDraft, isEditMode, isGrou
 	const { user, viewer } = useContext(AuthContext);
 	const isMain = channel_name === 'Main';
 	const navigate = useNavigate();
-	const PAGE_SIZE = 20;
 
 	useEffect(() => {
 		if (refreshTrigger !== undefined) {
@@ -43,9 +43,8 @@ const PostChannel = ({ channelId, channelName, feed, isDraft, isEditMode, isGrou
 	const getPosts = async ({ pageParam = 0 }) => {
 		try {
 			const recentUpvotes = JSON.parse(localStorage.getItem("recentUpvotes") || "[]");
-			console.log(`Fetching posts for channelId: ${channelId}`);
-			const response = await api.get('/channel_posts', { params: { channelId, feedId, isMain, isGroup: feed?.is_group, isSingle: false, limit: 48, offset: pageParam, recentUpvotes } });
-			return response.data;
+			const response = await api.post('/channel_posts', { channelId, feedId, isMain, isGroup: feed?.is_group, isSingle: false, limit: FETCH_LIMIT, offset: pageParam, recentUpvotes });
+			return response.data.posts || [];
 		} catch (error) {
 			if (error.response?.status === 404) {
 				return [];
@@ -56,7 +55,7 @@ const PostChannel = ({ channelId, channelName, feed, isDraft, isEditMode, isGrou
 
 	const getDrafts = async ({ pageParam = 0 }) => {
 		try {
-			const response = await api.get('/get_post_drafts', { params: { channel_id: channelId, poster_id: viewer?.feed_id, limit: PAGE_SIZE, offset: pageParam } });
+			const response = await api.get('/get_post_drafts', { params: { channel_id: channelId, poster_id: viewer?.feed_id, limit: FETCH_LIMIT, offset: pageParam } });
 			return response.data?.drafts;
 		} catch (error) {
 			throw error;
@@ -67,7 +66,7 @@ const PostChannel = ({ channelId, channelName, feed, isDraft, isEditMode, isGrou
 		enabled: !post_id && isDraft && channelReady,
 		queryKey: ['drafts', channelId, viewer?.feed_id],
 		queryFn: getDrafts,
-		getNextPageParam: (lastPage, allPages) => lastPage.length === PAGE_SIZE ? allPages.length * PAGE_SIZE : undefined
+		getNextPageParam: (lastPage, allPages) => lastPage.length === FETCH_LIMIT ? allPages.length * FETCH_LIMIT : undefined
 	});
 
 	const { data: singlePost, error: singlePostError, isLoading: singlePostLoading } = useQuery({
@@ -78,7 +77,7 @@ const PostChannel = ({ channelId, channelName, feed, isDraft, isEditMode, isGrou
 
 	const { data: postsData, error: postsError, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading: postsLoading } = useInfiniteQuery({
 		enabled: !post_id,
-		getNextPageParam: (lastPage, allPages) => lastPage.length === 10 ? allPages.length * 10 : undefined,
+		getNextPageParam: (lastPage, allPages) => lastPage.length === FETCH_LIMIT ? allPages.length * FETCH_LIMIT : undefined,
 		queryFn: getPosts,
 		queryKey: ['posts', channelId, channelName, feedId, isGroup]
 	});
@@ -160,7 +159,7 @@ const PostChannel = ({ channelId, channelName, feed, isDraft, isEditMode, isGrou
                 ) : isDraft ? (
                     <ul className="content-list">
                         <p className="large-text">Drafts</p>
-                        {renderList(draftsData.pages.flat())}
+                        {renderList(draftsData?.pages.flat())}
                     </ul>
                 ) : (
                     <ul className="content-list">{renderList(postsData?.pages.flat())}</ul>

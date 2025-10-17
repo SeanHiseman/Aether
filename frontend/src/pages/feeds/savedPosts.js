@@ -2,10 +2,11 @@ import api from '../../api';
 import { v4 } from 'uuid';
 import { AuthContext } from '../../components/authContext';
 import { FaPlus } from 'react-icons/fa';
-import { useContext, useEffect, useState } from 'react';
+import { useCallback, useContext, useEffect, useState, useRef } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import ChannelList from '../../components/channels/channelList';
 import ContentWidget from '../../components/content/contentWidget';
+const FETCH_LIMIT = 50;
 
 const SavedPosts = () => {
 	const { channel_name } = useParams();
@@ -13,23 +14,51 @@ const SavedPosts = () => {
 	const [channels, setChannels] = useState([]);
 	const [posts, setPosts] = useState([]);
 	const [savedError, setSavedError] = useState('');
+	const [isLoading, setIsLoading] = useState(false);
+	const [hasMore, setHasMore] = useState(true);
+	const [offset, setOffset] = useState(0);
 	const navigate = useNavigate();
+	const scrollRef = useRef(null);
 
-    useEffect(() => {
-        if (!isAuthenticated || !channel_name) return;
-        //const current = channels.find(c => c.channel_name === channel_name);
-    	//if (!current) return;
-        async function fetchPosts() {
-            try {
-                //const response = await api.get(`/get_saved_posts/${current?.channel_id}`);
-				const response = await api.get(`/get_saved_posts`);
-                setPosts(response.data?.posts);
-            } catch (error) {
-                setSavedError(error.response.data?.message || 'Error loading posts');
-            }
-        }
-        void fetchPosts();
-    }, [channels, channel_name, isAuthenticated]);
+	const fetchPosts = useCallback(async (reset = false) => {
+		setIsLoading(true);
+		setSavedError('');
+		try {
+			const currentOffset = reset ? 0 : offset;
+			const response = await api.get('/get_saved_posts', {
+				params: {
+					limit: FETCH_LIMIT,
+					offset: currentOffset
+				}
+			});
+			const newPosts = response.data?.posts || [];
+			setPosts(prev => reset ? newPosts : [...prev, ...newPosts]);
+			setOffset(reset ? FETCH_LIMIT : offset + FETCH_LIMIT);
+			setHasMore(newPosts.length === FETCH_LIMIT);
+		} catch (error) {
+			setSavedError(error.response.data?.message || 'Error loading posts');
+		} finally {
+			setIsLoading(false);
+		}
+	}, [offset]);
+
+	const loadMore = useCallback(() => {
+		if (!isAuthenticated || isLoading || !hasMore) return;
+		fetchPosts(false);
+	}, [isAuthenticated, isLoading, hasMore, fetchPosts]);
+
+	useEffect(() => {
+		if (!isAuthenticated) return;
+		fetchPosts(true);
+	}, [isAuthenticated]); 
+	
+	const handleScroll = useCallback(() => {
+		const element = scrollRef.current;
+		if (!element) return;
+		if (element.scrollTop + element.clientHeight >= element.scrollHeight - 200) {
+			loadMore();
+		}
+	}, [loadMore]);
 
 	const addChannel = async () => {
 		try {
@@ -59,10 +88,10 @@ const SavedPosts = () => {
 
 	return (
 		<div className="standard-container">
-			<div className="channel-feed">
-				{/*{currentChannel && (*/}
-					{posts.length > 0
-						? <ul className="content-list">
+			<div ref={scrollRef} onScroll={handleScroll} className="channel-feed">
+				{posts.length > 0 ? (
+					<>
+						<ul className="content-list">
 							{posts.map((post) => (
 								<ContentWidget
 									canRemove={false}
@@ -78,9 +107,13 @@ const SavedPosts = () => {
 								/>
 							))}
 						</ul>
-						: <p className="large-text faded-text">No posts yet</p>}
+						{isLoading && <p className="large-text faded-text">Loading more posts...</p>}
+					</>
+				) : (
+					!isLoading && <p className="large-text faded-text">No posts yet</p>
+				)}
 				{/*})}*/}
-				{/*{!currentChannel && <p className="text36">Choose a channel</p>}*/}
+				{/*{!currentChannel && <p className="large-text">Choose a channel</p>}*/}
 			</div>
 			<aside className="right-aside">
 				<p className="large-text">Saved posts</p>

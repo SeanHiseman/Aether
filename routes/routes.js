@@ -9,14 +9,10 @@ import { standardLimiter } from '../functions/checks/limiters.js';
 const router = Router();
 
 //Searches posts and feeds together
-router.get('/search', standardLimiter, async (req, res) => { 
+router.post('/search', standardLimiter, async (req, res) => { 
     try {
+        const { keyword, limit = 50, feedOffset = 0, postOffset = 0, recentUpvotes } = req.body;
         const searcherId = req.session.viewer_id;
-        const keyword = req.query.keyword ? req.query.keyword.toLowerCase() : '';
-        const recentUpvotes = req.query.recentUpvotes;
-        const limit = parseInt(req.query.limit, 10) || 48;
-        const feedOffset = parseInt(req.query.feedOffset, 10) || 0;
-        const postOffset = parseInt(req.query.postOffset, 10) || 0;
         const feeds = await Feeds.findAll({
             where: { feed_name: { [Op.like]: `%${keyword}%` } },
             limit,

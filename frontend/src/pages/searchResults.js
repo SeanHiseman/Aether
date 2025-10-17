@@ -8,7 +8,7 @@ import { useOutletContext, useSearchParams } from 'react-router-dom';
 import { ChunkFeeds } from '../functions/chunkFeeds';
 import ContentWidget from '../components/content/contentWidget';
 import FeedWidget from '../components/content/feedWidget';
-const FETCH_LIMIT = 48;
+const FETCH_LIMIT = 50;
 
 const SearchResults = () => {
     const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -30,22 +30,21 @@ const SearchResults = () => {
     const fetchSearchResults = useCallback(async ({ pageParam = {} }) => {
         try {
             const recentUpvotes = JSON.parse(localStorage.getItem("recentUpvotes") || "[]");
+            //Depends on if viewing combined or separate
             const feedOffset = pageParam.feedOffset || feedPage * FETCH_LIMIT;
             const postOffset = pageParam.postOffset || postPage * FETCH_LIMIT;
-            const response = await api.get("/search", {
-                params: {
-                    keyword,
-                    limit: FETCH_LIMIT,
-                    feedOffset,
-                    postOffset,
-                    recentUpvotes
-                }
+            const response = await api.post("/search", {
+                keyword,
+                limit: FETCH_LIMIT,
+                feedOffset,
+                postOffset,
+                recentUpvotes
             });
-            const feeds = response?.data?.feeds || [];
-            const posts = response?.data?.posts || [];
+            const feeds = response.data?.feeds || [];
+            const posts = response.data?.posts || [];
             return { feeds, posts };
         } catch (error) {
-            setErrorMessage(error.response?.data?.message || "Error getting search results");
+            setErrorMessage(error.response.data?.message || "Error getting search results");
             return { feeds: [], posts: [] };
         }
     }, [keyword, feedPage, postPage]);
@@ -58,10 +57,12 @@ const SearchResults = () => {
             if (!lastPage) return undefined;
             const feedCount = lastPage.feeds?.length || 0;
             const postCount = lastPage.posts?.length || 0;
+            const totalCount = feedCount + postCount;
+            if (totalCount < FETCH_LIMIT) return undefined; // Stop fetching if less than 50 items
             if (feedCount === 0 && postCount === 0) return undefined;
             return {
-                feedOffset: feedPage * 48 + feedCount,
-                postOffset: postPage * 48 + postCount
+                feedOffset: feedPage * FETCH_LIMIT + feedCount,
+                postOffset: postPage * FETCH_LIMIT + postCount
             };
         },
         enabled: !!keyword
@@ -73,8 +74,8 @@ const SearchResults = () => {
             if (entries[0].isIntersecting && hasNextPage && !isFetchingNextPage) {
                 fetchNextPage({
                     pageParam: {
-                        feedOffset: feedPage * 48,
-                        postOffset: postPage * 48
+                        feedOffset: feedPage * FETCH_LIMIT,
+                        postOffset: postPage * FETCH_LIMIT
                     }
                 });
                 setFeedPage(prev => prev + 1);
@@ -225,7 +226,7 @@ const SearchResults = () => {
                         )}
                     </ul>
                 </nav>
-				{isAuthenticated && <AlgorithmSelector locationId={"search"} refreshPosts={refreshPosts} />} {/* Project code */}
+				{isAuthenticated && <AlgorithmSelector locationId={"search"} refreshPosts={refreshPosts} />}
             </aside>
         </div>
     );
