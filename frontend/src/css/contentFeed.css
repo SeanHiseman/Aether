@@ -20,6 +20,7 @@
     max-width: 100%;
 	overflow-x: hidden;
 	touch-action: pan-y;
+    width: 100%;
 }
 .content-footer {
     align-items: center;
@@ -58,10 +59,11 @@
     cursor: inherit;
 }
 .content-list {
-    margin-left: var(--small-margin);
-    margin-right: var(--small-margin);
+    overflow-x: hidden;
+    padding-left: var(--small-margin);
+    padding-right: var(--small-margin);
     padding-top: var(--medium-margin);
-    width: 98%;
+    width: 100%;
 }
 .content-item, .content-list {
     box-sizing: border-box;

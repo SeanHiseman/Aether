@@ -133,13 +133,7 @@ const PostChannel = ({ channelId, channelName, feed, isDraft, isEditMode, isGrou
 
 	const renderList = (items) =>
 		items?.map((post) => (
-			<ContentWidget
-				key={post?.post_id}
-				feed={feed}
-				isDraft={isDraft}
-				onPostRemoved={handlePostRemoved}
-				post={post}
-			/>
+			<ContentWidget key={post?.post_id} feed={feed} isDraft={isDraft} onPostRemoved={handlePostRemoved} post={post} />
 		));
 
     return (
@@ -149,12 +143,7 @@ const PostChannel = ({ channelId, channelName, feed, isDraft, isEditMode, isGrou
                     <p className="large-text faded-text">{channelMessage}</p>
                 ) : (post_id && !isEditMode) ? (
                     <ul className="content-list">
-                        <ContentWidget
-                            feed={feed}
-                            isDraft={isDraft}
-                            onPostRemoved={handlePostRemoved}
-                            post={singlePost}
-                        />
+                        <ContentWidget feed={feed} isDraft={isDraft} onPostRemoved={handlePostRemoved} post={singlePost} />
                     </ul>
                 ) : isDraft ? (
                     <ul className="content-list">
