@@ -312,21 +312,33 @@ const ContentWidget = ({ canRemove = false, display = false, feed, isDraft = fal
 					display: 'flex',
 					flexDirection: 'column',
 					...(isFullscreenMode
-						? { height: '100vh', overflow: 'visible' }
+						? { height: '100vh', overflow: 'hidden' }
 						: { height: 'auto', overflow: 'visible' })
 				}}
 			>
-				<div ref={contentContainerRef} style={{ position: 'relative' }}>
-					<div className="display-div" style={isFullscreenMode ? { flex: 1, overflowY: 'auto' } : {}}>
+				<div ref={contentContainerRef} style={{ 
+					position: 'relative',
+					flex: isFullscreenMode ? 1 : 'initial',
+					display: 'flex',
+					flexDirection: 'column',
+					overflow: isFullscreenMode ? 'hidden' : 'visible'
+				}}>
+					<div className="display-div" style={isFullscreenMode ? { 
+						flex: 1, 
+						overflowY: 'auto',
+						overflowX: 'hidden'
+					} : {}}>
 						<ContentDisplay 
 							post={post} 
 							onCodeAppChange={setHasCodeOrApp} 
 							onOverflowChange={handleOverflowChange} 
-							showFullContent={showFullContent} 
-							showScrollBar={false}
+							showFullContent={showFullContent || isFullscreenMode} 
+							showScrollBar={!showExpandButton || showFullContent || isFullscreenMode}
 							onHeightChange={handleContentHeightChange}
 						/>
 					</div>
+				</div>
+				<div className="content-footer" style={{ justifyContent: (showExpandButton && !isFullscreenMode) ? 'space-between' : 'flex-end' }}>
 					{showExpandButton && !isFullscreenMode && (
 						<button
 							className="small-icon"
@@ -342,8 +354,6 @@ const ContentWidget = ({ canRemove = false, display = false, feed, isDraft = fal
 							{showFullContent ? <FaChevronUp /> : <FaChevronDown />}
 						</button>
 					)}
-				</div>
-				<div className="content-footer" style={{ justifyContent: 'flex-end' }}>
 					{(fullscreenRef.current?.requestFullscreen || fullscreenRef.current?.webkitRequestFullscreen) && hasCodeOrApp && (
 						<button className="large-icon" onClick={toggleFullscreen} title={isFullscreenMode ? "Close full-screen" : "Full-screen"}>
 							{isFullscreenMode ? <FaCompress /> : <FaExpand />}

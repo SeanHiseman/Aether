@@ -34,7 +34,9 @@ const WelcomeHome = () => {
                         <button className="button join welcome">Join</button>
                     </Link>
                 </div>
-                <p className="medium-text">The first social media platform for interactive content:</p>
+                <p className="medium-text" style={{ marginTop: '20px' }}>Customise the algorithms that shows you content:</p>
+                <AlgorithmSelector display={true} locationId={'display'} />
+                <p className="medium-text" style={{ marginTop: '20px' }}>Share interactive posts:</p>
 				<div className="welcome-posts-slideshow">
                     {welcomePosts.length > 1 && (
                         <div className="slideshow-controls">
@@ -54,8 +56,6 @@ const WelcomeHome = () => {
                         ))}
                     </div>
 				</div>
-                <p className="medium-text" style={{ marginTop: '20px' }}>Customise the algorithms that shows you content:</p>
-                <AlgorithmSelector display={true} locationId={'display'} />
             </div>
             <footer className="footer">
                 <div className="footer-content">

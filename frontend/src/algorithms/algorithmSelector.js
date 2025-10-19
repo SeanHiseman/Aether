@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { FaEdit, FaTrash } from 'react-icons/fa';
 import { useEffect, useState } from 'react';
 import AddAlgorithm from './addAlgorithm';
+import { loadWelcomeAlgorithms } from '../pages/welcome/welcomeContent';
 
 const AlgorithmSelector = ({ display, locationId, refreshPosts }) => {
 	const [algorithms, setAlgorithms] = useState([]);
@@ -33,7 +34,7 @@ const AlgorithmSelector = ({ display, locationId, refreshPosts }) => {
 				setAssignedAlgorithmId('');
 				setEditingAlgorithm(null);
 			}
-			refreshPosts(); 
+			if (!display) refreshPosts(); 
 			setAlgorithms(prev => {
 				const updated = prev.map(algo => ({
 					...algo,
@@ -52,7 +53,7 @@ const AlgorithmSelector = ({ display, locationId, refreshPosts }) => {
 				return updated;
 			});
 		} catch (error) {
-			setAssignError(error.response?.data?.message || 'Failed to assign algorithm');
+			setAssignError(error.response.data?.message || 'Failed to assign algorithm');
 			setTimeout(() => { setAssignError('') }, 3000);
 		} finally {
 			setLoading(false);
@@ -68,6 +69,7 @@ const AlgorithmSelector = ({ display, locationId, refreshPosts }) => {
 	};
 
 	const deleteAlgorithm = async algorithmId => {
+		if (display) return;
 		try {
 			await api.delete('/delete_algorithm', {
 				data: { algorithmId, locationId }
@@ -76,38 +78,42 @@ const AlgorithmSelector = ({ display, locationId, refreshPosts }) => {
 			if (algorithmId === assignedAlgorithmId) setAssignedAlgorithmId('');
 			if (editingAlgorithm?.algorithm_id === algorithmId) setEditingAlgorithm(null);
 		} catch (error) {
-			setError(error.response?.data?.message || 'Failed to delete algorithm');
+			setError(error.response.data?.message || 'Failed to delete algorithm');
 			setTimeout(() => { setError('') }, 3000);
 		}
 	};
 
 	const fetchAlgorithms = async () => { 
-		if (display) return;
 		try {
-			setError(null);
-			setLoading(true);
-			const response = await api.get('/get_viewer_algorithms');
-			if (response.data.success) {
-				const assigned = response.data.algorithms.find(a =>
-					a?.algorithm_locations?.some(fa => fa?.location_id === locationId)
-				);
-				const assignedId = assigned ? assigned?.algorithm_id : '';
-				const sorted = [...response?.data?.algorithms].sort((a, b) => a?.algorithm_name?.localeCompare(b?.algorithm_name));
-				if (assignedId) {
-					const assignedIndex = sorted.findIndex(a => a?.algorithm_id === assignedId);
-					if (assignedIndex > 0) {
-						const [assignedAlgo] = sorted.splice(assignedIndex, 1);
-						sorted.unshift(assignedAlgo);
+			if (display) {
+				const welcomeAlgos = await loadWelcomeAlgorithms(); 
+            	setAlgorithms(welcomeAlgos);
+			} else {
+				setError(null);
+				setLoading(true);
+				const response = await api.get('/get_viewer_algorithms');
+				if (response.data.success) {
+					const assigned = response.data.algorithms.find(a =>
+						a?.algorithm_locations?.some(fa => fa?.location_id === locationId)
+					);
+					const assignedId = assigned ? assigned?.algorithm_id : '';
+					const sorted = [...response?.data?.algorithms].sort((a, b) => a?.algorithm_name?.localeCompare(b?.algorithm_name));
+					if (assignedId) {
+						const assignedIndex = sorted.findIndex(a => a?.algorithm_id === assignedId);
+						if (assignedIndex > 0) {
+							const [assignedAlgo] = sorted.splice(assignedIndex, 1);
+							sorted.unshift(assignedAlgo);
+						}
 					}
-				}
-				setAlgorithms(sorted);
-				setAssignedAlgorithmId(assignedId);
-				if (assigned) {
-					setEditingAlgorithm(assigned);
+					setAlgorithms(sorted);
+					setAssignedAlgorithmId(assignedId);
+					if (assigned) {
+						setEditingAlgorithm(assigned);
+					}
 				}
 			}
 		} catch (error) {
-			setError(error.response?.data?.message || 'Failed to load algorithms');
+			setError(error.response.data?.message || 'Failed to load algorithms');
 			setTimeout(() => { setError('') }, 5000);
 		} finally {
 			setLoading(false);
@@ -115,6 +121,7 @@ const AlgorithmSelector = ({ display, locationId, refreshPosts }) => {
 	};
 
 	const handleCreated = newAlgo => {
+		if (display) return;
 		try {
 			const newAlgoWithLocation = {
 				...newAlgo,
@@ -135,7 +142,7 @@ const AlgorithmSelector = ({ display, locationId, refreshPosts }) => {
 			setEditingAlgorithm(newAlgo);
 			refreshPosts();
 		} catch (error) {
-			setError(error.response?.data?.message || 'Failed to update algorithms');
+			setError(error.response.data?.message || 'Failed to update algorithms');
 			setTimeout(() => { setError('') }, 5000);
 		}
 	};
@@ -158,6 +165,7 @@ const AlgorithmSelector = ({ display, locationId, refreshPosts }) => {
 	};
 
 	const unassignAlgorithm = async () => {
+		if (display) return;
 		try {
 			setAssignError(null);
 			if (assignedAlgorithmId) {
@@ -246,14 +254,14 @@ const AlgorithmSelector = ({ display, locationId, refreshPosts }) => {
 													}}
 													title="Edit algorithm"
 												><FaEdit /></button>
-												<button
+												{!display && <button
 													className="small-icon"
 													onClick={e => {
 														e.stopPropagation();
 														deleteAlgorithm(a.algorithm_id);
 													}}
 													title="Delete algorithm"
-												><FaTrash /></button>
+												><FaTrash /></button>}
 											</li>
 										);
 									})}

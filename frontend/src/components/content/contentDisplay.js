@@ -109,7 +109,7 @@ const ContentDisplay = ({ post, onCodeAppChange = () => {}, onHeightChange = () 
 
 	return (
 		<div ref={contentRef} className="display-container" style={{ 
-			maxHeight: showFullContent ? 'none' : heightStyle, 
+			maxHeight: showFullContent ? 'none' : '70vh', 
 			overflow: showScrollBar ? 'auto' : 'hidden', 
 			position: 'relative', 
 			borderTopRightRadius: post?.title && '0', 
@@ -125,7 +125,7 @@ const ContentDisplay = ({ post, onCodeAppChange = () => {}, onHeightChange = () 
 							key={i}
 							sandbox="allow-downloads allow-forms allow-modals allow-popups allow-scripts"
 							srcDoc={block.code}
-							style={{ border: 'none', height: '100%', width: '100%' }}
+							style={{ border: 'none', height: '70vh', width: '100%' }}
 							title={`code-block-${block.id}`}
 						/>
 					)

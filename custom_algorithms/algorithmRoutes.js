@@ -47,12 +47,8 @@ router.post('/create_algorithm', authenticateCheck, async (req, res) => {
 			scoring: {
 				sentiment,
 				voteImpact,
-				wordBoost: Array.isArray(wordBoost) ? wordBoost.map(word =>
-					typeof word === 'string' ? { word, value: 10 } : word
-				) : [],
-				wordSuppress: Array.isArray(wordSuppress) ? wordSuppress.map(word =>
-					typeof word === 'string' ? { word, value: -10 } : word
-				) : []
+				wordBoost: Array.isArray(wordBoost) ? wordBoost : [],
+				wordSuppress: Array.isArray(wordSuppress) ? wordSuppress : []
 			}
 		};
 		let algorithmCode;

@@ -165,7 +165,7 @@ const ALGORITHM_TEMPLATES = {
         customInstruction: "Show highly engaging discussions. Prioritise posts with active comment threads and community engagement."
     },
     "high_quality": {
-        name: "HIgh quality",
+        name: "High quality",
         chronology: 0.5, 
         sentiment: 0.2,
         variety: 0.7,

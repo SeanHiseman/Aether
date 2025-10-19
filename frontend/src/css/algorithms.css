@@ -258,6 +258,9 @@
 	padding: var(--medium-margin);
 	width: 100%;
 }
+.form-input::placeholder, .form-textarea::placeholder {
+	color: var(--light);
+}
 .form-input[type="date"]::-webkit-calendar-picker-indicator {
     filter: invert(1);
     cursor: pointer;
@@ -372,10 +375,6 @@
     font-weight: 500;
     font-size: 16px;
     user-select: none;
-}
-.form-label-with-info {
-    display: flex;
-    align-items: center;
 }
 
 @media (max-width: 768px) {
