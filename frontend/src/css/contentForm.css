@@ -61,7 +61,7 @@
   background-color: var(--darkest);
   border: 1px solid var(--border);
   border-radius: var(--small-margin);
-  color: var(--light);
+  color: var(--lightest);
   height: 40vh;
   padding: var(--medium-margin);
   resize: vertical;
@@ -69,7 +69,7 @@
 }
 .code-preview {
   border-radius: var(--small-margin);
-  color: var(--light);
+  color: var(--lightest);
   padding: 10px;
   white-space: pre-wrap;
   word-wrap: break-word;
@@ -194,7 +194,7 @@
   border: 1px solid var(--light);
   border-radius: var(--small-margin);
   box-sizing: border-box;
-  color: var(--light);
+  color: var(--lightest);
   margin-bottom: var(--large-margin);
   padding: var(--medium-margin);
   width: 97%;

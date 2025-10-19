@@ -15,6 +15,7 @@ const ContentWidget = ({ canRemove = false, display = false, feed, isDraft = fal
 	const authContext = useContext(AuthContext);
 	const { isAuthenticated = false, viewer = null, user = null } = authContext || {};
 	const [canRemoveState, setCanRemoveState] = useState(canRemove);
+	const [contentHeight, setContentHeight] = useState(0);
 	const [downvotes, setDownvotes] = useState(post?.downvotes);
 	const { feed_name, channel_name, post_id } = useParams();
 	const location = useLocation();
@@ -33,6 +34,7 @@ const ContentWidget = ({ canRemove = false, display = false, feed, isDraft = fal
 	const [postErrorMessage, setPostErrorMessage] = useState('');
 	const [replies, setReplies] = useState([]);
 	const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+	const [showExpandButton, setShowExpandButton] = useState(false);
 	const [showFullContent, setShowFullContent] = useState(false);
 	const [showNote, setShowNote] = useState(post?.note && post?.note?.is_misinfo);
 	const [showReplies, setShowReplies] = useState(post_id ? (post?.replies > 0) : false);
@@ -45,6 +47,7 @@ const ContentWidget = ({ canRemove = false, display = false, feed, isDraft = fal
 	const isViewingOwnPost = post?.poster_id === viewer?.feed_id;
 	const timeAgo = useTimeAgo(post?.created_at);
 	const urlPrefix = (post?.parentChannel?.feed?.is_group) ? 'g' : 'u';
+	const contentContainerRef = useRef(null);
 
 	const confirmDelete = async () => {
 		setShowDeleteConfirm(false);
@@ -259,11 +262,13 @@ const ContentWidget = ({ canRemove = false, display = false, feed, isDraft = fal
 		setTreeViewMode((prev) => !prev);
 	};
 
+	const handleContentHeightChange = (height) => {
+		setContentHeight(height);
+	};
+
 	const handleOverflowChange = (overflowing) => {
 		setIsOverflowing(overflowing);
-		if (!overflowing) {
-			setShowFullContent(false);
-		}
+		setShowExpandButton(overflowing);
 	};
 
 	const renderReplyContent = (reply) => {
@@ -308,27 +313,42 @@ const ContentWidget = ({ canRemove = false, display = false, feed, isDraft = fal
 					flexDirection: 'column',
 					...(isFullscreenMode
 						? { height: '100vh', overflow: 'visible' }
-						: isOverflowing
-							? (showFullContent
-								? { height: 'auto', overflow: 'visible' }
-								: { height: '70vh', overflow: 'hidden' })
-							: { height: 'auto', overflow: 'visible' })
+						: { height: 'auto', overflow: 'visible' })
 				}}
 			>
-				<div className="display-div" style={isFullscreenMode ? { flex: 1, overflowY: 'auto' } : { height: '100%' }}>
-					<ContentDisplay post={post} onCodeAppChange={setHasCodeOrApp} onOverflowChange={handleOverflowChange} showFullContent={showFullContent} showScrollBar={false} />
+				<div ref={contentContainerRef} style={{ position: 'relative' }}>
+					<div className="display-div" style={isFullscreenMode ? { flex: 1, overflowY: 'auto' } : {}}>
+						<ContentDisplay 
+							post={post} 
+							onCodeAppChange={setHasCodeOrApp} 
+							onOverflowChange={handleOverflowChange} 
+							showFullContent={showFullContent} 
+							showScrollBar={false}
+							onHeightChange={handleContentHeightChange}
+						/>
+					</div>
+					{showExpandButton && !isFullscreenMode && (
+						<button
+							className="small-icon"
+							onClick={(e) => {
+								e.stopPropagation();
+								setShowFullContent(!showFullContent);
+								if (!showFullContent && contentContainerRef.current) {
+									contentContainerRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+								}
+							}}
+							title={showFullContent ? 'Show less' : 'Show more'}
+						>
+							{showFullContent ? <FaChevronUp /> : <FaChevronDown />}
+						</button>
+					)}
 				</div>
-				<div className="content-footer">
+				<div className="content-footer" style={{ justifyContent: 'flex-end' }}>
 					{(fullscreenRef.current?.requestFullscreen || fullscreenRef.current?.webkitRequestFullscreen) && hasCodeOrApp && (
 						<button className="large-icon" onClick={toggleFullscreen} title={isFullscreenMode ? "Close full-screen" : "Full-screen"}>
 							{isFullscreenMode ? <FaCompress /> : <FaExpand />}
 						</button>
 					)}
-					{/*{isOverflowing && !isFullscreenMode && (
-						<button className="small-icon" onClick={() => setShowFullContent(!showFullContent)} title={showFullContent ? 'Show less' : 'Show more'}>
-							{showFullContent ? <FaChevronUp /> : <FaChevronDown />}
-						</button>
-					)}*/}
 				</div>
 			</div>
 			{showNote && <div className="ask-note"><p className="ask-note-text">{note}</p></div>}

@@ -33,7 +33,7 @@ const PostChannel = ({ channelId, channelName, feed, isDraft, isEditMode, isGrou
 
 	const getSinglePost = async () => {
 		try {
-			const response = await api.get('/channel_posts', { params: { feedId, isSingle: true, postId: post_id } });
+			const response = await api.post('/channel_posts', { feedId, isSingle: true, postId: post_id });
 			return response.data.post;
 		} catch (error) {
 			throw error;

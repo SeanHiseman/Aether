@@ -56,6 +56,7 @@ const checkStorageLimit = async (req, res, next) => {
 router.post('/channel_posts', standardLimiter, async (req, res) => {
 	try {
 		const { channelId, excludedPostIds, feedId, isGroup, isMain, isSingle, postId, limit = 50, offset = 0, recentUpvotes } = req.body;
+		console.log("channel posts req.body:", req.body);
 		const viewerId = req.session.viewer_id;
 		const includeOptions = [{
 			as: 'note',
@@ -85,12 +86,14 @@ router.post('/channel_posts', standardLimiter, async (req, res) => {
 					post_id: postId
 				}
 			});
-			if (!singlePost) return res.status(404).json({ success: false, message: 'Post not found' });
+			if (!singlePost) {
+				console.log("post not found");
+				return res.status(404).json({ success: false, message: 'Post not found' });} else {
 			const existing = viewerId
 				? await SavedPosts.findOne({ where: { post_id: postId, saver_id: viewerId } })
 				: null;
 			singlePost.dataValues.is_saved = Boolean(existing);
-			return res.status(200).json({ success: true, post: singlePost });
+			return res.status(200).json({ success: true, post: singlePost });}
 		}
 		const results = await ApplyAlgorithm({ 
             locationId: channelId,
@@ -104,7 +107,6 @@ router.post('/channel_posts', standardLimiter, async (req, res) => {
 			recentUpvotes,
             viewerId,
         });
-		console.log("results.length", results.length);
 		return res.status(200).json({ success: true, posts: results });
 	} catch (error) {
         console.error("Error in /channel_posts:", error);

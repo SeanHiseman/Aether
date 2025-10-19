@@ -3,11 +3,11 @@ import { useEffect, useRef, useState } from 'react'
 import AppBlock from './appBlock'
 import AppWebContainer from './appWebContainer'
 
-const ContentDisplay = ({ post, onCodeAppChange = () => {}, onOverflowChange = () => {}, showFullContent = false, showScrollBar = true }) => {
+const ContentDisplay = ({ post, onCodeAppChange = () => {}, onHeightChange = () => {}, onOverflowChange = () => {}, showFullContent = false, showScrollBar = true }) => {
 	const [blocks, setBlocks] = useState([]);
 	const content = post?.content;
 	const contentRef = useRef(null);
-	const heightStyle = showFullContent ? 'auto' : '100%';
+	const heightStyle = showFullContent ? 'auto' : '70vh';
 
 	useEffect(() => {
 		if (!content) return;
@@ -81,7 +81,13 @@ const ContentDisplay = ({ post, onCodeAppChange = () => {}, onOverflowChange = (
 		const element = contentRef.current
 		if (!element) return
 		const fixed = blocks.some(b => b.type === 'code' || b.type === 'app')
-		const update = () => onOverflowChange(fixed || element.scrollHeight > element.clientHeight)
+		const update = () => {
+			const scrollHeight = element.scrollHeight;
+			const viewportHeight = window.innerHeight * 0.7; // 70vh
+			const isOverflowing = fixed || scrollHeight > viewportHeight;
+			onOverflowChange(isOverflowing);
+			onHeightChange(scrollHeight);
+		}
 		update()
 		const ro = new ResizeObserver(update)
 		ro.observe(element)
@@ -90,7 +96,7 @@ const ContentDisplay = ({ post, onCodeAppChange = () => {}, onOverflowChange = (
 			ro.disconnect()
 			window.removeEventListener('resize', update)
 		}
-	}, [blocks, onOverflowChange])
+	}, [blocks, onHeightChange, onOverflowChange])
 
 	//Detect if there is any code or app blocks to toggle fullscreen button
 	useEffect(() => {
@@ -102,7 +108,13 @@ const ContentDisplay = ({ post, onCodeAppChange = () => {}, onOverflowChange = (
 	}
 
 	return (
-		<div ref={contentRef} className="display-container" style={{ height: heightStyle, overflow: showScrollBar ? 'auto' : 'hidden', position: 'relative', borderTopRightRadius: post?.title && '0', borderTopLeftRadius: post?.title && '0' }}>
+		<div ref={contentRef} className="display-container" style={{ 
+			maxHeight: showFullContent ? 'none' : heightStyle, 
+			overflow: showScrollBar ? 'auto' : 'hidden', 
+			position: 'relative', 
+			borderTopRightRadius: post?.title && '0', 
+			borderTopLeftRadius: post?.title && '0' 
+		}}>
 			{blocks.map((block, i) => {
 				if (block.type === 'text') {
 					return <div dangerouslySetInnerHTML={{ __html: block.html }} key={i} style={{ paddingTop: 5, paddingLeft: 5, paddingRight: 5 }} />
@@ -147,6 +159,7 @@ const ContentDisplay = ({ post, onCodeAppChange = () => {}, onOverflowChange = (
 ContentDisplay.propTypes = {
 	content: PropTypes.string,
 	onCodeAppChange: PropTypes.func,
+	onHeightChange: PropTypes.func,
 	onOverflowChange: PropTypes.func,
 	showFullContent: PropTypes.bool,
 	showScrollBar: PropTypes.bool,
