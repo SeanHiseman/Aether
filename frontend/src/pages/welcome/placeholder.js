@@ -15,10 +15,8 @@ const Placeholder = () => {
                     <button className="button join welcome">Join</button>
                 </Link>
             </div>
-            <div className="welcome-box single">
-                <div className="left-aligned-text">
-                    <p className="welcome-box-header">Coming soon...</p>
-                </div>
+            <div className="left-aligned-text">
+                <p className="welcome-box-header">Coming soon...</p>
             </div>
         </div>
     );

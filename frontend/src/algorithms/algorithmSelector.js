@@ -25,7 +25,7 @@ const AlgorithmSelector = ({ display, locationId, refreshPosts }) => {
 					algorithmId,
 					locationId
 				});
-				if (!response?.data?.success) throw new Error(response?.data?.message || 'Failed to assign algorithm.');
+				if (!response.data?.success) throw new Error(response?.data?.message || 'Failed to assign algorithm.');
 				setAssignedAlgorithmId(algorithmId);
 			} else {
 				await api.delete('/remove_algorithm', {
@@ -181,7 +181,7 @@ const AlgorithmSelector = ({ display, locationId, refreshPosts }) => {
 			setEditingAlgorithm(null);
 			refreshPosts();
 		} catch (error) {
-			setAssignError(error.response?.data?.message || 'Failed to unassign algorithm');
+			setAssignError(error.response.data?.message || 'Failed to unassign algorithm');
 			setTimeout(() => { setAssignError('') }, 3000);
 		};
 	};
