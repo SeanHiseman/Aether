@@ -20,7 +20,7 @@ body, html {
 	touch-action: pan-y; 
 }
 input, textarea, select {
-	font-size: 16px;
+	font-size: var(--small-text);
 }
 .bold {
     font-weight: bold;

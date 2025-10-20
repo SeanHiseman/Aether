@@ -12,9 +12,10 @@ import { AuthContext } from "../components/authContext";
 import DeepFeedItem from "../components/channels/deepFeedItem";
 import FeedItem from "../components/channels/feedItem";
 import GetCroppedImg from "../functions/getCroppedImg";
+import MessageDropdown from "../components/messages/messageDropdown";
 import { ThemeContext } from "../themeProvider";
 import { Tooltip } from "react-tooltip";
-import { UnreadContext } from "../components/connections/unreadContext";
+import { UnreadContext } from "../components/messages/unreadContext";
 import { ValidateTextInput } from "../functions/validateTextInput";
 import "../css/algorithms.css";
 import "../css/baseLayout.css";
@@ -490,7 +491,11 @@ const BaseLayout = () => {
                     {isAuthenticated ? (
                         <><DndContext sensors={sensors} collisionDetection={customCollisionDetection} onDragStart={dragStart} onDragEnd={dragEnd}>
                             <nav id="personal-feeds">
-                                <ul>     
+                                <ul>  
+                                    <li className="channel-link">
+                                        <Link to="/messages">Messages</Link>
+                                        <MessageDropdown />
+                                    </li>
                                     <li className="channel-link">
                                         <Link to="/explore">Explore</Link>
                                     </li>

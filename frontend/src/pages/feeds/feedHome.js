@@ -12,7 +12,7 @@ import ChatChannel from '../../components/channels/chatChannel';
 import ConfirmModal from '../../components/modals/confirmModal';
 import ContentForm from '../../components/content/contentForm';
 import FollowerChangeButton from '../../components/followerChangeButton';
-import ManageConnectionButton from '../../components/connections/manageConnectionButton';
+import ManageConnectionButton from '../../components/messages/manageConnectionButton';
 import PostChannel from '../../components/channels/postChannel';
 
 const FeedHome = () => {
@@ -50,6 +50,7 @@ const FeedHome = () => {
     const queryClient = useQueryClient();
     const { rightClasses, updateFeeds } = useOutletContext(); 
     const showDrafts = location.pathname.endsWith('/drafts');
+    const isViewingSelf = viewer?.feed_name === feed_name;
     const urlPrefix = feed?.is_group ? 'g' : 'u';
 
     useEffect(() => {
@@ -71,8 +72,8 @@ const FeedHome = () => {
                 if (error.response && error.response?.status === 404) {
                     setFeedNotFound(true);
                 } else {
-                    setFeedErrorMessage('Failed to load feed');
-                    setTimeout(() => { setFeedErrorMessage(''); }, 3000);
+                    setFeedErrorMessage(error.response.data?.message || 'Failed to load feed');
+                    setTimeout(() => { setFeedErrorMessage('') }, 3000);
                 }
             } finally {
                 setLoading(false);
@@ -479,9 +480,9 @@ const FeedHome = () => {
                         {viewer && isAuthenticated && (
                             <FollowerChangeButton feed={feed} showVertical={true} updateFeeds={updateFeeds} viewerId={viewer?.feed_id} />
                         )}
-                        {/*{!isViewingSelf && !feed.is_group && (
-                            <ManageConnectionButton feed={feed} viewerId={viewer.feed_id} />
-                        )}*/}
+                        {!isViewingSelf && !feed?.is_group && (
+                            <ManageConnectionButton feed={feed} viewerId={viewer?.feed_id} />
+                        )}
                     </div>
                 </aside>
             </div>
@@ -516,9 +517,9 @@ const FeedHome = () => {
                     ) : (
                         <p className="icon-text">{FormatNumber(feed?.follower_count)} {(feed?.follower_count) === 1 ? 'follower' : 'followers'}</p>
                     )}
-                    {/*{!isViewingSelf && !feed.is_group && (
-                        <ManageConnectionButton feed={feed} viewerId={viewer.feed_id} />
-                    )}*/}
+                    {!isViewingSelf && !feed?.is_group && (
+                        <ManageConnectionButton feed={feed} viewerId={viewer?.feed_id} />
+                    )}
                 </div>
                 {feedErrorMessage && <div className="tiny-text faded-text">{feedErrorMessage}</div>}
                 {channelRender && (

@@ -4,8 +4,8 @@ import { ProtectedRoute, PublicAuthProvider } from './components/authContext';
 import Account from './pages/feeds/settings/account';
 import AskChannel from './pages/ask/askChannel';
 import BaseLayout from './pages/base';
-import ChatPage from './pages/connections/chatPage';
-import ConnectionsPage from './pages/connections/connectionsPage';
+import ChatPage from './pages/messages/chatPage';
+import MessagesPage from './pages/messages/messagesPage';
 import ContentWidget from './components/content/contentWidget';
 import DeepFeed from './pages/deepFeed';
 import EmailVerification from './pages/site_entrance/verification';
@@ -31,11 +31,8 @@ import { QueryProvider } from './components/search/queryContext';
 import SearchResults from './pages/searchResults';
 import { SocketProvider } from './socketProvider';
 import { ThemeProvider as CustomThemeProvider } from './themeProvider';
-//import { ThemeProvider as MUIThemeProvider, createTheme } from '@mui/material/styles';
-import { UnreadProvider } from './components/connections/unreadContext';
+import { UnreadProvider } from './components/messages/unreadContext';
 import WelcomeHome from './pages/welcome/welcomeHome';
-
-//const muiTheme = createTheme();
 
 //Routes to each layout, some with the base layout wrapper
 const App = () => {
@@ -89,6 +86,7 @@ const App = () => {
 									<Route path=":channel_name" element={<ProtectedRoute><SavedPosts /></ProtectedRoute>} />
 								</Route>
 								<Route path="explore" element={<ExplorePage/>} />
+								<Route path="messages" element={<ProtectedRoute><MessagesPage /></ProtectedRoute>} />
 								<Route path="settings/:feed_name" element={<ProtectedRoute><FeedSettings /></ProtectedRoute>}>
 									<Route index element={<Navigate to="info" replace />} />
 									<Route path="deletion" element={<FeedDeletion />} />
@@ -99,8 +97,7 @@ const App = () => {
 									<Route path="account" element={<Account />} />
 									<Route path="theme" element={<Theme />} />
 								</Route>
-								{/*<Route path="connections" element={<ProtectedRoute><ConnectionsPage /></ProtectedRoute>} />
-								<Route path="connections/:connection_name" element={<ProtectedRoute><ChatPage /></ProtectedRoute>} />
+								{/*<Route path="connections/:connection_name" element={<ProtectedRoute><ChatPage /></ProtectedRoute>} />
 								<Route path="connections/:connection_name/:title" element={<ProtectedRoute><ChatPage /></ProtectedRoute>} />*/}
 								<Route path="d/:deep_feed_id" element={<ProtectedRoute><DeepFeed/></ProtectedRoute>} />
 								<Route path="search" element={<SearchResults />} />

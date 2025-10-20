@@ -6,7 +6,7 @@ import { useCallback, useContext, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { AuthContext } from '../../components/authContext';
 import { decrypt } from '../../encryptionUtil';
-import { UnreadContext } from '../connections/unreadContext';
+import { UnreadContext } from '../messages/unreadContext';
 
 const SortableFeedChannelItem = ({ channel, id, url }) => {
     const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });

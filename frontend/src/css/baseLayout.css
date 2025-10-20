@@ -113,7 +113,7 @@
 .channel-link:hover, .channel-item:hover {
   background-color: var(--dark);
 }
-.channel-list {
+.channel-list .align-left {
   margin-left: var(--medium-margin);
   width: 90%;
 }

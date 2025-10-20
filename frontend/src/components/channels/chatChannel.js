@@ -4,8 +4,8 @@ import { AuthContext } from '../authContext';
 import { io } from "socket.io-client";
 import { v4 } from 'uuid';
 import { decrypt, encrypt } from '../../encryptionUtil';
-import Message from '../connections/message';
-import { UnreadContext } from '../connections/unreadContext';
+import Message from '../messages/message';
+import { UnreadContext } from '../messages/unreadContext';
 
 const ChatChannel = ({ canAdd, canRemove, channelId, connection, isGroup, isLocked, setChats, setErrorMessage }) => {
     const [channel, setChannel] = useState([]);

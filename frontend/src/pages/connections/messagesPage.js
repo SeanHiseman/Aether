@@ -2,11 +2,11 @@ import api from '../../api';
 import { useContext, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import FeedItem from '../../components/channels/feedItem';
-import ManageConnectionButton from '../../components/connections/manageConnectionButton';
+import ManageConnectionButton from '../../components/messages/manageConnectionButton';
 import { AuthContext } from '../../components/authContext';
-import { UnreadContext } from '../../components/connections/unreadContext';
+import { UnreadContext } from '../../components/messages/unreadContext';
 
-const ConnectionsPage = () => {
+const MessagesPage = () => {
     const { state, dispatch } = useContext(UnreadContext);
     const { viewer } = useContext(AuthContext);
     const [activeTab, setActiveTab] = useState('connections');
@@ -140,7 +140,7 @@ const ConnectionsPage = () => {
 
     const requestCount = state.requestCount || 0;
 
-	document.title = 'Connections';
+	document.title = 'Messages';
 	return (
 		<div className="standard-container">
 			<div className="connections-feed">
@@ -213,4 +213,4 @@ const ConnectionsPage = () => {
 	);
 };
 
-export default ConnectionsPage;
+export default MessagesPage;
