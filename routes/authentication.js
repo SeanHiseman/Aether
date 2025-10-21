@@ -170,7 +170,9 @@ router.post('/forgot-password', resendLimiter, async (req, res) => {
 });
 
 router.post('/join', loginLimiter, async (req, res) => {
+    let transaction
     try {
+        transaction = await sequelize.transaction();
 		await new Promise((resolve, reject) => {
 			req.session.regenerate(err => {
 				if (err) reject(err);
@@ -180,21 +182,13 @@ router.post('/join', loginLimiter, async (req, res) => {
         const email = req.body.email;
         const username = req.body.username;
         const emailCheck = ValidateEmail(email);
-        if (!emailCheck.valid) {
-            return res.status(400).json({ message: emailCheck.error });
-        }
+        if (!emailCheck.valid) return res.status(400).json({ message: emailCheck.error });
         const usernameCheck = ValidateTextInput(username, 3, 30);
-        if (!usernameCheck.valid) {
-            return res.status(400).json({ message: usernameCheck.error });
-        }
+        if (!usernameCheck.valid) return res.status(400).json({ message: usernameCheck.error });
         const existingEmail = await Users.findOne({ where: { email } });
-        if (existingEmail) {
-            return res.status(409).json({ message: 'Email already registered' });
-        }
+        if (existingEmail) return res.status(409).json({ message: 'Email already registered' });
         const existingUser = await Users.findOne({ where: { username } });
-        if (existingUser) {
-            return res.status(409).json({ message: 'Username already taken' });
-        }
+        if (existingUser) return res.status(409).json({ message: 'Username already taken' });
         const user_id = v4();
         const hashedPassword = await hash(req.body.password, 10);
         const UserSince = new Date();
@@ -202,38 +196,42 @@ router.post('/join', loginLimiter, async (req, res) => {
         const verificationTokenExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); //24 hours
         await Users.create({
             email, user_id, username, password: hashedPassword, UserSince, email_verified: false, verification_token: verificationToken, verification_token_expires: verificationTokenExpires
-        });
+        }, { transaction });
         //Add initial user feed
         const default_photo = process.env.DEFAULT_USER_IMAGE;
         const feed_id = v4();
         await Feeds.create({
             feed_id, feed_name: username, description: "", feed_photo: default_photo, type: 'private', is_group: false, feed_owner: user_id
-        });
+        }, { transaction });
         //Add main channel
         const channel_id = v4();
         await FeedChannels.create({
             channel_id, channel_name: 'Main', feed_id, is_chat: false
-        });
+        }, { transaction });
         await SavedPostChannels.create({
             channel_id: v4(), saver_id: feed_id, channel_name: "Main", display_order: 0
-        });
-        await Followers.create({
-            follow_id: v4(), follower_id: feed_id, feed_id: process.env.WELCOME_FEED_ID
-        });
-        await PostDrafts.create({
-            draft_id: v4(), feed_id, channel_id, title: 'Edit this draft post using the edit button below', content: tutorialContent, poster_id: feed_id
-        });
-        await Feeds.increment('follower_count', { where: { feed_id: process.env.DEVELOPMENT_FEED_ID } });
-        await Feeds.increment('follower_count', { where: { feed_id: process.env.FEEDBACK_FEED_ID } });
-        await Feeds.increment('follower_count', { where: { feed_id: process.env.WELCOME_FEED_ID } });
+        }, { transaction });
+        //await Followers.create({
+            //follow_id: v4(), follower_id: feed_id, feed_id: process.env.WELCOME_FEED_ID
+        //, { transaction });
+        //await PostDrafts.create({
+            //draft_id: v4(), feed_id, channel_id, title: 'Edit this draft post using the edit button below', content: tutorialContent, poster_id: feed_id
+        //}, { transaction });
+        //await Feeds.increment('follower_count', { where: { feed_id: process.env.DEVELOPMENT_FEED_ID } }, { transaction });
+        //await Feeds.increment('follower_count', { where: { feed_id: process.env.FEEDBACK_FEED_ID } }, { transaction });
+        //await Feeds.increment('follower_count', { where: { feed_id: process.env.WELCOME_FEED_ID } }, { transaction });
         try {
             await sendVerificationEmail(email, username, verificationToken);
-        } catch (emailError) {          
-            return res.status(500).json({ success: false });
+        } catch (emailError) {      
+            if (transaction) await transaction.rollback();    
+            return res.status(500).json({ success: false, message: 'Email send error' });
         }
-        res.status(200).json({ success: true, message: 'Account created successfully. Please check your email to verify your account.' });
+        await transaction.commit();
+        res.status(200).json({ success: true, message: 'Please check your email to verify your account.' });
     } catch (error) {
-        res.status(500).json({ success: false });
+        console.error('Error in /join:', error);
+        if (transaction) await transaction.rollback();
+        res.status(500).json({ success: false, message: 'Creation failed. Please try again.' });
     }
 });
 
@@ -316,7 +314,7 @@ router.post('/login', loginLimiter, async (req, res) => {
         }
     }
     catch (error) {
-        console.log("error logging in:", error);
+        console.log("Error in /login:", error);
         res.status(500).json({ success: false, message: 'Failed login' });
     }
 });

@@ -22,7 +22,7 @@ export const generateVerificationToken = (userId, email) => {
 export const sendVerificationEmail = async (email, username, verificationToken) => {
     const verificationUrl = `${process.env.FRONTEND_URL}/verify-email?token=${verificationToken}`;
     const mailOptions = {
-        from: '"Aether" <no-reply@aether.cool>',
+        from: '"Aether" <no-reply@aethersocial.com>',
         to: email,
         subject: 'Verify your email',
         html: `
