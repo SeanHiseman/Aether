@@ -9,6 +9,7 @@ const EmailVerification = () => {
     const [email, setEmail] = useState('');
     const [emailError, setEmailError] = useState('');
     const [message, setMessage] = useState('');
+    const [showTempMessage, setShowTempMessage] = useState(false);
     const [searchParams] = useSearchParams();
     const [status, setStatus] = useState('verifying');
     const navigate = useNavigate();
@@ -18,7 +19,7 @@ const EmailVerification = () => {
             const token = searchParams.get('token');
             if (!token) {
                 setStatus('pending');
-                setMessage('Please check your email for the verification link.');
+                setMessage('Please check your email, including spam, for the verification link.');
                 return;
             }
             try {
@@ -30,7 +31,7 @@ const EmailVerification = () => {
                 }, 3000);
             } catch (error) {
                 setStatus('error');
-                setMessage(error.response.data?.message || 'Verification failed');
+                setMessage(error.response?.data?.message || 'Verification failed');
             }
         };
         verifyEmail();
@@ -42,6 +43,8 @@ const EmailVerification = () => {
             const response = await api.post('/resend-verification', { email });
             setStatus('info');
             setMessage(response.data?.message);
+            setShowTempMessage(true);
+            setTimeout(() => setShowTempMessage(false), 5000);
         } catch (error) {
             let msg = 'Resend failed';
             if (error.response) {
@@ -53,6 +56,8 @@ const EmailVerification = () => {
             }
             setStatus('error');
             setMessage(msg);
+            setShowTempMessage(true);
+            setTimeout(() => setShowTempMessage(false), 5000);
         }
     };
 
@@ -66,44 +71,37 @@ const EmailVerification = () => {
                         <div className="spinner"></div>
                     </div>
                 )}
-                {status === 'pending' && (
-                    <form onSubmit={handleResend}>
-                        <p>{message}</p>
-                        <p className="error-message">{emailError}</p>
-                        <input
-                            className="authentication-input-box"
-                            name="email"
-                            placeholder="Your email"
-                            required
-                            value={email}
-                            onChange={(e) => {
-                                const input = e.target.value;
-                                setEmail(input);
+                {showTempMessage && <p>{message}</p>}
+                <form onSubmit={handleResend}>
+                    <p className="error-message">{emailError}</p>
+                    <input
+                        className="authentication-input-box"
+                        name="email"
+                        placeholder="Your email"
+                        required
+                        value={email}
+                        onChange={(e) => {
+                            const input = e.target.value;
+                            setEmail(input);
+                            const { valid, error } = ValidateEmail(input);
+                            setEmailError(valid ? '' : error);
+                        }}
+                        onBlur={(e) => {
+                            const input = e.target.value;
+                            if (input) {
                                 const { valid, error } = ValidateEmail(input);
                                 setEmailError(valid ? '' : error);
-                            }}
-                            onBlur={(e) => {
-                                const input = e.target.value;
-                                if (input) {
-                                    const { valid, error } = ValidateEmail(input);
-                                    setEmailError(valid ? '' : error);
-                                }
-                            }}
-                        />
-                        <button
-                            className="button"
-                            type="submit"
-                            disabled={!email || emailError}
-                        >
-                            Resend Verification Email
-                        </button>
-                    </form>
-                )}
-                {status === 'info' && (
-                    <div>
-                        <p>{message}</p>
-                    </div>
-                )}
+                            }
+                        }}
+                    />
+                    <button
+                        className="button"
+                        type="submit"
+                        disabled={!email || emailError}
+                    >
+                        Resend Verification Email
+                    </button>
+                </form>
                 {status === 'success' && (
                     <div>
                         <p className="success-message">{message}</p>
