@@ -1,4 +1,4 @@
-import AlgorithmSelector from '../../algorithms/algorithmSelector'; //Project code
+import AlgorithmSelector from '../../algorithms/algorithmSelector';
 import api from '../../api';
 import { AuthContext } from '../../components/authContext';
 import { FaCog, FaEdit, FaFeatherAlt, FaFolder, FaFolderOpen, FaMinus, FaPlus, FaRegWindowClose, FaSave, FaTrash } from 'react-icons/fa';
@@ -481,7 +481,7 @@ const FeedHome = () => {
                         {viewer && isAuthenticated && (
                             <FollowerChangeButton feed={feed} showVertical={true} updateFeeds={updateFeeds} viewerId={viewer?.feed_id} />
                         )}
-                        {!isViewingSelf && !feed?.is_group && (
+                        {!isViewingSelf && !feed?.is_group && isAuthenticated && (
                             <ManageConnectionButton feed={feed} viewerId={viewer?.feed_id} />
                         )}
                     </div>
@@ -494,208 +494,212 @@ const FeedHome = () => {
             <div className="channel-feed">
                 {renderChannelContent()}
             </div>
-            <aside className={rightClasses}>
-                <div id="feed-summary">
-                    <Link to={`/${urlPrefix}/${feed_name}/Main`}>
-                        <img className="large-feed-photo" src={`${feed?.feed_photo}`} onError={(e) => e.currentTarget.src = '/media/site_images/blank-profile.png'} />
-                    </Link>
-                    <div className="feed-name">
+            {!loading ? (
+                <aside className={rightClasses}>
+                    <div id="feed-summary">
                         <Link to={`/${urlPrefix}/${feed_name}/Main`}>
-                            <p className="large-text bold">{feed?.feed_name}</p>
+                            <img className="large-feed-photo" src={`${feed?.feed_photo}`} onError={(e) => e.currentTarget.src = '/media/site_images/blank-profile.png'} />
                         </Link>
-                        {(isModerator || isAdmin) && (
-                            <Link to={`/settings/${feed_name}`}>
-                                <button className="small-icon" title="Settings">
-                                    <FaCog />
-                                </button>
+                        <div className="feed-name">
+                            <Link to={`/${urlPrefix}/${feed_name}/Main`}>
+                                <p className="large-text bold">{feed?.feed_name}</p>
                             </Link>
+                            {(isModerator || isAdmin) && (
+                                <Link to={`/settings/${feed_name}`}>
+                                    <button className="small-icon" title="Settings">
+                                        <FaCog />
+                                    </button>
+                                </Link>
+                            )}
+                        </div>
+                        <p className="small-text faded-text">{feed?.is_group ? 'Group' : 'User'}</p>
+                        <p className="description">{feed?.description}</p>
+                        {feed && user?.user_id !== feed?.feed_owner && isAuthenticated && viewer ? (
+                            <FollowerChangeButton feed={feed} showName={false} showVertical={true} updateFeeds={updateFeeds} viewerId={viewer?.feed_id} />
+                        ) : (
+                            <p className="icon-text">{FormatNumber(feed?.follower_count)} {(feed?.follower_count) === 1 ? 'follower' : 'followers'}</p>
+                        )}
+                        {!isViewingSelf && !feed?.is_group && isAuthenticated && (
+                            <ManageConnectionButton feed={feed} viewerId={viewer?.feed_id} />
                         )}
                     </div>
-                    <p className="small-text faded-text">{feed?.is_group ? 'Group' : 'User'}</p>
-                    <p className="description">{feed?.description}</p>
-                    {feed && user?.user_id !== feed?.feed_owner && isAuthenticated && viewer ? (
-                        <FollowerChangeButton feed={feed} showName={false} showVertical={true} updateFeeds={updateFeeds} viewerId={viewer?.feed_id} />
-                    ) : (
-                        <p className="icon-text">{FormatNumber(feed?.follower_count)} {(feed?.follower_count) === 1 ? 'follower' : 'followers'}</p>
-                    )}
-                    {!isViewingSelf && !feed?.is_group && isAuthenticated && (
-                        <ManageConnectionButton feed={feed} viewerId={viewer?.feed_id} />
-                    )}
-                </div>
-                {feedErrorMessage && <div className="tiny-text faded-text">{feedErrorMessage}</div>}
-                {channelRender && (
-                    <div className="channel-name-section">
-                        {isEditingChannelName ? (
-                            <div className="change-name">
-                                <textarea
-                                    className="change-name-area"
-                                    onChange={(e) => {
-                                        const input = e.target.value;
-                                        if (input.length <= 30) {
-                                            setNewChannelName(input);
-                                            if (input) {
-                                                if (input.trim() === 'main') {
-                                                    setFeedErrorMessage("Cannot be named 'Main'");
-                                                } else {
-                                                    const result = ValidateTextInput(input, 1, 30);
-                                                    if (result.valid) {
-                                                        setFeedErrorMessage("");
-                                                        setIsNewNameValid(true);
+                    {feedErrorMessage && <div className="tiny-text faded-text">{feedErrorMessage}</div>}
+                    {channelRender && (
+                        <div className="channel-name-section">
+                            {isEditingChannelName ? (
+                                <div className="change-name">
+                                    <textarea
+                                        className="change-name-area"
+                                        onChange={(e) => {
+                                            const input = e.target.value;
+                                            if (input.length <= 30) {
+                                                setNewChannelName(input);
+                                                if (input) {
+                                                    if (input.trim() === 'main') {
+                                                        setFeedErrorMessage("Cannot be named 'Main'");
                                                     } else {
-                                                        setFeedErrorMessage(result.error);
-                                                        setIsNewNameValid(false);
-                                                    }
-                                                }
-                                            } else {
-                                                setFeedErrorMessage("");
-                                                setIsNewNameValid(false);
-                                            }
-                                        } else {
-                                            setFeedErrorMessage("No more than 30 characters");
-                                            setIsNewNameValid(false);
-                                        }
-                                    } }
-                                    placeholder="New name"
-                                    value={newChannelName} />
-                                <div className="cancel-save">
-                                    <button className="small-icon" onClick={() => { setIsEditingChannelName(false); setNewChannelName(""); setFeedErrorMessage(""); } } title="Cancel">
-                                        <FaRegWindowClose />
-                                    </button>
-                                    <button className={!isNewNameValid ? "small-icon disabled" : "small-icon"} onClick={changeChannelName} title="Save">
-                                        <FaSave />
-                                    </button>
-                                </div>
-                            </div>
-                        ) : (
-                            <div className="channel-name">
-                                <div className="feed-name">
-                                    <Link to={`/${urlPrefix}/${feed_name}/${channel_name}`}>
-                                        <p className="medium-text">{channel_name}</p>
-                                    </Link>
-                                    {channel_name !== "Main" && isAdmin && (
-                                        <div className="dropdown" style={{ position: 'relative' }}>
-                                            <button
-                                                className="small-icon"
-                                                type="button"
-                                                onClick={() => setChannelSettingsDropdownOpen(!channelSettingsDropdownOpen)}
-                                                title="Channel settings"
-                                            >
-                                                <FaCog />
-                                            </button>
-                                            {channelSettingsDropdownOpen && (
-                                                <div className="dropdown-menu" style={{ position: 'absolute', zIndex: 100, left: '50%', top: '100%', transform: 'translateX(-60%)' }}>
-                                                    <button
-                                                        className="small-icon"
-                                                        type="button"
-                                                        onClick={() => {
-                                                            setChannelSettingsDropdownOpen(false);
-                                                            setIsEditingChannelName(true);
-                                                            setNewChannelName(channel_name);
-                                                        }}
-                                                    >
-                                                        <FaEdit /><span className="icon-text">Edit name</span>
-                                                    </button>
-                                                    <button
-                                                        className="small-icon"
-                                                        type="button"
-                                                        onClick={() => {
-                                                            setChannelSettingsDropdownOpen(false);
-                                                            deleteClick();
-                                                        }}
-                                                    >
-                                                        <FaTrash /><span className="icon-text">Delete channel</span>
-                                                    </button>
-                                                </div>
-                                            )}
-                                        </div>
-                                    )}
-                                </div>
-                                {isAdmin && (
-                                    <button className="small-icon" onClick={toggleChannelForm} title={showChannelForm ? 'Close' : 'Create Channel'}>
-                                        {showChannelForm ? <FaMinus /> : <FaPlus />}<p className="icon-text">{showChannelForm ? "Close" : "New channel"}</p>
-                                    </button>
-                                )}
-                                {showPostForm && (
-                                    <button className="small-icon" onClick={toggleDrafts} title={showDrafts ? 'Hide Drafts' : 'Show Drafts'}>
-                                        {showDrafts ? <FaFolder /> : <FaFolderOpen />}<p className="icon-text">{showDrafts ? "Hide drafts" : "Drafts"}</p>
-                                    </button>
-                                )}
-                                {showChannelForm && (
-                                    <form className="add-channel-form" onSubmit={AddChannel}>
-                                        <input
-                                            className="name-input"
-                                            onChange={(e) => {
-                                                const input = e.target.value;
-                                                if (input.length <= 30) {
-                                                    setNewChannelName(input);
-                                                    if (input) {
-                                                        if (input.trim() === 'main') {
-                                                            setFeedErrorMessage("Cannot be named 'Main'");
+                                                        const result = ValidateTextInput(input, 1, 30);
+                                                        if (result.valid) {
+                                                            setFeedErrorMessage("");
+                                                            setIsNewNameValid(true);
                                                         } else {
-                                                            const result = ValidateTextInput(input, 1, 30);
-                                                            if (result.valid) {
-                                                                setFeedErrorMessage("");
-                                                                setIsNewNameValid(true);
-                                                            } else {
-                                                                setFeedErrorMessage(result.error);
-                                                                setIsNewNameValid(false);
-                                                            }
+                                                            setFeedErrorMessage(result.error);
+                                                            setIsNewNameValid(false);
                                                         }
-                                                    } else {
-                                                        setFeedErrorMessage("");
-                                                        setIsNewNameValid(false);
                                                     }
                                                 } else {
-                                                    setFeedErrorMessage("No more than 30 characters");
+                                                    setFeedErrorMessage("");
                                                     setIsNewNameValid(false);
                                                 }
-                                            }}
-                                            placeholder="Channel name..."
-                                            type="text"
-                                            value={newChannelName} />
-                                        {/*{feed.is_group && (
-                                            <div className="channel-options">
-                                                <label>
-                                                    <input checked={isPostChannel} onChange={handlePostClick} type="checkbox"/>
-                                                    Post Channel
-                                                </label>
-                                                <label>
-                                                    <input checked={isChatChannel} onChange={handleChatClick} type="checkbox"/>
-                                                    Chat Channel
-                                                </label>
-                                            </div>
-                                        )}*/}
-                                        <button className="small-icon" title="Create channel" type="submit">
-                                            <FaPlus /><p className="icon-text">Create channel</p>
+                                            } else {
+                                                setFeedErrorMessage("No more than 30 characters");
+                                                setIsNewNameValid(false);
+                                            }
+                                        } }
+                                        placeholder="New name"
+                                        value={newChannelName} />
+                                    <div className="cancel-save">
+                                        <button className="small-icon" onClick={() => { setIsEditingChannelName(false); setNewChannelName(""); setFeedErrorMessage(""); } } title="Cancel">
+                                            <FaRegWindowClose />
                                         </button>
-                                    </form>
-                                )}
-                            </div>
-                        )}
-                    </div>
-                )}
-                {channelMode === 'post' && !showPostForm && (feed?.is_group || feed?.feed_owner === user?.user_id) && (!isLocked || isAdmin) && isAuthenticated && (
-                    <button
-                        className="small-icon"
-                        onClick={() => {
-                            setIsEdit(false);
-                            setPostToEdit(null);
-                            setShowPostForm(true);
-                        } }
-                        title="Create Post"
-                    >
-                        <FaFeatherAlt /><p className="icon-text">Create post</p>
-                    </button>
-                )}
-                {isAuthenticated && (<AlgorithmSelector locationId={channelRender?.channel_id} refreshPosts={refreshPosts} />)} 
-                {/*{channelRender && channelRender.is_posts && channelRender.is_chat && (
-                    <div className="option-toggle">
-                        <button className={channelMode === 'post' ? 'active-mode' : 'passive-mode'} onClick={() => setChannelMode('post')}>Posts</button>
-                        <button className={channelMode === 'chat' ? 'active-mode' : 'passive-mode'} onClick={() => setChannelMode('chat')}>Chat</button>
-                    </div>
-                )}*/}
-                <ChannelList canReorder={isAdmin} channels={channels} feedId={feed?.feed_id} feedName={feed?.feed_name} isChat={false} isGroup={feed?.is_group} setChannels={setChannels} />
-            </aside>
+                                        <button className={!isNewNameValid ? "small-icon disabled" : "small-icon"} onClick={changeChannelName} title="Save">
+                                            <FaSave />
+                                        </button>
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="channel-name">
+                                    <div className="feed-name">
+                                        <Link to={`/${urlPrefix}/${feed_name}/${channel_name}`}>
+                                            <p className="medium-text">{channel_name}</p>
+                                        </Link>
+                                        {channel_name !== "Main" && isAdmin && (
+                                            <div className="dropdown" style={{ position: 'relative' }}>
+                                                <button
+                                                    className="small-icon"
+                                                    type="button"
+                                                    onClick={() => setChannelSettingsDropdownOpen(!channelSettingsDropdownOpen)}
+                                                    title="Channel settings"
+                                                >
+                                                    <FaCog />
+                                                </button>
+                                                {channelSettingsDropdownOpen && (
+                                                    <div className="dropdown-menu" style={{ position: 'absolute', zIndex: 100, left: '50%', top: '100%', transform: 'translateX(-60%)' }}>
+                                                        <button
+                                                            className="small-icon"
+                                                            type="button"
+                                                            onClick={() => {
+                                                                setChannelSettingsDropdownOpen(false);
+                                                                setIsEditingChannelName(true);
+                                                                setNewChannelName(channel_name);
+                                                            }}
+                                                        >
+                                                            <FaEdit /><span className="icon-text">Edit name</span>
+                                                        </button>
+                                                        <button
+                                                            className="small-icon"
+                                                            type="button"
+                                                            onClick={() => {
+                                                                setChannelSettingsDropdownOpen(false);
+                                                                deleteClick();
+                                                            }}
+                                                        >
+                                                            <FaTrash /><span className="icon-text">Delete channel</span>
+                                                        </button>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
+                                    </div>
+                                    {isAdmin && (
+                                        <button className="small-icon" onClick={toggleChannelForm} title={showChannelForm ? 'Close' : 'Create Channel'}>
+                                            {showChannelForm ? <FaMinus /> : <FaPlus />}<p className="icon-text">{showChannelForm ? "Close" : "New channel"}</p>
+                                        </button>
+                                    )}
+                                    {showPostForm && (
+                                        <button className="small-icon" onClick={toggleDrafts} title={showDrafts ? 'Hide Drafts' : 'Show Drafts'}>
+                                            {showDrafts ? <FaFolder /> : <FaFolderOpen />}<p className="icon-text">{showDrafts ? "Hide drafts" : "Drafts"}</p>
+                                        </button>
+                                    )}
+                                    {showChannelForm && (
+                                        <form className="add-channel-form" onSubmit={AddChannel}>
+                                            <input
+                                                className="name-input"
+                                                onChange={(e) => {
+                                                    const input = e.target.value;
+                                                    if (input.length <= 30) {
+                                                        setNewChannelName(input);
+                                                        if (input) {
+                                                            if (input.trim() === 'main') {
+                                                                setFeedErrorMessage("Cannot be named 'Main'");
+                                                            } else {
+                                                                const result = ValidateTextInput(input, 1, 30);
+                                                                if (result.valid) {
+                                                                    setFeedErrorMessage("");
+                                                                    setIsNewNameValid(true);
+                                                                } else {
+                                                                    setFeedErrorMessage(result.error);
+                                                                    setIsNewNameValid(false);
+                                                                }
+                                                            }
+                                                        } else {
+                                                            setFeedErrorMessage("");
+                                                            setIsNewNameValid(false);
+                                                        }
+                                                    } else {
+                                                        setFeedErrorMessage("No more than 30 characters");
+                                                        setIsNewNameValid(false);
+                                                    }
+                                                }}
+                                                placeholder="Channel name..."
+                                                type="text"
+                                                value={newChannelName} />
+                                            {/*{feed.is_group && (
+                                                <div className="channel-options">
+                                                    <label>
+                                                        <input checked={isPostChannel} onChange={handlePostClick} type="checkbox"/>
+                                                        Post Channel
+                                                    </label>
+                                                    <label>
+                                                        <input checked={isChatChannel} onChange={handleChatClick} type="checkbox"/>
+                                                        Chat Channel
+                                                    </label>
+                                                </div>
+                                            )}*/}
+                                            <button className="small-icon" title="Create channel" type="submit">
+                                                <FaPlus /><p className="icon-text">Create channel</p>
+                                            </button>
+                                        </form>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+                    )}
+                    {channelMode === 'post' && !showPostForm && (feed?.is_group || feed?.feed_owner === user?.user_id) && (!isLocked || isAdmin) && isAuthenticated && (
+                        <button
+                            className="small-icon"
+                            onClick={() => {
+                                setIsEdit(false);
+                                setPostToEdit(null);
+                                setShowPostForm(true);
+                            } }
+                            title="Create Post"
+                        >
+                            <FaFeatherAlt /><p className="icon-text">Create post</p>
+                        </button>
+                    )}
+                    {isAuthenticated && (<AlgorithmSelector locationId={channelRender?.channel_id} refreshPosts={refreshPosts} />)} 
+                    {/*{channelRender && channelRender.is_posts && channelRender.is_chat && (
+                        <div className="option-toggle">
+                            <button className={channelMode === 'post' ? 'active-mode' : 'passive-mode'} onClick={() => setChannelMode('post')}>Posts</button>
+                            <button className={channelMode === 'chat' ? 'active-mode' : 'passive-mode'} onClick={() => setChannelMode('chat')}>Chat</button>
+                        </div>
+                    )}*/}
+                    <ChannelList canReorder={isAdmin} channels={channels} feedId={feed?.feed_id} feedName={feed?.feed_name} isChat={false} isGroup={feed?.is_group} setChannels={setChannels} />
+                </aside>
+            ) : (
+                <aside className="right-aside"></aside>
+            )}
         </div>
         <ConfirmModal isOpen={showDeleteConfirm} onConfirm={deleteChannel} onCancel={cancelDelete} title={`Delete ${pendingDeleteAction}`} message={`Are you sure you want to delete ${pendingDeleteAction}?`} /></>
     );

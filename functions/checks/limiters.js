@@ -2,7 +2,7 @@ import rateLimit from 'express-rate-limit';
 
 const loginLimiter = rateLimit({
     windowMs: 5 * 60 * 1000,  //5 minutes
-    max: 40,                  //40 attempts
+    max: 60,                  //60 attempts
     message: 'Too many attempts. Please try again later.',
     standardHeaders: true,
     legacyHeaders: false
@@ -10,7 +10,7 @@ const loginLimiter = rateLimit({
 
 const resendLimiter = rateLimit({
     windowMs: 5 * 60 * 1000, //5 minutes
-    max: 20,                 //20 resends
+    max: 30,                 //30 resends
     message: 'Too many requests. Please try again later',
     standardHeaders: true,
     legacyHeaders: false
@@ -18,7 +18,7 @@ const resendLimiter = rateLimit({
 
 const standardLimiter = rateLimit({
     windowMs: 5 * 60 * 1000,  //5 minutes
-    max: 200,                 //40 requests per minute
+    max: 300,                 //60 requests per minute
     message: 'Too many requests. Please try again later',
     standardHeaders: true,
     legacyHeaders: false
@@ -26,7 +26,7 @@ const standardLimiter = rateLimit({
 
 const higherLimiter = rateLimit({ //For more repetitive actions
     windowMs: 5 * 60 * 1000,  //5 minutes
-    max: 600,                 //120 requests per minute
+    max: 900,                 //180 requests per minute
     message: 'Too many requests. Please try again later',
     standardHeaders: true,
     legacyHeaders: false

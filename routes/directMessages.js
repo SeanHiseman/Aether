@@ -208,7 +208,7 @@ router.get('/get_connection/:connectionName', authenticateCheck, async (req, res
         }
         return res.status(200).json({ success: true, connection: connectionFeed });
     } catch (error) {
-        res.status(500).json({ success: false });
+        res.status(500).json({ success: false, message: 'Error getting connection' });
     }
 });
 
@@ -235,7 +235,7 @@ router.get('/get_connections', authenticateCheck, async (req, res) => {
                     { feed2_id: feedId }
                 ]
             },
-            limit: 10,
+            limit: 50,
             offset: parsedOffset,
             //More recent connections are first
             order: [['created_at', 'ASC']],
@@ -243,14 +243,14 @@ router.get('/get_connections', authenticateCheck, async (req, res) => {
         const filteredConnections = connections.map(connection => {
             const otherFeed = connection.feed1_id === feedId ? connection.Feed2 : connection.Feed1;
             return {
-                ...otherFeed.toJSON(),   // Return other feed's details
+                ...otherFeed.toJSON(),   //Return other feed's details
                 connection_id: connection.connection_id,
                 connection_date: connection.connection_date
             };
         });
-        res.status(200).json(filteredConnections);
+        res.status(200).json({ connections: filteredConnections , success: true });
     } catch (error) {
-        res.status(500).json({ success: false });  
+        res.status(500).json({ success: false, message: 'Error getting connections' });  
     }
 });
 
@@ -268,7 +268,7 @@ router.get('/get_connect_requests', authenticateCheck, async (req, res) => {
                 as: 'sender',
                 required: true,
             }],
-            limit: 10,
+            limit: 50,
             offset: parsedOffset
         });
         res.status(200).json({ success: true, requests });

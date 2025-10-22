@@ -44,12 +44,6 @@
     background-color: var(--lightest);
     border-top: 1px solid var(--darkest);
 }
-.connections-feed {
-    display: flex;
-    flex-direction: column;
-    overflow-y: auto;
-    width: 100%
-}
 .dropdown-container {
     position: relative;
 }

@@ -27,7 +27,7 @@
     display: flex;
     justify-content: space-between;
 }
-.content-item, .result-widget {
+.content-item {
     border-radius: calc(clamp(4px, 1vw, 10px) + var(--small-margin));
     border: 1px solid var(--light);
     cursor: pointer;
@@ -176,13 +176,6 @@
     display: flex;
     flex-direction: column;
     margin: var(--medium-margin);
-}
-.result-widget {
-    align-items: center;
-    display: flex;
-    justify-content: space-between;
-    padding: 0;
-    transition: 0.3s;
 }
 .result-widget:hover {
     transform: translate(var(--small-margin), calc(-1 * var(--small-margin)));
