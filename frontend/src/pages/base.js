@@ -494,7 +494,7 @@ const BaseLayout = () => {
                                 <ul>  
                                     <li className="channel-link">
                                         <Link to="/messages">Messages</Link>
-                                        <MessageDropdown />
+                                        {/*<MessageDropdown />*/}
                                     </li>
                                     <li className="channel-link">
                                         <Link to="/explore">Explore</Link>

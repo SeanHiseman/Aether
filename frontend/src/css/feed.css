@@ -37,6 +37,9 @@
     margin-right: 0;
     width: 100%;
 }
+.channel-name-settings {
+    display: flex;
+}
 .channel-options {
     display: flex;
     flex-direction: column;
@@ -45,6 +48,12 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
+}
+.channel-title-row {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	width: 100%;
 }
 #create-feed-section {
     align-items: center;

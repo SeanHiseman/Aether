@@ -194,7 +194,7 @@ const AlgorithmSelector = ({ display, locationId, refreshPosts }) => {
 	const renderContent = () => (
 		<div className="algorithm-content" onClick={display ? undefined : e => e.stopPropagation()}>
 			<div className="selector-header">
-				{!display && <button className="button" onClick={closeModal} title="Close">✕</button>}
+				{!display && <button className="button" onClick={closeModal} title="Close">✕<p className="icon-text">Close</p></button>}
 				<div className="error-message">{assignError}</div>
 				{!display && <p className="tiny-text">Changing the algorithm will reload posts</p>}
 			</div>

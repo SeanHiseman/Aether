@@ -9,7 +9,7 @@ const MessageDropdown = () => {
     };
     
     return (
-        <nav className="channel-list align-right">
+        <nav>
             {isOpen ? (
                 <FaChevronUp onClick={toggleDropdown} />
             ) : (

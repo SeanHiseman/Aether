@@ -76,7 +76,7 @@ router.post('/add_feed_channel', standardLimiter, authenticateCheck, async (req,
     try {
         transaction = await sequelize.transaction();
         let { channelName, feedId, isChat, isPosts, isSaved } = req.body;
-        const nameCheck = ValidateTextInput(channelName, 3, 30);
+        const nameCheck = ValidateTextInput(channelName, 1, 30);
         if (!nameCheck.valid) {
             return res.status(400).json({ message: nameCheck.error });
         }
@@ -150,7 +150,7 @@ router.post('/add_to_deep_feed', higherLimiter, async (req, res) => {
 router.post('/change_channel_name', standardLimiter, authenticateCheck, async (req, res) => {
     try {
         const { channelId, newChannelName } = req.body;
-        const nameCheck = ValidateTextInput(newChannelName, 3, 30);
+        const nameCheck = ValidateTextInput(newChannelName, 1, 30);
         if (!nameCheck.valid) {
             return res.status(400).json({ message: nameCheck.error });
         }

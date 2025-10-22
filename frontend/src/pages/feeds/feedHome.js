@@ -19,6 +19,7 @@ const FeedHome = () => {
     const [canRemove, setCanRemove] = useState(false);
     const [channelMode, setChannelMode] = useState('post');
     const [channels, setChannels] = useState([]);
+    const [channelSettingsDropdownOpen, setChannelSettingsDropdownOpen] = useState(false);
     const [draftPosts, setDraftPosts] = useState([]);
     const [feed, setFeed] = useState('');
     const [feedErrorMessage, setFeedErrorMessage] = useState('');
@@ -512,12 +513,12 @@ const FeedHome = () => {
                     </div>
                     <p className="small-text faded-text">{feed?.is_group ? 'Group' : 'User'}</p>
                     <p className="description">{feed?.description}</p>
-                    {feed && user?.user_id !== feed.feed_owner && isAuthenticated && viewer ? (
+                    {feed && user?.user_id !== feed?.feed_owner && isAuthenticated && viewer ? (
                         <FollowerChangeButton feed={feed} showName={false} showVertical={true} updateFeeds={updateFeeds} viewerId={viewer?.feed_id} />
                     ) : (
                         <p className="icon-text">{FormatNumber(feed?.follower_count)} {(feed?.follower_count) === 1 ? 'follower' : 'followers'}</p>
                     )}
-                    {!isViewingSelf && !feed?.is_group && (
+                    {!isViewingSelf && !feed?.is_group && isAuthenticated && (
                         <ManageConnectionButton feed={feed} viewerId={viewer?.feed_id} />
                     )}
                 </div>
@@ -567,52 +568,58 @@ const FeedHome = () => {
                             </div>
                         ) : (
                             <div className="channel-name">
-                                <Link to={`/${urlPrefix}/${feed_name}/${channel_name}`}>
-                                    <p className="medium-text">{channel_name}</p>
-                                </Link>
-                                <div className="button-group">
+                                <div className="feed-name">
+                                    <Link to={`/${urlPrefix}/${feed_name}/${channel_name}`}>
+                                        <p className="medium-text">{channel_name}</p>
+                                    </Link>
                                     {channel_name !== "Main" && isAdmin && (
-                                        <>
+                                        <div className="dropdown" style={{ position: 'relative' }}>
                                             <button
                                                 className="small-icon"
-                                                onClick={() => {
-                                                    setIsEditingChannelName(true);
-                                                    setNewChannelName(channel_name);
-                                                } }
-                                                title="Edit name"
+                                                type="button"
+                                                onClick={() => setChannelSettingsDropdownOpen(!channelSettingsDropdownOpen)}
+                                                title="Channel settings"
                                             >
-                                                <FaEdit />
+                                                <FaCog />
                                             </button>
-                                            <button className="small-icon" onClick={deleteClick} title="Delete channel">
-                                                <FaTrash />
-                                            </button>
-                                        </>
-                                    )}
-                                    {isAdmin && (
-                                        <button className="small-icon" onClick={toggleChannelForm} title={showChannelForm ? 'Close' : 'Create Channel'}>
-                                            {showChannelForm ? <FaMinus /> : <FaPlus />}
-                                        </button>
-                                    )}
-                                    {channelMode === 'post' && !showPostForm && (feed?.is_group || feed?.feed_owner === user?.user_id) && (!isLocked || isAdmin) && isAuthenticated && (
-                                        <button
-                                            className="small-icon"
-                                            onClick={() => {
-                                                setIsEdit(false);
-                                                setPostToEdit(null);
-                                                setShowPostForm(true);
-                                            } }
-                                            title="Create Post"
-                                        >
-                                            <FaFeatherAlt />
-                                        </button>
-                                    )}
-                                    {showPostForm && (
-                                        <button className="small-icon" onClick={toggleDrafts} title={showDrafts ? 'Hide Drafts' : 'Show Drafts'}>
-                                            {showDrafts ? <FaFolder /> : <FaFolderOpen />}<p className="icon-text">{showDrafts ? "Hide drafts" : "Drafts"}</p>
-                                        </button>
+                                            {channelSettingsDropdownOpen && (
+                                                <div className="dropdown-menu" style={{ position: 'absolute', zIndex: 100, left: '50%', top: '100%', transform: 'translateX(-60%)' }}>
+                                                    <button
+                                                        className="small-icon"
+                                                        type="button"
+                                                        onClick={() => {
+                                                            setChannelSettingsDropdownOpen(false);
+                                                            setIsEditingChannelName(true);
+                                                            setNewChannelName(channel_name);
+                                                        }}
+                                                    >
+                                                        <FaEdit /><span className="icon-text">Edit name</span>
+                                                    </button>
+                                                    <button
+                                                        className="small-icon"
+                                                        type="button"
+                                                        onClick={() => {
+                                                            setChannelSettingsDropdownOpen(false);
+                                                            deleteClick();
+                                                        }}
+                                                    >
+                                                        <FaTrash /><span className="icon-text">Delete channel</span>
+                                                    </button>
+                                                </div>
+                                            )}
+                                        </div>
                                     )}
                                 </div>
-                                {isAuthenticated && (<AlgorithmSelector locationId={channelRender?.channel_id} refreshPosts={refreshPosts} />)} {/*Project code*/}
+                                {isAdmin && (
+                                    <button className="small-icon" onClick={toggleChannelForm} title={showChannelForm ? 'Close' : 'Create Channel'}>
+                                        {showChannelForm ? <FaMinus /> : <FaPlus />}<p className="icon-text">{showChannelForm ? "Close" : "New channel"}</p>
+                                    </button>
+                                )}
+                                {showPostForm && (
+                                    <button className="small-icon" onClick={toggleDrafts} title={showDrafts ? 'Hide Drafts' : 'Show Drafts'}>
+                                        {showDrafts ? <FaFolder /> : <FaFolderOpen />}<p className="icon-text">{showDrafts ? "Hide drafts" : "Drafts"}</p>
+                                    </button>
+                                )}
                                 {showChannelForm && (
                                     <form className="add-channel-form" onSubmit={AddChannel}>
                                         <input
@@ -642,7 +649,7 @@ const FeedHome = () => {
                                                     setFeedErrorMessage("No more than 30 characters");
                                                     setIsNewNameValid(false);
                                                 }
-                                            } }
+                                            }}
                                             placeholder="Channel name..."
                                             type="text"
                                             value={newChannelName} />
@@ -659,7 +666,7 @@ const FeedHome = () => {
                                             </div>
                                         )}*/}
                                         <button className="small-icon" title="Create channel" type="submit">
-                                            <FaPlus />
+                                            <FaPlus /><p className="icon-text">Create channel</p>
                                         </button>
                                     </form>
                                 )}
@@ -667,6 +674,20 @@ const FeedHome = () => {
                         )}
                     </div>
                 )}
+                {channelMode === 'post' && !showPostForm && (feed?.is_group || feed?.feed_owner === user?.user_id) && (!isLocked || isAdmin) && isAuthenticated && (
+                    <button
+                        className="small-icon"
+                        onClick={() => {
+                            setIsEdit(false);
+                            setPostToEdit(null);
+                            setShowPostForm(true);
+                        } }
+                        title="Create Post"
+                    >
+                        <FaFeatherAlt /><p className="icon-text">Create post</p>
+                    </button>
+                )}
+                {isAuthenticated && (<AlgorithmSelector locationId={channelRender?.channel_id} refreshPosts={refreshPosts} />)} 
                 {/*{channelRender && channelRender.is_posts && channelRender.is_chat && (
                     <div className="option-toggle">
                         <button className={channelMode === 'post' ? 'active-mode' : 'passive-mode'} onClick={() => setChannelMode('post')}>Posts</button>

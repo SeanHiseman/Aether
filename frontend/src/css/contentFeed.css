@@ -69,12 +69,12 @@
     box-sizing: border-box;
 }
 .content-metadata {
+    align-items: center;
     display: grid;
+    font-size: var(--medium-text);
     grid-template-areas: "user channel spacer votes replies actions save datetime";
     grid-template-columns: minmax(0, auto) minmax(0, auto) 1fr minmax(0, auto) minmax(0, auto) minmax(0, auto) minmax(0, auto) minmax(0, auto);
     gap: 1rem;
-    align-items: center;
-    font-size: var(--medium-text);
     margin-bottom: var(--small-margin);
     margin-left: var(--small-margin);
     margin-right: var(--small-margin);

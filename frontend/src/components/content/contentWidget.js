@@ -443,7 +443,7 @@ const ContentWidget = ({ canRemove = false, display = false, feed, isDraft = fal
 						</button>
 					</div>
 				)}
-				<div className="view-date-container" style={{ fontFamily: 'monospace' }}>
+				<div className="view-date-container">
 					{!display && <p className="small-text faded-text" style={{ margin: '0px', textAlign: 'right' }}>
 						{post_id ? new Date(post?.created_at).toLocaleDateString() : timeAgo}
 					</p>}

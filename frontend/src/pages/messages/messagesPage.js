@@ -202,11 +202,12 @@ const MessagesPage = () => {
 			<aside className="right-aside">
 				<nav className="feed-list">
 					<p className="large-text">Messages</p>
-					<ul>
+                    <p className="small-text faded-text">Coming soon!</p>
+					{/*<ul>
 						{connections.map(c => (
 							<FeedItem key={c.feed_id} feed={c} isChat={true} unreadCount={state.feedCounts?.[c.feed_id] || 0} />
 						))}
-					</ul>
+					</ul>*/}
 				</nav>
 			</aside>
 		</div>

@@ -791,8 +791,8 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
                                         <FaToolbox /><span className="icon-text">Interactive</span>
                                     </button>
                                     {/*<button className="small-icon" type="button" onClick={() => { setAddContentDropdownOpen(false); document.getElementById('app-input').click(); }}>
-                <FaCube /><span className="icon-text">App</span>
-            </button>*/}
+                                        <FaCube /><span className="icon-text">App</span>
+                                    </button>*/}
                                     <button className="small-icon" type="button" onClick={() => { setAddContentDropdownOpen(false); addIframe(); } }>
                                         <FaLink /><span className="icon-text">Website</span>
                                     </button>
@@ -886,7 +886,7 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
                                                                         </button>
                                                                     )}
                                                                     {type !== BLOCK_TYPES.MEDIA && type !== BLOCK_TYPES.CODE && (
-                                                                        <button className="small-icon" onClick={() => removeBlock(id)} title="Delete" type="button"><FaTrash /></button>
+                                                                        <button className="small-icon" onClick={() => removeBlock(id)} title="Delete" type="button"><FaTrash /><p className="icon-text">Delete section</p></button>
                                                                     )}
                                                                     {type !== BLOCK_TYPES.MEDIA && (
                                                                         <button className="small-icon" onClick={toggleEdit} title={isEditing ? 'Preview' : 'Edit'} type="button">{isEditing ? <FaEye /> : <FaEdit />}</button>
@@ -937,7 +937,7 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
                                                                 </div>
                                                                 <div style={{ position: 'relative' }}>
                                                                     {(type === BLOCK_TYPES.MEDIA || type === BLOCK_TYPES.CODE) && (
-                                                                        <button className="small-icon" onClick={() => removeBlock(id)} title="Delete" type="button"><FaTrash /></button>
+                                                                        <button className="small-icon" onClick={() => removeBlock(id)} title="Delete" type="button"><FaTrash /><p className="icon-text">Delete section</p></button>
                                                                     )}
                                                                 </div>
                                                             </div>
@@ -974,7 +974,7 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
                                                                             ]
                                                                         }} />
                                                                     <button className="small-icon" onClick={() => removeBlock(id)} title="Delete" type="button">
-                                                                        <FaTrash />
+                                                                        <FaTrash /><p className="icon-text">Delete section</p>
                                                                     </button>
                                                                 </div>
                                                             </div>

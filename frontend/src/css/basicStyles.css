@@ -79,9 +79,10 @@ label {
     font-size: var(--medium-text);
 }
 p, .channel-link {
-    font-size: var(--small-text);
-    overflow-wrap: break-word;
-    white-space: normal;
+	font-size: var(--small-text);
+	overflow-wrap: anywhere;
+	word-break: break-word;
+	white-space: normal;
 }
 p, h1, h2, h3, h4, h5, h6 {
     margin: var(--small-margin);

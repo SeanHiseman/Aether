@@ -113,7 +113,7 @@
 .channel-link:hover, .channel-item:hover {
   background-color: var(--dark);
 }
-.channel-list .align-left {
+.channel-list {
   margin-left: var(--medium-margin);
   width: 90%;
 }
@@ -146,10 +146,10 @@
   display: flex;
   flex-direction: column;
 }
-.channel-name-settings {
-  align-items: center;
-  display: flex;
-  flex-direction: row;
+.channel-name {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
 }
 .change-name {
   align-items: center;
@@ -342,7 +342,7 @@ main {
 }
 .name-input {
   background-color: var(--dark);
-  border: 1px solid var(--border);
+  border: 1px solid var(--light);
   border-radius: var(--medium-margin);
   color: var(--lightest);
   font-size: var(--small-text);
@@ -419,13 +419,13 @@ main {
   background: none;
   border: none;
   border-radius: clamp(2px, 0.6vw, 5px);
-  color: var(--border);
+  color: var(--light);
   display: flex;
   font-size: var(--medium-text);
   justify-content: center;
   margin: clamp(3px, 1vw, 5px);
   padding: clamp(3px, 1vw, 5px);
-  stroke: var(--border);
+  stroke: var(--light);
 }
 .sidebar-toggle:hover {
   cursor: pointer;
@@ -433,7 +433,7 @@ main {
 .small-feed-photo {
   aspect-ratio: 1 / 1;
   border-radius: clamp(4px, 1vw, 10px);
-  width: clamp(20px, 5vw, 50px);
+  width: clamp(30px, 6vw, 55px); /*Below 55px causes it to look weird*/
 }
 .standard-container {
   display: flex;
