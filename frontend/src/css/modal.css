@@ -13,7 +13,7 @@
 .confirm-modal-content {
   background-color: var(--dark);
   padding: var(--large-margin);
-  border-radius: var(--small-margin);
+  border-radius: var(--medium-margin);
   max-width: 90%;
   width: calc(10 * var(--xl-margin));
 }

@@ -60,7 +60,7 @@ const BaseLayout = () => {
 	const { state } = useContext(UnreadContext);
 	const navigate = useNavigate();
 	const hasMembership = user?.has_membership;
-	const MAX_FILE_SIZE = hasMembership ? 100 * 1024 * 1024 : 1 * 1024 * 1024;
+	const MAX_FILE_SIZE = hasMembership ? 500 * 1024 * 1024 : 5 * 1024 * 1024; //500MB for members, 5MB for non-members
 	const isMobile = () => window.matchMedia("(max-width:768px)").matches;
 	const toggleLeft = () => { if (isMobile()) setMobileOpen(mobileOpen === "left" ? null : "left"); else setDesk(d => ({ ...d, left: !d.left })); };
 	const toggleRight = () => { if (isMobile()) setMobileOpen(mobileOpen === "right" ? null : "right"); else setDesk(d => ({ ...d, right: !d.right })); };

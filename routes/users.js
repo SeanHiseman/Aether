@@ -89,7 +89,7 @@ router.post('/change_username', standardLimiter, authenticateCheck, async (req, 
         if (!user) {
             return res.status(404).json({ success: false, error: 'User not found' });
         }
-        if (user.username.toLowerCase() === trimmedName.toLowerCase()) {
+        if (user.username === trimmedName) {
             return res.status(200).json({ success: true, message: 'Name is unchanged' });
         }
         const existingUser = await Users.findOne({
@@ -119,8 +119,8 @@ router.post('/create-checkout-session', standardLimiter, authenticateCheck, asyn
         console.log('Creating checkout session for planType:', planType);
         const userId = req.session?.user_id;
         const userEmail = req.session?.email;  
-        console.log('User ID:', userId);
-        console.log('User Email:', userEmail);
+        console.log('Checkout session userId:', userId);
+        console.log('Checkout session userEmail:', userEmail);
         const priceId = planType === 'yearly'
             ? stripeConfig.yearlyPriceId
             : stripeConfig.monthlyPriceId;
@@ -136,7 +136,7 @@ router.post('/create-checkout-session', standardLimiter, authenticateCheck, asyn
             metadata: { userId: userId.toString() },
             customer_email: userEmail,
         });
-        console.log("session:", session);
+        console.log("checkout session:", session);
         res.status(200).json({ success: true, url: session.url });
     } catch (error) {
         console.error('Error creating checkout session:', error);
@@ -146,9 +146,8 @@ router.post('/create-checkout-session', standardLimiter, authenticateCheck, asyn
 
 router.post('/cancel-subscription', standardLimiter, authenticateCheck, async (req, res) => {
     try {
-        console.log('Cancelling subscription for user');
         const userId = req.session?.user_id;
-        console.log('User ID:', userId);
+        console.log('Cancelling subscription for userId:', userId);
         const user = await Users.findOne({
             where: { user_id: userId },
             attributes: ['stripe_subscription_id']
@@ -163,10 +162,7 @@ router.post('/cancel-subscription', standardLimiter, authenticateCheck, async (r
         await stripe.subscriptions.update(user.stripe_subscription_id, {
             cancel_at_period_end: true
         });
-        res.status(200).json({ 
-            success: true, 
-            message: 'Subscription will be cancelled at the end of the billing period' 
-        });
+        res.status(200).json({ success: true, message: 'Subscription will be cancelled at the end of the billing period' });
     } catch (error) {
         console.error('Error cancelling subscription:', error);
         res.status(500).json({ success: false, error: 'Failed to cancel subscription' });

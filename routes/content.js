@@ -38,12 +38,9 @@ const checkStorageLimit = async (req, res, next) => {
         if (!user) {
             return res.status(404).json({ success: false, message: 'User not found' });
         }
-        const maxStorage = user.has_membership ? 25 * 1024 : 100; //25GB for members, 100MB for non-members
+        const maxStorage = user.has_membership ? 30 * 1024 : 300; //Weekly limit of 30GB for members, 300MB for non-members
         if (user.storage_count >= maxStorage) {
-            return res.status(413).json({ 
-                success: false, 
-                message: `Weekly limit of ${maxStorage}MB exceeded` 
-            });
+            return res.status(413).json({ success: false, message: `Weekly limit of ${maxStorage}MB exceeded` });
         }
         req.currentUser = user;
         next();
@@ -169,6 +166,7 @@ router.post('/content_vote', higherLimiter, authenticateCheck, async (req, res) 
     }
 });
 
+//Checks individual file sizes
 const postFilter = (req, file, cb) => {
     const allowedTypes = /jpeg|jpg|png|gif|mp4|mov|avi/;
     const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
@@ -176,7 +174,10 @@ const postFilter = (req, file, cb) => {
     if (!mimetype || !extname) {
         return cb(new Error('Only images and videos are allowed'));
     }
-    const maxSize = (req.session?.user?.has_membership ? 100 : 1) * 1024 * 1024;
+    const isVideo = file.mimetype.startsWith('video/');
+    const maxImageSize = (req.session?.user?.has_membership ? 500 : 5) * 1024 * 1024; //500MB vs 5MB
+    const maxVideoSize = (req.session?.user?.has_membership ? 10000 : 100) * 1024 * 1024; //10GB vs 100MB
+    const maxSize = isVideo ? maxVideoSize : maxImageSize;
     if (file.size > maxSize) {
         return cb(new Error(`File exceeds the limit of ${maxSize / (1024 * 1024)}MB`));
     }
@@ -218,7 +219,7 @@ router.post("/create_post", standardLimiter, authenticateCheck, checkStorageLimi
 		content = content || "";
 		const $ = cheerio.load(content, { decodeEntities: false });
 		//Extract and store image and video contents from html, then adjust html with new url
-		const mediaElements = $("img[src^='blob:'], video[src^='blob:']").toArray();
+		const mediaElements = $("img[src^='blob:'], video source[src^='blob:']").toArray();
 		for (let i = 0; i < mediaElements.length; i++) {
 			const el = mediaElements[i];
 			const file = req.files[i];
@@ -228,23 +229,15 @@ router.post("/create_post", standardLimiter, authenticateCheck, checkStorageLimi
 				const s3Key = `content/${fileName}`;
 				await UploadToS3(s3Key, file.buffer, file.mimetype);
 				const src = `https://${process.env.AWS_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${s3Key}`;
-				if (el.tagName === "img") {
-					$(el).attr("src", src).removeAttr("blob:");
-				} else {
-					$(el).empty().append(`<source src="${src}" type="${file.mimetype}">`);
-				}
+				$(el).attr("src", src).removeAttr("blob:");
 			} else {
 				const fileName = file.filename; 
 				const localPath = path.join(mediaDir, fileName);
 				if (file.path !== localPath) {
 					fs.copyFileSync(file.path, localPath);
 				}
-				const src = "/" + path.join("media", "content", fileName).replace(/\\/g, "/"); 
-				if (el.tagName === "img") {
-					$(el).attr("src", src).removeAttr("blob:");
-				} else {
-					$(el).empty().append(`<source src="${src}" type="${file.mimetype}">`);
-				}
+				const src = "/" + path.join("media", "content", fileName).replace(/\\/g, "/");
+				$(el).attr("src", src).removeAttr("blob:");
 			}
 		}
 		const finalHtml = $.html();

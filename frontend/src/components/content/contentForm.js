@@ -144,10 +144,11 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
     const urlPrefix = isGroup ? 'g' : 'u'
 
     const BLOCK_LIMIT = hasMembership ? 10000 : 10
-    const MAX_FILE_SIZE = hasMembership ? 100 * 1024 * 1024 : 1 * 1024 * 1024
+    const MAX_FILE_SIZE = hasMembership ? 500 * 1024 * 1024 : 5 * 1024 * 1024 //500MB for members, 5MB for non-members
+    const MAX_VIDEO_SIZE = hasMembership ? 10000 * 1024 * 1024 : 100 * 1024 * 1024 //10GB for members, 100MB for non-members
     const TEXT_CHAR_LIMIT = hasMembership ? 100000 : 1000
     const TITLE_CHAR_LIMIT = hasMembership ? 1000 : 100
-    const usageLimit = user?.has_membership ? 25000000 : 2500000
+    const usageLimit = user?.has_membership ? 25000000 : 2500000 //Token generation limit
     const limitReached = user?.usage_count >= usageLimit
 
     const addIframe = () => {
@@ -572,7 +573,11 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
             return
         }
         const files = Array.from(event.target.files)
-        const oversized = files.filter(f => f.size > MAX_FILE_SIZE)
+        const oversized = files.filter(f => {
+            const isVideo = f.type.startsWith('video/');
+            const maxSize = isVideo ? MAX_VIDEO_SIZE : MAX_FILE_SIZE; //Large limit for videos
+            return f.size > maxSize;
+        });
         if (oversized.length) {
             const names = oversized.map(f => f.name).join(', ')
             setPostErrorMessage(
@@ -613,7 +618,6 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
                         isEditing: false,
                         type: BLOCK_TYPES.MEDIA
                     }])
-                    URL.revokeObjectURL(url)
                 }
                 video.onerror = function() {
                     setBlocks(prev => [...prev, {

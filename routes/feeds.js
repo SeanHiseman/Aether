@@ -38,12 +38,9 @@ const checkProfileStorageLimit = async (req, res, next) => {
         if (!user) {
             return res.status(404).json({ success: false, message: 'User not found' });
         }
-        const maxStorage = user.has_membership ? 25 * 1024 : 100; //25GB for members, 100MB for non-members
+        const maxStorage = user.has_membership ? 25 * 1024 : 100; //30GB for members, 300MB for non-members
         if (user.storage_count >= maxStorage) {
-            return res.status(413).json({ 
-                success: false, 
-                message: `Weekly limit of ${maxStorage}MB exceeded` 
-            });
+            return res.status(413).json({ success: false, message: `Weekly limit of ${maxStorage}MB exceeded` });
         }
         req.currentUser = user;
         next();
@@ -269,7 +266,7 @@ router.post('/create_feed', standardLimiter, authenticateCheck, checkProfileStor
             if (req.file) {
                 const fileSize = calculateFileSize(req.file);
                 const user = req.currentUser;
-                const maxStorage = user.has_membership ? 100 * 1024 : 100;
+                const maxStorage = user.has_membership ? 30 * 1024 : 300; //Weekly limit of 30GB for members, 300MB for non-members
                 if (user.storage_count + fileSize > maxStorage) {
                     if (process.env.NODE_ENV === "production") {
                         const fileName = GenerateFileName(req.file, "feed-image");
@@ -968,7 +965,7 @@ router.put('/update_feed_photo/:feedId', standardLimiter, authenticateCheck, che
     feedProfileUpload(req, res, async function (error) {
         if (error instanceof multer.MulterError) {
             if (error.code === 'LIMIT_FILE_SIZE') {
-                return res.status(413).json({ error: 'File cannot be more than 100MB' });
+                return res.status(413).json({ error: 'File cannot be more than 500MB' });
             }
             return res.status(400).json({ success: false, message: 'File too large' });
         } else if (error) {
@@ -982,7 +979,7 @@ router.put('/update_feed_photo/:feedId', standardLimiter, authenticateCheck, che
             }
             const fileSize = calculateFileSize(file);
             const user = req.currentUser;
-            const maxStorage = user.has_membership ? 100 * 1024 : 100;
+            const maxStorage = user.has_membership ? 30 * 1024 : 300; //Weekly limit of 30GB for members, 300MB for non-members
             if (user.storage_count + fileSize > maxStorage) {
                 if (process.env.NODE_ENV === "production") {
                     const fileName = GenerateFileName(file, "feed-image");

@@ -24,7 +24,7 @@ const FeedInfoView = () => {
     const [zoom, setZoom] = useState(1);
     const { feed, setFeed, user, updateFeeds } = useOutletContext();
     const hasMembership = user?.has_membership;
-    const MAX_FILE_SIZE = hasMembership ? 100 * 1024 * 1024 : 1 * 1024 * 1024;
+    const MAX_FILE_SIZE = hasMembership ? 500 * 1024 * 1024 : 5 * 1024 * 1024; // 500MB for members, 5MB for non-members
 
     useEffect(() => {
         if (isEditingName) setName(feed?.feed_name);
@@ -32,7 +32,7 @@ const FeedInfoView = () => {
 
     useEffect(() => {
         if (isEditingDescription) setDescription(feed?.description);
-    }, [isEditingDescription, feed.description]);
+    }, [isEditingDescription, feed?.description]);
 
     const changeFeedPhoto = async (event) => {
         event.preventDefault();
@@ -52,7 +52,7 @@ const FeedInfoView = () => {
                 setFeed(prev => ({ ...prev, feed_photo: response.data?.newPhotoPath }));
                 if (feed?.is_group) {
                     const stored = JSON.parse(localStorage.getItem("followedFeeds")) || [];
-                    const updated = stored.map(f => f.feed_id === feed?.feed_id ? { ...f, feed_photo: response.data?.newPhotoPath } : f);
+                    const updated = stored.map(f => f?.feed_id === feed?.feed_id ? { ...f, feed_photo: response.data?.newPhotoPath } : f);
                     localStorage.setItem("followedFeeds", JSON.stringify(updated));
                 } else if (!feed?.is_group) {
                     const storedUser = JSON.parse(localStorage.getItem("user")) || {};
@@ -66,7 +66,7 @@ const FeedInfoView = () => {
                 setErrorMessage('');
                 updateFeeds();
             } else {
-                setErrorMessage(response.data.message || 'Failed to update feed photo');    
+                setErrorMessage(response.data?.message || 'Failed to update feed photo');    
                 setTimeout(() => { setErrorMessage(''); }, 5000);
             }
         } catch (error) {
@@ -87,7 +87,7 @@ const FeedInfoView = () => {
             return;
         }
         if (file.size > MAX_FILE_SIZE) {
-            setErrorMessage(hasMembership ? 'File exceeds your max size limit.' : 'File exceeds your max size limit. Get membership for more.');
+            setErrorMessage(hasMembership ? 'File exceeds max size limit.' : 'File exceeds max size limit. Get membership for more.');
             setTimeout(() => { setErrorMessage(''); }, 10000);
             return;
         }

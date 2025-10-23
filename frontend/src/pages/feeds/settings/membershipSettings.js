@@ -109,7 +109,7 @@ const MembershipSettings = () => {
         { icon: <Check className="feature-icon" />, text: "Improved customisation" },
         { icon: <ListFilter className="feature-icon" />, text: "Create longer posts" },
         { icon: <Shield className="feature-icon" />, text: "Higher use limits" },
-        { icon: <Ellipsis className="feature-icon" />, text: "And more..." },
+        { text: "And more..." },
     ];
 
     if (user?.has_membership) {
