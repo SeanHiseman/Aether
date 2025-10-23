@@ -19,15 +19,18 @@ const EmailVerification = () => {
             const token = searchParams.get('token');
             if (!token) {
                 setStatus('pending');
-                setMessage('Please check your email, including spam, for the verification link.');
+                setMessage('Email verification sent.');
                 return;
             }
             try {
                 const response = await api.get(`/verify-email?token=${token}`);
                 setStatus('success');
                 setMessage(response.data?.message);
+                if (response.data?.success) {
+                    localStorage.setItem('user', JSON.stringify(response.data.user));
+                }
                 setTimeout(() => {
-                    navigate('/g/Welcome');
+                    navigate('/explore');
                 }, 3000);
             } catch (error) {
                 setStatus('error');
@@ -64,6 +67,7 @@ const EmailVerification = () => {
     return (
         <div className="authentication-container">
             <p className="welcome-text pointer">Email Verification</p>
+            <p className="small-text">Check your email, incluing spam, for a verification link</p>
             <div className="authentication-box">
                 {status === 'verifying' && (
                     <div>

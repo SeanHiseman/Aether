@@ -19,11 +19,15 @@ const FeedDeletion = () => {
                 await api.delete('/delete_feed', { data: { feedId: feed?.feed_id } }) : 
                 await api.delete('/delete_account', { data: { userId: feed?.feed_owner } });
             if (response.data?.success) {
-                const stored = JSON.parse(localStorage.getItem("followedFeeds")) || [];
-                const updated = stored.filter(f => f.feed_id !== feed?.feed_id);
-                localStorage.setItem("followedFeeds", JSON.stringify(updated));
+                if (feed?.is_group) {
+                    const stored = JSON.parse(localStorage.getItem("followedFeeds")) || [];
+                    const updated = stored.filter(f => f.feed_id !== feed?.feed_id);
+                    localStorage.setItem("followedFeeds", JSON.stringify(updated));
+                    updateFeeds();
+                } else {
+                    localStorage.clear();
+                }
                 const route = feed?.is_group ? '/explore' : '/join';
-                updateFeeds();
                 setTimeout(() => navigate(route), 0); //ensure navigation runs after state updates
             }
         } catch (error) {

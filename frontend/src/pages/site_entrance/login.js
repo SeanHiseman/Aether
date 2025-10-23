@@ -25,11 +25,15 @@ const Login = () => {
                 localStorage.setItem("user", JSON.stringify(response.data?.user));
                 localStorage.setItem("recentUpvotes", JSON.stringify(response.data?.recentUpvotes));
                 await refreshTheme();
-                navigate('/explore'); 
+                navigate('/explore');
             }
         } catch (error) {
-            setErrorMessage(error.response.data?.message || 'Error logging in');
-            setTimeout(() => { setErrorMessage(''); }, 5000);
+            const msg = error.response.data?.message;
+            setErrorMessage(msg || 'Error logging in');
+            setTimeout(() => setErrorMessage(''), 5000);
+            if (msg && msg.includes('verify your email')) {
+                navigate(`/verify-email`);
+            }
         }
     };
 

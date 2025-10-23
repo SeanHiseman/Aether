@@ -22,7 +22,7 @@ export const generateVerificationToken = (userId, email) => {
 export const sendVerificationEmail = async (email, username, verificationToken) => {
     const verificationUrl = `${process.env.FRONTEND_URL}/verify-email?token=${verificationToken}`;
     const mailOptions = {
-        from: '"Aether" <no-reply@aethersocial.com>',
+        from: '"Aether Social" <no-reply@aethersocial.com>',
         to: email,
         subject: 'Verify your email',
         html: `
@@ -46,7 +46,7 @@ export const sendVerificationEmail = async (email, username, verificationToken) 
         </div>
         `,
         text: `
-        Welcome to Aether Social, ${username}!
+        Welcome to Aether Social, ${username}
         
         Please verify your email address by visiting this link:
         ${verificationUrl}

@@ -338,10 +338,10 @@ router.post('/resend-verification', resendLimiter, async (req, res) => {
         }
         const user = await Users.findOne({ where: { email } });
         if (!user) {
-            return res.status(404).json({ message: 'User not found' });
+            return res.status(404).json({ success: false, message: 'User not found' });
         }
         if (user.email_verified) {
-            return res.status(400).json({ message: 'Email already verified' });
+            return res.status(400).json({ success: false, message: 'Email already verified' });
         }
         const verificationToken = generateVerificationToken(user.user_id, email);
         const verificationTokenExpires = new Date(Date.now() + 24 * 60 * 60 * 1000);
@@ -352,7 +352,7 @@ router.post('/resend-verification', resendLimiter, async (req, res) => {
         await sendVerificationEmail(email, user.username, verificationToken);
         return res.status(200).json({ success: true, message: 'Verification email sent' });
     } catch (error) {
-        return res.status(500).json({ message: 'An error occurred. Please try again later.' });
+        return res.status(500).json({ success: false, message: 'An error occurred. Please try again later.' });
     }
 });
 
@@ -393,9 +393,7 @@ router.post('/reset-password', resendLimiter, async (req, res) => { //For users 
 router.get('/verify-email', resendLimiter, async (req, res) => {
 	try {
 		const { token } = req.query;
-		if (!token) {
-			return res.status(400).json({ message: 'Verification token is required' });
-		}
+		if (!token) return res.status(400).json({ message: 'Verification token is required' });
 		let decoded;
 		try {
 			decoded = jwt.verify(token, process.env.JWT_SECRET);
@@ -409,15 +407,9 @@ router.get('/verify-email', resendLimiter, async (req, res) => {
 				verification_token: token
 			}
 		});
-		if (!user) {
-			return res.status(404).json({ message: 'User not found or token invalid' });
-		}
-		if (user.email_verified) {
-			return res.status(200).json({ message: 'Email already verified' });
-		}
-		if (new Date() > user.verification_token_expires) {
-			return res.status(400).json({ message: 'Verification token has expired' });
-		}
+		if (!user) return res.status(404).json({ message: 'User not found or token invalid' });
+		if (user.email_verified) return res.status(200).json({ message: 'Email already verified' });
+		if (new Date() > user.verification_token_expires) return res.status(400).json({ message: 'Verification token has expired' });
 		await user.update({
 			email_verified: true,
 			verification_token: null,
@@ -427,7 +419,24 @@ router.get('/verify-email', resendLimiter, async (req, res) => {
 		req.session.user_id = user.user_id;
 		req.session.username = user.username;
 		req.session.viewer_id = feed.feed_id;
-		return res.status(200).json({ success: true, message: 'Email verified successfully!' });
+		return res.status(200).json({
+			success: true,
+			message: 'Email verified successfully!',
+			user: {
+				user_id: user.user_id,
+				feed_name: user.username,
+				email: user.email,
+				has_membership: user.has_membership,
+				theme: user.theme,
+				usage_count: user.usage_count,
+				storage_count: user.storage_count,
+				viewer_id: feed.feed_id,
+				feed_photo: feed.feed_photo
+			},
+			followedFeeds: [],
+			deepFeeds: [],
+			recentUpvotes: []
+		});
 	} catch (error) {
 		return res.status(500).json({ message: 'Server error' });
 	}
