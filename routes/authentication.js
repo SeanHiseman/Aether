@@ -303,6 +303,9 @@ router.post('/login', loginLimiter, async (req, res) => {
                     storage_count: user.storage_count,
                     viewer_id: feed.feed_id,
                     feed_photo: feed.feed_photo,
+                    follow_requests: feed.follow_requests,
+                    connections: feed.connections,
+                    connect_requests: feed.connect_requests
                 },
                 followedFeeds: normalizedFollowedFeeds, 
                 deepFeeds,

@@ -3,7 +3,7 @@ import { AuthContext } from '../../components/authContext';
 import ConfirmModal from '../../components/modals/confirmModal';
 import ConnectionWidget from './connectionWidget';
 import FeedItem from '../../components/channels/feedItem';
-import { Link, useOutletContext } from 'react-router-dom';
+import { useOutletContext } from 'react-router-dom';
 import { UnreadContext } from '../../components/messages/unreadContext';
 import { useContext, useEffect, useState } from 'react';
 
@@ -19,7 +19,7 @@ const MessagesPage = () => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [requestsOffset, setRequestsOffset] = useState(0);
     const { rightClasses } = useOutletContext(); 
-    const { state, dispatch } = useContext(UnreadContext);
+    const { dispatch } = useContext(UnreadContext);
     const { viewer } = useContext(AuthContext);
 
     const loadMoreConnections = async () => {
@@ -157,11 +157,13 @@ const MessagesPage = () => {
                 receiverId: viewer?.feed_id,
                 senderId: request?.sender_id
             });
-            if (response.data.success) {
+            if (response.data?.success) {
                 handleRequestUpdate(request.sender, request?.sender_id);
+                viewer.connections = (viewer.connections || 0) + 1;
+                viewer.connect_requests = (viewer.connect_requests || 1) - 1;
             }
         } catch (error) {
-            setErrorMessage(error.response?.data?.message || 'Error accepting request');
+            setErrorMessage(error.response.data?.message || 'Error accepting request');
             setTimeout(() => { setErrorMessage(''); }, 5000);
         }
     };
@@ -174,8 +176,9 @@ const MessagesPage = () => {
                     senderId: request?.sender_id
                 }
             });
-            if (response.data.success) {
+            if (response.data?.success) {
                 handleRequestUpdate(null, request?.sender_id);
+                viewer.connect_requests = (viewer.connect_requests || 1) - 1;
             }
         } catch (error) {
             setErrorMessage(error.response.data?.message || 'Error rejecting request');
@@ -191,8 +194,9 @@ const MessagesPage = () => {
                     feedId: connection?.feed_id
                 }
             });
-            if (response.data.success) {
+            if (response.data?.success) {
                 handleConnectionRemoval(connection?.feed_id);
+                viewer.connections = (viewer.connections || 1) - 1;
             }
         } catch (error) {
             setErrorMessage(error.response.data?.message || 'Error removing connection');
@@ -235,8 +239,6 @@ const MessagesPage = () => {
         }
     }, [connections]);
 
-    const requestCount = state.requestCount || 0;
-
 	document.title = 'Messages';
     return (
         <><div className="standard-container">
@@ -244,10 +246,10 @@ const MessagesPage = () => {
                 <div className="channel-content">
                     <div className="tab-titles">
                         <span className={`tab-title ${activeTab === 'connections' ? 'active' : ''}`} onClick={() => setActiveTab('connections')}>
-                            {connections.length} {connections.length === 1 ? 'Connection' : 'Connections'}
+                            {viewer?.connections} {viewer?.connections === 1 ? 'Connection' : 'Connections'}
                         </span>
                         <span className={`tab-title ${activeTab === 'requests' ? 'active' : ''}`} onClick={() => setActiveTab('requests')}>
-                            {requestCount} {requestCount === 1 ? 'Connect Request' : 'Connect Requests'}
+                            {viewer?.connect_requests} {viewer?.connect_requests === 1 ? 'Connect Request' : 'Connect Requests'}
                         </span>
                     </div>
                     <div className="error-message">{errorMessage}</div>
@@ -299,7 +301,7 @@ const MessagesPage = () => {
             onConfirm={confirmRemoveConnection}
             onCancel={cancelRemoveConnection}
             title="Remove Connection"
-            message={`Are you sure you want to remove your connection with "${connectionToRemove?.feed_name}"?`} 
+            message={`Are you sure you want to remove your connection with ${connectionToRemove?.feed_name}?`} 
         /></>
     );
 };

@@ -12,30 +12,48 @@ const router = Router();
 const SECRET_KEY = process.env.ENCRYPTION_SECRET_KEY;
 
 router.post('/accept_connect_request', authenticateCheck, async (req, res) => {
+    let transaction;
     try {
+        transaction = await sequelize.transaction();
         const { receiverId, senderId } = req.body;
         const connectRequest = await ConnectRequests.findOne({
-            where: { receiver_id: receiverId, sender_id: senderId }
+            where: { receiver_id: receiverId, sender_id: senderId },
+            transaction
         });
         await Connections.create({
             connection_id: v4(),
             feed1_id: senderId,
             feed2_id: receiverId,
             connection_date: new Date()
-        });;
+        }, { transaction });
         const encryptedTitle = CryptoJS.AES.encrypt("Main", SECRET_KEY).toString();
         const chat = await Chats.create({ 
             chat_id: v4(),
             title: encryptedTitle
-        });
+        }, { transaction });
         await FeedChats.bulkCreate([
             { feed_id: senderId, chat_id: chat.chat_id },
             { feed_id: receiverId, chat_id: chat.chat_id }
-        ]);
-        await connectRequest.destroy();
+        ], { transaction });
+        		await Feeds.increment('connections', {
+			where: { feed_id: senderId },
+			transaction
+		});
+		await Feeds.increment('connections', {
+			where: { feed_id: receiverId },
+			transaction
+		});
+		await Feeds.decrement('connect_requests', {
+			where: { feed_id: receiverId },
+			transaction
+		});
+		await connectRequest.destroy({ transaction });
+		await transaction.commit();
         res.status(200).json({ isConnected: true, success: true });
     } catch (error) {
-        res.status(500).json({ isConnected: false, success: false });
+        if (transaction) await transaction.rollback();
+		console.log("/accept_connect_request error:", error);
+        res.status(500).json({ isConnected: false, success: false, message: 'Error accepting request' });
     }
 });
 
@@ -90,18 +108,24 @@ router.delete('/delete_chat', authenticateCheck, async (req, res) => {
 });
 
 router.delete('/delete_connect_request', authenticateCheck, async (req, res) => {
+    let transaction;
     try {
+        transaction = await sequelize.transaction();
         const { receiverId, senderId } = req.body;
-        const deleteCount = await ConnectRequests.destroy({
-            where: { sender_id: senderId, receiver_id: receiverId } 
+        await ConnectRequests.destroy({
+            where: { sender_id: senderId, receiver_id: receiverId },
+            transaction
         });
-        if (deleteCount > 0) {
-            res.status(200).json({ isConnected: false, success: true });
-        } else {
-            res.status(500).json({ isConnected: false,  success: false });
-        }
+        await Feeds.decrement('connect_requests', {
+			where: { feed_id: receiverId },
+			transaction
+		});
+		await transaction.commit();
+        res.status(200).json({ isConnected: false, success: true });
     } catch (error) {
-        res.status(500).json({ isConnected: false,  success: false });
+        if (transaction) await transaction.rollback();
+		console.log("/delete_connect_request error:", error);
+        res.status(500).json({ isConnected: false,  success: false, message: 'Error deleting request' });
     }
 });
 
@@ -133,12 +157,17 @@ router.delete('/delete_connection', authenticateCheck, async (req, res) => {
             await FeedChats.destroy({ where: { chat_id: chatIds }, transaction });
             await Messages.destroy({ where: { chat_id: chatIds }, transaction });
             await Chats.destroy({ where: { chat_id: chatIds }, transaction });
-        }
+        };
+        await Feeds.decrement('connections', {
+            where: { feed_id: { [Op.in]: [deleterId, feedId] } },
+            transaction
+        })
         await transaction.commit();
         res.status(200).json({ success: true });
     } catch (error) {
+        console.log("/delete_connection error:", error);
         if (transaction) await transaction.rollback();
-        res.status(500).json({ success: false });
+        res.status(500).json({ success: false, message: 'Error removing connection' });
     }
 });
 
@@ -250,6 +279,7 @@ router.get('/get_connections', authenticateCheck, async (req, res) => {
         });
         res.status(200).json({ connections: filteredConnections , success: true });
     } catch (error) {
+        console.log("/get_connections error:", error);
         res.status(500).json({ success: false, message: 'Error getting connections' });  
     }
 });
@@ -273,21 +303,31 @@ router.get('/get_connect_requests', authenticateCheck, async (req, res) => {
         });
         res.status(200).json({ success: true, requests });
     } catch (error) {
-        res.status(500).json({ success: false });
+        console.log("/get_connect_requests error:", error);
+        res.status(500).json({ success: false, message: 'Error getting requests' });
     }
 });
 
 router.post('/send_connect_request', authenticateCheck, async (req, res) => {
+    let transaction;
     try {
+        transaction = await sequelize.transaction();
         const { receiverId, senderId } = req.body;
         await ConnectRequests.create({
             request_id: v4(),
             sender_id: senderId,
             receiver_id: receiverId
-        });
+        }, { transaction });
+        await Feeds.increment('connect_requests', {
+			where: { feed_id: receiverId },
+			transaction
+		});
+		await transaction.commit();
         res.status(200).json({ success: true });
     } catch (error) {
-        res.status(500).json({ success: false });
+        if (transaction) await transaction.rollback();
+		console.log("/send_connect_request error:", error);
+        res.status(500).json({ success: false, message: 'Error sending request' });
     }
 });
 
@@ -343,7 +383,7 @@ router.get('/unread_messages_count/:feed_id', async (req, res) => {
             requestCount: requestCount
         });
     } catch (error) {
-        res.status(500).json({ success: false, error: 'Failed to get unread counts' });
+        res.status(500).json({ success: false, message: 'Failed to get unread counts' });
     }
 });
 

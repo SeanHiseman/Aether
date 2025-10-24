@@ -44,13 +44,13 @@ const FeedSettings = () => {
                 const response = await api.get(`/follow_requests/${feed?.feed_id}`);
                 const requests = response.data?.requests || [];
                 setFollowRequests(requests);
-                setFollowRequestCount(requests.length);
+                setFollowRequestCount(feed?.follow_requests);
             } catch (error) {
                 setErrorMessage(error.response.data?.message || 'Error getting requests');
                 setTimeout(() => { setErrorMessage(''); }, 5000);
             } 
         };
-        if (feed.feed_id) {
+        if (feed?.feed_id) {
             getFollowRequests();
         }
     }, [feed?.feed_id]); 
@@ -110,7 +110,7 @@ const FeedSettings = () => {
                         )}
                         <li className="channel-link">
                             <Link to={`/settings/${feed_name}/followers`}>
-                                {FormatNumber(feed?.follower_count)} {feed.follower_count === 1 ? 'Follower' : 'Followers'}
+                                {FormatNumber(feed?.follower_count)} {feed?.follower_count === 1 ? 'Follower' : 'Followers'}
                             </Link>
                         </li>
                         {feed?.type === 'private' && (

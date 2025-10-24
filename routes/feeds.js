@@ -51,18 +51,23 @@ const checkProfileStorageLimit = async (req, res, next) => {
 };
 
 router.post('/accept_follow_request', higherLimiter, authenticateCheck, async (req, res) => {
+    let transaction;
     try {
+        transaction = await sequelize.transaction();
         const { request } = req.body;
-        const follow_request = await FollowRequests.findByPk(request.request_id);
+        const follow_request = await FollowRequests.findByPk(request.request_id, { transaction });
         await Followers.create({
             follow_id: v4(),
             follower_id: follow_request.sender_id,
             feed_id: follow_request.receiver_id
-        });
-        await Feeds.increment('follower_count', { where: { feed_id: follow_request.receiver_id } });
-        await follow_request.destroy();
+        }, { transaction });
+        await Feeds.increment('follower_count', { where: { feed_id: follow_request.receiver_id }, transaction });
+		await Feeds.decrement('follow_requests', { where: { feed_id: follow_request.receiver_id }, transaction });
+        await follow_request.destroy({ transaction });
+        await transaction.commit();
         res.status(200).json({ success: true });
     } catch (error) {
+        if (transaction) await transaction.rollback();
         console.log("/accept_follow_request error:", error);
         res.status(500).json({ success: false, message: 'Error accepting request' });
     }
@@ -482,13 +487,22 @@ router.delete('/delete_deep_feed', standardLimiter, authenticateCheck, async (re
 });
 
 router.delete('/delete_follow_request', higherLimiter, authenticateCheck, async (req, res) => {
+    let transaction;
     try {
+        transaction = await sequelize.transaction();
         const { receiverId, senderId } = req.body;
         await FollowRequests.destroy({
-            where: { receiver_id: receiverId, sender_id: senderId } 
+            where: { receiver_id: receiverId, sender_id: senderId },
+            transaction
         });
-        res.status(200).json({ success: false });
+        await Feeds.decrement('follow_requests', {
+			where: { feed_id: receiverId },
+			transaction
+		});
+        await transaction.commit();
+        res.status(200).json({ success: true });
     } catch (error) {
+        if (transaction) await transaction.rollback();
         console.log("/delete_follow_request error:", error);
         res.status(500).json({ success: false, message: 'Error deleting request' });
     }
@@ -871,16 +885,24 @@ router.post('/save_post', higherLimiter, authenticateCheck, async (req, res) => 
 	}
 });
 
-router.post('/send_follow_request', higherLimiter, authenticateCheck, async (req, res) => {``
+router.post('/send_follow_request', higherLimiter, authenticateCheck, async (req, res) => {
+    let transaction;
     try {
+        transaction = await sequelize.transaction();
         const { receiverId, senderId } = req.body;
         await FollowRequests.create({
             request_id: v4(),
             sender_id: senderId,
             receiver_id: receiverId,
         });
+        await Feeds.increment(
+            { follow_requests: 1 },
+            { where: { feed_id: receiverId }, transaction }
+        );
+        await transaction.commit();
         res.status(200).json({ success: true });
     } catch (error) {
+        if (transaction) await transaction.rollback();
         console.log("/send_follow_request error:", error);
         res.status(500).send({ success: false, message: 'Failed to send request.' });
     }

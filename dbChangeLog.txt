@@ -171,3 +171,8 @@ ALTER TABLE posts
 ADD COLUMN is_private BOOLEAN NOT NULL DEFAULT FALSE;
 
 CREATE INDEX idx_feed_id ON posts(feed_id);
+
+ALTER TABLE feeds
+ADD COLUMN follow_requests INT DEFAULT 0,
+ADD COLUMN connections INT DEFAULT 0,
+ADD COLUMN connect_requests INT DEFAULT 0;
