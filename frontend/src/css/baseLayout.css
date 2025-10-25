@@ -242,10 +242,10 @@
 }
 .feed-list-link-container {
   align-items: center;
-  border-radius: calc(clamp(4px, 1vw, 10px) + var(--medium-margin));
+  border-radius: calc(clamp(4px, 1vw, 10px) + var(--small-margin));
   display: flex;
   justify-content: space-between;
-  padding: var(--medium-margin);
+  padding: var(--small-margin);
 }
 .feed-list-link-container:hover {
   background-color: var(--light);

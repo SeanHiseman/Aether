@@ -1,19 +1,19 @@
 import AlgorithmSelector from '../../algorithms/algorithmSelector';
 import api from '../../api';
 import { AuthContext } from '../../components/authContext';
-import { FaCog, FaEdit, FaFeatherAlt, FaFolder, FaFolderOpen, FaMinus, FaPlus, FaRegWindowClose, FaSave, FaTrash } from 'react-icons/fa';
-import { useContext, useEffect, useState } from 'react';
-import { Link, useLocation, useNavigate, useOutletContext, useParams } from 'react-router-dom';
-import { useQueryClient } from '@tanstack/react-query';
-import { FormatNumber } from '../../functions/formatNumber';
-import { ValidateTextInput } from '../../functions/validateTextInput';
 import ChannelList from '../../components/channels/channelList';
 import ChatChannel from '../../components/channels/chatChannel';
 import ConfirmModal from '../../components/modals/confirmModal';
 import ContentForm from '../../components/content/contentForm';
+import { FaCog, FaEdit, FaFeatherAlt, FaFolder, FaFolderOpen, FaMinus, FaPlus, FaRegWindowClose, FaSave, FaTrash } from 'react-icons/fa';
+import { FormatNumber } from '../../functions/formatNumber';
 import FollowerChangeButton from '../../components/followerChangeButton';
+import { Link, useLocation, useNavigate, useOutletContext, useParams } from 'react-router-dom';
 import ManageConnectionButton from '../../components/messages/manageConnectionButton';
 import PostChannel from '../../components/channels/postChannel';
+import { useContext, useEffect, useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
+import { ValidateTextInput } from '../../functions/validateTextInput';
 
 const FeedHome = () => {
     const [canRemove, setCanRemove] = useState(false);
@@ -124,7 +124,7 @@ const FeedHome = () => {
             const fetchPost = async () => {
                 const isDraftPath = location.pathname.includes('/drafts/');
                 if (isDraftPath) {
-                    const draft = draftPosts.find(d => d.draft_id === post_id);
+                    const draft = draftPosts.find(d => d?.draft_id === post_id);
                     if (draft) {
                         setShowPostForm(true);
                         setIsEdit(true);
@@ -164,31 +164,42 @@ const FeedHome = () => {
     }, [isEditMode, post_id, queryClient, location.state, draftPosts]);
 
     useEffect(() => {
-        if (!isReplyMode || !post_id || !feed?.feed_id) return;
-        let cachedPost = queryClient.getQueryData(['singlePost', post_id]);
+        if (!isReplyMode || !post_id) {
+            setReplyingToPost(null);
+            return;
+        }
+        const statePost = location.state?.replyingTo;
+        if (statePost) {
+            console.log("statePost:", statePost);
+            setReplyingToPost(statePost);
+            queryClient.setQueryData(['singlePost', post_id], statePost);
+            return;
+        }
+        const cachedPost = queryClient.getQueryData(['singlePost', post_id]);
         if (cachedPost) {
+            console.log("cachedPost:", cachedPost);
             setReplyingToPost(cachedPost);
             return;
         }
         const fetchPost = async () => {
+            console.log("fetching post");
             try {
                 const response = await api.get('/channel_posts', {
-                    params: { isSingle: true, feedId: feed.feed_id, postId: post_id },
+                    params: { isSingle: true, feedId: feed?.feed_id, postId: post_id },
                 });
                 const post = response.data?.post;
                 if (post) {
                     queryClient.setQueryData(['singlePost', post_id], post);
                     setReplyingToPost(post);
                 } else {
-                    setReplyingToPost({ error: true }); 
+                    setReplyingToPost({ error: true });
                 }
             } catch (error) {
                 setReplyingToPost({ error: true });
             }
         };
         fetchPost();
-
-    }, [isReplyMode, post_id, feed?.feed_id, queryClient]);
+    }, [isReplyMode, post_id, feed?.feed_id, queryClient, location.state]);
 
     const AddChannel = async (event) => {
         if (!isAuthenticated) return;
@@ -402,7 +413,7 @@ const FeedHome = () => {
             setPostErrorMessage={setPostErrorMessage} 
             setShowForm={isReply ? () => {
                 setReplyingToPost(null);
-                navigate(`/${urlPrefix}/${feed_name}/${channel_name}${replyingToPost?.post_id ? `/${replyingToPost.post_id}` : ''}`);
+                navigate(`/${urlPrefix}/${feed_name}/${channel_name}${replyingToPost?.post_id ? `/${replyingToPost?.post_id}` : ''}`);
             } : () => {
                 setShowPostForm(false);
                 setIsEdit(false);
@@ -434,22 +445,25 @@ const FeedHome = () => {
     );
     const renderChannelContent = () => {
         if (isEditMode && showPostForm) return renderContentForm(false);
-        if (isReplyMode) { return renderContentForm(true); }
+        if (isReplyMode) {
+            renderPostChannel(false); 
+            return renderContentForm(true);
+        }
         if (showDrafts) return renderPostChannel(true);
         if (replyingToPost) return renderContentForm(true);
-        if (showPostForm) return renderContentForm(false);  
+        if (showPostForm) return renderContentForm(false);
         if (!channelRender) return null;
         const isPostMode = channelRender?.is_posts && (channelMode === 'post' || !channelRender?.is_chat);
         return isPostMode ? renderPostChannel(false) : (
-            <ChatChannel 
-                canAdd={isAdmin} 
-                canRemove={canRemove} 
-                channelId={channelRender?.channel_id} 
-                feedId={feed?.feed_id} 
-                isGroup={true} 
-                isLocked={isLocked} 
+            <ChatChannel
+                canAdd={isAdmin}
+                canRemove={canRemove}
+                channelId={channelRender?.channel_id}
+                feedId={feed?.feed_id}
+                isGroup={true}
+                isLocked={isLocked}
                 setErrorMessage={setFeedErrorMessage}
-            /> 
+            />
         );
     };
 

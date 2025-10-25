@@ -151,6 +151,14 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
     const usageLimit = user?.has_membership ? 25000000 : 2500000 //Token generation limit
     const limitReached = user?.usage_count >= usageLimit
 
+    useEffect(() => {
+        if (!isAuthenticated && post?.post_id) {
+            navigate(`/${urlPrefix}/${feed_name}/${channel_name}/${post.id}`)
+        } else if (!isAuthenticated) {
+            navigate(`/${urlPrefix}/${feed_name}/${channel_name}`)
+        }
+    }, [isAuthenticated, navigate, urlPrefix, feed_name, channel_name, post?.id])
+
     const addIframe = () => {
         const url = prompt('Enter the website URL:');
         if (url) {
@@ -714,17 +722,17 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
         try {
             //Drafts created and updated through create_post route
             const response = await api.post('/create_post', formData, { headers: { 'Content-Type': 'multipart/form-data' }});
-            if (response.data.success) {
+            if (response.data?.success) {
                 setPostErrorMessage('Draft saved')
                 setTimeout(() => { setPostErrorMessage('') }, 3000)
-                const [savedDraft] = response.data.draft
-                setDraftId(savedDraft.draft_id)
+                const [savedDraft] = response.data?.draft
+                setDraftId(savedDraft?.draft_id)
             }
         } catch (error) {
             setPostErrorMessage(error.response?.data?.message || 'Error saving draft.')
             setTimeout(() => { setPostErrorMessage('') }, 5000)
         }
-    }, [blocks, channelId, compileFinalHTML, draftId, feed.feed_id, isContentEmpty, isReply, post, title, viewer?.feed_id])
+    }, [blocks, channelId, compileFinalHTML, draftId, feed?.feed_id, isContentEmpty, isReply, post, title, viewer?.feed_id])
 
     const submitForm = useCallback(async e => {
 		if (!isAuthenticated) return;
@@ -756,7 +764,7 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
             setBlocks([]);
             setPostErrorMessage('');
         } catch (error) {
-            setPostErrorMessage(error.response?.data?.message || 'Error submitting the form.')
+            setPostErrorMessage(error.response.data?.message || 'Error submitting the form.')
             setTimeout(() => { setPostErrorMessage('') }, 5000)
         }
     }, [blocks, channelId, compileFinalHTML, compileFinalHTML, draftId, feed?.feed_id, isContentEmpty, isDraft, isEdit, isPostingDraft, isReply, onPostSubmit, post, title, urlPrefix])
@@ -769,6 +777,9 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
         updateBlock({ ...block, data: { ...block.data, align: newAlign } })
     }, [updateBlock])
 
+    if (!isAuthenticated) {
+        return null
+    }
     return (
         <><div className="create-post-container" style={{ paddingTop: isReply ? '0px' : '20px' }}>
             {isReply && post && (
@@ -823,7 +834,6 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
                                 <button className="small-icon" form="post-form" type="submit" title="Save edit">
                                     <FaSave />
                                 </button>
-
                             ) : (
                                 <>
                                     <button className="small-icon" type="button" onClick={saveDraft} title="Save draft">

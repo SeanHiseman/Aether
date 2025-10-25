@@ -461,7 +461,10 @@ const ContentWidget = ({ canRemove = false, display = false, feed, isDraft = fal
 							<button
 								className="large-icon"
 								disabled={readOnly}
-								onClick={() => navigate(`/${urlPrefix}/${post?.parentChannel?.feed?.feed_name}/${post?.parentChannel?.channel_name}/${post?.post_id}/reply`)}
+								onClick={() => navigate(
+									`/${urlPrefix}/${post?.parentChannel?.feed?.feed_name}/${post?.parentChannel?.channel_name}/${post?.post_id}/reply`,
+									{ state: { replyingTo: post } } 
+								)}
 								title="Reply"
 							>
 								<FaReply /><p className="icon-text">Reply</p>
