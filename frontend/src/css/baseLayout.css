@@ -108,9 +108,11 @@
 }
 .channel-item, .channel-link {
   cursor: pointer;
-  transition: background-color var(--transition-regular);
 }
 .channel-link:hover, .channel-item:hover {
+  background-color: var(--light);
+}
+.channel-link.selected, .channel-item.selected {
   background-color: var(--dark);
 }
 .channel-list {
@@ -244,10 +246,9 @@
   display: flex;
   justify-content: space-between;
   padding: var(--medium-margin);
-  transition: background-color var(--transition-regular);
 }
 .feed-list-link-container:hover {
-  background-color: var(--dark);
+  background-color: var(--light);
 }
 .feed-list-text {
   font-size: var(--medium-text);
@@ -413,6 +414,9 @@ main {
 }
 .search-bar:focus {
   background-color: var(--border);
+}
+.selected {
+  background-color: var(--dark);
 }
 .sidebar-toggle {
   align-items: center;

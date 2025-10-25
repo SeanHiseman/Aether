@@ -4,7 +4,7 @@ import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import PropTypes from 'prop-types'
 import { useCallback, useContext, useEffect, useRef, useState } from 'react'
-import { FaAlignCenter, FaArrowCircleUp, FaArrowRight, FaCircleNotch, FaCommentAlt, FaCopy, FaCube, FaCrop, FaEdit, FaEllipsisV, FaEye, FaFont, FaLink, FaPhotoVideo, FaRegLightbulb, FaReply, FaSave, FaShareAlt, FaTerminal, FaTimes, FaToolbox, FaTrash, FaWindowClose } from 'react-icons/fa'
+import { FaAlignCenter, FaArrowCircleUp, FaArrowRight, FaCircleNotch, FaCommentAlt, FaCopy, FaCube, FaCrop, FaEdit, FaEllipsisV, FaEye, FaFont, FaGripVertical, FaLink, FaPhotoVideo, FaRegLightbulb, FaReply, FaSave, FaShareAlt, FaTerminal, FaTimes, FaToolbox, FaTrash, FaWindowClose } from 'react-icons/fa'
 import ReactQuill from 'react-quill'
 import 'react-quill/dist/quill.snow.css'
 import { v4 } from 'uuid'
@@ -779,6 +779,9 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
             <form id="post-form" className="post-form" onSubmit={submitForm}>
                 <div className="post-header-buttons-sticky">
                     <div className="post-header-buttons">
+                        <button className="small-icon" type="button" onClick={closeForm} title="Close">
+                            ✕<p className="icon-text">Close</p>
+                        </button>
                         <div className="dropdown" style={{ position: 'relative' }}>
                             <button className="small-icon" type="button" onClick={() => setAddContentDropdownOpen(!addContentDropdownOpen)} title="Add content">
                                 <FaEllipsisV /><span className="icon-text">Add content</span>
@@ -807,9 +810,6 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
                             )}
                         </div>
                         <div className="right-buttons" style={{ display: 'flex', position: 'absolute', right: '0' }}>
-                            <button className="small-icon" type="button" onClick={closeForm} title="Close">
-                                <FaWindowClose />
-                            </button>
                             {isEdit && (
                                 <button className="small-icon" type="button" onClick={deleteClick} title={isDraft ? 'Delete draft' : isEdit ? 'Delete post' : 'Delete'}>
                                     <FaTrash />
@@ -817,7 +817,7 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
                             )}
                             {isReply ? (
                                 <button className="small-icon" form="post-form" type="submit" title="Reply">
-                                    <FaReply />
+                                    <FaReply /><p className="icon-text">Reply</p>
                                 </button>
                             ) : isEdit && !isDraft ? (
                                 <button className="small-icon" form="post-form" type="submit" title="Save edit">
@@ -830,8 +830,7 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
                                         <FaSave />
                                     </button>
                                     <button className="small-icon" form="post-form" type="submit" title="Post" onClick={() => setIsPostingDraft(true)}>
-                                        <FaArrowRight />
-                                        <p className="icon-text">{isReply ? 'Reply' : 'Create post'}</p>
+                                        <FaArrowRight /><p className="icon-text">Create post</p>
                                     </button>
                                 </>
                             )}
@@ -880,250 +879,279 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
                                         return (
                                             <Draggable key={id} draggableId={id} index={index} isDragDisabled={cropState[id]?.isCropping}>
                                                 {provided2 => (
-                                                    <div className="block" ref={provided2.innerRef} style={{ marginBottom: '20px' }} {...provided2.draggableProps} {...provided2.dragHandleProps}>
-                                                        {type !== BLOCK_TYPES.TEXT && (
-                                                            <div className="block-controls" style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                                                <div style={{ display: 'flex', gap: '10px' }}>
-                                                                    {type === BLOCK_TYPES.CODE && isEditing && (
-                                                                        <button className="small-icon" onClick={() => updateBlock({ ...block, data: { ...data, showPrompt: !data.showPrompt } })} title={data.showPrompt ? 'Direct input' : 'Prompt'} type="button">
-                                                                            {data.showPrompt ? <FaTerminal /> : <FaCommentAlt />}
-                                                                        </button>
+                                                    <div
+                                                        className="block-drag-container"
+                                                        ref={provided2.innerRef}
+                                                        {...provided2.draggableProps}
+                                                        style={{
+                                                            display: 'flex',
+                                                            alignItems: 'center',
+                                                            marginLeft: '4px',
+                                                            ...provided2.draggableProps.style
+                                                        }}
+                                                    >
+                                                        <div
+                                                            className="faded-text"
+                                                            {...provided2.dragHandleProps}
+                                                            style={{
+                                                                cursor: 'grab',
+                                                                display: 'flex',
+                                                                marginRight: '4px',
+                                                                alignItems: 'center',
+                                                            }}
+                                                        >
+                                                            <FaGripVertical size={20} />
+                                                        </div>
+                                                        <div className="block" style={{ flex: 1 }}>
+                                                            {type !== BLOCK_TYPES.TEXT && (
+                                                                <div className="block-controls" style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                                                    <div style={{ display: 'flex', gap: '10px' }}>
+                                                                        {type === BLOCK_TYPES.CODE && isEditing && (
+                                                                            <button className="small-icon" onClick={() => updateBlock({ ...block, data: { ...data, showPrompt: !data.showPrompt } })} title={data.showPrompt ? 'Direct input' : 'Prompt'} type="button">
+                                                                                {data.showPrompt ? <FaTerminal /> : <FaCommentAlt />}
+                                                                            </button>
+                                                                        )}
+                                                                        {type !== BLOCK_TYPES.MEDIA && type !== BLOCK_TYPES.CODE && (
+                                                                            <button className="small-icon" onClick={() => removeBlock(id)} title="Delete" type="button"><FaTrash /></button>
+                                                                        )}
+                                                                        {type !== BLOCK_TYPES.MEDIA && (
+                                                                            <button className="small-icon" onClick={toggleEdit} title={isEditing ? 'Preview' : 'Edit'} type="button">{isEditing ? <FaEye /> : <FaEdit />}</button>
+                                                                        )}
+                                                                        {type === BLOCK_TYPES.CODE && (
+                                                                            <button
+                                                                                className="small-icon"
+                                                                                onClick={() => {
+                                                                                    async function doCopy() {
+                                                                                        await navigator.clipboard.writeText(data.code);
+                                                                                    }
+                                                                                    doCopy().then(() => {
+                                                                                        setPostErrorMessage('Copied');
+                                                                                        setTimeout(() => setPostErrorMessage(''), 2000);
+                                                                                    });
+                                                                                }}
+                                                                                title="Copy"
+                                                                                type="button"
+                                                                            >
+                                                                                <FaCopy />
+                                                                            </button>
+                                                                        )}
+                                                                        {type === BLOCK_TYPES.MEDIA && (
+                                                                            <>
+                                                                                {data.isImage && (
+                                                                                    <button
+                                                                                        className="small-icon"
+                                                                                        onClick={() => setCropState(prev => ({
+                                                                                            ...prev,
+                                                                                            [id]: {
+                                                                                                isCropping: true,
+                                                                                                crop: { x: 0, y: 0 },
+                                                                                                zoom: 1,
+                                                                                                croppedAreaPixels: null
+                                                                                            }
+                                                                                        }))}
+                                                                                        title="Crop image"
+                                                                                        type="button"
+                                                                                    >
+                                                                                        <FaCrop /><p className="icon-text">Crop</p>
+                                                                                    </button>
+                                                                                )}
+                                                                                <button className="small-icon" onClick={() => toggleMediaAlignment(block)} title={block.data.align === 'center' ? "Align left" : "Align centre"} type="button">
+                                                                                    <FaAlignCenter /><p className="icon-text">Align</p>
+                                                                                </button>
+                                                                            </>
+                                                                        )}
+                                                                    </div>
+                                                                    <div style={{ position: 'relative' }}>
+                                                                        {(type === BLOCK_TYPES.MEDIA || type === BLOCK_TYPES.CODE) && (
+                                                                            <button className="small-icon" onClick={() => removeBlock(id)} title="Delete" type="button"><FaTrash /></button>
+                                                                        )}
+                                                                    </div>
+                                                                </div>
+                                                            )}
+
+                                                            {type === BLOCK_TYPES.TEXT && (
+                                                                <div className="block-content">
+                                                                    {data.textError && (
+                                                                        <div style={{ display: 'inline-flex', alignItems: 'center', marginBottom: '5px' }}>
+                                                                            {data.textError}
+                                                                            <button className="small-icon" onClick={() => navigate('/settings/membership')} type="button" style={{ marginLeft: '5px' }}><FaArrowCircleUp /></button>
+                                                                        </div>
                                                                     )}
-                                                                    {type !== BLOCK_TYPES.MEDIA && type !== BLOCK_TYPES.CODE && (
-                                                                        <button className="small-icon" onClick={() => removeBlock(id)} title="Delete" type="button"><FaTrash /><p className="icon-text">Delete section</p></button>
-                                                                    )}
-                                                                    {type !== BLOCK_TYPES.MEDIA && (
-                                                                        <button className="small-icon" onClick={toggleEdit} title={isEditing ? 'Preview' : 'Edit'} type="button">{isEditing ? <FaEye /> : <FaEdit />}</button>
-                                                                    )}
-                                                                    {type === BLOCK_TYPES.CODE && (
-                                                                        <button
-                                                                            className="small-icon"
-                                                                            onClick={() => {
-                                                                                async function doCopy() {
-                                                                                    await navigator.clipboard.writeText(data.code);
+                                                                    <div style={{ display: 'flex', alignItems: 'flex-start' }}>
+                                                                        <ReactQuill
+                                                                            className="text-editor"
+                                                                            onChange={val => {
+                                                                                const plainText = val.replace(/<[^>]*>/g, '');
+                                                                                if (plainText.length < TEXT_CHAR_LIMIT) {
+                                                                                    updateBlock({ ...block, data: { ...data, html: val, textError: '' } });
+                                                                                } else {
+                                                                                    updateBlock({ ...block, data: { ...data, textError: `Exceeded ${TEXT_CHAR_LIMIT} character limit. ${!user.has_membership && 'Get membership for more.'}` } });
                                                                                 }
-                                                                                doCopy().then(() => {
-                                                                                    setPostErrorMessage('Copied');
-                                                                                    setTimeout(() => setPostErrorMessage(''), 2000);
-                                                                                });
-                                                                            } }
-                                                                            title="Copy"
-                                                                            type="button"
-                                                                        >
-                                                                            <FaCopy />
+                                                                            }}
+                                                                            placeholder="Begin writing..."
+                                                                            theme="snow"
+                                                                            value={data.html}
+                                                                            style={{ flex: 1 }}
+                                                                            modules={{
+                                                                                toolbar: [
+                                                                                    [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
+                                                                                    ['bold', 'italic', 'underline', 'strike'],
+                                                                                    [{ 'list': 'ordered' }, { 'list': 'bullet' }],
+                                                                                    [{ 'color': [] }],
+                                                                                ]
+                                                                            }}
+                                                                        />
+                                                                        <button className="small-icon" onClick={() => removeBlock(id)} title="Delete" type="button">
+                                                                            <FaTrash />
                                                                         </button>
-                                                                    )}
-                                                                    {type === BLOCK_TYPES.MEDIA && (
+                                                                    </div>
+                                                                </div>
+                                                            )}
+
+                                                            {type === BLOCK_TYPES.CODE && (
+                                                                <div className="block-content">
+                                                                    {!data.showPrompt && <p className="small-text faded-text">For now, only one HTML file with inline JavaScript and CSS can be created.</p>}
+                                                                    {isEditing && (
                                                                         <>
-                                                                            {data.isImage && (
-                                                                                <button
-                                                                                    className="small-icon"
-                                                                                    onClick={() => setCropState(prev => ({
+                                                                            {data.showPrompt ? (
+                                                                                <div className="ai-generator">
+                                                                                    <textarea className="ai-prompt"
+                                                                                        disabled={limitReached || data.isBlockLoading}
+                                                                                        onChange={(e) => {
+                                                                                            const input = e.target.value;
+                                                                                            if (input.length <= TEXT_CHAR_LIMIT) {
+                                                                                                updateBlock({ ...block, data: { ...data, _tempAiPrompt: input } });
+                                                                                                setPostErrorMessage('');
+                                                                                            } else {
+                                                                                                updateBlock({ ...block, data: { ...data, _tempAiPrompt: input } });
+                                                                                                setPostErrorMessage('Too long.', !user?.has_membership && 'Get membership for more.');
+                                                                                            }
+                                                                                        }}
+                                                                                        placeholder={limitReached ? (user?.has_membership ? "Limit reached. Buy new membership to reset"
+                                                                                            : "Limit reached. Get membership for more.")
+                                                                                            : data.isBlockLoading ? "Creating post... may take up to a minute"
+                                                                                                : "Describe your post..."}
+                                                                                        value={data.isBlockLoading ? '' : (data._tempAiPrompt || '')} />
+                                                                                    <button className={data.isBlockLoading || !data._tempAiPrompt?.trim() || limitReached ? 'small-icon disabled' : 'small-icon'}
+                                                                                        disabled={data.isBlockLoading || !data._tempAiPrompt?.trim() || limitReached}
+                                                                                        onClick={() => generateCodeBlock(block)}
+                                                                                        title={limitReached ? (user?.has_membership ? "Usage limit reached"
+                                                                                            : "Limit reached. Get membership for more.")
+                                                                                            : data.isBlockLoading ? 'Creating...'
+                                                                                                : !data._tempAiPrompt?.trim() ? 'Enter a prompt'
+                                                                                                    : 'Create'}
+                                                                                        type="button">
+                                                                                        {data.isBlockLoading ? <FaCircleNotch className="spinner" /> : <FaArrowCircleUp />}
+                                                                                    </button>
+                                                                                </div>
+                                                                            ) : (
+                                                                                <textarea
+                                                                                    className="code-input"
+                                                                                    onChange={e => {
+                                                                                        const newValue = e.target.value;
+                                                                                        if (newValue.length <= 100 * TEXT_CHAR_LIMIT) {
+                                                                                            updateBlock({
+                                                                                                id: block.id,
+                                                                                                data: {
+                                                                                                    ...data,
+                                                                                                    code: newValue
+                                                                                                }
+                                                                                            });
+                                                                                            setPostErrorMessage('');
+                                                                                        } else {
+                                                                                            setPostErrorMessage('Code exceeds character limit.', !user.has_membership && 'Get membership for more.');
+                                                                                        }
+                                                                                    }}
+                                                                                    placeholder="Enter code..."
+                                                                                    value={data.code} />
+                                                                            )}
+                                                                        </>
+                                                                    )}
+                                                                    {data.code.trim() ? (
+                                                                        <div className="code-preview">
+                                                                            <iframe ref={el => { iframeRefs.current[id] = el; }} sandbox="allow-scripts allow-same-origin" srcDoc={data.code} style={{ border: 'none', width: '100%', height: '50vh' }} title={`code-preview-${id}`} />
+                                                                        </div>
+                                                                    ) : (
+                                                                        <p className="small-text faded-text">Nothing to preview</p>
+                                                                    )}
+                                                                </div>
+                                                            )}
+
+                                                            {type === BLOCK_TYPES.MEDIA && (
+                                                                <div className="media-preview">
+                                                                    {cropState[id]?.isCropping && data.isImage ? (
+                                                                        <div>
+                                                                            <div className="crop-container" style={{ position: 'relative', width: '100%', height: 300 }}>
+                                                                                <Cropper
+                                                                                    image={data.url}
+                                                                                    crop={cropState[id]?.crop || { x: 0, y: 0 }}
+                                                                                    zoom={cropState[id]?.zoom || 1}
+                                                                                    aspect={4 / 3}
+                                                                                    onCropChange={(crop) => setCropState(prev => ({
                                                                                         ...prev,
                                                                                         [id]: {
-                                                                                            isCropping: true,
-                                                                                            crop: { x: 0, y: 0 },
-                                                                                            zoom: 1,
-                                                                                            croppedAreaPixels: null
+                                                                                            ...prev[id],
+                                                                                            crop
                                                                                         }
                                                                                     }))}
-                                                                                    title="Crop image"
+                                                                                    onCropComplete={(_, croppedPixels) => onCropComplete(id, croppedPixels)}
+                                                                                    onZoomChange={(zoom) => setCropState(prev => ({
+                                                                                        ...prev,
+                                                                                        [id]: {
+                                                                                            ...prev[id],
+                                                                                            zoom
+                                                                                        }
+                                                                                    }))}
+                                                                                    onInteractionStart={() => { }} />
+                                                                            </div>
+                                                                            <div className="crop-controls" style={{ display: 'flex', justifyContent: 'center', marginTop: 10, gap: 10 }}>
+                                                                                <button
+                                                                                    className="small-icon"
+                                                                                    onClick={() => setCropState(prev => {
+                                                                                        const newState = { ...prev };
+                                                                                        delete newState[id];
+                                                                                        return newState;
+                                                                                    })}
+                                                                                    title="Cancel"
                                                                                     type="button"
                                                                                 >
-                                                                                    <FaCrop /><p className="icon-text">Crop</p>
+                                                                                    <FaTimes /><p className="icon-text">Cancel</p>
                                                                                 </button>
+                                                                                <button className="small-icon" onClick={() => applyCrop(id)} title="Apply Crop" type="button">
+                                                                                    <FaSave /><p className="icon-text">Apply</p>
+                                                                                </button>
+                                                                            </div>
+                                                                        </div>
+                                                                    ) : (
+                                                                        <>
+                                                                            {data.isImage ? (
+                                                                                <img alt="Uploaded Media" src={data.url} style={data.align === 'center' ? { display: 'block', margin: '0 auto', maxWidth: '100%', maxHeight: '60vh' } : { maxWidth: '100%', maxHeight: '60vh' }} />
+                                                                            ) : data.isVideo ? (
+                                                                                <video controls src={data.url} style={data.align === 'center' ? { display: 'block', margin: '0 auto', maxWidth: '100%', maxHeight: '60vh' } : { maxWidth: '100%', maxHeight: '60vh' }} />
+                                                                            ) : (
+                                                                                <p>Unsupported</p>
                                                                             )}
-                                                                            <button className="small-icon" onClick={() => toggleMediaAlignment(block)} title={block.data.align === 'center' ? "Align left" : "Align centre"} type="button">
-                                                                                <FaAlignCenter /><p className="icon-text">Align</p>
-                                                                            </button>
                                                                         </>
                                                                     )}
                                                                 </div>
-                                                                <div style={{ position: 'relative' }}>
-                                                                    {(type === BLOCK_TYPES.MEDIA || type === BLOCK_TYPES.CODE) && (
-                                                                        <button className="small-icon" onClick={() => removeBlock(id)} title="Delete" type="button"><FaTrash /><p className="icon-text">Delete section</p></button>
-                                                                    )}
-                                                                </div>
-                                                            </div>
-                                                        )}
-                                                        {type === BLOCK_TYPES.TEXT && (
-                                                            <div className="block-content">
-                                                                {data.textError && (
-                                                                    <div style={{ display: 'inline-flex', alignItems: 'center', marginBottom: '5px' }}>
-                                                                        {data.textError}
-                                                                        <button className="small-icon" onClick={() => navigate('/settings/membership')} type="button" style={{ marginLeft: '5px' }}><FaArrowCircleUp /></button>
+                                                            )}
+
+                                                            {type === BLOCK_TYPES.APP && (
+                                                                data.isUploading
+                                                                    ? <div key={id} className="app-placeholder">
+                                                                        <p>{data.fileName}</p>
+                                                                        <FaCircleNotch className="spinner" />
                                                                     </div>
-                                                                )}
-                                                                <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
-                                                                    <ReactQuill
-                                                                        className="text-editor"
-                                                                        onChange={val => {
-                                                                            const plainText = val.replace(/<[^>]*>/g, '');
-                                                                            if (plainText.length < TEXT_CHAR_LIMIT) {
-                                                                                updateBlock({ ...block, data: { ...data, html: val, textError: '' } });
-                                                                            } else {
-                                                                                updateBlock({ ...block, data: { ...data, textError: `Exceeded ${TEXT_CHAR_LIMIT} character limit. ${!user.has_membership && 'Get membership for more.'}` } });
-                                                                            }
-                                                                        } }
-                                                                        placeholder="Begin writing..."
-                                                                        theme="snow"
-                                                                        value={data.html}
-                                                                        style={{ flex: 1 }}
-                                                                        modules={{
-                                                                            toolbar: [
-                                                                                [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
-                                                                                ['bold', 'italic', 'underline', 'strike'],
-                                                                                [{ 'list': 'ordered' }, { 'list': 'bullet' }],
-                                                                                [{ 'color': [] }],
-                                                                            ]
-                                                                        }} />
-                                                                    <button className="small-icon" onClick={() => removeBlock(id)} title="Delete" type="button">
-                                                                        <FaTrash /><p className="icon-text">Delete section</p>
-                                                                    </button>
-                                                                </div>
-                                                            </div>
-                                                        )}
-                                                        {type === BLOCK_TYPES.CODE && (
-                                                            <div className="block-content">
-                                                                {!data.showPrompt && <p className="small-text faded-text">For now, only one HTML file with inline JavaScript and CSS can be created.</p>}
-                                                                {isEditing && (
-                                                                    <>
-                                                                        {data.showPrompt ? (
-                                                                            <div className="ai-generator">
-                                                                                <textarea className="ai-prompt"
-                                                                                    disabled={limitReached || data.isBlockLoading}
-                                                                                    onChange={(e) => {
-                                                                                        const input = e.target.value;
-                                                                                        if (input.length <= TEXT_CHAR_LIMIT) {
-                                                                                            updateBlock({ ...block, data: { ...data, _tempAiPrompt: input } });
-                                                                                            setPostErrorMessage('');
-                                                                                        } else {
-                                                                                            updateBlock({ ...block, data: { ...data, _tempAiPrompt: input } });
-                                                                                            setPostErrorMessage('Too long.', !user?.has_membership && 'Get membership for more.');
-                                                                                        }
-                                                                                    } }
-                                                                                    placeholder={limitReached ? (user?.has_membership ? "Limit reached. Buy new membership to reset"
-                                                                                        : "Limit reached. Get membership for more.")
-                                                                                        : data.isBlockLoading ? "Creating post... may take up to a minute"
-                                                                                            : "Describe your post..."}
-                                                                                    value={data.isBlockLoading ? '' : (data._tempAiPrompt || '')} />
-                                                                                <button className={data.isBlockLoading || !data._tempAiPrompt?.trim() || limitReached ? 'small-icon disabled' : 'small-icon'}
-                                                                                    disabled={data.isBlockLoading || !data._tempAiPrompt?.trim() || limitReached}
-                                                                                    onClick={() => generateCodeBlock(block)}
-                                                                                    title={limitReached ? (user?.has_membership ? "Usage limit reached"
-                                                                                        : "Limit reached. Get membership for more.")
-                                                                                        : data.isBlockLoading ? 'Creating...'
-                                                                                            : !data._tempAiPrompt?.trim() ? 'Enter a prompt'
-                                                                                                : 'Create'}
-                                                                                    type="button">
-                                                                                    {data.isBlockLoading ? <FaCircleNotch className="spinner" /> : <FaArrowCircleUp />}
-                                                                                </button>
-                                                                            </div>
-                                                                        ) : (
-                                                                            <textarea
-                                                                                className="code-input"
-                                                                                onChange={e => {
-                                                                                    const newValue = e.target.value;
-                                                                                    if (newValue.length <= 100 * TEXT_CHAR_LIMIT) {
-                                                                                        updateBlock({
-                                                                                            id: block.id,
-                                                                                            data: {
-                                                                                                ...data,
-                                                                                                code: newValue
-                                                                                            }
-                                                                                        });
-                                                                                        setPostErrorMessage('');
-                                                                                    } else {
-                                                                                        setPostErrorMessage('Code exceeds character limit.', !user.has_membership && 'Get membership for more.');
-                                                                                    }
-                                                                                } }
-                                                                                placeholder="Enter code..."
-                                                                                value={data.code} />
-                                                                        )}
-                                                                    </>
-                                                                )}
-                                                                {data.code.trim() ? (
-                                                                    <div className="code-preview">
-                                                                        <iframe ref={el => { iframeRefs.current[id] = el; } } sandbox="allow-scripts allow-same-origin" srcDoc={data.code} style={{ border: 'none', width: '100%', height: '50vh' }} title={`code-preview-${id}`} />
-                                                                    </div>
-                                                                ) : (
-                                                                    <p className="small-text faded-text">Nothing to preview</p>
-                                                                )}
-                                                            </div>
-                                                        )}
-                                                        {type === BLOCK_TYPES.MEDIA && (
-                                                            <div className="media-preview">
-                                                                {cropState[id]?.isCropping && data.isImage ? (
-                                                                    <div>
-                                                                        <div className="crop-container" style={{ position: 'relative', width: '100%', height: 300 }}>
-                                                                            <Cropper
-                                                                                image={data.url}
-                                                                                crop={cropState[id]?.crop || { x: 0, y: 0 }}
-                                                                                zoom={cropState[id]?.zoom || 1}
-                                                                                aspect={4 / 3}
-                                                                                onCropChange={(crop) => setCropState(prev => ({
-                                                                                    ...prev,
-                                                                                    [id]: {
-                                                                                        ...prev[id],
-                                                                                        crop
-                                                                                    }
-                                                                                }))}
-                                                                                onCropComplete={(_, croppedPixels) => onCropComplete(id, croppedPixels)}
-                                                                                onZoomChange={(zoom) => setCropState(prev => ({
-                                                                                    ...prev,
-                                                                                    [id]: {
-                                                                                        ...prev[id],
-                                                                                        zoom
-                                                                                    }
-                                                                                }))}
-                                                                                onInteractionStart={() => { } } />
-                                                                        </div>
-                                                                        <div className="crop-controls" style={{ display: 'flex', justifyContent: 'center', marginTop: 10, gap: 10 }}>
-                                                                            <button
-                                                                                className="small-icon"
-                                                                                onClick={() => setCropState(prev => {
-                                                                                    const newState = { ...prev };
-                                                                                    delete newState[id];
-                                                                                    return newState;
-                                                                                })}
-                                                                                title="Cancel"
-                                                                                type="button"
-                                                                            >
-                                                                                <FaTimes /><p className="icon-text">Cancel</p>
-                                                                            </button>
-                                                                            <button className="small-icon" onClick={() => applyCrop(id)} title="Apply Crop" type="button">
-                                                                                <FaSave /><p className="icon-text">Apply</p>
-                                                                            </button>
-                                                                        </div>
-                                                                    </div>
-                                                                ) : (
-                                                                    <>
-                                                                        {data.isImage ? (
-                                                                            <img alt="Uploaded Media" src={data.url} style={data.align === 'center' ? { display: 'block', margin: '0 auto', maxWidth: '100%', maxHeight: '60vh' } : { maxWidth: '100%', maxHeight: '60vh' }} />
-                                                                        ) : data.isVideo ? (
-                                                                            <video controls src={data.url} style={data.align === 'center' ? { display: 'block', margin: '0 auto', maxWidth: '100%', maxHeight: '60vh' } : { maxWidth: '100%', maxHeight: '60vh' }} />
-                                                                        ) : (
-                                                                            <p>Unsupported</p>
-                                                                        )}
-                                                                    </>
-                                                                )}
-                                                            </div>
-                                                        )}
-                                                        {type === BLOCK_TYPES.APP && (
-                                                            data.isUploading
-                                                                ? <div key={id} className="app-placeholder">
-                                                                    <p>{data.fileName}</p>
-                                                                    <FaCircleNotch className="spinner" />
-                                                                </div>
-                                                                : data.buildId
-                                                                    ? <iframe
-                                                                        ref={el => { iframeRefs.current[id] = el; } }
-                                                                        sandbox="allow-scripts allow-same-origin"
-                                                                        src={`/app_builds/${data.buildId}/index.html`}
-                                                                        style={{ border: 'none', width: '100%', height: '50vh' }}
-                                                                        title={`app-preview-${id}`} />
-                                                                    : null
-                                                        )}
+                                                                    : data.buildId
+                                                                        ? <iframe
+                                                                            ref={el => { iframeRefs.current[id] = el; }}
+                                                                            sandbox="allow-scripts allow-same-origin"
+                                                                            src={`/app_builds/${data.buildId}/index.html`}
+                                                                            style={{ border: 'none', width: '100%', height: '50vh' }}
+                                                                            title={`app-preview-${id}`} />
+                                                                        : null
+                                                            )}
+                                                        </div>
                                                     </div>
                                                 )}
                                             </Draggable>

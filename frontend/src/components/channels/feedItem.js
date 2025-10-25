@@ -4,7 +4,7 @@ import { FaChevronDown, FaChevronUp } from 'react-icons/fa';
 import { Link } from 'react-router-dom';
 import React from 'react';
 import { useCallback, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useDraggable, useDroppable } from '@dnd-kit/core';
 
 const FeedItem = ({ dragged, feed, isChat, parentDeepFeedId, unreadCount }) => {
@@ -12,6 +12,7 @@ const FeedItem = ({ dragged, feed, isChat, parentDeepFeedId, unreadCount }) => {
     const [feedChannels, setFeedChannels] = useState([]);
     const [isDragIntent, setIsDragIntent] = useState(false);
     const linkType = feed?.is_group ? 'g' : 'u';
+    const location = useLocation();
     const [mouseDown, setMouseDown] = useState(false);
     const navigate = useNavigate(); 
 
@@ -108,7 +109,7 @@ const FeedItem = ({ dragged, feed, isChat, parentDeepFeedId, unreadCount }) => {
                     </div>
                 );
                 return (
-                    <div className="feed-list-link-container">
+                    <div className={`feed-list-link-container ${location.pathname.startsWith(`/${linkType}/${feed?.feed_name}`) ? 'selected' : ''}`}>
                         {!dragged ? (
                             <Link 
                                 to={isChat ? `/connections/${feed?.feed_name}/Main` : `/${linkType}/${feed?.feed_name}`} 

@@ -52,7 +52,7 @@ const App = () => {
 				<SocketProvider>
 					<Router>
 						<Routes>
-							<Route path="/" element={<Navigate to="/welcome" replace />} />
+							<Route path="/" element={<Navigate to="/explore" replace />} />
 							<Route path="/welcome" element={<Outlet />}>
 								<Route index element={<WelcomeHome />} />
 								<Route path="contact" element={<Placeholder />} />

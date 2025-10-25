@@ -30,9 +30,9 @@
 }
 .block {
   background-color: var(--darkest);
-  border-top: 1px solid var(--light);
   box-sizing: border-box;
   padding: var(--medium-margin);
+  padding-left: 0;
   width: 100%;
 }
 .block-controls {
@@ -46,6 +46,9 @@
   display: flex;
   flex-direction: column;
   gap: var(--large-margin);
+}
+.block-drag-container {
+  border-top: 1px solid var(--light);
 }
 .block iframe, .live-preview-container iframe {
   border: none;

@@ -246,7 +246,7 @@ router.post('/login', loginLimiter, async (req, res) => {
         const { password, usernameOrEmail } = req.body;
         const user = await Users.findOne({ where: { [Op.or]: [{ email: usernameOrEmail }, { username: usernameOrEmail }] } });
         if (!user) {
-            return res.status(401).json({ success: false, message: 'Invalid credentials' });
+            return res.status(401).json({ success: false, message: 'Username not found' });
         }
         if (!user.email_verified) {
             return res.status(401).json({ success: false, message: 'Please verify your email before logging in.' });
@@ -313,7 +313,7 @@ router.post('/login', loginLimiter, async (req, res) => {
             });
         }
         else {
-            res.status(401).json({ success: false, message: 'Invalid credentials' });
+            res.status(401).json({ success: false, message: 'Incorrect password' });
         }
     }
     catch (error) {

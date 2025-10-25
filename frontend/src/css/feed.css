@@ -37,6 +37,21 @@
     margin-right: 0;
     width: 100%;
 }
+.channel-header-text {
+	align-self: flex-start;
+	color: var(--light);
+	font-size: var(--small-text);
+	display: flex;
+	align-items: center;
+	position: relative;
+}
+.channel-header-text::after {
+	content: '';
+	flex: 1;
+	height: 1px;
+	background: var(--light);
+	margin-left: 10px;
+}
 .channel-name-settings {
     display: flex;
 }

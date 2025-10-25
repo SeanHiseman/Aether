@@ -349,8 +349,7 @@ const AddAlgorithm = ({ algorithms = [], display, editingAlgorithm = null, locat
                 <div className="form-row">
                     <textarea
                         className="form-textarea tiny-text"
-                        disabled={!hasMembership && !display}
-                        placeholder={(hasMembership || display) ? (customInstruction ? customInstruction : "Describe your algorithm...") : "Custom instructions require membership"}
+                        placeholder="Describe your algorithm..."
                         style={{ margin: 0 }}
                         type="text"
                         value={customInstruction}

@@ -8,6 +8,11 @@ const ContentDisplay = ({ post, onCodeAppChange = () => {}, onHeightChange = () 
 	const content = post?.content;
 	const contentRef = useRef(null);
 	const heightStyle = showFullContent ? 'auto' : '70vh';
+	const urlPrefix = post?.parentChannel?.feed?.is_group ? 'g' : 'u';
+
+	const handleRedirect = () => {
+		window.location.href = `/${urlPrefix}/${post?.parentChannel?.feed?.feed_name}/${post?.parentChannel?.channel_name}/${post?.post_id}`;
+	};
 
 	useEffect(() => {
 		if (!content) return;
@@ -116,9 +121,11 @@ const ContentDisplay = ({ post, onCodeAppChange = () => {}, onHeightChange = () 
 			borderTopLeftRadius: post?.title && '0' 
 		}}>
 			{blocks.map((block, i) => {
-				if (block.type === 'text') {
-					return <div dangerouslySetInnerHTML={{ __html: block.html }} key={i} style={{ paddingTop: 5, paddingLeft: 5, paddingRight: 5 }} />
-				}
+			if (block.type === 'text') {
+				return (
+					<div dangerouslySetInnerHTML={{ __html: block.html }} key={i} onClick={handleRedirect} style={{ cursor: 'pointer', paddingTop: 5, paddingLeft: 5, paddingRight: 5 }} />
+				);
+			}
 				if (block.type === 'code') {
 					return (
 						<iframe
@@ -133,17 +140,17 @@ const ContentDisplay = ({ post, onCodeAppChange = () => {}, onHeightChange = () 
 				if (block.type === 'media') {
 					const styleObj =
 						block.align === 'center'
-							? { display: 'block', height: 'auto', margin: '0 auto', maxWidth: '100%', maxHeight: '60vh' }
-							: { height: 'auto', maxWidth: '100%', maxHeight: '60vh' }
-					if (block.isImage) return <img alt="Uploaded Media" key={i} src={block.url} style={styleObj} />
+							? { display: 'block', height: 'auto', margin: '0 auto', maxWidth: '100%', maxHeight: '60vh', cursor: 'pointer' }
+							: { height: 'auto', maxWidth: '100%', maxHeight: '60vh', cursor: 'pointer' };
+					if (block.isImage) return <img alt="Uploaded Media" key={i} src={block.url} style={styleObj} onClick={handleRedirect} />;
 					if (block.isVideo) {
 						return (
 							<video controls key={i} style={styleObj}>
 								<source src={block.url} type={block.fileType || 'video/*'} />
 							</video>
-						)
+						);
 					}
-					return <div key={i}>Unsupported</div>
+					return <div key={i}>Unsupported</div>;
 				}
 				if (block.type === 'app') {
 					return block.kind === 'webcontainer'

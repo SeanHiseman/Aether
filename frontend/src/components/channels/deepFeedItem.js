@@ -2,7 +2,7 @@ import api from '../../api';
 import { useCallback, useEffect, useState } from 'react';
 import { useDroppable } from '@dnd-kit/core';
 import { FaChevronDown, FaChevronUp } from 'react-icons/fa';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import FeedItem from './feedItem';
 
 const DeepFeedItem = ({ deepFeed, onFeedAdded, showHeader }) => {
@@ -10,6 +10,7 @@ const DeepFeedItem = ({ deepFeed, onFeedAdded, showHeader }) => {
 	const [errorMessage, setErrorMessage] = useState('');
 	const [isExpanded, setIsExpanded] = useState(false);
 	const [loading, setLoading] = useState(false);
+	const location = useLocation();
 
 	const { setNodeRef, isOver } = useDroppable({
 		id: `df-${deepFeed?.deep_feed_id}`,
@@ -108,7 +109,7 @@ const DeepFeedItem = ({ deepFeed, onFeedAdded, showHeader }) => {
 	return (
 		<div ref={setNodeRef} className={`deep-feed-container ${isOver ? 'drop-target-active' : ''}`} data-deep-feed-id={deepFeed?.deep_feed_id}>
 			{showHeader && (
-				<div className="channel-link deep-feed-header">
+				<div className={`channel-link deep-feed-header ${location.pathname.startsWith(`/d/${deepFeed?.deep_feed_id}`) ? 'selected' : ''}`}>
 					<Link to={`/d/${deepFeed?.deep_feed_id}`} title={`Go to ${deepFeed?.deep_feed_name}`}>
 						<p style={{ margin: '0' }}>{deepFeed?.name}</p>
 					</Link>

@@ -3,25 +3,33 @@ import { CSS } from '@dnd-kit/utilities';
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { useCallback, useContext, useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 import { AuthContext } from '../../components/authContext';
 import { decrypt } from '../../encryptionUtil';
 import { UnreadContext } from '../messages/unreadContext';
 
 const SortableFeedChannelItem = ({ channel, id, url }) => {
     const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
+    const { channel_name } = useParams();
     const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.7 : 1, cursor: 'grab' };
 
     return (
-        <li ref={setNodeRef} style={style} className={`channel-item ${isDragging ? 'dragging-active' : ''}`}  {...attributes}  {...listeners} >
-            <Link to={url} style={{ pointerEvents: isDragging ? 'none' : 'auto' }} >
-                <div className="channel-link">{channel.channel_name}</div>
+        <li ref={setNodeRef} 
+            style={style} 
+            className={`channel-item ${isDragging ? 'dragging-active' : ''} ${channel?.channel_name === channel_name ? 'selected' : ''}`} 
+            {...attributes} 
+            {...listeners}>
+            <Link to={url} style={{ pointerEvents: isDragging ? 'none' : 'auto' }}>
+                <div className={`channel-link ${channel?.channel_name === channel_name ? 'selected' : ''}`}>
+                    {channel.channel_name}
+                </div>
             </Link>
         </li>
     );
 };
 
 const ChannelList = ({ canReorder = false, channels, feedId, feedName, isChat, isGroup, isSaved, setChannels }) => {
+    const { channel_name } = useParams();
     const [errorMessage, setErrorMessage] = useState('');
     const { state: unreadState } = useContext(UnreadContext); 
     const urlLetter = isGroup ? 'g' : 'u';
@@ -38,14 +46,14 @@ const ChannelList = ({ canReorder = false, channels, feedId, feedName, isChat, i
                     setChannels([]);
                 }
             } else {
-                const response = await api.get(`/get_chats/${viewer.feed_id}`, {
+                const response = await api.get(`/get_chats/${viewer?.feed_id}`, {
                     params: { connectionName: feedName }
                 });
-                if (response.data.success) {
+                if (response.data?.success) {
                     const decryptedChats = response.data?.chats.map((chat) => {
                         return {
                             ...chat,
-                            title: decrypt(chat.title)
+                            title: decrypt(chat?.title)
                         };
                     });
                     setChannels(decryptedChats || []);
@@ -78,17 +86,17 @@ const ChannelList = ({ canReorder = false, channels, feedId, feedName, isChat, i
 
     const handleDragEnd = async (event) => {
         const { active, over } = event;
-        if (isChat || !active || !over || active.id === over.id) {
+        if (isChat || !active || !over || active?.id === over?.id) {
             return; 
         }
-        const oldIndex = channels.findIndex(c => c.channel_id === active.id);
-        const newIndex = channels.findIndex(c => c.channel_id === over.id);
+        const oldIndex = channels.findIndex(c => c?.channel_id === active?.id);
+        const newIndex = channels.findIndex(c => c?.channel_id === over?.id);
         if (oldIndex === -1 || newIndex === -1) {
             return;
         }
         const reorderedChannels = arrayMove(channels, oldIndex, newIndex);
         setChannels(reorderedChannels);
-        const orderedChannelIds = reorderedChannels.map(channel => channel.channel_id);
+        const orderedChannelIds = reorderedChannels.map(channel => channel?.channel_id);
         try {
             await api.put('/reorder_feed_channels', {
                 feed_id: feedId,
@@ -111,6 +119,7 @@ const ChannelList = ({ canReorder = false, channels, feedId, feedName, isChat, i
                 <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
                     <SortableContext items={channelIdsForDnd} strategy={verticalListSortingStrategy}>
                         <nav className="channel-list">
+                            <p className="channel-header-text">Channels</p>
                             {errorMessage && <div className="error-message">{errorMessage}</div>}
                             <ul>
                                 {validFeedChannels.map(channel => (
@@ -129,12 +138,16 @@ const ChannelList = ({ canReorder = false, channels, feedId, feedName, isChat, i
         } else {
             return (
                 <nav className="channel-list">
+                    <p className="channel-header-text">Channels</p>
                     {errorMessage && <div className="error-message">{errorMessage}</div>}
                     <ul>
                         {currentChannels.map(channel => (
-                            <li key={channel?.channel_id || channel?.channelId} className="channel-item">
+                            <li key={channel?.channel_id || channel?.channelId} 
+                                className={`channel-item ${channel?.channel_name === channel_name ? 'selected' : ''}`}>
                                 <Link to={`/${urlLetter}/${feedName}/${channel?.channel_name}`}>
-                                    <div className="channel-link">{channel?.channel_name}</div>
+                                    <div className={`channel-link ${channel?.channel_name === channel_name ? 'selected' : ''}`}>
+                                        {channel?.channel_name}
+                                    </div>
                                 </Link>
                             </li>
                         ))}
@@ -145,6 +158,7 @@ const ChannelList = ({ canReorder = false, channels, feedId, feedName, isChat, i
     } else {
         return (
             <nav className="channel-list">
+                <p className="channel-header-text">Channels</p>
                 {errorMessage && <div className="error-message">{errorMessage}</div>}
                 <ul>
                     {currentChannels.map(channel => (

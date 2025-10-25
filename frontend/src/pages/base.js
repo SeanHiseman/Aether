@@ -6,7 +6,7 @@ import { DndContext, PointerSensor, pointerWithin, rectIntersection, useSensor, 
 import { FaArrowRight, FaCog, FaFileUpload, FaMinus, FaPlus, FaPlusCircle, FaSignInAlt } from "react-icons/fa";
 import { MagnifyingGlassIcon } from "@radix-ui/react-icons";
 import { useCallback, useContext, useEffect, useRef, useState } from "react";
-import { Link, Outlet, useNavigate } from "react-router-dom";
+import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { v4 } from "uuid";
 import { AuthContext } from "../components/authContext";
 import DeepFeedItem from "../components/channels/deepFeedItem";
@@ -50,6 +50,7 @@ const BaseLayout = () => {
 	const [headerErrorMessage, setHeaderErrorMessage] = useState("");
 	const [imageSrc, setImageSrc] = useState(null);   
     const [isFeedNameValid, setIsFeedNameValid] = useState(true);  
+    const location = useLocation();
 	const [mobileOpen, setMobileOpen] = useState(null);
     const [nameModalOpen, setNameModalOpen] = useState(false);
     const [pendingDeepFeed, setPendingDeepFeed] = useState(null);
@@ -492,17 +493,17 @@ const BaseLayout = () => {
                         <><DndContext sensors={sensors} collisionDetection={customCollisionDetection} onDragStart={dragStart} onDragEnd={dragEnd}>
                             <nav id="personal-feeds">
                                 <ul>  
-                                    <li className="channel-link">
+                                    <li className={`channel-link ${location.pathname.startsWith('/messages') ? 'selected' : ''}`}>
                                         <Link to="/messages">Messages</Link>
                                         {/*<MessageDropdown />*/}
                                     </li>
-                                    <li className="channel-link">
+                                    <li className={`channel-link ${location.pathname.startsWith('/explore') ? 'selected' : ''}`}>
                                         <Link to="/explore">Explore</Link>
                                     </li>
-                                    <li className="channel-link">
+                                    <li className={`channel-link ${location.pathname.startsWith('/d/following') ? 'selected' : ''}`}>
                                         <Link to="/d/following">Following</Link>
                                     </li>
-                                    <li className="channel-link">
+                                    <li className={`channel-link ${location.pathname.startsWith('/saved') ? 'selected' : ''}`}>
                                         <Link to="/saved/Main">Saved posts</Link>
                                     </li>
                                 </ul>
