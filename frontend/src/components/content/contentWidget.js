@@ -25,7 +25,8 @@ const ContentWidget = ({ canRemove = false, display = false, feed, isDraft = fal
 	const [hasUpvoted, setHasUpvoted] = useState(post?.has_upvoted || false);
     const [hasDownvoted, setHasDownvoted] = useState(post?.has_downvoted || false);
 	const [hasViewed, setHasViewed] = useState(false);
-	const [isFullscreenMode, setIsFullscreenMode] = useState(false)
+	const [isFullscreenMode, setIsFullscreenMode] = useState(false);
+	const [isLoaded, setIsLoaded] = useState(false);
 	const [isOverflowing, setIsOverflowing] = useState(false);
 	const [isSaved, setIsSaved] = useState(post?.is_saved);
 	const navigate = useNavigate();
@@ -203,6 +204,16 @@ const ContentWidget = ({ canRemove = false, display = false, feed, isDraft = fal
     };
 
 	useEffect(() => {
+		let timeoutId;
+		if (post) {
+			setIsLoaded(true);
+		} else {
+			timeoutId = setTimeout(() => setIsLoaded(true), 5000);
+		}
+		return () => clearTimeout(timeoutId);
+	}, [post]);
+
+	useEffect(() => {
 		if (isAuthenticated && (isViewingOwnPost || feed?.isAdmin || feed?.isModerator) && !canRemoveState) {
 			setCanRemoveState(true);
 		}
@@ -295,6 +306,10 @@ const ContentWidget = ({ canRemove = false, display = false, feed, isDraft = fal
 			</div>
 		);
 	};
+
+	if (!isLoaded) {
+		return <p className="small-text faded-text">Loading content…</p>;
+	}
 
 	return (
 		<><div className={`content-item ${isReply ? 'reply' : ''}`}>

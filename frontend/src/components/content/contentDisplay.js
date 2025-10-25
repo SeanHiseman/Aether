@@ -8,6 +8,7 @@ const ContentDisplay = ({ post, onCodeAppChange = () => {}, onHeightChange = () 
 	const content = post?.content;
 	const contentRef = useRef(null);
 	const heightStyle = showFullContent ? 'auto' : '70vh';
+	const [loading, setLoading] = useState(false);
 	const urlPrefix = post?.parentChannel?.feed?.is_group ? 'g' : 'u';
 
 	const handleRedirect = () => {
@@ -17,8 +18,9 @@ const ContentDisplay = ({ post, onCodeAppChange = () => {}, onHeightChange = () 
 	useEffect(() => {
 		if (!content) return;
 		const fetchHtml = async () => {
+			setLoading(true);
 			try {
-				const response = await fetch(content); 
+				const response = await fetch(content);
 				const htmlText = await response.text();
 				const parser = new DOMParser();
 				const doc = parser.parseFromString(htmlText, 'text/html');
@@ -76,6 +78,8 @@ const ContentDisplay = ({ post, onCodeAppChange = () => {}, onHeightChange = () 
 				setBlocks(parsed);
 			} catch (error) {
 				setBlocks([]);
+			} finally {
+				setLoading(false);
 			}
 		};
 		fetchHtml();
@@ -88,7 +92,7 @@ const ContentDisplay = ({ post, onCodeAppChange = () => {}, onHeightChange = () 
 		const fixed = blocks.some(b => b.type === 'code' || b.type === 'app')
 		const update = () => {
 			const scrollHeight = element.scrollHeight;
-			const viewportHeight = window.innerHeight * 0.7; // 70vh
+			const viewportHeight = window.innerHeight * 0.7; //70vh
 			const isOverflowing = fixed || scrollHeight > viewportHeight;
 			onOverflowChange(isOverflowing);
 			onHeightChange(scrollHeight);
@@ -108,10 +112,12 @@ const ContentDisplay = ({ post, onCodeAppChange = () => {}, onHeightChange = () 
 		onCodeAppChange(blocks.some(b => b.type === 'app' || b.type === 'code'))
 	}, [blocks, onCodeAppChange])
 
+	if (loading) {
+		return <p className="small-text faded-text">Loading content…</p>;
+	}
 	if (!content) {
 		return <p className="small-text faded-text">Content not found</p>
 	}
-
 	return (
 		<div ref={contentRef} className="display-container" style={{ 
 			maxHeight: showFullContent ? 'none' : '70vh', 
