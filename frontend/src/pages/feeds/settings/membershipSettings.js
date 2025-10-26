@@ -36,7 +36,7 @@ const MembershipSettings = () => {
             });
             setSubscriptionStatus(response.data);
         } catch (error) {
-            setErrorMessage(error.response.data?.message || 'Error fetching subscription status');
+            setErrorMessage(error.response?.data?.message || 'Error fetching subscription status');
         }
     };
 
@@ -57,11 +57,11 @@ const MembershipSettings = () => {
             if (response.data.url) {
                 window.location.href = response.data.url;
             } else {
-                setErrorMessage(response.data.error || 'Failed to initiate payment. Please try again.');
+                setErrorMessage(response.data?.error || 'Failed to initiate payment. Please try again.');
             }
         } catch (error) {
             if (error.response) {
-                setErrorMessage(error.response.data?.error || 'Failed to initiate payment. Please try again.');
+                setErrorMessage(error.response?.data?.error || 'Failed to initiate payment. Please try again.');
             } else if (error.request) {
                 setErrorMessage('Network error. Please check your connection and try again.');
             } else {
@@ -92,7 +92,7 @@ const MembershipSettings = () => {
             fetchSubscriptionStatus(); 
         } catch (error) {
             if (error.response) {
-                setErrorMessage(error.response.data?.error || 'Failed to cancel membership. Please contact support.');
+                setErrorMessage(error.response?.data?.error || 'Failed to cancel membership. Please contact support.');
             } else if (error.request) {
                 setErrorMessage('Network error. Please try again.');
             } else {

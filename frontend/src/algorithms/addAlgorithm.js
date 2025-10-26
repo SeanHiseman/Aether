@@ -188,7 +188,7 @@ const AddAlgorithm = ({ algorithms = [], display, editingAlgorithm = null, locat
                 throw new Error(data.message || 'Failed to save algorithm.');
             }
         } catch (error) {
-            setError("Error submitting algorithm");
+            setError(error.response?.data?.message || "Error submitting algorithm");
             setTimeout(() => { setError('') }, 5000);
         } finally {
             setLoading(false);

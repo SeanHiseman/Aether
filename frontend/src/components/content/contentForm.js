@@ -264,7 +264,7 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
                 setTimeout(() => setPostErrorMessage(''), 5000)
             }
         } catch (error) {
-            setPostErrorMessage(error.response.data?.message || 'App upload failed.')
+            setPostErrorMessage(error.response?.data?.message || 'App upload failed.')
             setTimeout(() => setPostErrorMessage(''), 5000)
         }
     }, [])
@@ -431,7 +431,7 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
 	};
 
     const confirmDelete = useCallback(async () => {
-		if (!isAuthenticated) return;
+        if (!isAuthenticated) return;
         if (isDraft && !draftId) return;
         if (!isDraft && !post) return;
         setShowDeleteConfirm(false);
@@ -439,23 +439,24 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
             if (isDraft) {
                 await api.delete('/remove_draft', {
                     data: { draft: { draft_id: draftId } },
-                })
-                setDraftId(null)
-                setPostErrorMessage('Draft deleted')
+                });
+                setDraftId(null);
+                setPostErrorMessage('Draft deleted');
+                navigate(`/${urlPrefix}/${feed_name}/${channel_name}`);
             } else {
                 await api.delete('/remove_post', {
                     data: {
                         post: { post_id: post?.post_id, parent_id: post?.parent_id },
                     },
-                })
+                });
                 const navigateUrl = isReply ? `/${urlPrefix}/${feed_name}/${channel_name}/${post?.post_id}` : `/${urlPrefix}/${feed_name}/${channel_name}`;
                 navigate(navigateUrl);
                 if (onPostDelete) onPostDelete();
             }
-            setTimeout(() => setPostErrorMessage(''), 3000)
+            setTimeout(() => setPostErrorMessage(''), 3000);
         } catch (error) {
-            setPostErrorMessage(error.response.data?.message || `Error deleting ${isDraft ? 'draft' : 'post'}`)
-            setTimeout(() => setPostErrorMessage(''), 3000)
+            setPostErrorMessage(error.response?.data?.message || `Error deleting ${isDraft ? 'draft' : 'post'}`);
+            setTimeout(() => setPostErrorMessage(''), 3000);
         }
         setPendingDeleteAction(null);
     }, [channel_name, draftId, feed_name, isDraft, navigate, post, setDraftId, setShowForm, setPostErrorMessage, urlPrefix]);
@@ -482,7 +483,7 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
                         if (existingBlocks.length) setBlocks(existingBlocks)
                         else setBlocks([{ data: { html }, id: v4(), isEditing: true, type: BLOCK_TYPES.TEXT }])
                     } catch (error) {
-                        setPostErrorMessage(error.response.data?.message || 'Could not fetch post HTML')
+                        setPostErrorMessage(error.response?.data?.message || 'Could not fetch post HTML')
                     }
                 } 
             }
@@ -694,13 +695,13 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
 
     //Separate from submitForm since saving does not close the form
     const saveDraft = useCallback(async e => {
-		if (!isAuthenticated) return;
-        e.preventDefault()
-        submittedRef.current = true //Redundant backup
+        if (!isAuthenticated) return;
+        e.preventDefault();
+        submittedRef.current = true;
         if (isContentEmpty(blocks)) {
-            setPostErrorMessage(isReply ? 'Reply cannot be empty.' : 'Post cannot be empty.')
-            setTimeout(() => { setPostErrorMessage('') }, 5000)
-            return
+            setPostErrorMessage(isReply ? 'Reply cannot be empty.' : 'Post cannot be empty.');
+            setTimeout(() => setPostErrorMessage(''), 5000);
+            return;
         }
         const finalHTML = compileFinalHTML(blocks);
         const formData = new FormData();
@@ -708,10 +709,10 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
         if (!isReply) formData.append('title', title);
         if (isReply && post) formData.append('parent_id', post.post_id);
         blocks
-            .filter(b => b.type==='MEDIA' && b.data.file)
+            .filter(b => b.type === 'MEDIA' && b.data.file)
             .forEach(b => formData.append('files', b.data.file));
         formData.append('feed_id', feed?.feed_id);
-        formData.append('channel_id',channelId);
+        formData.append('channel_id', channelId);
         formData.append('poster_id', viewer?.feed_id);
         let id = draftId;
         if (!id) {
@@ -720,54 +721,61 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
         }
         formData.append('draft_id', id);
         try {
-            //Drafts created and updated through create_post route
-            const response = await api.post('/create_post', formData, { headers: { 'Content-Type': 'multipart/form-data' }});
+            const response = await api.post('/create_post', formData, {
+                headers: { 'Content-Type': 'multipart/form-data' },
+            });
             if (response.data?.success) {
-                setPostErrorMessage('Draft saved')
-                setTimeout(() => { setPostErrorMessage('') }, 3000)
-                const [savedDraft] = response.data?.draft
-                setDraftId(savedDraft?.draft_id)
+                setPostErrorMessage('Draft saved');
+                setTimeout(() => setPostErrorMessage(''), 3000);
+                const savedDraft = response.data?.result;
+                setDraftId(savedDraft?.draft_id || draftId || id);
             }
         } catch (error) {
-            setPostErrorMessage(error.response?.data?.message || 'Error saving draft.')
-            setTimeout(() => { setPostErrorMessage('') }, 5000)
+            console.log("error saving draft:", error);
+            setPostErrorMessage(error.response?.data?.message || 'Error saving draft.');
+            setTimeout(() => setPostErrorMessage(''), 5000);
         }
-    }, [blocks, channelId, compileFinalHTML, draftId, feed?.feed_id, isContentEmpty, isReply, post, title, viewer?.feed_id])
+    }, [blocks, channelId, compileFinalHTML, draftId, feed?.feed_id, isContentEmpty, isReply, post, title, viewer?.feed_id]);
 
     const submitForm = useCallback(async e => {
-		if (!isAuthenticated) return;
-        e.preventDefault()
-        submittedRef.current = true //Prevents cleanup from deleting builds
+        if (!isAuthenticated) return;
+        e.preventDefault();
+        submittedRef.current = true;
         if (isContentEmpty(blocks)) {
-            setPostErrorMessage(isReply ? 'Reply cannot be empty.' : 'Post cannot be empty.')
-            setTimeout(() => { setPostErrorMessage('') }, 5000)
-            return
+            setPostErrorMessage(isReply ? 'Reply cannot be empty.' : 'Post cannot be empty.');
+            setTimeout(() => { setPostErrorMessage(''); }, 5000);
+            return;
         }
         try {
-            const finalHTML = compileFinalHTML(blocks)
-            const formData = new FormData()
+            const finalHTML = compileFinalHTML(blocks);
+            const formData = new FormData();
             const postId = post?.post_id;
             formData.append('content', finalHTML);
             formData.append('feed_id', feed?.feed_id);
-            formData.append('is_private', feed?.type === 'public' ? false : true); //Feeds can also have type 'hidden', meaning such posts should be private too
-            if (!post || draftId) formData.append('draft_id', draftId);
-            if (!isReply) formData.append('post_id', postId); //Post object is that of parent post
+            formData.append('is_private', feed?.type === 'public' ? false : true);
+            //Publish draft as post if draftId exists
+            if (draftId) {
+                formData.append('draft_id', draftId);
+                formData.append('publish_draft', 'true');
+            }
+            //Edit existing post if post_id exists
+            if (!isReply && postId) formData.append('post_id', postId);
             if (!isReply) formData.append('title', title);
             if (channelId) formData.append('channel_id', channelId);
-            if (isReply && post) formData.append('parent_id', post?.post_id);
+            if (isReply && post) formData.append('parent_id', post.post_id);
             blocks
                 .filter(b => b.type === BLOCK_TYPES.MEDIA && b.data.file)
-                .forEach(mediaBlock => formData.append('files', mediaBlock.data.file))
-            await (onPostSubmit(formData));
+                .forEach(mediaBlock => formData.append('files', mediaBlock.data.file));
+            await onPostSubmit(formData);
             setIsPostingDraft(false);
             setTitle('');
             setBlocks([]);
             setPostErrorMessage('');
         } catch (error) {
-            setPostErrorMessage(error.response.data?.message || 'Error submitting the form.')
-            setTimeout(() => { setPostErrorMessage('') }, 5000)
+            setPostErrorMessage(error.response?.data?.message || 'Error submitting the form.');
+            setTimeout(() => { setPostErrorMessage(''); }, 5000);
         }
-    }, [blocks, channelId, compileFinalHTML, compileFinalHTML, draftId, feed?.feed_id, isContentEmpty, isDraft, isEdit, isPostingDraft, isReply, onPostSubmit, post, title, urlPrefix])
+    }, [blocks, channelId, compileFinalHTML, draftId, feed?.feed_id, isContentEmpty, isReply, onPostSubmit, post, title]);
 
     const toggleMediaAlignment = useCallback(block => {
         let newAlign;
@@ -834,6 +842,15 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
                                 <button className="small-icon" form="post-form" type="submit" title="Save edit">
                                     <FaSave />
                                 </button>
+                            ) : isEdit && isDraft ? (
+                                <>
+                                    <button className="small-icon" type="button" onClick={saveDraft} title="Save draft">
+                                        <FaSave />
+                                    </button>
+                                    <button className="small-icon" form="post-form" type="submit" title="Post" onClick={() => setIsPostingDraft(true)}>
+                                        <FaArrowRight /><p className="icon-text">Create post</p>
+                                    </button>
+                                </>
                             ) : (
                                 <>
                                     <button className="small-icon" type="button" onClick={saveDraft} title="Save draft">

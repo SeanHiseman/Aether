@@ -25,14 +25,14 @@ const FeedSettings = () => {
                 const response = await api.get(`/feed/${feed_name}`);
                 const feedData = response.data?.feedResult;
                 setFeed(feedData);
-                if (feedData.isOwner || feedData?.isAdmin || feedData?.isMod) {
+                if (feedData?.isOwner || feedData?.isAdmin || feedData?.isMod) {
                     setIsAuthorised(true);
                 } else {
                     setIsAuthorised(false);
                     navigate(`/${feed?.is_group ? 'g' : 'u'}/${feed_name}`);
                 }
             } catch (error) {
-                setErrorMessage(error.response.data?.message || 'Error loading feed data');
+                setErrorMessage(error.response?.data?.message || 'Error loading feed data');
             }
         };
         fetchFeedData();
@@ -46,7 +46,7 @@ const FeedSettings = () => {
                 setFollowRequests(requests);
                 setFollowRequestCount(feed?.follow_requests);
             } catch (error) {
-                setErrorMessage(error.response.data?.message || 'Error getting requests');
+                setErrorMessage(error.response?.data?.message || 'Error getting requests');
                 setTimeout(() => { setErrorMessage(''); }, 5000);
             } 
         };
@@ -71,7 +71,7 @@ const FeedSettings = () => {
                 setTimeout(() => { setErrorMessage(''); }, 5000);
             }
         } catch (error) {
-            setErrorMessage(error.response.data?.message || 'Logout failed');
+            setErrorMessage(error.response?.data?.message || 'Logout failed');
             setTimeout(() => { setErrorMessage(''); }, 5000);
         }
     };

@@ -28,7 +28,7 @@ const Login = () => {
                 navigate('/explore');
             }
         } catch (error) {
-            const msg = error.response.data?.message;
+            const msg = error.response?.data?.message;
             setErrorMessage(msg || 'Error logging in');
             setTimeout(() => setErrorMessage(''), 5000);
             if (msg && msg.includes('verify your email')) {

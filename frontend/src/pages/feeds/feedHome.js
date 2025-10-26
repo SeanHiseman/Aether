@@ -73,7 +73,7 @@ const FeedHome = () => {
                 if (error.response && error.response?.status === 404) {
                     setFeedNotFound(true);
                 } else {
-                    setFeedErrorMessage(error.response.data?.message || 'Failed to load feed');
+                    setFeedErrorMessage(error.response?.data?.message || 'Failed to load feed');
                     setTimeout(() => { setFeedErrorMessage('') }, 3000);
                 }
             } finally {
@@ -99,7 +99,7 @@ const FeedHome = () => {
                     })
                     setDraftPosts(response.data?.drafts)
                 } catch (error) {
-                    setFeedErrorMessage(error.response.data?.message || "Error getting drafts");
+                    setFeedErrorMessage(error.response?.data?.message || "Error getting drafts");
                 }
             }
             fetchDrafts()
@@ -151,7 +151,7 @@ const FeedHome = () => {
                         setPostToEdit(post);
                     }
                 } catch (error) {
-                    setPostErrorMessage(error.response.data?.message || "Error fetching post to edit");
+                    setPostErrorMessage(error.response?.data?.message || "Error fetching post to edit");
                 }
             };
             fetchPost();
@@ -175,14 +175,13 @@ const FeedHome = () => {
             queryClient.setQueryData(['singlePost', post_id], statePost);
             return;
         }
+        //Redundant backups, should work just from statePost
         const cachedPost = queryClient.getQueryData(['singlePost', post_id]);
         if (cachedPost) {
-            console.log("cachedPost:", cachedPost);
             setReplyingToPost(cachedPost);
             return;
         }
         const fetchPost = async () => {
-            console.log("fetching post");
             try {
                 const response = await api.get('/channel_posts', {
                     params: { isSingle: true, feedId: feed?.feed_id, postId: post_id },
@@ -244,7 +243,7 @@ const FeedHome = () => {
                 setTimeout(() => { setFeedErrorMessage(''); }, 5000);
             }
         } catch (error) {
-            setFeedErrorMessage(error.response.data?.message || 'Failed to add channel');
+            setFeedErrorMessage(error.response?.data?.message || 'Failed to add channel');
             setTimeout(() => { setFeedErrorMessage(''); }, 3000);
         }
     };
@@ -291,7 +290,7 @@ const FeedHome = () => {
                 setTimeout(() => { setFeedErrorMessage(''); }, 5000);
             }
         } catch (error) {
-            setFeedErrorMessage(error.response.data?.message || "Error changing channel name");
+            setFeedErrorMessage(error.response?.data?.message || "Error changing channel name");
             setTimeout(() => { setFeedErrorMessage(''); }, 3000);
         }
     };
@@ -322,7 +321,7 @@ const FeedHome = () => {
                 navigate(`/${urlPrefix}/${feed_name}/Main`);
             }
         } catch (error) {
-            setFeedErrorMessage(error.response.data?.response || 'Error deleting channel');
+            setFeedErrorMessage(error.response?.data?.response || 'Error deleting channel');
             setTimeout(() => { setFeedErrorMessage(''); }, 3000);
         }
         setPendingDeleteAction(null);
@@ -345,17 +344,6 @@ const FeedHome = () => {
             const response = await api.post('/create_post', formData, {
                 headers: { 'Content-Type': 'multipart/form-data' },
             });
-            const draftId = formData.get('draft_id')
-            //Delete if posting from a draft
-            if (draftId !== null && draftId !== '') {
-                await api.delete('/remove_draft', {
-                    headers: { 'Content-Type': 'application/json' },
-                    data: {   
-                        draft: { draft_id: draftId },
-                        isPosting: true,
-                    }
-                });     
-            }
             const postId = response.data?.result?.post_id;
             const parentId = response.data?.result?.parent_id; //If post is a reply
             const navId = parentId ? parentId : postId; //Navigate to parent if reply
@@ -367,10 +355,10 @@ const FeedHome = () => {
             navigate(navigationUrl);
         } catch (error) {
             if (error.response?.status === 413) {
-                setPostErrorMessage(error.response.data?.message + (!user?.has_membership ? ". Get membership for more" : ""));
+                setPostErrorMessage(error.response?.data?.message + (!user?.has_membership ? ". Get membership for more" : ""));
                 setTimeout(() => { setFeedErrorMessage(''); }, 10000); //Longer timeout for membership message
             } else {
-                setPostErrorMessage(error.response.data?.message || "Error creating post");
+                setPostErrorMessage(error.response?.data?.message || "Error creating post");
                 setTimeout(() => { setFeedErrorMessage(''); }, 3000);
             }
         }
@@ -598,7 +586,7 @@ const FeedHome = () => {
                                                     <FaCog />
                                                 </button>
                                                 {channelSettingsDropdownOpen && (
-                                                    <div className="dropdown-menu" style={{ position: 'absolute', zIndex: 100, left: '50%', top: '100%', transform: 'translateX(-60%)' }}>
+                                                    <div className="dropdown-menu" style={{ position: 'absolute', zIndex: 100, left: '50%', top: '100%', transform: 'translateX(-67%)' }}>
                                                         <button
                                                             className="small-icon"
                                                             type="button"
@@ -630,7 +618,7 @@ const FeedHome = () => {
                                             {showChannelForm ? <FaMinus /> : <FaPlus />}<p className="icon-text">{showChannelForm ? "Close" : "New channel"}</p>
                                         </button>
                                     )}
-                                    {showPostForm && (
+                                    {(showPostForm || showDrafts) && (
                                         <button className="small-icon" onClick={toggleDrafts} title={showDrafts ? 'Hide Drafts' : 'Show Drafts'}>
                                             {showDrafts ? <FaFolder /> : <FaFolderOpen />}<p className="icon-text">{showDrafts ? "Hide drafts" : "Drafts"}</p>
                                         </button>
@@ -689,7 +677,7 @@ const FeedHome = () => {
                             )}
                         </div>
                     )}
-                    {channelMode === 'post' && !showPostForm && (feed?.is_group || feed?.feed_owner === user?.user_id) && (!isLocked || isAdmin) && isAuthenticated && (
+                    {channelMode === 'post' && !showPostForm && !showDrafts && (feed?.is_group || feed?.feed_owner === user?.user_id) && (!isLocked || isAdmin) && isAuthenticated && (
                         <button
                             className="small-icon"
                             onClick={() => {

@@ -8,6 +8,7 @@ import ChannelList from '../../components/channels/channelList';
 import ContentWidget from '../../components/content/contentWidget';
 const FETCH_LIMIT = 50;
 
+//Currently awaiting implementation of saved channels
 const SavedPosts = () => {
 	const { channel_name } = useParams();
 	const { isAuthenticated, viewer } = useContext(AuthContext);
@@ -36,7 +37,7 @@ const SavedPosts = () => {
 			setOffset(reset ? FETCH_LIMIT : offset + FETCH_LIMIT);
 			setHasMore(newPosts.length === FETCH_LIMIT);
 		} catch (error) {
-			setSavedError(error.response.data?.message || 'Error loading posts');
+			setSavedError(error.response?.data?.message || 'Error loading posts');
 		} finally {
 			setIsLoading(false);
 		}

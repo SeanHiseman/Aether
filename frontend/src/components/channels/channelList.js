@@ -63,7 +63,7 @@ const ChannelList = ({ canReorder = false, channels, feedId, feedName, isChat, i
                 }
             }
         } catch (error) {
-            setErrorMessage(error.response.data?.message || 'Error getting channels');
+            setErrorMessage(error.response?.data?.message || 'Error getting channels');
             setTimeout(() => { setErrorMessage(''); }, 5000);
             setChannels([]);
         }
@@ -103,7 +103,7 @@ const ChannelList = ({ canReorder = false, channels, feedId, feedName, isChat, i
                 orderedChannelIds: orderedChannelIds
             });
         } catch (error) {
-            setErrorMessage(error.response.data?.message || 'Error saving order');
+            setErrorMessage(error.response?.data?.message || 'Error saving order');
             setTimeout(() => { setErrorMessage(''); }, 5000);
             getFeedChannels(); 
         }

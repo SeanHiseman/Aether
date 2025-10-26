@@ -80,7 +80,7 @@ const ContentWidget = ({ canRemove = false, display = false, feed, isDraft = fal
 				setPostErrorMessage(`Error removing ${pendingDeleteAction}`);
 			}
 		} catch (error) {
-			setPostErrorMessage(error.response.data?.message || `Error removing ${pendingDeleteAction}`);
+			setPostErrorMessage(error.response?.data?.message || `Error removing ${pendingDeleteAction}`);
 			setTimeout(() => setPostErrorMessage(""), 3000);
 		}
 		setPendingDeleteAction(null);
@@ -107,7 +107,7 @@ const ContentWidget = ({ canRemove = false, display = false, feed, isDraft = fal
 			}));
 			setReplies(processedReplies);
 		} catch (error){
-			setPostErrorMessage(error.response.data?.message || 'Error getting replies');
+			setPostErrorMessage(error.response?.data?.message || 'Error getting replies');
 			setTimeout(() => setPostErrorMessage(""), 3000);
 		}
 	}, []);
@@ -130,7 +130,7 @@ const ContentWidget = ({ canRemove = false, display = false, feed, isDraft = fal
 					setHasViewed(true);
 				}
 			} catch (error) {
-				setPostErrorMessage(error.response.data?.message || 'Error incrementing views');
+				setPostErrorMessage(error.response?.data?.message || 'Error incrementing views');
 				setTimeout(() => setPostErrorMessage(""), 3000);
 			}
 		},
@@ -166,7 +166,7 @@ const ContentWidget = ({ canRemove = false, display = false, feed, isDraft = fal
                 await incrementViews(postId);
             }
         } catch (error) {
-            setPostErrorMessage(error.response.data?.message || 'Error voting');
+            setPostErrorMessage(error.response?.data?.message || 'Error voting');
             setTimeout(() => setPostErrorMessage(""), 3000);
         }
     };
@@ -198,7 +198,7 @@ const ContentWidget = ({ canRemove = false, display = false, feed, isDraft = fal
 			onSaveToggle?.(post?.post_id, !isSaved);
 			setTimeout(() => setPostErrorMessage(""), 3000);
         } catch (error) {
-            setPostErrorMessage(error.response.data?.message || 'Error saving post');
+            setPostErrorMessage(error.response?.data?.message || 'Error saving post');
 			setTimeout(() => setPostErrorMessage(""), 3000);
         }
     };

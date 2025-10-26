@@ -25,15 +25,15 @@ const Join = () => {
         const username = event.target.username.value;
         try {
             const response = await api.post('/join', { email, password, username });
-            if (response.data.success) {
+            if (response.data?.success) {
                 setErrorMessage('');
                 navigate('/verify-email');
             } 
         } catch (error) {
             if (error.response?.status === 409) {
-                setErrorMessage(error.response.data?.message);
+                setErrorMessage(error.response?.data?.message);
             } else if (error.response?.status === 400) {
-                setErrorMessage(error.response.data?.message || 'Invalid input');
+                setErrorMessage(error.response?.data?.message || 'Invalid input');
             } else {
                 setErrorMessage('Joining failed, please try again');
             }

@@ -24,7 +24,7 @@ const FeedFollowers = () => {
             const response = await api.get(`/get_feed_followers/${feed?.feed_id}`);
             setFollowers(response?.data?.followers);
         } catch (error) {
-            setErrorMessage(error?.response?.data?.message || "Error getting followers");
+            setErrorMessage(error.response?.data?.message || "Error getting followers");
             setTimeout(() => { setErrorMessage(''); }, 5000);
         }
     }, [feed?.feed_id]);
@@ -40,7 +40,7 @@ const FeedFollowers = () => {
             setFeed((prevFeed) => ({ ...prevFeed, follower_count: prevFeed?.follower_count - 1 }));
             setFollowerCount(prevCount => prevCount - 1);
         } catch (error) {
-            setErrorMessage(error.response.data?.message || "Error removing follower");
+            setErrorMessage(error.response?.data?.message || "Error removing follower");
             setTimeout(() => { setErrorMessage(''); }, 5000);
         }
     };

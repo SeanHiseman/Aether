@@ -34,7 +34,7 @@ const Account = () => {
             if (error.response?.status === 409) {
                 setEmailMessage('This email is already in use');
             } else if (error.response?.status === 400) {
-                setEmailMessage(error.response.data?.error || 'Invalid email');
+                setEmailMessage(error.response?.data?.error || 'Invalid email');
             } else {
                 setEmailMessage('Email change error, please try again');
             }
@@ -54,7 +54,7 @@ const Account = () => {
             setPasswordMessage(response.data?.success ? 'Password changed' : 'Password change error, please try again');
             setTimeout(() => { setPasswordMessage(''); }, 5000);
         } catch (error) {
-            setPasswordMessage(error.response.data?.message || 'Password change error, please try again');
+            setPasswordMessage(error.response?.data?.message || 'Password change error, please try again');
             setTimeout(() => { setPasswordMessage(''); }, 5000);
         }
     };

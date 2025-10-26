@@ -53,7 +53,7 @@ const AlgorithmSelector = ({ display, locationId, refreshPosts }) => {
 				return updated;
 			});
 		} catch (error) {
-			setAssignError(error.response.data?.message || 'Failed to assign algorithm');
+			setAssignError(error.response?.data?.message || 'Failed to assign algorithm');
 			setTimeout(() => { setAssignError('') }, 3000);
 		} finally {
 			setLoading(false);
@@ -78,7 +78,7 @@ const AlgorithmSelector = ({ display, locationId, refreshPosts }) => {
 			if (algorithmId === assignedAlgorithmId) setAssignedAlgorithmId('');
 			if (editingAlgorithm?.algorithm_id === algorithmId) setEditingAlgorithm(null);
 		} catch (error) {
-			setError(error.response.data?.message || 'Failed to delete algorithm');
+			setError(error.response?.data?.message || 'Failed to delete algorithm');
 			setTimeout(() => { setError('') }, 3000);
 		}
 	};
@@ -113,7 +113,7 @@ const AlgorithmSelector = ({ display, locationId, refreshPosts }) => {
 				}
 			}
 		} catch (error) {
-			setError(error.response.data?.message || 'Failed to load algorithms');
+			setError(error.response?.data?.message || 'Failed to load algorithms');
 			setTimeout(() => { setError('') }, 5000);
 		} finally {
 			setLoading(false);
@@ -142,7 +142,7 @@ const AlgorithmSelector = ({ display, locationId, refreshPosts }) => {
 			setEditingAlgorithm(newAlgo);
 			refreshPosts();
 		} catch (error) {
-			setError(error.response.data?.message || 'Failed to update algorithms');
+			setError(error.response?.data?.message || 'Failed to update algorithms');
 			setTimeout(() => { setError('') }, 5000);
 		}
 	};
@@ -181,7 +181,7 @@ const AlgorithmSelector = ({ display, locationId, refreshPosts }) => {
 			setEditingAlgorithm(null);
 			refreshPosts();
 		} catch (error) {
-			setAssignError(error.response.data?.message || 'Failed to unassign algorithm');
+			setAssignError(error.response?.data?.message || 'Failed to unassign algorithm');
 			setTimeout(() => { setAssignError('') }, 3000);
 		};
 	};

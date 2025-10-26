@@ -67,7 +67,7 @@ const Theme = () => {
             setFeedbackMessage('Theme updated');
             setTimeout(() => { setFeedbackMessage(''); }, 5000);
         } catch (error) {
-            setErrorMessage(error.response.data?.message || 'Error changing theme');
+            setErrorMessage(error.response?.data?.message || 'Error changing theme');
             setTimeout(() => { setErrorMessage(''); }, 5000);
         }
     };
@@ -79,7 +79,7 @@ const Theme = () => {
             await updateTheme(themeColors);
             setCustomTheme(themeColors); 
         } catch (error) {
-            setErrorMessage(error.response.data?.message || 'Error changing theme');
+            setErrorMessage(error.response?.data?.message || 'Error changing theme');
             setTimeout(() => { setErrorMessage(''); }, 5000);
         }
     };

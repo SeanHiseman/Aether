@@ -188,7 +188,7 @@ const BaseLayout = () => {
             }
             setTimeout(() => setDragged(false), 0);
             } catch (error) {
-                setAsideErrorMessage(error.response.data?.message || "Error in drag operation");
+                setAsideErrorMessage(error.response?.data?.message || "Error in drag operation");
                 setTimeout(() => setAsideErrorMessage(""), 5000);
             }
         setTimeout(() => setDragged(false), 0);
@@ -218,7 +218,7 @@ const BaseLayout = () => {
                 updateFeeds();
             }
         } catch (error) {
-            setAsideErrorMessage(error.response.data?.message || "Error creating deep feed");
+            setAsideErrorMessage(error.response?.data?.message || "Error creating deep feed");
             setTimeout(() => setAsideErrorMessage(""), 5000);
         }
         setNameModalOpen(false);
@@ -293,6 +293,7 @@ const BaseLayout = () => {
         };
     }, [hasMoreFeeds]);
 
+    //Ask assistant temporarily deactivated
     const askClick = async e => {
         e.preventDefault();
         if (!isAuthenticated) {
@@ -382,13 +383,13 @@ const BaseLayout = () => {
         catch (error) {
             if (error.response?.status === 413) {
                 setAsideErrorMessage(
-                    (error.response.data?.message || "File too large") +
+                    (error.response?.data?.message || "File too large") +
                     (!user?.has_membership ? ". Get membership for more" : "")
                 );
                 setTimeout(() => setAsideErrorMessage(""), 10000);
             }
             else {
-                setAsideErrorMessage(error.response.data?.message || "Error creating feed");
+                setAsideErrorMessage(error.response?.data?.message || "Error creating feed");
                 setTimeout(() => setAsideErrorMessage(""), 5000);
             }
         }
@@ -459,7 +460,7 @@ const BaseLayout = () => {
             setDeepFeeds(deepFeedsWithContents);
             setFeed(storedUser);
         } catch (error) {
-            setAsideErrorMessage(error.response.data?.message || "Error updating feeds");
+            setAsideErrorMessage(error.response?.data?.message || "Error updating feeds");
             setFeeds([]);
             setDeepFeeds([]);
         }

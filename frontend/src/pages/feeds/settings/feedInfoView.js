@@ -71,9 +71,9 @@ const FeedInfoView = () => {
             }
         } catch (error) {
             if (error.response?.status === 413) {
-                setErrorMessage(error.response.data?.message + (!user?.has_membership ? ". Get membership for more" : ""));
+                setErrorMessage(error.response?.data?.message + (!user?.has_membership ? ". Get membership for more" : ""));
             } else {
-                setErrorMessage(error.response.data?.message || "Error, please try again");
+                setErrorMessage(error.response?.data?.message || "Error, please try again");
             }
             setTimeout(() => { setErrorMessage(''); }, 10000);
         }
@@ -127,7 +127,7 @@ const FeedInfoView = () => {
             const response = await api.post('/toggle_private', { feedId: feed?.feed_id });
             setFeed(prev => ({ ...prev, type: response.data?.type }));
         } catch (error){
-            setErrorMessage(error.response.data?.message || 'Error changing status');
+            setErrorMessage(error.response?.data?.message || 'Error changing status');
             setTimeout(() => { setErrorMessage(''); }, 5000);
         }
     };
@@ -143,7 +143,7 @@ const FeedInfoView = () => {
                 setIsEditingDescription(false);
             } 
         } catch (error){
-            setErrorMessage(error.response.data?.message || 'Error changing description');
+            setErrorMessage(error.response?.data?.message || 'Error changing description');
             setTimeout(() => { setErrorMessage(''); }, 5000);
         }
     };
@@ -176,7 +176,7 @@ const FeedInfoView = () => {
                 setTimeout(() => navigate(`/settings/${newName}/info`), 0); //ensures navigation happens after state updates
             }
         } catch (error) {
-		    setErrorMessage(error.response.data?.message || 'Error changing name');
+		    setErrorMessage(error.response?.data?.message || 'Error changing name');
             setTimeout(() => { setErrorMessage(''); }, 5000);
         }
     };

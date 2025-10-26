@@ -15,10 +15,10 @@ const ResetPassword = () => {
 		event.preventDefault();
 		try {
 			const { data } = await api.post('/reset-password', { password, token });
-			setMessage(data.message);
+			setMessage(data?.message);
 		} catch (error) {
 			if (error.response?.status === 400) {
-				setMessage(error.response.data?.message);
+				setMessage(error.response?.data?.message);
 			} else {
 				setMessage('Failed to reset password. Please try again.');
 			}

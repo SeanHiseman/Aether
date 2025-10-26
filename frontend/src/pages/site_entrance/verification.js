@@ -27,7 +27,7 @@ const EmailVerification = () => {
                 setStatus('success');
                 setMessage(response.data?.message);
                 if (response.data?.success) {
-                    localStorage.setItem('user', JSON.stringify(response.data.user));
+                    localStorage.setItem('user', JSON.stringify(response.data?.user));
                 }
                 setTimeout(() => {
                     navigate('/explore');

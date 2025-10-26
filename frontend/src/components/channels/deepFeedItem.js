@@ -44,7 +44,7 @@ const DeepFeedItem = ({ deepFeed, onFeedAdded, showHeader }) => {
 				return updated;
 			});
 		} catch (error) {
-			setErrorMessage(error.response.data?.message || 'Failed to add feed to deep feed.');
+			setErrorMessage(error.response?.data?.message || 'Failed to add to combined feed.');
 			setTimeout(() => setErrorMessage(''), 5000);
 		}
 	}, [deepFeed?.deep_feed_id]);
@@ -66,7 +66,7 @@ const DeepFeedItem = ({ deepFeed, onFeedAdded, showHeader }) => {
 				JSON.stringify(data?.contents || [])
 			);
 		} catch (error) {
-			setErrorMessage(error.response.data?.message || 'Failed to load deep feed contents.');
+			setErrorMessage(error.response?.data?.message || 'Failed to load contents.');
 			setContents([]);
 		} finally {
 			setLoading(false);

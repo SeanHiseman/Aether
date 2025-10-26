@@ -22,7 +22,7 @@ const FollowRequests = () => {
                 return updatedRequests;
             });
         } catch (error) {
-            setErrorMessage(error.response.data?.message || 'Error handling request');
+            setErrorMessage(error.response?.data?.message || 'Error handling request');
             setTimeout(() => { setErrorMessage(''); }, 5000);
         }
     };

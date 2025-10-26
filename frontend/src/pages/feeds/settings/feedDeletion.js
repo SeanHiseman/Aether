@@ -31,7 +31,7 @@ const FeedDeletion = () => {
                 setTimeout(() => navigate(route), 0); //ensure navigation runs after state updates
             }
         } catch (error) {
-            setErrorMessage(error.response.data?.message || 'Error deleting feed');
+            setErrorMessage(error.response?.data?.message || 'Error deleting feed');
             setTimeout(() => { setErrorMessage(''); }, 5000);
         }
         setShowConfirmation(false);

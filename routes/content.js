@@ -209,16 +209,12 @@ if (process.env.NODE_ENV === 'production') {
 //Unified route for creating and editing posts and drafts
 router.post("/create_post", standardLimiter, authenticateCheck, checkStorageLimit, postUpload.array("files"), async (req, res) => {
 	try {
-		let { channel_id, content, draft_id, feed_id, is_private, parent_id, post_id, poster_id, title } = req.body;
-        if (draft_id === 'null' || draft_id === 'undefined') { //If draft_id is received as the string 'null'
-            draft_id = null;        
-		}
-		if (post_id === 'null' || post_id === 'undefined') { //If post_id is received as the string 'null'
-            post_id = null;        
-		}
+		let { channel_id, content, draft_id, feed_id, is_private, parent_id, post_id, poster_id, title, publish_draft } = req.body;
+		if (draft_id === 'null' || draft_id === 'undefined') draft_id = null;
+		if (post_id === 'null' || post_id === 'undefined') post_id = null;
 		content = content || "";
+		//Handle media in HTML
 		const $ = cheerio.load(content, { decodeEntities: false });
-		//Extract and store image and video contents from html, then adjust html with new url
 		const mediaElements = $("img[src^='blob:'], video source[src^='blob:']").toArray();
 		for (let i = 0; i < mediaElements.length; i++) {
 			const el = mediaElements[i];
@@ -231,35 +227,65 @@ router.post("/create_post", standardLimiter, authenticateCheck, checkStorageLimi
 				const src = `https://${process.env.AWS_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${s3Key}`;
 				$(el).attr("src", src).removeAttr("blob:");
 			} else {
-				const fileName = file.filename; 
+				const fileName = file.filename;
 				const localPath = path.join(mediaDir, fileName);
-				if (file.path !== localPath) {
-					fs.copyFileSync(file.path, localPath);
-				}
+				if (file.path !== localPath) fs.copyFileSync(file.path, localPath);
 				const src = "/" + path.join("media", "content", fileName).replace(/\\/g, "/");
 				$(el).attr("src", src).removeAttr("blob:");
 			}
 		}
 		const finalHtml = $.html();
+		//Upload final HTML
 		let contentUrl;
-		//Storage location depends on production or testing
+		const htmlFileName = GenerateFileName({ originalname: "post.html" }, "post");
 		if (process.env.NODE_ENV === "production") {
-			const htmlFileName = GenerateFileName({ originalname: "post.html" }, "post");
 			const s3Key = `posts/${htmlFileName}`;
 			await UploadToS3(s3Key, Buffer.from(finalHtml), "text/html");
 			contentUrl = `https://${process.env.AWS_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${s3Key}`;
 		} else {
-			const htmlFileName = GenerateFileName({ originalname: "post.html" }, "post");
 			const localPath = path.join(postsDir, htmlFileName);
 			fs.writeFileSync(localPath, finalHtml);
 			contentUrl = `/media/posts/${htmlFileName}`;
 		}
-		let result;
-		if (draft_id) {
-			const existingDraft = await PostDrafts.findByPk(draft_id);
-			if (existingDraft && existingDraft.content) {
-				await UpdateMediaFiles(existingDraft.content, contentUrl);
+		let result = null;
+		//Update existing post
+		if (post_id) {
+			const post = await Posts.findByPk(post_id);
+			if (post) {
+				await UpdateMediaFiles(post.content, contentUrl);
+				post.content = contentUrl;
+				if (title) post.title = title;
+				if (channel_id) post.channel_id = channel_id;
+				if (feed_id) post.feed_id = feed_id;
+				if (parent_id) post.parent_id = parent_id;
+				post.updated_at = Sequelize.literal("CURRENT_TIMESTAMP(3)");
+				await post.save();
+				result = post;
 			}
+		}
+		//Publish draft as post
+		else if (draft_id && publish_draft === 'true') {
+			const draft = await PostDrafts.findByPk(draft_id);
+			const analysisResults = await contentAnalyser.analyseContent(finalHtml, title);
+			const newPostId = v4();
+			const postData = {
+				post_id: newPostId,
+				channel_id: draft?.channel_id || channel_id,
+				content: contentUrl,
+				feed_id: draft?.feed_id || feed_id,
+				is_private,
+				parent_id,
+				poster_id,
+				title,
+				...analysisResults
+			};
+			result = await Posts.create(postData);
+			if (draft) await PostDrafts.destroy({ where: { draft_id } });
+		}
+		//Create or update draft
+		else if (draft_id) {
+			const existingDraft = await PostDrafts.findByPk(draft_id);
+			if (existingDraft?.content) await UpdateMediaFiles(existingDraft.content, contentUrl);
 			result = await PostDrafts.upsert({
 				draft_id,
 				feed_id,
@@ -269,56 +295,41 @@ router.post("/create_post", standardLimiter, authenticateCheck, checkStorageLimi
 				title: title || null,
 				poster_id
 			});
-		} else {
-			const analysisResults = await contentAnalyser.analyseContent(finalHtml, title); //Post analysis for use in recommendation algorithms
-			let post = null;
-			if (post_id) {
-				post = await Posts.findByPk(post_id);
-			}
-			if (post) {
-				if (post.content) {
-					await UpdateMediaFiles(post.content, contentUrl);
-				}
-				post.content = contentUrl;
-				if (title) post.title = title;
-				if (channel_id) post.channel_id = channel_id;
-				if (feed_id) post.feed_id = feed_id;
-				if (parent_id) post.parent_id = parent_id;
-				post.updated_at = Sequelize.literal("CURRENT_TIMESTAMP(3)");
-				await post.save();
-			} else {
-				if (!post_id) post_id = v4();
-				const postData = {
-					post_id,
-					channel_id,
-					content: contentUrl,
-					feed_id,
-					is_private,
-					parent_id,
-					poster_id,
-					title,
-					...analysisResults
-				};
-				post = await Posts.create(postData);
-				if (parent_id) {
-					const parentPost = await Posts.findOne({ where: { post_id: parent_id } });
-					if (parentPost) {
-						parentPost.replies += 1;
-						await parentPost.save();
-					}
+		}
+		//Create new post
+		else {
+			const analysisResults = await contentAnalyser.analyseContent(finalHtml, title);
+			const newPostId = v4();
+
+			const postData = {
+				post_id: newPostId,
+				channel_id,
+				content: contentUrl,
+				feed_id,
+				is_private,
+				parent_id,
+				poster_id,
+				title,
+				...analysisResults
+			};
+			result = await Posts.create(postData);
+			if (parent_id) {
+				const parentPost = await Posts.findOne({ where: { post_id: parent_id } });
+				if (parentPost) {
+					parentPost.replies += 1;
+					await parentPost.save();
 				}
 			}
-			result = post;
 		}
 		return res.status(200).json({ success: true, result });
 	} catch (error) {
-		if (req.files && req.files.length > 0) {
+		if (req.files?.length > 0) {
 			for (const file of req.files) {
 				try {
 					if (process.env.NODE_ENV === "production") {
 						await DeleteFromS3(`content/${file.filename}`);
-					} else {
-						fs.existsSync(file.path) && fs.unlinkSync(file.path);
+					} else if (fs.existsSync(file.path)) {
+						fs.unlinkSync(file.path);
 					}
 				} catch (cleanupErr) {
 					console.error("Failed to cleanup file:", cleanupErr);

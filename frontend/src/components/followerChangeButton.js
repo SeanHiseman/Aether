@@ -54,7 +54,7 @@ const FollowerChangeButton = ({ feed, showFollowers = true, showName, showVertic
             }
             setShowUnfollowConfirm(false);
         } catch (error) {
-            setErrorMessage(error.response.data?.message || "Error updating following");
+            setErrorMessage(error.response?.data?.message || "Error updating following");
             setTimeout(() => setErrorMessage(''), 5000);
         }
     };

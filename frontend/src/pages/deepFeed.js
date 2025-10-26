@@ -40,7 +40,7 @@ const DeepFeed = () => {
                 if (cached) {
                     setContents(JSON.parse(cached));
                 } else {
-                    setErrorMessage(error.response.data?.message || 'Failed to load contents.');
+                    setErrorMessage(error.response?.data?.message || 'Failed to load contents.');
                     setContents([]);
                 }
                 setTimeout(() => setErrorMessage(''), 5000);
@@ -83,7 +83,7 @@ const DeepFeed = () => {
                 navigate('/explore');
             }
         } catch (error) {
-            setErrorMessage(error.response.data?.message || 'Error deleting combined feed');
+            setErrorMessage(error.response?.data?.message || 'Error deleting combined feed');
             setTimeout(() => { setErrorMessage(''); }, 5000);
         }
     };
@@ -111,7 +111,7 @@ const DeepFeed = () => {
                 updateFeeds();
             }
         } catch (error) {
-            setErrorMessage(error.response.data?.message || "Error changing name");
+            setErrorMessage(error.response?.data?.message || "Error changing name");
             setTimeout(() => { setErrorMessage(''); }, 5000);
         }
     };
@@ -151,7 +151,7 @@ const DeepFeed = () => {
             }
             return response.data?.posts;
         } catch (error) {
-            setErrorMessage(error.response.data?.message || 'Error fetching posts');
+            setErrorMessage(error.response?.data?.message || 'Error fetching posts');
             setTimeout(() => { setErrorMessage(''); }, 5000);
             return [];
         }
@@ -198,7 +198,7 @@ const DeepFeed = () => {
                 setTimeout(() => setErrorMessage(''), 5000);
             }
         } catch (error) {
-            setErrorMessage(error.response.data?.message || 'Error removing feed');
+            setErrorMessage(error.response?.data?.message || 'Error removing feed');
             setTimeout(() => setErrorMessage(''), 5000);
         }
     };
@@ -213,7 +213,6 @@ const DeepFeed = () => {
                     localStorage.setItem(`deepFeedContents_${deep_feed_id}`, JSON.stringify(fetched));
                     queryClient.invalidateQueries(['deepFeedPosts', deep_feed_id]);
                 } catch (error) {
-                    console.error('Error fetching updated contents:', error);
                     const cached = localStorage.getItem(`deepFeedContents_${deep_feed_id}`);
                     if (cached) {
                         setContents(JSON.parse(cached));

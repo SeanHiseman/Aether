@@ -48,7 +48,7 @@ const ExplorePage = () => {
 				shownPostIdsRef.current = [...shownPostIdsRef.current, ...newIds]; 
 			}
 		} catch (error) {
-			setErrorMessage(error.response.data?.message || "Failed to fetch posts");
+			setErrorMessage(error.response?.data?.message || "Failed to fetch posts");
 			setHasMorePosts(false);
 		}
 	}, []); 
@@ -79,7 +79,7 @@ const ExplorePage = () => {
 				shownFeedIdsRef.current = [...shownFeedIdsRef.current, ...newIds]; 
 			}
 		} catch (error) {
-			setErrorMessage(error.response.data?.message || "Failed to fetch feeds");
+			setErrorMessage(error.response?.data?.message || "Failed to fetch feeds");
 			setHasMoreFeeds(false);
 		}
 	}, []);
