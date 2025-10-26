@@ -15,7 +15,7 @@
   padding: var(--large-margin);
   border-radius: var(--medium-margin);
   max-width: 90%;
-  width: calc(10 * var(--xl-margin));
+  width: calc(12 * var(--xl-margin));
 }
 .confirm-modal-title {
   margin: 0 0 16px 0;
@@ -44,8 +44,11 @@
   color: var(--lightest);
 }
 .confirm-modal-confirm {
+  background-color: #3d8e15;
+  color: var(--lightest);
+}
+.confirm-modal-confirm.red {
   background-color: #dc3545;
-  color: white;
 }
 .confirm-modal-cancel:hover, .confirm-modal-confirm:hover {
   opacity: 0.8;

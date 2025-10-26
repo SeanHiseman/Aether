@@ -1,29 +1,29 @@
 import '../../css/modal.css';
 import { useState, useEffect } from 'react';
 
-const NameModal = ({ isOpen, onConfirm, onCancel, initialName = '', title = 'Name Your Feed', placeholder = 'Enter feed name...' }) => {
-    const [name, setName] = useState(initialName);
+const InputModal = ({ isOpen, maxLength = 999999, onConfirm, onCancel, inputText = '', title = '', placeholder = '' }) => {
+    const [text, setText] = useState(inputText);
     const [error, setError] = useState('');
 
     //Reset state when modal opens/closes
     useEffect(() => {
         if (isOpen) {
-            setName(initialName);
+            setText(inputText);
             setError('');
         }
-    }, [isOpen, initialName]);
+    }, [isOpen, inputText]);
 
     const handleConfirm = () => {
-        const trimmedName = name.trim();
-        if (!trimmedName) {
-            setError('Name cannot be empty');
+        const trimmedText = text.trim();
+        if (!trimmedText) {
+            setError('Cannot be empty');
             return;
         }
-        if (trimmedName.length > 30) {
-            setError('Name must be 30 characters or less');
+        if (trimmedText.length > maxLength) {
+            setError('Must be 30 characters or less');
             return;
         }
-        onConfirm(trimmedName);
+        onConfirm(trimmedText);
     };
 
     const handleKeyPress = (e) => {
@@ -42,9 +42,9 @@ const NameModal = ({ isOpen, onConfirm, onCancel, initialName = '', title = 'Nam
                     className="name-modal-input"
                     type="text"
                     placeholder={placeholder}
-                    value={name}
+                    value={text}
                     onChange={(e) => {
-                        setName(e.target.value);
+                        setText(e.target.value);
                         setError(''); 
                     }}
                     onKeyPress={handleKeyPress}
@@ -64,4 +64,4 @@ const NameModal = ({ isOpen, onConfirm, onCancel, initialName = '', title = 'Nam
     );
 };
 
-export default NameModal;
+export default InputModal;

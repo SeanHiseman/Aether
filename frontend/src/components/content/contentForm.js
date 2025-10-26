@@ -1,18 +1,19 @@
 import api from '../../api';
-import { Crown } from 'lucide-react';
-import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd'
-import { Link, useNavigate, useParams } from 'react-router-dom'
-import PropTypes from 'prop-types'
-import { useCallback, useContext, useEffect, useRef, useState } from 'react'
-import { FaAlignCenter, FaArrowCircleUp, FaArrowRight, FaCircleNotch, FaCommentAlt, FaCopy, FaCube, FaCrop, FaEdit, FaEllipsisV, FaEye, FaFileAlt, FaFont, FaGripVertical, FaLink, FaPhotoVideo, FaReply, FaSave, FaShareAlt, FaTerminal, FaTimes, FaToolbox, FaTrash, FaWindowClose, FaFile } from 'react-icons/fa'
-import ReactQuill from 'react-quill'
-import 'react-quill/dist/quill.snow.css'
-import { v4 } from 'uuid'
 import { AuthContext } from '../authContext'
+import { Crown } from 'lucide-react';
 import ConfirmModal from '../modals/confirmModal';
 import ContentWidget from './contentWidget'
 import Cropper from 'react-easy-crop';
+import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd'
+import { FaAlignCenter, FaArrowCircleUp, FaArrowRight, FaCircleNotch, FaCommentAlt, FaCopy, FaCube, FaCrop, FaEdit, FaEllipsisV, FaEye, FaFileAlt, FaFont, FaGripVertical, FaLink, FaPhotoVideo, FaReply, FaSave, FaShareAlt, FaTerminal, FaTimes, FaToolbox, FaTrash } from 'react-icons/fa'
 import GetCroppedImg from '../../functions/getCroppedImg';
+import InputModal from '../modals/inputModal';
+import { Link, useNavigate, useParams } from 'react-router-dom'
+import PropTypes from 'prop-types'
+import ReactQuill from 'react-quill'
+import { useCallback, useContext, useEffect, useRef, useState } from 'react'
+import { v4 } from 'uuid'
+import 'react-quill/dist/quill.snow.css'
 
 const BLOCK_TYPES = { APP: 'APP', CODE: 'CODE', MEDIA: 'MEDIA', TEXT: 'TEXT' }
 
@@ -135,6 +136,8 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
     const hasMembership = user?.has_membership
     const isDraft = Boolean(draftId)
     const iframeRefs = useRef({})
+    const [isIframeModalOpen, setIsIframeModalOpen] = useState(false)
+    const [isSocialModalOpen, setIsSocialModalOpen] = useState(false)
     const [isPostingDraft, setIsPostingDraft] = useState(false)
     const navigate = useNavigate()
     const submittedRef = useRef(false)
@@ -160,73 +163,11 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
     }, [isAuthenticated, navigate, urlPrefix, feed_name, channel_name, post?.id])
 
     const addIframe = () => {
-        const url = prompt('Enter the website URL:');
-        if (url) {
-            try {
-                const parsedUrl = new URL(url); //Validate URL format
-                if (parsedUrl.protocol !== 'http:' && parsedUrl.protocol !== 'https:') {
-                    alert('Please enter a valid http or https URL');
-                    return;
-                }
-                const iframeCode = `<html style="height:100%">
-                    <head>
-                        <style>
-                            html, body {
-                                margin: 0;
-                                height: 100%;
-                                overflow: hidden;
-                            }
-                        </style>
-                    </head>
-                    <body>
-                        <div style="width:100%; height:100vh">
-                            <iframe class="embedded-website" src="${parsedUrl.href}" style="width:100%; height:100%; border:none;" sandbox="allow-scripts allow-same-origin" referrerpolicy="no-referrer"></iframe>
-                        </div>
-                    </body>
-                </html>`;
-                const newBlock = {
-                    data: { code: iframeCode, isBlockLoading: false, showPrompt: true },
-                    id: v4(),
-                    isEditing: true,
-                    type: BLOCK_TYPES.CODE,
-                };
-                setBlocks(prev => [newBlock, ...prev]);
-            } catch (error) {
-                alert('Please enter a valid URL (e.g., https://example.com)');
-            }
-        }
+        setIsIframeModalOpen(true);
     };
 
     const addSocialMedia = () => {
-        const input = prompt('Enter the social media embed code or URL:');
-        if (!input) return;
-        let embedCode = input.trim();
-        if (embedCode.startsWith('http') && !embedCode.includes('<')) {
-            try {
-                const parsed = new URL(embedCode);
-                if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
-                    alert('Please enter a valid http or https URL');
-                    return;
-                }
-                embedCode = `<a href="${parsed.href}" target="_blank" rel="noopener noreferrer">${parsed.href}</a>`;
-            } catch (error) {
-                alert('Please enter a valid URL or embed code');
-                return;
-            }
-        }
-        if (!embedCode.startsWith('<div class="social-media-embed"')) {
-            embedCode =
-                `<div class="social-media-embed" style="width:100%;display:flex;justify-content:center;">` +
-                embedCode +
-                `</div>`;
-        }
-        const newBlock = {
-            data: { code: embedCode, isBlockLoading: false, showPrompt: true },
-            id: v4(),
-            isEditing: true,
-            type: BLOCK_TYPES.CODE,
-        };
-        setBlocks(prev => [newBlock, ...prev]);
+        setIsSocialModalOpen(true);
     };
 
     const appFileChange = useCallback(async e => {
@@ -663,6 +604,74 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
         })
     }, [MAX_FILE_SIZE, BLOCK_LIMIT, blocks.length, hasMembership])
 
+    const iframeConfirm = (urlInput) => {
+        try {
+            const normalisedUrl = urlInput.startsWith('http://') || urlInput.startsWith('https://')
+                ? urlInput
+                : `https://${urlInput}`;
+            const parsedUrl = new URL(normalisedUrl);
+            if (parsedUrl.protocol !== 'http:' && parsedUrl.protocol !== 'https:') {
+                alert('Please enter a valid http or https URL');
+                return;
+            }
+            const iframeCode = `<html style="height:100%">
+                <head>
+                    <style>
+                        html, body {
+                            margin: 0;
+                            height: 100%;
+                            overflow: hidden;
+                        }
+                    </style>
+                </head>
+                <body>
+                    <div style="width:100%; height:100vh">
+                        <iframe class="embedded-website" src="${parsedUrl.href}" style="width:100%; height:100%; border:none;" sandbox="allow-scripts" referrerpolicy="no-referrer"></iframe>
+                    </div>
+                </body>
+            </html>`;
+            const newBlock = {
+                data: { code: iframeCode, isBlockLoading: false, showPrompt: false },
+                id: v4(),
+                isEditing: false,
+                type: BLOCK_TYPES.CODE,
+            };
+            setBlocks(prev => [newBlock, ...prev]);
+        } catch (error) {
+            alert('Please enter a valid URL (e.g., https://example.com)');
+        }
+        setIsIframeModalOpen(false);
+    };
+
+    const socialConfirm = (input) => {
+        if (!input) return;
+        let embedCode = input.trim();
+        if (embedCode.startsWith('http') && !embedCode.includes('<')) {
+            try {
+                const parsed = new URL(embedCode);
+                if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+                    alert('Please enter a valid http or https URL');
+                    return;
+                }
+                embedCode = `<a href="${parsed.href}" target="_blank" rel="noopener noreferrer">${parsed.href}</a>`;
+            } catch (error) {
+                alert('Please enter a valid URL or embed code');
+                return;
+            }
+        }
+        if (!embedCode.startsWith('<div class="social-media-embed"')) {
+            embedCode = `<div class="social-media-embed" style="width:100%;display:flex;justify-content:center;">${embedCode}</div>`;
+        }
+        const newBlock = {
+            data: { code: embedCode, isBlockLoading: false, showPrompt: false },
+            id: v4(),
+            isEditing: false,
+            type: BLOCK_TYPES.CODE,
+        };
+        setBlocks(prev => [newBlock, ...prev]);
+        setIsSocialModalOpen(false);
+    };
+
     const onDragEnd = useCallback(result => {
         const { destination, source } = result
         if (!destination) return
@@ -890,7 +899,7 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
                         <Droppable droppableId="blocks-droppable">
                             {provided => (
                                 <div ref={provided.innerRef} {...provided.droppableProps}>
-                                    {!blocks.length && <p className="small-text faded-text" style={{ marginLeft: '10px' }}>Add content using the buttons above</p>}
+                                    {!blocks.length && <p className="small-text faded-text" style={{ marginLeft: '10px' }}>Add content using the 'Add' button</p>}
                                     {blocks.map((block, index) => {
                                         const { data, id, isEditing, type } = block;
                                         const toggleEdit = () => updateBlock({ ...block, isEditing: !isEditing });
@@ -986,7 +995,6 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
                                                                     </div>
                                                                 </div>
                                                             )}
-
                                                             {type === BLOCK_TYPES.TEXT && (
                                                                 <div className="block-content">
                                                                     {data.textError && (
@@ -1003,7 +1011,7 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
                                                                                 if (plainText.length < TEXT_CHAR_LIMIT) {
                                                                                     updateBlock({ ...block, data: { ...data, html: val, textError: '' } });
                                                                                 } else {
-                                                                                    updateBlock({ ...block, data: { ...data, textError: `Exceeded ${TEXT_CHAR_LIMIT} character limit. ${!user.has_membership && 'Get membership for more.'}` } });
+                                                                                    updateBlock({ ...block, data: { ...data, textError: `Exceeded ${TEXT_CHAR_LIMIT} character limit. ${!user?.has_membership && 'Get membership for more.'}` } });
                                                                                 }
                                                                             }}
                                                                             placeholder="Begin writing..."
@@ -1025,10 +1033,9 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
                                                                     </div>
                                                                 </div>
                                                             )}
-
                                                             {type === BLOCK_TYPES.CODE && (
                                                                 <div className="block-content">
-                                                                    {!data.showPrompt && <p className="small-text faded-text">For now, only one HTML file with inline JavaScript and CSS can be created.</p>}
+                                                                    {!data.showPrompt && isEditing && <p className="small-text faded-text">For now, only one HTML file with inline JavaScript and CSS can be created.</p>}
                                                                     {isEditing && (
                                                                         <>
                                                                             {data.showPrompt ? (
@@ -1077,7 +1084,7 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
                                                                                             });
                                                                                             setPostErrorMessage('');
                                                                                         } else {
-                                                                                            setPostErrorMessage('Code exceeds character limit.', !user.has_membership && 'Get membership for more.');
+                                                                                            setPostErrorMessage('Code exceeds character limit.', !user?.has_membership && 'Get membership for more.');
                                                                                         }
                                                                                     }}
                                                                                     placeholder="Enter code..."
@@ -1094,7 +1101,6 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
                                                                     )}
                                                                 </div>
                                                             )}
-
                                                             {type === BLOCK_TYPES.MEDIA && (
                                                                 <div className="media-preview">
                                                                     {cropState[id]?.isCropping && data.isImage ? (
@@ -1153,7 +1159,6 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
                                                                     )}
                                                                 </div>
                                                             )}
-
                                                             {type === BLOCK_TYPES.APP && (
                                                                 data.isUploading
                                                                     ? <div key={id} className="app-placeholder">
@@ -1183,7 +1188,10 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
                 </div>
             </form>
         </div>
-        <ConfirmModal isOpen={showDeleteConfirm} onConfirm={confirmDelete} onCancel={cancelDelete} title={`Delete ${pendingDeleteAction}`} message={`Are you sure you want to delete this ${pendingDeleteAction}?`} /></>
+        <ConfirmModal isOpen={showDeleteConfirm} onConfirm={confirmDelete} onCancel={cancelDelete} title={`Delete ${pendingDeleteAction}`} message={`Are you sure you want to delete this ${pendingDeleteAction}?`} />
+        <InputModal isOpen={isIframeModalOpen} title="Enter website URL" placeholder="https://example.com" onConfirm={iframeConfirm} onCancel={() => setIsIframeModalOpen(false)} />
+        <InputModal isOpen={isSocialModalOpen} title="Enter social media embed code" placeholder="Paste embed code" onConfirm={socialConfirm} onCancel={() => setIsSocialModalOpen(false)} />
+        </>
     )
 }
 

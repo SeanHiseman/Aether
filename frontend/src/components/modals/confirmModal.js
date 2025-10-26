@@ -12,7 +12,7 @@ const ConfirmModal = ({ isOpen, onConfirm, onCancel, message, title = 'Confirm' 
                         <button className="confirm-modal-cancel" onClick={onCancel}>
                             Cancel
                         </button>
-                        <button className="confirm-modal-confirm" onClick={onConfirm}>
+                        <button className="confirm-modal-confirm red" onClick={onConfirm}>
                             Confirm
                         </button>
                     </div>

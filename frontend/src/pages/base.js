@@ -1,5 +1,5 @@
 import api from "../api";
-import NameModal from "../components/modals/nameModal";
+import { AuthContext } from "../components/authContext";
 import Cropper from "react-easy-crop";
 import { Crown } from 'lucide-react';
 import { DndContext, PointerSensor, pointerWithin, rectIntersection, useSensor, useSensors } from "@dnd-kit/core";
@@ -7,16 +7,16 @@ import { FaArrowRight, FaCog, FaFileUpload, FaMinus, FaPlus, FaPlusCircle, FaSig
 import { MagnifyingGlassIcon } from "@radix-ui/react-icons";
 import { useCallback, useContext, useEffect, useRef, useState } from "react";
 import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
-import { v4 } from "uuid";
-import { AuthContext } from "../components/authContext";
 import DeepFeedItem from "../components/channels/deepFeedItem";
 import FeedItem from "../components/channels/feedItem";
 import GetCroppedImg from "../functions/getCroppedImg";
+import InputModal from "../components/modals/inputModal";
 import MessageDropdown from "../components/messages/messageDropdown";
 import { ThemeContext } from "../themeProvider";
 import { Tooltip } from "react-tooltip";
 import { UnreadContext } from "../components/messages/unreadContext";
 import { ValidateTextInput } from "../functions/validateTextInput";
+import { v4 } from "uuid";
 import "../css/algorithms.css";
 import "../css/baseLayout.css";
 import "../css/basicStyles.css";
@@ -734,9 +734,9 @@ const BaseLayout = () => {
                     </div>
                 </main>
             </div>
-        <NameModal isOpen={nameModalOpen} onConfirm={nameModalConfirm} onCancel={nameModalCancel} title={pendingDeepFeed ? 
+        <InputModal isOpen={nameModalOpen} onConfirm={nameModalConfirm} onCancel={nameModalCancel} title={pendingDeepFeed ? 
                 `Combine ${pendingDeepFeed.sourceFeed?.feed_name} and ${pendingDeepFeed.targetFeed?.feed_name}` : 
-                'Name Your Combined Feed'
+                'Name your combined feed'
             }
             placeholder="Enter combined feed name..."
         /></>
