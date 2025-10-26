@@ -4,7 +4,7 @@ import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import PropTypes from 'prop-types'
 import { useCallback, useContext, useEffect, useRef, useState } from 'react'
-import { FaAlignCenter, FaArrowCircleUp, FaArrowRight, FaCircleNotch, FaCommentAlt, FaCopy, FaCube, FaCrop, FaEdit, FaEllipsisV, FaEye, FaFont, FaGripVertical, FaLink, FaPhotoVideo, FaRegLightbulb, FaReply, FaSave, FaShareAlt, FaTerminal, FaTimes, FaToolbox, FaTrash, FaWindowClose } from 'react-icons/fa'
+import { FaAlignCenter, FaArrowCircleUp, FaArrowRight, FaCircleNotch, FaCommentAlt, FaCopy, FaCube, FaCrop, FaEdit, FaEllipsisV, FaEye, FaFileAlt, FaFont, FaGripVertical, FaLink, FaPhotoVideo, FaReply, FaSave, FaShareAlt, FaTerminal, FaTimes, FaToolbox, FaTrash, FaWindowClose, FaFile } from 'react-icons/fa'
 import ReactQuill from 'react-quill'
 import 'react-quill/dist/quill.snow.css'
 import { v4 } from 'uuid'
@@ -803,7 +803,7 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
                         </button>
                         <div className="dropdown" style={{ position: 'relative' }}>
                             <button className="small-icon" type="button" onClick={() => setAddContentDropdownOpen(!addContentDropdownOpen)} title="Add content">
-                                <FaEllipsisV /><span className="icon-text">Add content</span>
+                                <FaEllipsisV /><span className="icon-text">Add</span>
                             </button>
                             {addContentDropdownOpen && (
                                 <div className="dropdown-menu" style={{ position: 'absolute', zIndex: 100, left: 0, top: '100%' }}>
@@ -830,8 +830,8 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
                         </div>
                         <div className="right-buttons" style={{ display: 'flex', position: 'absolute', right: '0' }}>
                             {isEdit && (
-                                <button className="small-icon" type="button" onClick={deleteClick} title={isDraft ? 'Delete draft' : isEdit ? 'Delete post' : 'Delete'}>
-                                    <FaTrash />
+                                <button className="small-icon" type="button" onClick={deleteClick} title={isDraft ? 'Delete draft' : 'Delete post'}>
+                                    <FaTrash /><p className="icon-text">Delete</p>
                                 </button>
                             )}
                             {isReply ? (
@@ -840,24 +840,15 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
                                 </button>
                             ) : isEdit && !isDraft ? (
                                 <button className="small-icon" form="post-form" type="submit" title="Save edit">
-                                    <FaSave />
+                                    <FaSave /><p className="icon-text">Save edit</p>
                                 </button>
-                            ) : isEdit && isDraft ? (
-                                <>
-                                    <button className="small-icon" type="button" onClick={saveDraft} title="Save draft">
-                                        <FaSave />
-                                    </button>
-                                    <button className="small-icon" form="post-form" type="submit" title="Post" onClick={() => setIsPostingDraft(true)}>
-                                        <FaArrowRight /><p className="icon-text">Create post</p>
-                                    </button>
-                                </>
                             ) : (
                                 <>
                                     <button className="small-icon" type="button" onClick={saveDraft} title="Save draft">
-                                        <FaSave />
+                                        <FaFileAlt /><p className="icon-text">Save draft</p>
                                     </button>
                                     <button className="small-icon" form="post-form" type="submit" title="Post" onClick={() => setIsPostingDraft(true)}>
-                                        <FaArrowRight /><p className="icon-text">Create post</p>
+                                        <FaArrowRight /><p className="icon-text">Post</p>
                                     </button>
                                 </>
                             )}
@@ -865,7 +856,7 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
                     </div>
                 </div>
                 <div style={{ alignItems: 'center', alignSelf: 'center', display: 'flex', justifyContent: 'space-between', width: '97%' }}>
-                    {!hasMembership ? (<Link className="small-icon" to={`/settings/${user?.username}/membership`} type="button" title="View Membership">
+                    {!hasMembership ? (<Link className="small-icon" style={{ marginLeft: 0 }} to={`/settings/${user?.username}/membership`} type="button" title="View Membership">
                         <Crown />
                         <p className="icon-text">{blockLimitError ? blockLimitError : "Get membership"}</p>
                     </Link>) : (

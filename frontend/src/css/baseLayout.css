@@ -116,7 +116,6 @@
   background-color: var(--dark);
 }
 .channel-list {
-  margin-left: var(--medium-margin);
   width: 90%;
 }
 .channel-list-link, .channel-list-link:visited {
@@ -127,8 +126,8 @@
   align-items: center;
   display: flex;
   flex-direction: column;
-  margin-top: var(--large-margin);
-  width: 100%;
+  margin-top: var(--medium-margin);
+  width: 90%;
 }
 .chat-channel-button, .conversation-button, .posts-channel-button {
   background-color: var(--darkest);

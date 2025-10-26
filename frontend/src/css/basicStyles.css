@@ -56,7 +56,7 @@ input, textarea, select {
     color: var(--light);
 }
 .icon-text {
-    margin: 0 0 0 var(--medium-margin); /*Text always to the right of the icon*/
+    margin: 0 0 0 var(--small-margin); /*Text always to the right of the icon*/
 }
 input[type="text"] {
     outline: none;

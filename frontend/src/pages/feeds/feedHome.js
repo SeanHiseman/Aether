@@ -528,6 +528,9 @@ const FeedHome = () => {
                     {feedErrorMessage && <div className="tiny-text faded-text">{feedErrorMessage}</div>}
                     {channelRender && (
                         <div className="channel-name-section">
+                            <Link to={`/${urlPrefix}/${feed_name}/${channel_name}`} className="channel-header-text" style={{ margin: 0, width: '100%' }}>
+                                Current channel: {channel_name}
+                            </Link>
                             {isEditingChannelName ? (
                                 <div className="change-name">
                                     <textarea
@@ -572,9 +575,9 @@ const FeedHome = () => {
                             ) : (
                                 <div className="channel-name">
                                     <div className="feed-name">
-                                        <Link to={`/${urlPrefix}/${feed_name}/${channel_name}`}>
+                                        {isAdmin && <Link to={`/${urlPrefix}/${feed_name}/${channel_name}`}>
                                             <p className="medium-text">{channel_name}</p>
-                                        </Link>
+                                        </Link>}
                                         {channel_name !== "Main" && isAdmin && (
                                             <div className="dropdown" style={{ position: 'relative' }}>
                                                 <button

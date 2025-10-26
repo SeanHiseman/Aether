@@ -119,7 +119,7 @@ const ChannelList = ({ canReorder = false, channels, feedId, feedName, isChat, i
                 <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
                     <SortableContext items={channelIdsForDnd} strategy={verticalListSortingStrategy}>
                         <nav className="channel-list">
-                            <p className="channel-header-text">Channels</p>
+                            <p className="channel-header-text" style={{ margin: 0 }}>Channels</p>
                             {errorMessage && <div className="error-message">{errorMessage}</div>}
                             <ul>
                                 {validFeedChannels.map(channel => (
@@ -138,7 +138,7 @@ const ChannelList = ({ canReorder = false, channels, feedId, feedName, isChat, i
         } else {
             return (
                 <nav className="channel-list">
-                    <p className="channel-header-text">Channels</p>
+                    <p className="channel-header-text" style={{ margin: 0 }}>Channels</p>
                     {errorMessage && <div className="error-message">{errorMessage}</div>}
                     <ul>
                         {currentChannels.map(channel => (
@@ -158,7 +158,7 @@ const ChannelList = ({ canReorder = false, channels, feedId, feedName, isChat, i
     } else {
         return (
             <nav className="channel-list">
-                <p className="channel-header-text">Channels</p>
+                <p className="channel-header-text" style={{ margin: 0 }}>Channels</p>
                 {errorMessage && <div className="error-message">{errorMessage}</div>}
                 <ul>
                     {currentChannels.map(channel => (
