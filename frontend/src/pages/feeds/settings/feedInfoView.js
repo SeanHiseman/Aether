@@ -256,10 +256,10 @@ const FeedInfoView = () => {
                             <textarea className="change-name-area" value={newDescription} placeholder="Description..." 
                                 onChange={(e) => {
                                     const input = e.target.value;
-                                    if (input.length <= 1000) {
+                                    if (input.length <= 200) {
                                         setDescription(input);
                                         if (input) {
-                                            const result = ValidateTextInput(input, 0, 1000);
+                                            const result = ValidateTextInput(input, 0, 200, false);
                                             if (result.valid) {
                                                 setErrorMessage("");
                                                 setIsNewDescriptionValid(true);
@@ -272,7 +272,7 @@ const FeedInfoView = () => {
                                             setIsNewDescriptionValid(false);
                                         }
                                     } else {
-                                        setErrorMessage("No more than 1000 characters");
+                                        setErrorMessage("No more than 200 characters");
                                         setIsNewDescriptionValid(false);
                                     }
                                 }}

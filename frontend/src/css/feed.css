@@ -131,19 +131,16 @@
     justify-content: space-between;
     align-items: center;
 }
-.feed-header-photo {
-    align-items: center;
-    display: flex;
-    flex-direction: column;
-    max-width: 350px;
+.feed-widget-container * {
+    overflow-wrap: normal;
+    word-break: normal;
 }
-.feed-info {
+.feed-info, .feed-link, .feed-widget-info, .feed-widget-link {
     align-items: center;
     display: flex;
 }
-.feed-link {
-    align-items: center;
-    display: flex;
+.feed-wiget-type {
+    margin-left: var(--medium-margin);
 }
 .feed-list {
     transform: translateZ(0);
@@ -305,5 +302,12 @@
 @media (max-width: 768px) {
     .feed-settings {
         width: 100%;
+    }
+    .feed-widget-info, .feed-widget-link {
+        flex-direction: column;
+        text-align: center;
+    }
+    .feed-wiget-type {
+        margin-left: 0;
     }
 }

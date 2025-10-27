@@ -196,7 +196,7 @@ router.post('/change_deep_feed_name', standardLimiter, authenticateCheck, async 
 router.post('/change_description', standardLimiter, authenticateCheck, async (req, res) => {
     try {
         const { description, feedId } = req.body;
-        const descriptionCheck = ValidateTextInput(description, 0, 1000);
+        const descriptionCheck = ValidateTextInput(description, 0, 200, false);
         if (!descriptionCheck.valid) {
             return res.status(400).json({ message: descriptionCheck.error });
         }

@@ -191,7 +191,7 @@ const MembershipSettings = () => {
             <div className="header-section">
                 <p className="main-title">Get Membership</p>
                 <p className="main-subtitle">
-                    Experience the best of Aether Social
+                    Help support Aether Social
                 </p>
             </div>
             <div className="features-grid">
