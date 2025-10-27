@@ -59,7 +59,7 @@ const ExplorePage = () => {
 			const cached = localStorage.getItem("followedFeeds");
 			const excludedFeedIds = cached ? JSON.parse(cached).map(f => f.feed_id) : [];
 			const response = await api.post("/explore_feeds", {
-				limit: 30, 
+				limit: 30, //5 posts then 3 feeds
 				offset: page * 30, 
 				exclude: [...shownFeedIdsRef.current, ...excludedFeedIds] 
 			});
@@ -114,7 +114,8 @@ const ExplorePage = () => {
 	const handleScroll = useCallback(() => {
 		const element = scrollRef.current;
 		if (!element || isLoading) return;
-		if (element.scrollTop + element.clientHeight >= element.scrollHeight - 200) {
+		const threshold = window.innerHeight * 1.5; //Fetch new content 1.5 vertical height away from bottom
+		if (element.scrollTop + element.clientHeight >= element.scrollHeight - threshold) {
 			loadMore();
 		}
 	}, [loadMore, isLoading]);
@@ -169,11 +170,9 @@ const ExplorePage = () => {
 		setPosts([]);
 		shownPostIdsRef.current = [];
 		shownFeedIdsRef.current = [];
-		
 		const fetches = [];
 		if (filter === "all" || filter === "posts") fetches.push(fetchPosts(0));
 		if (filter === "all" || filter === "feeds") fetches.push(fetchFeeds(0));
-		
 		Promise.all(fetches).then(() => setIsLoading(false));
 	}, [refreshTrigger, fetchPosts, fetchFeeds, filter]);
 
@@ -189,14 +188,14 @@ const ExplorePage = () => {
 				) : (
 					<>
 						{filter === "all" && (
-							<div className="flex flex-col gap-3 w-99">
+							<div className="flex flex-col w-99">
 								{combinedItems.map((item, idx) =>
 									item?.type === "post" ? (
 										<div key={`post-${item?.data?.post_id}`} className="bg-gray-800 rounded-xl">
 											<ContentWidget post={item?.data} />
 										</div>
 									) : (
-										<div key={`feedtriplet-${idx}`} className="grid grid-cols-3 gap-3 w-full">
+										<div key={`feedtriplet-${idx}`} className="grid grid-cols-3 gap-3 w-full med-mar-top">
 											{item.data.map(feed => (
 												<FeedWidget key={feed?.feed_id} feed={feed} isAuthenticated={isAuthenticated} updateFeeds={updateFeeds} viewerId={viewer?.feed_id} />
 											))}
@@ -206,7 +205,7 @@ const ExplorePage = () => {
 							</div>
 						)}
 						{filter === "posts" && (
-							<div className="flex flex-col gap-3 w-99">
+							<div className="flex flex-col w-99">
 								{posts.map(post => (
 									<div key={post.post_id} className="bg-gray-800 rounded-xl">
 										<ContentWidget post={post} />
@@ -215,7 +214,7 @@ const ExplorePage = () => {
 							</div>
 						)}
 						{filter === "feeds" && (
-							<div className="flex flex-col gap-3 w-99">
+							<div className="flex flex-col gap-3 w-99 med-mar-top">
 								<div className="grid grid-cols-3 md:grid-cols-4 gap-3 w-full">
 									{feeds.map(feed => (
 										<FeedWidget key={feed?.feed_id} feed={feed} isAuthenticated={isAuthenticated} updateFeeds={updateFeeds} viewerId={viewer?.feed_id} />     

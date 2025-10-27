@@ -11,7 +11,7 @@ import FollowerChangeButton from '../../components/followerChangeButton';
 import { Link, useLocation, useNavigate, useOutletContext, useParams } from 'react-router-dom';
 import ManageConnectionButton from '../../components/messages/manageConnectionButton';
 import PostChannel from '../../components/channels/postChannel';
-import { useContext, useEffect, useState } from 'react';
+import { useContext, useEffect, useRef, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { ValidateTextInput } from '../../functions/validateTextInput';
 
@@ -493,9 +493,7 @@ const FeedHome = () => {
     }
     return (    
         <><div className="standard-container">
-            <div className="channel-feed">
-                {renderChannelContent()}
-            </div>
+            {renderChannelContent()}
             {!loading ? (
                 <aside className={rightClasses}>
                     <div id="feed-summary">

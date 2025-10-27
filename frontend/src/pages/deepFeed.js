@@ -1,6 +1,6 @@
 import AlgorithmSelector from '../algorithms/algorithmSelector';
 import api from '../api';
-import { useContext, useEffect, useRef, useState } from 'react';
+import { useContext, useEffect, useRef, useState, useCallback } from 'react';
 import { FaEdit, FaMinus, FaRegWindowClose, FaSave, FaTrash } from 'react-icons/fa';
 import { useNavigate, useOutletContext, useParams } from 'react-router-dom';
 import { AuthContext } from '../components/authContext';
@@ -21,7 +21,7 @@ const DeepFeed = () => {
     const [isNewNameValid, setIsNewNameValid] = useState(false);
     const [newName, setNewName] = useState('');
     const [refreshTrigger, setRefreshTrigger] = useState(false);
-    const loaderRef = useRef(null);
+    const scrollRef = useRef(null);
     const navigate = useNavigate();
     const queryClient = useQueryClient();
     const { rightClasses, updateFeeds } = useOutletContext(); 
@@ -224,23 +224,25 @@ const DeepFeed = () => {
         return () => window.removeEventListener('deepFeedUpdated', handleUpdate);
     }, [deep_feed_id, queryClient]);
 
-    useEffect(() => {
-        const observer = new IntersectionObserver((entries) => {
-            if (entries[0].isIntersecting && hasNextPage && !isFetchingNextPage) {
-                fetchNextPage();
-            }
-        });
-        if (loaderRef.current) {
-            observer.observe(loaderRef.current);
-        }
-        return () => {
-            if (loaderRef.current) {
-                observer.unobserve(loaderRef.current);
-            }
-        };
-    }, [loaderRef, hasNextPage, isFetchingNextPage, fetchNextPage]);
-
     const allPosts = Array.isArray(data?.pages) ? data.pages.flatMap(page => Array.isArray(page) ? page : []) : [];
+
+    const handleScroll = useCallback(() => {
+        const element = scrollRef.current;
+        if (!element || isFetchingNextPage || !hasNextPage) return;
+        const threshold = window.innerHeight * 1.5; //Fetch new content 1.5 vertical height away from bottom
+        if (element.scrollTop + element.clientHeight >= element.scrollHeight - threshold) {
+            fetchNextPage();
+        }
+    }, [fetchNextPage, isFetchingNextPage, hasNextPage]);
+
+    useEffect(() => {
+        const element = scrollRef.current;
+        const scrollHandler = (e) => {
+            handleScroll();
+        };
+        element.addEventListener('scroll', scrollHandler);
+        return () => element.removeEventListener('scroll', scrollHandler);
+    }, [handleScroll, allPosts.length]);
 
     const refreshPosts = () => {
         setRefreshTrigger(!refreshTrigger);
@@ -255,25 +257,25 @@ const DeepFeed = () => {
 
     return (
         <><div className="standard-container">
-            <div className="channel-feed">
-                <div className="channel-content">
-                    {allPosts.length > 0 ? (
-                        <>
-                            <ul className="content-list">
-                                {allPosts.map((post) => (
-                                    post ? (
-                                        <ContentWidget key={post?.post_id || Math.random()} post={post} />
-                                    ) : null
-                                ))}
-                            </ul>
-                            <div ref={loaderRef}>
-                                {isFetchingNextPage && <p className="large-text faded-text">Loading more posts...</p>}
+            <div ref={scrollRef} onScroll={handleScroll} className="channel-feed">
+                {allPosts.length > 0 ? (
+                    <div className="flex flex-col w-99">
+                        {allPosts.map((post) => (
+                            post ? (
+                                <div key={post?.post_id || Math.random()} className="bg-gray-800 rounded-xl">
+                                    <ContentWidget post={post} />
+                                </div>
+                            ) : null
+                        ))}
+                        {isFetchingNextPage && (
+                            <div className="flex justify-center py-4">
+                                <p className="large-text faded-text">Loading more posts...</p>
                             </div>
-                        </>
-                    ) : (
-                        !isLoading && <p className="large-text faded-text">No posts yet</p>
-                    )}
-                </div>
+                        )}
+                    </div>
+                ) : (
+                    !isLoading && <p className="large-text faded-text">No posts yet</p>
+                )}
             </div>
             <aside className={rightClasses}>
                 <div className="channel-name-section">

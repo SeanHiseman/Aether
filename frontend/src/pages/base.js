@@ -45,8 +45,6 @@ const BaseLayout = () => {
 	const [feedPhotoFile, setFeedPhotoFile] = useState(null);
 	const [feedType, setFeedType] = useState("public");
 	const [feeds, setFeeds] = useState([]);
-	const [feedsOffset, setFeedsOffset] = useState(0);
-	const [hasMoreFeeds, setHasMoreFeeds] = useState(true);
 	const [headerErrorMessage, setHeaderErrorMessage] = useState("");
 	const [imageSrc, setImageSrc] = useState(null);   
     const [isFeedNameValid, setIsFeedNameValid] = useState(true);  
@@ -237,7 +235,7 @@ const BaseLayout = () => {
     };
 
     useEffect(() => {
-        if (!isAuthenticated || !viewer?.feed_id || !hasMoreFeeds) {
+        if (!isAuthenticated || !viewer?.feed_id) {
             return;
         }
         (async () => {
@@ -247,17 +245,9 @@ const BaseLayout = () => {
                 setFeed(userFeed);
                 setTheme(userFeed?.theme);
                 const storedFeeds = JSON.parse(localStorage.getItem("followedFeeds")) || [];
-                const newFeeds = storedFeeds.slice(feedsOffset, feedsOffset + 30);
-                if (newFeeds.length < 30) {
-                    setHasMoreFeeds(false);
-                }
-                setFeeds(prev => {
-                    const combined = [...prev, ...newFeeds];
-                    combined.sort((a, b) =>
-                        a?.feed_name?.localeCompare(b?.feed_name)
-                    );
-                    return combined;
-                });
+                setFeeds(storedFeeds.sort((a, b) =>
+                    a?.feed_name?.localeCompare(b?.feed_name)
+                ));
                 const storedDeepFeeds = JSON.parse(localStorage.getItem("deepFeeds")) || [];
                 setDeepFeeds(storedDeepFeeds);
             }
@@ -266,32 +256,11 @@ const BaseLayout = () => {
                 setFeeds([]);
             }
         })();
-    }, [feedsOffset, hasMoreFeeds, isAuthenticated, viewer?.feed_id]);
+    }, [isAuthenticated, viewer?.feed_id, setTheme]);
 
     const registerFeedCallback = useCallback((deepFeedId, callback) => {
         setDeepFeedCallbacks(prev => ({ ...prev, [deepFeedId]: callback }));
     }, []);
-
-    useEffect(() => {
-        const handleScroll = () => {
-            const c = feedContainerRef.current;
-            if (c && hasMoreFeeds) {
-                const { scrollTop, scrollHeight, clientHeight } = c;
-                if (scrollHeight - scrollTop <= clientHeight + 50) {
-                    setFeedsOffset(prev => prev + 30);
-                }
-            }
-        };
-        const c = feedContainerRef.current;
-        if (c) {
-            c.addEventListener("scroll", handleScroll);
-        }
-        return () => {
-            if (c) {
-                c.removeEventListener("scroll", handleScroll);
-            }
-        };
-    }, [hasMoreFeeds]);
 
     //Ask assistant temporarily deactivated
     const askClick = async e => {

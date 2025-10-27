@@ -1,5 +1,5 @@
 import api from '../../api';
-import { useContext, useEffect, useRef } from 'react';
+import { useCallback, useContext, useEffect, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useInfiniteQuery, useQuery, useQueryClient } from '@tanstack/react-query';
 import { AuthContext } from '../../components/authContext';
@@ -7,13 +7,13 @@ import ContentWidget from '../content/contentWidget';
 const FETCH_LIMIT = 50;
 
 const PostChannel = ({ channelId, channelName, feed, isDraft, isEditMode, isGroup, refreshTrigger }) => {
+	const { channel_name, post_id } = useParams();
 	const channelReady = !!channelId;
 	const feedId = feed?.feed_id;
-	const loaderRef = useRef(null);
-	const queryClient = useQueryClient();
-	const { channel_name, post_id } = useParams();
-	const { user, viewer } = useContext(AuthContext);
 	const isMain = channel_name === 'Main';
+	const queryClient = useQueryClient();
+	const scrollRef = useRef(null);
+	const { user, viewer } = useContext(AuthContext);
 	const navigate = useNavigate();
 
 	useEffect(() => {
@@ -34,7 +34,7 @@ const PostChannel = ({ channelId, channelName, feed, isDraft, isEditMode, isGrou
 	const getSinglePost = async () => {
 		try {
 			const response = await api.post('/channel_posts', { feedId, isSingle: true, postId: post_id });
-			return response.data.post;
+			return response.data?.post;
 		} catch (error) {
 			throw error;
 		}
@@ -44,7 +44,7 @@ const PostChannel = ({ channelId, channelName, feed, isDraft, isEditMode, isGrou
 		try {
 			const recentUpvotes = JSON.parse(localStorage.getItem("recentUpvotes") || "[]");
 			const response = await api.post('/channel_posts', { channelId, feedId, isMain, isGroup: feed?.is_group, isSingle: false, limit: FETCH_LIMIT, offset: pageParam, recentUpvotes });
-			return response.data.posts || [];
+			return response.data?.posts || [];
 		} catch (error) {
 			if (error.response?.status === 404) {
 				return [];
@@ -66,7 +66,10 @@ const PostChannel = ({ channelId, channelName, feed, isDraft, isEditMode, isGrou
 		enabled: !post_id && isDraft && channelReady,
 		queryKey: ['drafts', channelId, viewer?.feed_id],
 		queryFn: getDrafts,
-		getNextPageParam: (lastPage, allPages) => lastPage.length === FETCH_LIMIT ? allPages.length * FETCH_LIMIT : undefined
+		getNextPageParam: (lastPage, allPages) => {
+			const nextParam = lastPage.length === FETCH_LIMIT ? allPages.length * FETCH_LIMIT : undefined;
+			return nextParam;
+		}
 	});
 
 	const { data: singlePost, error: singlePostError, isLoading: singlePostLoading } = useQuery({
@@ -76,8 +79,11 @@ const PostChannel = ({ channelId, channelName, feed, isDraft, isEditMode, isGrou
 	});
 
 	const { data: postsData, error: postsError, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading: postsLoading } = useInfiniteQuery({
-		enabled: !post_id,
-		getNextPageParam: (lastPage, allPages) => lastPage.length === FETCH_LIMIT ? allPages.length * FETCH_LIMIT : undefined,
+		enabled: !post_id && !isDraft && channelReady,
+		getNextPageParam: (lastPage, allPages) => {
+			const nextParam = lastPage.length === FETCH_LIMIT ? allPages.length * FETCH_LIMIT : undefined;
+			return nextParam;
+		},
 		queryFn: getPosts,
 		queryKey: ['posts', channelId, channelName, feedId, isGroup]
 	});
@@ -96,18 +102,33 @@ const PostChannel = ({ channelId, channelName, feed, isDraft, isEditMode, isGrou
 		}
 	};
 
+	const threshold = window.innerHeight * 1.5; //1.5 vertical height away from bottom
+
+	const handleScroll = useCallback(() => {
+		const element = scrollRef.current;
+		if (!element) return;
+		const isFetching = isDraft ? isFetchingDrafts : isFetchingNextPage;
+		const hasMore = isDraft ? hasMoreDrafts : hasNextPage;
+		const fetchNext = isDraft ? fetchNextDrafts : fetchNextPage;
+		if (isFetching || !hasMore) return;
+		const shouldFetch = element.scrollTop + element.clientHeight >= element.scrollHeight - threshold;
+		if (shouldFetch) fetchNext();
+	}, [isDraft, isFetchingDrafts, hasMoreDrafts, fetchNextDrafts, isFetchingNextPage, hasNextPage, fetchNextPage]);
+
 	useEffect(() => {
-		const obs = new IntersectionObserver(([entry]) => {
-			if (!entry.isIntersecting) return;
-			if (isDraft) {
-				hasMoreDrafts && !isFetchingDrafts && fetchNextDrafts();
-			} else {
-				hasNextPage && !isFetchingNextPage && fetchNextPage();
-			}
-		});
-		loaderRef.current && obs.observe(loaderRef.current);
-		return () => loaderRef.current && obs.unobserve(loaderRef.current);
-	}, [isDraft, hasMoreDrafts, isFetchingDrafts, fetchNextDrafts, hasNextPage, isFetchingNextPage, fetchNextPage]);
+		const scrollHandler = () => {
+			const element = scrollRef.current;
+			if (!element) return;
+			const isFetching = isDraft ? isFetchingDrafts : isFetchingNextPage;
+			const hasMore = isDraft ? hasMoreDrafts : hasNextPage;
+			const fetchNext = isDraft ? fetchNextDrafts : fetchNextPage;
+			if (isFetching || !hasMore) return;
+			const distanceFromBottom = element.scrollHeight - window.scrollY - window.innerHeight;
+			if (distanceFromBottom <= threshold) fetchNext();
+		};
+		window.addEventListener('scroll', scrollHandler);
+		return () => window.removeEventListener('scroll', scrollHandler);
+	}, [isDraft, isFetchingDrafts, hasMoreDrafts, fetchNextDrafts, isFetchingNextPage, hasNextPage, fetchNextPage]);
 
 	let channelMessage = '';
 
@@ -136,29 +157,37 @@ const PostChannel = ({ channelId, channelName, feed, isDraft, isEditMode, isGrou
 			<ContentWidget key={post?.post_id} feed={feed} isDraft={isDraft} onPostRemoved={handlePostRemoved} post={post} />
 		));
 
-    return (
-        <div className="channel">
-            <div className="channel-content">
-                {channelMessage ? (
-                    <p className="large-text faded-text">{channelMessage}</p>
-                ) : (post_id && !isEditMode) ? (
-                    <ul className="content-list">
-                        <ContentWidget feed={feed} isDraft={isDraft} onPostRemoved={handlePostRemoved} post={singlePost} />
-                    </ul>
-                ) : isDraft ? (
-                    <ul className="content-list">
-                        <p className="large-text">Drafts</p>
-                        {renderList(draftsData?.pages.flat())}
-                    </ul>
-                ) : (
-                    <ul className="content-list">{renderList(postsData?.pages.flat())}</ul>
-                )}
-				<div ref={loaderRef}>
-					{((isDraft && isFetchingDrafts) || (!isDraft && isFetchingNextPage)) && (
-						<p className="large-text faded-text">Loading more {isDraft ? 'drafts' : 'posts'}...</p>
-					)}
+	return (
+		<div ref={scrollRef} onScroll={handleScroll} className="channel-feed">
+			{channelMessage ? (
+				<p className="large-text faded-text">{channelMessage}</p>
+			) : (post_id && !isEditMode) ? (
+				<div className="flex flex-col w-99">
+					<div className="bg-gray-800 rounded-xl">
+						<ContentWidget feed={feed} isDraft={isDraft} onPostRemoved={handlePostRemoved} post={singlePost} />
+					</div>
 				</div>
-			</div>
+			) : isDraft ? (
+				<div className="flex flex-col w-99">
+					<p className="large-text">Drafts</p>
+					{draftsData?.pages.flat().map((post) => (
+						<div key={post?.draft_id || Math.random()} className="bg-gray-800 rounded-xl">
+							<ContentWidget feed={feed} isDraft={isDraft} onPostRemoved={handlePostRemoved} post={post} />
+						</div>
+					))}
+				</div>
+			) : (
+				<div className="flex flex-col w-99">
+					{postsData?.pages.flat().map((post) => (
+						<div key={post?.post_id || Math.random()} className="bg-gray-800 rounded-xl">
+							<ContentWidget feed={feed} isDraft={isDraft} onPostRemoved={handlePostRemoved} post={post} />
+						</div>
+					))}
+				</div>
+			)}
+			{((isDraft && isFetchingDrafts) || (!isDraft && isFetchingNextPage)) && (
+				<p className="large-text faded-text">Loading more {isDraft ? 'drafts' : 'posts'}...</p>
+			)}
 		</div>
 	);
 };

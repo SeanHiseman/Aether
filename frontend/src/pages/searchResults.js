@@ -1,9 +1,8 @@
 import AlgorithmSelector from '../algorithms/algorithmSelector';
 import api from '../api';
 import { AuthContext } from '../components/authContext';
-import { useCallback, useContext, useEffect, useRef, useState, useMemo } from 'react';
+import { useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { FaChevronDown, FaChevronUp } from 'react-icons/fa';
-import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
 import { useOutletContext, useSearchParams } from 'react-router-dom';
 import { ChunkFeeds } from '../functions/chunkFeeds';
 import ContentWidget from '../components/content/contentWidget';
@@ -11,170 +10,208 @@ import FeedWidget from '../components/content/feedWidget';
 const FETCH_LIMIT = 50;
 
 const SearchResults = () => {
-    const [dropdownOpen, setDropdownOpen] = useState(false);
-    const [errorMessage, setErrorMessage] = useState('');
-    const [feedTypeFilter, setFeedTypeFilter] = useState('all');
-    const [feedPage, setFeedPage] = useState(0);
-    const [postPage, setPostPage] = useState(0);
-    const [selectedView, setSelectedView] = useState('combined');
-    const [searchParams] = useSearchParams();
-    const keyword = (searchParams.get('keyword') || '').trim();
-    const { isAuthenticated, viewer } = useContext(AuthContext);
-    const loaderRef = useRef(null);
-    const queryClient = useQueryClient();
-    const { rightClasses, updateFeeds } = useOutletContext();
-    const [refreshTrigger, setRefreshTrigger] = useState(false);
-    const scrollRef = useRef(null);
+	const [dropdownOpen, setDropdownOpen] = useState(false);
+	const [errorMessage, setErrorMessage] = useState('');
+	const [feedPage, setFeedPage] = useState(0);
+	const [feeds, setFeeds] = useState([]);
+	const [feedTypeFilter, setFeedTypeFilter] = useState('all');
+	const [hasMoreFeeds, setHasMoreFeeds] = useState(true);
+	const [hasMorePosts, setHasMorePosts] = useState(true);
+	const [isLoading, setIsLoading] = useState(false);
+	const [postPage, setPostPage] = useState(0);
+	const [posts, setPosts] = useState([]);
+	const [selectedView, setSelectedView] = useState('combined');
+	const [searchParams] = useSearchParams();
+	const keyword = (searchParams.get('keyword') || '').trim();
+	const { isAuthenticated, viewer } = useContext(AuthContext);
+	const { rightClasses, updateFeeds } = useOutletContext();
+	const [refreshTrigger, setRefreshTrigger] = useState(false);
+	const shownPostIdsRef = useRef([]);
+	const shownFeedIdsRef = useRef([]);
+	const scrollRef = useRef(null);
 
-    //Gets results depending on which type is being viewed
-    const fetchSearchResults = useCallback(async ({ pageParam = {} }) => {
-        try {
-            const recentUpvotes = JSON.parse(localStorage.getItem("recentUpvotes") || "[]");
-            //Depends on if viewing combined or separate
-            const feedOffset = pageParam.feedOffset || feedPage * FETCH_LIMIT;
-            const postOffset = pageParam.postOffset || postPage * FETCH_LIMIT;
-            const response = await api.post("/search", {
-                keyword,
-                limit: FETCH_LIMIT,
-                feedOffset,
-                postOffset,
-                recentUpvotes
-            });
-            const feeds = response.data?.feeds || [];
-            const posts = response.data?.posts || [];
-            return { feeds, posts };
-        } catch (error) {
-            setErrorMessage(error.response?.data?.message || "Error getting search results");
-            return { feeds: [], posts: [] };
-        }
-    }, [keyword, feedPage, postPage]);
+	const fetchPosts = useCallback(async (page = 0) => {
+		try {
+			const recentUpvotes = JSON.parse(localStorage.getItem('recentUpvotes') || '[]');
+			const response = await api.post('/search', {
+				keyword,
+				limit: FETCH_LIMIT,
+				feedOffset: 0,
+				postOffset: page * FETCH_LIMIT,
+				recentUpvotes
+			});
+			const newPosts = response.data?.posts || [];
+			if (newPosts.length === 0) {
+				setHasMorePosts(false);
+				return;
+			}
+			if (page === 0) {
+				setPosts(newPosts);
+				shownPostIdsRef.current = newPosts.map(p => p?.post_id);
+			} else {
+				setPosts(prev => [...prev, ...newPosts]);
+				const newIds = newPosts.map(p => p?.post_id);
+				shownPostIdsRef.current = [...shownPostIdsRef.current, ...newIds];
+			}
+		} catch (error) {
+			setErrorMessage(error.response?.data?.message || 'Failed to fetch posts');
+			setHasMorePosts(false);
+		}
+	}, [keyword]);
 
-    //Infinite query to handle pagination
-    const { data, error, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading, isError } = useInfiniteQuery({
-        queryKey: ['searchResults', keyword, viewer?.feed_id],
-        queryFn: fetchSearchResults,
-        getNextPageParam: (lastPage, allPages) => {
-            if (!lastPage) return undefined;
-            const feedCount = lastPage.feeds?.length || 0;
-            const postCount = lastPage.posts?.length || 0;
-            const totalCount = feedCount + postCount;
-            if (totalCount < FETCH_LIMIT) return undefined; // Stop fetching if less than 50 items
-            if (feedCount === 0 && postCount === 0) return undefined;
-            return {
-                feedOffset: feedPage * FETCH_LIMIT + feedCount,
-                postOffset: postPage * FETCH_LIMIT + postCount
-            };
-        },
-        enabled: !!keyword
-    });
+	const fetchFeeds = useCallback(async (page = 0) => {
+		try {
+			const recentUpvotes = JSON.parse(localStorage.getItem('recentUpvotes') || '[]');
+			const response = await api.post('/search', {
+				keyword,
+				limit: 30,
+				feedOffset: page * 30,
+				postOffset: 0,
+				recentUpvotes
+			});
+			let newFeeds = response.data?.feeds || [];
+			if (feedTypeFilter !== 'all') {
+				newFeeds = newFeeds.filter(feed => (feedTypeFilter === 'group' ? feed.is_group : !feed.is_group));
+			}
+			if (newFeeds.length === 0) {
+				setHasMoreFeeds(false);
+				return;
+			}
+			if (page === 0) {
+				setFeeds(newFeeds);
+				const newIds = newFeeds.map(f => f?.feed_id);
+				shownFeedIdsRef.current = newIds;
+			} else {
+				setFeeds(prev => [...prev, ...newFeeds]);
+				const newIds = newFeeds.map(f => f?.feed_id);
+				shownFeedIdsRef.current = [...shownFeedIdsRef.current, ...newIds];
+			}
+		} catch (error) {
+			setErrorMessage(error.response?.data?.message || 'Failed to fetch feeds');
+			setHasMoreFeeds(false);
+		}
+	}, [keyword, feedTypeFilter]);
 
-    //Intersection observer for infinite scrolling
-    useEffect(() => {
-        const observer = new IntersectionObserver((entries) => {
-            if (entries[0].isIntersecting && hasNextPage && !isFetchingNextPage) {
-                fetchNextPage({
-                    pageParam: {
-                        feedOffset: feedPage * FETCH_LIMIT,
-                        postOffset: postPage * FETCH_LIMIT
-                    }
-                });
-                setFeedPage(prev => prev + 1);
-                setPostPage(prev => prev + 1);
-            }
-        });
-        const currentLoader = loaderRef.current;
-        if (currentLoader) {
-            observer.observe(currentLoader);
-        }
-        return () => {
-            if (currentLoader) {
-                observer.unobserve(currentLoader);
-            }
-        };
-    }, [fetchNextPage, hasNextPage, isFetchingNextPage]);
+	const loadMore = useCallback(async () => {
+		if (isLoading) return;
+		if (selectedView === 'combined') {
+			if (!hasMorePosts && !hasMoreFeeds) return;
+			setIsLoading(true);
+			const nextPostPage = postPage + 1;
+			const nextFeedPage = feedPage + 1;
+			if (hasMorePosts) await fetchPosts(nextPostPage);
+			if (hasMoreFeeds) await fetchFeeds(nextFeedPage);
+			if (hasMorePosts) setPostPage(nextPostPage);
+			if (hasMoreFeeds) setFeedPage(nextFeedPage);
+			setIsLoading(false);
+		} else if (selectedView === 'posts' && hasMorePosts) {
+			setIsLoading(true);
+			const nextPostPage = postPage + 1;
+			await fetchPosts(nextPostPage);
+			setPostPage(nextPostPage);
+			setIsLoading(false);
+		} else if (selectedView === 'feeds' && hasMoreFeeds) {
+			setIsLoading(true);
+			const nextFeedPage = feedPage + 1;
+			await fetchFeeds(nextFeedPage);
+			setFeedPage(nextFeedPage);
+			setIsLoading(false);
+		}
+	}, [isLoading, selectedView, fetchPosts, fetchFeeds, postPage, feedPage, hasMorePosts, hasMoreFeeds]);
 
+	const handleScroll = useCallback(() => {
+		const element = scrollRef.current;
+		if (!element || isLoading) return;
+		const threshold = window.innerHeight * 1.5; //1.5vh from the bottom
+		if (element.scrollTop + element.clientHeight >= element.scrollHeight - threshold) {
+			loadMore();
+		}
+	}, [loadMore, isLoading]);
 
-    const dropdownToggle = (e) => {
-        e.stopPropagation();
-        setDropdownOpen((prevOpen) => !prevOpen);
-    };
-    
-    const filteredResults = useMemo(() => {
-        if (!data) return { feeds: [], posts: [] };
-        let allFeeds = data.pages.flatMap(page => page.feeds || []);
-        let allPosts = data.pages.flatMap(page => page.posts || []);
-        if (feedTypeFilter !== 'all') {
-            allFeeds = allFeeds.filter(feed => (feedTypeFilter === 'group' ? feed.is_group : !feed.is_group));
-        }
-        return { feeds: allFeeds, posts: allPosts };
-    }, [data, feedTypeFilter]);
-    
-    const { feeds, posts } = filteredResults;
+	const combinedItems = useMemo(() => {
+		if (selectedView !== 'combined') return [];
+		const feedTriplets = ChunkFeeds(feeds, 3).map(f => ({ type: 'feedTriplet', data: f }));
+		const postItems = posts.map(p => ({ type: 'post', data: p }));
+		const interspersed = [];
+		const POSTS_PER_BLOCK = 5;
+		let postIndex = 0;
+		let feedIndex = 0;
+		while (postIndex < postItems.length || feedIndex < feedTriplets.length) {
+			for (let i = 0; i < POSTS_PER_BLOCK && postIndex < postItems.length; i++) {
+				interspersed.push(postItems[postIndex]);
+				postIndex++;
+			}
+			if (feedIndex < feedTriplets.length) {
+				interspersed.push(feedTriplets[feedIndex]);
+				feedIndex++;
+			}
+		}
+		return interspersed;
+	}, [selectedView, posts, feeds]);
 
-    const combinedItems = useMemo(() => {
-        if (selectedView !== "combined") return [];
-        const feedTriplets = ChunkFeeds(feeds, 3).map(f => ({ type: "feedTriplet", data: f }));
-        const postItems = posts.map(p => ({ type: "post", data: p }));
-        const interspersed = [];
-        const POSTS_PER_BLOCK = 5; 
-        let postIndex = 0;
-        let feedIndex = 0;
-        while (postIndex < postItems.length || feedIndex < feedTriplets.length) {
-            for (let i = 0; i < POSTS_PER_BLOCK && postIndex < postItems.length; i++) {
-                interspersed.push(postItems[postIndex]);
-                postIndex++;
-            }
-            if (feedIndex < feedTriplets.length) {
-                interspersed.push(feedTriplets[feedIndex]);
-                feedIndex++;
-            }
-        }
-        return interspersed;
-    }, [selectedView, posts, feeds]);
+	const dropdownToggle = (e) => {
+		e.stopPropagation();
+		setDropdownOpen(prev => !prev);
+	};
 
-    useEffect(() => {
-        if (error) {
-            setErrorMessage('Failed to load results. Please try again.');
-        }
-    }, [error]);
+	const refreshPosts = () => {
+		setRefreshTrigger(!refreshTrigger);
+	};
 
-    const refreshPosts = () => {
-        setRefreshTrigger(!refreshTrigger);
-    };
+	useEffect(() => {
+		setIsLoading(true);
+		setFeedPage(0);
+		setPostPage(0);
+		setFeeds([]);
+		setPosts([]);
+		shownPostIdsRef.current = [];
+		shownFeedIdsRef.current = [];
+		const fetches = [];
+		if (selectedView === 'combined' || selectedView === 'posts') fetches.push(fetchPosts(0));
+		if (selectedView === 'combined' || selectedView === 'feeds') fetches.push(fetchFeeds(0));
+		Promise.all(fetches).then(() => setIsLoading(false));
+	}, [selectedView, fetchPosts, fetchFeeds, keyword, feedTypeFilter]);
 
-    //Refresh posts upon algorithm change
-    useEffect(() => {
-        if (refreshTrigger === false) return; 
-        queryClient.invalidateQueries(['searchResults', keyword, viewer?.feed_id]);
-    }, [refreshTrigger, queryClient, keyword, viewer?.feed_id]);
+	useEffect(() => {
+		if (refreshTrigger === false) return;
+		setIsLoading(true);
+		setFeedPage(0);
+		setPostPage(0);
+		setFeeds([]);
+		setPosts([]);
+		shownPostIdsRef.current = [];
+		shownFeedIdsRef.current = [];
+		const fetches = [];
+		if (selectedView === 'combined' || selectedView === 'posts') fetches.push(fetchPosts(0));
+		if (selectedView === 'combined' || selectedView === 'feeds') fetches.push(fetchFeeds(0));
+		Promise.all(fetches).then(() => setIsLoading(false));
+	}, [refreshTrigger, fetchPosts, fetchFeeds, selectedView, keyword, feedTypeFilter]);
 
-    document.title = 'Search';
-    return (
-        <div className="standard-container">
-            <div ref={scrollRef} className="channel-feed">
-                {isLoading ? (
-                    <div className="flex justify-center items-center h-64">
+	const isInitialLoad = isLoading && posts.length === 0 && feeds.length === 0;
+
+	document.title = 'Search';
+	return (
+		<div className="standard-container">
+			<div ref={scrollRef} onScroll={handleScroll} className="channel-feed">
+				{isInitialLoad ? (
+					<div className="flex justify-center items-center h-64">
 						<span className="text-xl faded-text">Loading results...</span>
 					</div>
-                ) : isError ? (
-                    <div className="flex justify-center items-center h-64">
-						<span className="text-xl faded-text">Failed to load results. Please try again.</span>
-					</div>
-                ) : (posts.length === 0 && feeds.length === 0) ? (
-                    <div className="flex justify-center items-center h-64">
+				) : (posts.length === 0 && feeds.length === 0) ? (
+					<div className="flex justify-center items-center h-64">
 						<span className="text-xl faded-text">No results found</span>
 					</div>
-                ) : (
-                    <>
-						{selectedView === "combined" && (
-							<div className="flex flex-col gap-3 w-99">
+				) : (
+					<>
+						{selectedView === 'combined' && (
+							<div className="flex flex-col w-99">
 								{combinedItems.map((item, idx) =>
-									item.type === "post" ? (
+									item.type === 'post' ? (
 										<div key={`post-${item.data.post_id}`} className="bg-gray-800 rounded-xl w-full">
 											<ContentWidget post={item.data} />
 										</div>
 									) : (
-										<div key={`feedtriplet-${idx}`} className="grid grid-cols-3 gap-3 w-full">
+										<div key={`feedtriplet-${idx}`} className="grid grid-cols-3 gap-3 med-mar-top w-full">
 											{item.data.map(feed => (
 												<FeedWidget key={feed.feed_id} feed={feed} isAuthenticated={isAuthenticated} updateFeeds={updateFeeds} viewerId={viewer?.feed_id} />
 											))}
@@ -183,53 +220,54 @@ const SearchResults = () => {
 								)}
 							</div>
 						)}
-						{selectedView === "posts" && (
-							<div className="flex flex-col gap-3 w-99">
+						{selectedView === 'posts' && (
+							<div className="flex flex-col w-99">
 								{posts.map(post => (
-									<div key={post?.post_id} className="bg-gray-800 rounded-xl w-full">
+									<div key={post.post_id} className="bg-gray-800 rounded-xl w-full">
 										<ContentWidget post={post} />
 									</div>
 								))}
 							</div>
 						)}
-						{selectedView === "feeds" && (
-							<div className="flex flex-col gap-3 w-99">
-                                <div className="grid grid-cols-3 md:grid-cols-4 gap-3 w-full">
-                                    {feeds.map(feed => (
-                                        <FeedWidget key={feed?.feed_id} feed={feed} isAuthenticated={isAuthenticated} updateFeeds={updateFeeds} viewerId={viewer?.feed_id} />
-                                    ))}
-                                </div>
+						{selectedView === 'feeds' && (
+							<div className="flex flex-col w-99">
+								<div className="grid grid-cols-3 gap-3 md:grid-cols-4 med-mar-top w-full">
+									{feeds.map(feed => (
+										<FeedWidget key={feed.feed_id} feed={feed} isAuthenticated={isAuthenticated} updateFeeds={updateFeeds} viewerId={viewer?.feed_id} />
+									))}
+								</div>
 							</div>
 						)}
-                        <div ref={loaderRef} className="h-20 flex justify-center items-center">
-                            {isFetchingNextPage && <p className="text-lg faded-text">Loading more...</p>}
-                        </div>
+						{isLoading && <p className="text-lg faded-text flex justify-center py-4">Loading more...</p>}
 					</>
-                )}
-            </div>
-            <aside className={rightClasses}>
-                <p className="large-text bold">Results for "{keyword}"</p>
-                <div className="error-message">{errorMessage}</div>
-                <nav className="channel-list">
-                    <ul>
-                        <li className="channel-link" onClick={() => setSelectedView('combined')}>All results</li>
-                        <li className="channel-link" onClick={() => setSelectedView('posts')}>Posts</li>
-                        <li className="channel-link" onClick={() => { setSelectedView('feeds'); setDropdownOpen(false)}}>Feeds
-                            <div className="channel-dropdown" onClick={dropdownToggle}>{dropdownOpen ? <FaChevronUp /> : <FaChevronDown />}</div> 
-                        </li>
-                        {dropdownOpen && selectedView === 'feeds' && (
-                            <ul style={{ marginLeft: '10px' }}>
-                                <li className="channel-link" onClick={(e) => { e.stopPropagation(); setFeedTypeFilter('all'); setDropdownOpen(false); }}>All feeds</li>
-                                <li className="channel-link" onClick={(e) => { e.stopPropagation(); setFeedTypeFilter('group'); setDropdownOpen(false); }}>Groups</li>
-                                <li className="channel-link" onClick={(e) => { e.stopPropagation(); setFeedTypeFilter('user'); setDropdownOpen(false); }}>Users</li>
-                            </ul>
-                        )}
-                    </ul>
-                </nav>
-				{isAuthenticated && <AlgorithmSelector locationId={"search"} refreshPosts={refreshPosts} />}
-            </aside>
-        </div>
-    );
+				)}
+			</div>
+			<aside className={rightClasses}>
+				<p className="large-text bold">Results for "{keyword}"</p>
+				<div className="error-message">{errorMessage}</div>
+				<nav className="channel-list">
+					<ul>
+						<li className="channel-link" onClick={() => setSelectedView('combined')}>All results</li>
+						<li className="channel-link" onClick={() => setSelectedView('posts')}>Posts</li>
+						<li className="channel-link" onClick={() => { setSelectedView('feeds'); setDropdownOpen(false); }}>
+							Feeds
+							<div className="channel-dropdown" onClick={dropdownToggle}>
+								{dropdownOpen ? <FaChevronUp /> : <FaChevronDown />}
+							</div>
+						</li>
+						{dropdownOpen && selectedView === 'feeds' && (
+							<ul style={{ marginLeft: '10px' }}>
+								<li className="channel-link" onClick={(e) => { e.stopPropagation(); setFeedTypeFilter('all'); setDropdownOpen(false); }}>All feeds</li>
+								<li className="channel-link" onClick={(e) => { e.stopPropagation(); setFeedTypeFilter('group'); setDropdownOpen(false); }}>Groups</li>
+								<li className="channel-link" onClick={(e) => { e.stopPropagation(); setFeedTypeFilter('user'); setDropdownOpen(false); }}>Users</li>
+							</ul>
+						)}
+					</ul>
+				</nav>
+				{isAuthenticated && <AlgorithmSelector locationId={'search'} refreshPosts={refreshPosts} />}
+			</aside>
+		</div>
+	);
 };
 
 export default SearchResults;
