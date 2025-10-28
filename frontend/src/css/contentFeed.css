@@ -24,6 +24,7 @@
 }
 .content-footer {
     align-items: center;
+    background-color: var(--darkest);
     display: flex;
     justify-content: space-between;
 }

@@ -251,6 +251,7 @@ const AlgorithmSelector = ({ display, locationId, refreshPosts }) => {
 													onClick={e => {
 														e.stopPropagation();
 														setEditingAlgorithm(a);
+														setOptionsOpen(false);
 													}}
 													title="Edit algorithm"
 												><FaEdit /></button>

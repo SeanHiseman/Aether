@@ -101,13 +101,23 @@ router.post('/create_algorithm', authenticateCheck, async (req, res) => {
 			algorithmCode = JSON.stringify(algorithmJson);
 		}
 		transaction = await sequelize.transaction();
-		const existingAlgorithm = await Algorithms.findOne({
-			where: { algorithm_name: algorithmName, viewer_id: viewerId },
-			transaction
-		});
+		let existingAlgorithm = null;
+		if (req.body.algorithmId) {
+			existingAlgorithm = await Algorithms.findOne({
+				where: { algorithm_id: req.body.algorithmId, viewer_id: viewerId },
+				transaction
+			});
+		}
+		if (!existingAlgorithm) {
+			existingAlgorithm = await Algorithms.findOne({
+				where: { algorithm_name: algorithmName, viewer_id: viewerId },
+				transaction
+			});
+		}
 		let algorithm;
 		if (existingAlgorithm) {
 			algorithm = await existingAlgorithm.update({
+				algorithm_name: algorithmName,
 				algorithm_code: algorithmCode,
 				custom_instruction: customInstruction || null
 			}, { transaction });
@@ -121,7 +131,9 @@ router.post('/create_algorithm', authenticateCheck, async (req, res) => {
 			}, { transaction });
 		}
 		await transaction.commit();
-		res.status(201).json({ success: true, newAlgorithm: {
+		res.status(201).json({
+			success: true,
+			algorithm: {
 				...algorithm.toJSON(),
 				algorithm_locations: [{ location_id: locationId }]
 			}

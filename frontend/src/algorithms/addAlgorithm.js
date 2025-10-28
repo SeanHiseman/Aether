@@ -177,7 +177,7 @@ const AddAlgorithm = ({ algorithms = [], display, editingAlgorithm = null, locat
             };
             const { data } = await api.post('/create_algorithm', payload);
             if (data.success) {
-                const saved = data?.updatedAlgorithm || data?.newAlgorithm;
+                const saved = data?.algorithm;
                 if (editingAlgorithm) {
                     onUpdated && onUpdated(saved);
                 } else {
