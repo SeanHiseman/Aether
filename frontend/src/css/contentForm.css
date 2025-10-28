@@ -89,15 +89,6 @@
   cursor: pointer;
   font-size: clamp(6px, 2vw, 16px);
 }
-.create-post-container {
-  align-items: center;
-  box-sizing: border-box;
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  margin-top: var(--header-height);
-  width: 99%;
-}
 .dropdown-menu {
   background-color: var(--dark);
   border: 1px solid var(--border);
@@ -132,6 +123,7 @@
 }
 .post-header-buttons {
   align-items: center;
+  background-color: var(--darkest);
   display: flex;
   justify-content: flex-start;
   position: relative;
@@ -188,9 +180,6 @@
 }
 .ql-toolbar.ql-snow .ql-formats {
   margin-right: 0 !important;
-}
-.single-container {
-  min-height: 46%;
 }
 .title-input {
   align-self: center;

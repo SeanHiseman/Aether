@@ -3,15 +3,16 @@ import { useEffect, useRef, useState } from 'react'
 import AppBlock from './appBlock'
 import AppWebContainer from './appWebContainer'
 
-const ContentDisplay = ({ post, onCodeAppChange = () => {}, onHeightChange = () => {}, onOverflowChange = () => {}, showFullContent = false, showScrollBar = true }) => {
+const ContentDisplay = ({ post, isFullscreen = false, onCodeAppChange = () => {}, onHeightChange = () => {}, onOverflowChange = () => {}, showFullContent = false, showScrollBar = true }) => {
 	const [blocks, setBlocks] = useState([]);
 	const content = post?.content;
 	const contentRef = useRef(null);
-	const heightStyle = showFullContent ? 'auto' : '70vh';
 	const [loading, setLoading] = useState(false);
 	const urlPrefix = post?.parentChannel?.feed?.is_group ? 'g' : 'u';
 
+	//Prevents redirect when already viewing the individual post
 	const handleRedirect = () => {
+		if (window.location.pathname.includes(`/${post?.post_id}`)) return;
 		window.location.href = `/${urlPrefix}/${post?.parentChannel?.feed?.feed_name}/${post?.parentChannel?.channel_name}/${post?.post_id}`;
 	};
 
@@ -90,10 +91,14 @@ const ContentDisplay = ({ post, onCodeAppChange = () => {}, onHeightChange = () 
 		const element = contentRef.current
 		if (!element) return
 		const fixed = blocks.some(b => b.type === 'code' || b.type === 'app')
+		const singleFixed = blocks.length === 1 && fixed
 		const update = () => {
 			const scrollHeight = element.scrollHeight;
 			const viewportHeight = window.innerHeight * 0.7; //70vh
-			const isOverflowing = fixed || scrollHeight > viewportHeight;
+			let isOverflowing = scrollHeight > viewportHeight;
+			if (singleFixed && scrollHeight <= viewportHeight) {
+				isOverflowing = false;
+			}
 			onOverflowChange(isOverflowing);
 			onHeightChange(scrollHeight);
 		}
@@ -120,7 +125,8 @@ const ContentDisplay = ({ post, onCodeAppChange = () => {}, onHeightChange = () 
 	}
 	return (
 		<div ref={contentRef} className="display-container" style={{ 
-			maxHeight: showFullContent ? 'none' : '70vh', 
+			maxHeight: (showFullContent || isFullscreen) ? 'none' : '70vh',
+			height: isFullscreen ? '100%' : 'auto',
 			overflow: showScrollBar ? 'auto' : 'hidden', 
 			position: 'relative', 
 			borderTopRightRadius: post?.title && '0', 
@@ -132,17 +138,17 @@ const ContentDisplay = ({ post, onCodeAppChange = () => {}, onHeightChange = () 
 					<div dangerouslySetInnerHTML={{ __html: block.html }} key={i} onClick={handleRedirect} style={{ cursor: 'pointer', paddingTop: 5, paddingLeft: 5, paddingRight: 5 }} />
 				);
 			}
-				if (block.type === 'code') {
-					return (
-						<iframe
-							key={i}
-							sandbox="allow-downloads allow-forms allow-modals allow-popups allow-scripts"
-							srcDoc={block.code}
-							style={{ border: 'none', height: '70vh', width: '100%' }}
-							title={`code-block-${block.id}`}
-						/>
-					)
-				}
+			if (block.type === 'code') {
+				return (
+					<iframe
+						key={i}
+						sandbox="allow-downloads allow-forms allow-modals allow-popups allow-scripts"
+						srcDoc={block.code}
+						style={{ border: 'none', height: isFullscreen ? '100%' : '70vh', width: '100%' }}
+						title={`code-block-${block.id}`}
+					/>
+				)
+			}
 				if (block.type === 'media') {
 					const styleObj =
 						block.align === 'center'
@@ -171,6 +177,7 @@ const ContentDisplay = ({ post, onCodeAppChange = () => {}, onHeightChange = () 
 
 ContentDisplay.propTypes = {
 	content: PropTypes.string,
+	isFullscreen: PropTypes.bool,
 	onCodeAppChange: PropTypes.func,
 	onHeightChange: PropTypes.func,
 	onOverflowChange: PropTypes.func,

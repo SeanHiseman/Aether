@@ -798,7 +798,7 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
         return null
     }
     return (
-        <><div className="create-post-container" style={{ paddingTop: isReply ? '0px' : '20px' }}>
+        <><div className="channel-feed" style={{ paddingTop: isReply ? '0px' : '20px' }}>
             {isReply && post && (
                 <div className="post-reply-preview">
                     <ContentWidget canRemove={false} feed={feed} onPostRemoved={() => { } } post={post} readOnly />

@@ -493,7 +493,6 @@ ul {
 }
 .vote-disabled, .vote-disabled:hover {
   background-color: var(--border) !important;
-  cursor: default !important;
 }
 
 

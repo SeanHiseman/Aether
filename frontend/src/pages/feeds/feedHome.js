@@ -5,7 +5,7 @@ import ChannelList from '../../components/channels/channelList';
 import ChatChannel from '../../components/channels/chatChannel';
 import ConfirmModal from '../../components/modals/confirmModal';
 import ContentForm from '../../components/content/contentForm';
-import { FaCog, FaEdit, FaFeatherAlt, FaFolder, FaFolderOpen, FaMinus, FaPlus, FaRegWindowClose, FaSave, FaTrash } from 'react-icons/fa';
+import { FaCog, FaEdit, FaFolder, FaFolderOpen, FaMinus, FaPlus, FaRegWindowClose, FaPen, FaSave, FaTrash } from 'react-icons/fa';
 import { FormatNumber } from '../../functions/formatNumber';
 import FollowerChangeButton from '../../components/followerChangeButton';
 import { Link, useLocation, useNavigate, useOutletContext, useParams } from 'react-router-dom';
@@ -529,7 +529,7 @@ const FeedHome = () => {
                     {channelRender && (
                         <div className="channel-name-section">
                             <Link to={`/${urlPrefix}/${feed_name}/${channel_name}`} className="channel-header-text" style={{ margin: 0, width: '100%' }}>
-                                Current channel: {channel_name}
+                                {channel_name}
                             </Link>
                             {isEditingChannelName ? (
                                 <div className="change-name">
@@ -690,7 +690,7 @@ const FeedHome = () => {
                             } }
                             title="Create Post"
                         >
-                            <FaFeatherAlt /><p className="icon-text">Create post</p>
+                            <FaPen /><p className="icon-text">Create post</p>
                         </button>
                     )}
                     {isAuthenticated && (<AlgorithmSelector locationId={channelRender?.channel_id} refreshPosts={refreshPosts} />)} 

@@ -340,11 +340,13 @@ const ContentWidget = ({ canRemove = false, display = false, feed, isDraft = fal
 				}}>
 					<div className="display-div" style={isFullscreenMode ? { 
 						flex: 1, 
-						overflowY: 'auto',
-						overflowX: 'hidden'
+						display: 'flex',
+						flexDirection: 'column',
+						overflow: 'hidden'
 					} : {}}>
 						<ContentDisplay 
 							post={post} 
+							isFullscreen={isFullscreenMode}
 							onCodeAppChange={setHasCodeOrApp} 
 							onOverflowChange={handleOverflowChange} 
 							showFullContent={showFullContent || isFullscreenMode} 
