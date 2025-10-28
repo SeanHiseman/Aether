@@ -10,7 +10,7 @@ const FeedWidget = ({ feed, updateFeeds }) => {
 		: "/media/site_images/blank-group-icon.jpg";
 
 	return (
-		<div className="explore-block bg-gray-800 rounded-lg flex flex-col items-center feed-widget-container">
+		<div className="explore-block bg-gray-800 rounded-lg flex flex-col items-flex-start feed-widget-container">
 			<div className="feed-widget-info">
 				<Link className="feed-widget-link" to={`/${feed?.is_group ? "g" : "u"}/${feed?.feed_name}/Main`}>
 					<img className="small-feed-photo" src={imageUrl} onError={(e) => (e.currentTarget.src = "/media/site_images/blank-profile.png")} />

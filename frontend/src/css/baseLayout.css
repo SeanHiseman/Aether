@@ -352,7 +352,12 @@ main {
   width: 80%;
 }
 #personal-feeds {
-  margin-top: var(--large-margin);
+  width: 90%;
+}
+.post-button-container {
+  align-items: flex-start;
+  display: flex;
+  margin-top: var(--medium-margin);
   width: 90%;
 }
 .posts-channel-button {
@@ -571,6 +576,12 @@ ul {
   }
 
   /* header already stretches full-width, no change needed */
+}
+@media (min-width: 769px) { /* Hides sidebar arrows on desktop */
+	.sidebar-toggle {
+		visibility: hidden;
+		pointer-events: none;
+	}
 }
 /* @media (max-width:768px){
     .base-header {

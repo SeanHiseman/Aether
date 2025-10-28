@@ -201,7 +201,7 @@ router.post('/join', loginLimiter, async (req, res) => {
         const default_photo = process.env.DEFAULT_USER_IMAGE;
         const feed_id = v4();
         await Feeds.create({
-            feed_id, feed_name: username, description: "", feed_photo: default_photo, type: 'private', is_group: false, feed_owner: user_id
+            feed_id, feed_name: username, description: "", feed_photo: default_photo, type: 'public', is_group: false, feed_owner: user_id
         }, { transaction });
         //Add main channel
         const channel_id = v4();

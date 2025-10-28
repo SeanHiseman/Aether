@@ -62,7 +62,7 @@ const FollowerChangeButton = ({ feed, showFollowers = true, showName, showVertic
     return (
         <><div className={showVertical ? "follow-container vertical" : "follow-container horizontal"}>
             {showName && <p className="font-bold text-white text-lg truncate">{feed.feed_name}</p>}
-            {showFollowers && <p className="small-text">{FormatNumber(followerCount)} {followerCount === 1 ? 'follower' : 'followers'}</p>}
+            {showFollowers && <p className="small-text faded-text">{FormatNumber(followerCount)} {followerCount === 1 ? 'follower' : 'followers'}</p>}
             <button className="follow-button" onClick={handleFollowerChange}>
                 {follower ? <FaMinusCircle /> : request && isPrivate ? <FaMinus /> : <FaPlusCircle />}
                 <p className="icon-text">

@@ -78,6 +78,18 @@ label {
 .large-icon {
     font-size: var(--medium-text);
 }
+.main-button {
+    align-items: center;
+	background: var(--dark);
+	border: 1px solid var(--light);
+	border-radius: var(--medium-margin);
+	color: var(--lightest);
+	cursor: pointer;
+    display: flex;
+	font-size: var(--small-text);
+    margin: var(--medium-margin);
+	padding: var(--small-margin);
+}
 p, .channel-link {
 	font-size: var(--small-text);
 	overflow-wrap: anywhere;

@@ -139,7 +139,7 @@
     align-items: center;
     display: flex;
 }
-.feed-wiget-type {
+.feed-widget-type {
     margin-left: var(--medium-margin);
 }
 .feed-list {

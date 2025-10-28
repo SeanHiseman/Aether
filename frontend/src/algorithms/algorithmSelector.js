@@ -293,10 +293,7 @@ const AlgorithmSelector = ({ display, locationId, refreshPosts }) => {
 	return (
 		<div className="algorithm-selector">
 			{!display && (
-				<button
-					className="algorithm-selector__trigger"
-					onClick={() => setModalOpen(true)}
-				>
+				<button className="main-button" onClick={() => setModalOpen(true)}>
 					Choose Algorithm
 				</button>
 			)}

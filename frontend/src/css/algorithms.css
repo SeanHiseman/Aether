@@ -113,15 +113,6 @@
 	margin: var(--medium-margin);
 	position: relative;
 }
-.algorithm-selector__trigger {
-	background: var(--dark);
-	border: 1px solid var(--light);
-	border-radius: var(--medium-margin);
-	color: var(--lightest);
-	cursor: pointer;
-	font-size: var(--small-text);
-	padding: var(--small-margin);
-}
 .border-bottom {
 	border-bottom: 1px solid var(--light);
 }

@@ -263,7 +263,7 @@
   }
   .explore-block {
     border: 1px solid var(--light);
-    border-radius: var(--medium-margin);
+    border-radius: calc(clamp(4px, 1vw, 10px) + var(--small-margin));
     box-sizing: border-box;
     padding: var(--small-margin);
     width: 100%;
@@ -373,6 +373,9 @@
   }
   .items-center {
     align-items: center;
+  }
+  .items-flex-start {
+    align-items: flex-start;
   }
   .justify-between {
     justify-content: space-between;

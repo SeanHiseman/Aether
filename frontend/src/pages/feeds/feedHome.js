@@ -45,8 +45,9 @@ const FeedHome = () => {
     const { isAuthenticated, user, viewer } = useContext(AuthContext);
     const location = useLocation();
     const { feed_name, channel_name, post_id } = useParams();
-    const isReplyMode = location.pathname.endsWith('/reply');
+    const isCreateMode = location.pathname.endsWith('/create');
     const isEditMode = location.pathname.endsWith('/edit');
+    const isReplyMode = location.pathname.endsWith('/reply');
     const navigate = useNavigate();
     const queryClient = useQueryClient();
     const { rightClasses, updateFeeds } = useOutletContext(); 
@@ -258,13 +259,14 @@ const FeedHome = () => {
         }
     }, [channelRender, channels]);
 
-    //Resets channel states when switching channels
+    //Auto open contentForm when /create is on the end of the url
     useEffect(() => {
-        setShowPostForm(false);
-        setReplyingToPost(null);
-        setIsEdit(false);
-        setPostToEdit(null);
-    }, [channel_name, feed_name]);
+        if (isCreateMode && channelRender) {
+            setIsEdit(false);
+            setPostToEdit(null);
+            setShowPostForm(true);
+        }
+    }, [isCreateMode, channelRender]);
 
     const changeChannelName = async (event) => {
         if (!isAuthenticated) return;
@@ -680,7 +682,7 @@ const FeedHome = () => {
                     )}
                     {channelMode === 'post' && !showPostForm && !showDrafts && (feed?.is_group || feed?.feed_owner === user?.user_id) && (!isLocked || isAdmin) && isAuthenticated && (
                         <button
-                            className="small-icon"
+                            className="main-button"
                             onClick={() => {
                                 setIsEdit(false);
                                 setPostToEdit(null);

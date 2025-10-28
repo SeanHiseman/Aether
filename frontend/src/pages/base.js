@@ -3,7 +3,7 @@ import { AuthContext } from "../components/authContext";
 import Cropper from "react-easy-crop";
 import { Crown } from 'lucide-react';
 import { DndContext, PointerSensor, pointerWithin, rectIntersection, useSensor, useSensors } from "@dnd-kit/core";
-import { FaArrowRight, FaCog, FaFileUpload, FaMinus, FaPlus, FaPlusCircle, FaSignInAlt } from "react-icons/fa";
+import { FaArrowRight, FaCog, FaFeatherAlt, FaFileUpload, FaMinus, FaPlus, FaPlusCircle, FaSignInAlt } from "react-icons/fa";
 import { MagnifyingGlassIcon } from "@radix-ui/react-icons";
 import { useCallback, useContext, useEffect, useRef, useState } from "react";
 import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
@@ -459,6 +459,11 @@ const BaseLayout = () => {
                             </Link></>
                         )}
                     </div>
+                    {isAuthenticated && <div className="post-button-container">
+                        <Link className="main-button" to={`/u/${viewer?.feed_name}/Main/create`} title="Create Post">
+                            <FaFeatherAlt /><p className="icon-text">Create post</p>
+                        </Link>
+                    </div>}
                     {isAuthenticated ? (
                         <><DndContext sensors={sensors} collisionDetection={customCollisionDetection} onDragStart={dragStart} onDragEnd={dragEnd}>
                             <nav id="personal-feeds">

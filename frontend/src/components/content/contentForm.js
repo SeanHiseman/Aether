@@ -804,6 +804,9 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
                     <ContentWidget canRemove={false} feed={feed} onPostRemoved={() => { } } post={post} readOnly />
                 </div>
             )}
+            {!isReply && !isEdit && !post && (
+                <p className="large-text">Create post in: {feed_name} / {channel_name}</p>
+            )}
             <form id="post-form" className="post-form" onSubmit={submitForm}>
                 <div className="post-header-buttons-sticky">
                     <div className="post-header-buttons">
@@ -913,7 +916,6 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
                                                         style={{
                                                             display: 'flex',
                                                             alignItems: 'center',
-                                                            marginLeft: '4px',
                                                             ...provided2.draggableProps.style
                                                         }}
                                                     >
@@ -923,6 +925,7 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
                                                             style={{
                                                                 cursor: 'grab',
                                                                 display: 'flex',
+                                                                marginLeft: '4px',
                                                                 marginRight: '4px',
                                                                 alignItems: 'center',
                                                             }}
