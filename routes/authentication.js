@@ -1,3 +1,4 @@
+import { Algorithms, AlgorithmLocations } from '../custom_algorithms/algorithmRelationships.js'
 import authenticateCheck from '../functions/checks/authenticateCheck.js';
 import { compare, hash } from 'bcrypt';
 import { Connections, ConnectRequests, DeepFeeds, Feeds, FeedChannels, Followers, FeedChats, Messages, Posts, PostDrafts, PostNotes, PostVotes, SavedPostChannels, Users } from '../models/relationships.js'; 
@@ -252,7 +253,7 @@ router.post('/login', loginLimiter, async (req, res) => {
             return res.status(401).json({ success: false, message: 'Please verify your email before logging in.' });
         }
         if (user && await compare(password, user.password)) {
-            const feed = await Feeds.findOne({ where: { feed_owner: user.user_id, is_group: false }});
+            const feed = await Feeds.findOne({ where: { feed_owner: user.user_id, is_group: false }}); //Each user can only own one non-group feed (their own)
             req.session.user_id = user.user_id;
             req.session.username = user.username;
             req.session.email = user.email;
@@ -261,6 +262,14 @@ router.post('/login', loginLimiter, async (req, res) => {
             req.usage_count = user.usage_count;
             req.storage_count = user.storage_count;
             req.session.viewer_id = feed.feed_id;
+            const algorithms = await Algorithms.findAll({
+                where: { viewer_id: feed.feed_id },
+                include: [{
+                    model: AlgorithmLocations,
+                    as: 'algorithm_locations'
+                }],
+                order: [['algorithm_name', 'ASC']]
+            });
             const followedFeeds = await Followers.findAll({
                 where: { follower_id: feed.feed_id },
                 include: [{
@@ -309,7 +318,8 @@ router.post('/login', loginLimiter, async (req, res) => {
                 },
                 followedFeeds: normalizedFollowedFeeds, 
                 deepFeeds,
-                recentUpvotes
+                recentUpvotes,
+                algorithms
             });
         }
         else {

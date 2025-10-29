@@ -1,9 +1,9 @@
+import AddAlgorithm from './addAlgorithm';
 import api from '../api';
 import { createPortal } from 'react-dom';
-import { FaEdit, FaTrash } from 'react-icons/fa';
-import { useEffect, useState } from 'react';
-import AddAlgorithm from './addAlgorithm';
+import { FaEdit, FaSlidersH, FaTrash } from 'react-icons/fa';
 import { loadWelcomeAlgorithms } from '../pages/welcome/welcomeContent';
+import { useEffect, useState } from 'react';
 
 const AlgorithmSelector = ({ display, locationId, refreshPosts }) => {
 	const [algorithms, setAlgorithms] = useState([]);
@@ -25,7 +25,7 @@ const AlgorithmSelector = ({ display, locationId, refreshPosts }) => {
 					algorithmId,
 					locationId
 				});
-				if (!response.data?.success) throw new Error(response?.data?.message || 'Failed to assign algorithm.');
+				if (!response.data?.success) throw new Error(response.data?.message || 'Failed to assign algorithm.');
 				setAssignedAlgorithmId(algorithmId);
 			} else {
 				await api.delete('/remove_algorithm', {
@@ -38,18 +38,19 @@ const AlgorithmSelector = ({ display, locationId, refreshPosts }) => {
 			setAlgorithms(prev => {
 				const updated = prev.map(algo => ({
 					...algo,
-					algorithm_locations: algo?.algorithm_id === algorithmId 
-						? [...(algo?.algorithm_locations || []), { location_id: locationId }]
-						: (algo?.algorithm_locations || []).filter(loc => loc?.location_id !== locationId)
+					algorithm_locations: algo.algorithm_id === algorithmId
+						? [...(algo.algorithm_locations || []), { location_id: locationId }]
+						: (algo.algorithm_locations || []).filter(loc => loc.location_id !== locationId)
 				}));
-				updated.sort((a, b) => a?.algorithm_name?.localeCompare(b?.algorithm_name));
+				updated.sort((a, b) => a.algorithm_name.localeCompare(b.algorithm_name));
 				if (algorithmId) {
-					const index = updated.findIndex(a => a?.algorithm_id === algorithmId);
+					const index = updated.findIndex(a => a.algorithm_id === algorithmId);
 					if (index > 0) {
 						const [assigned] = updated.splice(index, 1);
 						updated.unshift(assigned);
 					}
 				}
+				localStorage.setItem('algorithms', JSON.stringify(updated));
 				return updated;
 			});
 		} catch (error) {
@@ -74,7 +75,11 @@ const AlgorithmSelector = ({ display, locationId, refreshPosts }) => {
 			await api.delete('/delete_algorithm', {
 				data: { algorithmId, locationId }
 			});
-			setAlgorithms(prev => prev.filter(a => a?.algorithm_id !== algorithmId));
+			setAlgorithms(prev => {
+				const updated = prev.filter(a => a.algorithm_id !== algorithmId);
+				localStorage.setItem('algorithms', JSON.stringify(updated));
+				return updated;
+			});
 			if (algorithmId === assignedAlgorithmId) setAssignedAlgorithmId('');
 			if (editingAlgorithm?.algorithm_id === algorithmId) setEditingAlgorithm(null);
 		} catch (error) {
@@ -91,13 +96,21 @@ const AlgorithmSelector = ({ display, locationId, refreshPosts }) => {
 			} else {
 				setError(null);
 				setLoading(true);
-				const response = await api.get('/get_viewer_algorithms');
-				if (response.data.success) {
-					const assigned = response.data.algorithms.find(a =>
+				let stored = localStorage.getItem('algorithms');
+				let algorithmsData = stored ? JSON.parse(stored) : null;
+				if (!algorithmsData) {
+					const response = await api.get('/get_viewer_algorithms');
+					if (response.data.success) {
+						algorithmsData = response.data.algorithms;
+						localStorage.setItem('algorithms', JSON.stringify(algorithmsData));
+					}
+				}
+				if (algorithmsData) {
+					const assigned = algorithmsData.find(a =>
 						a?.algorithm_locations?.some(fa => fa?.location_id === locationId)
 					);
 					const assignedId = assigned ? assigned?.algorithm_id : '';
-					const sorted = [...response?.data?.algorithms].sort((a, b) => a?.algorithm_name?.localeCompare(b?.algorithm_name));
+					const sorted = [...algorithmsData].sort((a, b) => a?.algorithm_name?.localeCompare(b?.algorithm_name));
 					if (assignedId) {
 						const assignedIndex = sorted.findIndex(a => a?.algorithm_id === assignedId);
 						if (assignedIndex > 0) {
@@ -107,9 +120,7 @@ const AlgorithmSelector = ({ display, locationId, refreshPosts }) => {
 					}
 					setAlgorithms(sorted);
 					setAssignedAlgorithmId(assignedId);
-					if (assigned) {
-						setEditingAlgorithm(assigned);
-					}
+					if (assigned) setEditingAlgorithm(assigned);
 				}
 			}
 		} catch (error) {
@@ -129,13 +140,14 @@ const AlgorithmSelector = ({ display, locationId, refreshPosts }) => {
 			};
 			//Manually move assigned algorithm to top of the list, so that fetchAlgorithms() does not need to be called again
 			setAlgorithms(prev => {
-				const updated = [...prev, newAlgoWithLocation]
-				updated.sort((a, b) => a?.algorithm_name?.localeCompare(b?.algorithm_name));
-				const index = updated.findIndex(a => a?.algorithm_id === newAlgo?.algorithm_id);
+				const updated = [...prev, newAlgoWithLocation];
+				updated.sort((a, b) => a.algorithm_name.localeCompare(b.algorithm_name));
+				const index = updated.findIndex(a => a.algorithm_id === newAlgo.algorithm_id);
 				if (index > 0) {
 					const [created] = updated.splice(index, 1);
 					updated.unshift(created);
 				}
+				localStorage.setItem('algorithms', JSON.stringify(updated));
 				return updated;
 			});
 			setAssignedAlgorithmId(newAlgo?.algorithm_id);
@@ -174,20 +186,33 @@ const AlgorithmSelector = ({ display, locationId, refreshPosts }) => {
 				});	
 			}
 			setAssignedAlgorithmId('');
-			setAlgorithms(prev => prev.map(algo => ({
-				...algo,
-				algorithm_locations: (algo?.algorithm_locations || []).filter(loc => loc?.location_id !== locationId)
-			})));
+			setAlgorithms(prev => {
+				const updated = prev.map(algo => ({
+					...algo,
+					algorithm_locations: (algo.algorithm_locations || []).filter(
+						loc => loc.location_id !== locationId
+					)
+				}));
+				localStorage.setItem('algorithms', JSON.stringify(updated));
+				return updated;
+			});
 			setEditingAlgorithm(null);
 			refreshPosts();
 		} catch (error) {
+			console.log("usassign algorithm error:", error);
 			setAssignError(error.response?.data?.message || 'Failed to unassign algorithm');
 			setTimeout(() => { setAssignError('') }, 3000);
 		};
 	};
 
 	const updateAlgorithms = updatedAlgo => {
-		setAlgorithms(prev => prev.map(a => a?.algorithm_id === updatedAlgo?.algorithm_id ? updatedAlgo : a));
+		setAlgorithms(prev => {
+			const updated = prev.map(a =>
+				a.algorithm_id === updatedAlgo.algorithm_id ? updatedAlgo : a
+			);
+			localStorage.setItem('algorithms', JSON.stringify(updated));
+			return updated;
+		});
 		setEditingAlgorithm(null);
 	};
 
@@ -295,7 +320,7 @@ const AlgorithmSelector = ({ display, locationId, refreshPosts }) => {
 		<div className="algorithm-selector">
 			{!display && (
 				<button className="main-button" onClick={() => setModalOpen(true)}>
-					Choose Algorithm
+					<FaSlidersH /><p className="icon-text">Choose algorithm</p>
 				</button>
 			)}
 			{(display || modalOpen) && (

@@ -2,7 +2,7 @@ import authenticateCheck from '../functions/checks/authenticateCheck.js';
 import OpenAI from 'openai';
 import { Router } from 'express';
 import { v4 } from 'uuid';
-import { Algorithms, AlgorithmLocations} from './algorithmRelationships.js';
+import { Algorithms, AlgorithmLocations } from './algorithmRelationships.js';
 import sequelize from '../databaseSetup.js';
 
 const openai = new OpenAI();
@@ -26,6 +26,7 @@ router.post('/assign_algorithm', authenticateCheck, async (req, res) => {
 		res.status(200).json({ success: true });
 	} catch (error) {
 		if (transaction) await transaction.rollback();
+		console.log("/assign_algorithm error:", error);
 		res.status(500).json({ success: false, message: 'Failed to assign algorithm.' });
 	}
 });
@@ -140,6 +141,7 @@ router.post('/create_algorithm', authenticateCheck, async (req, res) => {
 		});
 	} catch (error) {
 		if (transaction) await transaction.rollback();
+		console.log("/create_algorithm error:", error);
 		res.status(500).json({ success: false, message: 'Failed to create or update algorithm.' });
 	}
 });
@@ -162,10 +164,12 @@ router.delete('/delete_algorithm', authenticateCheck, async (req, res) => {
 		res.status(200).json({ success: true });
 	} catch (error) {
 		if (transaction) await transaction.rollback();
+		console.log("/delete_algorithm error:", error);
 		res.status(500).json({ success: false, message: 'Failed to delete algorithm.' });
 	}
 });
 
+//Only called if local storage is empty
 router.get('/get_viewer_algorithms', authenticateCheck, async (req, res) => {
 	try {
 		const viewerId = req.session.viewer_id;
@@ -180,6 +184,7 @@ router.get('/get_viewer_algorithms', authenticateCheck, async (req, res) => {
 		});
 		res.status(200).json({ success: true, algorithms });
 	} catch (error) {
+		console.log("/get_viewer_algorithms error:", error);
 		res.status(500).json({ success: false, message: 'Failed to get algorithms.' });
 	}
 });
@@ -191,6 +196,7 @@ router.delete('/remove_algorithm', authenticateCheck, async (req, res) => {
 		await AlgorithmLocations.destroy({ where: { location_id: locationId, viewer_id: viewerId } });
 		res.status(200).json({ success: true });
 	} catch (error) {
+		console.log("/remove_algorithm error:", error);
 		res.status(500).json({ success: false, message: 'Failed to remove algorithm.' });
 	}
 });

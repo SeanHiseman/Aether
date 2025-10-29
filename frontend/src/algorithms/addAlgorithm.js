@@ -1,9 +1,9 @@
+import { ALGORITHM_TEMPLATES } from './algorithmTemplates';
 import api from '../api';
+import { AuthContext } from '../components/authContext';
 import React from 'react';
 import { FaInfoCircle } from 'react-icons/fa';
 import { useCallback, useContext, useEffect, useRef, useState } from 'react';
-import { ALGORITHM_TEMPLATES } from './algorithmTemplates';
-import { AuthContext } from '../components/authContext';
 
 function InfoIconWithTooltip({ info }) {
     const [visible, setVisible] = useState(false);

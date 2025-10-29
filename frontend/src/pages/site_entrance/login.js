@@ -24,6 +24,7 @@ const Login = () => {
                 localStorage.setItem("deepFeeds", JSON.stringify(response.data?.deepFeeds || []));
                 localStorage.setItem("user", JSON.stringify(response.data?.user));
                 localStorage.setItem("recentUpvotes", JSON.stringify(response.data?.recentUpvotes));
+                localStorage.setItem("algorithms", JSON.stringify(response.data?.algorithms || []));
                 await refreshTheme();
                 navigate('/explore');
             }
