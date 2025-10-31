@@ -176,3 +176,10 @@ ALTER TABLE feeds
 ADD COLUMN follow_requests INT DEFAULT 0,
 ADD COLUMN connections INT DEFAULT 0,
 ADD COLUMN connect_requests INT DEFAULT 0;
+
+ALTER TABLE algorithms
+ADD COLUMN boost_embedding JSON NULL,
+ADD COLUMN suppress_embedding JSON NULL;
+
+ALTER TABLE posts
+MODIFY COLUMN embeddings JSON NULL;

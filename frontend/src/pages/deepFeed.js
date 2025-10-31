@@ -9,7 +9,7 @@ import ContentWidget from '../components/content/contentWidget';
 import FeedItem from '../components/channels/feedItem';
 import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
 import { ValidateTextInput } from '../functions/validateTextInput';
-const FETCH_LIMIT = 50;
+const FETCH_LIMIT = 100;
 
 const DeepFeed = () => {
     const { isAuthenticated } = useContext(AuthContext);

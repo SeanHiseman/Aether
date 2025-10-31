@@ -482,8 +482,8 @@ const AddAlgorithm = ({ algorithms = [], display, editingAlgorithm = null, locat
                         <div className="form-row">
                             <div className="form-group">
                                 <div className="form-label-with-info">
-                                    <label className="small-text">Boost Words</label>
-                                    <InfoIconWithTooltip info="Type words, separated by commas, that you wish to see more of." />
+                                    <label className="small-text">Boost topics</label>
+                                    <InfoIconWithTooltip info="Type topics, separated by commas, that you wish to see more of." />
                                 </div>
                                 <textarea
                                     className="form-textarea"
@@ -495,8 +495,8 @@ const AddAlgorithm = ({ algorithms = [], display, editingAlgorithm = null, locat
                             </div>
                             <div className="form-group">
                                 <div className="form-label-with-info">
-                                    <label className="small-text">Suppress Words</label>
-                                    <InfoIconWithTooltip info="Type words, separated by commas, that you wish to see less of." />
+                                    <label className="small-text">Suppress topics</label>
+                                    <InfoIconWithTooltip info="Type topics, separated by commas, that you wish to see less of." />
                                 </div>
                                 <textarea
                                     className="form-textarea"

@@ -1,10 +1,12 @@
 import authenticateCheck from '../functions/checks/authenticateCheck.js';
+import { ContentAnalyser } from '../functions/contentAnalyser.js';
 import OpenAI from 'openai';
 import { Router } from 'express';
 import { v4 } from 'uuid';
 import { Algorithms, AlgorithmLocations } from './algorithmRelationships.js';
 import sequelize from '../databaseSetup.js';
 
+const analyser = new ContentAnalyser();
 const openai = new OpenAI();
 const router = Router();
 
@@ -34,6 +36,7 @@ router.post('/assign_algorithm', authenticateCheck, async (req, res) => {
 router.post('/create_algorithm', authenticateCheck, async (req, res) => {
 	let transaction;
 	try {
+		transaction = await sequelize.transaction();
 		const { algorithmName, activeDays, chronology, contentType, customInstruction, dateFrom, dateTo, generateCode, locationId, minText, maxText, minVideo, maxVideo, sentiment, startTime, endTime, variety, voteImpact, wordBoost, wordSuppress } = req.body;
 		const viewerId = req.session.viewer_id;
 		const algorithmJson = {
@@ -53,6 +56,8 @@ router.post('/create_algorithm', authenticateCheck, async (req, res) => {
 			}
 		};
 		let algorithmCode;
+		let finalBoost = algorithmJson.scoring.wordBoost;
+		let finalSuppress = algorithmJson.scoring.wordSuppress;
 		if (generateCode && customInstruction && customInstruction.trim() !== "") {
 			const systemPrompt = `
 				You are an expert algorithm creation assistant. 
@@ -97,11 +102,32 @@ router.post('/create_algorithm', authenticateCheck, async (req, res) => {
 				]
 			});
 			const aiReply = response.choices[0].message.content;
-			algorithmCode = aiReply.replace(/```json\n|```/g, '').trim();
+			const parsed = aiReply.replace(/```json\n|```/g, '').trim();
+			algorithmCode = parsed;
+			const parsedJson = JSON.parse(parsed);
+			//Get word changes from custom instruction response
+			if (parsedJson.scoring) {
+				if (Array.isArray(parsedJson.scoring.wordBoost) && parsedJson.scoring.wordBoost.length)
+					finalBoost = parsedJson.scoring.wordBoost;
+				if (Array.isArray(parsedJson.scoring.wordSuppress) && parsedJson.scoring.wordSuppress.length)
+					finalSuppress = parsedJson.scoring.wordSuppress;
+			}
 		} else {
 			algorithmCode = JSON.stringify(algorithmJson);
 		}
-		transaction = await sequelize.transaction();
+		//Generate embeddings from finalBoost and finalSuppress
+		let boostEmbedding = null;
+		let suppressEmbedding = null;
+		if (Array.isArray(finalBoost) && finalBoost.length > 0) {
+			const boostText = finalBoost.join(' ');
+			boostEmbedding = await analyser.generateEmbedding(boostText);
+			console.log('Boost embedding:', boostEmbedding);
+		}
+		if (Array.isArray(finalSuppress) && finalSuppress.length > 0) {
+			const suppressText = finalSuppress.join(' ');
+			suppressEmbedding = await analyser.generateEmbedding(suppressText);
+			console.log('Suppress embedding:', suppressEmbedding);
+		};
 		let existingAlgorithm = null;
 		if (req.body.algorithmId) {
 			existingAlgorithm = await Algorithms.findOne({
@@ -120,7 +146,9 @@ router.post('/create_algorithm', authenticateCheck, async (req, res) => {
 			algorithm = await existingAlgorithm.update({
 				algorithm_name: algorithmName,
 				algorithm_code: algorithmCode,
-				custom_instruction: customInstruction || null
+				custom_instruction: customInstruction || null,
+				boost_embedding: boostEmbedding ? JSON.stringify(boostEmbedding) : null,
+				suppress_embedding: suppressEmbedding ? JSON.stringify(suppressEmbedding) : null
 			}, { transaction });
 		} else {
 			algorithm = await Algorithms.create({
@@ -128,7 +156,9 @@ router.post('/create_algorithm', authenticateCheck, async (req, res) => {
 				algorithm_name: algorithmName,
 				algorithm_code: algorithmCode,
 				custom_instruction: customInstruction || null,
-				viewer_id: viewerId
+				viewer_id: viewerId,
+				boost_embedding: boostEmbedding ? JSON.stringify(boostEmbedding) : null,
+				suppress_embedding: suppressEmbedding ? JSON.stringify(suppressEmbedding) : null
 			}, { transaction });
 		}
 		await transaction.commit();

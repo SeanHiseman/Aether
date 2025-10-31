@@ -6,7 +6,7 @@ import { ChunkFeeds } from "../../functions/chunkFeeds";
 import ContentWidget from "../../components/content/contentWidget";
 import FeedWidget from "../../components/content/feedWidget";
 import { useOutletContext } from "react-router-dom";
-const FETCH_LIMIT = 50;
+const FETCH_LIMIT = 100;
 
 const ExplorePage = () => {
 	const [errorMessage, setErrorMessage] = useState("");
@@ -59,8 +59,8 @@ const ExplorePage = () => {
 			const cached = localStorage.getItem("followedFeeds");
 			const excludedFeedIds = cached ? JSON.parse(cached).map(f => f.feed_id) : [];
 			const response = await api.post("/explore_feeds", {
-				limit: 30, //5 posts then 3 feeds
-				offset: page * 30, 
+				limit: 60, //5 posts then 3 feeds
+				offset: page * 60, 
 				exclude: [...shownFeedIdsRef.current, ...excludedFeedIds] 
 			});
 			const newFeeds = response.data?.feeds || [];

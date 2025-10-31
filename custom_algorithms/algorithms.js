@@ -1,11 +1,13 @@
-import { STRING, DataTypes, TEXT } from 'sequelize';
+import { DataTypes, JSON, STRING, TEXT } from 'sequelize';
 import sequelize from '../databaseSetup.js';
 
 const Algorithms = sequelize.define('algorithms', {
     algorithm_id: { type: STRING(36), allowNull: false, primaryKey: true },   
     algorithm_name: { type: STRING(120), allowNull: false },
     algorithm_code: { type: TEXT, allowNull: false }, 
-    custom_instruction: { type: TEXT, allowNull: true },  
+    custom_instruction: { type: JSON, allowNull: true },  
+    boost_embedding: { type: JSON, allowNull: true },  
+    suppress_embedding: { type: TEXT, allowNull: true },  
     viewer_id: { type: STRING(36), allowNull: false },     
     created_at: { type: DataTypes.DATE(3), defaultValue: sequelize.literal('CURRENT_TIMESTAMP(3)') },
     updated_at: { type: DataTypes.DATE(3), defaultValue: sequelize.literal('CURRENT_TIMESTAMP(3)'), onUpdate: sequelize.literal('CURRENT_TIMESTAMP(3)') },

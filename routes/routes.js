@@ -11,7 +11,7 @@ const router = Router();
 //Searches posts and feeds together
 router.post('/search', standardLimiter, async (req, res) => { 
     try {
-        const { keyword, limit = 50, feedOffset = 0, postOffset = 0, recentUpvotes } = req.body;
+        const { keyword, limit = 100, feedOffset = 0, postOffset = 0, recentUpvotes } = req.body;
         const searcherId = req.session.viewer_id;
         const feeds = await Feeds.findAll({
             where: { feed_name: { [Op.like]: `%${keyword}%` } },

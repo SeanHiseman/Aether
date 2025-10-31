@@ -7,7 +7,7 @@ import { useOutletContext, useSearchParams } from 'react-router-dom';
 import { ChunkFeeds } from '../functions/chunkFeeds';
 import ContentWidget from '../components/content/contentWidget';
 import FeedWidget from '../components/content/feedWidget';
-const FETCH_LIMIT = 50;
+const FETCH_LIMIT = 100;
 
 const SearchResults = () => {
 	const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -64,8 +64,8 @@ const SearchResults = () => {
 			const recentUpvotes = JSON.parse(localStorage.getItem('recentUpvotes') || '[]');
 			const response = await api.post('/search', {
 				keyword,
-				limit: 30,
-				feedOffset: page * 30,
+				limit: 60, //3 feeds for every 5 posts
+				feedOffset: page * 60,
 				postOffset: 0,
 				recentUpvotes
 			});

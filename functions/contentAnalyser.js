@@ -1,4 +1,3 @@
-//Project code
 import cheerio from 'cheerio';
 import natural from 'natural';
 import { pipeline } from '@xenova/transformers';

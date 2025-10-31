@@ -23,6 +23,14 @@ const excludedAttrs = [
     'embeddings'
 ];
 
+function computeHotness({ upvotes = 0, downvotes = 0, createdAt, decayBase = 90000, referenceTime = 1735689600 }) {
+	const score = upvotes - downvotes;
+	const order = Math.log10(Math.max(Math.abs(score), 1));
+	const sign = score > 0 ? 1 : score < 0 ? -1 : 0;
+	const ageInSeconds = (new Date(createdAt).getTime() / 1000) - referenceTime;
+	return order + (sign * ageInSeconds / decayBase);
+}
+
 function stripExcludedAttributes(posts) {
     return posts.map(p => {
         const obj = p.dataValues ? { ...p.dataValues } : { ...p };
@@ -51,14 +59,17 @@ async function ApplyAlgorithm({ locationId, excludedPostIds, feedId, followedFee
         //Find if there is an algorithm applied at this location
         let algorithm = {};
         let algorithmLocation = null;
+        let algorithmRow = null;
         if (viewerId && locationId) {
             algorithmLocation = await AlgorithmLocations.findOne({ 
-                where: { location_id: locationId, viewer_id: viewerId } 
+                where: { location_id: locationId, viewer_id: viewerId }, 
+                raw: true
             });
             if (algorithmLocation) {
-                const algorithmRow = await Algorithms.findOne({
-                    attributes: ['algorithm_code'],
-                    where: { algorithm_id: algorithmLocation.algorithm_id }
+                algorithmRow = await Algorithms.findOne({
+                    attributes: ['algorithm_code', 'boost_embedding', 'suppress_embedding'],
+                    where: { algorithm_id: algorithmLocation.algorithm_id },
+                    raw: true
                 });
                 if (algorithmRow) {
                     try {
@@ -95,7 +106,8 @@ async function ApplyAlgorithm({ locationId, excludedPostIds, feedId, followedFee
                     downvotes: { [Op.lte]: 0 }
                 },
                 order: [['updated_at', 'DESC']],
-                limit: 100
+                limit: 100,
+                raw: true
             });
             recentUpvoteIds = foundRecentUpvotes.map(row => row.post_id);
         } else if (recentUpvotes) {
@@ -119,14 +131,19 @@ async function ApplyAlgorithm({ locationId, excludedPostIds, feedId, followedFee
                 .filter(Boolean);
         }
 
+        //Normalise all scores for cosine similarities
+        const normalisedRecentEmbeddings = recentUpvoteEmbeddings.map(vec => {
+            const mag = Math.sqrt(vec.reduce((a, b) => a + b * b, 0)) || 1;
+            return vec.map(v => v / mag);
+        });
+
         //Fetch posts according to location
         let posts = [];
         const attrOption = fetchFullAttributes ? undefined : { exclude: excludedAttrs };
 
         if (locationId === "search" && keyword) { //Search results
-            posts = await Posts.findAll({
-                include: includeOptions,
-                attributes: attrOption,
+            const postIds = await Posts.findAll({
+                attributes: ['post_id'],
                 where: {
                     parent_id: null,
                     post_id: { [Op.notIn]: excludedIds },
@@ -136,38 +153,57 @@ async function ApplyAlgorithm({ locationId, excludedPostIds, feedId, followedFee
                     ],
                     is_private: false
                 },
-                limit: limit,
-                offset: offset,
-                order: [['created_at', 'DESC']]
+                order: [['created_at', 'DESC']],
+                limit,
+                offset,
+                raw: true
+            });
+            if (!postIds.length) return [];
+            posts = await Posts.findAll({
+                where: { post_id: { [Op.in]: postIds.map(p => p.post_id) } },
+                attributes: attrOption,
+                include: includeOptions
             });
         } else if (locationId === "following") { //Followed feeds
             if (followedFeedIdsSafe.length === 0) return [];
-            posts = await Posts.findAll({
-                include: includeOptions,
-                attributes: attrOption,
+            const postIds = await Posts.findAll({
+                attributes: ['post_id'],
                 where: {
                     feed_id: { [Op.in]: followedFeedIdsSafe },
                     parent_id: null,
                     post_id: { [Op.notIn]: excludedIds },
                     ...(viewerId ? { poster_id: { [Op.not]: viewerId } } : {})
                 },
-                limit: limit,
-                offset: offset,
-                order: [['created_at', 'DESC']]
+                order: [['created_at', 'DESC']],
+                limit,
+                offset,
+                raw: true
+            });
+            if (!postIds.length) return [];
+            posts = await Posts.findAll({
+                where: { post_id: { [Op.in]: postIds.map(p => p.post_id) } },
+                attributes: attrOption,
+                include: includeOptions
             });
         } else if (locationId === "explore") { //Explore page
-            posts = await Posts.findAll({
-                include: includeOptions,
-                attributes: attrOption,
+            const postIds = await Posts.findAll({
+                attributes: ['post_id'],
                 where: {
                     feed_id: { [Op.notIn]: followedFeedIdsSafe }, //Excluded followed feeds
                     parent_id: null,
                     post_id: { [Op.notIn]: excludedIds },
                     ...(viewerId ? { poster_id: { [Op.not]: viewerId } } : {})
                 },
-                limit: limit,
-                offset: offset,
-                order: [['created_at', 'DESC']]
+                order: [['created_at', 'DESC']],
+                limit,
+                offset,
+                raw: true
+            });
+            if (!postIds.length) return [];
+            posts = await Posts.findAll({
+                where: { post_id: { [Op.in]: postIds.map(p => p.post_id) } },
+                attributes: attrOption,
+                include: includeOptions
             });
         } else if (typeof locationId === 'string' && locationId.startsWith('deep_')) { //Combined feeds 
             const getAllFeedIdsInDeepFeed = async (deepFeedId, visited = new Set()) => {
@@ -175,142 +211,136 @@ async function ApplyAlgorithm({ locationId, excludedPostIds, feedId, followedFee
                 visited.add(deepFeedId);
                 const contents = await DeepFeedContent.findAll({
                     where: { deep_feed_id: deepFeedId },
-                    attributes: ['feed_id']
+                    attributes: ['feed_id'],
+                    raw: true
                 });
-                const feedIds = [];
-                for (const content of contents) {
-                    if (content.feed_id) {
-                        feedIds.push(content.feed_id);
-                    }
-                }
-                return feedIds;
+                return contents.map(c => c.feed_id);
             };
             const deepFeedId = locationId.replace(/^deep_/, ''); //strip prefix
             const allFeedIds = await getAllFeedIdsInDeepFeed(deepFeedId);
             if (allFeedIds.length === 0) return [];
-            posts = await Posts.findAll({
-                include: includeOptions,
-                attributes: attrOption,
+            const postIds = await Posts.findAll({
+                attributes: ['post_id'],
                 where: {
                     feed_id: { [Op.in]: allFeedIds },
                     parent_id: null,
                     post_id: { [Op.notIn]: excludedIds },
                     ...(viewerId ? { poster_id: { [Op.not]: viewerId } } : {})
                 },
-                limit: limit,
-                offset: offset,
-                order: [['created_at', 'DESC']]
+                order: [['created_at', 'DESC']],
+                limit,
+                offset,
+                raw: true
+            });
+            if (!postIds.length) return [];
+            posts = await Posts.findAll({
+                where: { post_id: { [Op.in]: postIds.map(p => p.post_id) } },
+                attributes: attrOption,
+                include: includeOptions
             });
         } else { //Feed channel
             const whereChannel = {
-                ...(isMain !== true && locationId ? { channel_id: locationId } : {}), //True from query is a string
+                ...(isMain !== true && locationId ? { channel_id: locationId } : {}),
                 feed_id: feedId,
                 parent_id: null,
                 post_id: { [Op.notIn]: excludedIds }
             };
-            posts = await Posts.findAll({
-                include: includeOptions,
-                attributes: attrOption,
+            const postIds = await Posts.findAll({
+                attributes: ['post_id'],
                 where: whereChannel,
-                limit: limit,
-                offset: offset,
-                order: [['created_at', 'DESC']]
+                order: [['created_at', 'DESC']],
+                limit,
+                offset,
+                raw: true
+            });
+            if (!postIds.length) return [];
+            posts = await Posts.findAll({
+                where: { post_id: { [Op.in]: postIds.map(p => p.post_id) } },
+                attributes: attrOption,
+                include: includeOptions
             });
         }
         if (!posts.length) return [];
 
-        const selectionLimit = limit ? parseInt(limit, 10) : 48;
-        const addUserVoteStatus = async (posts, viewerId) => {
-            if (!viewerId || posts.length === 0) return posts;
-            const postIds = posts.map(p => p.post_id || p.dataValues?.post_id).filter(Boolean);
-            const userVotes = await PostVotes.findAll({
-                attributes: ['post_id', 'upvotes', 'downvotes'],
-                where: {
-                    post_id: { [Op.in]: postIds },
-                    voter_id: viewerId
-                },
-                raw: true
-            });
-            const voteMap = new Map();
-            userVotes.forEach(vote => {
-                voteMap.set(vote.post_id, {
-                    has_upvoted: vote.upvotes > 0,
-                    has_downvoted: vote.downvotes > 0
-                });
-            });
-            return posts.map(post => {
-                const postId = post.post_id || post.dataValues?.post_id;
-                const voteStatus = voteMap.get(postId) || {
-                    has_upvoted: false,
-                    has_downvoted: false
-                };
-                if (post.dataValues) {
-                    return {
-                        ...post.dataValues,
-                        ...voteStatus
-                    };
-                } else {
-                    return {
-                        ...post,
-                        ...voteStatus
-                    };
-                }
-            });
-        };
+        const selectionLimit = limit ? parseInt(limit, 10) : 50; 
 
-        //Pure chronological order
+        // Pure chronological order
         if (useChronological) { 
             const paginated = posts.slice(0, selectionLimit);
-            const postsWithVotes = await addUserVoteStatus(paginated, viewerId);
-            const ids = postsWithVotes.map(p => p.post_id);
-            const savedRows = viewerId ? await SavedPosts.findAll({
-                attributes: ['post_id'],
-                raw: true,
-                where: { post_id: { [Op.in]: ids }, saver_id: viewerId }
-            }) : [];
+            const ids = paginated.map(p => p.post_id);
+            const [userVotes, savedRows] = viewerId
+                ? await Promise.all([
+                    PostVotes.findAll({
+                        attributes: ['post_id', 'upvotes', 'downvotes'],
+                        where: { post_id: { [Op.in]: ids }, voter_id: viewerId },
+                        raw: true
+                    }),
+                    SavedPosts.findAll({
+                        attributes: ['post_id'],
+                        where: { post_id: { [Op.in]: ids }, saver_id: viewerId },
+                        raw: true
+                    })
+                ])
+                : [[], []];
+            const voteMap = new Map(userVotes.map(v => [
+                v.post_id,
+                { has_upvoted: v.upvotes > 0, has_downvoted: v.downvotes > 0 }
+            ]));
             const savedSet = new Set(savedRows.map(s => s.post_id));
-            return stripExcludedAttributes(postsWithVotes).map(post => ({
-                ...post,
-                is_saved: savedSet.has(post.post_id)
+            const postsWithVotes = paginated.map(p => ({
+                ...(p.dataValues || p),
+                ...(voteMap.get(p.post_id) || { has_upvoted: false, has_downvoted: false }),
+                is_saved: savedSet.has(p.post_id)
             }));
+            return stripExcludedAttributes(postsWithVotes);
         }
 
-        //Weighted only by time-vote score
+        //Logarithmic vote/view ranking, weighted by time if no algorithm applied
         if (useStandardScore) { 
-            const postsWithScores = posts.map(post => {
-                const totalVotes = (post.upvotes || 0) + (post.downvotes || 0);
-                const qualityScore = totalVotes > 0 ? (post.upvotes || 0) / totalVotes : 0.5;
-                const engagementScore = (post.views || 0) > 0 ? totalVotes / (post.views || 1) : 0;
-                const ageInHours = (Date.now() - new Date(post.created_at)) / (1000 * 60 * 60);
-                const timeScore = Math.exp(-ageInHours / 72);
-                const defaultScore = (qualityScore * 0.4) + (engagementScore * 0.4) + (timeScore * 0.2);
-                return {
-                    ...post.dataValues,
-                    score: defaultScore
-                };
-            });
+            const now = Date.now();
+            const postsWithScores = posts.map(post => ({
+                ...(post.dataValues || post),
+                score: computeHotness({
+                    upvotes: post.upvotes,
+                    downvotes: post.downvotes,
+                    createdAt: post.created_at,
+                    decayBase: 90000 //25h
+                })
+            }));
             postsWithScores.sort((a, b) => b.score - a.score);
             const paginated = postsWithScores.slice(0, selectionLimit);
-            const postsWithVotes = await addUserVoteStatus(paginated, viewerId);
-            const ids = postsWithVotes.map(p => p.post_id);
-            const savedRows = viewerId ? await SavedPosts.findAll({
-                attributes: ['post_id'],
-                raw: true,
-                where: { post_id: { [Op.in]: ids }, saver_id: viewerId }
-            }) : [];
+            const ids = paginated.map(p => p.post_id);
+            const [userVotes, savedRows] = viewerId
+                ? await Promise.all([
+                    PostVotes.findAll({
+                        attributes: ['post_id', 'upvotes', 'downvotes'],
+                        where: { post_id: { [Op.in]: ids }, voter_id: viewerId },
+                        raw: true
+                    }),
+                    SavedPosts.findAll({
+                        attributes: ['post_id'],
+                        where: { post_id: { [Op.in]: ids }, saver_id: viewerId },
+                        raw: true
+                    })
+                ])
+                : [[], []];
+            const voteMap = new Map(userVotes.map(v => [
+                v.post_id,
+                { has_upvoted: v.upvotes > 0, has_downvoted: v.downvotes > 0 }
+            ]));
             const savedSet = new Set(savedRows.map(s => s.post_id));
-            return stripExcludedAttributes(postsWithVotes).map(post => ({
-                ...post,
-                is_saved: savedSet.has(post.post_id)
+            const postsWithVotes = paginated.map(p => ({
+                ...p,
+                ...(voteMap.get(p.post_id) || { has_upvoted: false, has_downvoted: false }),
+                is_saved: savedSet.has(p.post_id)
             }));
+            return stripExcludedAttributes(postsWithVotes);
         }
-
+        
         //Filter out posts, then apply scoring
         const finalPosts = [];
-        const { chronology = "newest", contentType = {}, variety = 1, textLimits = {}, videoLimits = {}, timeLimits = {}, dateLimits = {}, scoring = {} } = algorithm;
+        const { chronology = 1, contentType = {}, variety = 1, textLimits = {}, videoLimits = {}, timeLimits = {}, dateLimits = {}, scoring = {} } = algorithm;
         const { sentiment = 0, voteImpact = 1, wordBoost = [], wordSuppress = [] } = scoring;
-        const chronoPref = chronology === "oldest" ? -1 : 1;
-
         for (const post of posts) {
             //Content type filtering
             if (contentType.images === false && post.has_images) continue;
@@ -322,72 +352,101 @@ async function ApplyAlgorithm({ locationId, excludedPostIds, feedId, followedFee
             //Text length filtering
             if (textLimits.min && post.text_length < textLimits.min) continue;
             if (textLimits.max && post.text_length > textLimits.max) continue;
-
             //Video length filtering
             if (videoLimits.min && post.video_length < videoLimits.min) continue;
             if (videoLimits.max && post.video_length > videoLimits.max) continue;
-
             //Time of day filtering
             if (timeLimits.startTime && timeLimits.endTime) {
                 const createdAt = new Date(post.created_at);
                 const postTime = `${String(createdAt.getHours()).padStart(2, "0")}:${String(createdAt.getMinutes()).padStart(2, "0")}`;
                 if (postTime < timeLimits.startTime || postTime > timeLimits.endTime) continue;
             }
-
-            //Date range filtering
+            // Date range filtering
             if (dateLimits.from && new Date(post.created_at) < new Date(dateLimits.from)) continue;
             if (dateLimits.to && new Date(post.created_at) > new Date(dateLimits.to)) continue;
 
-            //Filtering complete, assign score to passed posts
+            //Filtering complete, begin scoring
             let score = 0;
+            //Hotness (chronology-weighted)
+            const baseDecay = 90000; //25h
+            const adjustedDecay = baseDecay * (1 + (1 - Math.min(Math.max(chronology, 0), 1)) * 4);
+            const hotnessScore = computeHotness({
+                upvotes: post.upvotes,
+                downvotes: post.downvotes,
+                createdAt: post.created_at,
+                decayBase: adjustedDecay
+            });
+            score += chronology * hotnessScore;
 
-            //Chronology scoring
-            const ageInHours = (Date.now() - new Date(post.created_at)) / (1000 * 60 * 60);
-            score += chronoPref * ageInHours;
-
-            //Vote impact (quality ratio × engagement ratio)
+            //Vote quality * engagement ratio
             const totalVotes = (post.upvotes || 0) + (post.downvotes || 0);
             const qualityRatio = totalVotes > 0 ? (post.upvotes || 0) / totalVotes : 0.5;
             const engagementRatio = (post.views || 0) > 0 ? totalVotes / post.views : 0;
-            score += voteImpact * qualityRatio * engagementRatio;
+            score += voteImpact * ((qualityRatio * 0.7) + (engagementRatio * 0.3));
 
-            //Word boosts/suppressions
-            wordBoost.forEach(({ word, value }) => {
-                if (post.text_body && post.text_body.toLowerCase().includes(word.toLowerCase())) {
-                    score += value;
+            //Word boost / suppression (literal + semantic)
+            let keywordComponent = 0;
+            let shouldSuppress = false;
+            if (post.text_body) {
+                const textLower = post.text_body.toLowerCase();
+                for (const w of wordSuppress) {
+                    if (textLower.includes(w.toLowerCase())) { shouldSuppress = true; break; }
                 }
-            });
-            wordSuppress.forEach(({ word, value }) => {
-                if (post.text_body && post.text_body.toLowerCase().includes(word.toLowerCase())) {
-                    score += value;
+                if (shouldSuppress) continue;
+                for (const w of wordBoost) {
+                    if (textLower.includes(w.toLowerCase())) keywordComponent += 10;
                 }
-            });
+            }
 
-            //Sentiment comparison
+            //Semantic boost/suppress using word embeddings
+            if (post.embeddings && (algorithmRow?.boost_embedding || algorithmRow?.suppress_embedding)) {
+                let postEmbedding = null;
+                try { postEmbedding = JSON.parse(post.embeddings); } catch { postEmbedding = null; }
+                if (Array.isArray(postEmbedding)) {
+                    const magPost = Math.sqrt(postEmbedding.reduce((a, b) => a + b * b, 0)) || 1;
+                    const normPost = postEmbedding.map(v => v / magPost);
+                    let semanticBoost = 0;
+                    let semanticSuppress = 0;
+                    if (algorithmRow.boost_embedding) {
+                        const boostVec = JSON.parse(algorithmRow.boost_embedding);
+                        if (Array.isArray(boostVec) && boostVec.length === normPost.length)
+                            semanticBoost = CosineSimilarity(normPost, boostVec);
+                    }
+                    if (algorithmRow.suppress_embedding) {
+                        const suppressVec = JSON.parse(algorithmRow.suppress_embedding);
+                        if (Array.isArray(suppressVec) && suppressVec.length === normPost.length)
+                            semanticSuppress = CosineSimilarity(normPost, suppressVec);
+                    }
+                    score += (semanticBoost * 10) - (semanticSuppress * 10);
+                }
+            }
+            score += keywordComponent;
+
+            //Sentiment alignment
             if (typeof post.sentiment_score === "number") {
                 const sentimentDistance = Math.abs(post.sentiment_score - sentiment);
-                const sentimentBoost = (0.5 - sentimentDistance) * 20; 
-                score += sentimentBoost;
+                score += (0.5 - sentimentDistance) * 20;
             }
 
-            //Variety scoring (cosine similarity against recent views)
-            let postEmbedding = null;
-            try {
-                postEmbedding = post.embeddings ? JSON.parse(post.embeddings) : null;
-            } catch {
-                postEmbedding = null;
+            //Variety scoring (cosine similarity against recent upvoted embeddings)
+            let postEmbedding = null; 
+            if (recentUpvoteEmbeddings.length && typeof post.embeddings === 'string' && post.embeddings.startsWith('[')) {
+                try { postEmbedding = JSON.parse(post.embeddings); } catch { postEmbedding = null; }
             }
             let maxSimilarity = 0;
-            if (postEmbedding && Array.isArray(postEmbedding) && recentUpvoteEmbeddings.length > 0) {
-                for (const ve of recentUpvoteEmbeddings) {
-                    if (Array.isArray(ve) && ve.length === postEmbedding.length) {
-                        const similarity = CosineSimilarity(postEmbedding, ve);
-                        if (similarity > maxSimilarity) maxSimilarity = similarity;
+            if (postEmbedding && Array.isArray(postEmbedding) && normalisedRecentEmbeddings.length > 0) {
+                const magPost = Math.sqrt(postEmbedding.reduce((a, b) => a + b * b, 0)) || 1;
+                const normPost = postEmbedding.map(v => v / magPost);
+                for (const ve of normalisedRecentEmbeddings) {
+                    if (ve.length === normPost.length) {
+                        const sim = CosineSimilarity(normPost, ve);
+                        if (sim > maxSimilarity) maxSimilarity = sim;
                     }
                 }
             }
-            const similarityComponent = ((1 - maxSimilarity) * variety * 10) + (maxSimilarity * (1 - variety) * 5);
-            score += similarityComponent;
+            score += ((1 - maxSimilarity) * variety * 10) + (maxSimilarity * (1 - variety) * 5);
+
+            //Add to final list
             finalPosts.push({
                 ...post.dataValues,
                 score
@@ -397,21 +456,32 @@ async function ApplyAlgorithm({ locationId, excludedPostIds, feedId, followedFee
         if (!finalPosts.length) return [];
         finalPosts.sort((a, b) => b.score - a.score); //Sort posts by score
         const paginatedFinalPosts = finalPosts.slice(0, selectionLimit);
-        const postsWithVotes = await addUserVoteStatus(paginatedFinalPosts, viewerId);
-        const finalIds = postsWithVotes.map(p => p.post_id);
-        const savedRows = viewerId ? await SavedPosts.findAll({ 
-            attributes: ['post_id'],
-            raw: true,
-            where: { post_id: { [Op.in]: finalIds }, saver_id: viewerId }
-        }) : [];
+        const finalIds = paginatedFinalPosts.map(p => p.post_id);
+        const [userVotes, savedRows] = viewerId
+            ? await Promise.all([
+                PostVotes.findAll({
+                    attributes: ['post_id', 'upvotes', 'downvotes'],
+                    where: { post_id: { [Op.in]: finalIds }, voter_id: viewerId },
+                    raw: true
+                }),
+                SavedPosts.findAll({
+                    attributes: ['post_id'],
+                    where: { post_id: { [Op.in]: finalIds }, saver_id: viewerId },
+                    raw: true
+                })
+            ])
+            : [[], []];
+        const voteMap = new Map(userVotes.map(v => [
+            v.post_id,
+            { has_upvoted: v.upvotes > 0, has_downvoted: v.downvotes > 0 }
+        ]));
         const savedSet = new Set(savedRows.map(s => s.post_id));
-        return stripExcludedAttributes(postsWithVotes).map(post => {
-            const { score, _maxSimilarity, ...rest } = post;
-            return {
-                ...rest,
-                is_saved: savedSet.has(post.post_id)
-            };
-        });
+        const postsWithVotes = paginatedFinalPosts.map(p => ({
+            ...(p.dataValues || p),
+            ...(voteMap.get(p.post_id) || { has_upvoted: false, has_downvoted: false }),
+            is_saved: savedSet.has(p.post_id)
+        }));
+        return stripExcludedAttributes(postsWithVotes);
     } catch (error) {
         console.error('Error in ApplyAlgorithm:', error);
         return [];

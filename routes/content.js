@@ -52,7 +52,7 @@ const checkStorageLimit = async (req, res, next) => {
 
 router.post('/channel_posts', standardLimiter, async (req, res) => {
 	try {
-		const { channelId, excludedPostIds, feedId, isGroup, isMain, isSingle, postId, limit = 50, offset = 0, recentUpvotes } = req.body;
+		const { channelId, excludedPostIds, feedId, isGroup, isMain, isSingle, postId, limit = 100, offset = 0, recentUpvotes } = req.body;
 		const viewerId = req.session.viewer_id;
 		const includeOptions = [{
 			as: 'note',
@@ -343,7 +343,7 @@ router.post("/create_post", standardLimiter, authenticateCheck, checkStorageLimi
 
 router.post("/explore_posts", standardLimiter, async (req, res) => {
     try {
-		const { exclude = [], followedFeedIds, recentUpvotes, limit = 50, offset = 0 } = req.body;
+		const { exclude = [], followedFeedIds, recentUpvotes, limit = 100, offset = 0 } = req.body;
 		const viewerId = req?.session?.viewer_id || null;
         const includeOptions = [{
             model: Feeds,
@@ -393,7 +393,7 @@ router.post("/explore_posts", standardLimiter, async (req, res) => {
 
 router.get('/get_post_drafts', standardLimiter, authenticateCheck, async (req, res) => {
     try {
-        const { channel_id, poster_id, limit = 50, offset = 0 } = req.query;
+        const { channel_id, poster_id, limit = 100, offset = 0 } = req.query;
         const drafts = await PostDrafts.findAll({
             where: { channel_id, poster_id },
             order: [['updated_at','DESC']],

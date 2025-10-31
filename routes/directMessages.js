@@ -264,7 +264,7 @@ router.get('/get_connections', authenticateCheck, async (req, res) => {
                     { feed2_id: feedId }
                 ]
             },
-            limit: 50,
+            limit: 100,
             offset: parsedOffset,
             //More recent connections are first
             order: [['created_at', 'ASC']],
@@ -298,7 +298,7 @@ router.get('/get_connect_requests', authenticateCheck, async (req, res) => {
                 as: 'sender',
                 required: true,
             }],
-            limit: 50,
+            limit: 100,
             offset: parsedOffset
         });
         res.status(200).json({ success: true, requests });

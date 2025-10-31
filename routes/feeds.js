@@ -174,7 +174,7 @@ router.post('/change_channel_name', standardLimiter, authenticateCheck, async (r
 router.post('/change_deep_feed_name', standardLimiter, authenticateCheck, async (req, res) => {
     try {
         const { deepFeedId, newName } = req.body;
-        const nameCheck = ValidateTextInput(newName, 3, 30);
+        const nameCheck = ValidateTextInput(newName, 1, 30);
         if (!nameCheck.valid) {
             return res.status(400).json({ message: nameCheck.error });
         }
@@ -399,7 +399,7 @@ router.get('/deep_feed_contents/:deepFeedId', standardLimiter, authenticateCheck
 
 router.post('/deep_feed_posts', standardLimiter, authenticateCheck, async (req, res) => {
     try {
-        const { deepFeedId, followedFeedIds: rawFollowedFeedIds, limit = 50, offset = 0, recentUpvotes } = req.body;
+        const { deepFeedId, followedFeedIds: rawFollowedFeedIds, limit = 100, offset = 0, recentUpvotes } = req.body;
         let followedFeedIds = rawFollowedFeedIds || [];
         if (!Array.isArray(followedFeedIds)) {
             followedFeedIds = [followedFeedIds];
@@ -561,7 +561,7 @@ router.post("/explore_feeds", standardLimiter, async (req, res) => {
 	try {
 		const { exclude = [], limit: reqLimit, offset: reqOffset } = req.body;
 		const viewerId = req.session?.viewer_id;
-		const limit = parseInt(reqLimit, 10) || 30;
+		const limit = parseInt(reqLimit, 10) || 60;
 		const offset = parseInt(reqOffset, 10) || 0;
 		let excludeArray = Array.isArray(exclude) ? exclude : [];
 		if (viewerId) {
@@ -677,7 +677,7 @@ router.get('/feed_channel_messages', higherLimiter, async (req, res) => {
             where: { channel_id: channelId },
             include: [{ model: Feeds }],
             order: [['timestamp', 'ASC']],
-            limit: parseInt(limit) || 20,
+            limit: parseInt(limit) || 100,
             offset: parseInt(offset) || 0,
         });
         res.status(200).json({ messages, success: true });
@@ -777,7 +777,7 @@ router.get('/get_feed_followers/:feedId', higherLimiter, authenticateCheck, asyn
 router.get('/get_saved_posts', standardLimiter, authenticateCheck, async (req, res) => {
     try {
         const saverId = req.session.viewer_id;
-        const { limit = 50, offset = 0 } = req.query;
+        const { limit = 100, offset = 0 } = req.query;
         const rows = await SavedPosts.findAll({
             where: { saver_id: saverId },
             include: [{
