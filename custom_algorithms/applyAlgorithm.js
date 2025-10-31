@@ -167,7 +167,6 @@ async function ApplyAlgorithm({ locationId, excludedPostIds, feedId, followedFee
                 raw: false
             });
             posts.sort((a, b) => orderedIds.indexOf(a.post_id) - orderedIds.indexOf(b.post_id));
-
         } else if (locationId === "following") { //Followed feeds
             if (followedFeedIdsSafe.length === 0) return [];
             const postIds = await Posts.findAll({
@@ -192,7 +191,6 @@ async function ApplyAlgorithm({ locationId, excludedPostIds, feedId, followedFee
                 raw: false
             });
             posts.sort((a, b) => orderedIds.indexOf(a.post_id) - orderedIds.indexOf(b.post_id));
-
         } else if (locationId === "explore") { //Explore page
             const postIds = await Posts.findAll({
                 attributes: ['post_id'],
@@ -216,7 +214,6 @@ async function ApplyAlgorithm({ locationId, excludedPostIds, feedId, followedFee
                 raw: false
             });
             posts.sort((a, b) => orderedIds.indexOf(a.post_id) - orderedIds.indexOf(b.post_id));
-
         } else if (typeof locationId === 'string' && locationId.startsWith('deep_')) { //Combined feeds 
             const getAllFeedIdsInDeepFeed = async (deepFeedId, visited = new Set()) => {
                 if (visited.has(deepFeedId)) return [];
@@ -253,7 +250,6 @@ async function ApplyAlgorithm({ locationId, excludedPostIds, feedId, followedFee
                 raw: false
             });
             posts.sort((a, b) => orderedIds.indexOf(a.post_id) - orderedIds.indexOf(b.post_id));
-
         } else { //Feed channel
             const whereChannel = {
                 ...(isMain !== true && locationId ? { channel_id: locationId } : {}),
@@ -317,7 +313,6 @@ async function ApplyAlgorithm({ locationId, excludedPostIds, feedId, followedFee
 
         //Logarithmic vote/view ranking, weighted by time if no algorithm applied
         if (useStandardScore) { 
-            const now = Date.now();
             const postsWithScores = posts.map(post => ({
                 ...(post.dataValues || post),
                 score: computeHotness({

@@ -404,7 +404,7 @@ router.post('/deep_feed_posts', standardLimiter, authenticateCheck, async (req, 
         if (!Array.isArray(followedFeedIds)) {
             followedFeedIds = [followedFeedIds];
         }
-        followedFeedIds = followedFeedIds.map(id => parseInt(id, 10)).filter(Boolean);
+        followedFeedIds = followedFeedIds.map(id => id?.toString().trim()).filter(Boolean);
         const viewerId = req.session.viewer_id;
         let deepFeed = null;
         if (deepFeedId === 'following') {
