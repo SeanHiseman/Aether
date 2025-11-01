@@ -208,12 +208,14 @@ const AlgorithmSelector = ({ display, locationId, refreshPosts }) => {
 	const updateAlgorithms = updatedAlgo => {
 		setAlgorithms(prev => {
 			const updated = prev.map(a =>
-				a.algorithm_id === updatedAlgo.algorithm_id ? updatedAlgo : a
+				a?.algorithm_id === updatedAlgo?.algorithm_id ? updatedAlgo : a
 			);
 			localStorage.setItem('algorithms', JSON.stringify(updated));
 			return updated;
 		});
 		setEditingAlgorithm(null);
+		refreshPosts();
+		fetchAlgorithms();
 	};
 
 	const renderContent = () => (

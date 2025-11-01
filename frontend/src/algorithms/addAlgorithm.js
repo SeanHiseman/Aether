@@ -301,10 +301,10 @@ const AddAlgorithm = ({ algorithms = [], display, editingAlgorithm = null, locat
             setVideoRange([parsedAlgorithmCode.minVideo || 0, parsedAlgorithmCode.maxVideo || 100]);
             const wordBoostArray = parsedAlgorithmCode.scoring?.wordBoost || [];
             const wordSuppressArray = parsedAlgorithmCode.scoring?.wordSuppress || [];
-            const wordBoostWords = wordBoostArray.map(item => item.word).join(',');
-            const wordSuppressWords = wordSuppressArray.map(item => item.word).join(',');
-            setWordBoost(() => wordBoostWords);
-            setWordSuppress(() => wordSuppressWords);
+            const wordBoostWords = wordBoostArray.map(item => typeof item === 'string' ? item : item.word).join(',');
+            const wordSuppressWords = wordSuppressArray.map(item => typeof item === 'string' ? item : item.word).join(',');
+            setWordBoost(wordBoostWords);
+            setWordSuppress(wordSuppressWords);
             setDateFrom(parsedAlgorithmCode.dateFrom || '');
             setDateTo(parsedAlgorithmCode.dateTo || '');
             setVariety(parsedAlgorithmCode.variety ?? 1);
