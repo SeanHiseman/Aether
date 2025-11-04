@@ -109,7 +109,7 @@ const EmailVerification = () => {
                 {status === 'success' && (
                     <div>
                         <p className="success-message">{message}</p>
-                        <p>Logging you in...</p>
+                        <p className="small-text faded-text">Logging you in...</p>
                     </div>
                 )}
                 {status === 'error' && (

@@ -183,3 +183,11 @@ ADD COLUMN suppress_embedding JSON NULL;
 
 ALTER TABLE posts
 MODIFY COLUMN embeddings JSON NULL;
+
+ALTER TABLE posts
+	ADD COLUMN rank_hotness DOUBLE NULL AFTER views,
+	ADD COLUMN rank_updated_at DATETIME NULL DEFAULT CURRENT_TIMESTAMP
+		ON UPDATE CURRENT_TIMESTAMP,
+	ADD INDEX idx_rank_hotness_desc (rank_hotness DESC, post_id DESC),
+	ADD INDEX idx_feed_rank (feed_id, rank_hotness DESC, post_id DESC),
+	ADD INDEX idx_created_desc (created_at DESC, post_id DESC);

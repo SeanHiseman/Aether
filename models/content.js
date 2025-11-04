@@ -19,6 +19,8 @@ const Posts = sequelize.define('posts', {
     content: { type: DataTypes.TEXT('long'), allowNull: false },
     replies: { type: INTEGER, allowNull: false, defaultValue: 0 },
     views: { type: INTEGER, allowNull: false, defaultValue: 0 },
+    rank_hotness: { type: FLOAT, allowNull: true, defaultValue: null },
+    rank_updated_at: { type: DataTypes.DATE(3), defaultValue: sequelize.literal('CURRENT_TIMESTAMP(3)') },
     upvotes: { type: INTEGER, allowNull: false, defaultValue: 0 },
     downvotes: { type: INTEGER, allowNull: false, defaultValue: 0 },
     created_at: { type: DataTypes.DATE(3), defaultValue: sequelize.literal('CURRENT_TIMESTAMP(3)') },
@@ -46,11 +48,11 @@ const Posts = sequelize.define('posts', {
     tableName: 'posts',
     timestamps: false,
     indexes: [
-        { fields: ['channel_id'] },
-        { fields: ['feed_id'] },
-        { fields: ['has_images', 'has_videos', 'has_interactive', 'has_external_posts', 'has_embedded_websites'] },
+        { fields: ['feed_id', 'rank_hotness', 'post_id'] },   
+        { fields: ['rank_hotness', 'post_id'] },             
+        { fields: ['created_at', 'post_id'] },
         { fields: ['sentiment_score'] },
-        { fields: ['created_at'] }, 
+        { fields: ['has_images', 'has_videos', 'has_interactive', 'has_external_posts', 'has_embedded_websites'] },
     ]
 });
 

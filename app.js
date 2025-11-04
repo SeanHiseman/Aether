@@ -16,6 +16,7 @@ import { handleStripeWebhook } from './routes/webhookHandler.js';
 import history from 'express-history-api-fallback';
 import path from 'path';
 import rateLimit from 'express-rate-limit';
+import Redis from 'ioredis';
 import routes from './routes/routes.js';
 import { Server } from 'socket.io';
 import session from 'express-session';
@@ -51,6 +52,11 @@ const limiter = rateLimit({ //Highest level limiter
 	message: 'Too many requests, please try again later.'
 });
 app.use(limiter);
+
+const redis = new Redis({
+	host: process.env.REDIS_HOST, 
+	port: process.env.REDIS_PORT,
+});
 
 app.use('/app_builds', express.static(appBuildPath, {
 	setHeaders: res => res.set('Access-Control-Allow-Origin', '*')
@@ -138,3 +144,5 @@ const HOST = process.env.APP_HOST;
 http.listen(PORT, HOST, () => {
     console.log(`Running on ${PORT}`)
 });
+
+export default redis;

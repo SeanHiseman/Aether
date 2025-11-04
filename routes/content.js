@@ -1,22 +1,23 @@
+import { AppBuilds, Feeds, FeedChannels, Posts, PostDrafts, PostNotes, PostVotes, SavedPosts, Users, ViewedPosts } from '../models/relationships.js';
 import { ApplyAlgorithm } from '../custom_algorithms/applyAlgorithm.js';
 import authenticateCheck from '../functions/checks/authenticateCheck.js';
-import DeleteMedia from '../functions/media_handling/deleteMedia.js';
 import cheerio from 'cheerio';
 import { ContentAnalyser } from '../functions/contentAnalyser.js';
+import { DeleteFromS3, UploadToS3 } from '../functions/media_handling/s3Handling.js';
+import DeleteMedia from '../functions/media_handling/deleteMedia.js';
 import dotenv from 'dotenv';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
-import { AppBuilds, Feeds, FeedChannels, Posts, PostDrafts, PostNotes, PostVotes, SavedPosts, Users, ViewedPosts } from '../models/relationships.js';
 import { GenerateFileName } from '../functions/media_handling/generateFileName.js';
 import multer from 'multer';
+import { Op, Sequelize } from 'sequelize';
 import { Router } from 'express';
 import path from 'path';
 import sequelize from '../databaseSetup.js';
 import { standardLimiter, higherLimiter } from '../functions/checks/limiters.js';
-import { Op, Sequelize } from 'sequelize';
 import unzipper from 'unzipper';
+import { updateHotnessRedis } from '../functions/postRanking.js';
 import UpdateMediaFiles from '../functions/media_handling/updateMediaFiles.js';
-import { DeleteFromS3, UploadToS3 } from '../functions/media_handling/s3Handling.js';
 import { v4 } from 'uuid';
 import yauzl from 'yauzl';
 
@@ -153,6 +154,7 @@ router.post('/content_vote', higherLimiter, authenticateCheck, async (req, res) 
         }
         await vote.save();
         await content.save();
+		await updateHotnessRedis(content);
         return res.status(200).json({
             success: true,
             upvotes: content.upvotes,
@@ -490,7 +492,8 @@ router.post('/increment_views', higherLimiter, authenticateCheck, async (req, re
         const { postId } = req.body;
         const post = await Posts.findByPk(postId, { transaction });
 		post.views += 1;
-        await post.save({ transaction});
+        await post.save({ transaction });
+		await updateHotnessRedis(post);
 		const existingView = await ViewedPosts.findOne({
 			where: { post_id: postId, viewer_id: req.session.viewer_id }.
 			transaction,

@@ -237,6 +237,8 @@ CREATE TABLE `posts` (
 	`content` LONGTEXT NOT NULL,
 	`replies` INT DEFAULT '0',
 	`views` INT DEFAULT '0',
+  `rank_hotness` DOUBLE DEFAULT NULL,
+	`rank_updated_at` DATETIME(3) DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
 	`upvotes` INT DEFAULT '0',
 	`downvotes` INT DEFAULT '0',
 	`created_at` DATETIME(3) DEFAULT CURRENT_TIMESTAMP(3),
@@ -268,6 +270,9 @@ CREATE TABLE `posts` (
 	KEY `idx_composite_quality` (`created_at`, `sentiment_score`),
 	KEY `idx_video_content` (`has_videos`, `video_length`),
 	KEY `idx_text_analysis` (`word_count`, `text_length`),
+  KEY `idx_rank_hotness_desc` (`rank_hotness` DESC, `post_id` DESC),
+	KEY `idx_feed_rank` (`feed_id`, `rank_hotness` DESC, `post_id` DESC),
+	KEY `idx_created_desc` (`created_at` DESC, `post_id` DESC),
 	CONSTRAINT `posts_ibfk_1` FOREIGN KEY (`feed_id`) REFERENCES `feeds` (`feed_id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
