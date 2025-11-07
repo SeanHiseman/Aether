@@ -297,8 +297,8 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
 			if (contentType.videos === false && post.has_videos) continue;
 			if (contentType.text === false && post.has_text) continue;
 			if (contentType.interactive === false && post.has_interactive) continue;
-			if (contentType.has_embedded_websites === false && post.has_embedded_websites) continue;
-			if (contentType.has_external_posts === false && post.has_external_posts) continue;
+			if (contentType.embeddedWebsites === false && post.has_embedded_websites) continue;
+			if (contentType.externalPosts === false && post.has_external_posts) continue;
             //Text length filtering
 			if (textLimits.min && post.text_length < textLimits.min) continue;
 			if (textLimits.max && post.text_length > textLimits.max) continue;

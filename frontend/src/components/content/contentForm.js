@@ -499,21 +499,55 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
         }
     }, [hasMembership, limitReached, user, updateBlock, setPostErrorMessage]);
 
-    const handleAddBlock = useCallback(type => {
-		if (!isAuthenticated) return;
-        setBlockLimitError('')
+    const handleAddBlock = useCallback((type, data = {}) => {
+        if (!isAuthenticated) return;
+        setBlockLimitError('');
         if (blocks.length >= BLOCK_LIMIT) {
-            setBlockLimitError(hasMembership ? `Block limit (${BLOCK_LIMIT}) reached.` : `Free block limit (${BLOCK_LIMIT}) reached. Get membership to add more:`)
-            return
+            setBlockLimitError(
+                hasMembership
+                    ? `Block limit (${BLOCK_LIMIT}) reached.`
+                    : `Free block limit (${BLOCK_LIMIT}) reached. Get membership to add more:`
+            );
+            return;
         }
         const newBlock = {
-            data: type === BLOCK_TYPES.TEXT ? { html: '' } : type === BLOCK_TYPES.CODE ? { code: '', isBlockLoading: false, showPrompt: true } : { file: null, fileType: '', isImage: false, isVideo: false, url: '', align: 'left' },
             id: v4(),
+            type,
             isEditing: type !== BLOCK_TYPES.MEDIA,
-            type
-        }
-        setBlocks(prev => [newBlock, ...prev])
-    }, [blocks.length, BLOCK_LIMIT, hasMembership])
+            data: (() => {
+                switch (type) {
+                    case BLOCK_TYPES.TEXT:
+                        return { html: '' };
+                    case BLOCK_TYPES.CODE:
+                        return { code: '', isBlockLoading: false, showPrompt: true, ...data };
+                    case BLOCK_TYPES.MEDIA:
+                        return {
+                            file: null,
+                            fileType: '',
+                            isImage: false,
+                            isVideo: false,
+                            url: '',
+                            align: 'left',
+                            ...data,
+                        };
+                    case BLOCK_TYPES.APP:
+                        return { isUploading: true, ...data };
+                    default:
+                        return { ...data };
+                }
+            })(),
+        };
+        setBlocks(prev => {
+            const isSingleEmptyText =
+                prev.length === 1 &&
+                prev[0].type === BLOCK_TYPES.TEXT &&
+                (!prev[0].data.html || prev[0].data.html.trim() === '');
+            //Only replace if the single empty block exists and the new one is not a text block
+            return isSingleEmptyText && type !== BLOCK_TYPES.TEXT
+                ? [newBlock]
+                : [...prev, newBlock];
+        });
+    }, [blocks.length, BLOCK_LIMIT, hasMembership]);
 
     const handleFilesChange = useCallback(event => {
 		if (!isAuthenticated) return;
@@ -547,62 +581,45 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
             return new File([file], uniqueName, { type: file.type })
         })
         uniqueFiles.forEach(file => {
-            const blockId = v4()
-            const url = URL.createObjectURL(file)
+            const url = URL.createObjectURL(file);
             if (file.type.startsWith('video/')) {
-                const video = document.createElement('video')
-                video.preload = 'metadata'
+                const video = document.createElement('video');
+                video.preload = 'metadata';
                 video.onloadedmetadata = function() {
-                    const duration = video.duration
-                    setBlocks(prev => [...prev, {
-                        data: { 
-                            file, 
-                            fileType: file.type, 
-                            isImage: false, 
-                            isVideo: true, 
-                            url, 
-                            align: 'center',
-                            duration: duration //Duration in seconds
-                        },
-                        id: blockId,
-                        isEditing: false,
-                        type: BLOCK_TYPES.MEDIA
-                    }])
-                }
+                    handleAddBlock(BLOCK_TYPES.MEDIA, {
+                        file,
+                        fileType: file.type,
+                        isImage: false,
+                        isVideo: true,
+                        url,
+                        align: 'center',
+                        duration: video.duration || null, //Duration in seconds
+                    });
+                };
                 video.onerror = function() {
-                    setBlocks(prev => [...prev, {
-                        data: { 
-                            file, 
-                            fileType: file.type, 
-                            isImage: false, 
-                            isVideo: true, 
-                            url, 
-                            align: 'center',
-                            duration: null
-                        },
-                        id: blockId,
-                        isEditing: false,
-                        type: BLOCK_TYPES.MEDIA
-                    }])
-                }
-                video.src = url
+                    handleAddBlock(BLOCK_TYPES.MEDIA, {
+                        file,
+                        fileType: file.type,
+                        isImage: false,
+                        isVideo: true,
+                        url,
+                        align: 'center',
+                        duration: null,
+                    });
+                };
+                video.src = url;
             } else {
-                setBlocks(prev => [...prev, {
-                    data: { 
-                        file, 
-                        fileType: file.type, 
-                        isImage: file.type.startsWith('image/'), 
-                        isVideo: false, 
-                        url, 
-                        align: 'center' 
-                    },
-                    id: blockId,
-                    isEditing: false,
-                    type: BLOCK_TYPES.MEDIA
-                }])
+                handleAddBlock(BLOCK_TYPES.MEDIA, {
+                    file,
+                    fileType: file.type,
+                    isImage: file.type.startsWith('image/'),
+                    isVideo: false,
+                    url,
+                    align: 'center',
+                });
             }
-        })
-    }, [MAX_FILE_SIZE, BLOCK_LIMIT, blocks.length, hasMembership])
+        });
+    }, [MAX_FILE_SIZE, MAX_VIDEO_SIZE, BLOCK_LIMIT, blocks.length, hasMembership]);
 
     const iframeConfirm = (urlInput) => {
         try {
@@ -630,13 +647,7 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
                     </div>
                 </body>
             </html>`;
-            const newBlock = {
-                data: { code: iframeCode, isBlockLoading: false, showPrompt: false },
-                id: v4(),
-                isEditing: false,
-                type: BLOCK_TYPES.CODE,
-            };
-            setBlocks(prev => [newBlock, ...prev]);
+            handleAddBlock(BLOCK_TYPES.CODE, { code: iframeCode, isBlockLoading: false, showPrompt: false });
         } catch (error) {
             alert('Please enter a valid URL (e.g., https://example.com)');
         }
@@ -662,13 +673,7 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
         if (!embedCode.startsWith('<div class="social-media-embed"')) {
             embedCode = `<div class="social-media-embed" style="width:100%;display:flex;justify-content:center;">${embedCode}</div>`;
         }
-        const newBlock = {
-            data: { code: embedCode, isBlockLoading: false, showPrompt: false },
-            id: v4(),
-            isEditing: false,
-            type: BLOCK_TYPES.CODE,
-        };
-        setBlocks(prev => [newBlock, ...prev]);
+        handleAddBlock(BLOCK_TYPES.CODE, { code: embedCode, isBlockLoading: false, showPrompt: false });
         setIsSocialModalOpen(false);
     };
 
@@ -759,6 +764,37 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
             const finalHTML = compileFinalHTML(blocks);
             const formData = new FormData();
             const postId = post?.post_id;
+            const hasImages = blocks.some(b => b.type === BLOCK_TYPES.MEDIA && b.data.isImage);
+            const hasVideos = blocks.some(b => b.type === BLOCK_TYPES.MEDIA && b.data.isVideo);
+            const hasInteractive = blocks.some(b =>
+                (b.type === BLOCK_TYPES.APP) || 
+                (b.type === BLOCK_TYPES.CODE && 
+                    !b.data.code?.includes('social-media-embed') &&
+                    !b.data.code?.includes('embedded-website'))
+            );
+            const hasExternalPosts = blocks.some(b => 
+                b.type === BLOCK_TYPES.CODE && b.data.code?.includes('social-media-embed')
+            );
+            const hasEmbeddedWebsites = blocks.some(b => 
+                b.type === BLOCK_TYPES.CODE && b.data.code?.includes('embedded-website')
+            );
+            const hasText = blocks.some(b => 
+                b.type === BLOCK_TYPES.TEXT && b.data.html?.trim() !== ''
+            );
+            const imageCount = blocks.filter(b => b.type === BLOCK_TYPES.MEDIA && b.data.isImage).length;
+            const videoCount = blocks.filter(b => b.type === BLOCK_TYPES.MEDIA && b.data.isVideo).length;
+            const videoLength = blocks
+                .filter(b => b.type === BLOCK_TYPES.MEDIA && b.data.isVideo && b.data.duration)
+                .reduce((sum, b) => sum + parseFloat(b.data.duration || 0), 0);
+            formData.append('has_images', hasImages)
+            formData.append('has_videos', hasVideos)
+            formData.append('has_interactive', hasInteractive)
+            formData.append('has_external_posts', hasExternalPosts)
+            formData.append('has_embedded_websites', hasEmbeddedWebsites)
+            formData.append('has_text', hasText)
+            formData.append('image_count', imageCount)
+            formData.append('video_count', videoCount)
+            formData.append('video_length', videoLength)
             formData.append('content', finalHTML);
             formData.append('feed_id', feed?.feed_id);
             formData.append('is_private', feed?.type === 'public' ? false : true);
@@ -935,65 +971,70 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
                                                         <div className="block" style={{ flex: 1 }}>
                                                             {type !== BLOCK_TYPES.TEXT && (
                                                                 <div className="block-controls" style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                                                    <div style={{ display: 'flex', gap: '10px' }}>
-                                                                        {type === BLOCK_TYPES.CODE && isEditing && (
-                                                                            <button className="small-icon" onClick={() => updateBlock({ ...block, data: { ...data, showPrompt: !data.showPrompt } })} title={data.showPrompt ? 'Direct input' : 'Prompt'} type="button">
-                                                                                {data.showPrompt ? <FaTerminal /> : <FaCommentAlt />}
-                                                                            </button>
-                                                                        )}
-                                                                        {type !== BLOCK_TYPES.MEDIA && type !== BLOCK_TYPES.CODE && (
-                                                                            <button className="small-icon" onClick={() => removeBlock(id)} title="Delete" type="button"><FaTrash /></button>
-                                                                        )}
-                                                                        {type !== BLOCK_TYPES.MEDIA && (
-                                                                            <button className="small-icon" onClick={toggleEdit} title={isEditing ? 'Preview' : 'Edit'} type="button">{isEditing ? <FaEye /> : <FaEdit />}</button>
-                                                                        )}
-                                                                        {type === BLOCK_TYPES.CODE && (
-                                                                            <button
-                                                                                className="small-icon"
-                                                                                onClick={() => {
-                                                                                    async function doCopy() {
-                                                                                        await navigator.clipboard.writeText(data.code);
-                                                                                    }
-                                                                                    doCopy().then(() => {
-                                                                                        setPostErrorMessage('Copied');
-                                                                                        setTimeout(() => setPostErrorMessage(''), 2000);
-                                                                                    });
-                                                                                }}
-                                                                                title="Copy"
-                                                                                type="button"
-                                                                            >
-                                                                                <FaCopy />
-                                                                            </button>
-                                                                        )}
-                                                                        {type === BLOCK_TYPES.MEDIA && (
-                                                                            <>
-                                                                                {data.isImage && (
-                                                                                    <button
-                                                                                        className="small-icon"
-                                                                                        onClick={() => setCropState(prev => ({
-                                                                                            ...prev,
-                                                                                            [id]: {
-                                                                                                isCropping: true,
-                                                                                                crop: { x: 0, y: 0 },
-                                                                                                zoom: 1,
-                                                                                                croppedAreaPixels: null
-                                                                                            }
-                                                                                        }))}
-                                                                                        title="Crop image"
-                                                                                        type="button"
-                                                                                    >
-                                                                                        <FaCrop /><p className="icon-text">Crop</p>
-                                                                                    </button>
-                                                                                )}
-                                                                                <button className="small-icon" onClick={() => toggleMediaAlignment(block)} title={block.data.align === 'center' ? "Align left" : "Align centre"} type="button">
-                                                                                    <FaAlignCenter /><p className="icon-text">Align</p>
+                                                                    {!(type === BLOCK_TYPES.CODE && (data.code?.includes('social-media-embed') || data.code?.includes('embedded-website'))) && (
+                                                                        <div style={{ display: 'flex', gap: '10px' }}>
+                                                                            {type === BLOCK_TYPES.CODE && isEditing && (
+                                                                                <button className="small-icon" onClick={() => updateBlock({ ...block, data: { ...data, showPrompt: !data.showPrompt } })} title={data.showPrompt ? 'Direct input' : 'Prompt'} type="button">
+                                                                                    {data.showPrompt ? <FaTerminal /> : <FaCommentAlt />}
                                                                                 </button>
-                                                                            </>
-                                                                        )}
-                                                                    </div>
-                                                                    <div style={{ position: 'relative' }}>
-                                                                        {(type === BLOCK_TYPES.MEDIA || type === BLOCK_TYPES.CODE) && (
+                                                                            )}
+                                                                            {type !== BLOCK_TYPES.MEDIA && type !== BLOCK_TYPES.CODE && (
+                                                                                <button className="small-icon" onClick={() => removeBlock(id)} title="Delete" type="button"><FaTrash /></button>
+                                                                            )}
+                                                                            {type !== BLOCK_TYPES.MEDIA && (
+                                                                                <button className="small-icon" onClick={toggleEdit} title={isEditing ? 'Preview' : 'Edit'} type="button">{isEditing ? <FaEye /> : <FaEdit />}</button>
+                                                                            )}
+                                                                            {type === BLOCK_TYPES.CODE && (
+                                                                                <button
+                                                                                    className="small-icon"
+                                                                                    onClick={() => {
+                                                                                        async function doCopy() {
+                                                                                            await navigator.clipboard.writeText(data.code);
+                                                                                        }
+                                                                                        doCopy().then(() => {
+                                                                                            setPostErrorMessage('Copied');
+                                                                                            setTimeout(() => setPostErrorMessage(''), 2000);
+                                                                                        });
+                                                                                    }}
+                                                                                    title="Copy"
+                                                                                    type="button"
+                                                                                >
+                                                                                    <FaCopy />
+                                                                                </button>
+                                                                            )}
+                                                                            {type === BLOCK_TYPES.MEDIA && (
+                                                                                <>
+                                                                                    {data.isImage && (
+                                                                                        <button
+                                                                                            className="small-icon"
+                                                                                            onClick={() => setCropState(prev => ({
+                                                                                                ...prev,
+                                                                                                [id]: {
+                                                                                                    isCropping: true,
+                                                                                                    crop: { x: 0, y: 0 },
+                                                                                                    zoom: 1,
+                                                                                                    croppedAreaPixels: null
+                                                                                                }
+                                                                                            }))}
+                                                                                            title="Crop image"
+                                                                                            type="button"
+                                                                                        >
+                                                                                            <FaCrop /><p className="icon-text">Crop</p>
+                                                                                        </button>
+                                                                                    )}
+                                                                                    <button className="small-icon" onClick={() => toggleMediaAlignment(block)} title={block.data.align === 'center' ? "Align left" : "Align centre"} type="button">
+                                                                                        <FaAlignCenter /><p className="icon-text">Align</p>
+                                                                                    </button>
+                                                                                </>
+                                                                            )}
+                                                                        </div>
+                                                                    )}
+                                                                    <div style={{ position: 'relative', marginLeft: 'auto' }}>
+                                                                        {(type === BLOCK_TYPES.MEDIA || (type === BLOCK_TYPES.CODE && !(data.code?.includes('social-media-embed') || data.code?.includes('embedded-website')))) && (
                                                                             <button className="small-icon" onClick={() => removeBlock(id)} title="Delete" type="button"><FaTrash /></button>
+                                                                        )}
+                                                                        {(type === BLOCK_TYPES.CODE && (data.code?.includes('social-media-embed') || data.code?.includes('embedded-website'))) && (
+                                                                            <button className="small-icon" onClick={() => removeBlock(id)} title="Delete" type="button" style={{ marginLeft: 'auto', display: 'block' }}><FaTrash /></button>
                                                                         )}
                                                                     </div>
                                                                 </div>
@@ -1038,8 +1079,13 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
                                                             )}
                                                             {type === BLOCK_TYPES.CODE && (
                                                                 <div className="block-content">
-                                                                    {!data.showPrompt && isEditing && <p className="small-text faded-text">For now, only one HTML file with inline JavaScript and CSS can be created.</p>}
-                                                                    {isEditing && (
+                                                                    {!data.showPrompt && isEditing && !(data.code?.includes('embedded-website') || data.code?.includes('social-media-embed')) && (
+                                                                        <p className="small-text faded-text">For now, only one HTML file with inline JavaScript and CSS can be created.</p>
+                                                                    )}
+                                                                    {isEditing && !(
+                                                                        data.code?.includes('embedded-website') ||
+                                                                        data.code?.includes('social-media-embed')
+                                                                    ) && (
                                                                         <>
                                                                             {data.showPrompt ? (
                                                                                 <div className="ai-generator">

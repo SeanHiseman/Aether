@@ -251,6 +251,32 @@ router.post("/create_post", standardLimiter, authenticateCheck, checkStorageLimi
 			fs.writeFileSync(localPath, finalHtml);
 			contentUrl = `/media/posts/${htmlFileName}`;
 		}
+		const textBody = await contentAnalyser.extractTextBody(finalHtml);
+		const embedding = await contentAnalyser.generateEmbedding(textBody);
+		const textProcessing = await contentAnalyser.processText(textBody);
+		const sentimentScore = await contentAnalyser.calculateSentiment(textBody);
+		const words = textBody.split(/\s+/).filter(w => w.length > 0);
+		const sentences = textBody.split(/[.!?]+/).filter(s => s.trim().length > 0);
+		const analysis = {
+			embeddings: JSON.stringify(embedding),
+			sentiment_score: sentimentScore,
+			sentence_count: sentences.length,
+			text_body: textBody,
+			text_length: textBody.length,
+			tokens: JSON.stringify(textProcessing.tokens),
+			word_count: words.length
+		};
+		const flags = {
+			has_embedded_websites: req.body.has_embedded_websites === 'true' || req.body.has_embedded_websites === true,
+			has_external_posts: req.body.has_external_posts === 'true' || req.body.has_external_posts === true,
+			has_images: req.body.has_images === 'true' || req.body.has_images === true,
+			has_interactive: req.body.has_interactive === 'true' || req.body.has_interactive === true,
+			has_text: req.body.has_text === 'true' || req.body.has_text === true,
+			has_videos: req.body.has_videos === 'true' || req.body.has_videos === true,
+			image_count: parseInt(req.body.image_count ?? 0) || 0,
+			video_count: parseInt(req.body.video_count ?? 0) || 0,
+			video_length: parseFloat(req.body.video_length ?? 0) || 0
+		};
 		let result = null;
 		//Update existing post
 		if (post_id) {
@@ -262,6 +288,7 @@ router.post("/create_post", standardLimiter, authenticateCheck, checkStorageLimi
 				if (channel_id) post.channel_id = channel_id;
 				if (feed_id) post.feed_id = feed_id;
 				if (parent_id) post.parent_id = parent_id;
+				Object.assign(post, analysis, flags);
 				post.updated_at = Sequelize.literal("CURRENT_TIMESTAMP(3)");
 				await post.save();
 				result = post;
@@ -270,18 +297,19 @@ router.post("/create_post", standardLimiter, authenticateCheck, checkStorageLimi
 		//Publish draft as post
 		else if (draft_id && publish_draft === 'true') {
 			const draft = await PostDrafts.findByPk(draft_id);
-			const analysisResults = await contentAnalyser.analyseContent(finalHtml, title);
 			const newPostId = v4();
 			const postData = {
 				post_id: newPostId,
-				channel_id: draft?.channel_id || channel_id,
+				channel_id,
 				content: contentUrl,
-				feed_id: draft?.feed_id || feed_id,
+				feed_id,
 				is_private,
 				parent_id,
 				poster_id,
 				title,
-				...analysisResults
+				rank_hotness: -0.1,
+				...analysis,
+				...flags
 			};
 			result = await Posts.create(postData);
 			if (draft) await PostDrafts.destroy({ where: { draft_id } });
@@ -302,7 +330,6 @@ router.post("/create_post", standardLimiter, authenticateCheck, checkStorageLimi
 		}
 		//Create new post
 		else {
-			const analysisResults = await contentAnalyser.analyseContent(finalHtml, title);
 			const newPostId = v4();
 			const postData = {
 				post_id: newPostId,
@@ -314,7 +341,8 @@ router.post("/create_post", standardLimiter, authenticateCheck, checkStorageLimi
 				poster_id,
 				title,
 				rank_hotness: -0.1,
-				...analysisResults
+				...analysis,
+				...flags
 			};
 			result = await Posts.create(postData);
 			if (parent_id) {
