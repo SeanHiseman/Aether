@@ -20,9 +20,7 @@ const ExplorePage = () => {
 	const [posts, setPosts] = useState([]);
 	const { isAuthenticated, viewer } = useContext(AuthContext);
 	const { rightClasses, updateFeeds } = useOutletContext();
-	const [refreshTrigger, setRefreshTrigger] = useState(false);
-	const shownPostIdsRef = useRef([]);
-	const shownFeedIdsRef = useRef([]);
+	const [refreshTrigger, setRefreshTrigger] = useState(false);;
 	const scrollRef = useRef(null);
 
 	const fetchPosts = useCallback(async (page = 0) => {
@@ -33,7 +31,6 @@ const ExplorePage = () => {
 			const response = await api.post("/explore_posts", {
 				limit: FETCH_LIMIT,
 				offset: page * FETCH_LIMIT,
-				exclude: shownPostIdsRef.current, 
 				followedFeedIds,
 				recentUpvotes
 			});
@@ -41,11 +38,8 @@ const ExplorePage = () => {
 			setHasMorePosts(response.data?.hasMore ?? false);
 			if (page === 0) {
 				setPosts(newPosts);
-				shownPostIdsRef.current = newPosts.map(p => p?.post_id);
 			} else { //Append to existing posts
 				setPosts(prev => [...prev, ...newPosts]);
-				const newIds = newPosts.map(p => p?.post_id);
-				shownPostIdsRef.current = [...shownPostIdsRef.current, ...newIds]; 
 			}
 		} catch (error) {
 			setErrorMessage(error.response?.data?.message || "Failed to fetch posts");
@@ -61,7 +55,7 @@ const ExplorePage = () => {
 			const response = await api.post("/explore_feeds", {
 				limit: 60, //5 posts then 3 feeds
 				offset: page * 60, 
-				exclude: [...shownFeedIdsRef.current, ...excludedFeedIds] 
+				exclude: [...excludedFeedIds] 
 			});
 			const newFeeds = response.data?.feeds || [];
 			if (newFeeds.length === 0) {
@@ -71,12 +65,8 @@ const ExplorePage = () => {
 			setHasMoreFeeds(response.data?.hasMore ?? false);
 			if (page === 0) {
 				setFeeds(newFeeds);
-				const newIds = newFeeds.map(f => f?.feed_id);
-				shownFeedIdsRef.current = newIds; 
 			} else {
 				setFeeds(prev => [...prev, ...newFeeds]);
-				const newIds = newFeeds.map(f => f?.feed_id);
-				shownFeedIdsRef.current = [...shownFeedIdsRef.current, ...newIds]; 
 			}
 		} catch (error) {
 			setErrorMessage(error.response?.data?.message || "Failed to fetch feeds");
@@ -152,8 +142,6 @@ const ExplorePage = () => {
 		setPostPage(0);
 		setFeeds([]);
 		setPosts([]);
-		shownPostIdsRef.current = [];
-		shownFeedIdsRef.current = [];
 		const fetches = [];
 		if (filter === "all" || filter === "posts") fetches.push(fetchPosts(0));
 		if (filter === "all" || filter === "feeds") fetches.push(fetchFeeds(0));
@@ -168,8 +156,6 @@ const ExplorePage = () => {
 		setPostPage(0);
 		setFeeds([]);
 		setPosts([]);
-		shownPostIdsRef.current = [];
-		shownFeedIdsRef.current = [];
 		const fetches = [];
 		if (filter === "all" || filter === "posts") fetches.push(fetchPosts(0));
 		if (filter === "all" || filter === "feeds") fetches.push(fetchFeeds(0));

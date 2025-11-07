@@ -106,6 +106,12 @@
 .deep-feeds-container {
     width: 90%;
 }
+.deep-feed-drag-overlay .deep-feed-header {
+    padding: var(--medium-margin);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
 .display-area {
     align-items: center;
     display: flex;
@@ -125,11 +131,11 @@
     display: flex;
     align-items: center;
 }
-.deep-feed-drag-overlay .deep-feed-header {
-    padding: var(--medium-margin);
-    display: flex;
-    justify-content: space-between;
+.feed-header-photo {
     align-items: center;
+    display: flex;
+    flex-direction: column;
+    max-width: 350px;
 }
 .feed-widget-container * {
     overflow-wrap: normal;

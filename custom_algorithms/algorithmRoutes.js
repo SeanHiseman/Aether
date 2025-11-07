@@ -1,9 +1,9 @@
+import { Algorithms, AlgorithmLocations } from './algorithmRelationships.js';
 import authenticateCheck from '../functions/checks/authenticateCheck.js';
 import { ContentAnalyser } from '../functions/contentAnalyser.js';
 import OpenAI from 'openai';
 import { Router } from 'express';
 import { v4 } from 'uuid';
-import { Algorithms, AlgorithmLocations } from './algorithmRelationships.js';
 import sequelize from '../databaseSetup.js';
 
 const analyser = new ContentAnalyser();
@@ -121,12 +121,10 @@ router.post('/create_algorithm', authenticateCheck, async (req, res) => {
 		if (Array.isArray(finalBoost) && finalBoost.length > 0) {
 			const boostText = finalBoost.join(' ');
 			boostEmbedding = await analyser.generateEmbedding(boostText);
-			console.log('Boost embedding:', boostEmbedding);
 		}
 		if (Array.isArray(finalSuppress) && finalSuppress.length > 0) {
 			const suppressText = finalSuppress.join(' ');
 			suppressEmbedding = await analyser.generateEmbedding(suppressText);
-			console.log('Suppress embedding:', suppressEmbedding);
 		};
 		let existingAlgorithm = null;
 		if (req.body.algorithmId) {

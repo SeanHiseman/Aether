@@ -1,9 +1,9 @@
+import { computeHotness } from '../functions/postRanking.js';
 import { ContentAnalyser } from '../functions/contentAnalyser.js';
 import { faker } from '@faker-js/faker';
 import fs from 'fs';
 import { parse } from 'csv-parse/sync';
 import { v4 } from 'uuid';
-import sequelize from '../databaseSetup.js';
 import { Feeds, FeedChannels, Posts, Users } from '../models/relationships.js';
 
 const contentAnalyser = new ContentAnalyser();
@@ -91,7 +91,7 @@ function generatePost(topic) {
 async function generateData() {
 	try {
 		const NUM_FEEDS = 200;
-		const POSTS_PER_CHANNEL = 100;
+		const POSTS_PER_CHANNEL = 200;
 		const feedsData = [];
 		const channelsData = [];
 		const postsData = [];
@@ -146,12 +146,14 @@ async function generateData() {
 				const topic = faker.helpers.arrayElement(topics);
 				const channelId = topicChannels[topic];
 				let htmlContent;
+				let postTitle;
 				if (tweetRows.length > 0 && Math.random() < 0.5) {
 					const tweet = tweetRows[Math.floor(Math.random() * tweetRows.length)];
 					const tweetContent = tweet[3];
+					postTitle = `${topic} Discussion: ${faker.company.catchPhrase()}`;
 					htmlContent = `<html><head></head><body><div class="content-block text-block" data-blockid="${v4()}"><p>${tweetContent}</p></div></body></html>`;
 				} else {
-					const postTitle = faker.helpers.arrayElement([
+					postTitle = faker.helpers.arrayElement([
 						`${topic} Insights: ${faker.word.adjective()} ${faker.word.noun()}`,
 						`Breaking ${topic} News: ${faker.company.catchPhrase()}`,
 						`Top ${faker.number.int({ min: 5, max: 15 })} ${topic} Tips`
@@ -162,18 +164,29 @@ async function generateData() {
 				const filePath = `/media/posts/post-${v4()}.html`;
 				fs.writeFileSync(`.${filePath}`, htmlContent, 'utf8');
 				const analysisResults = await contentAnalyser.analyseContent(htmlContent, null);
+				const upvotes = faker.number.int({ min: 0, max: 50000 });
+				const downvotes = faker.number.int({ min: 0, max: 30000 });
+				const created_at = faker.date.recent({ days: 60 });
+				const now = Math.floor(Date.now() / 1000);
+				const rank_hotness = computeHotness({
+					upvotes,
+					downvotes,
+					createdAt: created_at,
+					referenceTime: now
+				});
 				const post = {
 					post_id: postId,
 					feed_id: feedId,
 					channel_id: channelId,
-					title: null,
-					content: filePath, // store only path in DB
-					replies: faker.number.int({ min: 0, max: 100 }),
-					views: faker.number.int({ min: 10, max: 10000 }),
-					upvotes: faker.number.int({ min: 0, max: 500 }),
-					downvotes: faker.number.int({ min: 0, max: 100 }),
-					created_at: faker.date.recent({ days: 30 }),
+					title: postTitle,
+					content: filePath, //store only path in DB
+					replies: faker.number.int({ min: 0, max: 10000 }),
+					views: faker.number.int({ min: 10, max: 1000000 }),
+					upvotes,
+					downvotes,
+					created_at,
 					poster_id: feedId,
+					rank_hotness,
 					...analysisResults
 				};
 				postsData.push(post);

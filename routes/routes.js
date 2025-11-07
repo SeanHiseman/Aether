@@ -80,7 +80,6 @@ router.post('/search', standardLimiter, async (req, res) => {
         }];
         const postResults = await ApplyAlgorithm({
             locationId: 'search',
-            excludedPostIds: '',
             feedId: null, //Not used when locationId is 'search'
             includeOptions: includeOptions,
             isMain: 'false',

@@ -1,11 +1,11 @@
 import { Algorithms, AlgorithmLocations } from "./algorithms.js";
-import { computeHotness, getHotness } from "../functions/postRanking.js";
 import { CosineSimilarity } from "../functions/calculation/cosineSimilarity.js";
 import { DeepFeedContent, Posts, PostVotes, SavedPosts } from "../models/relationships.js";
 import { Op } from 'sequelize';
-import redis from "../app.js";
 
 const excludedAttrs = [
+	'rank_hotness',
+	'rank_updated_at',
     'text_body',
     'text_length',
     'word_count',
@@ -33,22 +33,12 @@ function stripExcludedAttributes(posts) {
 	});
 }
 
-async function ApplyAlgorithm({ locationId, excludedPostIds, feedId, followedFeedIds, includeOptions, isGroup = true, isMain, limit = 100, offset, recentUpvotes, viewerId, keyword = '' }) {
+async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOptions, isGroup = true, isMain, limit = 100, offset, recentUpvotes, viewerId, keyword = '' }) {
 	try {
         //Followed feeds are a received as a string
 		const followedFeedIdsSafe = (typeof followedFeedIds === "string")
 			? followedFeedIds.split(",")
 			: (Array.isArray(followedFeedIds) ? followedFeedIds : []);
-
-        //Already returned posts are excluded
-		let excludedIds = [];
-		if (excludedPostIds) {
-            if (Array.isArray(excludedPostIds)) {
-                excludedIds = excludedPostIds;
-            } else if (typeof excludedPostIds === 'string') {
-				excludedIds = excludedPostIds.split(',').map(id => id.trim()).filter(Boolean);
-            }
-		}
 
         //Find if there is an algorithm applied at this location
 		let algorithm = {};
@@ -75,13 +65,6 @@ async function ApplyAlgorithm({ locationId, excludedPostIds, feedId, followedFee
 			}
 		}
 
-        //Check if hotness ranking should be used
-        const hotnessRelevant =
-            (!algorithmRow || (
-                (algorithm?.scoring?.voteImpact ?? 1) > 0.5 &&
-                (algorithm?.chronology ?? 1) >= 0
-            ));
-
         //Check if algorithm is active today
 		let isActiveToday = false;
 		if (algorithmLocation) {
@@ -89,6 +72,7 @@ async function ApplyAlgorithm({ locationId, excludedPostIds, feedId, followedFee
             isActiveToday = algorithm.activeDays && algorithm.activeDays.length > 0 ? algorithm.activeDays.map(d => d.toLowerCase()).includes(today) : true;
 		}
 
+		const getOldest = algorithm.chronology === -1; //Get oldest posts
         const useChronological = (!isGroup && !algorithmLocation) || (!isActiveToday && !isGroup) || (algorithm.chronology === 1); //User feeds without active algorithms or 1 chronology should be in time order only
 		const useStandardScore = (!algorithmLocation && isGroup) || (!isActiveToday && isGroup);
 
@@ -98,56 +82,61 @@ async function ApplyAlgorithm({ locationId, excludedPostIds, feedId, followedFee
         //Collect recent upvoted posts for similarity comparison from local storage or database
 		let recentUpvoteIds = [];
 		let recentUpvoteEmbeddings = [];
-		if (viewerId && !recentUpvotes) {
-			const foundRecentUpvotes = await PostVotes.findAll({
-				attributes: ['post_id'],
-                where: { 
-                    voter_id: viewerId,
-                    upvotes: { [Op.gt]: 0 },
-                    downvotes: { [Op.lte]: 0 }
-                },
-				order: [['updated_at', 'DESC']],
-				limit: 100,
-				raw: true
+		let normalisedRecentEmbeddings = [];
+		if (algorithmLocation) { //Only need recent votes if there's an algorithm
+			if (viewerId && !recentUpvotes) {
+				const foundRecentUpvotes = await PostVotes.findAll({
+					attributes: ['post_id'],
+					where: { 
+						voter_id: viewerId,
+						upvotes: { [Op.gt]: 0 },
+						downvotes: { [Op.lte]: 0 }
+					},
+					order: [['updated_at', 'DESC']],
+					limit: limit,
+					raw: true
+				});
+				recentUpvoteIds = foundRecentUpvotes.map(row => row.post_id);
+			} else if (recentUpvotes) {
+				recentUpvoteIds = recentUpvotes.map(row => row.post_id);
+			}
+			if (recentUpvoteIds.length > 0) {
+				const recentUpvotePosts = await Posts.findAll({
+					attributes: ['embeddings'],
+					where: { post_id: { [Op.in]: recentUpvoteIds } },
+					raw: true
+				});
+				recentUpvoteEmbeddings = recentUpvotePosts
+					.map(p => { try { return p.embeddings ? JSON.parse(p.embeddings) : null; } catch { return null; } }) //Get embeddings of recently upvoted posts
+					.filter(Boolean);
+			}
+			normalisedRecentEmbeddings = recentUpvoteEmbeddings.map(vec => {
+				const mag = Math.sqrt(vec.reduce((a, b) => a + b * b, 0)) || 1;
+				return vec.map(v => v / mag);
 			});
-            recentUpvoteIds = foundRecentUpvotes.map(row => row.post_id);
-		} else if (recentUpvotes) {
-            recentUpvoteIds = recentUpvotes.map(row => row.post_id);
 		}
-		if (recentUpvoteIds.length > 0) {
-			const recentUpvotePosts = await Posts.findAll({
-				attributes: ['embeddings'],
-				where: { post_id: { [Op.in]: recentUpvoteIds } },
-				raw: true
-			});
-			recentUpvoteEmbeddings = recentUpvotePosts
-				.map(p => { try { return p.embeddings ? JSON.parse(p.embeddings) : null; } catch { return null; } })
-				.filter(Boolean);
-		}
-		const normalisedRecentEmbeddings = recentUpvoteEmbeddings.map(vec => {
-			const mag = Math.sqrt(vec.reduce((a, b) => a + b * b, 0)) || 1;
-			return vec.map(v => v / mag);
-		});
 
         //Fetch posts according to location
         let posts = [];
         const attrOption = fetchFullAttributes ? undefined : { exclude: excludedAttrs };
 
-        //Search is pure SQL (not Redis-ranked)
+		const orderMode = getOldest
+			? [['created_at', 'ASC']]
+			: (useChronological ? [['created_at', 'DESC']] : [['rank_hotness', 'DESC']]);
+
         if (locationId === "search" && keyword) {
             const postIds = await Posts.findAll({
                 attributes: ['post_id'],
                 where: {
                     parent_id: null,
-                    post_id: { [Op.notIn]: excludedIds },
                     [Op.or]: [
                         { title: { [Op.like]: `%${keyword}%` } },
                         { text_body: { [Op.like]: `%${keyword}%` } }
                     ],
                     is_private: false
                 },
-                order: [['created_at', 'DESC']],
-                limit: limit * 20,
+                order: orderMode,
+                limit: limit,
                 offset,
                 raw: true
             });
@@ -159,190 +148,117 @@ async function ApplyAlgorithm({ locationId, excludedPostIds, feedId, followedFee
                 attributes: attrOption,
                 raw: false
             });
-            posts.sort((a, b) => orderedIds.indexOf(a.post_id) - orderedIds.indexOf(b.post_id));
-
-        } else if (locationId === "following") { //Redis union of followed feeds
-            if (followedFeedIdsSafe.length === 0) return [];
-            const feedKeys = followedFeedIdsSafe.map(id => `hotness:feed_${id}`);
-            const tempKey = `hotness:temp:following:${viewerId}`;
-            await redis.zunionstore(tempKey, feedKeys.length, ...feedKeys);
-            await redis.expire(tempKey, 60);
-
-            let ids = [];
-            if (hotnessRelevant) {
-                ids = await redis.zrevrange(tempKey, 0, 9999);
-                if (ids.length < 2000) {
-                    let range = 10000;
-                    while (ids.length < 5000 && range < 100000) {
-                        const batch = await redis.zrevrange(tempKey, range, range + 9999);
-                        if (!batch.length) break;
-                        ids.push(...batch);
-                        range += 10000;
-                    }
-                }
-            }
-            if (!ids.length) {
-                const postIds = await Posts.findAll({
-                    attributes: ['post_id'],
-                    where: {
-                        feed_id: { [Op.in]: followedFeedIdsSafe },
-                        parent_id: null,
-                        post_id: { [Op.notIn]: excludedIds },
-                        ...(viewerId ? { poster_id: { [Op.not]: viewerId } } : {})
-                    },
-                    order: [['created_at', 'DESC']],
-                    limit: limit * (hotnessRelevant ? 20 : 200),
-                    offset,
-                    raw: true
-                });
-                ids = postIds.map(p => p.post_id);
-            }
-            const filtered = ids.filter(id => !excludedIds.includes(id)).slice(0, limit * 10);
-            if (!filtered.length) return [];
+            const orderMap = new Map(orderedIds.map((id, i) => [id, i]));
+			posts.sort((a, b) => orderMap.get(a.post_id) - orderMap.get(b.post_id));
+        } else if (locationId === "following") {
+            const postIds = await Posts.findAll({
+                attributes: ['post_id'],
+                where: {
+                    feed_id: { [Op.in]: followedFeedIdsSafe },
+                    parent_id: null,
+                    ...(viewerId ? { poster_id: { [Op.not]: viewerId } } : {})
+                },
+                order: orderMode,
+                limit: limit,
+                offset,
+                raw: true
+            });
+            const orderedIds = postIds.map(p => p.post_id);
             posts = await Posts.findAll({
-                where: { post_id: { [Op.in]: filtered } },
+                where: { post_id: orderedIds },
                 include: includeOptions,
                 attributes: attrOption,
                 raw: false
             });
-
-        } else if (locationId === "explore") { //Redis-scored explore corpus
-            let ids = [];
-            if (hotnessRelevant) {
-                ids = await redis.zrevrange('hotness:explore', 0, 9999);
-                if (ids.length < 2000) {
-                    let range = 10000;
-                    while (ids.length < 5000 && range < 100000) {
-                        const batch = await redis.zrevrange('hotness:explore', range, range + 9999);
-                        if (!batch.length) break;
-                        ids.push(...batch);
-                        range += 10000;
-                    }
-                }
-            }
-            if (!ids.length) {
-                const postIds = await Posts.findAll({
-                    attributes: ['post_id'],
-                    where: {
-                        feed_id: { [Op.notIn]: followedFeedIdsSafe },
-                        parent_id: null,
-                        post_id: { [Op.notIn]: excludedIds },
-                        ...(viewerId ? { poster_id: { [Op.not]: viewerId } } : {})
-                    },
-                    order: [['created_at', 'DESC']],
-                    limit: limit * (hotnessRelevant ? 20 : 200),
-                    offset,
-                    raw: true
-                });
-                ids = postIds.map(p => p.post_id);
-            }
-            const filtered = ids.filter(id => !excludedIds.includes(id)).slice(0, limit * 10);
-            if (!filtered.length) return [];
+			const orderMap = new Map(orderedIds.map((id, i) => [id, i]));
+			posts.sort((a, b) => orderMap.get(a.post_id) - orderMap.get(b.post_id));
+        } else if (locationId === "explore") {
+            const postIds = await Posts.findAll({
+                attributes: ['post_id'],
+                where: {
+                    feed_id: { [Op.notIn]: followedFeedIdsSafe },
+                    parent_id: null,
+                    ...(viewerId ? { poster_id: { [Op.not]: viewerId } } : {})
+                },
+                order: orderMode,
+                limit: limit,
+                offset,
+                raw: true
+            });
+            const orderedIds = postIds.map(p => p.post_id);
             posts = await Posts.findAll({
-                where: { post_id: { [Op.in]: filtered } },
+                where: { post_id: orderedIds },
                 include: includeOptions,
                 attributes: attrOption,
                 raw: false
             });
-
-        } else if (typeof locationId === 'string' && locationId.startsWith('deep_')) { //Redis union of deep-feed sources
+			const orderMap = new Map(orderedIds.map((id, i) => [id, i]));
+			posts.sort((a, b) => orderMap.get(a.post_id) - orderMap.get(b.post_id));
+        } else if (typeof locationId === 'string' && locationId.startsWith('deep_')) {
             const deepFeedId = locationId.replace(/^deep_/, '');
             const contents = await DeepFeedContent.findAll({
                 where: { deep_feed_id: deepFeedId },
                 attributes: ['feed_id'],
                 raw: true
             });
-            const feedKeys = contents.map(c => `hotness:feed_${c.feed_id}`);
-            let ids = [];
-            if (hotnessRelevant && feedKeys.length > 0) {
-                const tempKey = `hotness:temp:deep_${deepFeedId}`;
-                await redis.zunionstore(tempKey, feedKeys.length, ...feedKeys);
-                await redis.expire(tempKey, 60);
-                ids = await redis.zrevrange(tempKey, 0, 9999);
-                if (ids.length < 2000) {
-                    let range = 10000;
-                    while (ids.length < 5000 && range < 100000) {
-                        const batch = await redis.zrevrange(tempKey, range, range + 9999);
-                        if (!batch.length) break;
-                        ids.push(...batch);
-                        range += 10000;
-                    }
-                }
-            }
-            if (!ids.length) {
-                const allFeedIds = contents.map(c => c.feed_id);
-                const postIds = await Posts.findAll({
-                    attributes: ['post_id'],
-                    where: {
-                        feed_id: { [Op.in]: allFeedIds },
-                        parent_id: null,
-                        post_id: { [Op.notIn]: excludedIds },
-                        ...(viewerId ? { poster_id: { [Op.not]: viewerId } } : {})
-                    },
-                    order: [['created_at', 'DESC']],
-                    limit: limit * (hotnessRelevant ? 20 : 200),
-                    offset,
-                    raw: true
-                });
-                ids = postIds.map(p => p.post_id);
-            }
-            const filtered = ids.filter(id => !excludedIds.includes(id)).slice(0, limit * 10);
-            if (!filtered.length) return [];
+            const allFeedIds = contents.map(c => c.feed_id);
+            const postIds = await Posts.findAll({
+                attributes: ['post_id'],
+                where: {
+                    feed_id: { [Op.in]: allFeedIds },
+                    parent_id: null,
+                    ...(viewerId ? { poster_id: { [Op.not]: viewerId } } : {})
+                },
+                order: orderMode,
+                limit: limit,
+                offset,
+                raw: true
+            });
+            const orderedIds = postIds.map(p => p.post_id);
             posts = await Posts.findAll({
-                where: { post_id: { [Op.in]: filtered } },
+                where: { post_id: orderedIds },
                 include: includeOptions,
                 attributes: attrOption,
                 raw: false
             });
-
-        } else { //Feed channel, fallback to Redis if available
-            let ids = [];
-            if (hotnessRelevant) {
-                ids = await redis.zrevrange(`hotness:feed_${feedId}`, 0, 9999);
-                if (ids.length < 2000) {
-                    let range = 10000;
-                    while (ids.length < 5000 && range < 100000) {
-                        const batch = await redis.zrevrange(`hotness:feed_${feedId}`, range, range + 9999);
-                        if (!batch.length) break;
-                        ids.push(...batch);
-                        range += 10000;
-                    }
-                }
-            }
-            if (!ids.length) {
-                const postIds = await Posts.findAll({
-                    attributes: ['post_id'],
-                    where: {
-                        ...(isMain !== true && locationId ? { channel_id: locationId } : {}),
-                        feed_id: feedId,
-                        parent_id: null,
-                        post_id: { [Op.notIn]: excludedIds }
-                    },
-                    order: [['created_at', 'DESC']],
-                    limit: limit * (hotnessRelevant ? 20 : 200),
-                    offset,
-                    raw: true
-                });
-                ids = postIds.map(p => p.post_id);
-            }
-            const filtered = ids.filter(id => !excludedIds.includes(id)).slice(0, limit * 10);
-            if (!filtered.length) return [];
+			const orderMap = new Map(orderedIds.map((id, i) => [id, i]));
+			posts.sort((a, b) => orderMap.get(a.post_id) - orderMap.get(b.post_id));
+        } else {
+			//Non-group channels are chronological by default
+			const channelOrderMode =
+				(getOldest)
+					? [['created_at', 'ASC']]
+					: ((useChronological && !getOldest)
+						? [['created_at', 'DESC']]
+						: [['rank_hotness', 'DESC']]);
+            const postIds = await Posts.findAll({
+                attributes: ['post_id'],
+                where: {
+                    ...(isMain !== true && locationId ? { channel_id: locationId } : {}),
+                    feed_id: feedId,
+                    parent_id: null,
+                    is_private: false
+                },
+                order: channelOrderMode,
+                limit: limit,
+                offset,
+                raw: true
+            });
+            const orderedIds = postIds.map(p => p.post_id);
             posts = await Posts.findAll({
-                where: { post_id: { [Op.in]: filtered } },
+                where: { post_id: orderedIds },
                 include: includeOptions,
                 attributes: attrOption,
                 raw: false
             });
+			const orderMap = new Map(orderedIds.map((id, i) => [id, i]));
+			posts.sort((a, b) => orderMap.get(a.post_id) - orderMap.get(b.post_id));
         }
-
         if (!posts.length) return [];
 
-		const selectionLimit = parseInt(limit, 10) || 100;
-
-        // Pure chronological order
-		if (useChronological) {
-			const paginated = posts.slice(0, selectionLimit);
-			const ids = paginated.map(p => p.post_id);
+		//No algorithm to be applied
+		if (getOldest || useChronological || useStandardScore) {
+			const ids = posts.map(p => p.post_id);
 			const [userVotes, savedRows] = viewerId
 				? await Promise.all([
 					PostVotes.findAll({
@@ -357,58 +273,17 @@ async function ApplyAlgorithm({ locationId, excludedPostIds, feedId, followedFee
 					})
 				])
 				: [[], []];
-			const voteMap = new Map(userVotes.map(v => [
-                v.post_id,
-                { has_upvoted: v.upvotes > 0, has_downvoted: v.downvotes > 0 }
-			]));
+			const voteMap = new Map(
+				userVotes.map(v => [v.post_id, { has_upvoted: v.upvotes > 0, has_downvoted: v.downvotes > 0 }])
+			);
 			const savedSet = new Set(savedRows.map(s => s.post_id));
-            const postsWithVotes = paginated.map(p => ({
-				...(p.dataValues || p),
-				...(voteMap.get(p.post_id) || { has_upvoted: false, has_downvoted: false }),
-				is_saved: savedSet.has(p.post_id)
-            }));
-            return stripExcludedAttributes(postsWithVotes);
-		}
-
-        //Logarithmic vote/view ranking, weighted by time if no algorithm applied
-		if (useStandardScore) {
-			const postsWithScores = posts.map(post => ({
-				...(post.dataValues || post),
-				score: computeHotness({
-					upvotes: post.upvotes,
-					downvotes: post.downvotes,
-					createdAt: post.created_at,
-                    decayBase: 90000 //25h
-				})
-			}));
-			postsWithScores.sort((a, b) => b.score - a.score);
-			const paginated = postsWithScores.slice(0, selectionLimit);
-			const ids = paginated.map(p => p.post_id);
-			const [userVotes, savedRows] = viewerId
-				? await Promise.all([
-					PostVotes.findAll({
-						attributes: ['post_id', 'upvotes', 'downvotes'],
-						where: { post_id: { [Op.in]: ids }, voter_id: viewerId },
-						raw: true
-					}),
-					SavedPosts.findAll({
-						attributes: ['post_id'],
-						where: { post_id: { [Op.in]: ids }, saver_id: viewerId },
-						raw: true
-					})
-				])
-				: [[], []];
-			const voteMap = new Map(userVotes.map(v => [
-                v.post_id,
-                { has_upvoted: v.upvotes > 0, has_downvoted: v.downvotes > 0 }
-			]));
-			const savedSet = new Set(savedRows.map(s => s.post_id));
-            const postsWithVotes = paginated.map(p => ({
-				...p,
-				...(voteMap.get(p.post_id) || { has_upvoted: false, has_downvoted: false }),
-				is_saved: savedSet.has(p.post_id)
-            }));
-            return stripExcludedAttributes(postsWithVotes);
+			return stripExcludedAttributes(
+				posts.map(p => ({
+					...(p.dataValues || p),
+					...(voteMap.get(p.post_id) || { has_upvoted: false, has_downvoted: false }),
+					is_saved: savedSet.has(p.post_id)
+				}))
+			);
 		}
 
         //Filter out posts, then apply scoring
@@ -441,7 +316,7 @@ async function ApplyAlgorithm({ locationId, excludedPostIds, feedId, followedFee
 			if (dateLimits.to && new Date(post.created_at) > new Date(dateLimits.to)) continue;
 
 			let score = 0;
-			const baseHotness = await getHotness(post);
+			const baseHotness = post.rank_hotness;
 			score += (chronology ?? 1) * baseHotness;
 
             //Vote quality * engagement ratio (distinct from hotness)
@@ -513,7 +388,7 @@ async function ApplyAlgorithm({ locationId, excludedPostIds, feedId, followedFee
 
 		if (!finalPosts.length) return [];
         finalPosts.sort((a, b) => b.score - a.score); //Sort posts by score
-        const paginatedFinalPosts = finalPosts.slice(0, selectionLimit);
+        const paginatedFinalPosts = finalPosts.slice(0, limit);
         const finalIds = paginatedFinalPosts.map(p => p.post_id);
 		const [userVotes, savedRows] = viewerId
 			? await Promise.all([

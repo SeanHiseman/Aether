@@ -16,7 +16,7 @@ import path from 'path';
 import sequelize from '../databaseSetup.js';
 import { standardLimiter, higherLimiter } from '../functions/checks/limiters.js';
 import unzipper from 'unzipper';
-import { updateHotnessRedis } from '../functions/postRanking.js';
+import { computeHotness, updateHotnessRedis } from '../functions/postRanking.js';
 import UpdateMediaFiles from '../functions/media_handling/updateMediaFiles.js';
 import { v4 } from 'uuid';
 import yauzl from 'yauzl';
@@ -53,7 +53,7 @@ const checkStorageLimit = async (req, res, next) => {
 
 router.post('/channel_posts', standardLimiter, async (req, res) => {
 	try {
-		const { channelId, excludedPostIds, feedId, isGroup, isMain, isSingle, postId, limit = 100, offset = 0, recentUpvotes } = req.body;
+		const { channelId, feedId, isGroup, isMain, isSingle, postId, limit = 100, offset = 0, recentUpvotes } = req.body;
 		const viewerId = req.session.viewer_id;
 		const includeOptions = [{
 			as: 'note',
@@ -95,7 +95,6 @@ router.post('/channel_posts', standardLimiter, async (req, res) => {
 		}
 		const results = await ApplyAlgorithm({ 
             locationId: channelId,
-            excludedPostIds, 
             feedId, 
             includeOptions, 
             isGroup, 
@@ -121,11 +120,7 @@ router.post('/content_vote', higherLimiter, authenticateCheck, async (req, res) 
         }
         const [vote, created] = await PostVotes.findOrCreate({
             where: { post_id: postId, voter_id: feedId },
-            defaults: {
-                vote_id: v4(),
-                upvotes: 0,
-                downvotes: 0,
-            }
+            defaults: { vote_id: v4(), upvotes: 0, downvotes: 0 }
         });
         if (voteType === 'upvote') {
             if (vote.upvotes > 0) {
@@ -154,7 +149,14 @@ router.post('/content_vote', higherLimiter, authenticateCheck, async (req, res) 
         }
         await vote.save();
         await content.save();
-		await updateHotnessRedis(content);
+		const newHotness = computeHotness({
+			upvotes: content.upvotes || 0,
+			downvotes: content.downvotes || 0,
+			createdAt: content.created_at,
+			referenceTime: Math.floor(Date.now() / 1000)
+		});
+		await Posts.update({ rank_hotness: newHotness, rank_updated_at: new Date() }, { where: { post_id: postId } });
+		//await updateHotnessRedis(content);
         return res.status(200).json({
             success: true,
             upvotes: content.upvotes,
@@ -302,7 +304,6 @@ router.post("/create_post", standardLimiter, authenticateCheck, checkStorageLimi
 		else {
 			const analysisResults = await contentAnalyser.analyseContent(finalHtml, title);
 			const newPostId = v4();
-
 			const postData = {
 				post_id: newPostId,
 				channel_id,
@@ -312,6 +313,7 @@ router.post("/create_post", standardLimiter, authenticateCheck, checkStorageLimi
 				parent_id,
 				poster_id,
 				title,
+				rank_hotness: -0.1,
 				...analysisResults
 			};
 			result = await Posts.create(postData);
@@ -345,7 +347,7 @@ router.post("/create_post", standardLimiter, authenticateCheck, checkStorageLimi
 
 router.post("/explore_posts", standardLimiter, async (req, res) => {
     try {
-		const { exclude = [], followedFeedIds, recentUpvotes, limit = 100, offset = 0 } = req.body;
+		const { followedFeedIds, recentUpvotes, limit = 100, offset = 0 } = req.body;
 		const viewerId = req?.session?.viewer_id || null;
         const includeOptions = [{
             model: Feeds,
@@ -376,7 +378,6 @@ router.post("/explore_posts", standardLimiter, async (req, res) => {
         }];
         const posts = await ApplyAlgorithm({
             locationId: 'explore',
-            excludedPostIds: exclude,
             feedId: null,
 			followedFeedIds,
             includeOptions: includeOptions,
@@ -386,7 +387,7 @@ router.post("/explore_posts", standardLimiter, async (req, res) => {
 			recentUpvotes,
             viewerId,
         });
-        res.status(200).json({ posts: posts, hasMore: posts.length === limit });
+        res.status(200).json({ posts: posts, hasMore: posts.length >= limit });
     } catch (error) {
         console.error("Error in /explore_posts:", error);
         res.status(500).json({ success: false, message: 'Error fetching explore posts.' });
@@ -486,32 +487,34 @@ router.delete('/remove_post', standardLimiter, authenticateCheck, async (req, re
 });
 
 router.post('/increment_views', higherLimiter, authenticateCheck, async (req, res) => {
-	let transaction;
     try {
-		transaction = await sequelize.transaction();
         const { postId } = req.body;
-        const post = await Posts.findByPk(postId, { transaction });
+        const post = await Posts.findByPk(postId);
 		post.views += 1;
-        await post.save({ transaction });
-		await updateHotnessRedis(post);
+        await post.save();
+		const newHotness = computeHotness({
+			upvotes: post.upvotes || 0,
+			downvotes: post.downvotes || 0,
+			createdAt: post.created_at,
+			referenceTime: Math.floor(Date.now() / 1000)
+		});
+		await Posts.update({ rank_hotness: newHotness, rank_updated_at: new Date() }, { where: { post_id: postId } });
+		//await updateHotnessRedis(post);
 		const existingView = await ViewedPosts.findOne({
-			where: { post_id: postId, viewer_id: req.session.viewer_id }.
-			transaction,
+			where: { post_id: postId, viewer_id: req.session.viewer_id }
 		});
 		if (existingView) {
 			existingView.views += 1;
-			await existingView.save({ transaction });
+			await existingView.save();
 		} else {
 			await ViewedPosts.create({
 				post_id: postId,
 				viewer_id: req.session.viewer_id,	
 				views: 1
-			}, { transaction });
+			});
 		}
-		await transaction.commit();
         res.status(200).json({ success: true });
     } catch (error) {
-		if (transaction) await transaction.rollback();
 		console.error("Error in /increment_views:", error);
         res.status(500).json({ success: false, message: 'Error incrementing views.' });   
     }

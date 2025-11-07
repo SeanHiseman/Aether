@@ -1,9 +1,9 @@
 import api from '../../api';
+import { AuthContext } from '../../components/authContext';
+import ContentWidget from '../content/contentWidget';
 import { useCallback, useContext, useEffect, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useInfiniteQuery, useQuery, useQueryClient } from '@tanstack/react-query';
-import { AuthContext } from '../../components/authContext';
-import ContentWidget from '../content/contentWidget';
 const FETCH_LIMIT = 100;
 
 const PostChannel = ({ channelId, channelName, feed, isDraft, isEditMode, isGroup, refreshTrigger }) => {

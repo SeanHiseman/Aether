@@ -53,10 +53,26 @@ const limiter = rateLimit({ //Highest level limiter
 });
 app.use(limiter);
 
-const redis = new Redis({
-	host: process.env.REDIS_HOST, 
-	port: process.env.REDIS_PORT,
-});
+//const redis = new Redis({
+	//host: process.env.REDIS_HOST, 
+	//port: process.env.REDIS_PORT,
+//});
+
+//redis.on('connect', () => {
+    //console.log('Connected to Redis');
+//});
+
+//redis.on('ready', () => {
+    //console.log('Redis is ready for commands');
+//});
+
+//redis.on('error', (err) => {
+    //console.error('Redis connection error:', err);
+//});
+
+//redis.on('end', () => {
+    //console.log('Redis connection closed');
+//});
 
 app.use('/app_builds', express.static(appBuildPath, {
 	setHeaders: res => res.set('Access-Control-Allow-Origin', '*')
@@ -145,4 +161,4 @@ http.listen(PORT, HOST, () => {
     console.log(`Running on ${PORT}`)
 });
 
-export default redis;
+//export default redis;

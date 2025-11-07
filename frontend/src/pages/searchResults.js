@@ -1,12 +1,12 @@
 import AlgorithmSelector from '../algorithms/algorithmSelector';
 import api from '../api';
 import { AuthContext } from '../components/authContext';
-import { useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
-import { FaChevronDown, FaChevronUp } from 'react-icons/fa';
-import { useOutletContext, useSearchParams } from 'react-router-dom';
 import { ChunkFeeds } from '../functions/chunkFeeds';
 import ContentWidget from '../components/content/contentWidget';
+import { FaChevronDown, FaChevronUp } from 'react-icons/fa';
 import FeedWidget from '../components/content/feedWidget';
+import { useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import { useOutletContext, useSearchParams } from 'react-router-dom';
 const FETCH_LIMIT = 100;
 
 const SearchResults = () => {

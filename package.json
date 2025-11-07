@@ -8,7 +8,8 @@
     "start": "node app.js",
     "dev": "nodemon app.js",
     "create-test-data": "node custom_algorithms/datasetCreation.js",
-    "delete-test-data": "node custom_algorithms/datasetDeletion.js"
+    "delete-test-data": "node custom_algorithms/datasetDeletion.js",
+    "batch-calc-hot": "node functions/calculation/batchCalcHotness.js"
   },
   "keywords": [
     "aether",

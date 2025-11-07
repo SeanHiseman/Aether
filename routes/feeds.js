@@ -447,7 +447,6 @@ router.post('/deep_feed_posts', standardLimiter, authenticateCheck, async (req, 
         }];
         const deepFeedPosts = await ApplyAlgorithm({
             locationId: deepFeedId,
-            excludedPostIds: '',
             followedFeedIds,
             includeOptions: includeOptions,
             isGroup: false,
@@ -518,8 +517,8 @@ router.delete('/delete_feed', standardLimiter, authenticateCheck, async (req, re
             await transaction.rollback();
             return res.status(404).json({ success: false, message: 'Feed not found' });
         }
-        //With cascade, just delete the feed
         await Feeds.destroy({ where: { feed_id: feedId }, transaction });
+        await DeepFeedContent.destroy({ where: { content_id: feedId }, transaction });
         await transaction.commit();
         const feedPhoto = feed.feed_photo;
         if (feedPhoto && !defaultImages.includes(feedPhoto)) {
