@@ -139,10 +139,15 @@ const ContentDisplay = ({ post, isFullscreen = false, onCodeAppChange = () => {}
 				);
 			}
 			if (block.type === 'code') {
+				const isTrustedEmbed = block.code.includes('embedded-website') || block.code.includes('social-media-embed');
 				return (
 					<iframe
 						key={i}
-						sandbox="allow-downloads allow-forms allow-modals allow-popups allow-scripts"
+						sandbox={
+							isTrustedEmbed
+								? "allow-scripts allow-same-origin allow-popups allow-forms"
+								: "allow-scripts"
+						}
 						srcDoc={block.code}
 						style={{ border: 'none', height: isFullscreen ? '100%' : '70vh', width: '100%' }}
 						title={`code-block-${block.id}`}
