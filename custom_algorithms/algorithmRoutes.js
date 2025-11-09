@@ -43,7 +43,9 @@ router.post('/create_algorithm', authenticateCheck, async (req, res) => {
 			chronology,
 			contentType,
 			variety,
-			activeDays: Array.isArray(activeDays) ? activeDays : Object.keys(activeDays).filter(day => activeDays[day]),
+			activeDays: Array.isArray(activeDays)
+				? activeDays
+				: Object.keys(activeDays).filter(day => activeDays[day]),
 			textLimits: { min: minText || null, max: maxText || null },
 			videoLimits: { min: minVideo || null, max: maxVideo || null },
 			timeLimits: { startTime: startTime || null, endTime: endTime || null },
@@ -55,6 +57,53 @@ router.post('/create_algorithm', authenticateCheck, async (req, res) => {
 				wordSuppress: Array.isArray(wordSuppress) ? wordSuppress : []
 			}
 		};
+		let existingAlgorithm = null;
+		if (req.body.algorithmId) {
+			existingAlgorithm = await Algorithms.findOne({
+				where: { algorithm_id: req.body.algorithmId, viewer_id: viewerId },
+				transaction
+			});
+		}
+		if (!existingAlgorithm) {
+			existingAlgorithm = await Algorithms.findOne({
+				where: { algorithm_name: algorithmName, viewer_id: viewerId },
+				transaction
+			});
+		}
+		//If only the name changed, skip AI + embeddings entirely
+		if (existingAlgorithm) {
+			const prevCode = existingAlgorithm.algorithm_code;
+			const prevInstruction = existingAlgorithm.custom_instruction || '';
+			const bodyInstruction = customInstruction || '';
+			let nameChangedOnly = false;
+			const prevParsed = typeof prevCode === 'string' ? JSON.parse(prevCode) : prevCode;
+			const currParsed = algorithmJson;
+			//Remove irrelevant optional fields before comparing
+			delete prevParsed.customFilters;
+			delete prevParsed.customScoring;
+			const stringifySorted = obj =>
+				JSON.stringify(obj, Object.keys(obj).sort(), 2);
+			const sameStructure = stringifySorted(prevParsed) === stringifySorted(currParsed);
+			nameChangedOnly =
+				algorithmName !== existingAlgorithm.algorithm_name &&
+				prevInstruction === bodyInstruction &&
+				sameStructure;
+			if (nameChangedOnly) {
+				const algorithm = await existingAlgorithm.update(
+					{ algorithm_name: algorithmName },
+					{ transaction }
+				);
+				await transaction.commit();
+				return res.status(200).json({
+					success: true,
+					algorithm: {
+						...algorithm.toJSON(),
+						algorithm_locations: [{ location_id: locationId }]
+					}
+				});
+			}
+		}
+		//Continue normal flow if not rename-only
 		let algorithmCode;
 		let finalBoost = algorithmJson.scoring.wordBoost;
 		let finalSuppress = algorithmJson.scoring.wordSuppress;
@@ -105,7 +154,6 @@ router.post('/create_algorithm', authenticateCheck, async (req, res) => {
 			const parsed = aiReply.replace(/```json\n|```/g, '').trim();
 			algorithmCode = parsed;
 			const parsedJson = JSON.parse(parsed);
-			//Get word changes from custom instruction response
 			if (parsedJson.scoring) {
 				if (Array.isArray(parsedJson.scoring.wordBoost) && parsedJson.scoring.wordBoost.length)
 					finalBoost = parsedJson.scoring.wordBoost;
@@ -115,7 +163,9 @@ router.post('/create_algorithm', authenticateCheck, async (req, res) => {
 		} else {
 			algorithmCode = JSON.stringify(algorithmJson);
 		}
-		//Generate embeddings from finalBoost and finalSuppress
+		// -------------------------------------------------------
+		// ✅ Step 4: Generate embeddings if needed
+		// -------------------------------------------------------
 		let boostEmbedding = null;
 		let suppressEmbedding = null;
 		if (Array.isArray(finalBoost) && finalBoost.length > 0) {
@@ -125,20 +175,10 @@ router.post('/create_algorithm', authenticateCheck, async (req, res) => {
 		if (Array.isArray(finalSuppress) && finalSuppress.length > 0) {
 			const suppressText = finalSuppress.join(' ');
 			suppressEmbedding = await analyser.generateEmbedding(suppressText);
-		};
-		let existingAlgorithm = null;
-		if (req.body.algorithmId) {
-			existingAlgorithm = await Algorithms.findOne({
-				where: { algorithm_id: req.body.algorithmId, viewer_id: viewerId },
-				transaction
-			});
 		}
-		if (!existingAlgorithm) {
-			existingAlgorithm = await Algorithms.findOne({
-				where: { algorithm_name: algorithmName, viewer_id: viewerId },
-				transaction
-			});
-		}
+		// -------------------------------------------------------
+		// ✅ Step 5: Create or update algorithm
+		// -------------------------------------------------------
 		let algorithm;
 		if (existingAlgorithm) {
 			algorithm = await existingAlgorithm.update({

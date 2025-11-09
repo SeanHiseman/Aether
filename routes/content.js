@@ -215,7 +215,6 @@ if (process.env.NODE_ENV === 'production') {
 router.post("/create_post", standardLimiter, authenticateCheck, checkStorageLimit, postUpload.array("files"), async (req, res) => {
 	try {
 		let { channel_id, content, draft_id, feed_id, is_private, parent_id, post_id, poster_id, title, publish_draft } = req.body;
-		console.log("content:", content);
 		if (draft_id === 'null' || draft_id === 'undefined') draft_id = null;
 		if (post_id === 'null' || post_id === 'undefined') post_id = null;
 		content = content || "";
@@ -257,7 +256,6 @@ router.post("/create_post", standardLimiter, authenticateCheck, checkStorageLimi
 			if (hasTrustedEmbeds && allSafeScripts && allAllowedHosts) {
 				$block.attr('data-trusted', 'true');
 			} else if (!allSafeScripts || !allAllowedHosts) {
-				console.warn("Unsafe or invalid embed removed:", html);
 				embed.remove();
 			}
 		});
@@ -285,18 +283,13 @@ router.post("/create_post", standardLimiter, authenticateCheck, checkStorageLimi
 		const finalHtml = $.html();
 		let contentUrl;
 		const htmlFileName = GenerateFileName({ originalname: "post.html" }, "post");
-		console.log("htmlFileName:", htmlFileName);
 		if (process.env.NODE_ENV === "production") {
 			const s3Key = `posts/${htmlFileName}`;
 			await UploadToS3(s3Key, Buffer.from(finalHtml), "text/html");
 			contentUrl = `https://${process.env.AWS_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${s3Key}`;
 		} else {
 			const localPath = path.join(postsDir, htmlFileName);
-			console.log("localPath:", localPath);
-			console.log("finalHtml:", finalHtml);
 			fs.writeFileSync(localPath, finalHtml);
-			contentUrl = `/media/posts/${htmlFileName}`;
-			console.log("contentUrl:", contentUrl);
 		}
 		//Run text/embedding analysis
 		const textBody = await contentAnalyser.extractTextBody(finalHtml);

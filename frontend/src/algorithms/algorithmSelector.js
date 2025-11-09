@@ -131,14 +131,13 @@ const AlgorithmSelector = ({ display, locationId, refreshPosts }) => {
 		}
 	};
 
-	const handleCreated = newAlgo => {
+	const handleCreated = async newAlgo => {
 		if (display) return;
 		try {
 			const newAlgoWithLocation = {
 				...newAlgo,
 				algorithm_locations: [{ location_id: locationId }]
 			};
-			//Manually move assigned algorithm to top of the list, so that fetchAlgorithms() does not need to be called again
 			setAlgorithms(prev => {
 				const updated = [...prev, newAlgoWithLocation];
 				updated.sort((a, b) => a.algorithm_name.localeCompare(b.algorithm_name));
@@ -152,6 +151,7 @@ const AlgorithmSelector = ({ display, locationId, refreshPosts }) => {
 			});
 			setAssignedAlgorithmId(newAlgo?.algorithm_id);
 			setEditingAlgorithm(newAlgo);
+			await assignAlgorithm(newAlgo?.algorithm_id);
 			refreshPosts();
 		} catch (error) {
 			setError(error.response?.data?.message || 'Failed to update algorithms');
@@ -214,7 +214,14 @@ const AlgorithmSelector = ({ display, locationId, refreshPosts }) => {
 			return updated;
 		});
 		setEditingAlgorithm(null);
-		refreshPosts();
+		const originalAlgo = algorithms.find(a => a.algorithm_id === updatedAlgo.algorithm_id);
+		const nameChangedOnly = originalAlgo && 
+		originalAlgo.algorithm_name !== updatedAlgo.algorithm_name &&
+		JSON.stringify({ ...originalAlgo, algorithm_name: undefined }) ===
+		JSON.stringify({ ...updatedAlgo, algorithm_name: undefined });
+		if (!nameChangedOnly) {
+			refreshPosts();
+		}
 		fetchAlgorithms();
 	};
 
