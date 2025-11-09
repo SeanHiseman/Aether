@@ -1,3 +1,4 @@
+import { ALLOWED_EMBED_HOSTS, ALLOWED_SCRIPTS, SAFE_UTILITY_HOSTS } from '../embedHosts.js';
 import { AppBuilds, Feeds, FeedChannels, Posts, PostDrafts, PostNotes, PostVotes, SavedPosts, Users, ViewedPosts } from '../models/relationships.js';
 import { ApplyAlgorithm } from '../custom_algorithms/applyAlgorithm.js';
 import authenticateCheck from '../functions/checks/authenticateCheck.js';
@@ -214,11 +215,53 @@ if (process.env.NODE_ENV === 'production') {
 router.post("/create_post", standardLimiter, authenticateCheck, checkStorageLimit, postUpload.array("files"), async (req, res) => {
 	try {
 		let { channel_id, content, draft_id, feed_id, is_private, parent_id, post_id, poster_id, title, publish_draft } = req.body;
+		console.log("content:", content);
 		if (draft_id === 'null' || draft_id === 'undefined') draft_id = null;
 		if (post_id === 'null' || post_id === 'undefined') post_id = null;
 		content = content || "";
 		//Handle media in HTML
 		const $ = cheerio.load(content, { decodeEntities: false });
+		//Strip any spoofed trust attributes
+		$('[data-trusted]').removeAttr('data-trusted');
+		//Conditionally add trust only if frontend indicates trusted embeds
+		const hasTrustedEmbeds = req.body.has_trusted_embeds === 'true' || req.body.has_trusted_embeds === true;
+		$("div.code-block").each((_, block) => {
+			const $block = $(block);
+			const embed = $block.find("div.social-media-embed");
+			if (embed.length === 0) return; //skip non-embed code blocks
+			//Get full embed markup including <blockquote> and <script>
+			const html = embed.prop('outerHTML') || embed.toString();
+			//Extract all <script> src values
+			const scriptUrls = Array.from(html.matchAll(/<script[^>]+src=["']([^"']+)["']/gi)).map(m => {
+				let src = m[1].trim();
+				if (src.startsWith('//')) src = 'https:' + src;
+				return src;
+			});
+			const allSafeScripts = scriptUrls.every(src =>
+				ALLOWED_SCRIPTS.some(allow => src === allow || src.startsWith(allow))
+			);
+			//Extract and validate all URLs (full markup, not innerHTML)
+			const allUrls = Array.from(html.matchAll(/https?:\/\/[^\s"'<>()]+/gi)).map(m => m[0]);
+			const allAllowedHosts = allUrls.every(url => {
+				try {
+					const parsed = new URL(url);
+					const host = parsed.hostname.replace(/^www\./, '');
+					// Include safe utility hosts
+					if (SAFE_UTILITY_HOSTS.some(h => host.endsWith(h))) return true;
+					return ALLOWED_EMBED_HOSTS.some(h => host.endsWith(h));
+				} catch {
+					return true;
+				}
+			});
+			//Only mark trusted if frontend says embeds are trusted AND validation passes
+			if (hasTrustedEmbeds && allSafeScripts && allAllowedHosts) {
+				$block.attr('data-trusted', 'true');
+			} else if (!allSafeScripts || !allAllowedHosts) {
+				console.warn("Unsafe or invalid embed removed:", html);
+				embed.remove();
+			}
+		});
+		//Handle local media uploads
 		const mediaElements = $("img[src^='blob:'], video source[src^='blob:']").toArray();
 		for (let i = 0; i < mediaElements.length; i++) {
 			const el = mediaElements[i];
@@ -238,19 +281,24 @@ router.post("/create_post", standardLimiter, authenticateCheck, checkStorageLimi
 				$(el).attr("src", src).removeAttr("blob:");
 			}
 		}
+		//Generate and store final HTML
 		const finalHtml = $.html();
-		//Upload final HTML
 		let contentUrl;
 		const htmlFileName = GenerateFileName({ originalname: "post.html" }, "post");
+		console.log("htmlFileName:", htmlFileName);
 		if (process.env.NODE_ENV === "production") {
 			const s3Key = `posts/${htmlFileName}`;
 			await UploadToS3(s3Key, Buffer.from(finalHtml), "text/html");
 			contentUrl = `https://${process.env.AWS_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${s3Key}`;
 		} else {
 			const localPath = path.join(postsDir, htmlFileName);
+			console.log("localPath:", localPath);
+			console.log("finalHtml:", finalHtml);
 			fs.writeFileSync(localPath, finalHtml);
 			contentUrl = `/media/posts/${htmlFileName}`;
+			console.log("contentUrl:", contentUrl);
 		}
+		//Run text/embedding analysis
 		const textBody = await contentAnalyser.extractTextBody(finalHtml);
 		const embedding = await contentAnalyser.generateEmbedding(textBody);
 		const textProcessing = await contentAnalyser.processText(textBody);

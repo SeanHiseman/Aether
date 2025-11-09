@@ -37,9 +37,10 @@ const ContentDisplay = ({ post, isFullscreen = false, onCodeAppChange = () => {}
 						});
 					} else if (div.classList.contains('code-block')) {
 						parsed.push({
-							code: div.getAttribute('data-code') || '',
+							code: div.getAttribute('data-code') || div.innerHTML.trim(),
 							id,
 							type: 'code',
+							isTrustedEmbed: div.getAttribute('data-trusted') === 'true' // ✅ read trust flag from backend
 						});
 					} else if (div.classList.contains('media-block')) {
 						const align = div.getAttribute('data-align') || 'left';
@@ -139,14 +140,13 @@ const ContentDisplay = ({ post, isFullscreen = false, onCodeAppChange = () => {}
 				);
 			}
 			if (block.type === 'code') {
-				const isTrustedEmbed = block.code.includes('embedded-website') || block.code.includes('social-media-embed');
 				return (
 					<iframe
 						key={i}
 						sandbox={
-							isTrustedEmbed
-								? "allow-scripts allow-same-origin allow-popups allow-forms"
-								: "allow-scripts"
+							block.isTrustedEmbed
+								? "allow-scripts allow-same-origin allow-popups allow-forms allow-modals"
+								: "allow-scripts allow-popups allow-forms allow-modals"
 						}
 						srcDoc={block.code}
 						style={{ border: 'none', height: isFullscreen ? '100%' : '70vh', width: '100%' }}

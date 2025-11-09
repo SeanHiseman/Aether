@@ -1,3 +1,4 @@
+import { ALLOWED_EMBED_HOSTS, ALLOWED_SCRIPTS, SAFE_UTILITY_HOSTS } from '../../embedHost';
 import api from '../../api';
 import { AuthContext } from '../authContext'
 import { Crown } from 'lucide-react';
@@ -25,6 +26,60 @@ const escapeHtml = (html) =>
         .replace(/</g, '&lt;')
         .replace(/>/g, '&gt;')
 
+function isAllowedHost(url) {
+	try {
+		const parsed = new URL(url);
+		const host = parsed.hostname.replace(/^www\./, '');
+		return ALLOWED_EMBED_HOSTS.some(h => host.endsWith(h));
+	} catch {
+		return false;
+	}
+}
+
+function sanitizeEmbedHtml(raw) {
+	if (/<script|on\w+=|javascript:/i.test(raw)) {
+		//Extract all <script> sources
+		const allScripts = Array.from(raw.matchAll(/<script[^>]+src=["']([^"']+)["']/gi)).map(m => {
+			let src = m[1].trim();
+			//Normalise protocol-relative URLs (e.g. //www.instagram.com/embed.js)
+			if (src.startsWith('//')) src = 'https:' + src;
+			//Strip query strings or fragments for consistent comparison
+			try {
+				const u = new URL(src, 'https://');
+				src = `${u.origin}${u.pathname}`;
+			} catch {}
+			return src;
+		});
+		//Block disallowed scripts
+		const disallowed = allScripts.filter(src =>
+			!ALLOWED_SCRIPTS.some(allow => src === allow || src.startsWith(allow))
+		);
+		if (disallowed.length > 0) {
+			throw new Error(`Unsafe script detected: ${disallowed.join(', ')}`);
+		}
+	}
+	// Scan for all URLs (images, SVGs, metadata)
+	const allUrls = Array.from(raw.matchAll(/https?:\/\/[^\s"']+/gi)).map(m => m[0]);
+	//Verify each URL is from an allowed or safe host
+	const allAllowed = allUrls.every(url => {
+		try {
+			const parsed = new URL(url);
+			const host = parsed.hostname.replace(/^www\./, '');
+			//Skip known harmless technical or CDN domains
+			if (SAFE_UTILITY_HOSTS.some(h => host.endsWith(h))) return true;
+			//Otherwise must be an approved embed host
+			return isAllowedHost(url);
+		} catch {
+			return true; //ignore malformed or relative references
+		}
+	});
+	if (!allAllowed) {
+		throw new Error('Unsupported or unsafe embed host.');
+	}
+	return raw;
+}
+
+//Split compiled post into content blocks
 const parseContentBlocks = htmlString => {
 	const doc = new DOMParser().parseFromString(htmlString || '', 'text/html')
 	const divs = doc.querySelectorAll('div.content-block')
@@ -312,11 +367,10 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
                         `</div>`
                 }
                 else if (block.type === BLOCK_TYPES.CODE) {
-                    const escaped = escapeHtml(block.data.code || 'Nothing to preview')
+                    const trustedAttr = block.data.isTrustedEmbed ? ` data-origin="aether-social"` : '';
                     finalHTML +=
-                        `<div class="content-block code-block"` +
-                        ` data-blockid="${block.id}"` +
-                        ` data-code="${escaped}"></div>`
+                        `<div class="content-block code-block"${trustedAttr}` +
+                        ` data-blockid="${block.id}">${block.data.code || ''}</div>`;
                 }
                 else if (block.type === BLOCK_TYPES.MEDIA) {
                     const { align, url, fileType, isImage, isVideo } = block.data
@@ -657,23 +711,46 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
     const socialConfirm = (input) => {
         if (!input) return;
         let embedCode = input.trim();
-        if (embedCode.startsWith('http') && !embedCode.includes('<')) {
-            try {
-                const parsed = new URL(embedCode);
-                if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
-                    alert('Please enter a valid http or https URL');
+        try {
+            //If the user pasted a plain URL
+            if (!embedCode.startsWith('<')) {
+                const parsed = new URL(embedCode.startsWith('http') ? embedCode : `https://${embedCode}`);
+                if (!isAllowedHost(parsed.href))
+                    throw new Error('Unsupported social site.');
+                embedCode = `<iframe class="social-media-embed" src="${parsed.href}" 
+                    style="width:100%;border:none;" allowfullscreen></iframe>`;
+            }
+            //If user pasted raw HTML embed code
+            else {
+                try {
+                    const cleaned = sanitizeEmbedHtml(embedCode);
+                    const allUrls = Array.from(cleaned.matchAll(/https?:\/\/[^\s"']+/gi)).map(m => m[0]);
+                    const allAllowed = allUrls.every(url => {
+                        try {
+                            const parsed = new URL(url);
+                            const host = parsed.hostname.replace(/^www\./, '');
+                            if (SAFE_UTILITY_HOSTS.some(h => host.endsWith(h))) return true;
+                            return isAllowedHost(url);
+                        } catch {
+                            return true;
+                        }
+                    });
+                    if (!allAllowed) throw new Error('Unsupported or unsafe embed host.');
+                    embedCode = `<div class="social-media-embed" style="width:100%;display:flex;justify-content:center;">${cleaned}</div>`;
+                } catch (err) {
+                    alert(err.message || 'Invalid embed code.');
                     return;
                 }
-                embedCode = `<a href="${parsed.href}" target="_blank" rel="noopener noreferrer">${parsed.href}</a>`;
-            } catch (error) {
-                alert('Please enter a valid URL or embed code');
-                return;
             }
+            handleAddBlock(BLOCK_TYPES.CODE, {
+                code: embedCode,
+                isBlockLoading: false,
+                showPrompt: false,
+                isTrustedEmbed: true
+            });
+        } catch (err) {
+            alert(err.message || 'Invalid embed');
         }
-        if (!embedCode.startsWith('<div class="social-media-embed"')) {
-            embedCode = `<div class="social-media-embed" style="width:100%;display:flex;justify-content:center;">${embedCode}</div>`;
-        }
-        handleAddBlock(BLOCK_TYPES.CODE, { code: embedCode, isBlockLoading: false, showPrompt: false });
         setIsSocialModalOpen(false);
     };
 
@@ -719,6 +796,8 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
         }
         const finalHTML = compileFinalHTML(blocks);
         const formData = new FormData();
+        const hasTrustedEmbeds = blocks.some(b => b.data.isTrustedEmbed);
+        formData.append('has_trusted_embeds', hasTrustedEmbeds);
         formData.append('content', finalHTML);
         if (!isReply) formData.append('title', title);
         if (isReply && post) formData.append('parent_id', post.post_id);
@@ -764,6 +843,8 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
             const finalHTML = compileFinalHTML(blocks);
             const formData = new FormData();
             const postId = post?.post_id;
+            const hasTrustedEmbeds = blocks.some(b => b.data.isTrustedEmbed);
+            formData.append('has_trusted_embeds', hasTrustedEmbeds);
             const hasImages = blocks.some(b => b.type === BLOCK_TYPES.MEDIA && b.data.isImage);
             const hasVideos = blocks.some(b => b.type === BLOCK_TYPES.MEDIA && b.data.isVideo);
             const hasInteractive = blocks.some(b =>
