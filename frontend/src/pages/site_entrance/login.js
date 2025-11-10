@@ -1,7 +1,7 @@
 import api from '../../api';
 import { useContext, useEffect, useState } from 'react';
 import { FaEye, FaEyeSlash } from 'react-icons/fa';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { ThemeContext } from '../../themeProvider';
 import '../../css/authentication.css';
 import '../../css/basicStyles.css';
@@ -12,6 +12,7 @@ const Login = () => {
     const [errorMessage, setErrorMessage] = useState('');
     const { refreshTheme } = useContext(ThemeContext);
     const [showPassword, setShowPassword] = useState(false);
+    const location = useLocation();
     const navigate = useNavigate();
     const isDisabled = !password || !usernameOrEmail;
 
@@ -26,7 +27,8 @@ const Login = () => {
                 localStorage.setItem("recentUpvotes", JSON.stringify(response.data?.recentUpvotes));
                 localStorage.setItem("algorithms", JSON.stringify(response.data?.algorithms || []));
                 await refreshTheme();
-                navigate('/explore');
+                const from = location.state?.from || '/explore';
+                navigate(from, { replace: true });
             }
         } catch (error) {
             const msg = error.response?.data?.message;

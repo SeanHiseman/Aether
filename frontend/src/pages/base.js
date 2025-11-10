@@ -51,13 +51,13 @@ const BaseLayout = () => {
     const location = useLocation();
 	const [mobileOpen, setMobileOpen] = useState(null);
     const [nameModalOpen, setNameModalOpen] = useState(false);
+    const navigate = useNavigate();
     const [pendingDeepFeed, setPendingDeepFeed] = useState(null);
 	const [showForm, setShowForm] = useState(false);
 	const [zoom, setZoom] = useState(1);
 	const { isAuthenticated, user, viewer } = useContext(AuthContext);
 	const { setTheme } = useContext(ThemeContext);
 	const { state } = useContext(UnreadContext);
-	const navigate = useNavigate();
 	const hasMembership = user?.has_membership;
 	const MAX_FILE_SIZE = hasMembership ? 500 * 1024 * 1024 : 5 * 1024 * 1024; //500MB for members, 5MB for non-members
 	const isMobile = () => window.matchMedia("(max-width:768px)").matches;
@@ -624,10 +624,10 @@ const BaseLayout = () => {
                                     <FaArrowRight />
                                     <p className="icon-text">Join</p>
                                 </Link>
-                                <Link to="/login" className="large-icon">
+                                <button className="large-icon" onClick={() => navigate("/login", { state: { from: location.pathname } })} style={{ background: "none", border: "none", cursor: "pointer" }}>
                                     <FaSignInAlt />
                                     <p className="icon-text">Login</p>
-                                </Link>
+                                </button>
                                 <p className="faded-text" style={{ marginTop: "20px" }}>Join or login for more</p>
                             </div>
                             <div></div>

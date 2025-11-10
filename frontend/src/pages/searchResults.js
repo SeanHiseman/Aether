@@ -163,6 +163,7 @@ const SearchResults = () => {
 	};
 
 	useEffect(() => {
+		if (!keyword) return;
 		setIsLoading(true);
 		setFeedPage(0);
 		setPostPage(0);
@@ -177,7 +178,7 @@ const SearchResults = () => {
 	}, [selectedView, fetchPosts, fetchFeeds, keyword, feedTypeFilter]);
 
 	useEffect(() => {
-		if (refreshTrigger === false) return;
+		if (!refreshTrigger || !keyword) return;
 		setIsLoading(true);
 		setFeedPage(0);
 		setPostPage(0);
@@ -203,7 +204,7 @@ const SearchResults = () => {
 					</div>
 				) : (posts.length === 0 && feeds.length === 0) ? (
 					<div className="flex justify-center items-center h-64">
-						<span className="text-xl faded-text">No results found</span>
+						<span className="text-xl faded-text">{keyword ? "No results found" : "Enter a search term"}</span>
 					</div>
 				) : (
 					<>
@@ -247,7 +248,7 @@ const SearchResults = () => {
 				)}
 			</div>
 			<aside className={rightClasses}>
-				<p className="large-text bold">Results for "{keyword}"</p>
+				{keyword && <p className="large-text bold">Results for "{keyword}"</p>}
 				<div className="error-message">{errorMessage}</div>
 				<nav className="channel-list">
 					<ul>
@@ -268,7 +269,7 @@ const SearchResults = () => {
 						)}
 					</ul>
 				</nav>
-				{isAuthenticated && <AlgorithmSelector locationId={'search'} refreshPosts={refreshPosts} />}
+				<AlgorithmSelector display={false} isAuthenticated={isAuthenticated} locationId={'search'} refreshPosts={refreshPosts} />
 			</aside>
 		</div>
 	);

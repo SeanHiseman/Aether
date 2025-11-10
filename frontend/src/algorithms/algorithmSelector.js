@@ -5,7 +5,7 @@ import { FaEdit, FaSlidersH, FaTrash } from 'react-icons/fa';
 import { loadWelcomeAlgorithms } from '../pages/welcome/welcomeContent';
 import { useEffect, useState } from 'react';
 
-const AlgorithmSelector = ({ display, locationId, refreshPosts }) => {
+const AlgorithmSelector = ({ display = false, isAuthenticated = false, locationId, refreshPosts }) => {
 	const [algorithms, setAlgorithms] = useState([]);
 	const [assignedAlgorithmId, setAssignedAlgorithmId] = useState('');
 	const [assignError, setAssignError] = useState(null);
@@ -17,7 +17,7 @@ const AlgorithmSelector = ({ display, locationId, refreshPosts }) => {
 
 	const assignAlgorithm = async (algorithmId) => {
 		try {
-			if (loading || assignedAlgorithmId === algorithmId) return;
+			if (display || !isAuthenticated || loading || assignedAlgorithmId === algorithmId) return;
 			setLoading(true);
 			setAssignError(null);
 			if (algorithmId) {
@@ -70,7 +70,7 @@ const AlgorithmSelector = ({ display, locationId, refreshPosts }) => {
 	};
 
 	const deleteAlgorithm = async algorithmId => {
-		if (display) return;
+		if (display || !isAuthenticated) return;
 		try {
 			await api.delete('/delete_algorithm', {
 				data: { algorithmId, locationId }
@@ -90,7 +90,7 @@ const AlgorithmSelector = ({ display, locationId, refreshPosts }) => {
 
 	const fetchAlgorithms = async () => { 
 		try {
-			if (display) {
+			if (display || !isAuthenticated) {
 				const welcomeAlgos = await loadWelcomeAlgorithms(); 
             	setAlgorithms(welcomeAlgos);
 			} else {
@@ -132,7 +132,7 @@ const AlgorithmSelector = ({ display, locationId, refreshPosts }) => {
 	};
 
 	const handleCreated = async newAlgo => {
-		if (display) return;
+		if (display || !isAuthenticated) return;
 		try {
 			const newAlgoWithLocation = {
 				...newAlgo,
@@ -177,7 +177,7 @@ const AlgorithmSelector = ({ display, locationId, refreshPosts }) => {
 	};
 
 	const unassignAlgorithm = async () => {
-		if (display) return;
+		if (display || !isAuthenticated) return;
 		try {
 			setAssignError(null);
 			if (assignedAlgorithmId) {
@@ -230,7 +230,8 @@ const AlgorithmSelector = ({ display, locationId, refreshPosts }) => {
 			<div className="selector-header">
 				{!display && <button className="small-icon" onClick={closeModal} title="Close">✕<p className="icon-text">Close</p></button>}
 				<div className="error-message">{assignError}</div>
-				{!display && <p className="tiny-text">Changing the algorithm will reload posts</p>}
+				{!display && isAuthenticated && <p className="tiny-text">Changing the algorithm will reload posts</p>}
+				{!display && !isAuthenticated && <p className="tiny-text">Login to apply an algorithm</p>}
 			</div>
 			{loading && <div className="loading-state">Loading algorithms...</div>}
 			{!loading && (
@@ -247,7 +248,7 @@ const AlgorithmSelector = ({ display, locationId, refreshPosts }) => {
 							</div>
 							{optionsOpen && (
 								<ul className="algorithm-options">
-									<li key="unassign">
+									{!display && isAuthenticated && <li key="unassign">
 										<label
 											onClick={() => selectRadio('')}
 											style={{
@@ -265,19 +266,19 @@ const AlgorithmSelector = ({ display, locationId, refreshPosts }) => {
 											/>
 											No algorithm
 										</label>
-									</li>
+									</li>}
 									{algorithms.map(a => {
 										const isCurrentlyAssigned = a.algorithm_id === assignedAlgorithmId;
 										return (
 											<li key={a.algorithm_id} className={isCurrentlyAssigned ? 'assigned' : ''}>
 												<label onClick={() => selectRadio(a.algorithm_id)} style={{ cursor:'pointer' }}>
-													<input
+													{!display && isAuthenticated && <input
 														checked={isCurrentlyAssigned}
 														name="algorithm"
 														readOnly
 														type="radio"
 														value={a.algorithm_id}
-													/>
+													/>}		
 													{a.algorithm_name}{isCurrentlyAssigned ? ' (assigned)' : ''}
 												</label>
 												<button
@@ -288,15 +289,15 @@ const AlgorithmSelector = ({ display, locationId, refreshPosts }) => {
 														setOptionsOpen(false);
 													}}
 													title="Edit algorithm"
-												><FaEdit /></button>
-												{!display && <button
+												><FaEdit /><p className="icon-text">Edit</p></button>
+												{!display && isAuthenticated && <button
 													className="small-icon"
 													onClick={e => {
 														e.stopPropagation();
 														deleteAlgorithm(a.algorithm_id);
 													}}
 													title="Delete algorithm"
-												><FaTrash /></button>}
+												><FaTrash /><p className="icon-text">Delete</p></button>}
 											</li>
 										);
 									})}
@@ -308,6 +309,7 @@ const AlgorithmSelector = ({ display, locationId, refreshPosts }) => {
 						algorithms={algorithms} 
 						display={display}
 						editingAlgorithm={editingAlgorithm} 
+						isAuthenticated={isAuthenticated}
 						locationId={locationId} 
 						onCreated={handleCreated} 
 						onUpdated={updateAlgorithms} 

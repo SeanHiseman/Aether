@@ -101,7 +101,7 @@ const DualRangeSlider = ({ min = 0, max = 100, value = [25, 75], onChange, forma
     );
 };
 
-const AddAlgorithm = ({ algorithms = [], display, editingAlgorithm = null, locationId, onCreated, onUpdated, setEditingAlgorithm }) => {  
+const AddAlgorithm = ({ algorithms = [], display, editingAlgorithm = null, isAuthenticated, locationId, onCreated, onUpdated, setEditingAlgorithm }) => {  
     const authContext = useContext(AuthContext);
 	const { user = null } = authContext || {};
     const [activeDays, setActiveDays] = useState(['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']);
@@ -318,14 +318,9 @@ const AddAlgorithm = ({ algorithms = [], display, editingAlgorithm = null, locat
             <div className="error-state">{error}</div>
             <div className="create-header">
                 <p className="medium-text">{editingAlgorithm ? 'Edit Algorithm' : 'Create New Algorithm'}</p>
-		        {!display && <div>
+		        {!display && isAuthenticated && <div>
                     {editingAlgorithm && (
-                        <button 
-                            className="button button--secondary" 
-                            onClick={startCreatingNew} 
-                            type="button"
-                            style={{ marginRight: '8px' }}
-                        >
+                        <button className="button button--secondary" onClick={startCreatingNew} type="button" style={{ marginRight: '8px' }}>
                             Create New
                         </button>
                     )}
@@ -362,11 +357,7 @@ const AddAlgorithm = ({ algorithms = [], display, editingAlgorithm = null, locat
                             <label className="small-text">Template</label>
                             <InfoIconWithTooltip info="Predefined algorithms. Once selected, you can customise further." />
                         </div>
-                        <select
-                            className="form-select"
-                            value={template}
-                            onChange={e => templateChange(e.target.value)}
-                        >
+                        <select className="form-select" value={template} onChange={e => templateChange(e.target.value)}>
                             <option value="none">None</option>
                             <option value="trending_discussions">Trending</option>
                             <option value="shortform_viral">Shortform</option>

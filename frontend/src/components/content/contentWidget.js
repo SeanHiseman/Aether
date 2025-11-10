@@ -1,14 +1,14 @@
 import api from '../../api';
-import { FaArrowDown, FaArrowUp, FaBookmark, FaChevronDown, FaChevronUp, FaComments, FaCommentSlash, FaEdit, FaCompress, FaExpand, FaRegBookmark,  FaReply, FaTrash, FaTree, FaListUl } from 'react-icons/fa';
-import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
-import { useCallback, useContext, useEffect, useRef, useState } from 'react';
-import { AuthContext } from '../authContext';
 import AskButton from '../askButton';
+import { AuthContext } from '../authContext';
 import ContentDisplay from './contentDisplay';
 import ConfirmModal from '../modals/confirmModal';
+import { FaArrowDown, FaArrowUp, FaBookmark, FaChevronDown, FaChevronUp, FaComments, FaCommentSlash, FaEdit, FaCompress, FaExpand, FaRegBookmark,  FaReply, FaTrash, FaTree, FaListUl } from 'react-icons/fa';
 import { FormatNumber } from '../../functions/formatNumber';
+import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import ReplyTreeView from './replyTreeView';
 import PropTypes from 'prop-types';
+import { useCallback, useContext, useEffect, useRef, useState } from 'react';
 import useTimeAgo from '../../functions/useTimeAgo';
 
 const ContentWidget = ({ canRemove = false, display = false, feed, isDraft = false, onPostRemoved, onSaveToggle = () => {}, parent, post, readOnly = false }) => {
@@ -115,7 +115,7 @@ const ContentWidget = ({ canRemove = false, display = false, feed, isDraft = fal
 
 	const handleLoginRedirect = () => {
 		if (window.confirm ('Login to vote.')) {
-			navigate('/login', { state: {from: window.location.pathname} });
+			navigate('/login', { state: {from: location.pathname} });
 		}
 	};
 

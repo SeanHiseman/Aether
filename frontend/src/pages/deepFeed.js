@@ -337,7 +337,7 @@ const DeepFeed = () => {
                                     </>
                                 )}
                             </div>
-                            {isAuthenticated && <AlgorithmSelector locationId={deepFeed?.deep_feed_id} refreshPosts={refreshPosts} />}
+                            <AlgorithmSelector display={false} isAuthenticated={isAuthenticated} locationId={deepFeed?.deep_feed_id} refreshPosts={refreshPosts} />
                         </div>
                     )}
                     <div className="small-text faded-text">{errorMessage}</div>

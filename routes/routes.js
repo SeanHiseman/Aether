@@ -13,6 +13,10 @@ const router = Router();
 router.post('/search', standardLimiter, async (req, res) => { 
     try {
         const { keyword, limit = 100, feedOffset = 0, postOffset = 0, recentUpvotes } = req.body;
+        const trimmedKeyword = (keyword || '').trim();
+        if (!trimmedKeyword) {
+			return res.status(400).json({ success: false, message: 'Please enter a search term.' });
+		}
         const searcherId = req.session.viewer_id;
         const feeds = await Feeds.findAll({
             where: Sequelize.literal(

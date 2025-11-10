@@ -693,7 +693,7 @@ const FeedHome = () => {
                             <FaPen /><p className="icon-text">Create post</p>
                         </button>
                     )}
-                    {isAuthenticated && (<AlgorithmSelector locationId={channelRender?.channel_id} refreshPosts={refreshPosts} />)} 
+                    <AlgorithmSelector display={false} isAuthenticated={isAuthenticated} locationId={channelRender?.channel_id} refreshPosts={refreshPosts} />
                     {/*{channelRender && channelRender.is_posts && channelRender.is_chat && (
                         <div className="option-toggle">
                             <button className={channelMode === 'post' ? 'active-mode' : 'passive-mode'} onClick={() => setChannelMode('post')}>Posts</button>
