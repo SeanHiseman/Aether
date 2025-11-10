@@ -514,7 +514,7 @@ const FeedHome = () => {
                                 </Link>
                             )}
                         </div>
-                        <p className="small-text faded-text">{feed?.is_group ? 'Group' : 'User'}</p>
+                        <p className="small-text faded-text">{feed?.is_group ? 'Group' : 'User'} | {FormatNumber(feed?.post_count)} {(feed?.post_count) === 1 ? 'post' : 'posts'}</p>
                         <p className="description">{feed?.description}</p>
                         {feed && user?.user_id !== feed?.feed_owner && isAuthenticated && viewer ? (
                             <FollowerChangeButton feed={feed} showName={false} showVertical={true} updateFeeds={updateFeeds} viewerId={viewer?.feed_id} />

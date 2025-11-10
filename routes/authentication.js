@@ -122,7 +122,7 @@ router.delete('/delete_account', resendLimiter, authenticateCheck, async (req, r
             await PostNotes.destroy({ where: { post_id: { [Op.in]: userPostIds } }, transaction });
             await PostVotes.destroy({ where: { post_id: { [Op.in]: userPostIds } }, transaction });
         }
-        await Posts.destroy({ where: { poster_id: id }, transaction });
+        await Posts.destroy({ where: { feed_id: id, poster_id: id }, transaction }); //Only delete posts made to personal feed
         await PostDrafts.destroy({ where: { poster_id: id }, transaction });
         await Followers.destroy({ where: { follower_id: id }, transaction });
         await Connections.destroy({ where: { [Op.or]: [{ feed1_id: id }, { feed2_id: id }] }, transaction });

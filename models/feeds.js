@@ -24,6 +24,7 @@ const Feeds = sequelize.define('feeds', {
     follow_requests: { type: INTEGER, defaultValue: 0 },
     connections: { type: INTEGER, defaultValue: 0 },
     connect_requests: { type: INTEGER, defaultValue: 0 },
+    post_count: { type: INTEGER, defaultValue: 0 },
     type: { type: STRING(10), defaultValue: 'public' },
     is_group: { type: BOOLEAN, defaultValue: false },
     feed_owner: { type: STRING(36), allowNull: false, references: { model: Users, key: 'user_id' } },
@@ -40,6 +41,7 @@ const FeedChannels = sequelize.define('feed_channels', {
     is_posts: { type: BOOLEAN, defaultValue: true},
     is_chat: { type: BOOLEAN, defaultValue: true},
     display_order: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 0 },
+    post_count: { type: INTEGER, defaultValue: 0 },
     created_at: { type: DataTypes.DATE(3), defaultValue: sequelize.literal('CURRENT_TIMESTAMP(3)') },
     updated_at: { type: DataTypes.DATE(3), defaultValue: sequelize.literal('CURRENT_TIMESTAMP(3)') }
 }, { tableName: 'feed_channels', timestamps: false }); 

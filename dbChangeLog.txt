@@ -191,3 +191,25 @@ ALTER TABLE posts
 	ADD INDEX idx_rank_hotness_desc (rank_hotness DESC, post_id DESC),
 	ADD INDEX idx_feed_rank (feed_id, rank_hotness DESC, post_id DESC),
 	ADD INDEX idx_created_desc (created_at DESC, post_id DESC);
+
+ALTER TABLE feeds
+ADD COLUMN post_count INT DEFAULT 0;
+
+ALTER TABLE feed_channels
+ADD COLUMN post_count INT DEFAULT 0;
+
+SET SQL_SAFE_UPDATES = 0;
+UPDATE feeds f
+SET post_count = (
+    SELECT COUNT(*)
+    FROM posts p
+    WHERE p.feed_id = f.feed_id
+);
+
+UPDATE feed_channels fc
+SET post_count = (
+    SELECT COUNT(*)
+    FROM posts p
+    WHERE p.channel_id = fc.channel_id
+);
+SET SQL_SAFE_UPDATES = 1;
