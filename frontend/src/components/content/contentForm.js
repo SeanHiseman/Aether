@@ -194,6 +194,7 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
     const [isIframeModalOpen, setIsIframeModalOpen] = useState(false)
     const [isSocialModalOpen, setIsSocialModalOpen] = useState(false)
     const [isPostingDraft, setIsPostingDraft] = useState(false)
+    const [isSubmitting, setIsSubmitting] = useState(false)
     const navigate = useNavigate()
     const submittedRef = useRef(false)
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
@@ -337,6 +338,10 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
     }, [blocks])
 
     const closeForm = () => {
+        if (isSubmitting) {
+            const confirmClose = window.confirm('Your post is still uploading. Do you want to close anyway?');
+            if (!confirmClose) return;
+        }
         if (!draftId && !isEdit && !submittedRef.current) {
             blocksRef.current.forEach(b => {
                 if (b.type === BLOCK_TYPES.APP && b.data.buildId) {
@@ -892,7 +897,14 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
             blocks
                 .filter(b => b.type === BLOCK_TYPES.MEDIA && b.data.file)
                 .forEach(mediaBlock => formData.append('files', mediaBlock.data.file));
-            await onPostSubmit(formData);
+            setIsSubmitting(true);
+            const response = await onPostSubmit(formData);
+            setIsSubmitting(false);
+            if (!response || response.success !== true) {
+                setPostErrorMessage('Error submitting post. Please try again.');
+                setTimeout(() => setPostErrorMessage(''), 5000);
+                return;
+            }
             setIsPostingDraft(false);
             setTitle('');
             setBlocks([]);
@@ -959,25 +971,25 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
                         </div>
                         <div className="right-buttons" style={{ display: 'flex', position: 'absolute', right: '0' }}>
                             {isEdit && (
-                                <button className="small-icon" type="button" onClick={deleteClick} title={isDraft ? 'Delete draft' : 'Delete post'}>
+                                <button className="small-icon" type="button" onClick={deleteClick} title={isDraft ? 'Delete draft' : 'Delete post'} disabled={isSubmitting}>
                                     <FaTrash /><p className="icon-text">Delete</p>
                                 </button>
                             )}
                             {isReply ? (
-                                <button className="small-icon" form="post-form" type="submit" title="Reply">
-                                    <FaReply /><p className="icon-text">Reply</p>
+                                <button className="small-icon" form="post-form" type="submit" title="Reply" disabled={isSubmitting}>
+                                    {isSubmitting ? <FaCircleNotch className="spinner" /> : <><FaReply /><p className="icon-text">Reply</p></>}
                                 </button>
                             ) : isEdit && !isDraft ? (
-                                <button className="small-icon" form="post-form" type="submit" title="Save edit">
-                                    <FaSave /><p className="icon-text">Save edit</p>
+                                <button className="small-icon" form="post-form" type="submit" title="Save edit" disabled={isSubmitting}>
+                                    {isSubmitting ? <FaCircleNotch className="spinner" /> : <><FaSave /><p className="icon-text">Save edit</p></>}
                                 </button>
                             ) : (
                                 <>
-                                    <button className="small-icon" type="button" onClick={saveDraft} title="Save draft">
+                                    <button className="small-icon" type="button" onClick={saveDraft} title="Save draft" disabled={isSubmitting}>
                                         <FaFileAlt /><p className="icon-text">Save draft</p>
                                     </button>
-                                    <button className="small-icon" form="post-form" type="submit" title="Post" onClick={() => setIsPostingDraft(true)}>
-                                        <FaArrowRight /><p className="icon-text">Post</p>
+                                    <button className="small-icon" form="post-form" type="submit" title="Post" onClick={() => setIsPostingDraft(true)} disabled={isSubmitting}>
+                                        {isSubmitting ? <FaCircleNotch className="spinner" /> : <><FaArrowRight /><p className="icon-text">Post</p></>}
                                     </button>
                                 </>
                             )}
