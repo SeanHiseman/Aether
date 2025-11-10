@@ -193,6 +193,9 @@ const ContentWidget = ({ canRemove = false, display = false, feed, isDraft = fal
                     feedId: viewer?.feed_id,
                     postId: post?.post_id
                 });
+				if (!hasViewed) {
+					await incrementViews(post?.post_id);
+				}
             }
             setIsSaved(!isSaved);
 			onSaveToggle?.(post?.post_id, !isSaved);

@@ -213,3 +213,9 @@ SET post_count = (
     WHERE p.channel_id = fc.channel_id
 );
 SET SQL_SAFE_UPDATES = 1;
+
+ALTER TABLE posts
+	ADD FULLTEXT INDEX idx_fulltext_posts (title, text_body);
+
+ALTER TABLE feeds
+	ADD FULLTEXT INDEX idx_fulltext_feeds (feed_name, description);

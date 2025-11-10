@@ -4,6 +4,7 @@ import FollowerCheck from '../functions/checks/followerCheck.js';
 import { ConnectRequests, Feeds, FeedChannels, FollowRequests, PostNotes, PostVotes } from '../models/relationships.js'; 
 import { Op } from 'sequelize';
 import { Router } from 'express';
+import Sequelize from 'sequelize';
 import { standardLimiter } from '../functions/checks/limiters.js';
 
 const router = Router();
@@ -14,7 +15,9 @@ router.post('/search', standardLimiter, async (req, res) => {
         const { keyword, limit = 100, feedOffset = 0, postOffset = 0, recentUpvotes } = req.body;
         const searcherId = req.session.viewer_id;
         const feeds = await Feeds.findAll({
-            where: { feed_name: { [Op.like]: `%${keyword}%` } },
+            where: Sequelize.literal(
+                `MATCH (feed_name, description) AGAINST (${Feeds.sequelize.escape(keyword)} IN NATURAL LANGUAGE MODE)`
+            ),
             limit,
             offset: feedOffset
         });

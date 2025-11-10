@@ -31,7 +31,14 @@ const Feeds = sequelize.define('feeds', {
     is_locked: { type: BOOLEAN, defaultValue: false },
     created_at: { type: DataTypes.DATE(3), defaultValue: sequelize.literal('CURRENT_TIMESTAMP(3)') },
     updated_at: { type: DataTypes.DATE(3), defaultValue: sequelize.literal('CURRENT_TIMESTAMP(3)') },
-}, { tableName: 'feeds', timestamps: false });
+}, {
+	tableName: 'feeds',
+	timestamps: false,
+	indexes: [
+		{ fields: ['feed_owner'] },
+		{ name: 'idx_fulltext_feeds', type: 'FULLTEXT', fields: ['feed_name', 'description'] }
+	]
+});
 
 const FeedChannels = sequelize.define('feed_channels', { 
     channel_id: { type: STRING(36), primaryKey: true }, 

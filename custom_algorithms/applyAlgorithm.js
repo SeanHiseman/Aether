@@ -2,6 +2,7 @@ import { Algorithms, AlgorithmLocations } from "./algorithms.js";
 import { CosineSimilarity } from "../functions/calculation/cosineSimilarity.js";
 import { DeepFeedContent, Posts, PostVotes, SavedPosts } from "../models/relationships.js";
 import { Op } from 'sequelize';
+import Sequelize from 'sequelize';
 
 const excludedAttrs = [
 	'rank_hotness',
@@ -127,14 +128,7 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
         if (locationId === "search" && keyword) {
             const postIds = await Posts.findAll({
                 attributes: ['post_id'],
-                where: {
-                    parent_id: null,
-                    [Op.or]: [
-                        { title: { [Op.like]: `%${keyword}%` } },
-                        { text_body: { [Op.like]: `%${keyword}%` } }
-                    ],
-                    is_private: false
-                },
+				where: Sequelize.literal(`MATCH (title, text_body) AGAINST (${Posts.sequelize.escape(keyword)} IN NATURAL LANGUAGE MODE)`),
                 order: orderMode,
                 limit: limit,
                 offset,

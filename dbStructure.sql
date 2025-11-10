@@ -138,6 +138,7 @@ CREATE TABLE `feeds` (
   `is_locked` tinyint(1) DEFAULT '0',
   PRIMARY KEY (`feed_id`),
   KEY `feed_owner` (`feed_owner`),
+  FULLTEXT KEY `idx_fulltext_feeds` (`feed_name`, `description`),
   CONSTRAINT `feeds_ibfk_1` FOREIGN KEY (`feed_owner`) REFERENCES `users` (`user_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
@@ -275,6 +276,7 @@ CREATE TABLE `posts` (
   KEY `idx_rank_hotness_desc` (`rank_hotness` DESC, `post_id` DESC),
 	KEY `idx_feed_rank` (`feed_id`, `rank_hotness` DESC, `post_id` DESC),
 	KEY `idx_created_desc` (`created_at` DESC, `post_id` DESC),
+  FULLTEXT KEY `idx_fulltext_posts` (`title`, `text_body`),
 	CONSTRAINT `posts_ibfk_1` FOREIGN KEY (`feed_id`) REFERENCES `feeds` (`feed_id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 

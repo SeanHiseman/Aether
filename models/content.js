@@ -47,13 +47,19 @@ const Posts = sequelize.define('posts', {
 }, {
     tableName: 'posts',
     timestamps: false,
-    indexes: [
-        { fields: ['feed_id', 'rank_hotness', 'post_id'] },   
-        { fields: ['rank_hotness', 'post_id'] },             
-        { fields: ['created_at', 'post_id'] },
-        { fields: ['sentiment_score'] },
-        { fields: ['has_images', 'has_videos', 'has_interactive', 'has_external_posts', 'has_embedded_websites'] },
-    ]
+	indexes: [
+		{ name: 'idx_feed_id', fields: ['feed_id'] },
+		{ name: 'idx_channel_id', fields: ['channel_id'] },
+		{ name: 'idx_media_flags', fields: ['has_images', 'has_videos', 'has_interactive', 'has_external_posts', 'has_embedded_websites'] },
+		{ name: 'idx_sentiment', fields: ['sentiment_score'] },
+		{ name: 'idx_composite_quality', fields: ['created_at', 'sentiment_score'] },
+		{ name: 'idx_video_content', fields: ['has_videos', 'video_length'] },
+		{ name: 'idx_text_analysis', fields: ['word_count', 'text_length'] },
+		{ name: 'idx_rank_hotness_desc', fields: ['rank_hotness', 'post_id'] },
+		{ name: 'idx_feed_rank', fields: ['feed_id', 'rank_hotness', 'post_id'] },
+		{ name: 'idx_created_desc', fields: ['created_at', 'post_id'] },
+		{ name: 'idx_fulltext_posts', type: 'FULLTEXT', fields: ['title', 'text_body'] }
+	]
 });
 
 const PostDrafts = sequelize.define('post_drafts', {
