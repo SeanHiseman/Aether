@@ -128,7 +128,10 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
         if (locationId === "search" && keyword) {
             const postIds = await Posts.findAll({
                 attributes: ['post_id'],
-				where: Sequelize.literal(`MATCH (title, text_body) AGAINST (${Posts.sequelize.escape(keyword)} IN NATURAL LANGUAGE MODE)`),
+				where: { 
+					is_private: false,
+					[Op.and]: Sequelize.literal(`MATCH (title, text_body) AGAINST (${Posts.sequelize.escape(keyword)} IN NATURAL LANGUAGE MODE)`) 
+				},
                 order: orderMode,
                 limit: limit,
                 offset,
@@ -172,7 +175,8 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
                 where: {
                     feed_id: { [Op.notIn]: followedFeedIdsSafe },
                     parent_id: null,
-                    ...(viewerId ? { poster_id: { [Op.not]: viewerId } } : {})
+                    ...(viewerId ? { poster_id: { [Op.not]: viewerId } } : {}),
+					is_private: false
                 },
                 order: orderMode,
                 limit: limit,
@@ -231,7 +235,6 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
                     ...(isMain !== true && locationId ? { channel_id: locationId } : {}),
                     feed_id: feedId,
                     parent_id: null,
-                    is_private: false
                 },
                 order: channelOrderMode,
                 limit: limit,

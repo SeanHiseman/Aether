@@ -68,8 +68,8 @@ const ContentWidget = ({ canRemove = false, display = false, feed, isDraft = fal
 			}
 			const response = await api.delete(url, { data: dataPayload });
 			if (response.data?.success) {
-				onPostRemoved(isDraft ? post?.draft_id : post?.post_id)
-				if (!isDraft) {
+				onPostRemoved(isDraft ? post?.draft_id : post?.post_id);
+				if (!isDraft && !location.pathname.startsWith('/search')) {
 					if (post?.parent_id) {
 						navigate(`/${urlPrefix}/${post?.parentChannel?.feed?.feed_name}/${post?.parentChannel?.channel_name}/${post?.parent_id}`);
 					} else {
@@ -80,6 +80,7 @@ const ContentWidget = ({ canRemove = false, display = false, feed, isDraft = fal
 				setPostErrorMessage(`Error removing ${pendingDeleteAction}`);
 			}
 		} catch (error) {
+			console.log("error deleting:", error);
 			setPostErrorMessage(error.response?.data?.message || `Error removing ${pendingDeleteAction}`);
 			setTimeout(() => setPostErrorMessage(""), 3000);
 		}

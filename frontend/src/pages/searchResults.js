@@ -118,6 +118,10 @@ const SearchResults = () => {
 			setIsLoading(false);
 		}
 	}, [isLoading, selectedView, fetchPosts, fetchFeeds, postPage, feedPage, hasMorePosts, hasMoreFeeds]);
+	
+	const handlePostRemoved = (removedId) => {
+		setPosts(prev => prev.filter(p => p.post_id !== removedId));
+	};
 
 	const handleScroll = useCallback(() => {
 		const element = scrollRef.current;
@@ -208,7 +212,7 @@ const SearchResults = () => {
 								{combinedItems.map((item, idx) =>
 									item.type === 'post' ? (
 										<div key={`post-${item.data.post_id}`} className="bg-gray-800 rounded-xl w-full">
-											<ContentWidget post={item.data} />
+											<ContentWidget onPostRemoved={handlePostRemoved} post={item.data} />
 										</div>
 									) : (
 										<div key={`feedtriplet-${idx}`} className="grid grid-cols-3 gap-3 med-mar-top w-full">
@@ -224,7 +228,7 @@ const SearchResults = () => {
 							<div className="flex flex-col w-99">
 								{posts.map(post => (
 									<div key={post.post_id} className="bg-gray-800 rounded-xl w-full">
-										<ContentWidget post={post} />
+										<ContentWidget onPostRemoved={handlePostRemoved} post={post} />
 									</div>
 								))}
 							</div>

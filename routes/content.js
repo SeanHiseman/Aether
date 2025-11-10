@@ -290,6 +290,7 @@ router.post("/create_post", standardLimiter, authenticateCheck, checkStorageLimi
 		} else {
 			const localPath = path.join(postsDir, htmlFileName);
 			fs.writeFileSync(localPath, finalHtml);
+			contentUrl = `/media/posts/${htmlFileName}`;
 		}
 		//Run text/embedding analysis
 		const textBody = await contentAnalyser.extractTextBody(finalHtml);
