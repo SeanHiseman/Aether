@@ -318,11 +318,11 @@ const ContentWidget = ({ canRemove = false, display = false, feed, isDraft = fal
 	return (
 		<><div className={`content-item ${isReply ? 'reply' : ''}`}>
 			{postErrorMessage && <div className="small-text faded-text">{postErrorMessage}</div>}
-			{post?.title && <div className="title-container" onClick={() => incrementViews(post?.post_id)} style={{ display: 'block' }}>
+			{post?.title && <Link to={`/${urlPrefix}/${post?.parentChannel?.feed?.feed_name}/${post?.parentChannel?.channel_name}/${post?.post_id}`} className="title-container" onClick={() => incrementViews(post?.post_id)} style={{ display: 'block' }}>
 				<span className="large-text" style={{ marginLeft: 0 }}>
 					{post?.title || '\u00A0'}
 				</span>
-			</div>}
+			</Link>}
 			<div ref={fullscreenRef}
 				onClick={() => incrementViews(post?.post_id)}
 				style={{
