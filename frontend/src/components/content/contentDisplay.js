@@ -134,26 +134,43 @@ const ContentDisplay = ({ post, isFullscreen = false, onCodeAppChange = () => {}
 			borderTopLeftRadius: post?.title && '0' 
 		}}>
 			{blocks.map((block, i) => {
-			if (block.type === 'text') {
-				return (
-					<div dangerouslySetInnerHTML={{ __html: block.html }} key={i} onClick={handleRedirect} style={{ cursor: 'pointer', paddingTop: 5, paddingLeft: 5, paddingRight: 5 }} />
-				);
-			}
-			if (block.type === 'code') {
-				return (
-					<iframe
-						key={i}
-						sandbox={
-							block.isTrustedEmbed
-								? "allow-scripts allow-same-origin allow-popups allow-forms allow-modals"
-								: "allow-scripts allow-popups allow-forms allow-modals"
-						}
-						srcDoc={block.code}
-						style={{ border: 'none', height: isFullscreen ? '100%' : '70vh', width: '100%' }}
-						title={`code-block-${block.id}`}
-					/>
-				)
-			}
+				if (block.type === 'text') {
+					return (
+						<div dangerouslySetInnerHTML={{ __html: block.html }} key={i} onClick={handleRedirect} style={{ cursor: 'pointer', paddingTop: 5, paddingLeft: 5, paddingRight: 5 }} />
+					);
+				}
+				if (block.type === 'code') {
+					return (
+						<div
+							key={i}
+							style={{ position: 'relative', width: '100%', height: isFullscreen ? '100%' : '70vh' }}
+							onClick={e => {
+								const iframe = e.currentTarget.querySelector('iframe');
+								if (iframe) iframe.style.pointerEvents = 'auto';
+							}}
+							onMouseLeave={e => {
+								const iframe = e.currentTarget.querySelector('iframe');
+								if (iframe) iframe.style.pointerEvents = 'none';
+							}}
+						>
+							<iframe
+								sandbox={
+									block.isTrustedEmbed
+										? "allow-scripts allow-same-origin allow-popups allow-forms allow-modals"
+										: "allow-scripts allow-popups allow-forms allow-modals"
+								}
+								srcDoc={block.code}
+								style={{
+									border: 'none',
+									height: '100%',
+									width: '100%',
+									pointerEvents: 'none',
+								}}
+								title={`code-block-${block.id}`}
+							/>
+						</div>
+					)
+				}
 				if (block.type === 'media') {
 					const styleObj =
 						block.align === 'center'
