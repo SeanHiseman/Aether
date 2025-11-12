@@ -10,6 +10,53 @@ const AppBuilds = sequelize.define('app_builds', {
     created_at: { type: DataTypes.DATE(3), defaultValue: sequelize.literal('CURRENT_TIMESTAMP(3)') }
 }, { tableName: 'app_builds', timestamps: false });
 
+const ExternalPosts = sequelize.define('ExternalPosts', {
+	post_id: { type: DataTypes.STRING, primaryKey: true },
+	source: { type: DataTypes.STRING(32), allowNull: false },
+	source_post_id: { type: DataTypes.STRING(128), allowNull: false },
+	user_id: { type: DataTypes.STRING(64), allowNull: false },
+	parent_id: { type: DataTypes.STRING(128), allowNull: true },
+	title: { type: DataTypes.TEXT, allowNull: true },
+	text_body: { type: DataTypes.TEXT, allowNull: true },
+	text_length: { type: DataTypes.INTEGER, allowNull: true },
+	word_count: { type: DataTypes.INTEGER, allowNull: true },
+	image_count: { type: DataTypes.INTEGER, allowNull: true },
+	video_count: { type: DataTypes.INTEGER, allowNull: true },
+	has_images: { type: DataTypes.BOOLEAN, defaultValue: false },
+	has_videos: { type: DataTypes.BOOLEAN, defaultValue: false },
+	score: { type: DataTypes.INTEGER, allowNull: true },
+	hotness: { type: DataTypes.FLOAT, allowNull: true },
+	embeddings: { type: DataTypes.JSON, allowNull: true },
+	boost_embedding: { type: DataTypes.JSON, allowNull: true },
+	suppress_embedding: { type: DataTypes.JSON, allowNull: true },
+	is_private: { type: DataTypes.BOOLEAN, defaultValue: false },
+	fetched_at: { type: DataTypes.DATE, allowNull: false },
+	created_at_remote: { type: DataTypes.DATE, allowNull: false },
+	expired: { type: DataTypes.BOOLEAN, defaultValue: false },
+	channel: { type: DataTypes.STRING(128), allowNull: true },
+	author: { type: DataTypes.STRING(190), allowNull: true },
+	url: { type: DataTypes.TEXT, allowNull: false },
+	media: { type: DataTypes.JSON, allowNull: true }
+}, {
+	tableName: 'external_posts',
+	underscored: true,
+    timestamps: false, 
+	indexes: [
+		{ fields: ['user_id'] },
+		{ fields: ['parent_id'] },
+		{ fields: ['is_private'] },
+		{ fields: ['created_at_remote'] },
+		{ fields: ['hotness'] },
+		{ fields: ['score'] },
+		{ fields: ['source'] },
+		{ fields: ['expired'] },
+		{ fields: ['fetched_at'] },
+		{ fields: ['source', 'user_id'] },
+		{ fields: ['source', 'created_at_remote'] },
+		{ fields: ['user_id', 'created_at_remote'] }
+	]
+});
+
 const Posts = sequelize.define('posts', {
     post_id: { type: STRING(36), primaryKey: true },
     parent_id: { type: STRING(36), allowNull: true },
@@ -110,6 +157,7 @@ const ViewedPosts = sequelize.define('viewed_posts', {
 
 export {
     AppBuilds, 
+    ExternalPosts,
     Posts,
     PostDrafts,
     PostNotes,

@@ -19,6 +19,7 @@ import rateLimit from 'express-rate-limit';
 import Redis from 'ioredis';
 import routes from './routes/routes.js';
 import { Server } from 'socket.io';
+import socialConnect from './routes/socialConnect.js';
 import session from 'express-session';
 import sequelize  from './databaseSetup.js';
 import { urlencoded } from 'express';
@@ -103,6 +104,7 @@ app.use('/api/', content);
 app.use('/api/', directMessages);
 app.use('/api/', feeds);
 app.use('/api/', routes);
+app.use('/api/', socialConnect);
 app.use('/api/', users);
 
 app.get('/robots.txt', (req, res) => {

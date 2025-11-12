@@ -1,20 +1,21 @@
 import api from "../api";
 import { AuthContext } from "../components/authContext";
+import ConnectRedditButton from "../socialConnect.js/connectRedditButton";
 import Cropper from "react-easy-crop";
 import { Crown } from 'lucide-react';
+import DeepFeedItem from "../components/channels/deepFeedItem";
 import { DndContext, PointerSensor, pointerWithin, rectIntersection, useSensor, useSensors } from "@dnd-kit/core";
 import { FaArrowRight, FaCog, FaFileUpload, FaMinus, FaPen, FaPlus, FaPlusCircle, FaSignInAlt } from "react-icons/fa";
-import { MagnifyingGlassIcon } from "@radix-ui/react-icons";
-import { useCallback, useContext, useEffect, useRef, useState } from "react";
-import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
-import DeepFeedItem from "../components/channels/deepFeedItem";
 import FeedItem from "../components/channels/feedItem";
 import GetCroppedImg from "../functions/getCroppedImg";
 import InputModal from "../components/modals/inputModal";
+import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
+import { MagnifyingGlassIcon } from "@radix-ui/react-icons";
 import MessageDropdown from "../components/messages/messageDropdown";
 import { ThemeContext } from "../themeProvider";
 import { Tooltip } from "react-tooltip";
 import { UnreadContext } from "../components/messages/unreadContext";
+import { useCallback, useContext, useEffect, useRef, useState } from "react";
 import { ValidateTextInput } from "../functions/validateTextInput";
 import { v4 } from "uuid";
 import "../css/algorithms.css";
@@ -481,6 +482,9 @@ const BaseLayout = () => {
                                     <li className={`channel-link ${location.pathname.startsWith('/saved') ? 'selected' : ''}`}>
                                         <Link to="/saved/Main">Saved posts</Link>
                                     </li>
+                                    <li className={`channel-link ${location.pathname.startsWith('/feed/reddit') ? 'selected' : ''}`}>
+                                        <Link to="/feed/reddit">Reddit posts</Link>
+                                    </li>
                                 </ul>
                             </nav>
                             <div className="deep-feeds-container">
@@ -499,6 +503,7 @@ const BaseLayout = () => {
                                     <p className="icon-text">Get membership for more</p>
                                 </Link>
                             )}
+                            <ConnectRedditButton />
                             <p className="tiny-text faded-text">{asideErrorMessage}</p>
                             <div id="create-feed-section">
                                 <button className="small-icon" onClick={toggleForm} style={{alignSelf: "flex-start", marginLeft: "calc(5% + 10px)"}}>

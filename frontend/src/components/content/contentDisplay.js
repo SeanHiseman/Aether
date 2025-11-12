@@ -40,7 +40,7 @@ const ContentDisplay = ({ post, isFullscreen = false, onCodeAppChange = () => {}
 							code: div.getAttribute('data-code') || div.innerHTML.trim(),
 							id,
 							type: 'code',
-							isTrustedEmbed: div.getAttribute('data-trusted') === 'true' // ✅ read trust flag from backend
+							isTrustedEmbed: div.getAttribute('data-trusted') === 'true' //read trust flag from backend
 						});
 					} else if (div.classList.contains('media-block')) {
 						const align = div.getAttribute('data-align') || 'left';

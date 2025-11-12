@@ -1,0 +1,249 @@
+import authenticateCheck from '../functions/checks/authenticateCheck.js';
+import crypto from 'crypto';
+import { ConnectedAccounts } from '../models/users.js';
+import { ExternalPosts } from '../models/content.js';
+import express from 'express';
+import fetch from 'node-fetch';
+import { v4 } from 'uuid';
+
+const router = express.Router();
+
+const OAUTH_AUTHORIZE = 'https://www.reddit.com/api/v1/authorize';
+const OAUTH_TOKEN = 'https://www.reddit.com/api/v1/access_token';
+const OAUTH_ME = 'https://oauth.reddit.com/api/v1/me';
+
+function redditUserAgent() {
+	return 'AetherSocial/1.0 (+https://aethersocial.com)';
+}
+
+function mapRedditToExternal(userId, child) {
+	const d = child.data;
+	return {
+		post_id: `reddit:${d.id}`,
+		author: d.author ? `u/${d.author}` : null,
+		created_at_remote: new Date(d.created_utc * 1000),
+		expired: false,
+		fetched_at: new Date(),
+		media: d.preview?.images || null,
+		score: typeof d.score === 'number' ? d.score : null,
+		source: 'reddit',
+		source_post_id: d.id,
+		subreddit: d.subreddit || null,
+		text_body: d.selftext || null,
+		title: d.title || null,
+		url: d.url_overridden_by_dest || `https://www.reddit.com${d.permalink}`,
+		user_id: userId,
+        text_length: d.selftext?.length || 0,
+        word_count: d.selftext ? d.selftext.split(/\s+/).length : 0,
+        has_images: !!d.preview?.images,
+        has_videos: !!d.media?.reddit_video,
+        channel: d.subreddit || null,
+	};
+}
+
+function ua() {
+	return 'AetherSocial/1.0 (+https://aethersocial.com)';
+}
+
+router.get('/auth/reddit', authenticateCheck, async (req, res) => {
+    try {
+        const { REDDIT_CLIENT_ID, REDDIT_REDIRECT_URI } = process.env;
+        const userId = req.user.user_id;
+		const statePayload = {
+			user_id: userId,
+			nonce: crypto.randomBytes(16).toString('hex')
+		};
+		req.session.reddit_oauth_nonce = statePayload.nonce;
+        const state = Buffer.from(JSON.stringify(statePayload)).toString('base64url');
+        const scope = ['identity','read','mysubreddits','history'].join(' ');
+        const url = `${OAUTH_AUTHORIZE}?client_id=${encodeURIComponent(REDDIT_CLIENT_ID)}&response_type=code&state=${encodeURIComponent(state)}&redirect_uri=${encodeURIComponent(REDDIT_REDIRECT_URI)}&duration=permanent&scope=${encodeURIComponent(scope)}`;
+        res.redirect(url);
+    } catch (error) {
+      	console.error('/auth/reddit error:', error);
+		res.status(500).send('Reddit auth setup failed');  
+    }
+});
+
+async function ensureAccessToken(account) {
+	if (account.expires_at > new Date(Date.now() + 60 * 1000)) return account.access_token;
+	if (!account.refresh_token) return account.access_token;
+	const { REDDIT_CLIENT_ID, REDDIT_CLIENT_SECRET } = process.env;
+	const response = await fetch(OAUTH_TOKEN, {
+		method: 'POST',
+		headers: {
+			'Authorization': 'Basic ' + Buffer.from(`${REDDIT_CLIENT_ID}:${REDDIT_CLIENT_SECRET}`).toString('base64'),
+			'Content-Type': 'application/x-www-form-urlencoded',
+			'User-Agent': ua()
+		},
+		body: new URLSearchParams({
+			grant_type: 'refresh_token',
+			refresh_token: account.refresh_token
+		})
+	});
+	if (!response.ok) return account.access_token;
+	const json = await response.json();
+	account.access_token = json.access_token;
+	account.expires_at = new Date(Date.now() + (json.expires_in * 1000));
+	await account.save();
+	return account.access_token;
+}
+
+router.get('/reddit/callback', authenticateCheck, async (req, res) => {
+	try {
+		const { code, state } = req.query;
+		const payload = JSON.parse(Buffer.from(state, 'base64url').toString());
+		const { user_id, nonce } = payload;
+		const savedNonce = req.session.reddit_oauth_nonce;
+		if (!savedNonce || nonce !== savedNonce) {
+			return res.status(400).send('Invalid state');
+		}
+		delete req.session.reddit_oauth_nonce;
+		const { REDDIT_CLIENT_ID, REDDIT_CLIENT_SECRET, REDDIT_REDIRECT_URI, FRONTEND_URL } = process.env;
+		const tokenResp = await fetch(OAUTH_TOKEN, {
+			method: 'POST',
+			headers: {
+				'Authorization': 'Basic ' + Buffer.from(`${REDDIT_CLIENT_ID}:${REDDIT_CLIENT_SECRET}`).toString('base64'),
+				'Content-Type': 'application/x-www-form-urlencoded',
+				'User-Agent': redditUserAgent()
+			},
+			body: new URLSearchParams({
+				grant_type: 'authorization_code',
+				code,
+				redirect_uri: REDDIT_REDIRECT_URI
+			})
+		});
+		if (!tokenResp.ok) return res.status(502).send('Token exchange failed');
+		const tokenJson = await tokenResp.json();
+		const meResp = await fetch(OAUTH_ME, {
+			headers: {
+				'Authorization': `bearer ${tokenJson.access_token}`,
+				'User-Agent': redditUserAgent()
+			}
+		});
+		if (!meResp.ok) return res.status(502).send('Identity fetch failed');
+		const me = await meResp.json();
+		const expiresAt = new Date(Date.now() + (tokenJson.expires_in * 1000));
+        await ConnectedAccounts.upsert({
+            user_id,
+            platform: 'reddit',
+            handle: `u/${me.name}`,
+            access_token: tokenJson.access_token,
+            refresh_token: tokenJson.refresh_token || null,
+            token_type: tokenJson.token_type,
+            scope: tokenJson.scope,
+            expires_at: expiresAt,
+            extra: { reddit_id: me.id }
+        });
+		res.redirect(`${FRONTEND_URL}/feed/reddit`);
+	} catch (error) {
+        console.log("/reddit/callback error:", error);
+		res.status(500).send('Reddit auth error');
+	}
+});
+
+function generateRedditContentHTML(textBody, mediaArray) {
+	const mediaItems = Array.isArray(mediaArray)
+		? mediaArray
+		: mediaArray
+			? [mediaArray]
+			: [];
+	let html = '';
+
+	// ✅ Add text body
+	if (textBody && textBody.trim()) {
+		html += `
+			<div class="content-block text-block" data-blockid="${crypto.randomUUID()}">
+				<p>${textBody
+					.replace(/&/g, '&amp;')
+					.replace(/</g, '&lt;')
+					.replace(/>/g, '&gt;')
+					.replace(/\n/g, '<br>')}
+				</p>
+			</div>
+		`;
+	}
+
+	// ✅ Add media blocks
+	for (const media of mediaItems) {
+		const url = media?.source?.url?.replace(/&amp;/g, '&');
+		if (!url) continue;
+		html += `
+			<div class="content-block media-block" data-blockid="${crypto.randomUUID()}" data-align="center">
+				<img src="${url}" alt="Reddit media" />
+			</div>
+		`;
+	}
+
+	return html.trim();
+}
+
+router.get('/reddit/feed', authenticateCheck, async (req, res) => {
+	try {
+		const { limit = '100', after } = req.query;
+		const account = await ConnectedAccounts.findOne({ where: { user_id: req.user.user_id } });
+		if (!account) return res.status(404).json({ success: false, error: 'Not connected' });
+		const token = await ensureAccessToken(account);
+		const params = new URLSearchParams({ limit: String(Math.min(Number(limit) || 25, 100)) });
+		if (after) params.set('after', after);
+		const response = await fetch(`https://oauth.reddit.com/best?${params.toString()}`, {
+			headers: {
+				'Authorization': `bearer ${token}`,
+				'User-Agent': ua()
+			}
+		});
+		if (!response.ok) return res.status(502).json({ success: false, error: 'Upstream error' });
+		const json = await response.json();
+		const out = [];
+		for (const child of json.data.children) {
+			if (child.kind !== 't3') continue;
+			const mapped = mapRedditToExternal(req.user.user_id, child);
+
+			const contentHTML = generateRedditContentHTML(mapped.text_body, mapped.media);
+
+			out.push({
+				post_id: mapped.post_id,
+				title: mapped.title,
+				content: `data:text/html;charset=utf-8,${encodeURIComponent(contentHTML)}`,
+				created_at: mapped.created_at_remote || new Date(),
+				upvotes: mapped.score ?? 0,
+				downvotes: 0,
+				views: 0,
+				replies: 0,
+				is_saved: false,
+				has_upvoted: false,
+				has_downvoted: false,
+				poster: {
+					feed_name: mapped.author || 'reddit_user',
+					feed_photo: '/media/site_images/blank-profile.png'
+				},
+				parentChannel: {
+					channel_name: mapped.subreddit || 'reddit',
+					feed: {
+						feed_name: 'reddit',
+						is_group: false
+					}
+				}
+			});
+		}
+		res.status(200).json({ success: true, after: json.data.after || null, before: json.data.before || null, items: out });
+	} catch (error) {
+        console.log("/reddit/feed error:", error);
+		res.status(500).json({ success: false, error: 'Feed error' });
+	}
+});
+
+router.post('/reddit/expire', authenticateCheck, async (req, res) => {
+	try {
+		const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000);
+		await ExternalPosts.update(
+			{ expired: true, title: null, text_body: null, media: null },
+			{ where: { source: 'reddit', user_id: req.user.user_id, fetched_at: { [ExternalPosts.sequelize.Op.lt]: cutoff } } }
+		);
+		res.status(200).json({ success: true });
+	} catch (error) {
+        console.log("/reddit/expire error:", error);
+		res.status(500).json({ success: false, error: 'Expire error' });
+	}
+});
+
+export default router;

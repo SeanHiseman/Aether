@@ -24,6 +24,7 @@ import MembershipSettings from './pages/feeds/settings/membershipSettings';
 import NotFound from './notFound';
 import SavedPosts from './pages/feeds/savedPosts';
 import Placeholder from './pages/welcome/placeholder';
+import RedditFeedPage from './socialConnect.js/redditFeedPage';
 import ResetPassword from './pages/site_entrance/resetPassword';
 import Team from './pages/welcome/team';
 import Theme from './pages/feeds/settings/theme';
@@ -69,6 +70,7 @@ const App = () => {
 							<Route path="/reset-password" element={<ResetPassword />}/>
 							<Route path="/verify-email" element={<EmailVerification />} />
 							<Route element={BaseLayoutWithProviders}>
+								<Route path="/feed/reddit" element={<RedditFeedPage />} />
 								{/*<Route path="ask" element={<AskChannel />} >
 									<Route path=":chatId" element={<AskChannel />} />
 								</Route>*/}
