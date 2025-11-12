@@ -92,9 +92,14 @@ app.use(express.static(root));
 app.use(favicon(faviconPath));
 app.use(urlencoded({ extended: true}));
 app.use(session({
-    secret: process.env.APP_SECRET, 
-    resave: false,
-    saveUninitialized: true,
+	secret: process.env.APP_SECRET,
+	resave: false,
+	saveUninitialized: true,
+	cookie: {
+		httpOnly: true,
+		sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+		secure: process.env.NODE_ENV === 'production' //must be true for https
+	}
 }));
 
 app.use('/api/', algorithmRoutes); 

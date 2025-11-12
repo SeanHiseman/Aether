@@ -47,6 +47,9 @@ function ua() {
 
 router.get('/auth/reddit', authenticateCheck, async (req, res) => {
     try {
+		console.log('--- /auth/reddit ---');
+		console.log('Session ID before:', req.sessionID);
+		console.log('Session contents before:', req.session);
         const { REDDIT_CLIENT_ID, REDDIT_REDIRECT_URI } = process.env;
         const userId = req.user.user_id;
 		const statePayload = {
@@ -54,6 +57,7 @@ router.get('/auth/reddit', authenticateCheck, async (req, res) => {
 			nonce: crypto.randomBytes(16).toString('hex')
 		};
 		req.session.reddit_oauth_nonce = statePayload.nonce;
+		console.log('Session after setting nonce:', req.session);
         const state = Buffer.from(JSON.stringify(statePayload)).toString('base64url');
         const scope = ['identity','read','mysubreddits','history'].join(' ');
         const url = `${OAUTH_AUTHORIZE}?client_id=${encodeURIComponent(REDDIT_CLIENT_ID)}&response_type=code&state=${encodeURIComponent(state)}&redirect_uri=${encodeURIComponent(REDDIT_REDIRECT_URI)}&duration=permanent&scope=${encodeURIComponent(scope)}`;
@@ -65,31 +69,39 @@ router.get('/auth/reddit', authenticateCheck, async (req, res) => {
 });
 
 async function ensureAccessToken(account) {
-	if (account.expires_at > new Date(Date.now() + 60 * 1000)) return account.access_token;
-	if (!account.refresh_token) return account.access_token;
-	const { REDDIT_CLIENT_ID, REDDIT_CLIENT_SECRET } = process.env;
-	const response = await fetch(OAUTH_TOKEN, {
-		method: 'POST',
-		headers: {
-			'Authorization': 'Basic ' + Buffer.from(`${REDDIT_CLIENT_ID}:${REDDIT_CLIENT_SECRET}`).toString('base64'),
-			'Content-Type': 'application/x-www-form-urlencoded',
-			'User-Agent': ua()
-		},
-		body: new URLSearchParams({
-			grant_type: 'refresh_token',
-			refresh_token: account.refresh_token
-		})
-	});
-	if (!response.ok) return account.access_token;
-	const json = await response.json();
-	account.access_token = json.access_token;
-	account.expires_at = new Date(Date.now() + (json.expires_in * 1000));
-	await account.save();
-	return account.access_token;
+	try {
+		if (account.expires_at > new Date(Date.now() + 60 * 1000)) return account.access_token;
+		if (!account.refresh_token) return account.access_token;
+		const { REDDIT_CLIENT_ID, REDDIT_CLIENT_SECRET } = process.env;
+		const response = await fetch(OAUTH_TOKEN, {
+			method: 'POST',
+			headers: {
+				'Authorization': 'Basic ' + Buffer.from(`${REDDIT_CLIENT_ID}:${REDDIT_CLIENT_SECRET}`).toString('base64'),
+				'Content-Type': 'application/x-www-form-urlencoded',
+				'User-Agent': ua()
+			},
+			body: new URLSearchParams({
+				grant_type: 'refresh_token',
+				refresh_token: account.refresh_token
+			})
+		});
+		if (!response.ok) return account.access_token;
+		const json = await response.json();
+		account.access_token = json.access_token;
+		account.expires_at = new Date(Date.now() + (json.expires_in * 1000));
+		await account.save();
+		return account.access_token;
+	} catch (error) {
+		console.error('ensureAccessToken error:', error);
+	}
 }
 
 router.get('/reddit/callback', authenticateCheck, async (req, res) => {
 	try {
+		console.log('--- /reddit/callback ---');
+		console.log('Session ID on callback:', req.sessionID);
+		console.log('Session contents on callback:', req.session);
+		console.log('Incoming query params:', req.query);
 		const { code, state } = req.query;
 		const payload = JSON.parse(Buffer.from(state, 'base64url').toString());
 		const { user_id, nonce } = payload;
@@ -142,39 +154,38 @@ router.get('/reddit/callback', authenticateCheck, async (req, res) => {
 });
 
 function generateRedditContentHTML(textBody, mediaArray) {
-	const mediaItems = Array.isArray(mediaArray)
-		? mediaArray
-		: mediaArray
-			? [mediaArray]
-			: [];
-	let html = '';
-
-	// ✅ Add text body
-	if (textBody && textBody.trim()) {
-		html += `
-			<div class="content-block text-block" data-blockid="${crypto.randomUUID()}">
-				<p>${textBody
-					.replace(/&/g, '&amp;')
-					.replace(/</g, '&lt;')
-					.replace(/>/g, '&gt;')
-					.replace(/\n/g, '<br>')}
-				</p>
-			</div>
-		`;
+	try {
+		const mediaItems = Array.isArray(mediaArray)
+			? mediaArray
+			: mediaArray
+				? [mediaArray]
+				: [];
+		let html = '';
+		if (textBody && textBody.trim()) {
+			html += `
+				<div class="content-block text-block" data-blockid="${crypto.randomUUID()}">
+					<p>${textBody
+						.replace(/&/g, '&amp;')
+						.replace(/</g, '&lt;')
+						.replace(/>/g, '&gt;')
+						.replace(/\n/g, '<br>')}
+					</p>
+				</div>
+			`;
+		}
+		for (const media of mediaItems) {
+			const url = media?.source?.url?.replace(/&amp;/g, '&');
+			if (!url) continue;
+			html += `
+				<div class="content-block media-block" data-blockid="${crypto.randomUUID()}" data-align="center">
+					<img src="${url}" alt="Reddit media" />
+				</div>
+			`;
+		}
+		return html.trim();
+	} catch (error) {
+		console.error('generateRedditContentHTML error:', error);
 	}
-
-	// ✅ Add media blocks
-	for (const media of mediaItems) {
-		const url = media?.source?.url?.replace(/&amp;/g, '&');
-		if (!url) continue;
-		html += `
-			<div class="content-block media-block" data-blockid="${crypto.randomUUID()}" data-align="center">
-				<img src="${url}" alt="Reddit media" />
-			</div>
-		`;
-	}
-
-	return html.trim();
 }
 
 router.get('/reddit/feed', authenticateCheck, async (req, res) => {
