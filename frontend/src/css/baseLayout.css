@@ -443,6 +443,11 @@ main {
   border-radius: clamp(4px, 1vw, 10px);
   width: clamp(30px, 6vw, 55px); /*Below 55px causes it to look weird*/
 }
+.social-icon {
+  aspect-ratio: 1 / 1;
+  border-radius: clamp(2px, 0.5vw, 5px);
+  width: clamp(15px, 3vw, 28px); /*Below 55px causes it to look weird*/
+}
 .standard-container {
   display: flex;
   overflow: hidden;

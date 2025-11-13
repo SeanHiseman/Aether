@@ -16,6 +16,152 @@ function redditUserAgent() {
 	return 'AetherSocial/1.0 (+https://aethersocial.com)';
 }
 
+async function ensureAccessToken(account) {
+	try {
+		if (account.expires_at > new Date(Date.now() + 60 * 1000)) return account.access_token;
+		if (!account.refresh_token) return account.access_token;
+		const { REDDIT_CLIENT_ID, REDDIT_CLIENT_SECRET } = process.env;
+		const response = await fetch(OAUTH_TOKEN, {
+			method: 'POST',
+			headers: {
+				'Authorization': 'Basic ' + Buffer.from(`${REDDIT_CLIENT_ID}:${REDDIT_CLIENT_SECRET}`).toString('base64'),
+				'Content-Type': 'application/x-www-form-urlencoded',
+				'User-Agent': ua()
+			},
+			body: new URLSearchParams({
+				grant_type: 'refresh_token',
+				refresh_token: account.refresh_token
+			})
+		});
+		if (!response.ok) return account.access_token;
+		const json = await response.json();
+		account.access_token = json.access_token;
+		account.expires_at = new Date(Date.now() + (json.expires_in * 1000));
+		await account.save();
+		return account.access_token;
+	} catch (error) {
+		console.error('ensureAccessToken error:', error);
+	}
+}
+
+async function ensureBlueskyToken(account) {
+	try {
+		if (account.expires_at > new Date(Date.now() + 60 * 1000)) {
+			return account.access_token;
+		}
+		const response = await fetch('https://bsky.social/xrpc/com.atproto.server.refreshSession', {
+			method: 'POST',
+			headers: {
+				'Authorization': `Bearer ${account.refresh_token}`,
+				'Content-Type': 'application/json'
+			}
+		});
+		if (!response.ok) return account.access_token;
+		const json = await response.json();
+		account.access_token = json.accessJwt;
+		account.refresh_token = json.refreshJwt;
+		account.expires_at = new Date(Date.now() + 24 * 60 * 60 * 1000);
+		await account.save();
+		return account.access_token;
+	} catch (err) {
+		console.error('ensureBlueskyToken error:', err);
+		return account.access_token;
+	}
+}
+
+function mapBlueskyToExternal(userId, item) {
+	const post = item.post;
+	const record = post.record || {};
+	const text = record.text || '';
+	let images = null;
+	if (post.embed && post.embed.images) {
+		images = post.embed.images.map(img => ({ url: img.fullsize || img.thumb || null }));
+	}
+	return {
+		post_id: `bluesky:${post.uri}`,
+		author: post.author?.handle || null,
+		created_at_remote: new Date(record.createdAt),
+		expired: false,
+		fetched_at: new Date(),
+		media: images,
+		score: null,
+		source: 'bluesky',
+		source_post_id: post.uri,
+		subreddit: null,
+		text_body: text,
+		title: null,
+		url: `https://bsky.app/profile/${post.author?.handle}/post/${post.uri.split('/').pop()}`,
+		user_id: userId,
+		text_length: text.length,
+		word_count: text ? text.split(/\s+/).length : 0,
+		has_images: Array.isArray(images) && images.length > 0,
+		has_videos: false,
+		channel: post.author?.handle || null
+	};
+}
+
+function generateBlueskyContentHTML(textBody, media) {
+	let html = '';
+	if (textBody?.trim()) {
+		html += `
+			<div class="content-block text-block" data-blockid="${crypto.randomUUID()}">
+				<p>${textBody
+					.replace(/&/g, '&amp;')
+					.replace(/</g, '&lt;')
+					.replace(/>/g, '&gt;')
+					.replace(/\n/g, '<br>')}
+				</p>
+			</div>
+		`;
+	}
+	if (Array.isArray(media)) {
+		for (const m of media) {
+			if (!m.url) continue;
+			html += `
+				<div class="content-block media-block" data-blockid="${crypto.randomUUID()}" data-align="center">
+					<img src="${m.url}" alt="Bluesky media" />
+				</div>
+			`;
+		}
+	}
+	return html.trim();
+}
+
+function generateRedditContentHTML(textBody, mediaArray) {
+	try {
+		const mediaItems = Array.isArray(mediaArray)
+			? mediaArray
+			: mediaArray
+				? [mediaArray]
+				: [];
+		let html = '';
+		if (textBody && textBody.trim()) {
+			html += `
+				<div class="content-block text-block" data-blockid="${crypto.randomUUID()}">
+					<p>${textBody
+						.replace(/&/g, '&amp;')
+						.replace(/</g, '&lt;')
+						.replace(/>/g, '&gt;')
+						.replace(/\n/g, '<br>')}
+					</p>
+				</div>
+			`;
+		}
+		for (const media of mediaItems) {
+			const url = media?.source?.url?.replace(/&amp;/g, '&');
+			if (!url) continue;
+			html += `
+				<div class="content-block media-block" data-blockid="${crypto.randomUUID()}" data-align="center">
+					<img src="${url}" alt="Reddit media" />
+				</div>
+			`;
+		}
+		return html.trim();
+	} catch (error) {
+		console.error('generateRedditContentHTML error:', error);
+	}
+}
+
 function mapRedditToExternal(userId, child) {
 	const d = child.data;
 	return {
@@ -45,6 +191,38 @@ function ua() {
 	return 'AetherSocial/1.0 (+https://aethersocial.com)';
 }
 
+router.post('/auth/bluesky', authenticateCheck, async (req, res) => {
+	try {
+		const { identifier, appPassword } = req.body;
+		if (!identifier || !appPassword) {
+			return res.status(400).json({ success: false, error: 'Missing credentials' });
+		}
+		const response = await fetch('https://bsky.social/xrpc/com.atproto.server.createSession', {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({
+				identifier,
+				password: appPassword
+			})
+		});
+		if (!response.ok) return res.status(401).json({ success: false, error: 'Invalid Bluesky login' });
+		const json = await response.json();
+		await ConnectedAccounts.upsert({
+			user_id: req.user.user_id,
+			platform: 'bluesky',
+			handle: json.handle,
+			access_token: json.accessJwt,
+			refresh_token: json.refreshJwt,
+			expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000),
+			extra: { did: json.did }
+		});
+		res.status(200).json({ success: true });
+	} catch (error) {
+		console.log('/auth/bluesky error:', error);
+		res.status(500).json({ success: false });
+	}
+});
+
 router.get('/auth/reddit', authenticateCheck, async (req, res) => {
     try {
 		console.log('--- /auth/reddit ---');
@@ -68,33 +246,64 @@ router.get('/auth/reddit', authenticateCheck, async (req, res) => {
     }
 });
 
-async function ensureAccessToken(account) {
+router.get('/bluesky/feed', authenticateCheck, async (req, res) => {
 	try {
-		if (account.expires_at > new Date(Date.now() + 60 * 1000)) return account.access_token;
-		if (!account.refresh_token) return account.access_token;
-		const { REDDIT_CLIENT_ID, REDDIT_CLIENT_SECRET } = process.env;
-		const response = await fetch(OAUTH_TOKEN, {
-			method: 'POST',
-			headers: {
-				'Authorization': 'Basic ' + Buffer.from(`${REDDIT_CLIENT_ID}:${REDDIT_CLIENT_SECRET}`).toString('base64'),
-				'Content-Type': 'application/x-www-form-urlencoded',
-				'User-Agent': ua()
-			},
-			body: new URLSearchParams({
-				grant_type: 'refresh_token',
-				refresh_token: account.refresh_token
-			})
+		const account = await ConnectedAccounts.findOne({
+			where: { user_id: req.user.user_id, platform: 'bluesky' }
 		});
-		if (!response.ok) return account.access_token;
+		console.log('Bluesky account:', account);
+		if (!account) {
+			return res.status(404).json({ success: false, error: 'Not connected' });
+		}
+		const token = await ensureBlueskyToken(account);
+		console.log('Using Bluesky token:', token);
+		const extra = typeof account.extra === 'string' ? JSON.parse(account.extra) : account.extra;
+		const did = extra?.did;
+		if (!did) return res.status(500).json({ success: false, error: 'No DID stored' });
+		const limit = Math.min(Number(req.query.limit) || 50, 100);
+		const response = await fetch(
+			`https://bsky.social/xrpc/app.bsky.feed.getTimeline?limit=${limit}`,
+			{
+				headers: {
+					'Authorization': `Bearer ${token}`,
+					'Content-Type': 'application/json'
+				}
+			}
+		);
+		console.log('Bluesky feed response:', response);
+		if (!response.ok) return res.status(502).json({ success: false, error: 'Upstream error' });
 		const json = await response.json();
-		account.access_token = json.access_token;
-		account.expires_at = new Date(Date.now() + (json.expires_in * 1000));
-		await account.save();
-		return account.access_token;
+		const items = json.feed.map(item => {
+			const mapped = mapBlueskyToExternal(req.user.user_id, item);
+			const html = generateBlueskyContentHTML(mapped.text_body, mapped.media);
+			return {
+				post_id: mapped.post_id,
+				title: mapped.title,
+				content: `data:text/html;charset=utf-8,${encodeURIComponent(html)}`,
+				created_at: mapped.created_at_remote,
+				upvotes: 0,
+				downvotes: 0,
+				views: 0,
+				replies: mapped.replies || 0,
+				is_saved: false,
+				has_upvoted: false,
+				has_downvoted: false,
+				poster: {
+					feed_name: mapped.author || 'bluesky_user',
+					feed_photo: '/media/site_images/blank-profile.png'
+				},
+				parentChannel: {
+					channel_name: mapped.channel,
+					feed: { feed_name: 'bluesky', is_group: false }
+				}
+			};
+		});
+		res.status(200).json({ success: true, items });
 	} catch (error) {
-		console.error('ensureAccessToken error:', error);
+		console.log('/bluesky/feed error:', error);
+		res.status(500).json({ success: false });
 	}
-}
+});
 
 router.get('/reddit/callback', authenticateCheck, async (req, res) => {
 	try {
@@ -153,41 +362,6 @@ router.get('/reddit/callback', authenticateCheck, async (req, res) => {
 	}
 });
 
-function generateRedditContentHTML(textBody, mediaArray) {
-	try {
-		const mediaItems = Array.isArray(mediaArray)
-			? mediaArray
-			: mediaArray
-				? [mediaArray]
-				: [];
-		let html = '';
-		if (textBody && textBody.trim()) {
-			html += `
-				<div class="content-block text-block" data-blockid="${crypto.randomUUID()}">
-					<p>${textBody
-						.replace(/&/g, '&amp;')
-						.replace(/</g, '&lt;')
-						.replace(/>/g, '&gt;')
-						.replace(/\n/g, '<br>')}
-					</p>
-				</div>
-			`;
-		}
-		for (const media of mediaItems) {
-			const url = media?.source?.url?.replace(/&amp;/g, '&');
-			if (!url) continue;
-			html += `
-				<div class="content-block media-block" data-blockid="${crypto.randomUUID()}" data-align="center">
-					<img src="${url}" alt="Reddit media" />
-				</div>
-			`;
-		}
-		return html.trim();
-	} catch (error) {
-		console.error('generateRedditContentHTML error:', error);
-	}
-}
-
 router.get('/reddit/feed', authenticateCheck, async (req, res) => {
 	try {
 		const { limit = '100', after } = req.query;
@@ -208,9 +382,7 @@ router.get('/reddit/feed', authenticateCheck, async (req, res) => {
 		for (const child of json.data.children) {
 			if (child.kind !== 't3') continue;
 			const mapped = mapRedditToExternal(req.user.user_id, child);
-
 			const contentHTML = generateRedditContentHTML(mapped.text_body, mapped.media);
-
 			out.push({
 				post_id: mapped.post_id,
 				title: mapped.title,

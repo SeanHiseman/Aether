@@ -5,7 +5,7 @@ import Account from './pages/feeds/settings/account';
 import AskChannel from './pages/ask/askChannel';
 import BaseLayout from './pages/base';
 import ChatPage from './pages/messages/chatPage';
-import MessagesPage from './pages/messages/messagesPage';
+import ConnectBluesky from './socialConnect/connectBluesky';
 import ContentWidget from './components/content/contentWidget';
 import DeepFeed from './pages/deepFeed';
 import EmailVerification from './pages/site_entrance/verification';
@@ -21,11 +21,12 @@ import ForgotPassword from './pages/site_entrance/forgotPassword';
 import Join from './pages/site_entrance/join';
 import Login from './pages/site_entrance/login';
 import MembershipSettings from './pages/feeds/settings/membershipSettings';
+import MessagesPage from './pages/messages/messagesPage';
 import NotFound from './notFound';
-import SavedPosts from './pages/feeds/savedPosts';
 import Placeholder from './pages/welcome/placeholder';
-import RedditFeedPage from './socialConnect.js/redditFeedPage';
 import ResetPassword from './pages/site_entrance/resetPassword';
+import SavedPosts from './pages/feeds/savedPosts';
+import SocialFeedPage from './socialConnect/socialFeedPage';
 import Team from './pages/welcome/team';
 import Theme from './pages/feeds/settings/theme';
 import { QueryProvider } from './components/search/queryContext';
@@ -64,13 +65,15 @@ const App = () => {
 								<Route path="team" element={<Placeholder />} />
 								<Route path="terms" element={<Placeholder />} />
 							</Route>
+							<Route path="/connect/bluesky" element={<ConnectBluesky />} />
 							<Route path="/forgot-password" element={<ForgotPassword />}/>
 							<Route path="/join" element={<Join />} />
 							<Route path="/login" element={<Login />} />
 							<Route path="/reset-password" element={<ResetPassword />}/>
 							<Route path="/verify-email" element={<EmailVerification />} />
 							<Route element={BaseLayoutWithProviders}>
-								<Route path="/feed/reddit" element={<RedditFeedPage />} />
+								<Route path="/feed/reddit" element={<SocialFeedPage platform="reddit" />} />
+								<Route path="/feed/bluesky" element={<SocialFeedPage platform="bluesky" />} />
 								{/*<Route path="ask" element={<AskChannel />} >
 									<Route path=":chatId" element={<AskChannel />} />
 								</Route>*/}

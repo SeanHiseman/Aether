@@ -1,6 +1,6 @@
 import api from "../api";
 import { AuthContext } from "../components/authContext";
-import ConnectRedditButton from "../socialConnect.js/connectRedditButton";
+import ConnectSocialButton from "../socialConnect/connectSocialButton";
 import Cropper from "react-easy-crop";
 import { Crown } from 'lucide-react';
 import DeepFeedItem from "../components/channels/deepFeedItem";
@@ -473,18 +473,21 @@ const BaseLayout = () => {
                                         <Link to="/messages">Messages</Link>
                                         {/*<MessageDropdown />*/}
                                     </li>
-                                    <li className={`channel-link ${location.pathname.startsWith('/explore') ? 'selected' : ''}`}>
-                                        <Link to="/explore">Explore</Link>
-                                    </li>
-                                    <li className={`channel-link ${location.pathname.startsWith('/d/following') ? 'selected' : ''}`}>
-                                        <Link to="/d/following">Following</Link>
-                                    </li>
-                                    <li className={`channel-link ${location.pathname.startsWith('/saved') ? 'selected' : ''}`}>
-                                        <Link to="/saved/Main">Saved posts</Link>
-                                    </li>
-                                    <li className={`channel-link ${location.pathname.startsWith('/feed/reddit') ? 'selected' : ''}`}>
-                                        <Link to="/feed/reddit">Reddit posts</Link>
-                                    </li>
+                                    <Link to="/explore" className={`channel-link ${location.pathname.startsWith('/explore') ? 'selected' : ''}`}>
+                                        Explore
+                                    </Link>
+                                    <Link to="/d/following" className={`channel-link ${location.pathname.startsWith('/d/following') ? 'selected' : ''}`}>
+                                        Following
+                                    </Link>
+                                    <Link to="/saved/Main" className={`channel-link ${location.pathname.startsWith('/saved') ? 'selected' : ''}`}>
+                                        Saved posts
+                                    </Link>
+                                    <Link to="/feed/reddit"className={`channel-link ${location.pathname.startsWith('/feed/reddit') ? 'selected' : ''}`}>
+                                        Reddit posts
+                                    </Link>
+                                    <Link to="/feed/bluesky"className={`channel-link ${location.pathname.startsWith('/feed/bluesky') ? 'selected' : ''}`}>
+                                        Bluesky posts
+                                    </Link>
                                 </ul>
                             </nav>
                             <div className="deep-feeds-container">
@@ -503,7 +506,8 @@ const BaseLayout = () => {
                                     <p className="icon-text">Get membership for more</p>
                                 </Link>
                             )}
-                            <ConnectRedditButton />
+                            <ConnectSocialButton socialIcon={"/media/site_images/social_sites/reddit-logo.png"} socialName={"Reddit"} socialRoute={"auth/reddit"} />
+                            <ConnectSocialButton socialIcon={"/media/site_images/social_sites/bluesky-logo.png"} socialName={"Bluesky"} socialRoute={"/connect/bluesky"} />
                             <p className="tiny-text faded-text">{asideErrorMessage}</p>
                             <div id="create-feed-section">
                                 <button className="small-icon" onClick={toggleForm} style={{alignSelf: "flex-start", marginLeft: "calc(5% + 10px)"}}>
