@@ -12,8 +12,11 @@ const OAUTH_AUTHORIZE = 'https://www.reddit.com/api/v1/authorize';
 const OAUTH_TOKEN = 'https://www.reddit.com/api/v1/access_token';
 const OAUTH_ME = 'https://oauth.reddit.com/api/v1/me';
 
-function redditUserAgent() {
-	return 'AetherSocial/1.0 (+https://aethersocial.com)';
+function ua() {
+	if (process.env.NODE_ENV === 'production') {
+		return 'AetherSocial/1.0 (+https://aethersocial.com)';
+	}
+	return 'AetherSocialLocal/0.1 (testing on localhost)';
 }
 
 async function ensureAccessToken(account) {
@@ -69,6 +72,18 @@ async function ensureBlueskyToken(account) {
 	}
 }
 
+async function fetchRedditUserProfile(username, token) {
+	const resp = await fetch(`https://oauth.reddit.com/user/${username}/about`, {
+		headers: {
+			'Authorization': `bearer ${token}`,
+			'User-Agent': ua()
+		}
+	});
+	if (!resp.ok) return null;
+	const data = await resp.json();
+	return data.data?.icon_img || null;
+}
+
 function mapBlueskyToExternal(userId, item) {
 	const post = item.post;
 	const record = post.record || {};
@@ -80,6 +95,9 @@ function mapBlueskyToExternal(userId, item) {
 	return {
 		post_id: `bluesky:${post.uri}`,
 		author: post.author?.handle || null,
+		author_photo: post.author?.did
+			? `https://cdn.bsky.app/img/avatar/plain/${post.author.did}/avatar`
+			: null,
 		created_at_remote: new Date(record.createdAt),
 		expired: false,
 		fetched_at: new Date(),
@@ -167,6 +185,7 @@ function mapRedditToExternal(userId, child) {
 	return {
 		post_id: `reddit:${d.id}`,
 		author: d.author ? `u/${d.author}` : null,
+		author_photo: null,
 		created_at_remote: new Date(d.created_utc * 1000),
 		expired: false,
 		fetched_at: new Date(),
@@ -187,10 +206,6 @@ function mapRedditToExternal(userId, child) {
 	};
 }
 
-function ua() {
-	return 'AetherSocial/1.0 (+https://aethersocial.com)';
-}
-
 router.post('/auth/bluesky', authenticateCheck, async (req, res) => {
 	try {
 		const { identifier, appPassword } = req.body;
@@ -208,6 +223,7 @@ router.post('/auth/bluesky', authenticateCheck, async (req, res) => {
 		if (!response.ok) return res.status(401).json({ success: false, error: 'Invalid Bluesky login' });
 		const json = await response.json();
 		await ConnectedAccounts.upsert({
+			id: v4(),
 			user_id: req.user.user_id,
 			platform: 'bluesky',
 			handle: json.handle,
@@ -289,14 +305,27 @@ router.get('/bluesky/feed', authenticateCheck, async (req, res) => {
 				has_upvoted: false,
 				has_downvoted: false,
 				poster: {
-					feed_name: mapped.author || 'bluesky_user',
-					feed_photo: '/media/site_images/blank-profile.png'
+					username: mapped.author || 'bluesky_user',
+					user_photo: item.post.author?.avatar || '/media/site_images/blank-profile.png',
+					profile_url: mapped.author
+						? `https://bsky.app/profile/${mapped.author}`
+						: null
 				},
-				parentChannel: {
-					channel_name: mapped.channel,
-					feed: { feed_name: 'bluesky', is_group: false }
-				}
+				channel: mapped.channel,
+				url: mapped.url,
+				source: 'Bluesky'
 			};
+		});
+		const mappedPosts = json.feed.map(item => mapBlueskyToExternal(req.user.user_id, item));
+		await ExternalPosts.bulkCreate(mappedPosts, {
+			updateOnDuplicate: [
+				'title',
+				'text_body',
+				'media',
+				'score',
+				'created_at_remote',
+				'fetched_at',
+			]
 		});
 		res.status(200).json({ success: true, items });
 	} catch (error) {
@@ -325,7 +354,7 @@ router.get('/reddit/callback', authenticateCheck, async (req, res) => {
 			headers: {
 				'Authorization': 'Basic ' + Buffer.from(`${REDDIT_CLIENT_ID}:${REDDIT_CLIENT_SECRET}`).toString('base64'),
 				'Content-Type': 'application/x-www-form-urlencoded',
-				'User-Agent': redditUserAgent()
+				'User-Agent': ua()
 			},
 			body: new URLSearchParams({
 				grant_type: 'authorization_code',
@@ -338,13 +367,14 @@ router.get('/reddit/callback', authenticateCheck, async (req, res) => {
 		const meResp = await fetch(OAUTH_ME, {
 			headers: {
 				'Authorization': `bearer ${tokenJson.access_token}`,
-				'User-Agent': redditUserAgent()
+				'User-Agent': ua()
 			}
 		});
 		if (!meResp.ok) return res.status(502).send('Identity fetch failed');
 		const me = await meResp.json();
 		const expiresAt = new Date(Date.now() + (tokenJson.expires_in * 1000));
         await ConnectedAccounts.upsert({
+			id: v4(),
             user_id,
             platform: 'reddit',
             handle: `u/${me.name}`,
@@ -365,10 +395,14 @@ router.get('/reddit/callback', authenticateCheck, async (req, res) => {
 router.get('/reddit/feed', authenticateCheck, async (req, res) => {
 	try {
 		const { limit = '100', after } = req.query;
-		const account = await ConnectedAccounts.findOne({ where: { user_id: req.user.user_id } });
+		console.log("getting reddit feed with limit:", limit, "after:", after);
+		const account = await ConnectedAccounts.findOne({ where: { user_id: req.user.user_id, platform: 'reddit' } });
+		console.log('Reddit account:', account);
 		if (!account) return res.status(404).json({ success: false, error: 'Not connected' });
 		const token = await ensureAccessToken(account);
+		console.log('Using Reddit token:', token);
 		const params = new URLSearchParams({ limit: String(Math.min(Number(limit) || 25, 100)) });
+		console.log('Reddit feed params before after check:', params.toString());
 		if (after) params.set('after', after);
 		const response = await fetch(`https://oauth.reddit.com/best?${params.toString()}`, {
 			headers: {
@@ -376,12 +410,21 @@ router.get('/reddit/feed', authenticateCheck, async (req, res) => {
 				'User-Agent': ua()
 			}
 		});
+		console.log('Reddit feed response:', response);
 		if (!response.ok) return res.status(502).json({ success: false, error: 'Upstream error' });
 		const json = await response.json();
-		const out = [];
-		for (const child of json.data.children) {
-			if (child.kind !== 't3') continue;
+		const children = json.data.children.filter(c => c.kind === 't3');
+		const avatarMap = {};
+		await Promise.all(children.map(async child => {
 			const mapped = mapRedditToExternal(req.user.user_id, child);
+			const username = (mapped.author || '').replace('u/', '');
+			const avatar = await fetchRedditUserProfile(username, token);
+			avatarMap[username] = avatar || null;
+		}));
+		const out = [];
+		for (const child of children) {
+			const mapped = mapRedditToExternal(req.user.user_id, child);
+			const username = (mapped.author || '').replace('u/', '');
 			const contentHTML = generateRedditContentHTML(mapped.text_body, mapped.media);
 			out.push({
 				post_id: mapped.post_id,
@@ -396,21 +439,37 @@ router.get('/reddit/feed', authenticateCheck, async (req, res) => {
 				has_upvoted: false,
 				has_downvoted: false,
 				poster: {
-					feed_name: mapped.author || 'reddit_user',
-					feed_photo: '/media/site_images/blank-profile.png'
+					username: mapped.author || 'reddit_user',
+					user_photo: avatarMap[username] || '/media/site_images/blank-profile.png',
+					profile_url: `https://www.reddit.com/user/${username}`
 				},
-				parentChannel: {
-					channel_name: mapped.subreddit || 'reddit',
-					feed: {
-						feed_name: 'reddit',
-						is_group: false
-					}
-				}
+				channel: mapped.subreddit || 'reddit',
+				url: mapped.url,
+				source: 'Reddit'
 			});
 		}
+		const mappedPosts = [];
+		for (const child of children) {
+			const mapped = mapRedditToExternal(req.user.user_id, child);
+			const username = (mapped.author || '').replace('u/', '');
+			mapped.author_photo = avatarMap[username] || null;
+			mappedPosts.push(mapped);
+		}
+		await ExternalPosts.bulkCreate(mappedPosts, {
+			updateOnDuplicate: [
+				'title',
+				'text_body',
+				'media',
+				'score',
+				'created_at_remote',
+				'fetched_at',
+				'author_photo'
+			]
+		});
+		console.log("Returning reddit feed items:", out.length);
 		res.status(200).json({ success: true, after: json.data.after || null, before: json.data.before || null, items: out });
 	} catch (error) {
-        console.log("/reddit/feed error:", error);
+		console.log("/reddit/feed error:", error);
 		res.status(500).json({ success: false, error: 'Feed error' });
 	}
 });

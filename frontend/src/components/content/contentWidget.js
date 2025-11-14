@@ -295,7 +295,7 @@ const ContentWidget = ({ canRemove = false, display = false, feed, isDraft = fal
 						<p className="feed-list-text">{reply?.poster?.feed_name}</p>
 					</Link>
 				</div>
-				<ContentDisplay content={reply?.content} onCodeAppChange={setHasCodeOrApp} showFullContent={false} showScrollBar={false} treeViewMode={true} />
+				<ContentDisplay content={reply?.content} onCodeAppChange={setHasCodeOrApp} showFullContent={false} showScrollBar={false} />
 				<div className="tree-reply-footer">
 					<p className="small-text">{reply?.upvotes - reply?.downvotes} votes</p>
 					<Link to={`/${urlPrefix}/${post?.parentChannel?.feed?.feed_name}/${post?.parentChannel?.channel_name}/${post?.post_id}/reply`}>

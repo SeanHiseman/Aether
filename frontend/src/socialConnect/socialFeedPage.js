@@ -1,5 +1,5 @@
 import api from "../api";
-import ContentWidget from '../components/content/contentWidget';
+import ConnectedPostWidget from "./connectedPostWidget";
 import { useEffect, useState, useRef } from 'react';
 
 export default function SocialFeedPage({ platform }) {
@@ -34,14 +34,7 @@ export default function SocialFeedPage({ platform }) {
 					<div className="flex flex-col w-99">
 						{posts.map((post) => (
 							<div key={post.post_id || Math.random()} className="bg-gray-800 rounded-xl">
-								<ContentWidget
-									post={post}
-									canRemove={false}
-									readOnly={true}
-									onPostRemoved={() => {}}
-									onSaveToggle={() => {}}
-									feed={{}}
-								/>
+								<ConnectedPostWidget post={post} />
 							</div>
 						))}
 					</div>

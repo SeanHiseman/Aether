@@ -236,15 +236,14 @@ CREATE TABLE `external_posts` (
 	`has_videos` BOOLEAN NOT NULL DEFAULT FALSE,
 	`score` INT DEFAULT NULL,
 	`hotness` FLOAT DEFAULT NULL,
-	`embeddings` JSON DEFAULT NULL,
-	`boost_embedding` JSON DEFAULT NULL,
-	`suppress_embedding` JSON DEFAULT NULL,
+	`embedding` JSON DEFAULT NULL,
 	`is_private` BOOLEAN NOT NULL DEFAULT FALSE,
 	`fetched_at` DATETIME NOT NULL,
 	`created_at_remote` DATETIME NOT NULL,
 	`expired` BOOLEAN NOT NULL DEFAULT FALSE,
 	`channel` VARCHAR(128) DEFAULT NULL,
 	`author` VARCHAR(190) DEFAULT NULL,
+	`author_photo` TEXT DEFAULT NULL,
 	`url` TEXT NOT NULL,
 	`media` JSON DEFAULT NULL,
 	PRIMARY KEY (`post_id`),
@@ -263,7 +262,7 @@ CREATE TABLE `external_posts` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE `connected_accounts` (
-	`id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+	`id` CHAR(36) NOT NULL,
 	`user_id` VARCHAR(64) NOT NULL,
 	`platform` VARCHAR(32) NOT NULL,
 	`handle` VARCHAR(190) NOT NULL,

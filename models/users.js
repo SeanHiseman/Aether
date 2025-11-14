@@ -1,21 +1,21 @@
-import { BOOLEAN, FLOAT, STRING, DataTypes, INTEGER } from 'sequelize';
+import { BOOLEAN, DATE, FLOAT, JSON, STRING, DataTypes, INTEGER, TEXT } from 'sequelize';
 import cron from 'node-cron';
 import sequelize from '../databaseSetup.js';
 
 const ConnectedAccounts = sequelize.define('ConnectedAccounts', {
-	id: { type: DataTypes.BIGINT.UNSIGNED, autoIncrement: true, primaryKey: true },
-	user_id: { type: DataTypes.STRING(64), allowNull: false },
-	platform: { type: DataTypes.STRING(32), allowNull: false }, //reddit, mastodon, bluesky, twitter, etc.
-	handle: { type: DataTypes.STRING(190), allowNull: false }, //e.g. u/name, @user@instance
-	access_token: { type: DataTypes.TEXT, allowNull: false },
-	refresh_token: { type: DataTypes.TEXT, allowNull: true },
-	token_type: { type: DataTypes.STRING(32), allowNull: true },
-	scope: { type: DataTypes.TEXT, allowNull: true },
-	expires_at: { type: DataTypes.DATE, allowNull: true },
-	instance_url: { type: DataTypes.STRING(255), allowNull: true }, //for Mastodon/Fediverse
-	extra: { type: DataTypes.JSON, allowNull: true },                //arbitrary per-platform data
-    created_at: { type: DataTypes.DATE(3), defaultValue: sequelize.literal('CURRENT_TIMESTAMP(3)') },
-    updated_at: { type: DataTypes.DATE(3), defaultValue: sequelize.literal('CURRENT_TIMESTAMP(3)') },
+	id: { type: DataTypes.UUID, primaryKey: true, defaultValue: DataTypes.UUIDV4 },
+	user_id: { type: STRING(64), allowNull: false },
+	platform: { type: STRING(32), allowNull: false }, //reddit, mastodon, bluesky, twitter, etc.
+	handle: { type: STRING(190), allowNull: false }, //e.g. u/name, @user@instance
+	access_token: { type: TEXT, allowNull: false },
+	refresh_token: { type: TEXT, allowNull: true },
+	token_type: { type: STRING(32), allowNull: true },
+	scope: { type: TEXT, allowNull: true },
+	expires_at: { type: DATE, allowNull: true },
+	instance_url: { type: STRING(255), allowNull: true }, //for Mastodon/Fediverse
+	extra: { type: JSON, allowNull: true },                //arbitrary per-platform data
+    created_at: { type: DATE(3), defaultValue: sequelize.literal('CURRENT_TIMESTAMP(3)') },
+    updated_at: { type: DATE(3), defaultValue: sequelize.literal('CURRENT_TIMESTAMP(3)') },
 }, {
 	tableName: 'connected_accounts',
 	underscored: true,
