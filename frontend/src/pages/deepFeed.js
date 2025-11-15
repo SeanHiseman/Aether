@@ -6,6 +6,7 @@ import { useNavigate, useOutletContext, useParams } from 'react-router-dom';
 import { AuthContext } from '../components/authContext';
 import ConfirmModal from '../components/modals/confirmModal';
 import ContentWidget from '../components/content/contentWidget';
+import ExternalPostWidget from '../socialConnect/externalPostWidget';
 import FeedItem from '../components/channels/feedItem';
 import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
 import { ValidateTextInput } from '../functions/validateTextInput';
@@ -263,7 +264,11 @@ const DeepFeed = () => {
                         {allPosts.map((post) => (
                             post ? (
                                 <div key={post?.post_id || Math.random()} className="bg-gray-800 rounded-xl">
-                                    <ContentWidget post={post} />
+                                    {post.isExternal ? (
+                                        <ExternalPostWidget post={post} />
+                                    ) : (
+                                        <ContentWidget post={post} />
+                                    )}
                                 </div>
                             ) : null
                         ))}

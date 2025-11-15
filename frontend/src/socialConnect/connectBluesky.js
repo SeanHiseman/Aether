@@ -38,40 +38,16 @@ const ConnectBluesky = () => {
 				<p className="large-text">Bluesky Login</p>
 				<p className="error-message">{errorMessage}</p>
 				<form method="post" onSubmit={submit}>
-					<input
-						className="authentication-input-box"
-						placeholder="Bluesky handle (e.g. alice.bsky.social)"
-						required
-						value={handle}
-						onChange={(e) => setHandle(e.target.value)}
-					/>
+					<p className="small-text faded-text">Your details are sent directly to Bluesky. We do not see or store them.</p>
+					<input className="authentication-input-box" placeholder="Bluesky handle (e.g. alice.bsky.social)" required value={handle} onChange={(e) => setHandle(e.target.value)} />
 					<div className="password-container">
-						<input
-							type={showPassword ? 'text' : 'password'}
-							className="authentication-input-box"
-							placeholder="App password"
-							required
-							value={appPassword}
-							onChange={(e) => setAppPassword(e.target.value)}
-						/>
-						<button
-							type="button"
-							className="small-icon"
-							onClick={() => setShowPassword(!showPassword)}
-						>
+						<input type={showPassword ? 'text' : 'password'} className="authentication-input-box" placeholder="Bluesky password" required value={appPassword} onChange={(e) => setAppPassword(e.target.value)} />
+						<button type="button" className="small-icon" onClick={() => setShowPassword(!showPassword)}>
 							{showPassword ? <FaEyeSlash /> : <FaEye />}
 						</button>
 					</div>
-					<input
-						type="submit"
-						value="Connect Bluesky"
-						className={`submit${isDisabled ? ' disabled' : ''}`}
-						disabled={isDisabled}
-					/>
+					<input type="submit" value="Connect Bluesky" className={`submit${isDisabled ? ' disabled' : ''}`} disabled={isDisabled} />
 				</form>
-				<p className="small-text" style={{ marginTop: '1rem' }}>
-					You must use a Bluesky App Password, not your main password.
-				</p>
 			</div>
 		</div>
 	);

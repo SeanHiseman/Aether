@@ -1,4 +1,5 @@
 import authenticateCheck from '../functions/checks/authenticateCheck.js';
+import { ContentAnalyser } from '../functions/contentAnalyser.js';
 import crypto from 'crypto';
 import { ConnectedAccounts } from '../models/users.js';
 import { ExternalPosts } from '../models/content.js';
@@ -6,6 +7,7 @@ import express from 'express';
 import fetch from 'node-fetch';
 import { v4 } from 'uuid';
 
+const contentAnalyser = new ContentAnalyser();
 const router = express.Router();
 
 const OAUTH_AUTHORIZE = 'https://www.reddit.com/api/v1/authorize';
@@ -103,13 +105,13 @@ function mapBlueskyToExternal(userId, item) {
 		fetched_at: new Date(),
 		media: images,
 		score: null,
+		replies: typeof post.replyCount === 'number' ? post.replyCount : 0,
 		source: 'bluesky',
 		source_post_id: post.uri,
 		subreddit: null,
 		text_body: text,
 		title: null,
 		url: `https://bsky.app/profile/${post.author?.handle}/post/${post.uri.split('/').pop()}`,
-		user_id: userId,
 		text_length: text.length,
 		word_count: text ? text.split(/\s+/).length : 0,
 		has_images: Array.isArray(images) && images.length > 0,
@@ -182,6 +184,16 @@ function generateRedditContentHTML(textBody, mediaArray) {
 
 function mapRedditToExternal(userId, child) {
 	const d = child.data;
+	let media = null;
+	if (d.is_gallery && d.gallery_data && d.media_metadata) {
+		media = d.gallery_data.items.map(item => {
+			const meta = d.media_metadata[item.media_id];
+			const src = meta?.s?.u || meta?.s?.gif || meta?.s?.mp4 || null;
+			return src ? { source: { url: src } } : null;
+		}).filter(Boolean);
+	} else if (d.preview?.images) {
+		media = d.preview.images;
+	}
 	return {
 		post_id: `reddit:${d.id}`,
 		author: d.author ? `u/${d.author}` : null,
@@ -189,20 +201,20 @@ function mapRedditToExternal(userId, child) {
 		created_at_remote: new Date(d.created_utc * 1000),
 		expired: false,
 		fetched_at: new Date(),
-		media: d.preview?.images || null,
+		media,
 		score: typeof d.score === 'number' ? d.score : null,
+		replies: typeof d.num_comments === 'number' ? d.num_comments : 0,
 		source: 'reddit',
 		source_post_id: d.id,
 		subreddit: d.subreddit || null,
 		text_body: d.selftext || null,
 		title: d.title || null,
 		url: d.url_overridden_by_dest || `https://www.reddit.com${d.permalink}`,
-		user_id: userId,
-        text_length: d.selftext?.length || 0,
-        word_count: d.selftext ? d.selftext.split(/\s+/).length : 0,
-        has_images: !!d.preview?.images,
-        has_videos: !!d.media?.reddit_video,
-        channel: d.subreddit || null,
+		text_length: d.selftext?.length || 0,
+		word_count: d.selftext ? d.selftext.split(/\s+/).length : 0,
+		has_images: !!media,
+		has_videos: !!d.media?.reddit_video,
+		channel: d.subreddit || null,
 	};
 }
 
@@ -300,13 +312,13 @@ router.get('/bluesky/feed', authenticateCheck, async (req, res) => {
 				upvotes: 0,
 				downvotes: 0,
 				views: 0,
-				replies: mapped.replies || 0,
+				replies: typeof mapped.replies === 'number' ? mapped.replies : 0,
 				is_saved: false,
 				has_upvoted: false,
 				has_downvoted: false,
 				poster: {
 					username: mapped.author || 'bluesky_user',
-					user_photo: item.post.author?.avatar || '/media/site_images/blank-profile.png',
+					user_photo: item.post.author?.avatar || '/media/site_images/default-bluesky-user-icon.png',
 					profile_url: mapped.author
 						? `https://bsky.app/profile/${mapped.author}`
 						: null
@@ -323,11 +335,32 @@ router.get('/bluesky/feed', authenticateCheck, async (req, res) => {
 				'text_body',
 				'media',
 				'score',
+				'replies',
 				'created_at_remote',
-				'fetched_at',
-			]
+				'fetched_at'
+			],
+			ignoreDuplicates: true
 		});
 		res.status(200).json({ success: true, items });
+		//Background embedding generation
+		(async () => {
+			for (const p of mappedPosts) {
+				const exists = await ExternalPosts.findOne({
+					where: { post_id: p.post_id },
+					attributes: ['embedding']
+				});
+				if (!exists || !exists.embedding) {
+					const source = `${p.title || ''} ${p.text_body || ''}`.trim();
+					if (source) {
+						const emb = await contentAnalyser.generateEmbedding(source);
+						await ExternalPosts.update(
+							{ embedding: JSON.stringify(emb) },
+							{ where: { post_id: p.post_id } }
+						);
+					}
+				}
+			}
+		})();
 	} catch (error) {
 		console.log('/bluesky/feed error:', error);
 		res.status(500).json({ success: false });
@@ -419,7 +452,9 @@ router.get('/reddit/feed', authenticateCheck, async (req, res) => {
 			const mapped = mapRedditToExternal(req.user.user_id, child);
 			const username = (mapped.author || '').replace('u/', '');
 			const avatar = await fetchRedditUserProfile(username, token);
-			avatarMap[username] = avatar || null;
+			avatarMap[username] = avatar
+				? avatar.replace(/&amp;/g, '&')
+				: null;
 		}));
 		const out = [];
 		for (const child of children) {
@@ -434,13 +469,13 @@ router.get('/reddit/feed', authenticateCheck, async (req, res) => {
 				upvotes: mapped.score ?? 0,
 				downvotes: 0,
 				views: 0,
-				replies: 0,
+				replies: mapped.replies ?? 0,
 				is_saved: false,
 				has_upvoted: false,
 				has_downvoted: false,
 				poster: {
 					username: mapped.author || 'reddit_user',
-					user_photo: avatarMap[username] || '/media/site_images/blank-profile.png',
+					user_photo: avatarMap[username] || '/media/site_images/default-reddit-user-icon.png',
 					profile_url: `https://www.reddit.com/user/${username}`
 				},
 				channel: mapped.subreddit || 'reddit',
@@ -448,26 +483,50 @@ router.get('/reddit/feed', authenticateCheck, async (req, res) => {
 				source: 'Reddit'
 			});
 		}
-		const mappedPosts = [];
-		for (const child of children) {
+		const mappedPosts = children.map(child => {
 			const mapped = mapRedditToExternal(req.user.user_id, child);
 			const username = (mapped.author || '').replace('u/', '');
 			mapped.author_photo = avatarMap[username] || null;
-			mappedPosts.push(mapped);
-		}
+			return mapped;
+		});
 		await ExternalPosts.bulkCreate(mappedPosts, {
 			updateOnDuplicate: [
 				'title',
 				'text_body',
 				'media',
 				'score',
+				'replies',
 				'created_at_remote',
 				'fetched_at',
 				'author_photo'
-			]
+			],
+			ignoreDuplicates: true
 		});
-		console.log("Returning reddit feed items:", out.length);
-		res.status(200).json({ success: true, after: json.data.after || null, before: json.data.before || null, items: out });
+		res.status(200).json({
+			success: true,
+			after: json.data.after || null,
+			before: json.data.before || null,
+			items: out
+		});
+		//Background embedding generation
+		(async () => {
+			for (const p of mappedPosts) {
+				const exists = await ExternalPosts.findOne({
+					where: { post_id: p.post_id },
+					attributes: ['embedding']
+				});
+				if (!exists || !exists.embedding) {
+					const source = `${p.title || ''} ${p.text_body || ''}`.trim();
+					if (source) {
+						const emb = await contentAnalyser.generateEmbedding(source);
+						await ExternalPosts.update(
+							{ embedding: JSON.stringify(emb) },
+							{ where: { post_id: p.post_id } }
+						);
+					}
+				}
+			}
+		})();
 	} catch (error) {
 		console.log("/reddit/feed error:", error);
 		res.status(500).json({ success: false, error: 'Feed error' });

@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from 'react'
 import AppBlock from './appBlock'
 import AppWebContainer from './appWebContainer'
 
-const ContentDisplay = ({ post, isFullscreen = false, onCodeAppChange = () => {}, onHeightChange = () => {}, onOverflowChange = () => {}, showFullContent = false, showScrollBar = true }) => {
+const ContentDisplay = ({ post, isFullscreen = false, onCodeAppChange = () => {}, onHeightChange = () => {}, onOverflowChange = () => {}, redirect = true, showFullContent = false, showScrollBar = true }) => {
 	const [blocks, setBlocks] = useState([]);
 	const content = post?.content;
 	const contentRef = useRef(null);
@@ -136,7 +136,7 @@ const ContentDisplay = ({ post, isFullscreen = false, onCodeAppChange = () => {}
 			{blocks.map((block, i) => {
 				if (block.type === 'text') {
 					return (
-						<div dangerouslySetInnerHTML={{ __html: block.html }} key={i} onClick={handleRedirect} style={{ cursor: 'pointer', paddingTop: 5, paddingLeft: 5, paddingRight: 5 }} />
+						<div dangerouslySetInnerHTML={{ __html: block.html }} key={i} onClick={redirect ? handleRedirect : null} style={{ cursor: 'pointer', paddingTop: 5, paddingLeft: 5, paddingRight: 5 }} />
 					);
 				}
 				if (block.type === 'code') {

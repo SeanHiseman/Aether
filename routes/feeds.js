@@ -456,7 +456,21 @@ router.post('/deep_feed_posts', standardLimiter, authenticateCheck, async (req, 
             recentUpvotes,
             viewerId,
         });
-        return res.status(200).json({ deepFeed, posts: deepFeedPosts, success: true });
+        const externalReddit = await fetch(`http://localhost:${process.env.PORT || 7000}/api/reddit/feed`, { headers: { cookie: req.headers.cookie } });
+        const redditJson = await externalReddit.json();
+        const externalBluesky = await fetch(`http://localhost:${process.env.PORT || 7000}/api/bluesky/feed`, { headers: { cookie: req.headers.cookie } });
+        const blueskyJson = await externalBluesky.json();
+        const mappedReddit = (redditJson.items || []).map(p => ({ ...p, isExternal: true }));
+        const mappedBluesky = (blueskyJson.items || []).map(p => ({ ...p, isExternal: true }));
+        const localPosts = deepFeedPosts.map(p => ({ ...p, isExternal: false }));
+        const combined = [];
+        const maxLen = Math.max(localPosts.length, mappedReddit.length, mappedBluesky.length);
+        for (let i = 0; i < maxLen; i++) {
+            if (localPosts[i]) combined.push(localPosts[i]);
+            if (mappedReddit[i]) combined.push(mappedReddit[i]);
+            if (mappedBluesky[i]) combined.push(mappedBluesky[i]);
+        }
+        return res.status(200).json({ deepFeed, posts: combined, success: true });
     } catch (error) {
         console.log("error getting deep feed posts:", error);
         res.status(500).json({ success: false, error: error.message });

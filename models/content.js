@@ -14,7 +14,6 @@ const ExternalPosts = sequelize.define('ExternalPosts', {
 	post_id: { type: STRING(36), primaryKey: true },
 	source: { type: STRING(32), allowNull: false },
 	source_post_id: { type: STRING(128), allowNull: false },
-	user_id: { type: STRING(64), allowNull: false },
 	parent_id: { type: STRING(128), allowNull: true },
 	title: { type: TEXT, allowNull: true },
 	text_body: { type: TEXT, allowNull: true },
@@ -25,6 +24,7 @@ const ExternalPosts = sequelize.define('ExternalPosts', {
 	has_images: { type: BOOLEAN, defaultValue: false },
 	has_videos: { type: BOOLEAN, defaultValue: false },
 	score: { type: INTEGER, allowNull: true },
+    replies: { type: INTEGER, allowNull: true },
 	hotness: { type: FLOAT, allowNull: true },
 	embedding: { type: DataTypes.JSON, allowNull: true },
 	is_private: { type: BOOLEAN, defaultValue: false },
@@ -41,7 +41,6 @@ const ExternalPosts = sequelize.define('ExternalPosts', {
 	underscored: true,
     timestamps: false, 
 	indexes: [
-		{ fields: ['user_id'] },
 		{ fields: ['parent_id'] },
 		{ fields: ['is_private'] },
 		{ fields: ['created_at_remote'] },

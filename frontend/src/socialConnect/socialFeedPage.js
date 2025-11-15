@@ -1,5 +1,5 @@
 import api from "../api";
-import ConnectedPostWidget from "./connectedPostWidget";
+import ExternalPostWidget from "./externalPostWidget";
 import { useEffect, useState, useRef } from 'react';
 
 export default function SocialFeedPage({ platform }) {
@@ -34,7 +34,7 @@ export default function SocialFeedPage({ platform }) {
 					<div className="flex flex-col w-99">
 						{posts.map((post) => (
 							<div key={post.post_id || Math.random()} className="bg-gray-800 rounded-xl">
-								<ConnectedPostWidget post={post} />
+								<ExternalPostWidget post={post} />
 							</div>
 						))}
 					</div>
