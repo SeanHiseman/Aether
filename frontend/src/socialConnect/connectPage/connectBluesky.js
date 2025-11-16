@@ -1,9 +1,9 @@
-import api from "../api";
+import api from "../../api";
 import { FaEye, FaEyeSlash } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
 import { useState } from 'react';
-import "../css/authentication.css";
-import "../css/baseLayout.css";
+import "../../css/authentication.css";
+import "../../css/baseLayout.css";
 
 const ConnectBluesky = () => {
 	const [handle, setHandle] = useState('');
@@ -26,8 +26,8 @@ const ConnectBluesky = () => {
 			}
 			setErrorMessage('Could not connect to Bluesky');
 		} catch (error) {
-			const msg = error.response?.data?.error;
-			setErrorMessage(msg || 'Error connecting to Bluesky');
+			const message = error.response?.data?.error;
+			setErrorMessage(message || 'Error connecting to Bluesky');
 		}
 	};
 

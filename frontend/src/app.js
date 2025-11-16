@@ -5,7 +5,8 @@ import Account from './pages/feeds/settings/account';
 import AskChannel from './pages/ask/askChannel';
 import BaseLayout from './pages/base';
 import ChatPage from './pages/messages/chatPage';
-import ConnectBluesky from './socialConnect/connectBluesky';
+import ConnectBluesky from './socialConnect/connectPage/connectBluesky';
+import ConnectMastodon from './socialConnect/connectPage/connectMastodon';
 import ContentWidget from './components/content/contentWidget';
 import DeepFeed from './pages/deepFeed';
 import EmailVerification from './pages/site_entrance/verification';
@@ -67,6 +68,7 @@ const App = () => {
 							</Route>
 							<Route path="/connect/bluesky" element={<ConnectBluesky />} />
 							<Route path="/forgot-password" element={<ForgotPassword />}/>
+							<Route path="/connect/mastodon" element={<ConnectMastodon />} />
 							<Route path="/join" element={<Join />} />
 							<Route path="/login" element={<Login />} />
 							<Route path="/reset-password" element={<ResetPassword />}/>
@@ -74,6 +76,7 @@ const App = () => {
 							<Route element={BaseLayoutWithProviders}>
 								<Route path="/feed/reddit" element={<SocialFeedPage platform="reddit" />} />
 								<Route path="/feed/bluesky" element={<SocialFeedPage platform="bluesky" />} />
+								<Route path="/feed/mastodon" element={<SocialFeedPage platform="mastodon" />} />
 								{/*<Route path="ask" element={<AskChannel />} >
 									<Route path=":chatId" element={<AskChannel />} />
 								</Route>*/}

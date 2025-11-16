@@ -74,6 +74,10 @@ async function ensureBlueskyToken(account) {
 	}
 }
 
+async function ensureMastodonToken(account) {
+     return account.access_token;
+} 
+
 async function fetchRedditUserProfile(username, token) {
 	const resp = await fetch(`https://oauth.reddit.com/user/${username}/about`, {
 		headers: {
@@ -119,6 +123,35 @@ function mapBlueskyToExternal(userId, item) {
 		channel: post.author?.handle || null
 	};
 }
+
+function mapMastodonToExternal(userId, toot, instance) {
+     const text = toot.content || '';
+     const media = Array.isArray(toot.media_attachments)
+          ? toot.media_attachments.map(m => ({ url: m.url }))
+          : null;
+     return {
+          post_id: `mastodon:${toot.id}`,
+          author: toot.account?.acct || null,
+          author_photo: toot.account?.avatar || null,
+          created_at_remote: new Date(toot.created_at),
+          expired: false,
+          fetched_at: new Date(),
+          media,
+          score: null,
+          replies: toot.replies_count ?? 0,
+          source: 'mastodon',
+          source_post_id: toot.id,
+          subreddit: null,
+          text_body: toot.content || '',
+          title: null,
+          url: toot.url || null,
+          text_length: text.length,
+          word_count: text ? text.replace(/<[^>]*>/g, '').split(/\s+/).length : 0,
+          has_images: Array.isArray(media) && media.length > 0,
+          has_videos: false,
+          channel: instance
+     };
+} 
 
 function generateBlueskyContentHTML(textBody, media) {
 	let html = '';
@@ -180,6 +213,29 @@ function generateRedditContentHTML(textBody, mediaArray) {
 	} catch (error) {
 		console.error('generateRedditContentHTML error:', error);
 	}
+}
+
+function generateMastodonContentHTML(htmlBody, media) {
+     let out = '';
+
+     if (htmlBody) {
+          out += `
+               <div class="content-block text-block" data-blockid="${crypto.randomUUID()}">
+                    ${htmlBody}
+               </div>
+          `;
+     }
+     if (Array.isArray(media)) {
+          for (const m of media) {
+               if (!m.url) continue;
+               out += `
+                    <div class="content-block media-block" data-blockid="${crypto.randomUUID()}" data-align="center">
+                         <img src="${m.url}" alt="Mastodon media" />
+                    </div>
+               `;
+          }
+     }
+     return out.trim();
 }
 
 function mapRedditToExternal(userId, child) {
@@ -272,6 +328,52 @@ router.get('/auth/reddit', authenticateCheck, async (req, res) => {
       	console.error('/auth/reddit error:', error);
 		res.status(500).send('Reddit auth setup failed');  
     }
+});
+
+router.post('/auth/mastodon', authenticateCheck, async (req, res) => {
+	try {
+		const { instance } = req.body;
+		if (!instance) return res.status(400).json({ success: false, error: 'Missing instance' });
+		const base = `https://${instance}`;
+		const registerResponse = await fetch(`${base}/api/v1/apps`, {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({
+				client_name: "Aether Social",
+				redirect_uris: process.env.MASTODON_REDIRECT_URI,
+				scopes: "read follow",
+				website: "https://aethersocial.com"
+			})
+		});
+		const app = await registerResponse.json();
+		if (!registerResponse.ok || !app.client_id) {
+			return res.status(500).json({ success: false, error: 'App registration failed' });
+		}
+		await ConnectedAccounts.upsert({
+			id: v4(),
+			user_id: req.user.user_id,
+			platform: 'mastodon_app',
+			access_token: null,
+			refresh_token: null,
+			expires_at: null,
+			extra: {
+				instance,
+				client_id: app.client_id,
+				client_secret: app.client_secret
+			}
+		});
+		const params = new URLSearchParams({
+			response_type: 'code',
+			client_id: app.client_id,
+			redirect_uri: process.env.MASTODON_REDIRECT_URI,
+			scope: 'read follow',
+			state: JSON.stringify({ instance, user_id: req.user.user_id })
+		});
+		res.status(200).json({ success: true, url: `${base}/oauth/authorize?${params.toString()}` });
+	} catch (error) {
+		console.log('/auth/mastodon error:', error);
+		res.status(500).json({ success: false });
+	}
 });
 
 router.get('/bluesky/feed', authenticateCheck, async (req, res) => {
@@ -425,6 +527,68 @@ router.get('/reddit/callback', authenticateCheck, async (req, res) => {
 	}
 });
 
+router.get('/mastodon/callback', authenticateCheck, async (req, res) => {
+	try {
+		const { code, state } = req.query;
+		const payload = JSON.parse(state || '{}');
+		const { instance, user_id } = payload;
+		if (!instance || !code) {
+			return res.status(400).send('Invalid Mastodon callback');
+		}
+		const app = await ConnectedAccounts.findOne({
+			where: { user_id, platform: 'mastodon_app' }
+		});
+		if (!app) return res.status(400).send('Missing client credentials');
+		const { client_id, client_secret } = typeof app.extra === 'string'
+			? JSON.parse(app.extra)
+			: app.extra;
+		const base = `https://${instance}`;
+		const tokenResponse = await fetch(`${base}/oauth/token`, {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+			body: new URLSearchParams({
+				grant_type: 'authorization_code',
+				client_id,
+				client_secret,
+				redirect_uri: process.env.MASTODON_REDIRECT_URI,
+				code
+			})
+		});
+		const tokenJson = await tokenResponse.json();
+		if (!tokenResponse.ok || !tokenJson.access_token) {
+			return res.status(502).send('Token exchange failed');
+		}
+		const meResp = await fetch(`${base}/api/v1/accounts/verify_credentials`, {
+			headers: { Authorization: `Bearer ${tokenJson.access_token}` }
+		});
+		const me = await meResp.json();
+		await ConnectedAccounts.upsert({
+			id: v4(),
+			user_id,
+			platform: 'mastodon',
+			handle: me.acct,
+			access_token: tokenJson.access_token,
+			refresh_token: null,
+			token_type: 'Bearer',
+			scope: 'read follow',
+			expires_at: new Date(Date.now() + 365 * 24 * 3600 * 1000),
+			extra: {
+				instance,
+				client_id,
+				client_secret,
+				mastodon_id: me.id
+			}
+		});
+		await ConnectedAccounts.destroy({
+			where: { user_id, platform: 'mastodon_app' }
+		});
+		res.redirect(`${process.env.FRONTEND_URL}/feed/mastodon`);
+	} catch (err) {
+		console.log('/mastodon/callback error:', err);
+		res.status(500).send('Mastodon auth error');
+	}
+});
+
 router.get('/reddit/feed', authenticateCheck, async (req, res) => {
 	try {
 		const { limit = '100', after } = req.query;
@@ -530,6 +694,88 @@ router.get('/reddit/feed', authenticateCheck, async (req, res) => {
 	} catch (error) {
 		console.log("/reddit/feed error:", error);
 		res.status(500).json({ success: false, error: 'Feed error' });
+	}
+});
+
+router.get('/mastodon/feed', authenticateCheck, async (req, res) => {
+	try {
+		const account = await ConnectedAccounts.findOne({
+			where: { user_id: req.user.user_id, platform: 'mastodon' }
+		});
+		console.log('Mastodon account:', account);
+		if (!account) {
+			return res.status(404).json({ success: false, error: 'Not connected' });
+		}
+		const token = await ensureMastodonToken(account);
+		const extra = typeof account.extra === 'string' ? JSON.parse(account.extra) : account.extra;
+		const instance = extra?.instance;
+		const limit = Math.min(Number(req.query.limit) || 40, 80);
+		const response = await fetch(`https://${instance}/api/v1/timelines/home?limit=${limit}`, {
+			headers: { Authorization: `Bearer ${token}` }
+		})
+		console.log('Mastodon feed response:', response);
+		if (!response.ok) return res.status(502).json({ success: false, error: 'Upstream error' });
+		const feed = await response.json();
+		const mappedPosts = feed.map(toot => mapMastodonToExternal(req.user.user_id, toot, instance));
+		const items = mappedPosts.map(p => {
+			const html = generateMastodonContentHTML(p.text_body, p.media);
+			return {
+				post_id: p.post_id,
+				title: null,
+				content: `data:text/html;charset=utf-8,${encodeURIComponent(html)}`,
+				created_at: p.created_at_remote,
+				upvotes: 0,
+				downvotes: 0,
+				views: 0,
+				replies: p.replies,
+				is_saved: false,
+				has_upvoted: false,
+				has_downvoted: false,
+				poster: {
+						username: p.author,
+						user_photo: p.author_photo,
+						profile_url: p.url
+				},
+				channel: p.channel,
+				url: p.url,
+				source: 'Mastodon'
+			};
+		});
+		console.log('Mapped Mastodon posts:', mappedPosts);
+		await ExternalPosts.bulkCreate(mappedPosts, {
+			updateOnDuplicate: [
+				'text_body',
+				'media',
+				'replies',
+				'created_at_remote',
+				'fetched_at',
+				'author_photo'
+			],
+			ignoreDuplicates: true
+		});
+		res.status(200).json({ success: true, items });
+		(async () => {
+			for (const p of mappedPosts) {
+				const exists = await ExternalPosts.findOne({
+						where: { post_id: p.post_id },
+						attributes: ['embedding']
+				});
+
+				if (!exists || !exists.embedding) {
+						const src = p.text_body || '';
+						if (src.trim()) {
+							const emb = await contentAnalyser.generateEmbedding(src);
+							await ExternalPosts.update(
+								{ embedding: JSON.stringify(emb) },
+								{ where: { post_id: p.post_id } }
+							);
+						}
+				}
+			}
+		})();
+	} catch (error) {
+		console.log('/mastodon/feed error:', error);
+		res.status(500).json({ success: false });
 	}
 });
 

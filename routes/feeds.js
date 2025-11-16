@@ -456,12 +456,20 @@ router.post('/deep_feed_posts', standardLimiter, authenticateCheck, async (req, 
             recentUpvotes,
             viewerId,
         });
-        const externalReddit = await fetch(`http://localhost:${process.env.PORT || 7000}/api/reddit/feed`, { headers: { cookie: req.headers.cookie } });
-        const redditJson = await externalReddit.json();
-        const externalBluesky = await fetch(`http://localhost:${process.env.PORT || 7000}/api/bluesky/feed`, { headers: { cookie: req.headers.cookie } });
-        const blueskyJson = await externalBluesky.json();
-        const mappedReddit = (redditJson.items || []).map(p => ({ ...p, isExternal: true }));
-        const mappedBluesky = (blueskyJson.items || []).map(p => ({ ...p, isExternal: true }));
+        let mappedReddit = [];
+        let mappedBluesky = [];
+        let mappedMastodon = [];
+        if (deepFeedId === 'following') {
+                const externalReddit = await fetch(`http://localhost:${process.env.PORT || 7000}/api/reddit/feed`, { headers: { cookie: req.headers.cookie } });
+                const redditJson = await externalReddit.json();
+                const externalBluesky = await fetch(`http://localhost:${process.env.PORT || 7000}/api/bluesky/feed`, { headers: { cookie: req.headers.cookie } });
+                const blueskyJson = await externalBluesky.json();
+                const externalMastodon = await fetch(`http://localhost:${process.env.PORT || 7000}/api/mastodon/feed`, { headers: { cookie: req.headers.cookie } });
+                const mastodonJson = await externalMastodon.json();
+                mappedReddit = (redditJson.items || []).map(p => ({ ...p, isExternal: true }));
+                mappedBluesky = (blueskyJson.items || []).map(p => ({ ...p, isExternal: true }));
+                mappedMastodon = (mastodonJson.items || []).map(p => ({ ...p, isExternal: true }));
+        }
         const localPosts = deepFeedPosts.map(p => ({ ...p, isExternal: false }));
         const combined = [];
         const maxLen = Math.max(localPosts.length, mappedReddit.length, mappedBluesky.length);
@@ -469,6 +477,7 @@ router.post('/deep_feed_posts', standardLimiter, authenticateCheck, async (req, 
             if (localPosts[i]) combined.push(localPosts[i]);
             if (mappedReddit[i]) combined.push(mappedReddit[i]);
             if (mappedBluesky[i]) combined.push(mappedBluesky[i]);
+            if (mappedMastodon[i]) combined.push(mappedMastodon[i]);
         }
         return res.status(200).json({ deepFeed, posts: combined, success: true });
     } catch (error) {

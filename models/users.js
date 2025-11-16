@@ -6,8 +6,8 @@ const ConnectedAccounts = sequelize.define('ConnectedAccounts', {
 	id: { type: DataTypes.UUID, primaryKey: true, defaultValue: DataTypes.UUIDV4 },
 	user_id: { type: STRING(64), allowNull: false },
 	platform: { type: STRING(32), allowNull: false }, //reddit, mastodon, bluesky, twitter, etc.
-	handle: { type: STRING(190), allowNull: false }, //e.g. u/name, @user@instance
-	access_token: { type: TEXT, allowNull: false },
+	handle: { type: STRING(190), allowNull: true }, //e.g. u/name, @user@instance
+	access_token: { type: TEXT, allowNull: true },
 	refresh_token: { type: TEXT, allowNull: true },
 	token_type: { type: STRING(32), allowNull: true },
 	scope: { type: TEXT, allowNull: true },

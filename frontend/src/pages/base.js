@@ -488,6 +488,9 @@ const BaseLayout = () => {
                                     <Link to="/feed/bluesky"className={`channel-link ${location.pathname.startsWith('/feed/bluesky') ? 'selected' : ''}`}>
                                         Bluesky posts
                                     </Link>
+                                    <Link to="/feed/mastodon"className={`channel-link ${location.pathname.startsWith('/feed/mastodon') ? 'selected' : ''}`}>
+                                        Mastodon posts
+                                    </Link>
                                 </ul>
                             </nav>
                             <div className="deep-feeds-container">
@@ -508,6 +511,7 @@ const BaseLayout = () => {
                             )}
                             <ConnectSocialButton socialIcon={"/media/site_images/social_sites/reddit-logo.png"} socialName={"Reddit"} socialRoute={"auth/reddit"} />
                             <ConnectSocialButton socialIcon={"/media/site_images/social_sites/bluesky-logo.png"} socialName={"Bluesky"} socialRoute={"/connect/bluesky"} />
+                            <ConnectSocialButton socialIcon={"/media/site_images/social_sites/mastodon-logo.png"} socialName={"Mastodon"} socialRoute={"/connect/mastodon"} />
                             <p className="tiny-text faded-text">{asideErrorMessage}</p>
                             <div id="create-feed-section">
                                 <button className="small-icon" onClick={toggleForm} style={{alignSelf: "flex-start", marginLeft: "calc(5% + 10px)"}}>
