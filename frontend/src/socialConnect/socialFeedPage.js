@@ -1,14 +1,18 @@
 import api from "../api";
+import AlgorithmSelector from "../algorithms/algorithmSelector";
+import { AuthContext } from "../components/authContext";
 import ExternalPostWidget from "./externalPostWidget";
-import { useEffect, useState, useRef } from 'react';
+import { useContext, useEffect, useState, useRef } from 'react';
 
 export default function SocialFeedPage({ platform }) {
-	const [posts, setPosts] = useState([]);
+	const { isAuthenticated } = useContext(AuthContext);
 	const [loading, setLoading] = useState(true);
+	const [posts, setPosts] = useState([]);
 	const scrollRef = useRef(null);
 
 	useEffect(() => {
 		async function load() {
+			if (!isAuthenticated) return;
 			try {
 				console.log("Loading feed for platform:", platform);
 				const response = await api.get(`/${platform}/feed`, { withCredentials: true });
@@ -42,6 +46,7 @@ export default function SocialFeedPage({ platform }) {
 			</div>
 			<aside className="right-aside">
 				<p className="large-text bold">{platform || "Site not found"}</p>
+				<AlgorithmSelector display={false} isAuthenticated={isAuthenticated} locationId={platform} />
 			</aside>
 		</div>
 	);

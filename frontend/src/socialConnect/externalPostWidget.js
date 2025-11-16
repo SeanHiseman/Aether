@@ -13,9 +13,9 @@ const ExternalPostWidget = ({ post }) => {
 	const { isAuthenticated = false } = authContext || {};
 	const { post_id } = useParams();
 	const [isLoaded, setIsLoaded] = useState(false);
-	const isLike = post?.source === 'Reddit';
+	const isLike = post?.source === 'Bluesky' || post?.source === 'Mastodon';
+	const isVote = post?.source === 'Reddit';
 	const [isOverflowing, setIsOverflowing] = useState(false);
-	const isVote = post?.source === 'Bluesky';
 	const [showExpandButton, setShowExpandButton] = useState(false);
 	const [showFullContent, setShowFullContent] = useState(false);
 	const timeAgo = useTimeAgo(post?.created_at);

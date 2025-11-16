@@ -1,10 +1,11 @@
 import AlgorithmSelector from "../../algorithms/algorithmSelector";
 import api from '../../api';
 import { AuthContext } from "../../components/authContext";
-import { useMemo, useCallback, useContext, useEffect, useRef, useState } from "react";
 import { ChunkFeeds } from "../../functions/chunkFeeds";
+import ConnectSocialButton from "../../socialConnect/connectSocialButton";
 import ContentWidget from "../../components/content/contentWidget";
 import FeedWidget from "../../components/content/feedWidget";
+import { useMemo, useCallback, useContext, useEffect, useRef, useState } from "react";
 import { useOutletContext } from "react-router-dom";
 const FETCH_LIMIT = 100;
 
@@ -222,6 +223,14 @@ const ExplorePage = () => {
 					</ul>
 				</nav>
 				<AlgorithmSelector display={false} isAuthenticated={isAuthenticated} locationId={"explore"} refreshPosts={refreshPosts} />
+				{isAuthenticated && (
+					<div>
+						<p className="small-text">Connect your accounts from:</p>
+						<ConnectSocialButton socialIcon={"/media/site_images/social_sites/reddit-logo.png"} socialName={"Reddit"} socialRoute={"auth/reddit"} />
+						<ConnectSocialButton socialIcon={"/media/site_images/social_sites/bluesky-logo.png"} socialName={"Bluesky"} socialRoute={"/connect/bluesky"} />
+						<ConnectSocialButton socialIcon={"/media/site_images/social_sites/mastodon-logo.png"} socialName={"Mastodon"} socialRoute={"/connect/mastodon"} />
+					</div>
+				)}
 			</aside>
 		</div>
 	);

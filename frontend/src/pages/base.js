@@ -1,6 +1,5 @@
 import api from "../api";
 import { AuthContext } from "../components/authContext";
-import ConnectSocialButton from "../socialConnect/connectSocialButton";
 import Cropper from "react-easy-crop";
 import { Crown } from 'lucide-react';
 import DeepFeedItem from "../components/channels/deepFeedItem";
@@ -12,6 +11,7 @@ import InputModal from "../components/modals/inputModal";
 import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { MagnifyingGlassIcon } from "@radix-ui/react-icons";
 import MessageDropdown from "../components/messages/messageDropdown";
+import SocialFeedLink from "../socialConnect/socialFeedLink";
 import { ThemeContext } from "../themeProvider";
 import { Tooltip } from "react-tooltip";
 import { UnreadContext } from "../components/messages/unreadContext";
@@ -482,15 +482,6 @@ const BaseLayout = () => {
                                     <Link to="/saved/Main" className={`channel-link ${location.pathname.startsWith('/saved') ? 'selected' : ''}`}>
                                         Saved posts
                                     </Link>
-                                    <Link to="/feed/reddit"className={`channel-link ${location.pathname.startsWith('/feed/reddit') ? 'selected' : ''}`}>
-                                        Reddit posts
-                                    </Link>
-                                    <Link to="/feed/bluesky"className={`channel-link ${location.pathname.startsWith('/feed/bluesky') ? 'selected' : ''}`}>
-                                        Bluesky posts
-                                    </Link>
-                                    <Link to="/feed/mastodon"className={`channel-link ${location.pathname.startsWith('/feed/mastodon') ? 'selected' : ''}`}>
-                                        Mastodon posts
-                                    </Link>
                                 </ul>
                             </nav>
                             <div className="deep-feeds-container">
@@ -509,9 +500,6 @@ const BaseLayout = () => {
                                     <p className="icon-text">Get membership for more</p>
                                 </Link>
                             )}
-                            <ConnectSocialButton socialIcon={"/media/site_images/social_sites/reddit-logo.png"} socialName={"Reddit"} socialRoute={"auth/reddit"} />
-                            <ConnectSocialButton socialIcon={"/media/site_images/social_sites/bluesky-logo.png"} socialName={"Bluesky"} socialRoute={"/connect/bluesky"} />
-                            <ConnectSocialButton socialIcon={"/media/site_images/social_sites/mastodon-logo.png"} socialName={"Mastodon"} socialRoute={"/connect/mastodon"} />
                             <p className="tiny-text faded-text">{asideErrorMessage}</p>
                             <div id="create-feed-section">
                                 <button className="small-icon" onClick={toggleForm} style={{alignSelf: "flex-start", marginLeft: "calc(5% + 10px)"}}>
@@ -615,13 +603,11 @@ const BaseLayout = () => {
                                     Drag and drop to combine feeds
                                 </p>
                                 <ul className="feeds-list">
+                                    <SocialFeedLink logo="/media/site_images/social_sites/reddit-logo.png" name="Reddit" slug="reddit" />
+                                    <SocialFeedLink logo="/media/site_images/social_sites/bluesky-logo.png" name="Bluesky" slug="bluesky" />
+                                    <SocialFeedLink logo="/media/site_images/social_sites/mastodon-logo.png" name="Mastodon" slug="mastodon" />
                                     {feeds?.map(feed => (
-                                        <FeedItem 
-                                            key={feed?.feed_id} 
-                                            dragged={true}
-                                            feed={feed} 
-                                            isChat={false} 
-                                        />
+                                        <FeedItem key={feed?.feed_id} dragged={true} feed={feed} isChat={false} />
                                     ))}
                                 </ul>
                             </nav>
