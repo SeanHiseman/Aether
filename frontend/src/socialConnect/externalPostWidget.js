@@ -1,10 +1,10 @@
 import { AuthContext } from '../components/authContext';
 import ContentDisplay from '../components/content/contentDisplay';
-import { FaArrowDown, FaArrowUp, FaComments, FaHeart, FaRegBookmark } from 'react-icons/fa';
+import { FaArrowDown, FaArrowUp, FaChevronDown, FaChevronUp, FaComments, FaHeart, FaRegBookmark } from 'react-icons/fa';
 import { FormatNumber } from '../functions/formatNumber';
 import { useParams } from 'react-router-dom';
 import PropTypes from 'prop-types';
-import { useContext, useEffect, useState } from 'react';
+import { useContext, useEffect, useRef, useState } from 'react';
 import useTimeAgo from '../functions/useTimeAgo';
 
 const ExternalPostWidget = ({ post }) => {
@@ -14,8 +14,17 @@ const ExternalPostWidget = ({ post }) => {
 	const { post_id } = useParams();
 	const [isLoaded, setIsLoaded] = useState(false);
 	const isLike = post?.source === 'Reddit';
+	const [isOverflowing, setIsOverflowing] = useState(false);
 	const isVote = post?.source === 'Bluesky';
+	const [showExpandButton, setShowExpandButton] = useState(false);
+	const [showFullContent, setShowFullContent] = useState(false);
 	const timeAgo = useTimeAgo(post?.created_at);
+	const contentContainerRef = useRef(null);
+
+	const handleOverflowChange = (overflowing) => {
+		setIsOverflowing(overflowing);
+		setShowExpandButton(overflowing);
+	};
 
 	function normaliseRedditAvatar(url) {
 		if (!url) return '';
@@ -50,8 +59,28 @@ const ExternalPostWidget = ({ post }) => {
 			</a>}
 			<div style={{ position: 'relative', width: '100%', display: 'flex', flexDirection: 'column', height: 'auto', overflow: 'visible' }}>
 				<div style={{ position: 'relative', flex: 'initial', display: 'flex', flexDirection: 'column', overflow: 'visible' }}>
-					<div className="display-div">
-						<ContentDisplay post={post} redirect={false} />
+					<div ref={contentContainerRef} className="display-div">
+						<ContentDisplay post={post} redirect={false} onOverflowChange={handleOverflowChange} showFullContent={showFullContent} showScrollBar={!showExpandButton || showFullContent} />
+					</div>
+					<div className="content-footer" style={{ justifyContent: showExpandButton ? 'space-between' : 'flex-end' }}>
+						{showExpandButton && (
+							<button
+								className="small-icon"
+								onClick={(e) => {
+									e.stopPropagation();
+									setShowFullContent(!showFullContent);
+									if (!showFullContent && contentContainerRef.current) {
+										contentContainerRef.current.scrollIntoView({
+											behavior: 'smooth',
+											block: 'start'
+										});
+									}
+								}}
+								title={showFullContent ? 'Show less' : 'Show more'}
+							>
+								{showFullContent ? <FaChevronUp /> : <FaChevronDown />}
+							</button>
+						)}
 					</div>
 				</div>
 			</div>
