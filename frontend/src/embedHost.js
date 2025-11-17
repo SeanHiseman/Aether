@@ -54,5 +54,10 @@ export const SAFE_UTILITY_HOSTS = [
 	'pbs.twimg.com',           // Twitter image CDN
 	'video.twimg.com',         // Twitter video CDN
 	'cdn.embedly.com',         // common intermediary for embeds
-	'graph.facebook.com'       // metadata calls from FB embeds
+	'graph.facebook.com',       // metadata calls from FB embeds
+	//Required for Twitter/X embeds
+	't.co',
+	'abs.twimg.com',
+	'ton.twimg.com',
+	'syndication.twitter.com'
 ];
