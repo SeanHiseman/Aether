@@ -426,7 +426,7 @@ CREATE TABLE `connected_accounts` (
   	`updated_at` datetime(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
 	PRIMARY KEY (`id`),
 	KEY `idx_user_id` (`user_id`),
-	UNIQUE KEY `uniq_user_platform_handle` (`user_id`, `platform`, `handle`)
+	UNIQUE KEY `uniq_user_platform_handle` (`user_id`, `platform`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 INSERT INTO `users` (

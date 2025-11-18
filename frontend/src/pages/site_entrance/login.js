@@ -20,21 +20,22 @@ const Login = () => {
         event.preventDefault();
         try {
             const response = await api.post('/login', { password, usernameOrEmail }); //Username can also be email
-            if (response.data?.success) {
-                localStorage.setItem("followedFeeds", JSON.stringify(response.data?.followedFeeds));
-                localStorage.setItem("deepFeeds", JSON.stringify(response.data?.deepFeeds || []));
-                localStorage.setItem("user", JSON.stringify(response.data?.user));
-                localStorage.setItem("recentUpvotes", JSON.stringify(response.data?.recentUpvotes));
+            if (response.data?.success) {                
                 localStorage.setItem("algorithms", JSON.stringify(response.data?.algorithms || []));
+                localStorage.setItem("connectedAccounts", JSON.stringify(response.data?.connectedAccounts || []));
+                localStorage.setItem("deepFeeds", JSON.stringify(response.data?.deepFeeds || []));
+                localStorage.setItem("followedFeeds", JSON.stringify(response.data?.followedFeeds));
+                localStorage.setItem("recentUpvotes", JSON.stringify(response.data?.recentUpvotes));
+                localStorage.setItem("user", JSON.stringify(response.data?.user));
                 await refreshTheme();
                 const from = location.state?.from || '/explore';
                 navigate(from, { replace: true });
             }
         } catch (error) {
-            const msg = error.response?.data?.message;
-            setErrorMessage(msg || 'Error logging in');
+            const message = error.response?.data?.message;
+            setErrorMessage(message || 'Error logging in');
             setTimeout(() => setErrorMessage(''), 5000);
-            if (msg && msg.includes('verify your email')) {
+            if (message && message.includes('verify your email')) {
                 navigate(`/verify-email`);
             }
         }

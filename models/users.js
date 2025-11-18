@@ -22,7 +22,7 @@ const ConnectedAccounts = sequelize.define('ConnectedAccounts', {
     timestamps: false,
 	indexes: [
 		{ fields: ['user_id'] },
-		{ unique: true, fields: ['user_id', 'platform', 'handle'] }
+		{ unique: true, fields: ['user_id', 'platform'] }
 	]
 });
 

@@ -12,9 +12,9 @@ const ConnectMastodon = () => {
 	const submit = async (e) => {
 		e.preventDefault();
 		try {
-			const resp = await api.post('/auth/mastodon', { instance });
-			if (resp.data?.url) {
-				window.location.href = resp.data.url;
+			const response = await api.post('/auth/mastodon', { instance });
+			if (response.data?.url) {
+				window.location.href = response.data.url;
 				return;
 			}
 			setErrorMessage('Could not start Mastodon login');

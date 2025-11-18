@@ -603,11 +603,20 @@ const BaseLayout = () => {
                                     Drag and drop to combine feeds
                                 </p>
                                 <ul className="feeds-list">
-                                    <SocialFeedLink logo="/media/site_images/social_sites/reddit-logo.png" name="Reddit" slug="reddit" />
-                                    <SocialFeedLink logo="/media/site_images/social_sites/bluesky-logo.png" name="Bluesky" slug="bluesky" />
-                                    <SocialFeedLink logo="/media/site_images/social_sites/mastodon-logo.png" name="Mastodon" slug="mastodon" />
+                                    {JSON.parse(localStorage.getItem("connectedAccounts") || "[]")
+                                            ?.some(a => a.platform === "reddit") && (
+                                            <SocialFeedLink logo="/media/site_images/social_sites/reddit-logo.png" name="Reddit" slug="reddit" />
+                                    )}
+                                    {JSON.parse(localStorage.getItem("connectedAccounts") || "[]")
+                                            ?.some(a => a.platform === "bluesky") && (
+                                            <SocialFeedLink logo="/media/site_images/social_sites/bluesky-logo.png" name="Bluesky" slug="bluesky" />
+                                    )}
+                                    {JSON.parse(localStorage.getItem("connectedAccounts") || "[]")
+                                            ?.some(a => a.platform === "mastodon") && (
+                                            <SocialFeedLink logo="/media/site_images/social_sites/mastodon-logo.png" name="Mastodon" slug="mastodon" />
+                                    )}
                                     {feeds?.map(feed => (
-                                        <FeedItem key={feed?.feed_id} dragged={true} feed={feed} isChat={false} />
+                                            <FeedItem key={feed?.feed_id} dragged={true} feed={feed} isChat={false} />
                                     ))}
                                 </ul>
                             </nav>

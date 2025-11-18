@@ -131,7 +131,9 @@ const DeepFeed = () => {
                 followedFeedIds = [];
             }
             const recentUpvotes = JSON.parse(localStorage.getItem("recentUpvotes") || "[]");
+            const connectedAccounts = deep_feed_id === 'following' ? JSON.parse(localStorage.getItem("connectedAccounts") || "{}") : [];
             const response = await api.post('/deep_feed_posts', {
+                connectedAccounts,
                 deepFeedId: normalisedDeepFeedId,
                 followedFeedIds: followedFeedIds,
                 limit: FETCH_LIMIT,

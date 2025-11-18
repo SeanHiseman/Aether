@@ -1,4 +1,4 @@
-const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:7000';
+const backendUrl = process.env.REACT_APP_BACKEND_URL;
 
 export default function ConnectSocialButton({ socialIcon, socialName, socialRoute }) {
 	const handleClick = async () => {

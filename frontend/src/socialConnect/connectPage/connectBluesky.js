@@ -21,6 +21,17 @@ const ConnectBluesky = () => {
 				appPassword
 			});
 			if (response.data?.success) {
+				const existing = JSON.parse(localStorage.getItem("connectedAccounts") || "[]");
+				const updated = [
+					...existing,
+					{
+						platform: "bluesky",
+						handle,
+						instance_url: null,
+						extra: { did: response.data?.did }
+					}
+				];
+				localStorage.setItem("connectedAccounts", JSON.stringify(updated));
 				navigate('/feed/bluesky');
 				return;
 			}

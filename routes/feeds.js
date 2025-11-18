@@ -399,7 +399,7 @@ router.get('/deep_feed_contents/:deepFeedId', standardLimiter, authenticateCheck
 
 router.post('/deep_feed_posts', standardLimiter, authenticateCheck, async (req, res) => {
     try {
-        const { deepFeedId, followedFeedIds: rawFollowedFeedIds, limit = 100, offset = 0, recentUpvotes } = req.body;
+        const { connectedAccounts = [], deepFeedId, followedFeedIds: rawFollowedFeedIds, limit = 100, offset = 0, recentUpvotes } = req.body;
         let followedFeedIds = rawFollowedFeedIds || [];
         if (!Array.isArray(followedFeedIds)) {
             followedFeedIds = [followedFeedIds];
@@ -460,15 +460,21 @@ router.post('/deep_feed_posts', standardLimiter, authenticateCheck, async (req, 
         let mappedBluesky = [];
         let mappedMastodon = [];
         if (deepFeedId === 'following') {
+            if (connectedAccounts.find(a => a.platform === 'reddit')) {
                 const externalReddit = await fetch(`http://localhost:${process.env.PORT || 7000}/api/reddit/feed`, { headers: { cookie: req.headers.cookie } });
                 const redditJson = await externalReddit.json();
+                mappedReddit = (redditJson.items || []).map(p => ({ ...p, isExternal: true }));
+            }
+            if (connectedAccounts.find(a => a.platform === 'bluesky')) {
                 const externalBluesky = await fetch(`http://localhost:${process.env.PORT || 7000}/api/bluesky/feed`, { headers: { cookie: req.headers.cookie } });
                 const blueskyJson = await externalBluesky.json();
+                mappedBluesky = (blueskyJson.items || []).map(p => ({ ...p, isExternal: true }));
+            }
+            if (connectedAccounts.find(a => a.platform === 'mastodon')) {
                 const externalMastodon = await fetch(`http://localhost:${process.env.PORT || 7000}/api/mastodon/feed`, { headers: { cookie: req.headers.cookie } });
                 const mastodonJson = await externalMastodon.json();
-                mappedReddit = (redditJson.items || []).map(p => ({ ...p, isExternal: true }));
-                mappedBluesky = (blueskyJson.items || []).map(p => ({ ...p, isExternal: true }));
                 mappedMastodon = (mastodonJson.items || []).map(p => ({ ...p, isExternal: true }));
+            }
         }
         const localPosts = deepFeedPosts.map(p => ({ ...p, isExternal: false }));
         const combined = [];

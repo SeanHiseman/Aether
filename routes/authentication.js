@@ -2,6 +2,7 @@ import { Algorithms, AlgorithmLocations } from '../custom_algorithms/algorithmRe
 import authenticateCheck from '../functions/checks/authenticateCheck.js';
 import { compare, hash } from 'bcrypt';
 import { Connections, ConnectRequests, DeepFeeds, Feeds, FeedChannels, Followers, FeedChats, Messages, Posts, PostDrafts, PostNotes, PostVotes, SavedPostChannels, Users } from '../models/relationships.js'; 
+import { ConnectedAccounts } from '../models/users.js';
 import DeleteMedia from '../functions/media_handling/deleteMedia.js';
 import dotenv from 'dotenv';
 import { fileURLToPath } from 'url';
@@ -262,6 +263,10 @@ router.post('/login', loginLimiter, async (req, res) => {
             req.usage_count = user.usage_count;
             req.storage_count = user.storage_count;
             req.session.viewer_id = feed.feed_id;
+            const connectedAccounts = await ConnectedAccounts.findAll({
+                where: { user_id: user.user_id },
+                attributes: ['platform', 'handle', 'instance_url', 'extra']
+            });
             const algorithms = await Algorithms.findAll({
                 where: { viewer_id: feed.feed_id },
                 include: [{
@@ -316,10 +321,11 @@ router.post('/login', loginLimiter, async (req, res) => {
                     connections: feed.connections,
                     connect_requests: feed.connect_requests
                 },
-                followedFeeds: normalizedFollowedFeeds, 
+                algorithms,
+                connectedAccounts,
                 deepFeeds,
+                followedFeeds: normalizedFollowedFeeds, 
                 recentUpvotes,
-                algorithms
             });
         }
         else {

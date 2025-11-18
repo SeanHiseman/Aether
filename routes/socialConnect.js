@@ -21,7 +21,7 @@ function ua() {
 	return 'AetherSocialLocal/0.1 (testing on localhost)';
 }
 
-async function ensureAccessToken(account) {
+async function ensureRedditAccessToken(account) {
 	try {
 		if (account.expires_at > new Date(Date.now() + 60 * 1000)) return account.access_token;
 		if (!account.refresh_token) return account.access_token;
@@ -45,12 +45,36 @@ async function ensureAccessToken(account) {
 		await account.save();
 		return account.access_token;
 	} catch (error) {
-		console.error('ensureAccessToken error:', error);
+		console.error('ensureRedditAccessToken error:', error);
 	}
+}
+
+function decodeBlueskyJwt(jwt) {
+	const body = jwt.split('.')[1];
+	return JSON.parse(Buffer.from(body, 'base64').toString('utf8'));
 }
 
 async function ensureBlueskyToken(account) {
 	try {
+		const decoded = decodeBlueskyJwt(account.access_token);
+		if (!decoded.scope || !decoded.scope.includes('app.bsky.feed.read')) {
+			const session = await fetch('https://bsky.social/xrpc/com.atproto.server.createSession', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({
+					identifier: account.handle,
+					password: account.extra?.appPassword
+				})
+			});
+			if (session.ok) {
+				const json = await session.json();
+				account.access_token = json.accessJwt;
+				account.refresh_token = json.refreshJwt;
+				account.expires_at = new Date(Date.now() + 24 * 60 * 60 * 1000);
+				await account.save();
+				return account.access_token;
+			}
+		}
 		if (account.expires_at > new Date(Date.now() + 60 * 1000)) {
 			return account.access_token;
 		}
@@ -68,8 +92,8 @@ async function ensureBlueskyToken(account) {
 		account.expires_at = new Date(Date.now() + 24 * 60 * 60 * 1000);
 		await account.save();
 		return account.access_token;
-	} catch (err) {
-		console.error('ensureBlueskyToken error:', err);
+	} catch (error) {
+		console.error('ensureBlueskyToken error:', error);
 		return account.access_token;
 	}
 }
@@ -217,7 +241,6 @@ function generateRedditContentHTML(textBody, mediaArray) {
 
 function generateMastodonContentHTML(htmlBody, media) {
      let out = '';
-
      if (htmlBody) {
           out += `
                <div class="content-block text-block" data-blockid="${crypto.randomUUID()}">
@@ -274,6 +297,19 @@ function mapRedditToExternal(userId, child) {
 	};
 }
 
+router.get('/connected-accounts', authenticateCheck, async (req, res) => {
+	try {
+		const accounts = await ConnectedAccounts.findAll({
+			where: { user_id: req.user.user_id },
+			attributes: ['platform', 'handle', 'instance_url', 'extra']
+		});
+		res.status(200).json({ success: true, accounts });
+	} catch (error) {
+		console.log('/connected-accounts error:', error);
+		res.status(500).json({ success: false });
+	}
+});
+
 router.post('/auth/bluesky', authenticateCheck, async (req, res) => {
 	try {
 		const { identifier, appPassword } = req.body;
@@ -291,14 +327,13 @@ router.post('/auth/bluesky', authenticateCheck, async (req, res) => {
 		if (!response.ok) return res.status(401).json({ success: false, error: 'Invalid Bluesky login' });
 		const json = await response.json();
 		await ConnectedAccounts.upsert({
-			id: v4(),
 			user_id: req.user.user_id,
 			platform: 'bluesky',
 			handle: json.handle,
 			access_token: json.accessJwt,
 			refresh_token: json.refreshJwt,
 			expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000),
-			extra: { did: json.did }
+			extra: { did: json.did, appPassword }
 		});
 		res.status(200).json({ success: true });
 	} catch (error) {
@@ -309,17 +344,13 @@ router.post('/auth/bluesky', authenticateCheck, async (req, res) => {
 
 router.get('/auth/reddit', authenticateCheck, async (req, res) => {
     try {
-		console.log('--- /auth/reddit ---');
-		console.log('Session ID before:', req.sessionID);
-		console.log('Session contents before:', req.session);
         const { REDDIT_CLIENT_ID, REDDIT_REDIRECT_URI } = process.env;
         const userId = req.user.user_id;
 		const statePayload = {
 			user_id: userId,
 			nonce: crypto.randomBytes(16).toString('hex')
 		};
-		req.session.reddit_oauth_nonce = statePayload.nonce;
-		console.log('Session after setting nonce:', req.session);
+		req.session.reddit_oauth_nonce = statePayload.nonce;;
         const state = Buffer.from(JSON.stringify(statePayload)).toString('base64url');
         const scope = ['identity','read','mysubreddits','history'].join(' ');
         const url = `${OAUTH_AUTHORIZE}?client_id=${encodeURIComponent(REDDIT_CLIENT_ID)}&response_type=code&state=${encodeURIComponent(state)}&redirect_uri=${encodeURIComponent(REDDIT_REDIRECT_URI)}&duration=permanent&scope=${encodeURIComponent(scope)}`;
@@ -381,12 +412,10 @@ router.get('/bluesky/feed', authenticateCheck, async (req, res) => {
 		const account = await ConnectedAccounts.findOne({
 			where: { user_id: req.user.user_id, platform: 'bluesky' }
 		});
-		console.log('Bluesky account:', account);
 		if (!account) {
 			return res.status(404).json({ success: false, error: 'Not connected' });
 		}
 		const token = await ensureBlueskyToken(account);
-		console.log('Using Bluesky token:', token);
 		const extra = typeof account.extra === 'string' ? JSON.parse(account.extra) : account.extra;
 		const did = extra?.did;
 		if (!did) return res.status(500).json({ success: false, error: 'No DID stored' });
@@ -400,7 +429,6 @@ router.get('/bluesky/feed', authenticateCheck, async (req, res) => {
 				}
 			}
 		);
-		console.log('Bluesky feed response:', response);
 		if (!response.ok) return res.status(502).json({ success: false, error: 'Upstream error' });
 		const json = await response.json();
 		const items = json.feed.map(item => {
@@ -471,10 +499,6 @@ router.get('/bluesky/feed', authenticateCheck, async (req, res) => {
 
 router.get('/reddit/callback', authenticateCheck, async (req, res) => {
 	try {
-		console.log('--- /reddit/callback ---');
-		console.log('Session ID on callback:', req.sessionID);
-		console.log('Session contents on callback:', req.session);
-		console.log('Incoming query params:', req.query);
 		const { code, state } = req.query;
 		const payload = JSON.parse(Buffer.from(state, 'base64url').toString());
 		const { user_id, nonce } = payload;
@@ -520,7 +544,7 @@ router.get('/reddit/callback', authenticateCheck, async (req, res) => {
             expires_at: expiresAt,
             extra: { reddit_id: me.id }
         });
-		res.redirect(`${FRONTEND_URL}/feed/reddit`);
+		res.redirect(`${FRONTEND_URL}/feed/reddit?connected=reddit`);
 	} catch (error) {
         console.log("/reddit/callback error:", error);
 		res.status(500).send('Reddit auth error');
@@ -582,9 +606,9 @@ router.get('/mastodon/callback', authenticateCheck, async (req, res) => {
 		await ConnectedAccounts.destroy({
 			where: { user_id, platform: 'mastodon_app' }
 		});
-		res.redirect(`${process.env.FRONTEND_URL}/feed/mastodon`);
-	} catch (err) {
-		console.log('/mastodon/callback error:', err);
+		res.redirect(`${process.env.FRONTEND_URL}/feed/mastodon?connected=mastodon`);
+	} catch (error) {
+		console.log('/mastodon/callback error:', error);
 		res.status(500).send('Mastodon auth error');
 	}
 });
@@ -592,14 +616,10 @@ router.get('/mastodon/callback', authenticateCheck, async (req, res) => {
 router.get('/reddit/feed', authenticateCheck, async (req, res) => {
 	try {
 		const { limit = '100', after } = req.query;
-		console.log("getting reddit feed with limit:", limit, "after:", after);
 		const account = await ConnectedAccounts.findOne({ where: { user_id: req.user.user_id, platform: 'reddit' } });
-		console.log('Reddit account:', account);
 		if (!account) return res.status(404).json({ success: false, error: 'Not connected' });
-		const token = await ensureAccessToken(account);
-		console.log('Using Reddit token:', token);
+		const token = await ensureRedditAccessToken(account);
 		const params = new URLSearchParams({ limit: String(Math.min(Number(limit) || 25, 100)) });
-		console.log('Reddit feed params before after check:', params.toString());
 		if (after) params.set('after', after);
 		const response = await fetch(`https://oauth.reddit.com/best?${params.toString()}`, {
 			headers: {
@@ -607,7 +627,6 @@ router.get('/reddit/feed', authenticateCheck, async (req, res) => {
 				'User-Agent': ua()
 			}
 		});
-		console.log('Reddit feed response:', response);
 		if (!response.ok) return res.status(502).json({ success: false, error: 'Upstream error' });
 		const json = await response.json();
 		const children = json.data.children.filter(c => c.kind === 't3');
@@ -702,7 +721,6 @@ router.get('/mastodon/feed', authenticateCheck, async (req, res) => {
 		const account = await ConnectedAccounts.findOne({
 			where: { user_id: req.user.user_id, platform: 'mastodon' }
 		});
-		console.log('Mastodon account:', account);
 		if (!account) {
 			return res.status(404).json({ success: false, error: 'Not connected' });
 		}
@@ -713,7 +731,6 @@ router.get('/mastodon/feed', authenticateCheck, async (req, res) => {
 		const response = await fetch(`https://${instance}/api/v1/timelines/home?limit=${limit}`, {
 			headers: { Authorization: `Bearer ${token}` }
 		})
-		console.log('Mastodon feed response:', response);
 		if (!response.ok) return res.status(502).json({ success: false, error: 'Upstream error' });
 		const feed = await response.json();
 		const mappedPosts = feed.map(toot => mapMastodonToExternal(req.user.user_id, toot, instance));
@@ -732,16 +749,15 @@ router.get('/mastodon/feed', authenticateCheck, async (req, res) => {
 				has_upvoted: false,
 				has_downvoted: false,
 				poster: {
-						username: p.author,
-						user_photo: p.author_photo,
-						profile_url: p.url
+					username: p.author,
+					user_photo: p.author_photo,
+					profile_url: p.url
 				},
 				channel: p.channel,
 				url: p.url,
 				source: 'Mastodon'
 			};
 		});
-		console.log('Mapped Mastodon posts:', mappedPosts);
 		await ExternalPosts.bulkCreate(mappedPosts, {
 			updateOnDuplicate: [
 				'text_body',
@@ -757,19 +773,18 @@ router.get('/mastodon/feed', authenticateCheck, async (req, res) => {
 		(async () => {
 			for (const p of mappedPosts) {
 				const exists = await ExternalPosts.findOne({
-						where: { post_id: p.post_id },
-						attributes: ['embedding']
+					where: { post_id: p.post_id },
+					attributes: ['embedding']
 				});
-
 				if (!exists || !exists.embedding) {
-						const src = p.text_body || '';
-						if (src.trim()) {
-							const emb = await contentAnalyser.generateEmbedding(src);
-							await ExternalPosts.update(
-								{ embedding: JSON.stringify(emb) },
-								{ where: { post_id: p.post_id } }
-							);
-						}
+					const src = p.text_body || '';
+					if (src.trim()) {
+						const emb = await contentAnalyser.generateEmbedding(src);
+						await ExternalPosts.update(
+							{ embedding: JSON.stringify(emb) },
+							{ where: { post_id: p.post_id } }
+						);
+					}
 				}
 			}
 		})();
