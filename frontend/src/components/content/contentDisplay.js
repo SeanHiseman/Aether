@@ -144,11 +144,11 @@ const ContentDisplay = ({ post, isFullscreen = false, onCodeAppChange = () => {}
 						<div
 							key={i}
 							style={{ position: 'relative', width: '100%', height: isFullscreen ? '100%' : '70vh' }}
-							onClick={e => {
+							onClick={isFullscreen ? null : e => {
 								const iframe = e.currentTarget.querySelector('iframe');
 								if (iframe) iframe.style.pointerEvents = 'auto';
 							}}
-							onMouseLeave={e => {
+							onMouseLeave={isFullscreen ? null : e => {
 								const iframe = e.currentTarget.querySelector('iframe');
 								if (iframe) iframe.style.pointerEvents = 'none';
 							}}
@@ -164,7 +164,7 @@ const ContentDisplay = ({ post, isFullscreen = false, onCodeAppChange = () => {}
 									border: 'none',
 									height: '100%',
 									width: '100%',
-									pointerEvents: 'none',
+									pointerEvents: isFullscreen ? 'auto' : 'none',
 								}}
 								title={`code-block-${block.id}`}
 							/>

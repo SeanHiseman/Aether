@@ -99,18 +99,19 @@ const parseContentBlocks = htmlString => {
 				isEditing: false,
 				type: BLOCK_TYPES.APP
 			})
-		} else if (blockClass.includes('code-block')) {
-			result.push({
-				data: {
-					code: div.getAttribute('data-code') || '',
-					isBlockLoading: false,
-					showPrompt: true
-				},
-				id: blockId,
-				isEditing: true,
-				type: BLOCK_TYPES.CODE
-			})
-		} else if (blockClass.includes('text-block')) {
+        } else if (blockClass.includes('code-block')) {
+            const code = div.getAttribute('data-code') || content || ''
+            result.push({
+                data: {
+                    code,
+                    isBlockLoading: false,
+                    showPrompt: true
+                },
+                id: blockId,
+                isEditing: true,
+                type: BLOCK_TYPES.CODE
+            })
+        } else if (blockClass.includes('text-block')) {
 			result.push({
 				data: { html: content },
 				id: blockId,
