@@ -404,10 +404,7 @@ CREATE TABLE `external_posts` (
 	KEY `idx_score` (`score`),
 	KEY `idx_source` (`source`),
 	KEY `idx_expired` (`expired`),
-	KEY `idx_fetched_at` (`fetched_at`),
-	KEY `idx_source_user_id` (`source`, `user_id`),
-	KEY `idx_source_created_at_remote` (`source`, `created_at_remote`),
-	KEY `idx_user_id_created_at_remote` (`user_id`, `created_at_remote`)
+	KEY `idx_fetched_at` (`fetched_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE `connected_accounts` (
