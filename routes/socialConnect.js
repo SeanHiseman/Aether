@@ -497,6 +497,22 @@ router.get('/bluesky/feed', authenticateCheck, async (req, res) => {
 	}
 });
 
+router.post('/disconnect_external_account', authenticateCheck, async (req, res) => {
+    try {
+        const { platform } = req.body;
+        if (!platform) {
+            return res.status(400).json({ success: false, error: 'Missing platform' });
+        }
+        await ConnectedAccounts.destroy({
+            where: { user_id: req.user.user_id, platform }
+        });
+        return res.status(200).json({ success: true });
+    } catch (error) {
+        console.log('/disconnect error:', error);
+        res.status(500).json({ success: false });
+    }
+});
+
 router.get('/reddit/callback', authenticateCheck, async (req, res) => {
 	try {
 		const { code, state } = req.query;
