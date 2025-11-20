@@ -1,7 +1,7 @@
 import { Algorithms, AlgorithmLocations } from '../custom_algorithms/algorithmRelationships.js'
 import authenticateCheck from '../functions/checks/authenticateCheck.js';
 import { compare, hash } from 'bcrypt';
-import { Connections, ConnectRequests, DeepFeeds, Feeds, FeedChannels, Followers, FeedChats, Messages, Posts, PostDrafts, PostNotes, PostVotes, SavedPostChannels, Users } from '../models/relationships.js'; 
+import { Connections, ConnectRequests, DeepFeeds, Feeds, FeedChannels, Followers, FeedChats, Messages, Posts, PostDrafts, PostNotes, PostVotes, SavedPostChannels, Users, ViewedPosts } from '../models/relationships.js'; 
 import { ConnectedAccounts } from '../models/users.js';
 import DeleteMedia from '../functions/media_handling/deleteMedia.js';
 import dotenv from 'dotenv';
@@ -99,8 +99,6 @@ router.delete('/delete_account', resendLimiter, authenticateCheck, async (req, r
         const { userId } = req.body;
         const feed = await Feeds.findOne({ where: { feed_owner: userId, is_group: false } });
         const id = feed.feed_id;
-        await Posts.destroy({ where: { feed_id: id, poster_id: id }, transaction }); //Only delete posts made to personal feed
-        await PostDrafts.destroy({ where: { poster_id: id }, transaction });
         const followed = await Followers.findAll({
             where: { follower_id: id },
             attributes: ['feed_id'],
@@ -125,7 +123,11 @@ router.delete('/delete_account', resendLimiter, authenticateCheck, async (req, r
         if (userPostIds.length > 0) {
             await PostNotes.destroy({ where: { post_id: { [Op.in]: userPostIds } }, transaction });
             await PostVotes.destroy({ where: { post_id: { [Op.in]: userPostIds } }, transaction });
+            await ViewedPosts.destroy({ where: { post_id: { [Op.in]: userPostIds } }, transaction }); //Views of user's posts
         }
+        await ViewedPosts.destroy({ where: { viewer_id: id }, transaction }); //Views by user
+        await Posts.destroy({ where: { feed_id: id, poster_id: id }, transaction }); //Only delete posts made to personal feed
+        await PostDrafts.destroy({ where: { poster_id: id }, transaction });
         await Followers.destroy({ where: { follower_id: id }, transaction });
         await Connections.destroy({ where: { [Op.or]: [{ feed1_id: id }, { feed2_id: id }] }, transaction });
         await ConnectRequests.destroy({ where: { [Op.or]: [{ sender_id: userId }, { receiver_id: userId }] }, transaction });
