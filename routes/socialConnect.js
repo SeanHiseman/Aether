@@ -364,6 +364,7 @@ router.get('/auth/reddit', authenticateCheck, async (req, res) => {
 router.post('/auth/mastodon', authenticateCheck, async (req, res) => {
 	try {
 		const { instance } = req.body;
+		console.log("Requested Mastodon instance:", instance);
 		if (!instance) return res.status(400).json({ success: false, error: 'Missing instance' });
 		const base = `https://${instance}`;
 		const registerResponse = await fetch(`${base}/api/v1/apps`, {
@@ -376,6 +377,7 @@ router.post('/auth/mastodon', authenticateCheck, async (req, res) => {
 				website: "https://aethersocial.com"
 			})
 		});
+		console.log("Register response:", registerResponse);
 		const app = await registerResponse.json();
 		if (!registerResponse.ok || !app.client_id) {
 			return res.status(500).json({ success: false, error: 'App registration failed' });
@@ -383,7 +385,7 @@ router.post('/auth/mastodon', authenticateCheck, async (req, res) => {
 		await ConnectedAccounts.upsert({
 			id: v4(),
 			user_id: req.user.user_id,
-			platform: 'mastodon_app',
+			platform: 'mastodon',
 			access_token: null,
 			refresh_token: null,
 			expires_at: null,
@@ -400,6 +402,7 @@ router.post('/auth/mastodon', authenticateCheck, async (req, res) => {
 			scope: 'read follow',
 			state: JSON.stringify({ instance, user_id: req.user.user_id })
 		});
+		console.log("Mastodon params:", params);
 		res.status(200).json({ success: true, url: `${base}/oauth/authorize?${params.toString()}` });
 	} catch (error) {
 		console.log('/auth/mastodon error:', error);
@@ -567,7 +570,7 @@ router.get('/reddit/callback', authenticateCheck, async (req, res) => {
 	}
 });
 
-router.get('/mastodon/callback', authenticateCheck, async (req, res) => {
+router.get('/mastodon/callback', async (req, res) => {
 	try {
 		const { code, state } = req.query;
 		const payload = JSON.parse(state || '{}');
@@ -576,7 +579,7 @@ router.get('/mastodon/callback', authenticateCheck, async (req, res) => {
 			return res.status(400).send('Invalid Mastodon callback');
 		}
 		const app = await ConnectedAccounts.findOne({
-			where: { user_id, platform: 'mastodon_app' }
+			where: { user_id, platform: 'mastodon' }
 		});
 		if (!app) return res.status(400).send('Missing client credentials');
 		const { client_id, client_secret } = typeof app.extra === 'string'
@@ -618,9 +621,6 @@ router.get('/mastodon/callback', authenticateCheck, async (req, res) => {
 				client_secret,
 				mastodon_id: me.id
 			}
-		});
-		await ConnectedAccounts.destroy({
-			where: { user_id, platform: 'mastodon_app' }
 		});
 		res.redirect(`${process.env.FRONTEND_URL}/feed/mastodon?connected=mastodon`);
 	} catch (error) {

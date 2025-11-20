@@ -41,6 +41,7 @@ router.post('/change_password', resendLimiter, authenticateCheck, async (req, re
         await user.update({ password: hashedPassword });
         res.status(200).json({ success: true });
     } catch (error) {
+        console.error('Error in /change_password:', error);
         res.status(500).json({ success: false });
     }
 });
@@ -96,8 +97,10 @@ router.delete('/delete_account', resendLimiter, authenticateCheck, async (req, r
     try {
         transaction = await sequelize.transaction();
         const { userId } = req.body;
-        const feed = await Feeds.findOne({ where: { feed_owner: userId } });
+        const feed = await Feeds.findOne({ where: { feed_owner: userId, is_group: false } });
         const id = feed.feed_id;
+        await Posts.destroy({ where: { feed_id: id, poster_id: id }, transaction }); //Only delete posts made to personal feed
+        await PostDrafts.destroy({ where: { poster_id: id }, transaction });
         const followed = await Followers.findAll({
             where: { follower_id: id },
             attributes: ['feed_id'],
@@ -123,19 +126,19 @@ router.delete('/delete_account', resendLimiter, authenticateCheck, async (req, r
             await PostNotes.destroy({ where: { post_id: { [Op.in]: userPostIds } }, transaction });
             await PostVotes.destroy({ where: { post_id: { [Op.in]: userPostIds } }, transaction });
         }
-        await Posts.destroy({ where: { feed_id: id, poster_id: id }, transaction }); //Only delete posts made to personal feed
-        await PostDrafts.destroy({ where: { poster_id: id }, transaction });
         await Followers.destroy({ where: { follower_id: id }, transaction });
         await Connections.destroy({ where: { [Op.or]: [{ feed1_id: id }, { feed2_id: id }] }, transaction });
         await ConnectRequests.destroy({ where: { [Op.or]: [{ sender_id: userId }, { receiver_id: userId }] }, transaction });
         await FeedChats.destroy({ where: { feed_id: id }, transaction });
         await Messages.destroy({ where: { sender_id: userId }, transaction });
-        await Feeds.destroy({ where: { feed_owner: userId }, transaction });
+        await Feeds.destroy({ where: { feed_owner: userId, is_group: false }, transaction });
+        await ConnectedAccounts.destroy({ where: { user_id: userId }, transaction });
         await Users.destroy({ where: { user_id: userId }, transaction });
         await transaction.commit();
         res.clearCookie('sid');
         return res.status(200).json({ success: true });
     } catch (error) {
+        console.error('Error in /delete_account:', error);
         if (transaction) await transaction.rollback();
         return res.status(500).json({ success: false });
     }
@@ -371,6 +374,7 @@ router.post('/resend-verification', resendLimiter, async (req, res) => {
         await sendVerificationEmail(email, user.username, verificationToken);
         return res.status(200).json({ success: true, message: 'Verification email sent' });
     } catch (error) {
+        console.error('Error in /resend-verification:', error);
         return res.status(500).json({ success: false, message: 'An error occurred. Please try again later.' });
     }
 });
@@ -405,6 +409,7 @@ router.post('/reset-password', resendLimiter, async (req, res) => { //For users 
 		});
 		return res.status(200).json({ success: true, message: 'Password reset successful' });
 	} catch (error) {
+        console.error('Error in /reset-password:', error);
 		return res.status(500).json({ success: false, message: 'Server error' });
 	}
 });
@@ -457,6 +462,7 @@ router.get('/verify-email', resendLimiter, async (req, res) => {
 			recentUpvotes: []
 		});
 	} catch (error) {
+        console.error('Error in /verify-email:', error);
 		return res.status(500).json({ message: 'Server error' });
 	}
 });

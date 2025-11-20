@@ -31,8 +31,8 @@ Posts.belongsTo(Feeds, { as: 'poster', foreignKey: 'poster_id', targetKey: 'feed
 Posts.belongsTo(FeedChannels, { as: 'parentChannel', foreignKey: 'channel_id' });
 FeedChannels.hasMany(Posts, { as: 'posts', foreignKey: 'channel_id' });
 
-Posts.hasMany(Posts, { as: 'parentPost', foreignKey: 'post_id' });
-Posts.belongsTo(Posts, { as: 'reply', foreignKey: 'post_id' });
+Posts.hasMany(Posts, { as: 'childPosts', foreignKey: 'parent_id', onDelete: 'CASCADE' });
+Posts.belongsTo(Posts, { as: 'parentPost', foreignKey: 'parent_id' });
 
 ViewedPosts.belongsTo(Posts, { foreignKey: 'post_id' });
 Posts.hasMany(ViewedPosts, { foreignKey: 'post_id', onDelete: 'CASCADE' });

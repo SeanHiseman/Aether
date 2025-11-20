@@ -461,17 +461,17 @@ router.post('/deep_feed_posts', standardLimiter, authenticateCheck, async (req, 
         let mappedMastodon = [];
         if (deepFeedId === 'following') {
             if (connectedAccounts.find(a => a.platform === 'reddit')) {
-                const externalReddit = await fetch(`http://localhost:${process.env.PORT || 7000}/api/reddit/feed`, { headers: { cookie: req.headers.cookie } });
+                const externalReddit = await fetch(`http://localhost:${process.env.APP_PORT || 7000}/api/reddit/feed`, { headers: { cookie: req.headers.cookie } });
                 const redditJson = await externalReddit.json();
                 mappedReddit = (redditJson.items || []).map(p => ({ ...p, isExternal: true }));
             }
             if (connectedAccounts.find(a => a.platform === 'bluesky')) {
-                const externalBluesky = await fetch(`http://localhost:${process.env.PORT || 7000}/api/bluesky/feed`, { headers: { cookie: req.headers.cookie } });
+                const externalBluesky = await fetch(`http://localhost:${process.env.APP_PORT || 7000}/api/bluesky/feed`, { headers: { cookie: req.headers.cookie } });
                 const blueskyJson = await externalBluesky.json();
                 mappedBluesky = (blueskyJson.items || []).map(p => ({ ...p, isExternal: true }));
             }
             if (connectedAccounts.find(a => a.platform === 'mastodon')) {
-                const externalMastodon = await fetch(`http://localhost:${process.env.PORT || 7000}/api/mastodon/feed`, { headers: { cookie: req.headers.cookie } });
+                const externalMastodon = await fetch(`http://localhost:${process.env.APP_PORT || 7000}/api/mastodon/feed`, { headers: { cookie: req.headers.cookie } });
                 const mastodonJson = await externalMastodon.json();
                 mappedMastodon = (mastodonJson.items || []).map(p => ({ ...p, isExternal: true }));
             }

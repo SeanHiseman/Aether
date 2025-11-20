@@ -156,8 +156,8 @@ const ContentDisplay = ({ post, isFullscreen = false, onCodeAppChange = () => {}
 							<iframe
 								sandbox={
 									block.isTrustedEmbed
-										? "allow-scripts allow-same-origin allow-popups allow-forms allow-modals"
-										: "allow-scripts allow-popups allow-forms allow-modals"
+										? "allow-scripts allow-same-origin allow-downloads allow-popups allow-forms allow-modals"
+										: "allow-scripts allow-downloads allow-popups allow-forms allow-modals"
 								}
 								srcDoc={block.code}
 								style={{
