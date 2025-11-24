@@ -467,7 +467,7 @@ router.post('/deep_feed_posts', standardLimiter, authenticateCheck, async (req, 
             const tasks = [];
             if (redditEnabled) {
                 tasks.push(
-                    fetch(`http://localhost:${port}/api/reddit/feed`, { headers: { cookie: req.headers.cookie } })
+                    fetch(`http://localhost:${port}/api/reddit/feed?limit=20`, { headers: { cookie: req.headers.cookie } })
                         .then(r => r.json())
                         .then(j => j.items || [])
                 );
@@ -476,7 +476,7 @@ router.post('/deep_feed_posts', standardLimiter, authenticateCheck, async (req, 
             }
             if (blueskyEnabled) {
                 tasks.push(
-                    fetch(`http://localhost:${port}/api/bluesky/feed`, { headers: { cookie: req.headers.cookie } })
+                    fetch(`http://localhost:${port}/api/bluesky/feed?limit=20`, { headers: { cookie: req.headers.cookie } })
                         .then(r => r.json())
                         .then(j => j.items || [])
                 );
@@ -485,7 +485,7 @@ router.post('/deep_feed_posts', standardLimiter, authenticateCheck, async (req, 
             }
             if (mastodonEnabled) {
                 tasks.push(
-                    fetch(`http://localhost:${port}/api/mastodon/feed`, { headers: { cookie: req.headers.cookie } })
+                    fetch(`http://localhost:${port}/api/mastodon/feed?limit=20`, { headers: { cookie: req.headers.cookie } })
                         .then(r => r.json())
                         .then(j => j.items || [])
                 );

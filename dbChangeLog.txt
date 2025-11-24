@@ -286,3 +286,17 @@ RENAME COLUMN hotness TO rank_hotness,
 ADD INDEX idx_rank_hotness (rank_hotness);
 
 ALTER TABLE external_posts drop column parent_id;
+
+CREATE TABLE `external_posts_access` (
+	`id` VARCHAR(36) NOT NULL,
+	`user_id` VARCHAR(36) NOT NULL,
+	`post_id` VARCHAR(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+	`created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	PRIMARY KEY (`id`),
+	UNIQUE KEY `uniq_user_post` (`user_id`, `post_id`),
+	INDEX `idx_user_id` (`user_id`),
+	INDEX `idx_post_id` (`post_id`),
+	CONSTRAINT `fk_access_post`
+			FOREIGN KEY (`post_id`) REFERENCES `external_posts` (`post_id`)
+			ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

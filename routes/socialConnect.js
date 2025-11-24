@@ -446,6 +446,7 @@ router.get('/bluesky/feed', authenticateCheck, async (req, res) => {
 		const did = extra?.did;
 		if (!did) return res.status(500).json({ success: false, error: 'No DID stored' });
 		const limit = Math.min(Number(req.query.limit) || 50, 100);
+		console.log("bluesky limit:", limit);
 		const response = await fetch(
 			`https://bsky.social/xrpc/app.bsky.feed.getTimeline?limit=${limit}`,
 			{
@@ -673,6 +674,7 @@ router.get('/mastodon/callback', async (req, res) => {
 router.get('/reddit/feed', authenticateCheck, async (req, res) => {
 	try {
 		const { limit = '50', after } = req.query;
+		console.log("reddit limit:", limit);
 		const account = await ConnectedAccounts.findOne({ where: { user_id: req.user.user_id, platform: 'reddit' } });
 		if (!account) return res.status(404).json({ success: false, error: 'Not connected' });
 		const token = await ensureRedditAccessToken(account);
@@ -797,6 +799,7 @@ router.get('/mastodon/feed', authenticateCheck, async (req, res) => {
 		const extra = typeof account.extra === 'string' ? JSON.parse(account.extra) : account.extra;
 		const instance = extra?.instance;
 		const limit = req.query.limit || 40;
+		console.log("mastodon limit:", limit);
 		const response = await fetch(`https://${instance}/api/v1/timelines/home?limit=${limit}`, {
 			headers: { Authorization: `Bearer ${token}` }
 		})

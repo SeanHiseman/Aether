@@ -16,7 +16,14 @@ const DeepFeed = () => {
     const { isAuthenticated } = useContext(AuthContext);
     const [contents, setContents] = useState([]);
     const { deep_feed_id } = useParams();
-    const [deepFeed, setDeepFeed] = useState({ deep_feed_id: null, name: '', owner_id: null, parent_id: null });
+    const [deepFeed, setDeepFeed] = useState(() => {
+        if (deep_feed_id === 'following') {
+            return { deep_feed_id: 'following', name: 'Following', owner_id: 'system', parent_id: null };
+        }
+        const stored = JSON.parse(localStorage.getItem("deepFeeds") || "[]");
+        const match = stored.find(df => df.deep_feed_id === deep_feed_id);
+        return match || { deep_feed_id, name: '', owner_id: null, parent_id: null };
+    });
     const [errorMessage, setErrorMessage] = useState('');
     const [isEditingName, setIsEditingName] = useState(false);
     const [isNewNameValid, setIsNewNameValid] = useState(false);
@@ -263,7 +270,9 @@ const DeepFeed = () => {
     return (
         <><div className="standard-container">
             <div ref={scrollRef} onScroll={handleScroll} className="channel-feed">
-                {allPosts.length > 0 ? (
+                {isLoading ? (
+                    <p className="large-text faded-text">Loading posts...</p>
+                ) : allPosts.length > 0 ? (
                     <div className="flex flex-col w-99">
                         {allPosts.map((post) => (
                             post ? (
