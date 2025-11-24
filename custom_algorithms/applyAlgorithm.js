@@ -1,6 +1,7 @@
 import { Algorithms, AlgorithmLocations } from "./algorithms.js";
 import { CosineSimilarity } from "../functions/calculation/cosineSimilarity.js";
 import { DeepFeedContent, Posts, PostVotes, SavedPosts } from "../models/relationships.js";
+import { ExternalPosts } from "../models/content.js";
 import { Op } from 'sequelize';
 import Sequelize from 'sequelize';
 

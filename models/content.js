@@ -11,10 +11,9 @@ const AppBuilds = sequelize.define('app_builds', {
 }, { tableName: 'app_builds', timestamps: false });
 
 const ExternalPosts = sequelize.define('ExternalPosts', {
-	post_id: { type: STRING(36), primaryKey: true },
+	post_id: { type: STRING(255), primaryKey: true },
 	source: { type: STRING(32), allowNull: false },
 	source_post_id: { type: STRING(128), allowNull: false },
-	parent_id: { type: STRING(128), allowNull: true },
 	title: { type: TEXT, allowNull: true },
 	text_body: { type: TEXT, allowNull: true },
 	text_length: { type: INTEGER, allowNull: true },
@@ -25,9 +24,8 @@ const ExternalPosts = sequelize.define('ExternalPosts', {
 	has_videos: { type: BOOLEAN, defaultValue: false },
 	score: { type: INTEGER, allowNull: true },
     replies: { type: INTEGER, allowNull: true },
-	hotness: { type: FLOAT, allowNull: true },
-	embedding: { type: DataTypes.JSON, allowNull: true },
-	is_private: { type: BOOLEAN, defaultValue: false },
+	rank_hotness: { type: FLOAT, allowNull: true },
+	embeddings: { type: DataTypes.JSON, allowNull: true },
 	fetched_at: { type: DataTypes.DATE, allowNull: false },
 	created_at_remote: { type: DataTypes.DATE, allowNull: false },
 	expired: { type: BOOLEAN, defaultValue: false },
@@ -42,16 +40,28 @@ const ExternalPosts = sequelize.define('ExternalPosts', {
     timestamps: false, 
 	indexes: [
 		{ fields: ['parent_id'] },
-		{ fields: ['is_private'] },
 		{ fields: ['created_at_remote'] },
 		{ fields: ['hotness'] },
 		{ fields: ['score'] },
 		{ fields: ['source'] },
 		{ fields: ['expired'] },
-		{ fields: ['fetched_at'] },
-		{ fields: ['source', 'user_id'] },
-		{ fields: ['source', 'created_at_remote'] },
-		{ fields: ['user_id', 'created_at_remote'] }
+		{ fields: ['fetched_at'] }
+	]
+});
+
+const ExternalPostsAccess = sequelize.define('ExternalPostsAccess', {
+	id: { type: STRING(36), primaryKey: true },
+	user_id: { type: STRING(36), allowNull: false },
+	post_id: { type: STRING(36), allowNull: false },
+	created_at: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }
+}, {
+	tableName: 'external_posts_access',
+	underscored: true,
+	timestamps: false,
+	indexes: [
+		{ fields: ['user_id'] },
+		{ fields: ['post_id'] },
+		{ fields: ['user_id', 'post_id'], unique: true }
 	]
 });
 
@@ -156,6 +166,7 @@ const ViewedPosts = sequelize.define('viewed_posts', {
 export {
     AppBuilds, 
     ExternalPosts,
+    ExternalPostsAccess,
     Posts,
     PostDrafts,
     PostNotes,

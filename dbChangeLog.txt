@@ -236,7 +236,7 @@ CREATE TABLE `external_posts` (
 	`score` INT DEFAULT NULL,
 	`replies` INT DEFAULT NULL,
 	`hotness` FLOAT DEFAULT NULL,
-	`embedding` JSON DEFAULT NULL,
+	`embeddings` JSON DEFAULT NULL,
 	`is_private` BOOLEAN NOT NULL DEFAULT FALSE,
 	`fetched_at` DATETIME NOT NULL,
 	`created_at_remote` DATETIME NOT NULL,
@@ -275,3 +275,14 @@ CREATE TABLE `connected_accounts` (
 	KEY `idx_user_id` (`user_id`),
 	UNIQUE KEY `uniq_user_platform_handle` (`user_id`, `platform`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+ALTER TABLE external_posts
+CHANGE COLUMN embedding embeddings JSON NULL,
+DROP COLUMN is_private,
+ADD COLUMN sentiment_score FLOAT NULL,
+DROP INDEX idx_hotness,
+DROP INDEX idx_is_private,
+RENAME COLUMN hotness TO rank_hotness,
+ADD INDEX idx_rank_hotness (rank_hotness);
+
+ALTER TABLE external_posts drop column parent_id;

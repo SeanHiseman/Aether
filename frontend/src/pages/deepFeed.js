@@ -166,7 +166,9 @@ const DeepFeed = () => {
         getNextPageParam: (lastPage, allPages) => {
             if (!Array.isArray(lastPage)) return undefined;
             return lastPage.length === FETCH_LIMIT ? allPages.length * FETCH_LIMIT : undefined;
-        }
+        },
+        refetchOnWindowFocus: false, //Don't refetch when clicking back to window
+        refetchOnReconnect: false, //Don't refetch on network reconnect
     });
 
     const removeFeed = async (feedId) => {

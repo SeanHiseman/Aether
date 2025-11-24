@@ -231,7 +231,7 @@ const AlgorithmSelector = ({ display = false, isAuthenticated = false, locationI
 				{!display && <button className="small-icon" onClick={closeModal} title="Close">✕<p className="icon-text">Close</p></button>}
 				<div className="error-message">{assignError}</div>
 				{!display && isAuthenticated && <p className="tiny-text">Changing the algorithm will reload posts</p>}
-				{!display && !isAuthenticated && <p className="tiny-text">Login to apply an algorithm</p>}
+				{!display && !isAuthenticated && <p className="tiny-text">Login to create an algorithm</p>}
 			</div>
 			{loading && <div className="loading-state">Loading algorithms...</div>}
 			{!loading && (

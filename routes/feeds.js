@@ -460,24 +460,45 @@ router.post('/deep_feed_posts', standardLimiter, authenticateCheck, async (req, 
         let mappedBluesky = [];
         let mappedMastodon = [];
         if (deepFeedId === 'following') {
-            if (connectedAccounts.find(a => a.platform === 'reddit')) {
-                const externalReddit = await fetch(`http://localhost:${process.env.APP_PORT || 7000}/api/reddit/feed`, { headers: { cookie: req.headers.cookie } });
-                const redditJson = await externalReddit.json();
-                mappedReddit = (redditJson.items || []).map(p => ({ ...p, isExternal: true }));
+            const port = process.env.APP_PORT || 7000;
+            const redditEnabled = connectedAccounts.find(a => a.platform === 'reddit');
+            const blueskyEnabled = connectedAccounts.find(a => a.platform === 'bluesky');
+            const mastodonEnabled = connectedAccounts.find(a => a.platform === 'mastodon');
+            const tasks = [];
+            if (redditEnabled) {
+                tasks.push(
+                    fetch(`http://localhost:${port}/api/reddit/feed`, { headers: { cookie: req.headers.cookie } })
+                        .then(r => r.json())
+                        .then(j => j.items || [])
+                );
+            } else {
+                tasks.push(Promise.resolve([]));
             }
-            if (connectedAccounts.find(a => a.platform === 'bluesky')) {
-                const externalBluesky = await fetch(`http://localhost:${process.env.APP_PORT || 7000}/api/bluesky/feed`, { headers: { cookie: req.headers.cookie } });
-                const blueskyJson = await externalBluesky.json();
-                mappedBluesky = (blueskyJson.items || []).map(p => ({ ...p, isExternal: true }));
+            if (blueskyEnabled) {
+                tasks.push(
+                    fetch(`http://localhost:${port}/api/bluesky/feed`, { headers: { cookie: req.headers.cookie } })
+                        .then(r => r.json())
+                        .then(j => j.items || [])
+                );
+            } else {
+                tasks.push(Promise.resolve([]));
             }
-            if (connectedAccounts.find(a => a.platform === 'mastodon')) {
-                const externalMastodon = await fetch(`http://localhost:${process.env.APP_PORT || 7000}/api/mastodon/feed`, { headers: { cookie: req.headers.cookie } });
-                const mastodonJson = await externalMastodon.json();
-                mappedMastodon = (mastodonJson.items || []).map(p => ({ ...p, isExternal: true }));
+            if (mastodonEnabled) {
+                tasks.push(
+                    fetch(`http://localhost:${port}/api/mastodon/feed`, { headers: { cookie: req.headers.cookie } })
+                        .then(r => r.json())
+                        .then(j => j.items || [])
+                );
+            } else {
+                tasks.push(Promise.resolve([]));
             }
+            const [redditItems, blueskyItems, mastodonItems] = await Promise.all(tasks);
+            mappedReddit = redditItems.map(p => ({ ...p, isExternal: true }));
+            mappedBluesky = blueskyItems.map(p => ({ ...p, isExternal: true }));
+            mappedMastodon = mastodonItems.map(p => ({ ...p, isExternal: true }));
         }
         const localPosts = deepFeedPosts.map(p => ({ ...p, isExternal: false }));
-        const combined = [];
+        const combined = [...localPosts, ...mappedReddit, ...mappedBluesky, ...mappedMastodon];
         const maxLen = Math.max(localPosts.length, mappedReddit.length, mappedBluesky.length);
         for (let i = 0; i < maxLen; i++) {
             if (localPosts[i]) combined.push(localPosts[i]);

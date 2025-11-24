@@ -109,16 +109,16 @@ const ExternalPostWidget = ({ post }) => {
 								<button className="large-icon">
 									<FaHeart />
 								</button>
-								<p className="small-text">{FormatNumber(post?.like_count)}</p>
+								<p className="small-text">{FormatNumber(post?.score)}</p>
 							</>
 						)}
 					</div>
 				</div>
 				<div className="post-button-group reply-buttons">
-					<button className="large-icon" title={"Replies"}>
+					<a href={post?.url} className="large-icon" title={"Replies"}>
 						<FaComments />
 						<p className="small-text">{post?.replies}</p>
-					</button>
+					</a>
 				</div>
 				<div className="button-text-bottom">
 					<button className="large-icon">

@@ -549,6 +549,8 @@ router.delete('/remove_post', standardLimiter, authenticateCheck, async (req, re
 			}
 			await PostVotes.destroy({ where: { post_id: post.post_id }, transaction });
 			await PostNotes.destroy({ where: { post_id: post.post_id }, transaction });
+			await SavedPosts.destroy({ where: { post_id: post.post_id }, transaction });
+			await ViewedPosts.destroy({ where: { post_id: post.post_id }, transaction });
 			await Posts.destroy({ where: { post_id: post.post_id }, transaction });
 			await Feeds.decrement('post_count', { by: 1, where: { feed_id: foundPost.feed_id }, transaction });
 			await FeedChannels.decrement('post_count', { by: 1, where: { channel_id: foundPost.channel_id }, transaction });

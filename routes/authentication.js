@@ -5,6 +5,7 @@ import { Connections, ConnectRequests, DeepFeeds, Feeds, FeedChannels, Followers
 import { ConnectedAccounts } from '../models/users.js';
 import DeleteMedia from '../functions/media_handling/deleteMedia.js';
 import dotenv from 'dotenv';
+import { ExternalPostsAccess } from '../models/content.js';
 import { fileURLToPath } from 'url';
 import { generateVerificationToken, sendPasswordResetEmail, sendVerificationEmail } from '../functions/emailService.js';
 import jwt from 'jsonwebtoken';
@@ -135,6 +136,7 @@ router.delete('/delete_account', resendLimiter, authenticateCheck, async (req, r
         await Messages.destroy({ where: { sender_id: userId }, transaction });
         await Feeds.destroy({ where: { feed_owner: userId, is_group: false }, transaction });
         await ConnectedAccounts.destroy({ where: { user_id: userId }, transaction });
+        await ExternalPostsAccess.destroy({ where: { user_id: userId }, transaction });
         await Users.destroy({ where: { user_id: userId }, transaction });
         await transaction.commit();
         res.clearCookie('sid');
