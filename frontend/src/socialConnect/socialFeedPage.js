@@ -8,40 +8,81 @@ import { useContext, useEffect, useState, useRef } from 'react';
 import { useLocation } from "react-router-dom";
 
 export default function SocialFeedPage({ platform }) {
+	const [errorMessage, setErrorMessage] = useState('');
 	const { isAuthenticated } = useContext(AuthContext);
 	const [loading, setLoading] = useState(true);
 	const [posts, setPosts] = useState([]);
 	const location = useLocation();
 	const scrollRef = useRef(null);
-
-	//When returning from Reddit or Mastodon redirect
-	useEffect(() => {
-		const params = new URLSearchParams(location.search);
-		const connected = params.get("connected");
-		if (connected === "reddit" || connected === "mastodon") {
-			refreshConnectedAccounts();
-			window.history.replaceState({}, "", location.pathname);
-		}
-	}, [location]);
+	const hasLoadedRef = useRef(false); 
 
 	useEffect(() => {
-		setLoading(true);
-		setPosts([]);
-		async function load() {
-			if (!isAuthenticated) return;
-			try {
-				console.log("Loading feed for platform:", platform);
-				const response = await api.get(`/${platform}/feed`, { withCredentials: true });
-				console.log(`${platform} feed response:`, response);
-				setPosts(response.data.items || []);
-			} catch (error) {
-				console.error('Feed error:', error);
-			} finally {
-				setLoading(false);
-			}
+		//Reset on platform change
+		if (hasLoadedRef.current) {
+			hasLoadedRef.current = false;
 		}
-		load();
 	}, [platform]);
+
+	useEffect(() => {
+		if (hasLoadedRef.current) return;
+		try {
+			hasLoadedRef.current = true;
+			const params = new URLSearchParams(location.search);
+			const justConnected = params.get("connected");
+			console.log('SocialFeedPage loading:', { platform, justConnected, isAuthenticated });
+			//Check for cached posts from fresh connection
+			if (justConnected === "true") {
+				const cacheKey = `${platform}_initial_posts`;
+				const cachedPosts = sessionStorage.getItem(cacheKey);
+				console.log('Checking sessionStorage for key:', cacheKey);
+				console.log('Cached posts found:', cachedPosts ? 'YES' : 'NO');
+				try {
+					const parsedPosts = JSON.parse(cachedPosts);
+					console.log(`Loaded ${parsedPosts.length} cached ${platform} posts`);
+					setPosts(parsedPosts);
+					setLoading(false);
+					//Clean up cache and URL
+					sessionStorage.removeItem(cacheKey);
+					window.history.replaceState({}, "", location.pathname);
+					return; //Exit earlt, don't fetch from API
+				} catch (error) {
+					setErrorMessage('Error getting posts');
+					sessionStorage.removeItem(cacheKey);
+				}
+			}
+			//Handle OAuth redirects (Reddit/Mastodon)
+			if (justConnected === "reddit" || justConnected === "mastodon") {
+				refreshConnectedAccounts();
+				window.history.replaceState({}, "", location.pathname);
+			}
+			//Regular feed load from database/API
+			async function loadFeed() {
+				if (!isAuthenticated) {
+					setLoading(false);
+					return;
+				}
+				setLoading(true);
+				console.log(`Fetching ${platform} feed from API...`);
+				try {
+					const response = await api.get(`/${platform}/feed`, { 
+						withCredentials: true 
+					});
+					const items = response.data.items || [];
+					console.log(`✓ Loaded ${items.length} posts from API`);
+					setPosts(items);
+				} catch (error) {
+					setErrorMessage('Error getting posts');
+					setPosts([]);
+				} finally {
+					setLoading(false);
+				}
+			}
+			loadFeed();
+		} catch (error) {
+			setErrorMessage('Error loading feed');
+			setLoading(false);
+		}
+	}, [platform, location.search, isAuthenticated]);
 
 	if (!isAuthenticated) {
 		return (
@@ -59,6 +100,7 @@ export default function SocialFeedPage({ platform }) {
 	return (
 		<div className="standard-container">
 			<div ref={scrollRef} className="channel-feed">
+				<p className="error-message">{errorMessage}</p>
 				{loading ? (
 					<p className="large-text faded-text">Loading {capitalise(platform)} feed...</p>
 				) : posts.length === 0 ? (

@@ -15,6 +15,8 @@ async function getEmbedder() {
     return embedder;
 }
 
+export { getEmbedder };
+
 export class ContentAnalyser {
     constructor() {
         this.stemmer = natural.PorterStemmer;

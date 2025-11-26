@@ -10,35 +10,45 @@ const ConnectBluesky = () => {
 	const [appPassword, setAppPassword] = useState('');
 	const [showPassword, setShowPassword] = useState(false);
 	const [errorMessage, setErrorMessage] = useState('');
+	const [isSubmitting, setIsSubmitting] = useState(false);
 	const navigate = useNavigate();
-	const isDisabled = !handle || !appPassword;
+	const isDisabled = !handle || !appPassword || isSubmitting;
 
 	const submit = async (e) => {
 		e.preventDefault();
+		setIsSubmitting(true);
+		setErrorMessage('');
+		
 		try {
 			const response = await api.post('/auth/bluesky', {
 				identifier: handle,
 				appPassword
 			});
 			if (response.data?.success) {
+				//Update connected accounts in localStorage
 				const existing = JSON.parse(localStorage.getItem("connectedAccounts") || "[]");
 				const updated = [
-					...existing,
+					...existing.filter(acc => acc.platform !== "bluesky"),
 					{
 						platform: "bluesky",
 						handle,
-						instance_url: null,
+						instance_url: "https://bsky.social",
 						extra: { did: response.data?.did }
 					}
 				];
 				localStorage.setItem("connectedAccounts", JSON.stringify(updated));
-				navigate('/feed/bluesky');
+				//Store posts in sessionStorage BEFORE navigating
+				const cacheKey = 'bluesky_initial_posts';
+				sessionStorage.setItem(cacheKey, JSON.stringify(response.data.posts));
+				navigate('/feed/bluesky?connected=true');
 				return;
 			}
 			setErrorMessage('Could not connect to Bluesky');
 		} catch (error) {
-			const message = error.response?.data?.error;
-			setErrorMessage(message || 'Error connecting to Bluesky');
+			const message = error.response?.data?.error || 'Error connecting to Bluesky';
+			setErrorMessage(message);
+		} finally {
+			setIsSubmitting(false);
 		}
 	};
 

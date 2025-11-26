@@ -25,6 +25,7 @@ const ExternalPosts = sequelize.define('ExternalPosts', {
 	score: { type: INTEGER, allowNull: true },
     replies: { type: INTEGER, allowNull: true },
 	rank_hotness: { type: FLOAT, allowNull: true },
+    sentiment_score: { type: FLOAT, allowNull: true },
 	embeddings: { type: DataTypes.JSON, allowNull: true },
 	fetched_at: { type: DataTypes.DATE, allowNull: false },
 	created_at_remote: { type: DataTypes.DATE, allowNull: false },

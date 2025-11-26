@@ -26,7 +26,7 @@ const ExternalPostWidget = ({ post }) => {
 		setShowExpandButton(overflowing);
 	};
 
-	function normaliseRedditAvatar(url) {
+	function normaliseAvatar(url) {
 		if (!url) return '';
 		let out = url.replace(/&amp;/g, '&');
 		if (out.startsWith('//')) out = 'https:' + out;
@@ -87,7 +87,7 @@ const ExternalPostWidget = ({ post }) => {
 			<div className="content-metadata">
 				<div className="feed-info">
 					<a className="feed-link" target="_blank" rel="noopener noreferrer" href={post?.poster?.profile_url}>
-						<img className="small-feed-photo" src={normaliseRedditAvatar(post?.poster?.user_photo)} onError={(e) => e.currentTarget.src = '/media/site_images/blank-profile.png'} />
+						<img className="small-feed-photo" src={normaliseAvatar(post?.poster?.user_photo)} onError={(e) => e.currentTarget.src = '/media/site_images/blank-profile.png'} />
 						<p className="feed-list-text">{post?.poster?.username ?? 'Anonymous'}</p>
 					</a>
 				</div>
