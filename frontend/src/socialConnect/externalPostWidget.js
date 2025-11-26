@@ -8,7 +8,6 @@ import { useContext, useEffect, useRef, useState } from 'react';
 import useTimeAgo from '../functions/useTimeAgo';
 
 const ExternalPostWidget = ({ post }) => {
-    console.log("external post:", post);
 	const authContext = useContext(AuthContext);
 	const { isAuthenticated = false } = authContext || {};
 	const { post_id } = useParams();
@@ -115,7 +114,7 @@ const ExternalPostWidget = ({ post }) => {
 					</div>
 				</div>
 				<div className="post-button-group reply-buttons">
-					<a href={post?.url} className="large-icon" title={"Replies"}>
+					<a href={post?.url} className="large-icon" title={"Replies"} rel="noopener noreferrer" target="_blank">
 						<FaComments />
 						<p className="small-text">{post?.replies}</p>
 					</a>

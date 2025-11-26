@@ -411,6 +411,7 @@ CREATE TABLE `external_posts_access` (
   `id` VARCHAR(36) NOT NULL,
   `user_id` VARCHAR(36) NOT NULL,
   `post_id` VARCHAR(255) NOT NULL,
+  `source` VARCHAR(20) NOT NULL DEFAULT 'unknown',
   `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   UNIQUE KEY `uniq_user_post` (`user_id`, `post_id`),

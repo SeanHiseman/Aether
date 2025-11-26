@@ -54,6 +54,7 @@ const ExternalPostsAccess = sequelize.define('ExternalPostsAccess', {
 	id: { type: STRING(36), primaryKey: true },
 	user_id: { type: STRING(36), allowNull: false },
 	post_id: { type: STRING(36), allowNull: false },
+    source: { type: STRING(20), allowNull: false },
 	created_at: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }
 }, {
 	tableName: 'external_posts_access',
@@ -62,6 +63,7 @@ const ExternalPostsAccess = sequelize.define('ExternalPostsAccess', {
 	indexes: [
 		{ fields: ['user_id'] },
 		{ fields: ['post_id'] },
+        { fields: ['source'] },
 		{ fields: ['user_id', 'post_id'], unique: true }
 	]
 });

@@ -36,19 +36,26 @@ export default function SocialFeedPage({ platform }) {
 				const cachedPosts = sessionStorage.getItem(cacheKey);
 				console.log('Checking sessionStorage for key:', cacheKey);
 				console.log('Cached posts found:', cachedPosts ? 'YES' : 'NO');
-				try {
-					const parsedPosts = JSON.parse(cachedPosts);
-					console.log(`Loaded ${parsedPosts.length} cached ${platform} posts`);
-					setPosts(parsedPosts);
-					setLoading(false);
-					//Clean up cache and URL
-					sessionStorage.removeItem(cacheKey);
-					window.history.replaceState({}, "", location.pathname);
-					return; //Exit earlt, don't fetch from API
-				} catch (error) {
-					setErrorMessage('Error getting posts');
-					sessionStorage.removeItem(cacheKey);
+				if (cachedPosts) {
+					try {
+						const parsedPosts = JSON.parse(cachedPosts);
+						console.log(`Loaded ${parsedPosts.length} cached ${platform} posts`);
+						setPosts(parsedPosts);
+						setLoading(false);
+						//Clean up cache and URL
+						sessionStorage.removeItem(cacheKey);
+						window.history.replaceState({}, "", location.pathname);
+						//Refresh connected accounts to update local storage
+						refreshConnectedAccounts();
+						return; //Exit early, don't fetch from API
+					} catch (error) {
+						setErrorMessage('Error getting posts');
+						sessionStorage.removeItem(cacheKey);
+					}
 				}
+				//If no cached posts but justConnected, still refresh accounts
+				refreshConnectedAccounts();
+				window.history.replaceState({}, "", location.pathname);
 			}
 			//Handle OAuth redirects (Reddit/Mastodon)
 			if (justConnected === "reddit" || justConnected === "mastodon") {
@@ -62,13 +69,12 @@ export default function SocialFeedPage({ platform }) {
 					return;
 				}
 				setLoading(true);
-				console.log(`Fetching ${platform} feed from API...`);
 				try {
 					const response = await api.get(`/${platform}/feed`, { 
 						withCredentials: true 
 					});
 					const items = response.data.items || [];
-					console.log(`✓ Loaded ${items.length} posts from API`);
+					console.log(`Loaded ${items.length} posts from API`);
 					setPosts(items);
 				} catch (error) {
 					setErrorMessage('Error getting posts');

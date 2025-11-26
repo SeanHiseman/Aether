@@ -24,18 +24,6 @@ function ua() {
 	return 'AetherSocialLocal/0.1 (testing on localhost)';
 }
 
-async function fetchRedditUserProfile(username, token) {
-	const resp = await fetch(`https://oauth.reddit.com/user/${username}/about`, {
-		headers: {
-			'Authorization': `bearer ${token}`,
-			'User-Agent': ua()
-		}
-	});
-	if (!resp.ok) return null;
-	const data = await resp.json();
-	return data.data?.icon_img || null;
-}
-
 function generateBlueskyContentHTML(textBody, media) {
 	let html = '';
 	if (textBody?.trim()) {
@@ -213,10 +201,12 @@ function mapRedditToExternal(child) {
 	} else if (d.preview?.images) {
 		media = d.preview.images;
 	}
+	//Use snoovatar_img first, then author_icon_img, then a fallback default
+	const authorPhoto = 'https://www.redditstatic.com/avatars/defaults/v2/avatar_default_0.png';
 	return {
 		post_id: `reddit:${d.id}`,
 		author: d.author ? `u/${d.author}` : null,
-		author_photo: null,
+		author_photo: authorPhoto,
 		created_at_remote: new Date(d.created_utc * 1000),
 		expired: false,
 		fetched_at: new Date(),
@@ -228,7 +218,7 @@ function mapRedditToExternal(child) {
 		subreddit: d.subreddit || null,
 		text_body: d.selftext || null,
 		title: d.title || null,
-		url: d.url_overridden_by_dest || `https://www.reddit.com${d.permalink}`,
+		url: `https://www.reddit.com${d.permalink}`, 
 		text_length: d.selftext?.length || 0,
 		word_count: d.selftext ? d.selftext.split(/\s+/).length : 0,
 		image_count: Array.isArray(media) ? media.length : 0,
@@ -324,6 +314,7 @@ router.post('/auth/bluesky', authenticateCheck, async (req, res) => {
 				}))
 			});
 			//Compute post data in background
+			const start = Date.now();
 			setImmediate(async () => {
 				const embedder = await getEmbedder();
 				const enrichedPosts = await Promise.all(mappedPosts.map(async (mapped) => {
@@ -346,12 +337,14 @@ router.post('/auth/bluesky', authenticateCheck, async (req, res) => {
 				const accessRows = enrichedPosts.map(p => ({
 					id: v4(),
 					post_id: p.post_id,
+					source: 'bluesky',
 					user_id: req.user.user_id,
 					created_at: new Date()
 				}));
 				await ExternalPostsAccess.bulkCreate(accessRows, { 
 					ignoreDuplicates: true 
 				});
+				console.log("Bluesky background processing:", Date.now() - start, "ms");
 			});
 		} else {
 			//No posts available, but connection was successful
@@ -447,7 +440,7 @@ router.get('/bluesky/feed', authenticateCheck, async (req, res) => {
 		const limit = Math.min(Number(req.query.limit) || 100, 100);
 		console.log('Bluesky feed request with limit:', limit);
 		const accesses = await ExternalPostsAccess.findAll({
-			where: { user_id: req.user.user_id },
+			where: { user_id: req.user.user_id, source: 'bluesky' },
 			attributes: ['post_id'],
 			order: [['created_at','DESC']],
 			limit
@@ -552,35 +545,80 @@ router.get('/reddit/callback', authenticateCheck, async (req, res) => {
 			instance_url: 'https://reddit.com',
 			extra: JSON.stringify(tokenJson)
 		});
-		(async () => {
-			try {
-				const token = tokenJson.access_token;
-				const params = new URLSearchParams({ limit: '100' });
-				const resp = await fetch(`https://oauth.reddit.com/best?${params.toString()}`, {
-					headers: {
-						'Authorization': `bearer ${token}`,
-						'User-Agent': ua()
-					}
+		//Fetch initial posts
+		const token = tokenJson.access_token;
+		const params = new URLSearchParams({ limit: '100' });
+		const resp = await fetch(`https://oauth.reddit.com/best?${params.toString()}`, {
+			headers: {
+				'Authorization': `bearer ${token}`,
+				'User-Agent': ua()
+			}
+		});
+		//Return posts immediately
+		if (resp.ok) {
+			const j = await resp.json();
+			const children = j.data.children.filter(c => c.kind === 't3');
+			const mappedPosts = children.map(c => {
+				const p = mapRedditToExternal(c);
+				const rank_hotness = computeHotness({
+					upvotes: p.score || 0,
+					downvotes: 0,
+					createdAt: p.created_at_remote,
+					referenceTime: Math.floor(Date.now() / 1000)
 				});
-				if (!resp.ok) return;
-				const j = await resp.json();
-				const children = j.data.children.filter(c => c.kind === 't3');
-				const mappedPosts = await Promise.all(children.map(async child => {
-					const mapped = mapRedditToExternal(child);
-					const username = (mapped.author || '').replace('u/','');
-					mapped.author_photo = await fetchRedditUserProfile(username, token);
+				return { ...p, rank_hotness };
+			});
+			const postsData = mappedPosts.map(p => ({
+				post_id: p.post_id,
+				title: p.title,
+				content: `data:text/html;charset=utf-8,${encodeURIComponent(generateRedditContentHTML(p.text_body, p.media))}`,
+				created_at: p.created_at_remote,
+				upvotes: 0,
+				downvotes: 0,
+				views: 0,
+				replies: p.replies ?? 0,
+				score: p.score || 0,
+				is_saved: false,
+				has_upvoted: false,
+				has_downvoted: false,
+				poster: {
+					profile_url: p.author ? `https://reddit.com/${p.author}` : null,
+					user_photo: p.author_photo || '/media/site_images/default-reddit-user-icon.png',
+					username: p.author || 'reddit_user'
+				},
+				channel: p.channel,
+				url: p.url,
+				source: 'Reddit',
+				rank_hotness: p.rank_hotness
+			}));
+			res.send(`
+				<!DOCTYPE html>
+				<html>
+				<body>
+					<script>
+						sessionStorage.setItem('reddit_initial_posts', ${JSON.stringify(JSON.stringify(postsData))});
+						window.location.href = '/feed/reddit?connected=true';
+					</script>
+				</body>
+				</html>
+			`);
+			//Background processing
+			const start = Date.now();
+			setImmediate(async () => {
+				const embedder = await getEmbedder();
+				const enriched = await Promise.all(mappedPosts.map(async mapped => {
 					const html = generateRedditContentHTML(mapped.text_body, mapped.media);
-					const analysis = await contentAnalyser.analyseContent(html, mapped.title);
+					const details = await contentAnalyser.analyseContent(html, mapped.title, embedder);
 					const rank_hotness = computeHotness({
 						upvotes: mapped.score || 0,
 						downvotes: 0,
 						createdAt: mapped.created_at_remote,
 						referenceTime: Math.floor(Date.now() / 1000)
 					});
-					const sentiment_score = contentAnalyser.calculateSentiment(mapped.text_body) || 0;
-					return { ...mapped, ...analysis, rank_hotness, sentiment_score };
+					const sentiment_score = details?.sentiment_score ?? 0;
+					return { ...mapped, ...details, rank_hotness, sentiment_score };
 				}));
-				await ExternalPosts.bulkCreate(mappedPosts, {
+				await ExternalPosts.bulkCreate(enriched, {
 					updateOnDuplicate: [
 						'title','text_body','media','score','replies','created_at_remote','fetched_at',
 						'author_photo','image_count','video_count','text_length','word_count','has_images',
@@ -589,18 +627,15 @@ router.get('/reddit/callback', authenticateCheck, async (req, res) => {
 					],
 					ignoreDuplicates: true
 				});
-				const accessRows = mappedPosts.map(p => ({
-					id: v4(),
-					post_id: p.post_id,
-					user_id,
-					created_at: new Date()
-				}));
-				await ExternalPostsAccess.bulkCreate(accessRows, { ignoreDuplicates: true });
-			} catch (error) {
-				console.error('initial reddit fetch error:', error);
-			}
-		})();
-		res.redirect('/feed/reddit');
+				await ExternalPostsAccess.bulkCreate(
+					enriched.map(p => ({ id: v4(), post_id: p.post_id, source: 'reddit', user_id, created_at: new Date() })),
+					{ ignoreDuplicates: true }
+				);
+				console.log("Reddit background processing:", Date.now() - start, "ms");
+			});
+		} else {
+			res.redirect('/feed/reddit');
+		}
 	} catch (error) {
 		console.error('reddit callback error', error);
 		res.redirect('/feed/reddit?error=1');
@@ -637,48 +672,88 @@ router.get('/mastodon/callback', authenticateCheck, async (req, res) => {
 			instance_url: instance,
 			extra: JSON.stringify({ instance })
 		});
-		(async () => {
-			try {
-				const base = instance;
-				const resp = await fetch(`${base}/api/v1/timelines/home?limit=40`, {
-					headers: { Authorization: `Bearer ${tokenJson.access_token}` }
+		//Fetch initial posts
+		const base = instance;
+		const resp = await fetch(`${base}/api/v1/timelines/home?limit=40`, {
+			headers: { Authorization: `Bearer ${tokenJson.access_token}` }
+		});
+		if (resp.ok) {
+			const feed = await resp.json();
+			const mappedPosts = feed.map(t => {
+				const p = mapMastodonToExternal(t, instance);
+				const rank_hotness = computeHotness({
+					upvotes: p.score || 0,
+					downvotes: 0,
+					createdAt: p.created_at_remote,
+					referenceTime: Math.floor(Date.now() / 1000)
 				});
-				if (!resp.ok) return;
-				const feed = await resp.json();
-				const mappedPosts = await Promise.all(feed.map(async toot => {
-					const mapped = mapMastodonToExternal(toot, instance);
+				return { ...p, rank_hotness };
+			});
+			const postsData = mappedPosts.map(p => ({
+				post_id: p.post_id,
+				title: p.title,
+				content: `data:text/html;charset=utf-8,${encodeURIComponent(generateMastodonContentHTML(p.text_body, p.media))}`,
+				created_at: p.created_at_remote,
+				upvotes: 0,
+				downvotes: 0,
+				views: 0,
+				replies: p.replies ?? 0,
+				score: p.score || 0,
+				is_saved: false,
+				has_upvoted: false,
+				has_downvoted: false,
+				poster: {
+					profile_url: p.author ? `${instance}/@${p.author}` : null,
+					user_photo: p.author_photo || '/media/site_images/default-mastodon-user-icon.png',
+					username: p.author || 'mastodon_user'
+				},
+				channel: p.channel,
+				url: p.url,
+				source: 'Mastodon',
+				rank_hotness: p.rank_hotness
+			}));
+			res.send(`
+				<!DOCTYPE html>
+				<html>
+				<body>
+					<script>
+						sessionStorage.setItem('mastodon_initial_posts', ${JSON.stringify(JSON.stringify(postsData))});
+						window.location.href = '/feed/mastodon?connected=true';
+					</script>
+				</body>
+				</html>
+			`);
+			//Background analysis
+			const start = Date.now();
+			setImmediate(async () => {
+				const embedder = await getEmbedder();
+				const enriched = await Promise.all(mappedPosts.map(async mapped => {
 					const html = generateMastodonContentHTML(mapped.text_body, mapped.media);
-					const analysis = await contentAnalyser.analyseContent(html, mapped.title);
+					const details = await contentAnalyser.analyseContent(html, mapped.title, embedder);
 					const rank_hotness = computeHotness({
 						upvotes: mapped.score || 0,
 						downvotes: 0,
 						createdAt: mapped.created_at_remote,
 						referenceTime: Math.floor(Date.now() / 1000)
 					});
-					const sentiment_score = contentAnalyser.calculateSentiment(mapped.text_body) || 0;
-					return { ...mapped, ...analysis, rank_hotness, sentiment_score };
+					const sentiment_score = details?.sentiment_score ?? 0;
+					return { ...mapped, ...details, rank_hotness, sentiment_score };
 				}));
-				await ExternalPosts.bulkCreate(mappedPosts, {
-					updateOnDuplicate: [
-						'text_body','media','score','replies','created_at_remote','fetched_at',
-						'author_photo','image_count','video_count','text_length','word_count','has_images',
-						'has_videos','video_length','sentiment_score','tokens','embeddings','processed_at',
-						'rank_hotness'
-					],
-					ignoreDuplicates: true
-				});
-				const accessRows = mappedPosts.map(p => ({
-					id: v4(),
-					post_id: p.post_id,
-					user_id,
-					created_at: new Date()
-				}));
-				await ExternalPostsAccess.bulkCreate(accessRows, { ignoreDuplicates: true });
-			} catch (error) {
-				console.error('initial mastodon fetch error:', error);
-			}
-		})();
-		res.redirect('/feed/mastodon');
+				await ExternalPosts.bulkCreate(enriched, { updateOnDuplicate: [
+					'text_body','media','score','replies','created_at_remote','fetched_at',
+					'author_photo','image_count','video_count','text_length','word_count','has_images',
+					'has_videos','video_length','sentiment_score','tokens','embeddings','processed_at',
+					'rank_hotness'
+				], ignoreDuplicates: true });
+				await ExternalPostsAccess.bulkCreate(
+					enriched.map(p => ({ id: v4(), post_id: p.post_id, source: 'mastodon', user_id, created_at: new Date() })),
+					{ ignoreDuplicates: true }
+				);
+				console.log("Mastodon background processing:", Date.now() - start, "ms");
+			});
+		} else {
+			res.redirect('/feed/mastodon');
+		}
 	} catch (error) {
 		console.error(error);
 		res.redirect('/feed/mastodon?error=1');
@@ -689,7 +764,7 @@ router.get('/reddit/feed', authenticateCheck, async (req, res) => {
 	try {
 		const { limit = '100' } = req.query;
 		const accesses = await ExternalPostsAccess.findAll({
-			where: { user_id: req.user.user_id },
+			where: { user_id: req.user.user_id, source: 'reddit' },
 			attributes: ['post_id']
 		});
 		const postIds = accesses.map(a => a.post_id).filter(Boolean);
@@ -742,7 +817,7 @@ router.get('/mastodon/feed', authenticateCheck, async (req, res) => {
 		const limit = Math.min(Number(req.query.limit) || 40, 40);
 		console.log(`Mastodon feed request with limit: ${limit}`);
 		const accesses = await ExternalPostsAccess.findAll({
-			where: { user_id: req.user.user_id },
+			where: { user_id: req.user.user_id, source: 'mastodon' },
 			attributes: ['post_id'],
 			order: [['created_at','DESC']],
 			limit
@@ -752,6 +827,8 @@ router.get('/mastodon/feed', authenticateCheck, async (req, res) => {
 		if (!postIds.length) {
 			return res.status(200).json({ success: true, items: [] });
 		}
+		console.log(`Fetching ${postIds.length} mastodon postIds`);
+		console.log('Post IDs:', postIds);
 		const posts = await ExternalPosts.findAll({
 			where: { post_id: postIds, source: 'mastodon' },
 			order: [['rank_hotness','DESC']]
