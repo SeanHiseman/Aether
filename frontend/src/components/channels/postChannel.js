@@ -152,11 +152,6 @@ const PostChannel = ({ channelId, channelName, feed, isDraft, isEditMode, isGrou
 		}
 	}
 
-	const renderList = (items) =>
-		items?.map((post) => (
-			<ContentWidget key={post?.post_id} feed={feed} isDraft={isDraft} onPostRemoved={handlePostRemoved} post={post} />
-		));
-
 	return (
 		<div ref={scrollRef} onScroll={handleScroll} className="channel-feed">
 			{channelMessage ? (
