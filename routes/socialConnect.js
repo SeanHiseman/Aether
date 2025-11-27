@@ -591,6 +591,7 @@ router.get('/reddit/callback', authenticateCheck, async (req, res) => {
 				source: 'Reddit',
 				rank_hotness: p.rank_hotness
 			}));
+			//Small html file that contains post data
 			res.send(`
 				<!DOCTYPE html>
 				<html>
@@ -712,6 +713,7 @@ router.get('/mastodon/callback', authenticateCheck, async (req, res) => {
 				source: 'Mastodon',
 				rank_hotness: p.rank_hotness
 			}));
+			//Small html file that contains post data
 			res.send(`
 				<!DOCTYPE html>
 				<html>

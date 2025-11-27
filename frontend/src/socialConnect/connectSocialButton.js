@@ -1,4 +1,4 @@
-const backendUrl = process.env.REACT_APP_BACKEND_URL;
+import axios from 'axios';
 
 export default function ConnectSocialButton({ socialIcon, socialName, socialRoute }) {
 	const handleClick = async () => {
@@ -9,18 +9,14 @@ export default function ConnectSocialButton({ socialIcon, socialName, socialRout
 		if (socialRoute === '/connect/mastodon') {
 			const instance = prompt("Enter your Mastodon instance (e.g. mastodon.social)");
 			if (!instance) return;
-			const response = await fetch(`${backendUrl}/api/auth/mastodon`, {
-				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({ instance })
-			});
-			const json = await response.json();
+			const response = await axios.post(`/api/auth/mastodon`, { instance });
+			const json = response.data;
 			if (json?.url) {
 				window.location.href = json.url;
 			}
 			return;
 		}
-		window.location.href = `${backendUrl}/api/${socialRoute}`;
+		window.location.href = `/api/${socialRoute}`;
 	};
 
 	return (
