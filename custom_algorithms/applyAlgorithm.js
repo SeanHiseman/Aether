@@ -405,28 +405,52 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
 			//algorithmScore += voteImpact * ((qualityRatio * 0.7) + (engagementRatio * 0.3));
 
             //Semantic boost/suppress using word embeddings
+			//console.log("post.text_body:", post.text_body);
 			if (post.embeddings && (algorithmRow?.boost_embedding || algorithmRow?.suppress_embedding)) {
 				let postEmbedding = null;
 				try { postEmbedding = JSON.parse(post.embeddings); } catch { postEmbedding = null; }
-				//console.log("post text body:", post.text_body);
-				//Normalise post embeddings for comparison
 				const magPost = Math.sqrt(postEmbedding.reduce((a, b) => a + b * b, 0)) || 1;
 				const normPost = postEmbedding.map(v => v / magPost);
 				let semanticBoost = 0;
 				let semanticSuppress = 0;
+				let boostWords = [];
+				let suppressWords = [];
+				try {
+					const algoJson = JSON.parse(algorithmRow.algorithm_code);
+					boostWords = algoJson.scoring?.wordBoost || [];
+					suppressWords = algoJson.scoring?.wordSuppress || [];
+				} catch {}
 				if (algorithmRow.boost_embedding) {
-					//console.log("algorithmRow.boost_embedding length:", algorithmRow.boost_embedding.length);
-					const boostVec = JSON.parse(algorithmRow.boost_embedding);
-					if (Array.isArray(boostVec) && boostVec.length === normPost.length)
-						semanticBoost = CosineSimilarity(normPost, boostVec);
-					//console.log("semanticBoost:", semanticBoost);
+					const boostVecs = JSON.parse(algorithmRow.boost_embedding);
+					if (Array.isArray(boostVecs) && boostVecs.length) {
+						semanticBoost = Math.max(...boostVecs.map((bv, i) => {
+							const word = boostWords[i] || `keyword${i}`;
+							if (!bv || bv.length !== normPost.length) {
+								//console.log(`Boost "${word}" skipped: length mismatch`, bv?.length, normPost.length);
+								return 0;
+							}
+							const sim = CosineSimilarity(normPost, bv);
+							//console.log(`Boost "${word}" similarity:`, sim);
+							return sim;
+						}));
+						//console.log("Max semanticBoost:", semanticBoost);
+					}
 				}
 				if (algorithmRow.suppress_embedding) {
-					//console.log("algorithmRow.suppress_embedding length:", algorithmRow.suppress_embedding.length);
-					const suppressVec = JSON.parse(algorithmRow.suppress_embedding);
-					if (Array.isArray(suppressVec) && suppressVec.length === normPost.length)
-						semanticSuppress = CosineSimilarity(normPost, suppressVec);
-					//console.log("semanticSuppress:", semanticSuppress);
+					const suppressVecs = JSON.parse(algorithmRow.suppress_embedding);
+					if (Array.isArray(suppressVecs) && suppressVecs.length) {
+						semanticSuppress = Math.max(...suppressVecs.map((sv, i) => {
+							const word = suppressWords[i] || `keyword${i}`;
+							if (!sv || sv.length !== normPost.length) {
+								//console.log(`Suppress "${word}" skipped: length mismatch`, sv?.length, normPost.length);
+								return 0;
+							}
+							const sim = CosineSimilarity(normPost, sv);
+							//console.log(`Suppress "${word}" similarity:`, sim);
+							return sim;
+						}));
+						//console.log("Max semanticSuppress:", semanticSuppress);
+					}
 				}
 				//console.log(post.post_id, "algorithmScore before:", algorithmScore);
 				algorithmScore += (semanticBoost * 50) - (semanticSuppress * 50);

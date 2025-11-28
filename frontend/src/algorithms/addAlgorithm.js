@@ -340,15 +340,11 @@ const AddAlgorithm = ({ algorithms = [], display, editingAlgorithm = null, isAut
                         type="text"
                         value={algorithmName}
                         onChange={(e) => {
-                            const v = e.target.value;
-                            const r = ValidateTextInput(v, 1, 100);
-                            if (r.valid) {
-                                setAlgorithmName(v);
-                                setError('');
-                            } else {
-                                setError("Name too long");
-                                setAlgorithmName(v);
-                            }
+                            let v = e.target.value;
+                            if (v.length > 100) v = v.slice(0, 100);
+                            const r = ValidateTextInput(v, 0, 100, false);
+                            setAlgorithmName(v);
+                            setError(r.valid ? '' : r.error);
                         }}
                     />
                 </div>
@@ -360,15 +356,11 @@ const AddAlgorithm = ({ algorithms = [], display, editingAlgorithm = null, isAut
                         type="text"
                         value={customInstruction}
                         onChange={(e) => {
-                            const v = e.target.value;
+                            let v = e.target.value;
+                            if (v.length > 5000) v = v.slice(0, 5000);
                             const r = ValidateTextInput(v, 0, 5000, false);
-                            if (r.valid) {
-                                setCustomInstruction(v);
-                                setError('');
-                            } else {
-                                setError("Instruction too long");
-                                setCustomInstruction(v);
-                            }
+                            setCustomInstruction(v);
+                            setError(r.valid ? '' : r.error);
                             setTemplate('none');
                         }}
                     />

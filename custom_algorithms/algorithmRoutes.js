@@ -128,7 +128,7 @@ router.post('/create_algorithm', authenticateCheck, async (req, res) => {
 					}, 
 				}
 				Merge the form settings with the user's custom instruction. If contradiction, prioritise following custom instruction.  
-				No text outside the JSON.
+				No text outside the JSON. Use at least 20 words, or more, for wordBoost and wordSuppress.
 			`;
 			const userContent = `
 				Form Settings:
@@ -161,14 +161,10 @@ router.post('/create_algorithm', authenticateCheck, async (req, res) => {
 		let boostEmbedding = null;
 		let suppressEmbedding = null;
 		if (Array.isArray(finalBoost) && finalBoost.length > 0) {
-			const boostText = finalBoost.join(' ');
-			//console.log("boostText:", boostText);
-			boostEmbedding = await analyser.generateEmbedding(boostText);
+			boostEmbedding = await Promise.all(finalBoost.map(word => analyser.generateEmbedding(word)));
 		}
 		if (Array.isArray(finalSuppress) && finalSuppress.length > 0) {
-			const suppressText = finalSuppress.join(' ');
-			//console.log("suppressText:", suppressText);
-			suppressEmbedding = await analyser.generateEmbedding(suppressText);
+			suppressEmbedding = await Promise.all(finalSuppress.map(word => analyser.generateEmbedding(word)));
 		}
 		//Create or update algorithm
 		let algorithm;
