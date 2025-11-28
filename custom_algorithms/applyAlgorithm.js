@@ -1,7 +1,8 @@
 import { Algorithms, AlgorithmLocations } from "./algorithms.js";
 import { CosineSimilarity } from "../functions/calculation/cosineSimilarity.js";
 import { DeepFeedContent, Posts, PostVotes, SavedPosts } from "../models/relationships.js";
-import { ExternalPosts } from "../models/content.js";
+import { ExternalPosts, ExternalPostsAccess } from "../models/content.js";
+import { generateBlueskyContentHTML, generateMastodonContentHTML, generateRedditContentHTML } from "../routes/socialConnect.js";
 import { Op } from 'sequelize';
 import Sequelize from 'sequelize';
 
@@ -35,7 +36,7 @@ function stripExcludedAttributes(posts) {
 	});
 }
 
-async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOptions, isGroup = true, isMain, limit = 100, offset, recentUpvotes, viewerId, keyword = '' }) {
+async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOptions, isGroup = true, isMain, limit = 100, offset, recentUpvotes, viewerId, keyword = '', connectedAccounts = [], userId }) {
 	try {
         //Followed feeds are a received as a string
 		const followedFeedIdsSafe = (typeof followedFeedIds === "string")
@@ -148,28 +149,106 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
             });
             const orderMap = new Map(orderedIds.map((id, i) => [id, i]));
 			posts.sort((a, b) => orderMap.get(a.post_id) - orderMap.get(b.post_id));
-        } else if (locationId === "following") {
-            const postIds = await Posts.findAll({
-                attributes: ['post_id'],
-                where: {
-                    feed_id: { [Op.in]: followedFeedIdsSafe },
-                    parent_id: null,
-                    ...(viewerId ? { poster_id: { [Op.not]: viewerId } } : {})
-                },
-                order: orderMode,
-                limit: limit,
-                offset,
-                raw: true
-            });
-            const orderedIds = postIds.map(p => p.post_id);
-            posts = await Posts.findAll({
-                where: { post_id: orderedIds },
-                include: includeOptions,
-                attributes: attrOption,
-                raw: false
-            });
+		} else if (locationId === "following") {
+			//Calculate posts per source (local + up to 3 external sources)
+			const enabledSources = [];
+			if (connectedAccounts.find(a => a.platform === 'reddit')) enabledSources.push('reddit');
+			if (connectedAccounts.find(a => a.platform === 'bluesky')) enabledSources.push('bluesky');
+			if (connectedAccounts.find(a => a.platform === 'mastodon')) enabledSources.push('mastodon');
+			const totalSources = 1 + enabledSources.length; //local + external sources
+			//console.log("totalSources:", totalSources);
+			//const postsPerSource = Math.floor((limit * 3) / totalSources); //Get 3 times as many posts as is needed
+			const postsPerSource = Math.floor((limit * 0.5) / totalSources);
+			//Fetch local posts
+			const postIds = await Posts.findAll({
+				attributes: ['post_id'],
+				where: {
+					feed_id: { [Op.in]: followedFeedIdsSafe },
+					parent_id: null,
+					...(viewerId ? { poster_id: { [Op.not]: viewerId } } : {})
+				},
+				order: orderMode,
+				limit: postsPerSource,
+				offset,
+				raw: true
+			});
+			//console.log("local posts:", postIds.length);
+			const orderedIds = postIds.map(p => p.post_id);
+			posts = await Posts.findAll({
+				where: { post_id: orderedIds },
+				include: includeOptions,
+				attributes: attrOption,
+				raw: false
+			});
 			const orderMap = new Map(orderedIds.map((id, i) => [id, i]));
 			posts.sort((a, b) => orderMap.get(a.post_id) - orderMap.get(b.post_id));
+			//Fetch external posts directly from database
+			const externalPostsArrays = await Promise.all(
+				enabledSources.map(async (platform) => {
+					if (!userId) return [];
+					const accesses = await ExternalPostsAccess.findAll({
+						where: { user_id: userId, source: platform },
+						attributes: ['post_id'],
+						limit: postsPerSource
+					});
+					//console.log("external post accesses length:", accesses.length);
+					const extPostIds = accesses.map(a => a.post_id).filter(Boolean);
+					if (!extPostIds.length) return [];
+					const extPosts = await ExternalPosts.findAll({
+						where: { post_id: extPostIds, source: platform },
+						order: [['rank_hotness', 'DESC']],
+						limit: postsPerSource,
+						raw: true
+					});
+					//console.log("external posts length:", extPosts.length);
+					//Format external posts to match widget expectations
+					return extPosts.map(p => {
+						const media = typeof p.media === 'string' ? JSON.parse(p.media) : p.media;
+						let contentHTML = '';
+						let sourceName = '';
+						if (platform === 'reddit') {
+							contentHTML = generateRedditContentHTML(p.text_body, media);
+							sourceName = 'Reddit';
+						} else if (platform === 'bluesky') {
+							contentHTML = generateBlueskyContentHTML(p.text_body, media);
+							sourceName = 'Bluesky';
+						} else if (platform === 'mastodon') {
+							contentHTML = generateMastodonContentHTML(p.text_body, media);
+							sourceName = 'Mastodon';
+						}
+						const username = platform === 'reddit' ? (p.author || '').replace('u/','') : p.author;
+						const externalScore = p.score ?? 0;
+						return {
+							...p,
+							isExternal: true,
+							created_at: p.created_at_remote,
+							content: `data:text/html;charset=utf-8,${encodeURIComponent(contentHTML)}`,
+							has_interactive: false,
+							has_embedded_websites: false,
+							has_external_posts: false,
+							poster: {
+								username: p.author || `${platform}_user`,
+								user_photo: p.author_photo || `/media/site_images/default-${platform}-user-icon.png`,
+								profile_url: platform === 'reddit' ? `https://www.reddit.com/user/${username}` :
+											platform === 'bluesky' ? `https://bsky.app/profile/${p.author}` :
+											p.url
+							},
+							channel: p.channel || platform,
+							source: sourceName,
+							upvotes: externalScore, //Equivalent to upvotes
+							downvotes: 0,
+							views: 0,
+							replies: p.replies || 0,
+							is_saved: false,
+							has_upvoted: false,
+							has_downvoted: false,
+						};
+					});
+				})
+			);
+			//console.log("externalPostsArrays length:", externalPostsArrays.length);
+			const allExternalPosts = externalPostsArrays.flat();
+			posts = [...posts.map(p => ({ ...(p.dataValues || p), isExternal: false })), ...allExternalPosts];
         } else if (locationId === "explore") {
             const postIds = await Posts.findAll({
                 attributes: ['post_id'],
@@ -288,80 +367,75 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
 		const finalPosts = [];
         const { chronology = 1, contentType = {}, variety = 1, textLimits = {}, videoLimits = {}, timeLimits = {}, dateLimits = {}, scoring = {} } = algorithm;
 		const { sentiment = 0, voteImpact = 1, wordBoost = [], wordSuppress = [] } = scoring;
-
+		//console.log("posts:", posts);
+		//console.log("algorithm:", algorithm);
+		//console.log("posts length:", posts.length);
 		for (const post of posts) {
             //Content type filtering
-			if (contentType.images === false && post.has_images) continue;
-			if (contentType.videos === false && post.has_videos) continue;
-			if (contentType.text === false && post.has_text) continue;
-			if (contentType.interactive === false && post.has_interactive) continue;
-			if (contentType.embeddedWebsites === false && post.has_embedded_websites) continue;
-			if (contentType.externalPosts === false && post.has_external_posts) continue;
+			//if (contentType.images === false && post.has_images) continue;
+			//if (contentType.videos === false && post.has_videos) continue;
+			//if (contentType.text === false && post.has_text) continue;
+			//if (contentType.interactive === false && post.has_interactive) continue;
+			//if (contentType.embeddedWebsites === false && post.has_embedded_websites) continue;
+			//if (contentType.externalPosts === false && post.has_external_posts) continue;
             //Text length filtering
-			if (textLimits.min && post.text_length < textLimits.min) continue;
-			if (textLimits.max && post.text_length > textLimits.max) continue;
+			//if (textLimits.min && post.text_length < textLimits.min) continue;
+			//if (textLimits.max && post.text_length > textLimits.max) continue;
             //Video length filtering
-			if (videoLimits.min && post.video_length < videoLimits.min) continue;
-			if (videoLimits.max && post.video_length > videoLimits.max) continue;
-            //Time of day filtering
-			if (timeLimits.startTime && timeLimits.endTime) {
-				const createdAt = new Date(post.created_at);
-				const postTime = `${String(createdAt.getHours()).padStart(2, "0")}:${String(createdAt.getMinutes()).padStart(2, "0")}`;
-				if (postTime < timeLimits.startTime || postTime > timeLimits.endTime) continue;
-			}
-            // Date range filtering
-			if (dateLimits.from && new Date(post.created_at) < new Date(dateLimits.from)) continue;
-			if (dateLimits.to && new Date(post.created_at) > new Date(dateLimits.to)) continue;
-
-			let score = 0;
+			//if (videoLimits.min && post.video_length < videoLimits.min) continue;
+			//if (videoLimits.max && post.video_length > videoLimits.max) continue;
+			//Time of day filtering
+			//if (timeLimits.startTime && timeLimits.endTime) {
+			//	const createdAt = new Date(post.created_at || post.created_at_remote);
+			//	const postTime = `${String(createdAt.getHours()).padStart(2, "0")}:${String(createdAt.getMinutes()).padStart(2, "0")}`;
+			//	if (postTime < timeLimits.startTime || postTime > timeLimits.endTime) continue;
+			//}
+			//Date range filtering
+			//if (dateLimits.from && new Date(post.created_at || post.created_at_remote) < new Date(dateLimits.from)) continue;
+			//if (dateLimits.to && new Date(post.created_at || post.created_at_remote) > new Date(dateLimits.to)) continue;
+			let algorithmScore = 0;
 			const baseHotness = post.rank_hotness;
-			score += (chronology ?? 1) * baseHotness;
-
-            //Vote quality * engagement ratio (distinct from hotness)
-			const totalVotes = (post.upvotes || 0) + (post.downvotes || 0);
-			const qualityRatio = totalVotes > 0 ? (post.upvotes || 0) / totalVotes : 0.5;
-			const engagementRatio = (post.views || 0) > 0 ? totalVotes / post.views : 0;
-			score += voteImpact * ((qualityRatio * 0.7) + (engagementRatio * 0.3));
-
-			let keywordComponent = 0, shouldSuppress = false;
-			if (post.text_body) {
-				const textLower = post.text_body.toLowerCase();
-				for (const w of wordSuppress) {
-					if (textLower.includes(w.toLowerCase())) { shouldSuppress = true; break; }
-				}
-				if (shouldSuppress) continue;
-				for (const w of wordBoost) {
-					if (textLower.includes(w.toLowerCase())) keywordComponent += 10;
-				}
-			}
+			algorithmScore = baseHotness;
+			//algorithmScore += (chronology ?? 1) * baseHotness;
+            
+			//Vote quality * engagement ratio (distinct from hotness)
+			//const totalVotes = (post.upvotes || 0) + (post.downvotes || 0);
+			//const qualityRatio = totalVotes > 0 ? (post.upvotes || 0) / totalVotes : 0.5;
+			//const engagementRatio = (post.views || 0) > 0 ? totalVotes / post.views : 0;
+			//algorithmScore += voteImpact * ((qualityRatio * 0.7) + (engagementRatio * 0.3));
 
             //Semantic boost/suppress using word embeddings
 			if (post.embeddings && (algorithmRow?.boost_embedding || algorithmRow?.suppress_embedding)) {
 				let postEmbedding = null;
 				try { postEmbedding = JSON.parse(post.embeddings); } catch { postEmbedding = null; }
-				if (Array.isArray(postEmbedding)) {
-					const magPost = Math.sqrt(postEmbedding.reduce((a, b) => a + b * b, 0)) || 1;
-					const normPost = postEmbedding.map(v => v / magPost);
-                    let semanticBoost = 0;
-                    let semanticSuppress = 0;
-					if (algorithmRow.boost_embedding) {
-						const boostVec = JSON.parse(algorithmRow.boost_embedding);
-						if (Array.isArray(boostVec) && boostVec.length === normPost.length)
-							semanticBoost = CosineSimilarity(normPost, boostVec);
-					}
-					if (algorithmRow.suppress_embedding) {
-						const suppressVec = JSON.parse(algorithmRow.suppress_embedding);
-						if (Array.isArray(suppressVec) && suppressVec.length === normPost.length)
-							semanticSuppress = CosineSimilarity(normPost, suppressVec);
-					}
-					score += (semanticBoost * 10) - (semanticSuppress * 10);
+				//console.log("post text body:", post.text_body);
+				//Normalise post embeddings for comparison
+				const magPost = Math.sqrt(postEmbedding.reduce((a, b) => a + b * b, 0)) || 1;
+				const normPost = postEmbedding.map(v => v / magPost);
+				let semanticBoost = 0;
+				let semanticSuppress = 0;
+				if (algorithmRow.boost_embedding) {
+					//console.log("algorithmRow.boost_embedding length:", algorithmRow.boost_embedding.length);
+					const boostVec = JSON.parse(algorithmRow.boost_embedding);
+					if (Array.isArray(boostVec) && boostVec.length === normPost.length)
+						semanticBoost = CosineSimilarity(normPost, boostVec);
+					//console.log("semanticBoost:", semanticBoost);
 				}
+				if (algorithmRow.suppress_embedding) {
+					//console.log("algorithmRow.suppress_embedding length:", algorithmRow.suppress_embedding.length);
+					const suppressVec = JSON.parse(algorithmRow.suppress_embedding);
+					if (Array.isArray(suppressVec) && suppressVec.length === normPost.length)
+						semanticSuppress = CosineSimilarity(normPost, suppressVec);
+					//console.log("semanticSuppress:", semanticSuppress);
+				}
+				//console.log(post.post_id, "algorithmScore before:", algorithmScore);
+				algorithmScore += (semanticBoost * 50) - (semanticSuppress * 50);
+				//console.log(post.post_id, "algorithmScore after:", algorithmScore);
 			}
-			score += keywordComponent;
 
             //Sentiment alignment
 			const sentimentDistance = Math.abs(post.sentiment_score - sentiment);
-			score += (0.5 - sentimentDistance) * 20;
+			//algorithmScore += (0.5 - sentimentDistance) * 20;
 
             //Variety scoring (cosine similarity against recent upvoted embeddings)
 			let postEmbedding = null;
@@ -379,13 +453,13 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
 					}
 				}
 			}
-			score += ((1 - maxSimilarity) * variety * 10) + (maxSimilarity * (1 - variety) * 5);
-
-			finalPosts.push({ ...post.dataValues, score });
+			//algorithmScore += ((1 - maxSimilarity) * variety * 10) + (maxSimilarity * (1 - variety) * 5);
+			finalPosts.push({ ...post.dataValues || post, algorithmScore });
 		}
-
+		//console.log("finalPosts:", finalPosts);
+		//console.log("finalPosts length:", finalPosts.length);
 		if (!finalPosts.length) return [];
-        finalPosts.sort((a, b) => b.score - a.score); //Sort posts by score
+        finalPosts.sort((a, b) => b.algorithmScore - a.algorithmScore); //Sort posts by score
         const paginatedFinalPosts = finalPosts.slice(0, limit);
         const finalIds = paginatedFinalPosts.map(p => p.post_id);
 		const [userVotes, savedRows] = viewerId

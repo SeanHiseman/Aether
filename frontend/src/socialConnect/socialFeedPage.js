@@ -123,7 +123,7 @@ export default function SocialFeedPage({ platform }) {
 			</div>
 			<aside className="right-aside">
 				<p className="large-text bold">{capitalise(platform) || "Site not found"}</p>
-				<AlgorithmSelector display={false} isAuthenticated={isAuthenticated} locationId={platform} />
+				{/*<AlgorithmSelector display={false} isAuthenticated={isAuthenticated} locationId={platform} />*/}
 			</aside>
 		</div>
 	);

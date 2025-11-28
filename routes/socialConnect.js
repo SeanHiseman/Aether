@@ -24,7 +24,7 @@ function ua() {
 	return 'AetherSocialLocal/0.1 (testing on localhost)';
 }
 
-function generateBlueskyContentHTML(textBody, media) {
+export function generateBlueskyContentHTML(textBody, media) {
 	let html = '';
 	if (textBody?.trim()) {
 		html += `
@@ -53,7 +53,7 @@ function generateBlueskyContentHTML(textBody, media) {
 	return html.trim();
 }
 
-function generateRedditContentHTML(textBody, mediaArray) {
+export function generateRedditContentHTML(textBody, mediaArray) {
 	try {
 		const mediaItems = Array.isArray(mediaArray)
 			? mediaArray
@@ -88,7 +88,7 @@ function generateRedditContentHTML(textBody, mediaArray) {
 	}
 }
 
-function generateMastodonContentHTML(htmlBody, media) {
+export function generateMastodonContentHTML(htmlBody, media) {
      let out = '';
      if (htmlBody) {
           out += `
@@ -438,14 +438,12 @@ router.post('/auth/mastodon', authenticateCheck, async (req, res) => {
 router.get('/bluesky/feed', authenticateCheck, async (req, res) => {
 	try {
 		const limit = Math.min(Number(req.query.limit) || 100, 100);
-		console.log('Bluesky feed request with limit:', limit);
 		const accesses = await ExternalPostsAccess.findAll({
 			where: { user_id: req.user.user_id, source: 'bluesky' },
 			attributes: ['post_id'],
 			order: [['created_at','DESC']],
 			limit
 		});
-		console.log('Bluesky feed accesses found:', accesses.length);
 		const postIds = accesses.map(a => a.post_id).filter(Boolean);
 		if (!postIds.length) {
 			return res.status(200).json({ success: true, items: [] });
@@ -454,7 +452,6 @@ router.get('/bluesky/feed', authenticateCheck, async (req, res) => {
 			where: { post_id: postIds, source: 'bluesky' },
 			order: [['rank_hotness','DESC']]
 		});
-		console.log('Bluesky feed posts found:', posts.length);
 		const items = posts.map(p => {
 			const media = typeof p.media === 'string' ? JSON.parse(p.media) : p.media;
 			const html = generateBlueskyContentHTML(p.text_body, media);

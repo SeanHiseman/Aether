@@ -126,14 +126,7 @@ router.post('/create_algorithm', authenticateCheck, async (req, res) => {
 						"wordBoost": [],
 						"wordSuppress": []
 					}, 
-					"customFilters": [],
-					"customScoring": []
 				}
-				Posts are made to feeds. Each poster_id references a user feed who made the post.
-				Database schemas for custom filters/scoring:
-				    Post fields: post_id, parent_id, feed_id, channel_id, poster_id, title, content, text_body, replies, views, upvotes, downvotes, text_length, word_count, video_length, sentence_count, image_count, video_count, has_images, has_videos, has_interactive, has_external_posts, has_embedded_websites, has_text, sentiment_score, language, created_at, updated_at
-					Feed fields: feed_id, feed_name, decription, follower_count, is_group
-					Channel fields: channel_id, channel_name 
 				Merge the form settings with the user's custom instruction. If contradiction, prioritise following custom instruction.  
 				No text outside the JSON.
 			`;
@@ -151,6 +144,7 @@ router.post('/create_algorithm', authenticateCheck, async (req, res) => {
 				]
 			});
 			const aiReply = response.choices[0].message.content;
+			//console.log("aiReply:", aiReply);
 			const parsed = aiReply.replace(/```json\n|```/g, '').trim();
 			algorithmCode = parsed;
 			const parsedJson = JSON.parse(parsed);
@@ -163,22 +157,20 @@ router.post('/create_algorithm', authenticateCheck, async (req, res) => {
 		} else {
 			algorithmCode = JSON.stringify(algorithmJson);
 		}
-		// -------------------------------------------------------
-		// ✅ Step 4: Generate embeddings if needed
-		// -------------------------------------------------------
+		//Generate embeddings if needed
 		let boostEmbedding = null;
 		let suppressEmbedding = null;
 		if (Array.isArray(finalBoost) && finalBoost.length > 0) {
 			const boostText = finalBoost.join(' ');
+			//console.log("boostText:", boostText);
 			boostEmbedding = await analyser.generateEmbedding(boostText);
 		}
 		if (Array.isArray(finalSuppress) && finalSuppress.length > 0) {
 			const suppressText = finalSuppress.join(' ');
+			//console.log("suppressText:", suppressText);
 			suppressEmbedding = await analyser.generateEmbedding(suppressText);
 		}
-		// -------------------------------------------------------
-		// ✅ Step 5: Create or update algorithm
-		// -------------------------------------------------------
+		//Create or update algorithm
 		let algorithm;
 		if (existingAlgorithm) {
 			algorithm = await existingAlgorithm.update({
@@ -200,6 +192,7 @@ router.post('/create_algorithm', authenticateCheck, async (req, res) => {
 			}, { transaction });
 		}
 		await transaction.commit();
+		//console.log("algorithm:", algorithm);
 		res.status(201).json({
 			success: true,
 			algorithm: {

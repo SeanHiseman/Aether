@@ -124,8 +124,8 @@ export class ContentAnalyser {
             sentence_count: sentences.length,
             ...mediaAnalysis,
             sentiment_score: sentimentScore,
-            tokens: JSON.stringify(textProcessing.tokens),
-            embeddings: JSON.stringify(embedding),
+            tokens: textProcessing.tokens,
+            embeddings: embedding,
             processed_at: new Date()
         };
     }

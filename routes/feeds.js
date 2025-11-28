@@ -405,6 +405,7 @@ router.post('/deep_feed_posts', standardLimiter, authenticateCheck, async (req, 
             followedFeedIds = [followedFeedIds];
         }
         followedFeedIds = followedFeedIds.map(id => id?.toString().trim()).filter(Boolean);
+        const userId = req.session.user_id;
         const viewerId = req.session.viewer_id;
         let deepFeed = null;
         if (deepFeedId === 'following') {
@@ -455,58 +456,10 @@ router.post('/deep_feed_posts', standardLimiter, authenticateCheck, async (req, 
             offset,
             recentUpvotes,
             viewerId,
+            connectedAccounts,
+            userId
         });
-        let mappedReddit = [];
-        let mappedBluesky = [];
-        let mappedMastodon = [];
-        if (deepFeedId === 'following') {
-            const port = process.env.APP_PORT || 7000;
-            const redditEnabled = connectedAccounts.find(a => a.platform === 'reddit');
-            const blueskyEnabled = connectedAccounts.find(a => a.platform === 'bluesky');
-            const mastodonEnabled = connectedAccounts.find(a => a.platform === 'mastodon');
-            const tasks = [];
-            if (redditEnabled) {
-                tasks.push(
-                    fetch(`http://localhost:${port}/api/reddit/feed?limit=20`, { headers: { cookie: req.headers.cookie } })
-                        .then(r => r.json())
-                        .then(j => j.items || [])
-                );
-            } else {
-                tasks.push(Promise.resolve([]));
-            }
-            if (blueskyEnabled) {
-                tasks.push(
-                    fetch(`http://localhost:${port}/api/bluesky/feed?limit=20`, { headers: { cookie: req.headers.cookie } })
-                        .then(r => r.json())
-                        .then(j => j.items || [])
-                );
-            } else {
-                tasks.push(Promise.resolve([]));
-            }
-            if (mastodonEnabled) {
-                tasks.push(
-                    fetch(`http://localhost:${port}/api/mastodon/feed?limit=20`, { headers: { cookie: req.headers.cookie } })
-                        .then(r => r.json())
-                        .then(j => j.items || [])
-                );
-            } else {
-                tasks.push(Promise.resolve([]));
-            }
-            const [redditItems, blueskyItems, mastodonItems] = await Promise.all(tasks);
-            mappedReddit = redditItems.map(p => ({ ...p, isExternal: true }));
-            mappedBluesky = blueskyItems.map(p => ({ ...p, isExternal: true }));
-            mappedMastodon = mastodonItems.map(p => ({ ...p, isExternal: true }));
-        }
-        const localPosts = deepFeedPosts.map(p => ({ ...p, isExternal: false }));
-        const combined = [...localPosts, ...mappedReddit, ...mappedBluesky, ...mappedMastodon];
-        const maxLen = Math.max(localPosts.length, mappedReddit.length, mappedBluesky.length);
-        for (let i = 0; i < maxLen; i++) {
-            if (localPosts[i]) combined.push(localPosts[i]);
-            if (mappedReddit[i]) combined.push(mappedReddit[i]);
-            if (mappedBluesky[i]) combined.push(mappedBluesky[i]);
-            if (mappedMastodon[i]) combined.push(mappedMastodon[i]);
-        }
-        return res.status(200).json({ deepFeed, posts: combined, success: true });
+        return res.status(200).json({ deepFeed, posts: deepFeedPosts, success: true });
     } catch (error) {
         console.log("error getting deep feed posts:", error);
         res.status(500).json({ success: false, error: error.message });

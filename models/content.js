@@ -20,6 +20,7 @@ const ExternalPosts = sequelize.define('ExternalPosts', {
 	word_count: { type: INTEGER, allowNull: true },
 	image_count: { type: INTEGER, allowNull: true },
 	video_count: { type: INTEGER, allowNull: true },
+    has_text: { type: BOOLEAN, defaultValue: false },
 	has_images: { type: BOOLEAN, defaultValue: false },
 	has_videos: { type: BOOLEAN, defaultValue: false },
 	score: { type: INTEGER, allowNull: true },
@@ -31,7 +32,7 @@ const ExternalPosts = sequelize.define('ExternalPosts', {
 	created_at_remote: { type: DataTypes.DATE, allowNull: false },
 	expired: { type: BOOLEAN, defaultValue: false },
 	channel: { type: STRING(128), allowNull: true },
-	author: { type: STRING(190), allowNull: true },
+	author: { type: STRING(190), allowNull: true }, 
     author_photo: { type: TEXT, allowNull: true },
 	url: { type: TEXT, allowNull: false },
 	media: { type: DataTypes.JSON, allowNull: true }
@@ -99,8 +100,8 @@ const Posts = sequelize.define('posts', {
     video_count: { type: INTEGER, defaultValue: 0 },
     sentiment_score: { type: FLOAT, defaultValue: 0.0 }, 
     language: { type: STRING(20), defaultValue: 'en' },
-    tokens: { type: DataTypes.TEXT('long'), allowNull: true }, 
-    embeddings: { type: DataTypes.TEXT('long'), allowNull: true }, 
+    tokens: { type: DataTypes.JSON, allowNull: true }, 
+    embeddings: { type: DataTypes.JSON, allowNull: true },
     is_private: { type: BOOLEAN, defaultValue: false },
 }, {
     tableName: 'posts',

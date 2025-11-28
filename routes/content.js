@@ -300,12 +300,12 @@ router.post("/create_post", standardLimiter, authenticateCheck, checkStorageLimi
 		const words = textBody.split(/\s+/).filter(w => w.length > 0);
 		const sentences = textBody.split(/[.!?]+/).filter(s => s.trim().length > 0);
 		const analysis = {
-			embeddings: JSON.stringify(embedding),
+			embeddings: embedding,
 			sentiment_score: sentimentScore,
 			sentence_count: sentences.length,
 			text_body: textBody,
 			text_length: textBody.length,
-			tokens: JSON.stringify(textProcessing.tokens),
+			tokens: textProcessing.tokens,
 			word_count: words.length
 		};
 		const flags = {

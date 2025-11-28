@@ -147,6 +147,7 @@ const DeepFeed = () => {
                 offset: pageParam, 
                 recentUpvotes
             });
+            console.log("posts response:", response);
             if (pageParam === 0 && response.data?.deepFeed) {
                 setDeepFeed(response.data?.deepFeed);
                 document.title = response.data?.deepFeed?.name;

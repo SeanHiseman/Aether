@@ -4,6 +4,7 @@ import { AuthContext } from '../components/authContext';
 import React from 'react';
 import { FaInfoCircle } from 'react-icons/fa';
 import { useCallback, useContext, useEffect, useRef, useState } from 'react';
+import { ValidateTextInput } from '../functions/validateTextInput';
 
 function InfoIconWithTooltip({ info }) {
     const [visible, setVisible] = useState(false);
@@ -338,7 +339,17 @@ const AddAlgorithm = ({ algorithms = [], display, editingAlgorithm = null, isAut
                         placeholder="Enter name"
                         type="text"
                         value={algorithmName}
-                        onChange={e => setAlgorithmName(e.target.value)}
+                        onChange={(e) => {
+                            const v = e.target.value;
+                            const r = ValidateTextInput(v, 1, 100);
+                            if (r.valid) {
+                                setAlgorithmName(v);
+                                setError('');
+                            } else {
+                                setError("Name too long");
+                                setAlgorithmName(v);
+                            }
+                        }}
                     />
                 </div>
                 <div className="form-row">
@@ -348,7 +359,18 @@ const AddAlgorithm = ({ algorithms = [], display, editingAlgorithm = null, isAut
                         style={{ margin: 0 }}
                         type="text"
                         value={customInstruction}
-                        onChange={e => {setCustomInstruction(e.target.value); setTemplate('none')}}
+                        onChange={(e) => {
+                            const v = e.target.value;
+                            const r = ValidateTextInput(v, 0, 5000, false);
+                            if (r.valid) {
+                                setCustomInstruction(v);
+                                setError('');
+                            } else {
+                                setError("Instruction too long");
+                                setCustomInstruction(v);
+                            }
+                            setTemplate('none');
+                        }}
                     />
                 </div>
                 <div className="form-row border-bottom">

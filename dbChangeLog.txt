@@ -304,3 +304,12 @@ CREATE TABLE `external_posts_access` (
 
 ALTER TABLE external_posts_access
 	ADD COLUMN source VARCHAR(20) NOT NULL DEFAULT 'unknown';
+
+ALTER TABLE external_posts
+	ADD COLUMN has_text BOOLEAN NOT NULL DEFAULT FALSE;
+
+SET SQL_SAFE_UPDATES = 0;
+UPDATE external_posts
+SET has_text = 1
+WHERE text_body IS NOT NULL AND text_body != '';
+SET SQL_SAFE_UPDATES = 1;
