@@ -956,7 +956,7 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
                                         <FaPhotoVideo /><span className="icon-text">Media</span>
                                     </button>
                                     <button className="small-icon" type="button" onClick={() => { setAddContentDropdownOpen(false); handleAddBlock(BLOCK_TYPES.CODE); } }>
-                                        <FaToolbox /><span className="icon-text">Interactive</span>
+                                        <FaToolbox /><span className="icon-text">Custom</span>
                                     </button>
                                     {/*<button className="small-icon" type="button" onClick={() => { setAddContentDropdownOpen(false); document.getElementById('app-input').click(); }}>
                                         <FaCube /><span className="icon-text">App</span>
@@ -1198,7 +1198,7 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
                                                                                         placeholder={limitReached ? (user?.has_membership ? "Limit reached. Buy new membership to reset"
                                                                                             : "Limit reached. Get membership for more.")
                                                                                             : data.isBlockLoading ? "Creating post... may take up to a minute"
-                                                                                                : "Describe your post..."}
+                                                                                                : "Describe your custom post..."}
                                                                                         value={data.isBlockLoading ? '' : (data._tempAiPrompt || '')} />
                                                                                     <button className={data.isBlockLoading || !data._tempAiPrompt?.trim() || limitReached ? 'small-icon disabled' : 'small-icon'}
                                                                                         disabled={data.isBlockLoading || !data._tempAiPrompt?.trim() || limitReached}

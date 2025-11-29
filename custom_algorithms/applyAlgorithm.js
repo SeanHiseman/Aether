@@ -423,37 +423,39 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
 				if (algorithmRow.boost_embedding) {
 					const boostVecs = JSON.parse(algorithmRow.boost_embedding);
 					if (Array.isArray(boostVecs) && boostVecs.length) {
-						semanticBoost = Math.max(...boostVecs.map((bv, i) => {
+						const sims = boostVecs.map((bv, i) => {
 							const word = boostWords[i] || `keyword${i}`;
 							if (!bv || bv.length !== normPost.length) {
-								//console.log(`Boost "${word}" skipped: length mismatch`, bv?.length, normPost.length);
 								return 0;
 							}
 							const sim = CosineSimilarity(normPost, bv);
 							//console.log(`Boost "${word}" similarity:`, sim);
 							return sim;
-						}));
-						//console.log("Max semanticBoost:", semanticBoost);
+						});
+						const top = sims.sort((a, b) => b - a).slice(0, 5);
+						semanticBoost = top.reduce((a, b) => a + b, 0);
+						//console.log("Top boost sims:", top, "semanticBoost:", semanticBoost);
 					}
 				}
 				if (algorithmRow.suppress_embedding) {
 					const suppressVecs = JSON.parse(algorithmRow.suppress_embedding);
 					if (Array.isArray(suppressVecs) && suppressVecs.length) {
-						semanticSuppress = Math.max(...suppressVecs.map((sv, i) => {
+						const sims = suppressVecs.map((sv, i) => {
 							const word = suppressWords[i] || `keyword${i}`;
 							if (!sv || sv.length !== normPost.length) {
-								//console.log(`Suppress "${word}" skipped: length mismatch`, sv?.length, normPost.length);
 								return 0;
 							}
 							const sim = CosineSimilarity(normPost, sv);
 							//console.log(`Suppress "${word}" similarity:`, sim);
 							return sim;
-						}));
-						//console.log("Max semanticSuppress:", semanticSuppress);
+						});
+						const top = sims.sort((a, b) => b - a).slice(0, 5);
+						semanticSuppress = top.reduce((a, b) => a + b, 0);
+						//console.log("Top suppress sims:", top, "semanticSuppress:", semanticSuppress);
 					}
 				}
 				//console.log(post.post_id, "algorithmScore before:", algorithmScore);
-				algorithmScore += (semanticBoost * 50) - (semanticSuppress * 50);
+				algorithmScore += (semanticBoost * 20) - (semanticSuppress * 20);
 				//console.log(post.post_id, "algorithmScore after:", algorithmScore);
 			}
 
