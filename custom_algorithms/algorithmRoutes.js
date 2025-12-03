@@ -38,6 +38,7 @@ router.post('/create_algorithm', authenticateCheck, async (req, res) => {
 	try {
 		transaction = await sequelize.transaction();
 		const { algorithmName, activeDays, chronology, contentType, customInstruction, dateFrom, dateTo, generateCode, locationId, minText, maxText, minVideo, maxVideo, sentiment, startTime, endTime, variety, voteImpact, wordBoost, wordSuppress } = req.body;
+		console.log("create algorithm sentiment:", sentiment);
 		const viewerId = req.session.viewer_id;
 		const algorithmJson = {
 			chronology,

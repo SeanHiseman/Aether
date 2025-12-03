@@ -85,6 +85,7 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
         //Collect recent upvoted posts for similarity comparison from local storage or database
 		let recentUpvoteIds = [];
 		let recentUpvoteEmbeddings = [];
+		let recentUpvotePosts = [];
 		let normalisedRecentEmbeddings = [];
 		if (algorithmLocation) { //Only need recent votes if there's an algorithm
 			if (viewerId && !recentUpvotes) {
@@ -104,13 +105,13 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
 				recentUpvoteIds = recentUpvotes.map(row => row.post_id);
 			}
 			if (recentUpvoteIds.length > 0) {
-				const recentUpvotePosts = await Posts.findAll({
-					attributes: ['embeddings'],
+				recentUpvotePosts = await Posts.findAll({
+					attributes: ['embeddings', 'updated_at'],
 					where: { post_id: { [Op.in]: recentUpvoteIds } },
 					raw: true
 				});
 				recentUpvoteEmbeddings = recentUpvotePosts
-					.map(p => { try { return p.embeddings ? JSON.parse(p.embeddings) : null; } catch { return null; } }) //Get embeddings of recently upvoted posts
+					.map(p => p.embeddings || null) //Get embeddings of recently upvoted posts
 					.filter(Boolean);
 			}
 			normalisedRecentEmbeddings = recentUpvoteEmbeddings.map(vec => {
@@ -367,123 +368,147 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
 		const finalPosts = [];
         const { chronology = 1, contentType = {}, variety = 1, textLimits = {}, videoLimits = {}, timeLimits = {}, dateLimits = {}, scoring = {} } = algorithm;
 		const { sentiment = 0, voteImpact = 1, wordBoost = [], wordSuppress = [] } = scoring;
+		//console.log("algorithm:", algorithm);
+		//console.log("scoring:", scoring);
 		//console.log("posts:", posts);
 		//console.log("algorithm:", algorithm);
 		//console.log("posts length:", posts.length);
-		for (const post of posts) {
-            //Content type filtering
-			//if (contentType.images === false && post.has_images) continue;
-			//if (contentType.videos === false && post.has_videos) continue;
-			//if (contentType.text === false && post.has_text) continue;
-			//if (contentType.interactive === false && post.has_interactive) continue;
-			//if (contentType.embeddedWebsites === false && post.has_embedded_websites) continue;
-			//if (contentType.externalPosts === false && post.has_external_posts) continue;
-            //Text length filtering
-			//if (textLimits.min && post.text_length < textLimits.min) continue;
-			//if (textLimits.max && post.text_length > textLimits.max) continue;
-            //Video length filtering
-			//if (videoLimits.min && post.video_length < videoLimits.min) continue;
-			//if (videoLimits.max && post.video_length > videoLimits.max) continue;
-			//Time of day filtering
-			//if (timeLimits.startTime && timeLimits.endTime) {
-			//	const createdAt = new Date(post.created_at || post.created_at_remote);
-			//	const postTime = `${String(createdAt.getHours()).padStart(2, "0")}:${String(createdAt.getMinutes()).padStart(2, "0")}`;
-			//	if (postTime < timeLimits.startTime || postTime > timeLimits.endTime) continue;
-			//}
-			//Date range filtering
-			//if (dateLimits.from && new Date(post.created_at || post.created_at_remote) < new Date(dateLimits.from)) continue;
-			//if (dateLimits.to && new Date(post.created_at || post.created_at_remote) > new Date(dateLimits.to)) continue;
-			let algorithmScore = 0;
-			const baseHotness = post.rank_hotness;
-			algorithmScore = baseHotness;
-			//algorithmScore += (chronology ?? 1) * baseHotness;
-            
-			//Vote quality * engagement ratio (distinct from hotness)
-			//const totalVotes = (post.upvotes || 0) + (post.downvotes || 0);
-			//const qualityRatio = totalVotes > 0 ? (post.upvotes || 0) / totalVotes : 0.5;
-			//const engagementRatio = (post.views || 0) > 0 ? totalVotes / post.views : 0;
-			//algorithmScore += voteImpact * ((qualityRatio * 0.7) + (engagementRatio * 0.3));
 
-            //Semantic boost/suppress using word embeddings
-			//console.log("post.text_body:", post.text_body);
-			if (post.embeddings && (algorithmRow?.boost_embedding || algorithmRow?.suppress_embedding)) {
-				let postEmbedding = null;
-				try { postEmbedding = JSON.parse(post.embeddings); } catch { postEmbedding = null; }
-				const magPost = Math.sqrt(postEmbedding.reduce((a, b) => a + b * b, 0)) || 1;
-				const normPost = postEmbedding.map(v => v / magPost);
-				let semanticBoost = 0;
-				let semanticSuppress = 0;
-				let boostWords = [];
-				let suppressWords = [];
-				try {
-					const algoJson = JSON.parse(algorithmRow.algorithm_code);
-					boostWords = algoJson.scoring?.wordBoost || [];
-					suppressWords = algoJson.scoring?.wordSuppress || [];
-				} catch {}
-				if (algorithmRow.boost_embedding) {
-					const boostVecs = JSON.parse(algorithmRow.boost_embedding);
-					if (Array.isArray(boostVecs) && boostVecs.length) {
-						const sims = boostVecs.map((bv, i) => {
-							const word = boostWords[i] || `keyword${i}`;
-							if (!bv || bv.length !== normPost.length) {
-								return 0;
-							}
-							const sim = CosineSimilarity(normPost, bv);
-							//console.log(`Boost "${word}" similarity:`, sim);
-							return sim;
-						});
-						const top = sims.sort((a, b) => b - a).slice(0, 5);
-						semanticBoost = top.reduce((a, b) => a + b, 0);
-						//console.log("Top boost sims:", top, "semanticBoost:", semanticBoost);
-					}
-				}
-				if (algorithmRow.suppress_embedding) {
-					const suppressVecs = JSON.parse(algorithmRow.suppress_embedding);
-					if (Array.isArray(suppressVecs) && suppressVecs.length) {
-						const sims = suppressVecs.map((sv, i) => {
-							const word = suppressWords[i] || `keyword${i}`;
-							if (!sv || sv.length !== normPost.length) {
-								return 0;
-							}
-							const sim = CosineSimilarity(normPost, sv);
-							//console.log(`Suppress "${word}" similarity:`, sim);
-							return sim;
-						});
-						const top = sims.sort((a, b) => b - a).slice(0, 5);
-						semanticSuppress = top.reduce((a, b) => a + b, 0);
-						//console.log("Top suppress sims:", top, "semanticSuppress:", semanticSuppress);
-					}
-				}
-				//console.log(post.post_id, "algorithmScore before:", algorithmScore);
-				algorithmScore += (semanticBoost * 20) - (semanticSuppress * 20);
-				//console.log(post.post_id, "algorithmScore after:", algorithmScore);
-			}
+		//Predefined variables for use in scoring
+		const now = Date.now();
+		const tenDays = 864000000;
+		try {
+			for (const post of posts) {
+				const postEmbedding = post.embeddings;
+				//Content type filtering
+				//if (contentType.images === false && post.has_images) continue;
+				//if (contentType.videos === false && post.has_videos) continue;
+				//if (contentType.text === false && post.has_text) continue;
+				//if (contentType.interactive === false && post.has_interactive) continue;
+				//if (contentType.embeddedWebsites === false && post.has_embedded_websites) continue;
+				//if (contentType.externalPosts === false && post.has_external_posts) continue;
+				//Text length filtering
+				//if (textLimits.min && post.text_length < textLimits.min) continue;
+				//if (textLimits.max && post.text_length > textLimits.max) continue;
+				//Video length filtering
+				//if (videoLimits.min && post.video_length < videoLimits.min) continue;
+				//if (videoLimits.max && post.video_length > videoLimits.max) continue;
+				//Time of day filtering
+				//if (timeLimits.startTime && timeLimits.endTime) {
+				//	const createdAt = new Date(post.created_at || post.created_at_remote);
+				//	const postTime = `${String(createdAt.getHours()).padStart(2, "0")}:${String(createdAt.getMinutes()).padStart(2, "0")}`;
+				//	if (postTime < timeLimits.startTime || postTime > timeLimits.endTime) continue;
+				//}
+				//Date range filtering
+				//if (dateLimits.from && new Date(post.created_at || post.created_at_remote) < new Date(dateLimits.from)) continue;
+				//if (dateLimits.to && new Date(post.created_at || post.created_at_remote) > new Date(dateLimits.to)) continue;
+				let algorithmScore = 0;
+				const baseHotness = post.rank_hotness;
+				algorithmScore = baseHotness;
+				//algorithmScore += (chronology ?? 1) * baseHotness;
+				
+				//Vote quality * engagement ratio (distinct from hotness)
+				//const totalVotes = (post.upvotes || 0) + (post.downvotes || 0);
+				//const qualityRatio = totalVotes > 0 ? (post.upvotes || 0) / totalVotes : 0.5;
+				//const engagementRatio = (post.views || 0) > 0 ? totalVotes / post.views : 0;
+				//algorithmScore += voteImpact * ((qualityRatio * 0.7) + (engagementRatio * 0.3));
 
-            //Sentiment alignment
-			const sentimentDistance = Math.abs(post.sentiment_score - sentiment);
-			//algorithmScore += (0.5 - sentimentDistance) * 20;
-
-            //Variety scoring (cosine similarity against recent upvoted embeddings)
-			let postEmbedding = null;
-			if (recentUpvoteEmbeddings.length && typeof post.embeddings === 'string' && post.embeddings.startsWith('[')) {
-				try { postEmbedding = JSON.parse(post.embeddings); } catch { postEmbedding = null; }
-			}
-			let maxSimilarity = 0;
-			if (postEmbedding && Array.isArray(postEmbedding) && normalisedRecentEmbeddings.length > 0) {
-				const magPost = Math.sqrt(postEmbedding.reduce((a, b) => a + b * b, 0)) || 1;
-				const normPost = postEmbedding.map(v => v / magPost);
-				for (const ve of normalisedRecentEmbeddings) {
-					if (ve.length === normPost.length) {
-						const sim = CosineSimilarity(normPost, ve);
-						if (sim > maxSimilarity) maxSimilarity = sim;
+				//Semantic boost/suppress using word embeddings
+				//console.log("-----------", post.text_body);
+				if ((algorithmRow?.boost_embedding || algorithmRow?.suppress_embedding)) {
+					const magPost = Math.sqrt(postEmbedding.reduce((a, b) => a + b * b, 0)) || 1;
+					const normPost = postEmbedding.map(v => v / magPost);
+					let semanticBoost = 0;
+					let semanticSuppress = 0;
+					let boostWords = [];
+					let suppressWords = [];
+					try {
+						const algoJson = JSON.parse(algorithmRow.algorithm_code);
+						boostWords = algoJson.scoring?.wordBoost || [];
+						suppressWords = algoJson.scoring?.wordSuppress || [];
+					} catch {}
+					if (algorithmRow.boost_embedding) {
+						const boostVecs = algorithmRow.boost_embedding;
+						if (Array.isArray(boostVecs) && boostVecs.length) {
+							const sims = boostVecs.map((bv, i) => {
+								//const word = boostWords[i] || `keyword${i}`;
+								if (!bv || bv.length !== normPost.length) {
+									return 0;
+								}
+								const sim = CosineSimilarity(normPost, bv);
+								//console.log(`Boost "${word}" similarity:`, sim);
+								return sim;
+							});
+							const top = sims.sort((a, b) => b - a).slice(0, 5);
+							semanticBoost = top.reduce((a, b) => a + b, 0);
+							//console.log("Top boost sims:", top, "semanticBoost:", semanticBoost);
+						}
 					}
+					if (algorithmRow.suppress_embedding) {
+						const suppressVecs = algorithmRow.suppress_embedding;
+						if (Array.isArray(suppressVecs) && suppressVecs.length) {
+							const sims = suppressVecs.map((sv, i) => {
+								//const word = suppressWords[i] || `keyword${i}`;
+								if (!sv || sv.length !== normPost.length) {
+									return 0;
+								}
+								const sim = CosineSimilarity(normPost, sv);
+								//console.log(`Suppress "${word}" similarity:`, sim);
+								return sim;
+							});
+							const top = sims.sort((a, b) => b - a).slice(0, 5);
+							semanticSuppress = top.reduce((a, b) => a + b, 0);
+							//console.log("Top suppress sims:", top, "semanticSuppress:", semanticSuppress);
+						}
+					}
+					//console.log("score before: semantics", algorithmScore);
+					algorithmScore += (semanticBoost * 20) - (semanticSuppress * 20);
+					//console.log("score after semantics:", algorithmScore);
 				}
+
+				//Sentiment alignment
+				const sentimentDistance = Math.abs(post.sentiment_score - sentiment);
+				//console.log("post sentiment:", post.sentiment_score);
+				//console.log("algorithm sentiment:", sentiment)
+				//console.log("sentiment distance:", sentimentDistance);
+				//console.log("score before sentimentDistance:", algorithmScore);
+				algorithmScore += (0.5 - sentimentDistance) * 10;
+				//console.log("score after sentimentDistance:", algorithmScore);
+
+				//Variety scoring (cosine similarity against recent upvoted embeddings)
+				let similarityScore = 0;
+				if (normalisedRecentEmbeddings.length > 0) {
+					const weights = recentUpvotePosts.map(p => {
+						const age = now - new Date(p.updated_at).getTime();
+						return 1 / (1 + age / tenDays); 
+					});
+					const totalWeight = weights.reduce((a, b) => a + b, 0) || 1; //Higher weights for more recent upvotes
+					let weightedSum = 0;
+					for (let i = 0; i < normalisedRecentEmbeddings.length; i++) {
+						const vectorEmbedding = normalisedRecentEmbeddings[i];
+						if (vectorEmbedding.length === postEmbedding.length) {
+							const weight = weights[i] / totalWeight;
+							const similarity = CosineSimilarity(postEmbedding, vectorEmbedding);
+							//console.log("similarity:", similarity);
+							weightedSum += similarity * weight;
+							//console.log("weightedSum:", weightedSum);
+						}
+					}
+					similarityScore = Math.max(0, Math.min(1, weightedSum)); //Clamp between 0 and 1
+				}
+				//console.log("score before similarity:", algorithmScore);
+				const targetSimilarity = 0.6 * (1 - variety) + 0.1 * variety;
+				const similarityDelta = targetSimilarity - similarityScore;
+				const scoreAdjustment = similarityDelta * 30; //scaling factor
+				algorithmScore += scoreAdjustment;
+				//console.log("score after similarity:", algorithmScore);
+				finalPosts.push({ ...post.dataValues || post, algorithmScore });
 			}
-			//algorithmScore += ((1 - maxSimilarity) * variety * 10) + (maxSimilarity * (1 - variety) * 5);
-			finalPosts.push({ ...post.dataValues || post, algorithmScore });
+			//console.log("finalPosts:", finalPosts);
+			//console.log("finalPosts length:", finalPosts.length);
+		} catch (error) {
+			finalPosts = posts; //Return initial post batch if issue applying algorithm
 		}
-		//console.log("finalPosts:", finalPosts);
-		//console.log("finalPosts length:", finalPosts.length);
 		if (!finalPosts.length) return [];
         finalPosts.sort((a, b) => b.algorithmScore - a.algorithmScore); //Sort posts by score
         const paginatedFinalPosts = finalPosts.slice(0, limit);
