@@ -265,20 +265,25 @@ CREATE TABLE `posts` (
   `tokens` LONGTEXT NULL,
   `embeddings` JSON NULL,
   `is_private` BOOLEAN DEFAULT FALSE,
-	PRIMARY KEY (`post_id`),
-	KEY `idx_feed_id` (`feed_id`),
-	KEY `idx_channel_id` (`channel_id`),
-	KEY `idx_media_flags` (`has_images`, `has_videos`, `has_interactive`, `has_external_posts`, `has_embedded_websites`),
-	KEY `idx_sentiment` (`sentiment_score`),
-	KEY `idx_composite_quality` (`created_at`, `sentiment_score`),
-	KEY `idx_video_content` (`has_videos`, `video_length`),
-	KEY `idx_text_analysis` (`word_count`, `text_length`),
-  KEY `idx_rank_hotness_desc` (`rank_hotness` DESC, `post_id` DESC),
-	KEY `idx_feed_rank` (`feed_id`, `rank_hotness` DESC, `post_id` DESC),
-	KEY `idx_created_desc` (`created_at` DESC, `post_id` DESC),
-  FULLTEXT KEY `idx_fulltext_posts` (`title`, `text_body`),
-	CONSTRAINT `posts_ibfk_1` FOREIGN KEY (`feed_id`) REFERENCES `feeds` (`feed_id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+  PRIMARY KEY (`post_id`),
+  KEY `fk_posts_poster_id` (`poster_id`),
+  KEY `idx_channel_id` (`channel_id`),
+  KEY `idx_media_flags` (`has_images`,`has_videos`,`has_interactive`,`has_external_posts`,`has_embedded_websites`),
+  KEY `idx_sentiment` (`sentiment_score`),
+  KEY `idx_composite_quality` (`created_at`,`sentiment_score`),
+  KEY `idx_video_content` (`has_videos`,`video_length`),
+  KEY `idx_text_analysis` (`word_count`,`text_length`),
+  KEY `idx_posts_feed_id` (`feed_id`),
+  KEY `idx_feed_id` (`feed_id`),
+  KEY `idx_rank_hotness_desc` (`rank_hotness`,`post_id`),
+  KEY `idx_feed_rank` (`feed_id`,`rank_hotness`,`post_id`),
+  KEY `idx_created_desc` (`created_at`,`post_id`),
+  KEY `idx_posts_parent_id` (`parent_id`),
+  FULLTEXT KEY `idx_fulltext_posts` (`title`,`text_body`),
+  CONSTRAINT `fk_posts_channel_id` FOREIGN KEY (`channel_id`) REFERENCES `feed_channels` (`channel_id`),
+  CONSTRAINT `fk_posts_poster_id` FOREIGN KEY (`poster_id`) REFERENCES `feeds` (`feed_id`),
+  CONSTRAINT `posts_ibfk_1` FOREIGN KEY (`feed_id`) REFERENCES `feeds` (`feed_id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
 
 DROP TABLE IF EXISTS `app_builds`;
 CREATE TABLE `app_builds` (

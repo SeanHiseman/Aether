@@ -313,3 +313,8 @@ UPDATE external_posts
 SET has_text = 1
 WHERE text_body IS NOT NULL AND text_body != '';
 SET SQL_SAFE_UPDATES = 1;
+
+ALTER TABLE posts
+MODIFY embeddings JSON;
+
+CREATE INDEX idx_posts_parent_id ON posts(parent_id);

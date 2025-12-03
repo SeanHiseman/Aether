@@ -34,12 +34,16 @@ router.post('/assign_algorithm', authenticateCheck, async (req, res) => {
 });
 
 router.post('/create_algorithm', authenticateCheck, async (req, res) => {
+	//console.time("total");
 	let transaction;
 	try {
+		//console.time("transaction_start");
+		//console.log("creating algorithm");
 		transaction = await sequelize.transaction();
+		//console.timeEnd("transaction_start");
 		const { algorithmName, activeDays, chronology, contentType, customInstruction, dateFrom, dateTo, generateCode, locationId, minText, maxText, minVideo, maxVideo, sentiment, startTime, endTime, variety, voteImpact, wordBoost, wordSuppress } = req.body;
-		console.log("create algorithm sentiment:", sentiment);
 		const viewerId = req.session.viewer_id;
+		//console.time("build_algorithm_json");
 		const algorithmJson = {
 			chronology,
 			contentType,
@@ -58,6 +62,9 @@ router.post('/create_algorithm', authenticateCheck, async (req, res) => {
 				wordSuppress: Array.isArray(wordSuppress) ? wordSuppress : []
 			}
 		};
+		//console.timeEnd("build_algorithm_json");
+		//console.log("algorithmJson:", algorithmJson);
+		//console.time("fetch_existing_algorithm");
 		let existingAlgorithm = null;
 		if (req.body.algorithmId) {
 			existingAlgorithm = await Algorithms.findOne({
@@ -71,8 +78,10 @@ router.post('/create_algorithm', authenticateCheck, async (req, res) => {
 				transaction
 			});
 		}
+		//console.timeEnd("fetch_existing_algorithm");
 		//If only the name changed, skip AI + embeddings entirely
 		if (existingAlgorithm) {
+			//console.log("existing algorithm");
 			const prevCode = existingAlgorithm.algorithm_code;
 			const prevInstruction = existingAlgorithm.custom_instruction || '';
 			const bodyInstruction = customInstruction || '';
@@ -90,11 +99,14 @@ router.post('/create_algorithm', authenticateCheck, async (req, res) => {
 				prevInstruction === bodyInstruction &&
 				sameStructure;
 			if (nameChangedOnly) {
+				//console.time("rename_only_update");
 				const algorithm = await existingAlgorithm.update(
 					{ algorithm_name: algorithmName },
 					{ transaction }
 				);
 				await transaction.commit();
+				//console.timeEnd("rename_only_update");
+				//console.timeEnd("total");
 				return res.status(200).json({
 					success: true,
 					algorithm: {
@@ -104,11 +116,15 @@ router.post('/create_algorithm', authenticateCheck, async (req, res) => {
 				});
 			}
 		}
-		//Continue normal flow if not rename-only
 		let algorithmCode;
 		let finalBoost = algorithmJson.scoring.wordBoost;
 		let finalSuppress = algorithmJson.scoring.wordSuppress;
+		//console.time("ai_generation");
+		//console.log("generateCode:", generateCode);
+		//console.log("customInstruction:", customInstruction);
+		//console.log("trimmed customInstruction:", customInstruction.trim());
 		if (generateCode && customInstruction && customInstruction.trim() !== "") {
+			//console.log("generating code");
 			const systemPrompt = `
 				You are an expert algorithm creation assistant. 
 				Output a single, valid JSON object strictly following this schema:
@@ -137,6 +153,7 @@ router.post('/create_algorithm', authenticateCheck, async (req, res) => {
 				Custom Instruction:
 				"${customInstruction}"
 			`;
+			//console.log("sending user content:", userContent);
 			const response = await openai.chat.completions.create({
 				model: "gpt-5-mini",
 				messages: [
@@ -144,11 +161,13 @@ router.post('/create_algorithm', authenticateCheck, async (req, res) => {
 					{ role: "user", content: userContent }
 				]
 			});
+			//console.log("response:", response);
 			const aiReply = response.choices[0].message.content;
 			//console.log("aiReply:", aiReply);
 			const parsed = aiReply.replace(/```json\n|```/g, '').trim();
 			algorithmCode = parsed;
 			const parsedJson = JSON.parse(parsed);
+			//console.log("parsedJson:", parsedJson);
 			if (parsedJson.scoring) {
 				if (Array.isArray(parsedJson.scoring.wordBoost) && parsedJson.scoring.wordBoost.length)
 					finalBoost = parsedJson.scoring.wordBoost;
@@ -158,18 +177,23 @@ router.post('/create_algorithm', authenticateCheck, async (req, res) => {
 		} else {
 			algorithmCode = JSON.stringify(algorithmJson);
 		}
-		//Generate embeddings if needed
+		//console.timeEnd("ai_generation");
+		//console.time("embeddings");
 		let boostEmbedding = null;
 		let suppressEmbedding = null;
 		if (Array.isArray(finalBoost) && finalBoost.length > 0) {
+			//console.log("generating boostEmbedding");
 			boostEmbedding = await Promise.all(finalBoost.map(word => analyser.generateEmbedding(word)));
 		}
 		if (Array.isArray(finalSuppress) && finalSuppress.length > 0) {
+			//console.log("generating suppressEmbedding");
 			suppressEmbedding = await Promise.all(finalSuppress.map(word => analyser.generateEmbedding(word)));
 		}
-		//Create or update algorithm
+		//console.timeEnd("embeddings");
+		//console.time("db_write");
 		let algorithm;
 		if (existingAlgorithm) {
+			//console.log("updating existing algorithm");
 			algorithm = await existingAlgorithm.update({
 				algorithm_name: algorithmName,
 				algorithm_code: algorithmCode,
@@ -178,6 +202,7 @@ router.post('/create_algorithm', authenticateCheck, async (req, res) => {
 				suppress_embedding: suppressEmbedding ? JSON.stringify(suppressEmbedding) : null
 			}, { transaction });
 		} else {
+			//console.log("creating new algorithm");
 			algorithm = await Algorithms.create({
 				algorithm_id: v4(),
 				algorithm_name: algorithmName,
@@ -189,7 +214,9 @@ router.post('/create_algorithm', authenticateCheck, async (req, res) => {
 			}, { transaction });
 		}
 		await transaction.commit();
+		//console.timeEnd("db_write");
 		//console.log("algorithm:", algorithm);
+		//console.timeEnd("total");
 		res.status(201).json({
 			success: true,
 			algorithm: {
@@ -200,6 +227,7 @@ router.post('/create_algorithm', authenticateCheck, async (req, res) => {
 	} catch (error) {
 		if (transaction) await transaction.rollback();
 		console.log("/create_algorithm error:", error);
+		console.timeEnd("total");
 		res.status(500).json({ success: false, message: 'Failed to create or update algorithm.' });
 	}
 });

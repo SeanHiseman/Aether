@@ -78,17 +78,17 @@ const Posts = sequelize.define('posts', {
     content: { type: DataTypes.TEXT('long'), allowNull: false },
     replies: { type: INTEGER, allowNull: false, defaultValue: 0 },
     views: { type: INTEGER, allowNull: false, defaultValue: 0 },
-    rank_hotness: { type: FLOAT, allowNull: true, defaultValue: null },
-    rank_updated_at: { type: DataTypes.DATE(3), defaultValue: sequelize.literal('CURRENT_TIMESTAMP(3)') },
+    rank_hotness: { type: DataTypes.DOUBLE, allowNull: true, defaultValue: null },
+    rank_updated_at: { type: DataTypes.DATE(3), defaultValue: sequelize.literal('CURRENT_TIMESTAMP(3)'), onUpdate: sequelize.literal('CURRENT_TIMESTAMP(3)') },
     upvotes: { type: INTEGER, allowNull: false, defaultValue: 0 },
     downvotes: { type: INTEGER, allowNull: false, defaultValue: 0 },
     created_at: { type: DataTypes.DATE(3), defaultValue: sequelize.literal('CURRENT_TIMESTAMP(3)') },
-    updated_at: { type: DataTypes.DATE(3), defaultValue: sequelize.literal('CURRENT_TIMESTAMP(3)') },
+    updated_at: { type: DataTypes.DATE(3), defaultValue: sequelize.literal('CURRENT_TIMESTAMP(3)'), onUpdate: sequelize.literal('CURRENT_TIMESTAMP(3)') },
     poster_id: { type: STRING(36), allowNull: false },
-    text_body: { type: DataTypes.TEXT('long'), allowNull: true },
+    text_body: { type: DataTypes.TEXT('long'), allowNull: false },
     text_length: { type: INTEGER, defaultValue: 0 }, //Character count
     word_count: { type: INTEGER, defaultValue: 0 }, 
-    video_length: { type: INTEGER, defaultValue: 0 },
+    video_length: { type: DataTypes.FLOAT, defaultValue: 0 },
     sentence_count: { type: INTEGER, defaultValue: 0 },
     has_images: { type: BOOLEAN, defaultValue: false },
     has_videos: { type: BOOLEAN, defaultValue: false },
@@ -100,7 +100,7 @@ const Posts = sequelize.define('posts', {
     video_count: { type: INTEGER, defaultValue: 0 },
     sentiment_score: { type: FLOAT, defaultValue: 0.0 }, 
     language: { type: STRING(20), defaultValue: 'en' },
-    tokens: { type: DataTypes.JSON, allowNull: true }, 
+    tokens: { type: DataTypes.TEXT('long'), allowNull: false },
     embeddings: { type: DataTypes.JSON, allowNull: true },
     is_private: { type: BOOLEAN, defaultValue: false },
 }, {
@@ -117,7 +117,8 @@ const Posts = sequelize.define('posts', {
 		{ name: 'idx_rank_hotness_desc', fields: ['rank_hotness', 'post_id'] },
 		{ name: 'idx_feed_rank', fields: ['feed_id', 'rank_hotness', 'post_id'] },
 		{ name: 'idx_created_desc', fields: ['created_at', 'post_id'] },
-		{ name: 'idx_fulltext_posts', type: 'FULLTEXT', fields: ['title', 'text_body'] }
+		{ name: 'idx_fulltext_posts', type: 'FULLTEXT', fields: ['title', 'text_body'] },
+        { name: 'idx_posts_parent_id', fields: ['parent_id'] }
 	]
 });
 

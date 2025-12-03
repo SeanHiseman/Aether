@@ -365,7 +365,7 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
 		}
 
         //Filter out posts, then apply scoring
-		const finalPosts = [];
+		let finalPosts = [];
         const { chronology = 1, contentType = {}, variety = 1, textLimits = {}, videoLimits = {}, timeLimits = {}, dateLimits = {}, scoring = {} } = algorithm;
 		const { sentiment = 0, voteImpact = 1, wordBoost = [], wordSuppress = [] } = scoring;
 		//console.log("algorithm:", algorithm);
@@ -507,6 +507,7 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
 			//console.log("finalPosts:", finalPosts);
 			//console.log("finalPosts length:", finalPosts.length);
 		} catch (error) {
+			console.log("error applying algorithm to posts:", error);
 			finalPosts = posts; //Return initial post batch if issue applying algorithm
 		}
 		if (!finalPosts.length) return [];

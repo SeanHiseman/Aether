@@ -264,7 +264,7 @@ const AddAlgorithm = ({ algorithms = [], display, editingAlgorithm = null, isAut
     }
 
     useEffect(() => {
-        if (customInstruction.trim() && hasMembership) {
+        if (customInstruction.trim()) {
             if (template === 'none') {
                 setGenerateCode(true);
             } else {
@@ -273,7 +273,7 @@ const AddAlgorithm = ({ algorithms = [], display, editingAlgorithm = null, isAut
         } else {
             setGenerateCode(false);
         }
-    }, [customInstruction, template, hasMembership]);
+    }, [customInstruction, template]);
 
     useEffect(() => {
         if (editingAlgorithm) {
