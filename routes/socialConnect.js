@@ -616,10 +616,18 @@ router.get('/reddit/callback', authenticateCheck, async (req, res) => {
 				</html>
 			`);
 			//Background processing
-			const start = Date.now();
 			setImmediate(async () => {
+				const existing = await ExternalPosts.findAll({
+					where: { post_id: mappedPosts.map(m => m.post_id) },
+					attributes: ['post_id']
+				});
+				const existingIds = new Set(existing.map(e => e.post_id));
+				const newPosts = mappedPosts.filter(p => !existingIds.has(p.post_id));
+				if (newPosts.length === 0) {
+					return;
+				}
 				const embedder = await getEmbedder();
-				const enriched = await Promise.all(mappedPosts.map(async mapped => {
+				const enriched = await Promise.all(newPosts.map(async mapped => {
 					const html = generateRedditContentHTML(mapped.text_body, mapped.media);
 					const details = await contentAnalyser.analyseContent(html, mapped.title, embedder);
 					const rank_hotness = computeHotness({
@@ -737,10 +745,18 @@ router.get('/mastodon/callback', authenticateCheck, async (req, res) => {
 				</html>
 			`);
 			//Background analysis
-			const start = Date.now();
 			setImmediate(async () => {
+				const existing = await ExternalPosts.findAll({
+					where: { post_id: mappedPosts.map(m => m.post_id) },
+					attributes: ['post_id']
+				});
+				const existingIds = new Set(existing.map(e => e.post_id));
+				const newPosts = mappedPosts.filter(p => !existingIds.has(p.post_id));
+				if (newPosts.length === 0) {
+					return;
+				}
 				const embedder = await getEmbedder();
-				const enriched = await Promise.all(mappedPosts.map(async mapped => {
+				const enriched = await Promise.all(newPosts.map(async mapped => {
 					const html = generateMastodonContentHTML(mapped.text_body, mapped.media);
 					const details = await contentAnalyser.analyseContent(html, mapped.title, embedder);
 					const rank_hotness = computeHotness({
@@ -752,12 +768,15 @@ router.get('/mastodon/callback', authenticateCheck, async (req, res) => {
 					const sentiment_score = details?.sentiment_score ?? 0;
 					return { ...mapped, ...details, rank_hotness, sentiment_score };
 				}));
-				await ExternalPosts.bulkCreate(enriched, { updateOnDuplicate: [
-					'text_body','media','score','replies','created_at_remote','fetched_at',
-					'author_photo','image_count','video_count','text_length','word_count','has_images',
-					'has_videos','video_length','sentiment_score','tokens','embeddings','processed_at',
-					'rank_hotness'
-				], ignoreDuplicates: true });
+				await ExternalPosts.bulkCreate(enriched, {
+					updateOnDuplicate: [
+						'text_body','media','score','replies','created_at_remote','fetched_at',
+						'author_photo','image_count','video_count','text_length','word_count','has_images',
+						'has_videos','video_length','sentiment_score','tokens','embeddings','processed_at',
+						'rank_hotness'
+					],
+					ignoreDuplicates: true
+				});
 				await ExternalPostsAccess.bulkCreate(
 					enriched.map(p => ({ id: v4(), post_id: p.post_id, source: 'mastodon', user_id, created_at: new Date() })),
 					{ ignoreDuplicates: true }
