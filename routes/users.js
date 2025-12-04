@@ -57,7 +57,7 @@ router.post('/change_email', standardLimiter, authenticateCheck, async (req, res
             res.status(500).json({ success: false, error: 'Failed to send verification email' });
         }
     } catch (error) {
-        console.log("error changing email:", error);
+        console.error(new Date().toISOString(), '/change_email error:', error);
         res.status(500).json({ success: false, message: 'Error changing email' });
     }
 });
@@ -72,7 +72,7 @@ router.post('/change_theme', standardLimiter, authenticateCheck, async (req, res
         await Users.update({ theme: theme }, { where: { user_id: userId } });
         res.status(200).json({ success: true });
     } catch (error) {
-        console.log("error changing theme:", error);
+        console.error(new Date().toISOString(), '/change_theme error:', error);
         res.status(500).json({ success: false, message: 'Error changing theme' });
     }
 });
@@ -108,12 +108,12 @@ router.post('/change_username', standardLimiter, authenticateCheck, async (req, 
         await user.save();
         res.status(200).json({ success: true });
     } catch (error) {
-        console.log("error changing username:", error);
+        console.error(new Date().toISOString(), '/change_username error:', error);
         res.status(500).json({ success: false, error: 'Failed to update username' });
     }
 });
 
-router.post('/create-checkout-session', standardLimiter, authenticateCheck, async (req, res) => {
+router.post('/create_checkout_session', standardLimiter, authenticateCheck, async (req, res) => {
     try {
         const { planType } = req.body;
         console.log('Creating checkout session for planType:', planType);
@@ -136,15 +136,15 @@ router.post('/create-checkout-session', standardLimiter, authenticateCheck, asyn
             metadata: { userId: userId.toString() },
             customer_email: userEmail,
         });
-        console.log("checkout session:", session);
+        console.log('checkout session:', session);
         res.status(200).json({ success: true, url: session.url });
     } catch (error) {
-        console.error('Error creating checkout session:', error);
+        console.error(new Date().toISOString(), '/create_checkout_session error:', error);
         res.status(500).json({ error: 'Failed to create checkout session' });
     }
 });
 
-router.post('/cancel-subscription', standardLimiter, authenticateCheck, async (req, res) => {
+router.post('/cancel_subscription', standardLimiter, authenticateCheck, async (req, res) => {
     try {
         const userId = req.session?.user_id;
         console.log('Cancelling subscription for userId:', userId);
@@ -164,12 +164,12 @@ router.post('/cancel-subscription', standardLimiter, authenticateCheck, async (r
         });
         res.status(200).json({ success: true, message: 'Subscription will be cancelled at the end of the billing period' });
     } catch (error) {
-        console.error('Error cancelling subscription:', error);
+        console.error(new Date().toISOString(), '/cancel_subscription error:', error);
         res.status(500).json({ success: false, error: 'Failed to cancel subscription' });
     }
 });
 
-router.get('/subscription-status', standardLimiter, authenticateCheck, async (req, res) => {
+router.get('/subscription_status', standardLimiter, authenticateCheck, async (req, res) => {
     try {
         const userId = req.session?.user_id;
         const user = await Users.findOne({
@@ -186,7 +186,7 @@ router.get('/subscription-status', standardLimiter, authenticateCheck, async (re
                     user.stripe_subscription_id
                 );
             } catch (stripeError) {
-                console.error('Error fetching subscription from Stripe:', stripeError);
+                console.error(new Date().toISOString(), 'Error fetching subscription from Stripe:', stripeError);
                 if (stripeError.code === 'resource_missing') {
                     await Users.update({
                         stripe_subscription_id: null,
@@ -209,7 +209,7 @@ router.get('/subscription-status', standardLimiter, authenticateCheck, async (re
             } : null
         });
     } catch (error) {
-        console.error('Error fetching subscription status:', error);
+        console.error(new Date().toISOString(), '/subscription_status error:', error);
         res.status(500).json({ success: false, error: 'Failed to fetch subscription status' });
     }
 });
@@ -262,7 +262,7 @@ cron.schedule('0 * * * *', async () => {
             console.log(`Processed ${expiredUsers.length} expired subscriptions`);
         }
     } catch (error) {
-        console.error('Error in subscription expiration check:', error);
+        console.error(new Date().toISOString(), 'Error in subscription expiration check:', error);
     }
 });
 

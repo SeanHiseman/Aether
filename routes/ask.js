@@ -185,7 +185,7 @@ router.post('/generate_content', authenticateCheck, async (req, res) => {
         res.status(201).json({ success: true, generatedContent: aiReply});
     } catch (error) {
         clearTimeout(timeout);
-        console.error('Error generating content:', error);
+        console.error(new Date().toISOString(), '/generate_content error:', error);
         if (!res.headersSent) {
             res.status(500).json({ success: false, error: error.message });
         }

@@ -47,7 +47,7 @@ const checkStorageLimit = async (req, res, next) => {
         req.currentUser = user;
         next();
     } catch (error) {
-		console.error("Error checking storage limit:", error);
+		console.error(new Date().toISOString(), 'Error checking storage limit:', error);
         return res.status(500).json({ success: false, error: error.message });
     }
 };
@@ -107,7 +107,7 @@ router.post('/channel_posts', standardLimiter, async (req, res) => {
         });
 		return res.status(200).json({ success: true, posts: results });
 	} catch (error) {
-        console.error("Error in /channel_posts:", error);
+        console.error(new Date().toISOString(), '/channel_posts error:', error);
 		return res.status(500).json({ success: false, message: 'Error getting posts.' });
 	}
 });
@@ -166,7 +166,7 @@ router.post('/content_vote', higherLimiter, authenticateCheck, async (req, res) 
             hasDownvoted: vote.downvotes > 0
         }); 
     } catch (error) {
-        console.error("Error in /content_vote:", error);
+        console.error(new Date().toISOString(), '/content_vote error:', error);
         return res.status(500).json({ success: false });
     }
 });
@@ -410,11 +410,11 @@ router.post("/create_post", standardLimiter, authenticateCheck, checkStorageLimi
 						fs.unlinkSync(file.path);
 					}
 				} catch (cleanupErr) {
-					console.error("Failed to cleanup file:", cleanupErr);
+					console.error(new Date().toISOString(), 'Failed to cleanup file:', cleanupErr);
 				}
 			}
 		}
-		console.error("Error in /create_post:", error);
+		console.error(new Date().toISOString(), '/create_post error:', error);
 		return res.status(500).json({ success: false, message: "Error creating post" });
 	}
 });
@@ -463,7 +463,7 @@ router.post("/explore_posts", standardLimiter, async (req, res) => {
         });
         res.status(200).json({ posts: posts, hasMore: posts.length >= limit });
     } catch (error) {
-        console.error("Error in /explore_posts:", error);
+        console.error(new Date().toISOString(), '/explore_posts error:', error);
         res.status(500).json({ success: false, message: 'Error fetching explore posts.' });
     }
 });
@@ -479,7 +479,7 @@ router.get('/get_post_drafts', standardLimiter, authenticateCheck, async (req, r
         });
         return res.status(200).json({ drafts });
     } catch (error) {
-        console.error("Error in /get_post_drafts:", error);   
+        console.error(new Date().toISOString(), '/get_post_drafts error:', error);   
         return res.status(500).json({ success: false, error: 'Failed to load drafts' });
     }
 });
@@ -508,6 +508,7 @@ router.delete('/remove_build', standardLimiter, authenticateCheck, async (req, r
 			await DeleteBuilds(`<div data-buildid="${buildId}"></div>`);
 			return res.status(200).json({ success: true });
 		} catch (error) {
+			console.error(new Date().toISOString(), '/remove_build error:', error);
 			return res.status(500).json({ success: false });
 		}
 	}
@@ -528,7 +529,7 @@ router.delete('/remove_draft', standardLimiter, authenticateCheck, async (req, r
 		return res.status(200).json({ success: true });
 	} catch (error) {
         if (transaction) await transaction.rollback();
-		console.error("Error in /remove_draft:", error);
+		console.error(new Date().toISOString(), '/remove_draft error:', error);
 		return res.status(500).json({ success: false });
 	}
 });
@@ -559,7 +560,7 @@ router.delete('/remove_post', standardLimiter, authenticateCheck, async (req, re
 		return res.status(200).json({ success: true });
 	} catch (error) {
 		if (transaction) await transaction.rollback();
-		console.error("Error in /remove_post:", error);
+		console.error(new Date().toISOString(), '/remove_post, error:', error);
 		return res.status(500).json({ success: false });
 	}
 });
@@ -593,7 +594,7 @@ router.post('/increment_views', higherLimiter, authenticateCheck, async (req, re
 		}
         res.status(200).json({ success: true });
     } catch (error) {
-		console.error("Error in /increment_views:", error);
+		console.error(new Date().toISOString(), '/increment_views error:', error);
         res.status(500).json({ success: false, message: 'Error incrementing views.' });   
     }
 });
@@ -644,6 +645,7 @@ router.get('/post_replies/:postId', standardLimiter, async (req, res) => {
         }));
         return res.status(200).json(formattedReplies);
     } catch (error) {
+		console.error(new Date().toISOString(), '/post_replies error:', error);
         return res.status(500).json({ success: false });
     }
 });
@@ -726,6 +728,7 @@ router.post('/upload_build', standardLimiter, authenticateCheck, upload.single('
 		await AppBuilds.create({ build_id: buildId, kind, path: baseUrl })
 		return res.status(201).json({ buildId, kind, path: baseUrl, success: true })
 	} catch (error) {
+		console.error(new Date().toISOString(), '/upload_build error:', error);
 		if (tmpZip) {
 			try { await fs.promises.unlink(tmpZip) } catch {}
 		}

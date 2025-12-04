@@ -28,7 +28,7 @@ router.post('/assign_algorithm', authenticateCheck, async (req, res) => {
 		res.status(200).json({ success: true });
 	} catch (error) {
 		if (transaction) await transaction.rollback();
-		console.log("/assign_algorithm error:", error);
+		console.error(new Date().toISOString(), "/assign_algorithm error:", error);
 		res.status(500).json({ success: false, message: 'Failed to assign algorithm.' });
 	}
 });
@@ -226,8 +226,8 @@ router.post('/create_algorithm', authenticateCheck, async (req, res) => {
 		});
 	} catch (error) {
 		if (transaction) await transaction.rollback();
-		console.log("/create_algorithm error:", error);
-		console.timeEnd("total");
+		console.error(new Date().toISOString(), "/create_algorithm error:", error);
+		//console.timeEnd("total");
 		res.status(500).json({ success: false, message: 'Failed to create or update algorithm.' });
 	}
 });
@@ -250,7 +250,7 @@ router.delete('/delete_algorithm', authenticateCheck, async (req, res) => {
 		res.status(200).json({ success: true });
 	} catch (error) {
 		if (transaction) await transaction.rollback();
-		console.log("/delete_algorithm error:", error);
+		console.error(new Date().toISOString(), "/delete_algorithm error:", error);
 		res.status(500).json({ success: false, message: 'Failed to delete algorithm.' });
 	}
 });
@@ -270,7 +270,7 @@ router.get('/get_viewer_algorithms', authenticateCheck, async (req, res) => {
 		});
 		res.status(200).json({ success: true, algorithms });
 	} catch (error) {
-		console.log("/get_viewer_algorithms error:", error);
+		console.error(new Date().toISOString(), "/get_viewer_algorithms error:", error);
 		res.status(500).json({ success: false, message: 'Failed to get algorithms.' });
 	}
 });
@@ -282,7 +282,7 @@ router.delete('/remove_algorithm', authenticateCheck, async (req, res) => {
 		await AlgorithmLocations.destroy({ where: { location_id: locationId, viewer_id: viewerId } });
 		res.status(200).json({ success: true });
 	} catch (error) {
-		console.log("/remove_algorithm error:", error);
+		console.error(new Date().toISOString(), "/remove_algorithm error:", error);
 		res.status(500).json({ success: false, message: 'Failed to remove algorithm.' });
 	}
 });

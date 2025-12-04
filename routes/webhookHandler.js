@@ -75,12 +75,12 @@ async function handleSuccessfulRenewal(invoice) {
     console.log('Handling successful renewal/payment for invoice:', invoice.id);
     const subscriptionId = invoice.subscription || invoice.parent?.subscription_details?.subscription;
     if (!subscriptionId) {
-        console.log('No subscription ID found in invoice:', invoice);
+        console.log(new Date().toISOString(), 'No subscription ID found in invoice:', invoice);
         return;
     }
     const periodEndUnix = invoice.lines?.data?.[0]?.period?.end;
     if (!periodEndUnix) {
-        console.error('No period end found in invoice');
+        console.error(new Date().toISOString(), 'No period end found in invoice:', invoice);
         return;
     }
     const currentPeriodEnd = new Date(periodEndUnix * 1000);
@@ -138,7 +138,7 @@ async function handleFailedPayment(invoice) {
             where: { stripe_subscription_id: subscriptionId }
         });
         if (user) {
-            console.log(`Payment failed for user ${user.user_id}`);
+            console.error(new Date().toISOString(), `Payment failed for user ${user.user_id}`);
         }
     } catch (error) {
         throw error;

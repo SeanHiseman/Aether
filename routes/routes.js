@@ -98,7 +98,7 @@ router.post('/search', standardLimiter, async (req, res) => {
         });
         res.status(200).json({ feeds: feedData, posts: postResults, success: true });
     } catch (error) {
-        console.error('Search error:', error);
+        console.error(new Date().toISOString(), '/search error:', error);
         res.status(500).json({ success: false });
     }
 });

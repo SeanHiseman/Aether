@@ -45,7 +45,7 @@ const checkProfileStorageLimit = async (req, res, next) => {
         req.currentUser = user;
         next();
     } catch (error) {
-        console.log("checkProfileStorageLimit error:", error);
+        console.error(new Date().toISOString(), 'checkProfileStorageLimit error:', error);
         return res.status(500).json({ success: false, message: 'Error checking storage limit' });
     }
 };
@@ -68,7 +68,7 @@ router.post('/accept_follow_request', higherLimiter, authenticateCheck, async (r
         res.status(200).json({ success: true });
     } catch (error) {
         if (transaction) await transaction.rollback();
-        console.log("/accept_follow_request error:", error);
+        console.error(new Date().toISOString(), '/accept_follow_request error:', error);
         res.status(500).json({ success: false, message: 'Error accepting request' });
     }
 });
@@ -126,7 +126,7 @@ router.post('/add_feed_channel', standardLimiter, authenticateCheck, async (req,
         res.status(201).json({ success: true, newChannel });
     } catch (error) {
         if (transaction) await transaction.rollback();
-        console.log("/add_feed_channel error:", error);
+        console.error(new Date().toISOString(), '/add_feed_channel error:', error);
         res.status(500).json({ success: false, message: 'Error adding channel' });
     }
 });
@@ -144,7 +144,7 @@ router.post('/add_to_deep_feed', higherLimiter, async (req, res) => {
         });
         res.status(201).json({ success: true, content });
     } catch (error) {
-        console.log("/add_to_deep_feed error:", error);
+        console.error(new Date().toISOString(), '/add_to_deep_feed error:', error);
         res.status(500).json({ success: false, message: 'Error adding to feed' });
     }
 });
@@ -166,7 +166,7 @@ router.post('/change_channel_name', standardLimiter, authenticateCheck, async (r
             res.status(200).json({ success: true });
         }
     } catch (error) {
-        console.log("/change_channel_name error:", error);
+        console.error(new Date().toISOString(), '/change_channel_name error:', error);
         res.status(500).json({ success: false, message: 'Error changing name' });
     }
 });
@@ -188,7 +188,7 @@ router.post('/change_deep_feed_name', standardLimiter, authenticateCheck, async 
             res.status(200).json({ success: true });
         }
     } catch (error) {
-        console.log("/change_deep_feed_name error:", error);
+        console.error(new Date().toISOString(), '/change_deep_feed_name error:', error);
         res.status(500).json({ success: false, message: 'Error changing name' });
     }
 });
@@ -205,7 +205,7 @@ router.post('/change_description', standardLimiter, authenticateCheck, async (re
         await feed.save();
         res.status(200).json({ success: true });
     } catch (error) {
-        console.log("/change_description error:", error);
+        console.error(new Date().toISOString(), '/change_description error:', error);
         res.status(500).json({ success: false, message: 'Error changing description' });
     }
 });
@@ -234,7 +234,7 @@ router.post('/change_feed_name', standardLimiter, authenticateCheck, async (req,
         await feed.save();
         res.status(200).json({ success: true });
     } catch (error) {
-        console.log("/change_feed_name error:", error);
+        console.error(new Date().toISOString(), '/change_feed_name error:', error);
         res.status(500).json({ success: false, message: 'Error changing name' });
     }
 });
@@ -247,6 +247,7 @@ router.post('/create_feed', standardLimiter, authenticateCheck, checkProfileStor
             }
             return res.status(500).json({ success: false, message: 'Upload error occurred' });
         } else if (error) {
+            console.error(new Date().toISOString(), 'file upload failed in /create_feed:', error);
             return res.status(500).json({ success: false, message: 'Upload failed' });
         }
         try {
@@ -258,7 +259,7 @@ router.post('/create_feed', standardLimiter, authenticateCheck, checkProfileStor
             const existingFeed = await Feeds.findOne({ where: { feed_name: feedName } });
             if (existingFeed) {
                 if (req.file) {
-                    if (process.env.NODE_ENV === "production") {
+                    if (process.env.NODE_ENV === 'production') {
                         const fileName = GenerateFileName(req.file, "feed-image");
                         await DeleteFromS3(`feed-images/${fileName}`);
                     } else {
@@ -273,26 +274,26 @@ router.post('/create_feed', standardLimiter, authenticateCheck, checkProfileStor
                 const user = req.currentUser;
                 const maxStorage = user.has_membership ? 30 * 1024 : 300; //Weekly limit of 30GB for members, 300MB for non-members
                 if (user.storage_count + fileSize > maxStorage) {
-                    if (process.env.NODE_ENV === "production") {
-                        const fileName = GenerateFileName(req.file, "feed-image");
+                    if (process.env.NODE_ENV === 'production') {
+                        const fileName = GenerateFileName(req.file, 'feed-image');
                         await DeleteFromS3(`feed-images/${fileName}`);
                     } else {
                         fs.unlinkSync(req.file.path);
                     }
                     return res.status(413).json({ success: false, message: `Weekly limit of ${maxStorage}MB exceeded` });
                 }
-                if (process.env.NODE_ENV === "production") {
-                    const fileName = GenerateFileName(req.file, "feed-image");
+                if (process.env.NODE_ENV === 'production') {
+                    const fileName = GenerateFileName(req.file, 'feed-image');
                     const s3Key = `feed-images/${fileName}`;
                     await UploadToS3(s3Key, req.file.buffer, req.file.mimetype);
                     feed_photo = `https://${process.env.AWS_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${s3Key}`;
                 } else {
-                    const fileName = GenerateFileName(req.file, "feed-image");
+                    const fileName = GenerateFileName(req.file, 'feed-image');
                     const localPath = path.join(mediaDir, fileName);
                     if (req.file.path !== localPath) {
                         fs.copyFileSync(req.file.path, localPath);
                     }
-                    feed_photo = "/" + path.join("media", "feed_images", fileName).replace(/\\/g, "/");
+                    feed_photo = '/' + path.join('media', 'feed_images', fileName).replace(/\\/g, '/');
                 }
                 user.storage_count += fileSize;
                 await user.save();
@@ -322,17 +323,17 @@ router.post('/create_feed', standardLimiter, authenticateCheck, checkProfileStor
             });
             res.status(201).json({ success: true, feed });
         } catch (error) {
-            console.log("error creating feed:", error);
+            console.error(new Date().toISOString(), '/create_feed:', error);
             if (req.file) {
                 try {
-                    if (process.env.NODE_ENV === "production") {
-                        const fileName = GenerateFileName(req.file, "feed-image");
+                    if (process.env.NODE_ENV === 'production') {
+                        const fileName = GenerateFileName(req.file, 'feed-image');
                         await DeleteFromS3(`feed-images/${fileName}`);
                     } else if (req.file.path) {
                         fs.unlinkSync(req.file.path);
                     }
                 } catch (cleanupErr) {
-                    console.log("Failed to cleanup file:", cleanupErr);
+                    console.error(new Date().toISOString(), 'Failed to cleanup file:', cleanupErr);
                 }
             }
             res.status(500).json({ success: false, message: 'Failed to create feed' });
@@ -377,7 +378,7 @@ router.post('/create_deep_feed', standardLimiter, authenticateCheck, async (req,
         }
         res.status(201).json({ success: true, deepFeed, feedsToInclude });
     } catch (error) {
-        console.log("/create_deep_feed error:", error);
+        console.error(new Date().toISOString(), '/create_deep_feed error:', error);
         res.status(500).json({ success: false, message: 'Error creating feed' });
     }
 });
@@ -392,7 +393,7 @@ router.get('/deep_feed_contents/:deepFeedId', standardLimiter, authenticateCheck
         });
         res.status(200).json({ success: true, contents });
     } catch (error) {
-        console.log("error getting deep feed contents:", error);
+        console.error(new Date().toISOString(), '/deep_feed_contents error:', error);
         res.status(500).json({ success: false, message: 'Error getting contents' });
     }
 });
@@ -461,7 +462,7 @@ router.post('/deep_feed_posts', standardLimiter, authenticateCheck, async (req, 
         });
         return res.status(200).json({ deepFeed, posts: deepFeedPosts, success: true });
     } catch (error) {
-        console.log("error getting deep feed posts:", error);
+        console.error(new Date().toISOString(), '/deep_feed_posts error:', error);
         res.status(500).json({ success: false, error: error.message });
     }
 });
@@ -483,7 +484,7 @@ router.delete('/delete_deep_feed', standardLimiter, authenticateCheck, async (re
         res.status(200).json({ success: true });
     } catch (error) {
         if (transaction) await transaction.rollback();
-        console.log("/delete_deep_feed error:", error);
+        console.error(new Date().toISOString(), '/delete_deep_feed error:', error);
         res.status(500).json({ success: false, message: 'Error deleting feed' });
     }
 });
@@ -505,7 +506,7 @@ router.delete('/delete_follow_request', higherLimiter, authenticateCheck, async 
         res.status(200).json({ success: true });
     } catch (error) {
         if (transaction) await transaction.rollback();
-        console.log("/delete_follow_request error:", error);
+        console.error(new Date().toISOString(), '/delete_follow_request error:', error);
         res.status(500).json({ success: false, message: 'Error deleting request' });
     }
 });
@@ -530,7 +531,7 @@ router.delete('/delete_feed', standardLimiter, authenticateCheck, async (req, re
         res.status(200).json({ success: true });
     } catch (error) {
         if (transaction) await transaction.rollback();
-        console.log("/delete_feed error:", error);
+        console.error(new Date().toISOString(), '/delete_feed error:', error);
         res.status(500).json({ success: false, message: 'Error deleting feed' });
     }
 });
@@ -554,12 +555,12 @@ router.delete('/delete_feed_channel', higherLimiter, authenticateCheck, async (r
         res.status(200).json({ success: true });
     } catch (error) {
         if (transaction) await transaction.rollback();
-        console.log("/delete_feed_channel error:", error);
+        console.error(new Date().toISOString(), '/delete_feed_channel error:', error);
         res.status(500).json({ success: false, message: 'Failed to delete channel.' });
     }
 });
 
-router.post("/explore_feeds", standardLimiter, async (req, res) => {
+router.post('explore_feeds', standardLimiter, async (req, res) => {
 	try {
 		const { exclude = [], limit: reqLimit, offset: reqOffset } = req.body;
 		const viewerId = req.session?.viewer_id;
@@ -571,11 +572,11 @@ router.post("/explore_feeds", standardLimiter, async (req, res) => {
 		}
 		const { rows: feeds } = await Feeds.findAndCountAll({
 			where: {
-				type: { [Op.notIn]: ["private", "hidden"] },
+				type: { [Op.notIn]: ['private', 'hidden'] },
 				is_locked: false,
 				feed_id: { [Op.notIn]: excludeArray }
 			},
-			order: sequelize.literal("RAND()"),
+			order: sequelize.literal('RAND()'),
 			limit,
 			offset
 		});
@@ -591,7 +592,7 @@ router.post("/explore_feeds", standardLimiter, async (req, res) => {
 			response.isAdmin = followStatus?.isAdmin || false;
 			response.isMod = followStatus?.isMod || false;
 			response.isFollower = followStatus?.following || false;
-			if (viewerId && feed.type === "private") {
+			if (viewerId && feed.type === 'private') {
 				const followRequest = await FollowRequests.findOne({
 					where: { sender_id: viewerId, receiver_id: feed.feed_id }
 				});
@@ -601,8 +602,8 @@ router.post("/explore_feeds", standardLimiter, async (req, res) => {
 		}));
 		res.status(200).json({ success: true, feeds: feedData, hasMore: feedData.length >= limit });
 	} catch (error) {
-		console.log("/explore_feeds error:", error);
-		res.status(500).json({ success: false, message: "Error while fetching feeds" });
+		console.error(new Date().toISOString(), '/explore_feeds error:', error);
+		res.status(500).json({ success: false, message: 'Error while fetching feeds' });
 	}
 });
 
@@ -667,7 +668,7 @@ router.get('/feed/:feedName', standardLimiter, async (req, res) => {
         }
         res.status(200).json({ success: true, feedResult });
     } catch (error) {
-        console.log("/feed_error:", error);
+        console.error(new Date().toISOString(), '/feed error:', error);
         res.status(500).json({ success: false, message: 'Error retrieving the feed' });
     }
 });
@@ -684,7 +685,7 @@ router.get('/feed_channel_messages', higherLimiter, async (req, res) => {
         });
         res.status(200).json({ messages, success: true });
     } catch (error) {
-        console.log("/feed_channel_messages error:", error);
+        console.error(new Date().toISOString(), '/feed_channel_messages error:', error);
         res.status(500).json({ success: false, message: 'Error getting messages' });   
     }
 });
@@ -703,7 +704,7 @@ router.post('/follow_feed', higherLimiter, authenticateCheck, async (req, res) =
         await feed.increment('follower_count');
         res.status(200).json({ success: true });
     } catch (error) {
-        console.log("/follow_feed error:", error);
+        console.error(new Date().toISOString(), '/follow_feed error:', error);
         res.status(500).json({ success: false, message: 'Error following feed' });
     }
 });
@@ -721,7 +722,7 @@ router.get('/follow_requests/:feedId', standardLimiter, authenticateCheck, async
         }); 
         res.status(200).json({ success: true, requests });
     } catch (error) {
-        console.log("/follow_requests error:", error);
+        console.error(new Date().toISOString(), '/follow_requests error:', error);
         res.status(500).json({ success: false, message: 'Error getting requests' });
     }
 });
@@ -751,7 +752,7 @@ router.get('/get_feed_channels/:feedId', standardLimiter, async (req, res) => {
         });
         res.status(200).json({ success: true, channels });
     } catch (error) {
-        console.log("/get_feed_channels error:", error);
+        console.error(new Date().toISOString(), '/get_feed_channels error:', error);
         res.status(500).json({ success: false, message: 'Error getting channels' });
     }
 });
@@ -771,7 +772,7 @@ router.get('/get_feed_followers/:feedId', higherLimiter, authenticateCheck, asyn
         });
         res.status(200).json({ success: true, followers });
     } catch (error) {
-        console.log("/get_feed_followers error:", error);
+        console.error(new Date().toISOString(), '/get_feed_followers error:', error);
         res.status(500).json({ success: false, message: 'Error getting followers' });
     }
 });
@@ -799,7 +800,7 @@ router.get('/get_saved_posts', standardLimiter, authenticateCheck, async (req, r
         });
         res.status(200).json({ posts });
     } catch (error) {
-        console.log("/get_saved_posts error:", error);
+        console.error(new Date().toISOString(), '/get_saved_posts error:', error);
         res.status(500).json({ posts: [], message: 'Error getting posts' });
     }
 });
@@ -817,7 +818,7 @@ router.post('/remove_from_deep_feed', higherLimiter, authenticateCheck, async (r
         await DeepFeedContent.destroy({ where });
         res.status(200).json({ success: true });
     } catch (error) {
-        console.error('/remove_from_deep_feed error:', error);
+        console.error(new Date().toISOString(), '/remove_from_deep_feed error:', error);
         res.status(500).json({ success: false, message: 'Error removing from feed' });
     }
 });
@@ -831,7 +832,7 @@ router.delete('/remove_saved_post', higherLimiter, authenticateCheck, async (req
         if (!count) return res.status(404).json({ success: false, message: 'Not saved' });
         res.status(200).json({ success: true });
     } catch {
-        console.log("/remove_saved_post error:", error);
+        console.error(new Date().toISOString(), '/remove_saved_post error:', error);
         res.status(500).json({ success: false, message: 'Error removing saved post' });
     }
 });
@@ -861,7 +862,7 @@ router.put('/reorder_feed_channels', higherLimiter, async (req, res) => {
         res.status(200).json({ success: true, message: 'Channels reordered successfully.' });
     } catch (error) {
         if (transaction) await transaction.rollback();
-        console.log("/reorder_feed_channels error:", error);
+        console.error(new Date().toISOString(), '/reorder_feed_channels error:', error);
         res.status(500).json({ success: false, message: 'Failed to reorder channels.' });
     }
 });
@@ -882,7 +883,7 @@ router.post('/save_post', higherLimiter, authenticateCheck, async (req, res) => 
 		await SavedPosts.create({ ...where, feed_id: feedId, saved_channel_id: mainChannel.channel_id });
 		res.status(200).json({ saved: true });
 	} catch (error) {
-        console.log("/save_post error:", error);
+        console.error(new Date().toISOString(), '/save_post error:', error);
 		res.status(500).json({ success: false, message: 'Error saving post' });
 	}
 });
@@ -905,7 +906,7 @@ router.post('/send_follow_request', higherLimiter, authenticateCheck, async (req
         res.status(200).json({ success: true });
     } catch (error) {
         if (transaction) await transaction.rollback();
-        console.log("/send_follow_request error:", error);
+        console.error(new Date().toISOString(), '/send_follow_request error:', error);
         res.status(500).send({ success: false, message: 'Failed to send request.' });
     }
 });
@@ -916,7 +917,7 @@ router.post('/toggle_admin', higherLimiter, authenticateCheck, async (req, res) 
         await Followers.update({ is_admin: isAdmin }, { where: { feed_id: feedId, follower_id: followerId } });
         res.status(200).json({ success: true });
     } catch (error) {
-        console.log("/toggle_admin error:", error);
+        console.error(new Date().toISOString(), '/toggle_admin error:', error);
         res.status(500).json({ success: false, message: 'Failed to set admin.' });
     }
 });
@@ -932,7 +933,7 @@ router.post('/toggle_lock', standardLimiter, authenticateCheck, async (req, res)
         await feed.save();
         return res.status(200).json({ success: false, is_locked: feed.is_locked });
     } catch (error) {
-        console.log("/toggle_lock error:", error);
+        console.error(new Date().toISOString(), '/toggle_lock error:', error);
         return res.status(500).json({ success: false, message: 'Failed to set lock' });
     }
 });
@@ -946,7 +947,7 @@ router.post('/toggle_moderator', higherLimiter, authenticateCheck, async (req, r
         );
         res.status(200).json({ success: true });
     } catch (error) {
-        console.log("/toggle_moderator error:", error);
+        console.error(new Date().toISOString(), '/toggle_moderator error:', error);
         res.status(500).json({ success: false, message: 'Failed to set mod' });
     }
 });
@@ -969,7 +970,7 @@ router.post('/toggle_private', standardLimiter, authenticateCheck, async (req, r
 		res.status(200).json({ success: true, type: newType });
 	} catch (error) {
 		if (transaction) await transaction.rollback();
-		console.log("/toggle_private error:", error);
+		console.error(new Date().toISOString(), '/toggle_private error:', error);
 		res.status(500).json({ success: false, message: 'Failed to toggle feed privacy' });
 	}
 });
@@ -980,7 +981,7 @@ router.post('/transfer_ownership', standardLimiter, authenticateCheck, async (re
         await Feeds.update({ feed_owner: newOwnerId }, { where: { feed_id: feedId } });
         res.status(200).json({ success: true });
     } catch (error) {
-        console.log("/transfer_ownership:", error);
+        console.error(new Date().toISOString(), '/transfer_ownership error:', error);
         res.status(500).json({ success: false, message: 'Failed to transfer ownership' });
     }
 });
@@ -993,6 +994,7 @@ router.put('/update_feed_photo/:feedId', standardLimiter, authenticateCheck, che
             }
             return res.status(400).json({ success: false, message: 'File too large' });
         } else if (error) {
+            console.error(new Date().toISOString(), 'file upload error in /update_feed_photo:', error);
             return res.status(400).json({ success: false, message: 'Upload error' });
         }
         try {
@@ -1005,8 +1007,8 @@ router.put('/update_feed_photo/:feedId', standardLimiter, authenticateCheck, che
             const user = req.currentUser;
             const maxStorage = user.has_membership ? 30 * 1024 : 300; //Weekly limit of 30GB for members, 300MB for non-members
             if (user.storage_count + fileSize > maxStorage) {
-                if (process.env.NODE_ENV === "production") {
-                    const fileName = GenerateFileName(file, "feed-image");
+                if (process.env.NODE_ENV === 'production') {
+                    const fileName = GenerateFileName(file, 'feed-image');
                     await DeleteFromS3(`feed-images/${fileName}`);
                 } else {
                     fs.unlinkSync(file.path);
@@ -1014,22 +1016,22 @@ router.put('/update_feed_photo/:feedId', standardLimiter, authenticateCheck, che
                 return res.status(413).json({ success: false, message: `Weekly limit of ${maxStorage}MB exceeded` });
             }
             let newPhotoPath;
-            if (process.env.NODE_ENV === "production") {
-                const fileName = GenerateFileName(file, "feed-image");
+            if (process.env.NODE_ENV === 'production') {
+                const fileName = GenerateFileName(file, 'feed-image');
                 const s3Key = `feed-images/${fileName}`;
                 await UploadToS3(s3Key, file.buffer, file.mimetype);
                 newPhotoPath = `https://${process.env.AWS_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${s3Key}`;
             } else {
-                const fileName = GenerateFileName(file, "feed-image");
+                const fileName = GenerateFileName(file, 'feed-image');
                 const localPath = path.join(mediaDir, fileName);
                 if (file.path !== localPath) {
                     fs.copyFileSync(file.path, localPath);
                 }
-                newPhotoPath = "/" + path.join("media", "feed_images", fileName).replace(/\\/g, "/");
+                newPhotoPath = "/" + path.join('media', 'feed_images', fileName).replace(/\\/g, "/");
             }
             const feed = await Feeds.findOne({ where: { feed_id } });
             if (feed.feed_photo && !defaultImages.includes(feed.feed_photo)) {
-                if (process.env.NODE_ENV === "production") {
+                if (process.env.NODE_ENV === 'production') {
                     const urlParts = feed.feed_photo.split('/');
                     const s3Key = urlParts.slice(-2).join('/');
                     await DeleteFromS3(s3Key);
@@ -1046,16 +1048,17 @@ router.put('/update_feed_photo/:feedId', standardLimiter, authenticateCheck, che
             await feed.save();
             return res.status(200).json({ success: true, newPhotoPath });
         } catch (error) {
+            console.log(new Date().toISOString(), '/update_feed_photo error:', error);
             if (req.file) {
                 try {
-                    if (process.env.NODE_ENV === "production") {
-                        const fileName = GenerateFileName(req.file, "feed-image");
+                    if (process.env.NODE_ENV === 'production') {
+                        const fileName = GenerateFileName(req.file, 'feed-image');
                         await DeleteFromS3(`feed-images/${fileName}`);
                     } else if (req.file.path) {
                         fs.unlinkSync(req.file.path);
                     }
                 } catch (cleanupErr) {
-                    console.log("Failed to cleanup file:", cleanupErr);
+                    console.error(new Date().toISOString(), 'Failed to cleanup file:', cleanupErr);
                 }
             }
             res.status(500).json({ success: false, message: 'Failed to update photo' });
@@ -1073,7 +1076,7 @@ router.post('/unfollow_feed', higherLimiter, authenticateCheck, async (req, res)
         await feed.decrement('follower_count');
         res.status(200).json({ success: true });
     } catch (error) {
-        console.log("/unfollow_feed error:", error);
+        console.error(new Date().toISOString(), '/unfollow_feed error:', error);
         res.status(500).json({ success: false, message: 'Failed to unfollow feed' });
     }
 });
@@ -1093,11 +1096,11 @@ export const feedChatChannelSocket = (socket) => {
     socket.on('send_feed_message', async (message) => {
         try {
             if (message.content.length === 0) {
-                socket.emit('error_message', { error: "Message too short" });
+                socket.emit('error_message', { error: 'Message too short' });
                 return;
             }
             if (message.content.length > 1000) {
-                socket.emit('error_message', { error: "Message too long" });
+                socket.emit('error_message', { error: 'Message too long' });
                 return;
             }
             const newMessage = await FeedChannelMessages.create({
@@ -1113,8 +1116,8 @@ export const feedChatChannelSocket = (socket) => {
             );
             socket.emit('channel_message_confirmed', newMessage);
             socket.to(message.channel_id).emit('channel_message_confirmed', newMessage);
-        } catch (err) {
-            console.error("Error handling feed message:", err);
+        } catch (error) {
+            console.error(new Date().toISOString(), 'Error handling feed message:', error);
         }
     });
 };

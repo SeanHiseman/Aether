@@ -42,7 +42,7 @@ router.post('/change_password', resendLimiter, authenticateCheck, async (req, re
         await user.update({ password: hashedPassword });
         res.status(200).json({ success: true });
     } catch (error) {
-        console.error('Error in /change_password:', error);
+        console.error(new Date().toISOString(), '/change_password error:', error);
         res.status(500).json({ success: false });
     }
 });
@@ -83,6 +83,7 @@ router.get('/check_authentication', async (req, res) => {
             currentFeed: req.session.feed_id
         });
     } catch (error) {
+        console.error(new Date().toISOString(), '/check_authentication error:', error);
         return res.status(200).json({
             authenticated: false,
             feeds: null,
@@ -142,7 +143,7 @@ router.delete('/delete_account', resendLimiter, authenticateCheck, async (req, r
         res.clearCookie('sid');
         return res.status(200).json({ success: true });
     } catch (error) {
-        console.error('Error in /delete_account:', error);
+        console.error(new Date().toISOString(), '/delete_account error:', error);
         if (transaction) await transaction.rollback();
         return res.status(500).json({ success: false });
     }
@@ -173,7 +174,7 @@ router.post('/forgot-password', resendLimiter, async (req, res) => {
         await sendPasswordResetEmail(email, user.username, resetToken);
         return res.status(200).json({ success: true });
     } catch (error) {
-        console.error('Error in /forgot-password:', error);
+        console.error(new Date().toISOString(), '/forgot-password error:', error);
         return res.status(500).json({ success: false, message: 'An error occurred. Please try again later.' });
     }
 });
@@ -238,7 +239,7 @@ router.post('/join', loginLimiter, async (req, res) => {
         await transaction.commit();
         res.status(200).json({ success: true, message: 'Please check your email to verify your account.' });
     } catch (error) {
-        console.error('Error in /join:', error);
+        console.error(new Date().toISOString(), '/join error:', error);
         if (transaction) await transaction.rollback();
         res.status(500).json({ success: false, message: 'Creation failed. Please try again.' });
     }
@@ -340,7 +341,7 @@ router.post('/login', loginLimiter, async (req, res) => {
         }
     }
     catch (error) {
-        console.log("Error in /login:", error);
+        console.error(new Date().toISOString(), '/login error:', error);
         res.status(500).json({ success: false, message: 'Failed login' });
     }
 });
@@ -348,10 +349,11 @@ router.post('/login', loginLimiter, async (req, res) => {
 router.post('/logout', loginLimiter, (req, res) => {
     req.session.destroy( error => {
         if (error) {
-            return res.json({ success: false });
+            console.error(new Date().toISOString(), '/logout error:', error);
+            return res.status(500).json({ success: false });
         }
         res.clearCookie('sid');
-        return res.json({ success: true });
+        return res.status(200).json({ success: true });
     });
 });
 
@@ -378,7 +380,7 @@ router.post('/resend-verification', resendLimiter, async (req, res) => {
         await sendVerificationEmail(email, user.username, verificationToken);
         return res.status(200).json({ success: true, message: 'Verification email sent' });
     } catch (error) {
-        console.error('Error in /resend-verification:', error);
+        console.error(new Date().toISOString(), '/resend-verification error:', error);
         return res.status(500).json({ success: false, message: 'An error occurred. Please try again later.' });
     }
 });
@@ -413,7 +415,7 @@ router.post('/reset-password', resendLimiter, async (req, res) => { //For users 
 		});
 		return res.status(200).json({ success: true, message: 'Password reset successful' });
 	} catch (error) {
-        console.error('Error in /reset-password:', error);
+        console.error(new Date().toISOString(), '/reset-password error:', error);
 		return res.status(500).json({ success: false, message: 'Server error' });
 	}
 });
@@ -466,7 +468,7 @@ router.get('/verify-email', resendLimiter, async (req, res) => {
 			recentUpvotes: []
 		});
 	} catch (error) {
-        console.error('Error in /verify-email:', error);
+        console.error(new Date().toISOString(), '/verify-email error:', error);
 		return res.status(500).json({ message: 'Server error' });
 	}
 });

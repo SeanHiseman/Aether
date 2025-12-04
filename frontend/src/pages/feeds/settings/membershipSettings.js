@@ -29,7 +29,7 @@ const MembershipSettings = () => {
     const fetchSubscriptionStatus = async () => {
         if (!isAuthenticated) return;
         try {
-            const response = await api.get('/subscription-status', {
+            const response = await api.get('/subscription_status', {
                 headers: {
                     'Authorization': `Bearer ${localStorage.getItem('token')}`
                 }
@@ -46,7 +46,7 @@ const MembershipSettings = () => {
         setErrorMessage('');
         setSuccessMessage('');
         try {
-            const response = await api.post('/create-checkout-session', {
+            const response = await api.post('/create_checkout_session', {
                 planType,
                 userId: user?.user_id
             }, {
@@ -83,7 +83,7 @@ const MembershipSettings = () => {
         setLoading(true);
         setErrorMessage('');
         try {
-            const response = await api.post('/cancel-subscription', {}, {
+            const response = await api.post('/cancel_subscription', {}, {
                 headers: {
                     'Authorization': `Bearer ${localStorage.getItem('token')}`
                 }

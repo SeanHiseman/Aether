@@ -52,7 +52,7 @@ router.post('/accept_connect_request', authenticateCheck, async (req, res) => {
         res.status(200).json({ isConnected: true, success: true });
     } catch (error) {
         if (transaction) await transaction.rollback();
-		console.log("/accept_connect_request error:", error);
+		console.error(new Date().toISOString(), '/accept_connect_request error:', error);
         res.status(500).json({ isConnected: false, success: false, message: 'Error accepting request' });
     }
 });
@@ -66,6 +66,7 @@ router.post('/change_chat_name', authenticateCheck, async (req, res) => {
         );
         res.status(200).json({ success: true });
     } catch (error) {
+        console.error(new Date().toISOString(), '/change_chat_name error:', error);
         res.status(500).json({ success: false });
     }
 });
@@ -87,6 +88,7 @@ router.post('/create_chat', authenticateCheck, async (req, res) => {
         await FeedChats.bulkCreate(feedChats);
         res.status(201).json({ success: true, newChat });
     } catch (error) {
+        console.error(new Date().toISOString(), '/create_chat error:', error);
         res.status(500).json({ success: false });
     }
 });
@@ -102,6 +104,7 @@ router.delete('/delete_chat', authenticateCheck, async (req, res) => {
         await transaction.commit();
         res.status(200).json({ success: true });
     } catch (error) {
+        console.error(new Date().toISOString(), '/delete_chat error:', error);
         if (transaction) await transaction.rollback();
         res.status(500).json({ success: false });
     }
@@ -124,7 +127,7 @@ router.delete('/delete_connect_request', authenticateCheck, async (req, res) => 
         res.status(200).json({ isConnected: false, success: true });
     } catch (error) {
         if (transaction) await transaction.rollback();
-		console.log("/delete_connect_request error:", error);
+		console.error(new Date().toISOString(), '/delete_connect_request error:', error);
         res.status(500).json({ isConnected: false,  success: false, message: 'Error deleting request' });
     }
 });
@@ -165,7 +168,7 @@ router.delete('/delete_connection', authenticateCheck, async (req, res) => {
         await transaction.commit();
         res.status(200).json({ success: true });
     } catch (error) {
-        console.log("/delete_connection error:", error);
+        console.error(new Date().toISOString(), '/delete_connection error:', error);
         if (transaction) await transaction.rollback();
         res.status(500).json({ success: false, message: 'Error removing connection' });
     }
@@ -183,6 +186,7 @@ router.get('/get_chat_messages', authenticateCheck, async (req, res) => {
         });
         res.status(200).json({ messages, success: true });
     } catch (error) {
+        console.error(new Date().toISOString(), '/get_chat_messages error:', error);
         res.status(500).json({ success: false });
     }
 });
@@ -221,6 +225,7 @@ router.get('/get_chats/:feedId', authenticateCheck, async (req, res) => {
         });
         return res.status(200).json({ success: true, chats: chatDetails });
     } catch (error) {
+        console.error(new Date().toISOString(), '/get_chats error:', error);
         res.status(500).json({ success: false });
     }
 });
@@ -237,6 +242,7 @@ router.get('/get_connection/:connectionName', authenticateCheck, async (req, res
         }
         return res.status(200).json({ success: true, connection: connectionFeed });
     } catch (error) {
+        console.error(new Date().toISOString(), '/get_connection error:', error);
         res.status(500).json({ success: false, message: 'Error getting connection' });
     }
 });
@@ -279,7 +285,7 @@ router.get('/get_connections', authenticateCheck, async (req, res) => {
         });
         res.status(200).json({ connections: filteredConnections , success: true });
     } catch (error) {
-        console.log("/get_connections error:", error);
+        console.error(new Date().toISOString(), '/get_connections error:', error);
         res.status(500).json({ success: false, message: 'Error getting connections' });  
     }
 });
@@ -303,7 +309,7 @@ router.get('/get_connect_requests', authenticateCheck, async (req, res) => {
         });
         res.status(200).json({ success: true, requests });
     } catch (error) {
-        console.log("/get_connect_requests error:", error);
+        console.error(new Date().toISOString(), '/get_connect_requests error:', error);
         res.status(500).json({ success: false, message: 'Error getting requests' });
     }
 });
@@ -326,7 +332,7 @@ router.post('/send_connect_request', authenticateCheck, async (req, res) => {
         res.status(200).json({ success: true });
     } catch (error) {
         if (transaction) await transaction.rollback();
-		console.log("/send_connect_request error:", error);
+		console.error(new Date().toISOString(), '/send_connect_request error:', error);
         res.status(500).json({ success: false, message: 'Error sending request' });
     }
 });
@@ -383,6 +389,7 @@ router.get('/unread_messages_count/:feed_id', async (req, res) => {
             requestCount: requestCount
         });
     } catch (error) {
+        console.error(new Date().toISOString(), '/unread_messages_count error:', error);
         res.status(500).json({ success: false, message: 'Failed to get unread counts' });
     }
 });
@@ -401,7 +408,7 @@ export const connectRequestsSocket = (socket) => {
                     sender_id: senderId 
                 });
             } catch (error) {
-                socket.emit('error_message', { error: "Failed to send connect request" });
+                socket.emit('error_message', { error: 'Failed to send connect request' });
             }
         });
         socket.on('resolve_connect_request', async (data) => {
@@ -422,11 +429,11 @@ export const connectRequestsSocket = (socket) => {
                     accepted
                 });
             } catch (error) {
-                socket.emit('error_message', { error: "Failed to resolve connect request" });
+                socket.emit('error_message', { error: 'Failed to resolve connect request' });
             }
         });
     } catch (error) {
-        console.log("Connect requests socket error:", error);
+        console.error(new Date().toISOString(), 'Connect requests socket error:', error);
     }
 };
 
@@ -483,7 +490,7 @@ export const directMessagesSocket = (socket) => {
             socket.to(chat_id).emit('messages_marked_read', { chat_id, reader_id });
         });
     } catch (error) {
-        console.log("Socket error:", error);
+        console.error(new Date().toISOString(), 'Socket error:', error);
     }
 };
 

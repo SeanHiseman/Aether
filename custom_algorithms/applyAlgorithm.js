@@ -507,7 +507,7 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
 			//console.log("finalPosts:", finalPosts);
 			//console.log("finalPosts length:", finalPosts.length);
 		} catch (error) {
-			console.log("error applying algorithm to posts:", error);
+			console.error(new Date().toISOString(), "error applying algorithm to posts:", error);
 			finalPosts = posts; //Return initial post batch if issue applying algorithm
 		}
 		if (!finalPosts.length) return [];
@@ -539,7 +539,7 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
         }));
         return stripExcludedAttributes(postsWithVotes);
     } catch (error) {
-        console.error('Error in ApplyAlgorithm:', error);
+        console.error(new Date().toISOString(), 'Error in ApplyAlgorithm:', error);
 		return [];
 	}
 }

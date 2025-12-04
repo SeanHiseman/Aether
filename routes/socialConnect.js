@@ -25,32 +25,36 @@ function ua() {
 }
 
 export function generateBlueskyContentHTML(textBody, media) {
-	let html = '';
-	if (textBody?.trim()) {
-		html += `
-			<div class="content-block text-block" data-blockid="${crypto.randomUUID()}">
-				<p>${textBody
-					.replace(/&/g, '&amp;')
-					.replace(/</g, '&lt;')
-					.replace(/>/g, '&gt;')
-					.replace(/\n/g, '<br>')}
-				</p>
-			</div>
-		`;
-	}
-	if (Array.isArray(media)) {
-		for (const m of media) {
-			if (!m.url) continue;
+	try {
+		let html = '';
+		if (textBody?.trim()) {
 			html += `
-				<div class="content-block media-block" data-blockid="${crypto.randomUUID()}" data-align="center">
-					${m.url.match(/\\.(mp4|webm|mov|m4v)$/i)
-						? `<video src="${m.url}" controls playsinline></video>`
-						: `<img src="${m.url}" alt="Bluesky media" />`}
+				<div class="content-block text-block" data-blockid="${crypto.randomUUID()}">
+					<p>${textBody
+						.replace(/&/g, '&amp;')
+						.replace(/</g, '&lt;')
+						.replace(/>/g, '&gt;')
+						.replace(/\n/g, '<br>')}
+					</p>
 				</div>
 			`;
 		}
+		if (Array.isArray(media)) {
+			for (const m of media) {
+				if (!m.url) continue;
+				html += `
+					<div class="content-block media-block" data-blockid="${crypto.randomUUID()}" data-align="center">
+						${m.url.match(/\\.(mp4|webm|mov|m4v)$/i)
+							? `<video src="${m.url}" controls playsinline></video>`
+							: `<img src="${m.url}" alt="Bluesky media" />`}
+					</div>
+				`;
+			}
+		}
+		return html.trim();
+	} catch (error) {
+		console.error(new Date().toISOString(), 'generateBlueskyContentHTML error:', error);
 	}
-	return html.trim();
 }
 
 export function generateRedditContentHTML(textBody, mediaArray) {
@@ -84,30 +88,34 @@ export function generateRedditContentHTML(textBody, mediaArray) {
 		}
 		return html.trim();
 	} catch (error) {
-		console.error('generateRedditContentHTML error:', error);
+		console.error(new Date().toISOString(), 'generateRedditContentHTML error:', error);
 	}
 }
 
 export function generateMastodonContentHTML(htmlBody, media) {
-     let out = '';
-     if (htmlBody) {
-          out += `
-               <div class="content-block text-block" data-blockid="${crypto.randomUUID()}">
-                    ${htmlBody}
-               </div>
-          `;
-     }
-     if (Array.isArray(media)) {
-          for (const m of media) {
-               if (!m.url) continue;
-               out += `
-                    <div class="content-block media-block" data-blockid="${crypto.randomUUID()}" data-align="center">
-                         <img src="${m.url}" alt="Mastodon media" />
-                    </div>
-               `;
-          }
-     }
-     return out.trim();
+	try {
+		let out = '';
+		if (htmlBody) {
+			out += `
+				<div class="content-block text-block" data-blockid="${crypto.randomUUID()}">
+					${htmlBody}
+				</div>
+			`;
+		}
+		if (Array.isArray(media)) {
+			for (const m of media) {
+				if (!m.url) continue;
+				out += `
+					<div class="content-block media-block" data-blockid="${crypto.randomUUID()}" data-align="center">
+							<img src="${m.url}" alt="Mastodon media" />
+					</div>
+				`;
+			}
+		}
+		return out.trim();
+	} catch (error) {
+		console.error(new Date().toISOString(), 'generateMastodonContentHTML error:', error)
+	}
 }
 
 function mapBlueskyToExternal(item) {
@@ -237,7 +245,7 @@ router.get('/connected-accounts', authenticateCheck, async (req, res) => {
 		});
 		res.status(200).json({ success: true, accounts });
 	} catch (error) {
-		console.log('/connected-accounts error:', error);
+		console.error(new Date().toISOString(), '/connected-accounts error:', error);
 		res.status(500).json({ success: false });
 	}
 });
@@ -344,14 +352,13 @@ router.post('/auth/bluesky', authenticateCheck, async (req, res) => {
 				await ExternalPostsAccess.bulkCreate(accessRows, { 
 					ignoreDuplicates: true 
 				});
-				console.log("Bluesky background processing:", Date.now() - start, "ms");
 			});
 		} else {
 			//No posts available, but connection was successful
 			res.status(200).json({ success: true, did: json.did, posts: [] });
 		}
 	} catch (error) {
-		console.error('Error in /auth/bluesky:', error);
+		console.error(new Date().toISOString(), '/auth/bluesky error:', error);
 		res.status(400).json({ success: false, error: error.message });
 	}
 });
@@ -377,7 +384,7 @@ router.get('/auth/reddit', authenticateCheck, async (req, res) => {
 
 		res.redirect(url);
 	} catch (error) {
-		console.error('Error in /auth/reddit:', error);
+		console.error(new Date().toISOString(), '/auth/reddit error:', error);
 		res.status(500).send('Reddit auth setup failed');
 	}
 });
@@ -430,7 +437,7 @@ router.post('/auth/mastodon', authenticateCheck, async (req, res) => {
 		});
 		res.status(200).json({ success: true, url: `${base}/oauth/authorize?${params.toString()}` });
 	} catch (error) {
-		console.log('Error in /auth/mastodon:', error);
+		console.error(new Date().toISOString(), '/auth/mastodon error:', error);
 		res.status(500).json({ success: false });
 	}
 });
@@ -481,7 +488,7 @@ router.get('/bluesky/feed', authenticateCheck, async (req, res) => {
 		});
 		res.status(200).json({ success: true, items });
 	} catch (error) {
-		console.error('Error in /bluesky/feed:', error);
+		console.error(new Date().toISOString(), '/bluesky/feed error:', error);
 		res.status(400).json({ success: false });
 	}
 });
@@ -500,7 +507,7 @@ router.post('/disconnect_external_account', authenticateCheck, async (req, res) 
         return res.status(200).json({ success: true });
     } catch (error) {
 		if (transaction) await transaction.rollback();
-        console.log('/disconnect error:', error);
+        console.error(new Date().toISOString(), '/disconnect_external-account error:', error);
         res.status(500).json({ success: false });
     }
 });
@@ -629,13 +636,12 @@ router.get('/reddit/callback', authenticateCheck, async (req, res) => {
 					enriched.map(p => ({ id: v4(), post_id: p.post_id, source: 'reddit', user_id, created_at: new Date() })),
 					{ ignoreDuplicates: true }
 				);
-				console.log("Reddit background processing:", Date.now() - start, "ms");
 			});
 		} else {
 			res.redirect('/feed/reddit');
 		}
 	} catch (error) {
-		console.error('reddit callback error', error);
+		console.error(new Date().toISOString(), '/reddit/callback error:', error);
 		res.redirect('/feed/reddit?error=1');
 	}
 });
@@ -748,13 +754,12 @@ router.get('/mastodon/callback', authenticateCheck, async (req, res) => {
 					enriched.map(p => ({ id: v4(), post_id: p.post_id, source: 'mastodon', user_id, created_at: new Date() })),
 					{ ignoreDuplicates: true }
 				);
-				console.log("Mastodon background processing:", Date.now() - start, "ms");
 			});
 		} else {
 			res.redirect('/feed/mastodon');
 		}
 	} catch (error) {
-		console.error(error);
+		console.error(new Date().toISOString(), '/mastodon/callback error:', error);
 		res.redirect('/feed/mastodon?error=1');
 	}
 });
@@ -805,34 +810,34 @@ router.get('/reddit/feed', authenticateCheck, async (req, res) => {
 		});
 		res.status(200).json({ success: true, after: null, before: null, items: out });
 	} catch (error) {
-		console.error('reddit feed error', error);
+		console.error(new Date().toISOString(), '/reddit/feed error:', error);
 		res.status(400).json({ success: false });
 	}
 });
 
 router.get('/mastodon/feed', authenticateCheck, async (req, res) => {
 	try {
-		console.log("getting mastodon feed for user:", req.user.user_id);
+		//console.log("getting mastodon feed for user:", req.user.user_id);
 		const limit = Math.min(Number(req.query.limit) || 40, 40);
-		console.log(`Mastodon feed request with limit: ${limit}`);
+		//console.log(`Mastodon feed request with limit: ${limit}`);
 		const accesses = await ExternalPostsAccess.findAll({
 			where: { user_id: req.user.user_id, source: 'mastodon' },
 			attributes: ['post_id'],
 			order: [['created_at','DESC']],
 			limit
 		});
-		console.log(`Found ${accesses.length} mastodon accesses for user ${req.user.user_id}`);
+		//console.log(`Found ${accesses.length} mastodon accesses for user ${req.user.user_id}`);
 		const postIds = accesses.map(a => a.post_id).filter(Boolean);
 		if (!postIds.length) {
 			return res.status(200).json({ success: true, items: [] });
 		}
-		console.log(`Fetching ${postIds.length} mastodon postIds`);
-		console.log('Post IDs:', postIds);
+		//console.log(`Fetching ${postIds.length} mastodon postIds`);
+		//console.log('Post IDs:', postIds);
 		const posts = await ExternalPosts.findAll({
 			where: { post_id: postIds, source: 'mastodon' },
 			order: [['rank_hotness','DESC']]
 		});
-		console.log(`Found ${posts.length} mastodon posts for user ${req.user.user_id}`);
+		//console.log(`Found ${posts.length} mastodon posts for user ${req.user.user_id}`);
 		const items = posts.map(p => {
 			const media = typeof p.media === 'string' ? JSON.parse(p.media) : p.media;
 			const html = generateMastodonContentHTML(p.text_body, media);
@@ -862,7 +867,7 @@ router.get('/mastodon/feed', authenticateCheck, async (req, res) => {
 		});
 		res.status(200).json({ success: true, items });
 	} catch (error) {
-		console.error('mastodon feed error', error);
+		console.error(new Date().toISOString(), '/mastodon/feed error:', error);
 		res.status(400).json({ success: false });
 	}
 });
@@ -883,7 +888,7 @@ router.post('/reddit/expire', authenticateCheck, async (req, res) => {
 		}
 		res.status(200).json({ success: true });
 	} catch (error) {
-        console.log("/reddit/expire error:", error);
+        console.error(new Date().toISOString(), '/reddit/expire error:', error);
 		res.status(500).json({ success: false, error: 'Expire error' });
 	}
 });
