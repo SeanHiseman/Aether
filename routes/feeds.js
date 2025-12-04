@@ -560,7 +560,7 @@ router.delete('/delete_feed_channel', higherLimiter, authenticateCheck, async (r
     }
 });
 
-router.post('explore_feeds', standardLimiter, async (req, res) => {
+router.post('/explore_feeds', standardLimiter, async (req, res) => {
 	try {
 		const { exclude = [], limit: reqLimit, offset: reqOffset } = req.body;
 		const viewerId = req.session?.viewer_id;

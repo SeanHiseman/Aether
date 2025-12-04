@@ -318,3 +318,6 @@ ALTER TABLE posts
 MODIFY embeddings JSON;
 
 CREATE INDEX idx_posts_parent_id ON posts(parent_id);
+
+ALTER TABLE users 
+	ADD COLUMN last_active_at datetime(3) DEFAULT CURRENT_TIMESTAMP(3),

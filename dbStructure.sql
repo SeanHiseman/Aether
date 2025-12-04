@@ -319,6 +319,7 @@ CREATE TABLE `users` (
   `email` varchar(120) NOT NULL,
   `created_at` datetime(3) DEFAULT CURRENT_TIMESTAMP(3),
   `updated_at` datetime(3) DEFAULT CURRENT_TIMESTAMP(3),
+  `last_active_at` datetime(3) DEFAULT CURRENT_TIMESTAMP(3),
   `has_membership` tinyint(1) DEFAULT '0',
   `theme` text,
   `usage_count` int NOT NULL DEFAULT '0',
@@ -446,60 +447,3 @@ CREATE TABLE `connected_accounts` (
 	KEY `idx_user_id` (`user_id`),
 	UNIQUE KEY `uniq_user_platform_handle` (`user_id`, `platform`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
-INSERT INTO `users` (
-    `user_id`,
-    `username`,
-    `password`,
-    `email`,
-    `created_at`,
-    `updated_at`
-) VALUES (
-    'cf84729e-e00a-4ee5-a8d5-d8247e186b49',
-    'Aether',
-    'placeholder',
-    'thing@mail.com',
-    CURRENT_TIMESTAMP(3),
-    CURRENT_TIMESTAMP(3)
-);
-
-INSERT INTO `feeds` (
-    `feed_id`, 
-    `feed_name`, 
-    `feed_owner`, 
-    `created_at`, 
-    `updated_at`
-) VALUES 
-(
-    'ce95ea4e-5b3e-4661-aaa6-e0830d2d68d2',
-    'Welcome',
-    'cf84729e-e00a-4ee5-a8d5-d8247e186b49',
-    CURRENT_TIMESTAMP(3),
-    CURRENT_TIMESTAMP(3)
-),
-(
-    '50c3bf90-53a0-470e-a4ac-3cb3c7b4f791',
-    'Aether',
-    'cf84729e-e00a-4ee5-a8d5-d8247e186b49', 
-    CURRENT_TIMESTAMP(3),
-    CURRENT_TIMESTAMP(3)
-);
-
-INSERT INTO `followers` (
-    `follow_id`,
-    `follower_id`,
-    `feed_id`,
-    `is_mod`,
-    `is_admin`,
-    `created_at`,
-    `updated_at`
-) VALUES
-(
-    UUID(), 
-    '50c3bf90-53a0-470e-a4ac-3cb3c7b4f791', 
-    'ce95ea4e-5b3e-4661-aaa6-e0830d2d68d2',
-    1, 
-    1, 
-    CURRENT_TIMESTAMP(3),
-    CURRENT_TIMESTAMP(3)
-)

@@ -322,10 +322,18 @@ router.post('/auth/bluesky', authenticateCheck, async (req, res) => {
 				}))
 			});
 			//Compute post data in background
-			const start = Date.now();
 			setImmediate(async () => {
+				const existing = await ExternalPosts.findAll({
+					where: { post_id: mappedPosts.map(mp => mp.post_id) },
+					attributes: ['post_id']
+				});
+				const existingIds = new Set(existing.map(e => e.post_id));
+				const newPosts = mappedPosts.filter(p => !existingIds.has(p.post_id));
+				if (newPosts.length === 0) {
+					return;
+				}
 				const embedder = await getEmbedder();
-				const enrichedPosts = await Promise.all(mappedPosts.map(async (mapped) => {
+				const enrichedPosts = await Promise.all(newPosts.map(async (mapped) => {
 					const html = generateBlueskyContentHTML(mapped.text_body, mapped.media);
 					const details = await contentAnalyser.analyseContent(html, mapped.title, embedder);
 					const sentiment_score = typeof details?.sentiment_score === 'number'

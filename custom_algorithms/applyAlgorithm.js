@@ -110,9 +110,23 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
 					where: { post_id: { [Op.in]: recentUpvoteIds } },
 					raw: true
 				});
-				recentUpvoteEmbeddings = recentUpvotePosts
-					.map(p => p.embeddings || null) //Get embeddings of recently upvoted posts
-					.filter(Boolean);
+			recentUpvoteEmbeddings = recentUpvotePosts
+				.map(p => {
+					const raw = p.embeddings;
+					if (!raw) return null;
+
+					if (typeof raw === 'string') {
+						try {
+							const parsed = JSON.parse(raw);
+							return Array.isArray(parsed) ? parsed : null;
+						} catch (e) {
+							return null;
+						}
+					}
+
+					return Array.isArray(raw) ? raw : null;
+				})
+				.filter(Boolean);
 			}
 			normalisedRecentEmbeddings = recentUpvoteEmbeddings.map(vec => {
 				const mag = Math.sqrt(vec.reduce((a, b) => a + b * b, 0)) || 1;
@@ -377,9 +391,10 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
 		//Predefined variables for use in scoring
 		const now = Date.now();
 		const tenDays = 864000000;
+		let postEmbedding = [];
 		try {
 			for (const post of posts) {
-				const postEmbedding = post.embeddings;
+				postEmbedding = post.embeddings;
 				//Content type filtering
 				//if (contentType.images === false && post.has_images) continue;
 				//if (contentType.videos === false && post.has_videos) continue;
@@ -416,6 +431,17 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
 				//Semantic boost/suppress using word embeddings
 				//console.log("-----------", post.text_body);
 				if ((algorithmRow?.boost_embedding || algorithmRow?.suppress_embedding)) {
+					const raw = postEmbedding;
+					if (typeof raw === 'string') {
+						try {
+							postEmbedding = JSON.parse(raw);
+						} catch {
+							postEmbedding = [];
+						}
+					}
+					if (!Array.isArray(postEmbedding)) {
+						postEmbedding = [];
+					}
 					const magPost = Math.sqrt(postEmbedding.reduce((a, b) => a + b * b, 0)) || 1;
 					const normPost = postEmbedding.map(v => v / magPost);
 					let semanticBoost = 0;
@@ -428,7 +454,17 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
 						suppressWords = algoJson.scoring?.wordSuppress || [];
 					} catch {}
 					if (algorithmRow.boost_embedding) {
-						const boostVecs = algorithmRow.boost_embedding;
+						let boostVecs = algorithmRow.boost_embedding;
+						if (typeof boostVecs === 'string') {
+							try {
+								boostVecs = JSON.parse(boostVecs);
+							} catch {
+								boostVecs = [];
+							}
+						}
+						if (!Array.isArray(boostVecs)) {
+							boostVecs = [];
+						}
 						if (Array.isArray(boostVecs) && boostVecs.length) {
 							const sims = boostVecs.map((bv, i) => {
 								//const word = boostWords[i] || `keyword${i}`;
@@ -445,7 +481,17 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
 						}
 					}
 					if (algorithmRow.suppress_embedding) {
-						const suppressVecs = algorithmRow.suppress_embedding;
+						let suppressVecs = algorithmRow.suppress_embedding;
+						if (typeof suppressVecs === 'string') {
+							try {
+								suppressVecs = JSON.parse(suppressVecs);
+							} catch {
+								suppressVecs = [];
+							}
+						}
+						if (!Array.isArray(suppressVecs)) {
+							suppressVecs = [];
+						}
 						if (Array.isArray(suppressVecs) && suppressVecs.length) {
 							const sims = suppressVecs.map((sv, i) => {
 								//const word = suppressWords[i] || `keyword${i}`;

@@ -33,6 +33,7 @@ const Users = sequelize.define('users', {
     email: { type: STRING(120), allowNull: false, unique: true },
     created_at: { type: DataTypes.DATE(3), defaultValue: sequelize.literal('CURRENT_TIMESTAMP(3)') },
     updated_at: { type: DataTypes.DATE(3), defaultValue: sequelize.literal('CURRENT_TIMESTAMP(3)') },
+    last_active_at: { type: DataTypes.DATE(3), defaultValue: sequelize.literal('CURRENT_TIMESTAMP(3)') },
     has_membership: { type: BOOLEAN, defaultValue: false }, 
     stripe_subscription_id: { type: STRING(255), allowNull: true }, 
     subscription_expires_at: { type: DataTypes.DATE(3), allowNull: true },

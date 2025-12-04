@@ -263,6 +263,7 @@ router.post('/login', loginLimiter, async (req, res) => {
         }
         if (user && await compare(password, user.password)) {
             const feed = await Feeds.findOne({ where: { feed_owner: user.user_id, is_group: false }}); //Each user can only own one non-group feed (their own)
+            const loginTime = new Date();
             req.session.user_id = user.user_id;
             req.session.username = user.username;
             req.session.email = user.email;
@@ -271,6 +272,7 @@ router.post('/login', loginLimiter, async (req, res) => {
             req.usage_count = user.usage_count;
             req.storage_count = user.storage_count;
             req.session.viewer_id = feed.feed_id;
+            req.session.last_active_at = loginTime;
             const connectedAccounts = await ConnectedAccounts.findAll({
                 where: { user_id: user.user_id },
                 attributes: ['platform', 'handle', 'instance_url', 'extra']
@@ -312,6 +314,10 @@ router.post('/login', loginLimiter, async (req, res) => {
                 },
                 order: [['updated_at', 'DESC']], //Most recent upvotes
                 limit: 100
+            });
+            await Users.update(
+                { last_active_at: loginTime },
+                { where: { user_id: user.user_id },
             });
             res.status(200).json({ 
                 success: true, 

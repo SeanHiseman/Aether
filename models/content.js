@@ -27,7 +27,7 @@ const ExternalPosts = sequelize.define('ExternalPosts', {
     replies: { type: INTEGER, allowNull: true },
 	rank_hotness: { type: FLOAT, allowNull: true },
     sentiment_score: { type: FLOAT, allowNull: true },
-	embeddings: { type: DataTypes.JSON, allowNull: true },
+	embeddings: { type: DataTypes.TEXT('long'), allowNull: true },
 	fetched_at: { type: DataTypes.DATE, allowNull: false },
 	created_at_remote: { type: DataTypes.DATE, allowNull: false },
 	expired: { type: BOOLEAN, defaultValue: false },
@@ -101,7 +101,7 @@ const Posts = sequelize.define('posts', {
     sentiment_score: { type: FLOAT, defaultValue: 0.0 }, 
     language: { type: STRING(20), defaultValue: 'en' },
     tokens: { type: DataTypes.TEXT('long'), allowNull: false },
-    embeddings: { type: DataTypes.JSON, allowNull: true },
+    embeddings: { type: DataTypes.TEXT('long'), allowNull: true },
     is_private: { type: BOOLEAN, defaultValue: false },
 }, {
     tableName: 'posts',
