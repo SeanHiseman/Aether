@@ -27,7 +27,7 @@ const ExternalPosts = sequelize.define('ExternalPosts', {
     replies: { type: INTEGER, allowNull: true },
 	rank_hotness: { type: FLOAT, allowNull: true },
     sentiment_score: { type: FLOAT, allowNull: true },
-	embeddings: { type: DataTypes.TEXT('long'), allowNull: true },
+	embeddings: { type: DataTypes.JSON, allowNull: true },
 	fetched_at: { type: DataTypes.DATE, allowNull: false },
 	created_at_remote: { type: DataTypes.DATE, allowNull: false },
 	expired: { type: BOOLEAN, defaultValue: false },
@@ -38,12 +38,10 @@ const ExternalPosts = sequelize.define('ExternalPosts', {
 	media: { type: DataTypes.JSON, allowNull: true }
 }, {
 	tableName: 'external_posts',
-	underscored: true,
     timestamps: false, 
 	indexes: [
-		{ fields: ['parent_id'] },
 		{ fields: ['created_at_remote'] },
-		{ fields: ['hotness'] },
+		{ fields: ['rank_hotness'] },
 		{ fields: ['score'] },
 		{ fields: ['source'] },
 		{ fields: ['expired'] },
@@ -59,7 +57,6 @@ const ExternalPostsAccess = sequelize.define('ExternalPostsAccess', {
 	created_at: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }
 }, {
 	tableName: 'external_posts_access',
-	underscored: true,
 	timestamps: false,
 	indexes: [
 		{ fields: ['user_id'] },
@@ -100,8 +97,8 @@ const Posts = sequelize.define('posts', {
     video_count: { type: INTEGER, defaultValue: 0 },
     sentiment_score: { type: FLOAT, defaultValue: 0.0 }, 
     language: { type: STRING(20), defaultValue: 'en' },
-    tokens: { type: DataTypes.TEXT('long'), allowNull: false },
-    embeddings: { type: DataTypes.TEXT('long'), allowNull: true },
+    tokens: { type: DataTypes.JSON, allowNull: false },
+    embeddings: { type: DataTypes.JSON, allowNull: true },
     is_private: { type: BOOLEAN, defaultValue: false },
 }, {
     tableName: 'posts',

@@ -1,12 +1,14 @@
 import authenticateCheck from '../functions/checks/authenticateCheck.js';
+import cron from 'node-cron';
 import { computeHotness } from '../functions/postRanking.js';
 import { ContentAnalyser } from '../functions/contentAnalyser.js';
 import crypto from 'crypto';
-import { ConnectedAccounts } from '../models/users.js';
+import { ConnectedAccounts, Users } from '../models/users.js';
 import { ExternalPosts, ExternalPostsAccess } from '../models/content.js';
 import express from 'express';
 import fetch from 'node-fetch';
 import { getEmbedder } from '../functions/contentAnalyser.js';
+import { Op } from 'sequelize';
 import sequelize from '../databaseSetup.js';
 import { v4 } from 'uuid';
 
@@ -22,6 +24,177 @@ function ua() {
 		return 'AetherSocial/1.0 (+https://aethersocial.com)';
 	}
 	return 'AetherSocialLocal/0.1 (testing on localhost)';
+}
+
+async function fetchAndProcessPosts(platform, fetchConfig, user_id) {
+	try {
+		const { url, headers, mapper, htmlGenerator, limit } = fetchConfig;
+		const resp = await fetch(url, { headers });
+		const data = await resp.json();
+		let mappedPosts = [];
+		switch (platform) {
+			case 'bluesky':
+				mappedPosts = data.feed.map(item => {
+					const p = mapper(item);
+					const rank_hotness = computeHotness({
+						upvotes: p.score,
+						downvotes: 0,
+						createdAt: p.created_at_remote,
+						referenceTime: Math.floor(Date.now() / 1000)
+					});
+					return { ...p, rank_hotness };
+				});
+				break;
+			case 'reddit':
+				const children = data.data.children.filter(c => c.kind === 't3');
+				mappedPosts = children.map(c => {
+					const p = mapper(c);
+					const rank_hotness = computeHotness({
+						upvotes: p.score || 0,
+						downvotes: 0,
+						createdAt: p.created_at_remote,
+						referenceTime: Math.floor(Date.now() / 1000)
+					});
+					return { ...p, rank_hotness };
+				});
+				break;
+			case 'mastodon':
+				mappedPosts = data.map(t => {
+					const p = mapper(t, fetchConfig.instance);
+					const rank_hotness = computeHotness({
+						upvotes: p.score || 0,
+						downvotes: 0,
+						createdAt: p.created_at_remote,
+						referenceTime: Math.floor(Date.now() / 1000)
+					});
+					return { ...p, rank_hotness };
+				});
+				break;
+		}
+		const existing = await ExternalPosts.findAll({
+			where: { post_id: mappedPosts.map(m => m.post_id) },
+			attributes: ['post_id']
+		});
+		const existingIds = new Set(existing.map(e => e.post_id));
+		const newPosts = mappedPosts.filter(p => !existingIds.has(p.post_id));
+		if (newPosts.length === 0) {
+			return mappedPosts;
+		}
+		const embedder = await getEmbedder();
+		const enriched = await Promise.all(newPosts.map(async mapped => {
+			const html = htmlGenerator(mapped.text_body, mapped.media);
+			const details = await contentAnalyser.analyseContent(html, mapped.title, embedder);
+			const sentiment_score = details?.sentiment_score ?? 0;
+			const embeddings = details?.embeddings ?? null;
+			const has_text = (mapped.text_body?.length || 0) > 0;
+			const post = {
+				post_id: mapped.post_id,
+				source: mapped.source,
+				source_post_id: mapped.source_post_id,
+				title: mapped.title || null,
+				text_body: mapped.text_body || null,
+				text_length: mapped.text_length || 0,
+				word_count: mapped.word_count || 0,
+				image_count: mapped.image_count || 0,
+				video_count: mapped.video_count || 0,
+				has_text,
+				has_images: mapped.has_images || false,
+				has_videos: mapped.has_videos || false,
+				score: mapped.score || 0,
+				replies: mapped.replies || 0,
+				rank_hotness: mapped.rank_hotness || 0,
+				sentiment_score,
+				embeddings,
+				fetched_at: mapped.fetched_at,
+				created_at_remote: mapped.created_at_remote,
+				expired: mapped.expired || false,
+				channel: mapped.channel || null,
+				author: mapped.author || null,
+				author_photo: mapped.author_photo || null,
+				url: mapped.url,
+				media: mapped.media
+			};
+			
+			return post;
+		}));
+		const updateFields = [
+			'source_post_id', 'title', 'text_body', 'text_length', 'word_count', 
+			'image_count', 'video_count', 'has_text', 'has_images', 'has_videos',
+			'score', 'replies', 'rank_hotness', 'sentiment_score', 'embeddings',
+			'fetched_at', 'created_at_remote', 'expired', 'channel', 'author',
+			'author_photo', 'url', 'media'
+		];
+		//console.log(`Attempting to insert ${enriched.length} posts for ${platform}`);
+		//console.log('Keys in enriched object:', Object.keys(enriched[0]).sort());
+		//console.log('Model attributes:', Object.keys(ExternalPosts.rawAttributes).sort());
+		await ExternalPosts.bulkCreate(enriched, {
+			updateOnDuplicate: updateFields,
+			logging: false
+		});
+		await ExternalPostsAccess.bulkCreate(
+			enriched.map(p => ({ 
+				id: v4(), 
+				post_id: p.post_id, 
+				source: platform, 
+				user_id, 
+				created_at: new Date() 
+			})),
+			{ ignoreDuplicates: true }
+		);
+		//console.log(`Processed ${enriched.length} new ${platform} posts for user ${user_id}`);
+		return mappedPosts;
+	} catch (error) {
+		//console.error(new Date().toISOString(), `fetchAndProcessPosts ${platform} error:`, error);
+		throw error;
+	}
+}
+
+async function processAccount(account) {
+	try {
+		const { platform, user_id, access_token, instance_url } = account;
+		if (!access_token) {
+			console.log(`No access token for ${platform} account (user: ${user_id})`);
+			return;
+		}
+		const configs = {
+			bluesky: {
+				url: `https://bsky.social/xrpc/app.bsky.feed.getTimeline?limit=100`,
+				headers: { 
+					'Authorization': `Bearer ${access_token}`, 
+					'Content-Type': 'application/json' 
+				},
+				mapper: mapBlueskyToExternal,
+				htmlGenerator: generateBlueskyContentHTML,
+				limit: 100
+			},
+			reddit: {
+				url: `https://oauth.reddit.com/best?limit=100`,
+				headers: {
+					'Authorization': `bearer ${access_token}`,
+					'User-Agent': ua()
+				},
+				mapper: mapRedditToExternal,
+				htmlGenerator: generateRedditContentHTML,
+				limit: 100
+			},
+			mastodon: {
+				url: `${instance_url}/api/v1/timelines/home?limit=40`,
+				headers: { Authorization: `Bearer ${access_token}` },
+				mapper: mapMastodonToExternal,
+				htmlGenerator: generateMastodonContentHTML,
+				limit: 40,
+				instance: instance_url
+			}
+		};
+		const config = configs[platform];
+		if (!config) {
+			console.log(`Unknown platform: ${platform}`);
+			return;
+		}
+		await fetchAndProcessPosts(platform, config, user_id);
+	} catch (error) {
+		console.error(new Date().toISOString(), `Error processing ${account.platform} account:`, error);
+	}
 }
 
 export function generateBlueskyContentHTML(textBody, media) {
@@ -152,7 +325,6 @@ function mapBlueskyToExternal(item) {
 		replies: typeof post.replyCount === 'number' ? post.replyCount : 0,
 		source: 'bluesky',
 		source_post_id: post.uri,
-		subreddit: null,
 		text_body: text,
 		title: null,
 		url: `https://bsky.app/profile/${post.author?.handle}/post/${post.uri.split('/').pop()}`,
@@ -183,7 +355,6 @@ function mapMastodonToExternal(toot, instance) {
 		replies: toot.replies_count ?? 0,
 		source: 'mastodon',
 		source_post_id: toot.id,
-		subreddit: null,
 		text_body: toot.content || '',
 		title: null,
 		url: toot.url || null,
@@ -223,7 +394,6 @@ function mapRedditToExternal(child) {
 		replies: typeof d.num_comments === 'number' ? d.num_comments : 0,
 		source: 'reddit',
 		source_post_id: d.id,
-		subreddit: d.subreddit || null,
 		text_body: d.selftext || null,
 		title: d.title || null,
 		url: `https://www.reddit.com${d.permalink}`, 
@@ -253,7 +423,7 @@ router.get('/connected-accounts', authenticateCheck, async (req, res) => {
 router.post('/auth/bluesky', authenticateCheck, async (req, res) => {
 	try {
 		const { identifier, appPassword } = req.body;
-		//Authenticate with Bluesky
+		// Authenticate with Bluesky
 		const response = await fetch('https://bsky.social/xrpc/com.atproto.server.createSession', {
 			method: 'POST',
 			headers: { 'Content-Type': 'application/json' },
@@ -272,28 +442,20 @@ router.post('/auth/bluesky', authenticateCheck, async (req, res) => {
 			refresh_token: json.refreshJwt,
 			extra: JSON.stringify(json)
 		});
-		//Fetch initial posts
-		const token = json.accessJwt;
-		const limit = 100;
-		const resp = await fetch(`https://bsky.social/xrpc/app.bsky.feed.getTimeline?limit=${limit}`, {
+		// Use shared function
+		const config = {
+			url: `https://bsky.social/xrpc/app.bsky.feed.getTimeline?limit=100`,
 			headers: { 
-				'Authorization': `Bearer ${token}`, 
+				'Authorization': `Bearer ${json.accessJwt}`, 
 				'Content-Type': 'application/json' 
-			}
-		});
-		if (resp.ok) {
-			const j = await resp.json();
-			const mappedPosts = j.feed.map(item => {
-				const p = mapBlueskyToExternal(item);
-				const rank_hotness = computeHotness({
-					upvotes: p.score,
-					downvotes: 0,
-					createdAt: p.created_at_remote,
-					referenceTime: Math.floor(Date.now() / 1000)
-				});
-				return { ...p, rank_hotness };
-			});
-			//Return posts immediately to frontend
+			},
+			mapper: mapBlueskyToExternal,
+			htmlGenerator: generateBlueskyContentHTML,
+			limit: 100
+		};
+		try {
+			const mappedPosts = await fetchAndProcessPosts('bluesky', config, req.user.user_id);
+			// Return posts immediately
 			res.status(200).json({ 
 				success: true,
 				did: json.did,
@@ -321,48 +483,7 @@ router.post('/auth/bluesky', authenticateCheck, async (req, res) => {
 					rank_hotness: p.rank_hotness
 				}))
 			});
-			//Compute post data in background
-			setImmediate(async () => {
-				const existing = await ExternalPosts.findAll({
-					where: { post_id: mappedPosts.map(mp => mp.post_id) },
-					attributes: ['post_id']
-				});
-				const existingIds = new Set(existing.map(e => e.post_id));
-				const newPosts = mappedPosts.filter(p => !existingIds.has(p.post_id));
-				if (newPosts.length === 0) {
-					return;
-				}
-				const embedder = await getEmbedder();
-				const enrichedPosts = await Promise.all(newPosts.map(async (mapped) => {
-					const html = generateBlueskyContentHTML(mapped.text_body, mapped.media);
-					const details = await contentAnalyser.analyseContent(html, mapped.title, embedder);
-					const sentiment_score = typeof details?.sentiment_score === 'number'
-						? details.sentiment_score
-						: 0;
-					return { ...mapped, ...details, sentiment_score };
-				}));
-				//Avoid creating posts that already exist
-				await ExternalPosts.bulkCreate(enrichedPosts, {
-					updateOnDuplicate: [
-						'title', 'text_body', 'media', 'score', 'replies', 'created_at_remote', 'fetched_at',
-						'image_count', 'video_count', 'text_length', 'word_count', 'has_images', 'has_videos',
-						'video_length', 'sentiment_score', 'tokens', 'embeddings', 'processed_at', 'rank_hotness'
-					],
-					ignoreDuplicates: true
-				});
-				const accessRows = enrichedPosts.map(p => ({
-					id: v4(),
-					post_id: p.post_id,
-					source: 'bluesky',
-					user_id: req.user.user_id,
-					created_at: new Date()
-				}));
-				await ExternalPostsAccess.bulkCreate(accessRows, { 
-					ignoreDuplicates: true 
-				});
-			});
-		} else {
-			//No posts available, but connection was successful
+		} catch (fetchError) {
 			res.status(200).json({ success: true, did: json.did, posts: [] });
 		}
 	} catch (error) {
@@ -557,29 +678,18 @@ router.get('/reddit/callback', authenticateCheck, async (req, res) => {
 			instance_url: 'https://reddit.com',
 			extra: JSON.stringify(tokenJson)
 		});
-		//Fetch initial posts
-		const token = tokenJson.access_token;
-		const params = new URLSearchParams({ limit: '100' });
-		const resp = await fetch(`https://oauth.reddit.com/best?${params.toString()}`, {
+		const config = {
+			url: `https://oauth.reddit.com/best?limit=100`,
 			headers: {
-				'Authorization': `bearer ${token}`,
+				'Authorization': `bearer ${tokenJson.access_token}`,
 				'User-Agent': ua()
-			}
-		});
-		//Return posts immediately
-		if (resp.ok) {
-			const j = await resp.json();
-			const children = j.data.children.filter(c => c.kind === 't3');
-			const mappedPosts = children.map(c => {
-				const p = mapRedditToExternal(c);
-				const rank_hotness = computeHotness({
-					upvotes: p.score || 0,
-					downvotes: 0,
-					createdAt: p.created_at_remote,
-					referenceTime: Math.floor(Date.now() / 1000)
-				});
-				return { ...p, rank_hotness };
-			});
+			},
+			mapper: mapRedditToExternal,
+			htmlGenerator: generateRedditContentHTML,
+			limit: 100
+		};
+		try {
+			const mappedPosts = await fetchAndProcessPosts('reddit', config, user_id);
 			const postsData = mappedPosts.map(p => ({
 				post_id: p.post_id,
 				title: p.title,
@@ -603,7 +713,6 @@ router.get('/reddit/callback', authenticateCheck, async (req, res) => {
 				source: 'Reddit',
 				rank_hotness: p.rank_hotness
 			}));
-			//Small html file that contains post data
 			res.send(`
 				<!DOCTYPE html>
 				<html>
@@ -615,45 +724,7 @@ router.get('/reddit/callback', authenticateCheck, async (req, res) => {
 				</body>
 				</html>
 			`);
-			//Background processing
-			setImmediate(async () => {
-				const existing = await ExternalPosts.findAll({
-					where: { post_id: mappedPosts.map(m => m.post_id) },
-					attributes: ['post_id']
-				});
-				const existingIds = new Set(existing.map(e => e.post_id));
-				const newPosts = mappedPosts.filter(p => !existingIds.has(p.post_id));
-				if (newPosts.length === 0) {
-					return;
-				}
-				const embedder = await getEmbedder();
-				const enriched = await Promise.all(newPosts.map(async mapped => {
-					const html = generateRedditContentHTML(mapped.text_body, mapped.media);
-					const details = await contentAnalyser.analyseContent(html, mapped.title, embedder);
-					const rank_hotness = computeHotness({
-						upvotes: mapped.score || 0,
-						downvotes: 0,
-						createdAt: mapped.created_at_remote,
-						referenceTime: Math.floor(Date.now() / 1000)
-					});
-					const sentiment_score = details?.sentiment_score ?? 0;
-					return { ...mapped, ...details, rank_hotness, sentiment_score };
-				}));
-				await ExternalPosts.bulkCreate(enriched, {
-					updateOnDuplicate: [
-						'title','text_body','media','score','replies','created_at_remote','fetched_at',
-						'author_photo','image_count','video_count','text_length','word_count','has_images',
-						'has_videos','video_length','sentiment_score','tokens','embeddings','processed_at',
-						'rank_hotness'
-					],
-					ignoreDuplicates: true
-				});
-				await ExternalPostsAccess.bulkCreate(
-					enriched.map(p => ({ id: v4(), post_id: p.post_id, source: 'reddit', user_id, created_at: new Date() })),
-					{ ignoreDuplicates: true }
-				);
-			});
-		} else {
+		} catch (fetchError) {
 			res.redirect('/feed/reddit');
 		}
 	} catch (error) {
@@ -692,23 +763,16 @@ router.get('/mastodon/callback', authenticateCheck, async (req, res) => {
 			instance_url: instance,
 			extra: JSON.stringify({ instance })
 		});
-		//Fetch initial posts
-		const base = instance;
-		const resp = await fetch(`${base}/api/v1/timelines/home?limit=40`, {
-			headers: { Authorization: `Bearer ${tokenJson.access_token}` }
-		});
-		if (resp.ok) {
-			const feed = await resp.json();
-			const mappedPosts = feed.map(t => {
-				const p = mapMastodonToExternal(t, instance);
-				const rank_hotness = computeHotness({
-					upvotes: p.score || 0,
-					downvotes: 0,
-					createdAt: p.created_at_remote,
-					referenceTime: Math.floor(Date.now() / 1000)
-				});
-				return { ...p, rank_hotness };
-			});
+		const config = {
+			url: `${instance}/api/v1/timelines/home?limit=40`,
+			headers: { Authorization: `Bearer ${tokenJson.access_token}` },
+			mapper: mapMastodonToExternal,
+			htmlGenerator: generateMastodonContentHTML,
+			limit: 40,
+			instance
+		};
+		try {
+			const mappedPosts = await fetchAndProcessPosts('mastodon', config, user_id);
 			const postsData = mappedPosts.map(p => ({
 				post_id: p.post_id,
 				title: p.title,
@@ -732,7 +796,6 @@ router.get('/mastodon/callback', authenticateCheck, async (req, res) => {
 				source: 'Mastodon',
 				rank_hotness: p.rank_hotness
 			}));
-			//Small html file that contains post data
 			res.send(`
 				<!DOCTYPE html>
 				<html>
@@ -744,45 +807,7 @@ router.get('/mastodon/callback', authenticateCheck, async (req, res) => {
 				</body>
 				</html>
 			`);
-			//Background analysis
-			setImmediate(async () => {
-				const existing = await ExternalPosts.findAll({
-					where: { post_id: mappedPosts.map(m => m.post_id) },
-					attributes: ['post_id']
-				});
-				const existingIds = new Set(existing.map(e => e.post_id));
-				const newPosts = mappedPosts.filter(p => !existingIds.has(p.post_id));
-				if (newPosts.length === 0) {
-					return;
-				}
-				const embedder = await getEmbedder();
-				const enriched = await Promise.all(newPosts.map(async mapped => {
-					const html = generateMastodonContentHTML(mapped.text_body, mapped.media);
-					const details = await contentAnalyser.analyseContent(html, mapped.title, embedder);
-					const rank_hotness = computeHotness({
-						upvotes: mapped.score || 0,
-						downvotes: 0,
-						createdAt: mapped.created_at_remote,
-						referenceTime: Math.floor(Date.now() / 1000)
-					});
-					const sentiment_score = details?.sentiment_score ?? 0;
-					return { ...mapped, ...details, rank_hotness, sentiment_score };
-				}));
-				await ExternalPosts.bulkCreate(enriched, {
-					updateOnDuplicate: [
-						'text_body','media','score','replies','created_at_remote','fetched_at',
-						'author_photo','image_count','video_count','text_length','word_count','has_images',
-						'has_videos','video_length','sentiment_score','tokens','embeddings','processed_at',
-						'rank_hotness'
-					],
-					ignoreDuplicates: true
-				});
-				await ExternalPostsAccess.bulkCreate(
-					enriched.map(p => ({ id: v4(), post_id: p.post_id, source: 'mastodon', user_id, created_at: new Date() })),
-					{ ignoreDuplicates: true }
-				);
-			});
-		} else {
+		} catch (fetchError) {
 			res.redirect('/feed/mastodon');
 		}
 	} catch (error) {
@@ -844,27 +869,21 @@ router.get('/reddit/feed', authenticateCheck, async (req, res) => {
 
 router.get('/mastodon/feed', authenticateCheck, async (req, res) => {
 	try {
-		//console.log("getting mastodon feed for user:", req.user.user_id);
 		const limit = Math.min(Number(req.query.limit) || 40, 40);
-		//console.log(`Mastodon feed request with limit: ${limit}`);
 		const accesses = await ExternalPostsAccess.findAll({
 			where: { user_id: req.user.user_id, source: 'mastodon' },
 			attributes: ['post_id'],
 			order: [['created_at','DESC']],
 			limit
 		});
-		//console.log(`Found ${accesses.length} mastodon accesses for user ${req.user.user_id}`);
 		const postIds = accesses.map(a => a.post_id).filter(Boolean);
 		if (!postIds.length) {
 			return res.status(200).json({ success: true, items: [] });
 		}
-		//console.log(`Fetching ${postIds.length} mastodon postIds`);
-		//console.log('Post IDs:', postIds);
 		const posts = await ExternalPosts.findAll({
 			where: { post_id: postIds, source: 'mastodon' },
 			order: [['rank_hotness','DESC']]
 		});
-		//console.log(`Found ${posts.length} mastodon posts for user ${req.user.user_id}`);
 		const items = posts.map(p => {
 			const media = typeof p.media === 'string' ? JSON.parse(p.media) : p.media;
 			const html = generateMastodonContentHTML(p.text_body, media);
@@ -917,6 +936,34 @@ router.post('/reddit/expire', authenticateCheck, async (req, res) => {
 	} catch (error) {
         console.error(new Date().toISOString(), '/reddit/expire error:', error);
 		res.status(500).json({ success: false, error: 'Expire error' });
+	}
+});
+
+//Get external posts for active users
+cron.schedule('*/30 * * * *', async () => {
+	try {
+		console.log(new Date().toISOString(), 'Starting external posts update cron job');
+		const batchSize = 100;
+		//Only get users who were active in the last 10 minutes
+		const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000);
+		const activeUsers = await Users.findAll({
+			where: { last_active_at: { [Op.gte]: tenMinutesAgo } },
+			attributes: ['user_id'],
+			order: [['last_active_at', 'ASC']],
+			limit: batchSize
+		});
+		console.log(`Found ${activeUsers.length} active users`);
+		for (const user of activeUsers) {
+			const accounts = await ConnectedAccounts.findAll({
+				where: { user_id: user.user_id }
+			});
+			for (const account of accounts) {
+				await processAccount(account);
+			}
+		}
+		console.log(new Date().toISOString(), 'Completed external posts update cron job');
+	} catch (error) {
+		console.error(new Date().toISOString(), 'Error updating external posts:', error);
 	}
 });
 
