@@ -4,7 +4,7 @@ import { computeHotness } from '../functions/postRanking.js';
 import { ContentAnalyser } from '../functions/contentAnalyser.js';
 import crypto from 'crypto';
 import { ConnectedAccounts, Users } from '../models/users.js';
-import { ExternalPosts, ExternalPostsAccess } from '../models/content.js';
+import { ExternalPosts, ExternalPostsAccess, PaginationTokens } from '../models/content.js';
 import express from 'express';
 import fetch from 'node-fetch';
 import { getEmbedder } from '../functions/contentAnalyser.js';
@@ -32,6 +32,7 @@ async function fetchAndProcessPosts(platform, fetchConfig, user_id) {
 		const resp = await fetch(url, { headers });
 		const data = await resp.json();
 		let mappedPosts = [];
+		let nextToken = null;
 		switch (platform) {
 			case 'bluesky':
 				console.log("getting bluesky posts");
@@ -49,7 +50,9 @@ async function fetchAndProcessPosts(platform, fetchConfig, user_id) {
 					});
 					return { ...p, rank_hotness };
 				});
+				nextToken = { cursor: data.cursor };
 				console.log("bluesky mapped posts.length:", mappedPosts.length);
+				console.log("bluesky next cursor:", data.cursor);
 				break;
 			case 'reddit':
 				console.log("getting reddit posts");
@@ -64,7 +67,9 @@ async function fetchAndProcessPosts(platform, fetchConfig, user_id) {
 					});
 					return { ...p, rank_hotness };
 				});
+				nextToken = { after: data.data.after };
 				console.log("reddit mapped posts.length:", mappedPosts.length);
+				console.log("reddit next after:", data.data.after);
 				break;
 			case 'mastodon':
 				console.log("getting mastodon posts");
@@ -78,13 +83,19 @@ async function fetchAndProcessPosts(platform, fetchConfig, user_id) {
 					});
 					return { ...p, rank_hotness };
 				});
+				if (mappedPosts.length > 0) {
+					nextToken = { max_id: mappedPosts[mappedPosts.length - 1].source_post_id };
+				}
 				console.log("mastodon mapped posts.length:", mappedPosts.length);
+				console.log("mastodon next max_id:", nextToken?.max_id);
 				break;
 		}
+		console.log(`About to query existing posts for ${platform}`);
 		const existing = await ExternalPosts.findAll({
 			where: { post_id: mappedPosts.map(m => m.post_id) },
 			attributes: ['post_id']
 		});
+		console.log(`Found ${existing.length} existing posts`); 
 		const existingIds = new Set(existing.map(e => e.post_id));
 		const newPosts = mappedPosts.filter(p => !existingIds.has(p.post_id));
 		if (newPosts.length === 0) {
@@ -136,13 +147,14 @@ async function fetchAndProcessPosts(platform, fetchConfig, user_id) {
 		//console.log(`Attempting to insert ${enriched.length} posts for ${platform}`);
 		//console.log('Keys in enriched object:', Object.keys(enriched[0]).sort());
 		//console.log('Model attributes:', Object.keys(ExternalPosts.rawAttributes).sort());
+		console.log(enriched.length, platform, "posts to add");
 		await ExternalPosts.bulkCreate(enriched, {
 			updateOnDuplicate: updateFields,
 			logging: false
 		});
 		try {
 			console.log("adding posts to external posts access for:", platform);
-			const epa_response = await ExternalPostsAccess.bulkCreate(
+			await ExternalPostsAccess.bulkCreate(
 				enriched.map(p => ({ 
 					id: v4(), 
 					post_id: p.post_id, 
@@ -154,11 +166,20 @@ async function fetchAndProcessPosts(platform, fetchConfig, user_id) {
 				{ ignoreDuplicates: true }
 			);
 			console.log(platform, "posts added to epa succesfully");
-			//console.log("epa_response:", epa_response);
 		} catch (error) {
 			console.log("error adding to epa for:", platform, error);
 		}
 		//console.log(`Processed ${enriched.length} new ${platform} posts for user ${user_id}`);
+		if (nextToken) {
+			await PaginationTokens.upsert({
+				id: v4(),
+				user_id,
+				platform,
+				...nextToken,
+				updated_at: new Date()
+			});
+			console.log(`Saved pagination token for ${platform}`);
+		}
 		return mappedPosts;
 	} catch (error) {
 		console.error(new Date().toISOString(), `fetchAndProcessPosts ${platform} error:`, error);
@@ -173,9 +194,14 @@ async function processAccount(account) {
 			console.log(`No access token for ${platform} account (user: ${user_id})`);
 			return;
 		}
+		const paginationToken = await PaginationTokens.findOne({
+			where: { user_id, platform }
+		});
 		const configs = {
 			bluesky: {
-				url: `https://bsky.social/xrpc/app.bsky.feed.getTimeline?limit=100`,
+				url: paginationToken?.cursor 
+					? `https://bsky.social/xrpc/app.bsky.feed.getTimeline?limit=100&cursor=${paginationToken.cursor}`
+					: `https://bsky.social/xrpc/app.bsky.feed.getTimeline?limit=100`,
 				headers: { 
 					'Authorization': `Bearer ${access_token}`, 
 					'Content-Type': 'application/json' 
@@ -185,7 +211,9 @@ async function processAccount(account) {
 				limit: 100
 			},
 			reddit: {
-				url: `https://oauth.reddit.com/best?limit=100`,
+				url: paginationToken?.after 
+					? `https://oauth.reddit.com/best?limit=100&after=${paginationToken.after}`
+					: `https://oauth.reddit.com/best?limit=100`,
 				headers: {
 					'Authorization': `bearer ${access_token}`,
 					'User-Agent': ua()
@@ -195,7 +223,9 @@ async function processAccount(account) {
 				limit: 100
 			},
 			mastodon: {
-				url: `${instance_url}/api/v1/timelines/home?limit=40`,
+				url: paginationToken?.max_id 
+					? `${instance_url}/api/v1/timelines/home?limit=40&max_id=${paginationToken.max_id}`
+					: `${instance_url}/api/v1/timelines/home?limit=40`,
 				headers: { Authorization: `Bearer ${access_token}` },
 				mapper: mapMastodonToExternal,
 				htmlGenerator: generateMastodonContentHTML,
@@ -440,7 +470,6 @@ router.get('/connected-accounts', authenticateCheck, async (req, res) => {
 router.post('/auth/bluesky', authenticateCheck, async (req, res) => {
 	try {
 		const { identifier, appPassword } = req.body;
-		// Authenticate with Bluesky
 		const response = await fetch('https://bsky.social/xrpc/com.atproto.server.createSession', {
 			method: 'POST',
 			headers: { 'Content-Type': 'application/json' },
@@ -459,7 +488,6 @@ router.post('/auth/bluesky', authenticateCheck, async (req, res) => {
 			refresh_token: json.refreshJwt,
 			extra: JSON.stringify(json)
 		});
-		// Use shared function
 		const config = {
 			url: `https://bsky.social/xrpc/app.bsky.feed.getTimeline?limit=100`,
 			headers: { 
@@ -472,7 +500,7 @@ router.post('/auth/bluesky', authenticateCheck, async (req, res) => {
 		};
 		try {
 			const mappedPosts = await fetchAndProcessPosts('bluesky', config, req.user.user_id);
-			// Return posts immediately
+			//Return posts immediately
 			res.status(200).json({ 
 				success: true,
 				did: json.did,
@@ -679,6 +707,7 @@ router.get('/reddit/callback', authenticateCheck, async (req, res) => {
 				source: 'Reddit',
 				rank_hotness: p.rank_hotness
 			}));
+			//HTML to contain post data
 			res.send(`
 				<!DOCTYPE html>
 				<html>
@@ -762,6 +791,7 @@ router.get('/mastodon/callback', authenticateCheck, async (req, res) => {
 				source: 'Mastodon',
 				rank_hotness: p.rank_hotness
 			}));
+			//HTML to contain post data
 			res.send(`
 				<!DOCTYPE html>
 				<html>
@@ -785,11 +815,14 @@ router.get('/mastodon/callback', authenticateCheck, async (req, res) => {
 router.get('/bluesky/feed', authenticateCheck, async (req, res) => {
 	try {
 		const limit = Math.min(Number(req.query.limit) || 100, 100);
+		const offset = Number(req.query.offset) || 0; 
+		console.log("bluesky offset:", offset);
 		const accesses = await ExternalPostsAccess.findAll({
 			where: { user_id: req.user.user_id, source: 'bluesky' },
 			attributes: ['post_id'],
 			order: [['rank_hotness','DESC']],
-			limit
+			limit,
+			offset
 		});
 		const postIds = accesses.map(a => a.post_id).filter(Boolean);
 		if (!postIds.length) {
@@ -836,6 +869,7 @@ router.get('/bluesky/feed', authenticateCheck, async (req, res) => {
 router.get('/reddit/feed', authenticateCheck, async (req, res) => {
 	try {
 		const { limit = '100', offset = '0' } = req.query;
+		console.log("reddit offset:", offset);
 		const accesses = await ExternalPostsAccess.findAll({
 			where: { user_id: req.user.user_id, source: 'reddit' },
 			attributes: ['post_id'],
@@ -890,11 +924,14 @@ router.get('/reddit/feed', authenticateCheck, async (req, res) => {
 router.get('/mastodon/feed', authenticateCheck, async (req, res) => {
 	try {
 		const limit = Math.min(Number(req.query.limit) || 40, 40);
+		const offset = Number(req.query.offset) || 0;
+		console.log("mastodon offset:", offset);
 		const accesses = await ExternalPostsAccess.findAll({
 			where: { user_id: req.user.user_id, source: 'mastodon' },
 			attributes: ['post_id'],
 			order: [['rank_hotness','DESC']],
-			limit
+			limit,
+			offset
 		});
 		const postIds = accesses.map(a => a.post_id).filter(Boolean);
 		if (!postIds.length) {
@@ -960,7 +997,7 @@ router.post('/reddit/expire', authenticateCheck, async (req, res) => {
 });
 
 //Get external posts for active users
-cron.schedule('*/10 * * * *', async () => { //Runs every 10 minutes
+cron.schedule('*/10000 * * * *', async () => { //Runs every 10 minutes
 	try {
 		console.log(new Date().toISOString(), 'Starting external posts update cron job');
 		const batchSize = 100;

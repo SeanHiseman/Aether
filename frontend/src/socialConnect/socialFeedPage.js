@@ -27,9 +27,10 @@ export default function SocialFeedPage({ platform }) {
 		}
 		if (isFetchingRef.current) return;
 		isFetchingRef.current = true;
+		const fetchLimit = platform === 'mastodon' ? 40 : 100;
 		try {
 			const response = await api.get(`/${platform}/feed`, {
-				params: { limit: 100, offset },
+				params: { limit: fetchLimit, offset },
 				withCredentials: true
 			});
 			console.log("load feed response:", response);
@@ -40,10 +41,10 @@ export default function SocialFeedPage({ platform }) {
 			} else {
 				setPosts(items);
 			}
-			if (items.length < 100) {
+			if (items.length < fetchLimit) {
 				setHasMore(false);
 			} else {
-				setOffset(prev => prev + 100);
+				setOffset(prev => prev + fetchLimit);
 			}
 		} catch (error) {
 			setErrorMessage('Error getting posts');
@@ -108,21 +109,44 @@ export default function SocialFeedPage({ platform }) {
 
 	useEffect(() => {
 		const element = scrollRef.current;
+		// 1. Safety check: if ref is null, we can't attach listeners
 		if (!element) return;
+
 		const handleScroll = () => {
+			// --- DEBUG 1: Prove the event is firing ---
+			console.log("Scroll event fired on DIV");
+			console.log("Status -> hasMore:", hasMore, "isFetching:", isFetchingRef.current);
+
+			// 2. Check early returns AFTER logging
 			if (!hasMore || isFetchingRef.current) return;
-			const element = scrollRef.current;
-			if (!element) return;
-			const distanceFromBottom = element.scrollHeight - element.scrollTop - element.clientHeight;
+
+			// --- DEBUG 2: Check the math ---
+			// Since we are listening to the element, we use element properties
+			const totalHeight = element.scrollHeight;
+			const scrolledDistance = element.scrollTop;
+			const visibleHeight = element.clientHeight;
+			
+			// How far from bottom are we?
+			const distanceRemaining = totalHeight - scrolledDistance - visibleHeight;
 			const threshold = window.innerHeight * 1.5;
-			if (distanceFromBottom <= threshold) {
-				console.log("loading more posts")
+
+			console.log("Distance Remaining:", distanceRemaining);
+			console.log("Threshold:", threshold);
+
+			if (distanceRemaining <= threshold) {
+				console.log("!!! LOADING MORE POSTS !!!");
 				loadFeed(true);
 			}
 		};
-		window.addEventListener('scroll', handleScroll);
-		return () => window.removeEventListener('scroll', handleScroll);
-	}, [hasMore, platform, isAuthenticated]);
+
+		// 3. Attach to the ELEMENT, not the WINDOW
+		element.addEventListener('scroll', handleScroll);
+		
+		return () => {
+			// Cleanup the listener from the element
+			element.removeEventListener('scroll', handleScroll);
+		};
+	}, [hasMore, platform, isAuthenticated, offset]);
 
 	if (!isAuthenticated) {
 		return (

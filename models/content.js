@@ -68,6 +68,22 @@ const ExternalPostsAccess = sequelize.define('ExternalPostsAccess', {
     ]
 });
 
+const PaginationTokens = sequelize.define('PaginationTokens', {
+    id: { type: STRING(36), primaryKey: true },
+	user_id: { type: STRING(36), allowNull: false },
+	platform: { type: STRING(20), allowNull: false },
+	cursor: { type: TEXT, allowNull: true }, //Bluesky
+	after: { type: STRING(255), allowNull: true }, //Reddit
+	max_id: { type: STRING(255), allowNull: true }, //Mastodon
+	updated_at: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }
+}, {
+	tableName: 'pagination_tokens',
+	timestamps: false,
+	indexes: [
+		{ fields: ['user_id', 'platform'], unique: true }
+	]
+});
+
 const Posts = sequelize.define('posts', {
     post_id: { type: STRING(36), primaryKey: true },
     parent_id: { type: STRING(36), allowNull: true },
@@ -170,6 +186,7 @@ export {
     AppBuilds, 
     ExternalPosts,
     ExternalPostsAccess,
+    PaginationTokens,
     Posts,
     PostDrafts,
     PostNotes,

@@ -347,3 +347,15 @@ CREATE INDEX idx_feed_created ON posts (feed_id, created_at DESC, post_id);
 CREATE INDEX idx_feed_videos ON posts (feed_id, has_videos);
 CREATE INDEX idx_rank_hotness_desc ON posts (rank_hotness DESC, post_id);
 CREATE INDEX idx_created_desc ON posts (created_at DESC, post_id);
+
+CREATE TABLE `pagination_tokens` (
+  `id` CHAR(36) NOT NULL,
+  `user_id` VARCHAR(36) NOT NULL,
+  `platform` VARCHAR(20) NOT NULL,
+  `cursor` TEXT DEFAULT NULL,
+  `after` VARCHAR(255) DEFAULT NULL,
+  `max_id` VARCHAR(255) DEFAULT NULL,
+  `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `idx_user_platform` (`user_id`, `platform`)
+);
