@@ -25,7 +25,7 @@ const ExternalPosts = sequelize.define('ExternalPosts', {
 	has_videos: { type: BOOLEAN, defaultValue: false },
 	score: { type: INTEGER, allowNull: true },
     replies: { type: INTEGER, allowNull: true },
-	rank_hotness: { type: FLOAT, allowNull: true },
+	rank_hotness: { type: DataTypes.DOUBLE, allowNull: true, defaultValue: null },
     sentiment_score: { type: FLOAT, allowNull: true },
 	embeddings: { type: DataTypes.JSON, allowNull: true },
 	fetched_at: { type: DataTypes.DATE, allowNull: false },
@@ -39,14 +39,14 @@ const ExternalPosts = sequelize.define('ExternalPosts', {
 }, {
 	tableName: 'external_posts',
     timestamps: false, 
-	indexes: [
-		{ fields: ['created_at_remote'] },
-		{ fields: ['rank_hotness'] },
-		{ fields: ['score'] },
-		{ fields: ['source'] },
-		{ fields: ['expired'] },
-		{ fields: ['fetched_at'] }
-	]
+    indexes: [
+        { fields: ['created_at_remote'] },
+        { name: 'idx_ep_rank_hotness_desc', fields: [{ attribute: 'rank_hotness', order: 'DESC' }] },
+        { fields: ['score'] },
+        { fields: ['source'] },
+        { fields: ['expired'] },
+        { fields: ['fetched_at'] }
+    ]
 });
 
 const ExternalPostsAccess = sequelize.define('ExternalPostsAccess', {
@@ -54,16 +54,18 @@ const ExternalPostsAccess = sequelize.define('ExternalPostsAccess', {
 	user_id: { type: STRING(36), allowNull: false },
 	post_id: { type: STRING(36), allowNull: false },
     source: { type: STRING(20), allowNull: false },
+    rank_hotness: { type: DataTypes.DOUBLE, allowNull: true, defaultValue: null },
 	created_at: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }
 }, {
 	tableName: 'external_posts_access',
 	timestamps: false,
-	indexes: [
-		{ fields: ['user_id'] },
-		{ fields: ['post_id'] },
+    indexes: [
+        { fields: ['user_id'] },
+        { fields: ['post_id'] },
         { fields: ['source'] },
-		{ fields: ['user_id', 'post_id'], unique: true }
-	]
+        { fields: ['user_id', 'post_id'], unique: true },
+        { name: 'idx_eps_user_rank_desc', fields: ['user_id', { attribute: 'rank_hotness', order: 'DESC' }] }
+    ]
 });
 
 const Posts = sequelize.define('posts', {
@@ -103,20 +105,19 @@ const Posts = sequelize.define('posts', {
 }, {
     tableName: 'posts',
     timestamps: false,
-	indexes: [
-		{ name: 'idx_feed_id', fields: ['feed_id'] },
-		{ name: 'idx_channel_id', fields: ['channel_id'] },
-		{ name: 'idx_media_flags', fields: ['has_images', 'has_videos', 'has_interactive', 'has_external_posts', 'has_embedded_websites'] },
-		{ name: 'idx_sentiment', fields: ['sentiment_score'] },
-		{ name: 'idx_composite_quality', fields: ['created_at', 'sentiment_score'] },
-		{ name: 'idx_video_content', fields: ['has_videos', 'video_length'] },
-		{ name: 'idx_text_analysis', fields: ['word_count', 'text_length'] },
-		{ name: 'idx_rank_hotness_desc', fields: ['rank_hotness', 'post_id'] },
-		{ name: 'idx_feed_rank', fields: ['feed_id', 'rank_hotness', 'post_id'] },
-		{ name: 'idx_created_desc', fields: ['created_at', 'post_id'] },
-		{ name: 'idx_fulltext_posts', type: 'FULLTEXT', fields: ['title', 'text_body'] },
-        { name: 'idx_posts_parent_id', fields: ['parent_id'] }
-	]
+    indexes: [
+        { name: 'idx_posts_parent_id', fields: ['parent_id'] }, 
+        { name: 'idx_posts_poster_id', fields: ['poster_id'] },
+        { name: 'idx_feed_id', fields: ['feed_id'] }, 
+        { name: 'idx_channel_id', fields: ['channel_id'] },
+        { name: 'idx_feed_rank', fields: ['feed_id', { attribute: 'rank_hotness', order: 'DESC' }, 'post_id'] },
+        { name: 'idx_feed_created', fields: ['feed_id', { attribute: 'created_at', order: 'DESC' }, 'post_id'] },
+        { name: 'idx_rank_hotness_desc', fields: [{ attribute: 'rank_hotness', order: 'DESC' }, 'post_id'] },
+        { name: 'idx_created_desc', fields: [{ attribute: 'created_at', order: 'DESC' }, 'post_id'] },
+        { name: 'idx_fulltext_posts', type: 'FULLTEXT', fields: ['title', 'text_body'] },
+        { name: 'idx_feed_videos', fields: ['feed_id', 'has_videos'] },
+        { name: 'idx_sentiment', fields: ['sentiment_score'] }
+    ]
 });
 
 const PostDrafts = sequelize.define('post_drafts', {

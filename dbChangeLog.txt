@@ -321,3 +321,29 @@ CREATE INDEX idx_posts_parent_id ON posts(parent_id);
 
 ALTER TABLE users 
 	ADD COLUMN last_active_at datetime(3) DEFAULT CURRENT_TIMESTAMP(3);
+
+ALTER TABLE external_posts
+	MODIFY COLUMN rank_hotness DOUBLE NULL;
+
+ALTER TABLE external_posts_access
+	ADD COLUMN rank_hotness DOUBLE NULL;
+
+CREATE INDEX idx_epa_user_rank_desc 
+ON external_posts_access (user_id, rank_hotness DESC);
+
+CREATE INDEX idx_ep_rank_hotness_desc 
+ON external_posts (rank_hotness DESC);
+
+DROP INDEX idx_media_flags ON posts;
+DROP INDEX idx_text_analysis ON posts;
+DROP INDEX idx_video_content ON posts;
+DROP INDEX idx_composite_quality ON posts;
+DROP INDEX idx_rank_hotness_desc ON posts;
+DROP INDEX idx_feed_rank ON posts;
+DROP INDEX idx_created_desc ON posts;
+CREATE INDEX idx_posts_poster_id ON posts (poster_id);
+CREATE INDEX idx_feed_rank ON posts (feed_id, rank_hotness DESC, post_id);
+CREATE INDEX idx_feed_created ON posts (feed_id, created_at DESC, post_id);
+CREATE INDEX idx_feed_videos ON posts (feed_id, has_videos);
+CREATE INDEX idx_rank_hotness_desc ON posts (rank_hotness DESC, post_id);
+CREATE INDEX idx_created_desc ON posts (created_at DESC, post_id);

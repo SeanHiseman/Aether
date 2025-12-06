@@ -90,8 +90,8 @@ function generatePost(topic) {
 
 async function generateData() {
 	try {
-		const NUM_FEEDS = 200;
-		const POSTS_PER_CHANNEL = 200;
+		const NUM_FEEDS = 100;
+		const POSTS_PER_CHANNEL = 100;
 		const feedsData = [];
 		const channelsData = [];
 		const postsData = [];
@@ -201,7 +201,6 @@ async function generateData() {
 			await Posts.bulkCreate(batch);
 			console.log(`Inserted posts ${i + 1}–${i + batch.length} of ${postsData.length}`);
 		}
-
 		console.log(`Created ${usersData.length} users, ${feedsData.length} feeds, ${channelsData.length} channels, and ${postsData.length} posts.`);
 	} catch (error) {
 		console.error('Error generating data:', error);

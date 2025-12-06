@@ -34,6 +34,11 @@ async function fetchAndProcessPosts(platform, fetchConfig, user_id) {
 		let mappedPosts = [];
 		switch (platform) {
 			case 'bluesky':
+				console.log("getting bluesky posts");
+				if (!data || !data.feed) {
+					console.error('Bluesky timeline missing feed field', data);
+					return [];
+				}
 				mappedPosts = data.feed.map(item => {
 					const p = mapper(item);
 					const rank_hotness = computeHotness({
@@ -44,8 +49,10 @@ async function fetchAndProcessPosts(platform, fetchConfig, user_id) {
 					});
 					return { ...p, rank_hotness };
 				});
+				console.log("bluesky mapped posts.length:", mappedPosts.length);
 				break;
 			case 'reddit':
+				console.log("getting reddit posts");
 				const children = data.data.children.filter(c => c.kind === 't3');
 				mappedPosts = children.map(c => {
 					const p = mapper(c);
@@ -57,8 +64,10 @@ async function fetchAndProcessPosts(platform, fetchConfig, user_id) {
 					});
 					return { ...p, rank_hotness };
 				});
+				console.log("reddit mapped posts.length:", mappedPosts.length);
 				break;
 			case 'mastodon':
+				console.log("getting mastodon posts");
 				mappedPosts = data.map(t => {
 					const p = mapper(t, fetchConfig.instance);
 					const rank_hotness = computeHotness({
@@ -69,6 +78,7 @@ async function fetchAndProcessPosts(platform, fetchConfig, user_id) {
 					});
 					return { ...p, rank_hotness };
 				});
+				console.log("mastodon mapped posts.length:", mappedPosts.length);
 				break;
 		}
 		const existing = await ExternalPosts.findAll({
@@ -114,7 +124,6 @@ async function fetchAndProcessPosts(platform, fetchConfig, user_id) {
 				url: mapped.url,
 				media: mapped.media
 			};
-			
 			return post;
 		}));
 		const updateFields = [
@@ -131,20 +140,28 @@ async function fetchAndProcessPosts(platform, fetchConfig, user_id) {
 			updateOnDuplicate: updateFields,
 			logging: false
 		});
-		await ExternalPostsAccess.bulkCreate(
-			enriched.map(p => ({ 
-				id: v4(), 
-				post_id: p.post_id, 
-				source: platform, 
-				user_id, 
-				created_at: new Date() 
-			})),
-			{ ignoreDuplicates: true }
-		);
+		try {
+			console.log("adding posts to external posts access for:", platform);
+			const epa_response = await ExternalPostsAccess.bulkCreate(
+				enriched.map(p => ({ 
+					id: v4(), 
+					post_id: p.post_id, 
+					source: platform, 
+					user_id, 
+					rank_hotness: p.rank_hotness,
+					created_at: new Date() 
+				})),
+				{ ignoreDuplicates: true }
+			);
+			console.log(platform, "posts added to epa succesfully");
+			//console.log("epa_response:", epa_response);
+		} catch (error) {
+			console.log("error adding to epa for:", platform, error);
+		}
 		//console.log(`Processed ${enriched.length} new ${platform} posts for user ${user_id}`);
 		return mappedPosts;
 	} catch (error) {
-		//console.error(new Date().toISOString(), `fetchAndProcessPosts ${platform} error:`, error);
+		console.error(new Date().toISOString(), `fetchAndProcessPosts ${platform} error:`, error);
 		throw error;
 	}
 }
@@ -571,57 +588,6 @@ router.post('/auth/mastodon', authenticateCheck, async (req, res) => {
 	}
 });
 
-router.get('/bluesky/feed', authenticateCheck, async (req, res) => {
-	try {
-		const limit = Math.min(Number(req.query.limit) || 100, 100);
-		const accesses = await ExternalPostsAccess.findAll({
-			where: { user_id: req.user.user_id, source: 'bluesky' },
-			attributes: ['post_id'],
-			order: [['created_at','DESC']],
-			limit
-		});
-		const postIds = accesses.map(a => a.post_id).filter(Boolean);
-		if (!postIds.length) {
-			return res.status(200).json({ success: true, items: [] });
-		}
-		const posts = await ExternalPosts.findAll({
-			where: { post_id: postIds, source: 'bluesky' },
-			order: [['rank_hotness','DESC']]
-		});
-		const items = posts.map(p => {
-			const media = typeof p.media === 'string' ? JSON.parse(p.media) : p.media;
-			const html = generateBlueskyContentHTML(p.text_body, media);
-			return {
-				post_id: p.post_id,
-				title: p.title,
-				content: `data:text/html;charset=utf-8,${encodeURIComponent(html)}`,
-				created_at: p.created_at_remote,
-				upvotes: 0,
-				downvotes: 0,
-				views: 0,
-				replies: p.replies ?? 0,
-				score: p.score || 0,
-				is_saved: false,
-				has_upvoted: false,
-				has_downvoted: false,
-				poster: {
-					username: p.author || 'bluesky_user',
-					user_photo: p.author_photo || '/media/site_images/default-bluesky-user-icon.png',
-					profile_url: p.author ? `https://bsky.app/profile/${p.author}` : null
-				},
-				channel: p.channel,
-				url: p.url,
-				source: 'Bluesky',
-				rank_hotness: p.rank_hotness
-			};
-		});
-		res.status(200).json({ success: true, items });
-	} catch (error) {
-		console.error(new Date().toISOString(), '/bluesky/feed error:', error);
-		res.status(400).json({ success: false });
-	}
-});
-
 router.post('/disconnect_external_account', authenticateCheck, async (req, res) => {
 	let transaction;
     try {
@@ -816,12 +782,66 @@ router.get('/mastodon/callback', authenticateCheck, async (req, res) => {
 	}
 });
 
+router.get('/bluesky/feed', authenticateCheck, async (req, res) => {
+	try {
+		const limit = Math.min(Number(req.query.limit) || 100, 100);
+		const accesses = await ExternalPostsAccess.findAll({
+			where: { user_id: req.user.user_id, source: 'bluesky' },
+			attributes: ['post_id'],
+			order: [['rank_hotness','DESC']],
+			limit
+		});
+		const postIds = accesses.map(a => a.post_id).filter(Boolean);
+		if (!postIds.length) {
+			return res.status(200).json({ success: true, items: [] });
+		}
+		const posts = await ExternalPosts.findAll({
+			where: { post_id: postIds, source: 'bluesky' },
+			order: [['rank_hotness','DESC']]
+		});
+		const items = posts.map(p => {
+			const media = typeof p.media === 'string' ? JSON.parse(p.media) : p.media;
+			const html = generateBlueskyContentHTML(p.text_body, media);
+			return {
+				post_id: p.post_id,
+				title: p.title,
+				content: `data:text/html;charset=utf-8,${encodeURIComponent(html)}`,
+				created_at: p.created_at_remote,
+				upvotes: 0,
+				downvotes: 0,
+				views: 0,
+				replies: p.replies ?? 0,
+				score: p.score || 0,
+				is_saved: false,
+				has_upvoted: false,
+				has_downvoted: false,
+				poster: {
+					username: p.author || 'bluesky_user',
+					user_photo: p.author_photo || '/media/site_images/default-bluesky-user-icon.png',
+					profile_url: p.author ? `https://bsky.app/profile/${p.author}` : null
+				},
+				channel: p.channel,
+				url: p.url,
+				source: 'Bluesky',
+				rank_hotness: p.rank_hotness
+			};
+		});
+		res.status(200).json({ success: true, items });
+	} catch (error) {
+		console.error(new Date().toISOString(), '/bluesky/feed error:', error);
+		res.status(400).json({ success: false });
+	}
+});
+
 router.get('/reddit/feed', authenticateCheck, async (req, res) => {
 	try {
-		const { limit = '100' } = req.query;
+		const { limit = '100', offset = '0' } = req.query;
 		const accesses = await ExternalPostsAccess.findAll({
 			where: { user_id: req.user.user_id, source: 'reddit' },
-			attributes: ['post_id']
+			attributes: ['post_id'],
+			order: [['rank_hotness', 'DESC']],
+			offset: Number(offset),
+			limit: Math.min(Number(limit) || 100, 100)
 		});
 		const postIds = accesses.map(a => a.post_id).filter(Boolean);
 		if (!postIds.length) {
@@ -873,7 +893,7 @@ router.get('/mastodon/feed', authenticateCheck, async (req, res) => {
 		const accesses = await ExternalPostsAccess.findAll({
 			where: { user_id: req.user.user_id, source: 'mastodon' },
 			attributes: ['post_id'],
-			order: [['created_at','DESC']],
+			order: [['rank_hotness','DESC']],
 			limit
 		});
 		const postIds = accesses.map(a => a.post_id).filter(Boolean);
@@ -940,7 +960,7 @@ router.post('/reddit/expire', authenticateCheck, async (req, res) => {
 });
 
 //Get external posts for active users
-cron.schedule('*/30 * * * *', async () => {
+cron.schedule('*/10 * * * *', async () => { //Runs every 10 minutes
 	try {
 		console.log(new Date().toISOString(), 'Starting external posts update cron job');
 		const batchSize = 100;

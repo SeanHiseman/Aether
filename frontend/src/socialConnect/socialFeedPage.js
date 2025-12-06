@@ -10,16 +10,56 @@ import { useLocation } from "react-router-dom";
 export default function SocialFeedPage({ platform }) {
 	const [errorMessage, setErrorMessage] = useState('');
 	const { isAuthenticated } = useContext(AuthContext);
+	const [hasMore, setHasMore] = useState(true);
 	const [loading, setLoading] = useState(true);
+	const [offset, setOffset] = useState(0);
 	const [posts, setPosts] = useState([]);
 	const location = useLocation();
+	const isFetchingRef = useRef(false);
 	const scrollRef = useRef(null);
 	const hasLoadedRef = useRef(false); 
+
+	async function loadFeed(isNextPage = false) {
+		console.log("getting posts from backend")
+		if (!isAuthenticated) {
+			setLoading(false);
+			return;
+		}
+		if (isFetchingRef.current) return;
+		isFetchingRef.current = true;
+		try {
+			const response = await api.get(`/${platform}/feed`, {
+				params: { limit: 100, offset },
+				withCredentials: true
+			});
+			console.log("load feed response:", response);
+			const items = response.data.items || [];
+			console.log("items.length:", items.length);
+			if (isNextPage) {
+				setPosts(prev => [...prev, ...items]);
+			} else {
+				setPosts(items);
+			}
+			if (items.length < 100) {
+				setHasMore(false);
+			} else {
+				setOffset(prev => prev + 100);
+			}
+		} catch (error) {
+			setErrorMessage('Error getting posts');
+		} finally {
+			isFetchingRef.current = false;
+			setLoading(false);
+		}
+	}
 
 	useEffect(() => {
 		//Reset on platform change
 		if (hasLoadedRef.current) {
 			hasLoadedRef.current = false;
+			setOffset(0);
+			setHasMore(true);
+			setPosts([]);
 		}
 	}, [platform]);
 
@@ -29,17 +69,14 @@ export default function SocialFeedPage({ platform }) {
 			hasLoadedRef.current = true;
 			const params = new URLSearchParams(location.search);
 			const justConnected = params.get("connected");
-			console.log('SocialFeedPage loading:', { platform, justConnected, isAuthenticated });
 			//Check for cached posts from fresh connection
 			if (justConnected === "true") {
+				console.log("fresh connection, getting cached posts");
 				const cacheKey = `${platform}_initial_posts`;
 				const cachedPosts = sessionStorage.getItem(cacheKey);
-				console.log('Checking sessionStorage for key:', cacheKey);
-				console.log('Cached posts found:', cachedPosts ? 'YES' : 'NO');
 				if (cachedPosts) {
 					try {
 						const parsedPosts = JSON.parse(cachedPosts);
-						console.log(`Loaded ${parsedPosts.length} cached ${platform} posts`);
 						setPosts(parsedPosts);
 						setLoading(false);
 						//Clean up cache and URL
@@ -62,33 +99,30 @@ export default function SocialFeedPage({ platform }) {
 				refreshConnectedAccounts();
 				window.history.replaceState({}, "", location.pathname);
 			}
-			//Regular feed load from database/API
-			async function loadFeed() {
-				if (!isAuthenticated) {
-					setLoading(false);
-					return;
-				}
-				setLoading(true);
-				try {
-					const response = await api.get(`/${platform}/feed`, { 
-						withCredentials: true 
-					});
-					const items = response.data.items || [];
-					console.log(`Loaded ${items.length} posts from API`);
-					setPosts(items);
-				} catch (error) {
-					setErrorMessage('Error getting posts');
-					setPosts([]);
-				} finally {
-					setLoading(false);
-				}
-			}
 			loadFeed();
 		} catch (error) {
 			setErrorMessage('Error loading feed');
 			setLoading(false);
 		}
 	}, [platform, location.search, isAuthenticated]);
+
+	useEffect(() => {
+		const element = scrollRef.current;
+		if (!element) return;
+		const handleScroll = () => {
+			if (!hasMore || isFetchingRef.current) return;
+			const element = scrollRef.current;
+			if (!element) return;
+			const distanceFromBottom = element.scrollHeight - element.scrollTop - element.clientHeight;
+			const threshold = window.innerHeight * 1.5;
+			if (distanceFromBottom <= threshold) {
+				console.log("loading more posts")
+				loadFeed(true);
+			}
+		};
+		window.addEventListener('scroll', handleScroll);
+		return () => window.removeEventListener('scroll', handleScroll);
+	}, [hasMore, platform, isAuthenticated]);
 
 	if (!isAuthenticated) {
 		return (

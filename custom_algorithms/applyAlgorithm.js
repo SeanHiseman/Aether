@@ -393,6 +393,7 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
 		const tenDays = 864000000;
 		let postEmbedding = [];
 		try {
+			const logStart = Date.now();
 			for (const post of posts) {
 				postEmbedding = post.embeddings;
 				//Content type filtering
@@ -552,6 +553,8 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
 			}
 			//console.log("finalPosts:", finalPosts);
 			//console.log("finalPosts length:", finalPosts.length);
+			const logEnd = Date.now();
+			console.log("post processing time ms:", logEnd - logStart);
 		} catch (error) {
 			console.error(new Date().toISOString(), "error applying algorithm to posts:", error);
 			finalPosts = posts; //Return initial post batch if issue applying algorithm
