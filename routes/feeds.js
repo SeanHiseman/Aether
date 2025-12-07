@@ -401,6 +401,7 @@ router.get('/deep_feed_contents/:deepFeedId', standardLimiter, authenticateCheck
 router.post('/deep_feed_posts', standardLimiter, authenticateCheck, async (req, res) => {
     try {
         const { connectedAccounts = [], deepFeedId, followedFeedIds: rawFollowedFeedIds, limit = 100, offset = 0, recentUpvotes } = req.body;
+        console.log("deep feed posts offset:", offset);
         let followedFeedIds = rawFollowedFeedIds || [];
         if (!Array.isArray(followedFeedIds)) {
             followedFeedIds = [followedFeedIds];
@@ -460,6 +461,7 @@ router.post('/deep_feed_posts', standardLimiter, authenticateCheck, async (req, 
             connectedAccounts,
             userId
         });
+        console.log("deepFeedPosts.length:", deepFeedPosts.length);
         return res.status(200).json({ deepFeed, posts: deepFeedPosts, success: true });
     } catch (error) {
         console.error(new Date().toISOString(), '/deep_feed_posts error:', error);

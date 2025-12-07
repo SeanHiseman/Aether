@@ -172,8 +172,29 @@ const DeepFeed = () => {
         queryKey: ['deepFeedPosts', deep_feed_id],
         queryFn: getPosts,
         getNextPageParam: (lastPage, allPages) => {
-            if (!Array.isArray(lastPage)) return undefined;
-            return lastPage.length === FETCH_LIMIT ? allPages.length * FETCH_LIMIT : undefined;
+            console.log("=== getNextPageParam called ===");
+            console.log("lastPage:", lastPage);
+            console.log("lastPage is array:", Array.isArray(lastPage));
+            console.log("lastPage.length:", lastPage?.length);
+            console.log("allPages.length:", allPages.length);
+            console.log("FETCH_LIMIT:", FETCH_LIMIT);
+            
+            if (!Array.isArray(lastPage)) {
+                console.log("❌ lastPage is not an array, returning undefined");
+                return undefined;
+            }
+            
+            // Continue fetching as long as we got ANY posts
+            // Only stop when we get 0 posts
+            if (lastPage.length === 0) {
+                console.log("❌ No posts returned, no more pages");
+                return undefined;
+            }
+            
+            const nextOffset = allPages.length * FETCH_LIMIT;
+            console.log("✅ Got", lastPage.length, "posts, will fetch more at offset:", nextOffset);
+            
+            return nextOffset;
         },
         refetchOnWindowFocus: false, //Don't refetch when clicking back to window
         refetchOnReconnect: false, //Don't refetch on network reconnect
@@ -241,21 +262,28 @@ const DeepFeed = () => {
 
     const handleScroll = useCallback(() => {
         const element = scrollRef.current;
-        if (!element || isFetchingNextPage || !hasNextPage) return;
-        const threshold = window.innerHeight * 1.5; //Fetch new content 1.5 vertical height away from bottom
-        if (element.scrollTop + element.clientHeight >= element.scrollHeight - threshold) {
+        if (!element || isFetchingNextPage || !hasNextPage) {
+            return;
+        }
+        const totalHeight = element.scrollHeight;
+        const scrolledDistance = element.scrollTop;
+        const visibleHeight = element.clientHeight;
+        const distanceRemaining = totalHeight - scrolledDistance - visibleHeight;
+        const threshold = window.innerHeight * 1.5;
+        if (distanceRemaining <= threshold) {
             fetchNextPage();
         }
     }, [fetchNextPage, isFetchingNextPage, hasNextPage]);
 
     useEffect(() => {
         const element = scrollRef.current;
-        const scrollHandler = (e) => {
+        if (!element) return;
+        const scrollHandler = () => {
             handleScroll();
         };
         element.addEventListener('scroll', scrollHandler);
         return () => element.removeEventListener('scroll', scrollHandler);
-    }, [handleScroll, allPosts.length]);
+    }, [handleScroll]);
 
     const refreshPosts = () => {
         setRefreshTrigger(!refreshTrigger);
@@ -270,7 +298,7 @@ const DeepFeed = () => {
 
     return (
         <><div className="standard-container">
-            <div ref={scrollRef} onScroll={handleScroll} className="channel-feed">
+            <div ref={scrollRef} className="channel-feed">
                 {isLoading ? (
                     <p className="large-text faded-text">Loading posts...</p>
                 ) : allPosts.length > 0 ? (

@@ -109,41 +109,20 @@ export default function SocialFeedPage({ platform }) {
 
 	useEffect(() => {
 		const element = scrollRef.current;
-		// 1. Safety check: if ref is null, we can't attach listeners
 		if (!element) return;
-
 		const handleScroll = () => {
-			// --- DEBUG 1: Prove the event is firing ---
-			console.log("Scroll event fired on DIV");
-			console.log("Status -> hasMore:", hasMore, "isFetching:", isFetchingRef.current);
-
-			// 2. Check early returns AFTER logging
 			if (!hasMore || isFetchingRef.current) return;
-
-			// --- DEBUG 2: Check the math ---
-			// Since we are listening to the element, we use element properties
 			const totalHeight = element.scrollHeight;
 			const scrolledDistance = element.scrollTop;
 			const visibleHeight = element.clientHeight;
-			
-			// How far from bottom are we?
 			const distanceRemaining = totalHeight - scrolledDistance - visibleHeight;
 			const threshold = window.innerHeight * 1.5;
-
-			console.log("Distance Remaining:", distanceRemaining);
-			console.log("Threshold:", threshold);
-
 			if (distanceRemaining <= threshold) {
-				console.log("!!! LOADING MORE POSTS !!!");
 				loadFeed(true);
 			}
 		};
-
-		// 3. Attach to the ELEMENT, not the WINDOW
 		element.addEventListener('scroll', handleScroll);
-		
 		return () => {
-			// Cleanup the listener from the element
 			element.removeEventListener('scroll', handleScroll);
 		};
 	}, [hasMore, platform, isAuthenticated, offset]);

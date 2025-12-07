@@ -197,73 +197,63 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
 			});
 			const orderMap = new Map(orderedIds.map((id, i) => [id, i]));
 			posts.sort((a, b) => orderMap.get(a.post_id) - orderMap.get(b.post_id));
-			//Fetch external posts directly from database
-			const externalPostsArrays = await Promise.all(
-				enabledSources.map(async (platform) => {
-					if (!userId) return [];
-					const accesses = await ExternalPostsAccess.findAll({
-						where: { user_id: userId, source: platform },
-						attributes: ['post_id'],
-						limit: postsPerSource
-					});
-					//console.log("external post accesses length:", accesses.length);
-					const extPostIds = accesses.map(a => a.post_id).filter(Boolean);
-					if (!extPostIds.length) return [];
-					const extPosts = await ExternalPosts.findAll({
-						where: { post_id: extPostIds, source: platform },
-						order: [['rank_hotness', 'DESC']],
-						limit: postsPerSource,
-						raw: true
-					});
-					//console.log("external posts length:", extPosts.length);
-					//Format external posts to match widget expectations
-					return extPosts.map(p => {
-						const media = typeof p.media === 'string' ? JSON.parse(p.media) : p.media;
-						let contentHTML = '';
-						let sourceName = '';
-						if (platform === 'reddit') {
-							contentHTML = generateRedditContentHTML(p.text_body, media);
-							sourceName = 'Reddit';
-						} else if (platform === 'bluesky') {
-							contentHTML = generateBlueskyContentHTML(p.text_body, media);
-							sourceName = 'Bluesky';
-						} else if (platform === 'mastodon') {
-							contentHTML = generateMastodonContentHTML(p.text_body, media);
-							sourceName = 'Mastodon';
-						}
-						const username = platform === 'reddit' ? (p.author || '').replace('u/','') : p.author;
-						const externalScore = p.score ?? 0;
-						return {
-							...p,
-							isExternal: true,
-							created_at: p.created_at_remote,
-							content: `data:text/html;charset=utf-8,${encodeURIComponent(contentHTML)}`,
-							has_interactive: false,
-							has_embedded_websites: false,
-							has_external_posts: false,
-							poster: {
-								username: p.author || `${platform}_user`,
-								user_photo: p.author_photo || `/media/site_images/default-${platform}-user-icon.png`,
-								profile_url: platform === 'reddit' ? `https://www.reddit.com/user/${username}` :
-											platform === 'bluesky' ? `https://bsky.app/profile/${p.author}` :
-											p.url
-							},
-							channel: p.channel || platform,
-							source: sourceName,
-							upvotes: externalScore, //Equivalent to upvotes
-							downvotes: 0,
-							views: 0,
-							replies: p.replies || 0,
-							is_saved: false,
-							has_upvoted: false,
-							has_downvoted: false,
-						};
-					});
-				})
-			);
-			//console.log("externalPostsArrays length:", externalPostsArrays.length);
-			const allExternalPosts = externalPostsArrays.flat();
-			posts = [...posts.map(p => ({ ...(p.dataValues || p), isExternal: false })), ...allExternalPosts];
+			const externalAccesses = await ExternalPostsAccess.findAll({
+				where: { user_id: userId },
+				order: [['rank_hotness', 'DESC']],
+				attributes: ['post_id'],
+				limit: limit,
+				offset: offset,
+				raw: true
+			})
+			const unifiedIds = externalAccesses.map(a => a.post_id);
+			let externalPosts = [];
+			if (unifiedIds.length) {
+				externalPosts = await ExternalPosts.findAll({
+					where: { post_id: unifiedIds },
+					raw: true
+				});
+			}
+			const formattedExternal = externalPosts.map(p => {
+				const mediaParsed = typeof p.media === 'string' ? JSON.parse(p.media) : p.media;
+				const sourceName = p.source === 'reddit' ? 'Reddit' : p.source === 'bluesky' ? 'Bluesky' : 'Mastodon';
+				const username = p.source === 'reddit' ? (p.author || '').replace('u/','') : p.author;
+				const externalScore = p.score ?? 0;
+				return {
+					...p,
+					isExternal: true,
+					created_at: p.created_at_remote,
+					content: `data:text/html;charset=utf-8,${encodeURIComponent(
+						p.source === 'reddit'
+							? generateRedditContentHTML(p.text_body, mediaParsed)
+							: p.source === 'bluesky'
+							? generateBlueskyContentHTML(p.text_body, mediaParsed)
+							: generateMastodonContentHTML(p.text_body, mediaParsed)
+					)}`,
+					has_interactive: false,
+					has_embedded_websites: false,
+					has_external_posts: false,
+					poster: {
+						username: p.author || `${p.source}_user`,
+						user_photo: p.author_photo || `/media/site_images/default-${p.source}-user-icon.png`,
+						profile_url: p.source === 'reddit'
+							? `https://www.reddit.com/user/${username}`
+							: p.source === 'bluesky'
+							? `https://bsky.app/profile/${p.author}`
+							: p.url
+					},
+					channel: p.channel || p.source,
+					source: sourceName,
+					upvotes: externalScore,
+					downvotes: 0,
+					views: 0,
+					replies: p.replies || 0,
+					is_saved: false,
+					has_upvoted: false,
+					has_downvoted: false
+				};
+			});
+			console.log("formattedExternal.length:", formattedExternal.length);
+			posts = [...posts.map(p => ({ ...(p.dataValues || p), isExternal: false })), ...formattedExternal];
         } else if (locationId === "explore") {
             const postIds = await Posts.findAll({
                 attributes: ['post_id'],
@@ -394,6 +384,7 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
 		let postEmbedding = [];
 		try {
 			const logStart = Date.now();
+			console.log("posts.length:", posts.length);
 			for (const post of posts) {
 				postEmbedding = post.embeddings;
 				//Content type filtering
