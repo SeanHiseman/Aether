@@ -421,7 +421,6 @@ router.post("/create_post", standardLimiter, authenticateCheck, checkStorageLimi
 
 router.post("/explore_posts", standardLimiter, async (req, res) => {
     try {
-        const logStart = Date.now();
         const { followedFeedIds, recentUpvotes, limit = 100, offset = 0 } = req.body;
         const viewerId = req?.session?.viewer_id || null;
         const includeOptions = [{
@@ -462,8 +461,6 @@ router.post("/explore_posts", standardLimiter, async (req, res) => {
             recentUpvotes,
             viewerId,
         });
-        const logEnd = Date.now();
-        console.log("explore_posts total ms:", logEnd - logStart);
         res.status(200).json({ posts: posts, hasMore: posts.length >= limit });
     } catch (error) {
         console.error(new Date().toISOString(), '/explore_posts error:', error);

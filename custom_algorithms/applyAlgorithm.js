@@ -2,7 +2,7 @@ import { Algorithms, AlgorithmLocations } from "./algorithms.js";
 import { CosineSimilarity } from "../functions/calculation/cosineSimilarity.js";
 import { DeepFeedContent, Posts, PostVotes, SavedPosts } from "../models/relationships.js";
 import { ExternalPosts, ExternalPostsAccess } from "../models/content.js";
-import { generateBlueskyContentHTML, generateMastodonContentHTML, generateRedditContentHTML } from "../routes/socialConnect.js";
+import { generateBlueskyContentHTML, generateMastodonContentHTML, generateRedditContentHTML, processAccount } from "../routes/socialConnect.js";
 import { Op } from 'sequelize';
 import Sequelize from 'sequelize';
 
@@ -197,14 +197,42 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
 			});
 			const orderMap = new Map(orderedIds.map((id, i) => [id, i]));
 			posts.sort((a, b) => orderMap.get(a.post_id) - orderMap.get(b.post_id));
-			const externalAccesses = await ExternalPostsAccess.findAll({
-				where: { user_id: userId },
-				order: [['rank_hotness', 'DESC']],
-				attributes: ['post_id'],
-				limit: limit,
-				offset: offset,
-				raw: true
-			})
+			// Fetch external posts only if user has connected accounts
+			let externalAccesses = [];
+			if (connectedAccounts.length > 0) {
+				externalAccesses = await ExternalPostsAccess.findAll({
+					where: { user_id: userId },
+					order: [['rank_hotness', 'DESC']],
+					attributes: ['post_id'],
+					limit: limit,
+					offset: offset,
+					raw: true
+				});
+				// Refresh logic: if no external posts found, fetch from remote APIs
+				if (!externalAccesses.length && offset === 0) {
+					console.log('No external posts found, fetching from remote APIs');
+					await Promise.all(connectedAccounts.map(account => 
+						processAccount({
+							platform: account.platform,
+							user_id: userId,
+							access_token: account.access_token,
+							instance_url: account.instance_url
+						}).catch(error => {
+							console.error(`Error processing ${account.platform}:`, error);
+							return null;
+						})
+					));
+					externalAccesses = await ExternalPostsAccess.findAll({
+						where: { user_id: userId },
+						order: [['rank_hotness', 'DESC']],
+						attributes: ['post_id'],
+						limit: limit,
+						offset: offset,
+						raw: true
+					});
+					console.log(`External posts after refresh: ${externalAccesses.length}`);
+				}
+			}
 			const unifiedIds = externalAccesses.map(a => a.post_id);
 			let externalPosts = [];
 			if (unifiedIds.length) {
@@ -252,9 +280,9 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
 					has_downvoted: false
 				};
 			});
-			console.log("formattedExternal.length:", formattedExternal.length);
+			//console.log("formattedExternal.length:", formattedExternal.length);
 			posts = [...posts.map(p => ({ ...(p.dataValues || p), isExternal: false })), ...formattedExternal];
-        } else if (locationId === "explore") {
+		}else if (locationId === "explore") {
             const postIds = await Posts.findAll({
                 attributes: ['post_id'],
                 where: {
@@ -384,7 +412,7 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
 		let postEmbedding = [];
 		try {
 			const logStart = Date.now();
-			console.log("posts.length:", posts.length);
+			//console.log("posts.length:", posts.length);
 			for (const post of posts) {
 				postEmbedding = post.embeddings;
 				//Content type filtering
@@ -544,8 +572,8 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
 			}
 			//console.log("finalPosts:", finalPosts);
 			//console.log("finalPosts length:", finalPosts.length);
-			const logEnd = Date.now();
-			console.log("post processing time ms:", logEnd - logStart);
+			//const logEnd = Date.now();
+			//console.log("post processing time ms:", logEnd - logStart);
 		} catch (error) {
 			console.error(new Date().toISOString(), "error applying algorithm to posts:", error);
 			finalPosts = posts; //Return initial post batch if issue applying algorithm

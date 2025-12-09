@@ -23,6 +23,7 @@ const ExternalPosts = sequelize.define('ExternalPosts', {
     has_text: { type: BOOLEAN, defaultValue: false },
 	has_images: { type: BOOLEAN, defaultValue: false },
 	has_videos: { type: BOOLEAN, defaultValue: false },
+    has_embedded_websites: { type: BOOLEAN, defaultValue: false },
 	score: { type: INTEGER, allowNull: true },
     replies: { type: INTEGER, allowNull: true },
 	rank_hotness: { type: DataTypes.DOUBLE, allowNull: true, defaultValue: null },

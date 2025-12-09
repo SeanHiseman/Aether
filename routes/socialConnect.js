@@ -29,15 +29,15 @@ function ua() {
 async function fetchAndProcessPosts(platform, fetchConfig, user_id) {
 	try {
 		const { url, headers, mapper, htmlGenerator, limit } = fetchConfig;
+		console.log("fetching posts for:", platform);
 		const resp = await fetch(url, { headers });
+		console.log("fetchAndProcessPosts response:", resp);
 		const data = await resp.json();
 		let mappedPosts = [];
 		let nextToken = null;
 		switch (platform) {
 			case 'bluesky':
-				console.log("getting bluesky posts");
 				if (!data || !data.feed) {
-					console.error('Bluesky timeline missing feed field', data);
 					return [];
 				}
 				mappedPosts = data.feed.map(item => {
@@ -50,12 +50,17 @@ async function fetchAndProcessPosts(platform, fetchConfig, user_id) {
 					});
 					return { ...p, rank_hotness };
 				});
+				{
+					const localSeen = new Set();
+					mappedPosts = mappedPosts.filter(p => {
+						if (localSeen.has(p.post_id)) return false;
+						localSeen.add(p.post_id);
+						return true;
+					});
+				}
 				nextToken = { cursor: data.cursor };
-				console.log("bluesky mapped posts.length:", mappedPosts.length);
-				console.log("bluesky next cursor:", data.cursor);
 				break;
 			case 'reddit':
-				console.log("getting reddit posts");
 				const children = data.data.children.filter(c => c.kind === 't3');
 				mappedPosts = children.map(c => {
 					const p = mapper(c);
@@ -67,12 +72,17 @@ async function fetchAndProcessPosts(platform, fetchConfig, user_id) {
 					});
 					return { ...p, rank_hotness };
 				});
+				{
+					const localSeen = new Set();
+					mappedPosts = mappedPosts.filter(p => {
+						if (localSeen.has(p.post_id)) return false;
+						localSeen.add(p.post_id);
+						return true;
+					});
+				}
 				nextToken = { after: data.data.after };
-				console.log("reddit mapped posts.length:", mappedPosts.length);
-				console.log("reddit next after:", data.data.after);
 				break;
 			case 'mastodon':
-				console.log("getting mastodon posts");
 				mappedPosts = data.map(t => {
 					const p = mapper(t, fetchConfig.instance);
 					const rank_hotness = computeHotness({
@@ -83,24 +93,43 @@ async function fetchAndProcessPosts(platform, fetchConfig, user_id) {
 					});
 					return { ...p, rank_hotness };
 				});
+				{
+					const localSeen = new Set();
+					mappedPosts = mappedPosts.filter(p => {
+						if (localSeen.has(p.post_id)) return false;
+						localSeen.add(p.post_id);
+						return true;
+					});
+				}
 				if (mappedPosts.length > 0) {
 					nextToken = { max_id: mappedPosts[mappedPosts.length - 1].source_post_id };
 				}
-				console.log("mastodon mapped posts.length:", mappedPosts.length);
-				console.log("mastodon next max_id:", nextToken?.max_id);
 				break;
 		}
-		console.log(`About to query existing posts for ${platform}`);
 		const existing = await ExternalPosts.findAll({
 			where: { post_id: mappedPosts.map(m => m.post_id) },
 			attributes: ['post_id']
 		});
-		console.log(`Found ${existing.length} existing posts`); 
 		const existingIds = new Set(existing.map(e => e.post_id));
 		const newPosts = mappedPosts.filter(p => !existingIds.has(p.post_id));
-		if (newPosts.length === 0) {
-			return mappedPosts;
-		}
+		console.log("fetchAndProcessPosts newPosts.length:", newPosts.length);
+		const existingToken = await PaginationTokens.findOne({
+            where: { user_id, platform }
+        });
+        const tokenId = existingToken?.id || v4();
+		console.log("tokenId:", tokenId);
+        if (newPosts.length === 0) {
+            if (nextToken) {
+                await PaginationTokens.upsert({
+                    id: tokenId,
+                    user_id,
+                    platform,
+                    ...nextToken,
+                    updated_at: new Date()
+                });
+            }
+            return newPosts;
+        }
 		const embedder = await getEmbedder();
 		const enriched = await Promise.all(newPosts.map(async mapped => {
 			const html = htmlGenerator(mapped.text_body, mapped.media);
@@ -137,6 +166,7 @@ async function fetchAndProcessPosts(platform, fetchConfig, user_id) {
 			};
 			return post;
 		}));
+		console.log("enriched.length:", enriched.length);
 		const updateFields = [
 			'source_post_id', 'title', 'text_body', 'text_length', 'word_count', 
 			'image_count', 'video_count', 'has_text', 'has_images', 'has_videos',
@@ -144,32 +174,33 @@ async function fetchAndProcessPosts(platform, fetchConfig, user_id) {
 			'fetched_at', 'created_at_remote', 'expired', 'channel', 'author',
 			'author_photo', 'url', 'media'
 		];
-		//console.log(`Attempting to insert ${enriched.length} posts for ${platform}`);
-		//console.log('Keys in enriched object:', Object.keys(enriched[0]).sort());
-		//console.log('Model attributes:', Object.keys(ExternalPosts.rawAttributes).sort());
-		console.log(enriched.length, platform, "posts to add");
-		await ExternalPosts.bulkCreate(enriched, {
-			updateOnDuplicate: updateFields,
-			logging: false
-		});
 		try {
-			console.log("adding posts to external posts access for:", platform);
-			await ExternalPostsAccess.bulkCreate(
-				enriched.map(p => ({ 
-					id: v4(), 
-					post_id: p.post_id, 
-					source: platform, 
-					user_id, 
-					rank_hotness: p.rank_hotness,
-					created_at: new Date() 
-				})),
-				{ ignoreDuplicates: true }
-			);
-			console.log(platform, "posts added to epa succesfully");
+			await ExternalPosts.bulkCreate(enriched, {
+				updateOnDuplicate: updateFields,
+				logging: false
+			});
 		} catch (error) {
-			console.log("error adding to epa for:", platform, error);
+			console.log("error creating external posts for", platform, error);
 		}
-		//console.log(`Processed ${enriched.length} new ${platform} posts for user ${user_id}`);
+		//dedupe before creating access rows
+		const accessSeen = new Set();
+		const accessRows = enriched.filter(p => {
+			if (accessSeen.has(p.post_id)) return false;
+			accessSeen.add(p.post_id);
+			return true;
+		}).map(p => ({
+			id: v4(),
+			post_id: p.post_id,
+			source: platform,
+			user_id,
+			rank_hotness: p.rank_hotness,
+			created_at: new Date()
+		}));
+		try {
+			await ExternalPostsAccess.bulkCreate(accessRows, { ignoreDuplicates: true });
+		} catch (error) {
+			console.log("error creating external posts for", platform, error);
+		}
 		if (nextToken) {
 			await PaginationTokens.upsert({
 				id: v4(),
@@ -178,25 +209,25 @@ async function fetchAndProcessPosts(platform, fetchConfig, user_id) {
 				...nextToken,
 				updated_at: new Date()
 			});
-			console.log(`Saved pagination token for ${platform}`);
 		}
-		return mappedPosts;
+		return newPosts;
 	} catch (error) {
 		console.error(new Date().toISOString(), `fetchAndProcessPosts ${platform} error:`, error);
 		throw error;
 	}
 }
 
-async function processAccount(account) {
+export async function processAccount(account) {
 	try {
-		const { platform, user_id, access_token, instance_url } = account;
-		if (!access_token) {
-			console.log(`No access token for ${platform} account (user: ${user_id})`);
-			return;
-		}
-		const paginationToken = await PaginationTokens.findOne({
+		const { access_token, instance_url, platform, user_id } = account;
+		console.log("account:", account);
+		const accessCount = await ExternalPostsAccess.count({ where: { user_id, source: platform } });
+		let paginationToken = await PaginationTokens.findOne({
 			where: { user_id, platform }
 		});
+		if (accessCount === 0) {
+			paginationToken = null;
+		}
 		const configs = {
 			bluesky: {
 				url: paginationToken?.cursor 
@@ -427,7 +458,6 @@ function mapRedditToExternal(child) {
 	} else if (d.preview?.images) {
 		media = d.preview.images;
 	}
-	//Use snoovatar_img first, then author_icon_img, then a fallback default
 	const authorPhoto = 'https://www.redditstatic.com/avatars/defaults/v2/avatar_default_0.png';
 	return {
 		post_id: `reddit:${d.id}`,
@@ -500,6 +530,7 @@ router.post('/auth/bluesky', authenticateCheck, async (req, res) => {
 		};
 		try {
 			const mappedPosts = await fetchAndProcessPosts('bluesky', config, req.user.user_id);
+			mappedPosts.sort((a, b) => b.rank_hotness - a.rank_hotness);
 			//Return posts immediately
 			res.status(200).json({ 
 				success: true,
@@ -626,6 +657,7 @@ router.post('/disconnect_external_account', authenticateCheck, async (req, res) 
         }
         await ConnectedAccounts.destroy({ where: { user_id: req.user.user_id, platform }, transaction });
 		await ExternalPostsAccess.destroy({ where: { user_id: req.user.user_id }, transaction });
+		await PaginationTokens.destroy({ where: { user_id: req.user.user_id }, transaction });
 		await transaction.commit();
         return res.status(200).json({ success: true });
     } catch (error) {
@@ -684,6 +716,7 @@ router.get('/reddit/callback', authenticateCheck, async (req, res) => {
 		};
 		try {
 			const mappedPosts = await fetchAndProcessPosts('reddit', config, user_id);
+			mappedPosts.sort((a, b) => b.rank_hotness - a.rank_hotness);
 			const postsData = mappedPosts.map(p => ({
 				post_id: p.post_id,
 				title: p.title,
@@ -768,6 +801,7 @@ router.get('/mastodon/callback', authenticateCheck, async (req, res) => {
 		};
 		try {
 			const mappedPosts = await fetchAndProcessPosts('mastodon', config, user_id);
+			mappedPosts.sort((a, b) => b.rank_hotness - a.rank_hotness);
 			const postsData = mappedPosts.map(p => ({
 				post_id: p.post_id,
 				title: p.title,
@@ -812,167 +846,135 @@ router.get('/mastodon/callback', authenticateCheck, async (req, res) => {
 	}
 });
 
-router.get('/bluesky/feed', authenticateCheck, async (req, res) => {
-	try {
-		const limit = Math.min(Number(req.query.limit) || 100, 100);
-		const offset = Number(req.query.offset) || 0; 
-		console.log("bluesky offset:", offset);
-		const accesses = await ExternalPostsAccess.findAll({
-			where: { user_id: req.user.user_id, source: 'bluesky' },
-			attributes: ['post_id'],
-			order: [['rank_hotness','DESC']],
-			limit,
-			offset
-		});
-		const postIds = accesses.map(a => a.post_id).filter(Boolean);
-		if (!postIds.length) {
-			return res.status(200).json({ success: true, items: [] });
-		}
-		const posts = await ExternalPosts.findAll({
-			where: { post_id: postIds, source: 'bluesky' },
-			order: [['rank_hotness','DESC']]
-		});
-		const items = posts.map(p => {
-			const media = typeof p.media === 'string' ? JSON.parse(p.media) : p.media;
-			const html = generateBlueskyContentHTML(p.text_body, media);
-			return {
-				post_id: p.post_id,
-				title: p.title,
-				content: `data:text/html;charset=utf-8,${encodeURIComponent(html)}`,
-				created_at: p.created_at_remote,
-				upvotes: 0,
-				downvotes: 0,
-				views: 0,
-				replies: p.replies ?? 0,
-				score: p.score || 0,
-				is_saved: false,
-				has_upvoted: false,
-				has_downvoted: false,
-				poster: {
-					username: p.author || 'bluesky_user',
-					user_photo: p.author_photo || '/media/site_images/default-bluesky-user-icon.png',
-					profile_url: p.author ? `https://bsky.app/profile/${p.author}` : null
-				},
-				channel: p.channel,
-				url: p.url,
-				source: 'Bluesky',
-				rank_hotness: p.rank_hotness
-			};
-		});
-		res.status(200).json({ success: true, items });
-	} catch (error) {
-		console.error(new Date().toISOString(), '/bluesky/feed error:', error);
-		res.status(400).json({ success: false });
-	}
-});
+const FEED_CONFIG = {
+    bluesky: {
+        generator: generateBlueskyContentHTML,
+        defaultIcon: '/media/site_images/default-bluesky-user-icon.png',
+        sourceName: 'Bluesky',
+        getProfileUrl: (p) => p.author ? `https://bsky.app/profile/${p.author}` : null,
+        getChannel: (p) => p.channel,
+        mapExtras: (p) => ({ title: p.title }) //Bluesky uses title
+    },
+    reddit: {
+        generator: generateRedditContentHTML,
+        defaultIcon: '/media/site_images/default-reddit-user-icon.png',
+        sourceName: 'Reddit',
+        getProfileUrl: (p) => {
+            const username = (p.author || '').replace('u/', '');
+            return `https://www.reddit.com/user/${username}`;
+        },
+        getChannel: (p) => p.channel || 'reddit',
+        mapExtras: (p) => ({ 
+            title: p.title,
+            upvotes: p.score ?? 0 //Reddit maps score to upvotes
+        })
+    },
+    mastodon: {
+        generator: generateMastodonContentHTML,
+        defaultIcon: null, //Add default if you have one, or handle logic below
+        sourceName: 'Mastodon',
+        getProfileUrl: (p) => p.url,
+        getChannel: (p) => p.channel,
+        mapExtras: (p) => ({ 
+            title: null, //Mastodon usually has no title
+            rank_hotness: [p.rank_hotness] //Preserving your original array format
+        })
+    }
+};
 
-router.get('/reddit/feed', authenticateCheck, async (req, res) => {
-	try {
-		const { limit = '100', offset = '0' } = req.query;
-		console.log("reddit offset:", offset);
-		const accesses = await ExternalPostsAccess.findAll({
-			where: { user_id: req.user.user_id, source: 'reddit' },
-			attributes: ['post_id'],
-			order: [['rank_hotness', 'DESC']],
-			offset: Number(offset),
-			limit: Math.min(Number(limit) || 100, 100)
-		});
-		const postIds = accesses.map(a => a.post_id).filter(Boolean);
-		if (!postIds.length) {
-			return res.status(200).json({ success: true, after: null, before: null, items: [] });
-		}
-		const posts = await ExternalPosts.findAll({
-			where: { post_id: postIds, source: 'reddit' },
-			order: [['rank_hotness','DESC']],
-			limit: Math.min(Number(limit) || 100, 100)
-		});
-		const out = posts.map(p => {
-			const media = typeof p.media === 'string' ? JSON.parse(p.media) : p.media;
-			const contentHTML = generateRedditContentHTML(p.text_body, media);
-			const username = (p.author || '').replace('u/','');
-			return {
-				post_id: p.post_id,
-				title: p.title,
-				content: `data:text/html;charset=utf-8,${encodeURIComponent(contentHTML)}`,
-				created_at: p.created_at_remote || new Date(),
-				upvotes: p.score ?? 0,
-				downvotes: 0,
-				views: 0,
-				replies: p.replies ?? 0,
-				score: p.score || 0,
-				is_saved: false,
-				has_upvoted: false,
-				has_downvoted: false,
-				poster: {
-					username: p.author || 'reddit_user',
-					user_photo: p.author_photo || '/media/site_images/default-reddit-user-icon.png',
-					profile_url: `https://www.reddit.com/user/${username}`
-				},
-				channel: p.subreddit || 'reddit',
-				url: p.url,
-				source: 'Reddit',
-				rank_hotness: p.rank_hotness
-			};
-		});
-		res.status(200).json({ success: true, after: null, before: null, items: out });
-	} catch (error) {
-		console.error(new Date().toISOString(), '/reddit/feed error:', error);
-		res.status(400).json({ success: false });
-	}
-});
-
-router.get('/mastodon/feed', authenticateCheck, async (req, res) => {
-	try {
-		const limit = Math.min(Number(req.query.limit) || 40, 40);
-		const offset = Number(req.query.offset) || 0;
-		console.log("mastodon offset:", offset);
-		const accesses = await ExternalPostsAccess.findAll({
-			where: { user_id: req.user.user_id, source: 'mastodon' },
-			attributes: ['post_id'],
-			order: [['rank_hotness','DESC']],
-			limit,
-			offset
-		});
-		const postIds = accesses.map(a => a.post_id).filter(Boolean);
-		if (!postIds.length) {
-			return res.status(200).json({ success: true, items: [] });
-		}
-		const posts = await ExternalPosts.findAll({
-			where: { post_id: postIds, source: 'mastodon' },
-			order: [['rank_hotness','DESC']]
-		});
-		const items = posts.map(p => {
-			const media = typeof p.media === 'string' ? JSON.parse(p.media) : p.media;
-			const html = generateMastodonContentHTML(p.text_body, media);
-			return {
-				post_id: p.post_id,
-				title: null,
-				content: `data:text/html;charset=utf-8,${encodeURIComponent(html)}`,
-				created_at: p.created_at_remote,
-				upvotes: 0,
-				downvotes: 0,
-				views: 0,
-				replies: p.replies,
-				score: p.score || 0,
-				is_saved: false,
-				has_upvoted: false,
-				has_downvoted: false,
-				poster: {
-					username: p.author,
-					user_photo: p.author_photo,
-					profile_url: p.url
-				},
-				channel: p.channel,
-				url: p.url,
-				source: 'Mastodon',
-				rank_hotness: [p.rank_hotness]
-			};
-		});
-		res.status(200).json({ success: true, items });
-	} catch (error) {
-		console.error(new Date().toISOString(), '/mastodon/feed error:', error);
-		res.status(400).json({ success: false });
-	}
+//Combined route for Bluesky, Mastodon, and Reddit posts
+router.get('/:platform/feed', authenticateCheck, async (req, res) => {
+    const { platform } = req.params;
+    //Allowed platforms
+    if (!['bluesky', 'reddit', 'mastodon'].includes(platform)) {
+        return res.status(404).json({ success: false, message: 'Invalid platform' });
+    }
+    const config = FEED_CONFIG[platform];
+    try {
+        const limit = Math.min(Number(req.query.limit) || 100, 100);
+        const offset = Number(req.query.offset) || 0;
+        let accesses = await ExternalPostsAccess.findAll({
+            where: { user_id: req.user.user_id, source: platform },
+            attributes: ['post_id'],
+            order: [['rank_hotness', 'DESC']],
+            limit,
+            offset
+        });
+        //Refresh logic: If no local posts, fetch from remote API
+        if (!accesses.length) {
+            console.log(`getting external posts in /${platform}/feed`);
+            const account = await ConnectedAccounts.findOne({
+                where: { user_id: req.user.user_id, platform: platform }
+            });
+            if (account) {
+                console.log(`${platform} account found, getting posts`);
+                //Trigger background/process logic
+                await processAccount({
+                    platform: platform,
+                    user_id: req.user.user_id,
+                    access_token: account.access_token,
+                    instance_url: account.instance_url
+                });
+                //Re-fetch accesses after refresh
+                try {
+                    console.log(`getting ${platform} accesses`);
+                    accesses = await ExternalPostsAccess.findAll({
+                        where: { user_id: req.user.user_id, source: platform },
+                        attributes: ['post_id'],
+                        order: [['rank_hotness', 'DESC']],
+                        limit,
+                        offset
+                    });
+                } catch (error) {
+                    console.log(`${platform} accesses error:`, error);
+                }
+                console.log(`${platform} accesses.length after refresh:`, accesses.length);
+            }
+        }
+        const postIds = accesses.map(a => a.post_id).filter(Boolean);
+        console.log(`${platform} postIds.length:`, postIds.length);
+        if (!postIds.length) {
+            const extraPayload = platform === 'reddit' ? { after: null, before: null } : {};
+            return res.status(200).json({ success: true, items: [], ...extraPayload });
+        }
+        const posts = await ExternalPosts.findAll({
+            where: { post_id: postIds, source: platform },
+            order: [['rank_hotness', 'DESC']]
+        });
+        const items = posts.map(p => {
+            const media = typeof p.media === 'string' ? JSON.parse(p.media) : p.media;
+            const html = config.generator(p.text_body, media);
+            const extras = config.mapExtras ? config.mapExtras(p) : {};
+            return {
+                post_id: p.post_id,
+                content: `data:text/html;charset=utf-8,${encodeURIComponent(html)}`,
+                created_at: p.created_at_remote || new Date(),
+                upvotes: 0,
+                downvotes: 0,
+                views: 0,
+                replies: p.replies ?? 0,
+                score: p.score || 0,
+                is_saved: false,
+                has_upvoted: false,
+                has_downvoted: false,
+                poster: {
+                    username: p.author || `${platform}_user`,
+                    user_photo: p.author_photo || config.defaultIcon,
+                    profile_url: config.getProfileUrl(p)
+                },
+                channel: config.getChannel(p),
+                url: p.url,
+                source: config.sourceName,
+                rank_hotness: p.rank_hotness,
+                ...extras
+            };
+        });
+        const extraPayload = platform === 'reddit' ? { after: null, before: null } : {};
+        res.status(200).json({ success: true, items, ...extraPayload });
+    } catch (error) {
+        console.error(new Date().toISOString(), `/${platform}/feed error:`, error);
+        res.status(400).json({ success: false });
+    }
 });
 
 router.post('/reddit/expire', authenticateCheck, async (req, res) => {
@@ -997,7 +999,7 @@ router.post('/reddit/expire', authenticateCheck, async (req, res) => {
 });
 
 //Get external posts for active users
-cron.schedule('*/10000 * * * *', async () => { //Runs every 10 minutes
+cron.schedule('*/10 * * * *', async () => { //Runs every 10 minutes
 	try {
 		console.log(new Date().toISOString(), 'Starting external posts update cron job');
 		const batchSize = 100;

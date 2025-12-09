@@ -12,6 +12,7 @@ export default function SocialFeedPage({ platform }) {
 	const { isAuthenticated } = useContext(AuthContext);
 	const [hasMore, setHasMore] = useState(true);
 	const [loading, setLoading] = useState(true);
+	const [loadingMore, setLoadingMore] = useState(false);
 	const [offset, setOffset] = useState(0);
 	const [posts, setPosts] = useState([]);
 	const location = useLocation();
@@ -27,6 +28,9 @@ export default function SocialFeedPage({ platform }) {
 		}
 		if (isFetchingRef.current) return;
 		isFetchingRef.current = true;
+		if (isNextPage) {
+			setLoadingMore(true);
+		}
 		const fetchLimit = platform === 'mastodon' ? 40 : 100;
 		try {
 			const response = await api.get(`/${platform}/feed`, {
@@ -41,16 +45,18 @@ export default function SocialFeedPage({ platform }) {
 			} else {
 				setPosts(items);
 			}
-			if (items.length < fetchLimit) {
+			const returnedCount = items.length;
+			if (returnedCount === 0) {
 				setHasMore(false);
 			} else {
-				setOffset(prev => prev + fetchLimit);
+				setOffset(prev => prev + returnedCount);
 			}
 		} catch (error) {
 			setErrorMessage('Error getting posts');
 		} finally {
 			isFetchingRef.current = false;
 			setLoading(false);
+			setLoadingMore(false);
 		}
 	}
 
@@ -61,6 +67,7 @@ export default function SocialFeedPage({ platform }) {
 			setOffset(0);
 			setHasMore(true);
 			setPosts([]);
+			setLoading(true);
 		}
 	}, [platform]);
 
@@ -79,6 +86,8 @@ export default function SocialFeedPage({ platform }) {
 					try {
 						const parsedPosts = JSON.parse(cachedPosts);
 						setPosts(parsedPosts);
+						console.log("setting offset to:", parsedPosts.length);
+						setOffset(parsedPosts.length);
 						setLoading(false);
 						//Clean up cache and URL
 						sessionStorage.removeItem(cacheKey);
@@ -155,11 +164,18 @@ export default function SocialFeedPage({ platform }) {
 								<ExternalPostWidget post={post} />
 							</div>
 						))}
+						{loadingMore && (
+							<p className="large-text faded-text">Loading more posts...</p>
+						)}
+						{!hasMore && posts.length > 0 && (
+							<p className="large-text faded-text">No more posts to load</p>
+						)}
 					</div>
 				)}
 			</div>
 			<aside className="right-aside">
 				<p className="large-text bold">{capitalise(platform) || "Site not found"}</p>
+				<p className="small-text faded-text">Apply algorithm coming soon...</p>
 				{/*<AlgorithmSelector display={false} isAuthenticated={isAuthenticated} locationId={platform} />*/}
 			</aside>
 		</div>

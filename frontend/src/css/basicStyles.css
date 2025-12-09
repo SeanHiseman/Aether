@@ -6,7 +6,7 @@ a {
 body, html {
 	background-color: var(--darkest);
 	color: var(--lightest);
-	font-family: Arial, sans-serif;
+	font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
 	font-size: var(--small-text);
 	height: 100%;
 	margin: 0;

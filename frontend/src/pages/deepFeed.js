@@ -172,28 +172,14 @@ const DeepFeed = () => {
         queryKey: ['deepFeedPosts', deep_feed_id],
         queryFn: getPosts,
         getNextPageParam: (lastPage, allPages) => {
-            console.log("=== getNextPageParam called ===");
-            console.log("lastPage:", lastPage);
-            console.log("lastPage is array:", Array.isArray(lastPage));
-            console.log("lastPage.length:", lastPage?.length);
-            console.log("allPages.length:", allPages.length);
-            console.log("FETCH_LIMIT:", FETCH_LIMIT);
-            
             if (!Array.isArray(lastPage)) {
-                console.log("❌ lastPage is not an array, returning undefined");
                 return undefined;
             }
-            
-            // Continue fetching as long as we got ANY posts
-            // Only stop when we get 0 posts
+            //Only stop when 0 posts
             if (lastPage.length === 0) {
-                console.log("❌ No posts returned, no more pages");
                 return undefined;
             }
-            
             const nextOffset = allPages.length * FETCH_LIMIT;
-            console.log("✅ Got", lastPage.length, "posts, will fetch more at offset:", nextOffset);
-            
             return nextOffset;
         },
         refetchOnWindowFocus: false, //Don't refetch when clicking back to window

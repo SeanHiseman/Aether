@@ -359,3 +359,6 @@ CREATE TABLE `pagination_tokens` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `idx_user_platform` (`user_id`, `platform`)
 );
+
+ALTER TABLE external_posts
+	ADD COLUMN has_embedded_websites BOOLEAN DEFAULT FALSE;
