@@ -362,3 +362,6 @@ CREATE TABLE `pagination_tokens` (
 
 ALTER TABLE external_posts
 	ADD COLUMN has_embedded_websites BOOLEAN DEFAULT FALSE;
+
+ALTER TABLE external_posts
+	ADD COLUMN content TEXT DEFAULT NULL AFTER title;

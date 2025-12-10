@@ -125,7 +125,7 @@ const ExternalPostWidget = ({ post }) => {
 					</button>
 				</div>
 				<a href={post?.url} target="_blank" rel="noopener noreferrer">
-					<p className="small-text feed-channel-link faded-text">View post at: {post?.channel || 'Unknown source'} on {post?.source || 'Unknown site'}</p>
+					<p className="small-text feed-channel-link faded-text">See post at: {post?.channel || 'Unknown source'} on {post?.source || 'Unknown site'}</p>
 				</a>
 				<div className="view-date-container">
 					<p className="small-text faded-text" style={{ margin: '0px', textAlign: 'right' }}>

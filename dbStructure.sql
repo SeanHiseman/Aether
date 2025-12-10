@@ -379,6 +379,7 @@ CREATE TABLE `external_posts` (
   `source` VARCHAR(32) NOT NULL,
   `source_post_id` VARCHAR(128) NOT NULL,
   `title` TEXT DEFAULT NULL,
+  `content` TEXT DEFAULT NULL,
   `text_body` TEXT DEFAULT NULL,
   `text_length` INT DEFAULT NULL,
   `word_count` INT DEFAULT NULL,

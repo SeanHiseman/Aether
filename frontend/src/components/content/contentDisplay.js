@@ -21,8 +21,15 @@ const ContentDisplay = ({ post, isFullscreen = false, onCodeAppChange = () => {}
 		const fetchHtml = async () => {
 			setLoading(true);
 			try {
-				const response = await fetch(content);
-				const htmlText = await response.text();
+				let htmlText;
+				if (content.startsWith('data:text/html')) {
+					//It's a data URI - fetch it
+					const response = await fetch(content);
+					htmlText = await response.text();
+				} else {
+					//It's raw HTML - use it directly
+					htmlText = content;
+				}
 				const parser = new DOMParser();
 				const doc = parser.parseFromString(htmlText, 'text/html');
 				const divs = doc.querySelectorAll('.content-block');

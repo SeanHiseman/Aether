@@ -15,6 +15,7 @@ const ExternalPosts = sequelize.define('ExternalPosts', {
 	source: { type: STRING(32), allowNull: false },
 	source_post_id: { type: STRING(128), allowNull: false },
 	title: { type: TEXT, allowNull: true },
+    content: { type: TEXT, allowNull: true },
 	text_body: { type: TEXT, allowNull: true },
 	text_length: { type: INTEGER, allowNull: true },
 	word_count: { type: INTEGER, allowNull: true },
