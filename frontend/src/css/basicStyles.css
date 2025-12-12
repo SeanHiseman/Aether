@@ -41,6 +41,11 @@ input, textarea, select {
 .button, .dark-button, .dark-button-disabled {
     font-size: var(--small-text);
 }
+.compact {
+    margin: 3px !important;
+    padding: 3px !important;
+    width: auto !important;
+}
 .dark-text {
     color: var(--darkest);
 }

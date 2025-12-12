@@ -28,6 +28,35 @@ function ua() {
 	return 'AetherSocialLocal/0.1 (testing on localhost)';
 }
 
+function escapeHtml(str) {
+	return (str || '').toString()
+		.replace(/&/g, '&amp;')
+		.replace(/</g, '&lt;')
+		.replace(/>/g, '&gt;')
+		.replace(/"/g, '&quot;')
+		.replace(/'/g, '&#39;');
+}
+
+async function fetchUrlPreview(targetUrl) {
+	let controller = new AbortController();
+	let timeoutMs = 4000;
+	let timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+	try {
+		const response = await fetch(targetUrl, { headers: { 'User-Agent': ua() }, redirect: 'follow' });
+		const body = await response.text();
+		clearTimeout(timeoutId);
+		const $ = cheerio.load(body);
+		const description = $('meta[property="og:description"]').attr('content') || $('meta[name="twitter:description"]').attr('content') || $('meta[name="description"]').attr('content') || null;
+		const hostname = new URL(targetUrl).hostname.replace(/^www\./, '');
+		const image = $('meta[property="og:image"]').attr('content') || $('meta[name="twitter:image"]').attr('content') || null;
+		const title = $('meta[property="og:title"]').attr('content') || $('meta[name="twitter:title"]').attr('content') || $('title').text() || null;
+		return { description, hostname, image, title, url: (new URL(targetUrl)).href };
+	} catch (error) {
+		clearTimeout(timeoutId);
+		return null;
+	}
+}
+
 async function fetchAndProcessPosts(platform, fetchConfig, user_id) {
 	try {
 		const { url, headers, mapper, htmlGenerator, limit } = fetchConfig;
@@ -42,6 +71,7 @@ async function fetchAndProcessPosts(platform, fetchConfig, user_id) {
 				if (!data || !data.feed) {
 					return [];
 				}
+				data.feed = data.feed.filter(item => !item.reply); //Avoid returning replies
 				mappedPosts = data.feed.map(item => {
 					const p = mapper(item);
 					const rank_hotness = computeHotness({
@@ -136,8 +166,8 @@ async function fetchAndProcessPosts(platform, fetchConfig, user_id) {
 		const embedder = await getEmbedder();
 		const enriched = await Promise.all(newPosts.map(async mapped => {
 			const html = platform === 'mastodon' 
-				? htmlGenerator(mapped.content, mapped.media)
-				: htmlGenerator(mapped.text_body, mapped.media);
+				? await htmlGenerator(mapped.content, mapped.media)
+				: await htmlGenerator(mapped.text_body, mapped.media);
 			const details = await contentAnalyser.analyseContent(html, mapped.title, embedder);
 			const sentiment_score = details?.sentiment_score ?? 0;
 			const embeddings = details?.embeddings ?? null;
@@ -280,7 +310,7 @@ export async function processAccount(account) {
 	}
 }
 
-export function generateBlueskyContentHTML(textBody, media) {
+export async function generateBlueskyContentHTML(textBody, media) {
 	//console.log("bluesky textBody:", textBody);
 	try {
 		let html = '';
@@ -308,24 +338,38 @@ export function generateBlueskyContentHTML(textBody, media) {
 				`;
 			}
 		}
-		const $ = cheerio.load(textBody || '');
-		const urls = Array.from(new Set($('a[href]').map((i, el) => $(el).attr('href')).get()));
-		for (const u of urls) {
-			const parsedUrl = new URL(u);
-			const iframeHtml = `<iframe class="embedded-website" src="${parsedUrl.href}" style="width:100%; height:100%; border:none;" sandbox="allow-scripts" referrerpolicy="no-referrer"></iframe>`;
-			html += `
-				<div class="content-block code-block" data-blockid="${crypto.randomUUID()}" data-align="center" data-trusted="false">
-					${iframeHtml}
-				</div>
-			`;
-		}
+		//const $ = cheerio.load(textBody || '');
+		//const urls = Array.from(new Set($('a[href]').map((i, el) => $(el).attr('href')).get()));
+		//for (const u of urls) {
+			//const preview = await fetchUrlPreview(u);
+			//if (preview) {
+				//html += `
+					//<div class="content-block link-preview" data-blockid="${crypto.randomUUID()}" data-align="center" data-trusted="false" data-embed-preview="true">
+						//<a href="${preview.url}" target="_blank" rel="noopener noreferrer">
+							//${preview.image ? `<div class="preview-image"><img src="${escapeHtml(preview.image)}" alt="${escapeHtml(preview.title || preview.hostname)}" /></div>` : ''}
+							//<div class="preview-meta">
+								//<h4>${escapeHtml(preview.title || preview.hostname)}</h4>
+								//<p>${escapeHtml(preview.description || '')}</p>
+								//<span class="preview-host">${escapeHtml(preview.hostname)}</span>
+							//</div>
+						//</a>
+					//</div>
+				//`;
+			//} else {
+				//html += `
+					//<div class="content-block link-preview" data-blockid="${crypto.randomUUID()}" data-align="center" data-trusted="false">
+						//<a href="${escapeHtml(u)}" target="_blank" rel="noopener noreferrer">${escapeHtml(u)}</a>
+					//</div>
+				//`;
+			//}
+		//}
 		return html.trim();
 	} catch (error) {
 		console.error(new Date().toISOString(), 'generateBlueskyContentHTML error:', error);
 	}
 }
 
-export function generateRedditContentHTML(textBody, mediaArray) {
+export async function generateRedditContentHTML(textBody, mediaArray) {
 	//console.log("reddit textBody:", textBody);
 	try {
 		const mediaItems = Array.isArray(mediaArray)
@@ -355,17 +399,31 @@ export function generateRedditContentHTML(textBody, mediaArray) {
 				</div>
 			`;
 		}
-		const $ = cheerio.load(textBody || '');
-		const urls = Array.from(new Set($('a[href]').map((i, el) => $(el).attr('href')).get()));
-		for (const u of urls) {
-			const parsedUrl = new URL(u);
-			const iframeHtml = `<iframe class="embedded-website" src="${parsedUrl.href}" style="width:100%; height:100%; border:none;" sandbox="allow-scripts" referrerpolicy="no-referrer"></iframe>`;
-			html += `
-				<div class="content-block code-block" data-blockid="${crypto.randomUUID()}" data-align="center" data-trusted="false">
-					${iframeHtml}
-				</div>
-			`;
-		}
+		//const $ = cheerio.load(textBody || '');
+		//const urls = Array.from(new Set($('a[href]').map((i, el) => $(el).attr('href')).get()));
+		//for (const u of urls) {
+			//const preview = await fetchUrlPreview(u);
+			//if (preview) {
+				//html += `
+					//<div class="content-block link-preview" data-blockid="${crypto.randomUUID()}" data-align="center" data-trusted="false" data-embed-preview="true">
+						//<a href="${preview.url}" target="_blank" rel="noopener noreferrer">
+							//${preview.image ? `<div class="preview-image"><img src="${escapeHtml(preview.image)}" alt="${escapeHtml(preview.title || preview.hostname)}" /></div>` : ''}
+							//<div class="preview-meta">
+								//<h4>${escapeHtml(preview.title || preview.hostname)}</h4>
+								//<p>${escapeHtml(preview.description || '')}</p>
+								//<span class="preview-host">${escapeHtml(preview.hostname)}</span>
+							//</div>
+						//</a>
+					//</div>
+				//`;
+			//} else {
+				//html += `
+					//<div class="content-block link-preview" data-blockid="${crypto.randomUUID()}" data-align="center" data-trusted="false">
+						//<a href="${escapeHtml(u)}" target="_blank" rel="noopener noreferrer">${escapeHtml(u)}</a>
+					//</div>
+				//`;
+			//}
+		//}
 		return html.trim();
 	} catch (error) {
 		console.error(new Date().toISOString(), 'generateRedditContentHTML error:', error);
@@ -373,9 +431,9 @@ export function generateRedditContentHTML(textBody, mediaArray) {
 }
 
 //Mastodon posts use html, not raw text
-export function generateMastodonContentHTML(htmlContent, media) {
-	console.log("generating html for mastodon");
-	//console.log("mastodon htmlContent:", htmlContent);
+export async function generateMastodonContentHTML(htmlContent, media) {
+	console.log("generating html for mastodon from:", htmlContent);
+	console.log("mastodon media", media);
 	try {
 		let out = '';
 		if (htmlContent) {
@@ -385,30 +443,36 @@ export function generateMastodonContentHTML(htmlContent, media) {
 				</div>
 			`;
 		}
-		if (Array.isArray(media)) {
-			for (const m of media) {
+		if (media?.attachments && Array.isArray(media.attachments)) {
+			for (const m of media.attachments) {
 				if (!m.url) continue;
 				out += `
 					<div class="content-block media-block" data-blockid="${crypto.randomUUID()}" data-align="center">
-							<img src="${m.url}" alt="Mastodon media" />
+						<img src="${m.url}" alt="Mastodon media" />
 					</div>
 				`;
 			}
 		}
-		const $ = cheerio.load(htmlContent || '');
-		const urls = Array.from(new Set($('a[href]').map((i, el) => $(el).attr('href')).get()));
-		for (const u of urls) {
-			const parsedUrl = new URL(u);
-			const iframeHtml = `<iframe class="embedded-website" src="${parsedUrl.href}" style="width:100%; height:100%; border:none;" sandbox="allow-scripts" referrerpolicy="no-referrer"></iframe>`;
+		// Handle card (link preview)
+		if (media?.card) {
+			const card = media.card;
 			out += `
-				<div class="content-block code-block" data-blockid="${crypto.randomUUID()}" data-align="center" data-trusted="false">
-					${iframeHtml}
+				<div class="content-block link-preview" data-blockid="${crypto.randomUUID()}" data-align="center" data-trusted="false" data-embed-preview="true">
+					<a href="${escapeHtml(card.url)}" target="_blank" rel="noopener noreferrer">
+						${card.image ? `<div class="preview-image"><img src="${escapeHtml(card.image)}" alt="${escapeHtml(card.title || card.hostname)}" /></div>` : ''}
+						<div class="preview-meta">
+							<h4>${escapeHtml(card.title || card.hostname || card.url)}</h4>
+							${card.description ? `<p>${escapeHtml(card.description)}</p>` : ''}
+							<span class="preview-host">${escapeHtml(card.hostname || new URL(card.url).hostname)}</span>
+						</div>
+					</a>
 				</div>
 			`;
 		}
 		return out.trim();
 	} catch (error) {
-		console.error(new Date().toISOString(), 'generateMastodonContentHTML error:', error)
+		console.error(new Date().toISOString(), 'generateMastodonContentHTML error:', error);
+		return '';
 	}
 }
 
@@ -464,9 +528,18 @@ function mapMastodonToExternal(toot, instance) {
 	//Mastodon api does not provide raw text
 	const htmlContent = toot.content || '';
 	const rawText = htmlContent.replace(/<[^>]*>/g, '').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&#39;/g, "'").replace(/&quot;/g, '"').trim();
-	const media = Array.isArray(toot.media_attachments)
-		? toot.media_attachments.map(m => ({ url: m.url }))
-		: null;
+	const media = {
+		attachments: Array.isArray(toot.media_attachments)
+			? toot.media_attachments.map(m => ({ url: m.url, type: m.type }))
+			: [],
+		card: toot.card ? {
+			url: toot.card.url,
+			title: toot.card.title,
+			description: toot.card.description,
+			image: toot.card.image,
+			hostname: toot.card.provider_name || (toot.card.url ? new URL(toot.card.url).hostname : null)
+		} : null
+	};
 	const postInstance = toot.url ? new URL(toot.url).origin : instance;
 	//console.log("mastodon post instance:", postInstance);
 	return {
@@ -535,19 +608,6 @@ function mapRedditToExternal(child) {
 	};
 }
 
-router.get('/connected-accounts', authenticateCheck, async (req, res) => {
-	try {
-		const accounts = await ConnectedAccounts.findAll({
-			where: { user_id: req.user.user_id },
-			attributes: ['platform', 'handle', 'instance_url', 'extra']
-		});
-		res.status(200).json({ success: true, accounts });
-	} catch (error) {
-		console.error(new Date().toISOString(), '/connected-accounts error:', error);
-		res.status(500).json({ success: false });
-	}
-});
-
 router.post('/auth/bluesky', authenticateCheck, async (req, res) => {
 	try {
 		const { identifier, appPassword } = req.body;
@@ -583,33 +643,34 @@ router.post('/auth/bluesky', authenticateCheck, async (req, res) => {
 			const mappedPosts = await fetchAndProcessPosts('bluesky', config, req.user.user_id);
 			mappedPosts.sort((a, b) => b.rank_hotness - a.rank_hotness);
 			//Return posts immediately
-			res.status(200).json({ 
-				success: true,
-				did: json.did,
-				posts: mappedPosts.map(p => ({
-					post_id: p.post_id,
-					title: p.title,
-					content: (generateBlueskyContentHTML(p.text_body, p.media)),
-					created_at: p.created_at_remote,
-					upvotes: 0,
-					downvotes: 0,
-					views: 0,
-					replies: p.replies ?? 0,
-					score: p.score || 0,
-					is_saved: false,
-					has_upvoted: false,
-					has_downvoted: false,
-					poster: {
-						profile_url: p.author ? `https://bsky.app/profile/${p.author}` : null,
-						user_photo: p.author_photo || '/media/site_images/default-bluesky-user-icon.png',
-						username: p.author || 'bluesky_user'
-					},
-					channel: p.channel,
-					url: p.url,
-					source: 'Bluesky',
-					rank_hotness: p.rank_hotness
-				}))
-			});
+            const postsWithContent = await Promise.all(
+                mappedPosts.map(async (p) => ({
+                    post_id: p.post_id,
+                    title: p.title,
+                    content: await generateBlueskyContentHTML(p.text_body, p.media),
+                    text_body: p.text_body,
+                    created_at: p.created_at_remote,
+                    upvotes: 0,
+                    downvotes: 0,
+                    views: 0,
+                    replies: p.replies ?? 0,
+                    score: p.score || 0,
+                    is_saved: false,
+                    has_upvoted: false,
+                    has_downvoted: false,
+                    poster: {
+                        profile_url: p.author ? `https://bsky.app/profile/${p.author}` : null,
+                        user_photo: p.author_photo || '/media/site_images/default-bluesky-user-icon.png',
+                        username: p.author || 'bluesky_user'
+                    },
+                    channel: p.channel,
+                    url: p.url,
+                    source: 'Bluesky',
+                    rank_hotness: p.rank_hotness,
+					is_external: true
+                }))
+            );
+            res.status(200).json({ success: true, did: json.did, posts: postsWithContent });
 		} catch (fetchError) {
 			res.status(200).json({ success: true, did: json.did, posts: [] });
 		}
@@ -698,29 +759,12 @@ router.post('/auth/mastodon', authenticateCheck, async (req, res) => {
 	}
 });
 
-router.post('/disconnect_external_account', authenticateCheck, async (req, res) => {
-	let transaction;
-    try {
-		transaction = await sequelize.transaction();
-        const { platform } = req.body;
-        if (!platform) {
-            return res.status(400).json({ success: false, error: 'Missing platform' });
-        }
-        await ConnectedAccounts.destroy({ where: { user_id: req.user.user_id, platform }, transaction });
-		await ExternalPostsAccess.destroy({ where: { user_id: req.user.user_id }, transaction });
-		await PaginationTokens.destroy({ where: { user_id: req.user.user_id }, transaction });
-		await transaction.commit();
-        return res.status(200).json({ success: true });
-    } catch (error) {
-		if (transaction) await transaction.rollback();
-        console.error(new Date().toISOString(), '/disconnect_external-account error:', error);
-        res.status(500).json({ success: false });
-    }
-});
-
 router.get('/reddit/callback', authenticateCheck, async (req, res) => {
 	try {
 		const code = req.query.code;
+		if (!code) {
+			return res.redirect('/explore');
+		}
 		const user_id = req.user.user_id;
 		const tokenResponse = await fetch('https://www.reddit.com/api/v1/access_token', {
 			method: 'POST',
@@ -768,10 +812,10 @@ router.get('/reddit/callback', authenticateCheck, async (req, res) => {
 		try {
 			const mappedPosts = await fetchAndProcessPosts('reddit', config, user_id);
 			mappedPosts.sort((a, b) => b.rank_hotness - a.rank_hotness);
-			const postsData = mappedPosts.map(p => ({
+			const postsData = await Promise.all(mappedPosts.map(async (p) => ({
 				post_id: p.post_id,
 				title: p.title,
-				content: generateRedditContentHTML(p.content, p.media),
+				content: await generateRedditContentHTML(p.content, p.media),
 				created_at: p.created_at_remote,
 				upvotes: 0,
 				downvotes: 0,
@@ -789,8 +833,9 @@ router.get('/reddit/callback', authenticateCheck, async (req, res) => {
 				channel: p.channel,
 				url: p.url,
 				source: 'Reddit',
-				rank_hotness: p.rank_hotness
-			}));
+				rank_hotness: p.rank_hotness,
+				is_external: true
+			})));
 			//HTML to contain post data
 			res.send(`
 				<!DOCTYPE html>
@@ -815,6 +860,9 @@ router.get('/reddit/callback', authenticateCheck, async (req, res) => {
 router.get('/mastodon/callback', authenticateCheck, async (req, res) => {
 	try {
 		const code = req.query.code;
+		if (!code) {
+			return res.redirect('/explore');
+		}
 		const user_id = req.user.user_id;
 		const instance = req.session.mastodon_instance;
 		const token_url = `${instance}/oauth/token`;
@@ -853,10 +901,10 @@ router.get('/mastodon/callback', authenticateCheck, async (req, res) => {
 		try {
 			const mappedPosts = await fetchAndProcessPosts('mastodon', config, user_id);
 			mappedPosts.sort((a, b) => b.rank_hotness - a.rank_hotness);
-			const postsData = mappedPosts.map(p => ({
+			const postsData = await Promise.all(mappedPosts.map(async (p) => ({
 				post_id: p.post_id,
 				title: p.title,
-				content: generateMastodonContentHTML(p.content, p.media),
+				content: await generateMastodonContentHTML(p.text_body, p.media),
 				created_at: p.created_at_remote,
 				upvotes: 0,
 				downvotes: 0,
@@ -874,8 +922,9 @@ router.get('/mastodon/callback', authenticateCheck, async (req, res) => {
 				channel: p.channel,
 				url: p.url,
 				source: 'Mastodon',
-				rank_hotness: p.rank_hotness
-			}));
+				rank_hotness: p.rank_hotness,
+				is_external: true
+			})));
 			//HTML to contain post data
 			res.send(`
 				<!DOCTYPE html>
@@ -924,7 +973,7 @@ const FEED_CONFIG = {
         defaultIcon: null, //Add default if you have one, or handle logic below
         sourceName: 'Mastodon',
         getProfileUrl: (p) => p.url,
-        getChannel: (p) => p.channel,
+        getChannel: (p) => p.author, //not p.channel
         mapExtras: (p) => ({ 
             rank_hotness: [p.rank_hotness] //Preserving your original array format
         })
@@ -1007,6 +1056,7 @@ router.get('/:platform/feed', authenticateCheck, async (req, res) => {
                 channel: config.getChannel(p),
                 url: p.url,
                 source: config.sourceName,
+				is_external: true
             };
         });
         const extraPayload = platform === 'reddit' ? { after: null, before: null } : {};
@@ -1014,6 +1064,39 @@ router.get('/:platform/feed', authenticateCheck, async (req, res) => {
     } catch (error) {
         console.error(new Date().toISOString(), `/${platform}/feed error:`, error);
         res.status(400).json({ success: false });
+    }
+});
+
+router.get('/connected-accounts', authenticateCheck, async (req, res) => {
+	try {
+		const accounts = await ConnectedAccounts.findAll({
+			where: { user_id: req.user.user_id },
+			attributes: ['platform', 'handle', 'instance_url', 'extra']
+		});
+		res.status(200).json({ success: true, accounts });
+	} catch (error) {
+		console.error(new Date().toISOString(), '/connected-accounts error:', error);
+		res.status(500).json({ success: false });
+	}
+});
+
+router.post('/disconnect_external_account', authenticateCheck, async (req, res) => {
+	let transaction;
+    try {
+		transaction = await sequelize.transaction();
+        const { platform } = req.body;
+        if (!platform) {
+            return res.status(400).json({ success: false, error: 'Missing platform' });
+        }
+        await ConnectedAccounts.destroy({ where: { user_id: req.user.user_id, platform }, transaction });
+		await ExternalPostsAccess.destroy({ where: { user_id: req.user.user_id }, transaction });
+		await PaginationTokens.destroy({ where: { user_id: req.user.user_id }, transaction });
+		await transaction.commit();
+        return res.status(200).json({ success: true });
+    } catch (error) {
+		if (transaction) await transaction.rollback();
+        console.error(new Date().toISOString(), '/disconnect_external-account error:', error);
+        res.status(500).json({ success: false });
     }
 });
 

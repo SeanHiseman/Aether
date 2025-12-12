@@ -414,6 +414,9 @@
   .border-gray-200 {
     border-color: var(--color-gray-200);
   }
+  .border-top-light {
+    border-top: 1px solid var(--light);
+  }
   .bg-black {
     background-color: var(--color-black);
   }

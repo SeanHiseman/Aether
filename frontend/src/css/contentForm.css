@@ -100,6 +100,64 @@
   width: calc(10 * var(--large-margin));
   z-index: 10;
 }
+.link-preview-block {
+	padding: var(--medium-margin);
+	margin: var(--medium-margin) 0;
+}
+.link-preview-card {
+	display: block;
+	text-decoration: none;
+	border: 1px solid var(--border);
+	border-radius: 12px;
+	overflow: hidden;
+	background-color: var(--dark);
+}
+.link-preview-card:hover {
+	border-color: var(--light);
+}
+.link-preview-image {
+	width: 100%;
+	height: 300px;
+	overflow: hidden;
+	background-color: var(--darkest);
+}
+.link-preview-image img {
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+	display: block;
+}
+.link-preview-content {
+	padding: var(--large-margin) var(--xl-margin);
+}
+.link-preview-title {
+	margin: 0 0 var(--small-margin) 0;
+	font-size: var(--small-text);
+	font-weight: 600;
+	color: var(--lightest);
+	line-height: 1.3;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	display: -webkit-box;
+	-webkit-line-clamp: 2;
+	-webkit-box-orient: vertical;
+}
+.link-preview-description {
+	margin: 0 0 var(--medium-margin) 0;
+	font-size: var(--tiny-text);
+	color: var(--light);
+	line-height: 1.4;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	display: -webkit-box;
+	-webkit-line-clamp: 2;
+	-webkit-box-orient: vertical;
+}
+.link-preview-host {
+	font-size: var(--tiny-text);
+	color: var(--light);
+	text-transform: lowercase;
+}
 .main-content {
   display: flex;
   gap: var(--large-margin);
@@ -145,6 +203,8 @@
 .quill.text-editor { 
   background-color: var(--darkest); 
 }
+
+/*Quill styles*/
 .ql-editor.ql-blank::before { 
   color: var(--light) !important;
   font-size: var(--small-text) !important;

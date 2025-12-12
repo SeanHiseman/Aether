@@ -52,7 +52,7 @@ const ExternalPosts = sequelize.define('ExternalPosts', {
 });
 
 const ExternalPostsAccess = sequelize.define('ExternalPostsAccess', {
-	id: { type: STRING(36), primaryKey: true },
+	id: { type: STRING(255), primaryKey: true },
 	user_id: { type: STRING(36), allowNull: false },
 	post_id: { type: STRING(36), allowNull: false },
     source: { type: STRING(20), allowNull: false },

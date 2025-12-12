@@ -2,18 +2,14 @@ import AlgorithmSelector from "../../algorithms/algorithmSelector";
 import api from '../../api';
 import { AuthContext } from "../../components/authContext";
 import { ChunkFeeds } from "../../functions/chunkFeeds";
-import ConfirmModal from "../../components/modals/confirmModal";
-import ConnectSocialButton from "../../socialConnect/connectSocialButton";
 import ContentWidget from "../../components/content/contentWidget";
-import DisconnectSocialButton from "../../socialConnect/disconnectSocialButton";
 import FeedWidget from "../../components/content/feedWidget";
+import PlatformConnect from "../../socialConnect/platformConnect";
 import { useMemo, useCallback, useContext, useEffect, useRef, useState } from "react";
 import { useOutletContext } from "react-router-dom";
 const FETCH_LIMIT = 100;
 
 const ExplorePage = () => {
-	const [disconnectName, setDisconnectName] = useState('');
-	const [disconnectPlatform, setDisconnectPlatform] = useState(null);
 	const [errorMessage, setErrorMessage] = useState("");
 	const [feedPage, setFeedPage] = useState(0);
 	const [feeds, setFeeds] = useState([]);
@@ -21,18 +17,12 @@ const ExplorePage = () => {
 	const [hasMoreFeeds, setHasMoreFeeds] = useState(true);
 	const [hasMorePosts, setHasMorePosts] = useState(true);
 	const [isLoading, setIsLoading] = useState(false);
-	const [modalOpen, setModalOpen] = useState(false);
 	const [postPage, setPostPage] = useState(0);
 	const [posts, setPosts] = useState([]);
 	const { isAuthenticated, viewer } = useContext(AuthContext);
 	const { rightClasses, updateFeeds } = useOutletContext();
 	const [refreshTrigger, setRefreshTrigger] = useState(false);;
 	const scrollRef = useRef(null);
-	const connected = JSON.parse(localStorage.getItem("connectedAccounts") || "[]");
-	const hasReddit = connected.some(a => a.platform === "reddit");
-	const hasBluesky = connected.some(a => a.platform === "bluesky");
-	const hasMastodon = connected.some(a => a.platform === "mastodon");
-	const anyNotConnected = !hasReddit || !hasBluesky || !hasMastodon;
 
 	const fetchPosts = useCallback(async (page = 0) => {
 		try {
@@ -121,12 +111,6 @@ const ExplorePage = () => {
 		}
 	}, [loadMore, isLoading]);
 
-	const requestDisconnect = (platform, name) => {
-		setDisconnectPlatform(platform);
-		setDisconnectName(name);
-		setModalOpen(true);
-	};
-
 	const combinedItems = useMemo(() => {
 		if (filter !== "all") return [];
 		const feedTriplets = ChunkFeeds(feeds, 3).map(f => ({ type: "feedTriplet", data: f }));
@@ -182,7 +166,7 @@ const ExplorePage = () => {
 	const isInitialLoad = isLoading && posts.length === 0 && feeds.length === 0;
 
 	return (
-		<><div className="standard-container">
+		<div className="standard-container">
 			<div ref={scrollRef} onScroll={handleScroll} className="channel-feed">
 				{isInitialLoad ? (
 					<div className="flex justify-center items-center h-64">
@@ -239,50 +223,10 @@ const ExplorePage = () => {
 				</nav>
 				<AlgorithmSelector display={false} isAuthenticated={isAuthenticated} locationId={"explore"} refreshPosts={refreshPosts} />
 				{isAuthenticated && (
-					<div>
-						{anyNotConnected && (
-							<>
-								<p className="small-text">Connect your accounts from:</p>
-								{!hasReddit && <ConnectSocialButton socialIcon="/media/site_images/social_sites/reddit-logo.png" socialName="Reddit" socialRoute="auth/reddit" />}
-								{!hasBluesky && <ConnectSocialButton socialIcon="/media/site_images/social_sites/bluesky-logo.png" socialName="Bluesky" socialRoute="/connect/bluesky" />}
-								{!hasMastodon && <ConnectSocialButton socialIcon="/media/site_images/social_sites/mastodon-logo.png" socialName="Mastodon" socialRoute="/connect/mastodon" />}
-							</>
-						)}
-						{connected.length > 0 && (
-							<div className="mt-4">
-								<p className="small-text">Connected accounts:</p>
-								<p className="tiny-text faded-text">Click to disconnect</p>
-								{hasReddit && (
-									<DisconnectSocialButton socialIcon="/media/site_images/social_sites/reddit-logo.png" socialName="Reddit" platform="reddit" onRequestDisconnect={requestDisconnect} />
-								)}
-								{hasBluesky && (
-									<DisconnectSocialButton socialIcon="/media/site_images/social_sites/bluesky-logo.png" socialName="Bluesky" platform="bluesky" onRequestDisconnect={requestDisconnect} />
-								)}
-								{hasMastodon && (
-									<DisconnectSocialButton socialIcon="/media/site_images/social_sites/mastodon-logo.png" socialName="Mastodon" platform="mastodon" onRequestDisconnect={requestDisconnect} />
-								)}
-							</div>
-						)}
-					</div>
+					<PlatformConnect />
 				)}
 			</aside>
 		</div>
-		<ConfirmModal
-			isOpen={modalOpen}
-			title="Disconnect account"
-			message={`Are you sure you want to disconnect your ${disconnectName} account?`}
-			onCancel={() => setModalOpen(false)}
-			onConfirm={async () => {
-				try {
-					await api.post('/disconnect_external_account', { platform: disconnectPlatform });
-					const existing = JSON.parse(localStorage.getItem("connectedAccounts") || "[]");
-					const updated = existing.filter(a => a.platform !== disconnectPlatform);
-					localStorage.setItem("connectedAccounts", JSON.stringify(updated));
-					setModalOpen(false);
-				} catch (error) {
-					console.log("disconnect failed", error);
-				}
-		} } /></>
 	);
 };
 

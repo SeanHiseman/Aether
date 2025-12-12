@@ -2,7 +2,7 @@ import { Algorithms, AlgorithmLocations } from "./algorithms.js";
 import { CosineSimilarity } from "../functions/calculation/cosineSimilarity.js";
 import { DeepFeedContent, Posts, PostVotes, SavedPosts } from "../models/relationships.js";
 import { ExternalPosts, ExternalPostsAccess } from "../models/content.js";
-import { generateBlueskyContentHTML, generateMastodonContentHTML, generateRedditContentHTML, processAccount } from "../routes/socialConnect.js";
+import { processAccount } from "../routes/socialConnect.js";
 import { Op } from 'sequelize';
 import Sequelize from 'sequelize';
 
@@ -165,14 +165,11 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
             const orderMap = new Map(orderedIds.map((id, i) => [id, i]));
 			posts.sort((a, b) => orderMap.get(a.post_id) - orderMap.get(b.post_id));
 		} else if (locationId === "following") {
-			//Calculate posts per source (local + up to 3 external sources)
 			const enabledSources = [];
 			if (connectedAccounts.find(a => a.platform === 'reddit')) enabledSources.push('reddit');
 			if (connectedAccounts.find(a => a.platform === 'bluesky')) enabledSources.push('bluesky');
 			if (connectedAccounts.find(a => a.platform === 'mastodon')) enabledSources.push('mastodon');
 			const totalSources = 1 + enabledSources.length; //local + external sources
-			//console.log("totalSources:", totalSources);
-			//const postsPerSource = Math.floor((limit * 3) / totalSources); //Get 3 times as many posts as is needed
 			const postsPerSource = Math.floor((limit * 0.5) / totalSources);
 			//Fetch local posts
 			const postIds = await Posts.findAll({
@@ -208,7 +205,7 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
 					offset: offset,
 					raw: true
 				});
-				// Refresh logic: if no external posts found, fetch from remote APIs
+				// Refresh logic: if no external posts found, fetch from remote APIs and add to database
 				if (!externalAccesses.length && offset === 0) {
 					console.log('No external posts found, fetching from remote APIs');
 					await Promise.all(connectedAccounts.map(account => 
@@ -242,7 +239,6 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
 				});
 			}
 			const formattedExternal = externalPosts.map(p => {
-				const mediaParsed = typeof p.media === 'string' ? JSON.parse(p.media) : p.media;
 				const sourceName = p.source === 'reddit' ? 'Reddit' : p.source === 'bluesky' ? 'Bluesky' : 'Mastodon';
 				const username = p.source === 'reddit' ? (p.author || '').replace('u/','') : p.author;
 				const externalScore = p.score ?? 0;
@@ -250,15 +246,11 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
 					...p,
 					isExternal: true,
 					created_at: p.created_at_remote,
-					content: `data:text/html;charset=utf-8,${encodeURIComponent(
-						p.source === 'reddit'
-							? generateRedditContentHTML(p.text_body, mediaParsed)
-							: p.source === 'bluesky'
-							? generateBlueskyContentHTML(p.text_body, mediaParsed)
-							: generateMastodonContentHTML(p.text_body, mediaParsed)
-					)}`,
+					title: p.title,
+					content: p.content,
+					text_body: p.text_body,
 					has_interactive: false,
-					has_embedded_websites: false,
+					has_embedded_websites: p.has_embedded_websites,
 					has_external_posts: false,
 					poster: {
 						username: p.author || `${p.source}_user`,
@@ -280,7 +272,6 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
 					has_downvoted: false
 				};
 			});
-			//console.log("formattedExternal.length:", formattedExternal.length);
 			posts = [...posts.map(p => ({ ...(p.dataValues || p), isExternal: false })), ...formattedExternal];
 		}else if (locationId === "explore") {
             const postIds = await Posts.findAll({

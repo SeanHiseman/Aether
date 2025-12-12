@@ -1,9 +1,9 @@
-import PropTypes from 'prop-types'
-import { useEffect, useRef, useState } from 'react'
 import AppBlock from './appBlock'
 import AppWebContainer from './appWebContainer'
+import { useEffect, useRef, useState } from 'react'
 
 const ContentDisplay = ({ post, isFullscreen = false, onCodeAppChange = () => {}, onHeightChange = () => {}, onOverflowChange = () => {}, redirect = true, showFullContent = false, showScrollBar = true }) => {
+	console.log("post:", post);
 	const [blocks, setBlocks] = useState([]);
 	const content = post?.content;
 	const contentRef = useRef(null);
@@ -22,12 +22,13 @@ const ContentDisplay = ({ post, isFullscreen = false, onCodeAppChange = () => {}
 			setLoading(true);
 			try {
 				let htmlText;
-				if (content.startsWith('data:text/html')) {
-					//It's a data URI - fetch it
+				const isUrl = content.startsWith('http') || content.startsWith('/');
+				if (content.startsWith('data:text/html') || isUrl) {
+					//Fetch data 
 					const response = await fetch(content);
 					htmlText = await response.text();
 				} else {
-					//It's raw HTML - use it directly
+					//Use raw html
 					htmlText = content;
 				}
 				const parser = new DOMParser();
@@ -74,6 +75,24 @@ const ContentDisplay = ({ post, isFullscreen = false, onCodeAppChange = () => {}
 								url: src?.src || '',
 							});
 						}
+					} else if (div.classList.contains('link-preview')) {
+						const anchor = div.querySelector('a');
+						const href = anchor?.href || '';
+						const host = div.querySelector('.preview-host')?.textContent?.trim() || '';
+						const image = div.querySelector('.preview-image img')?.src || '';
+						const title = div.querySelector('.preview-meta h4')?.textContent?.trim() || '';
+						const description = div.querySelector('.preview-meta p')?.textContent?.trim() || '';
+						const isEmbedPreview = div.getAttribute('data-embed-preview') === 'true';
+						parsed.push({
+							description,
+							href,
+							host,
+							id,
+							image,
+							isEmbedPreview,
+							title,
+							type: 'link',
+						});
 					} else if (div.classList.contains('app-block')) {
 						parsed.push({
 							appPath: div.getAttribute('data-apppath'),
@@ -143,7 +162,7 @@ const ContentDisplay = ({ post, isFullscreen = false, onCodeAppChange = () => {}
 			{blocks.map((block, i) => {
 				if (block.type === 'text') {
 					return (
-						<div dangerouslySetInnerHTML={{ __html: block.html }} key={i} onClick={redirect ? handleRedirect : null} style={{ cursor: 'pointer', paddingTop: 5, paddingLeft: 5, paddingRight: 5 }} />
+						<div dangerouslySetInnerHTML={{ __html: block.html }} key={i} onClick={redirect && !post?.is_external ? handleRedirect : null} style={{ cursor: 'pointer', paddingTop: 5, paddingLeft: 5, paddingRight: 5 }} />
 					);
 				}
 				if (block.type === 'code') {
@@ -178,12 +197,40 @@ const ContentDisplay = ({ post, isFullscreen = false, onCodeAppChange = () => {}
 						</div>
 					)
 				}
+				if (block.type === 'link') {
+					return (
+						<div key={i} className="link-preview-block">
+							<a href={block.href} target="_blank" rel="noopener noreferrer" className="link-preview-card">
+								{block.image && (
+									<div className="link-preview-image">
+										<img src={block.image} alt={block.title || ''} />
+									</div>
+								)}
+								<div className="link-preview-content">
+									{block.title && (
+										<h4 className="link-preview-title">
+											{block.title}
+										</h4>
+									)}
+									{block.description && (
+										<p className="link-preview-description">
+											{block.description}
+										</p>
+									)}
+									<span className="link-preview-host">
+										{block.host}
+									</span>
+								</div>
+							</a>
+						</div>
+					);
+				}
 				if (block.type === 'media') {
 					const styleObj =
 						block.align === 'center'
 							? { display: 'block', height: 'auto', margin: '0 auto', maxWidth: '100%', maxHeight: '60vh', cursor: 'pointer' }
 							: { height: 'auto', maxWidth: '100%', maxHeight: '60vh', cursor: 'pointer' };
-					if (block.isImage) return <img alt="Uploaded Media" key={i} src={block.url} style={styleObj} onClick={handleRedirect} />;
+					if (block.isImage) return <img alt="Uploaded Media" key={i} src={block.url} style={styleObj} onClick={!post?.is_external ? handleRedirect : null} />;
 					if (block.isVideo) {
 						return (
 							<video controls key={i} style={styleObj}>
@@ -202,16 +249,6 @@ const ContentDisplay = ({ post, isFullscreen = false, onCodeAppChange = () => {}
 			})}
 		</div>
 	)
-}
-
-ContentDisplay.propTypes = {
-	content: PropTypes.string,
-	isFullscreen: PropTypes.bool,
-	onCodeAppChange: PropTypes.func,
-	onHeightChange: PropTypes.func,
-	onOverflowChange: PropTypes.func,
-	showFullContent: PropTypes.bool,
-	showScrollBar: PropTypes.bool,
 }
 
 export default ContentDisplay;

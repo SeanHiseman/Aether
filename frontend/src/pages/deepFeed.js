@@ -1,23 +1,26 @@
 import AlgorithmSelector from '../algorithms/algorithmSelector';
 import api from '../api';
-import { useContext, useEffect, useRef, useState, useCallback } from 'react';
-import { FaEdit, FaMinus, FaRegWindowClose, FaSave, FaTrash } from 'react-icons/fa';
-import { useNavigate, useOutletContext, useParams } from 'react-router-dom';
 import { AuthContext } from '../components/authContext';
 import ConfirmModal from '../components/modals/confirmModal';
 import ContentWidget from '../components/content/contentWidget';
 import ExternalPostWidget from '../socialConnect/externalPostWidget';
+import { FaEdit, FaGlobe, FaHome, FaMinus, FaRegWindowClose, FaSave, FaTrash } from 'react-icons/fa';
 import FeedItem from '../components/channels/feedItem';
+import PlatformConnect from '../socialConnect/platformConnect';
+import { useContext, useEffect, useRef, useState, useCallback } from 'react';
 import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
+import { useNavigate, useOutletContext, useParams } from 'react-router-dom';
 import { ValidateTextInput } from '../functions/validateTextInput';
+
 const FETCH_LIMIT = 100;
 
 const DeepFeed = () => {
     const { isAuthenticated } = useContext(AuthContext);
     const [contents, setContents] = useState([]);
     const { deep_feed_id } = useParams();
+    const isFollowing = deep_feed_id === 'following' ? true : false;
     const [deepFeed, setDeepFeed] = useState(() => {
-        if (deep_feed_id === 'following') {
+        if (isFollowing) {
             return { deep_feed_id: 'following', name: 'Following', owner_id: 'system', parent_id: null };
         }
         const stored = JSON.parse(localStorage.getItem("deepFeeds") || "[]");
@@ -25,6 +28,8 @@ const DeepFeed = () => {
         return match || { deep_feed_id, name: '', owner_id: null, parent_id: null };
     });
     const [errorMessage, setErrorMessage] = useState('');
+    const [includeExternal, setIncludeExternal] = useState(true);
+    const [includeNative, setIncludeNative] = useState(true);
     const [isEditingName, setIsEditingName] = useState(false);
     const [isNewNameValid, setIsNewNameValid] = useState(false);
     const [newName, setNewName] = useState('');
@@ -36,9 +41,10 @@ const DeepFeed = () => {
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
     useEffect(() => {
-        if (!deep_feed_id) return;
+        if (!deep_feed_id || isFollowing) return;
         const fetchContents = async () => {
             try {
+                console.log("fetching deep feed contents");
                 const { data } = await api.get(`/deep_feed_contents/${deep_feed_id}`);
                 const fetched = data?.contents || [];
                 setContents(fetched);
@@ -54,7 +60,6 @@ const DeepFeed = () => {
                 setTimeout(() => setErrorMessage(''), 5000);
             }
         };
-        
         fetchContents();
     }, [deep_feed_id]);
 
@@ -100,6 +105,7 @@ const DeepFeed = () => {
 
     const changeDeepFeedName = async (event) => {
         event.preventDefault();
+        if (isFollowing) return;
         try {
             const response = await api.post('/change_deep_feed_name', {
                 deepFeedId: deep_feed_id,
@@ -147,7 +153,6 @@ const DeepFeed = () => {
                 offset: pageParam, 
                 recentUpvotes
             });
-            console.log("posts response:", response);
             if (pageParam === 0 && response.data?.deepFeed) {
                 setDeepFeed(response.data?.deepFeed);
                 document.title = response.data?.deepFeed?.name;
@@ -244,7 +249,14 @@ const DeepFeed = () => {
         return () => window.removeEventListener('deepFeedUpdated', handleUpdate);
     }, [deep_feed_id, queryClient]);
 
-    const allPosts = Array.isArray(data?.pages) ? data.pages.flatMap(page => Array.isArray(page) ? page : []) : [];
+    const allPosts = Array.isArray(data?.pages)
+        ? data.pages
+            .flatMap(page => Array.isArray(page) ? page : [])
+            .filter(p =>
+                (includeNative && !p.isExternal) ||
+                (includeExternal && p.isExternal)
+            )
+        : [];
 
     const handleScroll = useCallback(() => {
         const element = scrollRef.current;
@@ -374,6 +386,14 @@ const DeepFeed = () => {
                         </div>
                     )}
                     <div className="small-text faded-text">{errorMessage}</div>
+                    {isFollowing && <div className="flex flex-col items-flex-start">
+                        <button onClick={() => setIncludeNative(includeExternal ? !includeNative : true)} className="small-icon">
+                            <FaHome /><p className="icon-text">{includeNative ? "Hide native" : "Show native"}</p>
+                        </button>
+                        <button onClick={() => setIncludeExternal(includeNative ? !includeExternal : true)} className="small-icon">
+                            <FaGlobe /><p className="icon-text">{includeExternal ? "Hide external" : "Show external"}</p>
+                        </button>
+                    </div>}
                     {sortedContents.length > 0 && (
                         <ul className="feed-list">
                             {sortedContents.map(item => (
@@ -387,6 +407,9 @@ const DeepFeed = () => {
                         </ul>
                     )}
                 </div>
+                {isAuthenticated && isFollowing && (
+                    <PlatformConnect />
+                )}
             </aside>
         </div>
         <ConfirmModal isOpen={showDeleteConfirm} onConfirm={confirmDelete} onCancel={cancelDelete} title={`Delete ${deepFeed?.name}`} message={`Are you sure you want to delete ${deepFeed?.name}?`} /></>

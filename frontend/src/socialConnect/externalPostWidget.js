@@ -3,7 +3,6 @@ import ContentDisplay from '../components/content/contentDisplay';
 import { FaArrowDown, FaArrowUp, FaChevronDown, FaChevronUp, FaComments, FaHeart, FaRegBookmark } from 'react-icons/fa';
 import { FormatNumber } from '../functions/formatNumber';
 import { useParams } from 'react-router-dom';
-import PropTypes from 'prop-types';
 import { useContext, useEffect, useRef, useState } from 'react';
 import useTimeAgo from '../functions/useTimeAgo';
 
@@ -94,51 +93,47 @@ const ExternalPostWidget = ({ post }) => {
 					<div className="post-button-group">
 						{isVote && (
 							<>
-								<button className="large-icon">
+								<button className="large-icon compact">
 									<FaArrowUp />
 								</button>
-								<p className="small-text">{FormatNumber(post?.score)}</p>
-								<button className="large-icon">
+								<p className="small-text compact">{FormatNumber(post?.score)}</p>
+								<button className="large-icon compact">
 									<FaArrowDown />
 								</button>
 							</>
 						)}
 						{isLike && (
 							<>
-								<button className="large-icon">
+								<button className="large-icon compact">
 									<FaHeart />
 								</button>
-								<p className="small-text">{FormatNumber(post?.score)}</p>
+								<p className="small-text compact">{FormatNumber(post?.score)}</p>
 							</>
 						)}
 					</div>
 				</div>
 				<div className="post-button-group reply-buttons">
-					<a href={post?.url} className="large-icon" title={"Replies"} rel="noopener noreferrer" target="_blank">
+					<a href={post?.url} className="large-icon compact" title={"Replies"} rel="noopener noreferrer" target="_blank">
 						<FaComments />
-						<p className="small-text">{post?.replies}</p>
+						<p className="small-text compact">{post?.replies}</p>
 					</a>
 				</div>
 				<div className="button-text-bottom">
-					<button className="large-icon">
+					<button className="large-icon compact">
 						<FaRegBookmark />
 					</button>
 				</div>
 				<a href={post?.url} target="_blank" rel="noopener noreferrer">
-					<p className="small-text feed-channel-link faded-text">See post at: {post?.channel || 'Unknown source'} on {post?.source || 'Unknown site'}</p>
+					<p className="small-text compact feed-channel-link faded-text">See post on {post?.source || 'Unknown site'}</p>
 				</a>
 				<div className="view-date-container">
-					<p className="small-text faded-text" style={{ margin: '0px', textAlign: 'right' }}>
+					<p className="small-text compact faded-text" style={{ margin: '0px', textAlign: 'right' }}>
 						{post_id ? new Date(post?.created_at).toLocaleDateString() : timeAgo}
 					</p>
 				</div>
 			</div>
 		</div>
 	);
-};
-
-ExternalPostWidget.propTypes = {
-	post: PropTypes.object.isRequired,
 };
 
 export default ExternalPostWidget;
