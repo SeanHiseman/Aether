@@ -181,6 +181,7 @@ const FeedInfoView = () => {
         }
     };
 
+    document.title = `${feed?.feed_name} settings`;
     return (
         <div className="feed-settings short">
             <div className="name-photo-area">

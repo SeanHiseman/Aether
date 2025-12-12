@@ -3,7 +3,7 @@ import AppWebContainer from './appWebContainer'
 import { useEffect, useRef, useState } from 'react'
 
 const ContentDisplay = ({ post, isFullscreen = false, onCodeAppChange = () => {}, onHeightChange = () => {}, onOverflowChange = () => {}, redirect = true, showFullContent = false, showScrollBar = true }) => {
-	console.log("post:", post);
+	//console.log("post:", post);
 	const [blocks, setBlocks] = useState([]);
 	const content = post?.content;
 	const contentRef = useRef(null);

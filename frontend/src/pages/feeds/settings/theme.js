@@ -84,6 +84,7 @@ const Theme = () => {
         }
     };
     
+    document.title = "Theme Settings";
     return (
         <div className="feed-settings">
             <p className="large-text">Choose your theme</p>

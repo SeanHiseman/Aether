@@ -54,6 +54,7 @@ const AlgorithmSelector = ({ display = false, isAuthenticated = false, locationI
 				return updated;
 			});
 		} catch (error) {
+			console.log("assign algorithm error:", error);
 			setAssignError(error.response?.data?.message || 'Failed to assign algorithm');
 			setTimeout(() => { setAssignError('') }, 3000);
 		} finally {
@@ -199,7 +200,6 @@ const AlgorithmSelector = ({ display = false, isAuthenticated = false, locationI
 			setEditingAlgorithm(null);
 			refreshPosts();
 		} catch (error) {
-			console.log("usassign algorithm error:", error);
 			setAssignError(error.response?.data?.message || 'Failed to unassign algorithm');
 			setTimeout(() => { setAssignError('') }, 3000);
 		};

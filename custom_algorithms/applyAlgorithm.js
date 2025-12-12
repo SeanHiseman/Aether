@@ -2,7 +2,7 @@ import { Algorithms, AlgorithmLocations } from "./algorithms.js";
 import { CosineSimilarity } from "../functions/calculation/cosineSimilarity.js";
 import { DeepFeedContent, Posts, PostVotes, SavedPosts } from "../models/relationships.js";
 import { ExternalPosts, ExternalPostsAccess } from "../models/content.js";
-import { processAccount } from "../routes/socialConnect.js";
+import { FEED_CONFIG, formatExternalPost, processAccount } from "../routes/socialConnect.js";
 import { Op } from 'sequelize';
 import Sequelize from 'sequelize';
 
@@ -48,8 +48,9 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
 		let algorithmLocation = null;
 		let algorithmRow = null;
 		if (viewerId && locationId) {
+			const normLocationId = locationId.replace(/^deep_/, '');
 			algorithmLocation = await AlgorithmLocations.findOne({
-				where: { location_id: locationId, viewer_id: viewerId },
+				where: { location_id: normLocationId, viewer_id: viewerId },
 				raw: true
 			});
 			if (algorithmLocation) {
@@ -69,11 +70,12 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
 		}
 
         //Check if algorithm is active today
-		let isActiveToday = false;
-		if (algorithmLocation) {
-			const today = new Date().toLocaleDateString("en-US", { weekday: "long" }).toLowerCase();
-            isActiveToday = algorithm.activeDays && algorithm.activeDays.length > 0 ? algorithm.activeDays.map(d => d.toLowerCase()).includes(today) : true;
-		}
+		//let isActiveToday = false;
+		let isActiveToday = true;
+		//if (algorithmLocation) {
+			//const today = new Date().toLocaleDateString("en-US", { weekday: "long" }).toLowerCase();
+            //isActiveToday = algorithm.activeDays && algorithm.activeDays.length > 0 ? algorithm.activeDays.map(d => d.toLowerCase()).includes(today) : true;
+		//}
 
 		const getOldest = algorithm.chronology === -1; //Get oldest posts
         const useChronological = (!isGroup && !algorithmLocation) || (!isActiveToday && !isGroup) || (algorithm.chronology === 1); //User feeds without active algorithms or 1 chronology should be in time order only
@@ -110,23 +112,19 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
 					where: { post_id: { [Op.in]: recentUpvoteIds } },
 					raw: true
 				});
-			recentUpvoteEmbeddings = recentUpvotePosts
-				.map(p => {
+				recentUpvoteEmbeddings = recentUpvotePosts.map(p => {
 					const raw = p.embeddings;
 					if (!raw) return null;
-
 					if (typeof raw === 'string') {
 						try {
 							const parsed = JSON.parse(raw);
 							return Array.isArray(parsed) ? parsed : null;
-						} catch (e) {
+						} catch (error) {
 							return null;
 						}
 					}
-
 					return Array.isArray(raw) ? raw : null;
-				})
-				.filter(Boolean);
+				}).filter(Boolean);
 			}
 			normalisedRecentEmbeddings = recentUpvoteEmbeddings.map(vec => {
 				const mag = Math.sqrt(vec.reduce((a, b) => a + b * b, 0)) || 1;
@@ -141,7 +139,6 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
 		const orderMode = getOldest
 			? [['created_at', 'ASC']]
 			: (useChronological ? [['created_at', 'DESC']] : [['rank_hotness', 'DESC']]);
-
         if (locationId === "search" && keyword) {
             const postIds = await Posts.findAll({
                 attributes: ['post_id'],
@@ -194,7 +191,7 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
 			});
 			const orderMap = new Map(orderedIds.map((id, i) => [id, i]));
 			posts.sort((a, b) => orderMap.get(a.post_id) - orderMap.get(b.post_id));
-			// Fetch external posts only if user has connected accounts
+			//Fetch external posts only if user has connected accounts
 			let externalAccesses = [];
 			if (connectedAccounts.length > 0) {
 				externalAccesses = await ExternalPostsAccess.findAll({
@@ -205,7 +202,7 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
 					offset: offset,
 					raw: true
 				});
-				// Refresh logic: if no external posts found, fetch from remote APIs and add to database
+				//If no external posts found, fetch from remote APIs and add to database
 				if (!externalAccesses.length && offset === 0) {
 					console.log('No external posts found, fetching from remote APIs');
 					await Promise.all(connectedAccounts.map(account => 
@@ -239,41 +236,58 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
 				});
 			}
 			const formattedExternal = externalPosts.map(p => {
-				const sourceName = p.source === 'reddit' ? 'Reddit' : p.source === 'bluesky' ? 'Bluesky' : 'Mastodon';
-				const username = p.source === 'reddit' ? (p.author || '').replace('u/','') : p.author;
-				const externalScore = p.score ?? 0;
-				return {
-					...p,
-					isExternal: true,
-					created_at: p.created_at_remote,
-					title: p.title,
-					content: p.content,
-					text_body: p.text_body,
-					has_interactive: false,
-					has_embedded_websites: p.has_embedded_websites,
-					has_external_posts: false,
-					poster: {
-						username: p.author || `${p.source}_user`,
-						user_photo: p.author_photo || `/media/site_images/default-${p.source}-user-icon.png`,
-						profile_url: p.source === 'reddit'
-							? `https://www.reddit.com/user/${username}`
-							: p.source === 'bluesky'
-							? `https://bsky.app/profile/${p.author}`
-							: p.url
-					},
-					channel: p.channel || p.source,
-					source: sourceName,
-					upvotes: externalScore,
-					downvotes: 0,
-					views: 0,
-					replies: p.replies || 0,
-					is_saved: false,
-					has_upvoted: false,
-					has_downvoted: false
-				};
+				const platformConfig = FEED_CONFIG[p.source];
+				return formatExternalPost(p, platformConfig, p.source);
 			});
 			posts = [...posts.map(p => ({ ...(p.dataValues || p), isExternal: false })), ...formattedExternal];
-		}else if (locationId === "explore") {
+		} else if (typeof locationId === 'string' && ['reddit','bluesky','mastodon'].includes(locationId)) {
+			const platform = locationId;
+			let accesses = [];
+			if (userId) {
+				accesses = await ExternalPostsAccess.findAll({
+					where: { user_id: userId, source: platform },
+					attributes: ['post_id'],
+					order: [['rank_hotness', 'DESC']],
+					limit,
+					offset,
+					raw: true
+				});
+			}
+			if (!accesses.length && connectedAccounts && connectedAccounts.length) {
+				const account = connectedAccounts.find(a => a.platform === platform);
+				if (account) {
+					await processAccount({
+						platform,
+						user_id: userId,
+						access_token: account.access_token,
+						instance_url: account.instance_url
+					}).catch(error => {
+						console.error(`Error processing ${platform}:`, error);
+					});
+					accesses = await ExternalPostsAccess.findAll({
+						where: { user_id: userId, source: platform },
+						attributes: ['post_id'],
+						order: [['rank_hotness', 'DESC']],
+						limit,
+						offset,
+						raw: true
+					});
+				}
+			}
+			const unifiedIds = accesses.map(a => a.post_id).filter(Boolean);
+			let externalPosts = [];
+			if (unifiedIds.length) {
+				externalPosts = await ExternalPosts.findAll({
+					where: { post_id: unifiedIds, source: platform },
+					raw: true
+				});
+			}
+			const formattedExternal = externalPosts.map(p => {
+				const platformConfig = FEED_CONFIG[platform];
+				return formatExternalPost(p, platformConfig, p.source);
+			});
+			posts = formattedExternal;
+		} else if (locationId === "explore") {
             const postIds = await Posts.findAll({
                 attributes: ['post_id'],
                 where: {
@@ -390,7 +404,7 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
         //Filter out posts, then apply scoring
 		let finalPosts = [];
         const { chronology = 1, contentType = {}, variety = 1, textLimits = {}, videoLimits = {}, timeLimits = {}, dateLimits = {}, scoring = {} } = algorithm;
-		const { sentiment = 0, voteImpact = 1, wordBoost = [], wordSuppress = [] } = scoring;
+		const { sentiment = 0, voteImpact = 1 } = scoring;
 		//console.log("algorithm:", algorithm);
 		//console.log("scoring:", scoring);
 		//console.log("posts:", posts);
@@ -402,7 +416,7 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
 		const tenDays = 864000000;
 		let postEmbedding = [];
 		try {
-			const logStart = Date.now();
+			//const logStart = Date.now();
 			//console.log("posts.length:", posts.length);
 			for (const post of posts) {
 				postEmbedding = post.embeddings;
@@ -457,8 +471,6 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
 					const normPost = postEmbedding.map(v => v / magPost);
 					let semanticBoost = 0;
 					let semanticSuppress = 0;
-					let boostWords = [];
-					let suppressWords = [];
 					try {
 						const algoJson = JSON.parse(algorithmRow.algorithm_code);
 						boostWords = algoJson.scoring?.wordBoost || [];

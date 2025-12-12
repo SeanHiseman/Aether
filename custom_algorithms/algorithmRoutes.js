@@ -15,6 +15,7 @@ router.post('/assign_algorithm', authenticateCheck, async (req, res) => {
 	try {
 		transaction = await sequelize.transaction();
 		const { algorithmId, locationId } = req.body;
+		//console.log("assigning algorithm", algorithmId, "to:", locationId);
 		const viewerId = req.session.viewer_id;
 		const [record, created] = await AlgorithmLocations.findOrCreate({
 			where: { location_id: locationId, viewer_id: viewerId },
@@ -277,9 +278,10 @@ router.get('/get_viewer_algorithms', authenticateCheck, async (req, res) => {
 
 router.delete('/remove_algorithm', authenticateCheck, async (req, res) => {
 	try {
-		const { locationId } = req.body;
+		const { algorithmId, locationId } = req.body;
+		//console.log("removing algorithm", algorithmId, "from:", locationId);
 		const viewerId = req.session.viewer_id;
-		await AlgorithmLocations.destroy({ where: { location_id: locationId, viewer_id: viewerId } });
+		await AlgorithmLocations.destroy({ where: { algorithm_id: algorithmId, location_id: locationId } });
 		res.status(200).json({ success: true });
 	} catch (error) {
 		console.error(new Date().toISOString(), "/remove_algorithm error:", error);

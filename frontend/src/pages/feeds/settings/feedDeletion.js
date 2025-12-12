@@ -43,6 +43,7 @@ const FeedDeletion = () => {
         setConfirmText('');
     };
 
+    document.title = feed?.is_group ? "Delete Feed" : "Delete Account";
     return (
         <div className="feed-settings">
             <div className="display-area" style={{ alignItems: 'start' }}>

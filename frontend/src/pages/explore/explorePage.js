@@ -165,6 +165,7 @@ const ExplorePage = () => {
 
 	const isInitialLoad = isLoading && posts.length === 0 && feeds.length === 0;
 
+	document.title = "Explore";
 	return (
 		<div className="standard-container">
 			<div ref={scrollRef} onScroll={handleScroll} className="channel-feed">

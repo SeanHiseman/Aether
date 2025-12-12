@@ -186,6 +186,7 @@ const MembershipSettings = () => {
         );
     }
 
+    document.title = "Membership Settings";
     return (
         <div className="membership-container">
             <div className="header-section">

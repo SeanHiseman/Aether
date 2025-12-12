@@ -15,13 +15,13 @@ export default function SocialFeedPage({ platform }) {
 	const [loadingMore, setLoadingMore] = useState(false);
 	const [offset, setOffset] = useState(0);
 	const [posts, setPosts] = useState([]);
+	const [refreshTrigger, setRefreshTrigger] = useState(false);
 	const location = useLocation();
 	const isFetchingRef = useRef(false);
 	const scrollRef = useRef(null);
 	const hasLoadedRef = useRef(false); 
 
 	async function loadFeed(isNextPage = false) {
-		console.log("getting posts from backend")
 		if (!isAuthenticated) {
 			setLoading(false);
 			return;
@@ -37,9 +37,7 @@ export default function SocialFeedPage({ platform }) {
 				params: { limit: fetchLimit, offset },
 				withCredentials: true
 			});
-			console.log("load feed response:", response);
 			const items = response.data.items || [];
-			console.log("items.length:", items.length);
 			if (isNextPage) {
 				setPosts(prev => [...prev, ...items]);
 			} else {
@@ -61,6 +59,15 @@ export default function SocialFeedPage({ platform }) {
 	}
 
 	useEffect(() => {
+		if (!isAuthenticated) return;
+		setOffset(0);
+		setHasMore(true);
+		setPosts([]);
+		setLoading(true);
+		loadFeed();
+	}, [refreshTrigger, isAuthenticated]);
+
+	useEffect(() => {
 		//Reset on platform change
 		if (hasLoadedRef.current) {
 			hasLoadedRef.current = false;
@@ -79,14 +86,12 @@ export default function SocialFeedPage({ platform }) {
 			const justConnected = params.get("connected");
 			//Check for cached posts from fresh connection
 			if (justConnected === "true") {
-				console.log("fresh connection, getting cached posts");
 				const cacheKey = `${platform}_initial_posts`;
 				const cachedPosts = sessionStorage.getItem(cacheKey);
 				if (cachedPosts) {
 					try {
 						const parsedPosts = JSON.parse(cachedPosts);
 						setPosts(parsedPosts);
-						console.log("setting offset to:", parsedPosts.length);
 						setOffset(parsedPosts.length);
 						setLoading(false);
 						//Clean up cache and URL
@@ -136,6 +141,15 @@ export default function SocialFeedPage({ platform }) {
 		};
 	}, [hasMore, platform, isAuthenticated, offset]);
 
+	const refreshPosts = () => {
+		setOffset(0);
+		setHasMore(true);
+		setPosts([]);
+		setLoading(true);
+        setRefreshTrigger(prev => !prev);
+    };
+
+	document.title = capitalise(platform) + " feed";
 	if (!isAuthenticated) {
 		return (
 			<div className="standard-container">	
@@ -175,8 +189,7 @@ export default function SocialFeedPage({ platform }) {
 			</div>
 			<aside className="right-aside">
 				<p className="large-text bold">{capitalise(platform) || "Site not found"}</p>
-				<p className="small-text faded-text">Apply algorithm coming soon...</p>
-				{/*<AlgorithmSelector display={false} isAuthenticated={isAuthenticated} locationId={platform} />*/}
+				<AlgorithmSelector display={false} isAuthenticated={isAuthenticated} locationId={platform} refreshPosts={refreshPosts} />
 			</aside>
 		</div>
 	);

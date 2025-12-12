@@ -6,6 +6,7 @@ import { ContentAnalyser } from '../functions/contentAnalyser.js';
 import cron from 'node-cron';
 import crypto from 'crypto';
 import { ConnectedAccounts, Users } from '../models/users.js';
+import dotenv from 'dotenv';
 import { ExternalPosts, ExternalPostsAccess, PaginationTokens } from '../models/content.js';
 import express from 'express';
 import fetch from 'node-fetch';
@@ -15,6 +16,7 @@ import sequelize from '../databaseSetup.js';
 import { v4 } from 'uuid';
 
 const contentAnalyser = new ContentAnalyser();
+dotenv.config();
 const router = express.Router();
 
 const OAUTH_AUTHORIZE = 'https://www.reddit.com/api/v1/authorize';
@@ -28,8 +30,8 @@ function ua() {
 	return 'AetherSocialLocal/0.1 (testing on localhost)';
 }
 
-function escapeHtml(str) {
-	return (str || '').toString()
+function escapeHtml(string) {
+	return (string || '').toString()
 		.replace(/&/g, '&amp;')
 		.replace(/</g, '&lt;')
 		.replace(/>/g, '&gt;')
@@ -37,24 +39,77 @@ function escapeHtml(str) {
 		.replace(/'/g, '&#39;');
 }
 
-async function fetchUrlPreview(targetUrl) {
-	let controller = new AbortController();
-	let timeoutMs = 4000;
-	let timeoutId = setTimeout(() => controller.abort(), timeoutMs);
-	try {
-		const response = await fetch(targetUrl, { headers: { 'User-Agent': ua() }, redirect: 'follow' });
-		const body = await response.text();
-		clearTimeout(timeoutId);
-		const $ = cheerio.load(body);
-		const description = $('meta[property="og:description"]').attr('content') || $('meta[name="twitter:description"]').attr('content') || $('meta[name="description"]').attr('content') || null;
-		const hostname = new URL(targetUrl).hostname.replace(/^www\./, '');
-		const image = $('meta[property="og:image"]').attr('content') || $('meta[name="twitter:image"]').attr('content') || null;
-		const title = $('meta[property="og:title"]').attr('content') || $('meta[name="twitter:title"]').attr('content') || $('title').text() || null;
-		return { description, hostname, image, title, url: (new URL(targetUrl)).href };
-	} catch (error) {
-		clearTimeout(timeoutId);
-		return null;
-	}
+export const FEED_CONFIG = {
+    bluesky: {
+        generator: generateBlueskyContentHTML,
+        defaultIcon: '/media/site_images/default-bluesky-user-icon.png',
+        sourceName: 'Bluesky',
+        getProfileUrl: (p) => p.author ? `https://bsky.app/profile/${p.author}` : null,
+        getChannel: (p) => p.channel,
+    },
+    reddit: {
+        generator: generateRedditContentHTML,
+        defaultIcon: '/media/site_images/default-reddit-user-icon.png',
+        sourceName: 'Reddit',
+        getProfileUrl: (p) => {
+            const username = (p.author || '').replace('u/', '');
+            return `https://www.reddit.com/user/${username}`;
+        },
+        getChannel: (p) => p.channel || 'reddit',
+        mapExtras: (p) => ({ 
+            title: p.title,
+            upvotes: p.score ?? 0 //Reddit maps score to upvotes
+        })
+    },
+    mastodon: {
+        generator: generateMastodonContentHTML,
+        defaultIcon: null, //Add default if you have one, or handle logic below
+        sourceName: 'Mastodon',
+        getProfileUrl: (p) => p.url,
+        getChannel: (p) => p.author, //not p.channel
+        mapExtras: (p) => ({ 
+            rank_hotness: [p.rank_hotness] //Preserving your original array format
+        })
+    }
+};
+
+//Format for return to frontend
+export function formatExternalPost(p, config, platform) {
+	const authorName = p.author || `${platform}_user`;
+	const profileUrl = p.source === 'reddit'
+		? `https://www.reddit.com/user/${(p.author || '').replace('u/','')}`
+		: p.source === 'bluesky'
+		? `https://bsky.app/profile/${p.author}`
+		: config.getProfileUrl(p);
+	const scoreValue = p.score ?? 0;
+	const sourceLabel = p.source === 'reddit' ? 'Reddit' : p.source === 'bluesky' ? 'Bluesky' : config.sourceName;
+	return {
+		...p,
+		channel: p.channel || config.getChannel(p),
+		content: p.content,
+		created_at: p.created_at_remote,
+		downvotes: 0,
+		has_downvoted: false,
+		has_embedded_websites: p.has_embedded_websites,
+		has_external_posts: false,
+		has_interactive: false,
+		has_upvoted: false,
+		is_external: true,
+		is_saved: false,
+		poster: {
+			profile_url: profileUrl,
+			user_photo: p.author_photo || config.defaultIcon,
+			username: authorName
+		},
+		replies: p.replies || 0,
+		score: scoreValue,
+		source: sourceLabel,
+		text_body: p.text_body,
+		title: p.title,
+		upvotes: scoreValue,
+		url: p.url,
+		views: 0
+	};
 }
 
 async function fetchAndProcessPosts(platform, fetchConfig, user_id) {
@@ -255,7 +310,6 @@ async function fetchAndProcessPosts(platform, fetchConfig, user_id) {
 export async function processAccount(account) {
 	try {
 		const { access_token, instance_url, platform, user_id } = account;
-		//console.log("account:", account);
 		const accessCount = await ExternalPostsAccess.count({ where: { user_id, source: platform } });
 		let paginationToken = await PaginationTokens.findOne({
 			where: { user_id, platform }
@@ -317,12 +371,7 @@ export async function generateBlueskyContentHTML(textBody, media) {
 		if (textBody?.trim()) {
 			html += `
 				<div class="content-block text-block" data-blockid="${crypto.randomUUID()}">
-					<p>${textBody
-						.replace(/&/g, '&amp;')
-						.replace(/</g, '&lt;')
-						.replace(/>/g, '&gt;')
-						.replace(/\n/g, '<br>')}
-					</p>
+					<p>${escapeHtml(textBody).replace(/\n/g, '<br>')}</p>
 				</div>
 			`;
 		}
@@ -338,31 +387,6 @@ export async function generateBlueskyContentHTML(textBody, media) {
 				`;
 			}
 		}
-		//const $ = cheerio.load(textBody || '');
-		//const urls = Array.from(new Set($('a[href]').map((i, el) => $(el).attr('href')).get()));
-		//for (const u of urls) {
-			//const preview = await fetchUrlPreview(u);
-			//if (preview) {
-				//html += `
-					//<div class="content-block link-preview" data-blockid="${crypto.randomUUID()}" data-align="center" data-trusted="false" data-embed-preview="true">
-						//<a href="${preview.url}" target="_blank" rel="noopener noreferrer">
-							//${preview.image ? `<div class="preview-image"><img src="${escapeHtml(preview.image)}" alt="${escapeHtml(preview.title || preview.hostname)}" /></div>` : ''}
-							//<div class="preview-meta">
-								//<h4>${escapeHtml(preview.title || preview.hostname)}</h4>
-								//<p>${escapeHtml(preview.description || '')}</p>
-								//<span class="preview-host">${escapeHtml(preview.hostname)}</span>
-							//</div>
-						//</a>
-					//</div>
-				//`;
-			//} else {
-				//html += `
-					//<div class="content-block link-preview" data-blockid="${crypto.randomUUID()}" data-align="center" data-trusted="false">
-						//<a href="${escapeHtml(u)}" target="_blank" rel="noopener noreferrer">${escapeHtml(u)}</a>
-					//</div>
-				//`;
-			//}
-		//}
 		return html.trim();
 	} catch (error) {
 		console.error(new Date().toISOString(), 'generateBlueskyContentHTML error:', error);
@@ -381,12 +405,7 @@ export async function generateRedditContentHTML(textBody, mediaArray) {
 		if (textBody && textBody.trim()) {
 			html += `
 				<div class="content-block text-block" data-blockid="${crypto.randomUUID()}">
-					<p>${textBody
-						.replace(/&/g, '&amp;')
-						.replace(/</g, '&lt;')
-						.replace(/>/g, '&gt;')
-						.replace(/\n/g, '<br>')}
-					</p>
+					<p>${escapeHtml(textBody).replace(/\n/g, '<br>')}</p>
 				</div>
 			`;
 		}
@@ -399,31 +418,6 @@ export async function generateRedditContentHTML(textBody, mediaArray) {
 				</div>
 			`;
 		}
-		//const $ = cheerio.load(textBody || '');
-		//const urls = Array.from(new Set($('a[href]').map((i, el) => $(el).attr('href')).get()));
-		//for (const u of urls) {
-			//const preview = await fetchUrlPreview(u);
-			//if (preview) {
-				//html += `
-					//<div class="content-block link-preview" data-blockid="${crypto.randomUUID()}" data-align="center" data-trusted="false" data-embed-preview="true">
-						//<a href="${preview.url}" target="_blank" rel="noopener noreferrer">
-							//${preview.image ? `<div class="preview-image"><img src="${escapeHtml(preview.image)}" alt="${escapeHtml(preview.title || preview.hostname)}" /></div>` : ''}
-							//<div class="preview-meta">
-								//<h4>${escapeHtml(preview.title || preview.hostname)}</h4>
-								//<p>${escapeHtml(preview.description || '')}</p>
-								//<span class="preview-host">${escapeHtml(preview.hostname)}</span>
-							//</div>
-						//</a>
-					//</div>
-				//`;
-			//} else {
-				//html += `
-					//<div class="content-block link-preview" data-blockid="${crypto.randomUUID()}" data-align="center" data-trusted="false">
-						//<a href="${escapeHtml(u)}" target="_blank" rel="noopener noreferrer">${escapeHtml(u)}</a>
-					//</div>
-				//`;
-			//}
-		//}
 		return html.trim();
 	} catch (error) {
 		console.error(new Date().toISOString(), 'generateRedditContentHTML error:', error);
@@ -432,8 +426,7 @@ export async function generateRedditContentHTML(textBody, mediaArray) {
 
 //Mastodon posts use html, not raw text
 export async function generateMastodonContentHTML(htmlContent, media) {
-	console.log("generating html for mastodon from:", htmlContent);
-	console.log("mastodon media", media);
+	//console.log("generating html for mastodon from:", htmlContent);
 	try {
 		let out = '';
 		if (htmlContent) {
@@ -453,7 +446,7 @@ export async function generateMastodonContentHTML(htmlContent, media) {
 				`;
 			}
 		}
-		// Handle card (link preview)
+		//Create card (link preview)
 		if (media?.card) {
 			const card = media.card;
 			out += `
@@ -476,6 +469,7 @@ export async function generateMastodonContentHTML(htmlContent, media) {
 	}
 }
 
+//Mapping directly into database
 function mapBlueskyToExternal(item) {
 	const post = item.post;
 	const record = post.record || {};
@@ -524,6 +518,7 @@ function mapBlueskyToExternal(item) {
 	};
 }
 
+//Mapping directly into database
 function mapMastodonToExternal(toot, instance) {
 	//Mastodon api does not provide raw text
 	const htmlContent = toot.content || '';
@@ -569,6 +564,7 @@ function mapMastodonToExternal(toot, instance) {
 	};
 } 
 
+//Mapping directly into database
 function mapRedditToExternal(child) {
 	const d = child.data;
 	let media = null;
@@ -643,33 +639,13 @@ router.post('/auth/bluesky', authenticateCheck, async (req, res) => {
 			const mappedPosts = await fetchAndProcessPosts('bluesky', config, req.user.user_id);
 			mappedPosts.sort((a, b) => b.rank_hotness - a.rank_hotness);
 			//Return posts immediately
-            const postsWithContent = await Promise.all(
-                mappedPosts.map(async (p) => ({
-                    post_id: p.post_id,
-                    title: p.title,
-                    content: await generateBlueskyContentHTML(p.text_body, p.media),
-                    text_body: p.text_body,
-                    created_at: p.created_at_remote,
-                    upvotes: 0,
-                    downvotes: 0,
-                    views: 0,
-                    replies: p.replies ?? 0,
-                    score: p.score || 0,
-                    is_saved: false,
-                    has_upvoted: false,
-                    has_downvoted: false,
-                    poster: {
-                        profile_url: p.author ? `https://bsky.app/profile/${p.author}` : null,
-                        user_photo: p.author_photo || '/media/site_images/default-bluesky-user-icon.png',
-                        username: p.author || 'bluesky_user'
-                    },
-                    channel: p.channel,
-                    url: p.url,
-                    source: 'Bluesky',
-                    rank_hotness: p.rank_hotness,
-					is_external: true
-                }))
-            );
+			const postsWithContent = await Promise.all(
+				mappedPosts.map(async (p) => {
+					const formatted = formatExternalPost(p, FEED_CONFIG.bluesky, 'bluesky');
+					formatted.content = await FEED_CONFIG.bluesky.generator(p.text_body, p.media);
+					return formatted;
+				})
+			);
             res.status(200).json({ success: true, did: json.did, posts: postsWithContent });
 		} catch (fetchError) {
 			res.status(200).json({ success: true, did: json.did, posts: [] });
@@ -812,30 +788,13 @@ router.get('/reddit/callback', authenticateCheck, async (req, res) => {
 		try {
 			const mappedPosts = await fetchAndProcessPosts('reddit', config, user_id);
 			mappedPosts.sort((a, b) => b.rank_hotness - a.rank_hotness);
-			const postsData = await Promise.all(mappedPosts.map(async (p) => ({
-				post_id: p.post_id,
-				title: p.title,
-				content: await generateRedditContentHTML(p.content, p.media),
-				created_at: p.created_at_remote,
-				upvotes: 0,
-				downvotes: 0,
-				views: 0,
-				replies: p.replies ?? 0,
-				score: p.score || 0,
-				is_saved: false,
-				has_upvoted: false,
-				has_downvoted: false,
-				poster: {
-					profile_url: p.author ? `https://reddit.com/${p.author}` : null,
-					user_photo: p.author_photo || '/media/site_images/default-reddit-user-icon.png',
-					username: p.author || 'reddit_user'
-				},
-				channel: p.channel,
-				url: p.url,
-				source: 'Reddit',
-				rank_hotness: p.rank_hotness,
-				is_external: true
-			})));
+			const postsData = await Promise.all(
+				mappedPosts.map(async (p) => {
+					const formatted = formatExternalPost(p, FEED_CONFIG.reddit, 'reddit');
+					formatted.content = await FEED_CONFIG.reddit.generator(p.content, p.media);
+					return formatted;
+				})
+			);
 			//HTML to contain post data
 			res.send(`
 				<!DOCTYPE html>
@@ -901,30 +860,13 @@ router.get('/mastodon/callback', authenticateCheck, async (req, res) => {
 		try {
 			const mappedPosts = await fetchAndProcessPosts('mastodon', config, user_id);
 			mappedPosts.sort((a, b) => b.rank_hotness - a.rank_hotness);
-			const postsData = await Promise.all(mappedPosts.map(async (p) => ({
-				post_id: p.post_id,
-				title: p.title,
-				content: await generateMastodonContentHTML(p.text_body, p.media),
-				created_at: p.created_at_remote,
-				upvotes: 0,
-				downvotes: 0,
-				views: 0,
-				replies: p.replies ?? 0,
-				score: p.score || 0,
-				is_saved: false,
-				has_upvoted: false,
-				has_downvoted: false,
-				poster: {
-					profile_url: p.author ? `${instance}/@${p.author}` : null,
-					user_photo: p.author_photo || '/media/site_images/default-mastodon-user-icon.png',
-					username: p.author || 'mastodon_user'
-				},
-				channel: p.channel,
-				url: p.url,
-				source: 'Mastodon',
-				rank_hotness: p.rank_hotness,
-				is_external: true
-			})));
+			const postsData = await Promise.all(
+				mappedPosts.map(async (p) => {
+					const formatted = formatExternalPost(p, FEED_CONFIG.mastodon, 'mastodon');
+					formatted.content = await FEED_CONFIG.mastodon.generator(p.text_body, p.media);
+					return formatted;
+				})
+			);
 			//HTML to contain post data
 			res.send(`
 				<!DOCTYPE html>
@@ -946,118 +888,32 @@ router.get('/mastodon/callback', authenticateCheck, async (req, res) => {
 	}
 });
 
-const FEED_CONFIG = {
-    bluesky: {
-        generator: generateBlueskyContentHTML,
-        defaultIcon: '/media/site_images/default-bluesky-user-icon.png',
-        sourceName: 'Bluesky',
-        getProfileUrl: (p) => p.author ? `https://bsky.app/profile/${p.author}` : null,
-        getChannel: (p) => p.channel,
-    },
-    reddit: {
-        generator: generateRedditContentHTML,
-        defaultIcon: '/media/site_images/default-reddit-user-icon.png',
-        sourceName: 'Reddit',
-        getProfileUrl: (p) => {
-            const username = (p.author || '').replace('u/', '');
-            return `https://www.reddit.com/user/${username}`;
-        },
-        getChannel: (p) => p.channel || 'reddit',
-        mapExtras: (p) => ({ 
-            title: p.title,
-            upvotes: p.score ?? 0 //Reddit maps score to upvotes
-        })
-    },
-    mastodon: {
-        generator: generateMastodonContentHTML,
-        defaultIcon: null, //Add default if you have one, or handle logic below
-        sourceName: 'Mastodon',
-        getProfileUrl: (p) => p.url,
-        getChannel: (p) => p.author, //not p.channel
-        mapExtras: (p) => ({ 
-            rank_hotness: [p.rank_hotness] //Preserving your original array format
-        })
-    }
-};
-
 //Combined route for Bluesky, Mastodon, and Reddit posts
 router.get('/:platform/feed', authenticateCheck, async (req, res) => {
     const { platform } = req.params;
-    //Allowed platforms
     if (!['bluesky', 'reddit', 'mastodon'].includes(platform)) {
         return res.status(404).json({ success: false, message: 'Invalid platform' });
     }
-    const config = FEED_CONFIG[platform];
     try {
         const limit = Math.min(Number(req.query.limit) || 100, 100);
         const offset = Number(req.query.offset) || 0;
-        let accesses = await ExternalPostsAccess.findAll({
-            where: { user_id: req.user.user_id, source: platform },
-            attributes: ['post_id'],
-            order: [['rank_hotness', 'DESC']],
+        const connectedAccount = await ConnectedAccounts.findOne({
+            where: { 
+                user_id: req.user.user_id,
+                platform: platform 
+            },
+            attributes: ['platform', 'access_token', 'instance_url'],
+            raw: true
+        });
+        const connectedAccounts = connectedAccount ? [connectedAccount] : []; //ApplyAlgorithm expects an array
+        const items = await ApplyAlgorithm({
+            locationId: platform, 
+            userId: req.user.user_id,
+            viewerId: req.session.viewer_id,
             limit,
-            offset
-        });
-        //Refresh logic: If no local posts, fetch from remote API
-        if (!accesses.length) {
-            //console.log(`getting external posts in /${platform}/feed`);
-            const account = await ConnectedAccounts.findOne({
-                where: { user_id: req.user.user_id, platform: platform }
-            });
-            if (account) {
-                //console.log(`${platform} account found, getting posts`);
-                //Trigger background/process logic
-                await processAccount({
-                    platform: platform,
-                    user_id: req.user.user_id,
-                    access_token: account.access_token,
-                    instance_url: account.instance_url
-                });
-                //Re-fetch accesses after refresh
-                try {
-                    //console.log(`getting ${platform} accesses`);
-                    accesses = await ExternalPostsAccess.findAll({
-                        where: { user_id: req.user.user_id, source: platform },
-                        attributes: ['post_id'],
-                        order: [['rank_hotness', 'DESC']],
-                        limit,
-                        offset
-                    });
-                } catch (error) {
-                    console.log(`${platform} accesses error:`, error);
-                }
-                //console.log(`${platform} accesses.length after refresh:`, accesses.length);
-            }
-        }
-        const postIds = accesses.map(a => a.post_id).filter(Boolean);
-        console.log(`${platform} postIds.length:`, postIds.length);
-        if (!postIds.length) {
-            const extraPayload = platform === 'reddit' ? { after: null, before: null } : {};
-            return res.status(200).json({ success: true, items: [], ...extraPayload });
-        }
-        const posts = await ExternalPosts.findAll({
-            where: { post_id: postIds, source: platform },
-            order: [['rank_hotness', 'DESC']]
-        });
-        const items = posts.map(p => {
-            return {
-                post_id: p.post_id,
-				title: p.title,
-                content: p.content,
-                created_at: p.created_at_remote,
-                replies: p.replies ?? 0,
-                score: p.score || 0,
-                is_saved: false,
-                poster: {
-                    username: p.author || `${platform}_user`,
-                    user_photo: p.author_photo || config.defaultIcon,
-                    profile_url: config.getProfileUrl(p)
-                },
-                channel: config.getChannel(p),
-                url: p.url,
-                source: config.sourceName,
-				is_external: true
-            };
+            offset,
+            connectedAccounts,
+            isGroup: false
         });
         const extraPayload = platform === 'reddit' ? { after: null, before: null } : {};
         res.status(200).json({ success: true, items, ...extraPayload });
@@ -1122,31 +978,33 @@ router.post('/reddit/expire', authenticateCheck, async (req, res) => {
 });
 
 //Get external posts for active users
-cron.schedule('*/10000 * * * *', async () => { //Runs every 10 minutes
-	try {
-		console.log(new Date().toISOString(), 'Starting external posts update cron job');
-		const batchSize = 100;
-		//Only get users who were active in the last 10 minutes
-		const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000);
-		const activeUsers = await Users.findAll({
-			where: { last_active_at: { [Op.gte]: tenMinutesAgo } },
-			attributes: ['user_id'],
-			order: [['last_active_at', 'ASC']],
-			limit: batchSize
-		});
-		console.log(`Found ${activeUsers.length} active users`);
-		for (const user of activeUsers) {
-			const accounts = await ConnectedAccounts.findAll({
-				where: { user_id: user.user_id }
+if (process.env.NODE_ENV === 'production') { //No need to get posts in testing
+	cron.schedule('*/10 * * * *', async () => { //Runs every 10 minutes
+		try {
+			console.log(new Date().toISOString(), 'Starting external posts update cron job');
+			const batchSize = 100;
+			//Only get users who were active in the last 10 minutes
+			const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000);
+			const activeUsers = await Users.findAll({
+				where: { last_active_at: { [Op.gte]: tenMinutesAgo } },
+				attributes: ['user_id'],
+				order: [['last_active_at', 'ASC']],
+				limit: batchSize
 			});
-			for (const account of accounts) {
-				await processAccount(account);
+			console.log(`Found ${activeUsers.length} active users`);
+			for (const user of activeUsers) {
+				const accounts = await ConnectedAccounts.findAll({
+					where: { user_id: user.user_id }
+				});
+				for (const account of accounts) {
+					await processAccount(account);
+				}
 			}
+			console.log(new Date().toISOString(), 'Completed external posts update cron job');
+		} catch (error) {
+			console.error(new Date().toISOString(), 'Error updating external posts:', error);
 		}
-		console.log(new Date().toISOString(), 'Completed external posts update cron job');
-	} catch (error) {
-		console.error(new Date().toISOString(), 'Error updating external posts:', error);
-	}
-});
+	});
+}
 
 export default router;

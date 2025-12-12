@@ -52,6 +52,7 @@ const ConnectBluesky = () => {
 		}
 	};
 
+	document.title = "Connect Bluesky";
 	return (
 		<div className="authentication-container">
 			<p className="welcome-text">Connect Bluesky</p>

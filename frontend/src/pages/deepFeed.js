@@ -44,7 +44,6 @@ const DeepFeed = () => {
         if (!deep_feed_id || isFollowing) return;
         const fetchContents = async () => {
             try {
-                console.log("fetching deep feed contents");
                 const { data } = await api.get(`/deep_feed_contents/${deep_feed_id}`);
                 const fetched = data?.contents || [];
                 setContents(fetched);
@@ -289,11 +288,12 @@ const DeepFeed = () => {
 
     //Refresh posts upon algorithm change
     useEffect(() => {
-        if (refreshTrigger === false) return;
-        queryClient.invalidateQueries(['deepFeedPosts', deep_feed_id]);
-        queryClient.refetchQueries(['deepFeedPosts', deep_feed_id]);
+        if (refreshTrigger !== undefined) {
+            queryClient.invalidateQueries(['deepFeedPosts', deep_feed_id]);
+        }
     }, [refreshTrigger, queryClient, deep_feed_id]);
 
+    document.title = deepFeed?.name || 'Combined feed';
     return (
         <><div className="standard-container">
             <div ref={scrollRef} className="channel-feed">
@@ -304,7 +304,7 @@ const DeepFeed = () => {
                         {allPosts.map((post) => (
                             post ? (
                                 <div key={post?.post_id || Math.random()} className="bg-gray-800 rounded-xl">
-                                    {post.isExternal ? (
+                                    {post.is_external ? (
                                         <ExternalPostWidget post={post} />
                                     ) : (
                                         <ContentWidget post={post} />

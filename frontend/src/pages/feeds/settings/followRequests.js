@@ -27,6 +27,7 @@ const FollowRequests = () => {
         }
     };
 
+    document.title = 'Follow Requests';
     return (
         <div className="channel-content">
             <p className="large-text bold">{FormatNumber(followRequests.length)} {followRequests.length === 1 ? 'follow request' : 'follow requests'}</p>

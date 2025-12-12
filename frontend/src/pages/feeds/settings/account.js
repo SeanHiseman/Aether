@@ -63,6 +63,7 @@ const Account = () => {
         setter(!currentState);
     };
 
+    document.title = "Account Settings";
     return (
         <div className="feed-settings">
             <div className="display-area">
