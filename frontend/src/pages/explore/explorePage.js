@@ -105,7 +105,7 @@ const ExplorePage = () => {
 	const handleScroll = useCallback(() => {
 		const element = scrollRef.current;
 		if (!element || isLoading) return;
-		const threshold = window.innerHeight * 1.5; //Fetch new content 1.5 vertical height away from bottom
+		const threshold = window.innerHeight * 2; //Fetch new content 2 vertical height away from bottom
 		if (element.scrollTop + element.clientHeight >= element.scrollHeight - threshold) {
 			loadMore();
 		}

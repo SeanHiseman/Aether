@@ -2,10 +2,12 @@ import api from "../api";
 import AlgorithmSelector from "../algorithms/algorithmSelector";
 import { AuthContext } from "../components/authContext";
 import { capitalise } from "../functions/capitalise";
+import ConfirmModal from "../components/modals/confirmModal";
+import DisconnectSocialButton from "./disconnectSocialButton";
 import ExternalPostWidget from "./externalPostWidget";
 import { refreshConnectedAccounts } from "../functions/refreshConnectedAccounts";
 import { useContext, useEffect, useState, useRef } from 'react';
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate, useOutletContext } from "react-router-dom";
 
 export default function SocialFeedPage({ platform }) {
 	const [errorMessage, setErrorMessage] = useState('');
@@ -17,9 +19,15 @@ export default function SocialFeedPage({ platform }) {
 	const [posts, setPosts] = useState([]);
 	const [refreshTrigger, setRefreshTrigger] = useState(false);
 	const location = useLocation();
+	const params = new URLSearchParams(location.search);
+	const justConnected = params.get("connected") === "true";
+	//console.log("socialFeedPage location:", location);
+	const [modalOpen, setModalOpen] = useState(false);
 	const isFetchingRef = useRef(false);
+	const { rightClasses } = useOutletContext(); 
 	const scrollRef = useRef(null);
 	const hasLoadedRef = useRef(false); 
+	const navigate = useNavigate();
 
 	async function loadFeed(isNextPage = false) {
 		if (!isAuthenticated) {
@@ -37,9 +45,14 @@ export default function SocialFeedPage({ platform }) {
 				params: { limit: fetchLimit, offset },
 				withCredentials: true
 			});
+			//console.log(`${platform} feed response:`, response);
 			const items = response.data.items || [];
 			if (isNextPage) {
-				setPosts(prev => [...prev, ...items]);
+				setPosts(prev => {
+					const existingIds = new Set(prev.map(p => p.post_id));
+					const newItems = items.filter(item => !existingIds.has(item.post_id));
+					return [...prev, ...newItems];
+				});
 			} else {
 				setPosts(items);
 			}
@@ -49,6 +62,7 @@ export default function SocialFeedPage({ platform }) {
 			} else {
 				setOffset(prev => prev + returnedCount);
 			}
+			hasLoadedRef.current = true;
 		} catch (error) {
 			setErrorMessage('Error getting posts');
 		} finally {
@@ -58,17 +72,22 @@ export default function SocialFeedPage({ platform }) {
 		}
 	}
 
+	const requestDisconnect = () => {
+		setModalOpen(true);
+	};
+
 	useEffect(() => {
 		if (!isAuthenticated) return;
+		if (hasLoadedRef.current) return;
+		if (justConnected) return;
 		setOffset(0);
 		setHasMore(true);
 		setPosts([]);
 		setLoading(true);
 		loadFeed();
-	}, [refreshTrigger, isAuthenticated]);
+	}, [refreshTrigger, isAuthenticated, justConnected]);
 
 	useEffect(() => {
-		//Reset on platform change
 		if (hasLoadedRef.current) {
 			hasLoadedRef.current = false;
 			setOffset(0);
@@ -79,47 +98,40 @@ export default function SocialFeedPage({ platform }) {
 	}, [platform]);
 
 	useEffect(() => {
+		if (!isAuthenticated) return;
 		if (hasLoadedRef.current) return;
 		try {
-			hasLoadedRef.current = true;
-			const params = new URLSearchParams(location.search);
-			const justConnected = params.get("connected");
-			//Check for cached posts from fresh connection
-			if (justConnected === "true") {
+			if (justConnected) {
+				//console.log("justConnected, checking for cached posts");
 				const cacheKey = `${platform}_initial_posts`;
 				const cachedPosts = sessionStorage.getItem(cacheKey);
 				if (cachedPosts) {
 					try {
 						const parsedPosts = JSON.parse(cachedPosts);
+						//console.log("found cached posts length:", parsedPosts.length);
 						setPosts(parsedPosts);
 						setOffset(parsedPosts.length);
 						setLoading(false);
-						//Clean up cache and URL
+						hasLoadedRef.current = true;
 						sessionStorage.removeItem(cacheKey);
-						window.history.replaceState({}, "", location.pathname);
-						//Refresh connected accounts to update local storage
+						navigate(location.pathname, { replace: true });
 						refreshConnectedAccounts();
-						return; //Exit early, don't fetch from API
+						return;
 					} catch (error) {
 						setErrorMessage('Error getting posts');
 						sessionStorage.removeItem(cacheKey);
 					}
 				}
-				//If no cached posts but justConnected, still refresh accounts
 				refreshConnectedAccounts();
-				window.history.replaceState({}, "", location.pathname);
-			}
-			//Handle OAuth redirects (Reddit/Mastodon)
-			if (justConnected === "reddit" || justConnected === "mastodon") {
-				refreshConnectedAccounts();
-				window.history.replaceState({}, "", location.pathname);
+				navigate(location.pathname, { replace: true });
+				return;
 			}
 			loadFeed();
 		} catch (error) {
 			setErrorMessage('Error loading feed');
 			setLoading(false);
 		}
-	}, [platform, location.search, isAuthenticated]);
+	}, [platform, location.search, isAuthenticated, justConnected]);
 
 	useEffect(() => {
 		const element = scrollRef.current;
@@ -146,8 +158,8 @@ export default function SocialFeedPage({ platform }) {
 		setHasMore(true);
 		setPosts([]);
 		setLoading(true);
-        setRefreshTrigger(prev => !prev);
-    };
+		setRefreshTrigger(prev => !prev);
+	};
 
 	document.title = capitalise(platform) + " feed";
 	if (!isAuthenticated) {
@@ -164,7 +176,7 @@ export default function SocialFeedPage({ platform }) {
 	}
 	
 	return (
-		<div className="standard-container">
+		<><div className="standard-container">
 			<div ref={scrollRef} className="channel-feed">
 				<p className="error-message">{errorMessage}</p>
 				{loading ? (
@@ -187,10 +199,28 @@ export default function SocialFeedPage({ platform }) {
 					</div>
 				)}
 			</div>
-			<aside className="right-aside">
+			<aside className={rightClasses}>
 				<p className="large-text bold">{capitalise(platform) || "Site not found"}</p>
 				<AlgorithmSelector display={false} isAuthenticated={isAuthenticated} locationId={platform} refreshPosts={refreshPosts} />
+				<p className="tiny-text faded-text">Click to disconnect</p>
+				<DisconnectSocialButton socialIcon={`/media/site_images/social_sites/${platform}-logo.png`} socialName={capitalise(platform)} platform={platform} onRequestDisconnect={requestDisconnect} />
 			</aside>
 		</div>
+		<ConfirmModal
+			isOpen={modalOpen}
+			title="Disconnect account"
+			message={`Are you sure you want to disconnect your ${capitalise(platform)} account?`}
+			onCancel={() => setModalOpen(false)}
+			onConfirm={async () => {
+				try {
+					await api.post('/disconnect_external_account', { platform });
+					const existing = JSON.parse(localStorage.getItem("connectedAccounts") || "[]");
+					const updated = existing.filter(a => a.platform !== platform);
+					localStorage.setItem("connectedAccounts", JSON.stringify(updated));
+					setModalOpen(false);
+					navigate('/explore');
+				} catch (error) { }
+			}} 
+		/></>
 	);
 }

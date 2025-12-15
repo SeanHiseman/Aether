@@ -25,7 +25,7 @@ const SearchResults = () => {
 	const keyword = (searchParams.get('keyword') || '').trim();
 	const { isAuthenticated, viewer } = useContext(AuthContext);
 	const { rightClasses, updateFeeds } = useOutletContext();
-	const [refreshTrigger, setRefreshTrigger] = useState(false);
+	const [refreshTrigger, setRefreshTrigger] = useState(0);
 	const shownPostIdsRef = useRef([]);
 	const shownFeedIdsRef = useRef([]);
 	const scrollRef = useRef(null);
@@ -159,7 +159,7 @@ const SearchResults = () => {
 	};
 
 	const refreshPosts = () => {
-		setRefreshTrigger(!refreshTrigger);
+		setRefreshTrigger(prev => prev + 1);
 	};
 
 	useEffect(() => {

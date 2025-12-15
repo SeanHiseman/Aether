@@ -4,7 +4,8 @@ import { DeepFeedContent, Posts, PostVotes, SavedPosts } from "../models/relatio
 import { ExternalPosts, ExternalPostsAccess } from "../models/content.js";
 import { FEED_CONFIG, formatExternalPost, processAccount } from "../routes/socialConnect.js";
 import { Op } from 'sequelize';
-import Sequelize from 'sequelize';
+import Sequelize, { QueryTypes } from 'sequelize';
+import sequelize from "../databaseSetup.js";
 
 const excludedAttrs = [
 	'rank_hotness',
@@ -37,6 +38,7 @@ function stripExcludedAttributes(posts) {
 }
 
 async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOptions, isGroup = true, isMain, limit = 100, offset, recentUpvotes, viewerId, keyword = '', connectedAccounts = [], userId }) {
+	//console.log("getting posts in applyAlgorithms at:", new Date().toISOString());
 	try {
         //Followed feeds are a received as a string
 		const followedFeedIdsSafe = (typeof followedFeedIds === "string")
@@ -166,7 +168,7 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
 			if (connectedAccounts.find(a => a.platform === 'reddit')) enabledSources.push('reddit');
 			if (connectedAccounts.find(a => a.platform === 'bluesky')) enabledSources.push('bluesky');
 			if (connectedAccounts.find(a => a.platform === 'mastodon')) enabledSources.push('mastodon');
-			const totalSources = 1 + enabledSources.length; //local + external sources
+			const totalSources = 1 + enabledSources.length;
 			const postsPerSource = Math.floor((limit * 0.5) / totalSources);
 			//Fetch local posts
 			const postIds = await Posts.findAll({
@@ -181,7 +183,6 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
 				offset,
 				raw: true
 			});
-			//console.log("local posts:", postIds.length);
 			const orderedIds = postIds.map(p => p.post_id);
 			posts = await Posts.findAll({
 				where: { post_id: orderedIds },
@@ -194,37 +195,55 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
 			//Fetch external posts only if user has connected accounts
 			let externalAccesses = [];
 			if (connectedAccounts.length > 0) {
-				externalAccesses = await ExternalPostsAccess.findAll({
-					where: { user_id: userId },
-					order: [['rank_hotness', 'DESC']],
-					attributes: ['post_id'],
-					limit: limit,
-					offset: offset,
-					raw: true
-				});
-				//If no external posts found, fetch from remote APIs and add to database
+				externalAccesses = await sequelize.query(
+					`
+					SELECT
+						p.post_id
+					FROM external_posts_access a
+					JOIN external_posts p ON p.post_id = a.post_id
+					WHERE
+						a.user_id = :userId
+						AND p.expired = false
+						AND p.created_at_remote >= DATE_SUB(NOW(), INTERVAL 7 DAY)
+					ORDER BY
+						(p.score * EXP(-0.00002 * TIMESTAMPDIFF(SECOND, p.created_at_remote, NOW()))) DESC
+					LIMIT :limit OFFSET :offset
+					`,
+					{
+						replacements: { limit: postsPerSource, offset, userId },
+						type: QueryTypes.SELECT
+					}
+				);
 				if (!externalAccesses.length && offset === 0) {
-					console.log('No external posts found, fetching from remote APIs');
-					await Promise.all(connectedAccounts.map(account => 
-						processAccount({
-							platform: account.platform,
-							user_id: userId,
-							access_token: account.access_token,
-							instance_url: account.instance_url
-						}).catch(error => {
-							console.error(`Error processing ${account.platform}:`, error);
-							return null;
-						})
-					));
-					externalAccesses = await ExternalPostsAccess.findAll({
-						where: { user_id: userId },
-						order: [['rank_hotness', 'DESC']],
-						attributes: ['post_id'],
-						limit: limit,
-						offset: offset,
-						raw: true
-					});
-					console.log(`External posts after refresh: ${externalAccesses.length}`);
+					await Promise.all(
+						connectedAccounts.map(account =>
+							processAccount({
+								platform: account.platform,
+								user_id: userId,
+								access_token: account.access_token,
+								instance_url: account.instance_url
+							}).catch(() => null)
+						)
+					);
+					externalAccesses = await sequelize.query(
+						`
+						SELECT
+							p.post_id
+						FROM external_posts_access a
+						JOIN external_posts p ON p.post_id = a.post_id
+						WHERE
+							a.user_id = :userId
+							AND p.expired = false
+							AND p.created_at_remote >= DATE_SUB(NOW(), INTERVAL 7 DAY)
+						ORDER BY
+							(p.score * EXP(-0.00002 * TIMESTAMPDIFF(SECOND, p.created_at_remote, NOW()))) DESC
+						LIMIT :limit OFFSET :offset
+						`,
+						{
+							replacements: { limit: postsPerSource, offset, userId },
+							type: QueryTypes.SELECT
+						}
+					);
 				}
 			}
 			const unifiedIds = externalAccesses.map(a => a.post_id);
@@ -239,42 +258,72 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
 				const platformConfig = FEED_CONFIG[p.source];
 				return formatExternalPost(p, platformConfig, p.source);
 			});
-			posts = [...posts.map(p => ({ ...(p.dataValues || p), isExternal: false })), ...formattedExternal];
+			posts = [
+				...posts.map(p => ({ ...(p.dataValues || p), isExternal: false })),
+				...formattedExternal
+			];
 		} else if (typeof locationId === 'string' && ['reddit','bluesky','mastodon'].includes(locationId)) {
 			const platform = locationId;
+			//console.log("inside applyAlgorithm getting posts for:", platform);
 			let accesses = [];
+			//console.log("userId:", userId);
 			if (userId) {
-				accesses = await ExternalPostsAccess.findAll({
-					where: { user_id: userId, source: platform },
-					attributes: ['post_id'],
-					order: [['rank_hotness', 'DESC']],
-					limit,
-					offset,
-					raw: true
-				});
+				accesses = await sequelize.query(
+					`
+					SELECT
+						p.post_id
+					FROM external_posts_access a
+					JOIN external_posts p ON p.post_id = a.post_id
+					WHERE
+						a.user_id = :userId
+						AND a.source = :platform
+						AND p.expired = false
+						AND p.created_at_remote >= DATE_SUB(NOW(), INTERVAL 7 DAY)
+					ORDER BY
+						(p.score * EXP(-0.00002 * TIMESTAMPDIFF(SECOND, p.created_at_remote, NOW()))) DESC
+					LIMIT :limit OFFSET :offset
+					`,
+					{
+						replacements: { limit, offset, platform, userId },
+						type: QueryTypes.SELECT
+					}
+				);
 			}
+			//console.log("accesses found:", accesses.length);
 			if (!accesses.length && connectedAccounts && connectedAccounts.length) {
 				const account = connectedAccounts.find(a => a.platform === platform);
+				//console.log("processing account for platform:", platform, account ? "found" : "not found");
 				if (account) {
 					await processAccount({
 						platform,
 						user_id: userId,
 						access_token: account.access_token,
 						instance_url: account.instance_url
-					}).catch(error => {
-						console.error(`Error processing ${platform}:`, error);
-					});
-					accesses = await ExternalPostsAccess.findAll({
-						where: { user_id: userId, source: platform },
-						attributes: ['post_id'],
-						order: [['rank_hotness', 'DESC']],
-						limit,
-						offset,
-						raw: true
-					});
+					}).catch(() => null);
+					accesses = await sequelize.query(
+						`
+						SELECT
+							p.post_id
+						FROM external_posts_access a
+						JOIN external_posts p ON p.post_id = a.post_id
+						WHERE
+							a.user_id = :userId
+							AND a.source = :platform
+							AND p.expired = false
+							AND p.created_at_remote >= DATE_SUB(NOW(), INTERVAL 7 DAY)
+						ORDER BY
+							(p.score * EXP(-0.00002 * TIMESTAMPDIFF(SECOND, p.created_at_remote, NOW()))) DESC
+						LIMIT :limit OFFSET :offset
+						`,
+						{
+							replacements: { limit, offset, platform, userId },
+							type: QueryTypes.SELECT
+						}
+					);
 				}
 			}
 			const unifiedIds = accesses.map(a => a.post_id).filter(Boolean);
+			//console.log("unifiedIds found:", unifiedIds.length);
 			let externalPosts = [];
 			if (unifiedIds.length) {
 				externalPosts = await ExternalPosts.findAll({
@@ -287,6 +336,7 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
 				return formatExternalPost(p, platformConfig, p.source);
 			});
 			posts = formattedExternal;
+			//console.log("externalPosts found:", posts.length);
 		} else if (locationId === "explore") {
             const postIds = await Posts.findAll({
                 attributes: ['post_id'],
@@ -416,7 +466,7 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
 		const tenDays = 864000000;
 		let postEmbedding = [];
 		try {
-			//const logStart = Date.now();
+			const logStart = Date.now();
 			//console.log("posts.length:", posts.length);
 			for (const post of posts) {
 				postEmbedding = post.embeddings;
@@ -575,7 +625,7 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
 			}
 			//console.log("finalPosts:", finalPosts);
 			//console.log("finalPosts length:", finalPosts.length);
-			//const logEnd = Date.now();
+			const logEnd = Date.now();
 			//console.log("post processing time ms:", logEnd - logStart);
 		} catch (error) {
 			console.error(new Date().toISOString(), "error applying algorithm to posts:", error);

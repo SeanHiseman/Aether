@@ -277,10 +277,6 @@ CREATE TABLE `posts` (
   KEY `idx_feed_videos` (`feed_id`,`has_videos`),
   KEY `idx_sentiment` (`sentiment_score`),
   FULLTEXT KEY `idx_fulltext_posts` (`title`,`text_body`),
-  -- Foreign Key Constraints (Retained from original SQL for integrity)
-  CONSTRAINT `fk_posts_channel_id` FOREIGN KEY (`channel_id`) REFERENCES `feed_channels` (`channel_id`),
-  CONSTRAINT `fk_posts_poster_id` FOREIGN KEY (`poster_id`) REFERENCES `feeds` (`feed_id`),
-  CONSTRAINT `posts_ibfk_1` FOREIGN KEY (`feed_id`) REFERENCES `feeds` (`feed_id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 DROP TABLE IF EXISTS `app_builds`;
@@ -391,7 +387,6 @@ CREATE TABLE `external_posts` (
   `has_embedded_websites` BOOLEAN DEFAULT FALSE,
   `score` INT DEFAULT NULL,
   `replies` INT DEFAULT NULL,
-  `rank_hotness` DOUBLE DEFAULT NULL,
   `sentiment_score` FLOAT DEFAULT NULL,
   `embeddings` JSON DEFAULT NULL,
   `fetched_at` DATETIME NOT NULL,
@@ -404,7 +399,6 @@ CREATE TABLE `external_posts` (
   `media` JSON DEFAULT NULL,
   PRIMARY KEY (`post_id`),
   KEY `idx_created_at_remote` (`created_at_remote`),
-  KEY `idx_ep_rank_hotness_desc` (`rank_hotness` DESC),
   KEY `idx_score` (`score`),
   KEY `idx_source` (`source`),
   KEY `idx_expired` (`expired`),
@@ -416,14 +410,12 @@ CREATE TABLE `external_posts_access` (
   `user_id` VARCHAR(36) NOT NULL,
   `post_id` VARCHAR(36) NOT NULL,
   `source` VARCHAR(20) NOT NULL,
-  `rank_hotness` DOUBLE DEFAULT NULL,
   `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   UNIQUE KEY `uniq_user_post` (`user_id`, `post_id`),
   KEY `idx_user_id` (`user_id`),
   KEY `idx_post_id` (`post_id`),
   KEY `idx_source` (`source`),
-  KEY `idx_eps_user_rank_desc` (`user_id`, `rank_hotness` DESC)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE `connected_accounts` (

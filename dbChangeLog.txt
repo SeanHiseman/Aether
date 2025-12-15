@@ -365,3 +365,15 @@ ALTER TABLE external_posts
 
 ALTER TABLE external_posts
 	ADD COLUMN content TEXT DEFAULT NULL AFTER title;
+
+ALTER TABLE external_posts
+	DROP INDEX idx_ep_rank_hotness_desc;
+
+ALTER TABLE external_posts
+	DROP COLUMN rank_hotness;
+
+ALTER TABLE external_posts_access
+	DROP INDEX idx_eps_user_rank_desc;
+
+ALTER TABLE external_posts_access
+	DROP COLUMN rank_hotness;

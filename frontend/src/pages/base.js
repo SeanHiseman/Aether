@@ -511,7 +511,7 @@ const BaseLayout = () => {
                                     ) : (
                                         <>
                                             <FaPlusCircle />
-                                            <p className="icon-text">Create Feed</p>
+                                            <p className="icon-text">Create Group Feed</p>
                                         </>
                                     )}
                                 </button>

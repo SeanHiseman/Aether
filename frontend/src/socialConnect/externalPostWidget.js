@@ -7,6 +7,7 @@ import { useContext, useEffect, useRef, useState } from 'react';
 import useTimeAgo from '../functions/useTimeAgo';
 
 const ExternalPostWidget = ({ post }) => {
+	//console.log("ExternalPostWidget post:", post);
 	const authContext = useContext(AuthContext);
 	const { isAuthenticated = false } = authContext || {};
 	const { post_id } = useParams();
@@ -47,6 +48,14 @@ const ExternalPostWidget = ({ post }) => {
     if (!isAuthenticated) {
         return <p className="small-text faded-text">Please log in to view this content.</p>;
     }
+
+	//Special formatting for subreddits, regular otherwise
+	const subreddit = post?.source === 'Reddit' && post?.channel
+		? post.channel.replace(/^r\//i, '')
+		: null;
+	const sourceLabel = post?.source === 'Reddit' && subreddit
+		? `r/${subreddit} on Reddit`
+		: (post?.source || 'Unknown site');
 
 	return (
 		<div className={'content-item'}>
@@ -124,7 +133,7 @@ const ExternalPostWidget = ({ post }) => {
 					</button>
 				</div>
 				<a href={post?.url} target="_blank" rel="noopener noreferrer">
-					<p className="small-text compact feed-channel-link faded-text">See post on {post?.source || 'Unknown site'}</p>
+					<p className="small-text compact feed-channel-link faded-text">See post at {sourceLabel}</p>
 				</a>
 				<div className="view-date-container">
 					<p className="small-text compact faded-text" style={{ margin: '0px', textAlign: 'right' }}>

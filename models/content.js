@@ -27,7 +27,6 @@ const ExternalPosts = sequelize.define('ExternalPosts', {
     has_embedded_websites: { type: BOOLEAN, defaultValue: false },
 	score: { type: INTEGER, allowNull: true },
     replies: { type: INTEGER, allowNull: true },
-	rank_hotness: { type: DataTypes.DOUBLE, allowNull: true, defaultValue: null },
     sentiment_score: { type: FLOAT, allowNull: true },
 	embeddings: { type: DataTypes.JSON, allowNull: true },
 	fetched_at: { type: DataTypes.DATE, allowNull: false },
@@ -43,7 +42,6 @@ const ExternalPosts = sequelize.define('ExternalPosts', {
     timestamps: false, 
     indexes: [
         { fields: ['created_at_remote'] },
-        { name: 'idx_ep_rank_hotness_desc', fields: [{ attribute: 'rank_hotness', order: 'DESC' }] },
         { fields: ['score'] },
         { fields: ['source'] },
         { fields: ['expired'] },
@@ -54,9 +52,8 @@ const ExternalPosts = sequelize.define('ExternalPosts', {
 const ExternalPostsAccess = sequelize.define('ExternalPostsAccess', {
 	id: { type: STRING(255), primaryKey: true },
 	user_id: { type: STRING(36), allowNull: false },
-	post_id: { type: STRING(36), allowNull: false },
+	post_id: { type: STRING(255), allowNull: false },
     source: { type: STRING(20), allowNull: false },
-    rank_hotness: { type: DataTypes.DOUBLE, allowNull: true, defaultValue: null },
 	created_at: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }
 }, {
 	tableName: 'external_posts_access',
@@ -66,7 +63,6 @@ const ExternalPostsAccess = sequelize.define('ExternalPostsAccess', {
         { fields: ['post_id'] },
         { fields: ['source'] },
         { fields: ['user_id', 'post_id'], unique: true },
-        { name: 'idx_eps_user_rank_desc', fields: ['user_id', { attribute: 'rank_hotness', order: 'DESC' }] }
     ]
 });
 

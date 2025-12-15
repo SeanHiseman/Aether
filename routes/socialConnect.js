@@ -1,6 +1,5 @@
 import { ApplyAlgorithm } from '../custom_algorithms/applyAlgorithm.js';
 import authenticateCheck from '../functions/checks/authenticateCheck.js';
-import cheerio from 'cheerio';
 import { computeHotness } from '../functions/postRanking.js';
 import { ContentAnalyser } from '../functions/contentAnalyser.js';
 import cron from 'node-cron';
@@ -67,9 +66,6 @@ export const FEED_CONFIG = {
         sourceName: 'Mastodon',
         getProfileUrl: (p) => p.url,
         getChannel: (p) => p.author, //not p.channel
-        mapExtras: (p) => ({ 
-            rank_hotness: [p.rank_hotness] //Preserving your original array format
-        })
     }
 };
 
@@ -114,19 +110,16 @@ export function formatExternalPost(p, config, platform) {
 
 async function fetchAndProcessPosts(platform, fetchConfig, user_id) {
 	try {
-		const { url, headers, mapper, htmlGenerator, limit } = fetchConfig;
-		//console.log("fetching posts for:", platform);
+		const { url, headers, mapper, htmlGenerator } = fetchConfig;
 		const resp = await fetch(url, { headers });
-		//console.log("fetchAndProcessPosts response:", resp);
 		const data = await resp.json();
 		let mappedPosts = [];
 		let nextToken = null;
+		//Map and compute nextToken
 		switch (platform) {
-			case 'bluesky':
-				if (!data || !data.feed) {
-					return [];
-				}
-				data.feed = data.feed.filter(item => !item.reply); //Avoid returning replies
+			case 'bluesky': {
+				if (!data || !data.feed) return [];
+				data.feed = data.feed.filter(item => !item.reply); //avoid replies
 				mappedPosts = data.feed.map(item => {
 					const p = mapper(item);
 					const rank_hotness = computeHotness({
@@ -137,18 +130,18 @@ async function fetchAndProcessPosts(platform, fetchConfig, user_id) {
 					});
 					return { ...p, rank_hotness };
 				});
-				{
-					const localSeen = new Set();
-					mappedPosts = mappedPosts.filter(p => {
-						if (localSeen.has(p.post_id)) return false;
-						localSeen.add(p.post_id);
-						return true;
-					});
-				}
-				nextToken = { cursor: data.cursor };
+				//batch dedupe
+				const localSeen = new Set();
+				mappedPosts = mappedPosts.filter(p => {
+					if (localSeen.has(p.post_id)) return false;
+					localSeen.add(p.post_id);
+					return true;
+				});
+				nextToken = data.cursor ? { cursor: data.cursor } : null;
 				break;
-			case 'reddit':
-				const children = data.data.children.filter(c => c.kind === 't3');
+			}
+			case 'reddit': {
+				const children = (data?.data?.children || []).filter(c => c.kind === 't3');
 				mappedPosts = children.map(c => {
 					const p = mapper(c);
 					const rank_hotness = computeHotness({
@@ -159,17 +152,17 @@ async function fetchAndProcessPosts(platform, fetchConfig, user_id) {
 					});
 					return { ...p, rank_hotness };
 				});
-				{
-					const localSeen = new Set();
-					mappedPosts = mappedPosts.filter(p => {
-						if (localSeen.has(p.post_id)) return false;
-						localSeen.add(p.post_id);
-						return true;
-					});
-				}
-				nextToken = { after: data.data.after };
+				const localSeen = new Set();
+				mappedPosts = mappedPosts.filter(p => {
+					if (localSeen.has(p.post_id)) return false;
+					localSeen.add(p.post_id);
+					return true;
+				});
+				nextToken = data?.data?.after ? { after: data.data.after } : null;
 				break;
-			case 'mastodon':
+			}
+			case 'mastodon': {
+				if (!Array.isArray(data)) return [];
 				mappedPosts = data.map(t => {
 					const p = mapper(t, fetchConfig.instance);
 					const rank_hotness = computeHotness({
@@ -180,118 +173,133 @@ async function fetchAndProcessPosts(platform, fetchConfig, user_id) {
 					});
 					return { ...p, rank_hotness };
 				});
-				{
-					const localSeen = new Set();
-					mappedPosts = mappedPosts.filter(p => {
-						if (localSeen.has(p.post_id)) return false;
-						localSeen.add(p.post_id);
-						return true;
-					});
-				}
+				const localSeen = new Set();
+				mappedPosts = mappedPosts.filter(p => {
+					if (localSeen.has(p.post_id)) return false;
+					localSeen.add(p.post_id);
+					return true;
+				});
+				//Mastodon pagination uses the last item id as max_id
 				if (mappedPosts.length > 0) {
 					nextToken = { max_id: mappedPosts[mappedPosts.length - 1].source_post_id };
+				} else {
+					nextToken = null;
 				}
 				break;
+			}
+			default:
+				return [];
 		}
-		const existing = await ExternalPosts.findAll({
-			where: { post_id: mappedPosts.map(m => m.post_id) },
+		if (mappedPosts.length === 0) {
+			//Persist token if provided, to avoid re-fetching same page
+			if (nextToken) {
+				const existingToken = await PaginationTokens.findOne({ where: { user_id, platform } });
+				const tokenId = existingToken?.id || v4();
+				await PaginationTokens.upsert({
+					id: tokenId,
+					user_id,
+					platform,
+					...nextToken,
+					updated_at: new Date()
+				});
+			}
+			return [];
+		}
+		const postIds = mappedPosts.map(p => p.post_id);
+		const existingGlobal = await ExternalPosts.findAll({
+			where: { post_id: postIds },
 			attributes: ['post_id'],
 			raw: true
 		});
-		const existingIds = new Set(existing.map(e => e.post_id));
-		const newPosts = mappedPosts.filter(p => !existingIds.has(p.post_id));
-		//console.log("fetchAndProcessPosts newPosts.length:", newPosts.length);
-		const existingToken = await PaginationTokens.findOne({
-            where: { user_id, platform }
-        });
-        const tokenId = existingToken?.id || v4();
-		//console.log("tokenId:", tokenId);
-        if (newPosts.length === 0) {
-            if (nextToken) {
-                await PaginationTokens.upsert({
-                    id: tokenId,
-                    user_id,
-                    platform,
-                    ...nextToken,
-                    updated_at: new Date()
-                });
-            }
-            return newPosts;
-        }
-		const embedder = await getEmbedder();
-		const enriched = await Promise.all(newPosts.map(async mapped => {
-			const html = platform === 'mastodon' 
-				? await htmlGenerator(mapped.content, mapped.media)
-				: await htmlGenerator(mapped.text_body, mapped.media);
-			const details = await contentAnalyser.analyseContent(html, mapped.title, embedder);
-			const sentiment_score = details?.sentiment_score ?? 0;
-			const embeddings = details?.embeddings ?? null;
-			const has_text = (mapped.text_body?.length || 0) > 0;
-			const post = {
-				post_id: mapped.post_id,
-				source: mapped.source,
-				source_post_id: mapped.source_post_id,
-				title: mapped.title || null,
-				content: html,
-				text_body: mapped.text_body || null,
-				text_length: mapped.text_length || 0,
-				word_count: mapped.word_count || 0,
-				image_count: mapped.image_count || 0,
-				video_count: mapped.video_count || 0,
-				has_text,
-				has_images: mapped.has_images || false,
-				has_videos: mapped.has_videos || false,
-				has_embedded_websites: details?.has_embedded_websites || false,
-				score: mapped.score || 0,
-				replies: mapped.replies || 0,
-				rank_hotness: mapped.rank_hotness || 0,
-				sentiment_score,
-				embeddings,
-				fetched_at: mapped.fetched_at,
-				created_at_remote: mapped.created_at_remote,
-				expired: mapped.expired || false,
-				channel: mapped.channel || null,
-				author: mapped.author || null,
-				author_photo: mapped.author_photo || null,
-				url: mapped.url,
-				media: mapped.media
-			};
-			return post;
-		}));
-		//console.log("enriched.length:", enriched.length);
-		const updateFields = [
-			'source_post_id', 'title', 'content', 'text_body', 'text_length', 'word_count', 
-			'image_count', 'video_count', 'has_text', 'has_images', 'has_videos',
-			'has_embedded_websites',
-			'score', 'replies', 'rank_hotness', 'sentiment_score', 'embeddings',
-			'fetched_at', 'created_at_remote', 'expired', 'channel', 'author',
-			'author_photo', 'url', 'media'
-		];
-		//Prevent excessively large db uploads
-		const batchSize = 20;
-		for (let i = 0; i < enriched.length; i += batchSize) {
-			const batch = enriched.slice(i, i + batchSize);
-			await ExternalPosts.bulkCreate(batch, {
-				updateOnDuplicate: updateFields,
-				logging: false
-			});
+		const existingGlobalIds = new Set(existingGlobal.map(r => r.post_id));
+		const existingUserAccess = await ExternalPostsAccess.findAll({
+			where: {
+				user_id,
+				source: platform,
+				post_id: postIds
+			},
+			attributes: ['post_id'],
+			raw: true
+		});
+		const existingUserAccessIds = new Set(existingUserAccess.map(r => r.post_id));
+		//Posts to insert into external_posts
+		const postsToInsert = mappedPosts.filter(p => !existingGlobalIds.has(p.post_id));
+		//Posts to grant access to this user, regardless of global existence
+		const postsToGrantAccess = mappedPosts.filter(p => !existingUserAccessIds.has(p.post_id));
+		//Only enrich and insert truly new-global posts
+		let enriched = [];
+		if (postsToInsert.length > 0) {
+			const embedder = await getEmbedder();
+			enriched = await Promise.all(postsToInsert.map(async mapped => {
+				const html = platform === 'mastodon'
+					? await htmlGenerator(mapped.content, mapped.media)
+					: await htmlGenerator(mapped.text_body, mapped.media);
+				const details = await contentAnalyser.analyseContent(html, mapped.title, embedder);
+				const sentiment_score = details?.sentiment_score ?? 0;
+				const embeddings = details?.embeddings ?? null;
+				const has_text = (mapped.text_body?.length || 0) > 0;
+				return {
+					post_id: mapped.post_id,
+					source: mapped.source,
+					source_post_id: mapped.source_post_id,
+					title: mapped.title || null,
+					content: html,
+					text_body: mapped.text_body || null,
+					text_length: mapped.text_length || 0,
+					word_count: mapped.word_count || 0,
+					image_count: mapped.image_count || 0,
+					video_count: mapped.video_count || 0,
+					has_text,
+					has_images: mapped.has_images || false,
+					has_videos: mapped.has_videos || false,
+					has_embedded_websites: details?.has_embedded_websites || false,
+					score: mapped.score || 0,
+					replies: mapped.replies || 0,
+					sentiment_score,
+					embeddings,
+					fetched_at: mapped.fetched_at,
+					created_at_remote: mapped.created_at_remote,
+					expired: mapped.expired || false,
+					channel: mapped.channel || null,
+					author: mapped.author || null,
+					author_photo: mapped.author_photo || null,
+					url: mapped.url,
+					media: mapped.media
+				};
+			}));
+			const updateFields = [
+				'source_post_id', 'title', 'content', 'text_body', 'text_length', 'word_count',
+				'image_count', 'video_count', 'has_text', 'has_images', 'has_videos',
+				'has_embedded_websites',
+				'score', 'replies', 'sentiment_score', 'embeddings',
+				'fetched_at', 'created_at_remote', 'expired', 'channel', 'author',
+				'author_photo', 'url', 'media'
+			];
+			//Prevent excessively large db uploads
+			const batchSize = 20;
+			for (let i = 0; i < enriched.length; i += batchSize) {
+				const batch = enriched.slice(i, i + batchSize);
+				await ExternalPosts.bulkCreate(batch, {
+					updateOnDuplicate: updateFields,
+					logging: false
+				});
+			}
 		}
-		//dedupe before creating access rows
-		const accessSeen = new Set();
-		const accessRows = enriched.filter(p => {
-			if (accessSeen.has(p.post_id)) return false;
-			accessSeen.add(p.post_id);
-			return true;
-		}).map(p => ({
-			id: v4(),
-			post_id: p.post_id,
-			source: platform,
-			user_id,
-			rank_hotness: p.rank_hotness,
-			created_at: new Date()
-		}));
-		await ExternalPostsAccess.bulkCreate(accessRows, { ignoreDuplicates: true });
+		//Grant per-user access for posts the user hasn't seen yet
+		if (postsToGrantAccess.length > 0) {
+			const accessRows = postsToGrantAccess.map(p => ({
+				id: v4(),
+				post_id: p.post_id,
+				source: platform,
+				user_id,
+				created_at: new Date()
+			}));
+			await ExternalPostsAccess.bulkCreate(accessRows, { ignoreDuplicates: true });
+		}
+		// Persist pagination token
 		if (nextToken) {
+			const existingToken = await PaginationTokens.findOne({ where: { user_id, platform } });
+			const tokenId = existingToken?.id || v4();
 			await PaginationTokens.upsert({
 				id: tokenId,
 				user_id,
@@ -300,7 +308,7 @@ async function fetchAndProcessPosts(platform, fetchConfig, user_id) {
 				updated_at: new Date()
 			});
 		}
-		return newPosts;
+		return postsToGrantAccess;
 	} catch (error) {
 		console.error(new Date().toISOString(), `fetchAndProcessPosts ${platform} error:`, error);
 		throw error;
@@ -637,6 +645,7 @@ router.post('/auth/bluesky', authenticateCheck, async (req, res) => {
 		};
 		try {
 			const mappedPosts = await fetchAndProcessPosts('bluesky', config, req.user.user_id);
+			//console.log(`Bluesky connect fetched ${mappedPosts.length} posts for user ${req.user.user_id}`);
 			mappedPosts.sort((a, b) => b.rank_hotness - a.rank_hotness);
 			//Return posts immediately
 			const postsWithContent = await Promise.all(
@@ -857,31 +866,27 @@ router.get('/mastodon/callback', authenticateCheck, async (req, res) => {
 			limit: 40,
 			instance
 		};
-		try {
-			const mappedPosts = await fetchAndProcessPosts('mastodon', config, user_id);
-			mappedPosts.sort((a, b) => b.rank_hotness - a.rank_hotness);
-			const postsData = await Promise.all(
-				mappedPosts.map(async (p) => {
-					const formatted = formatExternalPost(p, FEED_CONFIG.mastodon, 'mastodon');
-					formatted.content = await FEED_CONFIG.mastodon.generator(p.text_body, p.media);
-					return formatted;
-				})
-			);
-			//HTML to contain post data
-			res.send(`
-				<!DOCTYPE html>
-				<html>
-				<body>
-					<script>
-						sessionStorage.setItem('mastodon_initial_posts', ${JSON.stringify(JSON.stringify(postsData))});
-						window.location.href = '/feed/mastodon?connected=true';
-					</script>
-				</body>
-				</html>
-			`);
-		} catch (fetchError) {
-			res.redirect('/feed/mastodon');
-		}
+		const mappedPosts = await fetchAndProcessPosts('mastodon', config, user_id);
+		mappedPosts.sort((a, b) => b.rank_hotness - a.rank_hotness);
+		const postsData = await Promise.all(
+			mappedPosts.map(async (p) => {
+				const formatted = formatExternalPost(p, FEED_CONFIG.mastodon, 'mastodon');
+				formatted.content = await FEED_CONFIG.mastodon.generator(p.text_body, p.media);
+				return formatted;
+			})
+		);
+		//HTML to contain post data
+		res.send(`
+			<!DOCTYPE html>
+			<html>
+			<body>
+				<script>
+					sessionStorage.setItem('mastodon_initial_posts', ${JSON.stringify(JSON.stringify(postsData))});
+					window.location.href = '/feed/mastodon?connected=true';
+				</script>
+			</body>
+			</html>
+		`);
 	} catch (error) {
 		console.error(new Date().toISOString(), '/mastodon/callback error:', error);
 		res.redirect('/feed/mastodon?error=1');
@@ -890,6 +895,7 @@ router.get('/mastodon/callback', authenticateCheck, async (req, res) => {
 
 //Combined route for Bluesky, Mastodon, and Reddit posts
 router.get('/:platform/feed', authenticateCheck, async (req, res) => {
+	//console.log("/platform/feed called with params:", req.params, "and query:", req.query);
     const { platform } = req.params;
     if (!['bluesky', 'reddit', 'mastodon'].includes(platform)) {
         return res.status(404).json({ success: false, message: 'Invalid platform' });
@@ -915,6 +921,7 @@ router.get('/:platform/feed', authenticateCheck, async (req, res) => {
             connectedAccounts,
             isGroup: false
         });
+		//console.log("items fetched:", items.length);
         const extraPayload = platform === 'reddit' ? { after: null, before: null } : {};
         res.status(200).json({ success: true, items, ...extraPayload });
     } catch (error) {

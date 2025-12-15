@@ -248,12 +248,16 @@ const DeepFeed = () => {
         return () => window.removeEventListener('deepFeedUpdated', handleUpdate);
     }, [deep_feed_id, queryClient]);
 
+    //Filter native/external and prevent duplicate posts
     const allPosts = Array.isArray(data?.pages)
         ? data.pages
             .flatMap(page => Array.isArray(page) ? page : [])
+            .filter((p, index, self) => 
+                self.findIndex(post => post.post_id === p.post_id) === index
+            )
             .filter(p =>
-                (includeNative && !p.isExternal) ||
-                (includeExternal && p.isExternal)
+                (includeNative && !p.is_external) ||
+                (includeExternal && p.is_external)
             )
         : [];
 
