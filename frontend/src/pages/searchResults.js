@@ -32,6 +32,7 @@ const SearchResults = () => {
 
 	const fetchPosts = useCallback(async (page = 0) => {
 		try {
+			setIsLoading(true);
 			const recentUpvotes = JSON.parse(localStorage.getItem('recentUpvotes') || '[]');
 			const response = await api.post('/search', {
 				keyword,
@@ -40,8 +41,18 @@ const SearchResults = () => {
 				postOffset: page * FETCH_LIMIT,
 				recentUpvotes
 			});
-			const newPosts = response.data?.posts || [];
-			if (newPosts.length === 0) {
+			const { message, posts: newPosts, success } = response.data || {};
+			if (!success) {
+				setErrorMessage(message || 'Failed to fetch posts');
+				setHasMorePosts(false);
+				return;
+			}
+			if (!newPosts || newPosts.length === 0) {
+				if (page === 0) {
+					setPosts([]);
+					shownPostIdsRef.current = [];
+					setErrorMessage(message || '');
+				}
 				setHasMorePosts(false);
 				return;
 			}
@@ -56,6 +67,8 @@ const SearchResults = () => {
 		} catch (error) {
 			setErrorMessage(error.response?.data?.message || 'Failed to fetch posts');
 			setHasMorePosts(false);
+		} finally {
+			setIsLoading(false);
 		}
 	}, [keyword]);
 
@@ -159,6 +172,7 @@ const SearchResults = () => {
 	};
 
 	const refreshPosts = () => {
+		setErrorMessage('');
 		setRefreshTrigger(prev => prev + 1);
 	};
 

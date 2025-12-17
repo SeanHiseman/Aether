@@ -137,6 +137,7 @@ async function fetchAndProcessPosts(platform, fetchConfig, user_id) {
 					localSeen.add(p.post_id);
 					return true;
 				});
+				//mappedPosts = mappedPosts.filter(p => p.content != null);
 				nextToken = data.cursor ? { cursor: data.cursor } : null;
 				break;
 			}
@@ -158,6 +159,7 @@ async function fetchAndProcessPosts(platform, fetchConfig, user_id) {
 					localSeen.add(p.post_id);
 					return true;
 				});
+				//mappedPosts = mappedPosts.filter(p => p.content != null);
 				nextToken = data?.data?.after ? { after: data.data.after } : null;
 				break;
 			}
@@ -179,6 +181,7 @@ async function fetchAndProcessPosts(platform, fetchConfig, user_id) {
 					localSeen.add(p.post_id);
 					return true;
 				});
+				//mappedPosts = mappedPosts.filter(p => p.content != null);
 				//Mastodon pagination uses the last item id as max_id
 				if (mappedPosts.length > 0) {
 					nextToken = { max_id: mappedPosts[mappedPosts.length - 1].source_post_id };
@@ -912,18 +915,21 @@ router.get('/:platform/feed', authenticateCheck, async (req, res) => {
             raw: true
         });
         const connectedAccounts = connectedAccount ? [connectedAccount] : []; //ApplyAlgorithm expects an array
-        const items = await ApplyAlgorithm({
-            locationId: platform, 
-            userId: req.user.user_id,
-            viewerId: req.session.viewer_id,
-            limit,
-            offset,
-            connectedAccounts,
-            isGroup: false
-        });
+		const algorithmResult = await ApplyAlgorithm({
+			locationId: platform, 
+			userId: req.user.user_id,
+			viewerId: req.session.viewer_id,
+			limit,
+			offset,
+			connectedAccounts,
+			isGroup: false
+		});
+		const items = algorithmResult.posts;
+		const status = algorithmResult.status;
+		const message = algorithmResult.message;
 		//console.log("items fetched:", items.length);
         const extraPayload = platform === 'reddit' ? { after: null, before: null } : {};
-        res.status(200).json({ success: true, items, ...extraPayload });
+        res.status(200).json({ success: true, items: items, status: status, message: message, ...extraPayload });
     } catch (error) {
         console.error(new Date().toISOString(), `/${platform}/feed error:`, error);
         res.status(400).json({ success: false });

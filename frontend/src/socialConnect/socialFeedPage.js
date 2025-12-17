@@ -46,7 +46,13 @@ export default function SocialFeedPage({ platform }) {
 				withCredentials: true
 			});
 			//console.log(`${platform} feed response:`, response);
-			const items = response.data.items || [];
+			const items = Array.isArray(response.data?.items) ? response.data.items : [];
+			const status = response.data?.status;
+			const message = response.data?.message;
+			if (!isNextPage && message) {
+				setErrorMessage(message);
+				setTimeout(() => { setErrorMessage(''); }, 5000);
+			}
 			if (isNextPage) {
 				setPosts(prev => {
 					const existingIds = new Set(prev.map(p => p.post_id));
@@ -57,7 +63,7 @@ export default function SocialFeedPage({ platform }) {
 				setPosts(items);
 			}
 			const returnedCount = items.length;
-			if (returnedCount === 0) {
+			if (returnedCount === 0) { //May also be because some posts filtered out
 				setHasMore(false);
 			} else {
 				setOffset(prev => prev + returnedCount);
@@ -154,6 +160,7 @@ export default function SocialFeedPage({ platform }) {
 	}, [hasMore, platform, isAuthenticated, offset]);
 
 	const refreshPosts = () => {
+		setErrorMessage('');
 		setOffset(0);
 		setHasMore(true);
 		setPosts([]);
@@ -178,7 +185,6 @@ export default function SocialFeedPage({ platform }) {
 	return (
 		<><div className="standard-container">
 			<div ref={scrollRef} className="channel-feed">
-				<p className="error-message">{errorMessage}</p>
 				{loading ? (
 					<p className="large-text faded-text">Loading {capitalise(platform)} feed...</p>
 				) : posts.length === 0 ? (
@@ -201,6 +207,7 @@ export default function SocialFeedPage({ platform }) {
 			</div>
 			<aside className={rightClasses}>
 				<p className="large-text bold">{capitalise(platform) || "Site not found"}</p>
+				<p className="small-text faded-text">{errorMessage}</p>
 				<AlgorithmSelector display={false} isAuthenticated={isAuthenticated} locationId={platform} refreshPosts={refreshPosts} />
 				<p className="tiny-text faded-text">Click to disconnect</p>
 				<DisconnectSocialButton socialIcon={`/media/site_images/social_sites/${platform}-logo.png`} socialName={capitalise(platform)} platform={platform} onRequestDisconnect={requestDisconnect} />

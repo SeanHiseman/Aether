@@ -85,9 +85,9 @@ router.post('/search', standardLimiter, async (req, res) => {
             as: 'votes',
             attributes: ['upvotes', 'downvotes']
         }];
-        const postResults = await ApplyAlgorithm({
+        const algorithmResult = await ApplyAlgorithm({
             locationId: 'search',
-            feedId: null, //Not used when locationId is 'search'
+            feedId: null,
             includeOptions: includeOptions,
             isMain: 'false',
             limit: limit,
@@ -96,7 +96,10 @@ router.post('/search', standardLimiter, async (req, res) => {
             viewerId: searcherId,
             keyword: keyword
         });
-        res.status(200).json({ feeds: feedData, posts: postResults, success: true });
+        const posts = algorithmResult.posts;
+        const message = algorithmResult.message;
+        const status = algorithmResult.status;
+        res.status(200).json({ feeds: feedData, posts: posts, status: status, message: message, success: true });
     } catch (error) {
         console.error(new Date().toISOString(), '/search error:', error);
         res.status(500).json({ success: false });

@@ -164,7 +164,13 @@ const DeepFeed = () => {
                 });
                 document.title = 'Following';
             }
-            return response.data?.posts;
+            const posts = Array.isArray(response.data?.posts) ? response.data.posts : [];
+            const status = response.data?.status;
+            const message = response.data?.message;
+            if (pageParam === 0 && message) {
+                setErrorMessage(message);
+            }
+            return posts;
         } catch (error) {
             setErrorMessage(error.response?.data?.message || 'Error fetching posts');
             setTimeout(() => { setErrorMessage(''); }, 5000);
@@ -287,6 +293,7 @@ const DeepFeed = () => {
     }, [handleScroll]);
 
     const refreshPosts = () => {
+        setErrorMessage('');
         setRefreshTrigger(!refreshTrigger);
     };
 

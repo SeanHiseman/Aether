@@ -26,6 +26,7 @@ const ExplorePage = () => {
 
 	const fetchPosts = useCallback(async (page = 0) => {
 		try {
+			//console.log("Fetching posts for page", page);
 			const followedFeeds = JSON.parse(localStorage.getItem("followedFeeds") || "[]");
 			const recentUpvotes = JSON.parse(localStorage.getItem("recentUpvotes") || "[]");
 			const followedFeedIds = followedFeeds.map(f => f.feed_id);
@@ -35,14 +36,23 @@ const ExplorePage = () => {
 				followedFeedIds,
 				recentUpvotes
 			});
-			const newPosts = response.data?.posts || [];
+			//console.log("Fetched posts response:", response.data);
+			const newPosts = Array.isArray(response.data?.posts) ? response.data.posts : [];
+			const status = response.data?.status;
+			const message = response.data?.message;
 			setHasMorePosts(response.data?.hasMore ?? false);
+			if (page === 0 && message) {
+				setErrorMessage(message);
+			} else if (page === 0) {
+				setErrorMessage("");
+			}
 			if (page === 0) {
 				setPosts(newPosts);
-			} else { //Append to existing posts
+			} else {
 				setPosts(prev => [...prev, ...newPosts]);
 			}
 		} catch (error) {
+			//console.log("error fetching posts:", error);
 			setErrorMessage(error.response?.data?.message || "Failed to fetch posts");
 			setHasMorePosts(false);
 		}
@@ -133,6 +143,7 @@ const ExplorePage = () => {
 	}, [filter, posts, feeds]);
 
 	const refreshPosts = () => {
+		setErrorMessage('');
 		setRefreshTrigger(!refreshTrigger);
 	};
 
@@ -213,7 +224,6 @@ const ExplorePage = () => {
 				)}
 			</div>
 			<aside className={`${rightClasses} w-80 bg-white`}>
-				<p className="error-message">{errorMessage}</p>
 				<p className="large-text bold">Explore</p>
 				<nav className="channel-list">
 					<ul>
@@ -222,6 +232,7 @@ const ExplorePage = () => {
 						<li className="channel-link" onClick={() => setFilter("feeds")}>Feeds</li>
 					</ul>
 				</nav>
+				<p className="small-text faded-text">{errorMessage}</p>
 				<AlgorithmSelector display={false} isAuthenticated={isAuthenticated} locationId={"explore"} refreshPosts={refreshPosts} />
 				{isAuthenticated && (
 					<PlatformConnect />

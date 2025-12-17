@@ -35,7 +35,7 @@ router.post('/assign_algorithm', authenticateCheck, async (req, res) => {
 });
 
 router.post('/create_algorithm', authenticateCheck, async (req, res) => {
-	//console.time("total");
+	console.time("total");
 	let transaction;
 	try {
 		//console.time("transaction_start");

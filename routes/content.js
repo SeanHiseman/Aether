@@ -94,18 +94,21 @@ router.post('/channel_posts', standardLimiter, async (req, res) => {
 				return res.status(200).json({ success: true, post: singlePost })
 			}
 		}
-		const results = await ApplyAlgorithm({ 
-            locationId: channelId,
-            feedId, 
-            includeOptions, 
-            isGroup, 
-            isMain, 
-            limit, 
-            offset, 
+		const algorithmResult = await ApplyAlgorithm({ 
+			locationId: channelId,
+			feedId, 
+			includeOptions, 
+			isGroup, 
+			isMain, 
+			limit, 
+			offset, 
 			recentUpvotes,
-            viewerId,
-        });
-		return res.status(200).json({ success: true, posts: results });
+			viewerId,
+		});
+		const posts = algorithmResult.posts;
+		const status = algorithmResult.status;
+		const message = algorithmResult.message;
+		return res.status(200).json({ success: true, posts: posts,bstatus: status,bmessage: message });
 	} catch (error) {
         console.error(new Date().toISOString(), '/channel_posts error:', error);
 		return res.status(500).json({ success: false, message: 'Error getting posts.' });
@@ -450,18 +453,22 @@ router.post("/explore_posts", standardLimiter, async (req, res) => {
             attributes: ["upvotes", "downvotes"],
             required: false,
         }];
-        const posts = await ApplyAlgorithm({
-            locationId: 'explore',
-            feedId: null,
-            followedFeedIds,
-            includeOptions: includeOptions,
-            isMain: 'false',
-            limit: limit,
-            offset: offset,
-            recentUpvotes,
-            viewerId,
-        });
-        res.status(200).json({ posts: posts, hasMore: posts.length >= limit });
+		const algorithmResult = await ApplyAlgorithm({
+			locationId: 'explore',
+			feedId: null,
+			followedFeedIds,
+			includeOptions: includeOptions,
+			isMain: 'false',
+			limit: limit,
+			offset: offset,
+			recentUpvotes,
+			viewerId,
+		});
+		const posts = algorithmResult.posts;
+		console.log("Explore posts fetched:", posts);
+		const status = algorithmResult.status;
+		const message = algorithmResult.message;
+		res.status(200).json({ hasMore: posts.length >= limit, posts: posts, status: status, message: message });
     } catch (error) {
         console.error(new Date().toISOString(), '/explore_posts error:', error);
         res.status(500).json({ success: false, message: 'Error fetching explore posts.' });

@@ -447,7 +447,7 @@ router.post('/deep_feed_posts', standardLimiter, authenticateCheck, async (req, 
             model: PostVotes,
             required: false
         }];
-        const deepFeedPosts = await ApplyAlgorithm({
+        const algorithmResult = await ApplyAlgorithm({
             locationId: deepFeedId,
             followedFeedIds,
             includeOptions: includeOptions,
@@ -460,7 +460,10 @@ router.post('/deep_feed_posts', standardLimiter, authenticateCheck, async (req, 
             connectedAccounts,
             userId
         });
-        return res.status(200).json({ deepFeed, posts: deepFeedPosts, success: true });
+        const posts = algorithmResult.posts;
+        const status = algorithmResult.status;
+        const message = algorithmResult.message;
+        return res.status(200).json({ deepFeed, posts: posts, status: status, message: message, success: true });
     } catch (error) {
         console.error(new Date().toISOString(), '/deep_feed_posts error:', error);
         res.status(500).json({ success: false, error: error.message });

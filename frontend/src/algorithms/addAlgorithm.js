@@ -103,6 +103,7 @@ const DualRangeSlider = ({ min = 0, max = 100, value = [25, 75], onChange, forma
 };
 
 const AddAlgorithm = ({ algorithms = [], display, editingAlgorithm = null, isAuthenticated, locationId, onCreated, onUpdated, setEditingAlgorithm }) => {  
+    console.log("algorithms:", algorithms);
     const authContext = useContext(AuthContext);
 	const { user = null } = authContext || {};
     const [activeDays, setActiveDays] = useState(['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']);
@@ -138,6 +139,12 @@ const AddAlgorithm = ({ algorithms = [], display, editingAlgorithm = null, isAut
         return Math.pow(10, logMin + (value / 100) * (logMax - logMin));
     };
 
+    const inverseLogScale = (value, min, max) => {
+        const logMin = Math.log10(min);
+        const logMax = Math.log10(max);
+        return ((Math.log10(value) - logMin) / (logMax - logMin)) * 100;
+    };
+
     const submitAlgorithm = async () => {
         if (display) return;
         try {
@@ -164,10 +171,10 @@ const AddAlgorithm = ({ algorithms = [], display, editingAlgorithm = null, isAut
                 dateTo,
                 generateCode,
                 locationId,
-                minText: textRange[0],
-                maxText: textRange[1],
-                minVideo: videoRange[0],
-                maxVideo: videoRange[1],
+                minText: textRange[0] === 0 ? null : textRange[0],
+                maxText: textRange[1] >= 5000 ? null : textRange[1],
+                minVideo: videoRange[0] === 0 ? null : videoRange[0],
+                maxVideo: videoRange[1] >= 3600 ? null : videoRange[1],
                 sentiment,
                 startTime,
                 endTime,
@@ -298,8 +305,14 @@ const AddAlgorithm = ({ algorithms = [], display, editingAlgorithm = null, isAut
             setStartTime(parsedAlgorithmCode.startTime || '00:00');
             setEndTime(parsedAlgorithmCode.endTime || '23:59');
             setTemplate(parsedAlgorithmCode.template || 'none');
-            setTextRange([parsedAlgorithmCode.minText || 0, parsedAlgorithmCode.maxText || 100]);
-            setVideoRange([parsedAlgorithmCode.minVideo || 0, parsedAlgorithmCode.maxVideo || 100]);
+            setTextRange([ 
+                parsedAlgorithmCode.textLimits?.min ? inverseLogScale(parsedAlgorithmCode.textLimits.min, 1, 5000) : 0, 
+                parsedAlgorithmCode.textLimits?.max ? inverseLogScale(parsedAlgorithmCode.textLimits.max, 1, 5000) : 100 
+            ]);
+            setVideoRange([ 
+                parsedAlgorithmCode.videoLimits?.min ? inverseLogScale(parsedAlgorithmCode.videoLimits.min, 5, 3600) : 0, 
+                parsedAlgorithmCode.videoLimits?.max ? inverseLogScale(parsedAlgorithmCode.videoLimits.max, 5, 3600) : 100 
+            ]);
             const wordBoostArray = parsedAlgorithmCode.scoring?.wordBoost || [];
             const wordSuppressArray = parsedAlgorithmCode.scoring?.wordSuppress || [];
             const wordBoostWords = wordBoostArray.map(item => typeof item === 'string' ? item : item.word).join(',');

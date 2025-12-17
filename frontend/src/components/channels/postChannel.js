@@ -6,7 +6,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useInfiniteQuery, useQuery, useQueryClient } from '@tanstack/react-query';
 const FETCH_LIMIT = 100;
 
-const PostChannel = ({ channelId, channelName, feed, isDraft, isEditMode, isGroup, refreshTrigger }) => {
+const PostChannel = ({ channelId, channelName, feed, isDraft, isEditMode, isGroup, refreshTrigger, setPostErrorMessage }) => {
 	const { channel_name, post_id } = useParams();
 	const channelReady = !!channelId;
 	const feedId = feed?.feed_id;
@@ -23,7 +23,7 @@ const PostChannel = ({ channelId, channelName, feed, isDraft, isEditMode, isGrou
 				queryClient.invalidateQueries(['singlePost', post_id]);
 			}
 		}
-	}, [refreshTrigger, queryClient, channelId, channelName, feedId, isGroup, post_id]);
+	}, [refreshTrigger, queryClient, channelId, channelName, feedId, isGroup, post_id, setPostErrorMessage]);
 
 	useEffect(() => {
 		if (isDraft && !isGroup && viewer?.feed_id !== feedId) {
@@ -44,7 +44,13 @@ const PostChannel = ({ channelId, channelName, feed, isDraft, isEditMode, isGrou
 		try {
 			const recentUpvotes = JSON.parse(localStorage.getItem("recentUpvotes") || "[]");
 			const response = await api.post('/channel_posts', { channelId, feedId, isMain, isGroup: feed?.is_group, isSingle: false, limit: FETCH_LIMIT, offset: pageParam, recentUpvotes });
-			return response.data?.posts || [];
+			const posts = Array.isArray(response.data?.posts) ? response.data.posts : [];
+			const status = response.data?.status;
+			const message = response.data?.message;
+			if (pageParam === 0 && message) {
+				setPostErrorMessage(message);
+			}
+			return posts;
 		} catch (error) {
 			if (error.response?.status === 404) {
 				return [];
