@@ -15,8 +15,8 @@ const Theme = () => {
 			if (typeof theme === 'string' && theme.startsWith('{')) {
 				try {
 					return JSON.parse(theme);
-				} catch (e) {
-					console.error('Failed to parse theme JSON:', e);
+				} catch (error) {
+					console.error('Failed to parse theme JSON:', error);
 					return defaultThemeColors[theme] || defaultThemeColors['dark'];
 				}
 			}

@@ -262,12 +262,17 @@
     margin: var(--medium-margin);
 }
 .settings-area {
-    display: flex;
-    justify-content: center;
-    height: calc(100% - var(--header-height));
-    margin-top: var(--header-height);
-    padding: var(--medium-margin);
-    width: 100%;
+	display: flex;
+	justify-content: center;
+	height: calc(100% - var(--header-height));
+	margin-top: var(--header-height);
+	padding: var(--medium-margin);
+	width: 100%;
+	overflow-y: auto;
+	scrollbar-width: none;
+}
+.settings-area::-webkit-scrollbar {
+	display: none;
 }
 .settings-feed-info {
     display: flex;
