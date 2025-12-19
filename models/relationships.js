@@ -1,10 +1,13 @@
 import { AppBuilds, Posts, PostDrafts, PostNotes, PostVotes, Prompts, ViewedPosts } from "./content.js";
 import { DeepFeeds, DeepFeedContent, Feeds, FeedChannels, FeedChannelMessages, Followers, FollowRequests, SavedPosts, SavedPostChannels } from "./feeds.js";
 import { AskChats, AskMessages, Chats, ConnectRequests, Connections, FeedChats, Messages } from "./messages.js";
-import { Users } from "./users.js";
+import { Feedback, Users } from "./users.js";
 
 Users.hasMany(Feeds, { foreignKey: 'feed_owner' });
 Feeds.belongsTo(Users, { foreignKey: 'feed_owner' });
+
+Users.hasMany(Feedback, { foreignKey: 'user_id' });
+Feedback.belongsTo(Users, { foreignKey: 'user_id' });
 
 Feeds.hasMany(FeedChannels, { foreignKey: 'feed_id', as: 'channels', onDelete: 'CASCADE' });
 FeedChannels.belongsTo(Feeds, { foreignKey: 'feed_id' });
@@ -103,6 +106,7 @@ export {
     Connections, 
     DeepFeeds, 
     DeepFeedContent,
+    Feedback,
     FeedChats, 
     Feeds, 
     FeedChannels, 

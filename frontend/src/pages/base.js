@@ -26,6 +26,7 @@ import "../css/contentForm.css";
 import "../css/feed.css";
 import "../css/membership.css";
 import "../css/messages.css";
+import "../css/output.css";
 
 const BaseLayout = () => {
 	const [activeDragItem, setActiveDragItem] = useState(null);
@@ -449,184 +450,181 @@ const BaseLayout = () => {
             )}
             <div className="container">
                 <aside className={leftClasses} ref={feedContainerRef}>
-                    <div className="left-aside-feed-info">
-                        {isAuthenticated && (
-                            <><Link className="feed-link" to={`/u/${feed?.feed_name}`}>
-                                <img className="small-feed-photo" src={`${feed?.feed_photo}`} onError={(e) => e.currentTarget.src = '/media/site_images/blank-profile.png'} />
-                                <p className="feed-list-text">{feed?.feed_name}</p>
-                            </Link>
-                            <Link className="small-icon" to={`/settings/${feed?.feed_name}`} title="Settings">
-                                <FaCog />
-                            </Link></>
-                        )}
-                    </div>
-                    {isAuthenticated && <div className="post-button-container">
-                        <Link className="main-button" to={`/u/${viewer?.feed_name}/Main/create`} title="Create Post">
-                            <FaPen /><p className="icon-text">Create post</p>
-                        </Link>
-                    </div>}
                     {isAuthenticated ? (
-                        <><DndContext sensors={sensors} collisionDetection={customCollisionDetection} onDragStart={dragStart} onDragEnd={dragEnd}>
-                            <nav id="personal-feeds">
-                                <ul>  
-                                    <li className={`channel-link ${location.pathname.startsWith('/messages') ? 'selected' : ''}`}>
-                                        <Link to="/messages">Messages</Link>
-                                        {/*<MessageDropdown />*/}
-                                    </li>
-                                    <Link to="/explore" className={`channel-link ${location.pathname.startsWith('/explore') ? 'selected' : ''}`}>
-                                        Explore
-                                    </Link>
-                                    <Link to="/d/following" className={`channel-link ${location.pathname.startsWith('/d/following') ? 'selected' : ''}`}>
-                                        Following
-                                    </Link>
-                                    <Link to="/saved/Main" className={`channel-link ${location.pathname.startsWith('/saved') ? 'selected' : ''}`}>
-                                        Saved posts
-                                    </Link>
-                                </ul>
-                            </nav>
-                            <div className="deep-feeds-container">
-                                {deepFeeds?.map(deepFeed => (
-                                    <DeepFeedItem 
-                                        key={deepFeed?.deep_feed_id} 
-                                        deepFeed={deepFeed} 
-                                        onFeedAdded={registerFeedCallback} 
-                                        showHeader={true}
+                        <>
+                            <div className="left-aside-feed-info">
+                                <Link className="feed-link" to={`/u/${feed?.feed_name}`}>
+                                    <img
+                                        className="small-feed-photo"
+                                        src={`${feed?.feed_photo}`}
+                                        onError={(e) => e.currentTarget.src = '/media/site_images/blank-profile.png'}
                                     />
-                                ))}
-                            </div>
-                            {feedLimitReached && (
-                                <Link className="small-icon" to={`/settings/${user?.username}/membership`} type="button" style={{ marginLeft: '5px' }} title="View Membership">
-                                    <Crown />
-                                    <p className="icon-text">Get membership for more</p>
+                                    <p className="feed-list-text">{feed?.feed_name}</p>
                                 </Link>
-                            )}
-                            <p className="tiny-text faded-text">{asideErrorMessage}</p>
-                            <div id="create-feed-section">
-                                <button className="small-icon" onClick={toggleForm} style={{alignSelf: "flex-start", marginLeft: "calc(5% + 10px)"}}>
-                                    {showForm ? (
-                                        <>
-                                            <FaMinus />
-                                            <p className="icon-text">Close</p>
-                                        </>
-                                    ) : (
-                                        <>
-                                            <FaPlusCircle />
-                                            <p className="icon-text">Create Group Feed</p>
-                                        </>
-                                    )}
-                                </button>
-                                <Tooltip place="top" effect="solid" delayShow={0}>
-                                    {showForm ? "Close" : "Create feed"}
-                                </Tooltip>
-                                {showForm && (
-                                    <form id="create-feed-form" onSubmit={createFeed}>
-                                        <input
-                                            className="name-input"
-                                            type="text"
-                                            name="Name"
-                                            placeholder="Feed name..."
-                                            value={feedName}
-                                            onChange={(e) => {
-                                                const input = e.target.value;
-                                                if (input.length <= 30) {  
-                                                    setFeedName(input);
-                                                    if (input) {
-                                                        const result = ValidateTextInput(input, 0, 30);
-                                                        if (result.valid) {
-                                                            setAsideErrorMessage("");
-                                                            setIsFeedNameValid(true);
+                                <Link className="small-icon" to={`/settings/${feed?.feed_name}`} title="Settings">
+                                    <FaCog />
+                                </Link>
+                            </div>
+                            <Link to="/feedback">
+                                <p className="small-text faded-text underline">Give feedback</p>
+                            </Link>
+                            <div className="post-button-container">
+                                <Link className="main-button" to={`/u/${viewer?.feed_name}/Main/create`} title="Create Post">
+                                    <FaPen />
+                                    <p className="icon-text">Create post</p>
+                                </Link>
+                            </div>
+                            <DndContext sensors={sensors} collisionDetection={customCollisionDetection} onDragStart={dragStart} onDragEnd={dragEnd}>
+                                <nav id="personal-feeds">
+                                    <ul>
+                                        <li className={`channel-link ${location.pathname.startsWith('/messages') ? 'selected' : ''}`}>
+                                            <Link to="/messages">Messages</Link>
+                                        </li>
+                                        <Link to="/explore" className={`channel-link ${location.pathname.startsWith('/explore') ? 'selected' : ''}`}>
+                                            Explore
+                                        </Link>
+                                        <Link to="/d/following" className={`channel-link ${location.pathname.startsWith('/d/following') ? 'selected' : ''}`}>
+                                            Following
+                                        </Link>
+                                        <Link to="/saved/Main" className={`channel-link ${location.pathname.startsWith('/saved') ? 'selected' : ''}`}>
+                                            Saved posts
+                                        </Link>
+                                    </ul>
+                                </nav>
+                                <div className="deep-feeds-container">
+                                    {deepFeeds?.map(deepFeed => (
+                                        <DeepFeedItem key={deepFeed?.deep_feed_id} deepFeed={deepFeed} onFeedAdded={registerFeedCallback} showHeader={true} />
+                                    ))}
+                                </div>
+                                {feedLimitReached && (
+                                <Link className="small-icon" to={`/settings/${user?.username}/membership`} type="button" style={{ marginLeft: '5px' }} title="View Membership">
+                                        <Crown />
+                                        <p className="icon-text">Get membership for more</p>
+                                    </Link>
+                                )}
+                                <p className="tiny-text faded-text">{asideErrorMessage}</p>
+                                <div id="create-feed-section">
+                                    <button className="small-icon" onClick={toggleForm} style={{ alignSelf: "flex-start", marginLeft: "calc(5% + 10px)" }}>
+                                        {showForm ? (
+                                            <>
+                                                <FaMinus />
+                                                <p className="icon-text">Close</p>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <FaPlusCircle />
+                                                <p className="icon-text">Create Group Feed</p>
+                                            </>
+                                        )}
+                                    </button>
+                                    <Tooltip place="top" effect="solid" delayShow={0}>
+                                        {showForm ? "Close" : "Create feed"}
+                                    </Tooltip>
+                                    {showForm && (
+                                        <form id="create-feed-form" onSubmit={createFeed}>
+                                            <input
+                                                className="name-input"
+                                                type="text"
+                                                name="Name"
+                                                placeholder="Feed name..."
+                                                value={feedName}
+                                                onChange={(e) => {
+                                                    const input = e.target.value;
+                                                    if (input.length <= 30) {
+                                                        setFeedName(input);
+                                                        if (input) {
+                                                            const result = ValidateTextInput(input, 0, 30);
+                                                            if (result.valid) {
+                                                                setAsideErrorMessage("");
+                                                                setIsFeedNameValid(true);
+                                                            } else {
+                                                                setAsideErrorMessage(result.error);
+                                                                setIsFeedNameValid(false);
+                                                            }
                                                         } else {
-                                                            setAsideErrorMessage(result.error);
+                                                            setAsideErrorMessage("");
                                                             setIsFeedNameValid(false);
                                                         }
                                                     } else {
-                                                        setAsideErrorMessage("");
+                                                        setAsideErrorMessage("Feed name too long");
                                                         setIsFeedNameValid(false);
                                                     }
-                                                } else {
-                                                    setAsideErrorMessage("Feed name too long");
-                                                    setIsFeedNameValid(false);
-                                                }
-                                            }}
-                                        />
-                                        <div className="file-input">
-                                            <label htmlFor="feed-photo-input" className="small-icon">
-                                                <FaFileUpload />
-                                                <p className="icon-text">Choose feed photo</p>
-                                            </label>
+                                                }}
+                                            />
+                                            <div className="file-input">
+                                                <label htmlFor="feed-photo-input" className="small-icon">
+                                                    <FaFileUpload />
+                                                    <p className="icon-text">Choose feed photo</p>
+                                                </label>
                                             <input type="file" id="feed-photo-input" name="Feed photo" accept="image/*" onChange={handleFileChange} hidden/>
-                                            <p className="small-text faded-text">
-                                                {feedPhotoFile ? feedPhotoFile.name : "No file chosen"}
-                                            </p>
-                                        </div>
-                                        {imageSrc && (
-                                            <div className="crop-container" style={{ position: "relative", width: "100%", height: 180 }}>
-                                                <Cropper aspect={1} crop={crop} image={imageSrc} onCropChange={setCrop} onCropComplete={onCropComplete} onZoomChange={setZoom} zoom={zoom}/>
+                                                <p className="small-text faded-text">
+                                                    {feedPhotoFile ? feedPhotoFile.name : "No file chosen"}
+                                                </p>
                                             </div>
-                                        )}
-                                        <div className="option-toggle">
+                                            {imageSrc && (
+                                                <div className="crop-container" style={{ position: "relative", width: "100%", height: 180 }}>
+                                                <Cropper aspect={1} crop={crop} image={imageSrc} onCropChange={setCrop} onCropComplete={onCropComplete} onZoomChange={setZoom} zoom={zoom}/>
+                                                </div>
+                                            )}
+                                            <div className="option-toggle">
+                                                <button
+                                                    className={feedType === "public" ? "active-mode" : "passive-mode"}
+                                                    onClick={e => {
+                                                        e.preventDefault();
+                                                        setFeedType("public");
+                                                    }}
+                                                    title="Visible to everyone"
+                                                >
+                                                    Public
+                                                </button>
+                                                <button
+                                                    className={feedType === "private" ? "active-mode" : "passive-mode"}
+                                                    onClick={e => {
+                                                        e.preventDefault();
+                                                        setFeedType("private");
+                                                    }}
+                                                    title="Requires permission to follow"
+                                                >
+                                                    Private
+                                                </button>
+                                            </div>
                                             <button
-                                                className={feedType === "public" ? "active-mode" : "passive-mode"}
-                                                onClick={e => {
-                                                    e.preventDefault();
-                                                    setFeedType("public");
-                                                }}
-                                                title="Visible to everyone"
+                                                className={!isFeedNameValid ? "small-icon disabled" : "small-icon"}
+                                                disabled={!isFeedNameValid}
+                                                title={!isFeedNameValid ? "Fix input error" : "Create"}
+                                                type="submit"
+                                                value="Create"
                                             >
-                                                Public
+                                                <FaPlus />
                                             </button>
-                                            <button
-                                                className={feedType === "private" ? "active-mode" : "passive-mode"}
-                                                onClick={e => {
-                                                    e.preventDefault();
-                                                    setFeedType("private");
-                                                }}
-                                                title="Requires permission to follow"
-                                            >
-                                                Private
-                                            </button>
-                                        </div>
-                                        <button
-                                            className={!isFeedNameValid ? "small-icon disabled" : "small-icon"}
-                                            disabled={!isFeedNameValid}
-                                            title={!isFeedNameValid ? "Fix input error" : "Create"}
-                                            type="submit"
-                                            value="Create"
-                                        >
-                                            <FaPlus />
-                                        </button>
-                                    </form>
-                                )}
-                            </div>
-                            <nav className="feed-list">
-                                <p className="small-text faded-text">
-                                    Drag and drop to combine feeds
-                                </p>
-                                <ul className="feeds-list">
-                                    {JSON.parse(localStorage.getItem("connectedAccounts") || "[]")
-                                            ?.some(a => a.platform === "reddit") && (
+                                        </form>
+                                    )}
+                                </div>
+                                <nav className="feed-list">
+                                    <p className="small-text faded-text">Drag and drop to combine feeds</p>
+                                    <ul className="feeds-list">
+                                        {JSON.parse(localStorage.getItem("connectedAccounts") || "[]")?.some(a => a.platform === "reddit") && (
                                             <SocialFeedLink logo="/media/site_images/social_sites/reddit-logo.png" name="Reddit" slug="reddit" />
-                                    )}
-                                    {JSON.parse(localStorage.getItem("connectedAccounts") || "[]")
-                                            ?.some(a => a.platform === "bluesky") && (
+                                        )}
+                                        {JSON.parse(localStorage.getItem("connectedAccounts") || "[]")?.some(a => a.platform === "bluesky") && (
                                             <SocialFeedLink logo="/media/site_images/social_sites/bluesky-logo.png" name="Bluesky" slug="bluesky" />
-                                    )}
-                                    {JSON.parse(localStorage.getItem("connectedAccounts") || "[]")
-                                            ?.some(a => a.platform === "mastodon") && (
+                                        )}
+                                        {JSON.parse(localStorage.getItem("connectedAccounts") || "[]")?.some(a => a.platform === "mastodon") && (
                                             <SocialFeedLink logo="/media/site_images/social_sites/mastodon-logo.png" name="Mastodon" slug="mastodon" />
-                                    )}
-                                    {feeds?.map(feed => (
+                                        )}
+                                        {feeds?.map(feed => (
                                             <FeedItem key={feed?.feed_id} dragged={true} feed={feed} isChat={false} />
-                                    ))}
-                                </ul>
-                            </nav>
-                        </DndContext></>
+                                        ))}
+                                    </ul>
+                                </nav>
+                            </DndContext>
+                        </>
                     ) : (
                         <div style={{ alignItems: "center", display: "flex", flexDirection: "column", justifyContent: "space-between", height: "80%" }}>
                             <Link to="/welcome">
                                 <p className="large-text faded-text" style={{ fontWeight: 'bold' }}>Aether</p>
                                 <p className="large-text faded-text" style={{ fontWeight: 'bold' }}>Social</p>
-                            </Link> 
+                            </Link>
                             <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "10px" }}>
                                 <Link to="/join" className="large-icon">
                                     <FaArrowRight />
@@ -636,9 +634,11 @@ const BaseLayout = () => {
                                     <FaSignInAlt />
                                     <p className="icon-text">Login</p>
                                 </button>
-                                <p className="faded-text" style={{ marginTop: "20px" }}>Join or login for more</p>
+                                <p className="faded-text" style={{ marginTop: "20px" }}>
+                                    Join or login for more
+                                </p>
                             </div>
-                            <div></div>
+                            <div />
                         </div>
                     )}
                 </aside>

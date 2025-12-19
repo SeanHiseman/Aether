@@ -26,6 +26,23 @@ const ConnectedAccounts = sequelize.define('ConnectedAccounts', {
 	]
 });
 
+const Feedback = sequelize.define('Feedback', {
+	id: { type: STRING(36), primaryKey: true, defaultValue: DataTypes.UUIDV4, },
+	user_id: { type: STRING(36), allowNull: true },
+	message: { type: DataTypes.TEXT, allowNull: false },
+	is_resolved: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false },
+    created_at: { type: DataTypes.DATE(3), defaultValue: sequelize.literal('CURRENT_TIMESTAMP(3)') },
+    updated_at: { type: DataTypes.DATE(3), defaultValue: sequelize.literal('CURRENT_TIMESTAMP(3)') },
+}, {
+	tableName: 'feedback',
+    timestamps: false,
+	indexes: [
+		{ fields: ['user_id'] },
+		{ fields: ['created_at'] },
+		{ fields: ['is_resolved'] },
+	],
+}); 
+
 const Users = sequelize.define('users', {
     user_id: { type: STRING(36), primaryKey: true },
     username: { type: STRING(120), allowNull: false },
@@ -54,5 +71,6 @@ cron.schedule('0 0 * * 0', async () => { //Resets usage count every Sunday night
 
 export {
     ConnectedAccounts,
+    Feedback,
     Users,
 }

@@ -672,7 +672,7 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
 			is_saved: savedSet.has(p.post_id)
 		}));
 		console.log("ApplyAlgorithm returning posts:", postsWithVotes.length);
-		return { posts: stripExcludedAttributes(postsWithVotes), status: "ok", message: "successful fetch" };
+		return { posts: stripExcludedAttributes(postsWithVotes), status: "ok", message: "" }; //Frontend does not need message for success
 	} catch (error) {
 		console.error(new Date().toISOString(), 'Error in ApplyAlgorithm:', error);
 		return { posts: [], status: "error", message: "" };

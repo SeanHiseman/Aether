@@ -11,6 +11,7 @@ import ContentWidget from './components/content/contentWidget';
 import DeepFeed from './pages/deepFeed';
 import EmailVerification from './pages/site_entrance/verification';
 import ExplorePage from './pages/explore/explorePage';
+import Feedback from './components/feedback';
 import FeedDeletion from './pages/feeds/settings/feedDeletion';
 import FeedFollowers from './pages/feeds/settings/feedFollowers';
 import FeedInfoView from './pages/feeds/settings/feedInfoView';
@@ -66,6 +67,7 @@ const App = () => {
 								<Route path="team" element={<Placeholder />} />
 								<Route path="terms" element={<Placeholder />} />
 							</Route>
+							<Route path="/feedback" element={<PublicAuthProvider><Feedback /></PublicAuthProvider>} />
 							<Route path="/connect/bluesky" element={<ConnectBluesky />} />
 							<Route path="/forgot-password" element={<ForgotPassword />}/>
 							<Route path="/connect/mastodon" element={<ConnectMastodon />} />

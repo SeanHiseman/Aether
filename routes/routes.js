@@ -1,13 +1,34 @@
 import { ApplyAlgorithm } from '../custom_algorithms/applyAlgorithm.js';
+import authenticateCheck from '../functions/checks/authenticateCheck.js';
 import ConnectCheck from '../functions/checks/connectCheck.js';
+import { ConnectRequests, Feedback, Feeds, FeedChannels, FollowRequests, PostNotes, PostVotes } from '../models/relationships.js'; 
 import FollowerCheck from '../functions/checks/followerCheck.js';
-import { ConnectRequests, Feeds, FeedChannels, FollowRequests, PostNotes, PostVotes } from '../models/relationships.js'; 
 import { Op } from 'sequelize';
 import { Router } from 'express';
 import Sequelize from 'sequelize';
 import { standardLimiter } from '../functions/checks/limiters.js';
+import { ValidateTextInput } from '../functions/validateTextInput.js';
 
 const router = Router();
+
+router.post('/feedback', standardLimiter, authenticateCheck, async (req, res) => {
+	try {
+		const userId = req?.session?.user_id || null;
+		const { message } = req.body;
+		const messageCheck = ValidateTextInput(message, 1, 5000, false);
+		if (!messageCheck.valid) {
+			return res.status(400).json({ message: messageCheck.error });
+		}
+		await Feedback.create({
+			user_id: userId,
+			message,
+		});
+		return res.status(200).json({ success: true, message: 'Feedback submitted. Thank you.' });
+	} catch (error) {
+        console.error(new Date().toISOString(), '/feedback error:', error);
+		return res.status(500).json({ message: 'Failed to submit feedback.' });
+	}
+});
 
 //Searches posts and feeds together
 router.post('/search', standardLimiter, async (req, res) => { 

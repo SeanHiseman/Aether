@@ -5,11 +5,11 @@
     flex-direction: column;
 }
 .authentication-box {
-    border: 1px solid var(--border);
+    border: 1px solid var(--light);
     background-color: var(--dark);
     border-radius: var(--medium-margin);
-    padding: var(--large-margin);
     box-shadow: var(--shadow);
+    padding: var(--large-margin);
     text-align: center;
     width: calc(10 * var(--xl-margin));
 }

@@ -2,7 +2,7 @@ function ValidateTextInput(textInput, minLength = 0, maxLength = 9999999, charac
     if (typeof textInput !== 'string') {
         return { valid: false, error: 'Must be a string.' };
     }
-    if (textInput.length < minLength) {
+    if (textInput.length > 0 && textInput.length < minLength) {
         return { valid: false, error: `At least ${minLength} characters.` };
     }
     if (textInput.length > maxLength) {
