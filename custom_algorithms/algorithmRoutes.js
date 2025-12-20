@@ -35,14 +35,14 @@ router.post('/assign_algorithm', authenticateCheck, async (req, res) => {
 });
 
 router.post('/create_algorithm', authenticateCheck, async (req, res) => {
-	console.time("total");
+	//console.time("total");
 	let transaction;
 	try {
 		//console.time("transaction_start");
 		//console.log("creating algorithm");
 		transaction = await sequelize.transaction();
 		//console.timeEnd("transaction_start");
-		const { algorithmName, activeDays, chronology, contentType, customInstruction, dateFrom, dateTo, generateCode, locationId, minText, maxText, minVideo, maxVideo, sentiment, startTime, endTime, variety, voteImpact, wordBoost, wordSuppress } = req.body;
+		const { algorithmName, activeDays, chronology, contentType, customInstruction, dateFrom, dateTo, generateCode, locationId, minWords, maxWords, minVideo, maxVideo, sentiment, startTime, endTime, variety, voteImpact, wordBoost, wordSuppress } = req.body;
 		const viewerId = req.session.viewer_id;
 		//console.time("build_algorithm_json");
 		const algorithmJson = {
@@ -52,7 +52,7 @@ router.post('/create_algorithm', authenticateCheck, async (req, res) => {
 			activeDays: Array.isArray(activeDays)
 				? activeDays
 				: Object.keys(activeDays).filter(day => activeDays[day]),
-			textLimits: { min: minText || null, max: maxText || null },
+			wordLimits: { min: minWords || null, max: maxWords || null },
 			videoLimits: { min: minVideo || null, max: maxVideo || null },
 			timeLimits: { startTime: startTime || null, endTime: endTime || null },
 			dateLimits: { from: dateFrom || null, to: dateTo || null },
@@ -80,52 +80,82 @@ router.post('/create_algorithm', authenticateCheck, async (req, res) => {
 			});
 		}
 		//console.timeEnd("fetch_existing_algorithm");
-		//If only the name changed, skip AI + embeddings entirely
+		//Compare arrays
+		const sameWords = (a = [], b = []) => {
+			if (a.length !== b.length) return false;
+			const sa = [...a].sort();
+			const sb = [...b].sort();
+			return sa.every((v, i) => v === sb[i]);
+		};
+		const normalizeAlgorithmCode = (code) => {
+			const parsed = typeof code === 'string' ? JSON.parse(code) : code;
+			//Remove fields that don't affect AI generation
+			delete parsed.customFilters;
+			delete parsed.customScoring;
+			return parsed;
+		};
+		//Extract previous state
+		let prevInstruction = '';
+		let prevParsedCode = null;
+		let prevBoost = [];
+		let prevSuppress = [];
 		if (existingAlgorithm) {
-			//console.log("existing algorithm");
-			const prevCode = existingAlgorithm.algorithm_code;
-			const prevInstruction = existingAlgorithm.custom_instruction || '';
-			const bodyInstruction = customInstruction || '';
-			let nameChangedOnly = false;
-			const prevParsed = typeof prevCode === 'string' ? JSON.parse(prevCode) : prevCode;
-			const currParsed = algorithmJson;
-			//Remove irrelevant optional fields before comparing
-			delete prevParsed.customFilters;
-			delete prevParsed.customScoring;
-			const stringifySorted = obj =>
-				JSON.stringify(obj, Object.keys(obj).sort(), 2);
-			const sameStructure = stringifySorted(prevParsed) === stringifySorted(currParsed);
-			nameChangedOnly =
-				algorithmName !== existingAlgorithm.algorithm_name &&
-				prevInstruction === bodyInstruction &&
-				sameStructure;
-			if (nameChangedOnly) {
-				//console.time("rename_only_update");
-				const algorithm = await existingAlgorithm.update(
-					{ algorithm_name: algorithmName },
-					{ transaction }
-				);
-				await transaction.commit();
-				//console.timeEnd("rename_only_update");
-				//console.timeEnd("total");
-				return res.status(200).json({
-					success: true,
-					algorithm: {
-						...algorithm.toJSON(),
-						algorithm_locations: [{ location_id: locationId }]
-					}
-				});
+			prevInstruction = existingAlgorithm.custom_instruction || '';
+			prevParsedCode = normalizeAlgorithmCode(existingAlgorithm.algorithm_code);
+			if (prevParsedCode?.scoring?.wordBoost) {
+				prevBoost = prevParsedCode.scoring.wordBoost;
+			}
+			if (prevParsedCode?.scoring?.wordSuppress) {
+				prevSuppress = prevParsedCode.scoring.wordSuppress;
 			}
 		}
+		const currentInstruction = customInstruction || '';
+		const currentParsedCode = normalizeAlgorithmCode(algorithmJson);
+		const stringifySorted = obj => JSON.stringify(obj, Object.keys(obj).sort(), 2);
+		const sameStructure = prevParsedCode 
+			? stringifySorted(prevParsedCode) === stringifySorted(currentParsedCode)
+			: false;
+		//Determine if custom instruction changed
+		const instructionChanged = prevInstruction !== currentInstruction;
+		//Determine if boost/suppress words changed
+		const boostChanged = !sameWords(algorithmJson.scoring.wordBoost, prevBoost);
+		const suppressChanged = !sameWords(algorithmJson.scoring.wordSuppress, prevSuppress);
+		//Only name changed
+		if (existingAlgorithm && 
+		    algorithmName !== existingAlgorithm.algorithm_name &&
+		    !instructionChanged &&
+		    sameStructure) {
+			//console.log("Name-only change detected - skipping AI and embeddings");
+			//console.time("rename_only_update");
+			const algorithm = await existingAlgorithm.update(
+				{ algorithm_name: algorithmName },
+				{ transaction }
+			);
+			await transaction.commit();
+			//console.timeEnd("rename_only_update");
+			//console.timeEnd("total");
+			return res.status(200).json({
+				success: true,
+				algorithm: {
+					...algorithm.toJSON(),
+					algorithm_locations: [{ location_id: locationId }]
+				}
+			});
+		}
+		//Determine if we need to call AI
+		const needsAiGeneration = generateCode && 
+		                          currentInstruction.trim() !== "" && 
+		                          instructionChanged;
 		let algorithmCode;
 		let finalBoost = algorithmJson.scoring.wordBoost;
 		let finalSuppress = algorithmJson.scoring.wordSuppress;
-		//console.time("ai_generation");
 		//console.log("generateCode:", generateCode);
 		//console.log("customInstruction:", customInstruction);
-		//console.log("trimmed customInstruction:", customInstruction.trim());
-		if (generateCode && customInstruction && customInstruction.trim() !== "") {
-			//console.log("generating code");
+		//console.log("instructionChanged:", instructionChanged);
+		//console.log("needsAiGeneration:", needsAiGeneration);
+		if (needsAiGeneration) {
+			//console.time("ai_generation");
+			//console.log("Custom instruction changed - calling AI API");
 			const systemPrompt = `
 				You are an expert algorithm creation assistant. 
 				Output a single, valid JSON object strictly following this schema:
@@ -134,7 +164,7 @@ router.post('/create_algorithm', authenticateCheck, async (req, res) => {
 					"variety": number (0 to 1),
 					"contentType": { "images": boolean, "videos": boolean, "text": boolean, "interactive": boolean, "externalPosts": boolean, "embeddedWebsites": boolean },
 					"activeDays": string[] (each must be a lowercase full weekday name, e.g. "monday", "tuesday"),
-					"textLimits": { "min": number | null, "max": number | null },
+					"wordLimits": { "min": number | null, "max": number | null },
 					"videoLimits": { "min": number | null, "max": number | null },
 					"timeLimits": { "startTime": string | null, "endTime": string | null },
 					"dateLimits": { "from": string | null, "to": string | null },
@@ -143,7 +173,7 @@ router.post('/create_algorithm', authenticateCheck, async (req, res) => {
 						"voteImpact": number (0 to 1),
 						"wordBoost": [],
 						"wordSuppress": []
-					}, 
+					}
 				}
 				Merge the form settings with the user's custom instruction. If contradiction, prioritise following custom instruction.  
 				No text outside the JSON. Use at least 20 words, or more, for wordBoost and wordSuppress.
@@ -156,7 +186,7 @@ router.post('/create_algorithm', authenticateCheck, async (req, res) => {
 			`;
 			//console.log("sending user content:", userContent);
 			const response = await openai.chat.completions.create({
-				model: "gpt-5-mini",
+				model: "gpt-4o-mini",
 				messages: [
 					{ role: "system", content: systemPrompt },
 					{ role: "user", content: userContent }
@@ -170,25 +200,39 @@ router.post('/create_algorithm', authenticateCheck, async (req, res) => {
 			const parsedJson = JSON.parse(parsed);
 			//console.log("parsedJson:", parsedJson);
 			if (parsedJson.scoring) {
-				if (Array.isArray(parsedJson.scoring.wordBoost) && parsedJson.scoring.wordBoost.length)
+				if (Array.isArray(parsedJson.scoring.wordBoost) && parsedJson.scoring.wordBoost.length) {
 					finalBoost = parsedJson.scoring.wordBoost;
-				if (Array.isArray(parsedJson.scoring.wordSuppress) && parsedJson.scoring.wordSuppress.length)
+				}
+				if (Array.isArray(parsedJson.scoring.wordSuppress) && parsedJson.scoring.wordSuppress.length) {
 					finalSuppress = parsedJson.scoring.wordSuppress;
+				}
 			}
+			//console.timeEnd("ai_generation");
 		} else {
+			//Use the form values directly
+			//console.log("Using form values for algorithm code");
 			algorithmCode = JSON.stringify(algorithmJson);
 		}
-		//console.timeEnd("ai_generation");
+		//Generate embeddings only if words changed
 		//console.time("embeddings");
 		let boostEmbedding = null;
 		let suppressEmbedding = null;
-		if (Array.isArray(finalBoost) && finalBoost.length > 0) {
-			//console.log("generating boostEmbedding");
+		//Recalculate if final words differ from previous
+		const finalBoostChanged = !sameWords(finalBoost, prevBoost);
+		const finalSuppressChanged = !sameWords(finalSuppress, prevSuppress);
+		if (Array.isArray(finalBoost) && finalBoost.length > 0 && finalBoostChanged) {
+			//console.log("Boost words changed - generating new embeddings");
 			boostEmbedding = await Promise.all(finalBoost.map(word => analyser.generateEmbedding(word)));
+		} else if (existingAlgorithm && !finalBoostChanged && prevBoost.length > 0) {
+			//console.log("Boost words unchanged - reusing existing embeddings");
+			boostEmbedding = existingAlgorithm.boost_embedding;
 		}
-		if (Array.isArray(finalSuppress) && finalSuppress.length > 0) {
-			//console.log("generating suppressEmbedding");
+		if (Array.isArray(finalSuppress) && finalSuppress.length > 0 && finalSuppressChanged) {
+			//console.log("Suppress words changed - generating new embeddings");
 			suppressEmbedding = await Promise.all(finalSuppress.map(word => analyser.generateEmbedding(word)));
+		} else if (existingAlgorithm && !finalSuppressChanged && prevSuppress.length > 0) {
+			//console.log("Suppress words unchanged - reusing existing embeddings");
+			suppressEmbedding = existingAlgorithm.suppress_embedding;
 		}
 		//console.timeEnd("embeddings");
 		//console.time("db_write");
@@ -199,8 +243,8 @@ router.post('/create_algorithm', authenticateCheck, async (req, res) => {
 				algorithm_name: algorithmName,
 				algorithm_code: algorithmCode,
 				custom_instruction: customInstruction || null,
-				boost_embedding: boostEmbedding ? JSON.stringify(boostEmbedding) : null,
-				suppress_embedding: suppressEmbedding ? JSON.stringify(suppressEmbedding) : null
+				boost_embedding: boostEmbedding,
+				suppress_embedding: suppressEmbedding
 			}, { transaction });
 		} else {
 			//console.log("creating new algorithm");
@@ -210,8 +254,8 @@ router.post('/create_algorithm', authenticateCheck, async (req, res) => {
 				algorithm_code: algorithmCode,
 				custom_instruction: customInstruction || null,
 				viewer_id: viewerId,
-				boost_embedding: boostEmbedding ? JSON.stringify(boostEmbedding) : null,
-				suppress_embedding: suppressEmbedding ? JSON.stringify(suppressEmbedding) : null
+				boost_embedding: boostEmbedding,
+				suppress_embedding: suppressEmbedding
 			}, { transaction });
 		}
 		await transaction.commit();

@@ -81,7 +81,11 @@ const AlgorithmSelector = ({ display = false, isAuthenticated = false, locationI
 				localStorage.setItem('algorithms', JSON.stringify(updated));
 				return updated;
 			});
-			if (algorithmId === assignedAlgorithmId) setAssignedAlgorithmId('');
+			if (algorithmId === assignedAlgorithmId) {
+				setAssignedAlgorithmId('');
+				setEditingAlgorithm(null);
+				refreshPosts();
+			}
 			if (editingAlgorithm?.algorithm_id === algorithmId) setEditingAlgorithm(null);
 		} catch (error) {
 			setError(error.response?.data?.message || 'Failed to delete algorithm');
@@ -205,7 +209,7 @@ const AlgorithmSelector = ({ display = false, isAuthenticated = false, locationI
 		};
 	};
 
-	const updateAlgorithms = updatedAlgo => {
+	const updateAlgorithms = (updatedAlgo, nameOnlyChange = false) => {
 		setAlgorithms(prev => {
 			const updated = prev.map(a =>
 				a?.algorithm_id === updatedAlgo?.algorithm_id ? updatedAlgo : a
@@ -213,16 +217,11 @@ const AlgorithmSelector = ({ display = false, isAuthenticated = false, locationI
 			localStorage.setItem('algorithms', JSON.stringify(updated));
 			return updated;
 		});
-		setEditingAlgorithm(null);
-		const originalAlgo = algorithms.find(a => a.algorithm_id === updatedAlgo.algorithm_id);
-		const nameChangedOnly = originalAlgo && 
-		originalAlgo.algorithm_name !== updatedAlgo.algorithm_name &&
-		JSON.stringify({ ...originalAlgo, algorithm_name: undefined }) ===
-		JSON.stringify({ ...updatedAlgo, algorithm_name: undefined });
-		if (!nameChangedOnly) {
+		setEditingAlgorithm(updatedAlgo);
+		
+		if (!nameOnlyChange) {
 			refreshPosts();
 		}
-		fetchAlgorithms();
 	};
 
 	const renderContent = () => (

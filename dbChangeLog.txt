@@ -391,3 +391,8 @@ CREATE TABLE feedback (
 	INDEX idx_feedback_is_resolved (is_resolved),
 	FULLTEXT INDEX ft_feedback_message (message)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE INDEX idx_posts_word_count ON posts (word_count);
+CREATE INDEX idx_posts_video_length ON posts (video_length);
+
+CREATE INDEX idx_ext_posts_word_count ON external_posts (word_count);

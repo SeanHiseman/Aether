@@ -123,11 +123,11 @@ const AddAlgorithm = ({ algorithms = [], display, editingAlgorithm = null, isAut
     const [showMoreOptions, setShowMoreOptions] = useState(false);
     const [startTime, setStartTime] = useState('00:00');
     const [template, setTemplate] = useState('none');
-    const [textRange, setTextRange] = useState([0, 100]);
     const [videoRange, setVideoRange] = useState([0, 100]);
     const [variety, setVariety] = useState(0.5);
     const [voteImpact, setVoteImpact] = useState(0);
     const [wordBoost, setWordBoost] = useState('');
+    const [wordRange, setWordRange] = useState([0, 100]);
     const [wordSuppress, setWordSuppress] = useState('');
     const hasMembership = user?.has_membership
 
@@ -171,10 +171,10 @@ const AddAlgorithm = ({ algorithms = [], display, editingAlgorithm = null, isAut
                 dateTo,
                 generateCode,
                 locationId,
-                minText: textRange[0] === 0 ? null : textRange[0],
-                maxText: textRange[1] >= 5000 ? null : textRange[1],
-                minVideo: videoRange[0] === 0 ? null : videoRange[0],
-                maxVideo: videoRange[1] >= 3600 ? null : videoRange[1],
+                minWords: wordRange[0] === 0 ? null : Math.round(logScale(wordRange[0], 1, 5000)),
+                maxWords: wordRange[1] >= 100 ? null : Math.round(logScale(wordRange[1], 1, 5000)),
+                minVideo: videoRange[0] === 0 ? null : Math.round(logScale(videoRange[0], 5, 3600)),
+                maxVideo: videoRange[1] >= 100 ? null : Math.round(logScale(videoRange[1], 5, 3600)),
                 sentiment,
                 startTime,
                 endTime,
@@ -187,7 +187,10 @@ const AddAlgorithm = ({ algorithms = [], display, editingAlgorithm = null, isAut
             if (data.success) {
                 const saved = data?.algorithm;
                 if (editingAlgorithm) {
-                    onUpdated && onUpdated(saved);
+                    const wasNameOnlyChange = 
+                        editingAlgorithm.algorithm_name !== algorithmName &&
+                        editingAlgorithm.algorithm_code === saved.algorithm_code;
+                    onUpdated && onUpdated(saved, wasNameOnlyChange);
                 } else {
                     setEditingAlgorithm(saved);
                     onCreated && onCreated({ ...saved, algorithm_name: nameToUse });
@@ -213,7 +216,7 @@ const AddAlgorithm = ({ algorithms = [], display, editingAlgorithm = null, isAut
         setDateFrom('');
         setDateTo('');        
         setEditingAlgorithm(null);
-        setTextRange([0, 100]);
+        setWordRange([0, 100]);
         setVideoRange([0, 100]);
         setSentiment(0);
         setStartTime('00:00');
@@ -237,14 +240,14 @@ const AddAlgorithm = ({ algorithms = [], display, editingAlgorithm = null, isAut
             setVariety(0.5);
             setCustomInstruction('');
             setGenerateCode(true);
-            setTextRange([0, 100]);
+            setWordRange([0, 100]);
             setVideoRange([0, 100]);
             setContentType({ images: true, text: true, videos: true, interactive: true, externalPosts: true, embeddedWebsites: true });
             return;
         }
         const templateConfig = ALGORITHM_TEMPLATES[templateKey];
         if (templateConfig) {
-            setActiveDays(['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']); //Templates don't yet specify days
+            setActiveDays(['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']);
             setChronology(templateConfig.chronology);
             setSentiment(templateConfig.sentiment);
             setVoteImpact(templateConfig.voteImpact);
@@ -253,8 +256,14 @@ const AddAlgorithm = ({ algorithms = [], display, editingAlgorithm = null, isAut
             setVariety(templateConfig.variety);
             setCustomInstruction(templateConfig.customInstruction);
             setGenerateCode(false);
-            setTextRange([templateConfig.minText, templateConfig.maxText]);
-            setVideoRange([templateConfig.minVideo, templateConfig.maxVideo]);
+            setWordRange([
+                templateConfig.minWords ? inverseLogScale(templateConfig.minWords, 1, 5000) : 0,
+                templateConfig.maxWords ? inverseLogScale(templateConfig.maxWords, 1, 5000) : 100
+            ]);
+            setVideoRange([
+                templateConfig.minVideo ? inverseLogScale(templateConfig.minVideo, 5, 3600) : 0,
+                templateConfig.maxVideo ? inverseLogScale(templateConfig.maxVideo, 5, 3600) : 100
+            ]);
             setContentType(templateConfig.contentType);
             if (!algorithmName || Object.values(ALGORITHM_TEMPLATES).some(t => t.name === algorithmName)) {
                 setAlgorithmName(templateConfig.name);
@@ -305,9 +314,9 @@ const AddAlgorithm = ({ algorithms = [], display, editingAlgorithm = null, isAut
             setStartTime(parsedAlgorithmCode.startTime || '00:00');
             setEndTime(parsedAlgorithmCode.endTime || '23:59');
             setTemplate(parsedAlgorithmCode.template || 'none');
-            setTextRange([ 
-                parsedAlgorithmCode.textLimits?.min ? inverseLogScale(parsedAlgorithmCode.textLimits.min, 1, 5000) : 0, 
-                parsedAlgorithmCode.textLimits?.max ? inverseLogScale(parsedAlgorithmCode.textLimits.max, 1, 5000) : 100 
+            setWordRange([ 
+                parsedAlgorithmCode.wordLimits?.min ? inverseLogScale(parsedAlgorithmCode.wordLimits.min, 1, 5000) : 0, 
+                parsedAlgorithmCode.wordLimits?.max ? inverseLogScale(parsedAlgorithmCode.wordLimits.max, 1, 5000) : 100 
             ]);
             setVideoRange([ 
                 parsedAlgorithmCode.videoLimits?.min ? inverseLogScale(parsedAlgorithmCode.videoLimits.min, 5, 3600) : 0, 
@@ -552,12 +561,12 @@ const AddAlgorithm = ({ algorithms = [], display, editingAlgorithm = null, isAut
                             </div>
                             <div className="form-group">
                                 <div className="form-label-with-info">
-                                    <label className="small-text">Text length (words)</label>
-                                    <InfoIconWithTooltip info="Set minimum and maximum text length." />
+                                    <label className="small-text">Word count</label>
+                                    <InfoIconWithTooltip info="Set minimum and maximum word counts." />
                                 </div>
                                 <DualRangeSlider
-                                    value={textRange}
-                                    onChange={setTextRange}
+                                    value={wordRange}
+                                    onChange={setWordRange}
                                     formatValue={(val, type) => 
                                         val === 0 && type === 'min' ? 'No min' :
                                         val === 100 && type === 'max' ? 'No max' :

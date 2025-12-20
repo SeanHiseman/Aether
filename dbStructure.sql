@@ -276,6 +276,8 @@ CREATE TABLE `posts` (
   KEY `idx_created_desc` (`created_at` DESC,`post_id`),
   KEY `idx_feed_videos` (`feed_id`,`has_videos`),
   KEY `idx_sentiment` (`sentiment_score`),
+  KEY `idx_posts_word_count` (`word_count`),
+  KEY `idx_posts_video_length` (`video_length`),
   FULLTEXT KEY `idx_fulltext_posts` (`title`,`text_body`),
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
@@ -402,7 +404,8 @@ CREATE TABLE `external_posts` (
   KEY `idx_score` (`score`),
   KEY `idx_source` (`source`),
   KEY `idx_expired` (`expired`),
-  KEY `idx_fetched_at` (`fetched_at`)
+  KEY `idx_fetched_at` (`fetched_at`),
+  KEY `idx_ext_posts_word_count` (`word_count`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE `external_posts_access` (

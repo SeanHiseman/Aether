@@ -45,7 +45,8 @@ const ExternalPosts = sequelize.define('ExternalPosts', {
         { fields: ['score'] },
         { fields: ['source'] },
         { fields: ['expired'] },
-        { fields: ['fetched_at'] }
+        { fields: ['fetched_at'] },
+        { name: 'idx_ext_posts_word_count', fields: ['word_count'] },
     ]
 });
 
@@ -130,7 +131,9 @@ const Posts = sequelize.define('posts', {
         { name: 'idx_created_desc', fields: [{ attribute: 'created_at', order: 'DESC' }, 'post_id'] },
         { name: 'idx_fulltext_posts', type: 'FULLTEXT', fields: ['title', 'text_body'] },
         { name: 'idx_feed_videos', fields: ['feed_id', 'has_videos'] },
-        { name: 'idx_sentiment', fields: ['sentiment_score'] }
+        { name: 'idx_sentiment', fields: ['sentiment_score'] },
+        { name: 'idx_posts_word_count', fields: ['word_count'] },
+        { name: 'idx_posts_video_length', fields: ['video_length'] },
     ]
 });
 

@@ -5,3 +5,5 @@
 /node_modules
 .env
 .qodo
+/algorithm_logs
+/custom_algorithms/twitter_validation.csv

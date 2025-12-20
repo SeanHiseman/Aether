@@ -147,13 +147,72 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
 			? [['created_at', 'ASC']]
 			: (useChronological ? [['created_at', 'DESC']] : [['rank_hotness', 'DESC']]);
 
+		const { chronology = 1, contentType = {}, variety = 1, wordLimits = {}, videoLimits = {}, timeLimits = {}, dateLimits = {}, scoring = {} } = algorithm;
+		const { sentiment = 0, voteImpact = 1, wordBoost = [], wordSuppress = [] } = scoring;
+
+		//Algorithm filters for native Posts
+		const algorithmFilters = {};
+		if (algorithmLocation && isActiveToday) {
+			if (contentType.images === false) algorithmFilters.has_images = false;
+			if (contentType.videos === false) algorithmFilters.has_videos = false;
+			if (contentType.text === false) algorithmFilters.has_text = false;
+			if (contentType.embeddedWebsites === false) algorithmFilters.has_embedded_websites = false;
+			if (Number.isFinite(wordLimits.min)) {
+				algorithmFilters.word_count = { [Op.gte]: wordLimits.min };
+			}
+			if (Number.isFinite(wordLimits.max)) {
+				algorithmFilters.word_count = {
+					...algorithmFilters.word_count,
+					[Op.lte]: wordLimits.max
+				};
+			}
+			if (Number.isFinite(videoLimits.min)) {
+				algorithmFilters.video_length = { [Op.gte]: videoLimits.min };
+			}
+			if (Number.isFinite(videoLimits.max)) {
+				algorithmFilters.video_length = {
+					...algorithmFilters.video_length,
+					[Op.lte]: videoLimits.max
+				};
+			}
+			if (dateLimits.from) {
+				algorithmFilters.created_at = { [Op.gte]: new Date(dateLimits.from) };
+			}
+			if (dateLimits.to) {
+				algorithmFilters.created_at = {
+					...algorithmFilters.created_at,
+					[Op.lte]: new Date(dateLimits.to)
+				};
+			}
+		}
+		//console.log("algorithmFilters:", algorithmFilters);
+		//Algorithm filters for ExternalPosts
+		let externalFiltersSQL = '';
+		if (algorithmLocation && isActiveToday) {
+			const conditions = [];
+			if (contentType.images === false) conditions.push('p.has_images = false');
+			if (contentType.videos === false) conditions.push('p.has_videos = false');
+			if (contentType.text === false) conditions.push('p.has_text = false');
+			if (contentType.embeddedWebsites === false) conditions.push('p.has_embedded_websites = false');
+			if (Number.isFinite(wordLimits.min)) conditions.push(`p.word_count >= ${wordLimits.min}`);
+			if (Number.isFinite(wordLimits.max)) conditions.push(`p.word_count <= ${wordLimits.max}`);
+			if (Number.isFinite(videoLimits.min)) conditions.push(`p.video_length >= ${videoLimits.min}`);
+			if (Number.isFinite(videoLimits.max)) conditions.push(`p.video_length <= ${videoLimits.max}`);
+			if (dateLimits.from) conditions.push(`p.created_at_remote >= '${new Date(dateLimits.from).toISOString()}'`);
+			if (dateLimits.to) conditions.push(`p.created_at_remote <= '${new Date(dateLimits.to).toISOString()}'`);
+			if (conditions.length > 0) {
+				externalFiltersSQL = 'AND ' + conditions.join(' AND ');
+			}
+		}
+
         if (locationId === "search" && keyword) {
             const postIds = await Posts.findAll({
                 attributes: ['post_id'],
-				where: { 
-					is_private: false,
-					[Op.and]: Sequelize.literal(`MATCH (title, text_body) AGAINST (${Posts.sequelize.escape(keyword)} IN NATURAL LANGUAGE MODE)`) 
-				},
+                where: {
+                    ...algorithmFilters, 
+                    is_private: false,
+                    [Op.and]: Sequelize.literal(`MATCH (title, text_body) AGAINST (${Posts.sequelize.escape(keyword)} IN NATURAL LANGUAGE MODE)`) 
+                },
                 order: orderMode,
                 limit: backendFetchTotal,
                 offset,
@@ -168,195 +227,20 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
                 raw: false
             });
             const orderMap = new Map(orderedIds.map((id, i) => [id, i]));
-			posts.sort((a, b) => orderMap.get(a.post_id) - orderMap.get(b.post_id));
-		} else if (locationId === "following") {
-			const enabledSources = [];
-			if (connectedAccounts.find(a => a.platform === 'reddit')) enabledSources.push('reddit');
-			if (connectedAccounts.find(a => a.platform === 'bluesky')) enabledSources.push('bluesky');
-			if (connectedAccounts.find(a => a.platform === 'mastodon')) enabledSources.push('mastodon');
-			//Fetch local posts
-			const postIds = await Posts.findAll({
-				attributes: ['post_id'],
-				where: {
-					feed_id: { [Op.in]: followedFeedIdsSafe },
-					parent_id: null,
-					...(viewerId ? { poster_id: { [Op.not]: viewerId } } : {})
-				},
-				order: orderMode,
-				limit: backendFetchTotal,
-				offset,
-				raw: true
-			});
-			//console.log("local following postIds found:", postIds.length);
-			const orderedIds = postIds.map(p => p.post_id);
-			posts = await Posts.findAll({
-				where: { post_id: orderedIds },
-				include: includeOptions,
-				attributes: attrOption,
-				raw: false
-			});
-			const orderMap = new Map(orderedIds.map((id, i) => [id, i]));
-			posts.sort((a, b) => orderMap.get(a.post_id) - orderMap.get(b.post_id));
-			//console.log("local following posts found:", posts.length);
-			//console.log("offset:", offset);
-			//Fetch external posts only if user has connected accounts
-			let externalAccesses = [];
-			if (connectedAccounts.length > 0) {
-				externalAccesses = await sequelize.query(
-					`
-					SELECT
-						p.post_id
-					FROM external_posts_access a
-					JOIN external_posts p ON p.post_id = a.post_id
-					WHERE
-						a.user_id = :userId
-						AND p.expired = false
-						AND p.created_at_remote >= DATE_SUB(NOW(), INTERVAL 7 DAY)
-					ORDER BY
-						(p.score * EXP(-0.00002 * TIMESTAMPDIFF(SECOND, p.created_at_remote, NOW()))) DESC
-					LIMIT :limit OFFSET :offset
-					`,
-					{
-						replacements: { limit: backendFetchTotal, offset, userId },
-						type: QueryTypes.SELECT
-					}
-				);
-				//console.log("following externalAccesses found:", externalAccesses.length);
-				if (!externalAccesses.length && offset === 0) { //Get more posts from external platform
-					//console.log("no external accesses, processing connected accounts");
-					await Promise.all(
-						connectedAccounts.map(account =>
-							processAccount({
-								platform: account.platform,
-								user_id: userId,
-								access_token: account.access_token,
-								instance_url: account.instance_url
-							}).catch(() => null)
-						)
-					);
-					externalAccesses = await sequelize.query(
-						`
-						SELECT
-							p.post_id
-						FROM external_posts_access a
-						JOIN external_posts p ON p.post_id = a.post_id
-						WHERE
-							a.user_id = :userId
-							AND p.expired = false
-							AND p.created_at_remote >= DATE_SUB(NOW(), INTERVAL 7 DAY)
-						ORDER BY
-							(p.score * EXP(-0.00002 * TIMESTAMPDIFF(SECOND, p.created_at_remote, NOW()))) DESC
-						LIMIT :limit OFFSET :offset
-						`,
-						{
-							replacements: { limit: backendFetchTotal, offset, userId },
-							type: QueryTypes.SELECT
-						}
-					);
-					//console.log("following externalAccesses found:", externalAccesses.length);
-				}
-			}
-			const unifiedIds = externalAccesses.map(a => a.post_id);
-			//console.log("unifiedIds found:", unifiedIds.length);
-			let externalPosts = [];
-			if (unifiedIds.length) {
-				externalPosts = await ExternalPosts.findAll({
-					where: { post_id: unifiedIds },
-					raw: true
-				});
-			}
-			const formattedExternal = externalPosts.map(p => {
-				const platformConfig = FEED_CONFIG[p.source];
-				return formatExternalPost(p, platformConfig, p.source);
-			});
-			posts = [
-				...posts.map(p => ({ ...(p.dataValues || p), isExternal: false })),
-				...formattedExternal
-			];
-			//console.log("following posts found:", posts.length);
-		} else if (typeof locationId === 'string' && ['reddit','bluesky','mastodon'].includes(locationId)) { //Posts from individual external platforms
-			const platform = locationId;
-			//console.log("inside applyAlgorithm getting posts for:", platform);
-			let accesses = [];
-			//console.log("userId:", userId);
-			if (userId) {
-				accesses = await sequelize.query(
-					`
-					SELECT
-						p.post_id
-					FROM external_posts_access a
-					JOIN external_posts p ON p.post_id = a.post_id
-					WHERE
-						a.user_id = :userId
-						AND a.source = :platform
-						AND p.expired = false
-						AND p.created_at_remote >= DATE_SUB(NOW(), INTERVAL 7 DAY)
-					ORDER BY
-						(p.score * EXP(-0.00002 * TIMESTAMPDIFF(SECOND, p.created_at_remote, NOW()))) DESC
-					LIMIT :limit OFFSET :offset
-					`,
-					{
-						replacements: { limit: backendFetchTotal, offset, platform, userId },
-						type: QueryTypes.SELECT
-					}
-				);
-			}
-			//console.log("accesses found:", accesses.length);
-			if (!accesses.length && connectedAccounts && connectedAccounts.length) { //Get more posts from external platform
-				const account = connectedAccounts.find(a => a.platform === platform);
-				//console.log("processing account for platform:", platform, account ? "found" : "not found");
-				if (account) {
-					await processAccount({
-						platform,
-						user_id: userId,
-						access_token: account.access_token,
-						instance_url: account.instance_url
-					}).catch(() => null);
-					accesses = await sequelize.query(
-						`
-						SELECT
-							p.post_id
-						FROM external_posts_access a
-						JOIN external_posts p ON p.post_id = a.post_id
-						WHERE
-							a.user_id = :userId
-							AND a.source = :platform
-							AND p.expired = false
-							AND p.created_at_remote >= DATE_SUB(NOW(), INTERVAL 7 DAY)
-						ORDER BY
-							(p.score * EXP(-0.00002 * TIMESTAMPDIFF(SECOND, p.created_at_remote, NOW()))) DESC
-						LIMIT :limit OFFSET :offset
-						`,
-						{
-							replacements: { limit: backendFetchTotal, offset, platform, userId },
-							type: QueryTypes.SELECT
-						}
-					);
-				}
-			}
-			const unifiedIds = accesses.map(a => a.post_id).filter(Boolean);
-			//console.log("unifiedIds found:", unifiedIds.length);
-			let externalPosts = [];
-			if (unifiedIds.length) {
-				externalPosts = await ExternalPosts.findAll({
-					where: { post_id: unifiedIds, source: platform },
-					raw: true
-				});
-			}
-			const formattedExternal = externalPosts.map(p => {
-				const platformConfig = FEED_CONFIG[platform];
-				return formatExternalPost(p, platformConfig, p.source);
-			});
-			posts = formattedExternal;
-			//console.log("externalPosts found:", posts.length);
-		} else if (locationId === "explore") {
+            posts.sort((a, b) => orderMap.get(a.post_id) - orderMap.get(b.post_id));
+        } else if (locationId === "following") {
+            const enabledSources = [];
+            if (connectedAccounts.find(a => a.platform === 'reddit')) enabledSources.push('reddit');
+            if (connectedAccounts.find(a => a.platform === 'bluesky')) enabledSources.push('bluesky');
+            if (connectedAccounts.find(a => a.platform === 'mastodon')) enabledSources.push('mastodon');
+            //Fetch local posts
             const postIds = await Posts.findAll({
                 attributes: ['post_id'],
                 where: {
-                    feed_id: { [Op.notIn]: followedFeedIdsSafe },
+                    ...algorithmFilters, 
+                    feed_id: { [Op.in]: followedFeedIdsSafe },
                     parent_id: null,
-                    ...(viewerId ? { poster_id: { [Op.not]: viewerId } } : {}),
-					is_private: false
+                    ...(viewerId ? { poster_id: { [Op.not]: viewerId } } : {})
                 },
                 order: orderMode,
                 limit: backendFetchTotal,
@@ -370,8 +254,176 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
                 attributes: attrOption,
                 raw: false
             });
-			const orderMap = new Map(orderedIds.map((id, i) => [id, i]));
-			posts.sort((a, b) => orderMap.get(a.post_id) - orderMap.get(b.post_id));
+            const orderMap = new Map(orderedIds.map((id, i) => [id, i]));
+            posts.sort((a, b) => orderMap.get(a.post_id) - orderMap.get(b.post_id));
+            //Fetch external posts only if user has connected accounts
+            let externalAccesses = [];
+            if (connectedAccounts.length > 0) {
+                externalAccesses = await sequelize.query(
+                    `
+                    SELECT
+                        p.post_id
+                    FROM external_posts_access a
+                    JOIN external_posts p ON p.post_id = a.post_id
+                    WHERE
+                        a.user_id = :userId
+                        AND p.expired = false
+                        AND p.created_at_remote >= DATE_SUB(NOW(), INTERVAL 7 DAY)
+                        ${externalFiltersSQL}
+                    ORDER BY
+                        (p.score * EXP(-0.00002 * TIMESTAMPDIFF(SECOND, p.created_at_remote, NOW()))) DESC
+                    LIMIT :limit OFFSET :offset
+                    `,
+                    {
+                        replacements: { limit: backendFetchTotal, offset, userId },
+                        type: QueryTypes.SELECT
+                    }
+                );
+                if (!externalAccesses.length && offset === 0) {
+                    await Promise.all(
+                        connectedAccounts.map(account =>
+                            processAccount({
+                                platform: account.platform,
+                                user_id: userId,
+                                access_token: account.access_token,
+                                instance_url: account.instance_url
+                            }).catch(() => null)
+                        )
+                    );
+                    externalAccesses = await sequelize.query(
+                        `
+                        SELECT
+                            p.post_id
+                        FROM external_posts_access a
+                        JOIN external_posts p ON p.post_id = a.post_id
+                        WHERE
+                            a.user_id = :userId
+                            AND p.expired = false
+                            AND p.created_at_remote >= DATE_SUB(NOW(), INTERVAL 7 DAY)
+                            ${externalFiltersSQL}
+                        ORDER BY
+                            (p.score * EXP(-0.00002 * TIMESTAMPDIFF(SECOND, p.created_at_remote, NOW()))) DESC
+                        LIMIT :limit OFFSET :offset
+                        `,
+                        {
+                            replacements: { limit: backendFetchTotal, offset, userId },
+                            type: QueryTypes.SELECT
+                        }
+                    );
+                }
+            }
+            const unifiedIds = externalAccesses.map(a => a.post_id);
+            let externalPosts = [];
+            if (unifiedIds.length) {
+                externalPosts = await ExternalPosts.findAll({
+                    where: { post_id: unifiedIds },
+                    raw: true
+                });
+            }
+            const formattedExternal = externalPosts.map(p => {
+                const platformConfig = FEED_CONFIG[p.source];
+                return formatExternalPost(p, platformConfig, p.source);
+            });
+            posts = [
+                ...posts.map(p => ({ ...(p.dataValues || p), isExternal: false })),
+                ...formattedExternal
+            ];
+        } else if (typeof locationId === 'string' && ['reddit','bluesky','mastodon'].includes(locationId)) {
+            const platform = locationId;
+            let accesses = [];
+            if (userId) {
+                accesses = await sequelize.query(
+                    `
+                    SELECT
+                        p.post_id
+                    FROM external_posts_access a
+                    JOIN external_posts p ON p.post_id = a.post_id
+                    WHERE
+                        a.user_id = :userId
+                        AND a.source = :platform
+                        AND p.expired = false
+                        AND p.created_at_remote >= DATE_SUB(NOW(), INTERVAL 7 DAY)
+                        ${externalFiltersSQL}
+                    ORDER BY
+                        (p.score * EXP(-0.00002 * TIMESTAMPDIFF(SECOND, p.created_at_remote, NOW()))) DESC
+                    LIMIT :limit OFFSET :offset
+                    `,
+                    {
+                        replacements: { limit: backendFetchTotal, offset, platform, userId },
+                        type: QueryTypes.SELECT
+                    }
+                );
+            }
+            if (!accesses.length && connectedAccounts && connectedAccounts.length) {
+                const account = connectedAccounts.find(a => a.platform === platform);
+                if (account) {
+                    await processAccount({
+                        platform,
+                        user_id: userId,
+                        access_token: account.access_token,
+                        instance_url: account.instance_url
+                    }).catch(() => null);
+                    accesses = await sequelize.query(
+                        `
+                        SELECT
+                            p.post_id
+                        FROM external_posts_access a
+                        JOIN external_posts p ON p.post_id = a.post_id
+                        WHERE
+                            a.user_id = :userId
+                            AND a.source = :platform
+                            AND p.expired = false
+                            AND p.created_at_remote >= DATE_SUB(NOW(), INTERVAL 7 DAY)
+                            ${externalFiltersSQL}
+                        ORDER BY
+                            (p.score * EXP(-0.00002 * TIMESTAMPDIFF(SECOND, p.created_at_remote, NOW()))) DESC
+                        LIMIT :limit OFFSET :offset
+                        `,
+                        {
+                            replacements: { limit: backendFetchTotal, offset, platform, userId },
+                            type: QueryTypes.SELECT
+                        }
+                    );
+                }
+            }
+            const unifiedIds = accesses.map(a => a.post_id).filter(Boolean);
+            let externalPosts = [];
+            if (unifiedIds.length) {
+                externalPosts = await ExternalPosts.findAll({
+                    where: { post_id: unifiedIds, source: platform },
+                    raw: true
+                });
+            }
+            const formattedExternal = externalPosts.map(p => {
+                const platformConfig = FEED_CONFIG[platform];
+                return formatExternalPost(p, platformConfig, p.source);
+            });
+            posts = formattedExternal;
+        } else if (locationId === "explore") {
+            const postIds = await Posts.findAll({
+                attributes: ['post_id'],
+                where: {
+                    ...algorithmFilters, 
+                    feed_id: { [Op.notIn]: followedFeedIdsSafe },
+                    parent_id: null,
+                    ...(viewerId ? { poster_id: { [Op.not]: viewerId } } : {}),
+                    is_private: false
+                },
+                order: orderMode,
+                limit: backendFetchTotal,
+                offset,
+                raw: true
+            });
+			//console.log("explore postIds:", postIds.length);
+            const orderedIds = postIds.map(p => p.post_id);
+            posts = await Posts.findAll({
+                where: { post_id: orderedIds },
+                include: includeOptions,
+                attributes: attrOption,
+                raw: false
+            });
+            const orderMap = new Map(orderedIds.map((id, i) => [id, i]));
+            posts.sort((a, b) => orderMap.get(a.post_id) - orderMap.get(b.post_id));
         } else if (typeof locationId === 'string' && locationId.startsWith('deep_')) {
             const deepFeedId = locationId.replace(/^deep_/, '');
             const contents = await DeepFeedContent.findAll({
@@ -383,6 +435,7 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
             const postIds = await Posts.findAll({
                 attributes: ['post_id'],
                 where: {
+                    ...algorithmFilters, 
                     feed_id: { [Op.in]: allFeedIds },
                     parent_id: null,
                     ...(viewerId ? { poster_id: { [Op.not]: viewerId } } : {})
@@ -399,19 +452,20 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
                 attributes: attrOption,
                 raw: false
             });
-			const orderMap = new Map(orderedIds.map((id, i) => [id, i]));
-			posts.sort((a, b) => orderMap.get(a.post_id) - orderMap.get(b.post_id));
+            const orderMap = new Map(orderedIds.map((id, i) => [id, i]));
+            posts.sort((a, b) => orderMap.get(a.post_id) - orderMap.get(b.post_id));
         } else {
-			//Non-group channels are chronological by default
-			const channelOrderMode =
-				(getOldest)
-					? [['created_at', 'ASC']]
-					: ((useChronological && !getOldest)
-						? [['created_at', 'DESC']]
-						: [['rank_hotness', 'DESC']]);
+            //Non-group channels are chronological by default
+            const channelOrderMode =
+                (getOldest)
+                    ? [['created_at', 'ASC']]
+                    : ((useChronological && !getOldest)
+                        ? [['created_at', 'DESC']]
+                        : [['rank_hotness', 'DESC']]);
             const postIds = await Posts.findAll({
                 attributes: ['post_id'],
                 where: {
+                    ...algorithmFilters,
                     ...(isMain !== true && locationId ? { channel_id: locationId } : {}),
                     feed_id: feedId,
                     parent_id: null,
@@ -428,10 +482,16 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
                 attributes: attrOption,
                 raw: false
             });
-			const orderMap = new Map(orderedIds.map((id, i) => [id, i]));
-			posts.sort((a, b) => orderMap.get(a.post_id) - orderMap.get(b.post_id));
+            const orderMap = new Map(orderedIds.map((id, i) => [id, i]));
+            posts.sort((a, b) => orderMap.get(a.post_id) - orderMap.get(b.post_id));
         }
-        if (!posts.length) return { posts: [], status: "ok", message: "" };
+		//console.log("fetched posts:", posts.length);
+        if (!posts.length) {
+			if (algorithmLocation && isActiveToday && (Object.keys(algorithmFilters).length > 0 || externalFiltersSQL)) {
+				return { posts: [], status: "filtered", message: "Your algorithm settings filtered out all posts." };
+			}
+			return { posts: [], status: "ok", message: "" };
+		}
 
 		//No algorithm to be applied
 		if (getOldest || useChronological || useStandardScore) {
@@ -468,8 +528,6 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
 
         //Filter out posts, then apply scoring
 		let finalPosts = [];
-		const { chronology = 1, contentType = {}, variety = 1, textLimits = {}, videoLimits = {}, timeLimits = {}, dateLimits = {}, scoring = {} } = algorithm;
-		const { sentiment = 0, voteImpact = 1, wordBoost = [], wordSuppress = [] } = scoring;
 		//console.log("scoring:", scoring);
 		//console.log("posts:", posts);
 		//console.log("algorithm:", algorithm);
@@ -481,7 +539,6 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
 		let postEmbedding = [];
 		try {
 			const logStart = Date.now();
-			//console.log("posts.length:", posts.length);
 			for (const post of posts) {
 				//Explicit isExternalPost flag to avoid relying on absent fields
 				const isExternalPost = !!post.source || !!post.isExternal;
@@ -497,33 +554,20 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
 				if (!Array.isArray(postEmbedding)) postEmbedding = [];
 				const magPost = Math.sqrt(postEmbedding.reduce((a, b) => a + b * b, 0)) || 1;
 				const normPost = postEmbedding.map(v => v / magPost);
-				//Content type filtering
-				if (contentType.images === false && post.has_images) continue;
-				if (contentType.videos === false && post.has_videos) continue;
-				if (contentType.text === false && post.has_text) continue;
+				//Keep only filters that can't be done in SQL
 				//Only apply interactive filtering for native posts
 				if (contentType.interactive === false && !isExternalPost && post.has_interactive) continue;
-				if (contentType.embeddedWebsites === false && post.has_embedded_websites) continue;
 				//when external posts disabled, exclude both external posts and native posts that embed externals
 				if (contentType.externalPosts === false) {
 					if (isExternalPost) continue; //exclude external posts
 					if (post.has_external_posts) continue; //exclude native posts that embed external content
 				}
-				//Text length filtering (safe numeric checks)
-				if (Number.isFinite(textLimits.min) && Number.isFinite(post.text_length) && post.text_length < textLimits.min) continue;
-				if (Number.isFinite(textLimits.max) && Number.isFinite(post.text_length) && post.text_length > textLimits.max) continue;
-				//Video length filtering (safe numeric checks)
-				if (Number.isFinite(videoLimits.min) && Number.isFinite(post.video_length) && post.video_length < videoLimits.min) continue;
-				if (Number.isFinite(videoLimits.max) && Number.isFinite(post.video_length) && post.video_length > videoLimits.max) continue;
-				//Time of day filtering
+				//Time of day filtering (can't be done efficiently in SQL)
 				if (timeLimits.startTime && timeLimits.endTime) {
 					const createdAt = new Date(post.created_at || post.created_at_remote);
 					const postTime = `${String(createdAt.getHours()).padStart(2, "0")}:${String(createdAt.getMinutes()).padStart(2, "0")}`;
 					if (postTime < timeLimits.startTime || postTime > timeLimits.endTime) continue;
 				}
-				//Date range filtering
-				if (dateLimits.from && new Date(post.created_at || post.created_at_remote) < new Date(dateLimits.from)) continue;
-				if (dateLimits.to && new Date(post.created_at || post.created_at_remote) > new Date(dateLimits.to)) continue;
 
 				let algorithmScore = 0;
 				//Unified baseHotness for native (rank_hotness) and external (score) posts
@@ -641,7 +685,7 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
 			finalPosts = posts; //Return initial post batch if issue applying algorithm
 		}
 		if (!finalPosts.length) {
-			console.log("ApplyAlgorithm: all posts excluded by algorithm filters");
+			//console.log("ApplyAlgorithm: all posts excluded by algorithm filters");
 			return { posts: [], status: "filtered", message: "Your algorithm settings filtered out all posts." };
 		};
 		//console.log("apply algorithm posts after ranking:", finalPosts.length);
