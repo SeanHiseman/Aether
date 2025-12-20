@@ -137,12 +137,12 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
         //Fetch posts according to location
         let posts = [];
         const attrOption = fetchFullAttributes ? undefined : { exclude: excludedAttrs };
-		console.log("limit:", limit);
-		console.log("useChronological:", useChronological);
-		console.log("useStandardScore:", useStandardScore);
-		console.log("getOldest:", getOldest);
+		//console.log("limit:", limit);
+		//console.log("useChronological:", useChronological);
+		//console.log("useStandardScore:", useStandardScore);
+		//console.log("getOldest:", getOldest);
 		const backendFetchTotal = (useChronological || useStandardScore || getOldest) ? limit : Math.max(limit * 2, 200); //Fetch more posts from DB to allow for filtering later
-		console.log("backendFetchTotal:", backendFetchTotal);
+		//console.log("backendFetchTotal:", backendFetchTotal);
 		const orderMode = getOldest
 			? [['created_at', 'ASC']]
 			: (useChronological ? [['created_at', 'DESC']] : [['rank_hotness', 'DESC']]);
@@ -187,7 +187,7 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
 				offset,
 				raw: true
 			});
-			console.log("local following postIds found:", postIds.length);
+			//console.log("local following postIds found:", postIds.length);
 			const orderedIds = postIds.map(p => p.post_id);
 			posts = await Posts.findAll({
 				where: { post_id: orderedIds },
@@ -197,8 +197,8 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
 			});
 			const orderMap = new Map(orderedIds.map((id, i) => [id, i]));
 			posts.sort((a, b) => orderMap.get(a.post_id) - orderMap.get(b.post_id));
-			console.log("local following posts found:", posts.length);
-			console.log("offset:", offset);
+			//console.log("local following posts found:", posts.length);
+			//console.log("offset:", offset);
 			//Fetch external posts only if user has connected accounts
 			let externalAccesses = [];
 			if (connectedAccounts.length > 0) {
@@ -221,9 +221,9 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
 						type: QueryTypes.SELECT
 					}
 				);
-				console.log("following externalAccesses found:", externalAccesses.length);
+				//console.log("following externalAccesses found:", externalAccesses.length);
 				if (!externalAccesses.length && offset === 0) { //Get more posts from external platform
-					console.log("no external accesses, processing connected accounts");
+					//console.log("no external accesses, processing connected accounts");
 					await Promise.all(
 						connectedAccounts.map(account =>
 							processAccount({
@@ -253,11 +253,11 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
 							type: QueryTypes.SELECT
 						}
 					);
-					console.log("following externalAccesses found:", externalAccesses.length);
+					//console.log("following externalAccesses found:", externalAccesses.length);
 				}
 			}
 			const unifiedIds = externalAccesses.map(a => a.post_id);
-			console.log("unifiedIds found:", unifiedIds.length);
+			//console.log("unifiedIds found:", unifiedIds.length);
 			let externalPosts = [];
 			if (unifiedIds.length) {
 				externalPosts = await ExternalPosts.findAll({
@@ -273,10 +273,10 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
 				...posts.map(p => ({ ...(p.dataValues || p), isExternal: false })),
 				...formattedExternal
 			];
-			console.log("following posts found:", posts.length);
+			//console.log("following posts found:", posts.length);
 		} else if (typeof locationId === 'string' && ['reddit','bluesky','mastodon'].includes(locationId)) { //Posts from individual external platforms
 			const platform = locationId;
-			console.log("inside applyAlgorithm getting posts for:", platform);
+			//console.log("inside applyAlgorithm getting posts for:", platform);
 			let accesses = [];
 			//console.log("userId:", userId);
 			if (userId) {
@@ -472,9 +472,9 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
 		const { sentiment = 0, voteImpact = 1, wordBoost = [], wordSuppress = [] } = scoring;
 		//console.log("scoring:", scoring);
 		//console.log("posts:", posts);
-		console.log("algorithm:", algorithm);
+		//console.log("algorithm:", algorithm);
 
-		console.log("apply algorithm posts before ranking:", posts.length);
+		//console.log("apply algorithm posts before ranking:", posts.length);
 		//Predefined variables for use in scoring
 		const now = Date.now();
 		const tenDays = 864000000;
@@ -644,7 +644,7 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
 			console.log("ApplyAlgorithm: all posts excluded by algorithm filters");
 			return { posts: [], status: "filtered", message: "Your algorithm settings filtered out all posts." };
 		};
-		console.log("apply algorithm posts after ranking:", finalPosts.length);
+		//console.log("apply algorithm posts after ranking:", finalPosts.length);
         finalPosts.sort((a, b) => b.algorithmScore - a.algorithmScore); //Sort posts by score
         const paginatedFinalPosts = finalPosts.slice(0, limit); //Return top 100 posts
         const finalIds = paginatedFinalPosts.map(p => p.post_id);
@@ -671,7 +671,7 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
 			...(voteMap.get(p.post_id) || { has_upvoted: false, has_downvoted: false }),
 			is_saved: savedSet.has(p.post_id)
 		}));
-		console.log("ApplyAlgorithm returning posts:", postsWithVotes.length);
+		//console.log("ApplyAlgorithm returning posts:", postsWithVotes.length);
 		return { posts: stripExcludedAttributes(postsWithVotes), status: "ok", message: "" }; //Frontend does not need message for success
 	} catch (error) {
 		console.error(new Date().toISOString(), 'Error in ApplyAlgorithm:', error);

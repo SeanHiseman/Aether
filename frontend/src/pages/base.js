@@ -245,7 +245,6 @@ const BaseLayout = () => {
                 //Feed info of logged in user
                 const userFeed = JSON.parse(localStorage.getItem("user")) || [];
                 setFeed(userFeed);
-                setTheme(userFeed?.theme);
                 const storedFeeds = JSON.parse(localStorage.getItem("followedFeeds")) || [];
                 setFeeds(storedFeeds.sort((a, b) =>
                     a?.feed_name?.localeCompare(b?.feed_name)
@@ -258,7 +257,7 @@ const BaseLayout = () => {
                 setFeeds([]);
             }
         })();
-    }, [isAuthenticated, viewer?.feed_id, setTheme]);
+    }, [isAuthenticated, viewer?.feed_id]);
 
     const registerFeedCallback = useCallback((deepFeedId, callback) => {
         setDeepFeedCallbacks(prev => ({ ...prev, [deepFeedId]: callback }));

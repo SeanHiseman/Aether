@@ -289,9 +289,9 @@
 }
 .theme-box {
     border: 1px solid var(--light);
-    height: calc(1.5 * var(--xl-margin));
+    height: calc(1.3 * var(--xl-margin));
     margin: var(--small-margin);
-    width: calc(1.5 * var(--xl-margin));
+    width: calc(1.3 * var(--xl-margin));
 }
 .theme-container {
     display: flex;

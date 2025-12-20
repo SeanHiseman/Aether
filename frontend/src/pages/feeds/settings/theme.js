@@ -51,7 +51,7 @@ const Theme = () => {
 				setCustomTheme(theme);
 			}
 		}
-	}, [theme, defaultThemeColors]);
+	}, [theme]);
 
     const handleColorChange = (key, value) => {
         if (!customTheme) return;
@@ -76,8 +76,7 @@ const Theme = () => {
         if (!isAuthenticated) return;
         try {
             const themeColors = defaultThemeColors[themeName];
-            await updateTheme(themeColors);
-            setCustomTheme(themeColors); 
+            await updateTheme(themeColors); 
         } catch (error) {
             setErrorMessage(error.response?.data?.message || 'Error changing theme');
             setTimeout(() => { setErrorMessage(''); }, 5000);

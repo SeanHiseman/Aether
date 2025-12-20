@@ -65,7 +65,6 @@ router.post('/change_email', standardLimiter, authenticateCheck, async (req, res
 router.post('/change_theme', standardLimiter, authenticateCheck, async (req, res) => {
     try {
         const userId = req.session?.user_id;
-        console.log('/change_theme userId:', userId);
         let { theme } = req.body;
         if (typeof theme === 'object') {
             theme = JSON.stringify(theme);
