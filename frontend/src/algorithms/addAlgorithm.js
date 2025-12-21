@@ -110,7 +110,7 @@ const AddAlgorithm = ({ algorithms = [], display, editingAlgorithm = null, isAut
     const [algorithmCode, setAlgorithmCode] = useState('');
     const [algorithmName, setAlgorithmName] = useState('');
     const [chronology, setChronology] = useState(1);
-    const [contentType, setContentType] = useState({ images: true, text: true, videos: true, interactive: true, externalPosts: true, embeddedWebsites: true});
+    const [contentType, setContentType] = useState({ images: true, text: true, videos: true, interactive: true });
     const [customInstruction, setCustomInstruction] = useState('');
     const [dateFrom, setDateFrom] = useState('');
     const [dateTo, setDateTo] = useState('');
@@ -186,12 +186,12 @@ const AddAlgorithm = ({ algorithms = [], display, editingAlgorithm = null, isAut
             const { data } = await api.post('/create_algorithm', payload);
             if (data.success) {
                 const saved = data?.algorithm;
-                if (editingAlgorithm) {
-                    const wasNameOnlyChange = 
-                        editingAlgorithm.algorithm_name !== algorithmName &&
-                        editingAlgorithm.algorithm_code === saved.algorithm_code;
-                    onUpdated && onUpdated(saved, wasNameOnlyChange);
-                } else {
+            if (editingAlgorithm) {
+                const wasNameOnlyChange = 
+                    editingAlgorithm.algorithm_name !== algorithmName &&
+                    editingAlgorithm.algorithm_code === saved.algorithm_code;
+                onUpdated && onUpdated(saved, wasNameOnlyChange);
+            } else {
                     setEditingAlgorithm(saved);
                     onCreated && onCreated({ ...saved, algorithm_name: nameToUse });
                 }
@@ -211,7 +211,7 @@ const AddAlgorithm = ({ algorithms = [], display, editingAlgorithm = null, isAut
         setAlgorithmCode('');
         setAlgorithmName('');
         setChronology(0.8);
-        setContentType({ images: true, text: true, videos: true, interactive: true, externalPosts: true, embeddedWebsites: true });
+        setContentType({ images: true, text: true, videos: true, interactive: true });
         setCustomInstruction(''); 
         setDateFrom('');
         setDateTo('');        
@@ -242,7 +242,7 @@ const AddAlgorithm = ({ algorithms = [], display, editingAlgorithm = null, isAut
             setGenerateCode(true);
             setWordRange([0, 100]);
             setVideoRange([0, 100]);
-            setContentType({ images: true, text: true, videos: true, interactive: true, externalPosts: true, embeddedWebsites: true });
+            setContentType({ images: true, text: true, videos: true, interactive: true });
             return;
         }
         const templateConfig = ALGORITHM_TEMPLATES[templateKey];
@@ -307,7 +307,7 @@ const AddAlgorithm = ({ algorithms = [], display, editingAlgorithm = null, isAut
             setAlgorithmCode(parsedAlgorithmCode);
             setAlgorithmName(algorithm_name);
             setChronology(parsedAlgorithmCode.chronology || 0.8);
-            setContentType(parsedAlgorithmCode.contentType || { images: true, text: true, videos: true, interactive: true, externalPosts: true, embeddedWebsites: true });
+            setContentType(parsedAlgorithmCode.contentType || { images: true, text: true, videos: true, interactive: true });
             setCustomInstruction(editingAlgorithm.custom_instruction || ''); 
             setSentiment(parsedAlgorithmCode.scoring?.sentiment ?? 0);
             setVoteImpact(parsedAlgorithmCode.scoring?.voteImpact ?? 0);
@@ -422,20 +422,19 @@ const AddAlgorithm = ({ algorithms = [], display, editingAlgorithm = null, isAut
                             <div className="form-group">
                                 <div className="form-label-with-info">
                                     <label className="small-text">Chronology</label>
-                                    <InfoIconWithTooltip info="Prioritise older or newer posts. Fully newest means pure chronological order." />
+                                    <InfoIconWithTooltip info="Prioritise newer posts. Fully newest means pure chronological order." />
                                 </div>
                                 <input
                                     className="form-input"
                                     required
                                     step="0.1"
                                     type="range"
-                                    min="-1"
+                                    min="0"
                                     max="1"
                                     value={chronology}
                                     onChange={e => setChronology(parseFloat(e.target.value))}
                                 />
                                 <div className="slider-labels">
-                                    <span className="tiny-text">Oldest</span>
                                     <span className="tiny-text">Neutral</span>
                                     <span className="tiny-text">Newest</span>
                                 </div>
@@ -534,7 +533,7 @@ const AddAlgorithm = ({ algorithms = [], display, editingAlgorithm = null, isAut
                                 />
                             </div>
                         </div>
-                        <div className="form-row">
+                        <div className="form-row border-bottom">
                             <div className="form-group">
                                 <div className="form-label-with-info">
                                     <label className="small-text">Video length</label>
@@ -575,7 +574,11 @@ const AddAlgorithm = ({ algorithms = [], display, editingAlgorithm = null, isAut
                                 />
                             </div>
                         </div>
-                        <div className="form-row border-bottom">
+                    </>
+                )}
+                {showAdvancedOptions && (
+                    <>
+                        <div className="form-row">
                             <div className="form-label-with-info">
                                 <label className="small-text">Content Types</label>
                                 <InfoIconWithTooltip info="Unchecking a box will filter out all forms of that content." />
@@ -591,25 +594,7 @@ const AddAlgorithm = ({ algorithms = [], display, editingAlgorithm = null, isAut
                                     <input type="checkbox" checked={contentType.videos} onChange={e => setContentType(prev => ({ ...prev, videos: e.target.checked }))} /> Videos
                                 </label>
                                 <label>
-                                    <input type="checkbox" checked={contentType.interactive} onChange={e => setContentType(prev => ({ ...prev, interactive: e.target.checked }))} /> Interactive
-                                </label>
-                            </div>
-                        </div>
-                    </>
-                )}
-                {showAdvancedOptions && (
-                    <>
-                        <div className="form-row">
-                            <div className="form-label-with-info">
-                                <label className="small-text">More Content Types</label>
-                                <InfoIconWithTooltip info="Allow other websites, and posts from other sites to be embedded in posts." />
-                            </div>
-                            <div>
-                                <label>
-                                    <input type="checkbox" checked={contentType.externalPosts} onChange={e => setContentType(prev => ({ ...prev, externalPosts: e.target.checked }))} /> External posts
-                                </label>
-                                <label>
-                                    <input type="checkbox" checked={contentType.embeddedWebsites} onChange={e => setContentType(prev => ({ ...prev, embeddedWebsites: e.target.checked }))} /> Websites
+                                    <input type="checkbox" checked={contentType.interactive} onChange={e => setContentType(prev => ({ ...prev, interactive: e.target.checked }))} /> Custom
                                 </label>
                             </div>
                         </div>

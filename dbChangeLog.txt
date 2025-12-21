@@ -396,3 +396,10 @@ CREATE INDEX idx_posts_word_count ON posts (word_count);
 CREATE INDEX idx_posts_video_length ON posts (video_length);
 
 CREATE INDEX idx_ext_posts_word_count ON external_posts (word_count);
+
+ALTER TABLE external_posts
+	MODIFY source VARCHAR(32) COLLATE utf8mb4_unicode_ci NULL,
+	MODIFY source_post_id VARCHAR(128) COLLATE utf8mb4_unicode_ci NULL,
+	MODIFY fetched_at DATETIME NULL,
+	MODIFY created_at_remote DATETIME NULL,
+	MODIFY url TEXT COLLATE utf8mb4_unicode_ci NULL;

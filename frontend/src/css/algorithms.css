@@ -289,7 +289,7 @@
 	align-items: center;
 	display: flex;
 	gap: var(--medium-margin);
-	padding-bottom: var(--medium-margin);
+	padding-bottom: var(--large-margin);
 }
 .form-row .form-group {
 	flex: 1;

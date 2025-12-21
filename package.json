@@ -54,7 +54,7 @@
     "natural": "^7.1.0",
     "node-cron": "^3.0.3",
     "nodemailer": "^7.0.3",
-    "openai": "^4.57.0",
+    "openai": "^6.15.0",
     "react": "^18.3.1",
     "react-beautiful-dnd": "^13.1.1",
     "react-confirm-alert": "^3.0.6",
@@ -74,7 +74,7 @@
     "uuid": "^9.0.1",
     "wink-eng-lite-web-model": "^1.8.1",
     "wink-nlp": "^2.4.0",
-    "ws": "^8.11.0",
+    "ws": "^8.18.3",
     "xmlhttprequest-ssl": "^2.0.0",
     "yauzl": "^3.2.0"
   },

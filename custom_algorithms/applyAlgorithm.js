@@ -79,9 +79,12 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
             isActiveToday = algorithm.activeDays && algorithm.activeDays.length > 0 ? algorithm.activeDays.map(d => d.toLowerCase()).includes(today) : true;
 		}
 
-		const getOldest = algorithm.chronology === -1; //Get oldest posts
-        const useChronological = (!isGroup && !algorithmLocation) || (!isActiveToday && !isGroup) || (algorithm.chronology === 1); //User feeds without active algorithms or 1 chronology should be in time order only
-		const useStandardScore = (!algorithmLocation && isGroup) || (!isActiveToday && isGroup);
+		const { chronology = 0, contentType = {}, variety = 1, wordLimits = {}, videoLimits = {}, timeLimits = {}, dateLimits = {}, scoring = {} } = algorithm;
+		const { sentiment = 0, voteImpact = 1, wordBoost = [], wordSuppress = [] } = scoring;
+		const lowVoteImpact = voteImpact < 0.3; //When voteImpact is low, don't order by score/hotness
+		const highChronology = chronology > 0.7; //When chronology is high, prioritize recency
+        const useChronological = (!isGroup && !algorithmLocation) || (!isActiveToday && !isGroup) || highChronology || lowVoteImpact; //User feeds without active algorithms, high chronology, or low voteImpact should be in time order
+		const useStandardScore = ((!algorithmLocation && isGroup) || (!isActiveToday && isGroup)) && !lowVoteImpact;
 
         //Decide whether to fetch with all attributes or exclude them up front
 		const fetchFullAttributes = !useChronological && !useStandardScore;
@@ -140,15 +143,9 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
 		//console.log("limit:", limit);
 		//console.log("useChronological:", useChronological);
 		//console.log("useStandardScore:", useStandardScore);
-		//console.log("getOldest:", getOldest);
-		const backendFetchTotal = (useChronological || useStandardScore || getOldest) ? limit : Math.max(limit * 2, 200); //Fetch more posts from DB to allow for filtering later
+		const backendFetchTotal = (useChronological || useStandardScore) ? limit : Math.max(limit * 2, 200); //Fetch more posts from DB to allow for filtering later
 		//console.log("backendFetchTotal:", backendFetchTotal);
-		const orderMode = getOldest
-			? [['created_at', 'ASC']]
-			: (useChronological ? [['created_at', 'DESC']] : [['rank_hotness', 'DESC']]);
-
-		const { chronology = 1, contentType = {}, variety = 1, wordLimits = {}, videoLimits = {}, timeLimits = {}, dateLimits = {}, scoring = {} } = algorithm;
-		const { sentiment = 0, voteImpact = 1, wordBoost = [], wordSuppress = [] } = scoring;
+		const orderMode = (useChronological ? [['created_at', 'DESC']] : [['rank_hotness', 'DESC']]);
 
 		//Algorithm filters for native Posts
 		const algorithmFilters = {};
@@ -156,30 +153,36 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
 			if (contentType.images === false) algorithmFilters.has_images = false;
 			if (contentType.videos === false) algorithmFilters.has_videos = false;
 			if (contentType.text === false) algorithmFilters.has_text = false;
-			if (contentType.embeddedWebsites === false) algorithmFilters.has_embedded_websites = false;
+			//Word limits only apply if has_text = true
 			if (Number.isFinite(wordLimits.min)) {
 				algorithmFilters.word_count = { [Op.gte]: wordLimits.min };
+				algorithmFilters.has_text = true;
 			}
 			if (Number.isFinite(wordLimits.max)) {
-				algorithmFilters.word_count = {
+				algorithmFilters.word_count = { 
 					...algorithmFilters.word_count,
 					[Op.lte]: wordLimits.max
 				};
+				algorithmFilters.has_text = true;
 			}
+			//Video length limits only apply if has_videos = true
 			if (Number.isFinite(videoLimits.min)) {
 				algorithmFilters.video_length = { [Op.gte]: videoLimits.min };
+				algorithmFilters.has_videos = true;
 			}
 			if (Number.isFinite(videoLimits.max)) {
-				algorithmFilters.video_length = {
+				algorithmFilters.video_length = { 
 					...algorithmFilters.video_length,
 					[Op.lte]: videoLimits.max
 				};
+				algorithmFilters.has_videos = true;
 			}
+			//Date filters
 			if (dateLimits.from) {
 				algorithmFilters.created_at = { [Op.gte]: new Date(dateLimits.from) };
 			}
 			if (dateLimits.to) {
-				algorithmFilters.created_at = {
+				algorithmFilters.created_at = { 
 					...algorithmFilters.created_at,
 					[Op.lte]: new Date(dateLimits.to)
 				};
@@ -191,13 +194,11 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
 		if (algorithmLocation && isActiveToday) {
 			const conditions = [];
 			if (contentType.images === false) conditions.push('p.has_images = false');
-			if (contentType.videos === false) conditions.push('p.has_videos = false');
 			if (contentType.text === false) conditions.push('p.has_text = false');
-			if (contentType.embeddedWebsites === false) conditions.push('p.has_embedded_websites = false');
-			if (Number.isFinite(wordLimits.min)) conditions.push(`p.word_count >= ${wordLimits.min}`);
-			if (Number.isFinite(wordLimits.max)) conditions.push(`p.word_count <= ${wordLimits.max}`);
-			if (Number.isFinite(videoLimits.min)) conditions.push(`p.video_length >= ${videoLimits.min}`);
-			if (Number.isFinite(videoLimits.max)) conditions.push(`p.video_length <= ${videoLimits.max}`);
+			//Word limits only apply if has_text = true
+			if (Number.isFinite(wordLimits.min)) conditions.push(`(p.has_text = false OR p.word_count >= ${wordLimits.min})`);
+			if (Number.isFinite(wordLimits.max)) conditions.push(`(p.has_text = false OR p.word_count <= ${wordLimits.max})`);
+			//Date limits
 			if (dateLimits.from) conditions.push(`p.created_at_remote >= '${new Date(dateLimits.from).toISOString()}'`);
 			if (dateLimits.to) conditions.push(`p.created_at_remote <= '${new Date(dateLimits.to).toISOString()}'`);
 			if (conditions.length > 0) {
@@ -271,7 +272,7 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
                         AND p.created_at_remote >= DATE_SUB(NOW(), INTERVAL 7 DAY)
                         ${externalFiltersSQL}
                     ORDER BY
-                        (p.score * EXP(-0.00002 * TIMESTAMPDIFF(SECOND, p.created_at_remote, NOW()))) DESC
+                        ${lowVoteImpact ? 'p.created_at_remote' : '(p.score * EXP(-0.00002 * TIMESTAMPDIFF(SECOND, p.created_at_remote, NOW())))'} DESC
                     LIMIT :limit OFFSET :offset
                     `,
                     {
@@ -301,8 +302,8 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
                             AND p.expired = false
                             AND p.created_at_remote >= DATE_SUB(NOW(), INTERVAL 7 DAY)
                             ${externalFiltersSQL}
-                        ORDER BY
-                            (p.score * EXP(-0.00002 * TIMESTAMPDIFF(SECOND, p.created_at_remote, NOW()))) DESC
+                    	ORDER BY
+                        	${lowVoteImpact ? 'p.created_at_remote' : '(p.score * EXP(-0.00002 * TIMESTAMPDIFF(SECOND, p.created_at_remote, NOW())))'} DESC
                         LIMIT :limit OFFSET :offset
                         `,
                         {
@@ -316,7 +317,7 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
             let externalPosts = [];
             if (unifiedIds.length) {
                 externalPosts = await ExternalPosts.findAll({
-                    where: { post_id: unifiedIds },
+                    where: { post_id: unifiedIds, content: { [Op.ne]: null } },
                     raw: true
                 });
             }
@@ -390,7 +391,7 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
             let externalPosts = [];
             if (unifiedIds.length) {
                 externalPosts = await ExternalPosts.findAll({
-                    where: { post_id: unifiedIds, source: platform },
+                    where: { post_id: unifiedIds, source: platform, content: { [Op.ne]: null } },
                     raw: true
                 });
             }
@@ -456,10 +457,7 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
             posts.sort((a, b) => orderMap.get(a.post_id) - orderMap.get(b.post_id));
         } else {
             //Non-group channels are chronological by default
-            const channelOrderMode =
-                (getOldest)
-                    ? [['created_at', 'ASC']]
-                    : ((useChronological && !getOldest)
+            const channelOrderMode = ((useChronological)
                         ? [['created_at', 'DESC']]
                         : [['rank_hotness', 'DESC']]);
             const postIds = await Posts.findAll({
@@ -494,7 +492,7 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
 		}
 
 		//No algorithm to be applied
-		if (getOldest || useChronological || useStandardScore) {
+		if (useChronological || useStandardScore) {
 			const ids = posts.map(p => p.post_id);
 			const [userVotes, savedRows] = viewerId
 				? await Promise.all([
@@ -557,11 +555,6 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
 				//Keep only filters that can't be done in SQL
 				//Only apply interactive filtering for native posts
 				if (contentType.interactive === false && !isExternalPost && post.has_interactive) continue;
-				//when external posts disabled, exclude both external posts and native posts that embed externals
-				if (contentType.externalPosts === false) {
-					if (isExternalPost) continue; //exclude external posts
-					if (post.has_external_posts) continue; //exclude native posts that embed external content
-				}
 				//Time of day filtering (can't be done efficiently in SQL)
 				if (timeLimits.startTime && timeLimits.endTime) {
 					const createdAt = new Date(post.created_at || post.created_at_remote);
@@ -576,17 +569,18 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
 					: typeof post.score === 'number'
 						? post.score
 						: 0;
-				algorithmScore = baseHotness;
+				algorithmScore = voteImpact > 0 ? baseHotness * voteImpact : 0;
 				//algorithmScore += (chronology ?? 1) * baseHotness;
 
 				//Vote quality * engagement ratio (distinct from hotness)
-				//const totalVotes = (post.upvotes || 0) + (post.downvotes || 0);
-				//const qualityRatio = totalVotes > 0 ? (post.upvotes || 0) / totalVotes : 0.5;
-				//const engagementRatio = (post.views || 0) > 0 ? totalVotes / post.views : 0;
-				//algorithmScore += voteImpact * ((qualityRatio * 0.7) + (engagementRatio * 0.3));
+				if (voteImpact > 0) {
+					const totalVotes = (post.upvotes || 0) + (post.downvotes || 0);
+					const qualityRatio = totalVotes > 0 ? (post.upvotes || 0) / totalVotes : 0.5;
+					const engagementRatio = (post.views || 0) > 0 ? totalVotes / post.views : 0;
+					algorithmScore += voteImpact * ((qualityRatio * 0.7) + (engagementRatio * 0.3));
+				}
 
 				//Semantic boost/suppress using embeddings (algorithmRow holds precomputed embedding vectors)
-				// change: use embeddings only (no words), parse and normalise algorithm embeddings before comparing
 				if (algorithmRow?.boost_embedding || algorithmRow?.suppress_embedding) {
 					let semanticBoost = 0;
 					let semanticSuppress = 0;

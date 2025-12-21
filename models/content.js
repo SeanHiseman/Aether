@@ -12,8 +12,8 @@ const AppBuilds = sequelize.define('app_builds', {
 
 const ExternalPosts = sequelize.define('ExternalPosts', {
 	post_id: { type: STRING(255), primaryKey: true },
-	source: { type: STRING(32), allowNull: false },
-	source_post_id: { type: STRING(128), allowNull: false },
+	source: { type: STRING(32), allowNull: true },
+	source_post_id: { type: STRING(128), allowNull: true },
 	title: { type: TEXT, allowNull: true },
     content: { type: TEXT, allowNull: true },
 	text_body: { type: TEXT, allowNull: true },
@@ -29,13 +29,13 @@ const ExternalPosts = sequelize.define('ExternalPosts', {
     replies: { type: INTEGER, allowNull: true },
     sentiment_score: { type: FLOAT, allowNull: true },
 	embeddings: { type: DataTypes.JSON, allowNull: true },
-	fetched_at: { type: DataTypes.DATE, allowNull: false },
-	created_at_remote: { type: DataTypes.DATE, allowNull: false },
+	fetched_at: { type: DataTypes.DATE, allowNull: true },
+	created_at_remote: { type: DataTypes.DATE, allowNull: true },
 	expired: { type: BOOLEAN, defaultValue: false },
 	channel: { type: STRING(128), allowNull: true },
 	author: { type: STRING(190), allowNull: true }, 
     author_photo: { type: TEXT, allowNull: true },
-	url: { type: TEXT, allowNull: false },
+	url: { type: TEXT, allowNull: true },
 	media: { type: DataTypes.JSON, allowNull: true }
 }, {
 	tableName: 'external_posts',
