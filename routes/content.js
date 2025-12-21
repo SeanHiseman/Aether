@@ -176,20 +176,47 @@ router.post('/content_vote', higherLimiter, authenticateCheck, async (req, res) 
 
 //Checks individual file sizes
 const postFilter = (req, file, cb) => {
-    const allowedTypes = /jpeg|jpg|png|gif|mp4|mov|avi/;
-    const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
-    const mimetype = allowedTypes.test(file.mimetype);
-    if (!mimetype || !extname) {
-        return cb(new Error('Only images and videos are allowed'));
-    }
-    const isVideo = file.mimetype.startsWith('video/');
-    const maxImageSize = (req.session?.user?.has_membership ? 500 : 5) * 1024 * 1024; //500MB vs 5MB
-    const maxVideoSize = (req.session?.user?.has_membership ? 10000 : 100) * 1024 * 1024; //10GB vs 100MB
-    const maxSize = isVideo ? maxVideoSize : maxImageSize;
-    if (file.size > maxSize) {
-        return cb(new Error(`File exceeds the limit of ${maxSize / (1024 * 1024)}MB`));
-    }
-    cb(null, true);
+	const ALLOWED_MIME_TYPES = [
+		'image/jpeg',
+		'image/png',
+		'image/gif',
+		'image/webp',
+		'image/avif',
+		'image/heic',
+		'image/heif',
+		'video/mp4',
+		'video/quicktime',
+		'video/webm',
+		'video/x-matroska'
+	];
+	const ALLOWED_EXTENSIONS = [
+		'.jpg',
+		'.jpeg',
+		'.png',
+		'.gif',
+		'.webp',
+		'.avif',
+		'.heic',
+		'.heif',
+		'.mp4',
+		'.mov',
+		'.webm',
+		'.mkv'
+	];
+	const extname = path.extname(file.originalname).toLowerCase();
+	const isValidExtension = ALLOWED_EXTENSIONS.includes(extname);
+	const isValidMimeType = ALLOWED_MIME_TYPES.includes(file.mimetype);
+	if (!isValidExtension || !isValidMimeType) {
+		return cb(new Error('File type not allowed'));
+	}
+	const isVideo = file.mimetype.startsWith('video/');
+	const maxImageSize = (req.session?.user?.has_membership ? 500 : 5) * 1024 * 1024; //500MB vs 5MB
+	const maxVideoSize = (req.session?.user?.has_membership ? 10000 : 100) * 1024 * 1024; //10GB vs 100MB
+	const maxSize = isVideo ? maxVideoSize : maxImageSize;
+	if (file.size > maxSize) {
+		return cb(new Error(`File exceeds the limit of ${maxSize / (1024 * 1024)}MB`));
+	}
+	cb(null, true);
 };
 
 let postUpload

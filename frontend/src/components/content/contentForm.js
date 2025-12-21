@@ -610,27 +610,72 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
     }, [blocks.length, BLOCK_LIMIT, hasMembership]);
 
     const handleFilesChange = useCallback(event => {
-		if (!isAuthenticated) return;
-        setBlockLimitError('')
-        if (blocks.length >= BLOCK_LIMIT) {
-            setBlockLimitError(hasMembership ? `Block limit (${BLOCK_LIMIT}) reached.` : `Free block limit (${BLOCK_LIMIT}) reached. Get membership to add more:`)
-            return
+        if (!isAuthenticated) return;
+        setBlockLimitError('');
+        setPostErrorMessage('');
+        const files = Array.from(event.target.files);
+        const ALLOWED_MIME_TYPES = [
+            'image/jpeg',
+            'image/png',
+            'image/gif',
+            'image/webp',
+            'image/avif',
+            'image/heic',
+            'image/heif',
+            'video/mp4',
+            'video/quicktime',
+            'video/webm',
+            'video/x-matroska'
+        ];
+        const ALLOWED_EXTENSIONS = [
+            '.jpg',
+            '.jpeg',
+            '.png',
+            '.gif',
+            '.webp',
+            '.avif',
+            '.heic',
+            '.heif',
+            '.mp4',
+            '.mov',
+            '.webm',
+            '.mkv'
+        ];
+        const invalidTypes = files.filter(f => {
+            const ext = f.name.substring(f.name.lastIndexOf('.')).toLowerCase();
+            return !ALLOWED_MIME_TYPES.includes(f.type) || !ALLOWED_EXTENSIONS.includes(ext);
+        });
+        if (invalidTypes.length) {
+            setPostErrorMessage('File type not allowed');
+            setTimeout(() => {
+                setPostErrorMessage('');
+            }, 5000);
+            return;
         }
-        const files = Array.from(event.target.files)
+        if (blocks.length >= BLOCK_LIMIT) {
+            setBlockLimitError(
+                hasMembership
+                    ? `Block limit (${BLOCK_LIMIT}) reached.`
+                    : `Free block limit (${BLOCK_LIMIT}) reached. Get membership to add more:`
+            );
+            return;
+        }
         const oversized = files.filter(f => {
             const isVideo = f.type.startsWith('video/');
-            const maxSize = isVideo ? MAX_VIDEO_SIZE : MAX_FILE_SIZE; //Large limit for videos
+            const maxSize = isVideo ? MAX_VIDEO_SIZE : MAX_FILE_SIZE;
             return f.size > maxSize;
         });
         if (oversized.length) {
-            const names = oversized.map(f => f.name).join(', ')
+            const names = oversized.map(f => f.name).join(', ');
             setPostErrorMessage(
-                hasMembership ? `These files exceed your max size limit: ${names}.` : `These files exceed your max size limit: ${names}. Get membership for more.`
-            )
+                hasMembership
+                    ? `These files exceed your max size limit: ${names}.`
+                    : `These files exceed your max size limit: ${names}. Get membership for more.`
+            );
             setTimeout(() => {
-                setPostErrorMessage('')
-            }, 5000)
-            return
+                setPostErrorMessage('');
+            }, 5000);
+            return;
         }
         setPostErrorMessage('')
         const canFitCount = Math.max(0, BLOCK_LIMIT - blocks.length)

@@ -368,6 +368,12 @@ const BaseLayout = () => {
     const handleFileChange = event => {
         const file = event.target.files[0];
         if (file) {
+            const allowedTypes = ['image/jpeg','image/png','image/webp','image/heic','image/heif'];
+            if (!allowedTypes.includes(file.type)) {
+                setAsideErrorMessage('Please upload a valid image file (JPEG, PNG, GIF, WebP, or BMP)');
+                event.target.value = '';
+                return;
+            }
             if (file.size > MAX_FILE_SIZE) {
                 setAsideErrorMessage(
                     hasMembership

@@ -86,6 +86,13 @@ const FeedInfoView = () => {
             setIsFileSelected(false);
             return;
         }
+        const allowedTypes = ['image/jpeg','image/png','image/webp','image/heic','image/heif'];
+        if (!allowedTypes.includes(file.type)) {
+            setErrorMessage('Please upload a valid image file (JPEG, PNG, GIF, WebP, or BMP)');
+            setTimeout(() => { setErrorMessage(''); }, 10000);
+            event.target.value = '';
+            return;
+        }
         if (file.size > MAX_FILE_SIZE) {
             setErrorMessage(hasMembership ? 'File exceeds max size limit.' : 'File exceeds max size limit. Get membership for more.');
             setTimeout(() => { setErrorMessage(''); }, 10000);
