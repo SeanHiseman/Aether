@@ -143,7 +143,7 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
 		//console.log("limit:", limit);
 		//console.log("useChronological:", useChronological);
 		//console.log("useStandardScore:", useStandardScore);
-		const backendFetchTotal = (useChronological || useStandardScore) ? limit : Math.max(limit * 2, 200); //Fetch more posts from DB to allow for filtering later
+		const backendFetchTotal = (useChronological || useStandardScore) ? limit : Math.max(limit, 100); //Fetch more posts from DB to allow for filtering later
 		//console.log("backendFetchTotal:", backendFetchTotal);
 		const orderMode = (useChronological ? [['created_at', 'DESC']] : [['rank_hotness', 'DESC']]);
 
@@ -574,10 +574,14 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
 
 				//Vote quality * engagement ratio (distinct from hotness)
 				if (voteImpact > 0) {
-					const totalVotes = (post.upvotes || 0) + (post.downvotes || 0);
-					const qualityRatio = totalVotes > 0 ? (post.upvotes || 0) / totalVotes : 0.5;
-					const engagementRatio = (post.views || 0) > 0 ? totalVotes / post.views : 0;
-					algorithmScore += voteImpact * ((qualityRatio * 0.7) + (engagementRatio * 0.3));
+					const upvotes = post.upvotes || 0;
+					const downvotes = post.downvotes || 0;
+					const totalVotes = upvotes + downvotes;
+					if (totalVotes > 0) {
+						const netRatio = (upvotes - downvotes) / totalVotes;
+						const engagementRatio = (post.views || 0) > 0 ? totalVotes / post.views : 0;
+						algorithmScore += voteImpact * ((netRatio * 30) + (engagementRatio * 0.3)); //Heavily penalise negative ratios
+					}
 				}
 
 				//Semantic boost/suppress using embeddings (algorithmRow holds precomputed embedding vectors)

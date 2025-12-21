@@ -167,7 +167,7 @@
     width: 70%;
 }
 .feed-settings.short {
-    height: clamp(300px, 40vw, 1000px);
+    height: clamp(400px, 40vh, 1000px);
 }
 .follow-button {
     align-items: center;

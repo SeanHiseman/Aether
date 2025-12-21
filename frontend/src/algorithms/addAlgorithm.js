@@ -109,7 +109,7 @@ const AddAlgorithm = ({ algorithms = [], display, editingAlgorithm = null, isAut
     const [activeDays, setActiveDays] = useState(['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']);
     const [algorithmCode, setAlgorithmCode] = useState('');
     const [algorithmName, setAlgorithmName] = useState('');
-    const [chronology, setChronology] = useState(1);
+    const [chronology, setChronology] = useState(0);
     const [contentType, setContentType] = useState({ images: true, text: true, videos: true, interactive: true });
     const [customInstruction, setCustomInstruction] = useState('');
     const [dateFrom, setDateFrom] = useState('');
@@ -124,7 +124,7 @@ const AddAlgorithm = ({ algorithms = [], display, editingAlgorithm = null, isAut
     const [startTime, setStartTime] = useState('00:00');
     const [template, setTemplate] = useState('none');
     const [videoRange, setVideoRange] = useState([0, 100]);
-    const [variety, setVariety] = useState(0.5);
+    const [variety, setVariety] = useState(0);
     const [voteImpact, setVoteImpact] = useState(0);
     const [wordBoost, setWordBoost] = useState('');
     const [wordRange, setWordRange] = useState([0, 100]);
@@ -210,7 +210,7 @@ const AddAlgorithm = ({ algorithms = [], display, editingAlgorithm = null, isAut
         setActiveDays(['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']);
         setAlgorithmCode('');
         setAlgorithmName('');
-        setChronology(0.8);
+        setChronology(0.6);
         setContentType({ images: true, text: true, videos: true, interactive: true });
         setCustomInstruction(''); 
         setDateFrom('');
@@ -218,23 +218,23 @@ const AddAlgorithm = ({ algorithms = [], display, editingAlgorithm = null, isAut
         setEditingAlgorithm(null);
         setWordRange([0, 100]);
         setVideoRange([0, 100]);
-        setSentiment(0);
+        setSentiment(0.2);
         setStartTime('00:00');
         setEndTime('23:59');
         setTemplate('none');
         setWordBoost('');
         setWordSuppress('');
         setVariety(0.5);
-        setVoteImpact(0);
+        setVoteImpact(0.6);
     }
 
     const templateChange = (templateKey) => {
         setTemplate(templateKey);
         if (templateKey === 'none') {
             setActiveDays(['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']);
-            setChronology(0.8);
-            setSentiment(0);
-            setVoteImpact(0);
+            setChronology(0.6);
+            setSentiment(0.2);
+            setVoteImpact(0.8);
             setWordBoost('');
             setWordSuppress('');
             setVariety(0.5);
@@ -306,11 +306,11 @@ const AddAlgorithm = ({ algorithms = [], display, editingAlgorithm = null, isAut
             setActiveDays(parsedAlgorithmCode.activeDays || ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']);
             setAlgorithmCode(parsedAlgorithmCode);
             setAlgorithmName(algorithm_name);
-            setChronology(parsedAlgorithmCode.chronology || 0.8);
+            setChronology(parsedAlgorithmCode.chronology || 0.6);
             setContentType(parsedAlgorithmCode.contentType || { images: true, text: true, videos: true, interactive: true });
             setCustomInstruction(editingAlgorithm.custom_instruction || ''); 
-            setSentiment(parsedAlgorithmCode.scoring?.sentiment ?? 0);
-            setVoteImpact(parsedAlgorithmCode.scoring?.voteImpact ?? 0);
+            setSentiment(parsedAlgorithmCode.scoring?.sentiment ?? 0.2);
+            setVoteImpact(parsedAlgorithmCode.scoring?.voteImpact ?? 0.8);
             setStartTime(parsedAlgorithmCode.startTime || '00:00');
             setEndTime(parsedAlgorithmCode.endTime || '23:59');
             setTemplate(parsedAlgorithmCode.template || 'none');
@@ -449,7 +449,7 @@ const AddAlgorithm = ({ algorithms = [], display, editingAlgorithm = null, isAut
                                     required
                                     step="0.1"
                                     type="range"
-                                    min="-1"
+                                    min="0"
                                     max="1"
                                     value={voteImpact}
                                     onChange={e => setVoteImpact(parseFloat(e.target.value))}
