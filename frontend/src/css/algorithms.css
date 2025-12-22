@@ -353,7 +353,6 @@
     font-size: var(--small-text);
     padding: 10px 12px;
     min-width: 120px;
-    transition: border-color 0.2s ease;
 }
 .time-input::-webkit-calendar-picker-indicator {
     filter: invert(1);

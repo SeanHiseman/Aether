@@ -386,7 +386,6 @@ CREATE TABLE `external_posts` (
   `has_text` BOOLEAN DEFAULT FALSE,
   `has_images` BOOLEAN DEFAULT FALSE,
   `has_videos` BOOLEAN DEFAULT FALSE,
-  `has_embedded_websites` BOOLEAN DEFAULT FALSE,
   `score` INT DEFAULT NULL,
   `replies` INT DEFAULT NULL,
   `sentiment_score` FLOAT DEFAULT NULL,

@@ -160,11 +160,13 @@ export default function SocialFeedPage({ platform }) {
 	}, [hasMore, platform, isAuthenticated, offset]);
 
 	const refreshPosts = () => {
+		console.log("refreshing posts for", platform);
 		setErrorMessage('');
 		setOffset(0);
 		setHasMore(true);
 		setPosts([]);
 		setLoading(true);
+		hasLoadedRef.current = false;
 		setRefreshTrigger(prev => !prev);
 	};
 

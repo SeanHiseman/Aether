@@ -237,7 +237,6 @@
     font-weight: bold;
     outline: none;
     padding: var(--medium-margin) var(--large-margin);
-    transition: var(--transition-regular);
 }
 .option-toggle button.active-mode {
     background-color: var(--darkest);

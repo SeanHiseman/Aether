@@ -36,7 +36,6 @@ input, textarea, select {
     color: var(--lightest);
     padding: var(--small-margin);
     margin:  var(--small-margin);
-    transition: background-color var(--transition-regular);
 }
 .button, .dark-button, .dark-button-disabled {
     font-size: var(--small-text);

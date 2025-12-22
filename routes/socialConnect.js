@@ -86,7 +86,7 @@ export function formatExternalPost(p, config, platform) {
 		created_at: p.created_at_remote,
 		downvotes: 0,
 		has_downvoted: false,
-		has_embedded_websites: p.has_embedded_websites,
+		has_embedded_websites: false,
 		has_external_posts: false,
 		has_interactive: false,
 		has_upvoted: false,
@@ -255,7 +255,6 @@ async function fetchAndProcessPosts(platform, fetchConfig, user_id) {
 					has_text,
 					has_images: mapped.has_images || false,
 					has_videos: mapped.has_videos || false,
-					has_embedded_websites: details?.has_embedded_websites || false,
 					score: mapped.score || 0,
 					replies: mapped.replies || 0,
 					sentiment_score,
@@ -273,7 +272,6 @@ async function fetchAndProcessPosts(platform, fetchConfig, user_id) {
 			const updateFields = [
 				'source_post_id', 'title', 'content', 'text_body', 'text_length', 'word_count',
 				'image_count', 'video_count', 'has_text', 'has_images', 'has_videos',
-				'has_embedded_websites',
 				'score', 'replies', 'sentiment_score', 'embeddings',
 				'fetched_at', 'created_at_remote', 'expired', 'channel', 'author',
 				'author_photo', 'url', 'media'
@@ -524,7 +522,6 @@ function mapBlueskyToExternal(item) {
 		video_count: Array.isArray(videos) ? videos.length : 0,
 		has_images: Array.isArray(images) && images.length > 0,
 		has_videos: Array.isArray(videos) && videos.length > 0,
-		has_embedded_websites: !!text.match(/https?:\/\/[^\s]+/),
 		channel: post.author?.handle || null
 	};
 }
@@ -570,7 +567,6 @@ function mapMastodonToExternal(toot, instance) {
 		video_count: Array.isArray(media) ? media.filter(m => m && m.type === 'video').length : 0,
 		has_images: Array.isArray(media) && media.length > 0,
 		has_videos: false,
-		has_embedded_websites: !!rawText.match(/https?:\/\/[^\s]+/),
 		channel: postInstance
 	};
 } 
@@ -610,7 +606,6 @@ function mapRedditToExternal(child) {
 		video_count: d.media?.reddit_video ? 1 : 0,
 		has_images: !!media,
 		has_videos: !!d.media?.reddit_video,
-		has_embedded_websites: !!d.selftext?.match(/https?:\/\/[^\s]+/),
 		channel: d.subreddit || null,
 	};
 }
@@ -898,7 +893,6 @@ router.get('/mastodon/callback', authenticateCheck, async (req, res) => {
 
 //Combined route for Bluesky, Mastodon, and Reddit posts
 router.get('/:platform/feed', authenticateCheck, async (req, res) => {
-	//console.log("/platform/feed called with params:", req.params, "and query:", req.query);
     const { platform } = req.params;
     if (!['bluesky', 'reddit', 'mastodon'].includes(platform)) {
         return res.status(404).json({ success: false, message: 'Invalid platform' });

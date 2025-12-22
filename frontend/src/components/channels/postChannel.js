@@ -6,7 +6,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useInfiniteQuery, useQuery, useQueryClient } from '@tanstack/react-query';
 const FETCH_LIMIT = 100;
 
-const PostChannel = ({ channelId, channelName, feed, isDraft, isEditMode, isGroup, refreshTrigger, setPostErrorMessage }) => {
+const PostChannel = ({ channelId, channelName, feed, isDraft, isEditMode, isGroup, refreshTrigger, setFeedErrorMessage }) => {
 	const { channel_name, post_id } = useParams();
 	const channelReady = !!channelId;
 	const feedId = feed?.feed_id;
@@ -23,7 +23,7 @@ const PostChannel = ({ channelId, channelName, feed, isDraft, isEditMode, isGrou
 				queryClient.invalidateQueries(['singlePost', post_id]);
 			}
 		}
-	}, [refreshTrigger, queryClient, channelId, channelName, feedId, isGroup, post_id, setPostErrorMessage]);
+	}, [refreshTrigger, queryClient, channelId, channelName, feedId, isGroup, post_id, setFeedErrorMessage]);
 
 	useEffect(() => {
 		if (isDraft && !isGroup && viewer?.feed_id !== feedId) {
@@ -48,7 +48,7 @@ const PostChannel = ({ channelId, channelName, feed, isDraft, isEditMode, isGrou
 			const status = response.data?.status;
 			const message = response.data?.message;
 			if (pageParam === 0 && message) {
-				setPostErrorMessage(message);
+				setFeedErrorMessage(message);
 			}
 			return posts;
 		} catch (error) {

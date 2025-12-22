@@ -35,7 +35,6 @@
     padding: var(--medium-margin) var(--large-margin);
     text-align: center;
     text-decoration: none;
-    transition: background-color var(--transition-regular);
 }
 .link:hover, .submit:hover{
     background-color: var(--light);
@@ -59,7 +58,6 @@
     font-size: var(--small-text);
     margin: var(--medium-margin) 0;
     padding: var(--medium-margin) var(--large-margin);
-    transition: background-color var(--transition-regular);
     width: 100%;
 }
 .submit.disabled:hover {

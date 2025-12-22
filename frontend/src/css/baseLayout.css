@@ -139,7 +139,6 @@
   margin: 10px;
   max-width: 200px;
   padding: 5px 10px;
-  transition: background-color var(--transition-regular);
 }
 .chat-channel-button, .conversation-button {
   border-radius: 1000px;
@@ -234,7 +233,6 @@
 .feed-list-item.dragging {
     background-color: var(--dark);
     opacity: 0.9;
-    transition: none;
     z-index: 9999 !important;
 }
 .feed-list-link {
@@ -266,16 +264,15 @@
   margin: var(--medium-margin);
 }
 .icon-button {
+  align-items: center;
   border: none;
   background-color: var(--darkest);
-  height: 100%;
-  position: relative;
-  transition: background-color var(--transition-regular);
   cursor: pointer;
-  padding: 0 calc(0.4 * var(--header-height));
   display: flex;
-  align-items: center;
+  height: 100%;
   justify-content: center;
+  position: relative;
+  padding: 0 calc(0.4 * var(--header-height));
 }
 .icon-button.ask {
   border-top-right-radius: calc(clamp(4px, 1vw, 10px) + var(--medium-margin));
@@ -350,7 +347,6 @@ main {
   font-size: var(--small-text);
   margin: var(--medium-margin);
   padding: var(--small-margin);
-  transition: background-color var(--transition-regular);
   width: 80%;
 }
 #personal-feeds {
@@ -462,7 +458,6 @@ main {
   height: var(--medium-text);
   padding: 0;
   width: var(--medium-text);
-  transition: background-color var(--transition-regular);
 }
 #upload-form {
   display: flex;
@@ -493,7 +488,6 @@ ul {
 }
 .vote-enabled {
   background-color: var(--darkest);
-  transition: background-color var(--transition-regular);
 }
 .vote-enabled:hover {
   background-color: var(--light);

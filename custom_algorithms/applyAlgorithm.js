@@ -38,7 +38,6 @@ function stripExcludedAttributes(posts) {
 }
 
 async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOptions, isGroup = true, isMain, limit = 100, offset, recentUpvotes, viewerId, keyword = '', connectedAccounts = [], userId }) {
-	//console.log("getting posts in applyAlgorithms at:", new Date().toISOString());
 	try {
         //Followed feeds are a received as a string
 		const followedFeedIdsSafe = (typeof followedFeedIds === "string")
@@ -153,6 +152,11 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
 			if (contentType.images === false) algorithmFilters.has_images = false;
 			if (contentType.videos === false) algorithmFilters.has_videos = false;
 			if (contentType.text === false) algorithmFilters.has_text = false;
+			    if (contentType.interactive === false) {
+					algorithmFilters.has_interactive = false;
+					algorithmFilters.has_external_posts = false;
+					algorithmFilters.has_embedded_websites = false;
+				}
 			//Word limits only apply if has_text = true
 			if (Number.isFinite(wordLimits.min)) {
 				algorithmFilters.word_count = { [Op.gte]: wordLimits.min };
@@ -219,7 +223,7 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
                 offset,
                 raw: true
             });
-            if (!postIds.length) return { posts: [], status: "ok", message: "No posts match your search terms." };
+            if (!postIds.length) return { posts: [], status: "ok", message: "" };
             const orderedIds = postIds.map(p => p.post_id);
             posts = await Posts.findAll({
                 where: { post_id: orderedIds },
@@ -538,8 +542,6 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
 		try {
 			const logStart = Date.now();
 			for (const post of posts) {
-				//Explicit isExternalPost flag to avoid relying on absent fields
-				const isExternalPost = !!post.source || !!post.isExternal;
 				//Parse and normalise post embeddings once
 				postEmbedding = post.embeddings;
 				if (typeof postEmbedding === 'string') {
@@ -552,9 +554,6 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
 				if (!Array.isArray(postEmbedding)) postEmbedding = [];
 				const magPost = Math.sqrt(postEmbedding.reduce((a, b) => a + b * b, 0)) || 1;
 				const normPost = postEmbedding.map(v => v / magPost);
-				//Keep only filters that can't be done in SQL
-				//Only apply interactive filtering for native posts
-				if (contentType.interactive === false && !isExternalPost && post.has_interactive) continue;
 				//Time of day filtering (can't be done efficiently in SQL)
 				if (timeLimits.startTime && timeLimits.endTime) {
 					const createdAt = new Date(post.created_at || post.created_at_remote);

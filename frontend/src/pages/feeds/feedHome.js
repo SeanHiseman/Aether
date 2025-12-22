@@ -430,7 +430,7 @@ const FeedHome = () => {
             isEditMode={isEditMode}
             isGroup={feed?.is_group}
             refreshTrigger={isDraft ? undefined : refreshTrigger}
-            setPostErrorMessage={setPostErrorMessage}
+            setFeedErrorMessage={setFeedErrorMessage}
         />
     );
     const renderChannelContent = () => {
@@ -526,7 +526,6 @@ const FeedHome = () => {
                         )}
                     </div>
                     {feedErrorMessage && <div className="small-text faded-text">{feedErrorMessage}</div>}
-                    {postErrorMessage && <div className="small-text faded-text">{postErrorMessage}</div>}
                     {channelRender && (
                         <div className="channel-name-section">
                             <Link to={`/${urlPrefix}/${feed_name}/${channel_name}`} className="channel-header-text" style={{ margin: 0, width: '100%' }}>

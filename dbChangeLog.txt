@@ -403,3 +403,29 @@ ALTER TABLE external_posts
 	MODIFY fetched_at DATETIME NULL,
 	MODIFY created_at_remote DATETIME NULL,
 	MODIFY url TEXT COLLATE utf8mb4_unicode_ci NULL;
+
+ALTER TABLE external_posts
+	DROP COLUMN has_embedded_websites;
+
+UPDATE posts
+SET content = REPLACE(
+	content,
+	'https://aetherposts.s3.eu-west-2.amazonaws.com',
+	'https://dpu8nbskgrcvv.cloudfront.net'
+)
+WHERE content LIKE 'https://aetherposts.s3.eu-west-2.amazonaws.com/%';
+
+UPDATE feeds
+SET feed_photo = REPLACE(
+	feed_photo,
+	'https://aetherposts.s3.eu-west-2.amazonaws.com',
+	'https://dpu8nbskgrcvv.cloudfront.net'
+)
+WHERE feed_id IN (
+	SELECT t.feed_id
+	FROM (
+		SELECT feed_id
+		FROM feeds
+		WHERE feed_photo LIKE 'https://aetherposts.s3.eu-west-2.amazonaws.com/%'
+	) AS t
+);

@@ -297,9 +297,9 @@ router.post("/create_post", standardLimiter, authenticateCheck, checkStorageLimi
 			if (!file) continue;
 			if (process.env.NODE_ENV === "production") {
 				const fileName = GenerateFileName(file, "media");
-				const s3Key = `content/${fileName}`;
+				const s3Key = `media/${fileName}`;
 				await UploadToS3(s3Key, file.buffer, file.mimetype);
-				const src = `https://${process.env.AWS_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${s3Key}`;
+				const src = `https://${process.env.CLOUDFRONT_DOMAIN}/${s3Key}`;
 				$(el).attr("src", src).removeAttr("blob:");
 			} else {
 				const fileName = file.filename;
@@ -316,7 +316,7 @@ router.post("/create_post", standardLimiter, authenticateCheck, checkStorageLimi
 		if (process.env.NODE_ENV === "production") {
 			const s3Key = `posts/${htmlFileName}`;
 			await UploadToS3(s3Key, Buffer.from(finalHtml), "text/html");
-			contentUrl = `https://${process.env.AWS_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${s3Key}`;
+			contentUrl = `https://${process.env.CLOUDFRONT_DOMAIN}/${s3Key}`;
 		} else {
 			const localPath = path.join(postsDir, htmlFileName);
 			fs.writeFileSync(localPath, finalHtml);

@@ -286,7 +286,7 @@ router.post('/create_feed', standardLimiter, authenticateCheck, checkProfileStor
                     const fileName = GenerateFileName(req.file, 'feed-image');
                     const s3Key = `feed-images/${fileName}`;
                     await UploadToS3(s3Key, req.file.buffer, req.file.mimetype);
-                    feed_photo = `https://${process.env.AWS_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${s3Key}`;
+                    feed_photo = `https://${process.env.CLOUDFRONT_DOMAIN}/${s3Key}`;
                 } else {
                     const fileName = GenerateFileName(req.file, 'feed-image');
                     const localPath = path.join(mediaDir, fileName);
@@ -1019,12 +1019,12 @@ router.put('/update_feed_photo/:feedId', standardLimiter, authenticateCheck, che
                 return res.status(413).json({ success: false, message: `Weekly limit of ${maxStorage}MB exceeded` });
             }
             let newPhotoPath;
-            if (process.env.NODE_ENV === 'production') {
-                const fileName = GenerateFileName(file, 'feed-image');
-                const s3Key = `feed-images/${fileName}`;
-                await UploadToS3(s3Key, file.buffer, file.mimetype);
-                newPhotoPath = `https://${process.env.AWS_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${s3Key}`;
-            } else {
+                if (process.env.NODE_ENV === 'production') {
+                    const fileName = GenerateFileName(file, 'feed-image');
+                    const s3Key = `feed-images/${fileName}`;
+                    await UploadToS3(s3Key, file.buffer, file.mimetype);
+                    newPhotoPath = `https://${process.env.CLOUDFRONT_DOMAIN}/${s3Key}`;
+                } else {
                 const fileName = GenerateFileName(file, 'feed-image');
                 const localPath = path.join(mediaDir, fileName);
                 if (file.path !== localPath) {
@@ -1033,10 +1033,11 @@ router.put('/update_feed_photo/:feedId', standardLimiter, authenticateCheck, che
                 newPhotoPath = "/" + path.join('media', 'feed_images', fileName).replace(/\\/g, "/");
             }
             const feed = await Feeds.findOne({ where: { feed_id } });
+            //Delete old photo if not default
             if (feed.feed_photo && !defaultImages.includes(feed.feed_photo)) {
                 if (process.env.NODE_ENV === 'production') {
-                    const urlParts = feed.feed_photo.split('/');
-                    const s3Key = urlParts.slice(-2).join('/');
+                    const url = new URL(feed.feed_photo);
+                    const s3Key = url.pathname.replace(/^\/+/, '');
                     await DeleteFromS3(s3Key);
                 } else {
                     const oldPath = path.join(process.cwd(), feed.feed_photo);

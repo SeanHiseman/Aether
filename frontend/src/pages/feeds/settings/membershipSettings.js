@@ -105,7 +105,7 @@ const MembershipSettings = () => {
 
     const features = [
         { icon: <Zap className="feature-icon" />, text: "Highest quality post generation" },
-        { icon: <Star className="feature-icon" />, text: "Custom algorithm instructions" },
+        //{ icon: <Star className="feature-icon" />, text: "Custom algorithm instructions" },
         { icon: <Check className="feature-icon" />, text: "Improved customisation" },
         { icon: <ListFilter className="feature-icon" />, text: "Create longer posts" },
         { icon: <Shield className="feature-icon" />, text: "Higher use limits" },
