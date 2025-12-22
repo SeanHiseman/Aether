@@ -297,7 +297,7 @@ router.post("/create_post", standardLimiter, authenticateCheck, checkStorageLimi
 			if (!file) continue;
 			if (process.env.NODE_ENV === "production") {
 				const fileName = GenerateFileName(file, "media");
-				const s3Key = `media/${fileName}`;
+				const s3Key = `content/${fileName}`; //Content folder of S3 bucket
 				await UploadToS3(s3Key, file.buffer, file.mimetype);
 				const src = `https://${process.env.CLOUDFRONT_DOMAIN}/${s3Key}`;
 				$(el).attr("src", src).removeAttr("blob:");
