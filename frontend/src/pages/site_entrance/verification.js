@@ -67,7 +67,7 @@ const EmailVerification = () => {
     return (
         <div className="authentication-container">
             <p className="welcome-text pointer">Email Verification</p>
-            <p className="small-text">Check your email, incluing spam, for a verification link</p>
+            <p className="small-text">Check your email, including spam, for a verification link</p>
             <div className="authentication-box">
                 {status === 'verifying' && (
                     <div>
