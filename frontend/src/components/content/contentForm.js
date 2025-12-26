@@ -1191,8 +1191,30 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
                                                                             className="text-editor"
                                                                             onChange={val => {
                                                                                 const plainText = val.replace(/<[^>]*>/g, '');
+                                                                                //Auto-underline links and normalize URLs
+                                                                                const processedVal = val.replace(/<a href="([^"]*)"([^>]*)>/g, (match, url, rest) => {
+                                                                                    let normalizedUrl = url.trim();
+                                                                                    //Add https:// if no protocol exists
+                                                                                    if (!normalizedUrl.startsWith('http://') && !normalizedUrl.startsWith('https://')) {
+                                                                                        normalizedUrl = 'https://' + normalizedUrl;
+                                                                                    }
+                                                                                    //Add www. if not present and not a subdomain
+                                                                                    try {
+                                                                                        const parsed = new URL(normalizedUrl);
+                                                                                        const hostParts = parsed.hostname.split('.');
+                                                                                        if (hostParts.length === 2) {
+                                                                                            parsed.hostname = 'www.' + parsed.hostname;
+                                                                                            normalizedUrl = parsed.href;
+                                                                                        }
+                                                                                    } catch (e) {
+                                                                                        //Keep original if URL parsing fails
+                                                                                    }
+                                                                                    return `<a href="${normalizedUrl}" style="text-decoration: underline;"${rest}>`;
+                                                                                });
+                                                                                //Prevent infinite loop by checking if value actually changed
+                                                                                if (processedVal === data.html) return;
                                                                                 if (plainText.length < TEXT_CHAR_LIMIT) {
-                                                                                    updateBlock({ ...block, data: { ...data, html: val, textError: '' } });
+                                                                                    updateBlock({ ...block, data: { ...data, html: processedVal, textError: '' } });
                                                                                 } else {
                                                                                     updateBlock({ ...block, data: { ...data, textError: `Exceeded ${TEXT_CHAR_LIMIT} character limit. ${!user?.has_membership && 'Get membership for more.'}` } });
                                                                                 }
@@ -1207,6 +1229,7 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
                                                                                     ['bold', 'italic', 'underline', 'strike'],
                                                                                     [{ 'list': 'ordered' }, { 'list': 'bullet' }],
                                                                                     [{ 'color': [] }],
+                                                                                    ['link']
                                                                                 ]
                                                                             }}
                                                                         />
@@ -1381,17 +1404,6 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
         <InputModal isOpen={isSocialModalOpen} title="Enter social media embed code" placeholder="Paste embed code" onConfirm={socialConfirm} onCancel={() => setIsSocialModalOpen(false)} />
         </>
     )
-}
-
-ContentForm.propTypes = {
-    feed: PropTypes.object,
-    isEdit: PropTypes.bool,
-    isGroup: PropTypes.bool,
-    isReply: PropTypes.bool,
-    onEditSubmit: PropTypes.func,
-    onPostSubmit: PropTypes.func,
-    post: PropTypes.object,
-    setShowForm: PropTypes.func,
 }
 
 export default ContentForm;
