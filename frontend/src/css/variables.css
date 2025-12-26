@@ -77,3 +77,6 @@ body.red {
 	border: 3px solid transparent;
 	background-clip: padding-box;
 }
+::-webkit-scrollbar-thumb:hover {
+	background-color: var(--light);
+}

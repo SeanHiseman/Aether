@@ -1,12 +1,12 @@
 import api from '../../api';
-import { CSS } from '@dnd-kit/utilities'; 
-import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
-import { useCallback, useContext, useEffect, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
 import { AuthContext } from '../../components/authContext';
+import { CSS } from '@dnd-kit/utilities'; 
 import { decrypt } from '../../encryptionUtil';
+import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
+import { Link, useParams } from 'react-router-dom';
 import { UnreadContext } from '../messages/unreadContext';
+import { useCallback, useContext, useEffect, useState } from 'react';
 
 const SortableFeedChannelItem = ({ channel, id, url }) => {
     const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
@@ -89,13 +89,14 @@ const ChannelList = ({ canReorder = false, channels, feedId, feedName, isChat, i
         if (isChat || !active || !over || active?.id === over?.id) {
             return; 
         }
-        const oldIndex = channels.findIndex(c => c?.channel_id === active?.id);
-        const newIndex = channels.findIndex(c => c?.channel_id === over?.id);
+        const oldIndex = nonMainChannels.findIndex(c => c?.channel_id === active?.id);
+        const newIndex = nonMainChannels.findIndex(c => c?.channel_id === over?.id);
         if (oldIndex === -1 || newIndex === -1) {
             return;
         }
-        const reorderedChannels = arrayMove(channels, oldIndex, newIndex);
-        setChannels(reorderedChannels);
+        const reorderedChannels = arrayMove(nonMainChannels, oldIndex, newIndex);
+        const finalChannels = mainChannel ? [mainChannel, ...reorderedChannels] : reorderedChannels;
+        setChannels(finalChannels);
         const orderedChannelIds = reorderedChannels.map(channel => channel?.channel_id);
         try {
             await api.put('/reorder_feed_channels', {
@@ -110,9 +111,14 @@ const ChannelList = ({ canReorder = false, channels, feedId, feedName, isChat, i
     };
 
     const currentChannels = Array.isArray(channels) ? channels : [];
+    const mainChannel = currentChannels.find(channel => channel?.channel_name === 'Main');
+    const nonMainChannels = currentChannels.filter(channel => channel?.channel_name !== 'Main');
+    const orderedChannels = mainChannel
+        ? [mainChannel, ...nonMainChannels]
+        : nonMainChannels;
 
     if (!isChat) {
-        const validFeedChannels = currentChannels.filter(channel => channel && typeof channel?.channel_id === 'string');
+        const validFeedChannels = nonMainChannels.filter(channel => channel && typeof channel?.channel_id === 'string');
         const channelIdsForDnd = validFeedChannels.map(channel => channel?.channel_id);
         if (canReorder) {
             return (
@@ -122,10 +128,22 @@ const ChannelList = ({ canReorder = false, channels, feedId, feedName, isChat, i
                             <p className="channel-header-text" style={{ margin: 0 }}>Channels</p>
                             {errorMessage && <div className="error-message">{errorMessage}</div>}
                             <ul>
+                                {mainChannel && (
+                                    <li
+                                        key={mainChannel?.channel_id}
+                                        className={`channel-item ${mainChannel?.channel_name === channel_name ? 'selected' : ''}`}
+                                    >
+                                        <Link to={isSaved ? `/saved/${mainChannel?.channel_name}` : `/${urlLetter}/${feedName}/${mainChannel?.channel_name}`}>
+                                            <div className={`channel-link ${mainChannel?.channel_name === channel_name ? 'selected' : ''}`}>
+                                                {mainChannel.channel_name}
+                                            </div>
+                                        </Link>
+                                    </li>
+                                )}
                                 {validFeedChannels.map(channel => (
                                     <SortableFeedChannelItem
-                                        key={channel?.channel_id} 
-                                        id={channel?.channel_id}   
+                                        key={channel?.channel_id}
+                                        id={channel?.channel_id}
                                         channel={channel}
                                         url={isSaved ? `/saved/${channel?.channel_name}` : `/${urlLetter}/${feedName}/${channel?.channel_name}`}
                                     />
@@ -141,7 +159,7 @@ const ChannelList = ({ canReorder = false, channels, feedId, feedName, isChat, i
                     <p className="channel-header-text" style={{ margin: 0 }}>Channels</p>
                     {errorMessage && <div className="error-message">{errorMessage}</div>}
                     <ul>
-                        {currentChannels.map(channel => (
+                        {orderedChannels.map(channel => (
                             <li key={channel?.channel_id || channel?.channelId} 
                                 className={`channel-item ${channel?.channel_name === channel_name ? 'selected' : ''}`}>
                                 <Link to={`/${urlLetter}/${feedName}/${channel?.channel_name}`}>
@@ -161,7 +179,7 @@ const ChannelList = ({ canReorder = false, channels, feedId, feedName, isChat, i
                 <p className="channel-header-text" style={{ margin: 0 }}>Channels</p>
                 {errorMessage && <div className="error-message">{errorMessage}</div>}
                 <ul>
-                    {currentChannels.map(channel => (
+                    {orderedChannels.map(channel => (
                         <li key={channel?.chat_id} className="channel-item">
                             <Link to={`/connections/${feedName}/${channel?.title}`}>
                                 <div className="channel-link">

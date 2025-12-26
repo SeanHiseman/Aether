@@ -6,7 +6,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useInfiniteQuery, useQuery, useQueryClient } from '@tanstack/react-query';
 const FETCH_LIMIT = 100;
 
-const PostChannel = ({ channelId, channelName, feed, isDraft, isEditMode, isGroup, refreshTrigger, setFeedErrorMessage }) => {
+const PostChannel = ({ channelId, channelName, feed, includeGroup, includeUser, isDraft, isEditMode, isGroup, refreshTrigger, setFeedErrorMessage }) => {
 	const { channel_name, post_id } = useParams();
 	const channelReady = !!channelId;
 	const feedId = feed?.feed_id;
@@ -15,6 +15,10 @@ const PostChannel = ({ channelId, channelName, feed, isDraft, isEditMode, isGrou
 	const scrollRef = useRef(null);
 	const { user, viewer } = useContext(AuthContext);
 	const navigate = useNavigate();
+
+	useEffect(() => {
+		queryClient.invalidateQueries(['posts', channelId, channelName, feedId, isGroup]);
+	}, [includeGroup, includeUser, queryClient, channelId, channelName, feedId, isGroup]);
 
 	useEffect(() => {
 		if (refreshTrigger !== undefined) {
@@ -136,6 +140,13 @@ const PostChannel = ({ channelId, channelName, feed, isDraft, isEditMode, isGrou
 		return () => window.removeEventListener('scroll', scrollHandler);
 	}, [isDraft, isFetchingDrafts, hasMoreDrafts, fetchNextDrafts, isFetchingNextPage, hasNextPage, fetchNextPage]);
 
+	const allPosts = postsData?.pages.flat() || [];
+	const filteredPosts = allPosts.filter((post) => {
+		const isUserPost = post.feed_id === feedId;
+		if (isUserPost && !includeUser) return false;
+		if (!isUserPost && !includeGroup) return false;
+		return true;
+	});
 	let channelMessage = '';
 
 	if (post_id && !isEditMode) {
@@ -153,7 +164,9 @@ const PostChannel = ({ channelId, channelName, feed, isDraft, isEditMode, isGrou
 	} else {
 		if (postsError) {
 			channelMessage = 'Error fetching posts. Please try again.';
-		} else if (!postsData?.pages.flat().length && !postsLoading) {
+		} else if (!postsLoading && allPosts.length && !filteredPosts.length) {
+			channelMessage = 'All posts hidden';
+		} else if (!postsLoading && !allPosts.length) {
 			channelMessage = 'No posts yet';
 		}
 	}
@@ -179,7 +192,7 @@ const PostChannel = ({ channelId, channelName, feed, isDraft, isEditMode, isGrou
 				</div>
 			) : (
 				<div className="flex flex-col w-99">
-					{postsData?.pages.flat().map((post) => (
+					{filteredPosts.map((post) => (
 						<div key={post?.post_id || Math.random()} className="bg-gray-800 rounded-xl">
 							<ContentWidget feed={feed} isDraft={isDraft} onPostRemoved={handlePostRemoved} post={post} />
 						</div>

@@ -5,7 +5,7 @@ import ChannelList from '../../components/channels/channelList';
 import ChatChannel from '../../components/channels/chatChannel';
 import ConfirmModal from '../../components/modals/confirmModal';
 import ContentForm from '../../components/content/contentForm';
-import { FaCog, FaEdit, FaFolder, FaFolderOpen, FaMinus, FaPlus, FaRegWindowClose, FaPen, FaSave, FaTrash } from 'react-icons/fa';
+import { FaCog, FaEdit, FaFolder, FaFolderOpen, FaMinus, FaPlus, FaRegWindowClose, FaPen, FaSave, FaTrash, FaUser, FaUsers } from 'react-icons/fa';
 import { FormatNumber } from '../../functions/formatNumber';
 import FollowerChangeButton from '../../components/followerChangeButton';
 import { Link, useLocation, useNavigate, useOutletContext, useParams } from 'react-router-dom';
@@ -25,6 +25,8 @@ const FeedHome = () => {
     const [feedErrorMessage, setFeedErrorMessage] = useState('');
     const [feedNotFound, setFeedNotFound] = useState(false);
     const [loading, setLoading] = useState(true);
+    const [includeGroup, setIncludeGroup] = useState(true);
+    const [includeUser, setIncludeUser] = useState(true);
     const [isAdmin, setIsAdmin] = useState(false);
     const [isChatChannel, setIsChatChannel] = useState(false);
     const [isEdit, setIsEdit] = useState(false);
@@ -426,6 +428,8 @@ const FeedHome = () => {
             channelId={channelRender?.channel_id}
             channelName={isDraft ? channel_name : channelRender?.channel_name}
             feed={feed}
+            includeGroup={includeGroup}
+            includeUser={includeUser}
             isDraft={isDraft}
             isEditMode={isEditMode}
             isGroup={feed?.is_group}
@@ -531,6 +535,22 @@ const FeedHome = () => {
                             <Link to={`/${urlPrefix}/${feed_name}/${channel_name}`} className="channel-header-text" style={{ margin: 0, width: '100%' }}>
                                 {channel_name}
                             </Link>
+                            {channel_name === 'Main' && !feed.is_group && (
+                                <div className="flex flex-col items-flex-start">
+                                    <button onClick={() => setIncludeUser(!includeUser)} className="small-icon">
+                                        <FaUser />
+                                        <p className="icon-text">
+                                            {includeUser ? "Hide user posts" : "Show user posts"}
+                                        </p>
+                                    </button>
+                                    <button onClick={() => setIncludeGroup(!includeGroup)} className="small-icon">
+                                        <FaUsers />
+                                        <p className="icon-text">
+                                            {includeGroup ? "Hide group posts" : "Show group posts"}
+                                        </p>
+                                    </button>
+                                </div>
+                            )}
                             {isEditingChannelName ? (
                                 <div className="change-name">
                                     <textarea
@@ -575,7 +595,7 @@ const FeedHome = () => {
                             ) : (
                                 <div className="channel-name">
                                     <div className="feed-name">
-                                        {isAdmin && <Link to={`/${urlPrefix}/${feed_name}/${channel_name}`}>
+                                        {isAdmin && channel_name !== 'Main' && <Link to={`/${urlPrefix}/${feed_name}/${channel_name}`}>
                                             <p className="medium-text">{channel_name}</p>
                                         </Link>}
                                         {channel_name !== "Main" && isAdmin && (

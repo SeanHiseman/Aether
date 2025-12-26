@@ -548,8 +548,8 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
                 attributes: ['post_id'],
                 where: {
                     ...algorithmFilters,
-                    ...(isMain !== true && locationId ? { channel_id: locationId } : {}),
-                    feed_id: feedId,
+                    ...(!isMain && locationId ? { channel_id: locationId } : {}), //Get specific channel if not main feed
+					...(isMain && feedId ? { poster_id: feedId } : {}), //Get all posts made by the user being viewed
                     parent_id: null,
                 },
                 order: channelOrderMode,

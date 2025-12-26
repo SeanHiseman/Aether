@@ -7,15 +7,20 @@ import ExternalPostWidget from '../socialConnect/externalPostWidget';
 import { FaEdit, FaGlobe, FaHome, FaMinus, FaRegWindowClose, FaSave, FaTrash } from 'react-icons/fa';
 import FeedItem from '../components/channels/feedItem';
 import PlatformConnect from '../socialConnect/platformConnect';
-import { useContext, useEffect, useRef, useState, useCallback } from 'react';
+import { useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate, useOutletContext, useParams } from 'react-router-dom';
 import { ValidateTextInput } from '../functions/validateTextInput';
 
 const FETCH_LIMIT = 100;
 
+//Handles combined feeds, as well as the following feed (which can include external posts)
 const DeepFeed = () => {
     const { isAuthenticated } = useContext(AuthContext);
+    const [connectedPlatforms, setConnectedPlatforms] = useState(() => {
+        const accounts = JSON.parse(localStorage.getItem("connectedAccounts") || "[]");
+        return Object.keys(accounts);
+    });
     const [contents, setContents] = useState([]);
     const { deep_feed_id } = useParams();
     const isFollowing = deep_feed_id === 'following' ? true : false;
@@ -28,6 +33,10 @@ const DeepFeed = () => {
         return match || { deep_feed_id, name: '', owner_id: null, parent_id: null };
     });
     const [errorMessage, setErrorMessage] = useState('');
+    const [hasConnectedAccounts, setHasConnectedAccounts] = useState(() => {
+        const accounts = JSON.parse(localStorage.getItem("connectedAccounts") || "[]");
+        return Object.keys(accounts).length > 0;
+    });
     const [includeExternal, setIncludeExternal] = useState(true);
     const [includeNative, setIncludeNative] = useState(true);
     const [isEditingName, setIsEditingName] = useState(false);
@@ -143,7 +152,7 @@ const DeepFeed = () => {
                 followedFeedIds = [];
             }
             const recentUpvotes = JSON.parse(localStorage.getItem("recentUpvotes") || "[]");
-            const connectedAccounts = deep_feed_id === 'following' ? JSON.parse(localStorage.getItem("connectedAccounts") || "{}") : [];
+            const connectedAccounts = deep_feed_id === 'following' ? JSON.parse(localStorage.getItem("connectedAccounts") || "[]") : [];
             const response = await api.post('/deep_feed_posts', {
                 connectedAccounts,
                 deepFeedId: normalisedDeepFeedId,
@@ -177,6 +186,18 @@ const DeepFeed = () => {
             return [];
         }
     };
+
+    useEffect(() => {
+        const handleAccountsChange = () => {
+            const accounts = JSON.parse(localStorage.getItem("connectedAccounts") || "[]");
+            const platforms = accounts.map(a => a.platform);
+            setHasConnectedAccounts(platforms.length > 0);
+            setConnectedPlatforms(platforms);
+            queryClient.removeQueries(['deepFeedPosts', deep_feed_id]);
+        };
+        window.addEventListener('connectedAccountsUpdated', handleAccountsChange);
+        return () => window.removeEventListener('connectedAccountsUpdated', handleAccountsChange);
+    }, [deep_feed_id, queryClient]);
 
     const { data, error, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading, status } = useInfiniteQuery({
         queryKey: ['deepFeedPosts', deep_feed_id],
@@ -258,14 +279,20 @@ const DeepFeed = () => {
     const allPosts = Array.isArray(data?.pages)
         ? data.pages
             .flatMap(page => Array.isArray(page) ? page : [])
-            .filter((p, index, self) => 
+            .filter((p, index, self) =>
                 self.findIndex(post => post.post_id === p.post_id) === index
             )
-            .filter(p =>
-                (includeNative && !p.is_external) ||
-                (includeExternal && p.is_external)
-            )
+            .filter(post => {
+                if (!post?.platform) return true;
+                if (!post.is_external) return true;
+                return connectedPlatforms.includes(post.platform);
+            })
         : [];
+
+    const visiblePosts = allPosts.filter(p =>
+        (includeNative && !p.is_external) ||
+        (includeExternal && p.is_external)
+    );
 
     const handleScroll = useCallback(() => {
         const element = scrollRef.current;
@@ -310,9 +337,11 @@ const DeepFeed = () => {
             <div ref={scrollRef} className="channel-feed">
                 {isLoading ? (
                     <p className="large-text faded-text">Loading posts...</p>
-                ) : allPosts.length > 0 ? (
+                ) : allPosts.length > 0 && visiblePosts.length === 0 ? (
+                    <p className="large-text faded-text">All posts hidden</p>
+                ) : visiblePosts.length > 0 ? (
                     <div className="flex flex-col w-99">
-                        {allPosts.map((post) => (
+                        {visiblePosts.map((post) => (
                             post ? (
                                 <div key={post?.post_id || Math.random()} className="bg-gray-800 rounded-xl">
                                     {post.is_external ? (
@@ -330,7 +359,7 @@ const DeepFeed = () => {
                         )}
                     </div>
                 ) : (
-                    !isLoading && <p className="large-text faded-text">No posts yet</p>
+                    <p className="large-text faded-text">No posts yet</p>
                 )}
             </div>
             <aside className={rightClasses}>
@@ -397,12 +426,14 @@ const DeepFeed = () => {
                         </div>
                     )}
                     <div className="small-text faded-text">{errorMessage}</div>
-                    {isFollowing && <div className="flex flex-col items-flex-start">
-                        <button onClick={() => setIncludeNative(includeExternal ? !includeNative : true)} className="small-icon">
-                            <FaHome /><p className="icon-text">{includeNative ? "Hide native" : "Show native"}</p>
+                    {isFollowing && hasConnectedAccounts && <div className="flex flex-col items-flex-start">
+                        <button onClick={() => setIncludeNative(!includeNative)} className="small-icon">
+                            <FaHome />
+                            <p className="icon-text">{includeNative ? "Hide native" : "Show native"}</p>
                         </button>
-                        <button onClick={() => setIncludeExternal(includeNative ? !includeExternal : true)} className="small-icon">
-                            <FaGlobe /><p className="icon-text">{includeExternal ? "Hide external" : "Show external"}</p>
+                        <button onClick={() => setIncludeExternal(!includeExternal)} className="small-icon">
+                            <FaGlobe />
+                            <p className="icon-text">{includeExternal ? "Hide external" : "Show external"}</p>
                         </button>
                     </div>}
                     {sortedContents.length > 0 && (

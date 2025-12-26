@@ -58,6 +58,7 @@ const PlatformConnect = () => {
                         const existing = JSON.parse(localStorage.getItem("connectedAccounts") || "[]");
                         const updated = existing.filter(a => a.platform !== disconnectPlatform);
                         localStorage.setItem("connectedAccounts", JSON.stringify(updated));
+                        window.dispatchEvent(new CustomEvent('connectedAccountsUpdated'));
                         setModalOpen(false);
                     } catch (error) { }
                 }}
