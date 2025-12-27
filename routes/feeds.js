@@ -218,7 +218,7 @@ router.post('/change_feed_name', standardLimiter, authenticateCheck, async (req,
             return res.status(400).json({ message: nameCheck.error });
         }
         const feed = await Feeds.findOne({ where: { feed_id } });
-        if (feed.feed_name.toLowerCase() === newName.toLowerCase()) {
+        if (feed.feed_name === newName) {
             return res.status(200).json({ success: true, message: 'Name is unchanged' });
         }
         const existingFeed = await Feeds.findOne({

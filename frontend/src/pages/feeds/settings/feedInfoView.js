@@ -156,7 +156,7 @@ const FeedInfoView = () => {
     };
 
     const updateName = async () => {
-        if (newName.toLowerCase() === feed?.feed_name.toLowerCase()) {
+        if (newName === feed?.feed_name) {
             setErrorMessage('Name is unchanged');
             return;
         }

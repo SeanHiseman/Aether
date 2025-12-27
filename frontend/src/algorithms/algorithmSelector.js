@@ -1,3 +1,4 @@
+import AboutSection from './about';
 import AddAlgorithm from './addAlgorithm';
 import api from '../api';
 import { createPortal } from 'react-dom';
@@ -14,6 +15,7 @@ const AlgorithmSelector = ({ display = false, isAuthenticated = false, locationI
 	const [loading, setLoading] = useState(false);
 	const [modalOpen, setModalOpen] = useState(display || false);
 	const [optionsOpen, setOptionsOpen] = useState(false);
+	const [showAbout, setShowAbout] = useState(false);
 
 	const assignAlgorithm = async (algorithmId) => {
 		try {
@@ -54,7 +56,6 @@ const AlgorithmSelector = ({ display = false, isAuthenticated = false, locationI
 				return updated;
 			});
 		} catch (error) {
-			console.log("assign algorithm error:", error);
 			setAssignError(error.response?.data?.message || 'Failed to assign algorithm');
 			setTimeout(() => { setAssignError('') }, 3000);
 		} finally {
@@ -68,6 +69,7 @@ const AlgorithmSelector = ({ display = false, isAuthenticated = false, locationI
 		setError(null);
 		setModalOpen(false);
 		setOptionsOpen(false);
+		setShowAbout(false);
 	};
 
 	const deleteAlgorithm = async algorithmId => {
@@ -227,96 +229,105 @@ const AlgorithmSelector = ({ display = false, isAuthenticated = false, locationI
 	const renderContent = () => (
 		<div className="algorithm-content" onClick={display ? undefined : e => e.stopPropagation()}>
 			<div className="selector-header">
-				{!display && <button className="small-icon" onClick={closeModal} title="Close">✕<p className="icon-text">Close</p></button>}
-				<div className="error-message">{assignError}</div>
-				{!display && isAuthenticated && <p className="tiny-text">Changing the algorithm will reload posts</p>}
-				{!display && !isAuthenticated && <p className="tiny-text">Login to create an algorithm</p>}
+				{!display && !showAbout && <button className="small-icon" onClick={closeModal} title="Close">✕<p className="icon-text">Close</p></button>}
+				<button className="small-icon" style={{ textDecoration: 'underline' }} onClick={() => setShowAbout(prev => !prev)}>
+					{showAbout ? 'Back' : 'About'}
+				</button>
+				{!showAbout && <div className="error-message">{assignError}</div>}
+				{!showAbout && !display && isAuthenticated && <p className="tiny-text">Changing the algorithm will reload posts</p>}
+				{!showAbout && !display && !isAuthenticated && <p className="tiny-text">Login to create an algorithm</p>}
 			</div>
-			{loading && <div className="loading-state">Loading algorithms...</div>}
-			{!loading && (
+			{showAbout ? (
+				<AboutSection />
+			) : (
 				<>
-					<div className="choose-algorithm">
-						<div className={`dropdown${optionsOpen ? ' open' : ''}`}>
-							<div
-								className="form-select dropdown-trigger"
-								onClick={() => setOptionsOpen(o => !o)}
-							>
-								{assignedAlgorithmId
-									? `Assigned algorithm: ${algorithms.find(a => a.algorithm_id === assignedAlgorithmId)?.algorithm_name}`
-									: algorithms.length !== 0 ? 'Choose an algorithm...' : 'No algorithms assigned'}
-							</div>
-							{optionsOpen && (
-								<ul className="algorithm-options">
-									{!display && isAuthenticated && <li key="unassign">
-										<label
-											onClick={() => selectRadio('')}
-											style={{
-												cursor: assignedAlgorithmId ? 'pointer' : 'not-allowed',
-												opacity: assignedAlgorithmId ? 1 : 0.6,
-											}}
-										>	
-											<input
-												name="algorithm"
-												readOnly
-												type="radio"
-												value=""
-												checked={assignedAlgorithmId === ''}
-												disabled={!assignedAlgorithmId}
-											/>
-											No algorithm
-										</label>
-									</li>}
-									{algorithms.map(a => {
-										const isCurrentlyAssigned = a.algorithm_id === assignedAlgorithmId;
-										return (
-											<li key={a.algorithm_id} className={isCurrentlyAssigned ? 'assigned' : ''}>
-												<label onClick={() => selectRadio(a.algorithm_id)} style={{ cursor:'pointer' }}>
-													{!display && isAuthenticated && <input
-														checked={isCurrentlyAssigned}
+					{loading && <div className="loading-state">Loading algorithms...</div>}
+					{!loading && (
+						<>
+							<div className="choose-algorithm">
+								<div className={`dropdown${optionsOpen ? ' open' : ''}`}>
+									<div
+										className="form-select dropdown-trigger"
+										onClick={() => setOptionsOpen(o => !o)}
+									>
+										{assignedAlgorithmId
+											? `Assigned algorithm: ${algorithms.find(a => a.algorithm_id === assignedAlgorithmId)?.algorithm_name}`
+											: algorithms.length !== 0 ? 'Choose an algorithm...' : 'No algorithms assigned'}
+									</div>
+									{optionsOpen && (
+										<ul className="algorithm-options">
+											{!display && isAuthenticated && <li key="unassign">
+												<label
+													onClick={() => selectRadio('')}
+													style={{
+														cursor: assignedAlgorithmId ? 'pointer' : 'not-allowed',
+														opacity: assignedAlgorithmId ? 1 : 0.6,
+													}}
+												>	
+													<input
 														name="algorithm"
 														readOnly
 														type="radio"
-														value={a.algorithm_id}
-													/>}		
-													{a.algorithm_name}{isCurrentlyAssigned ? ' (assigned)' : ''}
+														value=""
+														checked={assignedAlgorithmId === ''}
+														disabled={!assignedAlgorithmId}
+													/>
+													No algorithm
 												</label>
-												<button
-													className="small-icon"
-													onClick={e => {
-														e.stopPropagation();
-														setEditingAlgorithm(a);
-														setOptionsOpen(false);
-													}}
-													title="Edit algorithm"
-												><FaEdit /><p className="icon-text">Edit</p></button>
-												{!display && isAuthenticated && <button
-													className="small-icon"
-													onClick={e => {
-														e.stopPropagation();
-														deleteAlgorithm(a.algorithm_id);
-													}}
-													title="Delete algorithm"
-												><FaTrash /><p className="icon-text">Delete</p></button>}
-											</li>
-										);
-									})}
-								</ul>
-							)}
-						</div>
-					</div>
-					<AddAlgorithm 
-						algorithms={algorithms} 
-						display={display}
-						editingAlgorithm={editingAlgorithm} 
-						isAuthenticated={isAuthenticated}
-						locationId={locationId} 
-						onCreated={handleCreated} 
-						onUpdated={updateAlgorithms} 
-						setEditingAlgorithm={setEditingAlgorithm}
-					/>
+											</li>}
+											{algorithms.map(a => {
+												const isCurrentlyAssigned = a.algorithm_id === assignedAlgorithmId;
+												return (
+													<li key={a.algorithm_id} className={isCurrentlyAssigned ? 'assigned' : ''}>
+														<label onClick={() => selectRadio(a.algorithm_id)} style={{ cursor:'pointer' }}>
+															{!display && isAuthenticated && <input
+																checked={isCurrentlyAssigned}
+																name="algorithm"
+																readOnly
+																type="radio"
+																value={a.algorithm_id}
+															/>}		
+															{a.algorithm_name}{isCurrentlyAssigned ? ' (assigned)' : ''}
+														</label>
+														<button
+															className="small-icon"
+															onClick={e => {
+																e.stopPropagation();
+																setEditingAlgorithm(a);
+																setOptionsOpen(false);
+															}}
+															title="Edit algorithm"
+														><FaEdit /><p className="icon-text">Edit</p></button>
+														{!display && isAuthenticated && <button
+															className="small-icon"
+															onClick={e => {
+																e.stopPropagation();
+																deleteAlgorithm(a.algorithm_id);
+															}}
+															title="Delete algorithm"
+														><FaTrash /><p className="icon-text">Delete</p></button>}
+													</li>
+												);
+											})}
+										</ul>
+									)}
+								</div>
+							</div>
+							<AddAlgorithm 
+								algorithms={algorithms} 
+								display={display}
+								editingAlgorithm={editingAlgorithm} 
+								isAuthenticated={isAuthenticated}
+								locationId={locationId} 
+								onCreated={handleCreated} 
+								onUpdated={updateAlgorithms} 
+								setEditingAlgorithm={setEditingAlgorithm}
+							/>
+						</>
+					)}
+					<div className="error-message">{error}</div>
 				</>
 			)}
-			<div className="error-message">{error}</div>
 		</div>
 	);
 
