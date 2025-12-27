@@ -118,6 +118,7 @@ router.post('/channel_posts', standardLimiter, async (req, res) => {
 router.post('/content_vote', higherLimiter, authenticateCheck, async (req, res) => {
     try {
         const { postId, feedId, voteType } = req.body;
+		console.log("/content_vote req.body:", req.body);
         const content = await Posts.findByPk(postId);
         if (!content) {
             return res.status(404).json({ success: false, message: 'Content not found' });
@@ -152,13 +153,18 @@ router.post('/content_vote', higherLimiter, authenticateCheck, async (req, res) 
             }
         }
         await vote.save();
-        await content.save();
+        const upvoteCount = await PostVotes.sum('upvotes', { where: { post_id: postId } });
+		const downvoteCount = await PostVotes.sum('downvotes', { where: { post_id: postId } });
+		content.upvotes = upvoteCount;
+		content.downvotes = downvoteCount;
+		await content.save();
 		const newHotness = computeHotness({
 			upvotes: content.upvotes || 0,
 			downvotes: content.downvotes || 0,
 			createdAt: content.created_at,
 			referenceTime: Math.floor(Date.now() / 1000)
 		});
+		console.log("newHotness:", newHotness);
 		await Posts.update({ rank_hotness: newHotness, rank_updated_at: new Date() }, { where: { post_id: postId } });
 		//await updateHotnessRedis(content);
         return res.status(200).json({
@@ -636,50 +642,54 @@ router.post('/increment_views', higherLimiter, authenticateCheck, async (req, re
 router.get('/post_replies/:postId', standardLimiter, async (req, res) => {
     try {
         const { postId } = req.params;
+        const viewerId = req?.session?.viewer_id || null;
         const parentPost = await Posts.findOne({ where: { post_id: postId } });
-        if (!parentPost) {
-            return res.status(404).json({ success: false, message: 'Parent post not found.' });
-        }
-        const includeOptions = [{
-                model: Feeds,
-                as: 'poster',
-            },{
-                model: PostVotes,
-                as: 'votes',
-                attributes: ['upvotes', 'downvotes'],
-                required: false
-            },{
-                model: PostNotes,
-                as: 'note',
-                required: false
-            },{
+        if (!parentPost) return res.status(404).json({ success: false, message: 'Parent post not found.' });
+        const includeOptions = [
+            { model: Feeds, as: 'poster' },
+            { model: PostVotes, as: 'votes', required: false },
+            { model: PostNotes, as: 'note', required: false },
+            {
                 model: FeedChannels,
                 as: 'parentChannel',
                 attributes: ['channel_name', 'channel_id'],
                 required: false,
-                include: [{
-                    model: Feeds,
-                }]
+                include: [{ model: Feeds }]
             }
         ];
-        const parentFeedId = parentPost.feed_id;
-        const parentChannelId = parentPost.channel_id;
-        const whereClause = {
-            parent_id: postId,
-            ...(parentFeedId ? { feed_id: parentFeedId } : {}),
-            ...(parentChannelId ? { channel_id: parentChannelId} : {})
-        };
         const replies = await Posts.findAll({
-            where: whereClause,
+            where: {
+                parent_id: postId,
+                feed_id: parentPost.feed_id,
+                channel_id: parentPost.channel_id
+            },
             include: includeOptions,
-            order: [['created_at', 'DESC']],
+            order: [['created_at', 'DESC']]
         });
-        const formattedReplies = replies.map(reply => ({
-            ...reply.dataValues,
-        }));
+        const viewerVotes = viewerId
+            ? await PostVotes.findAll({
+                attributes: ['post_id', 'upvotes', 'downvotes'],
+                where: { post_id: { [Op.in]: replies.map(r => r.post_id) }, voter_id: viewerId },
+                raw: true
+            })
+            : [];
+        const voteMap = new Map(viewerVotes.map(v => [
+            v.post_id, { has_upvoted: v.upvotes > 0, has_downvoted: v.downvotes > 0 }
+        ]));
+        const formattedReplies = replies.map(reply => {
+            const votes = reply.votes?.dataValues || { upvotes: 0, downvotes: 0 };
+            const viewerVote = voteMap.get(reply.post_id) || { has_upvoted: false, has_downvoted: false };
+            return {
+                ...reply.dataValues,
+				upvotes: reply.dataValues.upvotes || 0,
+				downvotes: reply.dataValues.downvotes || 0,
+                ...viewerVote,
+                has_viewed: false
+            };
+        });
         return res.status(200).json(formattedReplies);
     } catch (error) {
-		console.error(new Date().toISOString(), '/post_replies error:', error);
+        console.error(new Date().toISOString(), '/post_replies error:', error);
         return res.status(500).json({ success: false });
     }
 });

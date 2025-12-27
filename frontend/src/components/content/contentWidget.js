@@ -7,7 +7,6 @@ import { FaArrowDown, FaArrowUp, FaBookmark, FaChevronDown, FaChevronUp, FaComme
 import { FormatNumber } from '../../functions/formatNumber';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import ReplyTreeView from './replyTreeView';
-import PropTypes from 'prop-types';
 import { useCallback, useContext, useEffect, useRef, useState } from 'react';
 import useTimeAgo from '../../functions/useTimeAgo';
 
@@ -49,6 +48,18 @@ const ContentWidget = ({ canRemove = false, display = false, feed, isDraft = fal
 	const timeAgo = useTimeAgo(post?.created_at);
 	const urlPrefix = (post?.parentChannel?.feed?.is_group) ? 'g' : 'u';
 	const contentContainerRef = useRef(null);
+
+	//Sync local state with prop changes
+	useEffect(() => {
+		if (post) {
+			setUpvotes(post.upvotes);
+			setDownvotes(post.downvotes);
+			setHasUpvoted(post.has_upvoted || false);
+			setHasDownvoted(post.has_downvoted || false);
+			setIsSaved(post.is_saved);
+			setViews(post.views);
+		}
+	}, [post]);
 
 	const confirmDelete = async () => {
 		setShowDeleteConfirm(false);
@@ -370,9 +381,9 @@ const ContentWidget = ({ canRemove = false, display = false, feed, isDraft = fal
 									contentContainerRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
 								}
 							}}
-							title={showFullContent ? 'Show less' : 'Show more'}
 						>
 							{showFullContent ? <FaChevronUp /> : <FaChevronDown />}
+							<p className="icon-text">{showFullContent ? 'Show less' : 'Show more'}</p>
 						</button>
 					)}
 					{(fullscreenRef.current?.requestFullscreen || fullscreenRef.current?.webkitRequestFullscreen) && hasCodeOrApp && (
@@ -397,11 +408,11 @@ const ContentWidget = ({ canRemove = false, display = false, feed, isDraft = fal
 					{(isAuthenticated || display) ? (
 						!isViewingOwnPost ? (
 							<div className="post-button-group">
-								<button className={`large-icon ${hasUpvoted ? 'vote-active vote-disabled' : 'vote-enabled'}`} onClick={() => postVote(post?.post_id, 'upvote')} title={hasUpvoted ? 'Remove upvote' : 'Upvote'}>
+								<button className={`large-icon ${hasUpvoted ? 'vote-disabled' : 'vote-enabled'}`} onClick={() => postVote(post?.post_id, 'upvote')} title={hasUpvoted ? 'Remove upvote' : 'Upvote'}>
 									<FaArrowUp />
 								</button>
 								<p className="small-text">{FormatNumber(upvotes - downvotes)}</p>
-								<button className={`large-icon ${hasDownvoted ? 'vote-active vote-disabled' : 'vote-enabled'}`} onClick={() => postVote(post?.post_id, 'downvote')} title={hasDownvoted ? 'Remove downvote' : 'Downvote'}>
+								<button className={`large-icon ${hasDownvoted ? 'vote-disabled' : 'vote-enabled'}`} onClick={() => postVote(post?.post_id, 'downvote')} title={hasDownvoted ? 'Remove downvote' : 'Downvote'}>
 									<FaArrowDown />
 								</button>
 							</div>
@@ -523,18 +534,6 @@ const ContentWidget = ({ canRemove = false, display = false, feed, isDraft = fal
 		</div>
 		<ConfirmModal isOpen={showDeleteConfirm} onConfirm={confirmDelete} onCancel={cancelDelete} title={`Delete ${pendingDeleteAction}`} message={`Are you sure you want to delete this ${pendingDeleteAction}?`} /></>
 	);
-};
-
-ContentWidget.propTypes = {
-	canRemove: PropTypes.bool.isRequired,
-	feed: PropTypes.object.isRequired,
-	onEditClick: PropTypes.func.isRequired,
-	onPostRemoved: PropTypes.func.isRequired,
-	onReplyClick: PropTypes.func.isRequired, 
-	onSaveToggle: PropTypes.func.isRequired,
-	parent: PropTypes.object,
-	post: PropTypes.object.isRequired,
-	readOnly: PropTypes.bool, 
 };
 
 export default ContentWidget;

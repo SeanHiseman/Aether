@@ -549,7 +549,8 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
                 where: {
                     ...algorithmFilters,
                     ...(!isMain && locationId ? { channel_id: locationId } : {}), //Get specific channel if not main feed
-					...(isMain && feedId ? { poster_id: feedId } : {}), //Get all posts made by the user being viewed
+					...(isMain && feedId && !isGroup ? { poster_id: feedId } : {}), //Get all posts made by the user being viewed
+					...(isMain && isGroup ? { feed_id: feedId } : {}), //Group feed main posts
                     parent_id: null,
                 },
                 order: channelOrderMode,

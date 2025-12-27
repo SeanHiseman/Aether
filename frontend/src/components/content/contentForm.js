@@ -885,7 +885,7 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
         if (!isAuthenticated) return;
         e.preventDefault();
         submittedRef.current = true;
-        if (isContentEmpty(blocks)) {
+        if (blocks.length === 0 || isContentEmpty(blocks)) {
             setPostErrorMessage(isReply ? 'Reply cannot be empty.' : 'Post cannot be empty.');
             setTimeout(() => { setPostErrorMessage(''); }, 5000);
             return;
