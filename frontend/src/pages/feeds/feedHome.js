@@ -203,6 +203,14 @@ const FeedHome = () => {
         fetchPost();
     }, [isReplyMode, post_id, feed?.feed_id, queryClient, location.state]);
 
+    //Reset user/group filters when not on Main channel
+    useEffect(() => {
+        if (channel_name !== 'Main') {
+            setIncludeUser(true);
+            setIncludeGroup(true);
+        }
+    }, [channel_name]);
+
     const AddChannel = async (event) => {
         if (!isAuthenticated) return;
         event.preventDefault();
