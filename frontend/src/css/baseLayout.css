@@ -375,6 +375,7 @@ main {
 .right-aside {
   flex-shrink: 0;
   height: 100vh;
+  margin-left: auto;
   margin-top: var(--medium-margin);
   overflow-y: auto;
   width: var(--right-width);

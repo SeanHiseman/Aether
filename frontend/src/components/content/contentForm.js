@@ -1006,9 +1006,9 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
                                     {/*<button className="small-icon" type="button" onClick={() => { setAddContentDropdownOpen(false); document.getElementById('app-input').click(); }}>
                                         <FaCube /><span className="icon-text">App</span>
                                     </button>*/}
-                                    <button className="small-icon" type="button" onClick={() => { setAddContentDropdownOpen(false); addIframe(); } }>
+                                    {/*<button className="small-icon" type="button" onClick={() => { setAddContentDropdownOpen(false); addIframe(); } }>
                                         <FaLink /><span className="icon-text">Website</span>
-                                    </button>
+                                    </button>*/}
                                     <button className="small-icon" type="button" onClick={() => { setAddContentDropdownOpen(false); addSocialMedia(); } }>
                                         <FaShareAlt /><span className="icon-text">External Post</span>
                                     </button>
