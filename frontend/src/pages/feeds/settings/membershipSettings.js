@@ -1,7 +1,7 @@
 import api from '../../../api';
 import { AuthContext } from '../../../components/authContext';
 import { useContext, useEffect, useState } from 'react';
-import { Check, Crown, Ellipsis, ListFilter, Shield, Star, Zap } from 'lucide-react';
+import { ArrowUp, Check, Crown, Ellipsis, ListFilter, Shield, Star, Zap } from 'lucide-react';
 import { useOutletContext } from 'react-router-dom';
 
 const MembershipSettings = () => {
@@ -105,7 +105,7 @@ const MembershipSettings = () => {
 
     const features = [
         { icon: <Zap className="feature-icon" />, text: "Highest quality post generation" },
-        //{ icon: <Star className="feature-icon" />, text: "Custom algorithm instructions" },
+        { icon: <ArrowUp className="feature-icon" />, text: "Your posts are automatically boosted" },
         { icon: <Check className="feature-icon" />, text: "Improved customisation" },
         { icon: <ListFilter className="feature-icon" />, text: "Create longer posts" },
         { icon: <Shield className="feature-icon" />, text: "Higher use limits" },

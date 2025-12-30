@@ -64,7 +64,7 @@ const App = () => {
 								<Route path="private-policy" element={<Placeholder />} />
 								<Route path="security" element={<Placeholder />} />
 								<Route path="support" element={<Placeholder />} />
-								<Route path="team" element={<Placeholder />} />
+								<Route path="team" element={<Team />} />
 								<Route path="terms" element={<Placeholder />} />
 							</Route>
 							<Route path="/feedback" element={<PublicAuthProvider><Feedback /></PublicAuthProvider>} />
