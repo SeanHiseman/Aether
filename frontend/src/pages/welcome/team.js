@@ -7,7 +7,6 @@ const Team = () => {
     return (
         <div className="welcome-container">
             <p className="welcome-text">Meet the Team</p>
-            
             <div className="join-login">
                 <Link to="/welcome">
                     <button className="button join welcome">Back</button>
@@ -18,13 +17,8 @@ const Team = () => {
             </div>
             <div className="team-content">
                 <div className="left-aligned-text">
-                    <p className="welcome-box-header">Founder & Developer</p>
-                    <p style={{ 
-                        fontSize: 'clamp(14px, 2.5vw, 20px)', 
-                        fontWeight: '600',
-                        marginBottom: 'var(--small-margin)',
-                        color: '#6a6aff'
-                    }}>
+                    <p className="welcome-box-header">Founder & Developer:</p>
+                    <p style={{ fontSize: 'clamp(14px, 2.5vw, 20px)', fontWeight: '600', marginBottom: 'var(--small-margin)' }}>
                         Sean Hiseman
                     </p>
                 </div>

@@ -8,6 +8,7 @@ import { Op } from 'sequelize';
 import Sequelize, { QueryTypes } from 'sequelize';
 import sequelize from "../databaseSetup.js";
 
+//Properties that the frontend does not need to receive
 const excludedAttrs = [
 	'rank_hotness',
 	'rank_updated_at',
@@ -27,7 +28,8 @@ const excludedAttrs = [
     'sentiment_score',
     'language',
     'tokens',
-    'embeddings'
+    'embeddings',
+	'boost_amount'
 ];
 
 function stripExcludedAttributes(posts) {
@@ -729,7 +731,6 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
 				}
 
 				//Sentiment alignment (safe default when missing)
-				// change: guard against null/undefined sentiment_score
 				const postSentiment = typeof post.sentiment_score === 'number' ? post.sentiment_score : 0;
 				const sentimentDistance = Math.abs(postSentiment - sentiment);
 				algorithmScore += (0.5 - sentimentDistance) * 10;

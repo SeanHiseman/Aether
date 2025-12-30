@@ -429,3 +429,6 @@ WHERE feed_id IN (
 		WHERE feed_photo LIKE 'https://aetherposts.s3.eu-west-2.amazonaws.com/%'
 	) AS t
 );
+
+ALTER TABLE posts
+	ADD COLUMN boost_amount FLOAT DEFAULT 1.0;

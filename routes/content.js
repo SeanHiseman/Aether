@@ -162,7 +162,8 @@ router.post('/content_vote', higherLimiter, authenticateCheck, async (req, res) 
 			upvotes: content.upvotes || 0,
 			downvotes: content.downvotes || 0,
 			createdAt: content.created_at,
-			referenceTime: Math.floor(Date.now() / 1000)
+			referenceTime: Math.floor(Date.now() / 1000),
+			boost: content.boost_amount
 		});
 		console.log("newHotness:", newHotness);
 		await Posts.update({ rank_hotness: newHotness, rank_updated_at: new Date() }, { where: { post_id: postId } });
@@ -250,7 +251,7 @@ if (process.env.NODE_ENV === 'production') {
 //Unified route for creating and editing posts and drafts
 router.post("/create_post", standardLimiter, authenticateCheck, checkStorageLimit, postUpload.array("files"), async (req, res) => {
 	try {
-		let { channel_id, content, draft_id, feed_id, is_private, parent_id, post_id, poster_id, title, publish_draft } = req.body;
+		let { boost_amount, channel_id, content, draft_id, feed_id, is_private, parent_id, post_id, poster_id, title, publish_draft } = req.body;
 		if (draft_id === 'null' || draft_id === 'undefined') draft_id = null;
 		if (post_id === 'null' || post_id === 'undefined') post_id = null;
 		content = content || "";
@@ -386,6 +387,7 @@ router.post("/create_post", standardLimiter, authenticateCheck, checkStorageLimi
 				poster_id,
 				title,
 				rank_hotness: -0.1,
+				boost_amount,
 				...analysis,
 				...flags
 			};
@@ -615,7 +617,8 @@ router.post('/increment_views', higherLimiter, authenticateCheck, async (req, re
 			upvotes: post.upvotes || 0,
 			downvotes: post.downvotes || 0,
 			createdAt: post.created_at,
-			referenceTime: Math.floor(Date.now() / 1000)
+			referenceTime: Math.floor(Date.now() / 1000),
+			boost: post.boost_amount
 		});
 		await Posts.update({ rank_hotness: newHotness, rank_updated_at: new Date() }, { where: { post_id: postId } });
 		//await updateHotnessRedis(post);

@@ -353,6 +353,8 @@ const FeedHome = () => {
         }
         try {
             formData.append('poster_id', viewer?.feed_id);
+            const boostAmount = user?.has_membership ? 2 : 1; //Premium members get 2x boost
+            formData.append('boost_amount', boostAmount);
             const response = await api.post('/create_post', formData, {
                 headers: { 'Content-Type': 'multipart/form-data' },
             });

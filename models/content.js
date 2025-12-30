@@ -116,6 +116,7 @@ const Posts = sequelize.define('posts', {
     tokens: { type: DataTypes.JSON, allowNull: false },
     embeddings: { type: DataTypes.JSON, allowNull: true },
     is_private: { type: BOOLEAN, defaultValue: false },
+    boost_amount: { type: FLOAT, defaultValue: 1.0 }, 
 }, {
     tableName: 'posts',
     timestamps: false,

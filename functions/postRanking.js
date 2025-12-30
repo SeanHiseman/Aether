@@ -22,7 +22,7 @@ import { Posts } from '../models/relationships.js';
 //})();
 
 //Core hotness ranking formula
-export function computeHotness({ upvotes = 0, downvotes = 0, createdAt, referenceTime, decayBase = 600000 }) {
+export function computeHotness({ upvotes = 0, downvotes = 0, createdAt, referenceTime = Date.now() / 1000, boost = 1.0, decayBase = 600000 }) {
 	const score = upvotes - downvotes;
 	const age = (referenceTime - new Date(createdAt).getTime() / 1000);
 	//Small bias so new posts start slightly below strong ones
@@ -34,9 +34,9 @@ export function computeHotness({ upvotes = 0, downvotes = 0, createdAt, referenc
 	}
 	//Positive score: logarithmic growth with slower decay
 	const order = Math.log10(score + 1); //Adjust for near-zero
-	const boost = 1 + Math.pow(order, 1.4);
+	const boostFactor = 1 + Math.pow(order, 1.4) * boost;
 	const decay = age / (decayBase * (1 + order * 0.8)); //slows decay for high-score posts
-	return boost - decay;
+	return boostFactor - decay;
 }
 
 //Update Redis whenever post is created, viewed, or voted

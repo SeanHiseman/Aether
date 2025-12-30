@@ -7,6 +7,7 @@ import BaseLayout from './pages/base';
 import ChatPage from './pages/messages/chatPage';
 import ConnectBluesky from './socialConnect/connectPage/connectBluesky';
 import ConnectMastodon from './socialConnect/connectPage/connectMastodon';
+import Contact from './pages/welcome/contact';
 import ContentWidget from './components/content/contentWidget';
 import DeepFeed from './pages/deepFeed';
 import EmailVerification from './pages/site_entrance/verification';
@@ -26,9 +27,11 @@ import MembershipSettings from './pages/feeds/settings/membershipSettings';
 import MessagesPage from './pages/messages/messagesPage';
 import NotFound from './notFound';
 import Placeholder from './pages/welcome/placeholder';
+import Privacy from './pages/welcome/privacy';
 import ResetPassword from './pages/site_entrance/resetPassword';
 import SavedPosts from './pages/feeds/savedPosts';
 import SocialFeedPage from './socialConnect/socialFeedPage';
+import Support from './pages/welcome/support';
 import Team from './pages/welcome/team';
 import Theme from './pages/feeds/settings/theme';
 import { QueryProvider } from './components/search/queryContext';
@@ -59,11 +62,11 @@ const App = () => {
 							<Route path="/" element={<Navigate to="/explore" replace />} />
 							<Route path="/welcome" element={<Outlet />}>
 								<Route index element={<WelcomeHome />} />
-								<Route path="contact" element={<Placeholder />} />
+								<Route path="contact" element={<Contact />} />
 								<Route path="licenses" element={<Placeholder />} />
-								<Route path="private-policy" element={<Placeholder />} />
+								<Route path="private-policy" element={<Privacy />} />
 								<Route path="security" element={<Placeholder />} />
-								<Route path="support" element={<Placeholder />} />
+								<Route path="support" element={<Support />} />
 								<Route path="team" element={<Team />} />
 								<Route path="terms" element={<Placeholder />} />
 							</Route>

@@ -265,6 +265,7 @@ CREATE TABLE `posts` (
   `tokens` JSON NOT NULL,
   `embeddings` JSON DEFAULT NULL,
   `is_private` BOOLEAN DEFAULT FALSE,
+  `boost_amount` FLOAT DEFAULT 1.0,
   PRIMARY KEY (`post_id`),
   KEY `idx_posts_parent_id` (`parent_id`),
   KEY `idx_posts_poster_id` (`poster_id`),
