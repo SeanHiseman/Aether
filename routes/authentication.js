@@ -204,8 +204,12 @@ router.post('/join', loginLimiter, async (req, res) => {
         const UserSince = new Date();
         const verificationToken = generateVerificationToken(user_id, email);
         const verificationTokenExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); //24 hours
+        //ONLY FOR FIRST 1000 USERS
+        const subscriptionExpiresAt = new Date();
+        subscriptionExpiresAt.setFullYear(subscriptionExpiresAt.getFullYear() + 1);
+        //Free membership for a year
         await Users.create({
-            email, user_id, username, password: hashedPassword, UserSince, email_verified: false, verification_token: verificationToken, verification_token_expires: verificationTokenExpires
+            email, user_id, username, password: hashedPassword, UserSince, email_verified: false, verification_token: verificationToken, verification_token_expires: verificationTokenExpires, has_membership: true, subscription_expires_at: subscriptionExpiresAt
         }, { transaction });
         //Add initial user feed
         const default_photo = process.env.DEFAULT_USER_IMAGE;

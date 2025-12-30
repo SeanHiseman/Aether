@@ -28,6 +28,7 @@ const WelcomeHome = () => {
                 <Link to="/explore">
                     <p className="welcome-text">Welcome to Aether Social</p>
                 </Link>
+                <p className="medium-text">Free premium for first 1000 users, join soon!</p>
                 <div className="join-login">
                     <Link to="/login">
                         <button className="button join welcome">Login</button>

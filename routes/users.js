@@ -215,7 +215,8 @@ router.get('/subscription_status', standardLimiter, authenticateCheck, async (re
 });
 
 //Check for expired subscriptions (runs every hour)
-cron.schedule('0 * * * *', async () => {
+//cron.schedule('0 * * * *', async () => {
+cron.schedule('0 0 1 1 *', async () => { //Only once per year (TEMPORARY)
     try {
         const now = new Date();
         const expiredUsers = await Users.findAll({

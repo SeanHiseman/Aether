@@ -252,7 +252,6 @@ if (process.env.NODE_ENV === 'production') {
 router.post("/create_post", standardLimiter, authenticateCheck, checkStorageLimit, postUpload.array("files"), async (req, res) => {
 	try {
 		let { boost_amount, channel_id, content, draft_id, feed_id, is_private, parent_id, post_id, poster_id, title, publish_draft } = req.body;
-		console.log("boost_amount:", boost_amount);
 		if (draft_id === 'null' || draft_id === 'undefined') draft_id = null;
 		if (post_id === 'null' || post_id === 'undefined') post_id = null;
 		content = content || "";
