@@ -546,20 +546,30 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
             const channelOrderMode = ((useChronological)
                         ? [['created_at', 'DESC']]
                         : [['rank_hotness', 'DESC']]);
-            const postIds = await Posts.findAll({
-                attributes: ['post_id'],
-                where: {
-                    ...algorithmFilters,
-                    ...(!isMain && locationId ? { channel_id: locationId } : {}), //Get specific channel if not main feed
-					...(isMain && feedId && !isGroup ? { poster_id: feedId } : {}), //Get all posts made by the user being viewed
-					...(isMain && isGroup ? { feed_id: feedId } : {}), //Group feed main posts
-                    parent_id: null,
-                },
-                order: channelOrderMode,
-                limit: backendFetchTotal,
-                offset,
-                raw: true
-            });
+			const postIds = await Posts.findAll({
+				attributes: ['post_id'],
+				where: {
+					...algorithmFilters,
+					//If not on the main feed, restrict posts to a specific channel/location
+					...(!isMain && locationId ? { channel_id: locationId } : {}),
+					//On a user main feed, get all posts made by the viewed user
+					...(isMain && feedId && !isGroup ? { poster_id: feedId } : {}),
+					//On a group main feed, get all posts belonging to that group feed
+					...(isMain && isGroup ? { feed_id: feedId } : {}),
+					//On the main feed, exclude private posts from other feeds
+					...(isMain ? {
+						[Op.or]: [
+							{ is_private: false },
+							...(feedId ? [{ feed_id: feedId }] : [])
+						]
+					} : {}),
+					parent_id: null,
+				},
+				order: channelOrderMode, 
+				limit: backendFetchTotal,
+				offset,
+				raw: true
+			});
             const orderedIds = postIds.map(p => p.post_id);
             posts = await Posts.findAll({
                 where: { post_id: orderedIds },
