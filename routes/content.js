@@ -363,7 +363,7 @@ router.post("/create_post", standardLimiter, authenticateCheck, checkStorageLimi
 			if (post) {
 				await UpdateMediaFiles(post.content, contentUrl);
 				post.content = contentUrl;
-				if (title) post.title = title;
+				post.title = title; //New post might not have title
 				if (channel_id) post.channel_id = channel_id;
 				if (feed_id) post.feed_id = feed_id;
 				if (parent_id) post.parent_id = parent_id;

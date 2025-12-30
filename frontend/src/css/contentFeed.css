@@ -122,6 +122,10 @@
     grid-area: replies;
     justify-self: center;
 }
+.display-container {
+    border-top-left-radius: calc(clamp(4px, 1vw, 10px) + var(--small-margin));
+    border-bottom-right-radius: calc(clamp(4px, 1vw, 10px) + var(--small-margin));
+}
 .feed-channel-link {
     border: 1px solid transparent;
     border-radius: var(--small-margin);

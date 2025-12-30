@@ -3,7 +3,7 @@ import { AuthContext } from "../components/authContext";
 import Cropper from "react-easy-crop";
 import { Crown } from 'lucide-react';
 import DeepFeedItem from "../components/channels/deepFeedItem";
-import { DndContext, PointerSensor, pointerWithin, rectIntersection, useSensor, useSensors } from "@dnd-kit/core";
+import { DndContext, PointerSensor, pointerWithin, rectIntersection, TouchSensor, useSensor, useSensors } from "@dnd-kit/core";
 import { FaArrowRight, FaCog, FaFileUpload, FaMinus, FaPen, FaPlus, FaPlusCircle, FaSignInAlt } from "react-icons/fa";
 import FeedItem from "../components/channels/feedItem";
 import GetCroppedImg from "../functions/getCroppedImg";
@@ -69,7 +69,17 @@ const BaseLayout = () => {
 	const contentClasses = ["content", desk.left ? "hide-left" : "", desk.right ? "hide-right" : "", isMobile() && mobileOpen === "left" ? "shift-right" : ""].join(" ");
 	const leftClasses = ["left-aside", desk.left ? "collapsed" : "", isMobile() && mobileOpen === "left" ? "open" : ""].join(" ");
 	const rightClasses = ["right-aside", desk.right ? "collapsed" : "", isMobile() && mobileOpen === "right" ? "open" : ""].join(" ");
-	const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
+    const sensors = useSensors(
+        useSensor(PointerSensor, { 
+            activationConstraint: { distance: 8 } 
+        }),
+        useSensor(TouchSensor, { 
+            activationConstraint: { 
+                delay: 250,    //Wait 250ms before starting drag (prevents scroll conflicts)
+                tolerance: 5   //Allow 5px movement during the delay period
+            } 
+        })
+    );
 
     const customCollisionDetection = useCallback((args) => {
         const pointerCollisions = pointerWithin(args);

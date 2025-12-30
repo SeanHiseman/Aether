@@ -3,7 +3,7 @@ import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, v
 import { AuthContext } from '../../components/authContext';
 import { CSS } from '@dnd-kit/utilities'; 
 import { decrypt } from '../../encryptionUtil';
-import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
+import { DndContext, closestCenter, KeyboardSensor, PointerSensor, TouchSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { Link, useParams } from 'react-router-dom';
 import { UnreadContext } from '../messages/unreadContext';
 import { useCallback, useContext, useEffect, useState } from 'react';
@@ -76,7 +76,13 @@ const ChannelList = ({ canReorder = false, channels, feedId, feedName, isChat, i
     const sensors = useSensors(
         useSensor(PointerSensor, {
             activationConstraint: {
-                distance: 5, //Only start dragging after moving 5px
+                distance: 5,
+            },
+        }),
+        useSensor(TouchSensor, {  
+            activationConstraint: {
+                delay: 250,        //Wait 250ms before starting drag
+                tolerance: 5,      //Allow 5px movement during delay
             },
         }),
         useSensor(KeyboardSensor, {

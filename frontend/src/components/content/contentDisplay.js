@@ -121,9 +121,10 @@ const ContentDisplay = ({ post, isFullscreen = false, onCodeAppChange = () => {}
 		const singleFixed = blocks.length === 1 && fixed
 		const update = () => {
 			const scrollHeight = element.scrollHeight;
-			const viewportHeight = window.innerHeight * 0.7; //70vh
-			let isOverflowing = scrollHeight > viewportHeight;
-			if (singleFixed && scrollHeight <= viewportHeight) {
+			const clientHeight = element.clientHeight;
+			const threshold = 5;
+			let isOverflowing = scrollHeight > clientHeight + threshold;
+			if (singleFixed) {
 				isOverflowing = false;
 			}
 			onOverflowChange(isOverflowing);
@@ -151,14 +152,18 @@ const ContentDisplay = ({ post, isFullscreen = false, onCodeAppChange = () => {}
 		return <p className="small-text faded-text">Content not found</p>
 	}
 	return (
-		<div ref={contentRef} className="display-container" style={{ 
-			maxHeight: (showFullContent || isFullscreen) ? 'none' : '70vh',
-			height: isFullscreen ? '100%' : 'auto',
-			overflow: showScrollBar ? 'auto' : 'hidden', 
-			position: 'relative', 
-			borderTopRightRadius: post?.title && '0', 
-			borderTopLeftRadius: post?.title && '0' 
-		}}>
+		<div
+			ref={contentRef}
+			className="display-container"
+			style={{
+				maxHeight: (showFullContent || isFullscreen) ? 'none' : '70vh',
+				height: isFullscreen ? '100%' : 'auto',
+				overflow: showScrollBar ? 'auto' : 'hidden',
+				position: 'relative',
+				borderTopLeftRadius: post?.title ? '0' : undefined,
+				borderTopRightRadius: post?.title ? '0' : undefined
+			}}
+		>
 			{blocks.map((block, i) => {
 				if (block.type === 'text') {
 					return (
