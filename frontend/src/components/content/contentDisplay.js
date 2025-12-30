@@ -121,9 +121,10 @@ const ContentDisplay = ({ post, isFullscreen = false, onCodeAppChange = () => {}
 		const singleFixed = blocks.length === 1 && fixed
 		const update = () => {
 			const scrollHeight = element.scrollHeight;
-			const clientHeight = element.clientHeight;
+			const viewportHeight = window.innerHeight * 0.7; // 70vh (collapsed height)
 			const threshold = 5;
-			let isOverflowing = scrollHeight > clientHeight + threshold;
+			//Check if content would overflow when collapsed
+			let isOverflowing = scrollHeight > viewportHeight + threshold;
 			if (singleFixed) {
 				isOverflowing = false;
 			}
