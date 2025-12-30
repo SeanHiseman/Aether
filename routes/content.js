@@ -252,6 +252,7 @@ if (process.env.NODE_ENV === 'production') {
 router.post("/create_post", standardLimiter, authenticateCheck, checkStorageLimit, postUpload.array("files"), async (req, res) => {
 	try {
 		let { boost_amount, channel_id, content, draft_id, feed_id, is_private, parent_id, post_id, poster_id, title, publish_draft } = req.body;
+		console.log("boost_amount:", boost_amount);
 		if (draft_id === 'null' || draft_id === 'undefined') draft_id = null;
 		if (post_id === 'null' || post_id === 'undefined') post_id = null;
 		content = content || "";
@@ -367,6 +368,7 @@ router.post("/create_post", standardLimiter, authenticateCheck, checkStorageLimi
 				if (channel_id) post.channel_id = channel_id;
 				if (feed_id) post.feed_id = feed_id;
 				if (parent_id) post.parent_id = parent_id;
+				if (boost_amount) post.boost_amount = boost_amount;
 				Object.assign(post, analysis, flags);
 				post.updated_at = Sequelize.literal("CURRENT_TIMESTAMP(3)");
 				await post.save();
@@ -423,6 +425,7 @@ router.post("/create_post", standardLimiter, authenticateCheck, checkStorageLimi
 				poster_id,
 				title,
 				rank_hotness: -0.1,
+				boost_amount,
 				...analysis,
 				...flags
 			};
