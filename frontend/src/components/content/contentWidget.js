@@ -37,7 +37,7 @@ const ContentWidget = ({ canRemove = false, display = false, feed, isDraft = fal
 	const [showExpandButton, setShowExpandButton] = useState(false);
 	const [showFullContent, setShowFullContent] = useState(false);
 	const [showNote, setShowNote] = useState(post?.note && post?.note?.is_misinfo);
-	const [showReplies, setShowReplies] = useState(post_id ? (post?.replies > 0) : false);
+	const [showReplies, setShowReplies] = useState(readOnly ? false : (post_id ? (post?.replies > 0) : false));
 	const [treeViewMode, setTreeViewMode] = useState(false);
 	const [upvotes, setUpvotes] = useState(post?.upvotes);
 	const [views, setViews] = useState(post?.views);
@@ -452,7 +452,7 @@ const ContentWidget = ({ canRemove = false, display = false, feed, isDraft = fal
 								isDraft
 									? `/${urlPrefix}/${feed_name}/${channel_name}/${post?.draft_id}/edit`
 									: `/${urlPrefix}/${post?.parentChannel?.feed?.feed_name}/${post?.parentChannel?.channel_name}/${post?.post_id}/edit`,
-								{ state: { editData: post, isDraft: isDraft } }
+								{ state: { editData: post, isDraft: isDraft, parentPost: parent } }
 							)}
 							title={isReply ? "Edit Reply" : isDraft ? "Edit draft" : "Edit Post"}
 						>
@@ -515,6 +515,7 @@ const ContentWidget = ({ canRemove = false, display = false, feed, isDraft = fal
 									feed={feed}
 									key={reply?.post_id}
 									onPostRemoved={replyRemoved}
+									parent={post}
 									post={reply}
 									readOnly={readOnly} />
 							))

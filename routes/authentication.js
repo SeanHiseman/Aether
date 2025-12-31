@@ -182,7 +182,6 @@ router.post('/forgot-password', resendLimiter, async (req, res) => {
 router.post('/join', loginLimiter, async (req, res) => {
     let transaction
     try {
-        transaction = await sequelize.transaction();
 		await new Promise((resolve, reject) => {
 			req.session.regenerate(err => {
 				if (err) reject(err);
@@ -192,13 +191,14 @@ router.post('/join', loginLimiter, async (req, res) => {
         const email = req.body.email;
         const username = req.body.username;
         const emailCheck = ValidateEmail(email);
-        if (!emailCheck.valid) return res.status(400).json({ message: emailCheck.error });
+        if (!emailCheck.valid) return res.status(400).json({ field: 'email', message: emailCheck.error });
         const usernameCheck = ValidateTextInput(username, 3, 30);
-        if (!usernameCheck.valid) return res.status(400).json({ message: usernameCheck.error });
+        if (!usernameCheck.valid) return res.status(400).json({ field: 'username', message: usernameCheck.error });
         const existingEmail = await Users.findOne({ where: { email } });
         if (existingEmail) return res.status(409).json({ message: 'Email already registered' });
         const existingUser = await Users.findOne({ where: { username } });
         if (existingUser) return res.status(409).json({ message: 'Username already taken' });
+        transaction = await sequelize.transaction();
         const user_id = v4();
         const hashedPassword = await hash(req.body.password, 10);
         const UserSince = new Date();
@@ -258,6 +258,9 @@ router.post('/login', loginLimiter, async (req, res) => {
             });
         });
         const { password, usernameOrEmail } = req.body;
+        if (typeof usernameOrEmail !== 'string' || usernameOrEmail.length > 320) {
+            return res.status(400).json({ success: false, message: 'Invalid login input' });
+        }
         const user = await Users.findOne({ where: { [Op.or]: [{ email: usernameOrEmail }, { username: usernameOrEmail }] } });
         if (!user) {
             return res.status(401).json({ success: false, message: 'Username not found' });

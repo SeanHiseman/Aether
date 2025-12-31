@@ -28,17 +28,25 @@ const Join = () => {
             if (response.data?.success) {
                 setErrorMessage('');
                 navigate('/verify-email');
-            } 
+            }
         } catch (error) {
-            if (error.response?.status === 409) {
-                setErrorMessage(error.response?.data?.message);
-            } else if (error.response?.status === 400) {
-                setErrorMessage(error.response?.data?.message || 'Invalid input');
+            const status = error.response?.status;
+            const data = error.response?.data;
+            if (status === 409) {
+                setErrorMessage(data?.message);
+            } else if (status === 400) {
+                if (data?.field === 'username') {
+                    setErrorMessage(`Username: ${data.message}`);
+                } else if (data?.field === 'email') {
+                    setErrorMessage(`Email: ${data.message}`);
+                } else {
+                    setErrorMessage(data?.message || 'Invalid input');
+                }
             } else {
                 setErrorMessage('Joining failed, please try again');
             }
         }
-    };    
+    };
 
     const togglePasswordVisibility = (setter, currentState) => {
         setter(!currentState);

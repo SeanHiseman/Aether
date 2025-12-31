@@ -118,7 +118,6 @@ router.post('/channel_posts', standardLimiter, async (req, res) => {
 router.post('/content_vote', higherLimiter, authenticateCheck, async (req, res) => {
     try {
         const { postId, feedId, voteType } = req.body;
-		console.log("/content_vote req.body:", req.body);
         const content = await Posts.findByPk(postId);
         if (!content) {
             return res.status(404).json({ success: false, message: 'Content not found' });

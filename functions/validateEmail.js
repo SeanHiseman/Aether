@@ -1,16 +1,17 @@
 //Duplicate of frontend function
-function ValidateEmail(email, minLength = 0, maxLength = 320) {
+function ValidateEmail(email, minLength = 1, maxLength = 320) {
     if (typeof email !== 'string') {
         return { valid: false, error: 'Email must be a string.' };
     }
-    if (email.length < minLength) {
+    const trimmedEmail = email.trim();
+    if (trimmedEmail.length < minLength) {
         return { valid: false, error: `Email must be at least ${minLength} characters.` };
     }
-    if (email.length > maxLength) {
+    if (trimmedEmail.length > maxLength) {
         return { valid: false, error: `Email must be no more than ${maxLength} characters.` };
     }
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
+    if (!emailRegex.test(trimmedEmail)) {
         return { valid: false, error: 'Email format is invalid.' };
     }
     return { valid: true, error: null };

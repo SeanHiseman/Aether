@@ -36,6 +36,7 @@ const FeedHome = () => {
     const [isNewNameValid, setIsNewNameValid] = useState(false);
     const [isPostChannel, setIsPostChannel] = useState(true);
     const [newChannelName, setNewChannelName] = useState(''); 
+    const [parentPostForEdit, setParentPostForEdit] = useState(null);
     const [postErrorMessage, setPostErrorMessage] = useState('');
     const [postToEdit, setPostToEdit] = useState(null);
     const [refreshTrigger, setRefreshTrigger] = useState(false);
@@ -118,10 +119,12 @@ const FeedHome = () => {
     useEffect(() => {
         if (isEditMode && post_id) {
             const editData = location.state?.editData;
+            const parentPost = location.state?.parentPost;
             if (editData) {
                 setShowPostForm(true);
                 setIsEdit(true);
                 setPostToEdit(editData);
+                setParentPostForEdit(parentPost || null); 
                 return;
             }
             const fetchPost = async () => {
@@ -132,6 +135,7 @@ const FeedHome = () => {
                         setShowPostForm(true);
                         setIsEdit(true);
                         setPostToEdit(draft);
+                        setParentPostForEdit(parentPost || null);
                         return;
                     }
                 }
@@ -163,6 +167,7 @@ const FeedHome = () => {
             setShowPostForm(false);
             setIsEdit(false);
             setPostToEdit(null);
+            setParentPostForEdit(null);
         }
     }, [isEditMode, post_id, queryClient, location.state, draftPosts]);
 
@@ -173,7 +178,6 @@ const FeedHome = () => {
         }
         const statePost = location.state?.replyingTo;
         if (statePost) {
-            console.log("statePost:", statePost);
             setReplyingToPost(statePost);
             queryClient.setQueryData(['singlePost', post_id], statePost);
             return;
@@ -394,45 +398,56 @@ const FeedHome = () => {
     const toggleChannelForm = () => { setShowChannelForm((prev) => !prev) };
 
     //Decides contents of feed
-    const renderContentForm = (isReply = false) => (
-        <ContentForm 
-            channelId={channelRender?.channel_id} 
-            feed={feed} 
-            isEdit={isReply ? false : isEdit} 
-            isGroup={feed?.is_group}
-            isReply={isReply} 
-            onPostDelete={() => {
-                setShowPostForm(false);
-                setIsEdit(false);
-                setPostToEdit(null);
-                setReplyingToPost(null);
-                navigate(`/${urlPrefix}/${feed_name}/${channel_name}`);
-            }}
-            onPostSubmit={postSubmit}
-            populateFromPost={isReply ? false : Boolean(postToEdit)}
-            post={isReply ? replyingToPost : postToEdit} 
-            postErrorMessage={postErrorMessage} 
-            setPostErrorMessage={setPostErrorMessage} 
-            setShowForm={isReply ? () => {
-                setReplyingToPost(null);
-                navigate(`/${urlPrefix}/${feed_name}/${channel_name}${replyingToPost?.post_id ? `/${replyingToPost?.post_id}` : ''}`);
-            } : () => {
-                setShowPostForm(false);
-                setIsEdit(false);
-                setPostToEdit(null);
-                if (isEditMode && post_id) {
-                    const isDraftEdit = location.state?.isDraft || postToEdit?.draft_id;
-                    if (isDraftEdit) {
-                        navigate(`/${urlPrefix}/${feed_name}/${channel_name}/drafts`);
-                    } else {
-                        navigate(`/${urlPrefix}/${feed_name}/${channel_name}/${post_id}`);
-                    }
-                } else {
+    const renderContentForm = (isReply = false) => {
+        const isEditingReply = isEdit && postToEdit?.parent_id != null;
+        const effectiveIsReply = isReply || isEditingReply;
+        return (
+            <ContentForm 
+                channelId={channelRender?.channel_id} 
+                feed={feed} 
+                isEdit={isEdit}
+                isGroup={feed?.is_group}
+                isReply={effectiveIsReply} 
+                onPostDelete={() => {
+                    setShowPostForm(false);
+                    setIsEdit(false);
+                    setPostToEdit(null);
+                    setReplyingToPost(null);
+                    setParentPostForEdit(null);
                     navigate(`/${urlPrefix}/${feed_name}/${channel_name}`);
-                }
-            }}
-        />
-    );
+                }}
+                onPostSubmit={postSubmit}
+                parentPost={isEditingReply ? parentPostForEdit : null}
+                populateFromPost={isEdit}
+                post={isReply && !isEdit ? replyingToPost : postToEdit}
+                postErrorMessage={postErrorMessage} 
+                setPostErrorMessage={setPostErrorMessage} 
+                setShowForm={effectiveIsReply ? () => {
+                    setReplyingToPost(null);
+                    setPostToEdit(null);
+                    setParentPostForEdit(null);
+                    setIsEdit(false);
+                    const navId = isEditingReply ? postToEdit?.parent_id : replyingToPost?.post_id;
+                    navigate(`/${urlPrefix}/${feed_name}/${channel_name}${navId ? `/${navId}` : ''}`);
+                } : () => {
+                    setShowPostForm(false);
+                    setIsEdit(false);
+                    setPostToEdit(null);
+                    setParentPostForEdit(null);
+                    if (isEditMode && post_id) {
+                        const isDraftEdit = location.state?.isDraft || postToEdit?.draft_id;
+                        if (isDraftEdit) {
+                            navigate(`/${urlPrefix}/${feed_name}/${channel_name}/drafts`);
+                        } else {
+                            navigate(`/${urlPrefix}/${feed_name}/${channel_name}/${post_id}`);
+                        }
+                    } else {
+                        navigate(`/${urlPrefix}/${feed_name}/${channel_name}`);
+                    }
+                }}
+            />
+        );
+    };
     const renderPostChannel = (isDraft = false) => (
         <PostChannel
             channelId={channelRender?.channel_id}

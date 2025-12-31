@@ -180,7 +180,7 @@ const reorder = (list, startIndex, endIndex) => {
 }
 
 //Post is either the post being edited or replied to
-const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPostDelete, onPostSubmit, post = null, postErrorMessage, setPostErrorMessage, setShowForm }) => {
+const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPostDelete, onPostSubmit, parentPost = null, post = null, postErrorMessage, setPostErrorMessage, setShowForm }) => {
     const [addContentDropdownOpen, setAddContentDropdownOpen] = useState(false)
     const blocksRef = useRef([]) 
     const [blocks, setBlocks] = useState([])
@@ -210,6 +210,7 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
     const TITLE_CHAR_LIMIT = hasMembership ? 1000 : 100
     const usageLimit = user?.has_membership ? 25000000 : 2500000 //Token generation limit
     const limitReached = user?.usage_count >= usageLimit
+    const previewPost = isEdit && isReply ? parentPost : post;
 
     useEffect(() => {
         if (!isAuthenticated && post?.post_id) {
@@ -956,6 +957,7 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
             setBlocks([]);
             setPostErrorMessage('');
         } catch (error) {
+            console.log("error submitting form:", error);
             setPostErrorMessage(error.response?.data?.message || 'Error submitting the form.');
             setTimeout(() => { setPostErrorMessage(''); }, 5000);
         }
@@ -976,7 +978,7 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
         <><div className="channel-feed" style={{ paddingTop: isReply ? '0px' : '20px' }}>
             {isReply && post && (
                 <div className="post-reply-preview">
-                    <ContentWidget canRemove={false} feed={feed} onPostRemoved={() => { } } post={post} readOnly />
+                    <ContentWidget canRemove={false} feed={feed} onPostRemoved={() => { } } post={previewPost} readOnly />
                 </div>
             )}
             {!isReply && !isEdit && !post && (
