@@ -75,7 +75,7 @@ router.post('/channel_posts', standardLimiter, async (req, res) => {
 			model: PostVotes,
 			required: false
 		}];
-		if (isSingle === true) { 
+		if (isSingle === true) {
 			const singlePost = await Posts.findOne({
 				include: includeOptions,
 				where: {
@@ -85,99 +85,107 @@ router.post('/channel_posts', standardLimiter, async (req, res) => {
 				}
 			});
 			if (!singlePost) {
-				return res.status(404).json({ success: false, message: 'Post not found' })} 
-			else {
-				const existing = viewerId
-					? await SavedPosts.findOne({ where: { post_id: postId, saver_id: viewerId } })
-					: null;
-				singlePost.dataValues.is_saved = Boolean(existing);
-				return res.status(200).json({ success: true, post: singlePost })
+				return res.status(404).json({ success: false, message: 'Post not found' });
 			}
+			const voteRow = viewerId
+				? await PostVotes.findOne({
+					attributes: ['upvotes', 'downvotes'],
+					where: { post_id: postId, voter_id: viewerId },
+					raw: true
+				})
+				: null;
+			singlePost.dataValues.has_upvoted = voteRow ? voteRow.upvotes > 0 : false;
+			singlePost.dataValues.has_downvoted = voteRow ? voteRow.downvotes > 0 : false;
+			const existing = viewerId
+				? await SavedPosts.findOne({ where: { post_id: postId, saver_id: viewerId } })
+				: null;
+
+			singlePost.dataValues.is_saved = Boolean(existing);
+			return res.status(200).json({ success: true, post: singlePost });
 		}
-		const algorithmResult = await ApplyAlgorithm({ 
+		const algorithmResult = await ApplyAlgorithm({
 			locationId: channelId,
-			feedId, 
-			includeOptions, 
-			isGroup, 
-			isMain, 
-			limit, 
-			offset, 
+			feedId,
+			includeOptions,
+			isGroup,
+			isMain,
+			limit,
+			offset,
 			recentUpvotes,
-			viewerId,
+			viewerId
 		});
 		const posts = algorithmResult.posts;
 		const status = algorithmResult.status;
 		const message = algorithmResult.message;
-		return res.status(200).json({ success: true, posts: posts,bstatus: status,bmessage: message });
+		return res.status(200).json({
+			success: true,
+			posts: posts,
+			bstatus: status,
+			bmessage: message
+		});
 	} catch (error) {
-        console.error(new Date().toISOString(), '/channel_posts error:', error);
+		console.error(new Date().toISOString(), '/channel_posts error:', error);
 		return res.status(500).json({ success: false, message: 'Error getting posts.' });
 	}
 });
 
 router.post('/content_vote', higherLimiter, authenticateCheck, async (req, res) => {
-    try {
-        const { postId, feedId, voteType } = req.body;
-        const content = await Posts.findByPk(postId);
-        if (!content) {
-            return res.status(404).json({ success: false, message: 'Content not found' });
-        }
-        const [vote, created] = await PostVotes.findOrCreate({
-            where: { post_id: postId, voter_id: feedId },
-            defaults: { vote_id: v4(), upvotes: 0, downvotes: 0 }
-        });
-        if (voteType === 'upvote') {
-            if (vote.upvotes > 0) {
-                vote.upvotes = 0;
-                content.upvotes -= 1;
-            } else {
-                if (vote.downvotes > 0) {
-                    vote.downvotes = 0;
-                    content.downvotes -= 1;
-                }
-                vote.upvotes = 1;
-                content.upvotes += 1;
-            }
-        } else if (voteType === 'downvote') {
-            if (vote.downvotes > 0) {
-                vote.downvotes = 0;
-                content.downvotes -= 1;
-            } else {
-                if (vote.upvotes > 0) {
-                    vote.upvotes = 0;
-                    content.upvotes -= 1;
-                }
-                vote.downvotes = 1;
-                content.downvotes += 1;
-            }
-        }
-        await vote.save();
-        const upvoteCount = await PostVotes.sum('upvotes', { where: { post_id: postId } });
-		const downvoteCount = await PostVotes.sum('downvotes', { where: { post_id: postId } });
-		content.upvotes = upvoteCount;
-		content.downvotes = downvoteCount;
-		await content.save();
+	const transaction = await sequelize.transaction();
+	try {
+		const { feedId, postId, voteType } = req.body;
+		const content = await Posts.findByPk(postId, {
+			transaction,
+			lock: transaction.LOCK.UPDATE
+		});
+		if (!content) {
+			await transaction.rollback();
+			return res.status(404).json({ success: false, message: 'Content not found' });
+		}
+		const [vote] = await PostVotes.findOrCreate({
+			where: { post_id: postId, voter_id: feedId },
+			defaults: { vote_id: v4(), upvotes: 0, downvotes: 0 },
+			transaction,
+		});
+		const prevDownvotes = vote.downvotes;
+		const prevUpvotes = vote.upvotes;
+		if (voteType === 'upvote') {
+			vote.upvotes = prevUpvotes ? 0 : 1;
+			vote.downvotes = 0;
+		}
+		if (voteType === 'downvote') {
+			vote.downvotes = prevDownvotes ? 0 : 1;
+			vote.upvotes = 0;
+		}
+		const deltaDownvotes = vote.downvotes - prevDownvotes;
+		const deltaUpvotes = vote.upvotes - prevUpvotes;
+		content.upvotes += deltaUpvotes;
+		content.downvotes += deltaDownvotes;
+		await vote.save({ transaction });
+		await content.save({ transaction });
 		const newHotness = computeHotness({
-			upvotes: content.upvotes || 0,
-			downvotes: content.downvotes || 0,
+			upvotes: content.upvotes,
+			downvotes: content.downvotes,
 			createdAt: content.created_at,
 			referenceTime: Math.floor(Date.now() / 1000),
 			boost: content.boost_amount
 		});
-		console.log("newHotness:", newHotness);
-		await Posts.update({ rank_hotness: newHotness, rank_updated_at: new Date() }, { where: { post_id: postId } });
-		//await updateHotnessRedis(content);
-        return res.status(200).json({
-            success: true,
-            upvotes: content.upvotes,
-            downvotes: content.downvotes,
-            hasUpvoted: vote.upvotes > 0,
-            hasDownvoted: vote.downvotes > 0
-        }); 
-    } catch (error) {
-        console.error(new Date().toISOString(), '/content_vote error:', error);
-        return res.status(500).json({ success: false });
-    }
+		await Posts.update(
+			{ rank_hotness: newHotness, rank_updated_at: new Date() },
+			{ where: { post_id: postId }, transaction }
+		);
+		await transaction.commit();
+		return res.status(200).json({
+			success: true,
+			upvotes: content.upvotes,
+			downvotes: content.downvotes,
+			hasUpvoted: vote.upvotes === 1,
+			hasDownvoted: vote.downvotes === 1
+		});
+	} catch (error) {
+		await transaction.rollback();
+		console.error(new Date().toISOString(), '/content_vote error:', error);
+		return res.status(500).json({ success: false });
+	}
 });
 
 //Checks individual file sizes

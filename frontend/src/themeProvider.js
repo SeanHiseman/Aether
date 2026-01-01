@@ -4,13 +4,13 @@ import { createContext, useEffect, useState } from 'react';
 export const ThemeContext = createContext();
 
 const DEFAULT_THEME = 'dark';
-const DEFAULT_THEMES = ['blue','dark','green','white','purple','red'];
+const DEFAULT_THEMES = ['dark','blue','green','white','purple','red'];
 const DEFAULT_THEME_COLORS = {
-    blue: { border: '#dddddd', dark: '#273049', darkest: '#0b132b', light: '#3d52a0', lightest: '#dddddd' },
-    dark: { border: '#3e3f41', dark: '#232527', darkest: '#0f0f0f', light: '#737484', lightest: '#dddddd' },
-    green: { border: '#dddddd', dark: '#003325', darkest: '#001a0c', light: '#5a8a6c', lightest: '#dddddd' },
-    red: { border: '#dddddd', dark: '#312626', darkest: '#210303', light: '#873333', lightest: '#dddddd' },
-    purple: { border: '#dddddd', dark: '#240343', darkest: '#13001c', light: '#5b1e7a', lightest: '#dddddd' },
+	dark: { border: '#3e3f41', dark: '#232527', darkest: '#0f0f0f', light: '#737484', lightest: '#dddddd' },
+    blue: { border: '#dddddd', dark: '#273049', darkest: '#0b132b', light: '#3d52a0', lightest: '#8da2cdff' },
+    green: { border: '#dddddd', dark: '#003325', darkest: '#001a0c', light: '#5a8a6c', lightest: '#a1e8a2ff' },
+    red: { border: '#dddddd', dark: '#312626', darkest: '#210303', light: '#873333', lightest: '#f1b7b7ff' },
+    purple: { border: '#dddddd', dark: '#240343', darkest: '#13001c', light: '#5b1e7a', lightest: '#e2a4daff' },
     white: { border: '#2f2f2f', dark: '#e1e1e1', darkest: '#c7c7c7', light: '#717171ff', lightest: '#383838ff' }
 };
 

@@ -11,6 +11,7 @@ import { useCallback, useContext, useEffect, useRef, useState } from 'react';
 import useTimeAgo from '../../functions/useTimeAgo';
 
 const ContentWidget = ({ canRemove = false, display = false, feed, isDraft = false, onPostRemoved, onSaveToggle = () => {}, parent, post, readOnly = false }) => {
+	console.log("post:", post);
 	const authContext = useContext(AuthContext);
 	const { isAuthenticated = false, viewer = null, user = null } = authContext || {};
 	const [canRemoveState, setCanRemoveState] = useState(canRemove);
@@ -157,16 +158,11 @@ const ContentWidget = ({ canRemove = false, display = false, feed, isDraft = fal
                 feedId: viewer?.feed_id,
                 voteType,
             });
-            if (response.data?.success) {
-                setUpvotes(response.data?.upvotes);
-                setDownvotes(response.data?.downvotes);
-                if (voteType === 'upvote') {
-                    setHasUpvoted(!hasUpvoted);
-                    setHasDownvoted(false);
-                } else if (voteType === 'downvote') {
-                    setHasDownvoted(!hasDownvoted);
-                    setHasUpvoted(false);
-                }
+			if (response.data?.success) {
+				setUpvotes(response.data.upvotes);
+				setDownvotes(response.data.downvotes);
+				setHasUpvoted(response.data.hasUpvoted);
+				setHasDownvoted(response.data.hasDownvoted);
                 if (voteType === 'upvote' && !hasUpvoted) {
                     const storedUpvotes = JSON.parse(localStorage.getItem('recentUpvotes') || '[]');
                     const updatedUpvotes = [{ post_id: postId }, ...storedUpvotes];
