@@ -1,4 +1,5 @@
 import api from './api';
+import { HexToRgb } from './functions/hexToRgb';
 import { createContext, useEffect, useState } from 'react';
 export const ThemeContext = createContext();
 
@@ -10,19 +11,24 @@ const DEFAULT_THEME_COLORS = {
     green: { border: '#dddddd', dark: '#003325', darkest: '#001a0c', light: '#5a8a6c', lightest: '#dddddd' },
     red: { border: '#dddddd', dark: '#312626', darkest: '#210303', light: '#873333', lightest: '#dddddd' },
     purple: { border: '#dddddd', dark: '#240343', darkest: '#13001c', light: '#5b1e7a', lightest: '#dddddd' },
-    white: { border: '#2f2f2f', dark: '#e1e1e1', darkest: '#c7c7c7', light: '#9b9b9bff', lightest: '#171717ff' }
+    white: { border: '#2f2f2f', dark: '#e1e1e1', darkest: '#c7c7c7', light: '#717171ff', lightest: '#383838ff' }
 };
 
 const applyTheme = (theme) => {
 	if (typeof theme === 'string' && DEFAULT_THEMES.includes(theme)) {
 		document.body.className = theme;
-		['border','dark','darkest','light','lightest'].forEach((key) => {
-			document.documentElement.style.removeProperty(`--${key}`);
+		//Apply the default theme colors with sRGB specification
+		const themeColors = DEFAULT_THEME_COLORS[theme];
+		Object.entries(themeColors).forEach(([key, value]) => {
+			const cssColor = `color(srgb ${HexToRgb(value)})`;
+			document.documentElement.style.setProperty(`--${key}`, cssColor);
 		});
 	} else if (theme && typeof theme === 'object') {
 		document.body.className = '';
 		Object.entries(theme).forEach(([key, value]) => {
-			document.documentElement.style.setProperty(`--${key}`, value);
+			//Convert hex colors to sRGB for consistency across devices
+			const cssColor = value.startsWith('#') ? `color(srgb ${HexToRgb(value)})` : value;
+			document.documentElement.style.setProperty(`--${key}`, cssColor);
 		});
 	}
 };

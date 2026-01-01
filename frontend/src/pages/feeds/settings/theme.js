@@ -1,11 +1,14 @@
 import { AuthContext } from '../../../components/authContext';
 import { Crown } from 'lucide-react';
+import { HexToRgb } from '../../../functions/hexToRgb';
 import { Link } from "react-router-dom";
 import { ThemeContext } from '../../../themeProvider';
 import ThemeButton from './themeButton';
 import { useContext, useEffect, useState } from 'react';
 
 const Theme = () => {
+    const [errorMessage, setErrorMessage] = useState('');
+    const [feedbackMessage, setFeedbackMessage] = useState('');
     const { defaultThemeColors, setTheme: updateTheme, theme, themes } = useContext(ThemeContext);
     const { isAuthenticated, user } = useContext(AuthContext);
     
@@ -31,8 +34,6 @@ const Theme = () => {
 	};
     
     const [customTheme, setCustomTheme] = useState(getInitialTheme);
-    const [errorMessage, setErrorMessage] = useState('');
-    const [feedbackMessage, setFeedbackMessage] = useState('');
 
 	useEffect(() => {
 		if (theme) {
@@ -57,7 +58,9 @@ const Theme = () => {
         if (!customTheme) return;
         const updated = { ...customTheme, [key]: value };
         setCustomTheme(updated);
-        document.documentElement.style.setProperty(`--${key}`, value);
+        //Convert hex to sRGB color function for consistency
+        const cssColor = `color(srgb ${HexToRgb(value)})`;
+        document.documentElement.style.setProperty(`--${key}`, cssColor);
     };
 
     const handleCustomThemeSave = async () => {
@@ -83,10 +86,10 @@ const Theme = () => {
         }
     };
     
-    document.title = "Theme Settings";
+    document.title = "Colour theme";
     return (
         <div className="feed-settings">
-            <p className="large-text">Choose your theme</p>
+            <p className="large-text">Choose your colour theme</p>
             <div className="display-area" style={{ display: 'grid' }}>
                 {themes.map((themeName) => (
                     <ThemeButton key={themeName} colors={defaultThemeColors[themeName]} onThemeSelect={handleDefaultThemeSelect} themeName={themeName} />

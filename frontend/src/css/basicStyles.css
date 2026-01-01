@@ -1,4 +1,7 @@
 @import url('variables.css');
+* {
+  color-interpolation: sRGB;
+}
 a {
     color: inherit;
     text-decoration: none;

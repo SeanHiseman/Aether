@@ -550,7 +550,7 @@ ul {
     margin-top: 0; /* cancel the desktop 16-px margin  */
   }
   .search-container {
-    width: auto;
+    width: 60vw;
   }
   .search-form {
     max-width: 100%;

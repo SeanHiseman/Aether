@@ -127,7 +127,7 @@ const FeedSettings = () => {
                         )}
                         {!feed?.is_group && (
                             <li className="channel-link">
-                                <Link to={`/settings/${feed_name}/theme`}>Theme</Link>
+                                <Link to={`/settings/${feed_name}/theme`}>Colour theme</Link>
                             </li>
                         )}
                         {feed?.isOwner && (
