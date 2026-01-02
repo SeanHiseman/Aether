@@ -318,6 +318,9 @@
   .w-80 {
     width: calc(var(--spacing) * 80);
   }
+  .w-90 {
+    width: 90%;
+  }
   .w-99 {
     width: 99%;
   }
@@ -455,6 +458,12 @@
   }
   .text-center {
     text-align: center;
+  }
+  .text-left {
+    text-align: left;
+  }
+  .text-right {
+    text-align: right;
   }
   .text-2xl {
     font-size: var(--text-2xl);

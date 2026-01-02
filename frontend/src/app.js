@@ -3,7 +3,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ProtectedRoute, PublicAuthProvider } from './components/authContext';
 import Account from './pages/feeds/settings/account';
 import AskChannel from './pages/ask/askChannel';
-import BaseLayout from './pages/base';
+import BaseLayout from './pages/base/base';
 import ChatPage from './pages/messages/chatPage';
 import ConnectBluesky from './socialConnect/connectPage/connectBluesky';
 import ConnectMastodon from './socialConnect/connectPage/connectMastodon';
@@ -12,7 +12,7 @@ import ContentWidget from './components/content/contentWidget';
 import DeepFeed from './pages/deepFeed';
 import EmailVerification from './pages/site_entrance/verification';
 import ExplorePage from './pages/explore/explorePage';
-import Feedback from './components/feedback';
+import Feedback from './pages/base/feedback';
 import FeedDeletion from './pages/feeds/settings/feedDeletion';
 import FeedFollowers from './pages/feeds/settings/feedFollowers';
 import FeedInfoView from './pages/feeds/settings/feedInfoView';
@@ -21,6 +21,7 @@ import FeedSettings from './pages/feeds/settings/feedSettings';
 import FeedWrapper from './pages/feeds/feedWrapper';
 import FollowRequests from './pages/feeds/settings/followRequests';
 import ForgotPassword from './pages/site_entrance/forgotPassword';
+import Help from './pages/base/help';
 import Join from './pages/site_entrance/join';
 import Login from './pages/site_entrance/login';
 import MembershipSettings from './pages/feeds/settings/membershipSettings';
@@ -79,6 +80,7 @@ const App = () => {
 							<Route path="/reset-password" element={<ResetPassword />}/>
 							<Route path="/verify-email" element={<EmailVerification />} />
 							<Route element={BaseLayoutWithProviders}>
+								<Route path="/help" element={<Help />} />
 								<Route path="/feed/reddit" element={<SocialFeedPage platform="reddit" />} />
 								<Route path="/feed/bluesky" element={<SocialFeedPage platform="bluesky" />} />
 								<Route path="/feed/mastodon" element={<SocialFeedPage platform="mastodon" />} />

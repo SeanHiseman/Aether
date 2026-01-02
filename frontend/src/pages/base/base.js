@@ -1,32 +1,32 @@
-import api from "../api";
-import { AuthContext } from "../components/authContext";
+import api from "../../api";
+import { AuthContext } from "../../components/authContext";
 import Cropper from "react-easy-crop";
 import { Crown } from 'lucide-react';
-import DeepFeedItem from "../components/channels/deepFeedItem";
+import DeepFeedItem from "../../components/channels/deepFeedItem";
 import { DndContext, PointerSensor, pointerWithin, rectIntersection, TouchSensor, useSensor, useSensors } from "@dnd-kit/core";
 import { FaArrowRight, FaCog, FaFileUpload, FaMinus, FaPen, FaPlus, FaPlusCircle, FaSignInAlt } from "react-icons/fa";
-import FeedItem from "../components/channels/feedItem";
-import GetCroppedImg from "../functions/getCroppedImg";
-import InputModal from "../components/modals/inputModal";
+import FeedItem from "../../components/channels/feedItem";
+import GetCroppedImg from "../../functions/getCroppedImg";
+import InputModal from "../../components/modals/inputModal";
 import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { MagnifyingGlassIcon } from "@radix-ui/react-icons";
-import MessageDropdown from "../components/messages/messageDropdown";
-import SocialFeedLink from "../socialConnect/socialFeedLink";
-import { ThemeContext } from "../themeProvider";
+import MessageDropdown from "../../components/messages/messageDropdown";
+import SocialFeedLink from "../../socialConnect/socialFeedLink";
+import { ThemeContext } from "../../themeProvider";
 import { Tooltip } from "react-tooltip";
-import { UnreadContext } from "../components/messages/unreadContext";
+import { UnreadContext } from "../../components/messages/unreadContext";
 import { useCallback, useContext, useEffect, useRef, useState } from "react";
-import { ValidateTextInput } from "../functions/validateTextInput";
+import { ValidateTextInput } from "../../functions/validateTextInput";
 import { v4 } from "uuid";
-import "../css/algorithms.css";
-import "../css/baseLayout.css";
-import "../css/basicStyles.css";
-import "../css/contentFeed.css";
-import "../css/contentForm.css";
-import "../css/feed.css";
-import "../css/membership.css";
-import "../css/messages.css";
-import "../css/output.css";
+import "../../css/algorithms.css";
+import "../../css/baseLayout.css";
+import "../../css/basicStyles.css";
+import "../../css/contentFeed.css";
+import "../../css/contentForm.css";
+import "../../css/feed.css";
+import "../../css/membership.css";
+import "../../css/messages.css";
+import "../../css/output.css";
 
 const BaseLayout = () => {
 	const [activeDragItem, setActiveDragItem] = useState(null);
@@ -469,20 +469,21 @@ const BaseLayout = () => {
                         <>
                             <div className="left-aside-feed-info">
                                 <Link className="feed-link" to={`/u/${feed?.feed_name}`}>
-                                    <img
-                                        className="small-feed-photo"
-                                        src={`${feed?.feed_photo}`}
-                                        onError={(e) => e.currentTarget.src = '/media/site_images/blank-profile.png'}
-                                    />
+                                    <img className="small-feed-photo" src={`${feed?.feed_photo}`} onError={(e) => e.currentTarget.src = '/media/site_images/blank-profile.png'} />
                                     <p className="feed-list-text">{feed?.feed_name}</p>
                                 </Link>
                                 <Link className="small-icon" to={`/settings/${feed?.feed_name}`} title="Settings">
                                     <FaCog />
                                 </Link>
                             </div>
-                            <Link to="/feedback">
-                                <p className="small-text faded-text underline">Give feedback</p>
-                            </Link>
+                            <div className="text-left w-90">
+                                <Link to="/help">
+                                    <p className="small-text faded-text underline">Help</p>
+                                </Link>
+                                <Link to="/feedback">
+                                    <p className="small-text faded-text underline">Give feedback</p>
+                                </Link>
+                            </div>
                             <div className="post-button-container">
                                 <Link className="main-button" to={`/u/${viewer?.feed_name}/Main/create`} title="Create Post">
                                     <FaPen />

@@ -130,7 +130,7 @@ app.get('*', (req, res, next) => {
 	) {
 		return next()
 	}
-	if (req.headers.accept.includes('text/html')) {
+	if (req.headers.accept && req.headers.accept.includes('text/html')) {
 		return res.sendFile(path.join(root, 'index.html'))
 	}
 	next()

@@ -1,10 +1,10 @@
-import api from '../api';
-import { AuthContext } from './authContext';
+import api from '../../api';
+import { AuthContext } from '../../components/authContext';
 import { Link } from "react-router-dom";
 import { useContext, useState } from 'react';
-import { ValidateTextInput } from '../functions/validateTextInput';
-import '../css/authentication.css';
-import '../css/basicStyles.css';
+import { ValidateTextInput } from '../../functions/validateTextInput';
+import '../../css/authentication.css';
+import '../../css/basicStyles.css';
 
 const Feedback = () => {
     const [error, setError] = useState('');

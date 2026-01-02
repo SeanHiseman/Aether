@@ -11,7 +11,6 @@ import { useCallback, useContext, useEffect, useRef, useState } from 'react';
 import useTimeAgo from '../../functions/useTimeAgo';
 
 const ContentWidget = ({ canRemove = false, display = false, feed, isDraft = false, onPostRemoved, onSaveToggle = () => {}, parent, post, readOnly = false }) => {
-	console.log("post:", post);
 	const authContext = useContext(AuthContext);
 	const { isAuthenticated = false, viewer = null, user = null } = authContext || {};
 	const [canRemoveState, setCanRemoveState] = useState(canRemove);
