@@ -1035,7 +1035,7 @@ router.put('/update_feed_photo/:feedId', standardLimiter, authenticateCheck, che
             const feed = await Feeds.findOne({ where: { feed_id } });
             //Delete old photo if not default
             if (feed.feed_photo && !defaultImages.includes(feed.feed_photo)) {
-                if (process.env.NODE_ENV === 'production') {
+                if (feed.feed_photo.startsWith('http')) {
                     const url = new URL(feed.feed_photo);
                     const s3Key = url.pathname.replace(/^\/+/, '');
                     await DeleteFromS3(s3Key);
