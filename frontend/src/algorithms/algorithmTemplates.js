@@ -9,7 +9,7 @@ const ALGORITHM_TEMPLATES = {
         maxWords: null,
         minVideo: 0,
         maxVideo: null,
-        contentType: { images: true, text: true, videos: true, interactive: true, externalPosts: true, embeddedWebsites: true },
+        contentType: { images: true, text: true, videos: true, interactive: true },
         wordBoost: "breaking,news,update,urgent,developing,alert,live,happening,latest,confirmed",
         wordSuppress: "rumor,unconfirmed,speculation,allegedly,reportedly",
         customInstruction: "Show verified breaking news and current events. Prioritise recent posts with high engagement and visual content. Suppress unconfirmed information."
@@ -24,7 +24,7 @@ const ALGORITHM_TEMPLATES = {
         maxWords: 120,
         minVideo: 0,
         maxVideo: 60,
-        contentType: { images: true, text: true, videos: true, interactive: true, externalPosts: true, embeddedWebsites: true },
+        contentType: { images: true, text: true, videos: true, interactive: true },
         wordBoost: "viral,trending,quick,tip,hack,wow,amazing,genius,simple,fast",
         wordSuppress: "long,detailed,comprehensive,analysis,study",
         customInstruction: "Focus on short, highly engaging content under 280 words. Prioritise videos, interactive content, and posts with high viral potential."
@@ -39,7 +39,7 @@ const ALGORITHM_TEMPLATES = {
         maxWords: null,
         minVideo: 0,
         maxVideo: null,
-        contentType: { images: true, text: true, videos: true, interactive: true, externalPosts: true, embeddedWebsites: true },
+        contentType: { images: true, text: true, videos: true, interactive: true },
         wordBoost: "analysis,comprehensive,detailed,research,study,investigation,deep,thorough,complete",
         wordSuppress: "quick,brief,summary,tldr,short",
         customInstruction: "Prioritise comprehensive, well-researched longform content. Focus on detailed analysis and thorough investigations. Minimal visual distractions."
@@ -54,7 +54,7 @@ const ALGORITHM_TEMPLATES = {
         maxWords: null,
         minVideo: 0,
         maxVideo: null,
-        contentType: { images: true, text: true, videos: true, interactive: true, externalPosts: true, embeddedWebsites: true },
+        contentType: { images: true, text: true, videos: true, interactive: true },
         wordBoost: "tutorial,learn,how-to,guide,explain,education,course,lesson,teach,step-by-step",
         wordSuppress: "clickbait,drama,gossip,celebrity",
         customInstruction: "Focus on educational content with visual aids. Prioritise tutorials, guides, and how-to content with images or interactive elements."
@@ -69,7 +69,7 @@ const ALGORITHM_TEMPLATES = {
         maxWords: null,
         minVideo: 0,
         maxVideo: null,
-        contentType: { images: true, text: true, videos: true, interactive: true, externalPosts: true, embeddedWebsites: true },
+        contentType: { images: true, text: true, videos: true, interactive: true },
         wordBoost: "funny,meme,comedy,entertainment,viral,cute,amazing,hilarious,awesome",
         wordSuppress: "serious,political,depressing,sad,tragic",
         customInstruction: "Show entertaining content with positive sentiment. Prioritize funny, cute, and amazing content while filtering out serious or depressing material."
@@ -84,7 +84,7 @@ const ALGORITHM_TEMPLATES = {
 		maxWords: null,
 		minVideo: 0,
 		maxVideo: null,
-        contentType: { images: true, text: true, videos: true, interactive: true, externalPosts: true, embeddedWebsites: true },
+        contentType: { images: true, text: true, videos: true, interactive: true },
         wordBoost: "career,professional,industry,business,networking,leadership,startup,innovation,growth",
         wordSuppress: "personal,casual,meme,funny",
         customInstruction: "Focus on professional content. Prioritise career insights, industry news, and business networking content."
@@ -99,7 +99,7 @@ const ALGORITHM_TEMPLATES = {
 		maxWords: null,
 		minVideo: 0,
 		maxVideo: null,
-        contentType: { images: true, text: true, videos: true, interactive: true, externalPosts: true, embeddedWebsites: true },    
+        contentType: { images: true, text: true, videos: true, interactive: true },    
         wordBoost: "positive,inspiration,motivation,success,achievement,grateful,happiness,love,blessed,amazing",
         wordSuppress: "negative,problem,crisis,drama,toxic,hate,angry,sad,depressing",
         customInstruction: "Show only highly positive, uplifting content. Strongly filter out any negative sentiment or toxic content."
@@ -114,7 +114,7 @@ const ALGORITHM_TEMPLATES = {
 		maxWords: null,
 		minVideo: 0,
 		maxVideo: null,
-        contentType: { images: true, text: true, videos: true, interactive: true, externalPosts: true, embeddedWebsites: true },
+        contentType: { images: true, text: true, videos: true, interactive: true },
         wordBoost: "technology,AI,innovation,startup,coding,software,digital,tech,development,programming",
         wordSuppress: "outdated,legacy,old-school,traditional",
         customInstruction: "Focus on cutting-edge technology and innovation. Prioritise AI, software development, and digital innovation."
@@ -129,7 +129,7 @@ const ALGORITHM_TEMPLATES = {
 		maxWords: null,
 		minVideo: 0,
 		maxVideo: null,
-        contentType: { images: true, text: true, videos: true, interactive: true, externalPosts: true, embeddedWebsites: true },
+        contentType: { images: true, text: true, videos: true, interactive: true },
         wordBoost: "sports,fitness,workout,training,athlete,game,team,health,exercise,gym",
         wordSuppress: "injury,controversy,scandal",
         customInstruction: "Focus on sports and fitness content with visual elements. Prioritise positive athletic content and workout demonstrations."
@@ -144,7 +144,7 @@ const ALGORITHM_TEMPLATES = {
 		maxWords: null,
 		minVideo: 0,
 		maxVideo: null,
-        contentType: { images: true, text: true, videos: true, interactive: true, externalPosts: true, embeddedWebsites: true },
+        contentType: { images: true, text: true, videos: true, interactive: true },
         wordBoost: "art,creative,design,music,artist,painting,photography,inspiration,culture,aesthetic",
         wordSuppress: "commercial,advertisement,promotion",
         customInstruction: "Show creative and artistic content. Prioritise original art, design inspiration, and cultural content over commercial posts."
@@ -159,7 +159,7 @@ const ALGORITHM_TEMPLATES = {
 		maxWords: null,
 		minVideo: 0,
 		maxVideo: null,
-        contentType: { images: true, text: true, videos: true, interactive: true, externalPosts: true, embeddedWebsites: true },
+        contentType: { images: true, text: true, videos: true, interactive: true },
         wordBoost: "discussion,debate,opinion,thoughts,perspective,community,conversation,trending",
         wordSuppress: "spam,promotional,advertisement",
         customInstruction: "Show highly engaging discussions. Prioritise posts with active comment threads and community engagement."
@@ -174,7 +174,7 @@ const ALGORITHM_TEMPLATES = {
 		maxWords: null,
 		minVideo: 0,
 		maxVideo: null,
-        contentType: { images: true, text: true, videos: true, interactive: true, externalPosts: true, embeddedWebsites: true },
+        contentType: { images: true, text: true, videos: true, interactive: true },
         wordBoost: "quality,curated,thoughtful,insightful,well-written,informative,valuable",
         wordSuppress: "spam,low-effort,clickbait,rage-bait,toxic",
         customInstruction: "Focus on high-quality, well-crafted content with good engagement. Filter out spam and low-effort posts while prioritising thoughtful, valuable contributions."

@@ -257,213 +257,174 @@ if (process.env.NODE_ENV === 'production') {
 
 //Unified route for creating and editing posts and drafts
 router.post("/create_post", standardLimiter, authenticateCheck, checkStorageLimit, postUpload.array("files"), async (req, res) => {
-	try {
-		let { boost_amount, channel_id, content, draft_id, feed_id, is_private, parent_id, post_id, poster_id, title, publish_draft } = req.body;
-		if (draft_id === 'null' || draft_id === 'undefined') draft_id = null;
-		if (post_id === 'null' || post_id === 'undefined') post_id = null;
-		content = content || "";
-		//Handle media in HTML
-		const $ = cheerio.load(content, { decodeEntities: false });
-		//Strip any spoofed trust attributes
-		$('[data-trusted]').removeAttr('data-trusted');
-		//Conditionally add trust only if frontend indicates trusted embeds
-		const hasTrustedEmbeds = req.body.has_trusted_embeds === 'true' || req.body.has_trusted_embeds === true;
-		$("div.code-block").each((_, block) => {
-			const $block = $(block);
-			const embed = $block.find("div.social-media-embed");
-			if (embed.length === 0) return; //skip non-embed code blocks
-			//Get full embed markup including <blockquote> and <script>
-			const html = embed.prop('outerHTML') || embed.toString();
-			//Extract all <script> src values
-			const scriptUrls = Array.from(html.matchAll(/<script[^>]+src=["']([^"']+)["']/gi)).map(m => {
-				let src = m[1].trim();
-				if (src.startsWith('//')) src = 'https:' + src;
-				return src;
-			});
-			const allSafeScripts = scriptUrls.every(src =>
-				ALLOWED_SCRIPTS.some(allow => src === allow || src.startsWith(allow))
-			);
-			//Extract and validate all URLs (full markup, not innerHTML)
-			const allUrls = Array.from(html.matchAll(/https?:\/\/[^\s"'<>()]+/gi)).map(m => m[0]);
-			const allAllowedHosts = allUrls.every(url => {
-				try {
-					const parsed = new URL(url);
-					const host = parsed.hostname.replace(/^www\./, '');
-					// Include safe utility hosts
-					if (SAFE_UTILITY_HOSTS.some(h => host.endsWith(h))) return true;
-					return ALLOWED_EMBED_HOSTS.some(h => host.endsWith(h));
-				} catch {
-					return true;
-				}
-			});
-			//Only mark trusted if frontend says embeds are trusted AND validation passes
-			if (hasTrustedEmbeds && allSafeScripts && allAllowedHosts) {
-				$block.attr('data-trusted', 'true');
-			} else if (!allSafeScripts || !allAllowedHosts) {
-				embed.remove();
-			}
-		});
-		//Handle local media uploads
-		const mediaElements = $("img[src^='blob:'], video source[src^='blob:']").toArray();
-		for (let i = 0; i < mediaElements.length; i++) {
-			const el = mediaElements[i];
-			const file = req.files[i];
-			if (!file) continue;
-			if (process.env.NODE_ENV === "production") {
-				const fileName = GenerateFileName(file, "media");
+    try {
+        let { boost_amount, channel_id, content, draft_id, feed_id, is_private, parent_id, post_id, poster_id, title, publish_draft } = req.body;
+		console.log("create post req.body:", req.body);
+        if (draft_id === 'null' || draft_id === 'undefined') draft_id = null;
+        if (post_id === 'null' || post_id === 'undefined') post_id = null;
+        content = content || "";
+        //Parse HTML content
+        const $ = cheerio.load(content, { decodeEntities: false });
+        //Handle local media uploads
+        const mediaElements = $("img[src^='blob:'], video source[src^='blob:']").toArray();
+        for (let i = 0; i < mediaElements.length; i++) {
+            const el = mediaElements[i];
+            const file = req.files[i];
+            if (!file) continue;
+            if (process.env.NODE_ENV === "production") {
+                const fileName = GenerateFileName(file, "media");
 				const s3Key = `content/${fileName}`; //Content folder of S3 bucket
-				await UploadToS3(s3Key, file.buffer, file.mimetype);
-				const src = `https://${process.env.CLOUDFRONT_DOMAIN}/${s3Key}`;
-				$(el).attr("src", src).removeAttr("blob:");
-			} else {
-				const fileName = file.filename;
-				const localPath = path.join(mediaDir, fileName);
-				if (file.path !== localPath) fs.copyFileSync(file.path, localPath);
-				const src = "/" + path.join("media", "content", fileName).replace(/\\/g, "/");
-				$(el).attr("src", src).removeAttr("blob:");
-			}
-		}
-		//Generate and store final HTML
-		const finalHtml = $.html();
-		let contentUrl;
-		const htmlFileName = GenerateFileName({ originalname: "post.html" }, "post");
-		if (process.env.NODE_ENV === "production") {
-			const s3Key = `posts/${htmlFileName}`;
-			await UploadToS3(s3Key, Buffer.from(finalHtml), "text/html");
-			contentUrl = `https://${process.env.CLOUDFRONT_DOMAIN}/${s3Key}`;
-		} else {
-			const localPath = path.join(postsDir, htmlFileName);
-			fs.writeFileSync(localPath, finalHtml);
-			contentUrl = `/media/posts/${htmlFileName}`;
-		}
-		//Run text/embedding analysis
-		const textBody = await contentAnalyser.extractTextBody(finalHtml);
-		const embedding = await contentAnalyser.generateEmbedding(textBody);
-		const textProcessing = await contentAnalyser.processText(textBody);
-		const sentimentScore = await contentAnalyser.calculateSentiment(textBody);
-		const words = textBody.split(/\s+/).filter(w => w.length > 0);
-		const sentences = textBody.split(/[.!?]+/).filter(s => s.trim().length > 0);
-		const analysis = {
-			embeddings: embedding,
-			sentiment_score: sentimentScore,
-			sentence_count: sentences.length,
-			text_body: textBody,
-			text_length: textBody.length,
-			tokens: textProcessing.tokens,
-			word_count: words.length
-		};
-		const flags = {
-			has_embedded_websites: req.body.has_embedded_websites === 'true' || req.body.has_embedded_websites === true,
-			has_external_posts: req.body.has_external_posts === 'true' || req.body.has_external_posts === true,
-			has_images: req.body.has_images === 'true' || req.body.has_images === true,
-			has_interactive: req.body.has_interactive === 'true' || req.body.has_interactive === true,
-			has_text: req.body.has_text === 'true' || req.body.has_text === true,
-			has_videos: req.body.has_videos === 'true' || req.body.has_videos === true,
-			image_count: parseInt(req.body.image_count ?? 0) || 0,
-			video_count: parseInt(req.body.video_count ?? 0) || 0,
-			video_length: parseFloat(req.body.video_length ?? 0) || 0
-		};
-		let result = null;
-		//Update existing post
-		if (post_id) {
-			const post = await Posts.findByPk(post_id);
-			if (post) {
-				await UpdateMediaFiles(post.content, contentUrl);
-				post.content = contentUrl;
+                await UploadToS3(s3Key, file.buffer, file.mimetype);
+                const src = `https://${process.env.CLOUDFRONT_DOMAIN}/${s3Key}`;
+                $(el).attr("src", src).removeAttr("blob:");
+            } else {
+                const fileName = file.filename;
+                const localPath = path.join(mediaDir, fileName);
+                if (file.path !== localPath) fs.copyFileSync(file.path, localPath);
+                const src = "/" + path.join("media", "content", fileName).replace(/\\/g, "/");
+                $(el).attr("src", src).removeAttr("blob:");
+            }
+        }
+        //Generate and store final HTML
+        const finalHtml = $.html();
+        let contentUrl;
+        const htmlFileName = GenerateFileName({ originalname: "post.html" }, "post");
+        if (process.env.NODE_ENV === "production") {
+            const s3Key = `posts/${htmlFileName}`;
+            await UploadToS3(s3Key, Buffer.from(finalHtml), "text/html");
+            contentUrl = `https://${process.env.CLOUDFRONT_DOMAIN}/${s3Key}`;
+        } else {
+            const localPath = path.join(postsDir, htmlFileName);
+            fs.writeFileSync(localPath, finalHtml);
+            contentUrl = `/media/posts/${htmlFileName}`;
+        }
+        //Run text/embedding analysis
+        const textBody = await contentAnalyser.extractTextBody(finalHtml);
+        const embedding = await contentAnalyser.generateEmbedding(textBody);
+        const textProcessing = await contentAnalyser.processText(textBody);
+        const sentimentScore = await contentAnalyser.calculateSentiment(textBody);
+        const words = textBody.split(/\s+/).filter(w => w.length > 0);
+        const sentences = textBody.split(/[.!?]+/).filter(s => s.trim().length > 0);
+        const analysis = {
+            embeddings: embedding,
+            sentiment_score: sentimentScore,
+            sentence_count: sentences.length,
+            text_body: textBody,
+            text_length: textBody.length,
+            tokens: textProcessing.tokens,
+            word_count: words.length
+        };
+        const flags = {
+            has_images: req.body.has_images === 'true' || req.body.has_images === true,
+            has_interactive: req.body.has_interactive === 'true' || req.body.has_interactive === true,
+            has_text: req.body.has_text === 'true' || req.body.has_text === true,
+            has_videos: req.body.has_videos === 'true' || req.body.has_videos === true,
+            image_count: parseInt(req.body.image_count ?? 0) || 0,
+            video_count: parseInt(req.body.video_count ?? 0) || 0,
+            video_length: parseFloat(req.body.video_length ?? 0) || 0
+        };
+        let result = null;
+        //Update existing post
+        if (post_id) {
+            const post = await Posts.findByPk(post_id);
+            if (post) {
+                await UpdateMediaFiles(post.content, contentUrl);
+                post.content = contentUrl;
 				post.title = title; //New post might not have title
-				if (channel_id) post.channel_id = channel_id;
-				if (feed_id) post.feed_id = feed_id;
-				if (parent_id) post.parent_id = parent_id;
-				if (boost_amount) post.boost_amount = boost_amount;
-				Object.assign(post, analysis, flags);
-				post.updated_at = Sequelize.literal("CURRENT_TIMESTAMP(3)");
-				await post.save();
-				result = post;
-			}
-		}
-		//Publish draft as post
-		else if (draft_id && publish_draft === 'true') {
-			const draft = await PostDrafts.findByPk(draft_id);
-			const newPostId = v4();
-			const postData = {
-				post_id: newPostId,
-				channel_id,
-				content: contentUrl,
-				feed_id,
-				is_private,
-				parent_id,
-				poster_id,
-				title,
-				rank_hotness: -0.1,
-				boost_amount,
-				...analysis,
-				...flags
-			};
-			result = await Posts.create(postData);
-			await Feeds.increment('post_count', { by: 1, where: { feed_id } });
-			await FeedChannels.increment('post_count', { by: 1, where: { channel_id } });
-			if (draft) await PostDrafts.destroy({ where: { draft_id } });
-		}
-		//Create or update draft
-		else if (draft_id) {
-			const existingDraft = await PostDrafts.findByPk(draft_id);
-			if (existingDraft?.content) await UpdateMediaFiles(existingDraft.content, contentUrl);
-			result = await PostDrafts.upsert({
-				draft_id,
-				feed_id,
-				channel_id,
-				parent_id: parent_id || null,
-				content: contentUrl,
-				title: title || null,
-				poster_id
-			});
-		}
-		//Create new post
-		else {
-			const newPostId = v4();
-			const postData = {
-				post_id: newPostId,
-				channel_id,
-				content: contentUrl,
-				feed_id,
-				is_private,
-				parent_id,
-				poster_id,
-				title,
-				rank_hotness: -0.1,
-				boost_amount,
-				...analysis,
-				...flags
-			};
-			result = await Posts.create(postData);
-			await Feeds.increment('post_count', { by: 1, where: { feed_id } });
-			await FeedChannels.increment('post_count', { by: 1, where: { channel_id } });
-			if (parent_id) {
-				const parentPost = await Posts.findOne({ where: { post_id: parent_id } });
-				if (parentPost) {
-					parentPost.replies += 1;
-					await parentPost.save();
-				}
-			}
-		}
-		return res.status(200).json({ success: true, result });
-	} catch (error) {
-		if (req.files?.length > 0) {
-			for (const file of req.files) {
-				try {
-					if (process.env.NODE_ENV === "production") {
-						await DeleteFromS3(`content/${file.filename}`);
-					} else if (fs.existsSync(file.path)) {
-						fs.unlinkSync(file.path);
-					}
-				} catch (cleanupErr) {
-					console.error(new Date().toISOString(), 'Failed to cleanup file:', cleanupErr);
-				}
-			}
-		}
-		console.error(new Date().toISOString(), '/create_post error:', error);
-		return res.status(500).json({ success: false, message: "Error creating post" });
-	}
+                if (channel_id) post.channel_id = channel_id;
+                if (feed_id) post.feed_id = feed_id;
+                if (parent_id) post.parent_id = parent_id;
+                if (boost_amount) post.boost_amount = boost_amount;
+                Object.assign(post, analysis, flags);
+                post.updated_at = Sequelize.literal("CURRENT_TIMESTAMP(3)");
+                await post.save();
+                result = post;
+            }
+        }
+        //Publish draft as post
+        else if (draft_id && publish_draft === 'true') {
+            const draft = await PostDrafts.findByPk(draft_id);
+            const newPostId = v4();
+            const postData = {
+                post_id: newPostId,
+                channel_id,
+                content: contentUrl,
+                feed_id,
+                is_private,
+                parent_id,
+                poster_id,
+                title,
+                rank_hotness: -0.1,
+                boost_amount,
+                ...analysis,
+                ...flags
+            };
+            result = await Posts.create(postData);
+            await Feeds.increment('post_count', { by: 1, where: { feed_id } });
+            await FeedChannels.increment('post_count', { by: 1, where: { channel_id } });
+            if (draft) await PostDrafts.destroy({ where: { draft_id } });
+        }
+        //Create or update draft
+        else if (draft_id) {
+            const existingDraft = await PostDrafts.findByPk(draft_id);
+            if (existingDraft?.content) await UpdateMediaFiles(existingDraft.content, contentUrl);
+            result = await PostDrafts.upsert({
+                draft_id,
+                feed_id,
+                channel_id,
+                parent_id: parent_id || null,
+                content: contentUrl,
+                title: title || null,
+                poster_id
+            });
+        }
+        //Create new post
+        else {
+            const newPostId = v4();
+            const postData = {
+                post_id: newPostId,
+                channel_id,
+                content: contentUrl,
+                feed_id,
+                is_private,
+                parent_id,
+                poster_id,
+                title,
+                rank_hotness: -0.1,
+                boost_amount,
+                ...analysis,
+                ...flags
+            };
+            result = await Posts.create(postData);
+			console.log("/create_post result:", result);
+            await Feeds.increment('post_count', { by: 1, where: { feed_id } });
+            await FeedChannels.increment('post_count', { by: 1, where: { channel_id } });
+            if (parent_id) {
+                const parentPost = await Posts.findOne({ where: { post_id: parent_id } });
+                if (parentPost) {
+                    parentPost.replies += 1;
+                    await parentPost.save();
+                }
+            }
+        }
+        return res.status(200).json({ success: true, result });
+    } catch (error) {
+        if (req.files?.length > 0) {
+            for (const file of req.files) {
+                try {
+                    if (process.env.NODE_ENV === "production") {
+                        await DeleteFromS3(`content/${file.filename}`);
+                    } else if (fs.existsSync(file.path)) {
+                        fs.unlinkSync(file.path);
+                    }
+                } catch (cleanupErr) {
+                    console.error(new Date().toISOString(), 'Failed to cleanup file:', cleanupErr);
+                }
+            }
+        }
+        console.error(new Date().toISOString(), '/create_post error:', error);
+        return res.status(500).json({ success: false, message: "Error creating post" });
+    }
 });
 
 router.post("/explore_posts", standardLimiter, async (req, res) => {

@@ -20,8 +20,6 @@ const excludedAttrs = [
     'has_images',
     'has_videos',
     'has_interactive',
-    'has_external_posts',
-    'has_embedded_websites',
     'has_text',
     'image_count',
     'video_count',
@@ -155,11 +153,7 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
 			if (contentType.images === false) algorithmFilters.has_images = false;
 			if (contentType.videos === false) algorithmFilters.has_videos = false;
 			if (contentType.text === false) algorithmFilters.has_text = false;
-			    if (contentType.interactive === false) {
-					algorithmFilters.has_interactive = false;
-					algorithmFilters.has_external_posts = false;
-					algorithmFilters.has_embedded_websites = false;
-				}
+			if (contentType.interactive === false) algorithmFilters.has_interactive = false;
 			//Word limits only apply if has_text = true
 			if (Number.isFinite(wordLimits.min)) {
 				algorithmFilters.word_count = { [Op.gte]: wordLimits.min };

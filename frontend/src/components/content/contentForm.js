@@ -1,4 +1,3 @@
-import { ALLOWED_EMBED_HOSTS, ALLOWED_SCRIPTS, SAFE_UTILITY_HOSTS } from '../../embedHost';
 import api from '../../api';
 import { AuthContext } from '../authContext'
 import { Crown } from 'lucide-react';
@@ -6,78 +5,15 @@ import ConfirmModal from '../modals/confirmModal';
 import ContentWidget from './contentWidget'
 import Cropper from 'react-easy-crop';
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd'
-import { FaAlignCenter, FaArrowCircleUp, FaArrowRight, FaCircleNotch, FaCommentAlt, FaCopy, FaCube, FaCrop, FaEdit, FaEllipsisV, FaEye, FaFileAlt, FaFont, FaGripVertical, FaLink, FaPhotoVideo, FaReply, FaSave, FaShareAlt, FaTerminal, FaTimes, FaToolbox, FaTrash } from 'react-icons/fa'
+import { FaAlignCenter, FaArrowCircleUp, FaArrowRight, FaCircleNotch, FaCommentAlt, FaCopy, FaCube, FaCrop, FaEdit, FaEllipsisV, FaEye, FaFileAlt, FaFont, FaGripVertical, FaPhotoVideo, FaReply, FaSave, FaTerminal, FaTimes, FaToolbox, FaTrash } from 'react-icons/fa'
 import GetCroppedImg from '../../functions/getCroppedImg';
-import InputModal from '../modals/inputModal';
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import PropTypes from 'prop-types'
 import ReactQuill from 'react-quill'
 import { useCallback, useContext, useEffect, useRef, useState } from 'react'
 import { v4 } from 'uuid'
 import 'react-quill/dist/quill.snow.css'
 
 const BLOCK_TYPES = { APP: 'APP', CODE: 'CODE', MEDIA: 'MEDIA', TEXT: 'TEXT' }
-
-const escapeHtml = (html) =>
-    html
-        .replace(/&/g, '&amp;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#39;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-
-function isAllowedHost(url) {
-	try {
-		const parsed = new URL(url);
-		const host = parsed.hostname.replace(/^www\./, '');
-		return ALLOWED_EMBED_HOSTS.some(h => host.endsWith(h));
-	} catch {
-		return false;
-	}
-}
-
-function sanitizeEmbedHtml(raw) {
-	if (/<script|on\w+=|javascript:/i.test(raw)) {
-		//Extract all <script> sources
-		const allScripts = Array.from(raw.matchAll(/<script[^>]+src=["']([^"']+)["']/gi)).map(m => {
-			let src = m[1].trim();
-			//Normalise protocol-relative URLs (e.g. //www.instagram.com/embed.js)
-			if (src.startsWith('//')) src = 'https:' + src;
-			//Strip query strings or fragments for consistent comparison
-			try {
-				const u = new URL(src, 'https://');
-				src = `${u.origin}${u.pathname}`;
-			} catch {}
-			return src;
-		});
-		//Block disallowed scripts
-		const disallowed = allScripts.filter(src =>
-			!ALLOWED_SCRIPTS.some(allow => src === allow || src.startsWith(allow))
-		);
-		if (disallowed.length > 0) {
-			throw new Error(`Unsafe script detected: ${disallowed.join(', ')}`);
-		}
-	}
-	// Scan for all URLs (images, SVGs, metadata)
-	const allUrls = Array.from(raw.matchAll(/https?:\/\/[^\s"']+/gi)).map(m => m[0]);
-	//Verify each URL is from an allowed or safe host
-	const allAllowed = allUrls.every(url => {
-		try {
-			const parsed = new URL(url);
-			const host = parsed.hostname.replace(/^www\./, '');
-			//Skip known harmless technical or CDN domains
-			if (SAFE_UTILITY_HOSTS.some(h => host.endsWith(h))) return true;
-			//Otherwise must be an approved embed host
-			return isAllowedHost(url);
-		} catch {
-			return true; //ignore malformed or relative references
-		}
-	});
-	if (!allAllowed) {
-		throw new Error('Unsupported or unsafe embed host.');
-	}
-	return raw;
-}
 
 //Split compiled post into content blocks
 const parseContentBlocks = htmlString => {
@@ -192,8 +128,6 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
     const hasMembership = user?.has_membership
     const isDraft = Boolean(draftId)
     const iframeRefs = useRef({})
-    const [isIframeModalOpen, setIsIframeModalOpen] = useState(false)
-    const [isSocialModalOpen, setIsSocialModalOpen] = useState(false)
     const [isPostingDraft, setIsPostingDraft] = useState(false)
     const [isSubmitting, setIsSubmitting] = useState(false)
     const navigate = useNavigate()
@@ -219,14 +153,6 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
             navigate(`/${urlPrefix}/${feed_name}/${channel_name}`)
         }
     }, [isAuthenticated, navigate, urlPrefix, feed_name, channel_name, post?.id])
-
-    const addIframe = () => {
-        setIsIframeModalOpen(true);
-    };
-
-    const addSocialMedia = () => {
-        setIsSocialModalOpen(true);
-    };
 
     const appFileChange = useCallback(async e => {
         const blockId  = v4()
@@ -374,10 +300,11 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
                         `</div>`
                 }
                 else if (block.type === BLOCK_TYPES.CODE) {
-                    const trustedAttr = block.data.isTrustedEmbed ? ` data-origin="aether-social"` : '';
                     finalHTML +=
-                        `<div class="content-block code-block"${trustedAttr}` +
-                        ` data-blockid="${block.id}">${block.data.code || ''}</div>`;
+                        `<div class="content-block code-block"` +
+                        ` data-blockid="${block.id}">` +
+                        `${block.data.code || ''}` +
+                        `</div>`;
                 }
                 else if (block.type === BLOCK_TYPES.MEDIA) {
                     const { align, url, fileType, isImage, isVideo } = block.data
@@ -727,85 +654,6 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
         });
     }, [MAX_FILE_SIZE, MAX_VIDEO_SIZE, BLOCK_LIMIT, blocks.length, hasMembership]);
 
-    const iframeConfirm = (urlInput) => {
-        try {
-            const normalisedUrl = urlInput.startsWith('http://') || urlInput.startsWith('https://')
-                ? urlInput
-                : `https://${urlInput}`;
-            const parsedUrl = new URL(normalisedUrl);
-            if (parsedUrl.protocol !== 'http:' && parsedUrl.protocol !== 'https:') {
-                alert('Please enter a valid http or https URL');
-                return;
-            }
-            const iframeCode = `<html style="height:100%">
-                <head>
-                    <style>
-                        html, body {
-                            margin: 0;
-                            height: 100%;
-                            overflow: hidden;
-                        }
-                    </style>
-                </head>
-                <body>
-                    <div style="width:100%; height:100vh">
-                        <iframe class="embedded-website" src="${parsedUrl.href}" style="width:100%; height:100%; border:none;" sandbox="allow-scripts" referrerpolicy="no-referrer"></iframe>
-                    </div>
-                </body>
-            </html>`;
-            handleAddBlock(BLOCK_TYPES.CODE, { code: iframeCode, isBlockLoading: false, showPrompt: false });
-        } catch (error) {
-            alert('Please enter a valid URL (e.g., https://example.com)');
-        }
-        setIsIframeModalOpen(false);
-    };
-
-    const socialConfirm = (input) => {
-        if (!input) return;
-        let embedCode = input.trim();
-        try {
-            //If the user pasted a plain URL
-            if (!embedCode.startsWith('<')) {
-                const parsed = new URL(embedCode.startsWith('http') ? embedCode : `https://${embedCode}`);
-                if (!isAllowedHost(parsed.href))
-                    throw new Error('Unsupported social site.');
-                embedCode = `<iframe class="social-media-embed" src="${parsed.href}" 
-                    style="width:100%;border:none;" allowfullscreen></iframe>`;
-            }
-            //If user pasted raw HTML embed code
-            else {
-                try {
-                    const cleaned = sanitizeEmbedHtml(embedCode);
-                    const allUrls = Array.from(cleaned.matchAll(/https?:\/\/[^\s"']+/gi)).map(m => m[0]);
-                    const allAllowed = allUrls.every(url => {
-                        try {
-                            const parsed = new URL(url);
-                            const host = parsed.hostname.replace(/^www\./, '');
-                            if (SAFE_UTILITY_HOSTS.some(h => host.endsWith(h))) return true;
-                            return isAllowedHost(url);
-                        } catch {
-                            return true;
-                        }
-                    });
-                    if (!allAllowed) throw new Error('Unsupported or unsafe embed host.');
-                    embedCode = `<div class="social-media-embed" style="width:100%;display:flex;justify-content:center;">${cleaned}</div>`;
-                } catch (err) {
-                    alert(err.message || 'Invalid embed code.');
-                    return;
-                }
-            }
-            handleAddBlock(BLOCK_TYPES.CODE, {
-                code: embedCode,
-                isBlockLoading: false,
-                showPrompt: false,
-                isTrustedEmbed: true
-            });
-        } catch (err) {
-            alert(err.message || 'Invalid embed');
-        }
-        setIsSocialModalOpen(false);
-    };
-
     const onDragEnd = useCallback(result => {
         const { destination, source } = result
         if (!destination) return
@@ -848,8 +696,6 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
         }
         const finalHTML = compileFinalHTML(blocks);
         const formData = new FormData();
-        const hasTrustedEmbeds = blocks.some(b => b.data.isTrustedEmbed);
-        formData.append('has_trusted_embeds', hasTrustedEmbeds);
         formData.append('content', finalHTML);
         if (!isReply) formData.append('title', title);
         if (isReply && post) formData.append('parent_id', post.post_id);
@@ -876,7 +722,6 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
                 setDraftId(savedDraft?.draft_id || draftId || id);
             }
         } catch (error) {
-            console.log("error saving draft:", error);
             setPostErrorMessage(error.response?.data?.message || 'Error saving draft.');
             setTimeout(() => setPostErrorMessage(''), 5000);
         }
@@ -895,8 +740,6 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
             const finalHTML = compileFinalHTML(blocks);
             const formData = new FormData();
             const postId = post?.post_id;
-            const hasTrustedEmbeds = blocks.some(b => b.data.isTrustedEmbed);
-            formData.append('has_trusted_embeds', hasTrustedEmbeds);
             const hasImages = blocks.some(b => b.type === BLOCK_TYPES.MEDIA && b.data.isImage);
             const hasVideos = blocks.some(b => b.type === BLOCK_TYPES.MEDIA && b.data.isVideo);
             const hasInteractive = blocks.some(b =>
@@ -904,12 +747,6 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
                 (b.type === BLOCK_TYPES.CODE && 
                     !b.data.code?.includes('social-media-embed') &&
                     !b.data.code?.includes('embedded-website'))
-            );
-            const hasExternalPosts = blocks.some(b => 
-                b.type === BLOCK_TYPES.CODE && b.data.code?.includes('social-media-embed')
-            );
-            const hasEmbeddedWebsites = blocks.some(b => 
-                b.type === BLOCK_TYPES.CODE && b.data.code?.includes('embedded-website')
             );
             const hasText = blocks.some(b => 
                 b.type === BLOCK_TYPES.TEXT && b.data.html?.trim() !== ''
@@ -922,8 +759,6 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
             formData.append('has_images', hasImages)
             formData.append('has_videos', hasVideos)
             formData.append('has_interactive', hasInteractive)
-            formData.append('has_external_posts', hasExternalPosts)
-            formData.append('has_embedded_websites', hasEmbeddedWebsites)
             formData.append('has_text', hasText)
             formData.append('image_count', imageCount)
             formData.append('video_count', videoCount)
@@ -957,7 +792,6 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
             setBlocks([]);
             setPostErrorMessage('');
         } catch (error) {
-            console.log("error submitting form:", error);
             setPostErrorMessage(error.response?.data?.message || 'Error submitting the form.');
             setTimeout(() => { setPostErrorMessage(''); }, 5000);
         }
@@ -1008,12 +842,6 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
                                     {/*<button className="small-icon" type="button" onClick={() => { setAddContentDropdownOpen(false); document.getElementById('app-input').click(); }}>
                                         <FaCube /><span className="icon-text">App</span>
                                     </button>*/}
-                                    {/*<button className="small-icon" type="button" onClick={() => { setAddContentDropdownOpen(false); addIframe(); } }>
-                                        <FaLink /><span className="icon-text">Website</span>
-                                    </button>*/}
-                                    <button className="small-icon" type="button" onClick={() => { setAddContentDropdownOpen(false); addSocialMedia(); } }>
-                                        <FaShareAlt /><span className="icon-text">External Post</span>
-                                    </button>
                                 </div>
                             )}
                         </div>
@@ -1171,7 +999,7 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
                                                                         </div>
                                                                     )}
                                                                     <div style={{ position: 'relative', marginLeft: 'auto' }}>
-                                                                        {(type === BLOCK_TYPES.MEDIA || (type === BLOCK_TYPES.CODE && !(data.code?.includes('social-media-embed') || data.code?.includes('embedded-website')))) && (
+                                                                        {(type === BLOCK_TYPES.MEDIA || (type === BLOCK_TYPES.CODE)) && (
                                                                             <button className="small-icon" onClick={() => removeBlock(id)} title="Delete" type="button"><FaTrash /></button>
                                                                         )}
                                                                         {(type === BLOCK_TYPES.CODE && (data.code?.includes('social-media-embed') || data.code?.includes('embedded-website'))) && (
@@ -1243,13 +1071,10 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
                                                             )}
                                                             {type === BLOCK_TYPES.CODE && (
                                                                 <div className="block-content">
-                                                                    {!data.showPrompt && isEditing && !(data.code?.includes('embedded-website') || data.code?.includes('social-media-embed')) && (
+                                                                    {!data.showPrompt && isEditing && (
                                                                         <p className="small-text faded-text">For now, only one HTML file with inline JavaScript and CSS can be created.</p>
                                                                     )}
-                                                                    {isEditing && !(
-                                                                        data.code?.includes('embedded-website') ||
-                                                                        data.code?.includes('social-media-embed')
-                                                                    ) && (
+                                                                    {isEditing && (
                                                                         <>
                                                                             {data.showPrompt ? (
                                                                                 <div className="ai-generator">
@@ -1402,8 +1227,6 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
             </form>
         </div>
         <ConfirmModal isOpen={showDeleteConfirm} onConfirm={confirmDelete} onCancel={cancelDelete} title={`Delete ${pendingDeleteAction}`} message={`Are you sure you want to delete this ${pendingDeleteAction}?`} />
-        <InputModal isOpen={isIframeModalOpen} title="Enter website URL" placeholder="https://example.com" onConfirm={iframeConfirm} onCancel={() => setIsIframeModalOpen(false)} />
-        <InputModal isOpen={isSocialModalOpen} title="Enter social media embed code" placeholder="Paste embed code" onConfirm={socialConfirm} onCancel={() => setIsSocialModalOpen(false)} />
         </>
     )
 }

@@ -432,3 +432,7 @@ WHERE feed_id IN (
 
 ALTER TABLE posts
 	ADD COLUMN boost_amount FLOAT DEFAULT 1.0;
+
+ALTER TABLE posts
+	DROP COLUMN has_embedded_websites,
+	DROP COLUMN has_external_posts;

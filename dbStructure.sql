@@ -254,8 +254,6 @@ CREATE TABLE `posts` (
   `has_images` BOOLEAN DEFAULT FALSE,
   `has_videos` BOOLEAN DEFAULT FALSE,
   `has_interactive` BOOLEAN DEFAULT FALSE,
-  `has_external_posts` BOOLEAN DEFAULT FALSE,
-  `has_embedded_websites` BOOLEAN DEFAULT FALSE,
   `has_text` BOOLEAN DEFAULT FALSE,
   `image_count` INT DEFAULT 0,
   `video_count` INT DEFAULT 0,

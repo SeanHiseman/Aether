@@ -106,8 +106,6 @@ const Posts = sequelize.define('posts', {
     has_images: { type: BOOLEAN, defaultValue: false },
     has_videos: { type: BOOLEAN, defaultValue: false },
     has_interactive: { type: BOOLEAN, defaultValue: false },
-    has_external_posts: { type: BOOLEAN, defaultValue: false },
-    has_embedded_websites: { type: BOOLEAN, defaultValue: false },
     has_text: { type: BOOLEAN, defaultValue: false },
     image_count: { type: INTEGER, defaultValue: 0 },
     video_count: { type: INTEGER, defaultValue: 0 },

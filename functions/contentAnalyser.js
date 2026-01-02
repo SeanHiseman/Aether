@@ -43,8 +43,6 @@ export class ContentAnalyser {
         const images = $('img').length; //Change to detecting images in media blocks
         const videos = $('video').length; //Change to detecting videos in media blocks
         const interactive = $('.content-block.code-block, .content-block.app-block, pre, iframe, canvas').length;
-        const externalPosts = $('div.social-media-embed').length;
-        const embeddedWebsites = $('iframe.embedded-website').length;
         let totalVideoLength = 0;
         $('video').each((_, el) => {
             const durationAttr = $(el).attr('data-duration');
@@ -59,8 +57,6 @@ export class ContentAnalyser {
             has_images: images > 0,
             has_videos: videos > 0,
             has_interactive: interactive > 0,
-            has_external_posts: externalPosts > 0,
-            has_embedded_websites: embeddedWebsites > 0,
             image_count: images,
             video_count: videos,
             video_length: totalVideoLength,

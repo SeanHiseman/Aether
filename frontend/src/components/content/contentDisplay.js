@@ -3,7 +3,7 @@ import AppWebContainer from './appWebContainer'
 import { useEffect, useRef, useState } from 'react'
 
 const ContentDisplay = ({ post, isFullscreen = false, onCodeAppChange = () => {}, onHeightChange = () => {}, onOverflowChange = () => {}, redirect = true, showFullContent = false, showScrollBar = true }) => {
-	//console.log("post:", post);
+	console.log("post:", post);
 	const [blocks, setBlocks] = useState([]);
 	const content = post?.content;
 	const contentRef = useRef(null);
@@ -48,7 +48,6 @@ const ContentDisplay = ({ post, isFullscreen = false, onCodeAppChange = () => {}
 							code: div.getAttribute('data-code') || div.innerHTML.trim(),
 							id,
 							type: 'code',
-							isTrustedEmbed: div.getAttribute('data-trusted') === 'true' //read trust flag from backend
 						});
 					} else if (div.classList.contains('media-block')) {
 						const align = div.getAttribute('data-align') || 'left';
@@ -186,11 +185,7 @@ const ContentDisplay = ({ post, isFullscreen = false, onCodeAppChange = () => {}
 							}}
 						>
 							<iframe
-								sandbox={
-									block.isTrustedEmbed
-										? "allow-scripts allow-same-origin allow-downloads allow-popups allow-forms allow-modals"
-										: "allow-scripts allow-downloads allow-popups allow-forms allow-modals"
-								}
+								sandbox={"allow-scripts allow-downloads allow-popups allow-modals"}
 								srcDoc={block.code}
 								style={{
 									border: 'none',
