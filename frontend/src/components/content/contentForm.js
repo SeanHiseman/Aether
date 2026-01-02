@@ -5,7 +5,7 @@ import ConfirmModal from '../modals/confirmModal';
 import ContentWidget from './contentWidget'
 import Cropper from 'react-easy-crop';
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd'
-import { FaAlignCenter, FaArrowCircleUp, FaArrowRight, FaCircleNotch, FaCommentAlt, FaCopy, FaCube, FaCrop, FaEdit, FaEllipsisV, FaEye, FaFileAlt, FaFont, FaGripVertical, FaPhotoVideo, FaReply, FaSave, FaTerminal, FaTimes, FaToolbox, FaTrash } from 'react-icons/fa'
+import { FaAlignCenter, FaArrowCircleUp, FaArrowRight, FaCircleNotch, FaCommentAlt, FaCopy, FaCube, FaCrop, FaEdit, FaEllipsisV, FaEye, FaFileAlt, FaFont, FaGripVertical, FaImage, FaReply, FaSave, FaTerminal, FaTimes, FaToolbox, FaTrash, FaVideo } from 'react-icons/fa'
 import GetCroppedImg from '../../functions/getCroppedImg';
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import ReactQuill from 'react-quill'
@@ -537,11 +537,14 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
         });
     }, [blocks.length, BLOCK_LIMIT, hasMembership]);
 
-    const handleFilesChange = useCallback(event => {
+    const handleFilesChange = useCallback((event, mediaType = null) => {
         if (!isAuthenticated) return;
         setBlockLimitError('');
         setPostErrorMessage('');
         const files = Array.from(event.target.files);
+        const filteredFiles = mediaType
+            ? files.filter(f => f.type.startsWith(mediaType === 'image' ? 'image/' : 'video/'))
+            : files;
         const ALLOWED_MIME_TYPES = [
             'image/jpeg',
             'image/png',
@@ -569,7 +572,7 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
             '.webm',
             '.mkv'
         ];
-        const invalidTypes = files.filter(f => {
+        const invalidTypes = filteredFiles.filter(f => {
             const ext = f.name.substring(f.name.lastIndexOf('.')).toLowerCase();
             return !ALLOWED_MIME_TYPES.includes(f.type) || !ALLOWED_EXTENSIONS.includes(ext);
         });
@@ -588,7 +591,7 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
             );
             return;
         }
-        const oversized = files.filter(f => {
+        const oversized = filteredFiles.filter(f => {
             const isVideo = f.type.startsWith('video/');
             const maxSize = isVideo ? MAX_VIDEO_SIZE : MAX_FILE_SIZE;
             return f.size > maxSize;
@@ -607,7 +610,7 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
         }
         setPostErrorMessage('')
         const canFitCount = Math.max(0, BLOCK_LIMIT - blocks.length)
-        const fittingFiles = hasMembership ? files : files.slice(0, canFitCount)
+        const fittingFiles = hasMembership ? filteredFiles : filteredFiles.slice(0, canFitCount)
         const uniqueFiles = fittingFiles.map(file => {
             const ext = file.name.substring(file.name.lastIndexOf('.'))
             const uniqueName = `${Date.now()}-${v4()}${ext}`
@@ -652,7 +655,7 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
                 });
             }
         });
-    }, [MAX_FILE_SIZE, MAX_VIDEO_SIZE, BLOCK_LIMIT, blocks.length, hasMembership]);
+    }, [MAX_FILE_SIZE, MAX_VIDEO_SIZE, BLOCK_LIMIT, blocks.length, hasMembership, isAuthenticated, handleAddBlock]);
 
     const onDragEnd = useCallback(result => {
         const { destination, source } = result
@@ -833,8 +836,11 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
                                     <button className="small-icon" type="button" onClick={() => { setAddContentDropdownOpen(false); handleAddBlock(BLOCK_TYPES.TEXT); } }>
                                         <FaFont /><span className="icon-text">Text</span>
                                     </button>
-                                    <button className="small-icon" type="button" onClick={() => { setAddContentDropdownOpen(false); document.getElementById('media-input').click(); } }>
-                                        <FaPhotoVideo /><span className="icon-text">Media</span>
+                                    <button className="small-icon" type="button" onClick={() => { setAddContentDropdownOpen(false); document.getElementById('image-input').click(); } }>
+                                        <FaImage /><span className="icon-text">Image</span>
+                                    </button>
+                                    <button className="small-icon" type="button" onClick={() => { setAddContentDropdownOpen(false); document.getElementById('video-input').click(); } }>
+                                        <FaVideo /><span className="icon-text">Video</span>
                                     </button>
                                     <button className="small-icon" type="button" onClick={() => { setAddContentDropdownOpen(false); handleAddBlock(BLOCK_TYPES.CODE); } }>
                                         <FaToolbox /><span className="icon-text">Custom</span>
@@ -900,7 +906,8 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
                         type="text"
                         value={title} />
                 )}
-                <input accept="image/*,video/*" hidden id="media-input" multiple onChange={handleFilesChange} type="file" />
+                <input accept="image/*" hidden id="image-input" multiple onChange={(e) => handleFilesChange(e, 'image')} type="file" />
+                <input accept="video/*" hidden id="video-input" multiple onChange={(e) => handleFilesChange(e, 'video')} type="file" />
                 <input accept=".zip" hidden id="app-input" onChange={appFileChange} type="file" />
                 <div className='single-container'>
                     <DragDropContext onDragEnd={onDragEnd}>
