@@ -5,6 +5,7 @@ import { ChunkFeeds } from '../functions/chunkFeeds';
 import ContentWidget from '../components/content/contentWidget';
 import { FaChevronDown, FaChevronUp } from 'react-icons/fa';
 import FeedWidget from '../components/content/feedWidget';
+import SwipeableAside from '../components/swipeableAside';
 import { useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { useOutletContext, useSearchParams } from 'react-router-dom';
 const FETCH_LIMIT = 100;
@@ -24,12 +25,19 @@ const SearchResults = () => {
 	const [searchParams] = useSearchParams();
 	const keyword = (searchParams.get('keyword') || '').trim();
 	const { isAuthenticated, viewer } = useContext(AuthContext);
-	const { rightClasses, updateFeeds } = useOutletContext();
+	const { rightClasses, updateFeeds, closeDrawers, mobileOpen } = useOutletContext(); 
 	const [refreshTrigger, setRefreshTrigger] = useState(0);
 	const shownPostIdsRef = useRef([]);
 	const shownFeedIdsRef = useRef([]);
 	const scrollRef = useRef(null);
 
+    const isMobile = () => window.matchMedia("(max-width:768px)").matches;
+    
+    const computedRightClasses = [
+        rightClasses,
+        isMobile() && mobileOpen === "right" ? "open" : ""
+    ].filter(Boolean).join(" ");
+	
 	const fetchPosts = useCallback(async (page = 0) => {
 		try {
 			setIsLoading(true);
@@ -261,7 +269,7 @@ const SearchResults = () => {
 					</>
 				)}
 			</div>
-			<aside className={rightClasses}>
+			<SwipeableAside className={computedRightClasses} position="right" isOpen={mobileOpen === "right"} onClose={closeDrawers}>
 				{keyword && <p className="large-text bold">Results for "{keyword}"</p>}
 				<div className="error-message">{errorMessage}</div>
 				<nav className="channel-list">
@@ -284,7 +292,7 @@ const SearchResults = () => {
 					</ul>
 				</nav>
 				<AlgorithmSelector display={false} isAuthenticated={isAuthenticated} locationId={'search'} refreshPosts={refreshPosts} />
-			</aside>
+			</SwipeableAside>
 		</div>
 	);
 };

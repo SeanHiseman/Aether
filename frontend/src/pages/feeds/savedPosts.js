@@ -1,11 +1,12 @@
 import api from '../../api';
-import { v4 } from 'uuid';
 import { AuthContext } from '../../components/authContext';
-import { FaPlus } from 'react-icons/fa';
-import { useCallback, useContext, useEffect, useState, useRef } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
 import ChannelList from '../../components/channels/channelList';
 import ContentWidget from '../../components/content/contentWidget';
+import { FaPlus } from 'react-icons/fa';
+import { Link, useNavigate, useOutletContext, useParams } from 'react-router-dom';
+import SwipeableAside from '../../components/swipeableAside';
+import { useCallback, useContext, useEffect, useState, useRef } from 'react';
+import { v4 } from 'uuid';
 const FETCH_LIMIT = 50;
 
 //Currently awaiting implementation of saved channels
@@ -19,7 +20,15 @@ const SavedPosts = () => {
 	const [hasMore, setHasMore] = useState(true);
 	const [offset, setOffset] = useState(0);
 	const navigate = useNavigate();
+	const { rightClasses, updateFeeds, closeDrawers, mobileOpen } = useOutletContext(); 
 	const scrollRef = useRef(null);
+
+	const isMobile = () => window.matchMedia("(max-width:768px)").matches;
+    
+    const computedRightClasses = [
+        rightClasses,
+        isMobile() && mobileOpen === "right" ? "open" : ""
+    ].filter(Boolean).join(" ");
 
 	const fetchPosts = useCallback(async (reset = false) => {
 		setIsLoading(true);
@@ -116,7 +125,7 @@ const SavedPosts = () => {
 				{/*})}*/}
 				{/*{!currentChannel && <p className="large-text">Choose a channel</p>}*/}
 			</div>
-			<aside className="right-aside">
+			<SwipeableAside className={computedRightClasses} position="right" isOpen={mobileOpen === "right"} onClose={closeDrawers}>
 				<p className="large-text">Saved posts</p>
 				{/*<button className="small-icon" onClick={addChannel} title="New channel">
 					<FaPlus />
@@ -132,7 +141,7 @@ const SavedPosts = () => {
 					setChannels={setChannels}
 				/>*/}
 				<div className="error-message">{savedError}</div>
-			</aside>
+			</SwipeableAside>
 		</div>
 	);
 };

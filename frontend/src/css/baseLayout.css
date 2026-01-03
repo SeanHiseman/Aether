@@ -548,6 +548,7 @@ ul {
     top: var(--header-height); /* header height                    */
     height: calc(100% - var(--header-height));
     margin-top: 0; /* cancel the desktop 16-px margin  */
+    transition: transform 0.2s ease-out;
   }
   .search-container {
     width: 60vw;
@@ -570,6 +571,10 @@ ul {
   .left-aside.open,
   .right-aside.open {
     transform: translateX(0);
+  }
+  .left-aside.swiping,
+  .right-aside.swiping {
+      transition: none; /* Disable transition during active swipe for responsiveness */
   }
   .content {
     margin-left: 0;

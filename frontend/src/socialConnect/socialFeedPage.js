@@ -6,6 +6,7 @@ import ConfirmModal from "../components/modals/confirmModal";
 import DisconnectSocialButton from "./disconnectSocialButton";
 import ExternalPostWidget from "./externalPostWidget";
 import { refreshConnectedAccounts } from "../functions/refreshConnectedAccounts";
+import SwipeableAside from "../components/swipeableAside";
 import { useContext, useEffect, useState, useRef } from 'react';
 import { useLocation, useNavigate, useOutletContext } from "react-router-dom";
 
@@ -21,13 +22,19 @@ export default function SocialFeedPage({ platform }) {
 	const location = useLocation();
 	const params = new URLSearchParams(location.search);
 	const justConnected = params.get("connected") === "true";
-	//console.log("socialFeedPage location:", location);
 	const [modalOpen, setModalOpen] = useState(false);
 	const isFetchingRef = useRef(false);
-	const { rightClasses } = useOutletContext(); 
+	const { rightClasses, updateFeeds, closeDrawers, mobileOpen } = useOutletContext(); 
 	const scrollRef = useRef(null);
 	const hasLoadedRef = useRef(false); 
 	const navigate = useNavigate();
+
+	const isMobile = () => window.matchMedia("(max-width:768px)").matches;
+    
+    const computedRightClasses = [
+        rightClasses,
+        isMobile() && mobileOpen === "right" ? "open" : ""
+    ].filter(Boolean).join(" ");
 
 	async function loadFeed(isNextPage = false) {
 		if (!isAuthenticated) {
@@ -160,7 +167,6 @@ export default function SocialFeedPage({ platform }) {
 	}, [hasMore, platform, isAuthenticated, offset]);
 
 	const refreshPosts = () => {
-		console.log("refreshing posts for", platform);
 		setErrorMessage('');
 		setOffset(0);
 		setHasMore(true);
@@ -177,9 +183,9 @@ export default function SocialFeedPage({ platform }) {
 				<div className="channel-feed">
 					<p className="large-text faded-text">Log in to view your {capitalise(platform)} feed.</p>
 				</div>
-				<aside className="right-aside">
+				<SwipeableAside className={computedRightClasses} position="right" isOpen={mobileOpen === "right"} onClose={closeDrawers}>
 					<p className="large-text bold">{platform || "Site not found"}</p>
-				</aside>
+				</SwipeableAside>
 			</div>
 		);
 	}
@@ -207,13 +213,13 @@ export default function SocialFeedPage({ platform }) {
 					</div>
 				)}
 			</div>
-			<aside className={rightClasses}>
+			<SwipeableAside className={computedRightClasses} position="right" isOpen={mobileOpen === "right"} onClose={closeDrawers}>
 				<p className="large-text bold">{capitalise(platform) || "Site not found"}</p>
 				<p className="small-text faded-text">{errorMessage}</p>
 				<AlgorithmSelector display={false} isAuthenticated={isAuthenticated} locationId={platform} refreshPosts={refreshPosts} />
 				<p className="tiny-text faded-text">Click to disconnect</p>
 				<DisconnectSocialButton socialIcon={`/media/site_images/social_sites/${platform}-logo.png`} socialName={capitalise(platform)} platform={platform} onRequestDisconnect={requestDisconnect} />
-			</aside>
+			</SwipeableAside>
 		</div>
 		<ConfirmModal
 			isOpen={modalOpen}

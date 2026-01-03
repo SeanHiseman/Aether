@@ -3,6 +3,7 @@ import { AuthContext } from '../../components/authContext';
 import ConfirmModal from '../../components/modals/confirmModal';
 import ConnectionWidget from './connectionWidget';
 import FeedItem from '../../components/channels/feedItem';
+import SwipeableAside from '../../components/swipeableAside';
 import { useOutletContext } from 'react-router-dom';
 import { UnreadContext } from '../../components/messages/unreadContext';
 import { useContext, useEffect, useState } from 'react';
@@ -18,9 +19,16 @@ const MessagesPage = () => {
     const [hasMoreRequests, setHasMoreRequests] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [requestsOffset, setRequestsOffset] = useState(0);
-    const { rightClasses } = useOutletContext(); 
+    const { rightClasses, updateFeeds, closeDrawers, mobileOpen } = useOutletContext(); 
     const { dispatch } = useContext(UnreadContext);
     const { viewer } = useContext(AuthContext);
+
+    const isMobile = () => window.matchMedia("(max-width:768px)").matches;
+    
+    const computedRightClasses = [
+        rightClasses,
+        isMobile() && mobileOpen === "right" ? "open" : ""
+    ].filter(Boolean).join(" ");
 
     const loadMoreConnections = async () => {
         try {
@@ -284,7 +292,7 @@ const MessagesPage = () => {
                     )}
                 </div>
             </div>
-            <aside className={rightClasses}>
+            <SwipeableAside className={computedRightClasses} position="right" isOpen={mobileOpen === "right"} onClose={closeDrawers}>
                 <nav className="feed-list">
                     <p className="large-text">Messages</p>
                     <p className="small-text faded-text">Coming soon!</p>
@@ -294,7 +302,7 @@ const MessagesPage = () => {
                         ))}
                     </ul>*/}
                 </nav>
-            </aside>
+            </SwipeableAside>
         </div>
         <ConfirmModal
             isOpen={isModalOpen}

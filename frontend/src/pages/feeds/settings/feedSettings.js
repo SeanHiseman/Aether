@@ -1,9 +1,10 @@
 import api from '../../../api';
+import { applyTheme, DEFAULT_THEME_COLORS, ThemeContext } from '../../../themeProvider';
 import { AuthContext } from '../../../components/authContext';
 import { FaSignOutAlt } from 'react-icons/fa';
 import { FormatNumber } from '../../../functions/formatNumber';
 import { Link, Outlet, useNavigate, useOutletContext, useParams } from 'react-router-dom';
-import { applyTheme, DEFAULT_THEME_COLORS, ThemeContext } from '../../../themeProvider';
+import SwipeableAside from '../../../components/swipeableAside';
 import { useContext, useEffect, useState } from 'react';
 
 const FeedSettings = () => {
@@ -14,10 +15,17 @@ const FeedSettings = () => {
     const [followRequestCount, setFollowRequestCount] = useState(0);
     const [isAuthorised, setIsAuthorised] = useState(false);
     const navigate = useNavigate();
-    const { rightClasses, updateFeeds } = useOutletContext(); 
+    const { rightClasses, updateFeeds, closeDrawers, mobileOpen } = useOutletContext(); 
     const { setTheme } = useContext(ThemeContext);
     const { user } = useContext(AuthContext);
     const urlPrefix = feed?.is_group ? 'g' : 'u';
+
+    const isMobile = () => window.matchMedia("(max-width:768px)").matches;
+    
+    const computedRightClasses = [
+        rightClasses,
+        isMobile() && mobileOpen === "right" ? "open" : ""
+    ].filter(Boolean).join(" ");
 
     useEffect(() => {
         const fetchFeedData = async () => {
@@ -82,7 +90,7 @@ const FeedSettings = () => {
             <div className="settings-area">
                 <Outlet context={{ feed, setFeed, user, followRequests, setFollowRequests, setFollowRequestCount, updateFeeds }} />
             </div>  
-            <aside className={rightClasses}>
+            <SwipeableAside className={computedRightClasses} position="right" isOpen={mobileOpen === "right"} onClose={closeDrawers}>
                 <nav id="channel-list">
                     <ul>
                         <Link id="feed-summary" to={`/${urlPrefix}/${feed_name}/Main`}>
@@ -139,7 +147,7 @@ const FeedSettings = () => {
                         )}
                     </ul>
                 </nav>
-            </aside>
+            </SwipeableAside>
         </div>
     );
 }

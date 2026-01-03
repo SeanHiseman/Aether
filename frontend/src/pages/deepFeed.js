@@ -7,6 +7,7 @@ import ExternalPostWidget from '../socialConnect/externalPostWidget';
 import { FaEdit, FaGlobe, FaHome, FaMinus, FaRegWindowClose, FaSave, FaTrash } from 'react-icons/fa';
 import FeedItem from '../components/channels/feedItem';
 import PlatformConnect from '../socialConnect/platformConnect';
+import SwipeableAside from '../components/swipeableAside';
 import { useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate, useOutletContext, useParams } from 'react-router-dom';
@@ -46,8 +47,15 @@ const DeepFeed = () => {
     const scrollRef = useRef(null);
     const navigate = useNavigate();
     const queryClient = useQueryClient();
-    const { rightClasses, updateFeeds } = useOutletContext(); 
+    const { rightClasses, updateFeeds, closeDrawers, mobileOpen } = useOutletContext(); 
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+    
+    const isMobile = () => window.matchMedia("(max-width:768px)").matches;
+    
+    const computedRightClasses = [
+        rightClasses,
+        isMobile() && mobileOpen === "right" ? "open" : ""
+    ].filter(Boolean).join(" ");
 
     useEffect(() => {
         if (!deep_feed_id || isFollowing) return;
@@ -362,7 +370,7 @@ const DeepFeed = () => {
                     <p className="large-text faded-text">No posts yet</p>
                 )}
             </div>
-            <aside className={rightClasses}>
+            <SwipeableAside className={computedRightClasses} position="right" isOpen={mobileOpen === "right"} onClose={closeDrawers}>
                 <div className="channel-name-section">
                     {isEditingName ? (
                         <div className="change-name">
@@ -452,7 +460,7 @@ const DeepFeed = () => {
                 {isAuthenticated && isFollowing && (
                     <PlatformConnect />
                 )}
-            </aside>
+            </SwipeableAside>
         </div>
         <ConfirmModal isOpen={showDeleteConfirm} onConfirm={confirmDelete} onCancel={cancelDelete} title={`Delete ${deepFeed?.name}`} message={`Are you sure you want to delete ${deepFeed?.name}?`} /></>
     );

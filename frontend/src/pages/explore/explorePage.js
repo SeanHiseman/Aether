@@ -5,6 +5,7 @@ import { ChunkFeeds } from "../../functions/chunkFeeds";
 import ContentWidget from "../../components/content/contentWidget";
 import FeedWidget from "../../components/content/feedWidget";
 import PlatformConnect from "../../socialConnect/platformConnect";
+import SwipeableAside from "../../components/swipeableAside";
 import { useMemo, useCallback, useContext, useEffect, useRef, useState } from "react";
 import { useOutletContext } from "react-router-dom";
 const FETCH_LIMIT = 100;
@@ -20,9 +21,16 @@ const ExplorePage = () => {
 	const [postPage, setPostPage] = useState(0);
 	const [posts, setPosts] = useState([]);
 	const { isAuthenticated, viewer } = useContext(AuthContext);
-	const { rightClasses, updateFeeds } = useOutletContext();
+	const { rightClasses, updateFeeds, closeDrawers, mobileOpen } = useOutletContext();
 	const [refreshTrigger, setRefreshTrigger] = useState(false);;
 	const scrollRef = useRef(null);
+
+	const isMobile = () => window.matchMedia("(max-width:768px)").matches;
+    
+    const computedRightClasses = [
+        rightClasses,
+        isMobile() && mobileOpen === "right" ? "open" : ""
+    ].filter(Boolean).join(" ");
 
 	const fetchPosts = useCallback(async (page = 0) => {
 		try {
@@ -223,7 +231,7 @@ const ExplorePage = () => {
 					</>
 				)}
 			</div>
-			<aside className={`${rightClasses} w-80 bg-white`}>
+			<SwipeableAside className={computedRightClasses} position="right" isOpen={mobileOpen === "right"} onClose={closeDrawers}>
 				<p className="large-text bold">Explore</p>
 				<nav className="channel-list">
 					<ul>
@@ -237,7 +245,7 @@ const ExplorePage = () => {
 				{isAuthenticated && (
 					<PlatformConnect />
 				)}
-			</aside>
+			</SwipeableAside>
 		</div>
 	);
 };

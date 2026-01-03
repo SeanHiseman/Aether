@@ -6,6 +6,7 @@ import { AuthContext } from '../../components/authContext';
 import ChannelList from '../../components/channels/channelList';
 import ChatChannel from '../../components/channels/chatChannel';
 import { decrypt, encrypt } from '../../encryptionUtil';
+import SwipeableAside from '../../components/swipeableAside';
 
 const ChatPage = () => {
     const { connection_name, title } = useParams(); //The chat name is referred to as 'title' in the database, but 'chatName' in the frontend. May fix later.
@@ -20,7 +21,14 @@ const ChatPage = () => {
     const chatLimit = user && user.has_membership ? 10000 : 100;
     const chatLimitReached = chats.length >= chatLimit;
     const navigate = useNavigate();
-    const { rightClasses } = useOutletContext(); 
+    const { rightClasses, updateFeeds, closeDrawers, mobileOpen } = useOutletContext(); 
+
+    const isMobile = () => window.matchMedia("(max-width:768px)").matches;
+    
+    const computedRightClasses = [
+        rightClasses,
+        isMobile() && mobileOpen === "right" ? "open" : ""
+    ].filter(Boolean).join(" ");
 
     const fetchConnection = async () => {
         try {
@@ -182,7 +190,7 @@ const ChatPage = () => {
     return (
         <div className="standard-container">
             <ChatChannel canAdd={true} channelId={selectedChatId} connection={connection} isGroup={false} isLocked={false} setChats={setChats} setErrorMessage={setErrorMessage} />
-            <aside className={rightClasses}>
+            <SwipeableAside className={computedRightClasses} position="right" isOpen={mobileOpen === "right"} onClose={closeDrawers}>
                 {connection && (
                     <div id="feed-summary">
                         <Link className="chat-feed-link" to={`/u/${connection_name}`}>
@@ -281,7 +289,7 @@ const ChatPage = () => {
                         <ChannelList channels={chats} feedId={viewer.feed_id} feedName={connection.feed_name} isChat={true} isGroup={false} setChannels={updateChats} />
                     </div>
                 )}
-            </aside>
+            </SwipeableAside>
         </div>
     );       
 };

@@ -11,6 +11,7 @@ import FollowerChangeButton from '../../components/followerChangeButton';
 import { Link, useLocation, useNavigate, useOutletContext, useParams } from 'react-router-dom';
 import ManageConnectionButton from '../../components/messages/manageConnectionButton';
 import PostChannel from '../../components/channels/postChannel';
+import SwipeableAside from '../../components/swipeableAside';
 import { useContext, useEffect, useRef, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { ValidateTextInput } from '../../functions/validateTextInput';
@@ -41,6 +42,7 @@ const FeedHome = () => {
     const [postToEdit, setPostToEdit] = useState(null);
     const [refreshTrigger, setRefreshTrigger] = useState(false);
     const [replyingToPost, setReplyingToPost] = useState(null); 
+    const { rightClasses, updateFeeds, closeDrawers, mobileOpen } = useOutletContext();
     const [showChannelForm, setShowChannelForm] = useState(false);
     const [showPostForm, setShowPostForm] = useState(false);
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
@@ -53,10 +55,16 @@ const FeedHome = () => {
     const isReplyMode = location.pathname.endsWith('/reply');
     const navigate = useNavigate();
     const queryClient = useQueryClient();
-    const { rightClasses, updateFeeds } = useOutletContext(); 
     const showDrafts = location.pathname.endsWith('/drafts');
     const isViewingSelf = viewer?.feed_name === feed_name;
     const urlPrefix = feed?.is_group ? 'g' : 'u';
+
+    const isMobile = () => window.matchMedia("(max-width:768px)").matches;
+    
+    const computedRightClasses = [
+        rightClasses,
+        isMobile() && mobileOpen === "right" ? "open" : ""
+    ].filter(Boolean).join(" ");
 
     useEffect(() => {
         const fetchFeedData = async () => {
@@ -506,7 +514,7 @@ const FeedHome = () => {
                 <div className="channel-feed">
                     <p className="large-text faded-text">This feed is private</p>
                 </div>
-                <aside className="right-aside">
+                <SwipeableAside className={computedRightClasses} position="right" isOpen={mobileOpen === "right"} onClose={closeDrawers}>
                     <div id="feed-summary">
                         <img className="large-feed-photo" src={`${feed?.feed_photo}`} onError={(e) => e.currentTarget.src = '/media/site_images/blank-profile.png'} />
                         <p className="large-text bold">{feed?.feed_name}</p>
@@ -518,7 +526,7 @@ const FeedHome = () => {
                             <ManageConnectionButton feed={feed} viewerId={viewer?.feed_id} />
                         )}
                     </div>
-                </aside>
+                </SwipeableAside>
             </div>
         );
     }
@@ -526,7 +534,7 @@ const FeedHome = () => {
         <><div className="standard-container">
             {renderChannelContent()}
             {!loading ? (
-                <aside className={rightClasses}>
+                <SwipeableAside className={computedRightClasses} position="right" isOpen={mobileOpen === "right"} onClose={closeDrawers}>
                     <div id="feed-summary">
                         <Link to={`/${urlPrefix}/${feed_name}/Main`}>
                             <img className="large-feed-photo" src={`${feed?.feed_photo}`} onError={(e) => e.currentTarget.src = '/media/site_images/blank-profile.png'} />
@@ -746,7 +754,7 @@ const FeedHome = () => {
                         </div>
                     )}*/}
                     <ChannelList canReorder={isAdmin} channels={channels} feedId={feed?.feed_id} feedName={feed?.feed_name} isChat={false} isGroup={feed?.is_group} setChannels={setChannels} />
-                </aside>
+                </SwipeableAside>
             ) : (
                 <aside className="right-aside"></aside>
             )}

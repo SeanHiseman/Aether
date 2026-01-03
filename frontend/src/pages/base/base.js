@@ -12,6 +12,7 @@ import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { MagnifyingGlassIcon } from "@radix-ui/react-icons";
 import MessageDropdown from "../../components/messages/messageDropdown";
 import SocialFeedLink from "../../socialConnect/socialFeedLink";
+import SwipeableAside from "../../components/swipeableAside";
 import { ThemeContext } from "../../themeProvider";
 import { Tooltip } from "react-tooltip";
 import { UnreadContext } from "../../components/messages/unreadContext";
@@ -49,7 +50,7 @@ const BaseLayout = () => {
 	const [feeds, setFeeds] = useState([]);
 	const [headerErrorMessage, setHeaderErrorMessage] = useState("");
 	const [imageSrc, setImageSrc] = useState(null);   
-    const [isFeedNameValid, setIsFeedNameValid] = useState(true);  
+    const [isFeedNameValid, setIsFeedNameValid] = useState(true); 
     const location = useLocation();
 	const [mobileOpen, setMobileOpen] = useState(null);
     const [nameModalOpen, setNameModalOpen] = useState(false);
@@ -62,13 +63,6 @@ const BaseLayout = () => {
 	const { state } = useContext(UnreadContext);
 	const hasMembership = user?.has_membership;
 	const MAX_FILE_SIZE = hasMembership ? 500 * 1024 * 1024 : 5 * 1024 * 1024; //500MB for members, 5MB for non-members
-	const isMobile = () => window.matchMedia("(max-width:768px)").matches;
-	const toggleLeft = () => { if (isMobile()) setMobileOpen(mobileOpen === "left" ? null : "left"); else setDesk(d => ({ ...d, left: !d.left })); };
-	const toggleRight = () => { if (isMobile()) setMobileOpen(mobileOpen === "right" ? null : "right"); else setDesk(d => ({ ...d, right: !d.right })); };
-	const closeDrawers = () => setMobileOpen(null);
-	const contentClasses = ["content", desk.left ? "hide-left" : "", desk.right ? "hide-right" : "", isMobile() && mobileOpen === "left" ? "shift-right" : ""].join(" ");
-	const leftClasses = ["left-aside", desk.left ? "collapsed" : "", isMobile() && mobileOpen === "left" ? "open" : ""].join(" ");
-	const rightClasses = ["right-aside", desk.right ? "collapsed" : "", isMobile() && mobileOpen === "right" ? "open" : ""].join(" ");
     const sensors = useSensors(
         useSensor(PointerSensor, { 
             activationConstraint: { distance: 8 } 
@@ -80,6 +74,40 @@ const BaseLayout = () => {
             } 
         })
     );
+
+    const isMobile = () => window.matchMedia("(max-width:768px)").matches;
+    
+    const toggleLeft = () => { 
+        if (isMobile()) setMobileOpen(mobileOpen === "left" ? null : "left"); 
+        else setDesk(d => ({ ...d, left: !d.left })); 
+    };
+    
+    const toggleRight = () => { 
+        if (isMobile()) setMobileOpen(mobileOpen === "right" ? null : "right"); 
+        else setDesk(d => ({ ...d, right: !d.right })); 
+    };
+    
+    const closeDrawers = () => setMobileOpen(null);
+
+    //Classes without the swipe-related classes (SwipeableAside handles those)
+    const contentClasses = [
+        "content", 
+        desk.left ? "hide-left" : "", 
+        desk.right ? "hide-right" : "", 
+        isMobile() && mobileOpen === "left" ? "shift-right" : ""
+    ].filter(Boolean).join(" ");
+
+    const leftClasses = [
+        "left-aside", 
+        desk.left ? "collapsed" : "", 
+        isMobile() && mobileOpen === "left" ? "open" : ""
+    ].filter(Boolean).join(" ");
+
+    const rightClasses = [
+        "right-aside", 
+        desk.right ? "collapsed" : "", 
+        isMobile() && mobileOpen === "right" ? "open" : ""
+    ].filter(Boolean).join(" ");
 
     const customCollisionDetection = useCallback((args) => {
         const pointerCollisions = pointerWithin(args);
@@ -464,7 +492,7 @@ const BaseLayout = () => {
                 <div className="backdrop" onClick={closeDrawers} />
             )}
             <div className="container">
-                <aside className={leftClasses} ref={feedContainerRef}>
+                <SwipeableAside className={leftClasses} position="left"isOpen={mobileOpen === "left"} onClose={closeDrawers} forwardedRef={feedContainerRef}>
                     {isAuthenticated ? (
                         <>
                             <div className="left-aside-feed-info">
@@ -657,7 +685,7 @@ const BaseLayout = () => {
                             <div />
                         </div>
                     )}
-                </aside>
+                </SwipeableAside>
                 <main>
                     <header className={"base-header" + (desk.left ? " hide-left" : "") + (desk.right ? " hide-right" : "")}>
                         <button className="sidebar-toggle" onClick={toggleLeft} title={desk.left ? "Open sidebar" : "Close sidebar"}>
@@ -728,7 +756,7 @@ const BaseLayout = () => {
                         </button>
                     </header>
                     <div className={contentClasses}>
-                        <Outlet context={{ rightClasses, updateFeeds }} />
+                        <Outlet context={{ rightClasses, updateFeeds, closeDrawers, mobileOpen }} />
                     </div>
                 </main>
             </div>
