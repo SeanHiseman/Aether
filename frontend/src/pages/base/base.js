@@ -183,15 +183,29 @@ const BaseLayout = () => {
             if (dragType === "feed" && isOverDeepFeed && targetDeepFeedId) {
                 const sourceFeed = activeDragItem;
                 if (sourceFeed) {
-                    //Check for duplicate
-                    const cachedContents = JSON.parse(
+                    //Get cached contents
+                    let cachedContents = JSON.parse(
                         localStorage.getItem(`deepFeedContents_${targetDeepFeedId}`)
                     ) || [];
+                    //If cache is empty, fetch from API first
+                    if (cachedContents.length === 0) {
+                        try {
+                            const { data } = await api.get(`/deep_feed_contents/${targetDeepFeedId}`);
+                            cachedContents = data?.contents || [];
+                            localStorage.setItem(
+                                `deepFeedContents_${targetDeepFeedId}`,
+                                JSON.stringify(cachedContents)
+                            );
+                        } catch (fetchError) {
+                            console.error("Error fetching deep feed contents:", fetchError);
+                        }
+                    }
+                    //Check for duplicate
                     const alreadyExists = cachedContents.some(
                         item => item?.feed?.feed_id === sourceFeed?.feed_id
                     );
                     if (alreadyExists) {
-                        setAsideErrorMessage("Already in this combined feed");
+                        setAsideErrorMessage("This feed is already in the combined feed");
                         setTimeout(() => setAsideErrorMessage(""), 5000);
                         resetDragState();
                         return;

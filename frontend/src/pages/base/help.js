@@ -1,7 +1,16 @@
+import SwipeableAside from '../../components/swipeableAside';
+import { useOutletContext } from 'react-router-dom';
 import { useState } from 'react';
 
 const Help = () => {
     const [activeSection, setActiveSection] = useState('');
+    const { rightClasses, closeDrawers, mobileOpen } = useOutletContext();
+
+    const isMobile = () => window.matchMedia("(max-width:768px)").matches;
+
+    const computedRightClasses = [
+        rightClasses
+    ].filter(Boolean).join(" ");
 
     const scrollToSection = (id) => {
         const element = document.getElementById(id);
@@ -24,31 +33,18 @@ const Help = () => {
     ];
 
     const faqs = [
-        { id: 'faq-1', question: 'How do I create interactive posts?', answer: 'Select the custom block in the post form and prompt your post. Alternatively, you could generate the code for the post elsewhere and paste it into the direct input box.' },
-        { id: 'faq-2', question: 'Can I send messages?', answer: 'Messages will be added soon. You will be able to share posts with your connections.' },
-        { id: 'faq-3', question: 'Will I get any notifications?', answer: 'Notifications will be added soon, along with options to turn them off.' },
-        { id: 'faq-4', question: 'Why does my custom algorithm not work?', answer: 'We have a limited number of posts and customisation options for now, so not every custom algorithm can be satisfied.' },
-        { id: 'faq-5', question: 'Why do some features not work on mobile?', answer: 'Let us know using the feedback form if you find any mobile issues.' },
-        { id: 'faq-6', question: 'How do I report a bug?', answer: 'Use the feedback form below your profile picture on the left aside. We really appreciate you helping us to improve!' },
-        { id: 'faq-7', question: 'How do I contact support?', answer: 'support@aethersocial.com' },
-        { id: 'faq-8', question: 'Are other languages supported?', answer: 'Not yet, but they will be added.' },
-        { id: 'faq-9', question: 'How do you make money', answer: 'We will have a paid monthly subscription for premium features. This is being given away for free to our first 1000 users.' },
+        { id: 'faq-1', question: 'How do I change the colour scheme?', answer: 'Click the cog next to your name at the top of the left aside. On the right aside will be a colour theme section.' },
+        { id: 'faq-2', question: 'How do I create interactive posts?', answer: 'Select the custom block in the post form and prompt your post. Alternatively, you could generate the code for the post elsewhere and paste it into the direct input box.' },
+        { id: 'faq-3', question: 'Can I send messages?', answer: 'Messages will be added soon. You will be able to share posts with your connections.' },
+        { id: 'faq-4', question: 'Will I get any notifications?', answer: 'Notifications will be added soon, along with options to turn them off.' },
+        { id: 'faq-5', question: 'Why does my custom algorithm not work?', answer: 'We have a limited number of posts and customisation options for now, so not every custom algorithm can be satisfied.' },
+        { id: 'faq-6', question: 'Why do some features not work on mobile?', answer: 'Let us know using the feedback form if you find any mobile issues.' },
+        { id: 'faq-7', question: 'Do you have a mobile app?', answer: 'iOS and Android apps coming soon...' },
+        { id: 'faq-8', question: 'How do I report a bug?', answer: 'Use the feedback form below your profile picture on the left aside. We really appreciate you helping us to improve!' },
+        { id: 'faq-9', question: 'How do I contact support?', answer: 'support@aethersocial.com' },
+        { id: 'faq-10', question: 'Are other languages supported?', answer: 'Not yet, but they will be added.' },
+        { id: 'faq-11', question: 'How do you make money', answer: 'We will have a paid monthly subscription for premium features. This is being given away for free to our first 1000 users.' },
     ];
-
-    const containerStyle = {
-        display: 'flex',
-        width: '100%',
-        maxWidth: '100vw',
-        gap: 'var(--large-margin)'
-    };
-
-    const mainContentStyle = {
-        flex: '1',
-        minWidth: '0',
-        padding: 'var(--large-margin)',
-        maxWidth: 'calc(100% - var(--right-width) - var(--large-margin))',
-        marginTop: 'var(--header-height)'
-    };
 
     const sectionStyle = {
         marginBottom: 'var(--xl-margin)',
@@ -57,20 +53,6 @@ const Help = () => {
 
     const headingStyle = {
         marginBottom: 'var(--medium-margin)'
-    };
-
-    const asideStyle = {
-        width: 'var(--right-width)',
-        backgroundColor: 'var(--dark)',
-        padding: 'var(--medium-margin)',
-        position: 'fixed',
-        right: '0',
-        top: '0',
-        height: '100vh',
-        overflowY: 'auto',
-        borderLeft: '1px solid var(--border)',
-        scrollbarWidth: 'none',
-        msOverflowStyle: 'none'
     };
 
     const asideHeadingStyle = {
@@ -87,8 +69,8 @@ const Help = () => {
     });
 
     return (
-        <div style={containerStyle}>
-            <div style={mainContentStyle}>
+        <div className="standard-container">
+            <div className="channel-feed" style={{ alignItems: 'flex-start' }}>
                 <div className="large-text" style={{ marginBottom: 'var(--xl-margin)' }}>Help</div>
                 {sections.map((section) => (
                     <div key={section.id} id={section.id} style={sectionStyle}>
@@ -107,12 +89,7 @@ const Help = () => {
                     </div>
                 ))}
             </div>
-            <aside style={asideStyle}>
-                <style>{`
-                    aside::-webkit-scrollbar {
-                        display: none;
-                    }
-                `}</style>
+            <SwipeableAside className={computedRightClasses} position="right" isOpen={mobileOpen === "right"} style={{ alignItems: 'flex-start' }}>
                 <div className="small-text bold" style={asideHeadingStyle}>Help</div>
                 {sections.map((section) => (
                     <div
@@ -155,7 +132,7 @@ const Help = () => {
                         {faq.question}
                     </div>
                 ))}
-            </aside>
+            </SwipeableAside>
         </div>
     );
 };
