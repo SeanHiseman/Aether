@@ -410,6 +410,7 @@ main {
   outline: none;;
   font-size: var(--small-text);
   padding: 0 var(--medium-margin);
+  padding-right: 0;
 }
 .search-bar::placeholder {
   color: var(--light);
@@ -551,7 +552,7 @@ ul {
     transition: transform 0.2s ease-out;
   }
   .search-container {
-    width: 60vw;
+    width: 66vw;
   }
   .search-form {
     max-width: 100%;
