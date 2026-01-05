@@ -5,6 +5,7 @@ import { Crown } from 'lucide-react';
 import DeepFeedItem from "../../components/channels/deepFeedItem";
 import { DndContext, PointerSensor, pointerWithin, rectIntersection, TouchSensor, useSensor, useSensors } from "@dnd-kit/core";
 import { FaArrowRight, FaCog, FaFileUpload, FaMinus, FaPen, FaPlus, FaPlusCircle, FaSignInAlt } from "react-icons/fa";
+import { FcGoogle } from 'react-icons/fc';
 import FeedItem from "../../components/channels/feedItem";
 import GetCroppedImg from "../../functions/getCroppedImg";
 import InputModal from "../../components/modals/inputModal";
@@ -247,6 +248,10 @@ const BaseLayout = () => {
         resetDragState();
     };
 
+    const handleGoogleLogin = () => {
+        window.location.href = `${window.location.origin}/api/auth/google`;
+    };
+
     const nameModalConfirm = async (deepFeedName) => {
         if (!pendingDeepFeed) return;
         const { sourceFeed, targetFeed } = pendingDeepFeed;
@@ -287,6 +292,13 @@ const BaseLayout = () => {
         setActiveDragItem(null);
         setDragType(null);
     };
+
+    useEffect(() => {
+        const params = new URLSearchParams(location.search);
+        if (params.get('error') === 'auth_failed') {
+            setAsideErrorMessage('Google authentication failed. Please try again.');
+        }
+    }, [location]);
 
     useEffect(() => {
         if (!isAuthenticated || !viewer?.feed_id) {
@@ -684,6 +696,15 @@ const BaseLayout = () => {
                                 <p className="large-text faded-text" style={{ fontWeight: 'bold' }}>Social</p>
                             </Link>
                             <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "10px" }}>
+                                <button type="button" onClick={handleGoogleLogin} className="google-oauth-button">
+                                    <FcGoogle size={20} />
+                                    <span>Continue with Google</span>
+                                </button>
+                                <div className="divider-container">
+                                    <div className="divider-line" />
+                                    <span className="divider-text">or</span>
+                                    <div className="divider-line" />
+                                </div>
                                 <Link to="/join" className="large-icon">
                                     <FaArrowRight />
                                     <p className="icon-text">Join</p>

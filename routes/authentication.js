@@ -3,6 +3,7 @@ import authenticateCheck from '../functions/checks/authenticateCheck.js';
 import { compare, hash } from 'bcrypt';
 import { Connections, ConnectRequests, DeepFeeds, Feeds, FeedChannels, Followers, FeedChats, Messages, Posts, PostDrafts, PostNotes, PostVotes, SavedPostChannels, Users, ViewedPosts } from '../models/relationships.js'; 
 import { ConnectedAccounts } from '../models/users.js';
+import crypto from 'crypto';
 import DeleteMedia from '../functions/media_handling/deleteMedia.js';
 import dotenv from 'dotenv';
 import { ExternalPostsAccess } from '../models/content.js';
@@ -11,10 +12,12 @@ import { generateVerificationToken, sendPasswordResetEmail, sendVerificationEmai
 import jwt from 'jsonwebtoken';
 import { loginLimiter, resendLimiter } from '../functions/checks/limiters.js';
 import { Op } from 'sequelize';
+import passport from 'passport';
 import path from 'path';
 import { promises as fs } from 'fs';
 import { Router } from 'express';
 import sequelize from '../databaseSetup.js';
+import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
 import { ValidateEmail } from '../functions/validateEmail.js';
 import { ValidateTextInput } from '../functions/validateTextInput.js';
 import { v4 } from 'uuid';
@@ -33,6 +36,219 @@ const router = Router();
 		tutorialContent = '';
 	}
 })();
+
+//Google login configuration
+passport.use(new GoogleStrategy({
+        clientID: process.env.GOOGLE_CLIENT_ID,
+        clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+        callbackURL: process.env.GOOGLE_CALLBACK_URL
+    },
+    async (accessToken, refreshToken, profile, done) => {
+        try {
+        const email = profile.emails[0].value;
+        const googleId = profile.id;
+        //Check if user exists
+        let user = await Users.findOne({ 
+            where: { 
+            [Op.or]: [
+                { email },
+                { google_id: googleId }
+            ]
+            } 
+        });
+        if (user) {
+            //Update google_id if not set
+            if (!user.google_id) {
+            await user.update({ google_id: googleId });
+            }
+            return done(null, user);
+        }
+        //Create new user
+        const transaction = await sequelize.transaction();
+        try {
+            const user_id = v4();
+            const username = profile.displayName?.replace(/\s+/g, '_').substring(0, 30) || `user_${user_id.substring(0, 8)}`;
+            //Check if username exists and make it unique
+            let finalUsername = username;
+            let counter = 1;
+            while (await Users.findOne({ where: { username: finalUsername } })) {
+                finalUsername = `${username}_${counter}`;
+                counter++;
+            }
+            const UserSince = new Date();
+            const subscriptionExpiresAt = new Date();
+            subscriptionExpiresAt.setFullYear(subscriptionExpiresAt.getFullYear() + 1);
+            //Create user with email already verified
+            const newUser = await Users.create({
+                email,
+                user_id,
+                username: finalUsername,
+                password: await hash(crypto.randomBytes(32).toString('hex'), 10), //Random password
+                UserSince,
+                email_verified: true, //Auto-verify for Google OAuth
+                google_id: googleId,
+                has_membership: true,
+                subscription_expires_at: subscriptionExpiresAt
+            }, { transaction });
+            //Create feed
+            const default_photo = process.env.DEFAULT_USER_IMAGE;
+            const feed_id = v4();
+            await Feeds.create({
+                feed_id,
+                feed_name: finalUsername,
+                description: "",
+                feed_photo: default_photo,
+                type: 'public',
+                is_group: false,
+                feed_owner: user_id
+            }, { transaction });
+            //Create main channel
+            const channel_id = v4();
+            await FeedChannels.create({
+                channel_id,
+                channel_name: 'Main',
+                feed_id,
+                is_chat: false
+            }, { transaction });
+            await SavedPostChannels.create({
+                channel_id: v4(),
+                saver_id: feed_id,
+                channel_name: "Main",
+                display_order: 0
+            }, { transaction });
+            await transaction.commit();
+            return done(null, newUser);
+        } catch (error) {
+            await transaction.rollback();
+            return done(error);
+        }
+        } catch (error) {
+            return done(error);
+        }
+    }
+));
+
+passport.serializeUser((user, done) => {
+    done(null, user.user_id);
+});
+
+passport.deserializeUser(async (user_id, done) => {
+    try {
+        const user = await Users.findByPk(user_id);
+        done(null, user);
+    } catch (error) {
+        done(error);
+    }
+});
+
+router.get('/auth/google',
+    passport.authenticate('google', { scope: ['profile', 'email'] })
+); 
+
+router.get('/auth/google/callback', passport.authenticate('google', { failureRedirect: '/login' }), async (req, res) => {
+    try {
+        const user = req.user;
+        const feed = await Feeds.findOne({ 
+            where: { feed_owner: user.user_id, is_group: false } 
+        });
+        const loginTime = new Date();
+        req.session.user_id = user.user_id;
+        req.session.username = user.username;
+        req.session.email = user.email;
+        req.session.has_membership = user.has_membership;
+        req.theme = user.theme;
+        req.usage_count = user.usage_count;
+        req.storage_count = user.storage_count;
+        req.session.viewer_id = feed.feed_id;
+        req.session.last_active_at = loginTime;
+        const connectedAccounts = await ConnectedAccounts.findAll({
+            where: { user_id: user.user_id },
+            attributes: ['platform', 'handle', 'instance_url', 'extra']
+        });
+        const algorithms = await Algorithms.findAll({
+            where: { viewer_id: feed.feed_id },
+            include: [{
+            model: AlgorithmLocations,
+            as: 'algorithm_locations'
+            }],
+            order: [['algorithm_name', 'ASC']]
+        });
+        const followedFeeds = await Followers.findAll({
+            where: { follower_id: feed.feed_id },
+            include: [{
+            model: Feeds,
+            as: 'followedFeed',
+            }],
+            order: [['followedFeed', 'feed_name', 'ASC']]
+        });
+        const normalizedFollowedFeeds = followedFeeds.map(follow => ({
+            feed_id: follow.followedFeed.feed_id,
+            feed_name: follow.followedFeed.feed_name,
+            feed_photo: follow.followedFeed.feed_photo,
+            link_type: follow.link_type,
+            is_group: follow.followedFeed.is_group
+        }));
+        const deepFeeds = await DeepFeeds.findAll({
+            where: { owner_id: feed.feed_id, parent_id: null },
+            order: [['name', 'ASC']]
+        });
+        const recentUpvotes = await PostVotes.findAll({
+            attributes: ['post_id'],
+            where: { 
+            voter_id: feed.feed_id,
+            upvotes: { [Op.gt]: 0 },
+            downvotes: { [Op.lte]: 0 }
+            },
+            order: [['updated_at', 'DESC']],
+            limit: 100
+        });
+        await Users.update(
+            { last_active_at: loginTime },
+            { where: { user_id: user.user_id } }
+        );
+        //Store data in session for frontend to retrieve
+        req.session.loginData = {
+            user: {
+                user_id: user.user_id,
+                feed_name: user.username,
+                email: user.email,
+                has_membership: user.has_membership,
+                theme: user.theme,
+                usage_count: user.usage_count,
+                storage_count: user.storage_count,
+                viewer_id: feed.feed_id,
+                feed_photo: feed.feed_photo,
+                follow_requests: feed.follow_requests,
+                connections: feed.connections,
+                connect_requests: feed.connect_requests
+            },
+            algorithms,
+            connectedAccounts,
+            deepFeeds,
+            followedFeeds: normalizedFollowedFeeds,
+            recentUpvotes
+        };
+        //Redirect to frontend with success
+        res.redirect(`${process.env.FRONTEND_URL}/auth/google/success`);
+    } catch (error) {
+        console.error(new Date().toISOString(), '/auth/google/callback error:', error);
+        res.redirect(`${process.env.FRONTEND_URL}/login?error=auth_failed`);
+    }
+});
+
+router.get('/auth/google/data', authenticateCheck, async (req, res) => {
+    try {
+        if (req.session.loginData) {
+            const data = req.session.loginData;
+            delete req.session.loginData; //Clear after retrieval
+            return res.status(200).json({ success: true, ...data });
+        }
+        return res.status(404).json({ success: false, message: 'No login data found' });
+    } catch (error) {
+        console.error(new Date().toISOString(), '/auth/google/data error:', error);
+        return res.status(500).json({ success: false });
+    }
+});
 
 router.post('/change_password', resendLimiter, authenticateCheck, async (req, res) => { //For logged in users
     try {

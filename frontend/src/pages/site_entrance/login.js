@@ -1,6 +1,7 @@
 import api from '../../api';
 import { useContext, useEffect, useState } from 'react';
 import { FaEye, FaEyeSlash } from 'react-icons/fa';
+import { FcGoogle } from 'react-icons/fc';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { ThemeContext } from '../../themeProvider';
 import '../../css/authentication.css';
@@ -41,6 +42,10 @@ const Login = () => {
         }
     };
 
+    const handleGoogleLogin = () => {
+        window.location.href = `${window.location.origin}/api/auth/google`;
+    };
+
     const togglePasswordVisibility = () => {
         setShowPassword(!showPassword);
     };
@@ -55,6 +60,13 @@ const Login = () => {
         }, 300);
     }, []);
 
+    useEffect(() => {
+        const params = new URLSearchParams(location.search);
+        if (params.get('error') === 'auth_failed') {
+            setErrorMessage('Google authentication failed. Please try again.');
+        }
+    }, [location]);
+
     document.title = "Login";
     return (
         <div className="authentication-container">
@@ -67,6 +79,15 @@ const Login = () => {
                     </Link>
                 </div>
                 <p className="error-message">{errorMessage}</p>
+                <button type="button" onClick={handleGoogleLogin} className="google-oauth-button">
+                    <FcGoogle size={20} />
+                    <span>Continue with Google</span>
+                </button>
+                <div className="divider-container">
+                    <div className="divider-line" />
+                    <span className="divider-text">or</span>
+                    <div className="divider-line" />
+                </div>
                 <form method="post" autoComplete="on" onSubmit={handleLogin}>
                     <input
                         className="authentication-input-box"
@@ -104,21 +125,11 @@ const Login = () => {
                                 }
                             }}
                         />
-                        <button
-                            type="button"
-                            className="small-icon"
-                            onClick={togglePasswordVisibility}
-                            title={showPassword ? "Hide password" : "Show password"}
-                        >
+                        <button type="button" className="small-icon" onClick={togglePasswordVisibility} title={showPassword ? "Hide password" : "Show password"}>
                             {showPassword ? <FaEyeSlash /> : <FaEye />}
                         </button>
                     </div>
-                    <input
-                        className={`submit${isDisabled ? ' disabled' : ''}`}
-                        disabled={isDisabled}
-                        type="submit"
-                        value="Login"
-                    />
+                    <input className={`submit${isDisabled ? ' disabled' : ''}`} disabled={isDisabled} type="submit" value="Login" />
                     <Link to="/forgot-password">
                         <p className="small-text">Forgot password?</p>
                     </Link>

@@ -1,7 +1,8 @@
 import api from '../../api';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { FaEye, FaEyeSlash } from 'react-icons/fa';
-import { Link, useNavigate } from 'react-router-dom';
+import { FcGoogle } from 'react-icons/fc';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { ValidateEmail } from '../../functions/validateEmail';
 import { ValidateTextInput } from '../../functions/validateTextInput';
 import '../../css/authentication.css'; 
@@ -15,9 +16,14 @@ const Join = () => {
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [username, setUsername] = useState('');
+    const location = useLocation();
     const navigate = useNavigate();
     const emailValidation = ValidateEmail(email);
     const isDisabled = !confirmPassword || !email || !password || !username || !emailValidation.valid || password !== confirmPassword || Boolean(errorMessage);
+
+    const handleGoogleLogin = () => {
+        window.location.href = `${window.location.origin}/api/auth/google`;
+    };
 
     const handleJoin = async (event) => {
         event.preventDefault();
@@ -52,6 +58,13 @@ const Join = () => {
         setter(!currentState);
     };
 
+    useEffect(() => {
+        const params = new URLSearchParams(location.search);
+        if (params.get('error') === 'auth_failed') {
+            setErrorMessage('Google authentication failed. Please try again.');
+        }
+    }, [location]);
+
     document.title = "Join";
     return (
         <div className="authentication-container">
@@ -66,6 +79,15 @@ const Join = () => {
                     </Link>
                 </div>
                 <p className="error-message">{errorMessage}</p>
+                <button type="button" onClick={handleGoogleLogin} className="google-oauth-button">
+                    <FcGoogle size={20} />
+                    <span>Continue with Google</span>
+                </button>
+                <div className="divider-container">
+                    <div className="divider-line" />
+                    <span className="divider-text">or</span>
+                    <div className="divider-line" />
+                </div>
                 <form method="post" onSubmit={handleJoin}>
                 <input
                     className="authentication-input-box"
@@ -178,12 +200,7 @@ const Join = () => {
                             {showConfirmPassword ? <FaEyeSlash /> : <FaEye />}
                         </button>
                     </div>
-                    <input
-                        className={`submit${isDisabled ? ' disabled' : ''}`}
-                        disabled={isDisabled}
-                        type="submit"
-                        value="Join"
-                    />
+                    <input className={`submit${isDisabled ? ' disabled' : ''}`} disabled={isDisabled} type="submit" value="Join" />
                 </form>
             </div>
         </div>

@@ -436,3 +436,5 @@ ALTER TABLE posts
 ALTER TABLE posts
 	DROP COLUMN has_embedded_websites,
 	DROP COLUMN has_external_posts;
+
+ALTER TABLE users ADD COLUMN google_id VARCHAR(255) UNIQUE;

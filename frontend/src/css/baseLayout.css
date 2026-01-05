@@ -427,13 +427,13 @@ main {
   background: none;
   border: none;
   border-radius: clamp(2px, 0.6vw, 5px);
-  color: var(--light);
+  color: var(--lightest);
   display: flex;
   font-size: var(--medium-text);
   justify-content: center;
   margin: clamp(3px, 1vw, 5px);
   padding: clamp(3px, 1vw, 5px);
-  stroke: var(--light);
+  stroke: var(--lightest);
 }
 .sidebar-toggle:hover {
   cursor: pointer;

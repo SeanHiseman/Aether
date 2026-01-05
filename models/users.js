@@ -61,7 +61,8 @@ const Users = sequelize.define('users', {
     verification_token: { type: DataTypes.TEXT, allowNull: true},
     verification_token_expires: { type: DataTypes.DATE(3), allowNull: true },
     reset_token: { type: DataTypes.TEXT, allowNull: true },
-    reset_token_expires:    { type: DataTypes.DATE(3), allowNull: true },
+    reset_token_expires: { type: DataTypes.DATE(3), allowNull: true },
+    google_id: { type: STRING(255), unique: true, allowNull: true }
 }, { tableName: 'users', timestamps: false });
 
 cron.schedule('0 0 * * 0', async () => { //Resets usage count every Sunday night

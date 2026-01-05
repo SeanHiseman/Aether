@@ -14,14 +14,15 @@ import feeds, { feedChatChannelSocket } from './routes/feeds.js';
 import { fileURLToPath } from 'url';
 import { handleStripeWebhook } from './routes/webhookHandler.js';
 import history from 'express-history-api-fallback';
+import passport from 'passport';
 import path from 'path';
 import rateLimit from 'express-rate-limit';
 import Redis from 'ioredis';
 import routes from './routes/routes.js';
 import { Server } from 'socket.io';
-import socialConnect from './routes/socialConnect.js';
 import session from 'express-session';
 import sequelize  from './databaseSetup.js';
+import socialConnect from './routes/socialConnect.js';
 import { urlencoded } from 'express';
 import users from './routes/users.js';
 
@@ -103,6 +104,9 @@ app.use(session({
 	}
 }));
 
+app.use(passport.initialize());
+app.use(passport.session());
+
 app.use('/api/', algorithmRoutes); 
 app.use('/api/', ask);
 app.use('/api/', authentication);
@@ -134,10 +138,9 @@ app.get('*', (req, res, next) => {
 		return res.sendFile(path.join(root, 'index.html'))
 	}
 	next()
-})
+});
 
-app.use(history('index.html', { root }))
-
+app.use(history('index.html', { root }));
 sequelize.authenticate()
 
 io.on("connection", (socket) => {

@@ -21,6 +21,7 @@ import FeedSettings from './pages/feeds/settings/feedSettings';
 import FeedWrapper from './pages/feeds/feedWrapper';
 import FollowRequests from './pages/feeds/settings/followRequests';
 import ForgotPassword from './pages/site_entrance/forgotPassword';
+import GoogleAuthSuccess from './pages/site_entrance/googleAuthSuccess';
 import Help from './pages/base/help';
 import Join from './pages/site_entrance/join';
 import Login from './pages/site_entrance/login';
@@ -61,6 +62,7 @@ const App = () => {
 					<Router>
 						<Routes>
 							<Route path="/" element={<Navigate to="/explore" replace />} />
+							<Route path="/auth/google/success" element={<GoogleAuthSuccess />} />
 							<Route path="/welcome" element={<Outlet />}>
 								<Route index element={<WelcomeHome />} />
 								<Route path="contact" element={<Contact />} />
