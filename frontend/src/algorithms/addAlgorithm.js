@@ -90,10 +90,16 @@ const DualRangeSlider = ({ min = 0, max = 100, value = [25, 75], onChange, forma
     return (
         <div className="dual-slider">
             <div ref={trackRef} className="dual-slider__track" onClick={handleTrackClick}>
-                <div className="dual-slider__range" style={{ left: `${minPercent}%`, width: `${maxPercent - minPercent}%` }} />
+                <div 
+                    className="dual-slider__range" 
+                    style={{ 
+                        left: `${minPercent}%`, 
+                        width: `${maxPercent - minPercent}%` 
+                    }} 
+                />
+                <div className="dual-slider__handle" style={{ left: `${minPercent}%` }} onMouseDown={(e) => handleMouseDown(e, 'min')} />
+                <div className="dual-slider__handle" style={{ left: `${maxPercent}%` }} onMouseDown={(e) => handleMouseDown(e, 'max')} />
             </div>
-            <div className="dual-slider__handle" style={{ left: `${minPercent}%` }} onMouseDown={(e) => handleMouseDown(e, 'min')} />
-            <div className="dual-slider__handle" style={{ left: `${maxPercent}%` }} onMouseDown={(e) => handleMouseDown(e, 'max')} />
             <div className="dual-slider__values">
                 <span>{formatValue(value[0], 'min')}</span>
                 <span>{formatValue(value[1], 'max')}</span>
@@ -132,7 +138,6 @@ const AddAlgorithm = ({ algorithms = [], display, editingAlgorithm = null, isAut
 
     const [showFutureIdeas, setShowFutureIdeas] = useState(false);
     const [aiContentFilters, setAiContentFilters] = useState([]);
-    const [sourceWeights, setSourceWeights] = useState({ following: 70, suggestions: 30, trending: 50 });
     const [echoBreaker, setEchoBreaker] = useState(false);
     const [qualityThreshold, setQualityThreshold] = useState(40);
     const [readingTime, setReadingTime] = useState('medium');
@@ -547,7 +552,7 @@ const AddAlgorithm = ({ algorithms = [], display, editingAlgorithm = null, isAut
                                     type="text"
                                     value={wordBoost}
                                     onChange={e => setWordBoost(e.target.value)}
-                                    placeholder="e.g. sports,tech"
+                                    placeholder="e.g. sports, tech"
                                 />
                             </div>
                             <div className="form-group">
@@ -754,7 +759,7 @@ const AddAlgorithm = ({ algorithms = [], display, editingAlgorithm = null, isAut
                         <div className="form-row">
                             <div className="form-group">
                                 <div className="form-label-with-info">
-                                    <label className="small-text">AI Content Filters</label>
+                                    <label className="small-text">Filter out AI content</label>
                                     <InfoIconWithTooltip info="Automatically detects and filters suspected AI content." />
                                 </div>
                                 <div className="filter-tags">
@@ -764,61 +769,6 @@ const AddAlgorithm = ({ algorithms = [], display, editingAlgorithm = null, isAut
                                             {aiContentFilters.includes(filter) && <span className="filter-tag-remove">×</span>}
                                         </div>
                                     ))}
-                                </div>
-                            </div>
-                        </div>
-                        <div className="form-row">
-                            <div className="form-group">
-                                <div className="form-label-with-info">
-                                    <label className="small-text">Content Source Mix</label>
-                                    <InfoIconWithTooltip info="Balance content from different sources in your feed." />
-                                </div>
-                                <div className="source-list">
-                                    <div className="source-item">
-                                        <div className="source-info">
-                                            <div className="source-avatar">F</div>
-                                            <div className="source-details">
-                                                <div className="source-name">Following</div>
-                                                <div className="source-meta">People you follow</div>
-                                            </div>
-                                        </div>
-                                        <div className="source-weight">
-                                            <div className="weight-slider">
-                                                <div className="weight-slider-fill" style={{ width: `${sourceWeights.following}%` }} />
-                                            </div>
-                                            <span className="weight-value">{sourceWeights.following}%</span>
-                                        </div>
-                                    </div>
-                                    <div className="source-item">
-                                        <div className="source-info">
-                                            <div className="source-avatar">S</div>
-                                            <div className="source-details">
-                                                <div className="source-name">Suggestions</div>
-                                                <div className="source-meta">Recommended content</div>
-                                            </div>
-                                        </div>
-                                        <div className="source-weight">
-                                            <div className="weight-slider">
-                                                <div className="weight-slider-fill" style={{ width: `${sourceWeights.suggestions}%` }} />
-                                            </div>
-                                            <span className="weight-value">{sourceWeights.suggestions}%</span>
-                                        </div>
-                                    </div>
-                                    <div className="source-item">
-                                        <div className="source-info">
-                                            <div className="source-avatar">T</div>
-                                            <div className="source-details">
-                                                <div className="source-name">Trending</div>
-                                                <div className="source-meta">Popular right now</div>
-                                            </div>
-                                        </div>
-                                        <div className="source-weight">
-                                            <div className="weight-slider">
-                                                <div className="weight-slider-fill" style={{ width: `${sourceWeights.trending}%` }} />
-                                            </div>
-                                            <span className="weight-value">{sourceWeights.trending}%</span>
-                                        </div>
-                                    </div>
                                 </div>
                             </div>
                         </div>

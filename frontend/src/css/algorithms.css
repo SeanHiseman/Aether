@@ -180,42 +180,49 @@
 	transform: rotate(180deg);
 }
 .dual-slider {
+    padding-bottom: var(--large-margin);
     position: relative;
-    width: 94%;
-    height: 40px;
-}
-.dual-slider__track {
-    position: absolute;
-    top: 16px;
     width: 100%;
-    height: 8px;
-    background: #e0e0e0;
-    cursor: pointer;
-}
-.dual-slider__range {
-    position: absolute;
-    height: 100%;
-    background: #007bff;
 }
 .dual-slider__handle {
-    position: absolute;
-    width: 20px;
-    height: 20px;
-    background: white;
-    border: 2px solid #007bff;
+    background: var(--dark);
+    border: 2px solid var(--light);
     border-radius: 50%;
     cursor: pointer;
-    top: 10px;
-    transform: translate(-50%, 0);
+    height: var(--large-margin);
+    position: absolute;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    width: var(--large-margin);
     z-index: 2;
 }
-.dual-slider__values {
+.dual-slider__handle:active {
+    border-color: var(--lightest);
+}
+.dual-slider__handle:hover {
+    border-color: var(--lightest);
+}
+.dual-slider__range {
+    background: var(--light);
+    border-radius: var(--small-margin);
+    height: 100%;
     position: absolute;
-    top: 35px;
-    width: 100%;
+}
+.dual-slider__track {
+    background: var(--light);
+    border-radius: var(--small-margin);
+    cursor: pointer;
+    height: var(--medium-margin);
+    margin: 0 calc(var(--large-margin) / 2);
+    position: relative;
+    width: calc(100% - var(--large-margin));
+}
+.dual-slider__values {
+    color: var(--lightest);
     display: flex;
+    font-size: var(--tiny-text);
     justify-content: space-between;
-    font-size: 12px;
+    margin-top: var(--small-margin);
 }
 .form-group input[type="checkbox"] {
 	appearance: none;
@@ -271,6 +278,28 @@
 	cursor: pointer;
 	height: var(--large-margin);
 	width: var(--large-margin);
+}
+.form-input[type="range"]::-webkit-slider-thumb {
+	-webkit-appearance: none;
+	appearance: none;
+	background: var(--dark);
+	border: 2px solid var(--light);
+	border-radius: 50%;
+	cursor: pointer;
+	height: var(--large-margin);
+	width: var(--large-margin);
+}
+.form-input[type="range"]::-webkit-slider-thumb:active {
+	border-color: var(--lightest);
+}
+.form-input[type="range"]::-webkit-slider-thumb:hover {
+	border-color: var(--lightest);
+}
+.form-input[type="range"]::-moz-range-thumb:active {
+	border-color: var(--lightest);
+}
+.form-input[type="range"]::-moz-range-thumb:hover {
+	border-color: var(--lightest);
 }
 .form-input[type="time"] {
 	margin-right: var(--small-margin);
