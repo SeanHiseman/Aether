@@ -438,3 +438,6 @@ ALTER TABLE posts
 	DROP COLUMN has_external_posts;
 
 ALTER TABLE users ADD COLUMN google_id VARCHAR(255) UNIQUE;
+
+CREATE INDEX idx_feeds_follower_count_created_at
+ON feeds (follower_count DESC, created_at DESC);

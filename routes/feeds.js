@@ -565,7 +565,7 @@ router.delete('/delete_feed_channel', higherLimiter, authenticateCheck, async (r
 
 router.post('/explore_feeds', standardLimiter, async (req, res) => {
 	try {
-		const { exclude = [], limit: reqLimit, offset: reqOffset } = req.body;
+		const { limit: reqLimit, offset: reqOffset } = req.body;
 		const viewerId = req.session?.viewer_id;
 		const limit = parseInt(reqLimit, 10) || 60;
 		const offset = parseInt(reqOffset, 10) || 0;
@@ -573,16 +573,19 @@ router.post('/explore_feeds', standardLimiter, async (req, res) => {
 		if (viewerId) {
 			excludeArray.push(viewerId); 
 		}
-		const { rows: feeds } = await Feeds.findAndCountAll({
-			where: {
-				type: { [Op.notIn]: ['private', 'hidden'] },
-				is_locked: false,
-				feed_id: { [Op.notIn]: excludeArray }
-			},
-			order: sequelize.literal('RAND()'),
-			limit,
-			offset
-		});
+        const { rows: feeds } = await Feeds.findAndCountAll({
+            where: {
+                type: { [Op.notIn]: ['private', 'hidden'] },
+                is_locked: false,
+                feed_id: { [Op.notIn]: excludeArray }
+            },
+            order: [
+                ['follower_count', 'DESC'],
+                ['created_at', 'DESC']
+            ],
+            limit,
+            offset
+        });
 		const feedData = await Promise.all(feeds.map(async (feed) => {
 			const feedJSON = feed.toJSON();
 			const response = {

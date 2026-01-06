@@ -130,17 +130,20 @@ CREATE TABLE `feeds` (
   `connections` int DEFAULT '0',
   `connect_requests` int DEFAULT '0',
   `post_count` int DEFAULT '0',
-  `created_at` datetime(3) DEFAULT CURRENT_TIMESTAMP(3),
-  `updated_at` datetime(3) DEFAULT CURRENT_TIMESTAMP(3),
   `type` varchar(10) DEFAULT 'public',
   `is_group` tinyint(1) DEFAULT '0',
   `feed_owner` char(36) NOT NULL,
   `is_locked` tinyint(1) DEFAULT '0',
+  `created_at` datetime(3) DEFAULT CURRENT_TIMESTAMP(3),
+  `updated_at` datetime(3) DEFAULT CURRENT_TIMESTAMP(3),
   PRIMARY KEY (`feed_id`),
   KEY `feed_owner` (`feed_owner`),
+  KEY `idx_feeds_follower_count_created_at` (`follower_count`, `created_at`),
   FULLTEXT KEY `idx_fulltext_feeds` (`feed_name`, `description`),
   CONSTRAINT `feeds_ibfk_1` FOREIGN KEY (`feed_owner`) REFERENCES `users` (`user_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB
+DEFAULT CHARSET=utf8mb4
+COLLATE=utf8mb4_0900_ai_ci;
 
 DROP TABLE IF EXISTS `follow_requests`;
 CREATE TABLE `follow_requests` (

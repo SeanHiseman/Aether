@@ -36,6 +36,7 @@ const Feeds = sequelize.define('feeds', {
 	timestamps: false,
 	indexes: [
 		{ fields: ['feed_owner'] },
+        { fields: ['follower_count', 'created_at'] },
 		{ name: 'idx_fulltext_feeds', type: 'FULLTEXT', fields: ['feed_name', 'description'] }
 	]
 });
