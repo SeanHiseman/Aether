@@ -565,7 +565,7 @@ router.delete('/delete_feed_channel', higherLimiter, authenticateCheck, async (r
 
 router.post('/explore_feeds', standardLimiter, async (req, res) => {
 	try {
-		const { limit: reqLimit, offset: reqOffset } = req.body;
+		const { exclude = [], limit: reqLimit, offset: reqOffset } = req.body;
 		const viewerId = req.session?.viewer_id;
 		const limit = parseInt(reqLimit, 10) || 60;
 		const offset = parseInt(reqOffset, 10) || 0;
