@@ -80,7 +80,11 @@ passport.use(new GoogleStrategy({
                 subscription_expires_at: subscriptionExpiresAt
             }, { transaction });
             //Create feed
-            const googlePhoto = profile.photos?.[0]?.value;
+            let googlePhoto = profile.photos?.[0]?.value;
+            //Remove size restriction to get larger image
+            if (googlePhoto) {
+                googlePhoto = googlePhoto.replace(/=s\d+-c/, '=s400-c'); //400px version
+            }
             const feed_photo = googlePhoto || process.env.DEFAULT_USER_IMAGE;
             const feed_id = v4();
             await Feeds.create({
