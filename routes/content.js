@@ -579,6 +579,12 @@ router.delete('/remove_post', standardLimiter, authenticateCheck, async (req, re
 router.post('/increment_views', higherLimiter, authenticateCheck, async (req, res) => {
     try {
         const { postId } = req.body;
+		const existingView = await ViewedPosts.findOne({
+			where: { post_id: postId, viewer_id: req.session.viewer_id }
+		});
+		if (existingView && existingView.views >= 100) { //Cap at 100 views per user
+			return res.status(200).json({ success: true });
+		}
         const post = await Posts.findByPk(postId);
 		post.views += 1;
         await post.save();
@@ -590,10 +596,6 @@ router.post('/increment_views', higherLimiter, authenticateCheck, async (req, re
 			boost: post.boost_amount
 		});
 		await Posts.update({ rank_hotness: newHotness, rank_updated_at: new Date() }, { where: { post_id: postId } });
-		//await updateHotnessRedis(post);
-		const existingView = await ViewedPosts.findOne({
-			where: { post_id: postId, viewer_id: req.session.viewer_id }
-		});
 		if (existingView) {
 			existingView.views += 1;
 			await existingView.save();

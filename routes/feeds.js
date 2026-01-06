@@ -1036,9 +1036,11 @@ router.put('/update_feed_photo/:feedId', standardLimiter, authenticateCheck, che
             //Delete old photo if not default
             if (feed.feed_photo && !defaultImages.includes(feed.feed_photo)) {
                 if (feed.feed_photo.startsWith('http')) {
-                    const url = new URL(feed.feed_photo);
-                    const s3Key = url.pathname.replace(/^\/+/, '');
-                    await DeleteFromS3(s3Key);
+                    if (feed.feed_photo.includes(process.env.CLOUDFRONT_DOMAIN)) {
+                        const url = new URL(feed.feed_photo);
+                        const s3Key = url.pathname.replace(/^\/+/, '');
+                        await DeleteFromS3(s3Key);
+                    }
                 } else {
                     const oldPath = path.join(process.cwd(), feed.feed_photo);
                     if (fs.existsSync(oldPath)) {

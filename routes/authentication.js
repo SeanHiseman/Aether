@@ -80,13 +80,14 @@ passport.use(new GoogleStrategy({
                 subscription_expires_at: subscriptionExpiresAt
             }, { transaction });
             //Create feed
-            const default_photo = process.env.DEFAULT_USER_IMAGE;
+            const googlePhoto = profile.photos?.[0]?.value;
+            const feed_photo = googlePhoto || process.env.DEFAULT_USER_IMAGE;
             const feed_id = v4();
             await Feeds.create({
                 feed_id,
                 feed_name: finalUsername,
                 description: "",
-                feed_photo: default_photo,
+                feed_photo: feed_photo,
                 type: 'public',
                 is_group: false,
                 feed_owner: user_id
