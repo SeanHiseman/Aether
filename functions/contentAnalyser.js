@@ -39,9 +39,9 @@ export class ContentAnalyser {
     }
 
     async analyseMedia(htmlContent) {
-        const $ = cheerio.load(htmlContent || ''); //Change to detecting text blocks
-        const images = $('img').length; //Change to detecting images in media blocks
-        const videos = $('video').length; //Change to detecting videos in media blocks
+        const $ = cheerio.load(htmlContent || '');
+        const images = $('img').length;
+        const videos = $('video').length;
         const interactive = $('.content-block.code-block, .content-block.app-block, pre, iframe, canvas').length;
         let totalVideoLength = 0;
         $('video').each((_, el) => {
@@ -107,15 +107,16 @@ export class ContentAnalyser {
 
     async analyseContent(content, title) {
         const textBody = await this.extractTextBody(content);
+        const combinedText = [title, textBody].filter(Boolean).join(' ');
         const mediaAnalysis = await this.analyseMedia(content);
-        const embedding = await this.generateEmbedding(textBody);
-        const textProcessing = await this.processText(textBody);
-        const sentimentScore = await this.calculateSentiment(textBody);
-        const words = textBody.split(/\s+/).filter(w => w.length > 0);
-        const sentences = textBody.split(/[.!?]+/).filter(s => s.trim().length > 0);
+        const embedding = await this.generateEmbedding(combinedText);
+        const textProcessing = await this.processText(combinedText);
+        const sentimentScore = await this.calculateSentiment(combinedText);
+        const words = combinedText.split(/\s+/).filter(w => w.length > 0);
+        const sentences = combinedText.split(/[.!?]+/).filter(s => s.trim().length > 0);
         return {
-            text_body: textBody,
-            text_length: textBody.length,
+            text_body: combinedText,
+            text_length: combinedText.length,
             word_count: words.length,
             sentence_count: sentences.length,
             ...mediaAnalysis,

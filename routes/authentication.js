@@ -14,7 +14,6 @@ import { loginLimiter, resendLimiter } from '../functions/checks/limiters.js';
 import { Op } from 'sequelize';
 import passport from 'passport';
 import path from 'path';
-import { promises as fs } from 'fs';
 import { Router } from 'express';
 import sequelize from '../databaseSetup.js';
 import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
@@ -25,17 +24,7 @@ import { v4 } from 'uuid';
 dotenv.config();
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-let tutorialContent = '';
-const tutorialTemplatePath = path.join(__dirname, '..', 'tutorialPost.html');
 const router = Router();
-
-(async () => {
-	try {
-		tutorialContent = await fs.readFile(tutorialTemplatePath, 'utf8');
-	} catch (error) {
-		tutorialContent = '';
-	}
-})();
 
 //Google login configuration
 passport.use(new GoogleStrategy({
