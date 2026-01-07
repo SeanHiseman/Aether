@@ -3,10 +3,12 @@ import AppWebContainer from './appWebContainer'
 import { useEffect, useRef, useState } from 'react'
 
 const ContentDisplay = ({ post, isFullscreen = false, onCodeAppChange = () => {}, onHeightChange = () => {}, onOverflowChange = () => {}, redirect = true, showFullContent = false, showScrollBar = true }) => {
-	console.log("post:", post);
+	//console.log("post:", post);
+	const [activeIframeId, setActiveIframeId] = useState(null);
 	const [blocks, setBlocks] = useState([]);
 	const content = post?.content;
 	const contentRef = useRef(null);
+	const isMobile = typeof window !== 'undefined' && window.innerWidth <= 768;
 	const [loading, setLoading] = useState(false);
 	const urlPrefix = post?.parentChannel?.feed?.is_group ? 'g' : 'u';
 
@@ -171,30 +173,37 @@ const ContentDisplay = ({ post, isFullscreen = false, onCodeAppChange = () => {}
 					);
 				}
 				if (block.type === 'code') {
+					const iframeId = `iframe-${block.id || i}`;
+					const isActive = isFullscreen || activeIframeId === iframeId;
 					return (
 						<div
 							key={i}
+							data-iframe-wrapper
 							style={{ position: 'relative', width: '100%', height: isFullscreen ? '100%' : '70vh' }}
-							onClick={isFullscreen ? null : e => {
-								const iframe = e.currentTarget.querySelector('iframe');
-								if (iframe) iframe.style.pointerEvents = 'auto';
-							}}
-							onMouseLeave={isFullscreen ? null : e => {
-								const iframe = e.currentTarget.querySelector('iframe');
-								if (iframe) iframe.style.pointerEvents = 'none';
-							}}
+							onClick={isFullscreen ? null : () => setActiveIframeId(iframeId)}
+							onMouseLeave={isFullscreen ? null : () => setActiveIframeId(null)}
 						>
 							<iframe
 								sandbox={"allow-scripts allow-downloads allow-popups allow-modals"}
 								srcDoc={block.code}
-								style={{
-									border: 'none',
-									height: '100%',
-									width: '100%',
-									pointerEvents: isFullscreen ? 'auto' : 'none',
-								}}
+								style={{ border: 'none', height: '100%', width: '100%', pointerEvents: isActive ? 'auto' : 'none' }}
 								title={`code-block-${block.id}`}
 							/>
+							{!isActive && (
+								<div style={{
+									background: 'var(--darkest)',
+									borderRadius: 6,
+									bottom: 8,
+									color: 'white',
+									fontSize: 12,
+									position: 'absolute',
+									padding: '6px 12px',
+									pointerEvents: 'none',
+									right: 8,
+								}}>
+									{isMobile ? 'Tap' : 'Click'} to interact
+								</div>
+							)}
 						</div>
 					)
 				}
