@@ -249,6 +249,7 @@ const BaseLayout = () => {
     };
 
     const handleGoogleLogin = () => {
+        sessionStorage.setItem('authRedirectPath', location.pathname);
         window.location.href = `${window.location.origin}/api/auth/google`;
     };
 
@@ -698,7 +699,7 @@ const BaseLayout = () => {
                             <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "10px" }}>
                                 <button type="button" onClick={handleGoogleLogin} className="google-oauth-button">
                                     <FcGoogle size={20} />
-                                    <span>Continue with Google</span>
+                                    <span>Google login</span>
                                 </button>
                                 <div className="divider-container">
                                     <div className="divider-line" />
@@ -795,12 +796,33 @@ const BaseLayout = () => {
                     </div>
                 </main>
             </div>
-        <InputModal isOpen={nameModalOpen} onConfirm={nameModalConfirm} onCancel={nameModalCancel} title={pendingDeepFeed ? 
-                `Combine ${pendingDeepFeed.sourceFeed?.feed_name} and ${pendingDeepFeed.targetFeed?.feed_name}` : 
-                'Name your combined feed'
-            }
-            placeholder="Enter combined feed name..."
-        /></>
+            <InputModal isOpen={nameModalOpen} onConfirm={nameModalConfirm} onCancel={nameModalCancel} title={pendingDeepFeed ? 
+                    `Combine ${pendingDeepFeed.sourceFeed?.feed_name} and ${pendingDeepFeed.targetFeed?.feed_name}` : 
+                    'Name your combined feed'
+                } 
+                placeholder="Enter combined feed name..."
+            />
+            {!isAuthenticated && mobileOpen !== "left" && (
+                <footer className="mobile-auth-footer">
+                    <button type="button" onClick={handleGoogleLogin} className="google-oauth-button">
+                        <FcGoogle size={20} />
+                        <span>Google</span>
+                    </button>
+                    <Link to="/join" className="large-icon">
+                        <FaArrowRight />
+                        <p className="icon-text">Join</p>
+                    </Link>
+                    <button 
+                        className="large-icon" 
+                        onClick={() => navigate("/login", { state: { from: location.pathname } })}
+                        style={{ background: "none", border: "none", cursor: "pointer" }}
+                    >
+                        <FaSignInAlt />
+                        <p className="icon-text">Login</p>
+                    </button>
+                </footer>
+            )}
+        </>
     );
 };
 

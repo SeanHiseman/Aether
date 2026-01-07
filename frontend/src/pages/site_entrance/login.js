@@ -79,9 +79,9 @@ const Login = () => {
                     </Link>
                 </div>
                 <p className="error-message">{errorMessage}</p>
-                <button type="button" onClick={handleGoogleLogin} className="google-oauth-button">
+                <button type="button" onClick={handleGoogleLogin} className="google-oauth-button" style={{ width: '100%' }}>
                     <FcGoogle size={20} />
-                    <span>Continue with Google</span>
+                    <span>Login with Google</span>
                 </button>
                 <div className="divider-container">
                     <div className="divider-line" />

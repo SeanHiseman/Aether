@@ -240,7 +240,7 @@ const ExplorePage = () => {
 						<li className="channel-link" onClick={() => setFilter("feeds")}>Feeds</li>
 					</ul>
 				</nav>
-				<p className="small-text faded-text">{errorMessage}</p>
+				<p className="small-text faded-text">{isAuthenticated ? errorMessage : ""}</p>
 				<AlgorithmSelector display={false} isAuthenticated={isAuthenticated} locationId={"explore"} refreshPosts={refreshPosts} />
 				{isAuthenticated && (
 					<PlatformConnect />
