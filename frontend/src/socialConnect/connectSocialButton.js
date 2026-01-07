@@ -2,6 +2,7 @@ import axios from 'axios';
 
 export default function ConnectSocialButton({ socialIcon, socialName, socialRoute }) {
 	const handleClick = async () => {
+		if (!socialRoute) return;
 		if (socialRoute === '/connect/bluesky') {
 			window.location.href = socialRoute;
 			return;

@@ -4,17 +4,18 @@ import ConnectSocialButton from "./connectSocialButton";
 import DisconnectSocialButton from "./disconnectSocialButton";
 import { useState } from "react";
 
-const PlatformConnect = () => {
+const PlatformConnect = ({ display = false }) => {
     const [disconnectName, setDisconnectName] = useState('');
     const [disconnectPlatform, setDisconnectPlatform] = useState(null);
-    const connected = JSON.parse(localStorage.getItem("connectedAccounts") || "[]");
-	const hasReddit = connected.some(a => a.platform === "reddit");
-	const hasBluesky = connected.some(a => a.platform === "bluesky");
-	const hasMastodon = connected.some(a => a.platform === "mastodon");
-	const anyNotConnected = !hasReddit || !hasBluesky || !hasMastodon;
     const [modalOpen, setModalOpen] = useState(false);
+    const connected = display ? [] : JSON.parse(localStorage.getItem("connectedAccounts") || "[]");
+    const hasBluesky = connected.some(a => a.platform === "bluesky");
+    const hasMastodon = connected.some(a => a.platform === "mastodon");
+    const hasReddit = connected.some(a => a.platform === "reddit");
+    const anyNotConnected = true;
 
     const requestDisconnect = (platform, name) => {
+        if (display) return;
 		setDisconnectPlatform(platform);
 		setDisconnectName(name);
 		setModalOpen(true);
@@ -25,10 +26,10 @@ const PlatformConnect = () => {
             <div className="border-top-light">
                 {anyNotConnected && (
                     <>
-                        <p className="small-text">Connect your accounts from:</p>
-                        {!hasReddit && <ConnectSocialButton socialIcon="/media/site_images/social_sites/reddit-logo.png" socialName="Reddit" socialRoute="auth/reddit" />}
-                        {!hasBluesky && <ConnectSocialButton socialIcon="/media/site_images/social_sites/bluesky-logo.png" socialName="Bluesky" socialRoute="/connect/bluesky" />}
-                        {!hasMastodon && <ConnectSocialButton socialIcon="/media/site_images/social_sites/mastodon-logo.png" socialName="Mastodon" socialRoute="/connect/mastodon" />}
+                        {!display && <p className="small-text">Connect your accounts from:</p>}
+                        {!hasReddit && <ConnectSocialButton socialIcon="/media/site_images/social_sites/reddit-logo.png" socialName="Reddit" socialRoute={display ? null : "auth/reddit"} />}
+                        {!hasBluesky && <ConnectSocialButton socialIcon="/media/site_images/social_sites/bluesky-logo.png" socialName="Bluesky" socialRoute={display ? null : "/connect/bluesky"} />}
+                        {!hasMastodon && <ConnectSocialButton socialIcon="/media/site_images/social_sites/mastodon-logo.png" socialName="Mastodon" socialRoute={display ? null : "/connect/mastodon"} />}
                     </>
                 )}
                 {connected.length > 0 && (
@@ -47,22 +48,24 @@ const PlatformConnect = () => {
                     </div>
                 )}
             </div>
-            <ConfirmModal
-                isOpen={modalOpen}
-                title="Disconnect account"
-                message={`Are you sure you want to disconnect your ${disconnectName} account?`}
-                onCancel={() => setModalOpen(false)}
-                onConfirm={async () => {
-                    try {
-                        await api.post('/disconnect_external_account', { platform: disconnectPlatform });
-                        const existing = JSON.parse(localStorage.getItem("connectedAccounts") || "[]");
-                        const updated = existing.filter(a => a.platform !== disconnectPlatform);
-                        localStorage.setItem("connectedAccounts", JSON.stringify(updated));
-                        window.dispatchEvent(new CustomEvent('connectedAccountsUpdated'));
-                        setModalOpen(false);
-                    } catch (error) { }
-                }}
-            />
+            {!display && (
+                <ConfirmModal
+                    isOpen={modalOpen}
+                    title="Disconnect account"
+                    message={`Are you sure you want to disconnect your ${disconnectName} account?`}
+                    onCancel={() => setModalOpen(false)}
+                    onConfirm={async () => {
+                        try {
+                            await api.post('/disconnect_external_account', { platform: disconnectPlatform });
+                            const existing = JSON.parse(localStorage.getItem("connectedAccounts") || "[]");
+                            const updated = existing.filter(a => a.platform !== disconnectPlatform);
+                            localStorage.setItem("connectedAccounts", JSON.stringify(updated));
+                            window.dispatchEvent(new CustomEvent('connectedAccountsUpdated'));
+                            setModalOpen(false);
+                        } catch (error) { }
+                    }}
+                />
+            )}
         </>
     );
 };

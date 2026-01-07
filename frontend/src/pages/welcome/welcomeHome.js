@@ -3,7 +3,9 @@ import { useEffect, useState } from 'react';
 import '../../css/welcome.css';
 import AlgorithmSelector from '../../algorithms/algorithmSelector';
 import ContentWidget from '../../components/content/contentWidget';
+import { FaArrowRight } from 'react-icons/fa';
 import { loadWelcomeContent } from './welcomeContent';
+import PlatformConnect from '../../socialConnect/platformConnect';
 
 const WelcomeHome = () => {
     const [currentSlide, setCurrentSlide] = useState(0);
@@ -39,6 +41,8 @@ const WelcomeHome = () => {
                 </div>
                 <p className="medium-text" style={{ marginTop: '20px' }}>Customise the algorithms that shows you content:</p>
                 <AlgorithmSelector display={true} locationId={'display'} />
+                <p className="medium-text" style={{ marginTop: '20px' }}>Apply custom algorithms to posts from other platforms:</p>
+                <PlatformConnect display={true} />
                 <p className="medium-text" style={{ marginTop: '20px' }}>Share interactive posts:</p>
 				<div className="welcome-posts-slideshow">
                     {welcomePosts.length > 1 && (
@@ -59,6 +63,12 @@ const WelcomeHome = () => {
                         ))}
                     </div>
 				</div>
+                <Link to="/explore">
+                    <button className="large-icon" style={{ margin: '60px' }}>
+                        <FaArrowRight/>
+                        <p className="icon-text">Explore posts</p>
+                    </button>
+                </Link>
             </div>
             <footer className="footer">
                 <div className="footer-content">
