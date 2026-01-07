@@ -258,7 +258,7 @@ const SearchResults = () => {
 						)}
 						{selectedView === 'feeds' && (
 							<div className="flex flex-col w-99">
-								<div className="grid grid-cols-3 gap-3 md:grid-cols-4 med-mar-top w-full">
+								<div className="grid grid-cols-3 gap-3 med-mar-top w-full">
 									{feeds.map(feed => (
 										<FeedWidget key={feed.feed_id} feed={feed} isAuthenticated={isAuthenticated} updateFeeds={updateFeeds} viewerId={viewer?.feed_id} />
 									))}

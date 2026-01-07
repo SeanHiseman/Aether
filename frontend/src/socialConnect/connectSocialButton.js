@@ -1,8 +1,19 @@
+import { AuthContext } from '../components/authContext';
 import axios from 'axios';
+import { useContext } from "react";
 
 export default function ConnectSocialButton({ socialIcon, socialName, socialRoute }) {
+	const { isAuthenticated } = useContext(AuthContext);
+
 	const handleClick = async () => {
 		if (!socialRoute) return;
+		if (!isAuthenticated) {
+			const shouldLogin = window.confirm("Login to connect accounts");
+			if (shouldLogin) {
+				window.location.href = '/login';
+			}
+			return;
+		}
 		if (socialRoute === '/connect/bluesky') {
 			window.location.href = socialRoute;
 			return;

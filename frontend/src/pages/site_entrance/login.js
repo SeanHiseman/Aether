@@ -70,7 +70,9 @@ const Login = () => {
     document.title = "Login";
     return (
         <div className="authentication-container">
-            <p className="welcome-text">Welcome back</p>
+            <Link to="/welcome">
+                <p className="welcome-text pointer">Welcome to Aether Social</p>
+            </Link>
             <div className="authentication-box">
                 <div className="login-register">
                     <p className="large-text">Login</p>

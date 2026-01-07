@@ -63,7 +63,7 @@ const App = () => {
 						<Routes>
 							<Route path="/" element={<Navigate to="/explore" replace />} />
 							<Route path="/auth/google/success" element={<GoogleAuthSuccess />} />
-							<Route path="/welcome" element={<Outlet />}>
+							<Route path="/welcome" element={<PublicAuthProvider><Outlet /></PublicAuthProvider>}>
 								<Route index element={<WelcomeHome />} />
 								<Route path="contact" element={<Contact />} />
 								<Route path="licenses" element={<Placeholder />} />

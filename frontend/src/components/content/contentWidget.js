@@ -499,9 +499,7 @@ const ContentWidget = ({ canRemove = false, display = false, feed, isDraft = fal
 						</div>
 					)}
 					{treeViewMode ? (
-						<ReplyTreeView
-							replies={replies}
-							renderReplyContent={renderReplyContent} />
+						<ReplyTreeView replies={replies} renderReplyContent={renderReplyContent} />
 					) : (
 						replies.length !== 0 ? (
 							replies.map((reply) => (

@@ -221,7 +221,7 @@ const ExplorePage = () => {
 						)}
 						{filter === "feeds" && (
 							<div className="flex flex-col gap-3 w-99 med-mar-top">
-								<div className="grid grid-cols-3 md:grid-cols-4 gap-3 w-full">
+								<div className="grid grid-cols-3 gap-3 w-full">
 									{feeds.map(feed => (
 										<FeedWidget key={feed?.feed_id} feed={feed} isAuthenticated={isAuthenticated} updateFeeds={updateFeeds} viewerId={viewer?.feed_id} />
 									))}
@@ -242,9 +242,7 @@ const ExplorePage = () => {
 				</nav>
 				<p className="small-text faded-text">{isAuthenticated ? errorMessage : ""}</p>
 				<AlgorithmSelector display={false} isAuthenticated={isAuthenticated} locationId={"explore"} refreshPosts={refreshPosts} />
-				{isAuthenticated && (
-					<PlatformConnect />
-				)}
+				<PlatformConnect />
 			</SwipeableAside>
 		</div>
 	);
