@@ -696,6 +696,7 @@ const BaseLayout = () => {
                                 <p className="large-text faded-text" style={{ fontWeight: 'bold' }}>Aether</p>
                                 <p className="large-text faded-text" style={{ fontWeight: 'bold' }}>Social</p>
                             </Link>
+                            <p className="small-text faded-text" style={{ textAlign: 'center' }}>Social media you control</p>
                             <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "10px" }}>
                                 <button type="button" onClick={handleGoogleLogin} className="google-oauth-button">
                                     <FcGoogle size={20} />

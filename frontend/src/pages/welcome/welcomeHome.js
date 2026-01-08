@@ -29,6 +29,7 @@ const WelcomeHome = () => {
             <div className="welcome-container">
                 <Link to="/explore">
                     <p className="welcome-text">Welcome to Aether Social</p>
+                    <p className="small-text faded-text" style={{ textAlign: 'center' }}>Social media you control</p>
                 </Link>
                 <p className="medium-text">Free premium for first 1000 users, join soon!</p>
                 <div className="join-login">
