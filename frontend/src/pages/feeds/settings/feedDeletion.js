@@ -81,19 +81,34 @@ const FeedDeletion = () => {
                             Final Confirmation Required
                         </p>
                         <p className="small-text" style={{ marginBottom: '20px' }}>
-                            Let us know why you are leaving.
+                            {feed?.is_group ? 'Type DELETE to confirm.' : 'Let us know why you are leaving.'}
                         </p>
-                        <textarea
-                            className="name-input"
-                            placeholder="Your feedback (minimum 10 characters)"
-                            value={confirmText}
-                            style={{ marginBottom: '15px', padding: '8px', maxWidth: '300px', width: '90vw', minHeight: '80px' }}
-                            onChange={(e) => {
-                                const value = e.target.value;
-                                setConfirmText(value);
-                                setIsDisabled(value.trim().length < 10);
-                            }}
-                        />
+                        {feed?.is_group ? (
+                            <input
+                                type="text"
+                                className="name-input"
+                                placeholder="Type DELETE"
+                                value={confirmText}
+                                style={{ marginBottom: '15px', padding: '8px', maxWidth: '300px', width: '90vw' }}
+                                onChange={(e) => {
+                                    const value = e.target.value;
+                                    setConfirmText(value);
+                                    setIsDisabled(value.trim().toLowerCase() !== 'delete');
+                                }}
+                            />
+                        ) : (
+                            <textarea
+                                className="name-input"
+                                placeholder="Your feedback (minimum 10 characters)"
+                                value={confirmText}
+                                style={{ marginBottom: '15px', padding: '8px', maxWidth: '300px', width: '90vw', minHeight: '80px' }}
+                                onChange={(e) => {
+                                    const value = e.target.value;
+                                    setConfirmText(value);
+                                    setIsDisabled(value.trim().length < 10);
+                                }}
+                            />
+                        )}
                         <div style={{ display: 'flex', gap: '10px' }}>
                             <button
                                 className={`button delete${isDisabled ? ' disabled' : ''}`}
