@@ -599,9 +599,6 @@ ul {
   }
 }
 @media (min-width: 768px) { /* Hides sidebar arrows on desktop */
-  .content {
-    padding-bottom: 80px;
-  }
 	.sidebar-toggle {
 		visibility: hidden;
 		pointer-events: none;
