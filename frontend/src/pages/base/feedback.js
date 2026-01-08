@@ -8,9 +8,9 @@ import '../../css/basicStyles.css';
 
 const Feedback = () => {
     const [error, setError] = useState('');
-    const { isAuthenticated } = useContext(AuthContext);
+    const { isAuthenticated, user } = useContext(AuthContext);
 	const [messageText, setMessageText] = useState('');
-	const messageCheck = ValidateTextInput(messageText, 1, 5000, false);
+	const messageCheck = ValidateTextInput(messageText, 10, 5000, false);
     const isDisabled = !messageText || !messageCheck.valid || !isAuthenticated;
     const [responseMessage, setResponseMessage] = useState('');
 
@@ -19,7 +19,9 @@ const Feedback = () => {
 		try {
             if (!isAuthenticated) return;
 			await api.post('/feedback', {
+				isDeletion: false,
 				message: messageText,
+				userId: user?.user_id
 			});
 			setResponseMessage('Thank you for your feedback!');
             setTimeout(() => setResponseMessage(''), 5000);

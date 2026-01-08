@@ -459,11 +459,13 @@ CREATE TABLE feedback (
 	user_id CHAR(36) NULL,
 	message TEXT NOT NULL,
 	is_resolved BOOLEAN NOT NULL DEFAULT 0,
+  is_deletion BOOLEAN NOT NULL DEFAULT 0,
 	created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
 	updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 	PRIMARY KEY (id),
 	INDEX idx_feedback_user_id (user_id),
 	INDEX idx_feedback_created_at (created_at),
 	INDEX idx_feedback_is_resolved (is_resolved),
+  INDEX idx_feedback_is_deletion (is_deletion),
 	FULLTEXT INDEX ft_feedback_message (message)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

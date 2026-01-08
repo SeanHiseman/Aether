@@ -31,15 +31,17 @@ const Feedback = sequelize.define('Feedback', {
 	user_id: { type: STRING(36), allowNull: true },
 	message: { type: DataTypes.TEXT, allowNull: false },
 	is_resolved: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false },
+    is_deletion: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false },
     created_at: { type: DataTypes.DATE(3), defaultValue: sequelize.literal('CURRENT_TIMESTAMP(3)') },
     updated_at: { type: DataTypes.DATE(3), defaultValue: sequelize.literal('CURRENT_TIMESTAMP(3)') },
 }, {
 	tableName: 'feedback',
     timestamps: false,
 	indexes: [
-		{ fields: ['user_id'] },
-		{ fields: ['created_at'] },
-		{ fields: ['is_resolved'] },
+		{ name: 'idx_feedback_user_id', fields: ['user_id'] },
+		{ name: 'idx_feedback_created_at', fields: ['created_at'] },
+		{ name: 'idx_feedback_is_resolved', fields: ['is_resolved'] },
+        { name: 'idx_feedback_is_deletion', fields: ['is_deletion'] },
 	],
 }); 
 

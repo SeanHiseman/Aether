@@ -693,10 +693,10 @@ const BaseLayout = () => {
                     ) : (
                         <div style={{ alignItems: "center", display: "flex", flexDirection: "column", justifyContent: "space-between", height: "80%" }}>
                             <Link to="/welcome">
-                                <p className="large-text faded-text" style={{ fontWeight: 'bold' }}>Aether</p>
-                                <p className="large-text faded-text" style={{ fontWeight: 'bold' }}>Social</p>
+                                <p className="large-text faded-text" style={{ fontWeight: '700' }}>Aether</p>
+                                <p className="large-text faded-text" style={{ fontWeight: '700' }}>Social</p>
                             </Link>
-                            <p className="small-text faded-text" style={{ textAlign: 'center' }}>Social media you control</p>
+                            <p className="small-text faded-text" style={{ fontWeight: '500', textAlign: 'center' }}>Social media you control</p>
                             <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "10px" }}>
                                 <button type="button" onClick={handleGoogleLogin} className="google-oauth-button">
                                     <FcGoogle size={20} />

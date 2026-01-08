@@ -13,15 +13,15 @@ const router = Router();
 
 router.post('/feedback', standardLimiter, authenticateCheck, async (req, res) => {
 	try {
-		const userId = req?.session?.user_id || null;
-		const { message } = req.body;
-		const messageCheck = ValidateTextInput(message, 1, 5000, false);
+		const { isDeletion, message, userId } = req.body;
+		const messageCheck = ValidateTextInput(message, 10, 5000, false);
 		if (!messageCheck.valid) {
 			return res.status(400).json({ message: messageCheck.error });
 		}
 		await Feedback.create({
-			user_id: userId,
+            is_deletion: isDeletion, //Users leave feedback upon deleting account
 			message,
+            user_id: userId,
 		});
 		return res.status(200).json({ success: true, message: 'Feedback submitted. Thank you.' });
 	} catch (error) {

@@ -556,7 +556,7 @@ ul {
   }
   .mobile-auth-footer {
     align-items: center;
-    background: var(--darkest);
+    background: var(--dark);
     bottom: 0;
     display: flex;
     gap: 10px;

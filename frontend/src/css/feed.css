@@ -6,6 +6,10 @@
     font-size: clamp(6px, 4vw, 36px);
     padding: var(--large-margin);
 }
+.button.delete.disabled:hover {
+    background-color: var(--darkest);
+    opacity: 0.5;
+}
 .button.theme:hover {
     background-color: var(--light);
 }
