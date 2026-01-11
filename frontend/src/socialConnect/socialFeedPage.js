@@ -166,14 +166,21 @@ export default function SocialFeedPage({ platform }) {
 		};
 	}, [hasMore, platform, isAuthenticated, offset]);
 
+	useEffect(() => {
+		if (refreshTrigger === 0) return;
+		if (!isAuthenticated) return;
+		loadFeed();
+	}, [refreshTrigger]);
+
 	const refreshPosts = () => {
+		isFetchingRef.current = false;
 		setErrorMessage('');
 		setOffset(0);
 		setHasMore(true);
 		setPosts([]);
 		setLoading(true);
 		hasLoadedRef.current = false;
-		setRefreshTrigger(prev => !prev);
+		setRefreshTrigger(prev => prev + 1);
 	};
 
 	document.title = capitalise(platform) + " feed";

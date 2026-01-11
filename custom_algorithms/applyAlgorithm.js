@@ -655,14 +655,15 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
 				}
 
 				let algorithmScore = 0;
-				//Unified baseHotness for native (rank_hotness) and external (score) posts
-				const baseHotness = typeof post.rank_hotness === 'number'
-					? post.rank_hotness
-					: typeof post.score === 'number'
-						? post.score
-						: 0;
-				algorithmScore = voteImpact > 0 ? baseHotness * voteImpact : 0;
-				//algorithmScore += (chronology ?? 1) * baseHotness;
+				const isExternal = post.isExternal || post.is_external;
+				if (!isExternal) { //External post score is not comparible to rank_hotness
+					const baseHotness = typeof post.rank_hotness === 'number'
+						? post.rank_hotness
+						: typeof post.score === 'number'
+							? post.score
+							: 0;
+					algorithmScore = voteImpact > 0 ? baseHotness * voteImpact : 0;
+				}
 
 				//Vote quality * engagement ratio (distinct from hotness)
 				if (voteImpact > 0) {

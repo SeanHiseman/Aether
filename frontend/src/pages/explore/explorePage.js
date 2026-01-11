@@ -22,7 +22,7 @@ const ExplorePage = () => {
 	const [posts, setPosts] = useState([]);
 	const { isAuthenticated, viewer } = useContext(AuthContext);
 	const { rightClasses, updateFeeds, closeDrawers, mobileOpen } = useOutletContext();
-	const [refreshTrigger, setRefreshTrigger] = useState(false);;
+	const [refreshTrigger, setRefreshTrigger] = useState(0);
 	const scrollRef = useRef(null);
 
 	const isMobile = () => window.matchMedia("(max-width:768px)").matches;
@@ -152,7 +152,7 @@ const ExplorePage = () => {
 
 	const refreshPosts = () => {
 		setErrorMessage('');
-		setRefreshTrigger(!refreshTrigger);
+		setRefreshTrigger(prev => prev + 1);
 	};
 
 	//Reset all state on filter change and fetch initial batch
@@ -170,7 +170,7 @@ const ExplorePage = () => {
 
 	//Manual refresh trigger
 	useEffect(() => {
-		if (refreshTrigger === false) return; 
+		if (refreshTrigger === 0) return; 
 		setIsLoading(true);
 		setFeedPage(0);
 		setPostPage(0);

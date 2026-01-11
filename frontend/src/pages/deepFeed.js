@@ -43,7 +43,7 @@ const DeepFeed = () => {
     const [isEditingName, setIsEditingName] = useState(false);
     const [isNewNameValid, setIsNewNameValid] = useState(false);
     const [newName, setNewName] = useState('');
-    const [refreshTrigger, setRefreshTrigger] = useState(false);
+    const [refreshTrigger, setRefreshTrigger] = useState(0);
     const scrollRef = useRef(null);
     const navigate = useNavigate();
     const queryClient = useQueryClient();
@@ -329,14 +329,13 @@ const DeepFeed = () => {
 
     const refreshPosts = () => {
         setErrorMessage('');
-        setRefreshTrigger(!refreshTrigger);
+        setRefreshTrigger(prev => prev + 1);
     };
 
     //Refresh posts upon algorithm change
     useEffect(() => {
-        if (refreshTrigger !== undefined) {
-            queryClient.invalidateQueries(['deepFeedPosts', deep_feed_id]);
-        }
+        if (refreshTrigger === 0) return;  //Skip initial mount
+        queryClient.invalidateQueries(['deepFeedPosts', deep_feed_id]);
     }, [refreshTrigger, queryClient, deep_feed_id]);
 
     document.title = deepFeed?.name || 'Combined feed';

@@ -38,15 +38,15 @@ router.post('/assign_algorithm', authenticateCheck, async (req, res) => {
 
 router.post('/create_algorithm', authenticateCheck, async (req, res) => {
 	let transaction;
-	const totalTimer = 'create_algorithm_total';
+	//const totalTimer = 'create_algorithm_total';
 	try {
-		console.log('create_algorithm: start');
-		console.time(totalTimer);
-		console.time('parse_request');
+		//console.log('create_algorithm: start');
+		//console.time(totalTimer);
+		//console.time('parse_request');
 		const { algorithmName, activeDays, chronology, contentType, customInstruction, dateFrom, dateTo, generateCode, locationId, minWords, maxWords, minVideo, maxVideo, sentiment, startTime, endTime, variety, voteImpact, wordBoost, wordSuppress } = req.body;
 		const viewerId = req.session.viewer_id;
-		console.timeEnd('parse_request');
-		console.time('build_algorithm_json');
+		//console.timeEnd('parse_request');
+		//console.time('build_algorithm_json');
 		const algorithmJson = {
 			chronology,
 			contentType,
@@ -65,22 +65,22 @@ router.post('/create_algorithm', authenticateCheck, async (req, res) => {
 				wordSuppress: Array.isArray(wordSuppress) ? wordSuppress : []
 			}
 		};
-		console.timeEnd('build_algorithm_json');
-		console.time('load_existing_algorithm');
+		//console.timeEnd('build_algorithm_json');
+		//console.time('load_existing_algorithm');
 		let existingAlgorithm = null;
 		if (req.body.algorithmId) {
-			console.log('create_algorithm: lookup by algorithmId');
+			//console.log('create_algorithm: lookup by algorithmId');
 			existingAlgorithm = await Algorithms.findOne({
 				where: { algorithm_id: req.body.algorithmId, viewer_id: viewerId }
 			});
 		}
 		if (!existingAlgorithm) {
-			console.log('create_algorithm: lookup by algorithmName');
+			//console.log('create_algorithm: lookup by algorithmName');
 			existingAlgorithm = await Algorithms.findOne({
 				where: { algorithm_name: algorithmName, viewer_id: viewerId }
 			});
 		}
-		console.timeEnd('load_existing_algorithm');
+		//console.timeEnd('load_existing_algorithm');
 		const sameWords = (a = [], b = []) => {
 			if (a.length !== b.length) return false;
 			const sa = [...a].sort();
@@ -93,13 +93,13 @@ router.post('/create_algorithm', authenticateCheck, async (req, res) => {
 			delete parsed.customScoring;
 			return parsed;
 		};
-		console.time('compare_previous_state');
+		//console.time('compare_previous_state');
 		let prevInstruction = '';
 		let prevParsedCode = null;
 		let prevBoost = [];
 		let prevSuppress = [];
 		if (existingAlgorithm) {
-			console.log('create_algorithm: existing algorithm found');
+			//console.log('create_algorithm: existing algorithm found');
 			prevInstruction = existingAlgorithm.custom_instruction || '';
 			prevParsedCode = normalizeAlgorithmCode(existingAlgorithm.algorithm_code);
 			prevBoost = prevParsedCode?.scoring?.wordBoost || [];
@@ -116,23 +116,23 @@ router.post('/create_algorithm', authenticateCheck, async (req, res) => {
 		const instructionChanged = prevInstruction !== currentInstruction;
 		const boostChanged = !sameWords(algorithmJson.scoring.wordBoost, prevBoost);
 		const suppressChanged = !sameWords(algorithmJson.scoring.wordSuppress, prevSuppress);
-		console.timeEnd('compare_previous_state');
+		//console.timeEnd('compare_previous_state');
 		if (
 			existingAlgorithm &&
 			algorithmName !== existingAlgorithm.algorithm_name &&
 			!instructionChanged &&
 			sameStructure
 		) {
-			console.log('create_algorithm: rename only, no AI or embeddings');
-			console.time('rename_transaction');
+			//console.log('create_algorithm: rename only, no AI or embeddings');
+			//console.time('rename_transaction');
 			transaction = await sequelize.transaction();
 			const algorithm = await existingAlgorithm.update(
 				{ algorithm_name: algorithmName },
 				{ transaction }
 			);
 			await transaction.commit();
-			console.timeEnd('rename_transaction');
-			console.timeEnd(totalTimer);
+			//console.timeEnd('rename_transaction');
+			//console.timeEnd(totalTimer);
 			return res.status(200).json({
 				success: true,
 				algorithm: {
@@ -145,10 +145,10 @@ router.post('/create_algorithm', authenticateCheck, async (req, res) => {
 			generateCode &&
 			currentInstruction.trim() !== '' &&
 			instructionChanged;
-		console.log(
-			'create_algorithm: AI generation needed =',
-			needsAiGeneration
-		);
+		//console.log(
+			//'create_algorithm: AI generation needed =',
+			//needsAiGeneration
+		//);
 		let algorithmCode;
 		let finalBoost = algorithmJson.scoring.wordBoost;
 		let finalSuppress = algorithmJson.scoring.wordSuppress;
@@ -198,40 +198,40 @@ router.post('/create_algorithm', authenticateCheck, async (req, res) => {
 					finalSuppress = parsedJson.scoring.wordSuppress;
 				}
 			}
-			console.timeEnd('ai_generation');
+			//console.timeEnd('ai_generation');
 		} else {
-			console.log('create_algorithm: using form-generated code');
+			//console.log('create_algorithm: using form-generated code');
 			algorithmCode = JSON.stringify(algorithmJson);
 		}
 		const finalBoostChanged = !sameWords(finalBoost, prevBoost);
 		const finalSuppressChanged = !sameWords(finalSuppress, prevSuppress);
 		let boostEmbedding = null;
 		let suppressEmbedding = null;
-		console.time('embedding_generation');
+		//console.time('embedding_generation');
 		if (finalBoost.length > 0 && finalBoostChanged) {
-			console.log('create_algorithm: generating boost embeddings');
+			//console.log('create_algorithm: generating boost embeddings');
 			boostEmbedding = await Promise.all(
 				finalBoost.map(word => analyser.generateEmbedding(word))
 			);
 		} else if (existingAlgorithm && !finalBoostChanged) {
-			console.log('create_algorithm: reusing boost embeddings');
+			//console.log('create_algorithm: reusing boost embeddings');
 			boostEmbedding = existingAlgorithm.boost_embedding;
 		}
 		if (finalSuppress.length > 0 && finalSuppressChanged) {
-			console.log('create_algorithm: generating suppress embeddings');
+			//console.log('create_algorithm: generating suppress embeddings');
 			suppressEmbedding = await Promise.all(
 				finalSuppress.map(word => analyser.generateEmbedding(word))
 			);
 		} else if (existingAlgorithm && !finalSuppressChanged) {
-			console.log('create_algorithm: reusing suppress embeddings');
+			//console.log('create_algorithm: reusing suppress embeddings');
 			suppressEmbedding = existingAlgorithm.suppress_embedding;
 		}
-		console.timeEnd('embedding_generation');
-		console.time('db_transaction');
+		//console.timeEnd('embedding_generation');
+		//console.time('db_transaction');
 		transaction = await sequelize.transaction();
 		let algorithm;
 		if (existingAlgorithm) {
-			console.log('create_algorithm: updating algorithm record');
+			//console.log('create_algorithm: updating algorithm record');
 			algorithm = await existingAlgorithm.update(
 				{
 					algorithm_name: algorithmName,
@@ -243,7 +243,7 @@ router.post('/create_algorithm', authenticateCheck, async (req, res) => {
 				{ transaction }
 			);
 		} else {
-			console.log('create_algorithm: creating algorithm record');
+			//console.log('create_algorithm: creating algorithm record');
 			algorithm = await Algorithms.create(
 				{
 					algorithm_id: v4(),
@@ -258,9 +258,9 @@ router.post('/create_algorithm', authenticateCheck, async (req, res) => {
 			);
 		}
 		await transaction.commit();
-		console.timeEnd('db_transaction');
-		console.timeEnd(totalTimer);
-		console.log('create_algorithm: success');
+		//console.timeEnd('db_transaction');
+		//console.timeEnd(totalTimer);
+		//console.log('create_algorithm: success');
 		res.status(201).json({
 			success: true,
 			algorithm: {
@@ -271,10 +271,7 @@ router.post('/create_algorithm', authenticateCheck, async (req, res) => {
 	} catch (error) {
 		if (transaction) await transaction.rollback();
 		console.error(new Date().toISOString(), 'create_algorithm error:', error);
-		res.status(500).json({
-			success: false,
-			message: 'Failed to create or update algorithm.'
-		});
+		res.status(500).json({ success: false, message: 'Failed to create or update algorithm.' });
 	}
 });
 

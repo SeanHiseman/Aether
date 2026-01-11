@@ -156,10 +156,8 @@ const AlgorithmSelector = ({ display = false, isAuthenticated = false, locationI
 				localStorage.setItem('algorithms', JSON.stringify(updated));
 				return updated;
 			});
-			setAssignedAlgorithmId(newAlgo?.algorithm_id);
 			setEditingAlgorithm(newAlgo);
 			await assignAlgorithm(newAlgo?.algorithm_id);
-			refreshPosts();
 		} catch (error) {
 			setError(error.response?.data?.message || 'Failed to update algorithms');
 			setTimeout(() => { setError('') }, 5000);

@@ -21,13 +21,12 @@ const PostChannel = ({ channelId, channelName, feed, includeGroup, includeUser, 
 	}, [includeGroup, includeUser, queryClient, channelId, channelName, feedId, isGroup]);
 
 	useEffect(() => {
-		if (refreshTrigger !== undefined) {
-			queryClient.invalidateQueries(['posts', channelId, channelName, feedId, isGroup]);
-			if (post_id) {
-				queryClient.invalidateQueries(['singlePost', post_id]);
-			}
+		if (refreshTrigger === 0) return;
+		queryClient.invalidateQueries(['posts', channelId, channelName, feedId, isGroup]);
+		if (post_id) {
+			queryClient.invalidateQueries(['singlePost', post_id]);
 		}
-	}, [refreshTrigger, queryClient, channelId, channelName, feedId, isGroup, post_id, setFeedErrorMessage]);
+	}, [refreshTrigger, queryClient, channelId, channelName, feedId, isGroup, post_id]);
 
 	useEffect(() => {
 		if (isDraft && !isGroup && viewer?.feed_id !== feedId) {

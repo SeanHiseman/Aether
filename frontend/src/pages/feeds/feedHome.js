@@ -40,7 +40,7 @@ const FeedHome = () => {
     const [parentPostForEdit, setParentPostForEdit] = useState(null);
     const [postErrorMessage, setPostErrorMessage] = useState('');
     const [postToEdit, setPostToEdit] = useState(null);
-    const [refreshTrigger, setRefreshTrigger] = useState(false);
+    const [refreshTrigger, setRefreshTrigger] = useState(0);
     const [replyingToPost, setReplyingToPost] = useState(null); 
     const { rightClasses, updateFeeds, closeDrawers, mobileOpen } = useOutletContext();
     const [showChannelForm, setShowChannelForm] = useState(false);
@@ -391,7 +391,7 @@ const FeedHome = () => {
     };
 
     const refreshPosts = () => {
-        setRefreshTrigger(!refreshTrigger);
+        setRefreshTrigger(prev => prev + 1);
     };
 
     const toggleDrafts = () => {
