@@ -55,6 +55,17 @@ input, textarea, select {
     background: none;
     cursor: default;
 }
+.dropdown-menu {
+  background-color: var(--dark);
+  border: 1px solid var(--border);
+  border-radius: var(--small-margin);
+  color: var(--light);
+  padding: var(--small-margin);
+  position: absolute;
+  right: 0;
+  width: calc(10 * var(--large-margin));
+  z-index: 10;
+}
 .error-message {
     height: var(--small-text);
     margin: var(--small-margin);

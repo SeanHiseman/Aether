@@ -62,7 +62,7 @@ const FeedItem = ({ dragged, feed, isChat, parentDeepFeedId, unreadCount }) => {
     const handleClick = useCallback((e) => {
         //Only navigate if not dragging and it's a draggable item
         if (dragged && !isDragIntent && !isDragging) {
-            const path = isChat ? `/connections/${feed?.feed_name}/Main` : `/${linkType}/${feed?.feed_name}`;
+            const path = isChat ? `/connections/${feed?.feed_name}` : `/${linkType}/${feed?.feed_name}`;
             navigate(path);
         }
     }, [dragged, isDragIntent, isDragging, isChat, feed?.feed_name, linkType, navigate]);
@@ -109,11 +109,11 @@ const FeedItem = ({ dragged, feed, isChat, parentDeepFeedId, unreadCount }) => {
                     </div>
                 );
                 return (
-                    <div className={`feed-list-link-container ${location.pathname.startsWith(`/${linkType}/${feed?.feed_name}`) ? 'selected' : ''}`}>
+                    <div className={`feed-list-link-container ${location.pathname.startsWith(isChat ? `/connections/${feed?.feed_name}` : `/${linkType}/${feed?.feed_name}`) ? 'selected' : ''}`}>
                         {!dragged ? (
-                            <Link 
-                                to={isChat ? `/connections/${feed?.feed_name}/Main` : `/${linkType}/${feed?.feed_name}`} 
-                                title={`Go to ${feed?.feed_name}`} 
+                            <Link
+                                to={isChat ? `/connections/${feed?.feed_name}` : `/${linkType}/${feed?.feed_name}`}
+                                title={`Go to ${feed?.feed_name}`}
                                 draggable={false}
                             >
                                 {feedContent}

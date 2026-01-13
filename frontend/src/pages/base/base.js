@@ -549,7 +549,10 @@ const BaseLayout = () => {
                                 <nav id="personal-feeds">
                                     <ul>
                                         <li className={`channel-link ${location.pathname.startsWith('/messages') ? 'selected' : ''}`}>
-                                            <Link to="/messages">Messages</Link>
+                                            <Link to="/messages">
+                                                Messages
+                                                {state.total > 0 && <span className="unread-badge faded-text">{state.total}</span>}
+                                            </Link>
                                         </li>
                                         <Link to="/explore" className={`channel-link ${location.pathname.startsWith('/explore') ? 'selected' : ''}`}>
                                             Explore

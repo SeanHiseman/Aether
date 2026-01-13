@@ -166,7 +166,7 @@
     gap: var(--medium-margin);
 }
 .modal-content {
-    background-color: var(--color-white);
+    background-color: var(--dark);
     padding: var(--large-margin);
     border-radius: var(--medium-margin);
     box-shadow: var(--shadow-xl);

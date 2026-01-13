@@ -447,3 +447,14 @@ ADD COLUMN is_deletion BOOLEAN NOT NULL DEFAULT FALSE AFTER is_resolved;
 
 CREATE INDEX idx_feedback_is_deletion
 ON feedback (is_deletion);
+
+ALTER TABLE messages
+ADD COLUMN shared_post_id VARCHAR(36) NULL;
+
+ALTER TABLE messages
+ADD CONSTRAINT fk_shared_post
+  FOREIGN KEY (shared_post_id)
+  REFERENCES posts(post_id)
+  ON DELETE SET NULL;
+
+CREATE INDEX idx_messages_shared_post ON messages(shared_post_id);

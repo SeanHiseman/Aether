@@ -73,6 +73,8 @@ Chats.hasMany(Messages, { foreignKey: 'chat_id' });
 Messages.belongsTo(Chats, { foreignKey: 'chat_id' });
 Feeds.hasMany(Messages, { foreignKey: 'sender_id' });
 Messages.belongsTo(Feeds, { foreignKey: 'sender_id' });
+Messages.belongsTo(Posts, { foreignKey: 'shared_post_id', as: 'sharedPost' });
+Posts.hasMany(Messages, { foreignKey: 'shared_post_id', as: 'sharedInMessages' });
 
 AskChats.belongsTo(Users, { as: 'user', foreignKey: 'user_id' });
 Users.hasMany(AskChats, { as: 'askChats', foreignKey: 'user_id' });

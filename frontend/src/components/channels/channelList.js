@@ -29,6 +29,7 @@ const SortableFeedChannelItem = ({ channel, id, url }) => {
 };
 
 const ChannelList = ({ canReorder = false, channels, feedId, feedName, isChat, isGroup, isSaved, setChannels }) => {
+    console.log("channels:", channels);
     const { channel_name } = useParams();
     const [errorMessage, setErrorMessage] = useState('');
     const { state: unreadState } = useContext(UnreadContext); 
@@ -51,10 +52,20 @@ const ChannelList = ({ canReorder = false, channels, feedId, feedName, isChat, i
                 });
                 if (response.data?.success) {
                     const decryptedChats = response.data?.chats.map((chat) => {
-                        return {
-                            ...chat,
-                            title: decrypt(chat?.title)
-                        };
+                        try {
+                            //Decrypt the title
+                            const decryptedTitle = decrypt(chat?.title);
+                            return {
+                                ...chat,
+                                title: decryptedTitle
+                            };
+                        } catch (error) {
+                            console.error('Decryption error for chat:', chat?.chat_id, error);
+                            return {
+                                ...chat,
+                                title: 'Unknown Chat'
+                            };
+                        }
                     });
                     setChannels(decryptedChats || []);
                 } else {
@@ -187,7 +198,7 @@ const ChannelList = ({ canReorder = false, channels, feedId, feedName, isChat, i
                 <ul>
                     {orderedChannels.map(channel => (
                         <li key={channel?.chat_id} className="channel-item">
-                            <Link to={`/connections/${feedName}/${channel?.title}`}>
+                            <Link to={`/connections/${feedName}/${channel?.chat_id}`}>
                                 <div className="channel-link">
                                     {channel?.title}
                                     {unreadState.chatCounts[channel?.chat_id] > 0 && (

@@ -947,7 +947,7 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
                                                         <div className="block" style={{ flex: 1 }}>
                                                             {type !== BLOCK_TYPES.TEXT && (
                                                                 <div className="block-controls" style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                                                    {!(type === BLOCK_TYPES.CODE && (data.code?.includes('social-media-embed') || data.code?.includes('embedded-website'))) && (
+                                                                    {(type === BLOCK_TYPES.CODE) && (
                                                                         <div style={{ display: 'flex', gap: '10px' }}>
                                                                             {type === BLOCK_TYPES.CODE && isEditing && (
                                                                                 <button className="small-icon" onClick={() => updateBlock({ ...block, data: { ...data, showPrompt: !data.showPrompt } })} title={data.showPrompt ? 'Direct input' : 'Prompt'} type="button">

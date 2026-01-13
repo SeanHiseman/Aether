@@ -3,7 +3,8 @@ import AskButton from '../askButton';
 import { AuthContext } from '../authContext';
 import ContentDisplay from './contentDisplay';
 import ConfirmModal from '../modals/confirmModal';
-import { FaArrowDown, FaArrowUp, FaBookmark, FaChevronDown, FaChevronUp, FaComments, FaCommentSlash, FaEdit, FaCompress, FaExpand, FaRegBookmark,  FaReply, FaTrash, FaTree, FaListUl } from 'react-icons/fa';
+import SharePostModal from '../modals/sharePostModal';
+import { FaArrowDown, FaArrowUp, FaBookmark, FaChevronDown, FaChevronUp, FaComments, FaCommentSlash, FaEdit, FaCompress, FaExpand, FaRegBookmark, FaReply, FaShare, FaTrash, FaTree, FaListUl } from 'react-icons/fa';
 import { FormatNumber } from '../../functions/formatNumber';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import ReplyTreeView from './replyTreeView';
@@ -38,6 +39,7 @@ const ContentWidget = ({ canRemove = false, display = false, feed, isDraft = fal
 	const [showFullContent, setShowFullContent] = useState(false);
 	const [showNote, setShowNote] = useState(post?.note && post?.note?.is_misinfo);
 	const [showReplies, setShowReplies] = useState(readOnly ? false : (post_id ? (post?.replies > 0) : false));
+	const [showShareModal, setShowShareModal] = useState(false);
 	const [treeViewMode, setTreeViewMode] = useState(false);
 	const [upvotes, setUpvotes] = useState(post?.upvotes);
 	const [views, setViews] = useState(post?.views);
@@ -464,9 +466,12 @@ const ContentWidget = ({ canRemove = false, display = false, feed, isDraft = fal
 					<AskButton content={post} isReply={false} note={note} setNote={setNote} setPostErrorMessage={setPostErrorMessage} setShowNote={setShowNote} showNote={showNote} />
 				)}*/}
 				{!isDraft && isAuthenticated && (
-					<div className="button-text-bottom">
+					<div className="post-button-group">
 						<button className="large-icon" title={isSaved ? 'Unsave post' : 'Save post'} onClick={savePost}>
 							{isSaved ? <FaBookmark /> : <FaRegBookmark />}
+						</button>
+						<button className="large-icon" title="Share post" onClick={() => setShowShareModal(true)}>
+							<FaShare />
 						</button>
 					</div>
 				)}
@@ -526,7 +531,9 @@ const ContentWidget = ({ canRemove = false, display = false, feed, isDraft = fal
 				</div>
 			)}
 		</div>
-		<ConfirmModal isOpen={showDeleteConfirm} onConfirm={confirmDelete} onCancel={cancelDelete} title={`Delete ${pendingDeleteAction}`} message={`Are you sure you want to delete this ${pendingDeleteAction}?`} /></>
+		<ConfirmModal isOpen={showDeleteConfirm} onConfirm={confirmDelete} onCancel={cancelDelete} title={`Delete ${pendingDeleteAction}`} message={`Are you sure you want to delete this ${pendingDeleteAction}?`} />
+		{showShareModal && <SharePostModal post={post} onClose={() => setShowShareModal(false)} />}
+		</>
 	);
 };
 

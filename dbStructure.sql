@@ -182,13 +182,16 @@ CREATE TABLE `messages` (
   `is_read` tinyint(1) DEFAULT '0',
   `created_at` datetime(3) DEFAULT CURRENT_TIMESTAMP(3),
   `updated_at` datetime(3) DEFAULT CURRENT_TIMESTAMP(3),
+  `shared_post_id` VARCHAR(36) NULL,
   PRIMARY KEY (`message_id`),
   KEY `chat_id` (`chat_id`),
   KEY `sender_id` (`sender_id`),
   KEY `receiver_id` (`receiver_id`),
   CONSTRAINT `messages_ibfk_1` FOREIGN KEY (`chat_id`) REFERENCES `chats` (`chat_id`),
   CONSTRAINT `messages_ibfk_2` FOREIGN KEY (`sender_id`) REFERENCES `feeds` (`feed_id`),
-  CONSTRAINT `messages_ibfk_3` FOREIGN KEY (`receiver_id`) REFERENCES `feeds` (`feed_id`)
+  CONSTRAINT `messages_ibfk_3` FOREIGN KEY (`receiver_id`) REFERENCES `feeds` (`feed_id`),
+  CONSTRAINT `fk_shared_post` FOREIGN KEY (`shared_post_id`) REFERENCES `posts` (`post_id`) ON DELETE SET NULL
+  INDEX `idx_messages_shared_post` ON messages(shared_post_id),
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 DROP TABLE IF EXISTS `post_drafts`;

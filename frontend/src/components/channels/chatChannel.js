@@ -1,7 +1,6 @@
 import api from '../../api';
 import { useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { AuthContext } from '../authContext';
-import { io } from "socket.io-client";
 import { v4 } from 'uuid';
 import { decrypt, encrypt } from '../../encryptionUtil';
 import Message from '../messages/message';
@@ -10,6 +9,8 @@ import { UnreadContext } from '../messages/unreadContext';
 const ChatChannel = ({ canAdd, canRemove, channelId, connection, isGroup, isLocked, setChats, setErrorMessage }) => {
     const [channel, setChannel] = useState([]);
     const { dispatch } = useContext(UnreadContext);
+    const [editContent, setEditContent] = useState('');
+    const [editingMessageId, setEditingMessageId] = useState(null);
     const [hasMore, setHasMore] = useState(true);
     const [message, setMessage] = useState('');
     const [offset, setOffset] = useState(0);
@@ -19,33 +20,83 @@ const ChatChannel = ({ canAdd, canRemove, channelId, connection, isGroup, isLock
     const messagesEndRef = useRef(null);
     const socketRef = useRef(null);
 
-    //Initialize socket connection once
+    //Use the global socket from SocketProvider
     useEffect(() => {
-        if (!socketRef.current) {
-            socketRef.current = io(process.env.REACT_APP_SOCKET_URL, {
-                transports: ['websocket', 'polling'],
-            });
-            socketRef.current.on('connect_error', (err) => {
-                setErrorMessage(`Connection failed`);
-                setTimeout(() => { setErrorMessage(''); }, 5000);
-            });
-            socketRef.current.on('error_message', (error) => 
-                setErrorMessage('An error occurred'));
-                setTimeout(() => { setErrorMessage(''); }, 5000);
+        if (window.socket) {
+            socketRef.current = window.socket;
+        } else {
+            console.error('Global socket not available');
+            setErrorMessage('Connection failed');
+            setTimeout(() => { setErrorMessage(''); }, 5000);
         }
-        return () => {
-            if (socketRef.current) {
-                socketRef.current.disconnect();
-                socketRef.current = null;
-            }
-        };
-    }, []); 
+    }, [setErrorMessage]); 
 
     //Mark messages as read when entering a channel
+    const deleteMessage = useCallback((messageId) => {
+        try {
+            if (!messageId || !socketRef.current || !socketRef.current.connected) return;
+            const route = isGroup ? 'delete_feed_message' : 'delete_direct_message';
+            socketRef.current.emit(route, {
+                message_id: messageId,
+                channel_id: channelId,
+            });
+            setChannel(prev => prev.filter(m => m.message_id !== messageId));
+        } catch (error) {
+            setErrorMessage("Error deleting message");
+            setTimeout(() => { setErrorMessage(''); }, 5000);
+        }
+    }, [channelId, isGroup, setErrorMessage]);
+
+    const editMessage = useCallback((messageId, newContent) => {
+        try {
+            if (!newContent.trim()) return;
+            if (newContent.length > maxLength) {
+                setErrorMessage(`Message cannot exceed ${maxLength} characters.`);
+                setTimeout(() => { setErrorMessage(''); }, 5000);
+                return;
+            }
+            if (!socketRef.current || !socketRef.current.connected) {
+                setErrorMessage("Error, please try again.");
+                setTimeout(() => { setErrorMessage(''); }, 5000);
+                return;
+            }
+            socketRef.current.emit('edit_direct_message', {
+                message_id: messageId,
+                content: isGroup ? newContent : encrypt(newContent),
+                channel_id: channelId,
+            });
+            setEditingMessageId(null);
+            setEditContent('');
+        } catch (error) {
+            setErrorMessage("Error editing message");
+            setTimeout(() => { setErrorMessage(''); }, 5000);
+        }
+    }, [channelId, isGroup, maxLength, setErrorMessage]);
+
+    const getChannelMessages = useCallback(async (channelId, currentOffset = 0) => {
+        try {
+            const route = isGroup ? 'feed_channel_messages' : 'get_chat_messages';
+            const response = await api.get(`/${route}`, { params: { channelId, limit: 20, offset: currentOffset } });
+            const messages = response.data.messages.map((m) => ({
+                ...m,
+                content: isGroup ? m.content : decrypt(m.content),
+            }));
+            console.log("Fetched messages:", messages);
+            if (messages.length < 20) setHasMore(false);
+            if (currentOffset === 0) setChannel(messages);
+            else setChannel(prev => [...messages, ...prev]);
+            setOffset(currentOffset + messages.length);
+        } catch (error) {
+            setErrorMessage('Error fetching messages');
+            setTimeout(() => { setErrorMessage(''); }, 5000);
+        }
+    }, [isGroup, setErrorMessage]);
+
     useEffect(() => {
-        if (channelId && !isGroup && viewer.feed_id && socketRef.current && socketRef.current.connected) {
+        const socket = socketRef.current;
+        if (channelId && !isGroup && viewer.feed_id && socket && socket.connected) {
             try {
-                socketRef.current.emit('mark_messages_read', {
+                socket.emit('mark_messages_read', {
                     chat_id: channelId,
                     reader_id: viewer.feed_id,
                 });
@@ -55,8 +106,8 @@ const ChatChannel = ({ canAdd, canRemove, channelId, connection, isGroup, isLock
                 setTimeout(() => { setErrorMessage(''); }, 5000);
             }
         }
-    }, [channelId, isGroup, viewer.feed_id, dispatch, socketRef.current?.connected]);
-    
+    }, [channelId, isGroup, viewer.feed_id, dispatch, setErrorMessage]);
+
     //Channel-specific setup and event listeners
     useEffect(() => {
         try {
@@ -85,7 +136,7 @@ const ChatChannel = ({ canAdd, canRemove, channelId, connection, isGroup, isLock
             }
             const handleNewMessage = (newMessage) => {
                 try {
-                    if (newMessage.channel_id === channelId) {
+                    if (newMessage.chat_id === channelId) {
                         setChannel((prevMessages) => {
                             const messageExists = prevMessages.some(msg => msg.message_id === newMessage.message_id);
                             if (messageExists) return prevMessages;
@@ -110,6 +161,24 @@ const ChatChannel = ({ canAdd, canRemove, channelId, connection, isGroup, isLock
                     setChannel((prevMessages) => [...prevMessages, processedMessage]);
                 } catch (error) {
                     setErrorMessage("Error handling confirmed message");
+                    setTimeout(() => { setErrorMessage(''); }, 5000);
+                }
+            };
+            const handleMessageEdited = (editedMessage) => {
+                try {
+                    setChannel((prevMessages) =>
+                        prevMessages.map(msg =>
+                            msg.message_id === editedMessage.message_id
+                                ? {
+                                    ...msg,
+                                    content: isGroup ? editedMessage.content : decrypt(editedMessage.content),
+                                    edited_at: editedMessage.edited_at
+                                }
+                                : msg
+                        )
+                    );
+                } catch (error) {
+                    setErrorMessage("Error handling edited message");
                     setTimeout(() => { setErrorMessage(''); }, 5000);
                 }
             };
@@ -173,39 +242,6 @@ const ChatChannel = ({ canAdd, canRemove, channelId, connection, isGroup, isLock
             socketRef.current.emit('join_channel_type', isGroup ? 'feed_chat' : 'direct_message');
         }
     }, [isGroup]);
-
-    const deleteMessage = useCallback((messageId) => {
-        try {
-            if (!messageId || !socketRef.current || !socketRef.current.connected) return;
-            const route = isGroup ? 'delete_feed_message' : 'delete_direct_message';
-            socketRef.current.emit(route, {
-                message_id: messageId,
-                channel_id: channelId,
-            });
-            setChannel(prev => prev.filter(m => m.message_id !== messageId));  
-        } catch (error) {
-            setErrorMessage("Error deleting message");
-            setTimeout(() => { setErrorMessage(''); }, 5000);
-        }
-    }, [channelId, isGroup, setErrorMessage]);
-
-    const getChannelMessages = useCallback(async (channelId, currentOffset = 0) => {
-        try {
-            const route = isGroup ? 'feed_channel_messages' : 'get_chat_messages';
-            const response = await api.get(`/${route}`, { params: { channelId, limit: 20, offset: currentOffset } });
-            const messages = response.data.messages.map((m) => ({
-                ...m,
-                content: isGroup ? m.content : decrypt(m.content),
-            }));
-            if (messages.length < 20) setHasMore(false);
-            if (currentOffset === 0) setChannel(messages);
-            else setChannel(prev => [...messages, ...prev]);
-            setOffset(currentOffset + messages.length);
-        } catch (error) {
-            setErrorMessage('Error fetching messages');
-            setTimeout(() => { setErrorMessage(''); }, 5000);
-        }
-    }, [isGroup, setErrorMessage]);
 
     //Reset channel when channelId changes
     useEffect(() => {
@@ -271,14 +307,20 @@ const ChatChannel = ({ canAdd, canRemove, channelId, connection, isGroup, isLock
                             key={msg.message_id || index}
                             canRemove={canRemove}
                             deleteMessage={deleteMessage}
+                            editMessage={editMessage}
+                            editingMessageId={editingMessageId}
+                            setEditingMessageId={setEditingMessageId}
+                            editContent={editContent}
+                            setEditContent={setEditContent}
                             isGroup={isGroup}
                             isOutgoing={msg.sender_id === viewer.feed_id}
                             isRead={msg.is_read}
                             message={msg}
+                            maxLength={maxLength}
                         />
                     ))
                 ) : (   
-                    <p className="text36">No messages yet</p>
+                    <p className="large-text">No messages yet</p>
                 )}
                 <div ref={messagesEndRef} />
             </div>

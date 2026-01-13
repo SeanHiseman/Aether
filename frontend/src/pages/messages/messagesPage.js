@@ -19,8 +19,8 @@ const MessagesPage = () => {
     const [hasMoreRequests, setHasMoreRequests] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [requestsOffset, setRequestsOffset] = useState(0);
-    const { rightClasses, updateFeeds, closeDrawers, mobileOpen } = useOutletContext(); 
-    const { dispatch } = useContext(UnreadContext);
+    const { rightClasses, updateFeeds, closeDrawers, mobileOpen } = useOutletContext();
+    const { dispatch, state } = useContext(UnreadContext);
     const { viewer } = useContext(AuthContext);
 
     const isMobile = () => window.matchMedia("(max-width:768px)").matches;
@@ -81,31 +81,45 @@ const MessagesPage = () => {
             setRequestsOffset(0);
             setHasMoreRequests(true);
             loadMoreRequests();
-            const socket = window.socket; 
+            const socket = window.socket;
             if (socket) {
 				socket.on('new_connect_request', async () => {
 					setRequestsOffset(0);
 					setHasMoreRequests(true);
 					try {
-						const response = await api.get('/get_connect_requests', { 
-							params: { feedId: viewer?.feed_id, offset: 0 } 
+						const response = await api.get('/get_connect_requests', {
+							params: { feedId: viewer?.feed_id, offset: 0 }
 						});
 						const newRequests = response.data?.requests || [];
 						setConnectRequests(newRequests);
 						setRequestsOffset(newRequests.length);
-						dispatch({ 
+						dispatch({
 							type: 'SET_REQUEST_COUNT',
-							count: newRequests.length 
+							count: newRequests.length
 						});
 					} catch (error) {
 						setErrorMessage(error.response.data?.message || 'Error getting connect requests');
                         setTimeout(() => { setErrorMessage(''); }, 5000);
 					}
 				});
+
+				socket.on('connect_request_resolved', async (data) => {
+					if (data.accepted) {
+						try {
+							const response = await api.get(`/get_connection/${data.connectionName || data.receiverName}`);
+							if (response.data?.connection) {
+								handleConnectionAddition(response.data.connection);
+							}
+						} catch (error) {
+							console.error('Error fetching new connection:', error);
+						}
+					}
+				});
             }
             return () => {
                 if (socket) {
                     socket.off('new_connect_request');
+					socket.off('connect_request_resolved');
                 }
             };
         }
@@ -271,6 +285,7 @@ const MessagesPage = () => {
                                         key={connection?.connection_id}
                                         connection={connection}
                                         onRemove={openRemoveModal}
+                                        unreadCount={state.feedCounts?.[connection.feed_id] || 0}
                                         viewerId={viewer?.feed_id} />
                                 ))}
                             </div>
@@ -295,12 +310,15 @@ const MessagesPage = () => {
             <SwipeableAside className={computedRightClasses} position="right" isOpen={mobileOpen === "right"} onClose={closeDrawers}>
                 <nav className="feed-list">
                     <p className="large-text">Messages</p>
-                    <p className="small-text faded-text">Coming soon!</p>
-                    {/*<ul>
-                        {connections.map(c => (
-                            <FeedItem key={c.feed_id} feed={c} isChat={true} unreadCount={state.feedCounts?.[c.feed_id] || 0} />
-                        ))}
-                    </ul>*/}
+                    {connections.length === 0 ? (
+                        <p className="small-text faded-text">No connections yet</p>
+                    ) : (
+                        <ul>
+                            {connections.map(c => (
+                                <FeedItem key={c.feed_id} feed={c} isChat={true} unreadCount={state.feedCounts?.[c.feed_id] || 0} />
+                            ))}
+                        </ul>
+                    )}
                 </nav>
             </SwipeableAside>
         </div>

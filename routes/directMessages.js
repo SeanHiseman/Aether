@@ -3,7 +3,7 @@ import dotenv from 'dotenv';
 import { Router } from 'express';
 import { v4 } from 'uuid';
 import { Op, Sequelize } from 'sequelize';
-import { Chats, Connections, ConnectRequests, FeedChats, Feeds, Messages } from '../models/relationships.js';
+import { Chats, Connections, ConnectRequests, FeedChats, FeedChannels, Feeds, Messages, Posts, PostNotes, PostVotes, SavedPosts } from '../models/relationships.js';
 import authenticateCheck from '../functions/checks/authenticateCheck.js';
 import sequelize from '../databaseSetup.js';
 
@@ -177,13 +177,50 @@ router.delete('/delete_connection', authenticateCheck, async (req, res) => {
 router.get('/get_chat_messages', authenticateCheck, async (req, res) => {
     try {
         const { channelId, limit, offset } = req.query;
+        const viewerId = req.session.viewer_id;
         const messages = await Messages.findAll({
             where: { chat_id: channelId },
-            include: [{ model: Feeds }],
+            include: [
+                { model: Feeds },
+                {
+                    model: Posts,
+                    as: 'sharedPost',
+                    required: false,
+                    include: [
+                        { model: PostNotes, as: 'note', required: false },
+                        { model: Feeds, as: 'poster' },
+                        {
+                            model: FeedChannels,
+                            as: 'parentChannel',
+                            include: [{ model: Feeds }]
+                        },
+                        {
+                            model: PostVotes,
+                            as: 'votes',
+                            attributes: ['upvotes', 'downvotes']
+                        }
+                    ]
+                }
+            ],
             order: [['created_at', 'ASC']],
             limit: parseInt(limit) || 20,
             offset: parseInt(offset) || 0,
         });
+        for (const message of messages) {
+            if (message.sharedPost) {
+                const voteRow = await PostVotes.findOne({
+                    where: { post_id: message.shared_post_id, voter_id: viewerId },
+                    raw: true
+                });
+                message.sharedPost.dataValues.has_upvoted = voteRow?.upvotes > 0 || false;
+                message.sharedPost.dataValues.has_downvoted = voteRow?.downvotes > 0 || false;
+
+                const savedRow = await SavedPosts.findOne({
+                    where: { post_id: message.shared_post_id, saver_id: viewerId }
+                });
+                message.sharedPost.dataValues.is_saved = !!savedRow;
+            }
+        }
         res.status(200).json({ messages, success: true });
     } catch (error) {
         console.error(new Date().toISOString(), '/get_chat_messages error:', error);
@@ -437,6 +474,111 @@ export const connectRequestsSocket = (socket) => {
     }
 };
 
+router.post('/send_shared_post', authenticateCheck, async (req, res) => {
+    try {
+        const { post_id, shares, sender_id, message_text } = req.body;
+        if (!post_id || !shares || !Array.isArray(shares) || shares.length === 0) {
+            return res.status(400).json({ success: false, message: 'Invalid request parameters' });
+        }
+        const post = await Posts.findOne({
+            where: { post_id },
+            include: [
+                { model: PostNotes, as: 'note', required: false },
+                { model: Feeds, as: 'poster' },
+                {
+                    model: FeedChannels,
+                    as: 'parentChannel',
+                    include: [{ model: Feeds }]
+                },
+                {
+                    model: PostVotes,
+                    as: 'votes',
+                    attributes: ['upvotes', 'downvotes']
+                }
+            ]
+        });
+        if (!post) {
+            return res.status(404).json({ success: false, message: 'Post not found' });
+        }
+        if (post.is_private) {
+            return res.status(403).json({ success: false, message: 'Cannot share private posts' });
+        }
+        const encryptedContent = message_text ? CryptoJS.AES.encrypt(message_text, SECRET_KEY).toString() : null;
+        let sentCount = 0;
+        for (const share of shares) {
+            const { chat_id, receiver_id } = share;
+            const connection = await Connections.findOne({
+                where: {
+                    [Op.or]: [
+                        { feed1_id: sender_id, feed2_id: receiver_id },
+                        { feed1_id: receiver_id, feed2_id: sender_id }
+                    ]
+                }
+            });
+            if (!connection) {
+                continue;
+            }
+            const message = await Messages.create({
+                message_id: v4(),
+                content: encryptedContent,
+                chat_id,
+                sender_id,
+                receiver_id,
+                shared_post_id: post_id,
+                is_read: false,
+                created_at: new Date()
+            });
+            await Chats.update(
+                { updated_at: new Date() },
+                { where: { chat_id } }
+            );
+            const messageWithPost = await Messages.findOne({
+                where: { message_id: message.message_id },
+                include: [{
+                    model: Posts,
+                    as: 'sharedPost',
+                    required: false,
+                    include: [
+                        { model: PostNotes, as: 'note', required: false },
+                        { model: Feeds, as: 'poster' },
+                        {
+                            model: FeedChannels,
+                            as: 'parentChannel',
+                            include: [{ model: Feeds }]
+                        },
+                        {
+                            model: PostVotes,
+                            as: 'votes',
+                            attributes: ['upvotes', 'downvotes']
+                        }
+                    ]
+                }]
+            });
+            if (messageWithPost && messageWithPost.sharedPost) {
+                const voteRow = await PostVotes.findOne({
+                    where: { post_id, voter_id: receiver_id },
+                    raw: true
+                });
+                messageWithPost.sharedPost.dataValues.has_upvoted = voteRow?.upvotes > 0 || false;
+                messageWithPost.sharedPost.dataValues.has_downvoted = voteRow?.downvotes > 0 || false;
+                const savedRow = await SavedPosts.findOne({
+                    where: { post_id, saver_id: receiver_id }
+                });
+                messageWithPost.sharedPost.dataValues.is_saved = !!savedRow;
+            }
+            const io = req.app.get('io');
+            if (io) {
+                io.to(chat_id).emit('chat_message_confirmed', messageWithPost);
+            }
+            sentCount++;
+        }
+        res.status(200).json({ success: true, sentCount });
+    } catch (error) {
+        console.error(new Date().toISOString(), '/send_shared_post error:', error);
+        res.status(500).json({ success: false, message: 'Error sending shared post' });
+    }
+});
+
 export const directMessagesSocket = (socket) => {
     try {
         socket.on('join_chat', (chat_id) => {
@@ -445,10 +587,36 @@ export const directMessagesSocket = (socket) => {
         socket.on('leave_chat', (chat_id) => {
             socket.leave(chat_id);
         });
+        socket.on('chat_created', async (data) => {
+            const { chat_id, connection_feed_id } = data;
+            socket.to(connection_feed_id.toString()).emit('new_chat_created', { chat_id });
+        });
+        socket.on('chat_deleted', async (data) => {
+            const { chat_id, connection_feed_id } = data;
+            socket.to(connection_feed_id.toString()).emit('chat_removed', { chat_id });
+        });
         socket.on('delete_direct_message', async (data) => {
             const { message_id, channel_id } = data;
             await Messages.destroy({ where: { message_id: data.message_id } });
             socket.to(channel_id).emit('delete_direct_message', { message_id });
+        });
+        socket.on('edit_direct_message', async (data) => {
+            const { message_id, content, channel_id } = data;
+            const messageLength = content.length;
+            if (messageLength === 0) {
+                socket.emit('error_message', { error: "Message too short" });
+                return;
+            } else if (messageLength > 1000) {
+                socket.emit('error_message', { error: "Message too long" });
+                return;
+            }
+            await Messages.update(
+                { content, edited_at: new Date() },
+                { where: { message_id } }
+            );
+            const updatedMessage = await Messages.findOne({ where: { message_id } });
+            socket.to(channel_id).emit('message_edited', updatedMessage);
+            socket.emit('message_edited', updatedMessage);
         });
         socket.on('send_direct_message', async (message) => {
             const messageLength = message.content.length;
