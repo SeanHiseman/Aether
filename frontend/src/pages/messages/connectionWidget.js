@@ -10,7 +10,7 @@ const ConnectionWidget = ({ connection, connectRequest, onAccept, onReject, onRe
 
 	return (
 		<div className="explore-block bg-gray-800 rounded-lg flex flex-col items-center">
-			<Link to={`/u/${connection?.feed_name}`} className="w-20 h-20 rounded-full overflow-hidden mb-2 relative">
+			<Link to={`/connections/${connection?.feed_name}`} className="w-20 h-20 rounded-full overflow-hidden mb-2 relative">
 				<img
 					className="w-full h-full object-cover feed-img"
 					src={imageUrl}
