@@ -171,6 +171,22 @@ const ChatChannel = ({ canAdd, canRemove, channelId, connection, isGroup, isLock
                             }
                         }, 0);
                     }
+                    //Move chat to top when receiving a message (after Main)
+                    if (!isGroup && setChats && newMessage?.chat_id) {
+                        setChats(prevChats => {
+                            const mainChat = prevChats.find(c => c?.title === 'Main');
+                            const targetChat = prevChats.find(c => c?.chat_id === newMessage?.chat_id);
+                            const otherChats = prevChats.filter(c => c?.title !== 'Main' && c?.chat_id !== newMessage?.chat_id);
+                            
+                            if (targetChat) {
+                                const updatedChat = { ...targetChat, updated_at: new Date().toISOString() };
+                                return mainChat 
+                                    ? [mainChat, updatedChat, ...otherChats]
+                                    : [updatedChat, ...otherChats];
+                            }
+                            return prevChats;
+                        });
+                    }
                 } catch (error) {
                     setErrorMessage("Error handling new message");
                     setTimeout(() => { setErrorMessage(''); }, 5000);
@@ -253,7 +269,7 @@ const ChatChannel = ({ canAdd, canRemove, channelId, connection, isGroup, isLock
             setErrorMessage("Unexpected error");
             setTimeout(() => { setErrorMessage(''); }, 5000);
         }
-    }, [channelId, isGroup, getChannelMessages, deleteMessage]);    
+    }, [channelId, isGroup, getChannelMessages, deleteMessage, setChats, setErrorMessage]);
     
     useEffect(() => {
         if (socketRef.current) {
@@ -314,6 +330,21 @@ const ChatChannel = ({ canAdd, canRemove, channelId, connection, isGroup, isLock
             const route = isGroup ? 'send_feed_message' : 'send_direct_message';
             socketRef.current.emit(route, newMessage);
             setMessage('');
+            //Move current chat to top of list (after Main)
+            if (!isGroup && setChats) {
+                setChats(prevChats => {
+                    const mainChat = prevChats.find(c => c?.title === 'Main');
+                    const currentChat = prevChats.find(c => c?.chat_id === channelId);
+                    const otherChats = prevChats.filter(c => c?.title !== 'Main' && c?.chat_id !== channelId);
+                    if (currentChat) {
+                        const updatedChat = { ...currentChat, updated_at: new Date().toISOString() };
+                        return mainChat 
+                            ? [mainChat, updatedChat, ...otherChats]
+                            : [updatedChat, ...otherChats];
+                    }
+                    return prevChats;
+                });
+            }
         } catch (error) {
             setErrorMessage("Error sending message");
             setTimeout(() => { setErrorMessage(''); }, 5000);   
