@@ -28,7 +28,6 @@ const SortableFeedChannelItem = ({ channel, id, url }) => {
 };
 
 const ChannelList = ({ canReorder = false, channels, feedId, feedName, isChat, isGroup, isSaved, setChannels }) => {
-    console.log("channels:", channels);
     const { channel_name } = useParams();
     const [errorMessage, setErrorMessage] = useState('');
     const { state: unreadState } = useContext(UnreadContext); 
@@ -112,8 +111,16 @@ const ChannelList = ({ canReorder = false, channels, feedId, feedName, isChat, i
     };
 
     const currentChannels = Array.isArray(channels) ? channels : [];
-    const mainChannel = currentChannels.find(channel => channel?.channel_name === 'Main');
-    const nonMainChannels = currentChannels.filter(channel => channel?.channel_name !== 'Main');
+    const mainChannel = currentChannels.find(channel => 
+        channel?.channel_name === 'Main' || channel?.title === 'Main'
+    );
+    const nonMainChannels = currentChannels
+        .filter(channel => channel?.channel_name !== 'Main' && channel?.title !== 'Main')
+        .sort((a, b) => {
+            const dateA = new Date(a?.updated_at || 0);
+            const dateB = new Date(b?.updated_at || 0);
+            return dateB - dateA;
+        });
     const orderedChannels = mainChannel
         ? [mainChannel, ...nonMainChannels]
         : nonMainChannels;
@@ -130,10 +137,7 @@ const ChannelList = ({ canReorder = false, channels, feedId, feedName, isChat, i
                             {errorMessage && <div className="error-message">{errorMessage}</div>}
                             <ul>
                                 {mainChannel && (
-                                    <li
-                                        key={mainChannel?.channel_id}
-                                        className={`channel-item ${mainChannel?.channel_name === channel_name ? 'selected' : ''}`}
-                                    >
+                                    <li key={mainChannel?.channel_id} className={`channel-item ${mainChannel?.channel_name === channel_name ? 'selected' : ''}`}>
                                         <Link to={isSaved ? `/saved/${mainChannel?.channel_name}` : `/${urlLetter}/${feedName}/${mainChannel?.channel_name}`}>
                                             <div className={`channel-link ${mainChannel?.channel_name === channel_name ? 'selected' : ''}`}>
                                                 {mainChannel.channel_name}
@@ -157,7 +161,7 @@ const ChannelList = ({ canReorder = false, channels, feedId, feedName, isChat, i
         } else {
             return (
                 <nav className="channel-list">
-                    <p className="channel-header-text" style={{ margin: 0 }}>Channels</p>
+                    <p className="channel-header-text" style={{ margin: 0 }}>{isChat ? 'Chats' : 'Channels'}</p>
                     {errorMessage && <div className="error-message">{errorMessage}</div>}
                     <ul>
                         {orderedChannels.map(channel => (
@@ -177,7 +181,7 @@ const ChannelList = ({ canReorder = false, channels, feedId, feedName, isChat, i
     } else {
         return (
             <nav className="channel-list">
-                <p className="channel-header-text" style={{ margin: 0 }}>Channels</p>
+                <p className="channel-header-text" style={{ margin: 0 }}>{isChat ? 'Chats' : 'Channels'}</p>
                 {errorMessage && <div className="error-message">{errorMessage}</div>}
                 <ul>
                     {orderedChannels.map(channel => (

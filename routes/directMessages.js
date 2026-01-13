@@ -25,7 +25,7 @@ router.post('/accept_connect_request', authenticateCheck, async (req, res) => {
             feed2_id: receiverId,
             connection_date: new Date()
         }, { transaction });
-        const encryptedTitle = CryptoJS.AES.encrypt("Main", SECRET_KEY).toString();
+        const encryptedTitle = encrypt("Main");
         const chat = await Chats.create({ 
             chat_id: v4(),
             title: encryptedTitle
