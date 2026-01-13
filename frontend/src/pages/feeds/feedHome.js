@@ -535,7 +535,7 @@ const FeedHome = () => {
             {renderChannelContent()}
             {!loading ? (
                 <SwipeableAside className={computedRightClasses} position="right" isOpen={mobileOpen === "right"} onClose={closeDrawers}>
-                    <div id="feed-summary">
+                    <div className="feed-summary">
                         <Link to={`/${urlPrefix}/${feed_name}/Main`}>
                             <img className="large-feed-photo" src={`${feed?.feed_photo}`} onError={(e) => e.currentTarget.src = '/media/site_images/blank-profile.png'} />
                         </Link>

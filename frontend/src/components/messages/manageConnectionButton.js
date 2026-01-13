@@ -100,21 +100,18 @@ const ManageConnectionButton = ({ connectRequest, feed, isConnected, viewerId, o
 
     if ((viewerId === receiverId) && request && !hasConnection) {
         return (
-            <div>
-                <button className="small-icon" onClick={() => handleConnectRequest('accept')}>
-                    <FaUserPlus /><p className="icon-text">Accept</p>
-                </button>
-                <button className="small-icon" onClick={() => handleConnectRequest('reject')}>
-                    <FaUserMinus /><p className="icon-text">Reject</p>
-                </button>
-                {errorMessage && <div className="error-message">{errorMessage}</div>}
-            </div>
+            <><button className="small-icon" onClick={() => handleConnectRequest('accept')}>
+                <FaUserPlus /><p className="icon-text">Accept</p>
+            </button>
+            <button className="small-icon" onClick={() => handleConnectRequest('reject')}>
+                <FaUserMinus /><p className="icon-text">Reject</p>
+            </button>
+            {errorMessage && <div className="error-message">{errorMessage}</div>}</>
         );
     }
 
     return (
-        <div>
-            <button className="small-icon" onClick={handleSendRequest}>
+            <><button className="small-icon" onClick={handleSendRequest}>
             {hasConnection ? (
                 <>
                     <FaUserMinus /><p className="icon-text">Disconnect</p>
@@ -129,8 +126,7 @@ const ManageConnectionButton = ({ connectRequest, feed, isConnected, viewerId, o
                 </>
             )}
             </button>
-            {errorMessage && <div className="error-message">{errorMessage}</div>}
-        </div>
+            {errorMessage && <div className="error-message">{errorMessage}</div>}</>
     );
 }
 

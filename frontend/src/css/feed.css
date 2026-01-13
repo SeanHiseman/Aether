@@ -174,6 +174,12 @@
 .feed-settings.short {
     height: clamp(400px, 40vh, 1000px);
 }
+.feed-summary {
+    align-items: center;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+}
 .follow-button {
     align-items: center;
     background: none;
