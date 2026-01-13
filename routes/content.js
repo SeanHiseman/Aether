@@ -1,4 +1,3 @@
-import { ALLOWED_EMBED_HOSTS, ALLOWED_SCRIPTS, SAFE_UTILITY_HOSTS } from '../embedHosts.js';
 import { AppBuilds, Feeds, FeedChannels, Posts, PostDrafts, PostNotes, PostVotes, SavedPosts, Users, ViewedPosts } from '../models/relationships.js';
 import { ApplyAlgorithm } from '../custom_algorithms/applyAlgorithm.js';
 import authenticateCheck from '../functions/checks/authenticateCheck.js';
