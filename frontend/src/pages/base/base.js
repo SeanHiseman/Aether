@@ -11,7 +11,6 @@ import GetCroppedImg from "../../functions/getCroppedImg";
 import InputModal from "../../components/modals/inputModal";
 import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { MagnifyingGlassIcon } from "@radix-ui/react-icons";
-import MessageDropdown from "../../components/messages/messageDropdown";
 import SocialFeedLink from "../../socialConnect/socialFeedLink";
 import SwipeableAside from "../../components/swipeableAside";
 import { ThemeContext } from "../../themeProvider";
@@ -548,12 +547,12 @@ const BaseLayout = () => {
                             <DndContext sensors={sensors} collisionDetection={customCollisionDetection} onDragStart={dragStart} onDragEnd={dragEnd}>
                                 <nav id="personal-feeds">
                                     <ul>
-                                        <li className={`channel-link ${location.pathname.startsWith('/messages') ? 'selected' : ''}`}>
-                                            <Link to="/messages">
+                                        <Link to="/messages">
+                                            <div className={`channel-link ${location.pathname.startsWith('/messages') ? 'selected' : ''}`}>
                                                 Messages
-                                                {state.total > 0 && <span className="unread-badge faded-text">{state.total}</span>}
-                                            </Link>
-                                        </li>
+                                                {state.total > 0 && <span className="unread-count">{state.total}</span>}
+                                            </div>
+                                        </Link>
                                         <Link to="/explore" className={`channel-link ${location.pathname.startsWith('/explore') ? 'selected' : ''}`}>
                                             Explore
                                         </Link>

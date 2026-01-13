@@ -16,9 +16,6 @@ const ConnectionWidget = ({ connection, connectRequest, onAccept, onReject, onRe
 					src={imageUrl}
 					onError={(e) => e.currentTarget.src = '/media/site_images/blank-profile.png'}
 				/>
-				{unreadCount > 0 && (
-					<span className="unread-badge absolute top-0 right-0">{unreadCount}</span>
-				)}
 			</Link>
 			<p className="text-lg font-bold text-white truncate mt-1 text-center">
 				{connection?.feed_name}

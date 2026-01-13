@@ -1,6 +1,5 @@
 import api from '../../api';
 import { AuthContext } from '../authContext';
-import { decrypt } from '../../encryptionUtil';
 import { FaChevronDown, FaChevronUp, FaTimes } from 'react-icons/fa';
 import { useContext, useEffect, useState } from 'react';
 
@@ -43,30 +42,16 @@ const SharePostModal = ({ post, onClose }) => {
         if (connectionChats[connectionFeedId]) {
             return;
         }
-
         setLoadingChats(prev => ({ ...prev, [connectionFeedId]: true }));
         try {
             const response = await api.get(`/get_chats/${viewer?.feed_id}`, {
                 params: { connectionName }
             });
             const chats = response.data?.chats || [];
-            const decryptedChats = chats.map(chat => {
-                try {
-                    return {
-                        ...chat,
-                        title: decrypt(chat.title)
-                    };
-                } catch (error) {
-                    console.error('Decryption error for chat:', chat.chat_id, error);
-                    return {
-                        ...chat,
-                        title: 'Unknown Chat'
-                    };
-                }
-            });
+            //Backend already returns decrypted titles, no need to decrypt
             setConnectionChats(prev => ({
                 ...prev,
-                [connectionFeedId]: decryptedChats
+                [connectionFeedId]: chats
             }));
         } catch (error) {
             setErrorMessage(error.response?.data?.message || 'Error fetching chats');
@@ -77,7 +62,7 @@ const SharePostModal = ({ post, onClose }) => {
     };
 
     const toggleConnection = async (connection, e) => {
-        // If clicking the chevron/expand button, just expand/collapse
+        //If clicking the chevron/expand button, just expand/collapse
         if (e?.target?.closest('.expand-icon')) {
             if (expandedConnection === connection.feed_id) {
                 setExpandedConnection(null);
@@ -87,11 +72,8 @@ const SharePostModal = ({ post, onClose }) => {
             }
             return;
         }
-
-        // If clicking the connection itself, select/deselect the Main chat
+        //If clicking the connection itself, select/deselect the Main chat
         await fetchChatsForConnection(connection.feed_id, connection.feed_name);
-
-        // Wait a bit for chats to load
         setTimeout(() => {
             const chats = connectionChats[connection.feed_id];
             if (chats && chats.length > 0) {
@@ -108,7 +90,6 @@ const SharePostModal = ({ post, onClose }) => {
         const existingIndex = selectedChats.findIndex(
             sc => sc.chat_id === chat.chat_id && sc.receiver_id === connectionFeedId
         );
-
         if (existingIndex >= 0) {
             setSelectedChats(prev => prev.filter((_, idx) => idx !== existingIndex));
         } else {
@@ -136,27 +117,23 @@ const SharePostModal = ({ post, onClose }) => {
             setTimeout(() => setErrorMessage(''), 5000);
             return;
         }
-
         if (message.length > maxLength) {
             setErrorMessage(`Message too long (max ${maxLength} characters)`);
             setTimeout(() => setErrorMessage(''), 5000);
             return;
         }
-
         setSending(true);
         try {
             const shares = selectedChats.map(sc => ({
                 chat_id: sc.chat_id,
                 receiver_id: sc.receiver_id
             }));
-
             const response = await api.post('/send_shared_post', {
                 post_id: post.post_id,
                 shares,
                 sender_id: viewer?.feed_id,
                 message_text: message.trim() || null
             });
-
             if (response.data?.success) {
                 onClose();
             } else {
@@ -184,33 +161,17 @@ const SharePostModal = ({ post, onClose }) => {
                         <FaTimes />
                     </button>
                 </div>
-
                 {errorMessage && <div className="error-message">{errorMessage}</div>}
-
                 <div className="modal-body">
-                    <input
-                        type="text"
-                        className="input"
-                        placeholder="Search connections..."
-                        value={searchQuery}
-                        onChange={e => setSearchQuery(e.target.value)}
-                    />
-
+                    <input type="text" className="input" placeholder="Search connections..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} />
                     <div className="share-connections-list">
                         {filteredConnections.length === 0 ? (
                             <p className="small-text faded-text">No connections found</p>
                         ) : (
                             filteredConnections.map(connection => (
                                 <div key={connection.feed_id}>
-                                    <div
-                                        className="share-connection-item"
-                                        onClick={(e) => toggleConnection(connection, e)}
-                                    >
-                                        <img
-                                            className="small-feed-photo"
-                                            src={connection.feed_photo}
-                                            onError={e => e.currentTarget.src = '/media/site_images/blank-profile.png'}
-                                        />
+                                    <div className="share-connection-item" onClick={(e) => toggleConnection(connection, e)}>
+                                        <img className="small-feed-photo" src={connection.feed_photo} onError={e => e.currentTarget.src = '/media/site_images/blank-profile.png'} />
                                         <span className="small-text">{connection.feed_name}</span>
                                         <div className="ml-auto expand-icon">
                                             {expandedConnection === connection.feed_id ? (
@@ -220,7 +181,6 @@ const SharePostModal = ({ post, onClose }) => {
                                             )}
                                         </div>
                                     </div>
-
                                     {expandedConnection === connection.feed_id && (
                                         <div className="share-chats-list">
                                             {loadingChats[connection.feed_id] ? (
@@ -229,15 +189,8 @@ const SharePostModal = ({ post, onClose }) => {
                                                 <p className="small-text faded-text">No chats available</p>
                                             ) : (
                                                 connectionChats[connection.feed_id]?.map(chat => (
-                                                    <label
-                                                        key={chat.chat_id}
-                                                        className="share-chat-checkbox"
-                                                    >
-                                                        <input
-                                                            type="checkbox"
-                                                            checked={isChatSelected(chat.chat_id, connection.feed_id)}
-                                                            onChange={() => toggleChatSelection(chat, connection.feed_id)}
-                                                        />
+                                                    <label key={chat.chat_id} className="share-chat-checkbox">
+                                                        <input type="checkbox" checked={isChatSelected(chat.chat_id, connection.feed_id)} onChange={() => toggleChatSelection(chat, connection.feed_id)}/>
                                                         <span className="small-text">{chat.title}</span>
                                                     </label>
                                                 ))
@@ -248,7 +201,6 @@ const SharePostModal = ({ post, onClose }) => {
                             ))
                         )}
                     </div>
-
                     <div className="share-message-input">
                         <label className="small-text">Add a message (optional)</label>
                         <textarea
@@ -264,7 +216,6 @@ const SharePostModal = ({ post, onClose }) => {
                         </p>
                     </div>
                 </div>
-
                 <div className="modal-footer">
                     <button className="secondary-button" onClick={onClose}>
                         Cancel
@@ -280,7 +231,6 @@ const SharePostModal = ({ post, onClose }) => {
                         }
                     </button>
                 </div>
-
                 {selectedChats.length > 0 && (
                     <div className="selected-chats-summary">
                         <p className="small-text">Selected:</p>

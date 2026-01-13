@@ -470,9 +470,9 @@ const ContentWidget = ({ canRemove = false, display = false, feed, isDraft = fal
 						<button className="large-icon" title={isSaved ? 'Unsave post' : 'Save post'} onClick={savePost}>
 							{isSaved ? <FaBookmark /> : <FaRegBookmark />}
 						</button>
-						<button className="large-icon" title="Share post" onClick={() => setShowShareModal(true)}>
+						{!post?.is_private && <button className="large-icon" title="Share post" onClick={() => setShowShareModal(true)}>
 							<FaShare />
-						</button>
+						</button>}
 					</div>
 				)}
 				<div className="view-date-container">

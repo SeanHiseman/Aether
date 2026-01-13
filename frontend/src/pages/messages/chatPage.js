@@ -1,12 +1,11 @@
 import api from '../../api';
-import { useCallback, useContext, useEffect, useState } from 'react';
-import { Link, useNavigate, useOutletContext, useParams } from 'react-router-dom';
-import { FaEdit, FaMinus, FaPlus, FaRegWindowClose, FaSave, FaTrash } from 'react-icons/fa';
 import { AuthContext } from '../../components/authContext';
 import ChannelList from '../../components/channels/channelList';
 import ChatChannel from '../../components/channels/chatChannel';
-import { decrypt, encrypt } from '../../encryptionUtil';
+import { FaEdit, FaMinus, FaPlus, FaRegWindowClose, FaSave, FaTrash } from 'react-icons/fa';
+import { Link, useNavigate, useOutletContext, useParams } from 'react-router-dom';
 import SwipeableAside from '../../components/swipeableAside';
+import { useCallback, useContext, useEffect, useState } from 'react';
 
 const ChatPage = () => {
     const { connection_name, chat_id } = useParams();
@@ -34,7 +33,7 @@ const ChatPage = () => {
     const fetchConnection = useCallback(async () => {
         try {
             const response = await api.get(`/get_connection/${connection_name}`);
-            setConnection(response.data.connection);
+            setConnection(response.data?.connection);
         } catch (error) {
             setErrorMessage(error.response?.data?.message || 'Error getting connection');
             setTimeout(() => { setErrorMessage(''); }, 5000);
@@ -52,38 +51,27 @@ const ChatPage = () => {
         const socket = window.socket;
         if (!socket || !viewer?.feed_id) return;
         const handleNewChat = async () => {
-            //Refresh the chats list when a new chat is created by another user
             if (connection?.feed_name) {
                 try {
                     const response = await api.get(`/get_chats/${viewer?.feed_id}`, {
-                        params: { connectionName: connection.feed_name }
+                        params: { connectionName: connection?.feed_name }
                     });
                     if (response.data?.success) {
-                        const decryptedChats = response.data?.chats.map(chat => {
-                            try {
-                                return {
-                                    ...chat,
-                                    title: decrypt(chat.title)
-                                };
-                            } catch (error) {
-                                console.error('Decryption error:', error);
-                                return { ...chat, title: 'Unknown Chat' };
-                            }
-                        });
-                        setChats(decryptedChats || []);
+                        //No decryption needed, backend sends decrypted titles
+                        setChats(response.data?.chats || []);
                     }
                 } catch (error) {
-                    console.error('Error fetching chats:', error);
+                    console.error('Error fetching chats');
                 }
             }
         };
         const handleChatRemoved = (data) => {
-            setChats(prev => prev.filter(chat => chat.chat_id !== data.chat_id));
+            setChats(prev => prev.filter(chat => chat?.chat_id !== data?.chat_id));
             //If viewing deleted chat, redirect to Main
-            if (selectedChatId === data.chat_id) {
-                const mainChat = chats.find(c => c.title === 'Main');
+            if (selectedChatId === data?.chat_id) {
+                const mainChat = chats.find(c => c?.title === 'Main');
                 if (mainChat) {
-                    navigate(`/connections/${connection_name}/${mainChat.chat_id}`);
+                    navigate(`/connections/${connection_name}/${mainChat?.chat_id}`);
                 }
             }
         };
@@ -98,16 +86,16 @@ const ChatPage = () => {
     useEffect(() => {
         if (chats.length > 0) {
             if (chat_id) {
-                const found = chats.find(c => c.chat_id === chat_id);
+                const found = chats.find(c => c?.chat_id === chat_id);
                 if (found) {
-                    setSelectedChatId(found.chat_id);
-                    setCurrentChatTitle(found.title);
+                    setSelectedChatId(found?.chat_id);
+                    setCurrentChatTitle(found?.title);
                 }
             } else {
                 //If no chat_id, find and navigate to Main chat
-                const mainChat = chats.find(c => c.title === 'Main');
+                const mainChat = chats.find(c => c?.title === 'Main');
                 if (mainChat) {
-                    navigate(`/connections/${connection_name}/${mainChat.chat_id}`, { replace: true });
+                    navigate(`/connections/${connection_name}/${mainChat?.chat_id}`, { replace: true });
                 }
             }
         }
@@ -127,12 +115,9 @@ const ChatPage = () => {
                 setTimeout(() => { setErrorMessage(''); }, 5000);
                 return;
             } 
-            let finalChannelName = newChatName;
-            const encryptedChannelName = encrypt(newChatName);
-            finalChannelName = encryptedChannelName;
             const response = await api.post('/change_chat_name', {
                 channelId: selectedChatId,
-                newChannelName: finalChannelName,
+                newChannelName: newChatName, //Send plaintext
             });
             if (response.status === 200) {
                 setErrorMessage('');
@@ -172,21 +157,21 @@ const ChatPage = () => {
             let finalChatName = "";
             const baseName = "New chat";
             if (newChatName.length === 0) {
-                if (!chats.some(c => c.title === baseName)) { //If no chats have the default name
+                if (!chats.some(c => c?.title === baseName)) {
                     finalChatName = baseName;
                 } else {
-                    let counter = 2; //Allows for 'New chat 2', 'New chat 3' etc
-                    while (chats.some(c => c.title === `${baseName} ${counter}`)) {
+                    let counter = 2;
+                    while (chats.some(c => c?.title === `${baseName} ${counter}`)) {
                         counter++;
                     }
                     finalChatName = `${baseName} ${counter}`;
                 }
             } else {
                 finalChatName = newChatName;
-                if (chats.some(c => c.title === finalChatName)) {
-                setErrorMessage("Name already used");
-                setTimeout(() => { setErrorMessage(''); }, 5000);
-                return;
+                if (chats.some(c => c?.title === finalChatName)) {
+                    setErrorMessage("Name already used");
+                    setTimeout(() => { setErrorMessage(''); }, 5000);
+                    return;
                 }
             }
             if (finalChatName.length >= 30) {
@@ -199,28 +184,26 @@ const ChatPage = () => {
                 setTimeout(() => { setErrorMessage(''); }, 5000);
                 return;
             }
-            const encryptedChatName = encrypt(finalChatName);
             const response = await api.post('/create_chat', {
                 participants,
-                title: encryptedChatName
+                title: finalChatName //Send plaintext
             });
             if (response.data && response.status === 201) {
-                const newChat = response.data.newChat;
-                const decryptedTitle = decrypt(newChat.title);
-                const updatedChats = [{ ...newChat, title: decryptedTitle }, ...chats];
+                const newChat = response.data?.newChat;
+                //Backend already returns decrypted title, no need to decrypt
+                const updatedChats = [newChat, ...chats];
                 setChats(updatedChats);
                 setErrorMessage('');
                 setNewChatName('');
                 setShowForm(false);
-                //Emit socket event to notify other user
                 const socket = window.socket;
                 if (socket) {
                     socket.emit('chat_created', {
                         chat_id: newChat.chat_id,
-                        connection_feed_id: connection.feed_id
+                        connection_feed_id: connection?.feed_id
                     });
                 }
-                navigate(`/connections/${connection_name}/${newChat.chat_id}`);
+                navigate(`/connections/${connection_name}/${newChat?.chat_id}`);
             } else {
                 setErrorMessage("Failed to create chat");
                 setTimeout(() => { setErrorMessage(''); }, 5000);
@@ -240,19 +223,19 @@ const ChatPage = () => {
                     return;
                 }
                 const response = await api.delete('/delete_chat', { data: { channelId: selectedChatId } });
-                if (response.data.success) {
-                    setChats(prevChats => prevChats.filter(chat => chat.chat_id !== selectedChatId));
+                if (response.data?.success) {
+                    setChats(prevChats => prevChats.filter(chat => chat?.chat_id !== selectedChatId));
                     //Emit socket event to notify other user
                     const socket = window.socket;
                     if (socket) {
                         socket.emit('chat_deleted', {
                             chat_id: selectedChatId,
-                            connection_feed_id: connection.feed_id
+                            connection_feed_id: connection?.feed_id
                         });
                     }
                     const mainChat = chats.find(c => c.title === 'Main');
                     if (mainChat) {
-                        navigate(`/connections/${connection_name}/${mainChat.chat_id}`);
+                        navigate(`/connections/${connection_name}/${mainChat?.chat_id}`);
                     }
                 }
             } catch (error) {
@@ -276,7 +259,7 @@ const ChatPage = () => {
                 {connection && (
                     <div className="feed-summary">
                         <Link className="chat-feed-link" to={`/u/${connection_name}`}>
-                            <img className="small-feed-photo" src={`/${connection.feed_photo}`} onError={(e) => e.currentTarget.src = '/media/site_images/blank-profile.png'} />
+                            <img className="small-feed-photo" src={`${connection?.feed_photo}`} onError={(e) => e.currentTarget.src = '/media/site_images/blank-profile.png'} />
                             <p className="feed-list-text">{connection_name}</p>
                         </Link>
                         <div className="channel-name-section">
@@ -368,7 +351,7 @@ const ChatPage = () => {
                             )}
                             <div className="error-message">{errorMessage}</div>
                         </div>
-                        <ChannelList channels={chats} feedId={viewer.feed_id} feedName={connection.feed_name} isChat={true} isGroup={false} setChannels={updateChats} />
+                        <ChannelList channels={chats} feedId={viewer?.feed_id} feedName={connection?.feed_name} isChat={true} isGroup={false} setChannels={updateChats} />
                     </div>
                 )}
             </SwipeableAside>

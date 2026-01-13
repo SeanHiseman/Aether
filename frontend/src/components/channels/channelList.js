@@ -2,7 +2,6 @@ import api from '../../api';
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { AuthContext } from '../../components/authContext';
 import { CSS } from '@dnd-kit/utilities'; 
-import { decrypt } from '../../encryptionUtil';
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, TouchSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { Link, useParams } from 'react-router-dom';
 import { UnreadContext } from '../messages/unreadContext';
@@ -51,23 +50,8 @@ const ChannelList = ({ canReorder = false, channels, feedId, feedName, isChat, i
                     params: { connectionName: feedName }
                 });
                 if (response.data?.success) {
-                    const decryptedChats = response.data?.chats.map((chat) => {
-                        try {
-                            //Decrypt the title
-                            const decryptedTitle = decrypt(chat?.title);
-                            return {
-                                ...chat,
-                                title: decryptedTitle
-                            };
-                        } catch (error) {
-                            console.error('Decryption error for chat:', chat?.chat_id, error);
-                            return {
-                                ...chat,
-                                title: 'Unknown Chat'
-                            };
-                        }
-                    });
-                    setChannels(decryptedChats || []);
+                    //Backend already returns decrypted titles, no need to decrypt
+                    setChannels(response.data?.chats || []);
                 } else {
                     setErrorMessage(response.data?.message || 'Error getting chats from API');
                     setChannels([]);

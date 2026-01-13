@@ -1,10 +1,9 @@
 import api from '../../api';
-import { useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { AuthContext } from '../authContext';
-import { v4 } from 'uuid';
-import { decrypt, encrypt } from '../../encryptionUtil';
 import Message from '../messages/message';
 import { UnreadContext } from '../messages/unreadContext';
+import { useCallback, useContext, useEffect, useRef, useState } from 'react';
+import { v4 } from 'uuid';
 
 const ChatChannel = ({ canAdd, canRemove, channelId, connection, isGroup, isLocked, setChats, setErrorMessage }) => {
     const [channel, setChannel] = useState([]);
@@ -12,6 +11,7 @@ const ChatChannel = ({ canAdd, canRemove, channelId, connection, isGroup, isLock
     const [editContent, setEditContent] = useState('');
     const [editingMessageId, setEditingMessageId] = useState(null);
     const [hasMore, setHasMore] = useState(true);
+    const [isLoadingMore, setIsLoadingMore] = useState(false);
     const [message, setMessage] = useState('');
     const [offset, setOffset] = useState(0);
     const { user, viewer } = useContext(AuthContext);
@@ -19,13 +19,13 @@ const ChatChannel = ({ canAdd, canRemove, channelId, connection, isGroup, isLock
     const messagesContainerRef = useRef(null);
     const messagesEndRef = useRef(null);
     const socketRef = useRef(null);
+    const isInitialLoad = useRef(true);
 
     //Use the global socket from SocketProvider
     useEffect(() => {
         if (window.socket) {
             socketRef.current = window.socket;
         } else {
-            console.error('Global socket not available');
             setErrorMessage('Connection failed');
             setTimeout(() => { setErrorMessage(''); }, 5000);
         }
@@ -40,7 +40,7 @@ const ChatChannel = ({ canAdd, canRemove, channelId, connection, isGroup, isLock
                 message_id: messageId,
                 channel_id: channelId,
             });
-            setChannel(prev => prev.filter(m => m.message_id !== messageId));
+            setChannel(prev => prev.filter(m => m?.message_id !== messageId));
         } catch (error) {
             setErrorMessage("Error deleting message");
             setTimeout(() => { setErrorMessage(''); }, 5000);
@@ -62,7 +62,7 @@ const ChatChannel = ({ canAdd, canRemove, channelId, connection, isGroup, isLock
             }
             socketRef.current.emit('edit_direct_message', {
                 message_id: messageId,
-                content: isGroup ? newContent : encrypt(newContent),
+                content: newContent, //Send plaintext
                 channel_id: channelId,
             });
             setEditingMessageId(null);
@@ -75,16 +75,29 @@ const ChatChannel = ({ canAdd, canRemove, channelId, connection, isGroup, isLock
 
     const getChannelMessages = useCallback(async (channelId, currentOffset = 0) => {
         try {
+            const container = messagesContainerRef.current;
+            const previousScrollHeight = container?.scrollHeight || 0;
             const route = isGroup ? 'feed_channel_messages' : 'get_chat_messages';
-            const response = await api.get(`/${route}`, { params: { channelId, limit: 20, offset: currentOffset } });
-            const messages = response.data.messages.map((m) => ({
-                ...m,
-                content: isGroup ? m.content : decrypt(m.content),
-            }));
-            console.log("Fetched messages:", messages);
-            if (messages.length < 20) setHasMore(false);
-            if (currentOffset === 0) setChannel(messages);
-            else setChannel(prev => [...messages, ...prev]);
+            const limit = 100;
+            const response = await api.get(`/${route}`, { 
+                params: { channelId, limit, offset: currentOffset }
+            });
+            const messages = response.data?.messages || [];
+            if (messages.length < limit) setHasMore(false);
+            if (currentOffset === 0) {
+                setChannel(messages);
+                isInitialLoad.current = true;
+            } else {
+                isInitialLoad.current = false;
+                setChannel(prev => [...messages, ...prev]);
+                //Maintain scroll position after prepending messages
+                requestAnimationFrame(() => {
+                    if (container) {
+                        const newScrollHeight = container.scrollHeight;
+                        container.scrollTop = newScrollHeight - previousScrollHeight;
+                    }
+                });
+            }
             setOffset(currentOffset + messages.length);
         } catch (error) {
             setErrorMessage('Error fetching messages');
@@ -93,12 +106,22 @@ const ChatChannel = ({ canAdd, canRemove, channelId, connection, isGroup, isLock
     }, [isGroup, setErrorMessage]);
 
     useEffect(() => {
+        if (isInitialLoad.current && channel.length > 0) {
+            const container = messagesContainerRef.current;
+            if (container) {
+                container.scrollTop = container.scrollHeight;
+            }
+            isInitialLoad.current = false;
+        }
+    }, [channel]);
+
+    useEffect(() => {
         const socket = socketRef.current;
-        if (channelId && !isGroup && viewer.feed_id && socket && socket.connected) {
+        if (channelId && !isGroup && viewer?.feed_id && socket && socket.connected) {
             try {
                 socket.emit('mark_messages_read', {
                     chat_id: channelId,
-                    reader_id: viewer.feed_id,
+                    reader_id: viewer?.feed_id,
                 });
                 dispatch({ chatId: channelId, type: 'MARK_AS_READ' });
             } catch (error) {
@@ -106,7 +129,7 @@ const ChatChannel = ({ canAdd, canRemove, channelId, connection, isGroup, isLock
                 setTimeout(() => { setErrorMessage(''); }, 5000);
             }
         }
-    }, [channelId, isGroup, viewer.feed_id, dispatch, setErrorMessage]);
+    }, [channelId, isGroup, viewer?.feed_id, dispatch, setErrorMessage]);
 
     //Channel-specific setup and event listeners
     useEffect(() => {
@@ -121,7 +144,6 @@ const ChatChannel = ({ canAdd, canRemove, channelId, connection, isGroup, isLock
             const deleteRoute = isGroup ? 'delete_feed_message' : 'delete_direct_message';
             const setupChannel = () => {
                 try {
-                    //console.log(`Joining ${channelRoute} with ID:`, channelId);
                     socket.emit(channelRoute, channelId);
                     getChannelMessages(channelId, 0);
                 } catch (error) {
@@ -136,16 +158,18 @@ const ChatChannel = ({ canAdd, canRemove, channelId, connection, isGroup, isLock
             }
             const handleNewMessage = (newMessage) => {
                 try {
-                    if (newMessage.chat_id === channelId) {
+                    if (newMessage?.chat_id === channelId) {
                         setChannel((prevMessages) => {
-                            const messageExists = prevMessages.some(msg => msg.message_id === newMessage.message_id);
+                            const messageExists = prevMessages.some(msg => msg?.message_id === newMessage?.message_id);
                             if (messageExists) return prevMessages;
-                            const processedMessage = {
-                                ...newMessage,
-                                content: isGroup ? newMessage.content : decrypt(newMessage.content), //Needs updating to not use frontend decryption
-                            };
-                            return [...prevMessages, processedMessage];
+                            return [...prevMessages, newMessage];
                         });
+                        setTimeout(() => {
+                            const container = messagesContainerRef.current;
+                            if (container) {
+                                container.scrollTop = container.scrollHeight;
+                            }
+                        }, 0);
                     }
                 } catch (error) {
                     setErrorMessage("Error handling new message");
@@ -154,11 +178,13 @@ const ChatChannel = ({ canAdd, canRemove, channelId, connection, isGroup, isLock
             };
             const handleConfirmedMessage = (confirmedMessage) => {
                 try {
-                    const processedMessage = {
-                        ...confirmedMessage,
-                        content: isGroup ? confirmedMessage.content : decrypt(confirmedMessage.content), //Needs updating to not use frontend decryption
-                    };
-                    setChannel((prevMessages) => [...prevMessages, processedMessage]);
+                    setChannel((prevMessages) => [...prevMessages, confirmedMessage]);
+                    setTimeout(() => {
+                        const container = messagesContainerRef.current;
+                        if (container) {
+                            container.scrollTop = container.scrollHeight;
+                        }
+                    }, 0);
                 } catch (error) {
                     setErrorMessage("Error handling confirmed message");
                     setTimeout(() => { setErrorMessage(''); }, 5000);
@@ -168,11 +194,11 @@ const ChatChannel = ({ canAdd, canRemove, channelId, connection, isGroup, isLock
                 try {
                     setChannel((prevMessages) =>
                         prevMessages.map(msg =>
-                            msg.message_id === editedMessage.message_id
+                            msg.message_id === editedMessage?.message_id
                                 ? {
                                     ...msg,
-                                    content: isGroup ? editedMessage.content : decrypt(editedMessage.content),
-                                    edited_at: editedMessage.edited_at
+                                    content: editedMessage?.content, //Already decrypted
+                                    edited_at: editedMessage?.edited_at
                                 }
                                 : msg
                         )
@@ -187,7 +213,7 @@ const ChatChannel = ({ canAdd, canRemove, channelId, connection, isGroup, isLock
                     if (chat_id === channelId) {
                         setChannel((prevMessages) =>
                             prevMessages.map(msg =>
-                                (msg.sender_id !== reader_id && !msg.is_read)
+                                (msg?.sender_id !== reader_id && !msg?.is_read)
                                     ? { ...msg, is_read: true }
                                     : msg
                             )
@@ -203,6 +229,7 @@ const ChatChannel = ({ canAdd, canRemove, channelId, connection, isGroup, isLock
                 socket.on(confirmedRoute, handleConfirmedMessage);
                 socket.on(deleteRoute, deleteMessage);
                 socket.on('messages_marked_read', handleMessagesRead);
+                socket.on('message_edited', handleMessageEdited);
             } catch (error) {
                 setErrorMessage("Error setting up socket listeners");
                 setTimeout(() => { setErrorMessage(''); }, 5000);
@@ -216,6 +243,7 @@ const ChatChannel = ({ canAdd, canRemove, channelId, connection, isGroup, isLock
                     socket.off(confirmedRoute, handleConfirmedMessage);
                     socket.off(deleteRoute, deleteMessage);
                     socket.off('messages_marked_read', handleMessagesRead);
+                    socket.off('message_edited', handleMessageEdited);
                 } catch (error) {
                     setErrorMessage("Connection error");
                     setTimeout(() => { setErrorMessage(''); }, 5000);
@@ -227,16 +255,6 @@ const ChatChannel = ({ canAdd, canRemove, channelId, connection, isGroup, isLock
         }
     }, [channelId, isGroup, getChannelMessages, deleteMessage]);    
     
-    //Auto-scroll to bottom when new messages arrive
-    useEffect(() => {
-        if (messagesContainerRef.current) {
-            messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
-        }
-        if (messagesEndRef.current) {
-            messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
-        }
-    }, [channel]);
-
     useEffect(() => {
         if (socketRef.current) {
             socketRef.current.emit('join_channel_type', isGroup ? 'feed_chat' : 'direct_message');
@@ -249,6 +267,7 @@ const ChatChannel = ({ canAdd, canRemove, channelId, connection, isGroup, isLock
             setChannel([]);
             setOffset(0);
             setHasMore(true);
+            isInitialLoad.current = true;
             getChannelMessages(channelId, 0);
         }
     }, [channelId, getChannelMessages]);
@@ -258,13 +277,16 @@ const ChatChannel = ({ canAdd, canRemove, channelId, connection, isGroup, isLock
         const container = messagesContainerRef.current;
         if (!container) return;
         const handleScroll = () => {
-            if (container.scrollTop === 0 && hasMore) {
-                getChannelMessages(channelId, offset);
+            if (container.scrollTop <= 10 && hasMore && !isLoadingMore) {
+                setIsLoadingMore(true);
+                getChannelMessages(channelId, offset).finally(() => {
+                    setIsLoadingMore(false);
+                });
             }
         };
         container.addEventListener('scroll', handleScroll);
         return () => container.removeEventListener('scroll', handleScroll);
-    }, [channelId, getChannelMessages, hasMore, offset]);
+    }, [channelId, getChannelMessages, hasMore, offset, isLoadingMore]);
 
     //Send message with connection checks
     const sendMessage = useCallback(() => {
@@ -283,9 +305,9 @@ const ChatChannel = ({ canAdd, canRemove, channelId, connection, isGroup, isLock
             }
             const newMessage = {
                 message_id: v4(),
-                content: isGroup ? message : encrypt(message), //Needs updating to not use frontend encryption
-                sender_id: viewer.feed_id,
-                receiver_id: isGroup ? null: connection.feed_id,
+                content: message, //Send plaintext
+                sender_id: viewer?.feed_id,
+                receiver_id: isGroup ? null: connection?.feed_id,
                 channel_id: channelId,
                 created_at: Date.now(),
             };
@@ -296,7 +318,7 @@ const ChatChannel = ({ canAdd, canRemove, channelId, connection, isGroup, isLock
             setErrorMessage("Error sending message");
             setTimeout(() => { setErrorMessage(''); }, 5000);   
         }
-    }, [channelId, isGroup, maxLength, message, setChats, setErrorMessage, viewer.feed_id]);
+    }, [channelId, isGroup, maxLength, message, setChats, setErrorMessage, viewer?.feed_id]);
 
     return (
         <div className="channel">
@@ -304,7 +326,7 @@ const ChatChannel = ({ canAdd, canRemove, channelId, connection, isGroup, isLock
                 {channel.length > 0 ? (
                     channel.map((msg, index) => (
                         <Message
-                            key={msg.message_id || index}
+                            key={msg?.message_id || index}
                             canRemove={canRemove}
                             deleteMessage={deleteMessage}
                             editMessage={editMessage}
@@ -313,8 +335,8 @@ const ChatChannel = ({ canAdd, canRemove, channelId, connection, isGroup, isLock
                             editContent={editContent}
                             setEditContent={setEditContent}
                             isGroup={isGroup}
-                            isOutgoing={msg.sender_id === viewer.feed_id}
-                            isRead={msg.is_read}
+                            isOutgoing={msg?.sender_id === viewer?.feed_id}
+                            isRead={msg?.is_read}
                             message={msg}
                             maxLength={maxLength}
                         />
@@ -337,7 +359,7 @@ const ChatChannel = ({ canAdd, canRemove, channelId, connection, isGroup, isLock
                                 setMessage(input);
                                 setErrorMessage('');
                             } else {
-                                setErrorMessage(`${maxLength} character limit.`, !user.has_membership && "Get membership for more.");
+                                setErrorMessage(`${maxLength} character limit.`, !user?.has_membership && "Get membership for more.");
                             }
                         }}
                         onKeyDown={(e) => e.key === 'Enter' && sendMessage()}

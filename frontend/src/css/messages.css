@@ -124,17 +124,12 @@
     font-weight: bold;
     text-decoration: underline;
 }
-.unread-badge {
-    font-size: large;
-    margin: var(--small-margin);
-    top: -30px;
-}
 .unread-count {
-    color: var(--light);
-    font-size: medium;
-    margin: var(--small-margin);
+    color: var(--lightest);
+    font-size: var(--small-text);
+    margin-left: var(--medium-margin);
     position: relative;
-    top: -4px;
+    top: -5px;
 }
 
 /* Share Post Modal */
