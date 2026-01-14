@@ -5,6 +5,7 @@ import dotenv from 'dotenv';
 import { Op, Sequelize } from 'sequelize';
 import { Router } from 'express';
 import sequelize from '../databaseSetup.js';
+import { ValidateTextInput } from '../functions/validateTextInput.js';
 import { v4 } from 'uuid';
 
 dotenv.config();
@@ -389,6 +390,12 @@ router.post('/send_shared_post', authenticateCheck, async (req, res) => {
         if (!post_id || !shares || !Array.isArray(shares) || shares.length === 0) {
             return res.status(400).json({ success: false, message: 'Invalid request parameters' });
         }
+        if (message_text) {
+            const validation = ValidateTextInput(message_text, 0, 1000, false);
+            if (!validation.valid) {
+                return res.status(400).json({ success: false, message: validation.error });
+            }
+        }
         const post = await Posts.findOne({
             where: { post_id },
             include: [
@@ -613,12 +620,9 @@ export const directMessagesSocket = (socket) => {
         });
         socket.on('edit_direct_message', async (data) => {
             const { message_id, content, channel_id } = data;
-            const messageLength = content.length;
-            if (messageLength === 0) {
-                socket.emit('error_message', { error: "Message too short" });
-                return;
-            } else if (messageLength > 1000) {
-                socket.emit('error_message', { error: "Message too long" });
+            const validation = ValidateTextInput(content, 1, 1000);
+            if (!validation.valid) {
+                socket.emit('error_message', { error: validation.error });
                 return;
             }
             const encryptedContent = encrypt(content);
@@ -635,12 +639,9 @@ export const directMessagesSocket = (socket) => {
             socket.emit('message_edited', messageToSend);
         });
         socket.on('send_direct_message', async (message) => {
-            const messageLength = message.content.length;
-            if (messageLength === 0) {
-                socket.emit('error_message', { error: "Message too short" });
-                return;
-            } else if (messageLength > 1000) {
-                socket.emit('error_message', { error: "Message too long" });
+            const validation = ValidateTextInput(message.content, 1, 1000);
+            if (!validation.valid) {
+                socket.emit('error_message', { error: validation.error });
                 return;
             }
             const encryptedContent = encrypt(message.content);

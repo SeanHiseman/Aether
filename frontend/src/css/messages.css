@@ -94,6 +94,37 @@
 .message-date {
     margin: 0;
 }
+.message-edit-container {
+    border: 1px solid var(--light);
+    border-radius: var(--small-margin);
+    padding: 0;
+    width: 100%;
+}
+.message-edit-textarea {
+    background-color: transparent;
+    border-bottom: 1px solid var(--light);
+    color: var(--lightest);
+    font-family: inherit;
+    font-size: inherit;
+    min-height: 80px;
+    padding: var(--small-margin);
+    resize: vertical;
+    width: 100%;
+}
+.message-edit-textarea:focus {
+    outline: none;
+    border-color: var(--light);
+}
+.message-edit-error {
+    color: var(--color-error);
+    font-size: small;
+    margin: 4px 0;
+}
+.message-edit-buttons {
+    display: flex;
+    gap: var(--small-margin);
+    margin-top: var(--small-margin);
+}
 .message-info {
     align-items: center;
     display: flex;

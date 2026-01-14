@@ -2,6 +2,7 @@ import api from '../../api';
 import { AuthContext } from '../authContext';
 import { FaChevronDown, FaChevronUp, FaTimes } from 'react-icons/fa';
 import { useContext, useEffect, useState } from 'react';
+import { ValidateTextInput } from '../../functions/validateTextInput';
 
 const SharePostModal = ({ post, onClose }) => {
     const [connections, setConnections] = useState([]);
@@ -13,8 +14,9 @@ const SharePostModal = ({ post, onClose }) => {
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedChats, setSelectedChats] = useState([]);
     const [sending, setSending] = useState(false);
+    const [validationError, setValidationError] = useState('');
     const { user, viewer } = useContext(AuthContext);
-    const maxLength = user?.has_membership ? 100000 : 1000;
+    const maxLength = user?.has_membership ? 10000 : 1000;
 
     useEffect(() => {
         const storedConnections = localStorage.getItem('connections');
@@ -117,8 +119,9 @@ const SharePostModal = ({ post, onClose }) => {
             setTimeout(() => setErrorMessage(''), 5000);
             return;
         }
-        if (message.length > maxLength) {
-            setErrorMessage(`Message too long (max ${maxLength} characters)`);
+        const validation = ValidateTextInput(message, 0, maxLength, false);
+        if (!validation.valid) {
+            setErrorMessage(validation.error);
             setTimeout(() => setErrorMessage(''), 5000);
             return;
         }
@@ -203,17 +206,28 @@ const SharePostModal = ({ post, onClose }) => {
                     </div>
                     <div className="share-message-input">
                         <label className="small-text">Add a message (optional)</label>
-                        <textarea
-                            className="input"
-                            placeholder="Say something about this post..."
-                            value={message}
-                            onChange={e => setMessage(e.target.value)}
-                            maxLength={maxLength}
-                            rows={3}
-                        />
-                        <p className="tiny-text faded-text">
-                            {message.length}/{maxLength}
-                        </p>
+                            <textarea
+                                className="input"
+                                placeholder="Say something about this post..."
+                                value={message}
+                                onChange={e => {
+                                    const input = e.target.value;
+                                    const validation = ValidateTextInput(input, 0, maxLength, false);
+                                    if (!validation.valid) {
+                                        setValidationError(validation.error);
+                                        if (input.length > maxLength) {
+                                            return;
+                                        }
+                                    } else {
+                                        setValidationError('');
+                                    }
+                                    setMessage(input);
+                                }}
+                                rows={3}
+                            />
+                            <p className="tiny-text faded-text">
+                                {message.length}/{maxLength}
+                            </p>
                     </div>
                 </div>
                 <div className="modal-footer">

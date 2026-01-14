@@ -3,6 +3,7 @@ import { AuthContext } from '../authContext';
 import Message from '../messages/message';
 import { UnreadContext } from '../messages/unreadContext';
 import { useCallback, useContext, useEffect, useRef, useState } from 'react';
+import { ValidateTextInput } from '../../functions/validateTextInput';
 import { v4 } from 'uuid';
 
 const ChatChannel = ({ canAdd, canRemove, channelId, connection, isGroup, isLocked, setChats, setErrorMessage }) => {
@@ -15,7 +16,8 @@ const ChatChannel = ({ canAdd, canRemove, channelId, connection, isGroup, isLock
     const [message, setMessage] = useState('');
     const [offset, setOffset] = useState(0);
     const { user, viewer } = useContext(AuthContext);
-    const maxLength = user.has_membership ? 100000 : 1000;
+    const [validationError, setValidationError] = useState('');
+    const maxLength = user?.has_membership ? 10000 : 1000;
     const messagesContainerRef = useRef(null);
     const messagesEndRef = useRef(null);
     const socketRef = useRef(null);
@@ -49,9 +51,9 @@ const ChatChannel = ({ canAdd, canRemove, channelId, connection, isGroup, isLock
 
     const editMessage = useCallback((messageId, newContent) => {
         try {
-            if (!newContent.trim()) return;
-            if (newContent.length > maxLength) {
-                setErrorMessage(`Message cannot exceed ${maxLength} characters.`);
+            const validation = ValidateTextInput(newContent, 0, maxLength, false);
+            if (!validation.valid) {
+                setErrorMessage(validation.error);
                 setTimeout(() => { setErrorMessage(''); }, 5000);
                 return;
             }
@@ -62,7 +64,7 @@ const ChatChannel = ({ canAdd, canRemove, channelId, connection, isGroup, isLock
             }
             socketRef.current.emit('edit_direct_message', {
                 message_id: messageId,
-                content: newContent, //Send plaintext
+                content: newContent,
                 channel_id: channelId,
             });
             setEditingMessageId(null);
@@ -71,7 +73,7 @@ const ChatChannel = ({ canAdd, canRemove, channelId, connection, isGroup, isLock
             setErrorMessage("Error editing message");
             setTimeout(() => { setErrorMessage(''); }, 5000);
         }
-    }, [channelId, isGroup, maxLength, setErrorMessage]);
+    }, [channelId, setErrorMessage]);
 
     const getChannelMessages = useCallback(async (channelId, currentOffset = 0) => {
         try {
@@ -307,9 +309,9 @@ const ChatChannel = ({ canAdd, canRemove, channelId, connection, isGroup, isLock
     //Send message with connection checks
     const sendMessage = useCallback(() => {
         try {
-            if (!message.trim()) return;
-            if (message.length > maxLength) {
-                setErrorMessage(`Message cannot exceed ${maxLength} characters.`);
+            const validation = ValidateTextInput(message, 0, maxLength, false);
+            if (!validation.valid) {
+                setErrorMessage(validation.error);
                 setTimeout(() => { setErrorMessage(''); }, 5000);
                 return;
             }
@@ -349,7 +351,7 @@ const ChatChannel = ({ canAdd, canRemove, channelId, connection, isGroup, isLock
             setErrorMessage("Error sending message");
             setTimeout(() => { setErrorMessage(''); }, 5000);   
         }
-    }, [channelId, isGroup, maxLength, message, setChats, setErrorMessage, viewer?.feed_id]);
+    }, [channelId, isGroup, message, setChats, setErrorMessage, viewer?.feed_id]);
 
     return (
         <div className="channel">
@@ -386,12 +388,16 @@ const ChatChannel = ({ canAdd, canRemove, channelId, connection, isGroup, isLock
                         placeholder="Type a message..."
                         onChange={(e) => {
                             const input = e.target.value;
-                            if (input.length <= maxLength) {
-                                setMessage(input);
-                                setErrorMessage('');
+                            const validation = ValidateTextInput(input, 0, maxLength, false);
+                            if (!validation.valid) {
+                                setValidationError(validation.error);
+                                if (input.length > maxLength) {
+                                    return;
+                                }
                             } else {
-                                setErrorMessage(`${maxLength} character limit.`, !user?.has_membership && "Get membership for more.");
+                                setValidationError('');
                             }
+                            setMessage(input);
                         }}
                         onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
                     />

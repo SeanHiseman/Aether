@@ -3,13 +3,13 @@ import ContentWidget from '../content/contentWidget';
 import { FaEdit, FaTrash, FaEllipsisV } from 'react-icons/fa';
 import { Link } from 'react-router-dom';
 import { useState } from 'react';
+import { ValidateTextInput } from '../../functions/validateTextInput';
 
 const Message = ({ canRemove, deleteMessage, editMessage, editingMessageId, setEditingMessageId, editContent, setEditContent, isGroup, isOutgoing, isRead, message, maxLength }) => {
     const [optionsOpen, setOptionsOpen] = useState(false);
     const [showConfirmDelete, setShowConfirmDelete] = useState(false);
-    console.log("Rendering message:", message);
     const isSharedPost = Boolean(message?.shared_post_id);
-    console.log("isSharedPost:", isSharedPost);
+    const [validationError, setValidationError] = useState('');
 
     //Users can delete their own messages
     if (isOutgoing) {
@@ -56,12 +56,12 @@ const Message = ({ canRemove, deleteMessage, editMessage, editingMessageId, setE
     return (
         <div className={`message-container ${isOutgoing ? 'outgoing' : 'incoming'}${isSharedPost ? ' shared-post' : ''}`}>
             <div className="message-content">
-                {!isOutgoing && message.feed && isGroup && (
-                    <Link to={`/u/${message.feed.feed_name}`}>
-                        <img className="small-feed-photo" src={`${message.feed.feed_photo}`} onError={(e) => e.currentTarget.src = '/media/site_images/blank-profile.png'} />
+                {!isOutgoing && message?.feed && isGroup && (
+                    <Link to={`/u/${message?.feed?.feed_name}`}>
+                        <img className="small-feed-photo" src={`${message?.feed?.feed_photo}`} onError={(e) => e.currentTarget.src = '/media/site_images/blank-profile.png'} />
                     </Link>
                 )}
-                {canRemove && editingMessageId !== message.message_id && (
+                {canRemove && editingMessageId !== message?.message_id && (
                     <div className="dropdown" style={{ position: 'relative' }}>
                         <button className="small-icon" type="button" onClick={() => setOptionsOpen(!optionsOpen)} title="Message options">
                             <FaEllipsisV />
@@ -78,42 +78,65 @@ const Message = ({ canRemove, deleteMessage, editMessage, editingMessageId, setE
                         )}
                     </div>
                 )}
-                <div className={`message ${isSharedPost ? 'shared-post' : (isOutgoing ? 'outgoing' : 'incoming')}`}>
-                    {editingMessageId === message.message_id ? (
-                        <div>
-                            <input
-                                type="text"
-                                value={editContent}
-                                onChange={(e) => setEditContent(e.target.value)}
-                                onKeyDown={(e) => {
-                                    if (e.key === 'Enter') editMessage(message.message_id, editContent);
-                                    if (e.key === 'Escape') setEditingMessageId(null);
+                {editingMessageId === message.message_id ? (
+                    <div className="message-edit-container">
+                        <textarea
+                            value={editContent}
+                            onChange={(e) => {
+                                const input = e.target.value;
+                                setEditContent(input);
+                                const validation = ValidateTextInput(input, 0, maxLength, false);
+                                if (!validation.valid) {
+                                    setValidationError(validation.error);
+                                } else {
+                                    setValidationError('');
+                                }
+                            }}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter' && !e.shiftKey) {
+                                    e.preventDefault();
+                                    const validation = ValidateTextInput(editContent, 0, maxLength, false);
+                                    if (validation.valid) {
+                                        editMessage(message.message_id, editContent);
+                                    }
+                                }
+                                if (e.key === 'Escape') setEditingMessageId(null);
+                            }}
+                            className="message-edit-textarea"
+                            autoFocus
+                        />
+                        {validationError && <p className="message-edit-error">{validationError}</p>}
+                        <div className="message-edit-buttons">
+                            <button 
+                                className="button" 
+                                onClick={() => {
+                                    const validation = ValidateTextInput(editContent, 0, maxLength, false);
+                                    if (validation.valid) {
+                                        editMessage(message.message_id, editContent);
+                                    }
                                 }}
-                                className="chat-message-bar"
-                                autoFocus
-                                maxLength={maxLength}
-                            />
-                            <button onClick={() => editMessage(message.message_id, editContent)}>Save</button>
-                            <button onClick={() => setEditingMessageId(null)}>Cancel</button>
+                                disabled={!!validationError}
+                            >Save</button>
+                            <button className="button" onClick={() => setEditingMessageId(null)}>Cancel</button>
                         </div>
-                    ) : (
-                        <>
-                            {message?.content && (
-                                <div className="message-text">
-                                    {message.content}
-                                    {message.edited_at && <span style={{ fontSize: 'small', opacity: 0.7 }}> (edited)</span>}
-                                </div>
-                            )}
-                            {message.sharedPost ? (
-                                <div className={`shared-post-wrapper ${isOutgoing ? 'outgoing' : 'incoming'}`}>
-                                    <ContentWidget post={message.sharedPost} readOnly={false} display={false} />
-                                </div>
-                            ) : message.shared_post_id && (
-                                <div className="deleted-post-notice">[Post deleted]</div>
-                            )}
-                        </>
-                    )}
-                </div>
+                    </div>
+                ) : (
+                    <div className={`message ${isSharedPost ? 'shared-post' : (isOutgoing ? 'outgoing' : 'incoming')}`}>
+                        {message?.content && (
+                            <div className="message-text">
+                                {message.content}
+                                {message.edited_at && <span style={{ fontSize: 'small', opacity: 0.7 }}> (edited)</span>}
+                            </div>
+                        )}
+                        {message.sharedPost ? (
+                            <div className={`shared-post-wrapper ${isOutgoing ? 'outgoing' : 'incoming'}`}>
+                                <ContentWidget post={message.sharedPost} readOnly={false} display={false} />
+                            </div>
+                        ) : message.shared_post_id && (
+                            <div className="deleted-post-notice">[Post deleted]</div>
+                        )}
+                    </div>
+                )}
             </div>
             <div className={`message-info ${isSharedPost ? '' : (isOutgoing ? 'outgoing' : 'incoming')}`}>
                 <p className={`message-date ${isSharedPost ? '' : (isOutgoing ? 'outgoing' : 'incoming')}`}>
