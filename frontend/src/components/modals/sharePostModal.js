@@ -44,17 +44,33 @@ const SharePostModal = ({ post, onClose }) => {
         if (connectionChats[connectionFeedId]) {
             return;
         }
+        const storedChats = localStorage.getItem('connectionChats');
+        if (storedChats) {
+            const parsed = JSON.parse(storedChats);
+            if (parsed[connectionFeedId]) {
+                setConnectionChats(prev => ({
+                    ...prev,
+                    [connectionFeedId]: parsed[connectionFeedId]
+                }));
+                return; 
+            }
+        }
+        //API fallback if localStorage fails
         setLoadingChats(prev => ({ ...prev, [connectionFeedId]: true }));
         try {
             const response = await api.get(`/get_chats/${viewer?.feed_id}`, {
                 params: { connectionName }
             });
             const chats = response.data?.chats || [];
-            //Backend already returns decrypted titles, no need to decrypt
             setConnectionChats(prev => ({
                 ...prev,
                 [connectionFeedId]: chats
             }));
+            //Save to localStorage
+            const existingChats = localStorage.getItem('connectionChats');
+            const parsed = existingChats ? JSON.parse(existingChats) : {};
+            parsed[connectionFeedId] = chats;
+            localStorage.setItem('connectionChats', JSON.stringify(parsed));
         } catch (error) {
             setErrorMessage(error.response?.data?.message || 'Error fetching chats');
             setTimeout(() => setErrorMessage(''), 5000);

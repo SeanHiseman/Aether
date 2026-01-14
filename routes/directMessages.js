@@ -205,7 +205,7 @@ router.get('/get_chat_messages', authenticateCheck, async (req, res) => {
                 }
             ],
             order: [['created_at', 'ASC']],
-            limit: parseInt(limit) || 20,
+            limit: parseInt(limit) || 100,
             offset: parseInt(offset) || 0,
         });
         const decryptedMessages = messages.map(message => {
@@ -245,26 +245,20 @@ router.get('/get_chats/:feedId', authenticateCheck, async (req, res) => {
             return res.status(404).json({ success: false, message: 'Connection not found' });
         }
         const connectionFeedId = connectionFeed.feed_id;
-        const chatsWithViewerFeed = await FeedChats.findAll({
-            where: { feed_id: viewerFeedId },
-            attributes: ['chat_id']
+        const sharedChats = await FeedChats.findAll({
+            where: { feed_id: { [Op.in]: [viewerFeedId, connectionFeedId] } },
+            attributes: ['chat_id'],
+            group: ['chat_id'],
+            having: sequelize.literal('COUNT(DISTINCT feed_id) = 2')
         });
-        const chatIdsWithViewerFeed = chatsWithViewerFeed.map(chat => chat.chat_id);
-        const chatsWithConectionFeed = await FeedChats.findAll({
-            where: { feed_id: connectionFeedId },
-            attributes: ['chat_id']
-        });
-        const chatIdsWithConnectionFeed = chatsWithConectionFeed.map(chat => chat.chat_id);
-        const chatIds = chatIdsWithViewerFeed.filter(chatId => 
-            chatIdsWithConnectionFeed.includes(chatId)
-        );
-        if (chatIds.length === 0) {
+        const chatIds = sharedChats.map(chat => chat.chat_id);
+        if (!chatIds.length) {
             return res.status(200).json({ success: true, chats: [] });
         }
         const chatDetails = await Chats.findAll({
             where: { chat_id: { [Op.in]: chatIds } },
             attributes: ['chat_id', 'title', 'created_at', 'updated_at'],
-            order: [['updated_at', 'DESC']] 
+            order: [['updated_at', 'DESC']]
         });
         const decryptedChats = chatDetails.map(chat => ({
             ...chat.toJSON(),
@@ -297,7 +291,7 @@ router.get('/get_connection/:connectionName', authenticateCheck, async (req, res
 router.get('/get_connections', authenticateCheck, async (req, res) => {
     //Full list of connections for connection page
     try {
-        const { feedId, offset } = req.query;
+        const { feedId, limit, offset } = req.query;
         const parsedOffset = parseInt(offset) || 0;
         const feed = await Feeds.findOne({ where: { feed_id: feedId } });
         if (!feed) { 
@@ -317,7 +311,7 @@ router.get('/get_connections', authenticateCheck, async (req, res) => {
                     { feed2_id: feedId }
                 ]
             },
-            limit: 100,
+            limit: parseInt(limit) || 100,
             offset: parsedOffset,
             //More recent connections are first
             order: [['created_at', 'ASC']],
@@ -339,7 +333,7 @@ router.get('/get_connections', authenticateCheck, async (req, res) => {
 
 router.get('/get_connect_requests', authenticateCheck, async (req, res) => {
     try {
-        const { feedId, offset } = req.query;
+        const { feedId, limit, offset } = req.query;
         const parsedOffset = parseInt(offset) || 0;
         const requests = await ConnectRequests.findAll({ 
             where: { receiver_id: feedId },
@@ -351,7 +345,7 @@ router.get('/get_connect_requests', authenticateCheck, async (req, res) => {
                 as: 'sender',
                 required: true,
             }],
-            limit: 100,
+            limit: parseInt(limit) || 100,
             offset: parsedOffset
         });
         res.status(200).json({ success: true, requests });
@@ -605,13 +599,22 @@ export const directMessagesSocket = (socket) => {
         socket.on('leave_chat', (chat_id) => {
             socket.leave(chat_id);
         });
-        socket.on('chat_created', async (data) => {
-            const { chat_id, connection_feed_id } = data;
-            socket.to(connection_feed_id.toString()).emit('new_chat_created', { chat_id });
+        socket.on('chat_created', (data) => {
+            const { chat, connection_feed_id } = data;
+            if (connection_feed_id) {
+                io.to(connection_feed_id).emit('new_chat_created', { chat });
+            }
         });
         socket.on('chat_deleted', async (data) => {
             const { chat_id, connection_feed_id } = data;
             socket.to(connection_feed_id.toString()).emit('chat_removed', { chat_id });
+        });
+        socket.on('chat_renamed', async (data) => {
+            const { chat_id, new_title, connection_feed_id } = data;
+            socket.to(connection_feed_id.toString()).emit('chat_name_changed', { 
+                chat_id, 
+                new_title 
+            });
         });
         socket.on('delete_direct_message', async (data) => {
             const { message_id, channel_id } = data;

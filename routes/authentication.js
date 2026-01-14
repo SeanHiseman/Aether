@@ -1,9 +1,10 @@
 import { Algorithms, AlgorithmLocations } from '../custom_algorithms/algorithmRelationships.js'
 import authenticateCheck from '../functions/checks/authenticateCheck.js';
 import { compare, hash } from 'bcrypt';
-import { Connections, ConnectRequests, DeepFeeds, Feeds, FeedChannels, Followers, FeedChats, Messages, Posts, PostDrafts, PostNotes, PostVotes, SavedPostChannels, Users, ViewedPosts } from '../models/relationships.js'; 
+import { Chats, Connections, ConnectRequests, DeepFeeds, Feeds, FeedChannels, Followers, FeedChats, Messages, Posts, PostDrafts, PostNotes, PostVotes, SavedPostChannels, Users, ViewedPosts } from '../models/relationships.js'; 
 import { ConnectedAccounts } from '../models/users.js';
 import crypto from 'crypto';
+import { decrypt } from '../functions/encryptionUtil.js';
 import DeleteMedia from '../functions/media_handling/deleteMedia.js';
 import dotenv from 'dotenv';
 import { ExternalPostsAccess } from '../models/content.js';
@@ -435,15 +436,6 @@ router.post('/join', loginLimiter, async (req, res) => {
         await SavedPostChannels.create({
             channel_id: v4(), saver_id: feed_id, channel_name: "Main", display_order: 0
         }, { transaction });
-        //await Followers.create({
-            //follow_id: v4(), follower_id: feed_id, feed_id: process.env.WELCOME_FEED_ID
-        //, { transaction });
-        //await PostDrafts.create({
-            //draft_id: v4(), feed_id, channel_id, title: 'Edit this draft post using the edit button below', content: tutorialContent, poster_id: feed_id
-        //}, { transaction });
-        //await Feeds.increment('follower_count', { where: { feed_id: process.env.DEVELOPMENT_FEED_ID } }, { transaction });
-        //await Feeds.increment('follower_count', { where: { feed_id: process.env.FEEDBACK_FEED_ID } }, { transaction });
-        //await Feeds.increment('follower_count', { where: { feed_id: process.env.WELCOME_FEED_ID } }, { transaction });
         try {
             await sendVerificationEmail(email, username, verificationToken);
         } catch (emailError) {      
@@ -494,6 +486,44 @@ router.post('/login', loginLimiter, async (req, res) => {
                 where: { user_id: user.user_id },
                 attributes: ['platform', 'handle', 'instance_url', 'extra']
             });
+            const connections = await Connections.findAll({
+                where: {
+                    [Op.or]: [
+                        { feed1_id: feed.feed_id },
+                        { feed2_id: feed.feed_id }
+                    ]
+                }
+            });
+            const connectionFeedIds = connections.map(conn => 
+                conn.feed1_id === feed.feed_id ? conn.feed2_id : conn.feed1_id
+            );
+            const connectionFeeds = await Feeds.findAll({
+                where: { feed_id: { [Op.in]: connectionFeedIds } },
+            });
+            const connectionChatsMap = {};
+            for (const conn of connections) {
+                const connectionFeedId = conn.feed1_id === feed.feed_id ? conn.feed2_id : conn.feed1_id;
+                const sharedChats = await FeedChats.findAll({
+                    where: { feed_id: { [Op.in]: [feed.feed_id, connectionFeedId] } },
+                    attributes: ['chat_id'],
+                    group: ['chat_id'],
+                    having: sequelize.literal('COUNT(DISTINCT feed_id) = 2')
+                });
+                const chatIds = sharedChats.map(chat => chat.chat_id);
+                if (chatIds.length) {
+                    const chatDetails = await Chats.findAll({
+                        where: { chat_id: { [Op.in]: chatIds } },
+                        attributes: ['chat_id', 'title', 'created_at', 'updated_at'],
+                        order: [['updated_at', 'DESC']]
+                    });
+                    connectionChatsMap[connectionFeedId] = chatDetails.map(chat => ({
+                        ...chat.toJSON(),
+                        title: decrypt(chat.title)
+                    }));
+                } else {
+                    connectionChatsMap[connectionFeedId] = [];
+                }
+            }
             const algorithms = await Algorithms.findAll({
                 where: { viewer_id: feed.feed_id },
                 include: [{
@@ -550,10 +580,12 @@ router.post('/login', loginLimiter, async (req, res) => {
                     feed_photo: feed.feed_photo,
                     follow_requests: feed.follow_requests,
                     connections: feed.connections,
-                    connect_requests: feed.connect_requests
+                    connect_requests: feed.connect_requests //Connect request count
                 },
                 algorithms,
-                connectedAccounts,
+                connectedAccounts, //External social media accounts
+                connections: connectionFeeds, //Users that have been connected with
+                connectionChats: connectionChatsMap, //Chats with other users
                 deepFeeds,
                 followedFeeds: normalizedFollowedFeeds, 
                 recentUpvotes,

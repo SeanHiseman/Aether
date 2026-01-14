@@ -18,7 +18,7 @@ const ChatPage = () => {
     const [selectedChatId, setSelectedChatId] = useState(null);
     const [showForm, setShowForm] = useState(false);
     const { user, viewer } = useContext(AuthContext);
-    const chatLimit = user && user.has_membership ? 10000 : 100;
+    const chatLimit = user && user?.has_membership ? 10000 : 100;
     const chatLimitReached = chats.length >= chatLimit;
     const navigate = useNavigate();
     const { rightClasses, updateFeeds, closeDrawers, mobileOpen } = useOutletContext(); 
@@ -46,27 +46,49 @@ const ChatPage = () => {
         }
     }, [connection_name, fetchConnection]);
 
+    //Initialize chats from localStorage
+    useEffect(() => {
+        if (connection?.feed_id) {
+            const storedChats = localStorage.getItem('connectionChats');
+            if (storedChats) {
+                const parsed = JSON.parse(storedChats);
+                if (parsed[connection.feed_id]) {
+                    setChats(parsed[connection.feed_id]);
+                }
+            }
+        }
+    }, [connection?.feed_id]);
+
+    const updateLocalStorageChats = useCallback((connectionFeedId, newChats) => {
+        const storedChats = localStorage.getItem('connectionChats');
+        const parsed = storedChats ? JSON.parse(storedChats) : {};
+        parsed[connectionFeedId] = newChats;
+        localStorage.setItem('connectionChats', JSON.stringify(parsed));
+    }, []);
+
     //Socket listener for real-time chat updates
     useEffect(() => {
         const socket = window.socket;
         if (!socket || !viewer?.feed_id) return;
-        const handleNewChat = async () => {
-            if (connection?.feed_name) {
-                try {
-                    const response = await api.get(`/get_chats/${viewer?.feed_id}`, {
-                        params: { connectionName: connection?.feed_name }
-                    });
-                    if (response.data?.success) {
-                        //No decryption needed, backend sends decrypted titles
-                        setChats(response.data?.chats || []);
+        const handleNewChat = (data) => {
+            if (data?.chat && connection?.feed_id) {
+                setChats(prev => {
+                    //Avoid duplicates
+                    if (prev.some(c => c.chat_id === data.chat.chat_id)) {
+                        return prev;
                     }
-                } catch (error) {
-                    console.error('Error fetching chats');
-                }
+                    const newChats = [data.chat, ...prev];
+                    updateLocalStorageChats(connection.feed_id, newChats);
+                    return newChats;
+                });
             }
         };
         const handleChatRemoved = (data) => {
-            setChats(prev => prev.filter(chat => chat?.chat_id !== data?.chat_id));
+            setChats(prev => {
+                const newChats = prev.filter(chat => chat?.chat_id !== data?.chat_id);
+                updateLocalStorageChats(connection.feed_id, newChats);
+                return newChats;
+            });
             //If viewing deleted chat, redirect to Main
             if (selectedChatId === data?.chat_id) {
                 const mainChat = chats.find(c => c?.title === 'Main');
@@ -75,13 +97,29 @@ const ChatPage = () => {
                 }
             }
         };
+        const handleChatNameChanged = (data) => {
+            const { chat_id, new_title } = data;
+            setChats(prevChats => {
+                const newChats = prevChats.map(chat =>
+                    chat.chat_id === chat_id ? {...chat, title: new_title} : chat
+                );
+                updateLocalStorageChats(connection.feed_id, newChats);
+                return newChats;
+            });
+            //Update current chat title if viewing the renamed chat
+            if (selectedChatId === chat_id) {
+                setCurrentChatTitle(new_title);
+            }
+        };
         socket.on('new_chat_created', handleNewChat);
         socket.on('chat_removed', handleChatRemoved);
+        socket.on('chat_name_changed', handleChatNameChanged);
         return () => {
             socket.off('new_chat_created', handleNewChat);
             socket.off('chat_removed', handleChatRemoved);
+            socket.off('chat_name_changed', handleChatNameChanged);
         };
-    }, [connection?.feed_name, viewer?.feed_id, selectedChatId, chats, connection_name, navigate]);
+    }, [connection?.feed_name, connection?.feed_id, viewer?.feed_id, selectedChatId, chats, connection_name, navigate, updateLocalStorageChats]);
 
     useEffect(() => {
         if (chats.length > 0) {
@@ -108,7 +146,6 @@ const ChatPage = () => {
                 setErrorMessage("Channel needs a name");
                 setTimeout(() => { setErrorMessage(''); }, 5000);
                 return;
-            //Names over 30 characters already prevented
             }
             if (newChatName === 'Main') {
                 setErrorMessage("Channel cannot be named Main");
@@ -123,11 +160,13 @@ const ChatPage = () => {
                 setErrorMessage('');
                 setIsEditingChatName(false);
                 setNewChatName('');
-                setChats(prevChats =>
-                    prevChats.map(chat =>
-                        chat.chat_id === selectedChatId ? {...chat, title: newChatName} : chat
-                    )
-                );
+                setChats(prevChats => {
+                    const newChats = prevChats.map(chat =>
+                        chat?.chat_id === selectedChatId ? {...chat, title: newChatName} : chat
+                    );
+                    updateLocalStorageChats(connection.feed_id, newChats);
+                    return newChats;
+                });
                 setCurrentChatTitle(newChatName);
                 navigate(`/connections/${connection_name}/${selectedChatId}`);
             }
@@ -193,13 +232,14 @@ const ChatPage = () => {
                 //Backend already returns decrypted title, no need to decrypt
                 const updatedChats = [newChat, ...chats];
                 setChats(updatedChats);
+                updateLocalStorageChats(connection.feed_id, updatedChats);
                 setErrorMessage('');
                 setNewChatName('');
                 setShowForm(false);
                 const socket = window.socket;
                 if (socket) {
                     socket.emit('chat_created', {
-                        chat_id: newChat.chat_id,
+                        chat: newChat,
                         connection_feed_id: connection?.feed_id
                     });
                 }
@@ -214,7 +254,7 @@ const ChatPage = () => {
         }
     };
 
-    const handleDelete = async () => {
+    const deleteChat = async () => {
         if (window.confirm(`Are you sure you want to delete ${currentChatTitle}?`)) {
             try {
                 if (currentChatTitle === 'Main') {
@@ -224,7 +264,11 @@ const ChatPage = () => {
                 }
                 const response = await api.delete('/delete_chat', { data: { channelId: selectedChatId } });
                 if (response.data?.success) {
-                    setChats(prevChats => prevChats.filter(chat => chat?.chat_id !== selectedChatId));
+                    setChats(prevChats => {
+                        const newChats = prevChats.filter(chat => chat?.chat_id !== selectedChatId);
+                        updateLocalStorageChats(connection?.feed_id, newChats);
+                        return newChats;
+                    });
                     //Emit socket event to notify other user
                     const socket = window.socket;
                     if (socket) {
@@ -233,7 +277,7 @@ const ChatPage = () => {
                             connection_feed_id: connection?.feed_id
                         });
                     }
-                    const mainChat = chats.find(c => c.title === 'Main');
+                    const mainChat = chats.find(c => c?.title === 'Main');
                     if (mainChat) {
                         navigate(`/connections/${connection_name}/${mainChat?.chat_id}`);
                     }
@@ -298,7 +342,7 @@ const ChatPage = () => {
                                             <button className="small-icon" onClick={() => {setIsEditingChatName(true); setNewChatName(currentChatTitle);}} title="Edit chat name">
                                                 <FaEdit />
                                             </button>
-                                            <button className="small-icon" onClick={handleDelete} title="Delete chat">
+                                            <button className="small-icon" onClick={deleteChat} title="Delete chat">
                                                 <FaTrash />
                                             </button>
                                             <button className="small-icon" onClick={toggleForm} title={showForm ? "Close" : "Create chat"} >

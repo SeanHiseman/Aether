@@ -22,6 +22,7 @@ const MessagesPage = () => {
     const { rightClasses, updateFeeds, closeDrawers, mobileOpen } = useOutletContext();
     const { dispatch, state } = useContext(UnreadContext);
     const { viewer } = useContext(AuthContext);
+    const limit = 100;
 
     const isMobile = () => window.matchMedia("(max-width:768px)").matches;
     
@@ -33,9 +34,9 @@ const MessagesPage = () => {
     const loadMoreConnections = async () => {
         try {
             if (viewer?.feed_id) {
-                const response = await api.get('/get_connections', { params: { feedId: viewer?.feed_id, offset: connectionsOffset } });
+                const response = await api.get('/get_connections', { params: { feedId: viewer?.feed_id, limit, offset: connectionsOffset } });
                 const newConnections = response.data?.connections || [];
-                if (newConnections.length < 50) {
+                if (newConnections.length < limit) {
                     setHasMoreConnections(false);
                 }
                 setConnections(prevConnections => {
@@ -54,12 +55,16 @@ const MessagesPage = () => {
     const loadMoreRequests = async () => {
         try {
             if (viewer?.feed_id) {
-                const response = await api.get('/get_connect_requests', { params: { feedId: viewer?.feed_id, offset: requestsOffset } });
+                const response = await api.get('/get_connect_requests', { params: { feedId: viewer?.feed_id, limit, offset: requestsOffset } });
                 const newRequests = response.data?.requests || [];
-                if (newRequests.length < 50) {
+                if (newRequests.length < limit) {
                     setHasMoreRequests(false);
                 }
-                setConnectRequests(prevRequests => [...prevRequests, ...newRequests]);
+                setConnectRequests(prevRequests => {
+                    const updated = [...prevRequests, ...newRequests];
+                    localStorage.setItem('connectRequests', JSON.stringify(updated));
+                    return updated;
+                });
                 setRequestsOffset(prevOffset => prevOffset + newRequests.length);
                 dispatch({ 
                     type: 'SET_REQUEST_COUNT',
@@ -74,56 +79,75 @@ const MessagesPage = () => {
 
     useEffect(() => {
         if (viewer?.feed_id) {
-            setConnections([]);
-            setConnectRequests([]);
             setConnectionsOffset(0);
             setHasMoreConnections(true);
             setRequestsOffset(0);
             setHasMoreRequests(true);
-            loadMoreRequests();
+            //Check localStorage for connections
+            const storedConnections = localStorage.getItem('connections');
+            if (storedConnections && storedConnections !== 'undefined' && storedConnections !== 'null') { //Undefined different to empty
+                const parsed = JSON.parse(storedConnections);
+                setConnections(parsed);
+                setConnectionsOffset(parsed.length);
+            } else {
+                loadMoreConnections();
+            }
+            //Check localStorage for connect requests
+            const storedRequests = localStorage.getItem('connectRequests');
+            if (storedRequests) {
+                const parsed = JSON.parse(storedRequests);
+                setConnectRequests(parsed);
+                setRequestsOffset(parsed.length);
+                dispatch({ 
+                    type: 'SET_REQUEST_COUNT',
+                    count: parsed.length 
+                });
+            } else {
+                loadMoreRequests();
+            }
             const socket = window.socket;
             if (socket) {
-				socket.on('new_connect_request', async () => {
-					setRequestsOffset(0);
-					setHasMoreRequests(true);
-					try {
-						const response = await api.get('/get_connect_requests', {
-							params: { feedId: viewer?.feed_id, offset: 0 }
-						});
-						const newRequests = response.data?.requests || [];
-						setConnectRequests(newRequests);
-						setRequestsOffset(newRequests.length);
-						dispatch({
-							type: 'SET_REQUEST_COUNT',
-							count: newRequests.length
-						});
-					} catch (error) {
-						setErrorMessage(error.response.data?.message || 'Error getting connect requests');
+                socket.on('new_connect_request', async () => {
+                    setRequestsOffset(0);
+                    setHasMoreRequests(true);
+                    try {
+                        const response = await api.get('/get_connect_requests', {
+                            params: { feedId: viewer?.feed_id, offset: 0 }
+                        });
+                        const newRequests = response.data?.requests || [];
+                        setConnectRequests(newRequests);
+                        localStorage.setItem('connectRequests', JSON.stringify(newRequests));
+                        setRequestsOffset(newRequests.length);
+                        dispatch({
+                            type: 'SET_REQUEST_COUNT',
+                            count: newRequests.length
+                        });
+                    } catch (error) {
+                        setErrorMessage(error.response.data?.message || 'Error getting connect requests');
                         setTimeout(() => { setErrorMessage(''); }, 5000);
-					}
-				});
-
-				socket.on('connect_request_resolved', async (data) => {
-					if (data.accepted) {
-						try {
-							const response = await api.get(`/get_connection/${data.connectionName || data.receiverName}`);
-							if (response.data?.connection) {
-								handleConnectionAddition(response.data.connection);
-							}
-						} catch (error) {
-							console.error('Error fetching new connection:', error);
-						}
-					}
-				});
+                    }
+                });
+                socket.on('connect_request_resolved', async (data) => {
+                    if (data.accepted) {
+                        try {
+                            const response = await api.get(`/get_connection/${data.connectionName || data.receiverName}`);
+                            if (response.data?.connection) {
+                                handleConnectionAddition(response.data.connection);
+                            }
+                        } catch (error) {
+                            console.error('Error fetching new connection:', error);
+                        }
+                    }
+                });
             }
             return () => {
                 if (socket) {
                     socket.off('new_connect_request');
-					socket.off('connect_request_resolved');
+                    socket.off('connect_request_resolved');
                 }
             };
         }
-    }, [viewer.feed_id, dispatch]);
+    }, [viewer?.feed_id, dispatch]);
 
     useEffect(() => {
         const handleScroll = () => {
@@ -161,9 +185,11 @@ const MessagesPage = () => {
     };
 
     const handleRequestUpdate = (newConnection, senderId) => {
-        setConnectRequests(prevRequests =>
-            prevRequests.filter(request => request?.sender_id !== senderId)
-        );
+        setConnectRequests(prevRequests => {
+            const updated = prevRequests.filter(request => request?.sender_id !== senderId);
+            localStorage.setItem('connectRequests', JSON.stringify(updated));
+            return updated;
+        });
         dispatch({ 
             type: 'DECREMENT_REQUEST_COUNT',
             count: 1
@@ -243,23 +269,6 @@ const MessagesPage = () => {
         setConnectionToRemove(null);
         setIsModalOpen(false);
     };
-
-    useEffect(() => {
-        const storedConnections = localStorage.getItem('connections');
-        if (storedConnections) {
-            setConnections(JSON.parse(storedConnections));
-        } else {
-            loadMoreConnections();
-        }
-    }, [viewer?.feed_id]);
-
-    useEffect(() => {
-        if (connections.length > 0) {
-            localStorage.setItem('connections', JSON.stringify(connections));
-        } else {
-            localStorage.removeItem('connections');
-        }
-    }, [connections]);
 
 	document.title = 'Messages';
     return (

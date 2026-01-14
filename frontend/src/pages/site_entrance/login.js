@@ -24,6 +24,8 @@ const Login = () => {
             if (response.data?.success) {                
                 localStorage.setItem("algorithms", JSON.stringify(response.data?.algorithms || []));
                 localStorage.setItem("connectedAccounts", JSON.stringify(response.data?.connectedAccounts || []));
+                localStorage.setItem("connections", JSON.stringify(response.data?.connections || []));
+                localStorage.setItem("connectionChats", JSON.stringify(response.data?.connectionChats || {}));
                 localStorage.setItem("deepFeeds", JSON.stringify(response.data?.deepFeeds || []));
                 localStorage.setItem("followedFeeds", JSON.stringify(response.data?.followedFeeds));
                 localStorage.setItem("recentUpvotes", JSON.stringify(response.data?.recentUpvotes));

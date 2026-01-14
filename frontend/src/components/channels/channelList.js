@@ -45,12 +45,39 @@ const ChannelList = ({ canReorder = false, channels, feedId, feedName, isChat, i
                     setChannels([]);
                 }
             } else {
+                //Check localStorage first
+                const storedChats = localStorage.getItem('connectionChats');
+                if (storedChats) {
+                    const parsed = JSON.parse(storedChats);
+                    const storedConnections = localStorage.getItem('connections');
+                    if (storedConnections) {
+                        const connections = JSON.parse(storedConnections);
+                        const conn = connections.find(c => c.feed_name === feedName);
+                        if (conn && parsed[conn.feed_id]) {
+                            setChannels(parsed[conn.feed_id]);
+                            return;
+                        }
+                    }
+                }
+                //API fallback if localStorage fails
                 const response = await api.get(`/get_chats/${viewer?.feed_id}`, {
                     params: { connectionName: feedName }
                 });
                 if (response.data?.success) {
-                    //Backend already returns decrypted titles, no need to decrypt
-                    setChannels(response.data?.chats || []);
+                    const chats = response.data?.chats || [];
+                    setChannels(chats);
+                    //Save to localStorage
+                    const storedConnections = localStorage.getItem('connections');
+                    if (storedConnections) {
+                        const connections = JSON.parse(storedConnections);
+                        const conn = connections.find(c => c.feed_name === feedName);
+                        if (conn) {
+                            const existingChats = localStorage.getItem('connectionChats');
+                            const parsed = existingChats ? JSON.parse(existingChats) : {};
+                            parsed[conn.feed_id] = chats;
+                            localStorage.setItem('connectionChats', JSON.stringify(parsed));
+                        }
+                    }
                 } else {
                     setErrorMessage(response.data?.message || 'Error getting chats from API');
                     setChannels([]);
