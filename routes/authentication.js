@@ -47,9 +47,8 @@ passport.use(new GoogleStrategy({
             } 
         });
         if (user) {
-            //Update google_id if not set
             if (!user.google_id) {
-            await user.update({ google_id: googleId });
+                await user.update({ google_id: googleId });
             }
             return done(null, user);
         }
@@ -78,7 +77,7 @@ passport.use(new GoogleStrategy({
                 email_verified: true, //Auto-verify for Google OAuth
                 google_id: googleId,
                 has_membership: true,
-                subscription_expires_at: subscriptionExpiresAt
+                subscription_expires_at: subscriptionExpiresAt,
             }, { transaction });
             //Create feed
             let googlePhoto = profile.photos?.[0]?.value;
@@ -142,11 +141,18 @@ router.get('/auth/google',
 
 router.get('/auth/google/callback', passport.authenticate('google', { failureRedirect: '/login' }), async (req, res) => {
     try {
-        const user = req.user;
-        const feed = await Feeds.findOne({ 
-            where: { feed_owner: user.user_id, is_group: false } 
+        await new Promise((resolve, reject) => {
+            req.session.regenerate(error => {
+                if (error) reject(error);
+                else resolve();
+            });
         });
+        const user = req.user;
         const loginTime = new Date();
+        const isNewUser = !user.last_active_at;
+        const feed = await Feeds.findOne({
+            where: { feed_owner: user.user_id, is_group: false }
+        });
         req.session.user_id = user.user_id;
         req.session.username = user.username;
         req.session.email = user.email;
@@ -160,19 +166,57 @@ router.get('/auth/google/callback', passport.authenticate('google', { failureRed
             where: { user_id: user.user_id },
             attributes: ['platform', 'handle', 'instance_url', 'extra']
         });
+        const connections = await Connections.findAll({
+            where: {
+                [Op.or]: [
+                    { feed1_id: feed.feed_id },
+                    { feed2_id: feed.feed_id }
+                ]
+            }
+        });
+        const connectionFeedIds = connections.map(conn =>
+            conn.feed1_id === feed.feed_id ? conn.feed2_id : conn.feed1_id
+        );
+        const connectionFeeds = await Feeds.findAll({
+            where: { feed_id: { [Op.in]: connectionFeedIds } },
+        });
+        const connectionChatsMap = {};
+        for (const conn of connections) {
+            const connectionFeedId = conn.feed1_id === feed.feed_id ? conn.feed2_id : conn.feed1_id;
+            const sharedChats = await FeedChats.findAll({
+                where: { feed_id: { [Op.in]: [feed.feed_id, connectionFeedId] } },
+                attributes: ['chat_id'],
+                group: ['chat_id'],
+                having: sequelize.literal('COUNT(DISTINCT feed_id) = 2')
+            });
+            const chatIds = sharedChats.map(chat => chat.chat_id);
+            if (chatIds.length) {
+                const chatDetails = await Chats.findAll({
+                    where: { chat_id: { [Op.in]: chatIds } },
+                    attributes: ['chat_id', 'title', 'created_at', 'updated_at'],
+                    order: [['updated_at', 'DESC']]
+                });
+                connectionChatsMap[connectionFeedId] = chatDetails.map(chat => ({
+                    ...chat.toJSON(),
+                    title: decrypt(chat.title)
+                }));
+            } else {
+                connectionChatsMap[connectionFeedId] = [];
+            }
+        }
         const algorithms = await Algorithms.findAll({
             where: { viewer_id: feed.feed_id },
             include: [{
-            model: AlgorithmLocations,
-            as: 'algorithm_locations'
+                model: AlgorithmLocations,
+                as: 'algorithm_locations'
             }],
             order: [['algorithm_name', 'ASC']]
         });
         const followedFeeds = await Followers.findAll({
             where: { follower_id: feed.feed_id },
             include: [{
-            model: Feeds,
-            as: 'followedFeed',
+                model: Feeds,
+                as: 'followedFeed',
             }],
             order: [['followedFeed', 'feed_name', 'ASC']]
         });
@@ -189,10 +233,10 @@ router.get('/auth/google/callback', passport.authenticate('google', { failureRed
         });
         const recentUpvotes = await PostVotes.findAll({
             attributes: ['post_id'],
-            where: { 
-            voter_id: feed.feed_id,
-            upvotes: { [Op.gt]: 0 },
-            downvotes: { [Op.lte]: 0 }
+            where: {
+                voter_id: feed.feed_id,
+                upvotes: { [Op.gt]: 0 },
+                downvotes: { [Op.lte]: 0 }
             },
             order: [['updated_at', 'DESC']],
             limit: 100
@@ -201,8 +245,8 @@ router.get('/auth/google/callback', passport.authenticate('google', { failureRed
             { last_active_at: loginTime },
             { where: { user_id: user.user_id } }
         );
-        //Store data in session for frontend to retrieve
-        req.session.loginData = {
+        res.status(200).json({
+            success: true,
             user: {
                 user_id: user.user_id,
                 feed_name: user.username,
@@ -215,19 +259,21 @@ router.get('/auth/google/callback', passport.authenticate('google', { failureRed
                 feed_photo: feed.feed_photo,
                 follow_requests: feed.follow_requests,
                 connections: feed.connections,
-                connect_requests: feed.connect_requests
+                connect_requests: feed.connect_requests,
+                is_new_user: isNewUser
             },
             algorithms,
             connectedAccounts,
+            connections: connectionFeeds,
+            connectionChats: connectionChatsMap,
             deepFeeds,
             followedFeeds: normalizedFollowedFeeds,
             recentUpvotes
-        };
-        //Redirect to frontend with success
-        res.redirect(`${process.env.FRONTEND_URL}/auth/google/success`);
-    } catch (error) {
+        });
+    }
+    catch (error) {
         console.error(new Date().toISOString(), '/auth/google/callback error:', error);
-        res.redirect(`${process.env.FRONTEND_URL}/login?error=auth_failed`);
+        res.status(500).json({ success: false, message: 'Authentication failed' });
     }
 });
 

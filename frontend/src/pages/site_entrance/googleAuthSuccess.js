@@ -30,14 +30,17 @@ const GoogleAuthSuccess = () => {
                     localStorage.setItem("recentUpvotes", JSON.stringify(response.data?.recentUpvotes || []));
                     localStorage.setItem("user", JSON.stringify(response.data?.user));
                     await refreshTheme();
+                    const isNewUser = response.data?.user?.is_new_user === true;
                     const storedPath = sessionStorage.getItem('authRedirectPath');
-                    sessionStorage.removeItem('authRedirectPath'); //Cleanup
-                    const excludedPaths = ['/login', '/join', '/register', '/welcome', '/auth'];
-                    const isExcluded = excludedPaths.some(path => 
-                        storedPath?.startsWith(path)
-                    );
-                    //Use stored path if valid, otherwise default to /explore
-                    const redirectPath = (storedPath && !isExcluded) ? storedPath : '/explore';
+                    sessionStorage.removeItem('authRedirectPath');
+                    const excludedPaths = ['/login', '/join', '/register', '/welcome', '/auth', '/verify-email', '/forgot-password', '/reset-password'];
+                    const isExcluded = excludedPaths.some(path => storedPath?.startsWith(path));
+                    let redirectPath = '/explore';
+                    if (isNewUser) { //Go to help page on first login
+                        redirectPath = '/help';
+                    } else if (storedPath && !isExcluded) {
+                        redirectPath = storedPath;
+                    }
                     navigate(redirectPath, { replace: true });
                 } else {
                     setError('Failed to complete authentication');
