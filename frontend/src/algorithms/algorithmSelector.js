@@ -232,7 +232,6 @@ const AlgorithmSelector = ({ display = false, isAuthenticated = false, locationI
 					{showAbout ? 'Back' : 'About'}
 				</button>
 				{!showAbout && <div className="error-message">{assignError}</div>}
-				{!showAbout && !display && isAuthenticated && <p className="tiny-text">Changing the algorithm will reload posts</p>}
 				{!showAbout && !display && !isAuthenticated && <p className="tiny-text">Login to create an algorithm</p>}
 			</div>
 			{showAbout ? (
