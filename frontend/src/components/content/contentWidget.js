@@ -3,11 +3,12 @@ import AskButton from '../askButton';
 import { AuthContext } from '../authContext';
 import ContentDisplay from './contentDisplay';
 import ConfirmModal from '../modals/confirmModal';
-import SharePostModal from '../modals/sharePostModal';
 import { FaArrowDown, FaArrowUp, FaBookmark, FaChevronDown, FaChevronUp, FaComments, FaCommentSlash, FaEdit, FaCompress, FaExpand, FaRegBookmark, FaReply, FaShare, FaTrash, FaTree, FaListUl } from 'react-icons/fa';
 import { FormatNumber } from '../../functions/formatNumber';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
+import MembershipModal from '../modals/membershipModal';
 import ReplyTreeView from './replyTreeView';
+import SharePostModal from '../modals/sharePostModal';
 import { useCallback, useContext, useEffect, useRef, useState } from 'react';
 import useTimeAgo from '../../functions/useTimeAgo';
 
@@ -50,6 +51,7 @@ const ContentWidget = ({ canRemove = false, display = false, feed, isDraft = fal
 	const timeAgo = useTimeAgo(post?.created_at);
 	const urlPrefix = (post?.parentChannel?.feed?.is_group) ? 'g' : 'u';
 	const contentContainerRef = useRef(null);
+	const hasMembership = user?.has_membership;
 
 	//Sync local state with prop changes
 	useEffect(() => {

@@ -30,7 +30,7 @@ const EmailVerification = () => {
                     localStorage.setItem('user', JSON.stringify(response.data?.user));
                 }
                 setTimeout(() => {
-                    navigate('/explore');
+                    navigate('/help');
                 }, 3000);
             } catch (error) {
                 setStatus('error');
