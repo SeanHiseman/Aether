@@ -34,7 +34,7 @@ const Help = () => {
         { id: 'channels', title: 'Channels', content: 'Feeds are divided into channels for different topics. The main channel combines every post the user has made in all channels and group feeds.' },
         { id: 'posts', title: 'Posts', content: 'Posts are made to a channel in a feed. Posts can contain text, images, videos, and custom content, all mixed together. At the bottom of every post is a link to the channel and feed where the post was made.' },
         { id: 'custom-posts', title: 'Custom posts', content: 'Posts can contain custom code, enabling them to act like an app or webpage. These posts can be generated in the content form.' },
-        { id: 'connected-accounts', title: 'Notifications', content: 'You can connect your accounts from Reddit, Bluesky, and Mastodon. In the following feed, you will see posts from your connected platforms.' },
+        { id: 'connected-accounts', title: 'Connected accounts', content: 'You can connect your accounts from Reddit, Bluesky, and Mastodon. In the following feed, you will see posts from your connected platforms.' },
         { id: 'privacy', title: 'Privacy', content: 'Your personal information does not leave our platform. All your account data is permanently removed immediately upon account deletion.' },
     ];
 
