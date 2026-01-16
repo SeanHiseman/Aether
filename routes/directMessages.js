@@ -617,70 +617,92 @@ export const directMessagesSocket = (socket) => {
             });
         });
         socket.on('delete_direct_message', async (data) => {
-            const { message_id, channel_id } = data;
-            await Messages.destroy({ where: { message_id: data.message_id } });
-            socket.to(channel_id).emit('delete_direct_message', { message_id });
+            try {
+                const { message_id, channel_id } = data;
+                await Messages.destroy({ where: { message_id: data.message_id } });
+                socket.to(channel_id).emit('delete_direct_message', { message_id });
+            } catch (error) {
+                console.error('delete_direct_message error:', error);
+                socket.emit('error_message', { error: 'Failed to delete message' });
+            }
         });
         socket.on('edit_direct_message', async (data) => {
-            const { message_id, content, channel_id } = data;
-            const validation = ValidateTextInput(content, 1, 1000);
-            if (!validation.valid) {
-                socket.emit('error_message', { error: validation.error });
-                return;
+            try {
+                const { message_id, content, channel_id } = data;
+                const validation = ValidateTextInput(content, 1, 1000);
+                if (!validation.valid) {
+                    socket.emit('error_message', { error: validation.error });
+                    return;
+                }
+                const encryptedContent = encrypt(content);
+                await Messages.update(
+                    { content: encryptedContent, edited_at: new Date() },
+                    { where: { message_id } }
+                );
+                const updatedMessage = await Messages.findOne({ where: { message_id } });
+                const messageToSend = {
+                    ...updatedMessage.toJSON(),
+                    content: content
+                };
+                socket.to(channel_id).emit('message_edited', messageToSend);
+                socket.emit('message_edited', messageToSend);
+            } catch (error) {
+                console.error('edit_direct_message error:', error);
+                socket.emit('error_message', { error: 'Failed to edit message' });
             }
-            const encryptedContent = encrypt(content);
-            await Messages.update(
-                { content: encryptedContent, edited_at: new Date() },
-                { where: { message_id } }
-            );
-            const updatedMessage = await Messages.findOne({ where: { message_id } });
-            const messageToSend = {
-                ...updatedMessage.toJSON(),
-                content: content
-            };
-            socket.to(channel_id).emit('message_edited', messageToSend);
-            socket.emit('message_edited', messageToSend);
         });
         socket.on('send_direct_message', async (message) => {
-            const validation = ValidateTextInput(message.content, 1, 1000);
-            if (!validation.valid) {
-                socket.emit('error_message', { error: validation.error });
-                return;
+            try {
+                const validation = ValidateTextInput(message.content, 1, 1000);
+                if (!validation.valid) {
+                    socket.emit('error_message', { error: validation.error });
+                    return;
+                }
+                const encryptedContent = encrypt(message.content);
+                const newMessage = await Messages.create({
+                    message_id: message.message_id,
+                    content: encryptedContent,
+                    chat_id: message.channel_id,
+                    sender_id: message.sender_id,
+                    receiver_id: message.receiver_id,
+                    is_read: false,
+                    created_at: message.created_at
+                });
+                await Chats.update(
+                    { updated_at: message.created_at || new Date() },
+                    { where: { chat_id: message.channel_id } }
+                );
+                const messageToSend = {
+                    ...newMessage.toJSON(),
+                    content: message.content
+                };
+                socket.to(message.channel_id).emit('chat_message_confirmed', messageToSend);
+                socket.emit('chat_message_confirmed', messageToSend);
+            } catch (error) {
+                console.error('send_direct_message error:', error);
+                socket.emit('message_send_failed', {
+                    message_id: message.message_id,
+                    error: 'Failed to send message'
+                });
             }
-            const encryptedContent = encrypt(message.content);
-            const newMessage = await Messages.create({
-                message_id: message.message_id,
-                content: encryptedContent,
-                chat_id: message.channel_id,
-                sender_id: message.sender_id,
-                receiver_id: message.receiver_id,
-                is_read: false,
-                created_at: message.created_at
-            });
-            await Chats.update(
-                { updated_at: message.created_at || new Date() },  
-                { where: { chat_id: message.channel_id } }
-            );
-            const messageToSend = {
-                ...newMessage.toJSON(),
-                content: message.content
-            };
-            socket.to(message.channel_id).emit('chat_message_confirmed', messageToSend); 
-            socket.emit('chat_message_confirmed', messageToSend);
         });
         socket.on('mark_messages_read', async (data) => {
-            const { chat_id, reader_id } = data;
-            await Messages.update(
-                { is_read: true },
-                { 
-                    where: { 
-                        chat_id,
-                        receiver_id: reader_id, 
-                        is_read: false 
-                    } 
-                }
-            );
-            socket.to(chat_id).emit('messages_marked_read', { chat_id, reader_id });
+            try {
+                const { chat_id, reader_id } = data;
+                await Messages.update(
+                    { is_read: true },
+                    {
+                        where: {
+                            chat_id,
+                            receiver_id: reader_id,
+                            is_read: false
+                        }
+                    }
+                );
+                socket.to(chat_id).emit('messages_marked_read', { chat_id, reader_id });
+            } catch (error) {
+                console.error('mark_messages_read error:', error);
+            }
         });
     } catch (error) {
         console.error(new Date().toISOString(), 'Socket error:', error);

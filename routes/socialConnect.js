@@ -29,6 +29,42 @@ function ua() {
 	return 'AetherSocialLocal/0.1 (testing on localhost)';
 }
 
+async function refreshRedditToken(user_id) {
+	try {
+		const account = await ConnectedAccounts.findOne({
+			where: { user_id, platform: 'reddit' }
+		});
+		if (!account?.refresh_token) {
+			return null;
+		}
+		const tokenResponse = await fetch(OAUTH_TOKEN, {
+			method: 'POST',
+			headers: {
+				'Authorization': 'Basic ' + Buffer.from(process.env.REDDIT_CLIENT_ID + ':' + process.env.REDDIT_CLIENT_SECRET).toString('base64'),
+				'Content-Type': 'application/x-www-form-urlencoded'
+			},
+			body: new URLSearchParams({
+				grant_type: 'refresh_token',
+				refresh_token: account.refresh_token
+			})
+		});
+		if (!tokenResponse.ok) {
+			console.error('Failed to refresh Reddit token:', tokenResponse.status);
+			return null;
+		}
+		const tokenJson = await tokenResponse.json();
+		await ConnectedAccounts.update({
+			access_token: tokenJson.access_token,
+			refresh_token: tokenJson.refresh_token || account.refresh_token,
+			extra: JSON.stringify(tokenJson)
+		}, { where: { user_id, platform: 'reddit' } });
+		return tokenJson.access_token;
+	} catch (error) {
+		console.error('Error refreshing Reddit token:', error);
+		return null;
+	}
+}
+
 function escapeHtml(string) {
 	return (string || '').toString()
 		.replace(/&/g, '&amp;')
@@ -110,8 +146,23 @@ export function formatExternalPost(p, config, platform) {
 
 async function fetchAndProcessPosts(platform, fetchConfig, user_id) {
 	try {
-		const { url, headers, mapper, htmlGenerator } = fetchConfig;
-		const resp = await fetch(url, { headers });
+		let { url, headers, mapper, htmlGenerator } = fetchConfig;
+		let resp = await fetch(url, { headers });
+
+		// Handle expired tokens - try refresh for Reddit
+		if (!resp.ok && resp.status === 401 && platform === 'reddit') {
+			const newToken = await refreshRedditToken(user_id);
+			if (newToken) {
+				headers = { ...headers, 'Authorization': `bearer ${newToken}` };
+				resp = await fetch(url, { headers });
+			}
+		}
+
+		// Check response before parsing JSON
+		if (!resp.ok) {
+			throw new Error(`API returned ${resp.status}: ${resp.statusText}`);
+		}
+
 		const data = await resp.json();
 		let mappedPosts = [];
 		let nextToken = null;

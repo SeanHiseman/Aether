@@ -242,12 +242,17 @@ const ChatChannel = ({ canAdd, canRemove, channelId, connection, isGroup, isLock
                     setTimeout(() => { setErrorMessage(''); }, 5000);
                 }
             };
+            const handleMessageFailed = ({ message_id, error }) => {
+                setErrorMessage(error || "Failed to send message");
+                setTimeout(() => { setErrorMessage(''); }, 5000);
+            };
             try {
                 socket.on('new_message', handleNewMessage);
                 socket.on(confirmedRoute, handleConfirmedMessage);
                 socket.on(deleteRoute, deleteMessage);
                 socket.on('messages_marked_read', handleMessagesRead);
                 socket.on('message_edited', handleMessageEdited);
+                socket.on('message_send_failed', handleMessageFailed);
             } catch (error) {
                 setErrorMessage("Error setting up socket listeners");
                 setTimeout(() => { setErrorMessage(''); }, 5000);
@@ -262,6 +267,7 @@ const ChatChannel = ({ canAdd, canRemove, channelId, connection, isGroup, isLock
                     socket.off(deleteRoute, deleteMessage);
                     socket.off('messages_marked_read', handleMessagesRead);
                     socket.off('message_edited', handleMessageEdited);
+                    socket.off('message_send_failed', handleMessageFailed);
                 } catch (error) {
                     setErrorMessage("Connection error");
                     setTimeout(() => { setErrorMessage(''); }, 5000);

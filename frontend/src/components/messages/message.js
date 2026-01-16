@@ -130,7 +130,7 @@ const Message = ({ canRemove, deleteMessage, editMessage, editingMessageId, setE
                         )}
                         {message.sharedPost ? (
                             <div className={`shared-post-wrapper ${isOutgoing ? 'outgoing' : 'incoming'}`}>
-                                <ContentWidget post={message.sharedPost} readOnly={false} display={false} />
+                                <ContentWidget post={message.sharedPost} readOnly={false} display={false} sharedPost={true} />
                             </div>
                         ) : message.shared_post_id && (
                             <div className="deleted-post-notice">[Post deleted]</div>

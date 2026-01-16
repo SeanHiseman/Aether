@@ -12,7 +12,7 @@ import SharePostModal from '../modals/sharePostModal';
 import { useCallback, useContext, useEffect, useRef, useState } from 'react';
 import useTimeAgo from '../../functions/useTimeAgo';
 
-const ContentWidget = ({ canRemove = false, display = false, feed, isDraft = false, onPostRemoved, onSaveToggle = () => {}, parent, post, readOnly = false }) => {
+const ContentWidget = ({ canRemove = false, display = false, feed, isDraft = false, onPostRemoved, onSaveToggle = () => {}, parent, post, readOnly = false, sharedPost = false }) => {
 	const authContext = useContext(AuthContext);
 	const { isAuthenticated = false, viewer = null, user = null } = authContext || {};
 	const [canRemoveState, setCanRemoveState] = useState(canRemove);
@@ -404,7 +404,9 @@ const ContentWidget = ({ canRemove = false, display = false, feed, isDraft = fal
 					<p className="small-text feed-channel-link faded-text">{feedName}/{channelName}</p>
 				</Link>}
 				{!isDraft && (<div className="vote-container" style={{ marginRight: `${display && 0}` }}>
-					{(isAuthenticated || display) ? (
+					{sharedPost ? (
+						<p className="small-text">{FormatNumber(upvotes - downvotes)} {Math.abs(upvotes - downvotes) === 1 ? 'vote' : 'votes'}</p>
+					) : (isAuthenticated || display) ? (
 						!isViewingOwnPost ? (
 							<div className="post-button-group">
 								<button className={`large-icon ${hasUpvoted ? 'vote-disabled' : 'vote-enabled'}`} onClick={() => postVote(post?.post_id, 'upvote')} title={hasUpvoted ? 'Remove upvote' : 'Upvote'}>
@@ -430,7 +432,7 @@ const ContentWidget = ({ canRemove = false, display = false, feed, isDraft = fal
 						</div>
 					)}
 				</div>)}
-				{!readOnly && !isDraft && !display && (
+				{!readOnly && !isDraft && !display && !sharedPost && (
 					<div className="post-button-group reply-buttons">
 						<button className="large-icon" data-content-id={post?.post_id} onClick={toggleReplies} title={showReplies ? "Close Replies" : "Show Replies"}>
 							{showReplies ? <FaCommentSlash /> : <FaComments />}
@@ -443,7 +445,7 @@ const ContentWidget = ({ canRemove = false, display = false, feed, isDraft = fal
 						)}*/}
 					</div>
 				)}
-				<div className="post-button-group">
+				{!sharedPost && <div className="post-button-group">
 					{isAuthenticated && post?.poster_id === viewer?.feed_id && !readOnly && (
 						<button
 							className="large-icon"
@@ -463,11 +465,11 @@ const ContentWidget = ({ canRemove = false, display = false, feed, isDraft = fal
 							<FaTrash />
 						</button>
 					)}
-				</div>
+				</div>}
 				{/*{isAuthenticated && !post.note?.is_misinfo && !isDraft && (
 					<AskButton content={post} isReply={false} note={note} setNote={setNote} setPostErrorMessage={setPostErrorMessage} setShowNote={setShowNote} showNote={showNote} />
 				)}*/}
-				{!isDraft && isAuthenticated && (
+				{!sharedPost && !isDraft && isAuthenticated && (
 					<div className="post-button-group">
 						<button className="large-icon" title={isSaved ? 'Unsave post' : 'Save post'} onClick={savePost}>
 							{isSaved ? <FaBookmark /> : <FaRegBookmark />}
