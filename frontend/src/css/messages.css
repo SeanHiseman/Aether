@@ -156,11 +156,17 @@
     text-decoration: underline;
 }
 .unread-count {
-    color: var(--lightest);
-    font-size: var(--small-text);
-    margin-left: var(--medium-margin);
-    position: relative;
-    top: -5px;
+    background-color: var(--color-error);
+    border-radius: 50%;
+    color: var(--color-white);
+    font-size: 10px;
+    font-weight: bold;
+    min-width: 16px;
+    height: 16px;
+    line-height: 16px;
+    margin-left: var(--small-margin);
+    padding: 0 4px;
+    text-align: center;
 }
 
 /* Share Post Modal */
