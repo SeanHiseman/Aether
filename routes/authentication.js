@@ -150,6 +150,7 @@ router.get('/auth/google/callback', passport.authenticate('google', { failureRed
         const user = req.user;
         const loginTime = new Date();
         const isNewUser = !user.last_active_at;
+
         const feed = await Feeds.findOne({
             where: { feed_owner: user.user_id, is_group: false }
         });
@@ -157,53 +158,12 @@ router.get('/auth/google/callback', passport.authenticate('google', { failureRed
         req.session.username = user.username;
         req.session.email = user.email;
         req.session.has_membership = user.has_membership;
-        req.theme = user.theme;
-        req.usage_count = user.usage_count;
-        req.storage_count = user.storage_count;
         req.session.viewer_id = feed.feed_id;
         req.session.last_active_at = loginTime;
         const connectedAccounts = await ConnectedAccounts.findAll({
             where: { user_id: user.user_id },
             attributes: ['platform', 'handle', 'instance_url', 'extra']
         });
-        const connections = await Connections.findAll({
-            where: {
-                [Op.or]: [
-                    { feed1_id: feed.feed_id },
-                    { feed2_id: feed.feed_id }
-                ]
-            }
-        });
-        const connectionFeedIds = connections.map(conn =>
-            conn.feed1_id === feed.feed_id ? conn.feed2_id : conn.feed1_id
-        );
-        const connectionFeeds = await Feeds.findAll({
-            where: { feed_id: { [Op.in]: connectionFeedIds } },
-        });
-        const connectionChatsMap = {};
-        for (const conn of connections) {
-            const connectionFeedId = conn.feed1_id === feed.feed_id ? conn.feed2_id : conn.feed1_id;
-            const sharedChats = await FeedChats.findAll({
-                where: { feed_id: { [Op.in]: [feed.feed_id, connectionFeedId] } },
-                attributes: ['chat_id'],
-                group: ['chat_id'],
-                having: sequelize.literal('COUNT(DISTINCT feed_id) = 2')
-            });
-            const chatIds = sharedChats.map(chat => chat.chat_id);
-            if (chatIds.length) {
-                const chatDetails = await Chats.findAll({
-                    where: { chat_id: { [Op.in]: chatIds } },
-                    attributes: ['chat_id', 'title', 'created_at', 'updated_at'],
-                    order: [['updated_at', 'DESC']]
-                });
-                connectionChatsMap[connectionFeedId] = chatDetails.map(chat => ({
-                    ...chat.toJSON(),
-                    title: decrypt(chat.title)
-                }));
-            } else {
-                connectionChatsMap[connectionFeedId] = [];
-            }
-        }
         const algorithms = await Algorithms.findAll({
             where: { viewer_id: feed.feed_id },
             include: [{
@@ -216,7 +176,7 @@ router.get('/auth/google/callback', passport.authenticate('google', { failureRed
             where: { follower_id: feed.feed_id },
             include: [{
                 model: Feeds,
-                as: 'followedFeed',
+                as: 'followedFeed'
             }],
             order: [['followedFeed', 'feed_name', 'ASC']]
         });
@@ -245,8 +205,7 @@ router.get('/auth/google/callback', passport.authenticate('google', { failureRed
             { last_active_at: loginTime },
             { where: { user_id: user.user_id } }
         );
-        res.status(200).json({
-            success: true,
+        req.session.loginData = {
             user: {
                 user_id: user.user_id,
                 feed_name: user.username,
@@ -264,16 +223,15 @@ router.get('/auth/google/callback', passport.authenticate('google', { failureRed
             },
             algorithms,
             connectedAccounts,
-            connections: connectionFeeds,
-            connectionChats: connectionChatsMap,
             deepFeeds,
             followedFeeds: normalizedFollowedFeeds,
             recentUpvotes
-        });
+        };
+        res.redirect(`${process.env.FRONTEND_URL}/auth/google/success`);
     }
     catch (error) {
         console.error(new Date().toISOString(), '/auth/google/callback error:', error);
-        res.status(500).json({ success: false, message: 'Authentication failed' });
+        res.redirect(`${process.env.FRONTEND_URL}/login?error=auth_failed`);
     }
 });
 
