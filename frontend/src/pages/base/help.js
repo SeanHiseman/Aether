@@ -19,13 +19,6 @@ const Help = () => {
         }
     };
 
-    const introSection = {
-        id: 'intro',
-        title: 'Intro to Aether Social',
-        //content: 'Aether Social is a feed-based social platform built around user control and transparency. You decide what you see, how it is ranked, and where it comes from. Start by following feeds, explore channels within them, and experiment with algorithms to shape your timeline. You can create simple posts or build interactive, app-like posts using custom blocks. This introduction covers the basics so you can get started without needing to understand everything upfront.'
-        content: `Aether Social is a platform where you can customise and control the algorithms that show content to you. Wherever you see posts, you can apply a custom algorithm using the Choose Algorithm button on the right aside. ${isMobile && 'Tap the arrow buttons at the top to open the left and right asides, and swipe to close. '}Posts are made to feeds, which are spit into channels. The feeds you follow can be combined by dragging and dropping. On the left aside aside are the feeds you follow, as well as messages from users you connect with. Go to the explore page on the left aside to discover posts and feeds to follow`
-    };
-
     const sections = [
         { id: 'custom-algorithms', title: 'Custom Algorithms', content: 'Wherever you see posts, you can apply custom algorithms. Use the Choose Algorithm button on the right aside. You can choose from predefined template algorithms, describe your custom algorithm, or manually choose the algorithm settings.' },
         { id: 'user-feeds', title: 'User feeds', content: 'Each user has their own feed where only they can post. This feed can be public or private. Private feeds require permission to be followed.' },
@@ -67,7 +60,7 @@ const Help = () => {
     const navItemStyle = (isActive) => ({
         padding: 'var(--small-margin)',
         cursor: 'pointer',
-        color: isActive ? 'var(--lightest)' : 'var(--light)',
+        color: isActive ? 'var(--lightest)' : 'var(--lightest)',
         backgroundColor: isActive ? 'var(--darkest)' : 'transparent',
         borderRadius: 'var(--small-margin)'
     });

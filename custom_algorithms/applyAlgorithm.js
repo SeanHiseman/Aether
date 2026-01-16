@@ -272,7 +272,7 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
             isActiveToday = algorithm.activeDays && algorithm.activeDays.length > 0 ? algorithm.activeDays.map(d => d.toLowerCase()).includes(today) : true;
 		}
 
-		const { chronology = 0, contentType = {}, variety = 1, wordLimits = {}, videoLimits = {}, timeLimits = {}, dateLimits = {}, scoring = {} } = algorithm;
+		const { chronology = 0, contentType = {}, variety = 1, wordLimits = {}, videoLimits = {}, timeLimits = {}, scoring = {} } = algorithm;
 		const { sentiment = 0, voteImpact = 1, wordBoost = [], wordSuppress = [] } = scoring;
 		const lowVoteImpact = voteImpact < 0.3;
 		const highChronology = chronology > 0.7;
@@ -363,15 +363,6 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
 				};
 				algorithmFilters.has_videos = true;
 			}
-			if (dateLimits.from) {
-				algorithmFilters.created_at = { [Op.gte]: new Date(dateLimits.from) };
-			}
-			if (dateLimits.to) {
-				algorithmFilters.created_at = {
-					...algorithmFilters.created_at,
-					[Op.lte]: new Date(dateLimits.to)
-				};
-			}
 		}
 
 		//Algorithm filters for ExternalPosts (SQL string)
@@ -382,8 +373,6 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
 			if (contentType.text === false) conditions.push('p.has_text = false');
 			if (Number.isFinite(wordLimits.min)) conditions.push(`(p.has_text = false OR p.word_count >= ${wordLimits.min})`);
 			if (Number.isFinite(wordLimits.max)) conditions.push(`(p.has_text = false OR p.word_count <= ${wordLimits.max})`);
-			if (dateLimits.from) conditions.push(`p.created_at_remote >= '${new Date(dateLimits.from).toISOString()}'`);
-			if (dateLimits.to) conditions.push(`p.created_at_remote <= '${new Date(dateLimits.to).toISOString()}'`);
 			if (conditions.length > 0) {
 				externalFiltersSQL = 'AND ' + conditions.join(' AND ');
 			}

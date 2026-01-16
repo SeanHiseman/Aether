@@ -43,7 +43,7 @@ router.post('/create_algorithm', authenticateCheck, async (req, res) => {
 		//console.log('create_algorithm: start');
 		//console.time(totalTimer);
 		//console.time('parse_request');
-		const { algorithmName, activeDays, chronology, contentType, customInstruction, dateFrom, dateTo, generateCode, locationId, minWords, maxWords, minVideo, maxVideo, sentiment, startTime, endTime, variety, voteImpact, wordBoost, wordSuppress } = req.body;
+		const { algorithmName, activeDays, chronology, contentType, customInstruction, generateCode, locationId, minWords, maxWords, minVideo, maxVideo, sentiment, startTime, endTime, variety, voteImpact, wordBoost, wordSuppress } = req.body;
 		const viewerId = req.session.viewer_id;
 		//console.timeEnd('parse_request');
 		//console.time('build_algorithm_json');
@@ -57,7 +57,6 @@ router.post('/create_algorithm', authenticateCheck, async (req, res) => {
 			wordLimits: { min: minWords || null, max: maxWords || null },
 			videoLimits: { min: minVideo || null, max: maxVideo || null },
 			timeLimits: { startTime: startTime || null, endTime: endTime || null },
-			dateLimits: { from: dateFrom || null, to: dateTo || null },
 			scoring: {
 				sentiment,
 				voteImpact,

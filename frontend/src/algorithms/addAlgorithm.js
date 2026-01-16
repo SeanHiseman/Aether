@@ -117,14 +117,11 @@ const AddAlgorithm = ({ algorithms = [], display, editingAlgorithm = null, isAut
     const [chronology, setChronology] = useState(0);
     const [contentType, setContentType] = useState({ images: true, text: true, videos: true, interactive: true });
     const [customInstruction, setCustomInstruction] = useState('');
-    const [dateFrom, setDateFrom] = useState('');
-    const [dateTo, setDateTo] = useState('');
     const [endTime, setEndTime] = useState('23:59');
     const [error, setError] = useState(null);
     const [generateCode, setGenerateCode] = useState(false); //Tells backend if LLM should be used to generate JSON
     const [loading, setLoading] = useState(false);
     const [sentiment, setSentiment] = useState(0);
-    const [showAdvancedOptions, setShowAdvancedOptions] = useState(false);
     const [showMoreOptions, setShowMoreOptions] = useState(false);
     const [startTime, setStartTime] = useState('00:00');
     const [template, setTemplate] = useState('none');
@@ -135,34 +132,6 @@ const AddAlgorithm = ({ algorithms = [], display, editingAlgorithm = null, isAut
     const [wordRange, setWordRange] = useState([0, 100]);
     const [wordSuppress, setWordSuppress] = useState('');
     const hasMembership = user?.has_membership;
-
-    const [showFutureIdeas, setShowFutureIdeas] = useState(false);
-    const [aiContentFilters, setAiContentFilters] = useState([]);
-    const [echoBreaker, setEchoBreaker] = useState(false);
-    const [qualityThreshold, setQualityThreshold] = useState(40);
-    const [readingTime, setReadingTime] = useState('medium');
-    const [viralityDamper, setViralityDamper] = useState(0);
-    const [interactionDepth, setInteractionDepth] = useState({ 
-        quick_scroll: true, 
-        read: true, 
-        engage: true, 
-        deep_dive: false 
-    });
-
-    const toggleContentFilter = (filter) => {
-        setAiContentFilters(prev => 
-            prev.includes(filter) 
-                ? prev.filter(f => f !== filter)
-                : [...prev, filter]
-        );
-    };
-
-    const toggleInteractionType = (type) => {
-        setInteractionDepth(prev => ({
-            ...prev,
-            [type]: !prev[type]
-        }));
-    };
 
     const isDayActive = (day) => activeDays.includes(day);
 
@@ -200,8 +169,6 @@ const AddAlgorithm = ({ algorithms = [], display, editingAlgorithm = null, isAut
                 chronology,
                 contentType,
                 customInstruction,
-                dateFrom,
-                dateTo,
                 generateCode,
                 locationId,
                 minWords: wordRange[0] === 0 ? null : Math.round(logScale(wordRange[0], 1, 5000)),
@@ -245,9 +212,7 @@ const AddAlgorithm = ({ algorithms = [], display, editingAlgorithm = null, isAut
         setAlgorithmName('');
         setChronology(0.6);
         setContentType({ images: true, text: true, videos: true, interactive: true });
-        setCustomInstruction(''); 
-        setDateFrom('');
-        setDateTo('');        
+        setCustomInstruction('');        
         setEditingAlgorithm(null);
         setWordRange([0, 100]);
         setVideoRange([0, 100]);
@@ -361,8 +326,6 @@ const AddAlgorithm = ({ algorithms = [], display, editingAlgorithm = null, isAut
             const wordSuppressWords = wordSuppressArray.map(item => typeof item === 'string' ? item : item.word).join(',');
             setWordBoost(wordBoostWords);
             setWordSuppress(wordSuppressWords);
-            setDateFrom(parsedAlgorithmCode.dateFrom || '');
-            setDateTo(parsedAlgorithmCode.dateTo || '');
             setVariety(parsedAlgorithmCode.variety ?? 1);
         } else {
             startCreatingNew();
@@ -445,12 +408,6 @@ const AddAlgorithm = ({ algorithms = [], display, editingAlgorithm = null, isAut
                 </div>
                 <button className="button" onClick={() => setShowMoreOptions(!showMoreOptions)} type="button">
                     {showMoreOptions ? 'Fewer Options' : 'More Options'}
-                </button>
-                <button className="button" onClick={() => setShowAdvancedOptions(!showAdvancedOptions)} type="button">
-                    {showAdvancedOptions ? 'Hide Advanced Options' : 'Advanced Options'}
-                </button>
-                <button className="button" onClick={() => setShowFutureIdeas(!showFutureIdeas)} type="button">
-                    {showFutureIdeas ? 'Hide Future Ideas' : 'Future Ideas'}
                 </button>
                 {showMoreOptions && (
                     <>
@@ -610,10 +567,6 @@ const AddAlgorithm = ({ algorithms = [], display, editingAlgorithm = null, isAut
                                 />
                             </div>
                         </div>
-                    </>
-                )}
-                {showAdvancedOptions && (
-                    <>
                         <div className="form-row">
                             <div className="form-label-with-info">
                                 <label className="small-text">Content Types</label>
@@ -632,34 +585,6 @@ const AddAlgorithm = ({ algorithms = [], display, editingAlgorithm = null, isAut
                                 <label>
                                     <input type="checkbox" checked={contentType.interactive} onChange={e => setContentType(prev => ({ ...prev, interactive: e.target.checked }))} /> Custom
                                 </label>
-                            </div>
-                        </div>
-                        <div className="form-row">
-                            <div className="form-group">
-                                <div className="form-label-with-info">
-                                    <label className="small-text">Advanced chronology</label>
-                                    <InfoIconWithTooltip info="Controls the date range of posts shown." />
-                                </div>
-                                <div className="form-row">
-                                    <div className="form-group">
-                                        <label className="small-text">From Date</label>
-                                        <input
-                                            className="form-input"
-                                            type="date"
-                                            value={dateFrom}
-                                            onChange={e => setDateFrom(e.target.value)}
-                                        />
-                                    </div>
-                                    <div className="form-group">
-                                        <label className="small-text">Until Date</label>
-                                        <input
-                                            className="form-input"
-                                            type="date"
-                                            value={dateTo}
-                                            onChange={e => setDateTo(e.target.value)}
-                                        />
-                                    </div>
-                                </div>
                             </div>
                         </div>
                         <div className="form-row">
@@ -745,126 +670,6 @@ const AddAlgorithm = ({ algorithms = [], display, editingAlgorithm = null, isAut
                             </div>
                         </div>
                     </>
-                )}
-                {showFutureIdeas && (
-                    <div className="ideas-section">
-                        <div className="ideas-header">
-                            <p className="small-text" style={{ fontWeight: 600 }}>Future Features</p>
-                            <span className="ideas-badge">Prototype</span>
-                        </div>
-                        <p className="ideas-description">
-                            These are concept features under development. They demonstrate advanced algorithmic controls 
-                            that could give you even more power over your social media experience.
-                        </p>
-                        <div className="form-row">
-                            <div className="form-group">
-                                <div className="form-label-with-info">
-                                    <label className="small-text">Filter out AI content</label>
-                                    <InfoIconWithTooltip info="Automatically detects and filters suspected AI content." />
-                                </div>
-                                <div className="filter-tags">
-                                    {['AI images', 'AI videos', 'AI text'].map(filter => (
-                                        <div key={filter} className={`filter-tag ${aiContentFilters.includes(filter) ? 'active' : ''}`} onClick={() => toggleContentFilter(filter)}>
-                                            {filter}
-                                            {aiContentFilters.includes(filter) && <span className="filter-tag-remove">×</span>}
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                        </div>
-                        <div className="form-row">
-                            <div className="form-group">
-                                <div className="form-label-with-info">
-                                    <label className="small-text">Echo Chamber Breaker</label>
-                                    <InfoIconWithTooltip info="Intentionally expose you to diverse viewpoints outside your usual bubble." />
-                                </div>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                                    <div className={`toggle-switch ${echoBreaker ? 'active' : ''}`} onClick={() => setEchoBreaker(!echoBreaker)}>
-                                        <div className="toggle-switch-handle" />
-                                    </div>
-                                    <span className="small-text" style={{ color: 'var(--light)' }}>
-                                        {echoBreaker ? 'Enabled - Show me different perspectives' : 'Disabled'}
-                                    </span>
-                                </div>
-                            </div>
-                            <div className="form-group">
-                                <div className="form-label-with-info">
-                                    <label className="small-text">Virality Damper</label>
-                                    <InfoIconWithTooltip info="Reduce the impact of viral content. Higher values show you less of what everyone else is seeing." />
-                                </div>
-                                <input className="form-input" type="range" min="0" max="100" value={viralityDamper} onChange={e => setViralityDamper(parseInt(e.target.value))} />
-                                <div className="slider-labels">
-                                    <span className="tiny-text">Show Viral ({viralityDamper}%)</span>
-                                    <span className="tiny-text">Hide Viral</span>
-                                </div>
-                            </div>
-                        </div>
-                        <div className="form-row">
-                            <div className="form-group">
-                                <div className="form-label-with-info">
-                                    <label className="small-text">Minimum Quality Score</label>
-                                    <InfoIconWithTooltip info="Quality assessment based on grammar, coherence, sourcing, and value. Higher threshold means fewer but higher quality posts." />
-                                </div>
-                                <input className="form-input" type="range" min="0" max="100" value={qualityThreshold} onChange={e => setQualityThreshold(parseInt(e.target.value))} />
-                                <div className="slider-labels">
-                                    <span className="tiny-text">Show All ({qualityThreshold}%)</span>
-                                    <span className="tiny-text">Very Selective</span>
-                                </div>
-                            </div>
-                        </div>
-                        <div className="form-row">
-                            <div className="form-group">
-                                <div className="form-label-with-info">
-                                    <label className="small-text">Preferred Reading Time</label>
-                                    <InfoIconWithTooltip info="Optimize content length based on how much time you typically have." />
-                                </div>
-                                <div className="intensity-scale">
-                                    {[
-                                        { key: 'quick', label: 'Quick' },
-                                        { key: 'medium', label: 'Medium' },
-                                        { key: 'long', label: 'Long' },
-                                        { key: 'deep', label: 'Deep Dive' }
-                                    ].map(({ key, label }) => (
-                                        <div key={key} className={`intensity-option ${readingTime === key ? 'active' : ''}`} onClick={() => setReadingTime(key)}>
-                                            {label}
-                                        </div>
-                                    ))}
-                                </div>
-                                <div className="slider-labels">
-                                    <span className="tiny-text">{'< 2 min'}</span>
-                                    <span className="tiny-text">2-5 min</span>
-                                    <span className="tiny-text">5-15 min</span>
-                                    <span className="tiny-text">{'>15 min'}</span>
-                                </div>
-                            </div>
-                        </div>
-                        <div className="form-row">
-                            <div className="form-group">
-                                <div className="form-label-with-info">
-                                    <label className="small-text">Learn From My Interactions</label>
-                                    <InfoIconWithTooltip info="Choose which types of interactions should influence your algorithm." />
-                                </div>
-                                <div className="flex flex-col">
-                                    <label>
-                                        <input type="checkbox" checked={interactionDepth.quick_scroll} onChange={() => toggleInteractionType('quick_scroll')} />
-                                        Quick Scrolls (what I skip)
-                                    </label>
-                                    <label>
-                                        <input type="checkbox" checked={interactionDepth.read} onChange={() => toggleInteractionType('read')} /> 
-                                        Reading Time (what I pause on)
-                                    </label>
-                                    <label>
-                                        <input type="checkbox" checked={interactionDepth.engage} onChange={() => toggleInteractionType('engage')} /> 
-                                        Engagement (likes, comments)
-                                    </label>
-                                    <label>
-                                        <input type="checkbox" checked={interactionDepth.deep_dive} onChange={() => toggleInteractionType('deep_dive')} /> 
-                                        Redirects (clicking links, profiles)
-                                    </label>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
                 )}
             </div>
         </div>

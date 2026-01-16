@@ -437,7 +437,7 @@
 	letter-spacing: 0.05em;
 }
 .ideas-description {
-	color: var(--light);
+	color: var(--lightest);
 	font-size: var(--tiny-text);
 	margin-bottom: 20px;
 	line-height: 1.6;

@@ -1,4 +1,4 @@
-import AboutSection from './about';
+import FutureIdeas from './futureIdeas';
 import AddAlgorithm from './addAlgorithm';
 import api from '../api';
 import { createPortal } from 'react-dom';
@@ -15,7 +15,7 @@ const AlgorithmSelector = ({ display = false, isAuthenticated = false, locationI
 	const [loading, setLoading] = useState(false);
 	const [modalOpen, setModalOpen] = useState(display || false);
 	const [optionsOpen, setOptionsOpen] = useState(false);
-	const [showAbout, setShowAbout] = useState(false);
+	const [showFutureIdeas, setShowFutureIdeas] = useState(false);
 
 	const assignAlgorithm = async (algorithmId) => {
 		try {
@@ -69,7 +69,7 @@ const AlgorithmSelector = ({ display = false, isAuthenticated = false, locationI
 		setError(null);
 		setModalOpen(false);
 		setOptionsOpen(false);
-		setShowAbout(false);
+		setShowFutureIdeas(false);
 	};
 
 	const deleteAlgorithm = async algorithmId => {
@@ -227,15 +227,15 @@ const AlgorithmSelector = ({ display = false, isAuthenticated = false, locationI
 	const renderContent = () => (
 		<div className="algorithm-content" onClick={display ? undefined : e => e.stopPropagation()}>
 			<div className="selector-header">
-				{!display && !showAbout && <button className="small-icon" onClick={closeModal} title="Close">✕<p className="icon-text">Close</p></button>}
-				<button className="small-icon" style={{ textDecoration: 'underline' }} onClick={() => setShowAbout(prev => !prev)}>
-					{showAbout ? 'Back' : 'About'}
+				{!display && <button className="small-icon" onClick={closeModal} title="Close">✕<p className="icon-text">Close</p></button>}
+				<button className="small-icon" style={{ textDecoration: 'underline', marginLeft: 'auto' }} onClick={() => setShowFutureIdeas(prev => !prev)}>
+					{showFutureIdeas ? 'Back' : 'Future Ideas'}
 				</button>
-				{!showAbout && <div className="error-message">{assignError}</div>}
-				{!showAbout && !display && !isAuthenticated && <p className="tiny-text">Login to create an algorithm</p>}
 			</div>
-			{showAbout ? (
-				<AboutSection />
+			{!showFutureIdeas && <div className="error-message">{assignError}</div>}
+			{!showFutureIdeas && !display && !isAuthenticated && <p className="tiny-text">Login to create an algorithm</p>}
+			{showFutureIdeas ? (
+				<FutureIdeas />
 			) : (
 				<>
 					{loading && <div className="loading-state">Loading algorithms...</div>}
