@@ -602,7 +602,7 @@ export const directMessagesSocket = (socket) => {
         socket.on('chat_created', (data) => {
             const { chat, connection_feed_id } = data;
             if (connection_feed_id) {
-                io.to(connection_feed_id).emit('new_chat_created', { chat });
+                socket.to(connection_feed_id.toString()).emit('new_chat_created', { chat });
             }
         });
         socket.on('chat_deleted', async (data) => {

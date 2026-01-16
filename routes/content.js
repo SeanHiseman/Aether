@@ -394,7 +394,6 @@ router.post("/create_post", standardLimiter, authenticateCheck, checkStorageLimi
                 ...flags
             };
             result = await Posts.create(postData);
-			console.log("/create_post result:", result);
             await Feeds.increment('post_count', { by: 1, where: { feed_id } });
             await FeedChannels.increment('post_count', { by: 1, where: { channel_id } });
             if (parent_id) {
