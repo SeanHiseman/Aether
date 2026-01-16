@@ -554,6 +554,9 @@ ul {
     margin-top: 0; /* cancel the desktop 16-px margin  */
     transition: transform 0.2s ease-out;
   }
+  .icon-button.search {
+    padding: 0px;
+  }
   .mobile-auth-footer {
     align-items: center;
     background: var(--dark);
@@ -567,8 +570,11 @@ ul {
     right: 0;
     z-index: 999;
   }
+  .search-bar {
+    flex: none;
+  }
   .search-container {
-    width: 66vw;
+    width: 68vw;
   }
   .search-form {
     max-width: 100%;

@@ -320,7 +320,7 @@ CREATE TABLE `users` (
   `email` varchar(120) NOT NULL,
   `created_at` datetime(3) DEFAULT CURRENT_TIMESTAMP(3),
   `updated_at` datetime(3) DEFAULT CURRENT_TIMESTAMP(3),
-  `last_active_at` datetime(3) DEFAULT CURRENT_TIMESTAMP(3),
+  `last_active_at` datetime(3) DEFAULT NULL,
   `has_membership` tinyint(1) DEFAULT '0',
   `theme` text,
   `usage_count` int NOT NULL DEFAULT '0',
@@ -332,9 +332,10 @@ CREATE TABLE `users` (
   `verification_token_expires` datetime(3) DEFAULT NULL,
   `reset_token` text DEFAULT NULL,
   `reset_token_expires` DATETIME(3) DEFAULT NULL,
-  'google_id' VARCHAR(255) UNIQUE,
-  PRIMARY KEY (`user_id`),
-  UNIQUE KEY `email` (`email`)
+  `google_id` VARCHAR(255) UNIQUE,
+	PRIMARY KEY (`user_id`),
+	UNIQUE KEY `email` (`email`),
+	UNIQUE KEY `google_id` (`google_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 DROP TABLE IF EXISTS `saved_posts`;

@@ -150,7 +150,6 @@ router.get('/auth/google/callback', passport.authenticate('google', { failureRed
         const user = req.user;
         const loginTime = new Date();
         const isNewUser = !user.last_active_at;
-
         const feed = await Feeds.findOne({
             where: { feed_owner: user.user_id, is_group: false }
         });
