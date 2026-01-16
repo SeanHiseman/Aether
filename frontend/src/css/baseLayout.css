@@ -446,16 +446,16 @@ main {
   background-color: var(--color-error);
   border-radius: 50%;
   color: var(--color-white);
-  font-size: 10px;
+  font-size: 12px;
   font-weight: bold;
-  min-width: 16px;
-  height: 16px;
-  line-height: 16px;
-  padding: 0 4px;
+  min-width: 20px;
+  height: 20px;
+  line-height: 20px;
+  padding: 0 5px;
   position: absolute;
-  right: 0;
+  right: -5px;
   text-align: center;
-  top: 0;
+  top: -5px;
 }
 .small-feed-photo {
   aspect-ratio: 1 / 1;

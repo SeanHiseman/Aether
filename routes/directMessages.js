@@ -370,6 +370,12 @@ router.post('/send_connect_request', authenticateCheck, async (req, res) => {
 			transaction
 		});
 		await transaction.commit();
+        const io = req.app.get('io');
+        if (io) {
+            io.to(receiverId.toString()).emit('new_connect_request', {
+                sender_id: senderId
+            });
+        }
         res.status(200).json({ success: true });
     } catch (error) {
         if (transaction) await transaction.rollback();

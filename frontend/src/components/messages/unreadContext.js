@@ -93,8 +93,13 @@ export const UnreadProvider = ({ children }) => {
             }
         };
         fetchUnreadCounts();
-        const socket = window.socket; 
+        const socket = window.socket;
         if (socket) {
+            const joinRoom = () => socket.emit('join_user_room', viewer.feed_id);
+            if (socket.connected) {
+                joinRoom();
+            }
+            socket.on('connect', joinRoom);
             socket.on('chat_message_confirmed', (message) => {
                 if (message.receiver_id === viewer.feed_id && !message.is_read) {
                     dispatch({
@@ -116,7 +121,7 @@ export const UnreadProvider = ({ children }) => {
             });
             socket.on('connect_request_resolved', (data) => {
                 if (data.count && data.count > 0) {
-                    dispatch({ 
+                    dispatch({
                         type: 'DECREMENT_REQUEST_COUNT',
                         count: data.count || 1
                     });
@@ -125,6 +130,7 @@ export const UnreadProvider = ({ children }) => {
         }
         return () => {
             if (socket) {
+                socket.off('connect');
                 socket.off('chat_message_confirmed');
                 socket.off('messages_marked_read');
                 socket.off('new_connect_request');

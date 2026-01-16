@@ -159,13 +159,14 @@
     background-color: var(--color-error);
     border-radius: 50%;
     color: var(--color-white);
-    font-size: 10px;
+    display: inline-block;
+    font-size: 12px;
     font-weight: bold;
-    min-width: 16px;
-    height: 16px;
-    line-height: 16px;
+    min-width: 20px;
+    height: 20px;
+    line-height: 20px;
     margin-left: var(--small-margin);
-    padding: 0 4px;
+    padding: 0 5px;
     text-align: center;
 }
 

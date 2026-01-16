@@ -280,7 +280,7 @@ const MessagesPage = () => {
                             {viewer?.connections} {viewer?.connections === 1 ? 'Connection' : 'Connections'}
                         </span>
                         <span className={`tab-title ${activeTab === 'requests' ? 'active' : ''}`} onClick={() => setActiveTab('requests')}>
-                            {viewer?.connect_requests} {viewer?.connect_requests === 1 ? 'Connect Request' : 'Connect Requests'}
+                            {viewer?.connect_requests > 0 ? <span className="unread-count">{viewer.connect_requests}</span> : viewer?.connect_requests ?? 0} {viewer?.connect_requests === 1 ? 'Connect Request' : 'Connect Requests'}
                         </span>
                     </div>
                     <div className="error-message">{errorMessage}</div>
