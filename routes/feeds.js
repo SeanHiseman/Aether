@@ -1057,7 +1057,7 @@ router.put('/update_feed_photo/:feedId', standardLimiter, authenticateCheck, che
             await feed.save();
             return res.status(200).json({ success: true, newPhotoPath });
         } catch (error) {
-            console.log(new Date().toISOString(), '/update_feed_photo error:', error);
+            console.error(new Date().toISOString(), '/update_feed_photo error:', error);
             if (req.file) {
                 try {
                     if (process.env.NODE_ENV === 'production') {

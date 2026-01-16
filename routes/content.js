@@ -467,7 +467,6 @@ router.post("/explore_posts", standardLimiter, async (req, res) => {
 			viewerId,
 		});
 		const posts = algorithmResult.posts;
-		//console.log("Explore posts fetched:", posts);
 		const status = algorithmResult.status;
 		const message = algorithmResult.message;
 		res.status(200).json({ hasMore: posts.length >= limit, posts: posts, status: status, message: message });

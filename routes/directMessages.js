@@ -629,7 +629,7 @@ export const directMessagesSocket = (socket) => {
         socket.on('edit_direct_message', async (data) => {
             try {
                 const { message_id, content, channel_id } = data;
-                const validation = ValidateTextInput(content, 1, 1000);
+                const validation = ValidateTextInput(content, 1, 1000, false);
                 if (!validation.valid) {
                     socket.emit('error_message', { error: validation.error });
                     return;
@@ -653,7 +653,7 @@ export const directMessagesSocket = (socket) => {
         });
         socket.on('send_direct_message', async (message) => {
             try {
-                const validation = ValidateTextInput(message.content, 1, 1000);
+                const validation = ValidateTextInput(message.content, 1, 1000, false);
                 if (!validation.valid) {
                     socket.emit('error_message', { error: validation.error });
                     return;
