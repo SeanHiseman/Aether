@@ -190,7 +190,7 @@ const FeedInfoView = () => {
 
     document.title = `${feed?.feed_name} settings`;
     return (
-        <div className="feed-settings short">
+        <div className="feed-settings">
             <div className="name-photo-area">
                 <div className="feed-header-photo">
                     <img className="settings-feed-photo" src={`${feed?.feed_photo}`} onError={(e) => e.currentTarget.src = '/media/site_images/blank-profile.png'} />

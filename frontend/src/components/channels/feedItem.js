@@ -46,6 +46,7 @@ const FeedItem = ({ dragged, feed, isChat, parentDeepFeedId, unreadCount }) => {
             : 'pointer',
         opacity: isDragging ? 0.8 : 1,
         position: 'relative',
+        touchAction: 'none',
         transform: CSS.Translate.toString(transform),
         transition: 'none',
         zIndex: isDragging ? 1000 : 1,

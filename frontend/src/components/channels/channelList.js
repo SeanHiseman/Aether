@@ -10,7 +10,7 @@ import { useCallback, useContext, useEffect, useState } from 'react';
 const SortableFeedChannelItem = ({ channel, id, url }) => {
     const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
     const { channel_name } = useParams();
-    const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.7 : 1, cursor: 'grab' };
+    const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.7 : 1, cursor: 'grab', touchAction: 'none' };
 
     return (
         <li ref={setNodeRef} 
