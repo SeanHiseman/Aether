@@ -3,7 +3,8 @@ import { AuthContext } from '../authContext'
 import { Crown } from 'lucide-react';
 import ConfirmModal from '../modals/confirmModal';
 import ContentWidget from './contentWidget'
-import Cropper from 'react-easy-crop';
+import ReactCrop from 'react-image-crop';
+import 'react-image-crop/dist/ReactCrop.css';
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd'
 import { FaAlignCenter, FaArrowCircleUp, FaArrowRight, FaCircleNotch, FaCommentAlt, FaCopy, FaCube, FaCrop, FaEdit, FaEllipsisV, FaEye, FaFileAlt, FaFont, FaGripVertical, FaImage, FaReply, FaSave, FaTerminal, FaTimes, FaToolbox, FaTrash, FaVideo } from 'react-icons/fa'
 import GetCroppedImg from '../../functions/getCroppedImg';
@@ -127,6 +128,7 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
     const { isAuthenticated, user, viewer } = useContext(AuthContext)
     const hasMembership = user?.has_membership
     const isDraft = Boolean(draftId)
+    const cropImageRefs = useRef({})
     const iframeRefs = useRef({})
     const [isPostingDraft, setIsPostingDraft] = useState(false)
     const [isSubmitting, setIsSubmitting] = useState(false)
@@ -214,11 +216,36 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
 
     const applyCrop = useCallback(async (blockId) => {
         const blockCropState = cropState[blockId];
-        if (!blockCropState || !blockCropState.croppedAreaPixels) return;
+        if (!blockCropState || !blockCropState.crop) {
+            setPostErrorMessage('Please draw a crop selection first.');
+            setTimeout(() => setPostErrorMessage(''), 3000);
+            return;
+        }
         try {
             const block = blocks.find(b => b.id === blockId);
             if (!block || !block.data.isImage) return;
-            const croppedBlob = await GetCroppedImg(block.data.url, blockCropState.croppedAreaPixels);
+            const { crop } = blockCropState;
+            const imageRef = cropImageRefs.current[blockId];
+            if (!imageRef) {
+                setPostErrorMessage('Image reference not found. Please try again.');
+                setTimeout(() => setPostErrorMessage(''), 3000);
+                return;
+            }
+            if (!crop.width || !crop.height) {
+                setPostErrorMessage('Please draw a crop selection first.');
+                setTimeout(() => setPostErrorMessage(''), 3000);
+                return;
+            }
+            //Convert displayed pixel crop to natural image dimensions
+            const scaleX = imageRef.naturalWidth / imageRef.width;
+            const scaleY = imageRef.naturalHeight / imageRef.height;
+            const pixelCrop = {
+                x: crop.x * scaleX,
+                y: crop.y * scaleY,
+                width: crop.width * scaleX,
+                height: crop.height * scaleY
+            };
+            const croppedBlob = await GetCroppedImg(block.data.url, pixelCrop);
             const croppedUrl = URL.createObjectURL(croppedBlob);
             const filename = `cropped-${Date.now()}.jpg`;
             const croppedFile = new File([croppedBlob], filename, { type: 'image/jpeg' });
@@ -239,7 +266,7 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
             setPostErrorMessage(error.response?.data?.message || 'Failed to crop image. Please try again.');
             setTimeout(() => setPostErrorMessage(''), 5000)
         }
-    }, [blocks, cropState, updateBlock]);
+    }, [blocks, cropState, updateBlock, setPostErrorMessage]);
 
     //Remove uploaded builds if form is closed without posting or saving, or if a block is deleted
     useEffect(() => {
@@ -664,16 +691,6 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
         setBlocks(prev => reorder(prev, source.index, destination.index))
     }, [])
 
-    const onCropComplete = useCallback((blockId, croppedAreaPixels) => {
-        setCropState(prev => ({
-            ...prev,
-            [blockId]: {
-                ...prev[blockId],
-                croppedAreaPixels  
-            }
-        }));
-    }, []);
-
     const removeBlock = useCallback(async blockId => {
         const block = blocks.find(b => b.id === blockId)
         if (block?.type === BLOCK_TYPES.APP && block.data.buildId) {
@@ -947,70 +964,58 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
                                                         <div className="block" style={{ flex: 1 }}>
                                                             {type !== BLOCK_TYPES.TEXT && (
                                                                 <div className="block-controls" style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                                                    {(type === BLOCK_TYPES.CODE) && (
+                                                                    {type === BLOCK_TYPES.CODE && (
                                                                         <div style={{ display: 'flex', gap: '10px' }}>
-                                                                            {type === BLOCK_TYPES.CODE && isEditing && (
+                                                                            {isEditing && (
                                                                                 <button className="small-icon" onClick={() => updateBlock({ ...block, data: { ...data, showPrompt: !data.showPrompt } })} title={data.showPrompt ? 'Direct input' : 'Prompt'} type="button">
                                                                                     {data.showPrompt ? <FaTerminal /> : <FaCommentAlt />}
                                                                                 </button>
                                                                             )}
-                                                                            {type !== BLOCK_TYPES.MEDIA && type !== BLOCK_TYPES.CODE && (
-                                                                                <button className="small-icon" onClick={() => removeBlock(id)} title="Delete" type="button"><FaTrash /></button>
-                                                                            )}
-                                                                            {type !== BLOCK_TYPES.MEDIA && (
-                                                                                <button className="small-icon" onClick={toggleEdit} title={isEditing ? 'Preview' : 'Edit'} type="button">{isEditing ? <FaEye /> : <FaEdit />}</button>
-                                                                            )}
-                                                                            {type === BLOCK_TYPES.CODE && (
+                                                                            <button className="small-icon" onClick={toggleEdit} title={isEditing ? 'Preview' : 'Edit'} type="button">{isEditing ? <FaEye /> : <FaEdit />}</button>
+                                                                            <button
+                                                                                className="small-icon"
+                                                                                onClick={() => {
+                                                                                    async function doCopy() {
+                                                                                        await navigator.clipboard.writeText(data.code);
+                                                                                    }
+                                                                                    doCopy().then(() => {
+                                                                                        setPostErrorMessage('Copied');
+                                                                                        setTimeout(() => setPostErrorMessage(''), 2000);
+                                                                                    });
+                                                                                }}
+                                                                                title="Copy"
+                                                                                type="button"
+                                                                            >
+                                                                                <FaCopy />
+                                                                            </button>
+                                                                        </div>
+                                                                    )}
+                                                                    {type === BLOCK_TYPES.MEDIA && (
+                                                                        <div style={{ display: 'flex', gap: '10px' }}>
+                                                                            {data.isImage && (
                                                                                 <button
                                                                                     className="small-icon"
-                                                                                    onClick={() => {
-                                                                                        async function doCopy() {
-                                                                                            await navigator.clipboard.writeText(data.code);
+                                                                                    onClick={() => setCropState(prev => ({
+                                                                                        ...prev,
+                                                                                        [id]: {
+                                                                                            isCropping: true,
+                                                                                            crop: undefined
                                                                                         }
-                                                                                        doCopy().then(() => {
-                                                                                            setPostErrorMessage('Copied');
-                                                                                            setTimeout(() => setPostErrorMessage(''), 2000);
-                                                                                        });
-                                                                                    }}
-                                                                                    title="Copy"
+                                                                                    }))}
+                                                                                    title="Crop image"
                                                                                     type="button"
                                                                                 >
-                                                                                    <FaCopy />
+                                                                                    <FaCrop /><p className="icon-text">Crop</p>
                                                                                 </button>
                                                                             )}
-                                                                            {type === BLOCK_TYPES.MEDIA && (
-                                                                                <>
-                                                                                    {data.isImage && (
-                                                                                        <button
-                                                                                            className="small-icon"
-                                                                                            onClick={() => setCropState(prev => ({
-                                                                                                ...prev,
-                                                                                                [id]: {
-                                                                                                    isCropping: true,
-                                                                                                    crop: { x: 0, y: 0 },
-                                                                                                    zoom: 1,
-                                                                                                    croppedAreaPixels: null
-                                                                                                }
-                                                                                            }))}
-                                                                                            title="Crop image"
-                                                                                            type="button"
-                                                                                        >
-                                                                                            <FaCrop /><p className="icon-text">Crop</p>
-                                                                                        </button>
-                                                                                    )}
-                                                                                    <button className="small-icon" onClick={() => toggleMediaAlignment(block)} title={block.data.align === 'center' ? "Align left" : "Align centre"} type="button">
-                                                                                        <FaAlignCenter /><p className="icon-text">Align</p>
-                                                                                    </button>
-                                                                                </>
-                                                                            )}
+                                                                            <button className="small-icon" onClick={() => toggleMediaAlignment(block)} title={block.data.align === 'center' ? "Align left" : "Align centre"} type="button">
+                                                                                <FaAlignCenter /><p className="icon-text">Align</p>
+                                                                            </button>
                                                                         </div>
                                                                     )}
                                                                     <div style={{ position: 'relative', marginLeft: 'auto' }}>
-                                                                        {(type === BLOCK_TYPES.MEDIA || (type === BLOCK_TYPES.CODE)) && (
+                                                                        {(type === BLOCK_TYPES.MEDIA || type === BLOCK_TYPES.CODE) && (
                                                                             <button className="small-icon" onClick={() => removeBlock(id)} title="Delete" type="button"><FaTrash /></button>
-                                                                        )}
-                                                                        {(type === BLOCK_TYPES.CODE && (data.code?.includes('social-media-embed') || data.code?.includes('embedded-website'))) && (
-                                                                            <button className="small-icon" onClick={() => removeBlock(id)} title="Delete" type="button" style={{ marginLeft: 'auto', display: 'block' }}><FaTrash /></button>
                                                                         )}
                                                                     </div>
                                                                 </div>
@@ -1150,28 +1155,24 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
                                                                 <div className="media-preview">
                                                                     {cropState[id]?.isCropping && data.isImage ? (
                                                                         <div>
-                                                                            <div className="crop-container" style={{ position: 'relative', width: '100%', height: 300 }}>
-                                                                                <Cropper
-                                                                                    image={data.url}
-                                                                                    crop={cropState[id]?.crop || { x: 0, y: 0 }}
-                                                                                    zoom={cropState[id]?.zoom || 1}
-                                                                                    aspect={4 / 3}
-                                                                                    onCropChange={(crop) => setCropState(prev => ({
+                                                                            <div className="crop-container" style={data.align === 'center' ? { display: 'flex', justifyContent: 'center' } : {}}>
+                                                                                <ReactCrop
+                                                                                    crop={cropState[id]?.crop}
+                                                                                    onChange={(pixelCrop) => setCropState(prev => ({
                                                                                         ...prev,
                                                                                         [id]: {
                                                                                             ...prev[id],
-                                                                                            crop
+                                                                                            crop: pixelCrop
                                                                                         }
                                                                                     }))}
-                                                                                    onCropComplete={(_, croppedPixels) => onCropComplete(id, croppedPixels)}
-                                                                                    onZoomChange={(zoom) => setCropState(prev => ({
-                                                                                        ...prev,
-                                                                                        [id]: {
-                                                                                            ...prev[id],
-                                                                                            zoom
-                                                                                        }
-                                                                                    }))}
-                                                                                    onInteractionStart={() => { }} />
+                                                                                >
+                                                                                    <img
+                                                                                        ref={(el) => { if (el) cropImageRefs.current[id] = el; }}
+                                                                                        alt="Crop preview"
+                                                                                        src={data.url}
+                                                                                        style={{ maxWidth: '100%', maxHeight: '60vh' }}
+                                                                                    />
+                                                                                </ReactCrop>
                                                                             </div>
                                                                             <div className="crop-controls" style={{ display: 'flex', justifyContent: 'center', marginTop: 10, gap: 10 }}>
                                                                                 <button
