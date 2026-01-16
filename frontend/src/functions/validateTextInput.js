@@ -1,4 +1,4 @@
-function ValidateTextInput(textInput, minLength = 0, maxLength = 9999999, characterCheck = true, ) {
+function ValidateTextInput(textInput, minLength = 0, maxLength = 9999999, characterCheck = false) {
 	if (typeof textInput !== 'string') {
 		return { valid: false, error: 'Must be a string.' };
 	}

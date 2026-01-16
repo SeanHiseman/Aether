@@ -378,7 +378,8 @@ const ContentWidget = ({ canRemove = false, display = false, feed, isDraft = fal
 								setShowFullContent(!showFullContent);
 								if (!showFullContent && contentContainerRef.current) {
 									contentContainerRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
-								}
+								};
+								incrementViews(post?.post_id);
 							}}
 						>
 							{showFullContent ? <FaChevronUp /> : <FaChevronDown />}

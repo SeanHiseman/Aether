@@ -738,13 +738,18 @@ const BaseLayout = () => {
                                     </>
                                 </svg>
                             ) : (
-                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" strokeWidth="2">
-                                    <>
-                                        <line x1="3" y1="12" x2="17" y2="12" />
-                                        <polyline points="13 8 17 12 13 16" />
-                                        <line x1="21" y1="6" x2="21" y2="18" />
-                                    </>
-                                </svg>
+                                <>
+                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" strokeWidth="2">
+                                        <>
+                                            <line x1="3" y1="12" x2="17" y2="12" />
+                                            <polyline points="13 8 17 12 13 16" />
+                                            <line x1="21" y1="6" x2="21" y2="18" />
+                                        </>
+                                    </svg>
+                                    {isMobile() && state.total > 0 && (
+                                        <span className="sidebar-toggle-badge">{state.total}</span>
+                                    )}
+                                </>
                             )}
                         </button>
                         <form className="search-form" onSubmit={searchClick}>

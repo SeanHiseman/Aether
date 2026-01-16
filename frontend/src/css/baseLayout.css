@@ -436,10 +436,26 @@ main {
   justify-content: center;
   margin: clamp(3px, 1vw, 5px);
   padding: clamp(3px, 1vw, 5px);
+  position: relative;
   stroke: var(--lightest);
 }
 .sidebar-toggle:hover {
   cursor: pointer;
+}
+.sidebar-toggle-badge {
+  background-color: var(--color-error);
+  border-radius: 50%;
+  color: var(--color-white);
+  font-size: 10px;
+  font-weight: bold;
+  min-width: 16px;
+  height: 16px;
+  line-height: 16px;
+  padding: 0 4px;
+  position: absolute;
+  right: 0;
+  text-align: center;
+  top: 0;
 }
 .small-feed-photo {
   aspect-ratio: 1 / 1;
