@@ -571,7 +571,14 @@ ul {
     transition: transform 0.2s ease-out;
   }
   .icon-button.search {
-    padding: 0px;
+    padding: 0 var(--medium-margin);
+    position: absolute;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+  }
+  .search-container {
+    position: relative;
   }
   .mobile-auth-footer {
     align-items: center;
@@ -587,7 +594,8 @@ ul {
     z-index: 999;
   }
   .search-bar {
-    flex: none;
+    flex: 1;
+    padding-right: calc(var(--medium-text) + var(--medium-margin));
   }
   .search-container {
     width: 68vw;
