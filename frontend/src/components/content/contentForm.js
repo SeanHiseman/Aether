@@ -320,10 +320,12 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
             })
             .forEach(block => {
                 if (block.type === BLOCK_TYPES.TEXT) {
+                    //Process links
+                    const processedHtml = processLinks(block.data.html || 'Nothing to preview');
                     finalHTML +=
                         `<div class="content-block text-block"` +
                         ` data-blockid="${block.id}">` +
-                        `${block.data.html || 'Nothing to preview'}` +
+                        `${processedHtml}` +
                         `</div>`
                 }
                 else if (block.type === BLOCK_TYPES.CODE) {
@@ -689,7 +691,20 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
         if (!destination) return
         if (destination.index === source.index) return
         setBlocks(prev => reorder(prev, source.index, destination.index))
-    }, [])
+    }, []);
+
+    //Handle links in text blocks
+    const processLinks = (html) => {
+        return html.replace(/<a href="([^"]*)"([^>]*)>/g, (match, url, rest) => {
+            let normalizedUrl = url.trim();
+            //Add https:// if no protocol exists
+            if (!normalizedUrl.startsWith('http://') && !normalizedUrl.startsWith('https://')) {
+                normalizedUrl = 'https://' + normalizedUrl;
+            }
+            //Add underline styling
+            return `<a href="${normalizedUrl}" style="text-decoration: underline;"${rest}>`;
+        });
+    };
 
     const removeBlock = useCallback(async blockId => {
         const block = blocks.find(b => b.id === blockId)
@@ -1033,32 +1048,16 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
                                                                             className="text-editor"
                                                                             onChange={val => {
                                                                                 const plainText = val.replace(/<[^>]*>/g, '');
-                                                                                //Auto-underline links and normalize URLs
-                                                                                const processedVal = val.replace(/<a href="([^"]*)"([^>]*)>/g, (match, url, rest) => {
-                                                                                    let normalizedUrl = url.trim();
-                                                                                    //Add https:// if no protocol exists
-                                                                                    if (!normalizedUrl.startsWith('http://') && !normalizedUrl.startsWith('https://')) {
-                                                                                        normalizedUrl = 'https://' + normalizedUrl;
-                                                                                    }
-                                                                                    //Add www. if not present and not a subdomain
-                                                                                    try {
-                                                                                        const parsed = new URL(normalizedUrl);
-                                                                                        const hostParts = parsed.hostname.split('.');
-                                                                                        if (hostParts.length === 2) {
-                                                                                            parsed.hostname = 'www.' + parsed.hostname;
-                                                                                            normalizedUrl = parsed.href;
-                                                                                        }
-                                                                                    } catch (e) {
-                                                                                        //Keep original if URL parsing fails
-                                                                                    }
-                                                                                    return `<a href="${normalizedUrl}" style="text-decoration: underline;"${rest}>`;
-                                                                                });
-                                                                                //Prevent infinite loop by checking if value actually changed
-                                                                                if (processedVal === data.html) return;
                                                                                 if (plainText.length < TEXT_CHAR_LIMIT) {
-                                                                                    updateBlock({ ...block, data: { ...data, html: processedVal, textError: '' } });
+                                                                                    updateBlock({ ...block, data: { ...data, html: val, textError: '' } });
                                                                                 } else {
-                                                                                    updateBlock({ ...block, data: { ...data, textError: `Exceeded ${TEXT_CHAR_LIMIT} character limit. ${!user?.has_membership && 'Get membership for more.'}` } });
+                                                                                    updateBlock({ 
+                                                                                        ...block, 
+                                                                                        data: { 
+                                                                                            ...data, 
+                                                                                            textError: `Exceeded ${TEXT_CHAR_LIMIT} character limit. ${!user?.has_membership && 'Get membership for more.'}` 
+                                                                                        } 
+                                                                                    });
                                                                                 }
                                                                             }}
                                                                             placeholder="Begin writing..."
