@@ -821,7 +821,10 @@ router.post('/auth/bluesky', authenticateCheck, async (req, res) => {
 			body: JSON.stringify({ identifier, password: appPassword })
 		});
 		if (!response.ok) {
-			return res.status(400).json({ success: false, message: 'Invalid handle or app password'});
+			const errorData = await response.json().catch(() => ({}));
+			const errorMessage = errorData.message || errorData.error || 'Invalid handle or app password';
+			console.error(new Date().toISOString(), '[Bluesky Auth] Failed:', response.status, errorMessage);
+			return res.status(400).json({ success: false, message: errorMessage });
 		}
 		const json = await response.json();
 		await ConnectedAccounts.upsert({

@@ -64,17 +64,18 @@ const ConnectBluesky = () => {
 				<p className="large-text">Bluesky Login</p>
 				<p className="error-message">{errorMessage}</p>
 				<form method="post" onSubmit={submit}>
-					<p className="small-text faded-text">Your details are sent directly to Bluesky. We do not see or store them.</p>
+					<p className="small-text faded-text">Connect using an App Password for secure access.</p>
 					<input className="authentication-input-box" placeholder="Bluesky handle (e.g. alice.bsky.social)" required value={handle} onChange={(e) => setHandle(e.target.value)} />
 					<div className="password-container">
-						<input type={showPassword ? 'text' : 'password'} className="authentication-input-box" placeholder="App password (recommended)" required value={appPassword} onChange={(e) => setAppPassword(e.target.value)} />
+						<input type={showPassword ? 'text' : 'password'} className="authentication-input-box" placeholder="App password (e.g. xxxx-xxxx-xxxx-xxxx)" required value={appPassword} onChange={(e) => setAppPassword(e.target.value)} />
 						<button type="button" className="small-icon" onClick={() => setShowPassword(!showPassword)}>
 							{showPassword ? <FaEyeSlash /> : <FaEye />}
 						</button>
 					</div>
 					<p className="tiny-text faded-text">
-						For security, use an app password. Create one at <a href="https://bsky.app/settings/app-passwords" target="_blank" rel="noopener noreferrer">bsky.app/settings/app-passwords</a>
+						Create an app password at <a href="https://bsky.app/settings/app-passwords" target="_blank" rel="noopener noreferrer">bsky.app/settings/app-passwords</a>
 					</p>
+					<p className="tiny-text faded-text">Do not use your main Bluesky password.</p>
 					<input type="submit" value="Connect Bluesky" className={`submit${isDisabled ? ' disabled' : ''}`} disabled={isDisabled} />
 				</form>
 			</div>
