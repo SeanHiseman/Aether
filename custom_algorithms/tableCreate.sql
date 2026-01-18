@@ -24,7 +24,7 @@ CREATE TABLE `algorithms` (
 CREATE TABLE `algorithm_locations` (
 	`id` VARCHAR(36) NOT NULL PRIMARY KEY,
 	`algorithm_id` VARCHAR(36) NOT NULL,
-	`location_id` VARCHAR(36) NOT NULL,
+	`location_id` VARCHAR(255) NOT NULL,
 	`viewer_id` VARCHAR(36) NOT NULL,
 	INDEX `idx_algorithmlocations_location` (`location_id`),
 	INDEX `idx_algorithmlocations_viewer` (`viewer_id`),

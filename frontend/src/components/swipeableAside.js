@@ -1,15 +1,6 @@
 import { useState, useCallback, useRef } from 'react';
 
-const SwipeableAside = ({ 
-    children, 
-    className = '', 
-    position = 'right',
-    isOpen = false,
-    onClose,
-    minSwipeDistance = 75,
-    forwardedRef,
-    ...props 
-}) => {
+const SwipeableAside = ({ children, className = '', position = 'right', isOpen = false, onClose, minSwipeDistance = 75, forwardedRef, ...props }) => {
     const [touchStart, setTouchStart] = useState(null);
     const [touchEnd, setTouchEnd] = useState(null);
     const [swipeOffset, setSwipeOffset] = useState(0);

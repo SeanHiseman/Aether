@@ -133,14 +133,15 @@ router.post('/add_feed_channel', standardLimiter, authenticateCheck, async (req,
 
 router.post('/add_to_deep_feed', higherLimiter, async (req, res) => {
     try {
-        const { deepFeedId, feedId } = req.body;
-        if (!feedId) {
+        const { deepFeedId, feedId, externalDid } = req.body;
+        if (!feedId && !externalDid) {
             return res.status(400).json({ success: false, message: 'Id missing' });
         }
         const content = await DeepFeedContent.create({
             content_id: v4(),
             deep_feed_id: deepFeedId,
             feed_id: feedId || null,
+            external_did: externalDid || null,
         });
         res.status(201).json({ success: true, content });
     } catch (error) {
@@ -343,13 +344,14 @@ router.post('/create_feed', standardLimiter, authenticateCheck, checkProfileStor
 
 router.post('/create_deep_feed', standardLimiter, authenticateCheck, async (req, res) => {
     try {
-        const { deepFeedName, feedsToInclude, parentDeepFeedId, viewerId } = req.body;
+        const { deepFeedName, feedsToInclude = [], blueskyDidsToInclude = [], parentDeepFeedId, viewerId } = req.body;
         const nameCheck = ValidateTextInput(deepFeedName, 1, 30);
         if (!nameCheck.valid) {
             return res.status(400).json({ message: nameCheck.error });
         }
-        if (!feedsToInclude || feedsToInclude.length < 2) {
-            return res.status(400).json({ success: false, message: 'At least two feeds are required' });
+        const totalItems = (feedsToInclude?.length || 0) + (blueskyDidsToInclude?.length || 0);
+        if (totalItems < 2) {
+            return res.status(400).json({ success: false, message: 'At least two items are required' });
         }
         const deepFeed = await DeepFeeds.create({
             deep_feed_id: v4(),
@@ -357,26 +359,46 @@ router.post('/create_deep_feed', standardLimiter, authenticateCheck, async (req,
             name: deepFeedName,
             parent_id: parentDeepFeedId || null
         });
-        const contents = feedsToInclude.map(feedId => ({
+        //Create content entries for native feeds
+        const feedContents = (feedsToInclude || []).map(feedId => ({
             content_id: v4(),
             deep_feed_id: deepFeed.deep_feed_id,
-            feed_id: feedId
+            feed_id: feedId,
+            bluesky_did: null
         }));
-        await DeepFeedContent.bulkCreate(contents);
-        if (parentDeepFeedId) { 
-            await DeepFeedContent.destroy({
-                where: {
-                    deep_feed_id: parentDeepFeedId,
-                    feed_id: { [Op.in]: feedsToInclude }
-                }
-            });
+        //Create content entries for bluesky follows
+        const blueskyContents = (blueskyDidsToInclude || []).map(did => ({
+            content_id: v4(),
+            deep_feed_id: deepFeed.deep_feed_id,
+            feed_id: null,
+            bluesky_did: did
+        }));
+        await DeepFeedContent.bulkCreate([...feedContents, ...blueskyContents]);
+        if (parentDeepFeedId) {
+            if (feedsToInclude?.length > 0) {
+                await DeepFeedContent.destroy({
+                    where: {
+                        deep_feed_id: parentDeepFeedId,
+                        feed_id: { [Op.in]: feedsToInclude }
+                    }
+                });
+            }
+            if (blueskyDidsToInclude?.length > 0) {
+                await DeepFeedContent.destroy({
+                    where: {
+                        deep_feed_id: parentDeepFeedId,
+                        bluesky_did: { [Op.in]: blueskyDidsToInclude }
+                    }
+                });
+            }
             await DeepFeedContent.create({
                 content_id: v4(),
                 deep_feed_id: parentDeepFeedId,
-                feed_id: null
+                feed_id: null,
+                bluesky_did: null
             });
         }
-        res.status(201).json({ success: true, deepFeed, feedsToInclude });
+        res.status(201).json({ success: true, deepFeed, feedsToInclude, blueskyDidsToInclude });
     } catch (error) {
         console.error(new Date().toISOString(), '/create_deep_feed error:', error);
         res.status(500).json({ success: false, message: 'Error creating feed' });
@@ -389,9 +411,50 @@ router.get('/deep_feed_contents/:deepFeedId', standardLimiter, authenticateCheck
         const contents = await DeepFeedContent.findAll({
             where: { deep_feed_id: deepFeedId },
             include: [{ model: Feeds, as: 'feed' }],
-            order: [[{ model: Feeds, as: 'feed' }, 'feed_name', 'ASC']]
+            raw: false
         });
-        res.status(200).json({ success: true, contents });
+        //Fetch external account metadata for bluesky_did entries
+        const { ExternalAccountMeta } = await import('../models/content.js');
+        const blueskyDids = contents.filter(c => c.bluesky_did && !c.feed_id).map(c => c.bluesky_did);
+        let externalAccountsMap = new Map();
+        if (blueskyDids.length > 0) {
+            const externalAccounts = await ExternalAccountMeta.findAll({
+                where: { account_id: blueskyDids, platform: 'bluesky' },
+                raw: true
+            });
+            externalAccountsMap = new Map(externalAccounts.map(a => [a.account_id, a]));
+        }
+        //Format contents to include external account info
+        const formattedContents = contents.map(c => {
+            const content = c.toJSON ? c.toJSON() : c;
+            if (content.bluesky_did && !content.feed_id) {
+                const externalAccount = externalAccountsMap.get(content.bluesky_did);
+                return {
+                    ...content,
+                    externalAccount: externalAccount ? {
+                        did: externalAccount.account_id,
+                        handle: externalAccount.handle,
+                        display_name: externalAccount.display_name,
+                        avatar: externalAccount.avatar,
+                        platform: 'bluesky'
+                    } : {
+                        did: content.bluesky_did,
+                        handle: content.bluesky_did,
+                        display_name: null,
+                        avatar: null,
+                        platform: 'bluesky'
+                    }
+                };
+            }
+            return content;
+        });
+        //Sort: native feeds by name, external accounts by display_name/handle
+        formattedContents.sort((a, b) => {
+            const nameA = a.feed?.feed_name || a.externalAccount?.display_name || a.externalAccount?.handle || '';
+            const nameB = b.feed?.feed_name || b.externalAccount?.display_name || b.externalAccount?.handle || '';
+            return nameA.localeCompare(nameB);
+        });
+        res.status(200).json({ success: true, contents: formattedContents });
     } catch (error) {
         console.error(new Date().toISOString(), '/deep_feed_contents error:', error);
         res.status(500).json({ success: false, message: 'Error getting contents' });

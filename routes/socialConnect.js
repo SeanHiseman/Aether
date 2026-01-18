@@ -4,9 +4,9 @@ import { computeHotness } from '../functions/postRanking.js';
 import { ContentAnalyser } from '../functions/contentAnalyser.js';
 import cron from 'node-cron';
 import crypto from 'crypto';
-import { ConnectedAccounts, Users } from '../models/users.js';
+import { ExternalFollows, ConnectedAccounts, Users } from '../models/users.js';
 import dotenv from 'dotenv';
-import { ExternalPosts, ExternalPostsAccess, PaginationTokens } from '../models/content.js';
+import { ExternalAccountMeta, ExternalPosts, ExternalPostsAccess, PaginationTokens } from '../models/content.js';
 import express from 'express';
 import fetch from 'node-fetch';
 import { getEmbedder } from '../functions/contentAnalyser.js';
@@ -61,6 +61,42 @@ async function refreshRedditToken(user_id) {
 		return tokenJson.access_token;
 	} catch (error) {
 		console.error('Error refreshing Reddit token:', error);
+		return null;
+	}
+}
+
+async function refreshBlueskyToken(user_id) {
+	try {
+		//console.log(new Date().toISOString(), '[refreshBlueskyToken] Attempting to refresh token for user:', user_id);
+		const account = await ConnectedAccounts.findOne({
+			where: { user_id, platform: 'bluesky' }
+		});
+		if (!account?.refresh_token) {
+			console.log(new Date().toISOString(), '[refreshBlueskyToken] No refresh token found');
+			return null;
+		}
+		const tokenResponse = await fetch('https://bsky.social/xrpc/com.atproto.server.refreshSession', {
+			method: 'POST',
+			headers: {
+				'Authorization': `Bearer ${account.refresh_token}`,
+				'Content-Type': 'application/json'
+			}
+		});
+		if (!tokenResponse.ok) {
+			const errorText = await tokenResponse.text();
+			console.error(new Date().toISOString(), '[refreshBlueskyToken] Failed to refresh token:', tokenResponse.status, errorText);
+			return null;
+		}
+		const tokenJson = await tokenResponse.json();
+		//console.log(new Date().toISOString(), '[refreshBlueskyToken] Token refreshed successfully');
+		await ConnectedAccounts.update({
+			access_token: tokenJson.accessJwt,
+			refresh_token: tokenJson.refreshJwt,
+			extra: JSON.stringify(tokenJson)
+		}, { where: { user_id, platform: 'bluesky' } });
+		return tokenJson.accessJwt;
+	} catch (error) {
+		console.error(new Date().toISOString(), '[refreshBlueskyToken] Error:', error);
 		return null;
 	}
 }
@@ -157,12 +193,22 @@ async function fetchAndProcessPosts(platform, fetchConfig, user_id) {
 				resp = await fetch(url, { headers });
 			}
 		}
-
+		//Handle expired tokens for Bluesky (returns 400 with ExpiredToken)
+		if (!resp.ok && resp.status === 400 && platform === 'bluesky') {
+			const errorText = await resp.text();
+			if (errorText.includes('ExpiredToken')) {
+				//console.log(new Date().toISOString(), '[fetchAndProcessPosts] Bluesky token expired, attempting refresh...');
+				const newToken = await refreshBlueskyToken(user_id);
+				if (newToken) {
+					headers = { ...headers, 'Authorization': `Bearer ${newToken}` };
+					resp = await fetch(url, { headers });
+				}
+			}
+		}
 		// Check response before parsing JSON
 		if (!resp.ok) {
 			throw new Error(`API returned ${resp.status}: ${resp.statusText}`);
 		}
-
 		const data = await resp.json();
 		let mappedPosts = [];
 		let nextToken = null;
@@ -425,7 +471,6 @@ export async function processAccount(account) {
 }
 
 export async function generateBlueskyContentHTML(textBody, media) {
-	//console.log("bluesky textBody:", textBody);
 	try {
 		let html = '';
 		if (textBody?.trim()) {
@@ -435,21 +480,82 @@ export async function generateBlueskyContentHTML(textBody, media) {
 				</div>
 			`;
 		}
-		if (Array.isArray(media)) {
-			for (const m of media) {
-				if (!m.url) continue;
+		//Handle new structured media format
+		if (media && typeof media === 'object' && !Array.isArray(media)) {
+			//Images
+			if (media.images && Array.isArray(media.images)) {
+				for (const img of media.images) {
+					if (!img.url) continue;
+					html += `
+						<div class="content-block media-block" data-blockid="${crypto.randomUUID()}" data-align="center">
+							<img src="${escapeHtml(img.url)}" alt="${escapeHtml(img.alt || 'Bluesky media')}" />
+						</div>
+					`;
+				}
+			}
+			//Videos - show thumbnail with play indicator linking to original post
+			if (media.videos && Array.isArray(media.videos)) {
+				for (const vid of media.videos) {
+					if (!vid.thumbnail) continue;
+					html += `
+						<div class="content-block media-block video-thumbnail" data-blockid="${crypto.randomUUID()}" data-align="center" style="position: relative; cursor: pointer;">
+							<img src="${escapeHtml(vid.thumbnail)}" alt="Video thumbnail" />
+							<div class="video-play-overlay" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 60px; height: 60px; background: rgba(0,0,0,0.7); border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+								<span style="color: white; font-size: 24px; margin-left: 4px;">▶</span>
+							</div>
+						</div>
+					`;
+				}
+			}
+			//External link card
+			if (media.card && media.card.uri) {
+				const card = media.card;
+				let hostname = '';
+				try {
+					hostname = new URL(card.uri).hostname;
+				} catch { hostname = card.uri; }
 				html += `
-					<div class="content-block media-block" data-blockid="${crypto.randomUUID()}" data-align="center">
-						${m.url.match(/\\.(mp4|webm|mov|m4v)$/i)
-							? `<video src="${m.url}" controls playsinline></video>`
-							: `<img src="${m.url}" alt="Bluesky media" />`}
+					<div class="content-block link-preview" data-blockid="${crypto.randomUUID()}" data-align="center" data-trusted="false" data-embed-preview="true">
+						<a href="${escapeHtml(card.uri)}" target="_blank" rel="noopener noreferrer">
+							${card.thumb ? `<div class="preview-image"><img src="${escapeHtml(card.thumb)}" alt="${escapeHtml(card.title || hostname)}" /></div>` : ''}
+							<div class="preview-meta">
+								<h4>${escapeHtml(card.title || hostname)}</h4>
+								${card.description ? `<p>${escapeHtml(card.description)}</p>` : ''}
+								<span class="preview-host">${escapeHtml(hostname)}</span>
+							</div>
+						</a>
 					</div>
 				`;
+			}
+		}
+		//Handle legacy array format for backwards compatibility
+		else if (Array.isArray(media)) {
+			for (const m of media) {
+				if (!m.url && !m.thumbnail) continue;
+				const isVideo = m.type === 'video' || m.url?.match(/\.(mp4|webm|mov|m4v)$/i) || m.url?.includes('.m3u8');
+				if (isVideo && m.thumbnail) {
+					//Show video thumbnail with play indicator
+					html += `
+						<div class="content-block media-block video-thumbnail" data-blockid="${crypto.randomUUID()}" data-align="center" style="position: relative; cursor: pointer;">
+							<img src="${escapeHtml(m.thumbnail)}" alt="Video thumbnail" />
+							<div class="video-play-overlay" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 60px; height: 60px; background: rgba(0,0,0,0.7); border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+								<span style="color: white; font-size: 24px; margin-left: 4px;">▶</span>
+							</div>
+						</div>
+					`;
+				} else if (!isVideo && m.url) {
+					html += `
+						<div class="content-block media-block" data-blockid="${crypto.randomUUID()}" data-align="center">
+							<img src="${escapeHtml(m.url)}" alt="Bluesky media" />
+						</div>
+					`;
+				}
 			}
 		}
 		return html.trim();
 	} catch (error) {
 		console.error(new Date().toISOString(), 'generateBlueskyContentHTML error:', error);
+		return '';
 	}
 }
 
@@ -536,25 +642,70 @@ function mapBlueskyToExternal(item) {
 	const text = record.text || '';
 	let images = null;
 	let videos = null;
-	if (post.embed && post.embed.images) {
-		images = post.embed.images.map(img => ({ url: img.fullsize || img.thumb || null }));
-	}
-	if (post.embed && post.embed.$type === 'app.bsky.embed.video') {
-		videos = [{ url: post.embed.video?.playlist || null }];
-	}
-	if (post.embed && post.embed.$type === 'app.bsky.embed.external') {
-		const uri = post.embed.external?.uri || '';
-		if (uri.match(/\.(mp4|webm|mov|m4v)$/i)) {
-			videos = [{ url: uri }];
+	let externalCard = null;
+	const embed = post.embed;
+	if (embed) {
+		const embedType = embed.$type || '';
+		//Handle images (app.bsky.embed.images#view)
+		if (embed.images && Array.isArray(embed.images)) {
+			images = embed.images.map(img => ({
+				url: img.fullsize || img.thumb || null,
+				alt: img.alt || ''
+			}));
+		}
+		//Handle videos (app.bsky.embed.video#view)
+		if (embedType.includes('video') || embed.playlist) {
+			const videoUrl = embed.playlist || embed.video?.playlist || null;
+			const thumbnail = embed.thumbnail || embed.video?.thumbnail || null;
+			if (videoUrl) {
+				videos = [{ url: videoUrl, thumbnail, type: 'video' }];
+			}
+		}
+		//Handle external embeds/link cards (app.bsky.embed.external#view)
+		if (embedType.includes('external') && embed.external) {
+			const ext = embed.external;
+			externalCard = {
+				uri: ext.uri || '',
+				title: ext.title || '',
+				description: ext.description || '',
+				thumb: ext.thumb || null
+			};
+		}
+		//Handle recordWithMedia (quote post with media)
+		if (embed.media) {
+			if (embed.media.images && Array.isArray(embed.media.images)) {
+				images = embed.media.images.map(img => ({
+					url: img.fullsize || img.thumb || null,
+					alt: img.alt || ''
+				}));
+			}
+			if (embed.media.playlist || embed.media.$type?.includes('video')) {
+				const videoUrl = embed.media.playlist || null;
+				const thumbnail = embed.media.thumbnail || null;
+				if (videoUrl) {
+					videos = [{ url: videoUrl, thumbnail, type: 'video' }];
+				}
+			}
+			if (embed.media.external) {
+				const ext = embed.media.external;
+				externalCard = {
+					uri: ext.uri || '',
+					title: ext.title || '',
+					description: ext.description || '',
+					thumb: ext.thumb || null
+				};
+			}
 		}
 	}
-	const media = [
-		...(Array.isArray(images) ? images : []),
-		...(Array.isArray(videos) ? videos : [])
-	];
+	const media = {
+		images: images || [],
+		videos: videos || [],
+		card: externalCard
+	};
 	return {
 		post_id: `bluesky:${post.uri}`,
 		author: post.author?.handle || null,
+		author_did: post.author?.did || null,
 		author_photo: post.author?.avatar || null,
 		created_at_remote: new Date(record.createdAt),
 		expired: false,
@@ -682,11 +833,52 @@ router.post('/auth/bluesky', authenticateCheck, async (req, res) => {
 			refresh_token: json.refreshJwt,
 			extra: JSON.stringify(json)
 		});
+		//Fetch and store Bluesky follows
+		let blueskyFollows = [];
+		try {
+			let cursor = null;
+			const allFollows = [];
+			do {
+				const followsUrl = cursor
+					? `https://bsky.social/xrpc/app.bsky.graph.getFollows?actor=${encodeURIComponent(json.did)}&limit=100&cursor=${cursor}`
+					: `https://bsky.social/xrpc/app.bsky.graph.getFollows?actor=${encodeURIComponent(json.did)}&limit=100`;
+				const followsResponse = await fetch(followsUrl, {
+					headers: { 'Authorization': `Bearer ${json.accessJwt}` }
+				});
+				if (followsResponse.ok) {
+					const followsData = await followsResponse.json();
+					allFollows.push(...(followsData.follows || []));
+					cursor = followsData.cursor;
+				} else {
+					break;
+				}
+			} while (cursor);
+			//Store follows in database
+			for (const follow of allFollows) {
+				await ExternalFollows.upsert({
+					id: v4(),
+					user_id: req.user.user_id,
+					did: follow.did,
+					handle: follow.handle,
+					display_name: follow.displayName || null,
+					avatar: follow.avatar || null,
+					description: follow.description || null,
+					platform: 'bluesky',
+				});
+			}
+			//Fetch stored follows
+			blueskyFollows = await ExternalFollows.findAll({
+				where: { user_id: req.user.user_id, platform: 'bluesky' },
+				order: [['display_name', 'ASC'], ['handle', 'ASC']]
+			});
+		} catch (followsError) {
+			console.error(new Date().toISOString(), 'Error fetching Bluesky follows:', followsError);
+		}
 		const config = {
 			url: `https://bsky.social/xrpc/app.bsky.feed.getTimeline?limit=100`,
-			headers: { 
-				'Authorization': `Bearer ${json.accessJwt}`, 
-				'Content-Type': 'application/json' 
+			headers: {
+				'Authorization': `Bearer ${json.accessJwt}`,
+				'Content-Type': 'application/json'
 			},
 			mapper: mapBlueskyToExternal,
 			htmlGenerator: generateBlueskyContentHTML,
@@ -694,7 +886,6 @@ router.post('/auth/bluesky', authenticateCheck, async (req, res) => {
 		};
 		try {
 			const mappedPosts = await fetchAndProcessPosts('bluesky', config, req.user.user_id);
-			//console.log(`Bluesky connect fetched ${mappedPosts.length} posts for user ${req.user.user_id}`);
 			mappedPosts.sort((a, b) => b.rank_hotness - a.rank_hotness);
 			//Return posts immediately
 			const postsWithContent = await Promise.all(
@@ -704,9 +895,9 @@ router.post('/auth/bluesky', authenticateCheck, async (req, res) => {
 					return formatted;
 				})
 			);
-            res.status(200).json({ success: true, did: json.did, posts: postsWithContent });
+            res.status(200).json({ success: true, did: json.did, posts: postsWithContent, blueskyFollows });
 		} catch (fetchError) {
-			res.status(200).json({ success: true, did: json.did, posts: [] });
+			res.status(200).json({ success: true, did: json.did, posts: [], blueskyFollows });
 		}
 	} catch (error) {
 		console.error(new Date().toISOString(), '/auth/bluesky error:', error);
@@ -952,16 +1143,16 @@ router.get('/:platform/feed', authenticateCheck, async (req, res) => {
         const limit = Math.min(Number(req.query.limit) || 100, 100);
         const offset = Number(req.query.offset) || 0;
         const connectedAccount = await ConnectedAccounts.findOne({
-            where: { 
+            where: {
                 user_id: req.user.user_id,
-                platform: platform 
+                platform: platform
             },
             attributes: ['platform', 'access_token', 'instance_url'],
             raw: true
         });
         const connectedAccounts = connectedAccount ? [connectedAccount] : []; //ApplyAlgorithm expects an array
 		const algorithmResult = await ApplyAlgorithm({
-			locationId: platform, 
+			locationId: platform,
 			userId: req.user.user_id,
 			viewerId: req.session.viewer_id,
 			limit,
@@ -972,13 +1163,358 @@ router.get('/:platform/feed', authenticateCheck, async (req, res) => {
 		const items = algorithmResult.posts;
 		const status = algorithmResult.status;
 		const message = algorithmResult.message;
-		//console.log("items fetched:", items.length);
+		//Check total posts available to determine hasMore
+		const totalCount = await ExternalPostsAccess.count({
+			where: { user_id: req.user.user_id, source: platform }
+		});
+		const hasMore = (offset + items.length) < totalCount;
         const extraPayload = platform === 'reddit' ? { after: null, before: null } : {};
-        res.status(200).json({ success: true, items: items, status: status, message: message, ...extraPayload });
+        res.status(200).json({ success: true, items, status, message, hasMore, ...extraPayload });
     } catch (error) {
         console.error(new Date().toISOString(), `/${platform}/feed error:`, error);
         res.status(400).json({ success: false });
     }
+});
+
+router.get('/bluesky/follows', authenticateCheck, async (req, res) => {
+	try {
+		const blueskyFollows = await ExternalFollows.findAll({
+			where: { user_id: req.user.user_id, platform: 'bluesky' },
+			order: [['display_name', 'ASC'], ['handle', 'ASC']]
+		});
+		res.status(200).json({ success: true, blueskyFollows });
+	} catch (error) {
+		console.error(new Date().toISOString(), '/bluesky/follows error:', error);
+		res.status(500).json({ success: false });
+	}
+});
+
+//Fetch profile info from Bluesky (works with DID or handle)
+async function fetchBlueskyProfile(accountId, accessToken) {
+	try {
+		const url = `https://bsky.social/xrpc/app.bsky.actor.getProfile?actor=${encodeURIComponent(accountId)}`;
+		const response = await fetch(url, {
+			headers: {
+				'Authorization': `Bearer ${accessToken}`,
+				'Content-Type': 'application/json'
+			}
+		});
+		if (!response.ok) {
+			throw new Error(`Bluesky profile API error: ${response.status}`);
+		}
+		return await response.json();
+	} catch (error) {
+		console.error(new Date().toISOString(), 'fetchBlueskyProfile error:', error);
+		throw error;
+	}
+}
+
+async function fetchBlueskyAccountPosts(accountId, accessToken, cursor = null, limit = 100) {
+	try {
+		const url = cursor
+			? `https://bsky.social/xrpc/app.bsky.feed.getAuthorFeed?actor=${encodeURIComponent(accountId)}&limit=${Math.min(limit, 100)}&cursor=${cursor}`
+			: `https://bsky.social/xrpc/app.bsky.feed.getAuthorFeed?actor=${encodeURIComponent(accountId)}&limit=${Math.min(limit, 100)}`;
+		//console.log(new Date().toISOString(), '[fetchBlueskyAccountPosts] Fetching from URL:', url);
+		//console.log(new Date().toISOString(), '[fetchBlueskyAccountPosts] accountId:', accountId, 'hasToken:', !!accessToken);
+		const response = await fetch(url, {
+			headers: {
+				'Authorization': `Bearer ${accessToken}`,
+				'Content-Type': 'application/json'
+			}
+		});
+		//console.log(new Date().toISOString(), '[fetchBlueskyAccountPosts] Response status:', response.status);
+		if (!response.ok) {
+			const errorText = await response.text();
+			console.error(new Date().toISOString(), '[fetchBlueskyAccountPosts] Error response body:', errorText);
+			throw new Error(`Bluesky API error: ${response.status} - ${errorText}`);
+		}
+		const data = await response.json();
+		//console.log(new Date().toISOString(), '[fetchBlueskyAccountPosts] Success, feed items:', data?.feed?.length || 0);
+		return data;
+	} catch (error) {
+		console.error(new Date().toISOString(), '[fetchBlueskyAccountPosts] error:', error);
+		throw error;
+	}
+}
+
+//Quick processing - stores posts with basic HTML, returns immediately
+//Heavy processing (embeddings, sentiment) happens in background
+async function processExternalAccountPostsQuick(platform, accountId, posts, htmlGenerator) {
+	try {
+		const mappedPosts = posts.map(item => {
+			const p = mapBlueskyToExternal(item);
+			const rank_hotness = computeHotness({
+				upvotes: p.score,
+				downvotes: 0,
+				createdAt: p.created_at_remote,
+				referenceTime: Math.floor(Date.now() / 1000)
+			});
+			return { ...p, rank_hotness };
+		});
+		//Dedupe
+		const localSeen = new Set();
+		const uniquePosts = mappedPosts.filter(p => {
+			if (localSeen.has(p.post_id)) return false;
+			localSeen.add(p.post_id);
+			return true;
+		});
+		//Check which posts already exist
+		const postIds = uniquePosts.map(p => p.post_id);
+		const existingPosts = await ExternalPosts.findAll({
+			where: { post_id: postIds },
+			attributes: ['post_id'],
+			raw: true
+		});
+		const existingIds = new Set(existingPosts.map(r => r.post_id));
+		const postsToInsert = uniquePosts.filter(p => !existingIds.has(p.post_id));
+		//Quick insert - just basic HTML, no heavy processing
+		if (postsToInsert.length > 0) {
+			const quickInserts = await Promise.all(postsToInsert.map(async mapped => {
+				const html = await htmlGenerator(mapped.text_body, mapped.media);
+				const has_text = (mapped.text_body?.length || 0) > 0;
+				return {
+					post_id: mapped.post_id,
+					source: mapped.source,
+					source_post_id: mapped.source_post_id,
+					title: mapped.title || null,
+					content: html,
+					text_body: mapped.text_body || null,
+					text_length: mapped.text_length || 0,
+					word_count: mapped.word_count || 0,
+					image_count: mapped.image_count || 0,
+					video_count: mapped.video_count || 0,
+					has_text,
+					has_images: mapped.has_images || false,
+					has_videos: mapped.has_videos || false,
+					score: mapped.score || 0,
+					replies: mapped.replies || 0,
+					sentiment_score: 0, //Will be updated in background
+					embeddings: null, //Will be updated in background
+					fetched_at: mapped.fetched_at,
+					created_at_remote: mapped.created_at_remote,
+					expired: mapped.expired || false,
+					channel: mapped.channel || null,
+					author: mapped.author || null,
+					author_did: mapped.author_did || null,
+					author_photo: mapped.author_photo || null,
+					url: mapped.url,
+					media: mapped.media
+				};
+			}));
+			const updateFields = [
+				'source_post_id', 'title', 'content', 'text_body', 'text_length', 'word_count',
+				'image_count', 'video_count', 'has_text', 'has_images', 'has_videos',
+				'score', 'replies', 'fetched_at', 'created_at_remote', 'expired',
+				'channel', 'author', 'author_did', 'author_photo', 'url', 'media'
+			];
+			await ExternalPosts.bulkCreate(quickInserts, {
+				updateOnDuplicate: updateFields,
+				logging: false
+			});
+			//Run heavy processing in background (don't await)
+			processExternalAccountPostsBackground(postsToInsert.map(p => p.post_id)).catch(err => {
+				console.error(new Date().toISOString(), 'Background processing error:', err);
+			});
+		}
+		return uniquePosts.length;
+	} catch (error) {
+		console.error(new Date().toISOString(), 'processExternalAccountPostsQuick error:', error);
+		throw error;
+	}
+}
+
+//Background processing - updates posts with embeddings and sentiment
+async function processExternalAccountPostsBackground(postIds) {
+	try {
+		const posts = await ExternalPosts.findAll({
+			where: { post_id: postIds, embeddings: null },
+			raw: true
+		});
+		if (posts.length === 0) return;
+		const embedder = await getEmbedder();
+		for (const post of posts) {
+			try {
+				const details = await contentAnalyser.analyseContent(post.content, post.title, embedder);
+				await ExternalPosts.update({
+					sentiment_score: details?.sentiment_score ?? 0,
+					embeddings: details?.embeddings ?? null
+				}, {
+					where: { post_id: post.post_id }
+				});
+			} catch (err) {
+				console.error(new Date().toISOString(), 'Error processing post:', post.post_id, err);
+			}
+		}
+	} catch (error) {
+		console.error(new Date().toISOString(), 'processExternalAccountPostsBackground error:', error);
+	}
+}
+
+//Helper: Get account info from ExternalFollows or ExternalAccountMeta
+async function getExternalAccountInfo(userId, platform, accountId) {
+	const followRecord = await ExternalFollows.findOne({
+		where: {
+			user_id: userId,
+			platform,
+			[Op.or]: [{ handle: accountId }, { did: accountId }]
+		},
+		raw: true
+	});
+	if (followRecord) {
+		return {
+			did: followRecord.did,
+			handle: followRecord.handle,
+			display_name: followRecord.display_name,
+			avatar: followRecord.avatar,
+			description: followRecord.description
+		};
+	}
+	const accountMeta = await ExternalAccountMeta.findOne({
+		where: { account_id: accountId, platform },
+		raw: true
+	});
+	if (accountMeta) {
+		return {
+			did: accountMeta.account_id,
+			handle: accountMeta.handle,
+			display_name: accountMeta.display_name,
+			avatar: accountMeta.avatar,
+			description: accountMeta.description
+		};
+	}
+	return null;
+}
+
+//Helper: Ensure posts exist in DB for an external account (fetch from API if needed)
+async function ensureExternalAccountPosts(userId, platform, authorHandle, authorDid, cursor = null) {
+	const connectedAccount = await ConnectedAccounts.findOne({
+		where: { user_id: userId, platform },
+		attributes: ['access_token'],
+		raw: true
+	});
+	if (!connectedAccount?.access_token) return { success: false, cursor: null };
+
+	let accessToken = connectedAccount.access_token;
+	try {
+		let data;
+		try {
+			data = await fetchBlueskyAccountPosts(authorHandle, accessToken, cursor, 100);
+		} catch (fetchErr) {
+			if (fetchErr.message?.includes('ExpiredToken')) {
+				const newToken = await refreshBlueskyToken(userId);
+				if (!newToken) return { success: false, cursor: null };
+				accessToken = newToken;
+				data = await fetchBlueskyAccountPosts(authorHandle, newToken, cursor, 100);
+			} else {
+				throw fetchErr;
+			}
+		}
+		if (!data?.feed?.length) return { success: true, cursor: null };
+		//Filter to only this author's posts (no reposts/replies)
+		const apiPosts = data.feed.filter(item => {
+			if (item.reply) return false;
+			const postAuthorHandle = item.post?.author?.handle;
+			const postAuthorDid = item.post?.author?.did;
+			return postAuthorHandle === authorHandle || postAuthorDid === authorDid;
+		});
+		//Store posts and cursor
+		if (apiPosts.length > 0) {
+			await processExternalAccountPostsQuick(platform, authorDid, apiPosts, generateBlueskyContentHTML);
+		}
+		if (data.cursor) {
+			await ExternalAccountMeta.upsert({
+				id: v4(),
+				account_id: authorDid,
+				platform,
+				handle: authorHandle,
+				cursor: data.cursor,
+				last_fetched_at: new Date(),
+				updated_at: new Date()
+			});
+		}
+		return { success: true, cursor: data.cursor };
+	} catch (err) {
+		console.error(new Date().toISOString(), '[ensureExternalAccountPosts] Error:', err.message);
+		return { success: false, cursor: null };
+	}
+}
+
+//Route to get posts from a specific external account
+//Frontend should pass handle and did as query params
+router.get('/external/:platform/account/:accountId/posts', authenticateCheck, async (req, res) => {
+	try {
+		const { platform, accountId } = req.params;
+		const { handle, did } = req.query;
+		const limit = Math.min(Number(req.query.limit) || 50, 50);
+		const offset = Number(req.query.offset) || 0;
+		if (platform !== 'bluesky') {
+			return res.status(400).json({ success: false, message: `Platform ${platform} is not supported` });
+		}
+		//Use provided handle/did or fall back to accountId
+		const authorHandle = handle || accountId;
+		const authorDid = did || accountId;
+		//Check how many posts we have in DB
+		const dbPostCount = await ExternalPosts.count({
+			where: {
+				source: platform,
+				[Op.or]: [{ author: authorHandle }, { author_did: authorDid }]
+			}
+		});
+		//If first page and insufficient posts, fetch from API
+		if (offset === 0 && dbPostCount < limit) {
+			await ensureExternalAccountPosts(req.user.user_id, platform, authorHandle, authorDid);
+		}
+		//If we need more posts (paginating or not enough in DB), fetch from API
+		if (offset + limit > dbPostCount) {
+			const meta = await ExternalAccountMeta.findOne({
+				where: {
+					platform,
+					[Op.or]: [{ account_id: authorDid }, { handle: authorHandle }]
+				},
+				attributes: ['cursor'],
+				raw: true
+			});
+			if (meta?.cursor) {
+				await ensureExternalAccountPosts(req.user.user_id, platform, authorHandle, authorDid, meta.cursor);
+			}
+		}
+		//Use ApplyAlgorithm for ranking
+		const locationId = `external_account_${platform}_${authorDid}`;
+		const algorithmResult = await ApplyAlgorithm({
+			locationId,
+			userId: req.user.user_id,
+			viewerId: req.session.viewer_id,
+			limit,
+			offset,
+			isGroup: false
+		});
+		//Determine hasMore
+		const newDbCount = await ExternalPosts.count({
+			where: {
+				source: platform,
+				[Op.or]: [{ author: authorHandle }, { author_did: authorDid }]
+			}
+		});
+		const meta = await ExternalAccountMeta.findOne({
+			where: {
+				platform,
+				[Op.or]: [{ account_id: authorDid }, { handle: authorHandle }]
+			},
+			attributes: ['cursor'],
+			raw: true
+		});
+		const hasMore = (offset + algorithmResult.posts.length) < newDbCount || !!meta?.cursor;
+		res.status(200).json({
+			success: true,
+			items: algorithmResult.posts,
+			hasMore,
+			status: algorithmResult.status,
+			message: algorithmResult.message
+		});
+	} catch (error) {
+		console.error(new Date().toISOString(), '[ExternalAccountPosts] Route error:', error);
+		res.status(500).json({ success: false, message: 'Error fetching account posts' });
+	}
 });
 
 router.get('/connected-accounts', authenticateCheck, async (req, res) => {

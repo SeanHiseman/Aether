@@ -32,13 +32,14 @@ const ExternalPosts = sequelize.define('ExternalPosts', {
 	created_at_remote: { type: DataTypes.DATE, allowNull: true },
 	expired: { type: BOOLEAN, defaultValue: false },
 	channel: { type: STRING(128), allowNull: true },
-	author: { type: STRING(190), allowNull: true }, 
+	author: { type: STRING(190), allowNull: true },
+	author_did: { type: STRING(255), allowNull: true }, //DID for Bluesky, unique ID for other platforms
     author_photo: { type: TEXT, allowNull: true },
 	url: { type: TEXT, allowNull: true },
 	media: { type: DataTypes.JSON, allowNull: true }
 }, {
 	tableName: 'external_posts',
-    timestamps: false, 
+    timestamps: false,
     indexes: [
         { fields: ['created_at_remote'] },
         { fields: ['score'] },
@@ -46,6 +47,7 @@ const ExternalPosts = sequelize.define('ExternalPosts', {
         { fields: ['expired'] },
         { fields: ['fetched_at'] },
         { name: 'idx_ext_posts_word_count', fields: ['word_count'] },
+        { name: 'idx_ext_posts_author_did', fields: ['author_did'] },
     ]
 });
 
@@ -63,6 +65,30 @@ const ExternalPostsAccess = sequelize.define('ExternalPostsAccess', {
         { fields: ['post_id'] },
         { fields: ['source'] },
         { fields: ['user_id', 'post_id'], unique: true },
+    ]
+});
+
+//Stores data for external accounts
+const ExternalAccountMeta = sequelize.define('ExternalAccountMeta', {
+    id: { type: STRING(36), primaryKey: true },
+    account_id: { type: STRING(255), allowNull: false }, //DID for Bluesky, username for others
+    platform: { type: STRING(32), allowNull: false },
+    handle: { type: STRING(255), allowNull: true },
+    display_name: { type: STRING(255), allowNull: true },
+    avatar: { type: TEXT, allowNull: true },
+    description: { type: TEXT, allowNull: true },
+    last_fetched_at: { type: DataTypes.DATE, allowNull: true },
+    cursor: { type: TEXT, allowNull: true }, //For pagination
+    post_count: { type: INTEGER, defaultValue: 0 },
+    created_at: { type: DataTypes.DATE, defaultValue: DataTypes.NOW },
+    updated_at: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }
+}, {
+    tableName: 'external_account_meta',
+    timestamps: false,
+    indexes: [
+        { fields: ['account_id', 'platform'], unique: true },
+        { fields: ['platform'] },
+        { fields: ['last_fetched_at'] }
     ]
 });
 
@@ -182,7 +208,8 @@ const ViewedPosts = sequelize.define('viewed_posts', {
 }, { tableName: 'viewed_posts', timestamps: false });
 
 export {
-    AppBuilds, 
+    AppBuilds,
+    ExternalAccountMeta,
     ExternalPosts,
     ExternalPostsAccess,
     PaginationTokens,
@@ -190,6 +217,6 @@ export {
     PostDrafts,
     PostNotes,
     PostVotes,
-    Prompts, 
+    Prompts,
     ViewedPosts
 }

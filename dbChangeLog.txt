@@ -461,3 +461,49 @@ CREATE INDEX idx_messages_shared_post ON messages(shared_post_id);
 
 ALTER TABLE users
 MODIFY last_active_at DATETIME(3) NULL DEFAULT NULL;
+
+ALTER TABLE users ADD COLUMN bluesky_did VARCHAR(255) UNIQUE;
+
+CREATE TABLE `external_follows` (
+	`id` CHAR(36) NOT NULL,
+	`user_id` CHAR(36) NOT NULL,
+	`did` VARCHAR(255) NOT NULL,
+	`handle` VARCHAR(255) NOT NULL,
+	`display_name` VARCHAR(255) DEFAULT NULL,
+	`avatar` TEXT DEFAULT NULL,
+	`description` TEXT DEFAULT NULL,
+	`platform` VARCHAR(255) NOT NULL,
+	`created_at` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+	`updated_at` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+	PRIMARY KEY (`id`),
+	UNIQUE KEY `external_follows_user_did_unique` (`user_id`, `did`),
+	KEY `external_follows_user_id_idx` (`user_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+ALTER TABLE deep_feed_content ADD COLUMN external_did VARCHAR(255) DEFAULT NULL;
+
+CREATE TABLE `external_account_meta` (
+	`id` CHAR(36) NOT NULL,
+	`account_id` VARCHAR(255) NOT NULL,
+	`platform` VARCHAR(32) NOT NULL,
+	`handle` VARCHAR(255) DEFAULT NULL,
+	`display_name` VARCHAR(255) DEFAULT NULL,
+	`avatar` TEXT DEFAULT NULL,
+	`description` TEXT DEFAULT NULL,
+	`last_fetched_at` DATETIME DEFAULT NULL,
+	`cursor` TEXT DEFAULT NULL,
+	`post_count` INT DEFAULT 0,
+	`created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+	`updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+	PRIMARY KEY (`id`),
+	UNIQUE KEY `uniq_account_platform` (`account_id`, `platform`),
+	KEY `idx_platform` (`platform`),
+	KEY `idx_last_fetched` (`last_fetched_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+ALTER TABLE `external_posts`
+ADD COLUMN `author_did` VARCHAR(255) DEFAULT NULL AFTER `author`,
+ADD INDEX `idx_ext_posts_author_did` (`author_did`);
+
+ALTER TABLE `algorithm_locations`
+MODIFY `location_id` VARCHAR(255) NOT NULL;

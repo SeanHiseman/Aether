@@ -64,6 +64,7 @@ CREATE TABLE `deep_feed_content` (
   `content_id` varchar(36) NOT NULL,
   `deep_feed_id` varchar(36) NOT NULL,
   `feed_id` varchar(36) DEFAULT NULL,
+  `external_did` VARCHAR(255) DEFAULT NULL,
   PRIMARY KEY (`content_id`),
   KEY `deep_feed_id` (`deep_feed_id`),
   CONSTRAINT `deep_feed_content_ibfk_1` FOREIGN KEY (`deep_feed_id`) REFERENCES `deep_feeds` (`deep_feed_id`) ON DELETE CASCADE,
@@ -403,6 +404,7 @@ CREATE TABLE `external_posts` (
   `channel` VARCHAR(128) DEFAULT NULL,
   `author` VARCHAR(190) DEFAULT NULL,
   `author_photo` TEXT DEFAULT NULL,
+  `author_did` VARCHAR(255) DEFAULT NULL AFTER `author`,
   `url` TEXT DEFAULT NULL,
   `media` JSON DEFAULT NULL,
   PRIMARY KEY (`post_id`),
@@ -411,7 +413,8 @@ CREATE TABLE `external_posts` (
   KEY `idx_source` (`source`),
   KEY `idx_expired` (`expired`),
   KEY `idx_fetched_at` (`fetched_at`),
-  KEY `idx_ext_posts_word_count` (`word_count`)
+  KEY `idx_ext_posts_word_count` (`word_count`),
+  KEY `idx_ext_posts_author_did` (`author_did`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE `external_posts_access` (
@@ -426,6 +429,41 @@ CREATE TABLE `external_posts_access` (
   KEY `idx_post_id` (`post_id`),
   KEY `idx_source` (`source`),
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE `external_follows` (
+	`id` CHAR(36) NOT NULL,
+	`user_id` CHAR(36) NOT NULL,
+	`did` VARCHAR(255) NOT NULL,
+	`handle` VARCHAR(255) NOT NULL,
+	`display_name` VARCHAR(255) DEFAULT NULL,
+	`avatar` TEXT DEFAULT NULL,
+	`description` TEXT DEFAULT NULL,
+	`platform` VARCHAR(255) NOT NULL,
+	`created_at` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+	`updated_at` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+	PRIMARY KEY (`id`),
+	UNIQUE KEY `external_follows_user_did_unique` (`user_id`, `did`),
+	KEY `external_follows_user_id_idx` (`user_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE `external_account_meta` (
+  `id` CHAR(36) NOT NULL,
+  `account_id` VARCHAR(255) NOT NULL,
+  `platform` VARCHAR(32) NOT NULL,
+  `handle` VARCHAR(255) DEFAULT NULL,
+  `display_name` VARCHAR(255) DEFAULT NULL,
+  `avatar` TEXT DEFAULT NULL,
+  `description` TEXT DEFAULT NULL,
+  `last_fetched_at` DATETIME DEFAULT NULL,
+  `cursor` TEXT DEFAULT NULL,
+  `post_count` INT DEFAULT 0,
+  `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uniq_account_platform` (`account_id`, `platform`),
+  KEY `idx_platform` (`platform`),
+  KEY `idx_last_fetched` (`last_fetched_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE `connected_accounts` (
 	`id` CHAR(36) NOT NULL,

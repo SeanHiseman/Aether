@@ -56,22 +56,8 @@ function computeAlgorithmScore(post, { algorithmRow, voteImpact, sentiment, vari
 		}
 	}
 	let algorithmScore = 0;
-	//Base score from hotness/engagement (only for native posts)
-	if (!post.isExternal) {
-		const baseHotness = typeof post.rank_hotness === 'number' ? post.rank_hotness : 0;
-		algorithmScore = voteImpact > 0 ? baseHotness * voteImpact : 0;
-	}
-	//Vote quality scoring
-	if (voteImpact > 0) {
-		const upvotes = post.upvotes || post.score || 0;
-		const downvotes = post.downvotes || 0;
-		const totalVotes = upvotes + downvotes;
-		if (totalVotes > 0) {
-			const netRatio = (upvotes - downvotes) / totalVotes;
-			const engagementRatio = (post.views || 0) > 0 ? totalVotes / post.views : 0;
-			algorithmScore += voteImpact * ((netRatio * 30) + (engagementRatio * 0.3));
-		}
-	}
+	//When algorithm is applied, ranking is purely based on algorithmic factors
+	//(embeddings, sentiment, variety) - not hotness or votes
 	//Semantic boost/suppress using embeddings
 	if (algorithmRow?.boost_embedding || algorithmRow?.suppress_embedding) {
 		let semanticBoost = 0;
@@ -226,10 +212,14 @@ async function fetchPaginatedPostData({ paginatedIds, scoreMap, includeOptions, 
 		if (scoreB !== scoreA) return scoreB - scoreA;
 		return b.post_id.localeCompare(a.post_id);
 	});
-	return allPosts.map(p => ({
-		...p,
-		algorithmScore: scoreMap.get(p.post_id)?.algorithmScore || 0
-	}));
+	return allPosts.map(p => {
+		const algScore = scoreMap.get(p.post_id)?.algorithmScore || 0;
+		return {
+			...p,
+			algorithmScore: algScore
+			//score remains as the original platform score (likes) for display
+		};
+	});
 }
 
 async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOptions, isGroup = true, isMain, limit = 100, offset, recentUpvotes, viewerId, keyword = '', connectedAccounts = [], userId }) {
@@ -249,6 +239,16 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
 				where: { location_id: normLocationId, viewer_id: viewerId },
 				raw: true
 			});
+			//console.log("Checking algorithm location for:", { normLocationId, viewerId, found: !!algorithmLocation });
+			//For individual external accounts, also check for algorithm on the parent platform
+			if (!algorithmLocation && normLocationId.startsWith('external_account_')) {
+				const parts = normLocationId.replace('external_account_', '').split('_');
+				const platform = parts[0]; //e.g., 'bluesky'
+				algorithmLocation = await AlgorithmLocations.findOne({
+					where: { location_id: platform, viewer_id: viewerId },
+					raw: true
+				});
+			}
 			if (algorithmLocation) {
 				algorithmRow = await Algorithms.findOne({
 					attributes: ['algorithm_code', 'boost_embedding', 'suppress_embedding'],
@@ -279,6 +279,7 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
         const useChronological = (!isGroup && !algorithmLocation) || (!isActiveToday && !isGroup);
 		const useStandardScore = ((!algorithmLocation && isGroup) || (!isActiveToday && isGroup));
 		const hasActiveAlgorithm = algorithmLocation && isActiveToday;
+
         //Decide whether to fetch with all attributes or exclude them up front
 		const fetchFullAttributes = !useChronological && !useStandardScore;
 		const attrOption = fetchFullAttributes ? undefined : { exclude: excludedAttrs };
@@ -563,6 +564,63 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
 				const externalWithFlag = formattedExternal.map(p => ({ ...p, isExternal: true }));
 				posts = [...localWithFlag, ...externalWithFlag].slice(0, backendFetchTotal);
 			}
+		} else if (typeof locationId === 'string' && locationId.startsWith('external_account_')) {
+			//console.log("Applying algorithm for external account location:", locationId);
+			//Individual external account (e.g., external_account_bluesky_did:plc:xxx)
+			const parts = locationId.replace('external_account_', '').split('_');
+			const platform = parts[0];
+			const accountId = parts.slice(1).join('_'); //Handle DIDs with underscores
+			if (hasActiveAlgorithm) {
+				//console.log("hasActiveAlgorithm is true");
+				//Algorithm path for individual external account
+				//Search by both author_did and author (handle) for robustness
+				const externalPosts = await ExternalPosts.findAll({
+					attributes: ['post_id'],
+					where: {
+						source: platform,
+						[Op.or]: [{ author_did: accountId }, { author: accountId }],
+						expired: false,
+						content: { [Op.ne]: null }
+					},
+					order: [['created_at_remote', 'DESC']],
+					raw: true
+				});
+				const externalPostIds = externalPosts.map(p => p.post_id);
+				const { paginatedIds, scoreMap } = await scoreAndPaginateCandidates({
+					externalPostIds,
+					algorithmRow,
+					scoringParams,
+					offset,
+					limit
+				});
+				//console.log("scoreAndPaginateCandidates result:", { paginatedIds, scoreMap });
+				if (!paginatedIds.length) {
+					if (Object.keys(algorithmFilters).length > 0 || externalFiltersSQL) {
+						return { posts: [], status: "filtered", message: "Your algorithm settings filtered out all posts." };
+					}
+					return { posts: [], status: "ok", message: "" };
+				}
+				posts = await fetchPaginatedPostData({ paginatedIds, scoreMap, includeOptions, attrOption });
+			} else {
+				//Standard path
+				//Search by both author_did and author (handle) for robustnessThe 
+				const rawExternal = await ExternalPosts.findAll({
+					where: {
+						source: platform,
+						[Op.or]: [{ author_did: accountId }, { author: accountId }],
+						expired: false,
+						content: { [Op.ne]: null }
+					},
+					order: [['created_at_remote', 'DESC']],
+					limit: backendFetchTotal,
+					offset,
+					raw: true
+				});
+				posts = rawExternal.map(p => ({
+					...formatExternalPost(p, FEED_CONFIG[platform], platform),
+					isExternal: true
+				}));
+			}
 		} else if (typeof locationId === 'string' && ['reddit','bluesky','mastodon'].includes(locationId)) {
             const platform = locationId;
 			if (hasActiveAlgorithm) {
@@ -709,25 +767,47 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
             const deepFeedId = locationId.replace(/^deep_/, '');
             const contents = await DeepFeedContent.findAll({
                 where: { deep_feed_id: deepFeedId },
-                attributes: ['feed_id'],
+                attributes: ['feed_id', 'bluesky_did'],
                 raw: true
             });
-            const allFeedIds = contents.map(c => c.feed_id);
+            const allFeedIds = contents.map(c => c.feed_id).filter(Boolean);
+            const blueskyDids = contents.map(c => c.bluesky_did).filter(Boolean);
+            const hasExternalAccounts = blueskyDids.length > 0;
 			if (hasActiveAlgorithm) {
 				//Algorithm path
-				const nativePostIds = await Posts.findAll({
-					attributes: ['post_id'],
-					where: {
-						...algorithmFilters,
-						feed_id: { [Op.in]: allFeedIds },
-						parent_id: null,
-						...(viewerId ? { poster_id: { [Op.not]: viewerId } } : {})
-					},
-					order: [['created_at', 'DESC']],
-					raw: true
-				});
+				let nativePostIds = [];
+				if (allFeedIds.length > 0) {
+					nativePostIds = await Posts.findAll({
+						attributes: ['post_id'],
+						where: {
+							...algorithmFilters,
+							feed_id: { [Op.in]: allFeedIds },
+							parent_id: null,
+							...(viewerId ? { poster_id: { [Op.not]: viewerId } } : {})
+						},
+						order: [['created_at', 'DESC']],
+						raw: true
+					});
+				}
+				//Fetch external posts from Bluesky accounts in the deep feed
+				let externalPostIds = [];
+				if (hasExternalAccounts) {
+					const externalPosts = await ExternalPosts.findAll({
+						attributes: ['post_id'],
+						where: {
+							source: 'bluesky',
+							author_did: { [Op.in]: blueskyDids },
+							expired: false,
+							content: { [Op.ne]: null }
+						},
+						order: [['created_at_remote', 'DESC']],
+						raw: true
+					});
+					externalPostIds = externalPosts.map(p => p.post_id);
+				}
 				const { paginatedIds, scoreMap } = await scoreAndPaginateCandidates({
 					nativePostIds: nativePostIds.map(p => p.post_id),
+					externalPostIds,
 					algorithmRow,
 					scoringParams,
 					offset,
@@ -741,29 +821,56 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
 				}
 				posts = await fetchPaginatedPostData({ paginatedIds, scoreMap, includeOptions, attrOption });
 			} else {
-				//Standard path
-				const postIds = await Posts.findAll({
-					attributes: ['post_id'],
-					where: {
-						...algorithmFilters,
-						feed_id: { [Op.in]: allFeedIds },
-						parent_id: null,
-						...(viewerId ? { poster_id: { [Op.not]: viewerId } } : {})
-					},
-					order: orderMode,
-					limit: backendFetchTotal,
-					offset,
-					raw: true
-				});
-				const orderedIds = postIds.map(p => p.post_id);
-				posts = await Posts.findAll({
-					where: { post_id: orderedIds },
-					include: includeOptions,
-					attributes: attrOption,
-					raw: false
-				});
-				const orderMap = new Map(orderedIds.map((id, i) => [id, i]));
-				posts.sort((a, b) => orderMap.get(a.post_id) - orderMap.get(b.post_id));
+				//Standard path with mixed native and external posts
+				const halfLimit = hasExternalAccounts ? Math.ceil(backendFetchTotal / 2) : backendFetchTotal;
+				const halfOffset = hasExternalAccounts ? Math.floor(offset / 2) : offset;
+				let localPosts = [];
+				if (allFeedIds.length > 0) {
+					const postIds = await Posts.findAll({
+						attributes: ['post_id'],
+						where: {
+							...algorithmFilters,
+							feed_id: { [Op.in]: allFeedIds },
+							parent_id: null,
+							...(viewerId ? { poster_id: { [Op.not]: viewerId } } : {})
+						},
+						order: orderMode,
+						limit: halfLimit,
+						offset: halfOffset,
+						raw: true
+					});
+					const orderedIds = postIds.map(p => p.post_id);
+					if (orderedIds.length) {
+						localPosts = await Posts.findAll({
+							where: { post_id: orderedIds },
+							include: includeOptions,
+							attributes: attrOption,
+							raw: false
+						});
+						const orderMap = new Map(orderedIds.map((id, i) => [id, i]));
+						localPosts.sort((a, b) => orderMap.get(a.post_id) - orderMap.get(b.post_id));
+					}
+				}
+				//Fetch external posts from Bluesky accounts
+				let externalPosts = [];
+				if (hasExternalAccounts) {
+					const rawExternal = await ExternalPosts.findAll({
+						where: {
+							source: 'bluesky',
+							author_did: { [Op.in]: blueskyDids },
+							expired: false,
+							content: { [Op.ne]: null }
+						},
+						order: [['created_at_remote', 'DESC']],
+						limit: halfLimit,
+						offset: halfOffset,
+						raw: true
+					});
+					externalPosts = rawExternal.map(p => formatExternalPost(p, FEED_CONFIG.bluesky, 'bluesky'));
+				}
+				const localWithFlag = localPosts.map(p => ({ ...(p.dataValues || p), isExternal: false }));
+				const externalWithFlag = externalPosts.map(p => ({ ...p, isExternal: true }));
+				posts = IntermixArrays(localWithFlag, externalWithFlag).slice(0, backendFetchTotal);
 			}
         } else {
             //Default: channels and main feeds

@@ -32,6 +32,7 @@ import Placeholder from './pages/welcome/placeholder';
 import Privacy from './pages/welcome/privacy';
 import ResetPassword from './pages/site_entrance/resetPassword';
 import SavedPosts from './pages/feeds/savedPosts';
+import ExternalAccountPage from './socialConnect/externalAccountPage';
 import SocialFeedPage from './socialConnect/socialFeedPage';
 import Support from './pages/welcome/support';
 import Team from './pages/welcome/team';
@@ -86,6 +87,7 @@ const App = () => {
 								<Route path="/feed/reddit" element={<SocialFeedPage platform="reddit" />} />
 								<Route path="/feed/bluesky" element={<SocialFeedPage platform="bluesky" />} />
 								<Route path="/feed/mastodon" element={<SocialFeedPage platform="mastodon" />} />
+								<Route path="/external/:platform/:accountId" element={<ExternalAccountPage />} />
 								{/*<Route path="ask" element={<AskChannel />} >
 									<Route path=":chatId" element={<AskChannel />} />
 								</Route>*/}

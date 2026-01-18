@@ -214,6 +214,20 @@
     height: var(--xl-margin);
     width: var(--xl-margin); 
 }
+.video-thumbnail {
+    position: relative;
+    cursor: pointer;
+}
+.video-play-overlay {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 3rem;
+    color: white;
+    text-shadow: 0 0 10px rgba(0,0,0,0.7);
+    pointer-events: none;
+}
 .view-date-container {
     display: flex;
     flex-direction: column;

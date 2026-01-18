@@ -1,5 +1,6 @@
 import api from "../../api";
 import { AuthContext } from "../../components/authContext";
+import BlueskyFollowItem from "../../components/channels/blueskyFollowItem";
 import Cropper from "react-easy-crop";
 import { Crown } from 'lucide-react';
 import DeepFeedItem from "../../components/channels/deepFeedItem";
@@ -33,6 +34,7 @@ const BaseLayout = () => {
 	const [activeDragItem, setActiveDragItem] = useState(null);
 	const [activeId, setActiveId] = useState(null);
 	const [asideErrorMessage, setAsideErrorMessage] = useState("");
+	const [blueskyFollows, setBlueskyFollows] = useState([]);
 	const [crop, setCrop] = useState({ x: 0, y: 0 });
 	const [croppedAreaPixels, setCroppedAreaPixels] = useState(null);
 	const [currentQuery, setCurrentQuery] = useState("");
@@ -125,7 +127,18 @@ const BaseLayout = () => {
         let dragType = "feed";
         let dragItem = null;
         let feedId;
-        if (activeId.startsWith('df-')) {
+        //Handle Bluesky follows
+        if (activeId.startsWith('sidebar-bluesky-')) {
+            const blueskyDid = activeId.replace('sidebar-bluesky-', '');
+            dragType = "blueskyFollow";
+            dragItem = blueskyFollows.find(f => f.did === blueskyDid);
+        } else if (activeId.includes('-bluesky-')) {
+            dragType = "blueskyFollowInDeepFeed";
+            dragItem = {
+                follow: dragData.follow,
+                parentDeepFeedId: dragData.parentDeepFeedId
+            };
+        } else if (activeId.startsWith('df-')) {
             const parts = activeId.split('-');
             feedId = parts[parts.length - 1];
             dragType = "feedInDeepFeed";
@@ -135,14 +148,14 @@ const BaseLayout = () => {
         } else {
             feedId = activeId;
         }
-        if (dragData?.parentDeepFeedId) {
+        if (dragData?.parentDeepFeedId && dragType !== "blueskyFollowInDeepFeed") {
             dragType = "feedInDeepFeed";
-            dragItem = { 
-                feed: dragData.feed, 
-                parentDeepFeedId: dragData.parentDeepFeedId 
+            dragItem = {
+                feed: dragData.feed,
+                parentDeepFeedId: dragData.parentDeepFeedId
             };
         }
-        else {
+        else if (dragType === "feed") {
             dragItem = feeds.find(f => f.feed_id.toString() === feedId);
         }
         setDragType(dragType);
@@ -156,14 +169,20 @@ const BaseLayout = () => {
         const overId = over.id;
         const overData = over.data.current;
         let targetFeedId;
+        let targetBlueskyDid;
         if (overId.toString().startsWith('sidebar-feed-')) {
             targetFeedId = overId.toString().replace('sidebar-feed-', '');
+        } else if (overId.toString().startsWith('sidebar-bluesky-')) {
+            targetBlueskyDid = overId.toString().replace('sidebar-bluesky-', '');
         } else if (overId.toString().includes('-feed-')) {
             const parts = overId.toString().split('-');
             targetFeedId = parts[parts.length - 1];
+        } else if (overId.toString().includes('-bluesky-')) {
+            const parts = overId.toString().split('-');
+            targetBlueskyDid = parts[parts.length - 1];
         }
         //Check if the overId is a deep feed (not a feed within a deep feed)
-        const isOverDeepFeed = (overId.toString().startsWith('df-') && !overId.toString().includes('-feed-')) 
+        const isOverDeepFeed = (overId.toString().startsWith('df-') && !overId.toString().includes('-feed-') && !overId.toString().includes('-bluesky-'))
             || overData?.type === 'deepFeed';
         let targetDeepFeedId;
         if (isOverDeepFeed) {
@@ -218,12 +237,43 @@ const BaseLayout = () => {
                     if (data.success && deepFeedCallbacks[targetDeepFeedId]) {
                         deepFeedCallbacks[targetDeepFeedId]({ type: "UPDATE_CONTENTS" });
                     }
-                    window.dispatchEvent(new CustomEvent('deepFeedUpdated', { 
-                        detail: { deepFeedId: targetDeepFeedId } 
+                    window.dispatchEvent(new CustomEvent('deepFeedUpdated', {
+                        detail: { deepFeedId: targetDeepFeedId }
                     }));
                 }
             }
-            //Case 2: Two regular feeds from sidebar combine to create new deep feed
+            //Case 2: Bluesky follow dropped on deep feed
+            else if (dragType === "blueskyFollow" && isOverDeepFeed && targetDeepFeedId) {
+                const sourceFollow = activeDragItem;
+                if (sourceFollow) {
+                    //Get cached contents
+                    let cachedContents = JSON.parse(
+                        localStorage.getItem(`deepFeedContents_${targetDeepFeedId}`)
+                    ) || [];
+                    //Check for duplicate
+                    const alreadyExists = cachedContents.some(
+                        item => item?.bluesky_did === sourceFollow?.did
+                    );
+                    if (alreadyExists) {
+                        setAsideErrorMessage("This Bluesky follow is already in the combined feed");
+                        setTimeout(() => setAsideErrorMessage(""), 5000);
+                        resetDragState();
+                        return;
+                    }
+                    const payload = {
+                        deepFeedId: targetDeepFeedId,
+                        blueskyDid: sourceFollow?.did
+                    };
+                    const { data } = await api.post("/add_to_deep_feed", payload);
+                    if (data.success && deepFeedCallbacks[targetDeepFeedId]) {
+                        deepFeedCallbacks[targetDeepFeedId]({ type: "UPDATE_CONTENTS" });
+                    }
+                    window.dispatchEvent(new CustomEvent('deepFeedUpdated', {
+                        detail: { deepFeedId: targetDeepFeedId }
+                    }));
+                }
+            }
+            //Case 3: Two regular feeds from sidebar combine to create new deep feed
             else if (dragType === "feed" && !isOverDeepFeed && targetFeedId) {
                 const storedDeepFeeds = JSON.parse(localStorage.getItem("deepFeeds") || "[]");
                 if (storedDeepFeeds.length === (hasMembership ? 500 : 5)) { //Members get more combined feeds
@@ -234,6 +284,51 @@ const BaseLayout = () => {
                     const targetFeed = feeds.find(f => f?.feed_id.toString() === targetFeedId);
                     if (sourceFeed && targetFeed && sourceFeed?.feed_id !== targetFeed?.feed_id) {
                         setPendingDeepFeed({ sourceFeed, targetFeed });
+                        setNameModalOpen(true);
+                    }
+                }
+            }
+            //Case 4: Bluesky follow dropped on native feed to create new deep feed
+            else if (dragType === "blueskyFollow" && !isOverDeepFeed && targetFeedId) {
+                const storedDeepFeeds = JSON.parse(localStorage.getItem("deepFeeds") || "[]");
+                if (storedDeepFeeds.length === (hasMembership ? 500 : 5)) {
+                    setFeedLimitReached(true);
+                    setTimeout(() => setFeedLimitReached(false), 20000);
+                } else {
+                    const sourceFollow = activeDragItem;
+                    const targetFeed = feeds.find(f => f?.feed_id.toString() === targetFeedId);
+                    if (sourceFollow && targetFeed) {
+                        setPendingDeepFeed({ sourceFollow, targetFeed });
+                        setNameModalOpen(true);
+                    }
+                }
+            }
+            //Case 5: Native feed dropped on bluesky follow to create new deep feed
+            else if (dragType === "feed" && !isOverDeepFeed && targetBlueskyDid) {
+                const storedDeepFeeds = JSON.parse(localStorage.getItem("deepFeeds") || "[]");
+                if (storedDeepFeeds.length === (hasMembership ? 500 : 5)) {
+                    setFeedLimitReached(true);
+                    setTimeout(() => setFeedLimitReached(false), 20000);
+                } else {
+                    const sourceFeed = activeDragItem;
+                    const targetFollow = blueskyFollows.find(f => f?.did === targetBlueskyDid);
+                    if (sourceFeed && targetFollow) {
+                        setPendingDeepFeed({ sourceFeed, targetFollow });
+                        setNameModalOpen(true);
+                    }
+                }
+            }
+            //Case 6: Two bluesky follows combine to create new deep feed
+            else if (dragType === "blueskyFollow" && !isOverDeepFeed && targetBlueskyDid) {
+                const storedDeepFeeds = JSON.parse(localStorage.getItem("deepFeeds") || "[]");
+                if (storedDeepFeeds.length === (hasMembership ? 500 : 5)) {
+                    setFeedLimitReached(true);
+                    setTimeout(() => setFeedLimitReached(false), 20000);
+                } else {
+                    const sourceFollow = activeDragItem;
+                    const targetFollow = blueskyFollows.find(f => f?.did === targetBlueskyDid);
+                    if (sourceFollow && targetFollow && sourceFollow?.did !== targetFollow?.did) {
+                        setPendingDeepFeed({ sourceFollow, targetFollow });
                         setNameModalOpen(true);
                     }
                 }
@@ -254,20 +349,40 @@ const BaseLayout = () => {
 
     const nameModalConfirm = async (deepFeedName) => {
         if (!pendingDeepFeed) return;
-        const { sourceFeed, targetFeed } = pendingDeepFeed;
+        const { sourceFeed, targetFeed, sourceFollow, targetFollow } = pendingDeepFeed;
         try {
+            //Build arrays for feeds and bluesky DIDs
+            const feedsToInclude = [];
+            const blueskyDidsToInclude = [];
+            if (sourceFeed) feedsToInclude.push(sourceFeed.feed_id);
+            if (targetFeed) feedsToInclude.push(targetFeed.feed_id);
+            if (sourceFollow) blueskyDidsToInclude.push(sourceFollow.did);
+            if (targetFollow) blueskyDidsToInclude.push(targetFollow.did);
             const payload = {
                 viewerId: viewer?.feed_id,
                 deepFeedName,
-                feedsToInclude: [sourceFeed?.feed_id, targetFeed?.feed_id]
+                feedsToInclude: feedsToInclude.length > 0 ? feedsToInclude : undefined,
+                blueskyDidsToInclude: blueskyDidsToInclude.length > 0 ? blueskyDidsToInclude : undefined
             };
             const { data } = await api.post("/create_deep_feed", payload);
             if (data.success && data?.deepFeed) {
+                //Build the feeds array for local state
+                const feedsArray = [];
+                if (data.feedsToInclude) {
+                    data.feedsToInclude.forEach(id => {
+                        const feed = feeds.find(f => f?.feed_id === id);
+                        if (feed) feedsArray.push({ feed });
+                    });
+                }
+                if (data.blueskyDidsToInclude) {
+                    data.blueskyDidsToInclude.forEach(did => {
+                        const follow = blueskyFollows.find(f => f?.did === did);
+                        if (follow) feedsArray.push({ bluesky_did: did, follow });
+                    });
+                }
                 const newDeepFeed = {
                     ...data.deepFeed,
-                    feeds: data.feedsToInclude.map(id => ({ 
-                        feed: feeds.find(f => f?.feed_id === id) 
-                    }))
+                    feeds: feedsArray
                 };
                 const storedDeepFeeds = JSON.parse(localStorage.getItem("deepFeeds") || "[]");
                 storedDeepFeeds.push(newDeepFeed);
@@ -315,10 +430,13 @@ const BaseLayout = () => {
                 ));
                 const storedDeepFeeds = JSON.parse(localStorage.getItem("deepFeeds")) || [];
                 setDeepFeeds(storedDeepFeeds);
+                const storedBlueskyFollows = JSON.parse(localStorage.getItem("blueskyFollows")) || [];
+                setBlueskyFollows(storedBlueskyFollows);
             }
             catch (error) {
                 setDeepFeeds([]);
                 setFeeds([]);
+                setBlueskyFollows([]);
             }
         })();
     }, [isAuthenticated, viewer?.feed_id]);
@@ -485,24 +603,27 @@ const BaseLayout = () => {
             const storedFeeds = JSON.parse(localStorage.getItem("followedFeeds")) || [];
             const storedDeepFeeds = JSON.parse(localStorage.getItem("deepFeeds")) || [];
             const storedUser = JSON.parse(localStorage.getItem("user")) || [];
+            const storedBlueskyFollows = JSON.parse(localStorage.getItem("blueskyFollows")) || [];
             const deepFeedsWithContents = storedDeepFeeds.map(df => {
                 const cachedContents = JSON.parse(
                     localStorage.getItem(`deepFeedContents_${df?.deep_feed_id}`)
                 ) || [];
                 return {
                     ...df,
-                    feeds: cachedContents, 
+                    feeds: cachedContents,
                 };
             });
-            setFeeds(storedFeeds.sort((a, b) => 
+            setFeeds(storedFeeds.sort((a, b) =>
                 a?.feed_name.localeCompare(b?.feed_name)
             ));
             setDeepFeeds(deepFeedsWithContents);
             setFeed(storedUser);
+            setBlueskyFollows(storedBlueskyFollows);
         } catch (error) {
             setAsideErrorMessage(error.response?.data?.message || "Error updating feeds");
             setFeeds([]);
             setDeepFeeds([]);
+            setBlueskyFollows([]);
         }
     }, []);
 
@@ -518,7 +639,7 @@ const BaseLayout = () => {
                 <div className="backdrop" onClick={closeDrawers} />
             )}
             <div className="container">
-                <SwipeableAside className={leftClasses} position="left"isOpen={mobileOpen === "left"} onClose={closeDrawers} forwardedRef={feedContainerRef}>
+                <SwipeableAside className={leftClasses} position="left" isOpen={mobileOpen === "left"} onClose={closeDrawers} forwardedRef={feedContainerRef}>
                     {isAuthenticated ? (
                         <>
                             <div className="left-aside-feed-info">
@@ -688,6 +809,9 @@ const BaseLayout = () => {
                                         {feeds?.map(feed => (
                                             <FeedItem key={feed?.feed_id} dragged={true} feed={feed} isChat={false} />
                                         ))}
+                                        {blueskyFollows?.map(follow => (
+                                            <BlueskyFollowItem key={follow?.did} follow={follow} />
+                                        ))}
                                     </ul>
                                 </nav>
                             </DndContext>
@@ -804,10 +928,10 @@ const BaseLayout = () => {
                     </div>
                 </main>
             </div>
-            <InputModal isOpen={nameModalOpen} onConfirm={nameModalConfirm} onCancel={nameModalCancel} title={pendingDeepFeed ? 
-                    `Combine ${pendingDeepFeed.sourceFeed?.feed_name} and ${pendingDeepFeed.targetFeed?.feed_name}` : 
+            <InputModal isOpen={nameModalOpen} onConfirm={nameModalConfirm} onCancel={nameModalCancel} title={pendingDeepFeed ?
+                    `Combine ${pendingDeepFeed.sourceFeed?.feed_name || pendingDeepFeed.sourceFollow?.display_name || pendingDeepFeed.sourceFollow?.handle} and ${pendingDeepFeed.targetFeed?.feed_name || pendingDeepFeed.targetFollow?.display_name || pendingDeepFeed.targetFollow?.handle}` :
                     'Name your combined feed'
-                } 
+                }
                 placeholder="Enter combined feed name..."
             />
             {!isAuthenticated && mobileOpen !== "left" && (

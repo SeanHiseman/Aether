@@ -216,7 +216,7 @@
 .deep-feed-container.drop-target-active {
     background-color: var(--dark);
     border: 2px dashed var(--light);
-    border-radius: calc(clamp(4px, 1vw, 10px) + var(--medium-margin));  
+    border-radius: calc(clamp(3px, 0.8vw, 8px) + var(--small-margin));
     box-shadow: 0 0 8px var(--darkest);
 }
 .feed-list-item.drop-target {
@@ -225,7 +225,7 @@
 }
 .feed-list-item { 
     border: 2px solid transparent;
-    border-radius: calc(clamp(4px, 1vw, 10px) + var(--medium-margin));   
+    border-radius: calc(clamp(3px, 0.8vw, 8px) + var(--small-margin)); 
     position: relative;
     user-select: none;
     width: 100%;
@@ -241,7 +241,7 @@
 }
 .feed-list-link-container {
   align-items: center;
-  border-radius: calc(clamp(4px, 1vw, 10px) + var(--small-margin));
+  border-radius: calc(clamp(3px, 0.8vw, 8px) + var(--small-margin));
   display: flex;
   justify-content: space-between;
   padding: var(--small-margin);
@@ -307,6 +307,7 @@
   background-color: var(--darkest);
   display: flex;
   flex-direction: column;
+  overflow-x: hidden;
   overflow-y: auto;
   transform: translateZ(0); /*Needed for drag and drop rendering to work*/
 }
@@ -328,9 +329,6 @@
   color: var(--lightest);
   text-decoration: none;
 }
-.left-aside::-webkit-scrollbar, .right-aside::-webkit-scrollbar {
-  display: none; /*Hides scroll bar */
-}
 li {
   list-style-type: none;
 }
@@ -338,6 +336,11 @@ main {
   display: flex;
   flex-direction: column;
   width: 100%;
+}
+.medium-feed-photo {
+  aspect-ratio: 1 / 1;
+  border-radius: clamp(4px, 1vw, 10px);
+  width: clamp(30px, 6vw, 55px);
 }
 .mobile-auth-footer {
     display: none; /* Hidden by default (desktop) */
@@ -459,8 +462,8 @@ main {
 }
 .small-feed-photo {
   aspect-ratio: 1 / 1;
-  border-radius: clamp(4px, 1vw, 10px);
-  width: clamp(30px, 6vw, 55px); /*Below 55px causes it to look weird*/
+  border-radius: clamp(3px, 0.8vw, 8px);
+  width: clamp(22px, 4vw, 36px);
 }
 .social-icon {
   aspect-ratio: 1 / 1;

@@ -2,7 +2,8 @@ import { Algorithms, AlgorithmLocations } from '../custom_algorithms/algorithmRe
 import authenticateCheck from '../functions/checks/authenticateCheck.js';
 import { compare, hash } from 'bcrypt';
 import { Chats, Connections, ConnectRequests, DeepFeeds, Feeds, FeedChannels, Followers, FeedChats, Messages, Posts, PostDrafts, PostNotes, PostVotes, SavedPostChannels, Users, ViewedPosts } from '../models/relationships.js'; 
-import { ConnectedAccounts } from '../models/users.js';
+import { ExternalFollows, ConnectedAccounts } from '../models/users.js';
+import fetch from 'node-fetch';
 import crypto from 'crypto';
 import { decrypt } from '../functions/encryptionUtil.js';
 import DeleteMedia from '../functions/media_handling/deleteMedia.js';
@@ -200,6 +201,15 @@ router.get('/auth/google/callback', passport.authenticate('google', { failureRed
             order: [['updated_at', 'DESC']],
             limit: 100
         });
+        //Fetch Bluesky follows if user has Bluesky connected
+        let blueskyFollows = [];
+        const hasBluesky = connectedAccounts.some(a => a.platform === 'bluesky');
+        if (hasBluesky) {
+            blueskyFollows = await ExternalFollows.findAll({
+                where: { user_id: user.user_id, platform: 'bluesky' },
+                order: [['display_name', 'ASC'], ['handle', 'ASC']]
+            });
+        }
         await Users.update(
             { last_active_at: loginTime },
             { where: { user_id: user.user_id } }
@@ -221,6 +231,7 @@ router.get('/auth/google/callback', passport.authenticate('google', { failureRed
                 is_new_user: isNewUser
             },
             algorithms,
+            blueskyFollows,
             connectedAccounts,
             deepFeeds,
             followedFeeds: normalizedFollowedFeeds,
@@ -245,6 +256,242 @@ router.get('/auth/google/data', authenticateCheck, async (req, res) => {
     } catch (error) {
         console.error(new Date().toISOString(), '/auth/google/data error:', error);
         return res.status(500).json({ success: false });
+    }
+});
+
+//Bluesky login/signup - handles both existing and new users
+router.post('/auth/bluesky/login', loginLimiter, async (req, res) => {
+    let transaction;
+    try {
+        await new Promise((resolve, reject) => {
+            req.session.regenerate(err => {
+                if (err) reject(err);
+                else resolve();
+            });
+        });
+        const { identifier, appPassword } = req.body;
+        if (!identifier || !appPassword) {
+            return res.status(400).json({ success: false, message: 'Handle and app password are required' });
+        }
+        //Authenticate with Bluesky
+        const sessionResponse = await fetch('https://bsky.social/xrpc/com.atproto.server.createSession', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ identifier, password: appPassword })
+        });
+        if (!sessionResponse.ok) {
+            return res.status(401).json({ success: false, message: 'Invalid Bluesky handle or app password' });
+        }
+        const sessionData = await sessionResponse.json();
+        const blueskyDid = sessionData.did;
+        const accessJwt = sessionData.accessJwt;
+        const refreshJwt = sessionData.refreshJwt;
+        //Fetch Bluesky profile
+        const profileResponse = await fetch(`https://bsky.social/xrpc/app.bsky.actor.getProfile?actor=${encodeURIComponent(blueskyDid)}`, {
+            headers: { 'Authorization': `Bearer ${accessJwt}` }
+        });
+        let profileData = {};
+        if (profileResponse.ok) {
+            profileData = await profileResponse.json();
+        }
+        //Check if user exists by bluesky_did
+        let user = await Users.findOne({ where: { bluesky_did: blueskyDid } });
+        const isNewUser = !user;
+        if (isNewUser) {
+            //Create new user
+            transaction = await sequelize.transaction();
+            const user_id = v4();
+            let username = profileData.handle?.replace(/\.bsky\.social$/, '').replace(/[^a-zA-Z0-9_]/g, '_').substring(0, 30) || `user_${user_id.substring(0, 8)}`;
+            //Ensure username is unique
+            let finalUsername = username;
+            let counter = 1;
+            while (await Users.findOne({ where: { username: finalUsername } })) {
+                finalUsername = `${username}_${counter}`;
+                counter++;
+            }
+            const UserSince = new Date();
+            const subscriptionExpiresAt = new Date();
+            subscriptionExpiresAt.setFullYear(subscriptionExpiresAt.getFullYear() + 1);
+            //Create user with dummy email (Bluesky doesn't provide email)
+            const dummyEmail = `${blueskyDid}@bluesky.local`;
+            user = await Users.create({
+                email: dummyEmail,
+                user_id,
+                username: finalUsername,
+                password: await hash(crypto.randomBytes(32).toString('hex'), 10),
+                UserSince,
+                email_verified: true,
+                bluesky_did: blueskyDid,
+                has_membership: true,
+                subscription_expires_at: subscriptionExpiresAt,
+            }, { transaction });
+            //Create feed with Bluesky avatar
+            const feed_photo = profileData.avatar || process.env.DEFAULT_USER_IMAGE;
+            const feed_id = v4();
+            await Feeds.create({
+                feed_id,
+                feed_name: finalUsername,
+                description: profileData.description?.substring(0, 200) || '',
+                feed_photo,
+                type: 'public',
+                is_group: false,
+                feed_owner: user_id
+            }, { transaction });
+            //Create main channel
+            const channel_id = v4();
+            await FeedChannels.create({
+                channel_id,
+                channel_name: 'Main',
+                feed_id,
+                is_chat: false
+            }, { transaction });
+            await SavedPostChannels.create({
+                channel_id: v4(),
+                saver_id: feed_id,
+                channel_name: 'Main',
+                display_order: 0
+            }, { transaction });
+            await transaction.commit();
+            transaction = null;
+        } else {
+            //Update bluesky_did if not set (for existing users connecting Bluesky)
+            if (!user.bluesky_did) {
+                await user.update({ bluesky_did: blueskyDid });
+            }
+        }
+        //Store/update connected account credentials
+        await ConnectedAccounts.upsert({
+            user_id: user.user_id,
+            platform: 'bluesky',
+            handle: identifier,
+            instance_url: 'https://bsky.social',
+            access_token: accessJwt,
+            refresh_token: refreshJwt,
+            extra: JSON.stringify(sessionData)
+        });
+        //Fetch and store Bluesky follows
+        let blueskyFollows = [];
+        try {
+            let cursor = null;
+            const allFollows = [];
+            do {
+                const followsUrl = cursor
+                    ? `https://bsky.social/xrpc/app.bsky.graph.getFollows?actor=${encodeURIComponent(blueskyDid)}&limit=100&cursor=${cursor}`
+                    : `https://bsky.social/xrpc/app.bsky.graph.getFollows?actor=${encodeURIComponent(blueskyDid)}&limit=100`;
+                const followsResponse = await fetch(followsUrl, {
+                    headers: { 'Authorization': `Bearer ${accessJwt}` }
+                });
+                if (followsResponse.ok) {
+                    const followsData = await followsResponse.json();
+                    allFollows.push(...(followsData.follows || []));
+                    cursor = followsData.cursor;
+                } else {
+                    break;
+                }
+            } while (cursor);
+            //Store follows in database
+            for (const follow of allFollows) {
+                await ExternalFollows.upsert({
+                    id: v4(),
+                    user_id: user.user_id,
+                    did: follow.did,
+                    handle: follow.handle,
+                    display_name: follow.displayName || null,
+                    avatar: follow.avatar || null,
+                    description: follow.description || null,
+                    platform: 'bluesky',
+                });
+            }
+            //Fetch stored follows
+            blueskyFollows = await ExternalFollows.findAll({
+                where: { user_id: user.user_id, platform: 'bluesky' },
+                order: [['display_name', 'ASC'], ['handle', 'ASC']]
+            });
+        } catch (followsError) {
+            console.error(new Date().toISOString(), 'Error fetching Bluesky follows:', followsError);
+        }
+        //Get user feed and other data
+        const feed = await Feeds.findOne({ where: { feed_owner: user.user_id, is_group: false } });
+        const loginTime = new Date();
+        req.session.user_id = user.user_id;
+        req.session.username = user.username;
+        req.session.email = user.email;
+        req.session.has_membership = user.has_membership;
+        req.session.viewer_id = feed.feed_id;
+        req.session.last_active_at = loginTime;
+        const connectedAccounts = await ConnectedAccounts.findAll({
+            where: { user_id: user.user_id },
+            attributes: ['platform', 'handle', 'instance_url', 'extra']
+        });
+        const algorithms = await Algorithms.findAll({
+            where: { viewer_id: feed.feed_id },
+            include: [{
+                model: AlgorithmLocations,
+                as: 'algorithm_locations'
+            }],
+            order: [['algorithm_name', 'ASC']]
+        });
+        const followedFeeds = await Followers.findAll({
+            where: { follower_id: feed.feed_id },
+            include: [{
+                model: Feeds,
+                as: 'followedFeed'
+            }],
+            order: [['followedFeed', 'feed_name', 'ASC']]
+        });
+        const normalizedFollowedFeeds = followedFeeds.map(follow => ({
+            feed_id: follow.followedFeed.feed_id,
+            feed_name: follow.followedFeed.feed_name,
+            feed_photo: follow.followedFeed.feed_photo,
+            link_type: follow.link_type,
+            is_group: follow.followedFeed.is_group
+        }));
+        const deepFeeds = await DeepFeeds.findAll({
+            where: { owner_id: feed.feed_id, parent_id: null },
+            order: [['name', 'ASC']]
+        });
+        const recentUpvotes = await PostVotes.findAll({
+            attributes: ['post_id'],
+            where: {
+                voter_id: feed.feed_id,
+                upvotes: { [Op.gt]: 0 },
+                downvotes: { [Op.lte]: 0 }
+            },
+            order: [['updated_at', 'DESC']],
+            limit: 100
+        });
+        await Users.update(
+            { last_active_at: loginTime },
+            { where: { user_id: user.user_id } }
+        );
+        res.status(200).json({
+            success: true,
+            user: {
+                user_id: user.user_id,
+                feed_name: user.username,
+                email: user.email,
+                has_membership: user.has_membership,
+                theme: user.theme,
+                usage_count: user.usage_count,
+                storage_count: user.storage_count,
+                viewer_id: feed.feed_id,
+                feed_photo: feed.feed_photo,
+                follow_requests: feed.follow_requests,
+                connections: feed.connections,
+                connect_requests: feed.connect_requests,
+                is_new_user: isNewUser
+            },
+            algorithms,
+            blueskyFollows,
+            connectedAccounts,
+            deepFeeds,
+            followedFeeds: normalizedFollowedFeeds,
+            recentUpvotes
+        });
+    } catch (error) {
+        console.error(new Date().toISOString(), '/auth/bluesky/login error:', error);
+        if (transaction) await transaction.rollback();
+        res.status(500).json({ success: false, message: 'Authentication failed' });
     }
 });
 
@@ -557,7 +804,7 @@ router.post('/login', loginLimiter, async (req, res) => {
             });
             const recentUpvotes = await PostVotes.findAll({
                 attributes: ['post_id'],
-                where: { 
+                where: {
                     voter_id: feed.feed_id,
                     upvotes: { [Op.gt]: 0 },
                     downvotes: { [Op.lte]: 0 }
@@ -565,12 +812,21 @@ router.post('/login', loginLimiter, async (req, res) => {
                 order: [['updated_at', 'DESC']], //Most recent upvotes
                 limit: 100
             });
+            //Fetch Bluesky follows if user has Bluesky connected
+            let blueskyFollows = [];
+            const hasBluesky = connectedAccounts.some(a => a.platform === 'bluesky');
+            if (hasBluesky) {
+                blueskyFollows = await ExternalFollows.findAll({
+                    where: { user_id: user.user_id, platform: 'bluesky' },
+                    order: [['display_name', 'ASC'], ['handle', 'ASC']]
+                });
+            }
             await Users.update(
                 { last_active_at: loginTime },
                 { where: { user_id: user.user_id },
             });
-            res.status(200).json({ 
-                success: true, 
+            res.status(200).json({
+                success: true,
                 user: {
                     user_id: user.user_id,
                     feed_name: user.username,
@@ -586,11 +842,12 @@ router.post('/login', loginLimiter, async (req, res) => {
                     connect_requests: feed.connect_requests //Connect request count
                 },
                 algorithms,
+                blueskyFollows,
                 connectedAccounts, //External social media accounts
                 connections: connectionFeeds, //Users that have been connected with
                 connectionChats: connectionChatsMap, //Chats with other users
                 deepFeeds,
-                followedFeeds: normalizedFollowedFeeds, 
+                followedFeeds: normalizedFollowedFeeds,
                 recentUpvotes,
             });
         }

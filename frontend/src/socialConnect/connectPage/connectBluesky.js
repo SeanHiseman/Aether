@@ -18,7 +18,7 @@ const ConnectBluesky = () => {
 		e.preventDefault();
 		setIsSubmitting(true);
 		setErrorMessage('');
-		
+
 		try {
 			const response = await api.post('/auth/bluesky', {
 				identifier: handle,
@@ -37,6 +37,10 @@ const ConnectBluesky = () => {
 					}
 				];
 				localStorage.setItem("connectedAccounts", JSON.stringify(updated));
+				//Store bluesky follows in localStorage
+				if (response.data?.blueskyFollows) {
+					localStorage.setItem("blueskyFollows", JSON.stringify(response.data.blueskyFollows));
+				}
 				//Store posts in sessionStorage BEFORE navigating
 				const cacheKey = 'bluesky_initial_posts';
 				sessionStorage.setItem(cacheKey, JSON.stringify(response.data.posts));
@@ -63,11 +67,14 @@ const ConnectBluesky = () => {
 					<p className="small-text faded-text">Your details are sent directly to Bluesky. We do not see or store them.</p>
 					<input className="authentication-input-box" placeholder="Bluesky handle (e.g. alice.bsky.social)" required value={handle} onChange={(e) => setHandle(e.target.value)} />
 					<div className="password-container">
-						<input type={showPassword ? 'text' : 'password'} className="authentication-input-box" placeholder="Bluesky password" required value={appPassword} onChange={(e) => setAppPassword(e.target.value)} />
+						<input type={showPassword ? 'text' : 'password'} className="authentication-input-box" placeholder="App password (recommended)" required value={appPassword} onChange={(e) => setAppPassword(e.target.value)} />
 						<button type="button" className="small-icon" onClick={() => setShowPassword(!showPassword)}>
 							{showPassword ? <FaEyeSlash /> : <FaEye />}
 						</button>
 					</div>
+					<p className="tiny-text faded-text">
+						For security, use an app password. Create one at <a href="https://bsky.app/settings/app-passwords" target="_blank" rel="noopener noreferrer">bsky.app/settings/app-passwords</a>
+					</p>
 					<input type="submit" value="Connect Bluesky" className={`submit${isDisabled ? ' disabled' : ''}`} disabled={isDisabled} />
 				</form>
 			</div>

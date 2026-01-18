@@ -70,7 +70,8 @@ export default function SocialFeedPage({ platform }) {
 				setPosts(items);
 			}
 			const returnedCount = items.length;
-			if (returnedCount === 0) { //May also be because some posts filtered out
+			//Use hasMore from response, fallback to checking returnedCount
+			if (response.data?.hasMore === false || returnedCount === 0) {
 				setHasMore(false);
 			} else {
 				setOffset(prev => prev + returnedCount);

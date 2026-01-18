@@ -24,6 +24,7 @@ const GoogleAuthSuccess = () => {
                 const response = await api.get('/auth/google/data');
                 if (response.data?.success) {
                     localStorage.setItem("algorithms", JSON.stringify(response.data?.algorithms || []));
+                    localStorage.setItem("blueskyFollows", JSON.stringify(response.data?.blueskyFollows || []));
                     localStorage.setItem("connectedAccounts", JSON.stringify(response.data?.connectedAccounts || []));
                     localStorage.setItem("deepFeeds", JSON.stringify(response.data?.deepFeeds || []));
                     localStorage.setItem("followedFeeds", JSON.stringify(response.data?.followedFeeds || []));

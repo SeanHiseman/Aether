@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useDroppable } from '@dnd-kit/core';
 import { FaChevronDown, FaChevronUp } from 'react-icons/fa';
 import { Link, useLocation } from 'react-router-dom';
+import BlueskyFollowItem from './blueskyFollowItem';
 import FeedItem from './feedItem';
 
 const DeepFeedItem = ({ deepFeed, onFeedAdded, showHeader }) => {
@@ -124,15 +125,37 @@ const DeepFeedItem = ({ deepFeed, onFeedAdded, showHeader }) => {
 					{loading ? (
 						<p className="small-text faded-text">Loading...</p>
 					) : (
-						contents.map(item => (
-							<FeedItem 
-								key={item?.feed?.feed_id} 
-								id={item?.feed?.feed_id.toString()} 
-								feed={item?.feed} 
-								isChat={false} 
-								parentDeepFeedId={deepFeed?.deep_feed_id} 
-							/>
-						))
+						contents.map(item => {
+							//Render BlueskyFollowItem for external accounts
+							if (item?.externalAccount || (item?.bluesky_did && !item?.feed_id)) {
+								const follow = item.externalAccount || {
+									did: item.bluesky_did,
+									handle: item.bluesky_did,
+									display_name: null,
+									avatar: null
+								};
+								return (
+									<BlueskyFollowItem
+										key={`external-${follow.did}`}
+										follow={follow}
+										parentDeepFeedId={deepFeed?.deep_feed_id}
+									/>
+								);
+							}
+							//Render FeedItem for native feeds
+							if (item?.feed?.feed_id) {
+								return (
+									<FeedItem
+										key={item.feed.feed_id}
+										id={item.feed.feed_id.toString()}
+										feed={item.feed}
+										isChat={false}
+										parentDeepFeedId={deepFeed?.deep_feed_id}
+									/>
+								);
+							}
+							return null;
+						})
 					)}
 				</div>
 			)}

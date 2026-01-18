@@ -1,11 +1,12 @@
 import api from '../../api';
-import { useEffect, useState } from 'react';
-import { FaEye, FaEyeSlash } from 'react-icons/fa';
+import { useContext, useEffect, useState } from 'react';
+import { FaChevronDown, FaChevronUp, FaEye, FaEyeSlash } from 'react-icons/fa';
 import { FcGoogle } from 'react-icons/fc';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { ThemeContext } from '../../themeProvider';
 import { ValidateEmail } from '../../functions/validateEmail';
 import { ValidateTextInput } from '../../functions/validateTextInput';
-import '../../css/authentication.css'; 
+import '../../css/authentication.css';
 import '../../css/basicStyles.css';
 
 const Join = () => {
@@ -16,10 +17,47 @@ const Join = () => {
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [username, setUsername] = useState('');
+    const [showBlueskyForm, setShowBlueskyForm] = useState(false);
+    const [blueskyHandle, setBlueskyHandle] = useState('');
+    const [blueskyAppPassword, setBlueskyAppPassword] = useState('');
+    const [showBlueskyPassword, setShowBlueskyPassword] = useState(false);
+    const [blueskyLoading, setBlueskyLoading] = useState(false);
+    const { refreshTheme } = useContext(ThemeContext);
     const location = useLocation();
     const navigate = useNavigate();
     const emailValidation = ValidateEmail(email);
     const isDisabled = !confirmPassword || !email || !password || !username || !emailValidation.valid || password !== confirmPassword || Boolean(errorMessage);
+    const isBlueskyDisabled = !blueskyHandle || !blueskyAppPassword || blueskyLoading;
+
+    const handleBlueskyJoin = async (event) => {
+        event.preventDefault();
+        setBlueskyLoading(true);
+        try {
+            const response = await api.post('/auth/bluesky/login', {
+                identifier: blueskyHandle,
+                appPassword: blueskyAppPassword
+            });
+            if (response.data?.success) {
+                localStorage.setItem("algorithms", JSON.stringify(response.data?.algorithms || []));
+                localStorage.setItem("blueskyFollows", JSON.stringify(response.data?.blueskyFollows || []));
+                localStorage.setItem("connectedAccounts", JSON.stringify(response.data?.connectedAccounts || []));
+                localStorage.setItem("deepFeeds", JSON.stringify(response.data?.deepFeeds || []));
+                localStorage.setItem("followedFeeds", JSON.stringify(response.data?.followedFeeds || []));
+                localStorage.setItem("recentUpvotes", JSON.stringify(response.data?.recentUpvotes || []));
+                localStorage.setItem("user", JSON.stringify(response.data?.user));
+                await refreshTheme();
+                const isNewUser = response.data?.user?.is_new_user;
+                const from = isNewUser ? '/help' : '/explore';
+                navigate(from, { replace: true });
+            }
+        } catch (error) {
+            const message = error.response?.data?.message;
+            setErrorMessage(message || 'Invalid Bluesky credentials');
+            setTimeout(() => setErrorMessage(''), 5000);
+        } finally {
+            setBlueskyLoading(false);
+        }
+    };
 
     const handleGoogleLogin = () => {
         window.location.href = `${window.location.origin}/api/auth/google`;
@@ -83,6 +121,49 @@ const Join = () => {
                     <FcGoogle size={20} />
                     <span>Join with Google</span>
                 </button>
+                <button
+                    type="button"
+                    onClick={() => setShowBlueskyForm(!showBlueskyForm)}
+                    className="bluesky-oauth-button"
+                    style={{ width: '100%', marginTop: '10px' }}
+                >
+                    <img src="/media/site_images/social_sites/bluesky-logo.png" alt="Bluesky" style={{ width: 20, height: 20 }} />
+                    <span>Join with Bluesky</span>
+                    {showBlueskyForm ? <FaChevronUp size={12} /> : <FaChevronDown size={12} />}
+                </button>
+                {showBlueskyForm && (
+                    <form className="bluesky-form" onSubmit={handleBlueskyJoin}>
+                        <input
+                            className="authentication-input-box"
+                            name="bluesky-handle"
+                            placeholder="Bluesky handle (e.g. user.bsky.social)"
+                            value={blueskyHandle}
+                            onChange={(e) => setBlueskyHandle(e.target.value)}
+                        />
+                        <div className="password-container">
+                            <input
+                                type={showBlueskyPassword ? "text" : "password"}
+                                className="authentication-input-box"
+                                name="bluesky-password"
+                                placeholder="App password (recommended)"
+                                value={blueskyAppPassword}
+                                onChange={(e) => setBlueskyAppPassword(e.target.value)}
+                            />
+                            <button type="button" className="small-icon" onClick={() => setShowBlueskyPassword(!showBlueskyPassword)}>
+                                {showBlueskyPassword ? <FaEyeSlash /> : <FaEye />}
+                            </button>
+                        </div>
+                        <p className="tiny-text faded-text">
+                            For security, use an app password. Create one at <a href="https://bsky.app/settings/app-passwords" target="_blank" rel="noopener noreferrer">bsky.app/settings/app-passwords</a>
+                        </p>
+                        <input
+                            className={`submit${isBlueskyDisabled ? ' disabled' : ''}`}
+                            disabled={isBlueskyDisabled}
+                            type="submit"
+                            value={blueskyLoading ? "Joining..." : "Join with Bluesky"}
+                        />
+                    </form>
+                )}
                 <div className="divider-container">
                     <div className="divider-line" />
                     <span className="divider-text">or</span>

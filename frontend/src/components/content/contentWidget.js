@@ -301,7 +301,7 @@ const ContentWidget = ({ canRemove = false, display = false, feed, isDraft = fal
 			<div className="tree-reply-content">
 				<div className="feed-info">
 					<Link className="feed-link" to={`/u/${reply?.poster?.feed_name}`}>
-						<img className="small-feed-photo" src={`/${reply?.poster?.feed_photo}`} alt="Feed" />
+						<img className="medium-feed-photo" src={`/${reply?.poster?.feed_photo}`} alt="Feed" />
 						<p className="feed-list-text">{reply?.poster?.feed_name}</p>
 					</Link>
 				</div>
@@ -397,7 +397,7 @@ const ContentWidget = ({ canRemove = false, display = false, feed, isDraft = fal
 			<div className="content-metadata">
 				{!isDraft && (<div className="feed-info">
 					<Link className="feed-link" onClick={() => incrementViews(post?.post_id)} to={display ? '/welcome' : `/u/${post?.poster?.feed_name}`}>
-						<img className="small-feed-photo" src={`${post?.poster?.feed_photo}`} onError={(e) => e.currentTarget.src = '/media/site_images/blank-profile.png'} />
+						<img className="medium-feed-photo" src={`${post?.poster?.feed_photo}`} onError={(e) => e.currentTarget.src = '/media/site_images/blank-profile.png'} />
 						<p className="feed-list-text">{post?.poster?.feed_name ?? 'Anonymous'}</p>
 					</Link>
 				</div>)}

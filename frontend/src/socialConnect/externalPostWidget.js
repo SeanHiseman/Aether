@@ -94,7 +94,7 @@ const ExternalPostWidget = ({ post }) => {
 			<div className="content-metadata">
 				<div className="feed-info">
 					<a className="feed-link" target="_blank" rel="noopener noreferrer" href={post?.poster?.profile_url}>
-						<img className="small-feed-photo" src={normaliseAvatar(post?.poster?.user_photo)} onError={(e) => e.currentTarget.src = '/media/site_images/blank-profile.png'} />
+						<img className="medium-feed-photo" src={normaliseAvatar(post?.poster?.user_photo)} onError={(e) => e.currentTarget.src = '/media/site_images/blank-profile.png'} />
 						<p className="feed-list-text">{post?.poster?.username ?? 'Anonymous'}</p>
 					</a>
 				</div>
@@ -102,18 +102,18 @@ const ExternalPostWidget = ({ post }) => {
 					<div className="post-button-group">
 						{isVote && (
 							<>
-								<button className="large-icon compact">
+								<button className="large-icon compact" style={{ backgroundColor: 'transparent', pointerEvents: 'auto' }}>
 									<FaArrowUp />
 								</button>
 								<p className="small-text compact">{FormatNumber(post?.score)}</p>
-								<button className="large-icon compact">
+								<button className="large-icon compact" style={{ backgroundColor: 'transparent', pointerEvents: 'auto' }}>
 									<FaArrowDown />
 								</button>
 							</>
 						)}
 						{isLike && (
 							<>
-								<button className="large-icon compact">
+								<button className="large-icon compact" style={{ backgroundColor: 'transparent', pointerEvents: 'auto' }}>
 									<FaHeart />
 								</button>
 								<p className="small-text compact">{FormatNumber(post?.score)}</p>
@@ -126,11 +126,6 @@ const ExternalPostWidget = ({ post }) => {
 						<FaComments />
 						<p className="small-text compact">{post?.replies}</p>
 					</a>
-				</div>
-				<div className="button-text-bottom">
-					<button className="large-icon compact">
-						<FaRegBookmark />
-					</button>
 				</div>
 				<a href={post?.url} target="_blank" rel="noopener noreferrer">
 					<p className="small-text compact feed-channel-link faded-text">See post at {sourceLabel}</p>

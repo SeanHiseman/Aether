@@ -13,24 +13,39 @@ const openai = new OpenAI({
 const router = Router();
 
 router.post('/assign_algorithm', authenticateCheck, async (req, res) => {
-	let transaction;
 	try {
-		transaction = await sequelize.transaction();
 		const { algorithmId, locationId } = req.body;
-		//console.log("assigning algorithm", algorithmId, "to:", locationId);
 		const viewerId = req.session.viewer_id;
-		const [record, created] = await AlgorithmLocations.findOrCreate({
-			where: { location_id: locationId, viewer_id: viewerId },
-			defaults: { id: v4(), algorithm_id: algorithmId },
-			transaction
+		//Check if record exists
+		const existing = await AlgorithmLocations.findOne({
+			where: { location_id: locationId, viewer_id: viewerId }
 		});
-		if (!created) {
-			await record.update({ algorithm_id: algorithmId }, { transaction });
-		} 
-		await transaction.commit();
+		if (existing) {
+			await existing.update({ algorithm_id: algorithmId });
+		} else {
+			await AlgorithmLocations.create({
+				id: v4(),
+				algorithm_id: algorithmId,
+				location_id: locationId,
+				viewer_id: viewerId
+			});
+		}
 		res.status(200).json({ success: true });
 	} catch (error) {
-		if (transaction) await transaction.rollback();
+		//Handle race condition - if duplicate error, try update instead
+		if (error.name === 'SequelizeUniqueConstraintError') {
+			try {
+				const { algorithmId, locationId } = req.body;
+				const viewerId = req.session.viewer_id;
+				await AlgorithmLocations.update(
+					{ algorithm_id: algorithmId },
+					{ where: { location_id: locationId, viewer_id: viewerId } }
+				);
+				return res.status(200).json({ success: true });
+			} catch (retryError) {
+				console.error(new Date().toISOString(), "/assign_algorithm retry error:", retryError);
+			}
+		}
 		console.error(new Date().toISOString(), "/assign_algorithm error:", error);
 		res.status(500).json({ success: false, message: 'Failed to assign algorithm.' });
 	}
