@@ -479,7 +479,7 @@ const AddAlgorithm = ({ algorithms = [], display, editingAlgorithm = null, isAut
                             <div className="form-group">
                                 <div className="form-label-with-info">
                                     <label className="small-text">Content Variety</label>
-                                    <InfoIconWithTooltip info="Compares post similarity to your previously viewed posts." />
+                                    <InfoIconWithTooltip info="Compares post similarity to your previously upvoted posts." />
                                 </div>
                                 <input
                                     className="form-input"

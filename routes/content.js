@@ -360,6 +360,10 @@ router.post("/create_post", standardLimiter, authenticateCheck, checkStorageLimi
             result = await Posts.create(postData);
             await Feeds.increment('post_count', { by: 1, where: { feed_id } });
             await FeedChannels.increment('post_count', { by: 1, where: { channel_id } });
+            //Also increment post count for the user's personal feed
+            if (poster_id && poster_id !== feed_id) {
+                await Feeds.increment('post_count', { by: 1, where: { feed_id: poster_id } });
+            }
             if (draft) await PostDrafts.destroy({ where: { draft_id } });
         }
         //Create or update draft
@@ -396,6 +400,10 @@ router.post("/create_post", standardLimiter, authenticateCheck, checkStorageLimi
             result = await Posts.create(postData);
             await Feeds.increment('post_count', { by: 1, where: { feed_id } });
             await FeedChannels.increment('post_count', { by: 1, where: { channel_id } });
+            //Also increment post count for the user's personal feed
+            if (poster_id && poster_id !== feed_id) {
+                await Feeds.increment('post_count', { by: 1, where: { feed_id: poster_id } });
+            }
             if (parent_id) {
                 const parentPost = await Posts.findOne({ where: { post_id: parent_id } });
                 if (parentPost) {
@@ -563,6 +571,10 @@ router.delete('/remove_post', standardLimiter, authenticateCheck, async (req, re
 			await Posts.destroy({ where: { post_id: post.post_id }, transaction });
 			await Feeds.decrement('post_count', { by: 1, where: { feed_id: foundPost.feed_id }, transaction });
 			await FeedChannels.decrement('post_count', { by: 1, where: { channel_id: foundPost.channel_id }, transaction });
+			//Also decrement post count for the user's personal feed
+			if (foundPost.poster_id && foundPost.poster_id !== foundPost.feed_id) {
+				await Feeds.decrement('post_count', { by: 1, where: { feed_id: foundPost.poster_id }, transaction });
+			}
 		}
 		await transaction.commit();
 		return res.status(200).json({ success: true });
