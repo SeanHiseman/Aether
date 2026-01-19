@@ -1,5 +1,5 @@
 import api from '../../api';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useDroppable } from '@dnd-kit/core';
 import { FaChevronDown, FaChevronUp } from 'react-icons/fa';
 import { Link, useLocation } from 'react-router-dom';
@@ -12,6 +12,14 @@ const DeepFeedItem = ({ deepFeed, onFeedAdded, showHeader }) => {
 	const [isExpanded, setIsExpanded] = useState(false);
 	const [loading, setLoading] = useState(false);
 	const location = useLocation();
+
+	const blueskyFollows = useMemo(() => {
+		try {
+			return JSON.parse(localStorage.getItem("blueskyFollows") || "[]");
+		} catch {
+			return [];
+		}
+	}, []);
 
 	const { setNodeRef, isOver } = useDroppable({
 		id: `df-${deepFeed?.deep_feed_id}`,
@@ -127,13 +135,21 @@ const DeepFeedItem = ({ deepFeed, onFeedAdded, showHeader }) => {
 					) : (
 						contents.map(item => {
 							//Render BlueskyFollowItem for external accounts
-							if (item?.externalAccount || (item?.bluesky_did && !item?.feed_id)) {
-								const follow = item.externalAccount || {
-									did: item.bluesky_did,
-									handle: item.bluesky_did,
-									display_name: null,
-									avatar: null
-								};
+							if (item?.externalAccount || (item?.external_did && !item?.feed_id)) {
+								let follow = item.externalAccount;
+								if (!follow || !follow.display_name) {
+									const storedFollow = blueskyFollows.find(f => f.did === item.external_did);
+									if (storedFollow) {
+										follow = storedFollow;
+									} else {
+										follow = {
+											did: item.external_did,
+											handle: item.external_did,
+											display_name: null,
+											avatar: null
+										};
+									}
+								}
 								return (
 									<BlueskyFollowItem
 										key={`external-${follow.did}`}

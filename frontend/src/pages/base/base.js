@@ -252,7 +252,7 @@ const BaseLayout = () => {
                     ) || [];
                     //Check for duplicate
                     const alreadyExists = cachedContents.some(
-                        item => item?.bluesky_did === sourceFollow?.did
+                        item => item?.external_did === sourceFollow?.did
                     );
                     if (alreadyExists) {
                         setAsideErrorMessage("This Bluesky follow is already in the combined feed");
@@ -262,7 +262,7 @@ const BaseLayout = () => {
                     }
                     const payload = {
                         deepFeedId: targetDeepFeedId,
-                        blueskyDid: sourceFollow?.did
+                        externalDid: sourceFollow?.did
                     };
                     const { data } = await api.post("/add_to_deep_feed", payload);
                     if (data.success && deepFeedCallbacks[targetDeepFeedId]) {
@@ -377,7 +377,7 @@ const BaseLayout = () => {
                 if (data.blueskyDidsToInclude) {
                     data.blueskyDidsToInclude.forEach(did => {
                         const follow = blueskyFollows.find(f => f?.did === did);
-                        if (follow) feedsArray.push({ bluesky_did: did, follow });
+                        if (follow) feedsArray.push({ external_did: did, follow });
                     });
                 }
                 const newDeepFeed = {

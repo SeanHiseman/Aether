@@ -767,12 +767,12 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
             const deepFeedId = locationId.replace(/^deep_/, '');
             const contents = await DeepFeedContent.findAll({
                 where: { deep_feed_id: deepFeedId },
-                attributes: ['feed_id', 'bluesky_did'],
+                attributes: ['feed_id', 'external_did'],
                 raw: true
             });
             const allFeedIds = contents.map(c => c.feed_id).filter(Boolean);
-            const blueskyDids = contents.map(c => c.bluesky_did).filter(Boolean);
-            const hasExternalAccounts = blueskyDids.length > 0;
+            const externalDids = contents.map(c => c.external_did).filter(Boolean);
+            const hasExternalAccounts = externalDids.length > 0;
 			if (hasActiveAlgorithm) {
 				//Algorithm path
 				let nativePostIds = [];
@@ -796,7 +796,7 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
 						attributes: ['post_id'],
 						where: {
 							source: 'bluesky',
-							author_did: { [Op.in]: blueskyDids },
+							author_did: { [Op.in]: externalDids },
 							expired: false,
 							content: { [Op.ne]: null }
 						},
@@ -857,7 +857,7 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
 					const rawExternal = await ExternalPosts.findAll({
 						where: {
 							source: 'bluesky',
-							author_did: { [Op.in]: blueskyDids },
+							author_did: { [Op.in]: externalDids },
 							expired: false,
 							content: { [Op.ne]: null }
 						},

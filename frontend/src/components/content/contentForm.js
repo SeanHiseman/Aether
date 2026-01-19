@@ -1083,7 +1083,7 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
                                                             {type === BLOCK_TYPES.CODE && (
                                                                 <div className="block-content">
                                                                     {!data.showPrompt && isEditing && (
-                                                                        <p className="small-text faded-text">For now, only one HTML file with inline JavaScript and CSS can be created.</p>
+                                                                        <p className="small-text faded-text">One HTML file with inline JavaScript and CSS can be created. Malicious content will be removed</p>
                                                                     )}
                                                                     {isEditing && (
                                                                         <>

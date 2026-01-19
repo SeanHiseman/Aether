@@ -1,6 +1,7 @@
 import AlgorithmSelector from '../algorithms/algorithmSelector';
 import api from '../api';
 import { AuthContext } from '../components/authContext';
+import BlueskyFollowItem from '../components/channels/blueskyFollowItem';
 import ConfirmModal from '../components/modals/confirmModal';
 import ContentWidget from '../components/content/contentWidget';
 import ExternalPostWidget from '../socialConnect/externalPostWidget';
@@ -8,7 +9,7 @@ import { FaEdit, FaGlobe, FaHome, FaMinus, FaRegWindowClose, FaSave, FaTrash } f
 import FeedItem from '../components/channels/feedItem';
 import PlatformConnect from '../socialConnect/platformConnect';
 import SwipeableAside from '../components/swipeableAside';
-import { useCallback, useContext, useEffect, useRef, useState } from 'react';
+import { useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate, useOutletContext, useParams } from 'react-router-dom';
 import { ValidateTextInput } from '../functions/validateTextInput';
@@ -47,8 +48,16 @@ const DeepFeed = () => {
     const scrollRef = useRef(null);
     const navigate = useNavigate();
     const queryClient = useQueryClient();
-    const { rightClasses, updateFeeds, closeDrawers, mobileOpen } = useOutletContext(); 
+    const { rightClasses, updateFeeds, closeDrawers, mobileOpen } = useOutletContext();
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
+    const blueskyFollows = useMemo(() => {
+        try {
+            return JSON.parse(localStorage.getItem("blueskyFollows") || "[]");
+        } catch {
+            return [];
+        }
+    }, []);
     
     const isMobile = () => window.matchMedia("(max-width:768px)").matches;
     
@@ -79,9 +88,11 @@ const DeepFeed = () => {
         fetchContents();
     }, [deep_feed_id]);
 
-    const sortedContents = [...contents].sort((a, b) =>
-        (a?.feed?.feed_name || '').localeCompare(b?.feed?.feed_name || '')
-    );
+    const sortedContents = [...contents].sort((a, b) => {
+        const nameA = a?.feed?.feed_name || a?.externalAccount?.display_name || a?.externalAccount?.handle || '';
+        const nameB = b?.feed?.feed_name || b?.externalAccount?.display_name || b?.externalAccount?.handle || '';
+        return nameA.localeCompare(nameB);
+    });
 
     const cancelDelete = () => { setShowDeleteConfirm(false) };
 
@@ -249,8 +260,8 @@ const DeepFeed = () => {
                     return df;
                 });
                 localStorage.setItem("deepFeeds", JSON.stringify(updatedDeepFeeds));
-                window.dispatchEvent(new CustomEvent('deepFeedUpdated', { 
-                    detail: { deepFeedId: deep_feed_id } 
+                window.dispatchEvent(new CustomEvent('deepFeedUpdated', {
+                    detail: { deepFeedId: deep_feed_id }
                 }));
             } else {
                 setErrorMessage('Failed to remove feed');
@@ -258,6 +269,43 @@ const DeepFeed = () => {
             }
         } catch (error) {
             setErrorMessage(error.response?.data?.message || 'Error removing feed');
+            setTimeout(() => setErrorMessage(''), 5000);
+        }
+    };
+
+    const removeExternalAccount = async (externalDid) => {
+        try {
+            const response = await api.post('/remove_from_deep_feed', {
+                deepFeedId: deep_feed_id,
+                externalDid
+            });
+            if (response.data?.success) {
+                const updated = contents.filter(item => item?.external_did !== externalDid);
+                setContents(updated);
+                localStorage.setItem(
+                    `deepFeedContents_${deep_feed_id}`,
+                    JSON.stringify(updated)
+                );
+                const storedDeepFeeds = JSON.parse(localStorage.getItem("deepFeeds") || "[]");
+                const updatedDeepFeeds = storedDeepFeeds.map(df => {
+                    if (df.deep_feed_id === deep_feed_id) {
+                        return {
+                            ...df,
+                            feeds: updated
+                        };
+                    }
+                    return df;
+                });
+                localStorage.setItem("deepFeeds", JSON.stringify(updatedDeepFeeds));
+                window.dispatchEvent(new CustomEvent('deepFeedUpdated', {
+                    detail: { deepFeedId: deep_feed_id }
+                }));
+            } else {
+                setErrorMessage('Failed to remove account');
+                setTimeout(() => setErrorMessage(''), 5000);
+            }
+        } catch (error) {
+            setErrorMessage(error.response?.data?.message || 'Error removing account');
             setTimeout(() => setErrorMessage(''), 5000);
         }
     };
@@ -445,14 +493,40 @@ const DeepFeed = () => {
                     </div>}
                     {sortedContents.length > 0 && (
                         <ul className="feed-list">
-                            {sortedContents.map(item => (
-                                <li key={item?.feed?.feed_id} style={{ display: 'flex', alignItems: 'center' }}>
-                                    <button className="small-icon" onClick={() => removeFeed(item?.feed?.feed_id)} title="Remove from combined feed">
-                                        <FaMinus />
-                                    </button>
-                                    <FeedItem id={item?.feed?.feed_id.toString()} feed={item?.feed} isChat={false} parentDeepFeedId={deep_feed_id} />
-                                </li>
-                            ))}
+                            {sortedContents.map(item => {
+                                if (item?.externalAccount || (item?.external_did && !item?.feed_id)) {
+                                    let follow = item.externalAccount;
+                                    if (!follow || !follow.display_name) {
+                                        const storedFollow = blueskyFollows.find(f => f.did === item.external_did);
+                                        if (storedFollow) {
+                                            follow = storedFollow;
+                                        } else {
+                                            follow = {
+                                                did: item.external_did,
+                                                handle: item.external_did,
+                                                display_name: null,
+                                                avatar: null
+                                            };
+                                        }
+                                    }
+                                    return (
+                                        <li key={`external-${follow.did}`} style={{ display: 'flex', alignItems: 'center' }}>
+                                            <button className="small-icon" onClick={() => removeExternalAccount(follow.did)} title="Remove from combined feed">
+                                                <FaMinus />
+                                            </button>
+                                            <BlueskyFollowItem follow={follow} parentDeepFeedId={deep_feed_id} />
+                                        </li>
+                                    );
+                                }
+                                return (
+                                    <li key={item?.feed?.feed_id} style={{ display: 'flex', alignItems: 'center' }}>
+                                        <button className="small-icon" onClick={() => removeFeed(item?.feed?.feed_id)} title="Remove from combined feed">
+                                            <FaMinus />
+                                        </button>
+                                        <FeedItem id={item?.feed?.feed_id.toString()} feed={item?.feed} isChat={false} parentDeepFeedId={deep_feed_id} />
+                                    </li>
+                                );
+                            })}
                         </ul>
                     )}
                 </div>

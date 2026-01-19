@@ -364,14 +364,14 @@ router.post('/create_deep_feed', standardLimiter, authenticateCheck, async (req,
             content_id: v4(),
             deep_feed_id: deepFeed.deep_feed_id,
             feed_id: feedId,
-            bluesky_did: null
+            external_did: null
         }));
         //Create content entries for bluesky follows
         const blueskyContents = (blueskyDidsToInclude || []).map(did => ({
             content_id: v4(),
             deep_feed_id: deepFeed.deep_feed_id,
             feed_id: null,
-            bluesky_did: did
+            external_did: did
         }));
         await DeepFeedContent.bulkCreate([...feedContents, ...blueskyContents]);
         if (parentDeepFeedId) {
@@ -387,7 +387,7 @@ router.post('/create_deep_feed', standardLimiter, authenticateCheck, async (req,
                 await DeepFeedContent.destroy({
                     where: {
                         deep_feed_id: parentDeepFeedId,
-                        bluesky_did: { [Op.in]: blueskyDidsToInclude }
+                        external_did: { [Op.in]: blueskyDidsToInclude }
                     }
                 });
             }
@@ -395,7 +395,7 @@ router.post('/create_deep_feed', standardLimiter, authenticateCheck, async (req,
                 content_id: v4(),
                 deep_feed_id: parentDeepFeedId,
                 feed_id: null,
-                bluesky_did: null
+                external_did: null
             });
         }
         res.status(201).json({ success: true, deepFeed, feedsToInclude, blueskyDidsToInclude });
@@ -413,13 +413,13 @@ router.get('/deep_feed_contents/:deepFeedId', standardLimiter, authenticateCheck
             include: [{ model: Feeds, as: 'feed' }],
             raw: false
         });
-        //Fetch external account metadata for bluesky_did entries
+        //Fetch external account metadata for external_did entries
         const { ExternalAccountMeta } = await import('../models/content.js');
-        const blueskyDids = contents.filter(c => c.bluesky_did && !c.feed_id).map(c => c.bluesky_did);
+        const externalDids = contents.filter(c => c.external_did && !c.feed_id).map(c => c.external_did);
         let externalAccountsMap = new Map();
-        if (blueskyDids.length > 0) {
+        if (externalDids.length > 0) {
             const externalAccounts = await ExternalAccountMeta.findAll({
-                where: { account_id: blueskyDids, platform: 'bluesky' },
+                where: { account_id: externalDids, platform: 'bluesky' },
                 raw: true
             });
             externalAccountsMap = new Map(externalAccounts.map(a => [a.account_id, a]));
@@ -427,8 +427,8 @@ router.get('/deep_feed_contents/:deepFeedId', standardLimiter, authenticateCheck
         //Format contents to include external account info
         const formattedContents = contents.map(c => {
             const content = c.toJSON ? c.toJSON() : c;
-            if (content.bluesky_did && !content.feed_id) {
-                const externalAccount = externalAccountsMap.get(content.bluesky_did);
+            if (content.external_did && !content.feed_id) {
+                const externalAccount = externalAccountsMap.get(content.external_did);
                 return {
                     ...content,
                     externalAccount: externalAccount ? {
@@ -438,8 +438,8 @@ router.get('/deep_feed_contents/:deepFeedId', standardLimiter, authenticateCheck
                         avatar: externalAccount.avatar,
                         platform: 'bluesky'
                     } : {
-                        did: content.bluesky_did,
-                        handle: content.bluesky_did,
+                        did: content.external_did,
+                        handle: content.external_did,
                         display_name: null,
                         avatar: null,
                         platform: 'bluesky'
@@ -876,14 +876,19 @@ router.get('/get_saved_posts', standardLimiter, authenticateCheck, async (req, r
 
 router.post('/remove_from_deep_feed', higherLimiter, authenticateCheck, async (req, res) => {
     try {
-        const { deepFeedId, feedId } = req.body;
-        if (!feedId) {
+        const { deepFeedId, feedId, externalDid } = req.body;
+        if (!feedId && !externalDid) {
             return res.status(400).json({ success: false, message: 'Id missing' });
         }
         const where = {
-            deep_feed_id: deepFeedId,
-            feed_id: feedId
+            deep_feed_id: deepFeedId
         };
+        if (feedId) {
+            where.feed_id = feedId;
+        }
+        if (externalDid) {
+            where.external_did = externalDid;
+        }
         await DeepFeedContent.destroy({ where });
         res.status(200).json({ success: true });
     } catch (error) {
