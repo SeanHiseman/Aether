@@ -669,7 +669,7 @@ const AddAlgorithm = ({ algorithms = [], display, editingAlgorithm = null, isAut
                                 </label>
                             </div>
                         </div>
-                        <div className="create-header">
+                        <div className="create-header" style={{ justifyContent: 'end' }}>
                             {!display && isAuthenticated && <div>
                                 {editingAlgorithm && (
                                     <button className="button button--secondary" onClick={startCreatingNew} type="button" style={{ marginRight: '8px' }}>
