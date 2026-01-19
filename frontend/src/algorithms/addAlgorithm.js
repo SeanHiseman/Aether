@@ -471,7 +471,7 @@ const AddAlgorithm = ({ algorithms = [], display, editingAlgorithm = null, isAut
                                     onChange={e => setSentiment(parseFloat(e.target.value))}
                                 />
                                 <div className="slider-labels">
-                                    <span className="tiny-text">Negative</span>
+                                    <span className="tiny-text">Negative</span>_
                                     <span className="tiny-text">Neutral</span>
                                     <span className="tiny-text">Positive</span>
                                 </div>
@@ -668,6 +668,20 @@ const AddAlgorithm = ({ algorithms = [], display, editingAlgorithm = null, isAut
                                     /> Sun
                                 </label>
                             </div>
+                        </div>
+                        <div className="create-header">
+                            {!display && isAuthenticated && <div>
+                                {editingAlgorithm && (
+                                    <button className="button button--secondary" onClick={startCreatingNew} type="button" style={{ marginRight: '8px' }}>
+                                        Create New
+                                    </button>
+                                )}
+                                <button className="button button--success" onClick={submitAlgorithm} type="button" disabled={loading}>
+                                    {loading
+                                        ? editingAlgorithm ? 'Saving...' : 'Creating...'
+                                        : editingAlgorithm ? 'Save Changes' : 'Create'}
+                                </button>
+                            </div>}
                         </div>
                     </>
                 )}
