@@ -160,7 +160,7 @@
 }
 .welcome-container {
     align-items: center;
-    background-color: #00202a;
+    background-color: var(--darkest);
     display: flex;
     flex-direction: column;
     margin: 0;
