@@ -837,10 +837,10 @@ const BaseLayout = () => {
                                     <FaArrowRight />
                                     <p className="icon-text">Join</p>
                                 </Link>
-                                <button className="large-icon" onClick={() => navigate("/login", { state: { from: location.pathname } })} style={{ background: "none", border: "none", cursor: "pointer" }}>
+                                <Link to="/login" className="large-icon">
                                     <FaSignInAlt />
                                     <p className="icon-text">Login</p>
-                                </button>
+                                </Link>
                                 <p className="faded-text" style={{ marginTop: "20px" }}>
                                     Join or login for more
                                 </p>
