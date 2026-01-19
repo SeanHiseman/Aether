@@ -95,14 +95,9 @@ const Help = () => {
         width: '100%',
 	};
 	const dividerStyle = {
-		marginTop: 'calc(2.5 * var(--xl-margin))',
-		marginBottom: 'calc(1.5 * var(--xl-margin))',
+		marginBottom: 'var(--xl-margin)',
+        marginTop: 'var(--large-margin)',
 		textAlign: 'center'
-	};
-	const dividerLineStyle = {
-		height: '2px',
-		background: 'linear-gradient(90deg, transparent, var(--dark), transparent)',
-		marginBottom: 'var(--large-margin)'
 	};
 	const asideHeadingStyle = {
 		marginBottom: 'var(--medium-margin)',
@@ -149,7 +144,6 @@ const Help = () => {
 					</div>
 				))}
 				<div style={dividerStyle}>
-					<div style={dividerLineStyle}></div>
 					<div className="large-text">Frequently Asked Questions</div>
 				</div>
 				{faqs.map((faq) => (
