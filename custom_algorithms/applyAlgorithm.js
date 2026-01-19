@@ -38,144 +38,191 @@ function stripExcludedAttributes(posts) {
 	});
 }
 
+//Pre-normalize embeddings ONCE when loading algorithm
+function prepareAlgorithmEmbeddings(algorithmRow) {
+    const result = {
+        normalizedBoost: [],
+        normalizedSuppress: []
+    };
+    if (algorithmRow?.boost_embedding) {
+        let boostVecs = algorithmRow.boost_embedding;
+        if (typeof boostVecs === 'string') {
+            try { boostVecs = JSON.parse(boostVecs); } catch { boostVecs = []; }
+        }
+        if (Array.isArray(boostVecs)) {
+            result.normalizedBoost = boostVecs
+                .filter(bv => Array.isArray(bv) && bv.length > 0)
+                .map(bv => {
+                    const m = Math.sqrt(bv.reduce((a, b) => a + b * b, 0)) || 1;
+                    return bv.map(v => v / m);
+                });
+        }
+    }
+    if (algorithmRow?.suppress_embedding) {
+        let suppressVecs = algorithmRow.suppress_embedding;
+        if (typeof suppressVecs === 'string') {
+            try { suppressVecs = JSON.parse(suppressVecs); } catch { suppressVecs = []; }
+        }
+        if (Array.isArray(suppressVecs)) {
+            result.normalizedSuppress = suppressVecs
+                .filter(sv => Array.isArray(sv) && sv.length > 0)
+                .map(sv => {
+                    const m = Math.sqrt(sv.reduce((a, b) => a + b * b, 0)) || 1;
+                    return sv.map(v => v / m);
+                });
+        }
+    }
+    return result;
+}
+
+// Optimized cosine similarity for pre-normalized vectors
+function fastCosineSimilarity(a, b) {
+    let dot = 0;
+    for (let i = 0; i < a.length; i++) {
+        dot += a[i] * b[i];
+    }
+    return dot;
+}
+
 //Computes algorithm score for a single post
-function computeAlgorithmScore(post, { algorithmRow, voteImpact, sentiment, variety, normalisedRecentEmbeddings, recentUpvotePosts, timeLimits }) {
-	let postEmbedding = post.embeddings;
-	if (typeof postEmbedding === 'string') {
-		try { postEmbedding = JSON.parse(postEmbedding); } catch { postEmbedding = []; }
-	}
-	if (!Array.isArray(postEmbedding)) postEmbedding = [];
-	const magPost = Math.sqrt(postEmbedding.reduce((a, b) => a + b * b, 0)) || 1;
-	const normPost = postEmbedding.map(v => v / magPost);
-	//Time of day filtering
-	if (timeLimits.startTime && timeLimits.endTime) {
-		const createdAt = new Date(post.created_at || post.created_at_remote);
-		const postTime = `${String(createdAt.getHours()).padStart(2, "0")}:${String(createdAt.getMinutes()).padStart(2, "0")}`;
-		if (postTime < timeLimits.startTime || postTime > timeLimits.endTime) {
-			return null; // Filtered out
-		}
-	}
-	let algorithmScore = 0;
-	//When algorithm is applied, ranking is purely based on algorithmic factors
-	//(embeddings, sentiment, variety) - not hotness or votes
-	//Semantic boost/suppress using embeddings
-	if (algorithmRow?.boost_embedding || algorithmRow?.suppress_embedding) {
-		let semanticBoost = 0;
-		let semanticSuppress = 0;
-		if (algorithmRow.boost_embedding && normPost.length > 0) {
-			let boostVecs = algorithmRow.boost_embedding;
-			if (typeof boostVecs === 'string') {
-				try { boostVecs = JSON.parse(boostVecs); } catch { boostVecs = []; }
-			}
-			if (Array.isArray(boostVecs) && boostVecs.length) {
-				const normBoosts = boostVecs
-					.map(bv => (Array.isArray(bv) ? bv : null))
-					.filter(Boolean)
-					.map(bv => {
-						const m = Math.sqrt(bv.reduce((a, b) => a + b * b, 0)) || 1;
-						return bv.map(v => v / m);
-					});
-				const sims = normBoosts.map(bv => {
-					if (!bv || bv.length !== normPost.length) return 0;
-					return CosineSimilarity(normPost, bv);
-				});
-				const top = sims.sort((a, b) => b - a).slice(0, 5);
-				semanticBoost = top.reduce((a, b) => a + b, 0);
-			}
-		}
-		if (algorithmRow.suppress_embedding && normPost.length > 0) {
-			let suppressVecs = algorithmRow.suppress_embedding;
-			if (typeof suppressVecs === 'string') {
-				try { suppressVecs = JSON.parse(suppressVecs); } catch { suppressVecs = []; }
-			}
-			if (Array.isArray(suppressVecs) && suppressVecs.length) {
-				const normSuppress = suppressVecs
-					.map(sv => (Array.isArray(sv) ? sv : null))
-					.filter(Boolean)
-					.map(sv => {
-						const m = Math.sqrt(sv.reduce((a, b) => a + b * b, 0)) || 1;
-						return sv.map(v => v / m);
-					});
-				const sims = normSuppress.map(sv => {
-					if (!sv || sv.length !== normPost.length) return 0;
-					return CosineSimilarity(normPost, sv);
-				});
-				const top = sims.sort((a, b) => b - a).slice(0, 5);
-				semanticSuppress = top.reduce((a, b) => a + b, 0);
-			}
-		}
-		algorithmScore += (semanticBoost * 20) - (semanticSuppress * 20);
-	}
-	//Sentiment alignment
-	const postSentiment = typeof post.sentiment_score === 'number' ? post.sentiment_score : 0;
-	const sentimentDistance = Math.abs(postSentiment - sentiment);
-	algorithmScore += (0.5 - sentimentDistance) * 10;
-	//Variety scoring against recent upvotes
-	if (normalisedRecentEmbeddings.length > 0 && normPost.length > 0) {
-		const now = Date.now();
-		const tenDays = 864000000;
-		const weights = recentUpvotePosts.map(p => {
-			const age = now - new Date(p.updated_at).getTime();
-			return 1 / (1 + age / tenDays);
-		});
-		const totalWeight = weights.reduce((a, b) => a + b, 0) || 1;
-		let weightedSum = 0;
-		for (let i = 0; i < normalisedRecentEmbeddings.length; i++) {
-			const vectorEmbedding = normalisedRecentEmbeddings[i];
-			if (vectorEmbedding.length === normPost.length) {
-				const weight = weights[i] / totalWeight;
-				const similarity = CosineSimilarity(normPost, vectorEmbedding);
-				weightedSum += similarity * weight;
-			}
-		}
-		const similarityScore = Math.max(0, Math.min(1, weightedSum));
-		const targetSimilarity = 0.6 * (1 - variety) + 0.1 * variety;
-		const similarityDelta = targetSimilarity - similarityScore;
-		algorithmScore += similarityDelta * 30;
-	}
-	return algorithmScore;
+function computeAlgorithmScore(post, { algorithmRow, normalizedBoost, normalizedSuppress, voteImpact, sentiment, variety, normalisedRecentEmbeddings, recentUpvotePosts, recentWeights, totalWeight, timeLimits }) {
+    //Time of day filtering
+    if (timeLimits.startTime && timeLimits.endTime) {
+        const createdAt = new Date(post.created_at || post.created_at_remote);
+        const postTime = `${String(createdAt.getHours()).padStart(2, '0')}:${String(createdAt.getMinutes()).padStart(2, '0')}`;
+        if (postTime < timeLimits.startTime || postTime > timeLimits.endTime) {
+            return null;
+        }
+    }
+    let postEmbedding = post.embeddings;
+    if (typeof postEmbedding === 'string') {
+        try { postEmbedding = JSON.parse(postEmbedding); } catch { postEmbedding = []; }
+    }
+    if (!Array.isArray(postEmbedding)) postEmbedding = [];
+    
+    if (postEmbedding.length === 0) {
+        return 0; //No embedding = neutral score
+    }
+    const magPost = Math.sqrt(postEmbedding.reduce((a, b) => a + b * b, 0)) || 1;
+    const normPost = postEmbedding.map(v => v / magPost);
+    const expectedLen = normPost.length;
+    let algorithmScore = 0;
+    //Semantic boost using pre-normalized embeddings
+    if (normalizedBoost && normalizedBoost.length > 0) {
+        const sims = [];
+        for (const bv of normalizedBoost) {
+            if (bv.length === expectedLen) {
+                sims.push(fastCosineSimilarity(normPost, bv));
+            }
+        }
+        if (sims.length > 0) {
+            sims.sort((a, b) => b - a);
+            const top = sims.slice(0, 5);
+            algorithmScore += top.reduce((a, b) => a + b, 0) * 20;
+        }
+    }
+    //Semantic suppress using pre-normalized embeddings
+    if (normalizedSuppress && normalizedSuppress.length > 0) {
+        const sims = [];
+        for (const sv of normalizedSuppress) {
+            if (sv.length === expectedLen) {
+                sims.push(fastCosineSimilarity(normPost, sv));
+            }
+        }
+        if (sims.length > 0) {
+            sims.sort((a, b) => b - a);
+            const top = sims.slice(0, 5);
+            algorithmScore -= top.reduce((a, b) => a + b, 0) * 20;
+        }
+    }
+    //Sentiment alignment
+    const postSentiment = typeof post.sentiment_score === 'number' ? post.sentiment_score : 0;
+    const sentimentDistance = Math.abs(postSentiment - sentiment);
+    algorithmScore += (0.5 - sentimentDistance) * 10;
+    //Variety scoring using pre-computed weights
+    if (normalisedRecentEmbeddings.length > 0 && normPost.length > 0 && totalWeight > 0) {
+        let weightedSum = 0;
+        for (let i = 0; i < normalisedRecentEmbeddings.length; i++) {
+            const vectorEmbedding = normalisedRecentEmbeddings[i];
+            if (vectorEmbedding.length === normPost.length) {
+                weightedSum += fastCosineSimilarity(normPost, vectorEmbedding) * recentWeights[i];
+            }
+        }
+        const similarityScore = Math.max(0, Math.min(1, weightedSum));
+        const targetSimilarity = 0.6 * (1 - variety) + 0.1 * variety;
+        const similarityDelta = targetSimilarity - similarityScore;
+        algorithmScore += similarityDelta * 30;
+    }
+    return algorithmScore;
 }
 
 //Scores and paginates candidates from native and/or external sources, returns { paginatedIds, scoreMap } where paginatedIds is the slice for the current page
 async function scoreAndPaginateCandidates({ nativePostIds = [], externalPostIds = [], algorithmRow, scoringParams, offset, limit }) {
-	//Fetch post data with embeddings for scoring
-	let nativePosts = [];
-	if (nativePostIds.length) {
-		nativePosts = await Posts.findAll({
-			where: { post_id: { [Op.in]: nativePostIds } },
-			attributes: ['post_id', 'embeddings', 'rank_hotness', 'upvotes', 'downvotes', 'views', 'sentiment_score', 'created_at'],
-			raw: true
-		});
-	}
-	let externalPosts = [];
-	if (externalPostIds.length) {
-		externalPosts = await ExternalPosts.findAll({
-			where: { post_id: { [Op.in]: externalPostIds }, content: { [Op.ne]: null } },
-			attributes: ['post_id', 'embeddings', 'score', 'sentiment_score', 'created_at_remote'],
-			raw: true
-		});
-	}
-	//Compute algorithm scores for ALL candidates
-	const scoredCandidates = [];
-	const allCandidates = [
-		...nativePosts.map(p => ({ ...p, isExternal: false })),
-		...externalPosts.map(p => ({ ...p, isExternal: true, created_at: p.created_at_remote }))
-	];
-	for (const post of allCandidates) {
-		const score = computeAlgorithmScore(post, { algorithmRow, ...scoringParams });
-		if (score !== null) {
-			scoredCandidates.push({ post_id: post.post_id, algorithmScore: score, isExternal: post.isExternal });
-		}
-	}
-	//Sort by algorithm score with post_id as tie-breaker for deterministic ordering
-	scoredCandidates.sort((a, b) => {
-		if (b.algorithmScore !== a.algorithmScore) return b.algorithmScore - a.algorithmScore;
-		return b.post_id.localeCompare(a.post_id);
-	});
-	//Apply pagination
-	const paginatedIds = scoredCandidates.slice(offset, offset + limit);
-	const scoreMap = new Map(paginatedIds.map(p => [p.post_id, p]));
-	return { paginatedIds, scoreMap, totalCandidates: scoredCandidates.length };
+    //Limit candidates to prevent CPU overload
+    const MAX_CANDIDATES = 500;
+    const limitedNativeIds = nativePostIds.slice(0, MAX_CANDIDATES);
+    const remainingSlots = Math.max(0, MAX_CANDIDATES - limitedNativeIds.length);
+    const limitedExternalIds = externalPostIds.slice(0, remainingSlots);
+    //Pre-normalize algorithm embeddings once
+    const { normalizedBoost, normalizedSuppress } = prepareAlgorithmEmbeddings(algorithmRow);
+    //Pre-compute variety weights once
+    const { normalisedRecentEmbeddings, recentUpvotePosts } = scoringParams;
+    const now = Date.now();
+    const tenDays = 864000000;
+    let recentWeights = [];
+    let totalWeight = 0;
+    if (recentUpvotePosts && recentUpvotePosts.length > 0) {
+        recentWeights = recentUpvotePosts.map(p => {
+            const age = now - new Date(p.updated_at).getTime();
+            return 1 / (1 + age / tenDays);
+        });
+        totalWeight = recentWeights.reduce((a, b) => a + b, 0) || 1;
+        recentWeights = recentWeights.map(w => w / totalWeight);
+    }
+    //Build optimized params with pre-computed values
+    const optimizedParams = { ...scoringParams, normalizedBoost, normalizedSuppress, recentWeights, totalWeight };
+    //Fetch post data with embeddings for scoring
+    let nativePosts = [];
+    if (limitedNativeIds.length) {
+        nativePosts = await Posts.findAll({
+            where: { post_id: { [Op.in]: limitedNativeIds } },
+            attributes: ['post_id', 'embeddings', 'rank_hotness', 'upvotes', 'downvotes', 'views', 'sentiment_score', 'created_at'],
+            raw: true
+        });
+    }
+    let externalPosts = [];
+    if (limitedExternalIds.length) {
+        externalPosts = await ExternalPosts.findAll({
+            where: { post_id: { [Op.in]: limitedExternalIds }, content: { [Op.ne]: null } },
+            attributes: ['post_id', 'embeddings', 'score', 'sentiment_score', 'created_at_remote'],
+            raw: true
+        });
+    }
+    //Compute algorithm scores for all candidates
+    const scoredCandidates = [];
+    const allCandidates = [
+        ...nativePosts.map(p => ({ ...p, isExternal: false })),
+        ...externalPosts.map(p => ({ ...p, isExternal: true, created_at: p.created_at_remote }))
+    ];
+    for (const post of allCandidates) {
+        const score = computeAlgorithmScore(post, { algorithmRow, ...optimizedParams });
+        if (score !== null) {
+            scoredCandidates.push({ 
+                post_id: post.post_id, 
+                algorithmScore: score, 
+                isExternal: post.isExternal 
+            });
+        }
+    }
+    //Sort by algorithm score with post_id as tie-breaker
+    scoredCandidates.sort((a, b) => {
+        if (b.algorithmScore !== a.algorithmScore) return b.algorithmScore - a.algorithmScore;
+        return b.post_id.localeCompare(a.post_id);
+    });
+    //Apply pagination
+    const paginatedIds = scoredCandidates.slice(offset, offset + limit);
+    const scoreMap = new Map(paginatedIds.map(p => [p.post_id, p]));
+    return { paginatedIds, scoreMap, totalCandidates: scoredCandidates.length };
 }
 
 //Fetches full post data for paginated IDs and restores algorithm score ordering
@@ -379,6 +426,8 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
 			}
 		}
 
+		const MAX_ALGORITHM_CANDIDATES = 500;
+
         //Fetch posts according to location
         let posts = [];
         if (locationId === "search" && keyword) {
@@ -392,6 +441,7 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
 						[Op.and]: Sequelize.literal(`MATCH (title, text_body) AGAINST (${Posts.sequelize.escape(keyword)} IN NATURAL LANGUAGE MODE)`)
 					},
 					order: [['created_at', 'DESC']],
+					limit: MAX_ALGORITHM_CANDIDATES, 
 					raw: true
 				});
 				if (!nativePostIds.length) return { posts: [], status: "ok", message: "" };
@@ -442,6 +492,7 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
 						...(viewerId ? { poster_id: { [Op.not]: viewerId } } : {})
 					},
 					order: [['created_at', 'DESC']],
+					limit: MAX_ALGORITHM_CANDIDATES,
 					raw: true
 				});
 				let externalPostIds = [];
@@ -451,8 +502,9 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
 						JOIN external_posts p ON p.post_id = a.post_id
 						WHERE a.user_id = :userId AND p.expired = false
 						AND p.created_at_remote >= DATE_SUB(NOW(), INTERVAL 7 DAY) ${externalFiltersSQL}
-						ORDER BY p.created_at_remote DESC`,
-						{ replacements: { userId }, type: QueryTypes.SELECT }
+						ORDER BY p.created_at_remote DESC
+						LIMIT :maxCandidates`,
+						{ replacements: { userId, maxCandidates: MAX_ALGORITHM_CANDIDATES }, type: QueryTypes.SELECT }
 					);
 					if (!externalAccesses.length && offset === 0) {
 						await Promise.all(connectedAccounts.map(account =>
@@ -468,8 +520,9 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
 							JOIN external_posts p ON p.post_id = a.post_id
 							WHERE a.user_id = :userId AND p.expired = false
 							AND p.created_at_remote >= DATE_SUB(NOW(), INTERVAL 7 DAY) ${externalFiltersSQL}
-							ORDER BY p.created_at_remote DESC`,
-							{ replacements: { userId }, type: QueryTypes.SELECT }
+							ORDER BY p.created_at_remote DESC
+							LIMIT :maxCandidates`,
+							{ replacements: { userId, maxCandidates: MAX_ALGORITHM_CANDIDATES }, type: QueryTypes.SELECT }
 						);
 						externalPostIds = retryAccesses.map(a => a.post_id);
 					} else {
@@ -583,6 +636,7 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
 						content: { [Op.ne]: null }
 					},
 					order: [['created_at_remote', 'DESC']],
+					limit: MAX_ALGORITHM_CANDIDATES,
 					raw: true
 				});
 				const externalPostIds = externalPosts.map(p => p.post_id);
@@ -622,7 +676,7 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
 				}));
 			}
 		} else if (typeof locationId === 'string' && ['reddit','bluesky','mastodon'].includes(locationId)) {
-            const platform = locationId;
+			const platform = locationId;
 			if (hasActiveAlgorithm) {
 				//Algorithm path for external platform feeds
 				let externalPostIds = [];
@@ -632,8 +686,9 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
 						JOIN external_posts p ON p.post_id = a.post_id
 						WHERE a.user_id = :userId AND a.source = :platform AND p.expired = false
 						AND p.created_at_remote >= DATE_SUB(NOW(), INTERVAL 7 DAY) ${externalFiltersSQL}
-						ORDER BY p.created_at_remote DESC`,
-						{ replacements: { userId, platform }, type: QueryTypes.SELECT }
+						ORDER BY p.created_at_remote DESC
+						LIMIT :maxCandidates`,
+						{ replacements: { userId, platform, maxCandidates: MAX_ALGORITHM_CANDIDATES }, type: QueryTypes.SELECT }
 					);
 					externalPostIds = accesses.map(a => a.post_id);
 					if (!externalPostIds.length && connectedAccounts?.length) {
@@ -650,8 +705,9 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
 								JOIN external_posts p ON p.post_id = a.post_id
 								WHERE a.user_id = :userId AND a.source = :platform AND p.expired = false
 								AND p.created_at_remote >= DATE_SUB(NOW(), INTERVAL 7 DAY) ${externalFiltersSQL}
-								ORDER BY p.created_at_remote DESC`,
-								{ replacements: { userId, platform }, type: QueryTypes.SELECT }
+								ORDER BY p.created_at_remote DESC
+								LIMIT :maxCandidates`,
+								{ replacements: { userId, platform, maxCandidates: MAX_ALGORITHM_CANDIDATES }, type: QueryTypes.SELECT }
 							);
 							externalPostIds = retryAccesses.map(a => a.post_id);
 						}
@@ -722,6 +778,7 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
 						is_private: false
 					},
 					order: [['created_at', 'DESC']],
+					limit: MAX_ALGORITHM_CANDIDATES,
 					raw: true
 				});
 				const { paginatedIds, scoreMap } = await scoreAndPaginateCandidates({
@@ -786,6 +843,7 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
 							...(viewerId ? { poster_id: { [Op.not]: viewerId } } : {})
 						},
 						order: [['created_at', 'DESC']],
+						limit: MAX_ALGORITHM_CANDIDATES,
 						raw: true
 					});
 				}
@@ -894,6 +952,7 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
 					attributes: ['post_id'],
 					where: whereClause,
 					order: [['created_at', 'DESC']],
+					limit: MAX_ALGORITHM_CANDIDATES,
 					raw: true
 				});
 				const { paginatedIds, scoreMap } = await scoreAndPaginateCandidates({
