@@ -31,7 +31,7 @@ const WelcomeHome = () => {
                     <p className="welcome-text" style={{ fontWeight: '700' }}>Welcome to Aether Social</p>
                     <p className="small-text faded-text" style={{ fontWeight: '500', marginBottom: '20px', textAlign: 'center' }}>Social media you control</p>
                 </Link>
-                <p className="medium-text">Free premium for first 1000 users, join soon!</p>
+                {/*<p className="medium-text">Free premium for first 1000 users, join soon!</p>*/}
                 <div className="join-login">
                     <Link to="/login">
                         <button className="button join welcome">Login</button>
