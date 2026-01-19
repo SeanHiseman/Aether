@@ -120,7 +120,8 @@ const MembershipSettings = () => {
                         <Crown />
                     </div>
                     <h1 className="welcome-title">Welcome {user?.username}!</h1>
-                    <p className="welcome-subtitle">Thank you for supporting Aether Social</p>
+                    {/*<p className="welcome-subtitle">Thank you for supporting Aether Social</p>*/}
+                    <p className="welcome-subtitle">Free membership for first 1000 users</p>
                     <div className="status-card">
                         <p className="status-text">
                             Your membership is active and all premium features are unlocked
