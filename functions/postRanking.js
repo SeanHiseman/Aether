@@ -25,17 +25,18 @@ import { Posts } from '../models/relationships.js';
 export function computeHotness({ upvotes = 0, downvotes = 0, createdAt, referenceTime = Date.now() / 1000, boost = 1.0, decayBase = 600000 }) {
 	const score = upvotes - downvotes;
 	const age = (referenceTime - new Date(createdAt).getTime() / 1000);
+	const freshness = Math.exp(-age / decayBase);
 	//Small bias so new posts start slightly below strong ones
-	if (score === 0) return -0.1 - (age / decayBase);
+	if (score === 0) return (-0.1 * freshness) - (age / decayBase);
 	//Downvote penalty grows faster than upvote reward
 	if (score < 0) {
-		const penalty = Math.pow(Math.log10(1 + Math.abs(score)), 2.5) * 3; //strong drop
-		return -penalty - (age / (decayBase / 3)); //decays twice as fast
+		const penalty = Math.pow(Math.log10(1 + Math.abs(score)), 2.5) * 3;
+		return (-penalty * freshness) - (age / (decayBase / 3));
 	}
-	//Positive score: logarithmic growth with slower decay
-	const order = Math.log10(score + 1); //Adjust for near-zero
-	const boostFactor = 1 + Math.pow(order, 1.4) * boost;
-	const decay = age / (decayBase * (1 + order * 0.8)); //slows decay for high-score posts
+	//Positive score: logarithmic growth with stronger recency bias
+	const order = Math.log10(score + 1);
+	const boostFactor = (1 + Math.pow(order, 1.4) * boost) * freshness;
+	const decay = age / (decayBase * (1 + order * 0.3));
 	return boostFactor - decay;
 }
 

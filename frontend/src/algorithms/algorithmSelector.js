@@ -269,7 +269,7 @@ const AlgorithmSelector = ({ display = false, isAuthenticated = false, locationI
 														checked={assignedAlgorithmId === ''}
 														disabled={!assignedAlgorithmId}
 													/>
-													No algorithm
+													Default
 												</label>
 											</li>}
 											{algorithms.map(a => {
