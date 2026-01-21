@@ -21,6 +21,7 @@ const ForgotPassword = () => {
 		}
 	};
 
+	document.title = 'Forgot Password';
 	return (
 		<div className="authentication-container">
 			<p className="welcome-text">Forgot password</p>

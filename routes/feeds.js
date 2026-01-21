@@ -692,7 +692,7 @@ router.get('/feed/:feedName', standardLimiter, async (req, res) => {
             return res.status(404).json({ success: false, message: 'Feed not found' }); 
         }
         //If user is logged in and is the owner, or site admin
-        if (userId && userId === (feed.feed_owner || process.env.ADMIN_ID)) {
+        if (userId && (userId === feed.feed_owner || userId === process.env.ADMIN_ID)) {
             isAdmin = true;
             isMod = true;
             isConnected = true;

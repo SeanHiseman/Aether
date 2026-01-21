@@ -26,6 +26,7 @@ const ResetPassword = () => {
 		}
 	};
 
+	document.title = 'Reset Password';
 	return (
 		<div className="authentication-container">
 			<p className="welcome-text">Set New Password</p>

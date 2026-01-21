@@ -64,6 +64,7 @@ const EmailVerification = () => {
         }
     };
 
+    document.title = 'Email Verification';
     return (
         <div className="authentication-container">
             <p className="welcome-text pointer">Email Verification</p>
