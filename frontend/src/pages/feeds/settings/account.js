@@ -20,7 +20,12 @@ const Account = () => {
 
     const changeEmail = async (event) => {
         event.preventDefault();
-        if (!ValidateEmail(email) || email !== confirmEmail || email === user?.email || emailMessage) { //Redundant check
+        const { valid, error } = ValidateEmail(email);
+        if (!valid) {
+            setEmailMessage(error);
+            return;
+        }
+        if (email !== confirmEmail || email === user?.email || emailMessage) {
             return;
         }
         try {
@@ -146,26 +151,12 @@ const Account = () => {
                         onChange={(e) => {
                             const input = e.target.value;
                             setEmail(input);
-                            const { valid, error } = ValidateEmail(input);
-                            if (!valid) {
-                                setEmailMessage(error);
-                            } else if (input === user?.email) {
+                            if (input === user?.email) {
                                 setEmailMessage("Must use a different email to the current");
                             } else if (confirmEmail && input !== confirmEmail) {
                                 setEmailMessage("Emails do not match");
                             } else {
                                 setEmailMessage("");
-                            }
-                        }}
-                        onBlur={(e) => {
-                            const input = e.target.value;
-                            if (input) {
-                                const { valid, error } = ValidateEmail(input);
-                                if (!valid) {
-                                    setEmailMessage(error);
-                                } else if (input === user?.email) {
-                                    setEmailMessage("Must use a different email to the current");
-                                }
                             }
                         }}
                     />
@@ -179,13 +170,12 @@ const Account = () => {
                         onChange={(e) => {
                             const input = e.target.value;
                             setConfirmEmail(input);
-                            const { valid } = ValidateEmail(email);
                             if (email && input !== email) {
                                 setEmailMessage("Emails do not match");
-                            } else if (email && input === email && valid && email !== user?.email) {
+                            } else if (email && input === email && email !== user?.email) {
                                 setEmailMessage("");
                             }
-                        }} 
+                        }}
                     />
                     <input 
                         className={'submit' + (isEmailDisabled ? ' disabled' : '')}

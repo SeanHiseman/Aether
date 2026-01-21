@@ -67,6 +67,11 @@ const Join = () => {
         event.preventDefault();
         const email = event.target.email.value;
         const username = event.target.username.value;
+        const emailResult = ValidateEmail(email);
+        if (!emailResult.valid) {
+            setErrorMessage(emailResult.error);
+            return;
+        }
         try {
             const response = await api.post('/join', { email, password, username });
             if (response.data?.success) {
@@ -121,12 +126,7 @@ const Join = () => {
                     <FcGoogle size={20} />
                     <span>Join with Google</span>
                 </button>
-                <button
-                    type="button"
-                    onClick={() => setShowBlueskyForm(!showBlueskyForm)}
-                    className="bluesky-oauth-button"
-                    style={{ width: '100%', marginTop: '10px' }}
-                >
+                <button type="button" onClick={() => setShowBlueskyForm(!showBlueskyForm)} className="bluesky-oauth-button" style={{ width: '100%', marginTop: '10px' }}>
                     <img src="/media/site_images/social_sites/bluesky-logo.png" alt="Bluesky" style={{ width: 20, height: 20 }} />
                     <span>Join with Bluesky</span>
                     {showBlueskyForm ? <FaChevronUp size={12} /> : <FaChevronDown size={12} />}
@@ -156,12 +156,7 @@ const Join = () => {
                         <p className="tiny-text faded-text">
                             For security, use an app password. Create one at <a href="https://bsky.app/settings/app-passwords" target="_blank" rel="noopener noreferrer">bsky.app/settings/app-passwords</a>
                         </p>
-                        <input
-                            className={`submit${isBlueskyDisabled ? ' disabled' : ''}`}
-                            disabled={isBlueskyDisabled}
-                            type="submit"
-                            value={blueskyLoading ? "Joining..." : "Join with Bluesky"}
-                        />
+                        <input className={`submit${isBlueskyDisabled ? ' disabled' : ''}`} disabled={isBlueskyDisabled} type="submit" value={blueskyLoading ? "Joining..." : "Join with Bluesky"} />
                     </form>
                 )}
                 <div className="divider-container">
@@ -206,26 +201,9 @@ const Join = () => {
                             const input = e.target.value;
                             if (input.length <= 320) {
                                 setEmail(input);
-                                if (input) {
-                                    const result = ValidateEmail(input);
-                                    if (result.valid) {
-                                        setErrorMessage("");
-                                    } else {
-                                        setErrorMessage(result.error);
-                                    }
-                                } else {
-                                    setErrorMessage("");
-                                }
+                                setErrorMessage("");
                             } else {
                                 setErrorMessage("Email cannot exceed 320 characters");
-                            }
-                        }}
-                        onBlur={(e) => {
-                            if (e.target.value) {
-                                const result = ValidateEmail(e.target.value);
-                                if (!result.valid) {
-                                    setErrorMessage(result.error);
-                                }
                             }
                         }}
                     />
