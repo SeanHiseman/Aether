@@ -95,7 +95,6 @@ const ContentWidget = ({ canRemove = false, display = false, feed, isDraft = fal
 				setPostErrorMessage(`Error removing ${pendingDeleteAction}`);
 			}
 		} catch (error) {
-			console.log("error deleting:", error);
 			setPostErrorMessage(error.response?.data?.message || `Error removing ${pendingDeleteAction}`);
 			setTimeout(() => setPostErrorMessage(""), 3000);
 		}

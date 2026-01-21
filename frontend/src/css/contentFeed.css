@@ -35,26 +35,17 @@
     margin-top: var(--medium-margin);
 }
 .content-item.reply {
-    border-right: none;
     border-radius: 0;
     box-shadow: none;
     margin-left: var(--large-margin);
     margin-right: 0;
     margin-top: 0;
     padding-bottom: 0;
-    padding-right: 0;
     padding-top: 0;
     position: relative;
 }
-.content-item.reply::before {
-    background-color: var(--dark-line);
-    bottom: 0;
-    content: '';
-    position: relative;
-    left: 0;
-    position: absolute;
-    top: 0;
-    width: 2px; 
+.content-item.reply {
+    overflow: hidden;
 }
 .content-item * {
     cursor: inherit;
@@ -68,6 +59,14 @@
 }
 .content-item, .content-list {
     box-sizing: border-box;
+}
+.content-item.thread-top {
+	border-bottom-left-radius: 0;
+	border-bottom-right-radius: 0;
+}
+.content-item.thread-bottom {
+	border-top-left-radius: 0;
+	border-top-right-radius: 0;
 }
 .content-metadata {
     align-items: center;

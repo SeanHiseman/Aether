@@ -86,6 +86,16 @@ router.post('/channel_posts', standardLimiter, async (req, res) => {
 			if (!singlePost) {
 				return res.status(404).json({ success: false, message: 'Post not found' });
 			}
+			let parentPost = null;
+			if (singlePost.parent_id) {
+				parentPost = await Posts.findOne({
+					include: includeOptions,
+					where: {
+						post_id: singlePost.parent_id,
+						feed_id: feedId
+					}
+				});
+			}
 			const voteRow = viewerId
 				? await PostVotes.findOne({
 					attributes: ['upvotes', 'downvotes'],
@@ -98,9 +108,10 @@ router.post('/channel_posts', standardLimiter, async (req, res) => {
 			const existing = viewerId
 				? await SavedPosts.findOne({ where: { post_id: postId, saver_id: viewerId } })
 				: null;
-
 			singlePost.dataValues.is_saved = Boolean(existing);
-			return res.status(200).json({ success: true, post: singlePost });
+			console.log("singlePost:", singlePost);
+			console.log("parentPost:", parentPost);
+			return res.status(200).json({ success: true, post: singlePost, parent: parentPost });
 		}
 		const algorithmResult = await ApplyAlgorithm({
 			locationId: channelId,
@@ -116,12 +127,7 @@ router.post('/channel_posts', standardLimiter, async (req, res) => {
 		const posts = algorithmResult.posts;
 		const status = algorithmResult.status;
 		const message = algorithmResult.message;
-		return res.status(200).json({
-			success: true,
-			posts: posts,
-			bstatus: status,
-			bmessage: message
-		});
+		return res.status(200).json({ success: true, posts: posts, status: status, message: message });
 	} catch (error) {
 		console.error(new Date().toISOString(), '/channel_posts error:', error);
 		return res.status(500).json({ success: false, message: 'Error getting posts.' });

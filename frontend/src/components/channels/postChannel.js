@@ -37,7 +37,10 @@ const PostChannel = ({ channelId, channelName, feed, includeGroup, includeUser, 
 	const getSinglePost = async () => {
 		try {
 			const response = await api.post('/channel_posts', { feedId, isSingle: true, postId: post_id });
-			return response.data?.post;
+			return {
+				parent: response.data?.parent || null,
+				post: response.data?.post || null
+			};
 		} catch (error) {
 			throw error;
 		}
@@ -177,7 +180,23 @@ const PostChannel = ({ channelId, channelName, feed, includeGroup, includeUser, 
 			) : (post_id && !isEditMode) ? (
 				<div className="flex flex-col w-99">
 					<div className="bg-gray-800 rounded-xl">
-						<ContentWidget feed={feed} isDraft={isDraft} onPostRemoved={handlePostRemoved} post={singlePost} />
+						{singlePost?.parent && (
+							<ContentWidget
+								feed={feed}
+								isDraft={isDraft}
+								post={singlePost.parent}
+								readOnly
+							/>
+						)}
+						{singlePost?.post && (
+							<ContentWidget
+								feed={feed}
+								isDraft={isDraft}
+								onPostRemoved={handlePostRemoved}
+								parent={singlePost?.parent || null}
+								post={singlePost.post}
+							/>
+						)}
 					</div>
 				</div>
 			) : isDraft ? (
