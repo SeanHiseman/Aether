@@ -1,5 +1,5 @@
 import authenticateCheck from '../functions/checks/authenticateCheck.js';
-import { Chats, Connections, ConnectRequests, FeedChats, FeedChannels, Feeds, Messages, Posts, PostNotes, PostVotes, SavedPosts } from '../models/relationships.js';
+import { Chats, Connections, ConnectRequests, FeedChats, FeedChannels, Feeds, Followers, Messages, Posts, PostNotes, PostVotes, SavedPosts } from '../models/relationships.js';
 import { decrypt, encrypt } from '../functions/encryptionUtil.js';
 import dotenv from 'dotenv';
 import { Op, Sequelize } from 'sequelize';
@@ -20,6 +20,44 @@ router.post('/accept_connect_request', authenticateCheck, async (req, res) => {
             where: { receiver_id: receiverId, sender_id: senderId },
             transaction
         });
+        //Ensure sender follows receiver
+        const senderFollowsReceiver = await Followers.findOne({
+            where: {
+                follower_id: senderId,
+                feed_id: receiverId
+            },
+            transaction
+        });
+        if (!senderFollowsReceiver) {
+            await Followers.create({
+                follow_id: v4(),
+                follower_id: senderId,
+                feed_id: receiverId
+            }, { transaction });
+            await Feeds.increment('follower_count', {
+                where: { feed_id: receiverId },
+                transaction
+            });
+        }
+        //Ensure receiver follows sender
+        const receiverFollowsSender = await Followers.findOne({
+            where: {
+                follower_id: receiverId,
+                feed_id: senderId
+            },
+            transaction
+        });
+        if (!receiverFollowsSender) {
+            await Followers.create({
+                follow_id: v4(),
+                follower_id: receiverId,
+                feed_id: senderId
+            }, { transaction });
+            await Feeds.increment('follower_count', {
+                where: { feed_id: senderId },
+                transaction
+            });
+        }
         await Connections.create({
             connection_id: v4(),
             feed1_id: senderId,

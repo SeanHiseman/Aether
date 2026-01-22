@@ -11,11 +11,7 @@ const ConnectionWidget = ({ connection, connectRequest, onAccept, onReject, onRe
 	return (
 		<div className="explore-block bg-gray-800 rounded-lg flex flex-col items-center">
 			<Link to={`/connections/${connection?.feed_name}`} className="w-20 h-20 rounded-full overflow-hidden mb-2 relative">
-				<img
-					className="w-full h-full object-cover feed-img"
-					src={imageUrl}
-					onError={(e) => e.currentTarget.src = '/media/site_images/blank-profile.png'}
-				/>
+				<img className="w-full h-full object-cover feed-img" src={imageUrl} onError={(e) => e.currentTarget.src = '/media/site_images/blank-profile.png'} />
 			</Link>
 			<p className="text-lg font-bold text-white truncate mt-1 text-center">
 				{connection?.feed_name}

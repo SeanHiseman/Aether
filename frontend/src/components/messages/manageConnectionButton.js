@@ -1,12 +1,14 @@
 import api from '../../api';
+import ConfirmModal from '../modals/confirmModal';
 import { FaUserMinus, FaUserPlus } from 'react-icons/fa';
 import { useEffect, useState } from 'react';
 
-const ManageConnectionButton = ({ connectRequest, feed, isConnected, viewerId, onRequestUpdate }) => {
+const ManageConnectionButton = ({ connectRequest, feed, isConnected, viewerId, onRequestUpdate, updateFeeds }) => {
     const [errorMessage, setErrorMessage] = useState('');
     const [hasConnection, setHasConnection] = useState(isConnected || feed.isConnected);
     const [request, setRequest] = useState(connectRequest || feed.connectRequest);
     const senderId = request?.sender_id || viewerId;
+    const [showDisconnectConfirm, setShowDisconnectConfirm] = useState(false);
     const receiverId = request?.receiver_id || feed?.feed_id;
 
     useEffect(() => {
@@ -23,15 +25,24 @@ const ManageConnectionButton = ({ connectRequest, feed, isConnected, viewerId, o
                     senderId
                 });
                 if (response.status === 200) {
-                    const newConnection = {
-                        feed_id: senderId,
-                        feed_name: feed.feed_name,
-                        feed_photo: feed.feed_photo,
-                    };
+                    const storedFollowedFeeds = JSON.parse(localStorage.getItem('followedFeeds')) || [];
+                    const alreadyFollowing = storedFollowedFeeds.some(f => f.feed_id === senderId);
+                    if (!alreadyFollowing) {
+                        storedFollowedFeeds.push({
+                            feed_id: senderId,
+                            feed_name: feed.feed_name,
+                            feed_photo: feed.feed_photo,
+                            is_group: feed.is_group
+                        });
+                        localStorage.setItem('followedFeeds', JSON.stringify(storedFollowedFeeds));
+                    }
                     setHasConnection(true);
                     setRequest(null);
                     if (onRequestUpdate) {
-                        onRequestUpdate(newConnection, senderId);
+                        onRequestUpdate(senderId);
+                    }
+                    if (updateFeeds) {
+                        updateFeeds();
                     }
                 }
             } else if (result === 'reject') {
@@ -56,11 +67,9 @@ const ManageConnectionButton = ({ connectRequest, feed, isConnected, viewerId, o
             let method, requestData, url;
             const targetFeedId = viewerId === senderId ? receiverId : senderId;
             if (hasConnection) {
-                if (window.confirm(`Are you sure you want to delete your connection with ${feed.feed_name}`)) {
-                    method = 'delete';
-                    url = '/delete_connection';
-                    requestData = { deleterId: viewerId, feedId: targetFeedId };
-                }
+                method = 'delete';
+                url = '/delete_connection';
+                requestData = { deleterId: viewerId, feedId: targetFeedId };
             } 
             else if (request) {
                 method = 'delete';
@@ -111,22 +120,32 @@ const ManageConnectionButton = ({ connectRequest, feed, isConnected, viewerId, o
     }
 
     return (
-            <><button className="small-icon" onClick={handleSendRequest}>
-            {hasConnection ? (
-                <>
-                    <FaUserMinus /><p className="icon-text">Disconnect</p>
-                </>
-            ) : request ? (
-                <>
-                    <FaUserMinus /><p className="icon-text">Cancel request</p>
-                </>
-            ) : (
-                <>
-                    <FaUserPlus /><p className="icon-text">Connect</p>
-                </>
-            )}
-            </button>
-            {errorMessage && <div className="error-message">{errorMessage}</div>}</>
+        <><button className="small-icon" onClick={() => { if (hasConnection) {setShowDisconnectConfirm(true)} else {handleSendRequest()}}}>
+        {hasConnection ? (
+            <>
+                <FaUserMinus /><p className="icon-text">Disconnect</p>
+            </>
+        ) : request ? (
+            <>
+                <FaUserMinus /><p className="icon-text">Cancel request</p>
+            </>
+        ) : (
+            <>
+                <FaUserPlus /><p className="icon-text">Connect</p>
+            </>
+        )}
+        </button>
+        {errorMessage && <div className="error-message">{errorMessage}</div>}
+        <ConfirmModal
+            isOpen={showDisconnectConfirm}
+            onConfirm={() => {
+                setShowDisconnectConfirm(false);
+                handleSendRequest();
+            } }
+            onCancel={() => setShowDisconnectConfirm(false)}
+            title="Disconnect Confirmation"
+            message={`Are you sure you want to disconnect from ${feed?.feed_name}?`} />
+        </>
     );
 }
 

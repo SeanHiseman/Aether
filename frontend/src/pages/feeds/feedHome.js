@@ -523,7 +523,7 @@ const FeedHome = () => {
                             <FollowerChangeButton feed={feed} showVertical={true} updateFeeds={updateFeeds} viewerId={viewer?.feed_id} />
                         )}
                         {!isViewingSelf && !feed?.is_group && isAuthenticated && (
-                            <ManageConnectionButton feed={feed} viewerId={viewer?.feed_id} />
+                            <ManageConnectionButton feed={feed} updateFeeds={updateFeeds} viewerId={viewer?.feed_id} />
                         )}
                     </div>
                 </SwipeableAside>
@@ -559,7 +559,7 @@ const FeedHome = () => {
                             <p className="icon-text">{FormatNumber(feed?.follower_count)} {(feed?.follower_count) === 1 ? 'follower' : 'followers'}</p>
                         )}
                         {!isViewingSelf && !feed?.is_group && isAuthenticated && (
-                            <ManageConnectionButton feed={feed} viewerId={viewer?.feed_id} />
+                            <ManageConnectionButton feed={feed} viewerId={viewer?.feed_id} updateFeeds={updateFeeds} />
                         )}
                     </div>
                     {feedErrorMessage && <div className="small-text faded-text">{feedErrorMessage}</div>}

@@ -206,9 +206,21 @@ const MessagesPage = () => {
                 senderId: request?.sender_id
             });
             if (response.data?.success) {
+                const storedFollowedFeeds = JSON.parse(localStorage.getItem('followedFeeds')) || [];
+                const alreadyFollowing = storedFollowedFeeds.some(f => f.feed_id === request?.sender?.feed_id);
+                if (!alreadyFollowing && request?.sender) {
+                    storedFollowedFeeds.push({
+                        feed_id: request.sender.feed_id,
+                        feed_name: request.sender.feed_name,
+                        feed_photo: request.sender.feed_photo,
+                        is_group: request.sender.is_group
+                    });
+                    localStorage.setItem('followedFeeds', JSON.stringify(storedFollowedFeeds));
+                }
                 handleRequestUpdate(request.sender, request?.sender_id);
                 viewer.connections = (viewer.connections || 0) + 1;
                 viewer.connect_requests = (viewer.connect_requests || 1) - 1;
+                updateFeeds();
             }
         } catch (error) {
             setErrorMessage(error.response.data?.message || 'Error accepting request');
