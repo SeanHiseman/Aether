@@ -358,7 +358,7 @@ router.post("/create_post", standardLimiter, authenticateCheck, checkStorageLimi
                 parent_id,
                 poster_id,
                 title,
-                rank_hotness: -0.1,
+                rank_hotness: 0.1,
                 boost_amount,
                 ...analysis,
                 ...flags
@@ -398,7 +398,7 @@ router.post("/create_post", standardLimiter, authenticateCheck, checkStorageLimi
                 parent_id,
                 poster_id,
                 title,
-                rank_hotness: -0.1,
+                rank_hotness: 0.1,
                 boost_amount,
                 ...analysis,
                 ...flags

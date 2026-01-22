@@ -16,15 +16,20 @@ const Support = () => {
                 </Link>
             </div>
             <div className="team-content">
-                <div className="left-aligned-text">
-                    <p className="welcome-box-header">Need help? Let us know at:</p>
-                    <p style={{ 
-                        fontSize: 'clamp(14px, 2.5vw, 20px)', 
+                <div className="content-card">
+                    <p className="welcome-box-header" style={{ marginBottom: 'clamp(16px, 3vw, 24px)' }}>Need help? Let us know</p>
+                    <a href="mailto:support@aethersocial.com" style={{
+                        fontSize: 'clamp(16px, 2.8vw, 22px)',
                         fontWeight: '600',
-                        marginBottom: 'var(--small-margin)',
-                    }}>
+                        color: '#6a6aff',
+                        textDecoration: 'none',
+                        transition: 'color 0.3s ease',
+                        display: 'inline-block'
+                    }}
+                    onMouseEnter={(e) => e.target.style.color = '#8a8aff'}
+                    onMouseLeave={(e) => e.target.style.color = '#6a6aff'}>
                         support@aethersocial.com
-                    </p>
+                    </a>
                 </div>
             </div>
         </div>

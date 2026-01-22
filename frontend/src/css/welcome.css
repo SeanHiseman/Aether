@@ -1,10 +1,16 @@
 @import url('variables.css');
+
 .join-login {
-    margin-top: var(--medium-margin);
+    margin-top: clamp(12px, 2.5vw, 20px);
+    display: flex;
+    gap: var(--large-margin);
+    justify-content: center;
+    flex-wrap: wrap;
 }
 .left-aligned-text {
-    margin: var(--text24);
+    margin: clamp(12px, 2.5vw, 20px);
     text-align: left;
+    width: 100%;
 }
 .button.join {
     background-color: var(--darkest);
@@ -16,47 +22,80 @@
     background-color: var(--light);
 }
 .button.join.welcome {
-    background-color: var(--dark);
-    border: 1px solid var(--border);
-    border-radius: clamp(16px, 3.2vw, 32px);
-    margin: var(--large-margin);
-    transition: 0.3s;
+    background: linear-gradient(145deg, #2a2c2e, #1f2123);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: clamp(12px, 2.5vw, 20px);
+    padding: clamp(12px, 2.5vw, 18px) clamp(24px, 5vw, 40px);
+    font-weight: 600;
+    letter-spacing: 0.3px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    transition: all 0.3s ease;
 }
 .button.join.welcome:hover, .welcome-box:hover {
-    background-color: #353739;
-    transform: translate(var(--small-margin), calc(-1 * var(--small-margin)));
+    background: linear-gradient(145deg, #353739, #2a2c2e);
+    border-color: rgba(255, 255, 255, 0.15);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
 }
 .footer {
-    background: rgba(20, 20, 30, 0.9);
+    background: linear-gradient(180deg,
+        rgba(18, 19, 24, 0.95) 0%,
+        rgba(15, 16, 20, 0.97) 40%,
+        rgba(12, 13, 18, 0.98) 100%);
     backdrop-filter: blur(var(--large-margin));
-    border-top: 1px solid rgba(255, 255, 255, 0.1);
-    margin-top: auto;
-    padding: clamp(12px, 6vw, 48px) clamp(8px, 4vw, 32px) clamp(8px, 4vw, 32px);
+    border-top: 1px solid rgba(255, 255, 255, 0.12);
+    padding: clamp(24px, 5vw, 40px) clamp(20px, 4vw, 32px) clamp(20px, 4vw, 24px);
     width: 100%;
     position: relative;
+    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.4), 0 -1px 3px rgba(106, 106, 255, 0.05);
+}
+
+.footer::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(90deg,
+        transparent 0%,
+        rgba(106, 106, 255, 0.2) 20%,
+        rgba(106, 106, 255, 0.3) 50%,
+        rgba(106, 106, 255, 0.2) 80%,
+        transparent 100%);
+    pointer-events: none;
 }
 .footer-bottom {
     text-align: center;
+    margin-top: clamp(16px, 3vw, 24px);
+    padding-top: clamp(16px, 3vw, 20px);
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.footer-bottom p {
+    color: rgba(255, 255, 255, 0.6);
+    font-size: clamp(12px, 2vw, 14px);
+    letter-spacing: 0.3px;
 }
 .footer-content {
     max-width: clamp(800px, 60vw, 1200px);
     margin: 0 auto;
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(clamp(200px, 15vw, 250px), 1fr));
-    gap: clamp(8px, 4vw, 32px);
+    gap: clamp(16px, 3vw, 24px);
     align-items: start;
 }
 .footer-section h3 {
     font-size: clamp(6px, 2.2vw, 17.6px);
     font-weight: 600;
-    margin-bottom: var(--large-margin);
+    margin-bottom: clamp(8px, 2vw, 12px);
     color: #e0e0ff;
     letter-spacing: 0.02em;
 }
 .footer-links {
     display: flex;
     flex-direction: column;
-    gap: clamp(3px, 1.5vw, 12px);
+    gap: clamp(4px, 1vw, 8px);
 }
 .footer-links a {
     color: rgba(255, 255, 255, 0.7);
@@ -73,27 +112,31 @@
     display: flex;
     justify-content: center;
     gap: var(--large-margin);
-    margin: var(--medium-margin);
+    margin: clamp(12px, 2.5vw, 20px);
 }
 .slideshow-btn {
-    background: #007bff;
-    border: none;
+    background: linear-gradient(145deg, #4a6fa5, #3a5a88);
+    border: 1px solid rgba(255, 255, 255, 0.15);
     color: white;
-    width: var(--xl-margin);
-    height: var(--xl-margin);
+    width: clamp(40px, 8vw, 56px);
+    height: clamp(40px, 8vw, 56px);
     border-radius: 50%;
-    font-size: var(--large-margin);
+    font-size: clamp(20px, 4vw, 28px);
     font-weight: bold;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+    transition: all 0.3s ease;
 }
 .slideshow-btn:hover {
-    background: #0056b3;
+    background: linear-gradient(145deg, #5a7fb5, #4a6fa5);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
 }
 .slideshow-btn:active {
-    transform: scale(0.95);
+    transform: translateY(0) scale(0.95);
 }
 .slideshow-container {
     position: relative;
@@ -110,7 +153,7 @@
 .social-links {
     display: flex;
     gap: var(--large-margin);
-    margin-top: var(--medium-margin);
+    margin-top: clamp(8px, 2vw, 12px);
 }
 .social-link {
     display: flex;
@@ -132,62 +175,121 @@
 }
 .welcome-box {
     align-items: center;
-    background-color: var(--dark);
-    border: 1px solid var(--border);
+    background: linear-gradient(145deg, #2a2c2e, #1f2123);
+    border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: clamp(16px, 3.2vw, 32px);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
     color: white;
     cursor: pointer;
     display: flex;
     font-size: var(--text24);
-    padding: var(--medium-margin);
-    transition: 0.3s;
+    padding: clamp(16px, 3vw, 24px);
+    transition: all 0.3s ease;
 }
 .welcome-box.single {
     cursor: default;
-    padding: var(--large-margin);
+    padding: clamp(20px, 4vw, 32px);
     transition: none;
     width: 45%;
 }
 .welcome-box.single:hover {
-    background-color: var(--dark);
+    background: linear-gradient(145deg, #2a2c2e, #1f2123);
     transform: none;
 }
 .welcome-box-header {
     font-size: var(--text36);
-    font-weight: bold;
-    margin-bottom: var(--text36);
-    margin-top: clamp(3px, 1.2vw, 6px);
+    font-weight: 700;
+    margin-bottom: clamp(12px, 2.5vw, 20px);
+    margin-top: 0;
+    line-height: 1.2;
+    letter-spacing: -0.02em;
 }
 .welcome-container {
     align-items: center;
-    background-color: var(--darkest);
+    background: linear-gradient(to bottom,
+        #1a1c1e 0%,
+        #16181a 20%,
+        #14161a 50%,
+        #16181a 80%,
+        #1a1c1e 100%);
     display: flex;
     flex-direction: column;
-    margin: 0;
+    margin: 0 auto;
+    padding: clamp(16px, 3vw, 24px);
+    min-height: 100vh;
+    width: 100%;
+    position: relative;
+}
+
+.welcome-container::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background:
+        radial-gradient(circle at 20% 20%, rgba(106, 106, 255, 0.03) 0%, transparent 50%),
+        radial-gradient(circle at 80% 80%, rgba(106, 106, 255, 0.02) 0%, transparent 50%);
+    pointer-events: none;
+    z-index: 0;
+}
+
+.welcome-container > * {
+    position: relative;
+    z-index: 1;
 }
 .welcome-posts-slideshow {
     position: relative;
     width: 60%;
+    margin: clamp(16px, 3vw, 24px) 0;
 }
 .welcome-text {
-    font-size: clamp(6px, 6vw, 48px);
-    margin-bottom: var(--medium-margin);
-    margin-top: var(--text36);
+    font-size: clamp(32px, 6vw, 56px);
+    margin-bottom: clamp(12px, 2.5vw, 20px);
+    margin-top: clamp(16px, 3vw, 24px);
     position: relative;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    text-align: center;
+}
+.team-content {
+    max-width: clamp(600px, 70vw, 900px);
+    width: 100%;
+    margin-top: clamp(16px, 3vw, 24px);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+.content-card {
+    background: linear-gradient(145deg, #2a2c2e, #1f2123);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: clamp(16px, 3vw, 24px);
+    padding: clamp(20px, 4vw, 32px);
+    margin-bottom: clamp(16px, 3vw, 24px);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    transition: all 0.3s ease;
+    width: 100%;
+}
+.content-card:hover {
+    border-color: rgba(255, 255, 255, 0.15);
+    box-shadow: 0 6px 25px rgba(0, 0, 0, 0.4);
+    transform: translateY(-2px);
 }
 @media (max-width: 768px) {
     .welcome-box {
         min-height: clamp(120px, 18vw, 180px);
     }
     .left-aligned-text {
-        margin: 1.5rem;
+        margin: clamp(8px, 2vw, 12px);
     }
     .welcome-box-header {
-        font-size: clamp(6px, 3.5vw, 28px);
+        font-size: clamp(20px, 4.5vw, 32px);
     }
     .button.join.welcome {
-        width: clamp(150px, 25vw, 200px);
+        width: clamp(140px, 35vw, 180px);
         text-align: center;
+        font-size: clamp(14px, 3.5vw, 18px);
     }
     .footer-content {
         grid-template-columns: 1fr;
@@ -197,6 +299,16 @@
         justify-content: center;
     }
     .welcome-posts-slideshow {
-        width: 99%;
+        width: 95%;
+    }
+    .team-content {
+        max-width: 95%;
+        padding: 0;
+    }
+    .content-card {
+        padding: clamp(16px, 4vw, 24px);
+    }
+    .welcome-container {
+        padding: clamp(12px, 3vw, 20px) clamp(12px, 3vw, 16px);
     }
 }

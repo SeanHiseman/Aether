@@ -15,8 +15,10 @@ const Placeholder = () => {
                     <button className="button join welcome">Join</button>
                 </Link>
             </div>
-            <div className="left-aligned-text">
-                <p className="welcome-box-header">Coming soon...</p>
+            <div className="team-content">
+                <div className="content-card" style={{ textAlign: 'center' }}>
+                    <p className="welcome-box-header">Coming soon...</p>
+                </div>
             </div>
         </div>
     );

@@ -16,15 +16,20 @@ const Contact = () => {
                 </Link>
             </div>
             <div className="team-content">
-                <div className="left-aligned-text">
-                    <p className="welcome-box-header">Get in touch:</p>
-                    <p style={{ 
-                        fontSize: 'clamp(14px, 2.5vw, 20px)', 
+                <div className="content-card">
+                    <p className="welcome-box-header" style={{ marginBottom: 'clamp(16px, 3vw, 24px)' }}>Get in touch</p>
+                    <a href="mailto:contact@aethersocial.com" style={{
+                        fontSize: 'clamp(16px, 2.8vw, 22px)',
                         fontWeight: '600',
-                        marginBottom: 'var(--small-margin)',
-                    }}>
+                        color: '#6a6aff',
+                        textDecoration: 'none',
+                        transition: 'color 0.3s ease',
+                        display: 'inline-block'
+                    }}
+                    onMouseEnter={(e) => e.target.style.color = '#8a8aff'}
+                    onMouseLeave={(e) => e.target.style.color = '#6a6aff'}>
                         contact@aethersocial.com
-                    </p>
+                    </a>
                 </div>
             </div>
         </div>

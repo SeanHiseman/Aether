@@ -16,14 +16,25 @@ const Privacy = () => {
                 </Link>
             </div>
             <div className="team-content">
-                <div className="left-aligned-text">
-                    <p className="welcome-box-header">Your personal data does not leave Aether Social</p>
-                    <p style={{ fontSize: 'clamp(14px, 2.5vw, 20px)', fontWeight: '600', marginBottom: 'var(--small-margin)' }}>
+                <div className="content-card">
+                    <p className="welcome-box-header" style={{ marginBottom: 'clamp(16px, 3vw, 24px)' }}>Your personal data does not leave Aether Social</p>
+                    <p style={{
+                        fontSize: 'clamp(15px, 2.5vw, 18px)',
+                        fontWeight: '600',
+                        marginBottom: 'clamp(20px, 4vw, 32px)',
+                        lineHeight: '1.6',
+                        color: 'rgba(255, 255, 255, 0.9)'
+                    }}>
                         Sensitive information, such as passwords and private messages, are encrypted.
                     </p>
                 </div>
-                <div className="left-aligned-text">
-                    <p style={{ lineHeight: '1.6', color: 'rgba(255, 255, 255, 0.85)' }}>
+                <div className="content-card">
+                    <p style={{
+                        lineHeight: '1.7',
+                        color: 'rgba(255, 255, 255, 0.85)',
+                        fontSize: 'clamp(15px, 2.5vw, 18px)',
+                        fontStyle: 'italic'
+                    }}>
                         Full privacy policy coming soon.
                     </p>
                 </div>

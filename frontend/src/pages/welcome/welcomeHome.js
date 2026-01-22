@@ -27,9 +27,15 @@ const WelcomeHome = () => {
     return (
         <>
             <div className="welcome-container">
-                <Link to="/explore">
-                    <p className="welcome-text" style={{ fontWeight: '700' }}>Welcome to Aether Social</p>
-                    <p className="small-text faded-text" style={{ fontWeight: '500', marginBottom: '20px', textAlign: 'center' }}>Social media you control</p>
+                <Link to="/explore" style={{ textDecoration: 'none', color: 'inherit' }}>
+                    <p className="welcome-text">Welcome to Aether Social</p>
+                    <p className="small-text faded-text" style={{
+                        fontWeight: '500',
+                        marginBottom: '20px',
+                        textAlign: 'center',
+                        fontSize: 'clamp(16px, 3vw, 24px)',
+                        letterSpacing: '0.3px'
+                    }}>Social media you control</p>
                 </Link>
                 {/*<p className="medium-text">Free premium for first 1000 users, join soon!</p>*/}
                 <div className="join-login">
@@ -40,32 +46,84 @@ const WelcomeHome = () => {
                         <button className="button join welcome">Join</button>
                     </Link>
                 </div>
-                <p className="medium-text" style={{ marginTop: '20px' }}>Customise the algorithms that shows you content:</p>
-                <AlgorithmSelector display={true} locationId={'display'} />
-                <p className="medium-text" style={{ marginTop: '20px' }}>Apply custom algorithms to posts from other platforms:</p>
-                <PlatformConnect display={true} />
-                <p className="medium-text" style={{ marginTop: '20px' }}>Share interactive posts:</p>
-				<div className="welcome-posts-slideshow">
-                    {welcomePosts.length > 1 && (
-                        <div className="slideshow-controls">
-                            <button className="slideshow-btn prev" onClick={prevSlide}>
-                                ‹
-                            </button>
-                            <button className="slideshow-btn next" onClick={nextSlide}>
-                                ›
-                            </button>
-                        </div>
-                    )}
-                    <div className="slideshow-container">
-                        {welcomePosts.map((post, index) => (
-                            <div key={post?.post_id} className={`slide ${index === currentSlide ? 'active' : ''}`}>
-                                <ContentWidget display={true} post={post} />
+
+                <div style={{
+                    maxWidth: 'clamp(600px, 80vw, 1200px)',
+                    width: '100%',
+                    marginTop: 'clamp(20px, 4vw, 32px)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center'
+                }}>
+                    <p className="medium-text" style={{
+                        marginBottom: 'clamp(12px, 2.5vw, 20px)',
+                        fontSize: 'clamp(18px, 3.5vw, 28px)',
+                        fontWeight: '600',
+                        textAlign: 'center',
+                        letterSpacing: '-0.01em'
+                    }}>Customise the algorithms that shows you content</p>
+                    <AlgorithmSelector display={true} locationId={'display'} />
+                </div>
+
+                <div style={{
+                    maxWidth: 'clamp(600px, 80vw, 1200px)',
+                    width: '100%',
+                    marginTop: 'clamp(20px, 4vw, 32px)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center'
+                }}>
+                    <p className="medium-text" style={{
+                        marginBottom: 'clamp(12px, 2.5vw, 20px)',
+                        fontSize: 'clamp(18px, 3.5vw, 28px)',
+                        fontWeight: '600',
+                        textAlign: 'center',
+                        letterSpacing: '-0.01em'
+                    }}>Apply custom algorithms to posts from other platforms</p>
+                    <PlatformConnect display={true} />
+                </div>
+
+                <div style={{
+                    maxWidth: 'clamp(600px, 80vw, 1200px)',
+                    width: '100%',
+                    marginTop: 'clamp(20px, 4vw, 32px)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center'
+                }}>
+                    <p className="medium-text" style={{
+                        marginBottom: 'clamp(12px, 2.5vw, 20px)',
+                        fontSize: 'clamp(18px, 3.5vw, 28px)',
+                        fontWeight: '600',
+                        textAlign: 'center',
+                        letterSpacing: '-0.01em'
+                    }}>Share interactive posts</p>
+                    <div className="welcome-posts-slideshow">
+                        {welcomePosts.length > 1 && (
+                            <div className="slideshow-controls">
+                                <button className="slideshow-btn prev" onClick={prevSlide}>
+                                    ‹
+                                </button>
+                                <button className="slideshow-btn next" onClick={nextSlide}>
+                                    ›
+                                </button>
                             </div>
-                        ))}
+                        )}
+                        <div className="slideshow-container">
+                            {welcomePosts.map((post, index) => (
+                                <div key={post?.post_id} className={`slide ${index === currentSlide ? 'active' : ''}`}>
+                                    <ContentWidget display={true} post={post} />
+                                </div>
+                            ))}
+                        </div>
                     </div>
-				</div>
+                </div>
+
                 <Link to="/explore">
-                    <button className="large-icon" style={{ margin: '60px' }}>
+                    <button className="large-icon" style={{
+                        margin: 'clamp(24px, 5vw, 40px) 0',
+                        transition: 'all 0.3s ease'
+                    }}>
                         <FaArrowRight/>
                         <p className="icon-text">Explore posts</p>
                     </button>
