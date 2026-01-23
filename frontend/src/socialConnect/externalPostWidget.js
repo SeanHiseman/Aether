@@ -45,9 +45,6 @@ const ExternalPostWidget = ({ post }) => {
 	if (!isLoaded) {
 		return <p className="small-text faded-text">Loading content…</p>;
 	}
-    if (!isAuthenticated) {
-        return <p className="small-text faded-text">Please log in to view this content.</p>;
-    }
 
 	//Special formatting for subreddits, regular otherwise
 	const subreddit = post?.source === 'Reddit' && post?.channel

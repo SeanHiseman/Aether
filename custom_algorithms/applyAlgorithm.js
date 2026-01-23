@@ -160,9 +160,24 @@ function computeAlgorithmScore(post, { algorithmRow, normalizedBoost, normalized
 async function scoreAndPaginateCandidates({ nativePostIds = [], externalPostIds = [], algorithmRow, scoringParams, offset, limit }) {
     //Limit candidates to prevent CPU overload
     const MAX_CANDIDATES = 500;
-    const limitedNativeIds = nativePostIds.slice(0, MAX_CANDIDATES);
-    const remainingSlots = Math.max(0, MAX_CANDIDATES - limitedNativeIds.length);
-    const limitedExternalIds = externalPostIds.slice(0, remainingSlots);
+    //Split candidates fairly between native and external posts
+    const hasExternal = externalPostIds.length > 0;
+    const hasNative = nativePostIds.length > 0;
+    let limitedNativeIds, limitedExternalIds;
+    if (hasExternal && hasNative) {
+        //50/50 split when both are present
+        const halfMax = Math.floor(MAX_CANDIDATES / 2);
+        limitedNativeIds = nativePostIds.slice(0, halfMax);
+        limitedExternalIds = externalPostIds.slice(0, halfMax);
+    } else if (hasExternal) {
+        //All external if no native
+        limitedNativeIds = [];
+        limitedExternalIds = externalPostIds.slice(0, MAX_CANDIDATES);
+    } else {
+        //All native if no external
+        limitedNativeIds = nativePostIds.slice(0, MAX_CANDIDATES);
+        limitedExternalIds = [];
+    }
     //Pre-normalize algorithm embeddings once
     const { normalizedBoost, normalizedSuppress } = prepareAlgorithmEmbeddings(algorithmRow);
     //Pre-compute variety weights once
@@ -204,14 +219,23 @@ async function scoreAndPaginateCandidates({ nativePostIds = [], externalPostIds 
         ...nativePosts.map(p => ({ ...p, isExternal: false })),
         ...externalPosts.map(p => ({ ...p, isExternal: true, created_at: p.created_at_remote }))
     ];
+    let nativeScored = 0;
+    let externalScored = 0;
+    let nativeFiltered = 0;
+    let externalFiltered = 0;
     for (const post of allCandidates) {
         const score = computeAlgorithmScore(post, { algorithmRow, ...optimizedParams });
         if (score !== null) {
-            scoredCandidates.push({ 
-                post_id: post.post_id, 
-                algorithmScore: score, 
-                isExternal: post.isExternal 
+            scoredCandidates.push({
+                post_id: post.post_id,
+                algorithmScore: score,
+                isExternal: post.isExternal
             });
+            if (post.isExternal) externalScored++;
+            else nativeScored++;
+        } else {
+            if (post.isExternal) externalFiltered++;
+            else nativeFiltered++;
         }
     }
     //Sort by algorithm score with post_id as tie-breaker
@@ -768,7 +792,7 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
 			}
         } else if (locationId === "explore") {
 			if (hasActiveAlgorithm) {
-				//Algorithm path
+				//Algorithm path with external posts
 				const nativePostIds = await Posts.findAll({
 					attributes: ['post_id'],
 					where: {
@@ -781,22 +805,36 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
 					limit: MAX_ALGORITHM_CANDIDATES,
 					raw: true
 				});
+				//Fetch hottest external posts from all platforms (same for all users)
+				//Use 30 day window for explore feed to ensure content availability
+				const externalPostsQuery = await sequelize.query(
+					`SELECT p.post_id FROM external_posts p
+					WHERE p.source IN ('reddit', 'bluesky', 'mastodon') AND p.expired = false
+					AND p.created_at_remote >= DATE_SUB(NOW(), INTERVAL 30 DAY) ${externalFiltersSQL}
+					ORDER BY (p.score * EXP(-0.00002 * TIMESTAMPDIFF(SECOND, p.created_at_remote, NOW()))) DESC
+					LIMIT :maxCandidates`,
+					{ replacements: { maxCandidates: MAX_ALGORITHM_CANDIDATES }, type: QueryTypes.SELECT }
+				);
+				const externalPostIds = externalPostsQuery.map(a => a.post_id);
 				const { paginatedIds, scoreMap } = await scoreAndPaginateCandidates({
 					nativePostIds: nativePostIds.map(p => p.post_id),
+					externalPostIds,
 					algorithmRow,
 					scoringParams,
 					offset,
 					limit
 				});
 				if (!paginatedIds.length) {
-					if (Object.keys(algorithmFilters).length > 0) {
+					if (Object.keys(algorithmFilters).length > 0 || externalFiltersSQL) {
 						return { posts: [], status: "filtered", message: "Your algorithm settings filtered out all posts." };
 					}
 					return { posts: [], status: "ok", message: "" };
 				}
 				posts = await fetchPaginatedPostData({ paginatedIds, scoreMap, includeOptions, attrOption });
 			} else {
-				//Standard path
+				//Standard path with mixed native and external posts
+				const halfLimit = Math.ceil(backendFetchTotal / 2);
+				const halfOffset = Math.floor(offset / 2);
 				const postIds = await Posts.findAll({
 					attributes: ['post_id'],
 					where: {
@@ -806,19 +844,44 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
 						is_private: false
 					},
 					order: orderMode,
-					limit: backendFetchTotal,
-					offset,
+					limit: halfLimit,
+					offset: halfOffset,
 					raw: true
 				});
 				const orderedIds = postIds.map(p => p.post_id);
-				posts = await Posts.findAll({
-					where: { post_id: orderedIds },
-					include: includeOptions,
-					attributes: attrOption,
-					raw: false
-				});
-				const orderMap = new Map(orderedIds.map((id, i) => [id, i]));
-				posts.sort((a, b) => orderMap.get(a.post_id) - orderMap.get(b.post_id));
+				let localPosts = [];
+				if (orderedIds.length) {
+					localPosts = await Posts.findAll({
+						where: { post_id: orderedIds },
+						include: includeOptions,
+						attributes: attrOption,
+						raw: false
+					});
+					const orderMap = new Map(orderedIds.map((id, i) => [id, i]));
+					localPosts.sort((a, b) => orderMap.get(a.post_id) - orderMap.get(b.post_id));
+				}
+				//Fetch hottest external posts from all platforms (same for all users)
+				//Use 30 day window for explore feed to ensure content availability
+				const externalAccesses = await sequelize.query(
+					`SELECT p.post_id FROM external_posts p
+					WHERE p.source IN ('reddit', 'bluesky', 'mastodon') AND p.expired = false
+					AND p.created_at_remote >= DATE_SUB(NOW(), INTERVAL 30 DAY) ${externalFiltersSQL}
+					ORDER BY ${lowVoteImpact ? 'p.created_at_remote' : '(p.score * EXP(-0.00002 * TIMESTAMPDIFF(SECOND, p.created_at_remote, NOW())))'} DESC
+					LIMIT :limit OFFSET :offset`,
+					{ replacements: { limit: halfLimit, offset: halfOffset }, type: QueryTypes.SELECT }
+				);
+				const unifiedIds = externalAccesses.map(a => a.post_id);
+				let externalPosts = [];
+				if (unifiedIds.length) {
+					externalPosts = await ExternalPosts.findAll({
+						where: { post_id: unifiedIds, content: { [Op.ne]: null } },
+						raw: true
+					});
+				}
+				const formattedExternal = externalPosts.map(p => formatExternalPost(p, FEED_CONFIG[p.source], p.source));
+				const localWithFlag = localPosts.map(p => ({ ...(p.dataValues || p), isExternal: false }));
+				const externalWithFlag = formattedExternal.map(p => ({ ...p, isExternal: true }));
+				posts = IntermixArrays(localWithFlag, externalWithFlag).slice(0, backendFetchTotal);
 			}
         } else if (typeof locationId === 'string' && locationId.startsWith('deep_')) {
             const deepFeedId = locationId.replace(/^deep_/, '');

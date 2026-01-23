@@ -3,7 +3,9 @@ import api from '../../api';
 import { AuthContext } from "../../components/authContext";
 import { ChunkFeeds } from "../../functions/chunkFeeds";
 import ContentWidget from "../../components/content/contentWidget";
+import ExternalPostWidget from '../../socialConnect/externalPostWidget';
 import FeedWidget from "../../components/content/feedWidget";
+import { FaGlobe, FaHome } from 'react-icons/fa';
 import PlatformConnect from "../../socialConnect/platformConnect";
 import SwipeableAside from "../../components/swipeableAside";
 import { useMemo, useCallback, useContext, useEffect, useRef, useState } from "react";
@@ -17,6 +19,8 @@ const ExplorePage = () => {
 	const [filter, setFilter] = useState("all");
 	const [hasMoreFeeds, setHasMoreFeeds] = useState(true);
 	const [hasMorePosts, setHasMorePosts] = useState(true);
+	const [includeExternal, setIncludeExternal] = useState(true);
+	const [includeNative, setIncludeNative] = useState(true);
 	const [isLoading, setIsLoading] = useState(false);
 	const [postPage, setPostPage] = useState(0);
 	const [posts, setPosts] = useState([]);
@@ -129,12 +133,19 @@ const ExplorePage = () => {
 		}
 	}, [loadMore, isLoading]);
 
+	//Filter posts by native/external toggles
+	const visiblePosts = useMemo(() => {
+		return posts.filter(p =>
+			(includeNative && !p.is_external) || (includeExternal && p.is_external)
+		);
+	}, [posts, includeNative, includeExternal]);
+
 	const combinedItems = useMemo(() => {
 		if (filter !== "all") return [];
 		const feedTriplets = ChunkFeeds(feeds, 3).map(f => ({ type: "feedTriplet", data: f }));
-		const postItems = posts.map(p => ({ type: "post", data: p }));
+		const postItems = visiblePosts.map(p => ({ type: "post", data: p }));
 		const interspersed = [];
-		const POSTS_PER_BLOCK = 5; 
+		const POSTS_PER_BLOCK = 5;
 		let postIndex = 0;
 		let feedIndex = 0;
 		while (postIndex < postItems.length || feedIndex < feedTriplets.length) {
@@ -148,7 +159,7 @@ const ExplorePage = () => {
 			}
 		}
 		return interspersed;
-	}, [filter, posts, feeds]);
+	}, [filter, visiblePosts, feeds]);
 
 	const refreshPosts = () => {
 		setErrorMessage('');
@@ -192,13 +203,19 @@ const ExplorePage = () => {
 					<div className="flex justify-center items-center h-64">
 						<span className="large-text faded-text">Loading...</span>
 					</div>
+				) : posts.length > 0 && visiblePosts.length === 0 && filter !== "feeds" ? (
+					<p className="large-text faded-text">All posts hidden</p>
 				) : (
 					<>
 						{filter === "all" && (
 							<div className="flex flex-col w-99">
 								{combinedItems.map((item, idx) => item?.type === "post" ? (
 									<div key={`post-${item?.data?.post_id}`} className="bg-gray-800 rounded-xl">
-										<ContentWidget post={item?.data} />
+										{item.data.is_external ? (
+											<ExternalPostWidget post={item.data} />
+										) : (
+											<ContentWidget post={item.data} />
+										)}
 									</div>
 								) : (
 									<div key={`feedtriplet-${idx}`} className="grid grid-cols-3 gap-3 w-full med-mar-top">
@@ -212,9 +229,13 @@ const ExplorePage = () => {
 						)}
 						{filter === "posts" && (
 							<div className="flex flex-col w-99">
-								{posts.map(post => (
+								{visiblePosts.map(post => (
 									<div key={post.post_id} className="bg-gray-800 rounded-xl">
-										<ContentWidget post={post} />
+										{post.is_external ? (
+											<ExternalPostWidget post={post} />
+										) : (
+											<ContentWidget post={post} />
+										)}
 									</div>
 								))}
 							</div>
@@ -242,6 +263,16 @@ const ExplorePage = () => {
 				</nav>
 				<p className="small-text faded-text">{isAuthenticated ? errorMessage : ""}</p>
 				<AlgorithmSelector display={false} isAuthenticated={isAuthenticated} locationId={"explore"} refreshPosts={refreshPosts} />
+				<div className="flex flex-col items-flex-start">
+					<button onClick={() => setIncludeNative(!includeNative)} className="small-icon">
+						<FaHome />
+						<p className="icon-text">{includeNative ? "Hide native" : "Show native"}</p>
+					</button>
+					<button onClick={() => setIncludeExternal(!includeExternal)} className="small-icon">
+						<FaGlobe />
+						<p className="icon-text">{includeExternal ? "Hide external" : "Show external"}</p>
+					</button>
+				</div>
 				<PlatformConnect />
 			</SwipeableAside>
 		</div>
