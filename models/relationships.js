@@ -1,4 +1,4 @@
-import { AppBuilds, Posts, PostDrafts, PostNotes, PostVotes, Prompts, ViewedPosts } from "./content.js";
+import { AppBuilds, ExternalPosts, Posts, PostDrafts, PostNotes, PostVotes, Prompts, ViewedPosts } from "./content.js";
 import { DeepFeeds, DeepFeedContent, Feeds, FeedChannels, FeedChannelMessages, Followers, FollowRequests, SavedPosts, SavedPostChannels } from "./feeds.js";
 import { AskChats, AskMessages, Chats, ConnectRequests, Connections, FeedChats, Messages } from "./messages.js";
 import { Feedback, Users } from "./users.js";
@@ -75,6 +75,8 @@ Feeds.hasMany(Messages, { foreignKey: 'sender_id' });
 Messages.belongsTo(Feeds, { foreignKey: 'sender_id' });
 Messages.belongsTo(Posts, { foreignKey: 'shared_post_id', as: 'sharedPost' });
 Posts.hasMany(Messages, { foreignKey: 'shared_post_id', as: 'sharedInMessages' });
+Messages.belongsTo(ExternalPosts, { foreignKey: 'shared_external_post_id', as: 'sharedExternalPost' });
+ExternalPosts.hasMany(Messages, { foreignKey: 'shared_external_post_id', as: 'sharedInMessages' });
 
 AskChats.belongsTo(Users, { as: 'user', foreignKey: 'user_id' });
 Users.hasMany(AskChats, { as: 'askChats', foreignKey: 'user_id' });
@@ -101,24 +103,25 @@ Feeds.hasMany(PostDrafts, { as: 'drafts', foreignKey: 'feed_id' });
 
 export {
     AppBuilds,
-    AskChats, 
-    AskMessages, 
-    Chats, 
-    ConnectRequests, 
-    Connections, 
-    DeepFeeds, 
+    AskChats,
+    AskMessages,
+    Chats,
+    ConnectRequests,
+    Connections,
+    DeepFeeds,
     DeepFeedContent,
+    ExternalPosts,
     Feedback,
-    FeedChats, 
-    Feeds, 
-    FeedChannels, 
-    FeedChannelMessages, 
-    Followers, 
-    FollowRequests, 
+    FeedChats,
+    Feeds,
+    FeedChannels,
+    FeedChannelMessages,
+    Followers,
+    FollowRequests,
     Messages,
-    Posts, 
+    Posts,
     PostDrafts,
-    PostNotes, 
+    PostNotes,
     PostVotes,
     Prompts,
     SavedPosts,

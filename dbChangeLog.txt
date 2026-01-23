@@ -507,3 +507,6 @@ ADD INDEX `idx_ext_posts_author_did` (`author_did`);
 
 ALTER TABLE `algorithm_locations`
 MODIFY `location_id` VARCHAR(255) NOT NULL;
+
+  ALTER TABLE `messages` ADD COLUMN `shared_external_post_id` VARCHAR(255) NULL AFTER `shared_post_id`;
+  CREATE INDEX `idx_shared_external_post_id` ON `messages` (`shared_external_post_id`);

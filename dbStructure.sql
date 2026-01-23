@@ -176,7 +176,7 @@ CREATE TABLE `followers` (
 DROP TABLE IF EXISTS `messages`;
 CREATE TABLE `messages` (
   `message_id` char(36) NOT NULL,
-  `content` varchar(1000) NOT NULL,
+  `content` varchar(1000) DEFAULT NULL,
   `chat_id` char(36) NOT NULL,
   `sender_id` char(36) NOT NULL,
   `receiver_id` char(36) NOT NULL,
@@ -184,15 +184,17 @@ CREATE TABLE `messages` (
   `created_at` datetime(3) DEFAULT CURRENT_TIMESTAMP(3),
   `updated_at` datetime(3) DEFAULT CURRENT_TIMESTAMP(3),
   `shared_post_id` VARCHAR(36) NULL,
+  `shared_external_post_id` VARCHAR(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL,
   PRIMARY KEY (`message_id`),
   KEY `chat_id` (`chat_id`),
   KEY `sender_id` (`sender_id`),
   KEY `receiver_id` (`receiver_id`),
+  KEY `idx_messages_shared_post` (`shared_post_id`),
+  KEY `idx_shared_external_post_id` (`shared_external_post_id`),
   CONSTRAINT `messages_ibfk_1` FOREIGN KEY (`chat_id`) REFERENCES `chats` (`chat_id`),
   CONSTRAINT `messages_ibfk_2` FOREIGN KEY (`sender_id`) REFERENCES `feeds` (`feed_id`),
   CONSTRAINT `messages_ibfk_3` FOREIGN KEY (`receiver_id`) REFERENCES `feeds` (`feed_id`),
   CONSTRAINT `fk_shared_post` FOREIGN KEY (`shared_post_id`) REFERENCES `posts` (`post_id`) ON DELETE SET NULL
-  INDEX `idx_messages_shared_post` ON messages(shared_post_id),
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 DROP TABLE IF EXISTS `post_drafts`;
@@ -381,7 +383,7 @@ CREATE TABLE viewed_posts (
 );
 
 CREATE TABLE `external_posts` (
-  `post_id` VARCHAR(255) NOT NULL,
+  `post_id` VARCHAR(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,
   `source` VARCHAR(32) DEFAULT NULL,
   `source_post_id` VARCHAR(128) DEFAULT NULL,
   `title` TEXT DEFAULT NULL,
@@ -404,7 +406,7 @@ CREATE TABLE `external_posts` (
   `channel` VARCHAR(128) DEFAULT NULL,
   `author` VARCHAR(190) DEFAULT NULL,
   `author_photo` TEXT DEFAULT NULL,
-  `author_did` VARCHAR(255) DEFAULT NULL AFTER `author`,
+  `author_did` VARCHAR(255) DEFAULT NULL,
   `url` TEXT DEFAULT NULL,
   `media` JSON DEFAULT NULL,
   PRIMARY KEY (`post_id`),

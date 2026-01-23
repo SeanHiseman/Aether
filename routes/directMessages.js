@@ -1,5 +1,5 @@
 import authenticateCheck from '../functions/checks/authenticateCheck.js';
-import { Chats, Connections, ConnectRequests, FeedChats, FeedChannels, Feeds, Followers, Messages, Posts, PostNotes, PostVotes, SavedPosts } from '../models/relationships.js';
+import { Chats, Connections, ConnectRequests, ExternalPosts, FeedChats, FeedChannels, Feeds, Followers, Messages, Posts, PostNotes, PostVotes, SavedPosts } from '../models/relationships.js';
 import { decrypt, encrypt } from '../functions/encryptionUtil.js';
 import dotenv from 'dotenv';
 import { Op, Sequelize } from 'sequelize';
@@ -240,6 +240,11 @@ router.get('/get_chat_messages', authenticateCheck, async (req, res) => {
                             attributes: ['upvotes', 'downvotes']
                         }
                     ]
+                },
+                {
+                    model: ExternalPosts,
+                    as: 'sharedExternalPost',
+                    required: false
                 }
             ],
             order: [['created_at', 'ASC']],
@@ -263,6 +268,14 @@ router.get('/get_chat_messages', authenticateCheck, async (req, res) => {
                     where: { post_id: message.shared_post_id, saver_id: viewerId }
                 });
                 message.sharedPost.is_saved = !!savedRow;
+            }
+            if (message.sharedExternalPost) {
+                message.sharedExternalPost.poster = {
+                    username: message.sharedExternalPost.author,
+                    user_photo: message.sharedExternalPost.author_photo,
+                    profile_url: message.sharedExternalPost.url
+                };
+                message.sharedExternalPost.created_at = message.sharedExternalPost.created_at_remote;
             }
         }
         res.status(200).json({ messages: decryptedMessages, success: true });
@@ -532,6 +545,84 @@ router.post('/send_shared_post', authenticateCheck, async (req, res) => {
     } catch (error) {
         console.error(new Date().toISOString(), '/send_shared_post error:', error);
         res.status(500).json({ success: false, message: 'Error sending shared post' });
+    }
+});
+
+router.post('/send_shared_external_post', authenticateCheck, async (req, res) => {
+    try {
+        const { post_id, shares, sender_id, message_text } = req.body;
+        if (!post_id || !shares || !Array.isArray(shares) || shares.length === 0) {
+            return res.status(400).json({ success: false, message: 'Invalid request parameters' });
+        }
+        if (message_text) {
+            const validation = ValidateTextInput(message_text, 0, 1000, false);
+            if (!validation.valid) {
+                return res.status(400).json({ success: false, message: validation.error });
+            }
+        }
+        const externalPost = await ExternalPosts.findOne({
+            where: { post_id }
+        });
+        if (!externalPost) {
+            return res.status(404).json({ success: false, message: 'External post not found' });
+        }
+        const encryptedContent = message_text ? encrypt(message_text) : null;
+        let sentCount = 0;
+        for (const share of shares) {
+            const { chat_id, receiver_id } = share;
+            const connection = await Connections.findOne({
+                where: {
+                    [Op.or]: [
+                        { feed1_id: sender_id, feed2_id: receiver_id },
+                        { feed1_id: receiver_id, feed2_id: sender_id }
+                    ]
+                }
+            });
+            if (!connection) {
+                continue;
+            }
+            const message = await Messages.create({
+                message_id: v4(),
+                content: encryptedContent,
+                chat_id,
+                sender_id,
+                receiver_id,
+                shared_external_post_id: post_id,
+                is_read: false,
+                created_at: new Date()
+            });
+            await Chats.update(
+                { updated_at: new Date() },
+                { where: { chat_id } }
+            );
+            const messageWithPost = await Messages.findOne({
+                where: { message_id: message.message_id },
+                include: [{
+                    model: ExternalPosts,
+                    as: 'sharedExternalPost',
+                    required: false
+                }]
+            });
+            const messageToSend = messageWithPost.toJSON();
+            messageToSend.content = decrypt(messageToSend.content);
+            if (messageToSend.sharedExternalPost) {
+                messageToSend.sharedExternalPost.poster = {
+                    username: messageToSend.sharedExternalPost.author,
+                    user_photo: messageToSend.sharedExternalPost.author_photo,
+                    profile_url: messageToSend.sharedExternalPost.url
+                };
+                messageToSend.sharedExternalPost.created_at = messageToSend.sharedExternalPost.created_at_remote;
+            }
+            const io = req.app.get('io');
+            if (io) {
+                io.to(chat_id).emit('chat_message_confirmed', messageToSend);
+            }
+            sentCount++;
+        }
+        res.status(200).json({ success: true, sentCount });
+    } catch (error) {
+        console.error(new Date().toISOString(), '/send_shared_external_post error:', error);
+        res.status(500).json({ success: false, message: 'Error sending shared external post' });
     }
 });
 

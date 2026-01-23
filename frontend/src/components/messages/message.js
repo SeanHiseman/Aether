@@ -1,5 +1,6 @@
 import ConfirmModal from '../modals/confirmModal';
 import ContentWidget from '../content/contentWidget';
+import ExternalPostWidget from '../../socialConnect/externalPostWidget';
 import { FaEdit, FaTrash, FaEllipsisV } from 'react-icons/fa';
 import { Link } from 'react-router-dom';
 import { useState } from 'react';
@@ -9,6 +10,7 @@ const Message = ({ canRemove, deleteMessage, editMessage, editingMessageId, setE
     const [optionsOpen, setOptionsOpen] = useState(false);
     const [showConfirmDelete, setShowConfirmDelete] = useState(false);
     const isSharedPost = Boolean(message?.shared_post_id);
+    const isSharedExternalPost = Boolean(message?.shared_external_post_id);
     const [validationError, setValidationError] = useState('');
 
     //Users can delete their own messages
@@ -54,7 +56,7 @@ const Message = ({ canRemove, deleteMessage, editMessage, editingMessageId, setE
     };
 
     return (
-        <div className={`message-container ${isOutgoing ? 'outgoing' : 'incoming'}${isSharedPost ? ' shared-post' : ''}`}>
+        <div className={`message-container ${isOutgoing ? 'outgoing' : 'incoming'}${isSharedPost || isSharedExternalPost ? ' shared-post' : ''}`}>
             <div className="message-content">
                 {!isOutgoing && message?.feed && isGroup && (
                     <Link to={`/u/${message?.feed?.feed_name}`}>
@@ -121,7 +123,7 @@ const Message = ({ canRemove, deleteMessage, editMessage, editingMessageId, setE
                         </div>
                     </div>
                 ) : (
-                    <div className={`message ${isSharedPost ? 'shared-post' : (isOutgoing ? 'outgoing' : 'incoming')}`}>
+                    <div className={`message ${isSharedPost || isSharedExternalPost ? 'shared-post' : (isOutgoing ? 'outgoing' : 'incoming')}`}>
                         {message?.content && (
                             <div className="message-text">
                                 {message.content}
@@ -135,11 +137,18 @@ const Message = ({ canRemove, deleteMessage, editMessage, editingMessageId, setE
                         ) : message.shared_post_id && (
                             <div className="deleted-post-notice">[Post deleted]</div>
                         )}
+                        {message.sharedExternalPost ? (
+                            <div className={`shared-post-wrapper ${isOutgoing ? 'outgoing' : 'incoming'}`}>
+                                <ExternalPostWidget post={message.sharedExternalPost} sharedPost={true} />
+                            </div>
+                        ) : message.shared_external_post_id && !message.sharedExternalPost && (
+                            <div className="deleted-post-notice">[External post no longer available]</div>
+                        )}
                     </div>
                 )}
             </div>
-            <div className={`message-info ${isSharedPost ? '' : (isOutgoing ? 'outgoing' : 'incoming')}`}>
-                <p className={`message-date ${isSharedPost ? '' : (isOutgoing ? 'outgoing' : 'incoming')}`}>
+            <div className={`message-info ${isSharedPost || isSharedExternalPost ? '' : (isOutgoing ? 'outgoing' : 'incoming')}`}>
+                <p className={`message-date ${isSharedPost || isSharedExternalPost ? '' : (isOutgoing ? 'outgoing' : 'incoming')}`}>
                     {formatTimestamp(message.created_at)}
                 </p>
                 {isOutgoing && !isGroup && (
