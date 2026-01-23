@@ -812,12 +812,20 @@ router.post('/login', loginLimiter, async (req, res) => {
                 order: [['updated_at', 'DESC']], //Most recent upvotes
                 limit: 100
             });
-            //Fetch Bluesky follows if user has Bluesky connected
+            //Fetch external feed follows from connected accounts
             let blueskyFollows = [];
+            let mastodonFollows = [];
             const hasBluesky = connectedAccounts.some(a => a.platform === 'bluesky');
+            const hasMastodon = connectedAccounts.some(a => a.platform === 'mastodon');
             if (hasBluesky) {
                 blueskyFollows = await ExternalFollows.findAll({
                     where: { user_id: user.user_id, platform: 'bluesky' },
+                    order: [['display_name', 'ASC'], ['handle', 'ASC']]
+                });
+            }
+            if (hasMastodon) {
+                mastodonFollows = await ExternalFollows.findAll({
+                    where: { user_id: user.user_id, platform: 'mastodon' },
                     order: [['display_name', 'ASC'], ['handle', 'ASC']]
                 });
             }
@@ -843,6 +851,7 @@ router.post('/login', loginLimiter, async (req, res) => {
                 },
                 algorithms,
                 blueskyFollows,
+                mastodonFollows,
                 connectedAccounts, //External social media accounts
                 connections: connectionFeeds, //Users that have been connected with
                 connectionChats: connectionChatsMap, //Chats with other users

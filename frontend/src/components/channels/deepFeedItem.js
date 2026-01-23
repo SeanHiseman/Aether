@@ -3,7 +3,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useDroppable } from '@dnd-kit/core';
 import { FaChevronDown, FaChevronUp } from 'react-icons/fa';
 import { Link, useLocation } from 'react-router-dom';
-import BlueskyFollowItem from './blueskyFollowItem';
+import ExternalFollowItem from './externalFollowItem';
 import FeedItem from './feedItem';
 
 const DeepFeedItem = ({ deepFeed, onFeedAdded, showHeader }) => {
@@ -16,6 +16,14 @@ const DeepFeedItem = ({ deepFeed, onFeedAdded, showHeader }) => {
 	const blueskyFollows = useMemo(() => {
 		try {
 			return JSON.parse(localStorage.getItem("blueskyFollows") || "[]");
+		} catch {
+			return [];
+		}
+	}, []);
+
+	const mastodonFollows = useMemo(() => {
+		try {
+			return JSON.parse(localStorage.getItem("mastodonFollows") || "[]");
 		} catch {
 			return [];
 		}
@@ -137,23 +145,38 @@ const DeepFeedItem = ({ deepFeed, onFeedAdded, showHeader }) => {
 							//Render BlueskyFollowItem for external accounts
 							if (item?.externalAccount || (item?.external_did && !item?.feed_id)) {
 								let follow = item.externalAccount;
+								let platform = item?.platform || 'bluesky'; //Default to bluesky for backward compatibility
+
 								if (!follow || !follow.display_name) {
-									const storedFollow = blueskyFollows.find(f => f.did === item.external_did);
-									if (storedFollow) {
-										follow = storedFollow;
+									//Try to find in blueskyFollows first
+									const blueskyMatch = blueskyFollows.find(f => f.did === item.external_did);
+									if (blueskyMatch) {
+										follow = blueskyMatch;
+										platform = 'bluesky';
 									} else {
-										follow = {
-											did: item.external_did,
-											handle: item.external_did,
-											display_name: null,
-											avatar: null
-										};
+										//Try mastodonFollows
+										const mastodonMatch = mastodonFollows.find(f => f.did === item.external_did);
+										if (mastodonMatch) {
+											follow = mastodonMatch;
+											platform = 'mastodon';
+										} else {
+											//Fallback: detect platform from DID format
+											//Bluesky DIDs start with "did:", Mastodon uses numeric IDs
+											platform = item.external_did?.startsWith('did:') ? 'bluesky' : 'mastodon';
+											follow = {
+												did: item.external_did,
+												handle: item.external_did,
+												display_name: null,
+												avatar: null
+											};
+										}
 									}
 								}
 								return (
-									<BlueskyFollowItem
-										key={`external-${follow.did}`}
+									<ExternalFollowItem
+										key={`external-${platform}-${follow.did}`}
 										follow={follow}
+										platform={platform}
 										parentDeepFeedId={deepFeed?.deep_feed_id}
 									/>
 								);

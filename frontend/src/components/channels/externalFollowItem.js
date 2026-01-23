@@ -3,20 +3,21 @@ import React, { useCallback, useState } from 'react';
 import { useDraggable, useDroppable } from '@dnd-kit/core';
 import { useNavigate } from 'react-router-dom';
 
-const BlueskyFollowItem = ({ follow, parentDeepFeedId }) => {
+const ExternalFollowItem = ({ follow, parentDeepFeedId, platform = 'bluesky' }) => {
     const navigate = useNavigate();
     const [isDragIntent, setIsDragIntent] = useState(false);
     const [mouseDown, setMouseDown] = useState(false);
 
     const uniqueId = parentDeepFeedId
-        ? `df-${parentDeepFeedId}-bluesky-${follow?.did}`
-        : `sidebar-bluesky-${follow?.did}`;
+        ? `df-${parentDeepFeedId}-${platform}-${follow?.did}`
+        : `sidebar-${platform}-${follow?.did}`;
 
     const { attributes, listeners, setNodeRef: setDraggableRef, transform, isDragging } = useDraggable({
         id: uniqueId,
         data: {
             parentDeepFeedId,
-            type: 'blueskyFollow',
+            type: platform === 'bluesky' ? 'blueskyFollow' : 'externalFollow',
+            platform: platform,
             follow: follow,
             originalId: follow?.did
         }
@@ -42,7 +43,7 @@ const BlueskyFollowItem = ({ follow, parentDeepFeedId }) => {
         if (!isDragIntent && !isDragging) {
             //Navigate to internal page to view this account's posts
             //Pass follow data through state so name/avatar show immediately
-            navigate(`/external/bluesky/${encodeURIComponent(follow?.did || follow?.handle)}`, {
+            navigate(`/external/${platform}/${encodeURIComponent(follow?.did || follow?.handle)}`, {
                 state: {
                     accountInfo: {
                         did: follow?.did,
@@ -54,7 +55,7 @@ const BlueskyFollowItem = ({ follow, parentDeepFeedId }) => {
                 }
             });
         }
-    }, [isDragIntent, isDragging, follow, navigate]);
+    }, [isDragIntent, isDragging, follow, navigate, platform]);
 
     const handleMouseDown = useCallback(() => {
         setIsDragIntent(false);
@@ -101,9 +102,9 @@ const BlueskyFollowItem = ({ follow, parentDeepFeedId }) => {
                     <p className="small-text">{displayName}</p>
                     <img
                         className="bluesky-indicator"
-                        src="/media/site_images/social_sites/bluesky-logo.png"
-                        alt="Bluesky"
-                        title="Bluesky follow"
+                        src={`/media/site_images/social_sites/${platform}-logo.png`}
+                        alt={platform.charAt(0).toUpperCase() + platform.slice(1)}
+                        title={`${platform.charAt(0).toUpperCase() + platform.slice(1)} follow`}
                     />
                 </div>
             </div>
@@ -111,4 +112,4 @@ const BlueskyFollowItem = ({ follow, parentDeepFeedId }) => {
     );
 };
 
-export default BlueskyFollowItem;
+export default ExternalFollowItem;

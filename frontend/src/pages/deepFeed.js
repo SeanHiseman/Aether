@@ -1,7 +1,7 @@
 import AlgorithmSelector from '../algorithms/algorithmSelector';
 import api from '../api';
 import { AuthContext } from '../components/authContext';
-import BlueskyFollowItem from '../components/channels/blueskyFollowItem';
+import ExternalFollowItem from '../components/channels/externalFollowItem';
 import ConfirmModal from '../components/modals/confirmModal';
 import ContentWidget from '../components/content/contentWidget';
 import ExternalPostWidget from '../socialConnect/externalPostWidget';
@@ -54,6 +54,14 @@ const DeepFeed = () => {
     const blueskyFollows = useMemo(() => {
         try {
             return JSON.parse(localStorage.getItem("blueskyFollows") || "[]");
+        } catch {
+            return [];
+        }
+    }, []);
+
+    const mastodonFollows = useMemo(() => {
+        try {
+            return JSON.parse(localStorage.getItem("mastodonFollows") || "[]");
         } catch {
             return [];
         }
@@ -496,25 +504,39 @@ const DeepFeed = () => {
                             {sortedContents.map(item => {
                                 if (item?.externalAccount || (item?.external_did && !item?.feed_id)) {
                                     let follow = item.externalAccount;
+                                    let platform = item?.platform || 'bluesky'; //Default to bluesky for backward compatibility
+
                                     if (!follow || !follow.display_name) {
-                                        const storedFollow = blueskyFollows.find(f => f.did === item.external_did);
-                                        if (storedFollow) {
-                                            follow = storedFollow;
+                                        //Try to find in blueskyFollows first
+                                        const blueskyMatch = blueskyFollows.find(f => f.did === item.external_did);
+                                        if (blueskyMatch) {
+                                            follow = blueskyMatch;
+                                            platform = 'bluesky';
                                         } else {
-                                            follow = {
-                                                did: item.external_did,
-                                                handle: item.external_did,
-                                                display_name: null,
-                                                avatar: null
-                                            };
+                                            //Try mastodonFollows
+                                            const mastodonMatch = mastodonFollows.find(f => f.did === item.external_did);
+                                            if (mastodonMatch) {
+                                                follow = mastodonMatch;
+                                                platform = 'mastodon';
+                                            } else {
+                                                //Fallback: detect platform from DID format
+                                                //Bluesky DIDs start with "did:", Mastodon uses numeric IDs
+                                                platform = item.external_did?.startsWith('did:') ? 'bluesky' : 'mastodon';
+                                                follow = {
+                                                    did: item.external_did,
+                                                    handle: item.external_did,
+                                                    display_name: null,
+                                                    avatar: null
+                                                };
+                                            }
                                         }
                                     }
                                     return (
-                                        <li key={`external-${follow.did}`} style={{ display: 'flex', alignItems: 'center' }}>
+                                        <li key={`external-${platform}-${follow.did}`} style={{ display: 'flex', alignItems: 'center' }}>
                                             <button className="small-icon" onClick={() => removeExternalAccount(follow.did)} title="Remove from combined feed">
                                                 <FaMinus />
                                             </button>
-                                            <BlueskyFollowItem follow={follow} parentDeepFeedId={deep_feed_id} />
+                                            <ExternalFollowItem follow={follow} platform={platform} parentDeepFeedId={deep_feed_id} />
                                         </li>
                                     );
                                 }

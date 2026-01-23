@@ -30,6 +30,7 @@ const Login = () => {
             if (response.data?.success) {
                 localStorage.setItem("algorithms", JSON.stringify(response.data?.algorithms || []));
                 localStorage.setItem("blueskyFollows", JSON.stringify(response.data?.blueskyFollows || []));
+                localStorage.setItem("mastodonFollows", JSON.stringify(response.data?.mastodonFollows || []));
                 localStorage.setItem("connectedAccounts", JSON.stringify(response.data?.connectedAccounts || []));
                 localStorage.setItem("connections", JSON.stringify(response.data?.connections || []));
                 localStorage.setItem("connectionChats", JSON.stringify(response.data?.connectionChats || {}));

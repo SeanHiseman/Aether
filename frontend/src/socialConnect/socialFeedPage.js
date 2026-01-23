@@ -102,13 +102,13 @@ export default function SocialFeedPage({ platform }) {
 	}, [refreshTrigger, isAuthenticated, justConnected]);
 
 	useEffect(() => {
-		if (hasLoadedRef.current) {
-			hasLoadedRef.current = false;
-			setOffset(0);
-			setHasMore(true);
-			setPosts([]);
-			setLoading(true);
-		}
+		//Always reset state when platform changes
+		hasLoadedRef.current = false;
+		setOffset(0);
+		setHasMore(true);
+		setPosts([]);
+		setLoading(true);
+		isFetchingRef.current = false;
 	}, [platform]);
 
 	useEffect(() => {

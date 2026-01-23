@@ -1,6 +1,6 @@
 import api from "../../api";
 import { AuthContext } from "../../components/authContext";
-import BlueskyFollowItem from "../../components/channels/blueskyFollowItem";
+import ExternalFollowItem from "../../components/channels/externalFollowItem";
 import Cropper from "react-easy-crop";
 import { Crown } from 'lucide-react';
 import DeepFeedItem from "../../components/channels/deepFeedItem";
@@ -35,6 +35,7 @@ const BaseLayout = () => {
 	const [activeId, setActiveId] = useState(null);
 	const [asideErrorMessage, setAsideErrorMessage] = useState("");
 	const [blueskyFollows, setBlueskyFollows] = useState([]);
+	const [mastodonFollows, setMastodonFollows] = useState([]);
 	const [crop, setCrop] = useState({ x: 0, y: 0 });
 	const [croppedAreaPixels, setCroppedAreaPixels] = useState(null);
 	const [currentQuery, setCurrentQuery] = useState("");
@@ -127,13 +128,23 @@ const BaseLayout = () => {
         let dragType = "feed";
         let dragItem = null;
         let feedId;
-        //Handle Bluesky follows
+        //Handle external follows (Bluesky, Mastodon, etc.)
         if (activeId.startsWith('sidebar-bluesky-')) {
             const blueskyDid = activeId.replace('sidebar-bluesky-', '');
             dragType = "blueskyFollow";
             dragItem = blueskyFollows.find(f => f.did === blueskyDid);
+        } else if (activeId.startsWith('sidebar-mastodon-')) {
+            const mastodonDid = activeId.replace('sidebar-mastodon-', '');
+            dragType = "mastodonFollow";
+            dragItem = mastodonFollows.find(f => f.did === mastodonDid);
         } else if (activeId.includes('-bluesky-')) {
             dragType = "blueskyFollowInDeepFeed";
+            dragItem = {
+                follow: dragData.follow,
+                parentDeepFeedId: dragData.parentDeepFeedId
+            };
+        } else if (activeId.includes('-mastodon-')) {
+            dragType = "mastodonFollowInDeepFeed";
             dragItem = {
                 follow: dragData.follow,
                 parentDeepFeedId: dragData.parentDeepFeedId
@@ -148,7 +159,7 @@ const BaseLayout = () => {
         } else {
             feedId = activeId;
         }
-        if (dragData?.parentDeepFeedId && dragType !== "blueskyFollowInDeepFeed") {
+        if (dragData?.parentDeepFeedId && dragType !== "blueskyFollowInDeepFeed" && dragType !== "mastodonFollowInDeepFeed") {
             dragType = "feedInDeepFeed";
             dragItem = {
                 feed: dragData.feed,
@@ -170,19 +181,25 @@ const BaseLayout = () => {
         const overData = over.data.current;
         let targetFeedId;
         let targetBlueskyDid;
+        let targetMastodonDid;
         if (overId.toString().startsWith('sidebar-feed-')) {
             targetFeedId = overId.toString().replace('sidebar-feed-', '');
         } else if (overId.toString().startsWith('sidebar-bluesky-')) {
             targetBlueskyDid = overId.toString().replace('sidebar-bluesky-', '');
+        } else if (overId.toString().startsWith('sidebar-mastodon-')) {
+            targetMastodonDid = overId.toString().replace('sidebar-mastodon-', '');
         } else if (overId.toString().includes('-feed-')) {
             const parts = overId.toString().split('-');
             targetFeedId = parts[parts.length - 1];
         } else if (overId.toString().includes('-bluesky-')) {
             const parts = overId.toString().split('-');
             targetBlueskyDid = parts[parts.length - 1];
+        } else if (overId.toString().includes('-mastodon-')) {
+            const parts = overId.toString().split('-');
+            targetMastodonDid = parts[parts.length - 1];
         }
         //Check if the overId is a deep feed (not a feed within a deep feed)
-        const isOverDeepFeed = (overId.toString().startsWith('df-') && !overId.toString().includes('-feed-') && !overId.toString().includes('-bluesky-'))
+        const isOverDeepFeed = (overId.toString().startsWith('df-') && !overId.toString().includes('-feed-') && !overId.toString().includes('-bluesky-') && !overId.toString().includes('-mastodon-'))
             || overData?.type === 'deepFeed';
         let targetDeepFeedId;
         if (isOverDeepFeed) {
@@ -273,6 +290,38 @@ const BaseLayout = () => {
                     }));
                 }
             }
+            //Case 2b: Mastodon follow dropped on deep feed
+            else if (dragType === "mastodonFollow" && isOverDeepFeed && targetDeepFeedId) {
+                const sourceFollow = activeDragItem;
+                if (sourceFollow) {
+                    //Get cached contents
+                    let cachedContents = JSON.parse(
+                        localStorage.getItem(`deepFeedContents_${targetDeepFeedId}`)
+                    ) || [];
+                    //Check for duplicate
+                    const alreadyExists = cachedContents.some(
+                        item => item?.external_did === sourceFollow?.did
+                    );
+                    if (alreadyExists) {
+                        setAsideErrorMessage("This Mastodon follow is already in the combined feed");
+                        setTimeout(() => setAsideErrorMessage(""), 5000);
+                        resetDragState();
+                        return;
+                    }
+                    const payload = {
+                        deepFeedId: targetDeepFeedId,
+                        externalDid: sourceFollow?.did,
+                        platform: 'mastodon'
+                    };
+                    const { data } = await api.post("/add_to_deep_feed", payload);
+                    if (data.success && deepFeedCallbacks[targetDeepFeedId]) {
+                        deepFeedCallbacks[targetDeepFeedId]({ type: "UPDATE_CONTENTS" });
+                    }
+                    window.dispatchEvent(new CustomEvent('deepFeedUpdated', {
+                        detail: { deepFeedId: targetDeepFeedId }
+                    }));
+                }
+            }
             //Case 3: Two regular feeds from sidebar combine to create new deep feed
             else if (dragType === "feed" && !isOverDeepFeed && targetFeedId) {
                 const storedDeepFeeds = JSON.parse(localStorage.getItem("deepFeeds") || "[]");
@@ -318,6 +367,21 @@ const BaseLayout = () => {
                     }
                 }
             }
+            //Case 5b: Native feed dropped on mastodon follow to create new deep feed
+            else if (dragType === "feed" && !isOverDeepFeed && targetMastodonDid) {
+                const storedDeepFeeds = JSON.parse(localStorage.getItem("deepFeeds") || "[]");
+                if (storedDeepFeeds.length === (hasMembership ? 500 : 5)) {
+                    setFeedLimitReached(true);
+                    setTimeout(() => setFeedLimitReached(false), 20000);
+                } else {
+                    const sourceFeed = activeDragItem;
+                    const targetFollow = mastodonFollows.find(f => f?.did === targetMastodonDid);
+                    if (sourceFeed && targetFollow) {
+                        setPendingDeepFeed({ sourceFeed, targetFollow });
+                        setNameModalOpen(true);
+                    }
+                }
+            }
             //Case 6: Two bluesky follows combine to create new deep feed
             else if (dragType === "blueskyFollow" && !isOverDeepFeed && targetBlueskyDid) {
                 const storedDeepFeeds = JSON.parse(localStorage.getItem("deepFeeds") || "[]");
@@ -327,6 +391,21 @@ const BaseLayout = () => {
                 } else {
                     const sourceFollow = activeDragItem;
                     const targetFollow = blueskyFollows.find(f => f?.did === targetBlueskyDid);
+                    if (sourceFollow && targetFollow && sourceFollow?.did !== targetFollow?.did) {
+                        setPendingDeepFeed({ sourceFollow, targetFollow });
+                        setNameModalOpen(true);
+                    }
+                }
+            }
+            //Case 6b: Two mastodon follows combine to create new deep feed
+            else if (dragType === "mastodonFollow" && !isOverDeepFeed && targetMastodonDid) {
+                const storedDeepFeeds = JSON.parse(localStorage.getItem("deepFeeds") || "[]");
+                if (storedDeepFeeds.length === (hasMembership ? 500 : 5)) {
+                    setFeedLimitReached(true);
+                    setTimeout(() => setFeedLimitReached(false), 20000);
+                } else {
+                    const sourceFollow = activeDragItem;
+                    const targetFollow = mastodonFollows.find(f => f?.did === targetMastodonDid);
                     if (sourceFollow && targetFollow && sourceFollow?.did !== targetFollow?.did) {
                         setPendingDeepFeed({ sourceFollow, targetFollow });
                         setNameModalOpen(true);
@@ -432,11 +511,14 @@ const BaseLayout = () => {
                 setDeepFeeds(storedDeepFeeds);
                 const storedBlueskyFollows = JSON.parse(localStorage.getItem("blueskyFollows")) || [];
                 setBlueskyFollows(storedBlueskyFollows);
+                const storedMastodonFollows = JSON.parse(localStorage.getItem("mastodonFollows")) || [];
+                setMastodonFollows(storedMastodonFollows);
             }
             catch (error) {
                 setDeepFeeds([]);
                 setFeeds([]);
                 setBlueskyFollows([]);
+                setMastodonFollows([]);
             }
         })();
     }, [isAuthenticated, viewer?.feed_id]);
@@ -604,6 +686,7 @@ const BaseLayout = () => {
             const storedDeepFeeds = JSON.parse(localStorage.getItem("deepFeeds")) || [];
             const storedUser = JSON.parse(localStorage.getItem("user")) || [];
             const storedBlueskyFollows = JSON.parse(localStorage.getItem("blueskyFollows")) || [];
+            const storedMastodonFollows = JSON.parse(localStorage.getItem("mastodonFollows")) || [];
             const deepFeedsWithContents = storedDeepFeeds.map(df => {
                 const cachedContents = JSON.parse(
                     localStorage.getItem(`deepFeedContents_${df?.deep_feed_id}`)
@@ -619,11 +702,13 @@ const BaseLayout = () => {
             setDeepFeeds(deepFeedsWithContents);
             setFeed(storedUser);
             setBlueskyFollows(storedBlueskyFollows);
+            setMastodonFollows(storedMastodonFollows);
         } catch (error) {
             setAsideErrorMessage(error.response?.data?.message || "Error updating feeds");
             setFeeds([]);
             setDeepFeeds([]);
             setBlueskyFollows([]);
+            setMastodonFollows([]);
         }
     }, []);
 
@@ -810,7 +895,10 @@ const BaseLayout = () => {
                                             <FeedItem key={feed?.feed_id} dragged={true} feed={feed} isChat={false} />
                                         ))}
                                         {blueskyFollows?.map(follow => (
-                                            <BlueskyFollowItem key={follow?.did} follow={follow} />
+                                            <ExternalFollowItem key={`bluesky-${follow?.did}`} follow={follow} platform="bluesky" />
+                                        ))}
+                                        {mastodonFollows?.map(follow => (
+                                            <ExternalFollowItem key={`mastodon-${follow?.did}`} follow={follow} platform="mastodon" />
                                         ))}
                                     </ul>
                                 </nav>

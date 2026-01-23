@@ -750,6 +750,7 @@ function mapMastodonToExternal(toot, instance) {
 	return {
 		post_id: `mastodon:${toot.id}`,
 		author: toot.account?.acct || null,
+		author_did: toot.account?.id || null, //Store numeric Mastodon account ID
 		author_photo: toot.account?.avatar || null,
 		created_at_remote: new Date(toot.created_at),
 		expired: false,
@@ -1092,39 +1093,115 @@ router.get('/mastodon/callback', authenticateCheck, async (req, res) => {
 			return res.redirect('/feed/mastodon?error=1');
 		}
 		const tokenJson = await tokenResponse.json();
+
+		//Get user account info and follows
+		let mastodonHandle = null;
+		let mastodonFollows = [];
+		try {
+			const credentialsResponse = await fetch(`${instance}/api/v1/accounts/verify_credentials`, {
+				headers: { 'Authorization': `Bearer ${tokenJson.access_token}` }
+			});
+			if (credentialsResponse.ok) {
+				const credentials = await credentialsResponse.json();
+				mastodonHandle = credentials.acct;
+				const accountId = credentials.id;
+
+				//Paginate through follows with rate limit consideration
+				let maxId = null;
+				const allFollows = [];
+				let pageCount = 0;
+				const MAX_PAGES = 5; //Limit to 5 pages (400 follows) to avoid rate limits
+				do {
+					const followsUrl = maxId
+						? `${instance}/api/v1/accounts/${accountId}/following?limit=80&max_id=${maxId}`
+						: `${instance}/api/v1/accounts/${accountId}/following?limit=80`;
+					const followsResponse = await fetch(followsUrl, {
+						headers: { 'Authorization': `Bearer ${tokenJson.access_token}` }
+					});
+					if (followsResponse.ok) {
+						const followsData = await followsResponse.json();
+						if (followsData.length === 0) break;
+						allFollows.push(...followsData);
+						//Mastodon uses the last item id as max_id for pagination
+						maxId = followsData[followsData.length - 1]?.id;
+						pageCount++;
+						//Add delay between requests to avoid rate limiting
+						if (maxId && pageCount < MAX_PAGES) {
+							await new Promise(resolve => setTimeout(resolve, 1000)); //1 second delay
+						}
+					} else {
+						break;
+					}
+				} while (maxId && pageCount < MAX_PAGES);
+
+				//Store follows in database
+				for (const follow of allFollows) {
+					await ExternalFollows.upsert({
+						id: v4(),
+						user_id: req.user.user_id,
+						did: follow.id, //Mastodon uses numeric IDs
+						handle: follow.acct,
+						display_name: follow.display_name || null,
+						avatar: follow.avatar || null,
+						description: follow.note ? follow.note.replace(/<[^>]*>/g, '').trim() : null, //Strip HTML from bio
+						platform: 'mastodon',
+					});
+				}
+
+				//Fetch stored follows
+				mastodonFollows = await ExternalFollows.findAll({
+					where: { user_id: req.user.user_id, platform: 'mastodon' },
+					order: [['display_name', 'ASC'], ['handle', 'ASC']]
+				});
+			}
+		} catch (followsError) {
+			console.error(new Date().toISOString(), 'Error fetching Mastodon follows:', followsError);
+		}
+
 		await ConnectedAccounts.upsert({
 			user_id,
 			platform: 'mastodon',
-			handle: null,
+			handle: mastodonHandle,
 			access_token: tokenJson.access_token,
 			refresh_token: '',
 			instance_url: instance,
 			extra: JSON.stringify({ instance })
 		});
-		const config = {
-			url: `${instance}/api/v1/timelines/home?limit=40`,
-			headers: { Authorization: `Bearer ${tokenJson.access_token}` },
-			mapper: mapMastodonToExternal,
-			htmlGenerator: generateMastodonContentHTML,
-			limit: 40,
-			instance
-		};
-		const mappedPosts = await fetchAndProcessPosts('mastodon', config, user_id);
-		mappedPosts.sort((a, b) => b.rank_hotness - a.rank_hotness);
-		const postsData = await Promise.all(
-			mappedPosts.map(async (p) => {
-				const formatted = formatExternalPost(p, FEED_CONFIG.mastodon, 'mastodon');
-				formatted.content = await FEED_CONFIG.mastodon.generator(p.text_body, p.media);
-				return formatted;
-			})
-		);
-		//HTML to contain post data
+
+		//Add delay before fetching timeline to avoid rate limiting
+		await new Promise(resolve => setTimeout(resolve, 2000));
+
+		let postsData = [];
+		try {
+			const config = {
+				url: `${instance}/api/v1/timelines/home?limit=20`,
+				headers: { Authorization: `Bearer ${tokenJson.access_token}` },
+				mapper: mapMastodonToExternal,
+				htmlGenerator: generateMastodonContentHTML,
+				limit: 20,
+				instance
+			};
+			const mappedPosts = await fetchAndProcessPosts('mastodon', config, user_id);
+			mappedPosts.sort((a, b) => b.rank_hotness - a.rank_hotness);
+			postsData = await Promise.all(
+				mappedPosts.map(async (p) => {
+					const formatted = formatExternalPost(p, FEED_CONFIG.mastodon, 'mastodon');
+					formatted.content = await FEED_CONFIG.mastodon.generator(p.text_body, p.media);
+					return formatted;
+				})
+			);
+		} catch (timelineError) {
+			console.error(new Date().toISOString(), 'Error fetching Mastodon timeline (connection still successful):', timelineError.message);
+			//Connection succeeds even if timeline fetch fails due to rate limiting
+		}
+		//HTML to contain post data and follows
 		res.send(`
 			<!DOCTYPE html>
 			<html>
 			<body>
 				<script>
 					sessionStorage.setItem('mastodon_initial_posts', ${JSON.stringify(JSON.stringify(postsData))});
+					localStorage.setItem('mastodonFollows', ${JSON.stringify(JSON.stringify(mastodonFollows))});
 					window.location.href = '/feed/mastodon?connected=true';
 				</script>
 			</body>
@@ -1192,6 +1269,19 @@ router.get('/bluesky/follows', authenticateCheck, async (req, res) => {
 	}
 });
 
+router.get('/mastodon/follows', authenticateCheck, async (req, res) => {
+	try {
+		const mastodonFollows = await ExternalFollows.findAll({
+			where: { user_id: req.user.user_id, platform: 'mastodon' },
+			order: [['display_name', 'ASC'], ['handle', 'ASC']]
+		});
+		res.status(200).json({ success: true, mastodonFollows });
+	} catch (error) {
+		console.error(new Date().toISOString(), '/mastodon/follows error:', error);
+		res.status(500).json({ success: false });
+	}
+});
+
 //Fetch profile info from Bluesky (works with DID or handle)
 async function fetchBlueskyProfile(accountId, accessToken) {
 	try {
@@ -1240,12 +1330,42 @@ async function fetchBlueskyAccountPosts(accountId, accessToken, cursor = null, l
 	}
 }
 
+async function fetchMastodonAccountPosts(accountId, accessToken, instanceUrl, maxId = null, limit = 40) {
+	try {
+		const url = maxId
+			? `${instanceUrl}/api/v1/accounts/${encodeURIComponent(accountId)}/statuses?limit=${Math.min(limit, 40)}&max_id=${maxId}`
+			: `${instanceUrl}/api/v1/accounts/${encodeURIComponent(accountId)}/statuses?limit=${Math.min(limit, 40)}`;
+		const response = await fetch(url, {
+			headers: {
+				'Authorization': `Bearer ${accessToken}`
+			}
+		});
+		if (!response.ok) {
+			const errorText = await response.text();
+			console.error(new Date().toISOString(), '[fetchMastodonAccountPosts] Error response body:', errorText);
+			throw new Error(`Mastodon API error: ${response.status} - ${errorText}`);
+		}
+		const data = await response.json();
+		return data;
+	} catch (error) {
+		console.error(new Date().toISOString(), '[fetchMastodonAccountPosts] error:', error);
+		throw error;
+	}
+}
+
 //Quick processing - stores posts with basic HTML, returns immediately
 //Heavy processing (embeddings, sentiment) happens in background
-async function processExternalAccountPostsQuick(platform, accountId, posts, htmlGenerator) {
+async function processExternalAccountPostsQuick(platform, accountId, posts, htmlGenerator, instanceUrl = null) {
 	try {
 		const mappedPosts = posts.map(item => {
-			const p = mapBlueskyToExternal(item);
+			let p;
+			if (platform === 'bluesky') {
+				p = mapBlueskyToExternal(item);
+			} else if (platform === 'mastodon') {
+				p = mapMastodonToExternal(item, instanceUrl);
+			} else {
+				return null;
+			}
 			const rank_hotness = computeHotness({
 				upvotes: p.score,
 				downvotes: 0,
@@ -1253,7 +1373,7 @@ async function processExternalAccountPostsQuick(platform, accountId, posts, html
 				referenceTime: Math.floor(Date.now() / 1000)
 			});
 			return { ...p, rank_hotness };
-		});
+		}).filter(Boolean);
 		//Dedupe
 		const localSeen = new Set();
 		const uniquePosts = mappedPosts.filter(p => {
@@ -1273,7 +1393,9 @@ async function processExternalAccountPostsQuick(platform, accountId, posts, html
 		//Quick insert - just basic HTML, no heavy processing
 		if (postsToInsert.length > 0) {
 			const quickInserts = await Promise.all(postsToInsert.map(async mapped => {
-				const html = await htmlGenerator(mapped.text_body, mapped.media);
+				//For Mastodon, use content (HTML) instead of text_body; for Bluesky use text_body
+				const contentToPass = platform === 'mastodon' ? mapped.content : mapped.text_body;
+				const html = await htmlGenerator(contentToPass, mapped.media);
 				const has_text = (mapped.text_body?.length || 0) > 0;
 				return {
 					post_id: mapped.post_id,
@@ -1389,53 +1511,81 @@ async function getExternalAccountInfo(userId, platform, accountId) {
 }
 
 //Helper: Ensure posts exist in DB for an external account (fetch from API if needed)
-async function ensureExternalAccountPosts(userId, platform, authorHandle, authorDid, cursor = null) {
+async function ensureExternalAccountPosts(userId, platform, authorHandle, authorDid, cursor = null, instanceUrl = null) {
 	const connectedAccount = await ConnectedAccounts.findOne({
 		where: { user_id: userId, platform },
-		attributes: ['access_token'],
+		attributes: ['access_token', 'instance_url'],
 		raw: true
 	});
 	if (!connectedAccount?.access_token) return { success: false, cursor: null };
 
 	let accessToken = connectedAccount.access_token;
+	const instance = instanceUrl || connectedAccount.instance_url;
+
 	try {
-		let data;
-		try {
-			data = await fetchBlueskyAccountPosts(authorHandle, accessToken, cursor, 100);
-		} catch (fetchErr) {
-			if (fetchErr.message?.includes('ExpiredToken')) {
-				const newToken = await refreshBlueskyToken(userId);
-				if (!newToken) return { success: false, cursor: null };
-				accessToken = newToken;
-				data = await fetchBlueskyAccountPosts(authorHandle, newToken, cursor, 100);
-			} else {
-				throw fetchErr;
+		if (platform === 'bluesky') {
+			let data;
+			try {
+				data = await fetchBlueskyAccountPosts(authorHandle, accessToken, cursor, 100);
+			} catch (fetchErr) {
+				if (fetchErr.message?.includes('ExpiredToken')) {
+					const newToken = await refreshBlueskyToken(userId);
+					if (!newToken) return { success: false, cursor: null };
+					accessToken = newToken;
+					data = await fetchBlueskyAccountPosts(authorHandle, newToken, cursor, 100);
+				} else {
+					throw fetchErr;
+				}
 			}
-		}
-		if (!data?.feed?.length) return { success: true, cursor: null };
-		//Filter to only this author's posts (no reposts/replies)
-		const apiPosts = data.feed.filter(item => {
-			if (item.reply) return false;
-			const postAuthorHandle = item.post?.author?.handle;
-			const postAuthorDid = item.post?.author?.did;
-			return postAuthorHandle === authorHandle || postAuthorDid === authorDid;
-		});
-		//Store posts and cursor
-		if (apiPosts.length > 0) {
-			await processExternalAccountPostsQuick(platform, authorDid, apiPosts, generateBlueskyContentHTML);
-		}
-		if (data.cursor) {
-			await ExternalAccountMeta.upsert({
-				id: v4(),
-				account_id: authorDid,
-				platform,
-				handle: authorHandle,
-				cursor: data.cursor,
-				last_fetched_at: new Date(),
-				updated_at: new Date()
+			if (!data?.feed?.length) return { success: true, cursor: null };
+			//Filter to only this author's posts (no reposts/replies)
+			const apiPosts = data.feed.filter(item => {
+				if (item.reply) return false;
+				const postAuthorHandle = item.post?.author?.handle;
+				const postAuthorDid = item.post?.author?.did;
+				return postAuthorHandle === authorHandle || postAuthorDid === authorDid;
 			});
+			//Store posts and cursor
+			if (apiPosts.length > 0) {
+				await processExternalAccountPostsQuick(platform, authorDid, apiPosts, generateBlueskyContentHTML);
+			}
+			if (data.cursor) {
+				await ExternalAccountMeta.upsert({
+					id: v4(),
+					account_id: authorDid,
+					platform,
+					handle: authorHandle,
+					cursor: data.cursor,
+					last_fetched_at: new Date(),
+					updated_at: new Date()
+				});
+			}
+			return { success: true, cursor: data.cursor };
+		} else if (platform === 'mastodon') {
+			const data = await fetchMastodonAccountPosts(authorDid, accessToken, instance, cursor, 40);
+			if (!Array.isArray(data) || data.length === 0) return { success: true, cursor: null };
+
+			//Store posts
+			if (data.length > 0) {
+				await processExternalAccountPostsQuick(platform, authorDid, data, generateMastodonContentHTML, instance);
+			}
+
+			//Store cursor (maxId is the last post's ID)
+			const nextCursor = data.length > 0 ? data[data.length - 1].id : null;
+			if (nextCursor) {
+				await ExternalAccountMeta.upsert({
+					id: v4(),
+					account_id: authorDid,
+					platform,
+					handle: authorHandle,
+					cursor: nextCursor,
+					last_fetched_at: new Date(),
+					updated_at: new Date()
+				});
+			}
+			return { success: true, cursor: nextCursor };
 		}
-		return { success: true, cursor: data.cursor };
+		return { success: false, cursor: null };
 	} catch (err) {
 		console.error(new Date().toISOString(), '[ensureExternalAccountPosts] Error:', err.message);
 		return { success: false, cursor: null };
@@ -1450,22 +1600,44 @@ router.get('/external/:platform/account/:accountId/posts', authenticateCheck, as
 		const { handle, did } = req.query;
 		const limit = Math.min(Number(req.query.limit) || 50, 50);
 		const offset = Number(req.query.offset) || 0;
-		if (platform !== 'bluesky') {
+
+		if (!['bluesky', 'mastodon'].includes(platform)) {
 			return res.status(400).json({ success: false, message: `Platform ${platform} is not supported` });
 		}
+
+		//Get instance URL for Mastodon
+		let instanceUrl = null;
+		if (platform === 'mastodon') {
+			const connectedAccount = await ConnectedAccounts.findOne({
+				where: { user_id: req.user.user_id, platform: 'mastodon' },
+				attributes: ['instance_url'],
+				raw: true
+			});
+			instanceUrl = connectedAccount?.instance_url;
+			if (!instanceUrl) {
+				return res.status(400).json({ success: false, message: 'Mastodon instance not found' });
+			}
+		}
+
 		//Use provided handle/did or fall back to accountId
 		const authorHandle = handle || accountId;
 		const authorDid = did || accountId;
+
 		//Check how many posts we have in DB
 		const dbPostCount = await ExternalPosts.count({
 			where: {
 				source: platform,
-				[Op.or]: [{ author: authorHandle }, { author_did: authorDid }]
+				[Op.or]: [
+					{ author: authorHandle },
+					{ author_did: authorDid },
+					...(platform === 'mastodon' ? [{ author: accountId }] : [])
+				]
 			}
 		});
+
 		//If first page and insufficient posts, fetch from API
 		if (offset === 0 && dbPostCount < limit) {
-			await ensureExternalAccountPosts(req.user.user_id, platform, authorHandle, authorDid);
+			await ensureExternalAccountPosts(req.user.user_id, platform, authorHandle, authorDid, null, instanceUrl);
 		}
 		//If we need more posts (paginating or not enough in DB), fetch from API
 		if (offset + limit > dbPostCount) {
@@ -1478,7 +1650,7 @@ router.get('/external/:platform/account/:accountId/posts', authenticateCheck, as
 				raw: true
 			});
 			if (meta?.cursor) {
-				await ensureExternalAccountPosts(req.user.user_id, platform, authorHandle, authorDid, meta.cursor);
+				await ensureExternalAccountPosts(req.user.user_id, platform, authorHandle, authorDid, meta.cursor, instanceUrl);
 			}
 		}
 		//Use ApplyAlgorithm for ranking
@@ -1495,7 +1667,11 @@ router.get('/external/:platform/account/:accountId/posts', authenticateCheck, as
 		const newDbCount = await ExternalPosts.count({
 			where: {
 				source: platform,
-				[Op.or]: [{ author: authorHandle }, { author_did: authorDid }]
+				[Op.or]: [
+					{ author: authorHandle },
+					{ author_did: authorDid },
+					...(platform === 'mastodon' ? [{ author: accountId }] : [])
+				]
 			}
 		});
 		const meta = await ExternalAccountMeta.findOne({

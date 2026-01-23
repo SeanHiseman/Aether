@@ -11,7 +11,7 @@ export default function ExternalAccountPage() {
 	const { platform, accountId } = useParams();
 	const location = useLocation();
 
-	//Check localStorage first for account info (bluesky follows are stored on login)
+	//Check localStorage first for account info (bluesky/mastodon follows are stored on login)
 	const getInitialAccountInfo = () => {
 		//console.log('[ExternalAccountPage] getInitialAccountInfo called for:', { platform, accountId });
 		//First check navigation state
@@ -43,6 +43,30 @@ export default function ExternalAccountPage() {
 				console.error('[ExternalAccountPage] Error parsing blueskyFollows from localStorage:', error);
 			}
 		}
+		//Then check localStorage for mastodon follows
+		if (platform === 'mastodon') {
+			try {
+				const mastodonFollows = JSON.parse(localStorage.getItem('mastodonFollows') || '[]');
+				//console.log('[ExternalAccountPage] Checking localStorage, mastodonFollows count:', mastodonFollows.length);
+				const match = mastodonFollows.find(f =>
+					f.handle === accountId || f.did === accountId
+				);
+				if (match) {
+					//console.log('[ExternalAccountPage] Found match in localStorage:', { handle: match.handle, did: match.did });
+					return {
+						did: match.did,
+						handle: match.handle,
+						display_name: match.display_name,
+						avatar: match.avatar,
+						description: match.description
+					};
+				} else {
+					console.log('[ExternalAccountPage] No match found in localStorage for accountId:', accountId);
+				}
+			} catch (error) {
+				console.error('[ExternalAccountPage] Error parsing mastodonFollows from localStorage:', error);
+			}
+		}
 		//console.log('[ExternalAccountPage] No initial account info found');
 		return null;
 	};
@@ -60,6 +84,7 @@ export default function ExternalAccountPage() {
 	const { rightClasses, closeDrawers, mobileOpen } = useOutletContext();
 	const scrollRef = useRef(null);
 	const hasLoadedRef = useRef(false);
+	const previousAccountRef = useRef(`${platform}_${accountId}`);
 
 	const isMobile = () => window.matchMedia("(max-width:768px)").matches;
 
@@ -133,6 +158,17 @@ export default function ExternalAccountPage() {
 			setLoadingMore(false);
 		}
 	}
+
+	//Detect account change early to prevent showing old posts
+	useEffect(() => {
+		const currentAccount = `${platform}_${accountId}`;
+		if (previousAccountRef.current !== currentAccount) {
+			previousAccountRef.current = currentAccount;
+			//Clear posts immediately when account changes
+			setPosts([]);
+			setLoading(true);
+		}
+	}, [platform, accountId]);
 
 	//Load posts when account changes or on refresh
 	useEffect(() => {
