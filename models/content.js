@@ -36,7 +36,8 @@ const ExternalPosts = sequelize.define('ExternalPosts', {
 	author_did: { type: STRING(255), allowNull: true }, //DID for Bluesky, unique ID for other platforms
     author_photo: { type: TEXT, allowNull: true },
 	url: { type: TEXT, allowNull: true },
-	media: { type: DataTypes.JSON, allowNull: true }
+	media: { type: DataTypes.JSON, allowNull: true },
+	cid: { type: STRING(128), allowNull: true }
 }, {
 	tableName: 'external_posts',
     timestamps: false,
@@ -192,6 +193,27 @@ const PostVotes = sequelize.define('post_votes', {
     updated_at: { type: DataTypes.DATE(3), allowNull: false, defaultValue: sequelize.literal('CURRENT_TIMESTAMP(3)') },
 }, { tableName: 'post_votes', timestamps: false });
 
+const ExternalPostVotes = sequelize.define('external_post_votes', {
+    vote_id: { type: STRING(36), primaryKey: true },
+    post_id: { type: STRING(255), allowNull: false },
+    user_id: { type: STRING(36), allowNull: false },
+    source: { type: STRING(32), allowNull: false },
+    vote_type: { type: DataTypes.ENUM('upvote', 'downvote', 'like'), allowNull: false },
+    synced_to_platform: { type: BOOLEAN, defaultValue: false },
+    platform_uri: { type: TEXT, allowNull: true },
+    created_at: { type: DataTypes.DATE(3), defaultValue: sequelize.literal('CURRENT_TIMESTAMP(3)') },
+    updated_at: { type: DataTypes.DATE(3), defaultValue: sequelize.literal('CURRENT_TIMESTAMP(3)') },
+}, {
+    tableName: 'external_post_votes',
+    timestamps: false,
+    indexes: [
+        { fields: ['user_id', 'post_id'], unique: true },
+        { fields: ['user_id'] },
+        { fields: ['post_id'] },
+        { fields: ['source'] }
+    ]
+});
+
 const Prompts = sequelize.define('prompts', {
     prompt_id: { type: STRING(36), primaryKey: true },
     prompt_content: { type: STRING(100000), allowNull: false },
@@ -212,6 +234,7 @@ export {
     ExternalAccountMeta,
     ExternalPosts,
     ExternalPostsAccess,
+    ExternalPostVotes,
     PaginationTokens,
     Posts,
     PostDrafts,

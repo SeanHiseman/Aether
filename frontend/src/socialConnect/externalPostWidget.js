@@ -1,3 +1,4 @@
+import api from '../api';
 import { AuthContext } from '../components/authContext';
 import ContentDisplay from '../components/content/contentDisplay';
 import { FaArrowDown, FaArrowUp, FaChevronDown, FaChevronUp, FaComments, FaHeart, FaRegBookmark, FaShare } from 'react-icons/fa';
@@ -8,7 +9,7 @@ import { useContext, useEffect, useRef, useState } from 'react';
 import useTimeAgo from '../functions/useTimeAgo';
 
 const ExternalPostWidget = ({ post, sharedPost = false }) => {
-	//console.log("ExternalPostWidget post:", post);
+	console.log("ExternalPostWidget post:", post);
 	const authContext = useContext(AuthContext);
 	const { isAuthenticated = false } = authContext || {};
 	const { post_id } = useParams();
@@ -19,6 +20,13 @@ const ExternalPostWidget = ({ post, sharedPost = false }) => {
 	const [showExpandButton, setShowExpandButton] = useState(false);
 	const [showFullContent, setShowFullContent] = useState(false);
 	const [showShareModal, setShowShareModal] = useState(false);
+	const [userVote, setUserVote] = useState(() => {
+		if (post?.has_upvoted) return post.source === 'Reddit' ? 'upvote' : 'like';
+		if (post?.has_downvoted) return 'downvote';
+		return null;
+	});
+	const [localScore, setLocalScore] = useState(post?.score || 0);
+	const [voteError, setVoteError] = useState('');
 	const timeAgo = useTimeAgo(post?.created_at);
 	const contentContainerRef = useRef(null);
 
@@ -38,11 +46,88 @@ const ExternalPostWidget = ({ post, sharedPost = false }) => {
 		let timeoutId;
 		if (post) {
 			setIsLoaded(true);
+			setLocalScore(post?.score || 0);
 		} else {
 			timeoutId = setTimeout(() => setIsLoaded(true), 5000);
 		}
 		return () => clearTimeout(timeoutId);
 	}, [post]);
+
+	useEffect(() => {
+		//Use vote data from post object if available
+		if (post?.has_upvoted !== undefined) {
+			if (post.has_upvoted) {
+				setUserVote(post.source === 'Reddit' ? 'upvote' : 'like');
+			} else if (post.has_downvoted) {
+				setUserVote('downvote');
+			} else {
+				setUserVote(null);
+			}
+			return;
+		}
+	}, [isAuthenticated, post?.post_id, post?.has_upvoted, post?.has_downvoted, post?.source]);
+
+	const handleVote = async (voteType) => {
+		if (!isAuthenticated) {
+			setVoteError('Please log in to vote');
+			setTimeout(() => setVoteError(''), 3000);
+			return;
+		}
+		const prevVote = userVote;
+		const prevScore = localScore;
+		try {
+			setVoteError('');
+			//Optimistic update
+			if (userVote === voteType) {
+				//Removing vote
+				setUserVote(null);
+				if (isVote) {
+					setLocalScore(prev => prev - (voteType === 'upvote' ? 1 : -1));
+				} else {
+					setLocalScore(prev => prev - 1);
+				}
+			} else {
+				//Adding or changing vote
+				setUserVote(voteType);
+				if (isVote) {
+					let delta = voteType === 'upvote' ? 1 : -1;
+					if (prevVote) {
+						delta = voteType === 'upvote' ? 2 : -2;
+					}
+					setLocalScore(prev => prev + delta);
+				} else {
+					setLocalScore(prev => prev + (prevVote ? 0 : 1));
+				}
+			}
+			const response = await api.post('/vote_external_post', {
+				postId: post.post_id,
+				voteType,
+				source: post.source,
+				sourcePostId: post.source_post_id
+			});
+			if (!response.data.success) {
+				//Revert on failure
+				setUserVote(prevVote);
+				setLocalScore(prevScore);
+				setVoteError(response.data.message || 'Failed to record vote');
+				setTimeout(() => setVoteError(''), 3000);
+			} else {
+				//Success - update to match actual vote type returned
+				setUserVote(response.data.voteType);
+				if (!response.data.syncedToPlatform) {
+					setVoteError('Vote saved locally but not synced to platform');
+					setTimeout(() => setVoteError(''), 3000);
+				}
+			}
+		} catch (error) {
+			console.error('Error voting:', error);
+			//Revert on error
+			setUserVote(prevVote);
+			setLocalScore(prevScore);
+			setVoteError('Error recording vote');
+			setTimeout(() => setVoteError(''), 3000);
+		}
+	};
 
 	if (!isLoaded) {
 		return <p className="small-text faded-text">Loading content…</p>;
@@ -102,12 +187,12 @@ const ExternalPostWidget = ({ post, sharedPost = false }) => {
 						<div className="post-button-group">
 							{isVote && (
 								<>
-									<p className="small-text compact">{FormatNumber(post?.score)}</p>
+									<p className="small-text compact">{FormatNumber(localScore)}</p>
 								</>
 							)}
 							{isLike && (
 								<>
-									<p className="small-text compact">{FormatNumber(post?.score)} {isLike && 'likes'}</p>
+									<p className="small-text compact">{FormatNumber(localScore)} {isLike && 'likes'}</p>
 								</>
 							)}
 						</div>
@@ -115,25 +200,53 @@ const ExternalPostWidget = ({ post, sharedPost = false }) => {
 						<div className="post-button-group">
 							{isVote && (
 								<>
-									<button className="large-icon compact" style={{ backgroundColor: 'transparent', pointerEvents: 'auto' }}>
+									<button
+										className="large-icon compact"
+										style={{
+											backgroundColor: 'transparent',
+											pointerEvents: 'auto',
+											color: userVote === 'upvote' ? '#ff4500' : undefined
+										}}
+										onClick={() => handleVote('upvote')}
+										title="Upvote"
+									>
 										<FaArrowUp />
 									</button>
-									<p className="small-text compact">{FormatNumber(post?.score)}</p>
-									<button className="large-icon compact" style={{ backgroundColor: 'transparent', pointerEvents: 'auto' }}>
+									<p className="small-text compact">{FormatNumber(localScore)}</p>
+									<button
+										className="large-icon compact"
+										style={{
+											backgroundColor: 'transparent',
+											pointerEvents: 'auto',
+											color: userVote === 'downvote' ? '#7193ff' : undefined
+										}}
+										onClick={() => handleVote('downvote')}
+										title="Downvote"
+									>
 										<FaArrowDown />
 									</button>
 								</>
 							)}
 							{isLike && (
 								<>
-									<button className="large-icon compact" style={{ backgroundColor: 'transparent', pointerEvents: 'auto' }}>
+									<button
+										className="large-icon compact"
+										style={{
+											backgroundColor: 'transparent',
+											pointerEvents: 'auto',
+											color: userVote === 'like' ? '#ff1744' : undefined
+										}}
+										onClick={() => handleVote('like')}
+										title="Like"
+									>
 										<FaHeart />
 									</button>
-									<p className="small-text compact">{FormatNumber(post?.score)}</p>
+									<p className="small-text compact">{FormatNumber(localScore)}</p>
 								</>
 							)}
 						</div>
 					)}
+					{voteError && <p className="tiny-text" style={{ color: '#ff1744' }}>{voteError}</p>}
 				</div>
 				{!sharedPost && (
 					<div className="post-button-group reply-buttons">

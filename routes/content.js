@@ -441,6 +441,7 @@ router.post("/create_post", standardLimiter, authenticateCheck, checkStorageLimi
 router.post("/explore_posts", standardLimiter, async (req, res) => {
     try {
         const { followedFeedIds, recentUpvotes, limit = 100, offset = 0 } = req.body;
+		const userId = req?.session?.user_id || null;
         const viewerId = req?.session?.viewer_id || null;
         const includeOptions = [{
             model: Feeds,
@@ -478,6 +479,7 @@ router.post("/explore_posts", standardLimiter, async (req, res) => {
 			limit: limit,
 			offset: offset,
 			recentUpvotes,
+			userId,
 			viewerId,
 		});
 		const posts = algorithmResult.posts;

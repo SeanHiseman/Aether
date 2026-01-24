@@ -1,7 +1,7 @@
 import { Algorithms, AlgorithmLocations } from "./algorithms.js";
 import { CosineSimilarity } from "../functions/calculation/cosineSimilarity.js";
 import { DeepFeedContent, Posts, PostVotes, SavedPosts } from "../models/relationships.js";
-import { ExternalPosts, ExternalPostsAccess } from "../models/content.js";
+import { ExternalPosts, ExternalPostsAccess, ExternalPostVotes } from "../models/content.js";
 import { FEED_CONFIG, formatExternalPost, processAccount } from "../routes/socialConnect.js";
 import { IntermixArrays } from "../functions/intermixArrays.js";
 import { Op } from 'sequelize';
@@ -75,7 +75,7 @@ function prepareAlgorithmEmbeddings(algorithmRow) {
     return result;
 }
 
-// Optimized cosine similarity for pre-normalized vectors
+//Optimized cosine similarity for pre-normalized vectors
 function fastCosineSimilarity(a, b) {
     let dot = 0;
     for (let i = 0; i < a.length; i++) {
@@ -294,6 +294,7 @@ async function fetchPaginatedPostData({ paginatedIds, scoreMap, includeOptions, 
 }
 
 async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOptions, isGroup = true, isMain, limit = 100, offset, recentUpvotes, viewerId, keyword = '', connectedAccounts = [], userId }) {
+	console.log("locationId:", locationId, "userId:", userId);
 	try {
         //Followed feeds are a received as a string
 		const followedFeedIdsSafe = (typeof followedFeedIds === "string")
@@ -788,7 +789,10 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
 						raw: true
 					});
 				}
-				posts = externalPosts.map(p => formatExternalPost(p, FEED_CONFIG[platform], p.source));
+				posts = externalPosts.map(p => ({
+					...formatExternalPost(p, FEED_CONFIG[platform], p.source),
+					isExternal: true
+				}));
 			}
         } else if (locationId === "explore") {
 			if (hasActiveAlgorithm) {
@@ -1073,59 +1077,103 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
 				posts = IntermixArrays(nativePosts, externalPosts);
 			}
 			const ids = posts.map(p => p.post_id);
-			const [userVotes, savedRows] = viewerId
+			const nativeIds = posts.filter(p => !p.isExternal).map(p => p.post_id);
+			const externalIds = posts.filter(p => p.isExternal).map(p => p.post_id);
+			console.log("externalIds for standard score:", externalIds);
+			const [userVotes, externalVotes, savedRows] = viewerId
 				? await Promise.all([
-					PostVotes.findAll({
+					nativeIds.length ? PostVotes.findAll({
 						attributes: ['post_id', 'upvotes', 'downvotes'],
-						where: { post_id: { [Op.in]: ids }, voter_id: viewerId },
+						where: { post_id: { [Op.in]: nativeIds }, voter_id: viewerId },
 						raw: true
-					}),
+					}) : Promise.resolve([]),
+					externalIds.length ? ExternalPostVotes.findAll({
+						attributes: ['post_id', 'vote_type'],
+						where: { post_id: { [Op.in]: externalIds }, user_id: userId },
+						raw: true
+					}) : Promise.resolve([]),
 					SavedPosts.findAll({
 						attributes: ['post_id'],
 						where: { post_id: { [Op.in]: ids }, saver_id: viewerId },
 						raw: true
 					})
 				])
-				: [[], []];
+				: [[], [], []];
+			console.log("external votes for standard score:", externalVotes);
 			const voteMap = new Map(
 				userVotes.map(v => [v.post_id, { has_upvoted: v.upvotes > 0, has_downvoted: v.downvotes > 0 }])
 			);
+			const externalVoteMap = new Map(externalVotes.map(v => [v.post_id, {
+				has_upvoted: v.vote_type === 'upvote' || v.vote_type === 'like',
+				has_downvoted: v.vote_type === 'downvote'
+			}]));
+			console.log("standard score external vote map:", externalVoteMap);
 			const savedSet = new Set(savedRows.map(s => s.post_id));
 			return {
 				posts: stripExcludedAttributes(
-					posts.map(p => ({
-						...(p.dataValues || p),
-						...(voteMap.get(p.post_id) || { has_upvoted: false, has_downvoted: false }),
-						is_saved: savedSet.has(p.post_id)
-					}))
+					posts.map(p => {
+						const isExternal = p.isExternal || p.is_external;
+						const votes = isExternal
+							? (externalVoteMap.get(p.post_id) || { has_upvoted: false, has_downvoted: false })
+							: (voteMap.get(p.post_id) || { has_upvoted: false, has_downvoted: false });
+						return {
+							...(p.dataValues || p),
+							...votes,
+							is_saved: savedSet.has(p.post_id)
+						};
+					})
 				),
 				status: "ok"
 			};
 		}
 		const finalIds = posts.map(p => p.post_id);
-		const [userVotes, savedRows] = viewerId
+		//Separate native and external post IDs for vote lookup
+		const nativeIds = posts.filter(p => !p.isExternal).map(p => p.post_id);
+		const externalIds = posts.filter(p => p.isExternal).map(p => p.post_id);
+		const [userVotes, externalVotes, savedRows] = viewerId
 			? await Promise.all([
-				PostVotes.findAll({
+				nativeIds.length ? PostVotes.findAll({
 					attributes: ['post_id', 'upvotes', 'downvotes'],
-					where: { post_id: { [Op.in]: finalIds }, voter_id: viewerId },
+					where: { post_id: { [Op.in]: nativeIds }, voter_id: viewerId },
 					raw: true
-				}),
+				}) : Promise.resolve([]),
+				externalIds.length ? ExternalPostVotes.findAll({
+					attributes: ['post_id', 'vote_type'],
+					where: { post_id: { [Op.in]: externalIds }, user_id: userId },
+					raw: true
+				}) : Promise.resolve([]),
 				SavedPosts.findAll({
 					attributes: ['post_id'],
 					where: { post_id: { [Op.in]: finalIds }, saver_id: viewerId },
 					raw: true
 				})
 			])
-			: [[], []];
+			: [[], [], []];
+		//Native post votes map
 		const voteMap = new Map(userVotes.map(v => [
 			v.post_id, { has_upvoted: v.upvotes > 0, has_downvoted: v.downvotes > 0 }
 		]));
-		const savedSet = new Set(savedRows.map(s => s.post_id));
-		const postsWithVotes = posts.map(p => ({
-			...(p.dataValues || p),
-			...(voteMap.get(p.post_id) || { has_upvoted: false, has_downvoted: false }),
-			is_saved: savedSet.has(p.post_id)
+		//External post votes map (convert vote_type to has_upvoted/has_downvoted)
+		const externalVoteMap = new Map(externalVotes.map(v => {
+			//For Reddit, map upvote/downvote to the respective flags
+			//For Bluesky/Mastodon, only has_upvoted is used (vote_type === 'like')
+			return [v.post_id, {
+				has_upvoted: v.vote_type === 'upvote' || v.vote_type === 'like',
+				has_downvoted: v.vote_type === 'downvote'
+			}];
 		}));
+		const savedSet = new Set(savedRows.map(s => s.post_id));
+		const postsWithVotes = posts.map(p => {
+			const isExternal = p.isExternal || p.is_external;
+			const votes = isExternal
+				? (externalVoteMap.get(p.post_id) || { has_upvoted: false, has_downvoted: false })
+				: (voteMap.get(p.post_id) || { has_upvoted: false, has_downvoted: false });
+			return {
+				...(p.dataValues || p),
+				...votes,
+				is_saved: savedSet.has(p.post_id)
+			};
+		});
 		return { posts: stripExcludedAttributes(postsWithVotes), status: "ok", message: "" };
 	} catch (error) {
 		console.error(new Date().toISOString(), 'Error in ApplyAlgorithm:', error);

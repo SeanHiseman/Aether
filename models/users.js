@@ -7,6 +7,7 @@ const ConnectedAccounts = sequelize.define('ConnectedAccounts', {
 	user_id: { type: STRING(64), allowNull: false },
 	platform: { type: STRING(32), allowNull: false }, //reddit, mastodon, bluesky, twitter, etc.
 	handle: { type: STRING(190), allowNull: true }, //e.g. u/name, @user@instance
+	account_id: { type: STRING(255), allowNull: true }, //Platform-specific user ID (DID for Bluesky, numeric ID for Mastodon)
 	access_token: { type: TEXT, allowNull: true },
 	refresh_token: { type: TEXT, allowNull: true },
 	token_type: { type: STRING(32), allowNull: true },

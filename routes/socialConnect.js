@@ -6,7 +6,7 @@ import cron from 'node-cron';
 import crypto from 'crypto';
 import { ExternalFollows, ConnectedAccounts, Users } from '../models/users.js';
 import dotenv from 'dotenv';
-import { ExternalAccountMeta, ExternalPosts, ExternalPostsAccess, PaginationTokens } from '../models/content.js';
+import { ExternalAccountMeta, ExternalPosts, ExternalPostsAccess, ExternalPostVotes, PaginationTokens } from '../models/content.js';
 import express from 'express';
 import fetch from 'node-fetch';
 import { getEmbedder } from '../functions/contentAnalyser.js';
@@ -92,6 +92,7 @@ async function refreshBlueskyToken(user_id) {
 		await ConnectedAccounts.update({
 			access_token: tokenJson.accessJwt,
 			refresh_token: tokenJson.refreshJwt,
+			account_id: tokenJson.did,
 			extra: JSON.stringify(tokenJson)
 		}, { where: { user_id, platform: 'bluesky' } });
 		return tokenJson.accessJwt;
@@ -184,7 +185,6 @@ async function fetchAndProcessPosts(platform, fetchConfig, user_id) {
 	try {
 		let { url, headers, mapper, htmlGenerator } = fetchConfig;
 		let resp = await fetch(url, { headers });
-
 		// Handle expired tokens - try refresh for Reddit
 		if (!resp.ok && resp.status === 401 && platform === 'reddit') {
 			const newToken = await refreshRedditToken(user_id);
@@ -363,7 +363,8 @@ async function fetchAndProcessPosts(platform, fetchConfig, user_id) {
 					author: mapped.author || null,
 					author_photo: mapped.author_photo || null,
 					url: mapped.url,
-					media: mapped.media
+					media: mapped.media,
+					cid: mapped.cid || null
 				};
 			}));
 			const updateFields = [
@@ -371,12 +372,17 @@ async function fetchAndProcessPosts(platform, fetchConfig, user_id) {
 				'image_count', 'video_count', 'has_text', 'has_images', 'has_videos',
 				'score', 'replies', 'sentiment_score', 'embeddings',
 				'fetched_at', 'created_at_remote', 'expired', 'channel', 'author',
-				'author_photo', 'url', 'media'
+				'author_photo', 'url', 'media', 'cid'
 			];
 			//Prevent excessively large db uploads
 			const batchSize = 20;
 			for (let i = 0; i < enriched.length; i += batchSize) {
 				const batch = enriched.slice(i, i + batchSize);
+				//Log CID info for Bluesky posts
+				if (platform === 'bluesky') {
+					const cidCount = batch.filter(p => p.cid).length;
+					console.log(new Date().toISOString(), `[fetchAndProcessPosts] Saving ${batch.length} Bluesky posts, ${cidCount} have CIDs`);
+				}
 				await ExternalPosts.bulkCreate(batch, {
 					updateOnDuplicate: updateFields,
 					logging: false
@@ -560,7 +566,6 @@ export async function generateBlueskyContentHTML(textBody, media) {
 }
 
 export async function generateRedditContentHTML(textBody, mediaArray) {
-	//console.log("reddit textBody:", textBody);
 	try {
 		const mediaItems = Array.isArray(mediaArray)
 			? mediaArray
@@ -592,7 +597,6 @@ export async function generateRedditContentHTML(textBody, mediaArray) {
 
 //Mastodon posts use html, not raw text
 export async function generateMastodonContentHTML(htmlContent, media) {
-	//console.log("generating html for mastodon from:", htmlContent);
 	try {
 		let out = '';
 		if (htmlContent) {
@@ -640,6 +644,14 @@ function mapBlueskyToExternal(item) {
 	const post = item.post;
 	const record = post.record || {};
 	const text = record.text || '';
+	//Log to check CID extraction
+	if (!post.cid) {
+		console.warn(new Date().toISOString(), '[mapBlueskyToExternal] No CID found in post:', {
+			uri: post.uri,
+			has_cid: !!post.cid,
+			post_keys: Object.keys(post).join(', ')
+		});
+	}
 	let images = null;
 	let videos = null;
 	let externalCard = null;
@@ -724,7 +736,8 @@ function mapBlueskyToExternal(item) {
 		video_count: Array.isArray(videos) ? videos.length : 0,
 		has_images: Array.isArray(images) && images.length > 0,
 		has_videos: Array.isArray(videos) && videos.length > 0,
-		channel: post.author?.handle || null
+		channel: post.author?.handle || null,
+		cid: post.cid || null
 	};
 }
 
@@ -832,6 +845,7 @@ router.post('/auth/bluesky', authenticateCheck, async (req, res) => {
 			user_id: req.user.user_id,
 			platform: 'bluesky',
 			handle: identifier,
+			account_id: json.did,
 			instance_url: 'https://bsky.social',
 			access_token: json.accessJwt,
 			refresh_token: json.refreshJwt,
@@ -948,7 +962,7 @@ router.post('/auth/mastodon', authenticateCheck, async (req, res) => {
 			body: JSON.stringify({
 				client_name: "Aether Social",
 				redirect_uris: process.env.MASTODON_REDIRECT_URI,
-				scopes: "read follow",
+				scopes: "read write follow",
 				website: "https://aethersocial.com"
 			})
 		});
@@ -978,7 +992,7 @@ router.post('/auth/mastodon', authenticateCheck, async (req, res) => {
 			response_type: 'code',
 			client_id: app.client_id,
 			redirect_uri: process.env.MASTODON_REDIRECT_URI,
-			scope: 'read follow',
+			scope: 'read write follow',
 			state: JSON.stringify({ instance, user_id: req.user.user_id })
 		});
 		res.status(200).json({ success: true, url: `${base}/oauth/authorize?${params.toString()}` });
@@ -1093,9 +1107,9 @@ router.get('/mastodon/callback', authenticateCheck, async (req, res) => {
 			return res.redirect('/feed/mastodon?error=1');
 		}
 		const tokenJson = await tokenResponse.json();
-
 		//Get user account info and follows
 		let mastodonHandle = null;
+		let mastodonAccountId = null;
 		let mastodonFollows = [];
 		try {
 			const credentialsResponse = await fetch(`${instance}/api/v1/accounts/verify_credentials`, {
@@ -1104,8 +1118,8 @@ router.get('/mastodon/callback', authenticateCheck, async (req, res) => {
 			if (credentialsResponse.ok) {
 				const credentials = await credentialsResponse.json();
 				mastodonHandle = credentials.acct;
+				mastodonAccountId = credentials.id;
 				const accountId = credentials.id;
-
 				//Paginate through follows with rate limit consideration
 				let maxId = null;
 				const allFollows = [];
@@ -1133,7 +1147,6 @@ router.get('/mastodon/callback', authenticateCheck, async (req, res) => {
 						break;
 					}
 				} while (maxId && pageCount < MAX_PAGES);
-
 				//Store follows in database
 				for (const follow of allFollows) {
 					await ExternalFollows.upsert({
@@ -1147,7 +1160,6 @@ router.get('/mastodon/callback', authenticateCheck, async (req, res) => {
 						platform: 'mastodon',
 					});
 				}
-
 				//Fetch stored follows
 				mastodonFollows = await ExternalFollows.findAll({
 					where: { user_id: req.user.user_id, platform: 'mastodon' },
@@ -1157,20 +1169,18 @@ router.get('/mastodon/callback', authenticateCheck, async (req, res) => {
 		} catch (followsError) {
 			console.error(new Date().toISOString(), 'Error fetching Mastodon follows:', followsError);
 		}
-
 		await ConnectedAccounts.upsert({
 			user_id,
 			platform: 'mastodon',
 			handle: mastodonHandle,
+			account_id: mastodonAccountId,
 			access_token: tokenJson.access_token,
 			refresh_token: '',
 			instance_url: instance,
 			extra: JSON.stringify({ instance })
 		});
-
 		//Add delay before fetching timeline to avoid rate limiting
 		await new Promise(resolve => setTimeout(resolve, 2000));
-
 		let postsData = [];
 		try {
 			const config = {
@@ -1281,26 +1291,6 @@ router.get('/mastodon/follows', authenticateCheck, async (req, res) => {
 		res.status(500).json({ success: false });
 	}
 });
-
-//Fetch profile info from Bluesky (works with DID or handle)
-async function fetchBlueskyProfile(accountId, accessToken) {
-	try {
-		const url = `https://bsky.social/xrpc/app.bsky.actor.getProfile?actor=${encodeURIComponent(accountId)}`;
-		const response = await fetch(url, {
-			headers: {
-				'Authorization': `Bearer ${accessToken}`,
-				'Content-Type': 'application/json'
-			}
-		});
-		if (!response.ok) {
-			throw new Error(`Bluesky profile API error: ${response.status}`);
-		}
-		return await response.json();
-	} catch (error) {
-		console.error(new Date().toISOString(), 'fetchBlueskyProfile error:', error);
-		throw error;
-	}
-}
 
 async function fetchBlueskyAccountPosts(accountId, accessToken, cursor = null, limit = 100) {
 	try {
@@ -1423,14 +1413,15 @@ async function processExternalAccountPostsQuick(platform, accountId, posts, html
 					author_did: mapped.author_did || null,
 					author_photo: mapped.author_photo || null,
 					url: mapped.url,
-					media: mapped.media
+					media: mapped.media,
+					cid: mapped.cid || null
 				};
 			}));
 			const updateFields = [
 				'source_post_id', 'title', 'content', 'text_body', 'text_length', 'word_count',
 				'image_count', 'video_count', 'has_text', 'has_images', 'has_videos',
 				'score', 'replies', 'fetched_at', 'created_at_remote', 'expired',
-				'channel', 'author', 'author_did', 'author_photo', 'url', 'media'
+				'channel', 'author', 'author_did', 'author_photo', 'url', 'media', 'cid'
 			];
 			await ExternalPosts.bulkCreate(quickInserts, {
 				updateOnDuplicate: updateFields,
@@ -1475,42 +1466,7 @@ async function processExternalAccountPostsBackground(postIds) {
 	}
 }
 
-//Helper: Get account info from ExternalFollows or ExternalAccountMeta
-async function getExternalAccountInfo(userId, platform, accountId) {
-	const followRecord = await ExternalFollows.findOne({
-		where: {
-			user_id: userId,
-			platform,
-			[Op.or]: [{ handle: accountId }, { did: accountId }]
-		},
-		raw: true
-	});
-	if (followRecord) {
-		return {
-			did: followRecord.did,
-			handle: followRecord.handle,
-			display_name: followRecord.display_name,
-			avatar: followRecord.avatar,
-			description: followRecord.description
-		};
-	}
-	const accountMeta = await ExternalAccountMeta.findOne({
-		where: { account_id: accountId, platform },
-		raw: true
-	});
-	if (accountMeta) {
-		return {
-			did: accountMeta.account_id,
-			handle: accountMeta.handle,
-			display_name: accountMeta.display_name,
-			avatar: accountMeta.avatar,
-			description: accountMeta.description
-		};
-	}
-	return null;
-}
-
-//Helper: Ensure posts exist in DB for an external account (fetch from API if needed)
+//Ensure posts exist in DB for an external account (fetch from API if needed)
 async function ensureExternalAccountPosts(userId, platform, authorHandle, authorDid, cursor = null, instanceUrl = null) {
 	const connectedAccount = await ConnectedAccounts.findOne({
 		where: { user_id: userId, platform },
@@ -1518,10 +1474,8 @@ async function ensureExternalAccountPosts(userId, platform, authorHandle, author
 		raw: true
 	});
 	if (!connectedAccount?.access_token) return { success: false, cursor: null };
-
 	let accessToken = connectedAccount.access_token;
 	const instance = instanceUrl || connectedAccount.instance_url;
-
 	try {
 		if (platform === 'bluesky') {
 			let data;
@@ -1564,12 +1518,10 @@ async function ensureExternalAccountPosts(userId, platform, authorHandle, author
 		} else if (platform === 'mastodon') {
 			const data = await fetchMastodonAccountPosts(authorDid, accessToken, instance, cursor, 40);
 			if (!Array.isArray(data) || data.length === 0) return { success: true, cursor: null };
-
 			//Store posts
 			if (data.length > 0) {
 				await processExternalAccountPostsQuick(platform, authorDid, data, generateMastodonContentHTML, instance);
 			}
-
 			//Store cursor (maxId is the last post's ID)
 			const nextCursor = data.length > 0 ? data[data.length - 1].id : null;
 			if (nextCursor) {
@@ -1600,11 +1552,9 @@ router.get('/external/:platform/account/:accountId/posts', authenticateCheck, as
 		const { handle, did } = req.query;
 		const limit = Math.min(Number(req.query.limit) || 50, 50);
 		const offset = Number(req.query.offset) || 0;
-
 		if (!['bluesky', 'mastodon'].includes(platform)) {
 			return res.status(400).json({ success: false, message: `Platform ${platform} is not supported` });
 		}
-
 		//Get instance URL for Mastodon
 		let instanceUrl = null;
 		if (platform === 'mastodon') {
@@ -1618,11 +1568,9 @@ router.get('/external/:platform/account/:accountId/posts', authenticateCheck, as
 				return res.status(400).json({ success: false, message: 'Mastodon instance not found' });
 			}
 		}
-
 		//Use provided handle/did or fall back to accountId
 		const authorHandle = handle || accountId;
 		const authorDid = did || accountId;
-
 		//Check how many posts we have in DB
 		const dbPostCount = await ExternalPosts.count({
 			where: {
@@ -1634,7 +1582,6 @@ router.get('/external/:platform/account/:accountId/posts', authenticateCheck, as
 				]
 			}
 		});
-
 		//If first page and insufficient posts, fetch from API
 		if (offset === 0 && dbPostCount < limit) {
 			await ensureExternalAccountPosts(req.user.user_id, platform, authorHandle, authorDid, null, instanceUrl);
@@ -1750,6 +1697,265 @@ router.post('/reddit/expire', authenticateCheck, async (req, res) => {
 	}
 });
 
+//Vote/like on an external post
+router.post('/vote_external_post', authenticateCheck, async (req, res) => {
+	try {
+		const { postId, voteType, source, sourcePostId } = req.body;
+		const userId = req.user.user_id;
+		if (!postId || !voteType || !source) {
+			return res.status(400).json({ success: false, message: 'Missing required fields' });
+		}
+		//Get user's connected account for the platform
+		const account = await ConnectedAccounts.findOne({
+			where: { user_id: userId, platform: source.toLowerCase() }
+		});
+		if (!account) {
+			return res.status(400).json({ success: false, message: `No ${source} account connected` });
+		}
+		//Check existing vote
+		const existingVote = await ExternalPostVotes.findOne({
+			where: { post_id: postId, user_id: userId }
+		});
+		let isRemoving = false;
+		if (existingVote && existingVote.vote_type === voteType) {
+			//User is removing their vote
+			isRemoving = true;
+		}
+		let syncedToPlatform = false;
+		let errorMessage = null;
+		let platformUri = null;
+		//Sync to platform APIs
+		try {
+			if (source.toLowerCase() === 'reddit') {
+				//Reddit voting
+				let dir = 0; //0 = unvote
+				if (!isRemoving) {
+					dir = voteType === 'upvote' ? 1 : -1;
+				}
+				const voteResponse = await fetch('https://oauth.reddit.com/api/vote', {
+					method: 'POST',
+					headers: {
+						'Authorization': `bearer ${account.access_token}`,
+						'User-Agent': ua(),
+						'Content-Type': 'application/x-www-form-urlencoded'
+					},
+					body: new URLSearchParams({
+						id: sourcePostId,
+						dir: dir.toString()
+					})
+				});
+				if (voteResponse.ok) {
+					syncedToPlatform = true;
+				} else {
+					errorMessage = 'Failed to sync vote to Reddit';
+				}
+			} else if (source.toLowerCase() === 'bluesky') {
+				//Bluesky like/unlike
+				if (isRemoving) {
+					//Unlike - need to find and delete the like record
+					if (existingVote?.platform_uri) {
+						const rkey = existingVote.platform_uri.split('/').pop();
+						const unlikeResponse = await fetch('https://bsky.social/xrpc/com.atproto.repo.deleteRecord', {
+							method: 'POST',
+							headers: {
+								'Authorization': `Bearer ${account.access_token}`,
+								'Content-Type': 'application/json'
+							},
+							body: JSON.stringify({
+								repo: account.account_id,
+								collection: 'app.bsky.feed.like',
+								rkey: rkey
+							})
+						});
+						syncedToPlatform = unlikeResponse.ok;
+						if (!unlikeResponse.ok) {
+							errorMessage = 'Failed to sync unlike to Bluesky';
+						}
+					} else {
+						errorMessage = 'Like removed locally (was not synced to Bluesky)';
+						syncedToPlatform = false;
+					}
+				} else {
+					//Like - need to get the CID from the database
+					const externalPost = await ExternalPosts.findOne({
+						where: { post_id: postId },
+						attributes: ['cid', 'source_post_id']
+					});
+					if (!externalPost?.cid) {
+						errorMessage = 'Post CID not found - cannot sync like to Bluesky';
+					} else {
+						const likePayload = {
+							repo: account.account_id,
+							collection: 'app.bsky.feed.like',
+							record: {
+								subject: {
+									uri: sourcePostId,
+									cid: externalPost.cid
+								},
+								createdAt: new Date().toISOString()
+							}
+						};
+						const likeResponse = await fetch('https://bsky.social/xrpc/com.atproto.repo.createRecord', {
+							method: 'POST',
+							headers: {
+								'Authorization': `Bearer ${account.access_token}`,
+								'Content-Type': 'application/json'
+							},
+							body: JSON.stringify(likePayload)
+						});
+						if (likeResponse.ok) {
+							const likeData = await likeResponse.json();
+							syncedToPlatform = true;
+							//Store the like URI for future unlike operations
+							platformUri = likeData.uri;
+						} else {
+							errorMessage = 'Failed to sync like to Bluesky';
+						}
+					}
+				}
+			} else if (source.toLowerCase() === 'mastodon') {
+				//Mastodon favourite/unfavourite
+				//For cross-instance posts, we need to find the local status ID
+				let localStatusId = sourcePostId;
+				//Get the post URL to check if it's from a different instance
+				const externalPost = await ExternalPosts.findOne({
+					where: { post_id: postId },
+					attributes: ['url']
+				});
+				if (externalPost?.url) {
+					const postUrl = externalPost.url;
+					const postInstance = new URL(postUrl).origin;
+					const userInstance = account.instance_url;
+					//If post is from a different instance, search for local representation
+					if (postInstance !== userInstance) {
+						try {
+							const searchResponse = await fetch(
+								`${userInstance}/api/v2/search?${new URLSearchParams({
+									q: postUrl,
+									type: 'statuses',
+									resolve: 'true',
+									limit: '1'
+								})}`,
+								{
+									headers: {
+										'Authorization': `Bearer ${account.access_token}`
+									}
+								}
+							);
+							if (searchResponse.ok) {
+								const searchData = await searchResponse.json();
+								if (searchData.statuses && searchData.statuses.length > 0) {
+									localStatusId = searchData.statuses[0].id;
+								} else {
+									errorMessage = 'Post not found on your Mastodon instance';
+								}
+							} else {
+								errorMessage = 'Failed to find post on your instance';
+							}
+						} catch (searchError) {
+							errorMessage = 'Failed to find post on your instance';
+						}
+					}
+				}
+				//Only proceed if we have a valid local status ID
+				if (localStatusId && !errorMessage) {
+					const endpoint = isRemoving ? 'unfavourite' : 'favourite';
+					const mastodonResponse = await fetch(`${account.instance_url}/api/v1/statuses/${localStatusId}/${endpoint}`, {
+						method: 'POST',
+						headers: {
+							'Authorization': `Bearer ${account.access_token}`
+						}
+					});
+					if (mastodonResponse.ok) {
+						syncedToPlatform = true;
+					} else {
+						errorMessage = 'Failed to sync like to Mastodon';
+					}
+				}
+			}
+		} catch (platformError) {
+			errorMessage = `Failed to sync to ${source}`;
+		}
+		//Update database regardless of platform sync status
+		const isVoteSystem = source.toLowerCase() === 'reddit'; //Reddit uses upvote/downvote, others use likes
+		if (isRemoving) {
+			await ExternalPostVotes.destroy({
+				where: { post_id: postId, user_id: userId }
+			});
+			//Decrement score in external_posts
+			const externalPost = await ExternalPosts.findOne({ where: { post_id: postId } });
+			if (externalPost) {
+				let delta = -1;
+				if (isVoteSystem && existingVote?.vote_type === 'downvote') {
+					delta = 1; //Removing downvote increases score
+				}
+				await ExternalPosts.update(
+					{ score: sequelize.literal(`score + ${delta}`) },
+					{ where: { post_id: postId } }
+				);
+			}
+		} else {
+			if (existingVote) {
+				//Changing vote (e.g., upvote to downvote)
+				const oldVoteType = existingVote.vote_type;
+				existingVote.vote_type = voteType;
+				existingVote.synced_to_platform = syncedToPlatform;
+				if (platformUri) {
+					existingVote.platform_uri = platformUri;
+				}
+				await existingVote.save();
+				//Update score if vote type changed (only for Reddit)
+				if (oldVoteType !== voteType && isVoteSystem) {
+					let delta = 0;
+					if (oldVoteType === 'downvote' && voteType === 'upvote') {
+						delta = 2; //From -1 to +1
+					} else if (oldVoteType === 'upvote' && voteType === 'downvote') {
+						delta = -2; //From +1 to -1
+					}
+					if (delta !== 0) {
+						await ExternalPosts.update(
+							{ score: sequelize.literal(`score + ${delta}`) },
+							{ where: { post_id: postId } }
+						);
+					}
+				}
+			} else {
+				const newVote = {
+					vote_id: v4(),
+					post_id: postId,
+					user_id: userId,
+					source: source.toLowerCase(),
+					vote_type: voteType,
+					synced_to_platform: syncedToPlatform,
+					platform_uri: platformUri
+				};
+				await ExternalPostVotes.create(newVote);
+				//Increment score in external_posts
+				const externalPost = await ExternalPosts.findOne({ where: { post_id: postId } });
+				if (externalPost) {
+					let delta = 1;
+					if (isVoteSystem && voteType === 'downvote') {
+						delta = -1;
+					}
+					await ExternalPosts.update(
+						{ score: sequelize.literal(`score + ${delta}`) },
+						{ where: { post_id: postId } }
+					);
+				}
+			}
+		}
+		const responseData = {
+			success: true,
+			voteType: isRemoving ? null : voteType,
+			syncedToPlatform,
+			message: errorMessage || 'Vote recorded successfully'
+		};
+		res.status(200).json(responseData);
+	} catch (error) {
+		res.status(500).json({ success: false, message: 'Error recording vote' });
+	}
+});
+
 //Get external posts for active users
 if (process.env.NODE_ENV === 'production') { //No need to get posts in testing
 	cron.schedule('*/10 * * * *', async () => { //Runs every 10 minutes
@@ -1778,7 +1984,6 @@ if (process.env.NODE_ENV === 'production') { //No need to get posts in testing
 			console.error(new Date().toISOString(), 'Error updating external posts:', error);
 		}
 	});
-
 	//Get external posts for admin user every hour
 	cron.schedule('0 * * * *', async () => { //Runs every hour at minute 0
 		try {
