@@ -112,11 +112,7 @@ const FeedItem = ({ dragged, feed, isChat, parentDeepFeedId, unreadCount }) => {
                 return (
                     <div className={`feed-list-link-container ${location.pathname.startsWith(isChat ? `/connections/${feed?.feed_name}` : `/${linkType}/${feed?.feed_name}`) ? 'selected' : ''}`}>
                         {!dragged ? (
-                            <Link
-                                to={isChat ? `/connections/${feed?.feed_name}` : `/${linkType}/${feed?.feed_name}`}
-                                title={`Go to ${feed?.feed_name}`}
-                                draggable={false}
-                            >
+                            <Link to={isChat ? `/connections/${feed?.feed_name}` : `/${linkType}/${feed?.feed_name}`} title={`Go to ${feed?.feed_name}`} draggable={false}>
                                 {feedContent}
                             </Link>
                         ) : (

@@ -125,13 +125,17 @@ const ChatChannel = ({ canAdd, canRemove, channelId, connection, isGroup, isLock
                     chat_id: channelId,
                     reader_id: viewer?.feed_id,
                 });
-                dispatch({ chatId: channelId, type: 'MARK_AS_READ' });
+                dispatch({
+                    chatId: channelId,
+                    feedId: connection?.feed_id,
+                    type: 'MARK_AS_READ'
+                });
             } catch (error) {
                 setErrorMessage('Error marking messages as read');
                 setTimeout(() => { setErrorMessage(''); }, 5000);
             }
         }
-    }, [channelId, isGroup, viewer?.feed_id, dispatch, setErrorMessage]);
+    }, [channelId, isGroup, viewer?.feed_id, connection?.feed_id, dispatch, setErrorMessage]);
 
     //Channel-specific setup and event listeners
     useEffect(() => {
