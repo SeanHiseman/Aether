@@ -1778,6 +1778,36 @@ if (process.env.NODE_ENV === 'production') { //No need to get posts in testing
 			console.error(new Date().toISOString(), 'Error updating external posts:', error);
 		}
 	});
+
+	//Get external posts for admin user every hour
+	cron.schedule('0 * * * *', async () => { //Runs every hour at minute 0
+		try {
+			const adminId = process.env.ADMIN_ID;
+			if (!adminId) {
+				console.log(new Date().toISOString(), 'ADMIN_ID not set, skipping admin external posts update');
+				return;
+			}
+			console.log(new Date().toISOString(), 'Starting admin external posts update cron job');
+			const adminUser = await Users.findOne({
+				where: { user_id: adminId },
+				attributes: ['user_id']
+			});
+			if (!adminUser) {
+				console.log(new Date().toISOString(), `Admin user with ID ${adminId} not found`);
+				return;
+			}
+			const accounts = await ConnectedAccounts.findAll({
+				where: { user_id: adminUser.user_id }
+			});
+			console.log(`Found ${accounts.length} connected accounts for admin user`);
+			for (const account of accounts) {
+				await processAccount(account);
+			}
+			console.log(new Date().toISOString(), 'Completed admin external posts update cron job');
+		} catch (error) {
+			console.error(new Date().toISOString(), 'Error updating admin external posts:', error);
+		}
+	});
 }
 
 export default router;
