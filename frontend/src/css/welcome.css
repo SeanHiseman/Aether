@@ -268,13 +268,7 @@
     padding: clamp(20px, 4vw, 32px);
     margin-bottom: clamp(16px, 3vw, 24px);
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-    transition: all 0.3s ease;
     width: 100%;
-}
-.content-card:hover {
-    border-color: rgba(255, 255, 255, 0.15);
-    box-shadow: 0 6px 25px rgba(0, 0, 0, 0.4);
-    transform: translateY(-2px);
 }
 @media (max-width: 768px) {
     .welcome-box {
