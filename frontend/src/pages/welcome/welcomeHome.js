@@ -46,7 +46,6 @@ const WelcomeHome = () => {
                         <button className="button join welcome">Join</button>
                     </Link>
                 </div>
-
                 <div style={{
                     maxWidth: 'clamp(600px, 80vw, 1200px)',
                     width: '100%',
@@ -64,7 +63,6 @@ const WelcomeHome = () => {
                     }}>Customise the algorithms that shows you content</p>
                     <AlgorithmSelector display={true} locationId={'display'} />
                 </div>
-
                 <div style={{
                     maxWidth: 'clamp(600px, 80vw, 1200px)',
                     width: '100%',
@@ -82,7 +80,6 @@ const WelcomeHome = () => {
                     }}>Apply custom algorithms to posts from other platforms</p>
                     <PlatformConnect display={true} />
                 </div>
-
                 <div style={{
                     maxWidth: 'clamp(600px, 80vw, 1200px)',
                     width: '100%',
@@ -118,12 +115,8 @@ const WelcomeHome = () => {
                         </div>
                     </div>
                 </div>
-
                 <Link to="/explore">
-                    <button className="large-icon" style={{
-                        margin: 'clamp(24px, 5vw, 40px) 0',
-                        transition: 'all 0.3s ease'
-                    }}>
+                    <button className="large-icon" style={{ margin: 'clamp(24px, 5vw, 40px) 0', transition: 'all 0.3s ease' }}>
                         <FaArrowRight/>
                         <p className="icon-text">Explore posts</p>
                     </button>
@@ -134,17 +127,17 @@ const WelcomeHome = () => {
                     <div className="footer-section">
                         <h3 style={{ marginLeft: 0 }}>Business</h3>
                         <div className="footer-links">
-                            <Link to="/welcome/team">Team</Link>
-                            <Link to="/welcome/support">Support</Link>
-                            <Link to="/welcome/security">Security</Link>
+                            <Link to="/team">Team</Link>
+                            <Link to="/support">Support</Link>
+                            <Link to="/security">Security</Link>
                         </div>
                     </div>
                     <div className="footer-section">
                         <h3 style={{ marginLeft: 0 }}>Legal</h3>
                         <div className="footer-links">
-                            <Link to="/welcome/terms">Terms of Service</Link>
-                            <Link to="/welcome/licenses">Licenses</Link>
-                            <Link to="/welcome/private-policy">Privacy Policy</Link>
+                            <Link to="/terms">Terms of Service</Link>
+                            <Link to="/licenses">Licenses</Link>
+                            <Link to="/privacy">Privacy Policy</Link>
                         </div>
                     </div>
                     <div className="footer-section">
@@ -183,7 +176,7 @@ const WelcomeHome = () => {
                     </div>
                 </div>
                 <div className="footer-bottom">
-                    <p>&copy; 2025 Aether Social Limited. All rights reserved.</p>
+                    <p>&copy; 2026 Aether Social Limited. All rights reserved.</p>
                 </div>
             </footer>
         </>

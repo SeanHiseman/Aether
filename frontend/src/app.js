@@ -62,18 +62,16 @@ const App = () => {
 				<SocketProvider>
 					<Router>
 						<Routes>
-							<Route path="/" element={<Navigate to="/welcome" replace />} />
+							<Route path="/" element={<PublicAuthProvider><WelcomeHome /></PublicAuthProvider>} />
+							<Route path="/welcome" element={<PublicAuthProvider><WelcomeHome /></PublicAuthProvider>} />
 							<Route path="/auth/google/success" element={<GoogleAuthSuccess />} />
-							<Route path="/welcome" element={<PublicAuthProvider><Outlet /></PublicAuthProvider>}>
-								<Route index element={<WelcomeHome />} />
-								<Route path="contact" element={<Contact />} />
-								<Route path="licenses" element={<Placeholder />} />
-								<Route path="private-policy" element={<Privacy />} />
-								<Route path="security" element={<Placeholder />} />
-								<Route path="support" element={<Support />} />
-								<Route path="team" element={<Team />} />
-								<Route path="terms" element={<Placeholder />} />
-							</Route>
+							<Route path="/contact" element={<PublicAuthProvider><Contact /></PublicAuthProvider>} />
+							<Route path="/licenses" element={<PublicAuthProvider><Placeholder /></PublicAuthProvider>} />
+							<Route path="/privacy" element={<PublicAuthProvider><Privacy /></PublicAuthProvider>} />
+							<Route path="/security" element={<PublicAuthProvider><Placeholder /></PublicAuthProvider>} />
+							<Route path="/support" element={<PublicAuthProvider><Support /></PublicAuthProvider>} />
+							<Route path="/team" element={<PublicAuthProvider><Team /></PublicAuthProvider>} />
+							<Route path="/terms" element={<PublicAuthProvider><Placeholder /></PublicAuthProvider>} />
 							<Route path="/feedback" element={<PublicAuthProvider><Feedback /></PublicAuthProvider>} />
 							<Route path="/connect/bluesky" element={<ConnectBluesky />} />
 							<Route path="/forgot-password" element={<ForgotPassword />}/>
