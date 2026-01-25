@@ -9,7 +9,7 @@ import { useContext, useEffect, useRef, useState } from 'react';
 import useTimeAgo from '../functions/useTimeAgo';
 
 const ExternalPostWidget = ({ post, sharedPost = false }) => {
-	console.log("ExternalPostWidget post:", post);
+	//console.log("ExternalPostWidget post:", post);
 	const authContext = useContext(AuthContext);
 	const { isAuthenticated = false } = authContext || {};
 	const { post_id } = useParams();
@@ -29,6 +29,11 @@ const ExternalPostWidget = ({ post, sharedPost = false }) => {
 	const [voteError, setVoteError] = useState('');
 	const timeAgo = useTimeAgo(post?.created_at);
 	const contentContainerRef = useRef(null);
+
+	//Check if user has this platform connected
+	const connectedAccounts = JSON.parse(localStorage.getItem("connectedAccounts") || "[]");
+	const platformName = post?.source?.toLowerCase(); //Convert 'Bluesky' -> 'bluesky'
+	const hasConnectedPlatform = connectedAccounts.some(a => a.platform === platformName);
 
 	const handleOverflowChange = (overflowing) => {
 		setIsOverflowing(overflowing);
@@ -70,6 +75,11 @@ const ExternalPostWidget = ({ post, sharedPost = false }) => {
 	const handleVote = async (voteType) => {
 		if (!isAuthenticated) {
 			setVoteError('Please log in to vote');
+			setTimeout(() => setVoteError(''), 3000);
+			return;
+		}
+		if (!hasConnectedPlatform) {
+			setVoteError(`Please connect your ${post.source} account to vote`);
 			setTimeout(() => setVoteError(''), 3000);
 			return;
 		}
@@ -205,10 +215,13 @@ const ExternalPostWidget = ({ post, sharedPost = false }) => {
 										style={{
 											backgroundColor: 'transparent',
 											pointerEvents: 'auto',
-											color: userVote === 'upvote' ? '#ff4500' : undefined
+											color: userVote === 'upvote' ? '#ff4500' : undefined,
+											opacity: !isAuthenticated || !hasConnectedPlatform ? 0.5 : 1,
+											cursor: !isAuthenticated || !hasConnectedPlatform ? 'not-allowed' : 'pointer'
 										}}
 										onClick={() => handleVote('upvote')}
-										title="Upvote"
+										title={!hasConnectedPlatform ? `Connect ${post.source} to upvote` : "Upvote"}
+										disabled={!isAuthenticated || !hasConnectedPlatform}
 									>
 										<FaArrowUp />
 									</button>
@@ -218,10 +231,13 @@ const ExternalPostWidget = ({ post, sharedPost = false }) => {
 										style={{
 											backgroundColor: 'transparent',
 											pointerEvents: 'auto',
-											color: userVote === 'downvote' ? '#7193ff' : undefined
+											color: userVote === 'downvote' ? '#7193ff' : undefined,
+											opacity: !isAuthenticated || !hasConnectedPlatform ? 0.5 : 1,
+											cursor: !isAuthenticated || !hasConnectedPlatform ? 'not-allowed' : 'pointer'
 										}}
 										onClick={() => handleVote('downvote')}
-										title="Downvote"
+										title={!hasConnectedPlatform ? `Connect ${post.source} to downvote` : "Downvote"}
+										disabled={!isAuthenticated || !hasConnectedPlatform}
 									>
 										<FaArrowDown />
 									</button>
@@ -234,10 +250,13 @@ const ExternalPostWidget = ({ post, sharedPost = false }) => {
 										style={{
 											backgroundColor: 'transparent',
 											pointerEvents: 'auto',
-											color: userVote === 'like' ? '#ff1744' : undefined
+											color: userVote === 'like' ? '#ff1744' : undefined,
+											opacity: !isAuthenticated || !hasConnectedPlatform ? 0.5 : 1,
+											cursor: !isAuthenticated || !hasConnectedPlatform ? 'not-allowed' : 'pointer'
 										}}
 										onClick={() => handleVote('like')}
-										title="Like"
+										title={!hasConnectedPlatform ? `Connect ${post.source} to like` : "Like"}
+										disabled={!isAuthenticated || !hasConnectedPlatform}
 									>
 										<FaHeart />
 									</button>
