@@ -18,7 +18,6 @@ const ConnectBluesky = () => {
 		e.preventDefault();
 		setIsSubmitting(true);
 		setErrorMessage('');
-
 		try {
 			const response = await api.post('/auth/bluesky', {
 				identifier: handle,
@@ -76,7 +75,7 @@ const ConnectBluesky = () => {
 						Create an app password at <a href="https://bsky.app/settings/app-passwords" target="_blank" rel="noopener noreferrer">bsky.app/settings/app-passwords</a>
 					</p>
 					<p className="tiny-text faded-text">Do not use your main Bluesky password.</p>
-					<input type="submit" value="Connect Bluesky" className={`submit${isDisabled ? ' disabled' : ''}`} disabled={isDisabled} />
+					<input type="submit" value={isSubmitting ? 'Connecting' : 'Connect Bluesky'} className={`submit${isDisabled ? ' disabled' : ''}`} disabled={isDisabled}/>
 				</form>
 			</div>
 		</div>
