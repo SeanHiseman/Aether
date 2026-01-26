@@ -533,6 +533,51 @@ export async function generateBlueskyContentHTML(textBody, media) {
 					</div>
 				`;
 			}
+			//Quoted post
+			if (media.quotedPost) {
+				const qp = media.quotedPost;
+				const postUrl = qp.uri ? `https://bsky.app/profile/${qp.author.handle}/post/${qp.uri.split('/').pop()}` : '#';
+				html += `
+					<div class="content-block quoted-post" data-blockid="${crypto.randomUUID()}" data-align="left" style="border-left: 3px solid #1d9bf0; padding-left: 12px; margin: 12px 0; background: rgba(29, 155, 240, 0.05); border-radius: 8px;">
+						<div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+							${qp.author.avatar ? `<img src="${escapeHtml(qp.author.avatar)}" alt="${escapeHtml(qp.author.handle)}" style="width: 20px; height: 20px; border-radius: 50%;" />` : ''}
+							<a href="https://bsky.app/profile/${escapeHtml(qp.author.handle)}" target="_blank" rel="noopener noreferrer" style="font-weight: 600; color: inherit; text-decoration: none;">
+								${escapeHtml(qp.author.displayName || qp.author.handle)}
+							</a>
+							<span style="color: #666;">@${escapeHtml(qp.author.handle)}</span>
+						</div>
+						${qp.text ? `<p style="margin: 8px 0; white-space: pre-wrap;">${escapeHtml(qp.text)}</p>` : ''}
+						${qp.images && qp.images.length > 0 ? qp.images.map(img => `
+							<div style="margin: 8px 0;">
+								<img src="${escapeHtml(img.url)}" alt="${escapeHtml(img.alt || 'Quoted post image')}" style="max-width: 100%; border-radius: 8px;" />
+							</div>
+						`).join('') : ''}
+						${qp.videos && qp.videos.length > 0 ? qp.videos.map(vid => `
+							<div style="margin: 8px 0; position: relative;">
+								<img src="${escapeHtml(vid.thumbnail)}" alt="Video thumbnail" style="max-width: 100%; border-radius: 8px;" />
+								<div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 40px; height: 40px; background: rgba(0,0,0,0.7); border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+									<span style="color: white; font-size: 16px; margin-left: 2px;">▶</span>
+								</div>
+							</div>
+						`).join('') : ''}
+						${qp.card && qp.card.uri ? (() => {
+							let hostname = '';
+							try { hostname = new URL(qp.card.uri).hostname; } catch { hostname = qp.card.uri; }
+							return `
+								<a href="${escapeHtml(qp.card.uri)}" target="_blank" rel="noopener noreferrer" style="display: block; margin: 8px 0; padding: 8px; border: 1px solid #ccc; border-radius: 8px; text-decoration: none; color: inherit;">
+									${qp.card.thumb ? `<img src="${escapeHtml(qp.card.thumb)}" alt="${escapeHtml(qp.card.title || hostname)}" style="max-width: 100%; border-radius: 4px; margin-bottom: 4px;" />` : ''}
+									<div style="font-weight: 600;">${escapeHtml(qp.card.title || hostname)}</div>
+									${qp.card.description ? `<div style="font-size: 0.9em; color: #666;">${escapeHtml(qp.card.description)}</div>` : ''}
+									<div style="font-size: 0.8em; color: #999;">${escapeHtml(hostname)}</div>
+								</a>
+							`;
+						})() : ''}
+						<a href="${escapeHtml(postUrl)}" target="_blank" rel="noopener noreferrer" style="display: block; margin-top: 8px; font-size: 0.9em; color: #1d9bf0; text-decoration: none;">
+							View quoted post →
+						</a>
+					</div>
+				`;
+			}
 		}
 		//Handle legacy array format for backwards compatibility
 		else if (Array.isArray(media)) {
@@ -632,6 +677,53 @@ export async function generateMastodonContentHTML(htmlContent, media) {
 				</div>
 			`;
 		}
+		//Quoted post
+		if (media?.quotedPost) {
+			const qp = media.quotedPost;
+			out += `
+				<div class="content-block quoted-post" data-blockid="${crypto.randomUUID()}" data-align="left" style="border-left: 3px solid #6364ff; padding-left: 12px; margin: 12px 0; background: rgba(99, 100, 255, 0.05); border-radius: 8px;">
+					<div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+						${qp.author.avatar ? `<img src="${escapeHtml(qp.author.avatar)}" alt="${escapeHtml(qp.author.handle)}" style="width: 20px; height: 20px; border-radius: 50%;" />` : ''}
+						<span style="font-weight: 600;">${escapeHtml(qp.author.displayName || qp.author.handle)}</span>
+						<span style="color: #666;">@${escapeHtml(qp.author.handle)}</span>
+					</div>
+					${qp.content ? `<div style="margin: 8px 0;">${qp.content}</div>` : ''}
+					${qp.attachments && qp.attachments.length > 0 ? qp.attachments.map(att => {
+						if (att.type === 'video') {
+							return `
+								<div style="margin: 8px 0;">
+									<video controls style="max-width: 100%; border-radius: 8px;">
+										<source src="${escapeHtml(att.url)}" type="video/mp4" />
+									</video>
+								</div>
+							`;
+						} else {
+							return `
+								<div style="margin: 8px 0;">
+									<img src="${escapeHtml(att.url)}" alt="Quoted post media" style="max-width: 100%; border-radius: 8px;" />
+								</div>
+							`;
+						}
+					}).join('') : ''}
+					${qp.card ? (() => {
+						const c = qp.card;
+						return `
+							<a href="${escapeHtml(c.url)}" target="_blank" rel="noopener noreferrer" style="display: block; margin: 8px 0; padding: 8px; border: 1px solid #ccc; border-radius: 8px; text-decoration: none; color: inherit;">
+								${c.image ? `<img src="${escapeHtml(c.image)}" alt="${escapeHtml(c.title || c.hostname)}" style="max-width: 100%; border-radius: 4px; margin-bottom: 4px;" />` : ''}
+								<div style="font-weight: 600;">${escapeHtml(c.title || c.hostname || c.url)}</div>
+								${c.description ? `<div style="font-size: 0.9em; color: #666;">${escapeHtml(c.description)}</div>` : ''}
+								<div style="font-size: 0.8em; color: #999;">${escapeHtml(c.hostname)}</div>
+							</a>
+						`;
+					})() : ''}
+					${qp.url ? `
+						<a href="${escapeHtml(qp.url)}" target="_blank" rel="noopener noreferrer" style="display: block; margin-top: 8px; font-size: 0.9em; color: #6364ff; text-decoration: none;">
+							View quoted post →
+						</a>
+					` : ''}
+				</div>
+			`;
+		}
 		return out.trim();
 	} catch (error) {
 		console.error(new Date().toISOString(), 'generateMastodonContentHTML error:', error);
@@ -655,6 +747,7 @@ function mapBlueskyToExternal(item) {
 	let images = null;
 	let videos = null;
 	let externalCard = null;
+	let quotedPost = null;
 	const embed = post.embed;
 	if (embed) {
 		const embedType = embed.$type || '';
@@ -708,11 +801,62 @@ function mapBlueskyToExternal(item) {
 				};
 			}
 		}
+		//Handle quote posts (app.bsky.embed.record#view or app.bsky.embed.recordWithMedia#view)
+		if (embed.record) {
+			const quotedRecord = embed.record.record || embed.record;
+			if (quotedRecord && quotedRecord.author) {
+				//Extract quoted post images from its embed
+				let quotedImages = null;
+				let quotedVideos = null;
+				let quotedCard = null;
+				if (quotedRecord.embed) {
+					const qEmbed = quotedRecord.embed;
+					if (qEmbed.images && Array.isArray(qEmbed.images)) {
+						quotedImages = qEmbed.images.map(img => ({
+							url: img.fullsize || img.thumb || null,
+							alt: img.alt || ''
+						}));
+					}
+					if (qEmbed.playlist || qEmbed.$type?.includes('video')) {
+						const videoUrl = qEmbed.playlist || null;
+						const thumbnail = qEmbed.thumbnail || null;
+						if (videoUrl) {
+							quotedVideos = [{ url: videoUrl, thumbnail, type: 'video' }];
+						}
+					}
+					if (qEmbed.external) {
+						quotedCard = {
+							uri: qEmbed.external.uri || '',
+							title: qEmbed.external.title || '',
+							description: qEmbed.external.description || '',
+							thumb: qEmbed.external.thumb || null
+						};
+					}
+				}
+				const quotedPostRecord = quotedRecord.value || quotedRecord;
+				quotedPost = {
+					uri: quotedRecord.uri || embed.record.uri,
+					cid: quotedRecord.cid || embed.record.cid,
+					author: {
+						handle: quotedRecord.author.handle || null,
+						did: quotedRecord.author.did || null,
+						displayName: quotedRecord.author.displayName || null,
+						avatar: quotedRecord.author.avatar || null
+					},
+					text: quotedPostRecord.text || '',
+					createdAt: quotedPostRecord.createdAt || null,
+					images: quotedImages || [],
+					videos: quotedVideos || [],
+					card: quotedCard
+				};
+			}
+		}
 	}
 	const media = {
 		images: images || [],
 		videos: videos || [],
-		card: externalCard
+		card: externalCard,
+		quotedPost: quotedPost
 	};
 	return {
 		post_id: `bluesky:${post.uri}`,
@@ -746,6 +890,38 @@ function mapMastodonToExternal(toot, instance) {
 	//Mastodon api does not provide raw text
 	const htmlContent = toot.content || '';
 	const rawText = htmlContent.replace(/<[^>]*>/g, '').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&#39;/g, "'").replace(/&quot;/g, '"').trim();
+	//Extract quoted post if present (Mastodon 4.5+)
+	let quotedPost = null;
+	if (toot.quote || toot.quoted_status) {
+		const quoted = toot.quote || toot.quoted_status;
+		const quotedHtmlContent = quoted.content || '';
+		const quotedText = quotedHtmlContent.replace(/<[^>]*>/g, '').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&#39;/g, "'").replace(/&quot;/g, '"').trim();
+		//Extract quoted post media
+		const quotedAttachments = Array.isArray(quoted.media_attachments)
+			? quoted.media_attachments.map(m => ({ url: m.url, type: m.type }))
+			: [];
+		const quotedCard = quoted.card ? {
+			url: quoted.card.url,
+			title: quoted.card.title,
+			description: quoted.card.description,
+			image: quoted.card.image,
+			hostname: quoted.card.provider_name || (quoted.card.url ? new URL(quoted.card.url).hostname : null)
+		} : null;
+		quotedPost = {
+			id: quoted.id,
+			url: quoted.url || null,
+			author: {
+				handle: quoted.account?.acct || null,
+				displayName: quoted.account?.display_name || quoted.account?.username || null,
+				avatar: quoted.account?.avatar || null
+			},
+			content: quotedHtmlContent,
+			text: quotedText,
+			createdAt: quoted.created_at || null,
+			attachments: quotedAttachments,
+			card: quotedCard
+		};
+	}
 	const media = {
 		attachments: Array.isArray(toot.media_attachments)
 			? toot.media_attachments.map(m => ({ url: m.url, type: m.type }))
@@ -756,7 +932,8 @@ function mapMastodonToExternal(toot, instance) {
 			description: toot.card.description,
 			image: toot.card.image,
 			hostname: toot.card.provider_name || (toot.card.url ? new URL(toot.card.url).hostname : null)
-		} : null
+		} : null,
+		quotedPost: quotedPost
 	};
 	const postInstance = toot.url ? new URL(toot.url).origin : instance;
 	//console.log("mastodon post instance:", postInstance);

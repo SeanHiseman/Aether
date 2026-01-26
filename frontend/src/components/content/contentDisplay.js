@@ -94,6 +94,12 @@ const ContentDisplay = ({ post, isFullscreen = false, onCodeAppChange = () => {}
 							title,
 							type: 'link',
 						});
+					} else if (div.classList.contains('quoted-post')) {
+						parsed.push({
+							html: div.innerHTML.trim(),
+							id,
+							type: 'quoted',
+						});
 					} else if (div.classList.contains('app-block')) {
 						parsed.push({
 							appPath: div.getAttribute('data-apppath'),
@@ -254,6 +260,22 @@ const ContentDisplay = ({ post, isFullscreen = false, onCodeAppChange = () => {}
 					return block.kind === 'webcontainer'
 						? <AppWebContainer key={block.id} buildId={block.buildId}/>
 						: <AppBlock key={block.id} appPath={block.appPath}/>
+				}
+				if (block.type === 'quoted') {
+					return (
+						<div
+							key={i}
+							dangerouslySetInnerHTML={{ __html: block.html }}
+							style={{
+								borderLeft: '3px solid #1d9bf0',
+								paddingLeft: '12px',
+								margin: '12px 5px',
+								background: 'rgba(29, 155, 240, 0.05)',
+								borderRadius: '8px',
+								padding: '12px'
+							}}
+						/>
+					);
 				}
 				return null
 			})}

@@ -510,3 +510,26 @@ MODIFY `location_id` VARCHAR(255) NOT NULL;
 
 ALTER TABLE `messages` ADD COLUMN `shared_external_post_id` VARCHAR(255) NULL AFTER `shared_post_id`;
 CREATE INDEX `idx_shared_external_post_id` ON `messages` (`shared_external_post_id`);
+
+ALTER TABLE connected_accounts
+ADD COLUMN account_id VARCHAR(255) NULL AFTER handle;
+
+ALTER TABLE external_posts
+ADD COLUMN cid VARCHAR(128) NULL AFTER media;
+
+CREATE TABLE IF NOT EXISTS external_post_votes (
+    vote_id VARCHAR(36) PRIMARY KEY,
+    post_id VARCHAR(255) NOT NULL,
+    user_id VARCHAR(36) NOT NULL,
+    source VARCHAR(32) NOT NULL,
+    vote_type ENUM('upvote', 'downvote', 'like') NOT NULL,
+    synced_to_platform BOOLEAN DEFAULT FALSE,
+    platform_uri TEXT,
+    created_at DATETIME(3) DEFAULT CURRENT_TIMESTAMP(3),
+    updated_at DATETIME(3) DEFAULT CURRENT_TIMESTAMP(3),
+
+    INDEX idx_user_id (user_id),
+    INDEX idx_post_id (post_id),
+    INDEX idx_source (source),
+    UNIQUE INDEX idx_user_post (user_id, post_id)
+);
