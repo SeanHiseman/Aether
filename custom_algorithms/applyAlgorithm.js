@@ -832,7 +832,8 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
 				}
 				posts = await fetchPaginatedPostData({ paginatedIds, scoreMap, includeOptions, attrOption });
 			} else {
-				//Standard path with mixed native and external posts (soft, interspersed 2:3 preference)
+				//Standard path with mixed native and external posts
+				//Soft 2:3 preference, interspersed, balanced external sources with graceful degradation
 				const nativeTarget = Math.ceil((backendFetchTotal / 5) * 2);
 				const externalTarget = Math.ceil((backendFetchTotal / 5) * 3);
 				const nativeOffset = Math.floor((offset / 5) * 2);
@@ -863,7 +864,7 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
 					localPosts.sort((a, b) => orderMap.get(a.post_id) - orderMap.get(b.post_id));
 				}
 				const externalAccesses = await sequelize.query(
-					`SELECT p.post_id FROM external_posts p
+					`SELECT p.post_id, p.source FROM external_posts p
 					WHERE p.source IN ('reddit', 'bluesky', 'mastodon') AND p.expired = false
 					AND p.created_at_remote >= DATE_SUB(NOW(), INTERVAL 30 DAY) ${externalFiltersSQL}
 					ORDER BY ${lowVoteImpact ? 'p.created_at_remote' : '(p.score * EXP(-0.00002 * TIMESTAMPDIFF(SECOND, p.created_at_remote, NOW())))'} DESC
@@ -878,28 +879,75 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
 						raw: true
 					});
 				}
-				const formattedExternal = externalPosts.map(p =>
-					formatExternalPost(p, FEED_CONFIG[p.source], p.source)
-				);
+				const formattedExternal = externalPosts.map(p => formatExternalPost(p, FEED_CONFIG[p.source], p.source));
 				const localWithFlag = localPosts.map(p => ({ ...(p.dataValues || p), isExternal: false }));
 				const externalWithFlag = formattedExternal.map(p => ({ ...p, isExternal: true }));
-				const mixedPosts = [];
+				const externalBySource = { bluesky: [], mastodon: [], reddit: [] };
+				for (const post of externalWithFlag) {
+					const sourceLower = post.source?.toLowerCase();
+					if (externalBySource[sourceLower]) {
+						externalBySource[sourceLower].push(post);
+					}
+				}
+				const externalSourceOrder = ['reddit', 'bluesky', 'mastodon'];
+				let externalSourceIndex = 0;
 				let nativeIndex = 0;
-				let externalIndex = 0;
+				const mixedPosts = [];
 				const nativeWeight = 2;
 				const externalWeight = 3;
 				let nativeScore = 0;
 				let externalScore = 0;
+				let recentExternalSources = [];
+				//Mix posts from native and external sources
 				while (
 					mixedPosts.length < backendFetchTotal &&
-					(nativeIndex < localWithFlag.length || externalIndex < externalWithFlag.length)
+					(nativeIndex < localWithFlag.length ||
+					externalBySource.reddit.length ||
+					externalBySource.bluesky.length ||
+					externalBySource.mastodon.length)
 				) {
+					const externalAvailable =
+						externalBySource.reddit.length ||
+						externalBySource.bluesky.length ||
+						externalBySource.mastodon.length;
 					const chooseExternal =
-						externalIndex < externalWithFlag.length &&
-						(nativeIndex >= localWithFlag.length ||
-							externalScore <= nativeScore);
+						externalAvailable &&
+						(nativeIndex >= localWithFlag.length || externalScore <= nativeScore);
 					if (chooseExternal) {
-						mixedPosts.push(externalWithFlag[externalIndex++]);
+						let selectedPost = null;
+						let checkedSources = 0;
+						while (checkedSources < externalSourceOrder.length) {
+							const source = externalSourceOrder[externalSourceIndex];
+							externalSourceIndex = (externalSourceIndex + 1) % externalSourceOrder.length;
+							checkedSources++;
+							if (
+								externalBySource[source].length &&
+								!recentExternalSources.includes(source)
+							) {
+								selectedPost = externalBySource[source].shift();
+								recentExternalSources.push(source);
+								if (recentExternalSources.length > 2) {
+									recentExternalSources.shift();
+								}
+								break;
+							}
+						}
+						if (!selectedPost) {
+							for (const source of externalSourceOrder) {
+								if (externalBySource[source].length) {
+									selectedPost = externalBySource[source].shift();
+									recentExternalSources.push(source);
+									if (recentExternalSources.length > 2) {
+										recentExternalSources.shift();
+									}
+									break;
+								}
+							}
+						}
+						if (!selectedPost) {
+							break;
+						}
+						mixedPosts.push(selectedPost);
 						externalScore += nativeWeight;
 					} else {
 						mixedPosts.push(localWithFlag[nativeIndex++]);
