@@ -832,9 +832,11 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
 				}
 				posts = await fetchPaginatedPostData({ paginatedIds, scoreMap, includeOptions, attrOption });
 			} else {
-				//Standard path with mixed native and external posts
-				const halfLimit = Math.ceil(backendFetchTotal / 2);
-				const halfOffset = Math.floor(offset / 2);
+				//Standard path with mixed native and external posts (soft, interspersed 2:3 preference)
+				const nativeTarget = Math.ceil((backendFetchTotal / 5) * 2);
+				const externalTarget = Math.ceil((backendFetchTotal / 5) * 3);
+				const nativeOffset = Math.floor((offset / 5) * 2);
+				const externalOffset = Math.floor((offset / 5) * 3);
 				const postIds = await Posts.findAll({
 					attributes: ['post_id'],
 					where: {
@@ -844,8 +846,8 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
 						is_private: false
 					},
 					order: orderMode,
-					limit: halfLimit,
-					offset: halfOffset,
+					limit: nativeTarget,
+					offset: nativeOffset,
 					raw: true
 				});
 				const orderedIds = postIds.map(p => p.post_id);
@@ -860,15 +862,13 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
 					const orderMap = new Map(orderedIds.map((id, i) => [id, i]));
 					localPosts.sort((a, b) => orderMap.get(a.post_id) - orderMap.get(b.post_id));
 				}
-				//Fetch hottest external posts from all platforms (same for all users)
-				//Use 30 day window for explore feed to ensure content availability
 				const externalAccesses = await sequelize.query(
 					`SELECT p.post_id FROM external_posts p
 					WHERE p.source IN ('reddit', 'bluesky', 'mastodon') AND p.expired = false
 					AND p.created_at_remote >= DATE_SUB(NOW(), INTERVAL 30 DAY) ${externalFiltersSQL}
 					ORDER BY ${lowVoteImpact ? 'p.created_at_remote' : '(p.score * EXP(-0.00002 * TIMESTAMPDIFF(SECOND, p.created_at_remote, NOW())))'} DESC
 					LIMIT :limit OFFSET :offset`,
-					{ replacements: { limit: halfLimit, offset: halfOffset }, type: QueryTypes.SELECT }
+					{ replacements: { limit: externalTarget, offset: externalOffset }, type: QueryTypes.SELECT }
 				);
 				const unifiedIds = externalAccesses.map(a => a.post_id);
 				let externalPosts = [];
@@ -878,10 +878,35 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
 						raw: true
 					});
 				}
-				const formattedExternal = externalPosts.map(p => formatExternalPost(p, FEED_CONFIG[p.source], p.source));
+				const formattedExternal = externalPosts.map(p =>
+					formatExternalPost(p, FEED_CONFIG[p.source], p.source)
+				);
 				const localWithFlag = localPosts.map(p => ({ ...(p.dataValues || p), isExternal: false }));
 				const externalWithFlag = formattedExternal.map(p => ({ ...p, isExternal: true }));
-				posts = IntermixArrays(localWithFlag, externalWithFlag).slice(0, backendFetchTotal);
+				const mixedPosts = [];
+				let nativeIndex = 0;
+				let externalIndex = 0;
+				const nativeWeight = 2;
+				const externalWeight = 3;
+				let nativeScore = 0;
+				let externalScore = 0;
+				while (
+					mixedPosts.length < backendFetchTotal &&
+					(nativeIndex < localWithFlag.length || externalIndex < externalWithFlag.length)
+				) {
+					const chooseExternal =
+						externalIndex < externalWithFlag.length &&
+						(nativeIndex >= localWithFlag.length ||
+							externalScore <= nativeScore);
+					if (chooseExternal) {
+						mixedPosts.push(externalWithFlag[externalIndex++]);
+						externalScore += nativeWeight;
+					} else {
+						mixedPosts.push(localWithFlag[nativeIndex++]);
+						nativeScore += externalWeight;
+					}
+				}
+				posts = mixedPosts.slice(0, backendFetchTotal);
 			}
         } else if (typeof locationId === 'string' && locationId.startsWith('deep_')) {
             const deepFeedId = locationId.replace(/^deep_/, '');
