@@ -70,7 +70,7 @@ const Login = () => {
                 localStorage.setItem("user", JSON.stringify(response.data?.user));
                 await refreshTheme();
                 const isNewUser = response.data?.user?.is_new_user;
-                const from = isNewUser ? '/profile-photo-setup' : (location.state?.from || '/explore');
+                const from = isNewUser ? '/profile-setup' : (location.state?.from || '/explore');
                 navigate(from, { replace: true });
             }
         } catch (error) {

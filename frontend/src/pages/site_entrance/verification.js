@@ -30,7 +30,7 @@ const EmailVerification = () => {
                     localStorage.setItem('user', JSON.stringify(response.data?.user));
                 }
                 setTimeout(() => {
-                    navigate('/profile-photo-setup');
+                    navigate('/profile-setup');
                 }, 3000);
             } catch (error) {
                 setStatus('error');

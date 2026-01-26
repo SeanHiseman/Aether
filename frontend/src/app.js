@@ -30,7 +30,7 @@ import MessagesPage from './pages/messages/messagesPage';
 import NotFound from './notFound';
 import Placeholder from './pages/welcome/placeholder';
 import Privacy from './pages/welcome/privacy';
-import ProfilePhotoSetup from './pages/site_entrance/profilePhotoSetup';
+import ProfileSetup from './pages/site_entrance/profileSetup';
 import ResetPassword from './pages/site_entrance/resetPassword';
 import SavedPosts from './pages/feeds/savedPosts';
 import ExternalAccountPage from './socialConnect/externalAccountPage';
@@ -79,7 +79,7 @@ const App = () => {
 							<Route path="/connect/mastodon" element={<ConnectMastodon />} />
 							<Route path="/join" element={<Join />} />
 							<Route path="/login" element={<Login />} />
-							<Route path="/profile-photo-setup" element={<ProfilePhotoSetup />} />
+							<Route path="/profile-setup" element={<PublicAuthProvider><ProtectedRoute><ProfileSetup /></ProtectedRoute></PublicAuthProvider>} />
 							<Route path="/reset-password" element={<ResetPassword />}/>
 							<Route path="/verify-email" element={<EmailVerification />} />
 							<Route element={BaseLayoutWithProviders}>
