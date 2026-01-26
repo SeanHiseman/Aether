@@ -51,7 +51,7 @@ input, textarea, select {
 .dark-text {
     color: var(--darkest);
 }
-.disabled:hover {
+.disabled:hover, .button.disabled:hover {
     background: none;
     cursor: default;
 }

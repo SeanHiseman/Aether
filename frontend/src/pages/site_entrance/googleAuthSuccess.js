@@ -37,8 +37,8 @@ const GoogleAuthSuccess = () => {
                     const excludedPaths = ['/login', '/join', '/register', '/welcome', '/auth', '/verify-email', '/forgot-password', '/reset-password'];
                     const isExcluded = excludedPaths.some(path => storedPath?.startsWith(path));
                     let redirectPath = '/explore';
-                    if (isNewUser) { //Go to help page on first login
-                        redirectPath = '/help';
+                    if (isNewUser) { //Go to profile photo setup on first login
+                        redirectPath = '/profile-photo-setup';
                     } else if (storedPath && !isExcluded) {
                         redirectPath = storedPath;
                     }

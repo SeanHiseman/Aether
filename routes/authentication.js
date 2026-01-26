@@ -1,14 +1,13 @@
 import { Algorithms, AlgorithmLocations } from '../custom_algorithms/algorithmRelationships.js'
 import authenticateCheck from '../functions/checks/authenticateCheck.js';
 import { compare, hash } from 'bcrypt';
-import { Chats, Connections, ConnectRequests, DeepFeeds, Feeds, FeedChannels, Followers, FeedChats, Messages, Posts, PostDrafts, PostNotes, PostVotes, SavedPostChannels, Users, ViewedPosts } from '../models/relationships.js'; 
+import { Chats, Connections, ConnectRequests, DeepFeeds, ExternalPostsAccess, ExternalPostVotes, Feeds, FeedChannels, Followers, FeedChats, Messages, PaginationTokens, Posts, PostDrafts, PostNotes, PostVotes, SavedPostChannels, Users, ViewedPosts } from '../models/relationships.js'; 
 import { ExternalFollows, ConnectedAccounts } from '../models/users.js';
 import fetch from 'node-fetch';
 import crypto from 'crypto';
 import { decrypt } from '../functions/encryptionUtil.js';
 import DeleteMedia from '../functions/media_handling/deleteMedia.js';
 import dotenv from 'dotenv';
-import { ExternalPostsAccess } from '../models/content.js';
 import { fileURLToPath } from 'url';
 import { generateVerificationToken, sendPasswordResetEmail, sendVerificationEmail } from '../functions/emailService.js';
 import jwt from 'jsonwebtoken';
@@ -582,7 +581,7 @@ router.delete('/delete_account', resendLimiter, authenticateCheck, async (req, r
             attributes: ['post_id'],
             transaction,
         });
-        const userPostIds = userPosts.map(p => p.post_id);
+        const userPostIds = userPosts.map(p => p.post_id); //Posts that the user has made
         if (userPostIds.length > 0) {
             await PostNotes.destroy({ where: { post_id: { [Op.in]: userPostIds } }, transaction });
             await PostVotes.destroy({ where: { post_id: { [Op.in]: userPostIds } }, transaction });
@@ -599,6 +598,9 @@ router.delete('/delete_account', resendLimiter, authenticateCheck, async (req, r
         await Feeds.destroy({ where: { feed_owner: userId, is_group: false }, transaction });
         await ConnectedAccounts.destroy({ where: { user_id: userId }, transaction });
         await ExternalPostsAccess.destroy({ where: { user_id: userId }, transaction });
+        await ExternalFollows.destroy({ where: { user_id: userId }, transaction });
+        await ExternalPostVotes.destroy({ where: { user_id: userId }, transaction });
+        await PaginationTokens.destroy({ where: { user_id: userId }, transaction });
         await Users.destroy({ where: { user_id: userId }, transaction });
         await transaction.commit();
         res.clearCookie('sid');

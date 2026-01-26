@@ -30,7 +30,7 @@ const EmailVerification = () => {
                     localStorage.setItem('user', JSON.stringify(response.data?.user));
                 }
                 setTimeout(() => {
-                    navigate('/help');
+                    navigate('/profile-photo-setup');
                 }, 3000);
             } catch (error) {
                 setStatus('error');
@@ -99,11 +99,7 @@ const EmailVerification = () => {
                             }
                         }}
                     />
-                    <button
-                        className="button"
-                        type="submit"
-                        disabled={!email || emailError}
-                    >
+                    <button className="button" type="submit" disabled={!email || emailError}>
                         Resend Verification Email
                     </button>
                 </form>

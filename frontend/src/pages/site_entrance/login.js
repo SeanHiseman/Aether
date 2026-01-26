@@ -70,7 +70,7 @@ const Login = () => {
                 localStorage.setItem("user", JSON.stringify(response.data?.user));
                 await refreshTheme();
                 const isNewUser = response.data?.user?.is_new_user;
-                const from = isNewUser ? '/help' : (location.state?.from || '/explore');
+                const from = isNewUser ? '/profile-photo-setup' : (location.state?.from || '/explore');
                 navigate(from, { replace: true });
             }
         } catch (error) {
@@ -125,12 +125,7 @@ const Login = () => {
                     <FcGoogle size={20} />
                     <span>Login with Google</span>
                 </button>
-                <button
-                    type="button"
-                    onClick={() => setShowBlueskyForm(!showBlueskyForm)}
-                    className="bluesky-oauth-button"
-                    style={{ width: '100%', marginTop: '10px' }}
-                >
+                <button type="button" onClick={() => setShowBlueskyForm(!showBlueskyForm)} className="bluesky-oauth-button" style={{ width: '100%', marginTop: '10px' }}>
                     <img src="/media/site_images/social_sites/bluesky-logo.png" alt="Bluesky" style={{ width: 20, height: 20 }} />
                     <span>Login with Bluesky</span>
                     {showBlueskyForm ? <FaChevronUp size={12} /> : <FaChevronDown size={12} />}
@@ -216,7 +211,7 @@ const Login = () => {
                     </div>
                     <input className={`submit${isDisabled ? ' disabled' : ''}`} disabled={isDisabled} type="submit" value="Login" />
                     <Link to="/forgot-password">
-                        <p className="small-text">Forgot password?</p>
+                        <p className="small-text underline">Forgot password?</p>
                     </Link>
                 </form>
             </div>

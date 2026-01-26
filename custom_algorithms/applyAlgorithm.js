@@ -294,7 +294,6 @@ async function fetchPaginatedPostData({ paginatedIds, scoreMap, includeOptions, 
 }
 
 async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOptions, isGroup = true, isMain, limit = 100, offset, recentUpvotes, viewerId, keyword = '', connectedAccounts = [], userId }) {
-	console.log("locationId:", locationId, "userId:", userId);
 	try {
         //Followed feeds are a received as a string
 		const followedFeedIdsSafe = (typeof followedFeedIds === "string")
@@ -311,7 +310,6 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
 				where: { location_id: normLocationId, viewer_id: viewerId },
 				raw: true
 			});
-			//console.log("Checking algorithm location for:", { normLocationId, viewerId, found: !!algorithmLocation });
 			//For individual external accounts, also check for algorithm on the parent platform
 			if (!algorithmLocation && normLocationId.startsWith('external_account_')) {
 				const parts = normLocationId.replace('external_account_', '').split('_');
@@ -643,13 +641,11 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
 				posts = [...localWithFlag, ...externalWithFlag].slice(0, backendFetchTotal);
 			}
 		} else if (typeof locationId === 'string' && locationId.startsWith('external_account_')) {
-			//console.log("Applying algorithm for external account location:", locationId);
 			//Individual external account (e.g., external_account_bluesky_did:plc:xxx)
 			const parts = locationId.replace('external_account_', '').split('_');
 			const platform = parts[0];
 			const accountId = parts.slice(1).join('_'); //Handle DIDs with underscores
 			if (hasActiveAlgorithm) {
-				//console.log("hasActiveAlgorithm is true");
 				//Algorithm path for individual external account
 				//Search by both author_did and author (handle) for robustness
 				const externalPosts = await ExternalPosts.findAll({
@@ -1079,7 +1075,6 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
 			const ids = posts.map(p => p.post_id);
 			const nativeIds = posts.filter(p => !p.isExternal).map(p => p.post_id);
 			const externalIds = posts.filter(p => p.isExternal).map(p => p.post_id);
-			console.log("externalIds for standard score:", externalIds);
 			const [userVotes, externalVotes, savedRows] = viewerId
 				? await Promise.all([
 					nativeIds.length ? PostVotes.findAll({
@@ -1099,7 +1094,6 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
 					})
 				])
 				: [[], [], []];
-			console.log("external votes for standard score:", externalVotes);
 			const voteMap = new Map(
 				userVotes.map(v => [v.post_id, { has_upvoted: v.upvotes > 0, has_downvoted: v.downvotes > 0 }])
 			);
@@ -1107,7 +1101,6 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
 				has_upvoted: v.vote_type === 'upvote' || v.vote_type === 'like',
 				has_downvoted: v.vote_type === 'downvote'
 			}]));
-			console.log("standard score external vote map:", externalVoteMap);
 			const savedSet = new Set(savedRows.map(s => s.post_id));
 			return {
 				posts: stripExcludedAttributes(
