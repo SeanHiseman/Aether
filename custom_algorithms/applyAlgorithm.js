@@ -12,7 +12,6 @@ import sequelize from "../databaseSetup.js";
 const excludedAttrs = [
 	'rank_hotness',
 	'rank_updated_at',
-    'text_body',
     'text_length',
     'word_count',
     'video_length',

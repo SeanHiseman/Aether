@@ -10,6 +10,8 @@ const ContentDisplay = ({ post, isFullscreen = false, onCodeAppChange = () => {}
 	const contentRef = useRef(null);
 	const isMobile = typeof window !== 'undefined' && window.innerWidth <= 768;
 	const [loading, setLoading] = useState(false);
+	const quotedPostData = post?.quotedPost || null;
+	const quotedExternalPostData = post?.quotedExternalPost || null;
 	const urlPrefix = post?.parentChannel?.feed?.is_group ? 'g' : 'u';
 
 	//Prevents redirect when already viewing the individual post
@@ -279,6 +281,95 @@ const ContentDisplay = ({ post, isFullscreen = false, onCodeAppChange = () => {}
 				}
 				return null
 			})}
+			{quotedPostData && (
+				<div
+					style={{
+						borderLeft: '3px solid #6b46c1',
+						paddingLeft: '12px',
+						margin: '12px 5px',
+						background: 'rgba(107, 70, 193, 0.05)',
+						borderRadius: '8px',
+						padding: '12px',
+						cursor: 'pointer'
+					}}
+					onClick={() => {
+						const qUrlPrefix = quotedPostData?.parentChannel?.feed?.is_group ? 'g' : 'u';
+						window.location.href = `/${qUrlPrefix}/${quotedPostData?.parentChannel?.feed?.feed_name}/${quotedPostData?.parentChannel?.channel_name}/${quotedPostData?.post_id}`;
+					}}
+				>
+					<div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+						{quotedPostData?.poster?.feed_photo && (
+							<img src={quotedPostData.poster.feed_photo} alt={quotedPostData.poster.feed_name} className="tiny-feed-photo" onError={(e) => e.currentTarget.src = '/media/site_images/blank-profile.png'} />
+						)}
+						<span style={{ fontWeight: 600, fontSize: '14px' }}>
+							{quotedPostData?.poster?.feed_name || 'Anonymous'}
+						</span>
+					</div>
+					{quotedPostData?.title && (
+						<p style={{ fontWeight: 600, margin: '8px 0', fontSize: '14px' }}>
+							{quotedPostData.title}
+						</p>
+					)}
+					{quotedPostData?.text_body && (
+						<p style={{ margin: '8px 0', fontSize: '13px', color: '#666' }}>
+							{quotedPostData.text_body.substring(0, 600)}
+							{quotedPostData.text_body.length > 600 ? '...' : ''}
+						</p>
+					)}
+					<span style={{ fontSize: '12px', color: '#1d9bf0', display: 'block', marginTop: '8px' }}>
+						View quoted post →
+					</span>
+				</div>
+			)}
+		{quotedExternalPostData && (
+			<div
+				style={{
+					borderLeft: '3px solid #e67e22',
+					paddingLeft: '12px',
+					margin: '12px 5px',
+					background: 'rgba(230, 126, 34, 0.05)',
+					borderRadius: '8px',
+					padding: '12px',
+					cursor: 'pointer'
+				}}
+				onClick={() => {
+					if (quotedExternalPostData?.url) {
+						window.open(quotedExternalPostData.url, '_blank');
+					}
+				}}
+			>
+				<div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+					{quotedExternalPostData?.author_photo && (
+						<img
+							src={quotedExternalPostData.author_photo}
+							alt={quotedExternalPostData.author}
+							style={{ width: '20px', height: '20px', borderRadius: '50%' }}
+							onError={(e) => e.currentTarget.src = '/media/site_images/blank-profile.png'}
+						/>
+					)}
+					<span style={{ fontWeight: 600, fontSize: '14px' }}>
+						{quotedExternalPostData?.author || 'Anonymous'}
+					</span>
+					<span style={{ fontSize: '12px', color: '#666' }}>
+						• {quotedExternalPostData?.source}
+					</span>
+				</div>
+				{quotedExternalPostData?.title && (
+					<p style={{ fontWeight: 600, margin: '8px 0', fontSize: '14px' }}>
+						{quotedExternalPostData.title}
+					</p>
+				)}
+				{quotedExternalPostData?.text_body && (
+					<p style={{ margin: '8px 0', fontSize: '13px', color: '#666' }}>
+						{quotedExternalPostData.text_body.substring(0, 600)}
+						{quotedExternalPostData.text_body.length > 600 ? '...' : ''}
+					</p>
+				)}
+				<span style={{ fontSize: '12px', color: '#e67e22', display: 'block', marginTop: '8px' }}>
+					View external post →
+				</span>
+			</div>
+		)}
 		</div>
 	)
 }

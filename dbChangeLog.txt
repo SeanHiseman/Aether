@@ -533,3 +533,14 @@ CREATE TABLE IF NOT EXISTS external_post_votes (
     INDEX idx_source (source),
     UNIQUE INDEX idx_user_post (user_id, post_id)
 );
+
+ALTER TABLE posts
+ADD COLUMN quoted_post_id VARCHAR(36) NULL AFTER parent_id;
+
+ALTER TABLE posts
+ADD INDEX idx_posts_quoted_post_id (quoted_post_id);
+
+ALTER TABLE posts 
+ADD COLUMN quoted_external_post_id VARCHAR(255) NULL AFTER quoted_post_id;
+
+CREATE INDEX idx_posts_quoted_external_post_id ON posts(quoted_external_post_id);

@@ -2,13 +2,14 @@ import api from '../../api';
 import { AuthContext } from '../authContext'
 import { Crown } from 'lucide-react';
 import ConfirmModal from '../modals/confirmModal';
-import ContentWidget from './contentWidget'
+import ContentWidget from './contentWidget';
+import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
+import ExternalPostWidget from '../../socialConnect/externalPostWidget';
+import { FaAlignCenter, FaArrowCircleUp, FaArrowRight, FaCircleNotch, FaCommentAlt, FaCopy, FaCube, FaCrop, FaEdit, FaEllipsisV, FaEye, FaFileAlt, FaFont, FaGripVertical, FaImage, FaReply, FaSave, FaTerminal, FaTimes, FaToolbox, FaTrash, FaVideo } from 'react-icons/fa'
 import ReactCrop from 'react-image-crop';
 import 'react-image-crop/dist/ReactCrop.css';
-import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd'
-import { FaAlignCenter, FaArrowCircleUp, FaArrowRight, FaCircleNotch, FaCommentAlt, FaCopy, FaCube, FaCrop, FaEdit, FaEllipsisV, FaEye, FaFileAlt, FaFont, FaGripVertical, FaImage, FaReply, FaSave, FaTerminal, FaTimes, FaToolbox, FaTrash, FaVideo } from 'react-icons/fa'
 import GetCroppedImg from '../../functions/getCroppedImg';
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
 import ReactQuill from 'react-quill'
 import { useCallback, useContext, useEffect, useRef, useState } from 'react'
 import { v4 } from 'uuid'
@@ -119,7 +120,7 @@ const reorder = (list, startIndex, endIndex) => {
 //Post is either the post being edited or replied to
 const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPostDelete, onPostSubmit, parentPost = null, post = null, postErrorMessage, setPostErrorMessage, setShowForm }) => {
     const [addContentDropdownOpen, setAddContentDropdownOpen] = useState(false)
-    const blocksRef = useRef([]) 
+    const blocksRef = useRef([])
     const [blocks, setBlocks] = useState([])
     const [blockLimitError, setBlockLimitError] = useState('')
     const { channel_name, feed_name } = useParams()
@@ -132,7 +133,16 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
     const iframeRefs = useRef({})
     const [isPostingDraft, setIsPostingDraft] = useState(false)
     const [isSubmitting, setIsSubmitting] = useState(false)
+    const location = useLocation()
     const navigate = useNavigate()
+    const [quotedPost, setQuotedPost] = useState(location.state?.quotedPost || null)
+    const [quotedExternalPost, setQuotedExternalPost] = useState(() => {
+        const externalPost = location.state?.quotedExternalPost || null;
+        if (externalPost) {
+            console.log('quotedExternalPost received:', externalPost);
+        }
+        return externalPost;
+    })
     const submittedRef = useRef(false)
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
     const [pendingDeleteAction, setPendingDeleteAction] = useState(null)
@@ -811,6 +821,8 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
             if (!isReply) formData.append('title', title);
             if (channelId) formData.append('channel_id', channelId);
             if (isReply && post) formData.append('parent_id', post.post_id);
+            if (quotedPost) formData.append('quoted_post_id', quotedPost.post_id);
+            if (quotedExternalPost) formData.append('quoted_external_post_id', quotedExternalPost.post_id);
             blocks
                 .filter(b => b.type === BLOCK_TYPES.MEDIA && b.data.file)
                 .forEach(mediaBlock => formData.append('files', mediaBlock.data.file));
@@ -830,7 +842,7 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
             setPostErrorMessage(error.response?.data?.message || 'Error submitting the form.');
             setTimeout(() => { setPostErrorMessage(''); }, 5000);
         }
-    }, [blocks, channelId, compileFinalHTML, draftId, feed?.feed_id, isContentEmpty, isReply, onPostSubmit, post, title]);
+    }, [blocks, channelId, compileFinalHTML, draftId, feed?.feed_id, isContentEmpty, isReply, onPostSubmit, post, quotedPost, quotedExternalPost, title]);
 
     const toggleMediaAlignment = useCallback(block => {
         let newAlign;
@@ -848,6 +860,28 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
             {isReply && post && (
                 <div className="post-reply-preview">
                     <ContentWidget canRemove={false} feed={feed} onPostRemoved={() => { } } post={previewPost} readOnly />
+                </div>
+            )}
+            {quotedPost && (
+                <div className="post-reply-preview" style={{ marginBottom: '16px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                        <p className="small-text" style={{ fontWeight: 600 }}>Quoting post:</p>
+                        <button type="button" className="small-icon" onClick={() => setQuotedPost(null)} title="Remove quoted post" style={{ padding: '4px 8px' }}>
+                            <FaTimes />
+                        </button>
+                    </div>
+                    <ContentWidget canRemove={false} feed={feed} onPostRemoved={() => { } } post={quotedPost} readOnly />
+                </div>
+            )}
+            {quotedExternalPost && (
+                <div style={{ marginBottom: '16px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                        <p className="small-text" style={{ fontWeight: 600 }}>Quoting external post:</p>
+                        <button type="button" className="small-icon" onClick={() => setQuotedExternalPost(null)} title="Remove quoted post" style={{ padding: '4px 8px' }}>
+                            <FaTimes />
+                        </button>
+                    </div>
+                    <ExternalPostWidget post={quotedExternalPost} sharedPost={true} />
                 </div>
             )}
             {!isReply && !isEdit && !post && (

@@ -3,11 +3,12 @@ import AskButton from '../askButton';
 import { AuthContext } from '../authContext';
 import ContentDisplay from './contentDisplay';
 import ConfirmModal from '../modals/confirmModal';
-import { FaArrowDown, FaArrowUp, FaBookmark, FaChevronDown, FaChevronUp, FaComments, FaCommentSlash, FaEdit, FaCompress, FaExpand, FaRegBookmark, FaReply, FaShare, FaTrash, FaTree, FaListUl } from 'react-icons/fa';
+import { FaArrowDown, FaArrowUp, FaBookmark, FaChevronDown, FaChevronUp, FaComments, FaCommentSlash, FaEdit, FaCompress, FaExpand, FaQuoteRight, FaRegBookmark, FaReply, FaShare, FaTrash, FaTree, FaListUl } from 'react-icons/fa';
 import { FormatNumber } from '../../functions/formatNumber';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import MembershipModal from '../modals/membershipModal';
 import ReplyTreeView from './replyTreeView';
+import QuotePostModal from '../modals/quotePostModal';
 import SharePostModal from '../modals/sharePostModal';
 import { useCallback, useContext, useEffect, useRef, useState } from 'react';
 import useTimeAgo from '../../functions/useTimeAgo';
@@ -41,6 +42,7 @@ const ContentWidget = ({ canRemove = false, display = false, feed, isDraft = fal
 	const [showNote, setShowNote] = useState(post?.note && post?.note?.is_misinfo);
 	const [showReplies, setShowReplies] = useState(readOnly ? false : (post_id ? (post?.replies > 0) : false));
 	const [showShareModal, setShowShareModal] = useState(false);
+	const [showQuoteModal, setShowQuoteModal] = useState(false);
 	const [treeViewMode, setTreeViewMode] = useState(false);
 	const [upvotes, setUpvotes] = useState(post?.upvotes);
 	const [views, setViews] = useState(post?.views);
@@ -474,6 +476,9 @@ const ContentWidget = ({ canRemove = false, display = false, feed, isDraft = fal
 						<button className="large-icon" title={isSaved ? 'Unsave post' : 'Save post'} onClick={savePost}>
 							{isSaved ? <FaBookmark /> : <FaRegBookmark />}
 						</button>
+						{!post?.is_private && <button className="large-icon" title="Quote post" onClick={() => setShowQuoteModal(true)}>
+							<FaQuoteRight />
+						</button>}
 						{!post?.is_private && <button className="large-icon" title="Share post" onClick={() => setShowShareModal(true)}>
 							<FaShare />
 						</button>}
@@ -536,6 +541,7 @@ const ContentWidget = ({ canRemove = false, display = false, feed, isDraft = fal
 			)}
 		</div>
 		<ConfirmModal isOpen={showDeleteConfirm} onConfirm={confirmDelete} onCancel={cancelDelete} title={`Delete ${pendingDeleteAction}`} message={`Are you sure you want to delete this ${pendingDeleteAction}?`} />
+		{showQuoteModal && <QuotePostModal post={post} onClose={() => setShowQuoteModal(false)} />}
 		{showShareModal && <SharePostModal post={post} onClose={() => setShowShareModal(false)} />}
 		</>
 	);

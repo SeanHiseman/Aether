@@ -28,10 +28,6 @@ input, textarea, select {
 .bold {
     font-weight: bold;
 }
-.button.active, .button:hover, .button.selected:focus, .chat-channel-button:hover, .conversation-button:hover, .dark-button:hover, .follow-button:hover, .icon-button:hover, .large-icon:hover, #messages-button:hover, .posts-channel-button:hover, .small-icon:hover {
-    background-color: var(--light);
-    cursor: pointer;
-}
 .button, .dark-button {
     background-color: var(--darkest);
     border-radius: var(--small-margin);
@@ -123,8 +119,11 @@ p, h1, h2, h3, h4, h5, h6 {
 .spinner {
     animation: spin 1s linear infinite;
 }
+.button.active, .button:hover, .button.selected:focus, .chat-channel-button:hover, .conversation-button:hover, .dark-button:hover, .follow-button:hover, .icon-button:hover, .large-icon:hover, .main-button:hover, #messages-button:hover, .posts-channel-button:hover, .small-icon:hover {
+    background-color: var(--light);
+    cursor: pointer;
+}
 
-/*Use these text names from now on */
 .tiny-text {
     font-size: var(--tiny-text);
 }

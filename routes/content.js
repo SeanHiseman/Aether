@@ -1,4 +1,4 @@
-import { AppBuilds, Feeds, FeedChannels, Posts, PostDrafts, PostNotes, PostVotes, SavedPosts, Users, ViewedPosts } from '../models/relationships.js';
+import { AppBuilds, ExternalPosts, Feeds, FeedChannels, Posts, PostDrafts, PostNotes, PostVotes, SavedPosts, Users, ViewedPosts } from '../models/relationships.js';
 import { ApplyAlgorithm } from '../custom_algorithms/applyAlgorithm.js';
 import authenticateCheck from '../functions/checks/authenticateCheck.js';
 import cheerio from 'cheerio';
@@ -69,6 +69,31 @@ router.post('/channel_posts', standardLimiter, async (req, res) => {
 			as: 'poster',
 			model: Feeds
 		},{
+			as: 'quotedPost',
+			model: Posts,
+			required: false,
+			include: [
+				{
+					as: 'poster',
+					model: Feeds,
+					attributes: ['feed_id', 'feed_name', 'feed_photo']
+				},
+				{
+					as: 'parentChannel',
+					model: FeedChannels,
+					attributes: ['channel_id', 'channel_name'],
+					include: [{
+						model: Feeds,
+						attributes: ['feed_id', 'feed_name', 'is_group']
+					}]
+				}
+			]
+		},{
+			as: 'quotedExternalPost',
+			model: ExternalPosts,
+			required: false,
+			attributes: ['post_id', 'source', 'title', 'text_body', 'author', 'author_photo', 'url', 'created_at_remote', 'score', 'replies']
+		},{
 			as: 'votes',
 			attributes: ['downvotes', 'upvotes'],
 			model: PostVotes,
@@ -109,8 +134,6 @@ router.post('/channel_posts', standardLimiter, async (req, res) => {
 				? await SavedPosts.findOne({ where: { post_id: postId, saver_id: viewerId } })
 				: null;
 			singlePost.dataValues.is_saved = Boolean(existing);
-			console.log("singlePost:", singlePost);
-			console.log("parentPost:", parentPost);
 			return res.status(200).json({ success: true, post: singlePost, parent: parentPost });
 		}
 		const algorithmResult = await ApplyAlgorithm({
@@ -263,9 +286,15 @@ if (process.env.NODE_ENV === 'production') {
 //Unified route for creating and editing posts and drafts
 router.post("/create_post", standardLimiter, authenticateCheck, checkStorageLimit, postUpload.array("files"), async (req, res) => {
     try {
-        let { boost_amount, channel_id, content, draft_id, feed_id, is_private, parent_id, post_id, poster_id, title, publish_draft } = req.body;
+        let { boost_amount, channel_id, content, draft_id, feed_id, is_private, parent_id, post_id, poster_id, quoted_post_id, quoted_external_post_id, title, publish_draft } = req.body;
         if (draft_id === 'null' || draft_id === 'undefined') draft_id = null;
         if (post_id === 'null' || post_id === 'undefined') post_id = null;
+        if (quoted_post_id === 'null' || quoted_post_id === 'undefined') quoted_post_id = null;
+        if (quoted_external_post_id === 'null' || quoted_external_post_id === 'undefined') quoted_external_post_id = null;
+
+        if (quoted_external_post_id) {
+            console.log('Received quoted_external_post_id:', quoted_external_post_id);
+        }
         content = content || "";
         //Parse HTML content
         const $ = cheerio.load(content, { decodeEntities: false });
@@ -338,6 +367,8 @@ router.post("/create_post", standardLimiter, authenticateCheck, checkStorageLimi
                 if (channel_id) post.channel_id = channel_id;
                 if (feed_id) post.feed_id = feed_id;
                 if (parent_id) post.parent_id = parent_id;
+                if (quoted_post_id !== undefined) post.quoted_post_id = quoted_post_id;
+                if (quoted_external_post_id !== undefined) post.quoted_external_post_id = quoted_external_post_id;
                 if (boost_amount) post.boost_amount = boost_amount;
                 Object.assign(post, analysis, flags);
                 post.updated_at = Sequelize.literal("CURRENT_TIMESTAMP(3)");
@@ -357,6 +388,8 @@ router.post("/create_post", standardLimiter, authenticateCheck, checkStorageLimi
                 is_private,
                 parent_id,
                 poster_id,
+                quoted_post_id,
+                quoted_external_post_id,
                 title,
                 rank_hotness: 0.1,
                 boost_amount,
@@ -397,6 +430,8 @@ router.post("/create_post", standardLimiter, authenticateCheck, checkStorageLimi
                 is_private,
                 parent_id,
                 poster_id,
+                quoted_post_id,
+                quoted_external_post_id,
                 title,
                 rank_hotness: 0.1,
                 boost_amount,
@@ -464,6 +499,30 @@ router.post("/explore_posts", standardLimiter, async (req, res) => {
             model: PostNotes,
             as: "note",
             required: false,
+        },{
+            as: 'quotedPost',
+            model: Posts,
+            required: false,
+            include: [
+                {
+                    as: 'poster',
+                    model: Feeds,
+                    attributes: ['feed_id', 'feed_name', 'feed_photo']
+                },
+                {
+                    as: 'parentChannel',
+                    model: FeedChannels,
+                    attributes: ['channel_id', 'channel_name'],
+                    include: [{
+                        model: Feeds,
+                        attributes: ['feed_id', 'feed_name', 'is_group']
+                    }]
+                }
+            ]
+        },{
+            as: 'quotedExternalPost',
+            model: ExternalPosts,
+            required: false
         },{
             model: PostVotes,
             as: "votes",
@@ -646,6 +705,32 @@ router.get('/post_replies/:postId', standardLimiter, async (req, res) => {
                 attributes: ['channel_name', 'channel_id'],
                 required: false,
                 include: [{ model: Feeds }]
+            },
+            {
+                as: 'quotedPost',
+                model: Posts,
+                required: false,
+                include: [
+                    {
+                        as: 'poster',
+                        model: Feeds,
+                        attributes: ['feed_id', 'feed_name', 'feed_photo']
+                    },
+                    {
+                        as: 'parentChannel',
+                        model: FeedChannels,
+                        attributes: ['channel_id', 'channel_name'],
+                        include: [{
+                            model: Feeds,
+                            attributes: ['feed_id', 'feed_name', 'is_group']
+                        }]
+                    }
+                ]
+            },
+            {
+                as: 'quotedExternalPost',
+                model: ExternalPosts,
+                required: false
             }
         ];
         const replies = await Posts.findAll({

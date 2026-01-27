@@ -1,8 +1,9 @@
 import api from '../api';
 import { AuthContext } from '../components/authContext';
 import ContentDisplay from '../components/content/contentDisplay';
-import { FaArrowDown, FaArrowUp, FaChevronDown, FaChevronUp, FaComments, FaHeart, FaRegBookmark, FaShare } from 'react-icons/fa';
+import { FaArrowDown, FaArrowUp, FaChevronDown, FaChevronUp, FaComments, FaHeart, FaQuoteRight, FaRegBookmark, FaShare } from 'react-icons/fa';
 import { FormatNumber } from '../functions/formatNumber';
+import QuotePostModal from '../components/modals/quotePostModal';
 import ShareExternalPostModal from '../components/modals/shareExternalPostModal';
 import { useParams } from 'react-router-dom';
 import { useContext, useEffect, useRef, useState } from 'react';
@@ -20,6 +21,7 @@ const ExternalPostWidget = ({ post, sharedPost = false }) => {
 	const [showExpandButton, setShowExpandButton] = useState(false);
 	const [showFullContent, setShowFullContent] = useState(false);
 	const [showShareModal, setShowShareModal] = useState(false);
+	const [showQuoteModal, setShowQuoteModal] = useState(false);
 	const [userVote, setUserVote] = useState(() => {
 		if (post?.has_upvoted) return post.source === 'Reddit' ? 'upvote' : 'like';
 		if (post?.has_downvoted) return 'downvote';
@@ -277,6 +279,9 @@ const ExternalPostWidget = ({ post, sharedPost = false }) => {
 				)}
 				{!sharedPost && isAuthenticated && (
 					<div className="post-button-group">
+						<button className="large-icon compact" title="Quote post" onClick={() => setShowQuoteModal(true)}>
+							<FaQuoteRight />
+						</button>
 						<button className="large-icon compact" title="Share post" onClick={() => setShowShareModal(true)}>
 							<FaShare />
 						</button>
@@ -292,6 +297,7 @@ const ExternalPostWidget = ({ post, sharedPost = false }) => {
 				</div>
 			</div>
 			{showShareModal && <ShareExternalPostModal post={post} onClose={() => setShowShareModal(false)} />}
+			{showQuoteModal && <QuotePostModal externalPost={post} onClose={() => setShowQuoteModal(false)} />}
 		</div>
 	);
 };

@@ -483,6 +483,11 @@ main {
   padding: 0;
   width: var(--medium-text);
 }
+.tiny-feed-photo {
+  aspect-ratio: 1 / 1;
+  border-radius: clamp(2px, 0.5vw, 5px);
+  width: clamp(15px, 3vw, 27px);
+}
 #upload-form {
   display: flex;
   flex-direction: column;

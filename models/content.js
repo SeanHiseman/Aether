@@ -112,6 +112,8 @@ const PaginationTokens = sequelize.define('PaginationTokens', {
 const Posts = sequelize.define('posts', {
     post_id: { type: STRING(36), primaryKey: true },
     parent_id: { type: STRING(36), allowNull: true },
+    quoted_post_id: { type: STRING(36), allowNull: true },
+    quoted_external_post_id: { type: STRING(255), allowNull: true },
     feed_id: { type: STRING(36), allowNull: false },
     channel_id: { type: STRING(36), allowNull: false },
     title: { type: STRING(120), allowNull: true },
@@ -146,7 +148,8 @@ const Posts = sequelize.define('posts', {
     tableName: 'posts',
     timestamps: false,
     indexes: [
-        { name: 'idx_posts_parent_id', fields: ['parent_id'] }, 
+        { name: 'idx_posts_parent_id', fields: ['parent_id'] },
+        { name: 'idx_posts_quoted_post_id', fields: ['quoted_post_id'] },
         { name: 'idx_posts_poster_id', fields: ['poster_id'] },
         { name: 'idx_feed_id', fields: ['feed_id'] }, 
         { name: 'idx_channel_id', fields: ['channel_id'] },
