@@ -1,7 +1,7 @@
 import api from '../api';
 import { AuthContext } from '../components/authContext';
 import ContentDisplay from '../components/content/contentDisplay';
-import { FaArrowDown, FaArrowUp, FaChevronDown, FaChevronUp, FaComments, FaHeart, FaQuoteRight, FaRegBookmark, FaShare } from 'react-icons/fa';
+import { FaArrowDown, FaArrowUp, FaBookmark, FaChevronDown, FaChevronUp, FaComments, FaHeart, FaQuoteRight, FaRegBookmark, FaShare } from 'react-icons/fa';
 import { FormatNumber } from '../functions/formatNumber';
 import QuotePostModal from '../components/modals/quotePostModal';
 import ShareExternalPostModal from '../components/modals/shareExternalPostModal';
@@ -194,26 +194,16 @@ const ExternalPostWidget = ({ post, sharedPost = false }) => {
 						<p className="feed-list-text">{post?.poster?.username ?? 'Anonymous'}</p>
 					</a>
 				</div>
-				<div className="vote-container" style={{ marginRight: `${sharedPost && 0}` }}>
-					{sharedPost ? (
-						<div className="post-button-group">
-							{isVote && (
-								<>
-									<p className="small-text compact">{FormatNumber(localScore)}</p>
-								</>
-							)}
-							{isLike && (
-								<>
-									<p className="small-text compact">{FormatNumber(localScore)} {isLike && 'likes'}</p>
-								</>
-							)}
-						</div>
-					) : (
+				<a href={post?.url} target="_blank" rel="noopener noreferrer">
+					<p className="small-text feed-channel-link faded-text">See post at {sourceLabel}</p>
+				</a>
+				{!sharedPost ? (
+					<div className="vote-container">
 						<div className="post-button-group">
 							{isVote && (
 								<>
 									<button
-										className="large-icon compact"
+										className="large-icon"
 										style={{
 											backgroundColor: 'transparent',
 											pointerEvents: 'auto',
@@ -227,9 +217,9 @@ const ExternalPostWidget = ({ post, sharedPost = false }) => {
 									>
 										<FaArrowUp />
 									</button>
-									<p className="small-text compact">{FormatNumber(localScore)}</p>
+									<p className="small-text">{FormatNumber(localScore)}</p>
 									<button
-										className="large-icon compact"
+										className="large-icon"
 										style={{
 											backgroundColor: 'transparent',
 											pointerEvents: 'auto',
@@ -248,7 +238,7 @@ const ExternalPostWidget = ({ post, sharedPost = false }) => {
 							{isLike && (
 								<>
 									<button
-										className="large-icon compact"
+										className="large-icon"
 										style={{
 											backgroundColor: 'transparent',
 											pointerEvents: 'auto',
@@ -262,36 +252,44 @@ const ExternalPostWidget = ({ post, sharedPost = false }) => {
 									>
 										<FaHeart />
 									</button>
-									<p className="small-text compact">{FormatNumber(localScore)}</p>
+									<p className="small-text">{FormatNumber(localScore)}</p>
 								</>
 							)}
 						</div>
-					)}
-					{voteError && <p className="tiny-text" style={{ color: '#ff1744' }}>{voteError}</p>}
-				</div>
+						{voteError && <p className="tiny-text" style={{ color: '#ff1744' }}>{voteError}</p>}
+					</div>
+				) : (
+					<div className="vote-container">
+						<div className="post-button-group">
+							{isVote && (
+								<p className="small-text">{FormatNumber(localScore)}</p>
+							)}
+							{isLike && (
+								<p className="small-text">{FormatNumber(localScore)} {isLike && 'likes'}</p>
+							)}
+						</div>
+					</div>
+				)}
 				{!sharedPost && (
 					<div className="post-button-group reply-buttons">
-						<a href={post?.url} className="large-icon compact" title={"Replies"} rel="noopener noreferrer" target="_blank">
+						<a href={post?.url} className="large-icon" title={"Replies"} rel="noopener noreferrer" target="_blank">
 							<FaComments />
-							<p className="small-text compact">{post?.replies}</p>
+							<p className="small-text">{post?.replies}</p>
 						</a>
 					</div>
 				)}
 				{!sharedPost && isAuthenticated && (
 					<div className="post-button-group">
-						<button className="large-icon compact" title="Quote post" onClick={() => setShowQuoteModal(true)}>
+						<button className="large-icon" title="Quote post" onClick={() => setShowQuoteModal(true)}>
 							<FaQuoteRight />
 						</button>
-						<button className="large-icon compact" title="Share post" onClick={() => setShowShareModal(true)}>
+						<button className="large-icon" title="Share post" onClick={() => setShowShareModal(true)}>
 							<FaShare />
 						</button>
 					</div>
 				)}
-				<a href={post?.url} target="_blank" rel="noopener noreferrer">
-					<p className="small-text compact feed-channel-link faded-text">See post at {sourceLabel}</p>
-				</a>
 				<div className="view-date-container">
-					<p className="small-text compact faded-text" style={{ margin: '0px', textAlign: 'right' }}>
+					<p className="small-text faded-text" style={{ margin: '0px', textAlign: 'right' }}>
 						{post_id ? new Date(post?.created_at).toLocaleDateString() : timeAgo}
 					</p>
 				</div>

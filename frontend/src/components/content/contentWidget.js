@@ -3,7 +3,7 @@ import AskButton from '../askButton';
 import { AuthContext } from '../authContext';
 import ContentDisplay from './contentDisplay';
 import ConfirmModal from '../modals/confirmModal';
-import { FaArrowDown, FaArrowUp, FaBookmark, FaChevronDown, FaChevronUp, FaComments, FaCommentSlash, FaEdit, FaCompress, FaExpand, FaQuoteRight, FaRegBookmark, FaReply, FaShare, FaTrash, FaTree, FaListUl } from 'react-icons/fa';
+import { FaArrowDown, FaArrowUp, FaBookmark, FaChevronDown, FaChevronUp, FaComments, FaCommentSlash, FaEdit, FaEllipsisV, FaCompress, FaExpand, FaQuoteRight, FaRegBookmark, FaReply, FaShare, FaTrash, FaTree, FaListUl } from 'react-icons/fa';
 import { FormatNumber } from '../../functions/formatNumber';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import MembershipModal from '../modals/membershipModal';
@@ -43,7 +43,9 @@ const ContentWidget = ({ canRemove = false, display = false, feed, isDraft = fal
 	const [showReplies, setShowReplies] = useState(readOnly ? false : (post_id ? (post?.replies > 0) : false));
 	const [showShareModal, setShowShareModal] = useState(false);
 	const [showQuoteModal, setShowQuoteModal] = useState(false);
+	const [showOptionsDropdown, setShowOptionsDropdown] = useState(false);
 	const [treeViewMode, setTreeViewMode] = useState(false);
+	const dropdownRef = useRef(null);
 	const [upvotes, setUpvotes] = useState(post?.upvotes);
 	const [views, setViews] = useState(post?.views);
     const channelName = post?.parentChannel?.channel_name;
@@ -242,6 +244,17 @@ const ContentWidget = ({ canRemove = false, display = false, feed, isDraft = fal
 			}
 		}
 	}, [getReplies, hasViewed, incrementViews, post?.post_id, showReplies]);
+
+	// Close dropdown when clicking outside
+	useEffect(() => {
+		const handleClickOutside = (event) => {
+			if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+				setShowOptionsDropdown(false);
+			}
+		};
+		document.addEventListener('mousedown', handleClickOutside);
+		return () => document.removeEventListener('mousedown', handleClickOutside);
+	}, []);
 
 	const toggleFullscreen = () => {
 		const element = fullscreenRef.current
@@ -447,27 +460,73 @@ const ContentWidget = ({ canRemove = false, display = false, feed, isDraft = fal
 						)}*/}
 					</div>
 				)}
-				{!sharedPost && <div className="post-button-group">
-					{isAuthenticated && post?.poster_id === viewer?.feed_id && !readOnly && (
-						<button
-							className="large-icon"
-							onClick={() => navigate(
-								isDraft
-									? `/${urlPrefix}/${feed_name}/${channel_name}/${post?.draft_id}/edit`
-									: `/${urlPrefix}/${post?.parentChannel?.feed?.feed_name}/${post?.parentChannel?.channel_name}/${post?.post_id}/edit`,
-								{ state: { editData: post, isDraft: isDraft, parentPost: parent } }
-							)}
-							title={isReply ? "Edit Reply" : isDraft ? "Edit draft" : "Edit Post"}
-						>
-							<FaEdit />
+				{!sharedPost && isAuthenticated && (post?.poster_id === viewer?.feed_id || canRemoveState) && !readOnly && (
+					<div className="post-button-group" style={{ position: 'relative' }} ref={dropdownRef}>
+						<button className="large-icon" onClick={() => setShowOptionsDropdown(!showOptionsDropdown)} title="Options">
+							<FaEllipsisV />
 						</button>
-					)}
-					{isAuthenticated && canRemoveState && !readOnly && (
-						<button className="large-icon" onClick={deleteClick} title={isReply ? "Delete Reply" : isDraft ? "Delete draft" : "Delete Post"}>
-							<FaTrash />
-						</button>
-					)}
-				</div>}
+						{showOptionsDropdown && (
+							<div className="dropdown-menu dropdown-above">
+								{post?.poster_id === viewer?.feed_id && (
+									<button
+										style={{
+											display: 'flex',
+											alignItems: 'center',
+											gap: '8px',
+											width: '100%',
+											padding: '12px 16px',
+											border: 'none',
+											background: 'none',
+											color: 'var(--text-primary)',
+											cursor: 'pointer',
+											fontSize: '14px',
+											textAlign: 'left'
+										}}
+										onClick={() => {
+											setShowOptionsDropdown(false);
+											navigate(
+												isDraft
+													? `/${urlPrefix}/${feed_name}/${channel_name}/${post?.draft_id}/edit`
+													: `/${urlPrefix}/${post?.parentChannel?.feed?.feed_name}/${post?.parentChannel?.channel_name}/${post?.post_id}/edit`,
+												{ state: { editData: post, isDraft: isDraft, parentPost: parent } }
+											);
+										}}
+										onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--bg-hover)'}
+										onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+									>
+										<FaEdit /> {isReply ? "Edit Reply" : isDraft ? "Edit draft" : "Edit Post"}
+									</button>
+								)}
+								{canRemoveState && (
+									<button
+										style={{
+											display: 'flex',
+											alignItems: 'center',
+											gap: '8px',
+											width: '100%',
+											padding: '12px 16px',
+											border: 'none',
+											background: 'none',
+											color: '#ff4444',
+											cursor: 'pointer',
+											fontSize: '14px',
+											textAlign: 'left',
+											borderTop: post?.poster_id === viewer?.feed_id ? '1px solid var(--border)' : 'none'
+										}}
+										onClick={() => {
+											setShowOptionsDropdown(false);
+											deleteClick();
+										}}
+										onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--bg-hover)'}
+										onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+									>
+										<FaTrash /> {isReply ? "Delete Reply" : isDraft ? "Delete draft" : "Delete Post"}
+									</button>
+								)}
+							</div>
+						)}
+					</div>
+				)}
 				{/*{isAuthenticated && !post.note?.is_misinfo && !isDraft && (
 					<AskButton content={post} isReply={false} note={note} setNote={setNote} setPostErrorMessage={setPostErrorMessage} setShowNote={setShowNote} showNote={showNote} />
 				)}*/}

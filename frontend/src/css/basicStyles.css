@@ -62,6 +62,11 @@ input, textarea, select {
   width: calc(10 * var(--large-margin));
   z-index: 10;
 }
+.dropdown-menu.dropdown-above {
+  bottom: 100%;
+  margin-bottom: 4px;
+  top: auto;
+}
 .error-message {
     height: var(--small-text);
     margin: var(--small-margin);

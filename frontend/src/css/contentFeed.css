@@ -97,9 +97,6 @@
     grid-area: votes;
     margin-right: calc(2 * var(--xl-margin));
 }
-.content-metadata:has(.vote-container) .post-button-group:last-of-type {
-    grid-area: actions;
-}
 .content-metadata:not(:has(.vote-container)) .post-button-group:first-of-type {
     grid-area: votes;
 }
@@ -109,6 +106,9 @@
 .content-metadata:has(.vote-container) .post-button-group:nth-of-type(2) {
     grid-area: replies;
     justify-self: center;
+}
+.content-metadata:has(.vote-container) .post-button-group:last-of-type {
+    grid-area: actions;
 }
 .content-metadata .button-text-bottom {
     grid-area: save;
@@ -388,11 +388,12 @@
 @media (max-width: 768px) {
     .content-metadata {
         gap: var(--tiny-margin);
-        grid-template-areas: 
-            "user votes replies actions save"
-            "channel datetime datetime datetime datetime";
-        grid-template-columns: minmax(0, 1fr) minmax(0, auto) minmax(0, auto) minmax(0, auto) minmax(0, auto);
-        grid-template-rows: auto auto;
+        grid-template-areas:
+            "user user user user user"
+            "votes replies actions save save"
+            "channel channel datetime datetime datetime";
+        grid-template-columns: minmax(0, auto) minmax(0, auto) minmax(0, auto) minmax(0, auto) minmax(0, 1fr);
+        grid-template-rows: auto auto auto;
         margin-bottom: 0;
         width: 100%;
     }
@@ -405,22 +406,22 @@
         margin-right: var(--small-margin);
     }
     .feed-channel-link {
-        max-width: 100%;    
-        overflow: visible;    
-        white-space: nowrap;  
-        text-overflow: clip; 
+        max-width: 100%;
+        overflow: visible;
+        white-space: nowrap;
+        text-overflow: clip;
     }
     .view-date-container, .content-metadata .button-text-bottom {
-        min-width: auto; 
+        min-width: auto;
         overflow: visible;
     }
     .view-date-container {
-        flex-direction: row;  
-        justify-self: end;   
-        gap: var(--small-margin);  
-        align-items: center; 
-        min-width: auto;       
-        overflow: visible;     
+        flex-direction: row;
+        justify-self: end;
+        gap: var(--small-margin);
+        align-items: center;
+        min-width: auto;
+        overflow: visible;
     }
     .vote-container {
         justify-self: start;

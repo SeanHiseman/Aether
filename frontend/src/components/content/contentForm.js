@@ -136,13 +136,7 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
     const location = useLocation()
     const navigate = useNavigate()
     const [quotedPost, setQuotedPost] = useState(location.state?.quotedPost || null)
-    const [quotedExternalPost, setQuotedExternalPost] = useState(() => {
-        const externalPost = location.state?.quotedExternalPost || null;
-        if (externalPost) {
-            console.log('quotedExternalPost received:', externalPost);
-        }
-        return externalPost;
-    })
+    const [quotedExternalPost, setQuotedExternalPost] = useState(location.state?.quotedExternalPost || null);
     const submittedRef = useRef(false)
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
     const [pendingDeleteAction, setPendingDeleteAction] = useState(null)
