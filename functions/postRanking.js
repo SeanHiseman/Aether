@@ -22,7 +22,7 @@ import { Posts } from '../models/relationships.js';
 //})();
 
 //Core hotness ranking formula
-export function computeHotness({ upvotes = 0, downvotes = 0, createdAt, referenceTime = Date.now() / 1000, boost = 1.0, decayBase = 600000 }) {
+export function computeHotness({ upvotes = 0, downvotes = 0, createdAt, referenceTime = Date.now() / 1000, boost = 1.0, decayBase = 150000 }) {
 	const score = upvotes - downvotes;
 	const age = (referenceTime - new Date(createdAt).getTime() / 1000);
 	const freshness = Math.exp(-age / decayBase);
@@ -33,10 +33,11 @@ export function computeHotness({ upvotes = 0, downvotes = 0, createdAt, referenc
 		const penalty = Math.pow(Math.log10(1 + Math.abs(score)), 2.5) * 3;
 		return (-penalty * freshness) - (age / (decayBase / 3));
 	}
-	//Positive score: logarithmic growth with stronger recency bias
+	//Positive score: logarithmic growth with much stronger recency bias
 	const order = Math.log10(score + 1);
-	const boostFactor = (1 + Math.pow(order, 1.4) * boost) * freshness;
-	const decay = age / (decayBase * (1 + order * 0.3));
+	//Increase freshness weight to favor recent posts more
+	const boostFactor = (1 + Math.pow(order, 1.4) * boost) * Math.pow(freshness, 0.7);
+	const decay = age / (decayBase * (1 + order * 0.2));
 	return boostFactor - decay;
 }
 

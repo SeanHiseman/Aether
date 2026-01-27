@@ -152,6 +152,12 @@ function computeAlgorithmScore(post, { algorithmRow, normalizedBoost, normalized
         const similarityDelta = targetSimilarity - similarityScore;
         algorithmScore += similarityDelta * 30;
     }
+    //Recency boost - heavily favor recent posts
+    const postTime = new Date(post.created_at || post.created_at_remote).getTime();
+    const ageInHours = (Date.now() - postTime) / (1000 * 60 * 60);
+    //Exponential decay favoring posts from the last 24 hours
+    const recencyBoost = 20 * Math.exp(-ageInHours / 12);
+    algorithmScore += recencyBoost;
     return algorithmScore;
 }
 
@@ -862,14 +868,21 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
 					const orderMap = new Map(orderedIds.map((id, i) => [id, i]));
 					localPosts.sort((a, b) => orderMap.get(a.post_id) - orderMap.get(b.post_id));
 				}
-				const externalAccesses = await sequelize.query(
-					`SELECT p.post_id, p.source FROM external_posts p
-					WHERE p.source IN ('reddit', 'bluesky', 'mastodon') AND p.expired = false
-					AND p.created_at_remote >= DATE_SUB(NOW(), INTERVAL 30 DAY) ${externalFiltersSQL}
-					ORDER BY ${lowVoteImpact ? 'p.created_at_remote' : '(p.score * EXP(-0.00002 * TIMESTAMPDIFF(SECOND, p.created_at_remote, NOW())))'} DESC
-					LIMIT :limit OFFSET :offset`,
-					{ replacements: { limit: externalTarget, offset: externalOffset }, type: QueryTypes.SELECT }
+				//Fetch equal amounts from each platform
+				const perPlatformTarget = Math.ceil(externalTarget / 3);
+				const perPlatformOffset = Math.floor(externalOffset / 3);
+				const platformQueries = ['bluesky', 'reddit', 'mastodon'].map(platform =>
+					sequelize.query(
+						`SELECT p.post_id, p.source FROM external_posts p
+						WHERE p.source = :platform AND p.expired = false
+						AND p.created_at_remote >= DATE_SUB(NOW(), INTERVAL 30 DAY) ${externalFiltersSQL}
+						ORDER BY ${lowVoteImpact ? 'p.created_at_remote' : '(p.score * EXP(-0.00002 * TIMESTAMPDIFF(SECOND, p.created_at_remote, NOW())))'} DESC
+						LIMIT :limit OFFSET :offset`,
+						{ replacements: { platform, limit: perPlatformTarget, offset: perPlatformOffset }, type: QueryTypes.SELECT }
+					)
 				);
+				const platformResults = await Promise.all(platformQueries);
+				const externalAccesses = platformResults.flat();
 				const unifiedIds = externalAccesses.map(a => a.post_id);
 				let externalPosts = [];
 				if (unifiedIds.length) {
@@ -888,7 +901,7 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
 						externalBySource[sourceLower].push(post);
 					}
 				}
-				const externalSourceOrder = ['reddit', 'bluesky', 'mastodon'];
+				const externalSourceOrder = ['bluesky', 'reddit', 'mastodon'];
 				let externalSourceIndex = 0;
 				let nativeIndex = 0;
 				const mixedPosts = [];
@@ -896,8 +909,7 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
 				const externalWeight = 3;
 				let nativeScore = 0;
 				let externalScore = 0;
-				let recentExternalSources = [];
-				//Mix posts from native and external sources
+				//Mix posts from native and external sources with strict platform rotation
 				while (
 					mixedPosts.length < backendFetchTotal &&
 					(nativeIndex < localWithFlag.length ||
@@ -914,34 +926,15 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
 						(nativeIndex >= localWithFlag.length || externalScore <= nativeScore);
 					if (chooseExternal) {
 						let selectedPost = null;
-						let checkedSources = 0;
-						while (checkedSources < externalSourceOrder.length) {
+						//Strict rotation: try each source in order until we find one with posts
+						let attempts = 0;
+						while (!selectedPost && attempts < externalSourceOrder.length) {
 							const source = externalSourceOrder[externalSourceIndex];
-							externalSourceIndex = (externalSourceIndex + 1) % externalSourceOrder.length;
-							checkedSources++;
-							if (
-								externalBySource[source].length &&
-								!recentExternalSources.includes(source)
-							) {
+							if (externalBySource[source].length) {
 								selectedPost = externalBySource[source].shift();
-								recentExternalSources.push(source);
-								if (recentExternalSources.length > 2) {
-									recentExternalSources.shift();
-								}
-								break;
 							}
-						}
-						if (!selectedPost) {
-							for (const source of externalSourceOrder) {
-								if (externalBySource[source].length) {
-									selectedPost = externalBySource[source].shift();
-									recentExternalSources.push(source);
-									if (recentExternalSources.length > 2) {
-										recentExternalSources.shift();
-									}
-									break;
-								}
-							}
+							externalSourceIndex = (externalSourceIndex + 1) % externalSourceOrder.length;
+							attempts++;
 						}
 						if (!selectedPost) {
 							break;
