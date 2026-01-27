@@ -75,9 +75,9 @@
     grid-template-areas: "user channel spacer votes replies actions save datetime";
     grid-template-columns: minmax(0, auto) minmax(0, auto) 1fr minmax(0, auto) minmax(0, auto) minmax(0, auto) minmax(0, auto) minmax(0, auto);
     gap: 1rem;
-    margin-bottom: var(--small-margin);
-    margin-left: var(--small-margin);
-    margin-right: var(--small-margin);
+    margin: var(--small-margin);
+    margin: var(--small-margin);
+    margin: var(--small-margin);
 }
 .content-metadata .external-link {
     grid-area: channel;
