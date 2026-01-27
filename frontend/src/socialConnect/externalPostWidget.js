@@ -194,7 +194,7 @@ const ExternalPostWidget = ({ post, sharedPost = false }) => {
 						<p className="feed-list-text">{post?.poster?.username ?? 'Anonymous'}</p>
 					</a>
 				</div>
-				<a href={post?.url} target="_blank" rel="noopener noreferrer">
+				<a className="external-link" href={post?.url} target="_blank" rel="noopener noreferrer">
 					<p className="small-text feed-channel-link faded-text">See post at {sourceLabel}</p>
 				</a>
 				{!sharedPost ? (
@@ -279,7 +279,7 @@ const ExternalPostWidget = ({ post, sharedPost = false }) => {
 					</div>
 				)}
 				{!sharedPost && isAuthenticated && (
-					<div className="post-button-group">
+					<div className="post-button-group save-share-buttons">
 						<button className="large-icon" title="Quote post" onClick={() => setShowQuoteModal(true)}>
 							<FaQuoteRight />
 						</button>

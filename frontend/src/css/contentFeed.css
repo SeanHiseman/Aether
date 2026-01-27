@@ -79,6 +79,9 @@
     margin-left: var(--small-margin);
     margin-right: var(--small-margin);
 }
+.content-metadata .external-link {
+    grid-area: channel;
+}
 .content-metadata p,
 .content-metadata .feed-list-text,
 .content-metadata .feed-channel-link {
@@ -97,29 +100,19 @@
     grid-area: votes;
     margin-right: calc(2 * var(--xl-margin));
 }
-.content-metadata:not(:has(.vote-container)) .post-button-group:first-of-type {
-    grid-area: votes;
-}
-.content-metadata:not(:has(.vote-container)) .post-button-group:last-of-type {
-    grid-area: replies;
-}
-.content-metadata:has(.vote-container) .post-button-group:nth-of-type(2) {
+.content-metadata .post-button-group.reply-buttons {
     grid-area: replies;
     justify-self: center;
 }
-.content-metadata:has(.vote-container) .post-button-group:last-of-type {
+.content-metadata .post-button-group.options-buttons {
     grid-area: actions;
 }
-.content-metadata .button-text-bottom {
+.content-metadata .post-button-group.save-share-buttons {
     grid-area: save;
 }
 .content-metadata .view-date-container {
     grid-area: datetime;
     justify-self: end;
-}
-.content-metadata .post-button-group.reply-buttons {
-    grid-area: replies;
-    justify-self: center;
 }
 .display-container {
     border-top-left-radius: calc(clamp(4px, 1vw, 10px) + var(--small-margin));
@@ -385,49 +378,71 @@
     animation: drawLine 1s ease forwards;
 }
 
+/* Mobile Styles */
 @media (max-width: 768px) {
     .content-metadata {
-        gap: var(--tiny-margin);
+        display: grid;
+        gap: var(--small-margin) var(--tiny-margin);
         grid-template-areas:
-            "user user user user user"
-            "votes replies actions save save"
-            "channel channel datetime datetime datetime";
-        grid-template-columns: minmax(0, auto) minmax(0, auto) minmax(0, auto) minmax(0, auto) minmax(0, 1fr);
+            "user user user user user user"
+            "votes . replies . actions save"
+            "channel channel channel datetime datetime datetime";
+        grid-template-columns: auto 1fr auto 1fr auto auto;
         grid-template-rows: auto auto auto;
         margin-bottom: 0;
-        width: 100%;
+    }
+    /* Row 1: User info */
+    .content-metadata .feed-info {
+        grid-area: user;
+    }
+    /* Row 2: Votes - LEFT */
+    .content-metadata .vote-container {
+        grid-area: votes;
+        justify-self: start;
+        margin-right: 0;
+    }
+    /* Row 2: Replies - CENTER */
+    .content-metadata .post-button-group.reply-buttons {
+        grid-area: replies;
+        justify-self: center;
+    }
+    /* Row 2: Options dropdown - RIGHT */
+    .content-metadata .post-button-group.options-buttons {
+        grid-area: actions;
+        justify-self: end;
+    }
+    /* Row 2: Save/Quote/Share - FAR RIGHT */
+    .content-metadata .post-button-group.save-share-buttons {
+        grid-area: save;
+        justify-self: end;
+    }
+    /* Row 3: Channel link */
+    .content-metadata > a:not(.feed-link) {
+        grid-area: channel;
+        justify-self: start;
+    }
+    /* Row 3: Date/Views */
+    .content-metadata .view-date-container {
+        grid-area: datetime;
+        flex-direction: row;
+        justify-self: end;
+        gap: var(--small-margin);
+        align-items: center;
+        margin-right: 0;
+    }
+    .content-metadata .external-link {
+        grid-area: channel;
+        justify-self: start;
     }
     .content-metadata .feed-list-text {
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
     }
-    .content-metadata .vote-container {
-        margin-right: var(--small-margin);
-    }
     .feed-channel-link {
         max-width: 100%;
         overflow: visible;
         white-space: nowrap;
         text-overflow: clip;
-    }
-    .view-date-container, .content-metadata .button-text-bottom {
-        min-width: auto;
-        overflow: visible;
-    }
-    .view-date-container {
-        flex-direction: row;
-        justify-self: end;
-        gap: var(--small-margin);
-        align-items: center;
-        min-width: auto;
-        overflow: visible;
-    }
-    .vote-container {
-        justify-self: start;
-        display: flex;
-        align-items: center;
-        gap: var(--small-margin);
-        padding-right: 0;
     }
 }

@@ -409,59 +409,64 @@ const ContentWidget = ({ canRemove = false, display = false, feed, isDraft = fal
 			</div>
 			{showNote && <div className="ask-note"><p className="ask-note-text">{note}</p></div>}
 			<div className="content-metadata">
-				{!isDraft && (<div className="feed-info">
-					<Link className="feed-link" onClick={() => incrementViews(post?.post_id)} to={display ? '/welcome' : `/u/${post?.poster?.feed_name}`}>
-						<img className="medium-feed-photo" src={`${post?.poster?.feed_photo}`} onError={(e) => e.currentTarget.src = '/media/site_images/blank-profile.png'} />
-						<p className="feed-list-text">{post?.poster?.feed_name ?? 'Anonymous'}</p>
+				{!isDraft && (
+					<div className="feed-info">
+						<Link className="feed-link" onClick={() => incrementViews(post?.post_id)} to={display ? '/welcome' : `/u/${post?.poster?.feed_name}`}>
+							<img className="medium-feed-photo" src={`${post?.poster?.feed_photo}`} onError={(e) => e.currentTarget.src = '/media/site_images/blank-profile.png'} />
+							<p className="feed-list-text">{post?.poster?.feed_name ?? 'Anonymous'}</p>
+						</Link>
+					</div>
+				)}
+				
+				{!isDraft && !display && (
+					<Link to={`/${urlPrefix}/${post?.parentChannel?.feed?.feed_name}/${post?.parentChannel?.channel_name}/${post?.post_id}`} onClick={() => incrementViews(post?.post_id)}>
+						<p className="small-text feed-channel-link faded-text">{feedName}/{channelName}</p>
 					</Link>
-				</div>)}
-				{!isDraft && !display && <Link to={`/${urlPrefix}/${post?.parentChannel?.feed?.feed_name}/${post?.parentChannel?.channel_name}/${post?.post_id}`} onClick={() => incrementViews(post?.post_id)}>
-					<p className="small-text feed-channel-link faded-text">{feedName}/{channelName}</p>
-				</Link>}
-				{!isDraft && (<div className="vote-container" style={{ marginRight: `${display && 0}` }}>
-					{sharedPost ? (
-						<p className="small-text">{FormatNumber(upvotes - downvotes)} {Math.abs(upvotes - downvotes) === 1 ? 'vote' : 'votes'}</p>
-					) : (isAuthenticated || display) ? (
-						!isViewingOwnPost ? (
+				)}
+				
+				{!isDraft && (
+					<div className="vote-container" style={{ marginRight: `${display && 0}` }}>
+						{sharedPost ? (
+							<p className="small-text">{FormatNumber(upvotes - downvotes)} {Math.abs(upvotes - downvotes) === 1 ? 'vote' : 'votes'}</p>
+						) : (isAuthenticated || display) ? (
+							!isViewingOwnPost ? (
+								<div className="post-button-group">
+									<button className={`large-icon ${hasUpvoted ? 'vote-disabled' : 'vote-enabled'}`} onClick={() => postVote(post?.post_id, 'upvote')} title={hasUpvoted ? 'Remove upvote' : 'Upvote'}>
+										<FaArrowUp />
+									</button>
+									<p className="small-text">{FormatNumber(upvotes - downvotes)}</p>
+									<button className={`large-icon ${hasDownvoted ? 'vote-disabled' : 'vote-enabled'}`} onClick={() => postVote(post?.post_id, 'downvote')} title={hasDownvoted ? 'Remove downvote' : 'Downvote'}>
+										<FaArrowDown />
+									</button>
+								</div>
+							) : (
+								<p className="small-text">{FormatNumber(upvotes - downvotes)} {Math.abs(upvotes - downvotes) === 1 ? 'vote' : 'votes'}</p>
+							)
+						) : (
 							<div className="post-button-group">
-								<button className={`large-icon ${hasUpvoted ? 'vote-disabled' : 'vote-enabled'}`} onClick={() => postVote(post?.post_id, 'upvote')} title={hasUpvoted ? 'Remove upvote' : 'Upvote'}>
+								<button className="large-icon" onClick={handleLoginRedirect} style={{ padding: 0 }} title="Login to vote">
 									<FaArrowUp />
 								</button>
-								<p className="small-text">{FormatNumber(upvotes - downvotes)}</p>
-								<button className={`large-icon ${hasDownvoted ? 'vote-disabled' : 'vote-enabled'}`} onClick={() => postVote(post?.post_id, 'downvote')} title={hasDownvoted ? 'Remove downvote' : 'Downvote'}>
+								<p className="small-text" style={{ margin: 0 }}>{FormatNumber(upvotes - downvotes)}</p>
+								<button className="large-icon" onClick={handleLoginRedirect} style={{ padding: 0 }} title="Login to vote">
 									<FaArrowDown />
 								</button>
 							</div>
-						) : (
-							<p className="small-text">{FormatNumber(upvotes - downvotes)} {Math.abs(upvotes - downvotes) === 1 ? 'vote' : 'votes'}</p>
-						)
-					) : (
-						<div className="post-button-group">
-							<button className="large-icon" onClick={handleLoginRedirect} style={{ padding: 0 }} title="Login to vote">
-								<FaArrowUp />
-							</button>
-							<p className="small-text" style={{ margin: 0 }}>{FormatNumber(upvotes - downvotes)}</p>
-							<button className="large-icon" onClick={handleLoginRedirect} style={{ padding: 0 }} title="Login to vote">
-								<FaArrowDown />
-							</button>
-						</div>
-					)}
-				</div>)}
+						)}
+					</div>
+				)}
+				
 				{!readOnly && !isDraft && !display && !sharedPost && (
 					<div className="post-button-group reply-buttons">
 						<button className="large-icon" data-content-id={post?.post_id} onClick={toggleReplies} title={showReplies ? "Close Replies" : "Show Replies"}>
 							{showReplies ? <FaCommentSlash /> : <FaComments />}
 							<p className="small-text" id={`reply-count-${post?.post_id}`}>{post?.replies}</p>
 						</button>
-						{/*{showReplies && post.replies > 0 && (
-							<button className="large-icon" onClick={toggleViewMode} title={treeViewMode ? "Switch to List View" : "Switch to Tree View"}>
-								{treeViewMode ? <FaListUl /> : <FaTree />}
-							</button>
-						)}*/}
 					</div>
 				)}
+				
 				{!sharedPost && isAuthenticated && (post?.poster_id === viewer?.feed_id || canRemoveState) && !readOnly && (
-					<div className="post-button-group" style={{ position: 'relative' }} ref={dropdownRef}>
+					<div className="post-button-group options-buttons" style={{ position: 'relative' }} ref={dropdownRef}>
 						<button className="large-icon" onClick={() => setShowOptionsDropdown(!showOptionsDropdown)} title="Options">
 							<FaEllipsisV />
 						</button>
@@ -527,26 +532,31 @@ const ContentWidget = ({ canRemove = false, display = false, feed, isDraft = fal
 						)}
 					</div>
 				)}
-				{/*{isAuthenticated && !post.note?.is_misinfo && !isDraft && (
-					<AskButton content={post} isReply={false} note={note} setNote={setNote} setPostErrorMessage={setPostErrorMessage} setShowNote={setShowNote} showNote={showNote} />
-				)}*/}
+				
 				{!sharedPost && !isDraft && isAuthenticated && (
-					<div className="post-button-group">
+					<div className="post-button-group save-share-buttons">
 						<button className="large-icon" title={isSaved ? 'Unsave post' : 'Save post'} onClick={savePost}>
 							{isSaved ? <FaBookmark /> : <FaRegBookmark />}
 						</button>
-						{!post?.is_private && <button className="large-icon" title="Quote post" onClick={() => setShowQuoteModal(true)}>
-							<FaQuoteRight />
-						</button>}
-						{!post?.is_private && <button className="large-icon" title="Share post" onClick={() => setShowShareModal(true)}>
-							<FaShare />
-						</button>}
+						{!post?.is_private && (
+							<button className="large-icon" title="Quote post" onClick={() => setShowQuoteModal(true)}>
+								<FaQuoteRight />
+							</button>
+						)}
+						{!post?.is_private && (
+							<button className="large-icon" title="Share post" onClick={() => setShowShareModal(true)}>
+								<FaShare />
+							</button>
+						)}
 					</div>
 				)}
+				
 				<div className="view-date-container">
-					{!display && <p className="small-text faded-text" style={{ margin: '0px', textAlign: 'right' }}>
-						{post_id ? new Date(post?.created_at).toLocaleDateString() : timeAgo}
-					</p>}
+					{!display && (
+						<p className="small-text faded-text" style={{ margin: '0px', textAlign: 'right' }}>
+							{post_id ? new Date(post?.created_at).toLocaleDateString() : timeAgo}
+						</p>
+					)}
 					{!isDraft && (
 						<p className="small-text faded-text" style={{ margin: '0px', width: '12ch', textAlign: 'right' }}>
 							{FormatNumber(views)} {views === 1 ? 'view' : 'views'}
