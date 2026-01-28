@@ -459,7 +459,11 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
         //Fetch posts according to location
         let posts = [];
 		if (locationId === "search" && keyword) {
-			const escapedKeyword = Posts.sequelize.escape(keyword);
+			//Prepare search term for BOOLEAN MODE: wrap phrases in quotes for exact matching
+			const searchTerm = keyword.trim().includes(' ')
+				? `"${keyword.replace(/"/g, '\\"')}"`
+				: keyword;
+			const escapedKeyword = Posts.sequelize.escape(searchTerm);
 			if (hasActiveAlgorithm) {
 				//Algorithm path: fetch all candidates from both tables, score, then paginate
 				const nativePostIds = await Posts.findAll({
@@ -467,7 +471,7 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
 					where: {
 						...algorithmFilters,
 						is_private: false,
-						[Op.and]: Sequelize.literal(`MATCH (title, text_body) AGAINST (${escapedKeyword} IN NATURAL LANGUAGE MODE)`)
+						[Op.and]: Sequelize.literal(`MATCH (title, text_body) AGAINST (${escapedKeyword} IN BOOLEAN MODE)`)
 					},
 					order: [['created_at', 'DESC']],
 					limit: MAX_ALGORITHM_CANDIDATES,
@@ -477,7 +481,7 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
 					attributes: ['post_id'],
 					where: {
 						expired: false,
-						[Op.and]: Sequelize.literal(`MATCH (title, text_body) AGAINST (${escapedKeyword} IN NATURAL LANGUAGE MODE)`)
+						[Op.and]: Sequelize.literal(`MATCH (title, text_body) AGAINST (${escapedKeyword} IN BOOLEAN MODE)`)
 					},
 					order: [['created_at_remote', 'DESC']],
 					limit: MAX_ALGORITHM_CANDIDATES,
@@ -511,7 +515,7 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
 					where: {
 						...algorithmFilters,
 						is_private: false,
-						[Op.and]: Sequelize.literal(`MATCH (title, text_body) AGAINST (${escapedKeyword} IN NATURAL LANGUAGE MODE)`)
+						[Op.and]: Sequelize.literal(`MATCH (title, text_body) AGAINST (${escapedKeyword} IN BOOLEAN MODE)`)
 					},
 					order: orderMode,
 					limit: backendFetchTotal,
@@ -521,7 +525,7 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
 					attributes: ['post_id', 'created_at_remote'],
 					where: {
 						expired: false,
-						[Op.and]: Sequelize.literal(`MATCH (title, text_body) AGAINST (${escapedKeyword} IN NATURAL LANGUAGE MODE)`)
+						[Op.and]: Sequelize.literal(`MATCH (title, text_body) AGAINST (${escapedKeyword} IN BOOLEAN MODE)`)
 					},
 					order: [['created_at_remote', 'DESC']],
 					limit: backendFetchTotal,
