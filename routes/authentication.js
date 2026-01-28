@@ -1,8 +1,8 @@
 import { Algorithms, AlgorithmLocations } from '../custom_algorithms/algorithmRelationships.js'
 import authenticateCheck from '../functions/checks/authenticateCheck.js';
 import { compare, hash } from 'bcrypt';
-import { Chats, Connections, ConnectRequests, DeepFeeds, ExternalPostsAccess, ExternalPostVotes, Feeds, FeedChannels, Followers, FeedChats, Messages, PaginationTokens, Posts, PostDrafts, PostNotes, PostVotes, SavedPostChannels, Users, ViewedPosts } from '../models/relationships.js'; 
-import { ExternalFollows, ConnectedAccounts } from '../models/users.js';
+import { Chats, Connections, ConnectRequests, DeepFeeds, ExternalFollows, ExternalPostsAccess, ExternalPostVotes, Feeds, FeedChannels, Followers, FeedChats, Messages, PaginationTokens, Posts, PostDrafts, PostNotes, PostVotes, SavedPostChannels, Users, ViewedPosts } from '../models/relationships.js'; 
+import { ConnectedAccounts } from '../models/users.js';
 import fetch from 'node-fetch';
 import crypto from 'crypto';
 import { decrypt } from '../functions/encryptionUtil.js';

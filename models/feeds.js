@@ -1,4 +1,4 @@
-import { BOOLEAN, DataTypes, STRING, INTEGER, TEXT } from 'sequelize';
+import { BOOLEAN, DATE, DataTypes, STRING, INTEGER, TEXT } from 'sequelize';
 import sequelize from '../databaseSetup.js';
 import { Users } from "./users.js";
 
@@ -74,6 +74,27 @@ const Followers = sequelize.define('followers', {
     updated_at: { type: DataTypes.DATE(3), defaultValue: sequelize.literal('CURRENT_TIMESTAMP(3)') }
 }, { tableName: 'followers', timestamps: false });
 
+const ExternalFollows = sequelize.define('ExternalFollows', {
+    id: { type: STRING(36), primaryKey: true, defaultValue: DataTypes.UUIDV4 },
+    user_id: { type: STRING(36), allowNull: false },
+    did: { type: STRING(255), allowNull: false },
+    handle: { type: STRING(255), allowNull: false },
+    display_name: { type: STRING(255), allowNull: true },
+    avatar: { type: TEXT, allowNull: true },
+    description: { type: TEXT, allowNull: true },
+    platform: { type: STRING(255), allowNull: false },
+    created_at: { type: DATE(3), defaultValue: sequelize.literal('CURRENT_TIMESTAMP(3)') },
+    updated_at: { type: DATE(3), defaultValue: sequelize.literal('CURRENT_TIMESTAMP(3)') },
+}, {
+    tableName: 'external_follows',
+    underscored: true,
+    timestamps: false,
+    indexes: [
+        { fields: ['user_id'] },
+        { unique: true, fields: ['user_id', 'did'] }
+    ]
+});  
+
 const FollowRequests = sequelize.define('follow_requests', {
     request_id: { type: STRING(36), primaryKey: true },
     sender_id: { type: STRING(36), allowNull: false},
@@ -107,6 +128,7 @@ export {
     FeedChannels,
     FeedChannelMessages,
     Followers,
+    ExternalFollows,
     FollowRequests,
     SavedPosts,
     SavedPostChannels

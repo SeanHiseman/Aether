@@ -10,7 +10,7 @@ import { useContext, useEffect, useRef, useState } from 'react';
 import useTimeAgo from '../functions/useTimeAgo';
 
 const ExternalPostWidget = ({ post, sharedPost = false }) => {
-	//console.log("ExternalPostWidget post:", post);
+	console.log("ExternalPostWidget post:", post);
 	const authContext = useContext(AuthContext);
 	const { isAuthenticated = false } = authContext || {};
 	const { post_id } = useParams();

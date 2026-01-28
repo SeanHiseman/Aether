@@ -1,7 +1,7 @@
 import { ApplyAlgorithm } from '../custom_algorithms/applyAlgorithm.js';
 import authenticateCheck from '../functions/checks/authenticateCheck.js';
 import ConnectCheck from '../functions/checks/connectCheck.js';
-import { ConnectRequests, Feedback, Feeds, FeedChannels, FollowRequests, PostNotes, PostVotes } from '../models/relationships.js'; 
+import { ConnectRequests, ExternalPosts, Feedback, Feeds, FeedChannels, FollowRequests, PostNotes, PostVotes } from '../models/relationships.js'; 
 import FollowerCheck from '../functions/checks/followerCheck.js';
 import { Op } from 'sequelize';
 import { Router } from 'express';
@@ -38,7 +38,8 @@ router.post('/search', standardLimiter, async (req, res) => {
         if (!trimmedKeyword) {
 			return res.status(400).json({ success: false, message: 'Please enter a search term.' });
 		}
-        const searcherId = req.session.viewer_id;
+        const userId = req.session.user_id || null;
+        const searcherId = req.session.viewer_id || null;
         const feeds = await Feeds.findAll({
             where: Sequelize.literal(
                 `MATCH (feed_name, description) AGAINST (${Feeds.sequelize.escape(keyword)} IN NATURAL LANGUAGE MODE)`
@@ -114,13 +115,17 @@ router.post('/search', standardLimiter, async (req, res) => {
             limit: limit,
             offset: postOffset,
             recentUpvotes,
+            userId: userId,
             viewerId: searcherId,
             keyword: keyword
         });
-        const posts = algorithmResult.posts;
-        const message = algorithmResult.message;
-        const status = algorithmResult.status;
-        res.status(200).json({ feeds: feedData, posts: posts, status: status, message: message, success: true });
+        res.status(200).json({ 
+            feeds: feedData, 
+            posts: algorithmResult.posts, 
+            status: algorithmResult.status, 
+            message: algorithmResult.message, 
+            success: true 
+        });
     } catch (error) {
         console.error(new Date().toISOString(), '/search error:', error);
         res.status(500).json({ success: false });

@@ -3,11 +3,13 @@ import api from '../api';
 import { AuthContext } from '../components/authContext';
 import { ChunkFeeds } from '../functions/chunkFeeds';
 import ContentWidget from '../components/content/contentWidget';
-import { FaChevronDown, FaChevronUp } from 'react-icons/fa';
+import ExternalPostWidget from '../socialConnect/externalPostWidget';
+import { FaChevronDown, FaChevronUp ,FaGlobe, FaHome } from 'react-icons/fa';
 import FeedWidget from '../components/content/feedWidget';
 import SwipeableAside from '../components/swipeableAside';
 import { useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { useOutletContext, useSearchParams } from 'react-router-dom';
+
 const FETCH_LIMIT = 100;
 
 const SearchResults = () => {
@@ -18,26 +20,28 @@ const SearchResults = () => {
 	const [feedTypeFilter, setFeedTypeFilter] = useState('all');
 	const [hasMoreFeeds, setHasMoreFeeds] = useState(true);
 	const [hasMorePosts, setHasMorePosts] = useState(true);
+	const [includeExternal, setIncludeExternal] = useState(true);
+	const [includeNative, setIncludeNative] = useState(true);
 	const [isLoading, setIsLoading] = useState(false);
 	const [postPage, setPostPage] = useState(0);
-	const [posts, setPosts] = useState([]);
+	const [posts, setPosts] = useState([]); //Will contain both native and external posts
 	const [selectedView, setSelectedView] = useState('combined');
 	const [searchParams] = useSearchParams();
 	const keyword = (searchParams.get('keyword') || '').trim();
 	const { isAuthenticated, viewer } = useContext(AuthContext);
-	const { rightClasses, updateFeeds, closeDrawers, mobileOpen } = useOutletContext(); 
+	const { rightClasses, updateFeeds, closeDrawers, mobileOpen } = useOutletContext();
 	const [refreshTrigger, setRefreshTrigger] = useState(0);
 	const shownPostIdsRef = useRef([]);
 	const shownFeedIdsRef = useRef([]);
 	const scrollRef = useRef(null);
 
-    const isMobile = () => window.matchMedia("(max-width:768px)").matches;
-    
-    const computedRightClasses = [
-        rightClasses,
-        isMobile() && mobileOpen === "right" ? "open" : ""
-    ].filter(Boolean).join(" ");
-	
+	const isMobile = () => window.matchMedia("(max-width:768px)").matches;
+
+	const computedRightClasses = [
+		rightClasses,
+		isMobile() && mobileOpen === "right" ? "open" : ""
+	].filter(Boolean).join(" ");
+
 	const fetchPosts = useCallback(async (page = 0) => {
 		try {
 			setIsLoading(true);
@@ -47,7 +51,7 @@ const SearchResults = () => {
 				limit: FETCH_LIMIT,
 				feedOffset: 0,
 				postOffset: page * FETCH_LIMIT,
-				recentUpvotes
+				recentUpvotes,
 			});
 			const { message, posts: newPosts, success } = response.data || {};
 			if (!success) {
@@ -139,7 +143,7 @@ const SearchResults = () => {
 			setIsLoading(false);
 		}
 	}, [isLoading, selectedView, fetchPosts, fetchFeeds, postPage, feedPage, hasMorePosts, hasMoreFeeds]);
-	
+
 	const handlePostRemoved = (removedId) => {
 		setPosts(prev => prev.filter(p => p.post_id !== removedId));
 	};
@@ -153,10 +157,36 @@ const SearchResults = () => {
 		}
 	}, [loadMore, isLoading]);
 
+	//Render the appropriate widget based on post type
+	const renderPostWidget = (post) => {
+		if (post?.isExternal) {
+			return (
+				<div key={`external-${post?.post_id}`} className="bg-gray-800 rounded-xl w-full">
+					<ExternalPostWidget post={post} />
+				</div>
+			);
+		}
+		return (
+			<div key={`post-${post?.post_id}`} className="bg-gray-800 rounded-xl w-full">
+				<ContentWidget onPostRemoved={handlePostRemoved} post={post} />
+			</div>
+		);
+	};
+
+	const visiblePosts = useMemo(() => {
+		return posts.filter(p =>
+			(includeNative && !p?.is_external) || (includeExternal && p?.is_external)
+		);
+	}, [posts, includeNative, includeExternal]);
+
 	const combinedItems = useMemo(() => {
 		if (selectedView !== 'combined') return [];
 		const feedTriplets = ChunkFeeds(feeds, 3).map(f => ({ type: 'feedTriplet', data: f }));
-		const postItems = posts.map(p => ({ type: 'post', data: p }));
+		const postItems = visiblePosts.map(p => ({ 
+			type: 'post', 
+			data: p,
+			isExternal: p.isExternal || false
+		}));
 		const interspersed = [];
 		const POSTS_PER_BLOCK = 5;
 		let postIndex = 0;
@@ -172,10 +202,9 @@ const SearchResults = () => {
 			}
 		}
 		return interspersed;
-	}, [selectedView, posts, feeds]);
+	}, [selectedView, visiblePosts, feeds]);
 
 	const dropdownToggle = (e) => {
-		e.stopPropagation();
 		setDropdownOpen(prev => !prev);
 	};
 
@@ -191,6 +220,8 @@ const SearchResults = () => {
 		setPostPage(0);
 		setFeeds([]);
 		setPosts([]);
+		setHasMorePosts(true);
+		setHasMoreFeeds(true);
 		shownPostIdsRef.current = [];
 		shownFeedIdsRef.current = [];
 		const fetches = [];
@@ -206,6 +237,8 @@ const SearchResults = () => {
 		setPostPage(0);
 		setFeeds([]);
 		setPosts([]);
+		setHasMorePosts(true);
+		setHasMoreFeeds(true);
 		shownPostIdsRef.current = [];
 		shownFeedIdsRef.current = [];
 		const fetches = [];
@@ -221,22 +254,18 @@ const SearchResults = () => {
 		<div className="standard-container">
 			<div ref={scrollRef} onScroll={handleScroll} className="channel-feed">
 				{isInitialLoad ? (
-					<div className="flex justify-center items-center h-64">
 						<span className="text-xl faded-text">Loading results...</span>
-					</div>
 				) : (posts.length === 0 && feeds.length === 0) ? (
-					<div className="flex justify-center items-center h-64">
 						<span className="text-xl faded-text">{keyword ? "No results found" : "Enter a search term"}</span>
-					</div>
+				) : (posts.length > 0 && visiblePosts.length === 0 && selectedView !== 'feeds') ? (
+						<span className="large-text faded-text">All posts hidden</span>
 				) : (
 					<>
 						{selectedView === 'combined' && (
 							<div className="flex flex-col w-99">
 								{combinedItems.map((item, idx) =>
 									item.type === 'post' ? (
-										<div key={`post-${item.data.post_id}`} className="bg-gray-800 rounded-xl w-full">
-											<ContentWidget onPostRemoved={handlePostRemoved} post={item.data} />
-										</div>
+										renderPostWidget(item.data)
 									) : (
 										<div key={`feedtriplet-${idx}`} className="grid grid-cols-3 gap-3 med-mar-top w-full">
 											{item.data.map(feed => (
@@ -249,11 +278,7 @@ const SearchResults = () => {
 						)}
 						{selectedView === 'posts' && (
 							<div className="flex flex-col w-99">
-								{posts.map(post => (
-									<div key={post.post_id} className="bg-gray-800 rounded-xl w-full">
-										<ContentWidget onPostRemoved={handlePostRemoved} post={post} />
-									</div>
-								))}
+								{visiblePosts.map(post => renderPostWidget(post))}
 							</div>
 						)}
 						{selectedView === 'feeds' && (
@@ -274,24 +299,34 @@ const SearchResults = () => {
 				<div className="error-message">{errorMessage}</div>
 				<nav className="channel-list">
 					<ul>
-						<li className="channel-link" onClick={() => setSelectedView('combined')}>All results</li>
-						<li className="channel-link" onClick={() => setSelectedView('posts')}>Posts</li>
-						<li className="channel-link" onClick={() => { setSelectedView('feeds'); setDropdownOpen(false); }}>
+						<li className={`channel-link ${selectedView === 'combined' ? 'selected' : ''}`} onClick={() => setSelectedView('combined')}>All results</li>
+						<li className={`channel-link ${selectedView === 'posts' ? 'selected' : ''}`} onClick={() => setSelectedView('posts')}>Posts</li>
+						<li className={`channel-link ${selectedView === 'feeds' ? 'selected' : ''}`} onClick={dropdownToggle}>
 							Feeds
-							<div className="channel-dropdown" onClick={dropdownToggle}>
+							<div className="channel-dropdown">
 								{dropdownOpen ? <FaChevronUp /> : <FaChevronDown />}
 							</div>
 						</li>
-						{dropdownOpen && selectedView === 'feeds' && (
+						{dropdownOpen && (
 							<ul style={{ marginLeft: '10px' }}>
-								<li className="channel-link" onClick={(e) => { e.stopPropagation(); setFeedTypeFilter('all'); setDropdownOpen(false); }}>All feeds</li>
-								<li className="channel-link" onClick={(e) => { e.stopPropagation(); setFeedTypeFilter('group'); setDropdownOpen(false); }}>Groups</li>
-								<li className="channel-link" onClick={(e) => { e.stopPropagation(); setFeedTypeFilter('user'); setDropdownOpen(false); }}>Users</li>
+								<li className={`channel-link ${selectedView === 'feeds' && feedTypeFilter === 'all' ? 'selected' : ''}`} onClick={(e) => { e.stopPropagation(); setSelectedView('feeds'); setFeedTypeFilter('all'); }}>All feeds</li>
+								<li className={`channel-link ${selectedView === 'feeds' && feedTypeFilter === 'group' ? 'selected' : ''}`} onClick={(e) => { e.stopPropagation(); setSelectedView('feeds'); setFeedTypeFilter('group'); }}>Groups</li>
+								<li className={`channel-link ${selectedView === 'feeds' && feedTypeFilter === 'user' ? 'selected' : ''}`} onClick={(e) => { e.stopPropagation(); setSelectedView('feeds'); setFeedTypeFilter('user'); }}>Users</li>
 							</ul>
 						)}
 					</ul>
 				</nav>
 				<AlgorithmSelector display={false} isAuthenticated={isAuthenticated} locationId={'search'} refreshPosts={refreshPosts} />
+				<div className="flex flex-col items-flex-start">
+					<button onClick={() => setIncludeNative(!includeNative)} className="small-icon">
+						<FaHome />
+						<p className="icon-text">{includeNative ? "Hide native" : "Show native"}</p>
+					</button>
+					<button onClick={() => setIncludeExternal(!includeExternal)} className="small-icon">
+						<FaGlobe />
+						<p className="icon-text">{includeExternal ? "Hide external" : "Show external"}</p>
+					</button>
+				</div>
 			</SwipeableAside>
 		</div>
 	);

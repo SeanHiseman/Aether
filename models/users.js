@@ -69,34 +69,12 @@ const Users = sequelize.define('users', {
     bluesky_did: { type: STRING(255), unique: true, allowNull: true }
 }, { tableName: 'users', timestamps: false });
 
-const ExternalFollows = sequelize.define('ExternalFollows', {
-    id: { type: STRING(36), primaryKey: true, defaultValue: DataTypes.UUIDV4 },
-    user_id: { type: STRING(36), allowNull: false },
-    did: { type: STRING(255), allowNull: false },
-    handle: { type: STRING(255), allowNull: false },
-    display_name: { type: STRING(255), allowNull: true },
-    avatar: { type: TEXT, allowNull: true },
-    description: { type: TEXT, allowNull: true },
-    platform: { type: STRING(255), allowNull: false },
-    created_at: { type: DATE(3), defaultValue: sequelize.literal('CURRENT_TIMESTAMP(3)') },
-    updated_at: { type: DATE(3), defaultValue: sequelize.literal('CURRENT_TIMESTAMP(3)') },
-}, {
-    tableName: 'external_follows',
-    underscored: true,
-    timestamps: false,
-    indexes: [
-        { fields: ['user_id'] },
-        { unique: true, fields: ['user_id', 'did'] }
-    ]
-});
-
 cron.schedule('0 0 * * 0', async () => { //Resets usage count every Sunday night
     await Users.update({ usage_count: 0 }, { where: {} });
     await Users.update({ storage_count: 0 }, { where: {} });
 });
 
 export {
-    ExternalFollows,
     ConnectedAccounts,
     Feedback,
     Users,

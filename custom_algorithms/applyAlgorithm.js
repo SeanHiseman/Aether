@@ -458,55 +458,130 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
 
         //Fetch posts according to location
         let posts = [];
-        if (locationId === "search" && keyword) {
+		if (locationId === "search" && keyword) {
+			const escapedKeyword = Posts.sequelize.escape(keyword);
 			if (hasActiveAlgorithm) {
-				//Algorithm path: fetch all candidates, score, then paginate
+				//Algorithm path: fetch all candidates from both tables, score, then paginate
 				const nativePostIds = await Posts.findAll({
 					attributes: ['post_id'],
 					where: {
 						...algorithmFilters,
 						is_private: false,
-						[Op.and]: Sequelize.literal(`MATCH (title, text_body) AGAINST (${Posts.sequelize.escape(keyword)} IN NATURAL LANGUAGE MODE)`)
+						[Op.and]: Sequelize.literal(`MATCH (title, text_body) AGAINST (${escapedKeyword} IN NATURAL LANGUAGE MODE)`)
 					},
 					order: [['created_at', 'DESC']],
-					limit: MAX_ALGORITHM_CANDIDATES, 
+					limit: MAX_ALGORITHM_CANDIDATES,
 					raw: true
 				});
-				if (!nativePostIds.length) return { posts: [], status: "ok", message: "" };
-				const { paginatedIds, scoreMap } = await scoreAndPaginateCandidates({
+				const externalPostIds = await ExternalPosts.findAll({
+					attributes: ['post_id'],
+					where: {
+						expired: false,
+						[Op.and]: Sequelize.literal(`MATCH (title, text_body) AGAINST (${escapedKeyword} IN NATURAL LANGUAGE MODE)`)
+					},
+					order: [['created_at_remote', 'DESC']],
+					limit: MAX_ALGORITHM_CANDIDATES,
+					raw: true
+				});
+				if (!nativePostIds.length && !externalPostIds.length) {
+					return { posts: [], status: "ok", message: "" };
+				}
+				const { paginatedIds, paginatedExternalIds, scoreMap } = await scoreAndPaginateCandidates({
 					nativePostIds: nativePostIds.map(p => p.post_id),
+					externalPostIds: externalPostIds.map(p => p.post_id),
 					algorithmRow,
 					scoringParams,
 					offset,
 					limit
 				});
-				if (!paginatedIds.length) return { posts: [], status: "filtered", message: "Your algorithm settings filtered out all posts." };
-				posts = await fetchPaginatedPostData({ paginatedIds, scoreMap, includeOptions, attrOption });
+				if (!paginatedIds?.length && !paginatedExternalIds?.length) {
+					return { posts: [], status: "filtered", message: "Your algorithm settings filtered out all posts." };
+				}
+				posts = await fetchPaginatedPostData({ 
+					paginatedIds, 
+					paginatedExternalIds,
+					scoreMap, 
+					includeOptions, 
+					attrOption 
+				});
 			} else {
-				//Standard path
-				const postIds = await Posts.findAll({
-					attributes: ['post_id'],
+				//Standard path - merge results from both tables
+				const nativePostIds = await Posts.findAll({
+					attributes: ['post_id', 'created_at'],
 					where: {
 						...algorithmFilters,
 						is_private: false,
-						[Op.and]: Sequelize.literal(`MATCH (title, text_body) AGAINST (${Posts.sequelize.escape(keyword)} IN NATURAL LANGUAGE MODE)`)
+						[Op.and]: Sequelize.literal(`MATCH (title, text_body) AGAINST (${escapedKeyword} IN NATURAL LANGUAGE MODE)`)
 					},
 					order: orderMode,
 					limit: backendFetchTotal,
-					offset,
 					raw: true
 				});
-				if (!postIds.length) return { posts: [], status: "ok", message: "" };
-				const orderedIds = postIds.map(p => p.post_id);
-				posts = await Posts.findAll({
-					where: { post_id: orderedIds },
-					include: includeOptions,
-					attributes: attrOption,
-					raw: false
+				const externalPostIds = await ExternalPosts.findAll({
+					attributes: ['post_id', 'created_at_remote'],
+					where: {
+						expired: false,
+						[Op.and]: Sequelize.literal(`MATCH (title, text_body) AGAINST (${escapedKeyword} IN NATURAL LANGUAGE MODE)`)
+					},
+					order: [['created_at_remote', 'DESC']],
+					limit: backendFetchTotal,
+					raw: true
 				});
-				const orderMap = new Map(orderedIds.map((id, i) => [id, i]));
-				posts.sort((a, b) => orderMap.get(a.post_id) - orderMap.get(b.post_id));
-			}
+				if (!nativePostIds.length && !externalPostIds.length) {
+					return { posts: [], status: "ok", message: "" };
+				}
+				const combinedResults = [
+					...nativePostIds.map(p => ({ 
+						post_id: p.post_id, 
+						created_at: p.created_at, 
+						isExternal: false 
+					})),
+					...externalPostIds.map(p => ({ 
+						post_id: p.post_id, 
+						created_at: p.created_at_remote, 
+						isExternal: true 
+					}))
+				];
+				//Sort by created_at descending (adjust based on orderMode if needed)
+				combinedResults.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+				//Apply pagination
+				const paginatedResults = combinedResults.slice(offset, offset + limit);
+				const nativeIds = paginatedResults.filter(r => !r.isExternal).map(r => r.post_id);
+				const externalIds = paginatedResults.filter(r => r.isExternal).map(r => r.post_id);
+				//Fetch full data for native posts
+				let nativePosts = [];
+				if (nativeIds.length) {
+					nativePosts = await Posts.findAll({
+						where: { post_id: nativeIds },
+						include: includeOptions,
+						attributes: attrOption,
+						raw: false
+					});
+				}
+				//Fetch full data for external posts
+				let externalPosts = [];
+				if (externalIds.length) {
+					const rawExternal = await ExternalPosts.findAll({
+						where: { post_id: externalIds, content: { [Op.ne]: null } },
+						raw: true
+					});
+					externalPosts = rawExternal.map(p => {
+						const platformConfig = FEED_CONFIG[p.source];
+						return formatExternalPost(p, platformConfig, p.source);
+					});
+				}
+				//Combine and restore original order
+				const allPosts = [
+					...nativePosts.map(p => ({ ...(p.dataValues || p), isExternal: false })),
+					...externalPosts.map(p => ({ ...(p.dataValues || p), isExternal: true })),
+				];
+				const orderMap = new Map(paginatedResults.map((r, i) => [r.post_id, i]));
+				posts = allPosts.sort((a, b) => {
+					const idA = a.post_id;
+					const idB = b.post_id;
+					return orderMap.get(idA) - orderMap.get(idB);
+				});
+			} 
 		} else if (locationId === "following") {
 			const hasExternalSources = connectedAccounts.length > 0;
 			if (hasActiveAlgorithm) {

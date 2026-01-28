@@ -49,6 +49,7 @@ const ExternalPosts = sequelize.define('ExternalPosts', {
         { fields: ['fetched_at'] },
         { name: 'idx_ext_posts_word_count', fields: ['word_count'] },
         { name: 'idx_ext_posts_author_did', fields: ['author_did'] },
+        { name: 'idx_fulltext_external_posts', type: 'FULLTEXT', fields: ['title', 'text_body'] },
     ]
 });
 

@@ -1,7 +1,7 @@
-import { AppBuilds, ExternalPosts, ExternalPostsAccess, ExternalPostVotes, PaginationTokens, Posts, PostDrafts, PostNotes, PostVotes, Prompts, ViewedPosts } from "./content.js";
-import { DeepFeeds, DeepFeedContent, Feeds, FeedChannels, FeedChannelMessages, Followers, FollowRequests, SavedPosts, SavedPostChannels } from "./feeds.js";
+import { AppBuilds, ExternalAccountMeta, ExternalPosts, ExternalPostsAccess, ExternalPostVotes, PaginationTokens, Posts, PostDrafts, PostNotes, PostVotes, Prompts, ViewedPosts } from "./content.js";
+import { DeepFeeds, DeepFeedContent, Feeds, FeedChannels, FeedChannelMessages, Followers, ExternalFollows, FollowRequests, SavedPosts, SavedPostChannels } from "./feeds.js";
 import { AskChats, AskMessages, Chats, ConnectRequests, Connections, FeedChats, Messages } from "./messages.js";
-import { Feedback, ExternalFollows, Users } from "./users.js";
+import { Feedback, Users } from "./users.js";
 
 Users.hasMany(Feeds, { foreignKey: 'feed_owner' });
 Feeds.belongsTo(Users, { foreignKey: 'feed_owner' });
@@ -113,6 +113,7 @@ export {
     Connections,
     DeepFeeds,
     DeepFeedContent,
+    ExternalAccountMeta,
     ExternalFollows,
     ExternalPosts,
     ExternalPostsAccess,
