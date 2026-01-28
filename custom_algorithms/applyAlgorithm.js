@@ -886,12 +886,12 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
 					raw: true
 				});
 				//Fetch hottest external posts from all platforms (same for all users)
-				//Use 30 day window for explore feed to ensure content availability
+				//Use 3 day window for explore feed to heavily favor recent posts
 				const externalPostsQuery = await sequelize.query(
 					`SELECT p.post_id FROM external_posts p
 					WHERE p.source IN ('reddit', 'bluesky', 'mastodon') AND p.expired = false
-					AND p.created_at_remote >= DATE_SUB(NOW(), INTERVAL 30 DAY) ${externalFiltersSQL}
-					ORDER BY (p.score * EXP(-0.00002 * TIMESTAMPDIFF(SECOND, p.created_at_remote, NOW()))) DESC
+					AND p.created_at_remote >= DATE_SUB(NOW(), INTERVAL 3 DAY) ${externalFiltersSQL}
+					ORDER BY (p.score * EXP(-0.00005 * TIMESTAMPDIFF(SECOND, p.created_at_remote, NOW()))) DESC
 					LIMIT :maxCandidates`,
 					{ replacements: { maxCandidates: MAX_ALGORITHM_CANDIDATES }, type: QueryTypes.SELECT }
 				);
@@ -950,8 +950,8 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
 					sequelize.query(
 						`SELECT p.post_id, p.source FROM external_posts p
 						WHERE p.source = :platform AND p.expired = false
-						AND p.created_at_remote >= DATE_SUB(NOW(), INTERVAL 30 DAY) ${externalFiltersSQL}
-						ORDER BY ${lowVoteImpact ? 'p.created_at_remote' : '(p.score * EXP(-0.00002 * TIMESTAMPDIFF(SECOND, p.created_at_remote, NOW())))'} DESC
+						AND p.created_at_remote >= DATE_SUB(NOW(), INTERVAL 3 DAY) ${externalFiltersSQL}
+						ORDER BY ${lowVoteImpact ? 'p.created_at_remote' : '(p.score * EXP(-0.00005 * TIMESTAMPDIFF(SECOND, p.created_at_remote, NOW())))'} DESC
 						LIMIT :limit OFFSET :offset`,
 						{ replacements: { platform, limit: perPlatformTarget, offset: perPlatformOffset }, type: QueryTypes.SELECT }
 					)
