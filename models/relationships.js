@@ -1,5 +1,5 @@
 import { AppBuilds, ExternalAccountMeta, ExternalPosts, ExternalPostsAccess, ExternalPostVotes, PaginationTokens, Posts, PostDrafts, PostNotes, PostVotes, Prompts, Reposts, ViewedPosts } from "./content.js";
-import { DeepFeeds, DeepFeedContent, Feeds, FeedChannels, FeedChannelMessages, Followers, ExternalFollows, FollowRequests, SavedPosts, SavedPostChannels } from "./feeds.js";
+import { DeepFeeds, DeepFeedContent, Feeds, FeedChannels, FeedChannelMessages, FeedChannelViews, Followers, ExternalFollows, FollowRequests, SavedPosts, SavedPostChannels } from "./feeds.js";
 import { AskChats, AskMessages, Chats, ConnectRequests, Connections, FeedChats, Messages } from "./messages.js";
 import { Feedback, Users } from "./users.js";
 
@@ -17,10 +17,15 @@ DeepFeeds.hasMany(DeepFeedContent, { foreignKey: 'deep_feed_id', as: 'contents' 
 
 DeepFeedContent.belongsTo(Feeds, { foreignKey: "feed_id", as: "feed" });
 
-FeedChannelMessages.belongsTo(FeedChannels, { foreignKey: 'channel_id' }); 
+FeedChannelMessages.belongsTo(FeedChannels, { foreignKey: 'channel_id' });
 FeedChannels.hasMany(FeedChannelMessages, { foreignKey: 'channel_id' });
 FeedChannelMessages.belongsTo(Feeds, { foreignKey: 'sender_id' });
 Feeds.hasMany(FeedChannelMessages, { foreignKey: 'sender_id' });
+
+FeedChannelViews.belongsTo(FeedChannels, { foreignKey: 'channel_id', as: 'channel' });
+FeedChannels.hasMany(FeedChannelViews, { foreignKey: 'channel_id', as: 'views' });
+FeedChannelViews.belongsTo(Feeds, { foreignKey: 'viewer_id', as: 'viewer' });
+Feeds.hasMany(FeedChannelViews, { foreignKey: 'viewer_id', as: 'channelViews' });
 
 Feeds.belongsToMany(Feeds, { through: Followers, foreignKey: 'feed_id', otherKey: 'follower_id', as: 'feedFollowers', onDelete: 'CASCADE', onUpdate: 'CASCADE' });
 Feeds.belongsToMany(Feeds, { through: Followers, foreignKey: 'follower_id', otherKey: 'feed_id', as: 'followingFeeds', onDelete: 'CASCADE', onUpdate: 'CASCADE' });
@@ -130,6 +135,7 @@ export {
     Feeds,
     FeedChannels,
     FeedChannelMessages,
+    FeedChannelViews,
     Followers,
     FollowRequests,
     Messages,

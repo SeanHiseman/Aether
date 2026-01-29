@@ -243,6 +243,32 @@ const FeedHome = () => {
         }
     }, [channel_name, channels, isChatMode]);
 
+    //Listen for new messages to trigger re-render for unread indicators
+    useEffect(() => {
+        const socket = window.socket;
+        if (!socket || !feed?.is_group) return;
+
+        const handleNewMessage = (newMessage) => {
+            const currentChannelId = channels.find(c => c?.channel_name === channel_name)?.channel_id;
+            const messageChannel = channels.find(c => c?.channel_id === newMessage.channel_id);
+
+            //Only update for chat-enabled channels and if message is in a different channel
+            if (newMessage.channel_id &&
+                newMessage.channel_id !== currentChannelId &&
+                messageChannel?.is_chat) {
+                //Trigger re-render by updating channels array reference
+                //ChannelList will recalculate hasUnread from localStorage
+                setChannels(prevChannels => [...prevChannels]);
+            }
+        };
+
+        socket.on('channel_message_confirmed', handleNewMessage);
+
+        return () => {
+            socket.off('channel_message_confirmed', handleNewMessage);
+        };
+    }, [channel_name, channels, feed?.is_group]);
+
     const AddChannel = async (event) => {
         if (!isAuthenticated) return;
         event.preventDefault();

@@ -55,15 +55,29 @@ const FeedChannels = sequelize.define('feed_channels', {
     updated_at: { type: DataTypes.DATE(3), defaultValue: sequelize.literal('CURRENT_TIMESTAMP(3)') }
 }, { tableName: 'feed_channels', timestamps: false }); 
 
-const FeedChannelMessages = sequelize.define('feed_channel_messages', { 
-    message_id: { type: STRING(36), primaryKey: true }, 
-    content: { type: STRING(1000), allowNull: false }, 
-    channel_id: { type: STRING(36), allowNull: false }, 
+const FeedChannelMessages = sequelize.define('feed_channel_messages', {
+    message_id: { type: STRING(36), primaryKey: true },
+    content: { type: STRING(1000), allowNull: false },
+    channel_id: { type: STRING(36), allowNull: false },
     sender_id: { type: STRING(36), allowNull: false},
     created_at: { type: DataTypes.DATE(3), defaultValue: sequelize.literal('CURRENT_TIMESTAMP(3)') },
     updated_at: { type: DataTypes.DATE(3), defaultValue: sequelize.literal('CURRENT_TIMESTAMP(3)') }
-}, { tableName: 'feed_channel_messages', timestamps: false }); 
-  
+}, { tableName: 'feed_channel_messages', timestamps: false });
+
+const FeedChannelViews = sequelize.define('feed_channel_views', {
+    view_id: { type: STRING(36), primaryKey: true },
+    viewer_id: { type: STRING(36), allowNull: false },
+    channel_id: { type: STRING(36), allowNull: false },
+    last_seen_at: { type: DataTypes.DATE(3), allowNull: false, defaultValue: sequelize.literal('CURRENT_TIMESTAMP(3)') }
+}, {
+    tableName: 'feed_channel_views',
+    timestamps: false,
+    indexes: [
+        { unique: true, fields: ['viewer_id', 'channel_id'] },
+        { fields: ['channel_id'] }
+    ]
+});
+
 const Followers = sequelize.define('followers', {
     follow_id: { type: STRING(36), primaryKey: true },
     follower_id: { type: STRING(36), allowNull: false },
@@ -124,9 +138,10 @@ const SavedPostChannels = sequelize.define('saved_post_channels', {
 export {
     DeepFeeds,
     DeepFeedContent,
-    Feeds, 
+    Feeds,
     FeedChannels,
     FeedChannelMessages,
+    FeedChannelViews,
     Followers,
     ExternalFollows,
     FollowRequests,

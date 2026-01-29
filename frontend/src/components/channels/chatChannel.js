@@ -4,6 +4,7 @@ import Message from '../messages/message';
 import { UnreadContext } from '../messages/unreadContext';
 import { useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { ValidateTextInput } from '../../functions/validateTextInput';
+import { updateChannelView } from '../../functions/channelViewTracking';
 import { v4 } from 'uuid';
 
 const ChatChannel = ({ canAdd, canRemove, channelId, connection, isGroup, isLocked, setChats, setErrorMessage }) => {
@@ -300,6 +301,24 @@ const ChatChannel = ({ canAdd, canRemove, channelId, connection, isGroup, isLock
             getChannelMessages(channelId, 0);
         }
     }, [channelId, getChannelMessages]);
+
+    //Mark channel as seen when entering
+    useEffect(() => {
+        if (channelId && isGroup) {
+            //Update localStorage immediately for instant UI feedback
+            updateChannelView(channelId);
+
+            //Sync with backend asynchronously (only if authenticated)
+            if (viewer?.feed_id && isAuthenticated) {
+                api.post('/mark_channel_seen', {
+                    channelId,
+                    viewerId: viewer.feed_id
+                }).catch(error => {
+                    console.error('Error syncing channel view with backend:', error);
+                });
+            }
+        }
+    }, [channelId, viewer?.feed_id, isAuthenticated, isGroup]);
 
     //Infinite scrolling
     useEffect(() => {

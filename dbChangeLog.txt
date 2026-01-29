@@ -554,3 +554,12 @@ ADD COLUMN repost_count INT DEFAULT 0;
 CREATE INDEX idx_posts_repost_count ON posts(repost_count);
 
 CREATE INDEX idx_external_posts_repost_count ON external_posts(repost_count);
+
+CREATE TABLE feed_channel_views (
+	view_id VARCHAR(36) PRIMARY KEY,
+	viewer_id VARCHAR(36) NOT NULL,
+	channel_id VARCHAR(36) NOT NULL,
+	last_seen_at DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+	UNIQUE KEY unique_viewer_channel (viewer_id, channel_id),
+	KEY idx_channel (channel_id)
+);

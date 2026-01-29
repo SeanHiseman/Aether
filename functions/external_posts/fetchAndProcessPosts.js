@@ -208,7 +208,6 @@ export async function fetchAndProcessPosts(platform, fetchConfig, user_id) {
 				//Log CID info for Bluesky posts
 				if (platform === 'bluesky') {
 					const cidCount = batch.filter(p => p.cid).length;
-					console.log(new Date().toISOString(), `[fetchAndProcessPosts] Saving ${batch.length} Bluesky posts, ${cidCount} have CIDs`);
 				}
 				await ExternalPosts.bulkCreate(batch, {
 					updateOnDuplicate: updateFields,

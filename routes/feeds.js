@@ -1,7 +1,7 @@
 import { ApplyAlgorithm } from '../custom_algorithms/applyAlgorithm.js';
 import authenticateCheck from '../functions/checks/authenticateCheck.js';
 import ConnectCheck from '../functions/checks/connectCheck.js';
-import { ConnectRequests, DeepFeeds, DeepFeedContent, ExternalPosts, ExternalPostVotes, Feeds, FeedChannels, FeedChannelMessages, Followers, FollowRequests, Posts, PostNotes, PostVotes, Reposts, SavedPosts, SavedPostChannels, Users } from '../models/relationships.js';
+import { ConnectRequests, DeepFeeds, DeepFeedContent, ExternalPosts, ExternalPostVotes, Feeds, FeedChannels, FeedChannelMessages, FeedChannelViews, Followers, FollowRequests, Posts, PostNotes, PostVotes, Reposts, SavedPosts, SavedPostChannels, Users } from '../models/relationships.js';
 import DeleteMedia from '../functions/media_handling/deleteMedia.js';
 import { DeleteFromS3, UploadToS3 } from '../functions/media_handling/s3Handling.js';
 import dotenv from 'dotenv';
@@ -759,6 +759,25 @@ router.get('/feed_channel_messages', higherLimiter, async (req, res) => {
     }
 });
 
+router.post('/mark_channel_seen', higherLimiter, authenticateCheck, async (req, res) => {
+    try {
+        const { channelId, viewerId } = req.body;
+        if (!channelId || !viewerId) {
+            return res.status(400).json({ success: false, message: 'Missing required fields' });
+        }
+        await FeedChannelViews.upsert({
+            view_id: v4(),
+            viewer_id: viewerId,
+            channel_id: channelId,
+            last_seen_at: new Date()
+        });
+        res.status(200).json({ success: true });
+    } catch (error) {
+        console.error(new Date().toISOString(), '/mark_channel_seen error:', error);
+        res.status(500).json({ success: false, message: 'Error marking channel as seen' });
+    }
+});
+
 router.post('/follow_feed', higherLimiter, authenticateCheck, async (req, res) => {
     try {
         const { followerId, followedFeedId } = req.body;
@@ -798,28 +817,54 @@ router.get('/follow_requests/:feedId', standardLimiter, authenticateCheck, async
 
 router.get('/get_feed_channels/:feedId', standardLimiter, async (req, res) => {
     try {
-        const feedId = req.params.feedId; 
-        const saverId = req.session.viewer_id;
+        const feedId = req.params.feedId;
+        const viewerId = req.session.viewer_id;
         if (feedId === 'saved') { //Channels in the 'saved' feed
             const channels = await SavedPostChannels.findAll({
-                where: { saver_id: saverId },
+                where: { saver_id: viewerId },
                 include: [{
                     model: Feeds,
                     as: 'feed',
                 }],
-                order: [['display_order', 'ASC'], ['channel_name', 'ASC']] 
+                order: [['display_order', 'ASC'], ['channel_name', 'ASC']]
             });
             return res.status(200).json({ success: true, channels });
         }
+        //Build include array conditionally
+        const includeArray = [{
+            model: Feeds,
+            as: 'feed',
+        }];
+        //Only include views if user is authenticated
+        if (viewerId) {
+            includeArray.push({
+                model: FeedChannelViews,
+                as: 'views',
+                where: { viewer_id: viewerId },
+                required: false
+            });
+        }
         const channels = await FeedChannels.findAll({
             where: { feed_id: feedId },
-            include: [{
-                model: Feeds,
-                as: 'feed',
-            }],
-            order: [['display_order', 'ASC'], ['channel_name', 'ASC']] //Secondary in case of same display order
+            include: includeArray,
+            order: [['display_order', 'ASC'], ['channel_name', 'ASC']]
         });
-        res.status(200).json({ success: true, channels });
+        //Add hasUnread flag to each channel (only for authenticated users with chat channels)
+        const channelsWithStatus = channels.map(channel => {
+            const channelJSON = channel.toJSON();
+            //Only calculate hasUnread for authenticated users and chat-enabled channels
+            let hasUnread = false;
+            if (viewerId && channelJSON.is_chat) {
+                const view = channelJSON.views && channelJSON.views.length > 0 ? channelJSON.views[0] : null;
+                hasUnread = !view || new Date(channelJSON.updated_at) > new Date(view.last_seen_at);
+            }
+            return {
+                ...channelJSON,
+                hasUnread,
+                views: undefined //Remove the views array from response
+            };
+        });
+        res.status(200).json({ success: true, channels: channelsWithStatus });
     } catch (error) {
         console.error(new Date().toISOString(), '/get_feed_channels error:', error);
         res.status(500).json({ success: false, message: 'Error getting channels' });

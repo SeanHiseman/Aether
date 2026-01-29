@@ -48,7 +48,6 @@ export function mapMastodonToExternal(toot, instance) {
 		quotedPost: quotedPost
 	};
 	const postInstance = toot.url ? new URL(toot.url).origin : instance;
-	//console.log("mastodon post instance:", postInstance);
 	return {
 		post_id: `mastodon:${toot.id}`,
 		author: toot.account?.acct || null,
