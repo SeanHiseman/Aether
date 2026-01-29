@@ -470,7 +470,7 @@ router.post('/send_shared_post', authenticateCheck, async (req, res) => {
         if (post.is_private) {
             return res.status(403).json({ success: false, message: 'Cannot share private posts' });
         }
-        const encryptedContent = message_text ? encrypt(message_text) : null;
+        const encryptedContent = message_text ? encrypt(message_text) : encrypt('');
         let sentCount = 0;
         for (const share of shares) {
             const { chat_id, receiver_id } = share;

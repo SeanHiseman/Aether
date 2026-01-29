@@ -91,16 +91,26 @@ const SharePostModal = ({ post, onClose }) => {
             return;
         }
         //If clicking the connection itself, select/deselect the Main chat
-        await fetchChatsForConnection(connection.feed_id, connection.feed_name);
-        setTimeout(() => {
-            const chats = connectionChats[connection.feed_id];
-            if (chats && chats.length > 0) {
-                const mainChat = chats.find(c => c.title === 'Main');
-                if (mainChat) {
-                    toggleChatSelection(mainChat, connection.feed_id);
-                }
+        //First check if chats are already loaded
+        let chats = connectionChats[connection.feed_id];
+        //If not loaded, fetch them
+        if (!chats) {
+            await fetchChatsForConnection(connection.feed_id, connection.feed_name);
+            //After fetch completes, get the chats from state
+            //We need to check localStorage since state might not be updated yet
+            const storedChats = localStorage.getItem('connectionChats');
+            if (storedChats) {
+                const parsed = JSON.parse(storedChats);
+                chats = parsed[connection.feed_id];
             }
-        }, 100);
+        }
+        //Now select the Main chat
+        if (chats && chats.length > 0) {
+            const mainChat = chats.find(c => c.title === 'Main');
+            if (mainChat) {
+                toggleChatSelection(mainChat, connection.feed_id);
+            }
+        }
     };
 
     const toggleChatSelection = (chat, connectionFeedId) => {

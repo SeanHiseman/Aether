@@ -544,3 +544,13 @@ ALTER TABLE posts
 ADD COLUMN quoted_external_post_id VARCHAR(255) NULL AFTER quoted_post_id;
 
 CREATE INDEX idx_posts_quoted_external_post_id ON posts(quoted_external_post_id);
+
+ALTER TABLE posts
+ADD COLUMN repost_count INT DEFAULT 0;
+
+ALTER TABLE external_posts
+ADD COLUMN repost_count INT DEFAULT 0;
+
+CREATE INDEX idx_posts_repost_count ON posts(repost_count);
+
+CREATE INDEX idx_external_posts_repost_count ON external_posts(repost_count);
