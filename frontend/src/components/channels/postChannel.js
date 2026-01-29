@@ -1,18 +1,22 @@
 import api from '../../api';
 import { AuthContext } from '../../components/authContext';
 import ContentWidget from '../content/contentWidget';
+import ExternalPostWidget from '../../socialConnect/externalPostWidget';
+import RepostIndicator from '../content/repostIndicator';
 import { useCallback, useContext, useEffect, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useInfiniteQuery, useQuery, useQueryClient } from '@tanstack/react-query';
 const FETCH_LIMIT = 100;
 
-const PostChannel = ({ channelId, channelName, feed, includeGroup, includeUser, isDraft, isEditMode, isGroup, refreshTrigger, setFeedErrorMessage }) => {
+const PostChannel = ({ channelId, channelName, feed, includeGroup, includeReposts, includeUser, isDraft, isEditMode, isGroup, refreshTrigger, setFeedErrorMessage }) => {
 	const { channel_name, post_id } = useParams();
 	const channelReady = !!channelId;
 	const feedId = feed?.feed_id;
 	const isMain = channel_name === 'Main';
 	const queryClient = useQueryClient();
 	const scrollRef = useRef(null);
+	const lastFetchTimeRef = useRef(0);
+	const filterChangeTimeRef = useRef(0);
 	const { user, viewer } = useContext(AuthContext);
 	const navigate = useNavigate();
 
@@ -123,8 +127,18 @@ const PostChannel = ({ channelId, channelName, feed, includeGroup, includeUser, 
 		const hasMore = isDraft ? hasMoreDrafts : hasNextPage;
 		const fetchNext = isDraft ? fetchNextDrafts : fetchNextPage;
 		if (isFetching || !hasMore) return;
+
+		const now = Date.now();
+		// Prevent fetching too frequently (debounce)
+		if (now - lastFetchTimeRef.current < 500) return;
+		// Don't fetch right after filter change (prevents spam when page height changes)
+		if (now - filterChangeTimeRef.current < 1000) return;
+
 		const shouldFetch = element.scrollTop + element.clientHeight >= element.scrollHeight - threshold;
-		if (shouldFetch) fetchNext();
+		if (shouldFetch) {
+			lastFetchTimeRef.current = now;
+			fetchNext();
+		}
 	}, [isDraft, isFetchingDrafts, hasMoreDrafts, fetchNextDrafts, isFetchingNextPage, hasNextPage, fetchNextPage]);
 
 	useEffect(() => {
@@ -142,8 +156,19 @@ const PostChannel = ({ channelId, channelName, feed, includeGroup, includeUser, 
 		return () => window.removeEventListener('scroll', scrollHandler);
 	}, [isDraft, isFetchingDrafts, hasMoreDrafts, fetchNextDrafts, isFetchingNextPage, hasNextPage, fetchNextPage]);
 
+	// Track filter changes to prevent scroll spam
+	useEffect(() => {
+		filterChangeTimeRef.current = Date.now();
+	}, [includeUser, includeGroup, includeReposts]);
+
 	const allPosts = postsData?.pages.flat() || [];
 	const filteredPosts = allPosts.filter((post) => {
+		const isRepost = post.is_repost;
+		// Reposts are a separate category - check them first
+		if (isRepost) {
+			return includeReposts;
+		}
+		// For non-reposts, apply user/group filters
 		const isUserPost = post.feed_id === feedId;
 		if (isUserPost && !includeUser) return false;
 		if (!isUserPost && !includeGroup) return false;
@@ -210,11 +235,32 @@ const PostChannel = ({ channelId, channelName, feed, includeGroup, includeUser, 
 				</div>
 			) : (
 				<div className="flex flex-col w-99">
-					{filteredPosts.map((post) => (
-						<div key={post?.post_id || Math.random()} className="bg-gray-800 rounded-xl">
-							<ContentWidget feed={feed} isDraft={isDraft} onPostRemoved={handlePostRemoved} post={post} />
-						</div>
-					))}
+					{filteredPosts.map((post) => {
+						// Debug: Check repost data
+						if (post.is_repost) {
+							console.log('Repost data:', {
+								is_repost: post.is_repost,
+								reposted_by: post.reposted_by,
+								reposted_by_name: post.reposted_by_name,
+								reposted_at: post.reposted_at
+							});
+						}
+						return (
+							<div key={post?.post_id || Math.random()} className="bg-gray-800 rounded-xl">
+								{post.is_repost && (
+									<RepostIndicator
+										reposter={{ feed_id: post.reposted_by, feed_name: post.reposted_by_name || 'Unknown' }}
+										repostedAt={post.reposted_at}
+									/>
+								)}
+								{post.isExternal || post.is_external ? (
+									<ExternalPostWidget post={post} />
+								) : (
+									<ContentWidget feed={feed} isDraft={isDraft} onPostRemoved={handlePostRemoved} post={post} />
+								)}
+							</div>
+						);
+					})}
 				</div>
 			)}
 			{((isDraft && isFetchingDrafts) || (!isDraft && isFetchingNextPage)) && (

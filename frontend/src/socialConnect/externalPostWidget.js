@@ -1,7 +1,7 @@
 import api from '../api';
 import { AuthContext } from '../components/authContext';
 import ContentDisplay from '../components/content/contentDisplay';
-import { FaArrowDown, FaArrowUp, FaBookmark, FaChevronDown, FaChevronUp, FaComments, FaHeart, FaQuoteRight, FaRegBookmark, FaShare } from 'react-icons/fa';
+import { FaArrowDown, FaArrowUp, FaBookmark, FaChevronDown, FaChevronUp, FaComments, FaHeart, FaQuoteRight, FaRegBookmark, FaRetweet, FaShare } from 'react-icons/fa';
 import { FormatNumber } from '../functions/formatNumber';
 import QuotePostModal from '../components/modals/quotePostModal';
 import ShareExternalPostModal from '../components/modals/shareExternalPostModal';
@@ -29,6 +29,8 @@ const ExternalPostWidget = ({ post, sharedPost = false }) => {
 	});
 	const [localScore, setLocalScore] = useState(post?.score || 0);
 	const [voteError, setVoteError] = useState('');
+	const [hasReposted, setHasReposted] = useState(post?.has_reposted || false);
+	const [repostCount, setRepostCount] = useState(post?.repost_count || 0);
 	const timeAgo = useTimeAgo(post?.created_at);
 	const contentContainerRef = useRef(null);
 
@@ -137,6 +139,28 @@ const ExternalPostWidget = ({ post, sharedPost = false }) => {
 			setUserVote(prevVote);
 			setLocalScore(prevScore);
 			setVoteError('Error recording vote');
+			setTimeout(() => setVoteError(''), 3000);
+		}
+	};
+
+	const toggleRepost = async () => {
+		if (!isAuthenticated) {
+			setVoteError('Please log in to repost');
+			setTimeout(() => setVoteError(''), 3000);
+			return;
+		}
+		try {
+			const response = await api.post('/toggle_repost', {
+				postId: post.post_id,
+				feedId: authContext.viewer?.feed_id,
+				isExternal: true
+			});
+			if (response.data?.success) {
+				setHasReposted(response.data?.reposted);
+				setRepostCount(response.data?.repost_count);
+			}
+		} catch (error) {
+			setVoteError('Error reposting');
 			setTimeout(() => setVoteError(''), 3000);
 		}
 	};
@@ -280,6 +304,16 @@ const ExternalPostWidget = ({ post, sharedPost = false }) => {
 				)}
 				{!sharedPost && isAuthenticated && (
 					<div className="post-button-group save-share-buttons">
+						<button
+							className="large-icon"
+							style={{
+								color: hasReposted ? '#17bf63' : undefined
+							}}
+							title={hasReposted ? 'Remove repost' : 'Repost'}
+							onClick={toggleRepost}
+						>
+							<FaRetweet />
+						</button>
 						<button className="large-icon" title="Quote post" onClick={() => setShowQuoteModal(true)}>
 							<FaQuoteRight />
 						</button>

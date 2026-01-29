@@ -5,7 +5,7 @@ import ChannelList from '../../components/channels/channelList';
 import ChatChannel from '../../components/channels/chatChannel';
 import ConfirmModal from '../../components/modals/confirmModal';
 import ContentForm from '../../components/content/contentForm';
-import { FaCog, FaEdit, FaFolder, FaFolderOpen, FaMinus, FaPlus, FaRegWindowClose, FaPen, FaSave, FaTrash, FaUser, FaUsers } from 'react-icons/fa';
+import { FaCog, FaEdit, FaFolder, FaFolderOpen, FaMinus, FaPlus, FaRegWindowClose, FaPen, FaRetweet, FaSave, FaTrash, FaUser, FaUsers } from 'react-icons/fa';
 import { FormatNumber } from '../../functions/formatNumber';
 import FollowerChangeButton from '../../components/followerChangeButton';
 import { Link, useLocation, useNavigate, useOutletContext, useParams } from 'react-router-dom';
@@ -27,6 +27,7 @@ const FeedHome = () => {
     const [feedNotFound, setFeedNotFound] = useState(false);
     const [loading, setLoading] = useState(true);
     const [includeGroup, setIncludeGroup] = useState(true);
+    const [includeReposts, setIncludeReposts] = useState(true);
     const [includeUser, setIncludeUser] = useState(true);
     const [isAdmin, setIsAdmin] = useState(false);
     const [isChatChannel, setIsChatChannel] = useState(false);
@@ -215,11 +216,12 @@ const FeedHome = () => {
         fetchPost();
     }, [isReplyMode, post_id, feed?.feed_id, queryClient, location.state]);
 
-    //Reset user/group filters when not on Main channel
+    //Reset user/group/repost filters when not on Main channel
     useEffect(() => {
         if (channel_name !== 'Main') {
             setIncludeUser(true);
             setIncludeGroup(true);
+            setIncludeReposts(true);
         }
     }, [channel_name]);
 
@@ -462,6 +464,7 @@ const FeedHome = () => {
             channelName={isDraft ? channel_name : channelRender?.channel_name}
             feed={feed}
             includeGroup={includeGroup}
+            includeReposts={includeReposts}
             includeUser={includeUser}
             isDraft={isDraft}
             isEditMode={isEditMode}
@@ -473,7 +476,7 @@ const FeedHome = () => {
     const renderChannelContent = () => {
         if (isEditMode && showPostForm) return renderContentForm(false);
         if (isReplyMode) {
-            renderPostChannel(false); 
+            renderPostChannel(false);
             return renderContentForm(true);
         }
         if (showDrafts) return renderPostChannel(true);
@@ -580,6 +583,12 @@ const FeedHome = () => {
                                         <FaUsers />
                                         <p className="icon-text">
                                             {includeGroup ? "Hide group posts" : "Show group posts"}
+                                        </p>
+                                    </button>
+                                    <button onClick={() => setIncludeReposts(!includeReposts)} className="small-icon">
+                                        <FaRetweet />
+                                        <p className="icon-text">
+                                            {includeReposts ? "Hide reposts" : "Show reposts"}
                                         </p>
                                     </button>
                                 </div>

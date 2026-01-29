@@ -1,4 +1,4 @@
-import { AppBuilds, ExternalPosts, Feeds, FeedChannels, Posts, PostDrafts, PostNotes, PostVotes, SavedPosts, Users, ViewedPosts } from '../models/relationships.js';
+import { AppBuilds, ExternalPosts, Feeds, FeedChannels, Posts, PostDrafts, PostNotes, PostVotes, Reposts, SavedPosts, Users, ViewedPosts } from '../models/relationships.js';
 import { ApplyAlgorithm } from '../custom_algorithms/applyAlgorithm.js';
 import authenticateCheck from '../functions/checks/authenticateCheck.js';
 import cheerio from 'cheerio';
@@ -16,7 +16,7 @@ import path from 'path';
 import sequelize from '../databaseSetup.js';
 import { standardLimiter, higherLimiter } from '../functions/checks/limiters.js';
 import unzipper from 'unzipper';
-import { computeHotness, updateHotnessRedis } from '../functions/postRanking.js';
+import { computeHotness } from '../functions/postRanking.js';
 import UpdateMediaFiles from '../functions/media_handling/updateMediaFiles.js';
 import { v4 } from 'uuid';
 import yauzl from 'yauzl';
@@ -53,7 +53,8 @@ const checkStorageLimit = async (req, res, next) => {
 
 router.post('/channel_posts', standardLimiter, async (req, res) => {
 	try {
-		const { channelId, feedId, isGroup, isMain, isSingle, postId, limit = 100, offset = 0, recentUpvotes } = req.body;
+		const { channelId, feedId, includeReposts = true, isGroup, isMain, isSingle, postId, limit = 100, offset = 0, recentUpvotes } = req.body;
+		const userId = req.session.user_id;
 		const viewerId = req.session.viewer_id;
 		const includeOptions = [{
 			as: 'note',
@@ -140,11 +141,13 @@ router.post('/channel_posts', standardLimiter, async (req, res) => {
 			locationId: channelId,
 			feedId,
 			includeOptions,
+			includeReposts,
 			isGroup,
 			isMain,
 			limit,
 			offset,
 			recentUpvotes,
+			userId, 
 			viewerId
 		});
 		const posts = algorithmResult.posts;
@@ -213,6 +216,93 @@ router.post('/content_vote', higherLimiter, authenticateCheck, async (req, res) 
 		await transaction.rollback();
 		console.error(new Date().toISOString(), '/content_vote error:', error);
 		return res.status(500).json({ success: false });
+	}
+});
+
+router.post('/toggle_repost', higherLimiter, authenticateCheck, async (req, res) => {
+	const transaction = await sequelize.transaction();
+	try {
+		const { postId, feedId, isExternal = false } = req.body;
+		//Prevent self-repost for native posts
+		if (!isExternal) {
+			const post = await Posts.findByPk(postId, { transaction });
+			if (!post) {
+				await transaction.rollback();
+				return res.status(404).json({ success: false, message: 'Post not found' });
+			}
+			if (post.poster_id === feedId) {
+				await transaction.rollback();
+				return res.status(400).json({
+					success: false,
+					message: 'Cannot repost your own post'
+				});
+			}
+		}
+		//Check if repost exists
+		const existingRepost = await Reposts.findOne({
+			where: { post_id: postId, reposter_id: feedId },
+			transaction
+		});
+		if (existingRepost) {
+			//Remove repost (toggle off)
+			await existingRepost.destroy({ transaction });
+			if (isExternal) {
+				await ExternalPosts.decrement('repost_count', {
+					where: { post_id: postId },
+					transaction
+				});
+			} else {
+				await Posts.decrement('repost_count', {
+					where: { post_id: postId },
+					transaction
+				});
+			}
+			await transaction.commit();
+			//Fetch updated count
+			const updatedPost = isExternal
+				? await ExternalPosts.findByPk(postId)
+				: await Posts.findByPk(postId);
+			return res.status(200).json({
+				success: true,
+				reposted: false,
+				repost_count: updatedPost?.repost_count || 0
+			});
+		} else {
+			await Reposts.create({
+				repost_id: v4(),
+				post_id: postId,
+				reposter_id: feedId,
+				is_external: isExternal
+			}, { transaction });
+			if (isExternal) {
+				await ExternalPosts.increment('repost_count', {
+					where: { post_id: postId },
+					transaction
+				});
+			} else {
+				await Posts.increment('repost_count', {
+					where: { post_id: postId },
+					transaction
+				});
+			}
+			await transaction.commit();
+			//Fetch updated count
+			const updatedPost = isExternal
+				? await ExternalPosts.findByPk(postId)
+				: await Posts.findByPk(postId);
+			return res.status(200).json({
+				success: true,
+				reposted: true,
+				repost_count: updatedPost?.repost_count || 0
+			});
+		}
+	} catch (error) {
+		await transaction.rollback();
+		console.error(new Date().toISOString(), 'Error toggling repost:', error);
+		return res.status(500).json({
+			success: false,
+			message: 'Error toggling repost'
+		});
 	}
 });
 

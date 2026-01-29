@@ -1,5 +1,5 @@
 import { Algorithms, AlgorithmLocations } from "./algorithms.js";
-import { DeepFeedContent, Posts, PostVotes, SavedPosts } from "../models/relationships.js";
+import { DeepFeedContent, Feeds, Posts, PostVotes, Reposts, SavedPosts } from "../models/relationships.js";
 import { excludedAttrs } from "./algorithmFunctions/stripExcludedAttributes.js";
 import { ExternalPosts, ExternalPostVotes } from "../models/content.js";
 import { FEED_CONFIG } from "../routes/socialConnect.js";
@@ -438,6 +438,102 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
 				const localWithFlag = localPosts.map(p => ({ ...(p.dataValues || p), isExternal: false }));
 				const externalWithFlag = formattedExternal.map(p => ({ ...p, isExternal: true }));
 				posts = [...localWithFlag, ...externalWithFlag].slice(0, backendFetchTotal);
+				//Fetch reposts from followed users
+				if (followedFeedIdsSafe.length > 0) {
+					try {
+						console.log(`[Following] Looking for reposts from ${followedFeedIdsSafe.length} followed feeds:`, followedFeedIdsSafe);
+						const reposts = await Reposts.findAll({
+							where: { reposter_id: { [Op.in]: followedFeedIdsSafe } },
+							order: [['created_at', 'DESC']],
+							limit: backendFetchTotal,
+							offset: 0,
+							include: [
+								{
+									model: Feeds,
+									as: 'reposter',
+									attributes: ['feed_id', 'feed_name', 'feed_photo']
+								}
+							],
+							raw: false
+						});
+						console.log(`[Following] Found ${reposts.length} total reposts from followed users`);
+						reposts.forEach(r => {
+							console.log(`  Repost by ${r.reposter_id}: post_id=${r.post_id}, is_external=${r.is_external}`);
+						});
+
+						//Separate native and external reposts
+						const nativeRepostIds = reposts.filter(r => !r.is_external).map(r => r.post_id);
+						const externalRepostIds = reposts.filter(r => r.is_external).map(r => r.post_id);
+						console.log(`[Following] Native reposts: ${nativeRepostIds.length}, External reposts: ${externalRepostIds.length}`);
+
+						//Fetch native posts for native reposts
+						let nativeRepostPosts = [];
+						if (nativeRepostIds.length > 0) {
+							console.log(`[Following] Attempting to fetch native posts with IDs:`, nativeRepostIds);
+							const nativePosts = await Posts.findAll({
+								where: { post_id: { [Op.in]: nativeRepostIds } },
+								include: includeOptions,
+								attributes: attrOption,
+								raw: false
+							});
+							console.log(`[Following] Fetched ${nativePosts.length} native posts for reposts`);
+							nativePosts.forEach(p => {
+								console.log(`  Post: ${p.post_id}, feed_id: ${p.feed_id}`);
+							});
+
+							//Map posts with repost data
+							nativeRepostPosts = nativePosts.map(post => {
+								const repostData = reposts.find(r => r.post_id === post.post_id);
+								const reposterData = repostData?.reposter?.dataValues || repostData?.reposter;
+								return {
+									...(post.dataValues || post),
+									is_repost: true,
+									reposted_at: repostData?.created_at,
+									reposted_by: repostData?.reposter_id,
+									reposted_by_name: reposterData?.feed_name || 'Unknown'
+								};
+							});
+						}
+
+						//Fetch external posts for external reposts
+						let externalRepostPosts = [];
+						if (externalRepostIds.length > 0) {
+							const rawExternal = await ExternalPosts.findAll({
+								where: { post_id: { [Op.in]: externalRepostIds }, content: { [Op.ne]: null } },
+								raw: true
+							});
+							externalRepostPosts = rawExternal.map(p => {
+								const platformConfig = FEED_CONFIG[p.source];
+								const repostData = reposts.find(r => r.post_id === p.post_id);
+								const reposterData = repostData?.reposter?.dataValues || repostData?.reposter;
+								return {
+									...formatExternalPost(p, platformConfig, p.source),
+									is_external: true,
+									isExternal: true,
+									is_repost: true,
+									reposted_at: repostData?.created_at,
+									reposted_by: repostData?.reposter_id,
+									reposted_by_name: reposterData?.feed_name || 'Unknown'
+								};
+							});
+						}
+						console.log(`[Following] Processed ${nativeRepostPosts.length} native repost posts, ${externalRepostPosts.length} external repost posts`);
+						//Merge reposts with regular posts
+						posts = [...posts, ...nativeRepostPosts, ...externalRepostPosts];
+						console.log(`[Following] Total posts after merging reposts: ${posts.length}`);
+						//Sort by creation/repost time
+						posts.sort((a, b) => {
+							const aTime = a.reposted_at || a.created_at || a.created_at_remote;
+							const bTime = b.reposted_at || b.created_at || b.created_at_remote;
+							return new Date(bTime) - new Date(aTime);
+						});
+						//Limit to backendFetchTotal
+						posts = posts.slice(0, backendFetchTotal);
+					} catch (error) {
+						console.error('Error fetching reposts for following feed:', error);
+						//Continue without reposts if there's an error
+					}
+				}
 			}
 		} else if (typeof locationId === 'string' && locationId.startsWith('external_account_')) {
 			//Individual external account (e.g., external_account_bluesky_did:plc:xxx)
@@ -911,6 +1007,92 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
 				const orderMap = new Map(orderedIds.map((id, i) => [id, i]));
 				posts.sort((a, b) => orderMap.get(a.post_id) - orderMap.get(b.post_id));
 			}
+			//Fetch reposts for Main channel
+			if (isMain && feedId) {
+				try {
+					const reposts = await Reposts.findAll({
+						where: { reposter_id: feedId },
+						order: [['created_at', 'DESC']],
+						limit: backendFetchTotal,
+						offset: 0,
+						include: [
+							{
+								model: Feeds,
+								as: 'reposter',
+								attributes: ['feed_id', 'feed_name', 'feed_photo']
+							}
+						],
+						raw: false
+					});
+					console.log(`[Main Channel] Found ${reposts.length} total reposts for feed ${feedId}`);
+
+					//Separate native and external reposts
+					const nativeRepostIds = reposts.filter(r => !r.is_external).map(r => r.post_id);
+					const externalRepostIds = reposts.filter(r => r.is_external).map(r => r.post_id);
+					console.log(`[Main Channel] Native reposts: ${nativeRepostIds.length}, External reposts: ${externalRepostIds.length}`);
+
+					//Fetch native posts for native reposts
+					let nativeRepostPosts = [];
+					if (nativeRepostIds.length > 0) {
+						const nativePosts = await Posts.findAll({
+							where: { post_id: { [Op.in]: nativeRepostIds } },
+							include: includeOptions,
+							attributes: attrOption,
+							raw: false
+						});
+						console.log(`[Main Channel] Fetched ${nativePosts.length} native posts for reposts`);
+
+						//Map posts with repost data
+						nativeRepostPosts = nativePosts.map(post => {
+							const repostData = reposts.find(r => r.post_id === post.post_id);
+							const reposterData = repostData?.reposter?.dataValues || repostData?.reposter;
+							return {
+								...(post.dataValues || post),
+								is_repost: true,
+								reposted_at: repostData?.created_at,
+								reposted_by: repostData?.reposter_id,
+								reposted_by_name: reposterData?.feed_name || 'Unknown'
+							};
+						});
+					}
+
+					//Fetch external posts for external reposts
+					let externalRepostPosts = [];
+					if (externalRepostIds.length > 0) {
+						const rawExternal = await ExternalPosts.findAll({
+							where: { post_id: { [Op.in]: externalRepostIds }, content: { [Op.ne]: null } },
+							raw: true
+						});
+						externalRepostPosts = rawExternal.map(p => {
+							const platformConfig = FEED_CONFIG[p.source];
+							const repostData = reposts.find(r => r.post_id === p.post_id);
+							const reposterData = repostData?.reposter?.dataValues || repostData?.reposter;
+							return {
+								...formatExternalPost(p, platformConfig, p.source),
+								is_external: true,
+								isExternal: true,
+								is_repost: true,
+								reposted_at: repostData?.created_at,
+								reposted_by: repostData?.reposter_id,
+								reposted_by_name: reposterData?.feed_name || 'Unknown'
+							};
+						});
+					}
+					console.log(`[Main Channel] Processed ${nativeRepostPosts.length} native repost posts, ${externalRepostPosts.length} external repost posts`);
+					//Merge reposts with regular posts
+					posts = [...posts, ...nativeRepostPosts, ...externalRepostPosts];
+					console.log(`[Main Channel] Total posts after merging reposts: ${posts.length}`);
+					//Sort by creation/repost time
+					posts.sort((a, b) => {
+						const aTime = a.reposted_at || a.created_at || a.created_at_remote;
+						const bTime = b.reposted_at || b.created_at || b.created_at_remote;
+						return new Date(bTime) - new Date(aTime);
+					});
+				} catch (error) {
+					console.error('Error fetching reposts:', error);
+					//Continue without reposts if there's an error
+				}
+			}
         }
 
         if (!posts.length) {
@@ -934,7 +1116,7 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
 			const ids = posts.map(p => p.post_id);
 			const nativeIds = posts.filter(p => !p.isExternal).map(p => p.post_id);
 			const externalIds = posts.filter(p => p.isExternal).map(p => p.post_id);
-			const [userVotes, externalVotes, savedRows] = viewerId
+			const [userVotes, externalVotes, savedRows, repostRows] = viewerId
 				? await Promise.all([
 					nativeIds.length ? PostVotes.findAll({
 						attributes: ['post_id', 'upvotes', 'downvotes'],
@@ -950,9 +1132,14 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
 						attributes: ['post_id'],
 						where: { post_id: { [Op.in]: ids }, saver_id: viewerId },
 						raw: true
+					}),
+					Reposts.findAll({
+						attributes: ['post_id'],
+						where: { post_id: { [Op.in]: ids }, reposter_id: viewerId },
+						raw: true
 					})
 				])
-				: [[], [], []];
+				: [[], [], [], []];
 			const voteMap = new Map(
 				userVotes.map(v => [v.post_id, { has_upvoted: v.upvotes > 0, has_downvoted: v.downvotes > 0 }])
 			);
@@ -961,6 +1148,7 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
 				has_downvoted: v.vote_type === 'downvote'
 			}]));
 			const savedSet = new Set(savedRows.map(s => s.post_id));
+			const repostSet = new Set(repostRows.map(r => r.post_id));
 			return {
 				posts: stripExcludedAttributes(
 					posts.map(p => {
@@ -971,7 +1159,8 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
 						return {
 							...(p.dataValues || p),
 							...votes,
-							is_saved: savedSet.has(p.post_id)
+							is_saved: savedSet.has(p.post_id),
+							has_reposted: repostSet.has(p.post_id)
 						};
 					})
 				),
@@ -982,7 +1171,7 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
 		//Separate native and external post IDs for vote lookup
 		const nativeIds = posts.filter(p => !p.isExternal).map(p => p.post_id);
 		const externalIds = posts.filter(p => p.isExternal).map(p => p.post_id);
-		const [userVotes, externalVotes, savedRows] = viewerId
+		const [userVotes, externalVotes, savedRows, repostRows] = viewerId
 			? await Promise.all([
 				nativeIds.length ? PostVotes.findAll({
 					attributes: ['post_id', 'upvotes', 'downvotes'],
@@ -998,9 +1187,14 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
 					attributes: ['post_id'],
 					where: { post_id: { [Op.in]: finalIds }, saver_id: viewerId },
 					raw: true
+				}),
+				Reposts.findAll({
+					attributes: ['post_id'],
+					where: { post_id: { [Op.in]: finalIds }, reposter_id: viewerId },
+					raw: true
 				})
 			])
-			: [[], [], []];
+			: [[], [], [], []];
 		//Native post votes map
 		const voteMap = new Map(userVotes.map(v => [
 			v.post_id, { has_upvoted: v.upvotes > 0, has_downvoted: v.downvotes > 0 }
@@ -1015,6 +1209,7 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
 			}];
 		}));
 		const savedSet = new Set(savedRows.map(s => s.post_id));
+		const repostSet = new Set(repostRows.map(r => r.post_id));
 		const postsWithVotes = posts.map(p => {
 			const isExternal = p.isExternal || p.is_external;
 			const votes = isExternal
@@ -1023,7 +1218,8 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
 			return {
 				...(p.dataValues || p),
 				...votes,
-				is_saved: savedSet.has(p.post_id)
+				is_saved: savedSet.has(p.post_id),
+				has_reposted: repostSet.has(p.post_id)
 			};
 		});
 		return { posts: stripExcludedAttributes(postsWithVotes), status: "ok", message: "" };

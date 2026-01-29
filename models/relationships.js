@@ -1,4 +1,4 @@
-import { AppBuilds, ExternalAccountMeta, ExternalPosts, ExternalPostsAccess, ExternalPostVotes, PaginationTokens, Posts, PostDrafts, PostNotes, PostVotes, Prompts, ViewedPosts } from "./content.js";
+import { AppBuilds, ExternalAccountMeta, ExternalPosts, ExternalPostsAccess, ExternalPostVotes, PaginationTokens, Posts, PostDrafts, PostNotes, PostVotes, Prompts, Reposts, ViewedPosts } from "./content.js";
 import { DeepFeeds, DeepFeedContent, Feeds, FeedChannels, FeedChannelMessages, Followers, ExternalFollows, FollowRequests, SavedPosts, SavedPostChannels } from "./feeds.js";
 import { AskChats, AskMessages, Chats, ConnectRequests, Connections, FeedChats, Messages } from "./messages.js";
 import { Feedback, Users } from "./users.js";
@@ -55,6 +55,13 @@ FollowRequests.belongsTo(Feeds, { as: 'receiver', foreignKey: 'receiver_id' });
 
 Posts.hasMany(PostVotes, { as: 'votes', foreignKey: 'post_id', onDelete: 'CASCADE' });
 PostVotes.belongsTo(Posts, { as: 'parentPost', foreignKey: 'post_id' });
+
+Posts.hasMany(Reposts, { foreignKey: 'post_id', as: 'reposts', onDelete: 'CASCADE' });
+Reposts.belongsTo(Posts, { foreignKey: 'post_id' });
+Feeds.hasMany(Reposts, { foreignKey: 'reposter_id', as: 'user_reposts' });
+Reposts.belongsTo(Feeds, { foreignKey: 'reposter_id', as: 'reposter' });
+
+ExternalPosts.hasMany(Reposts, { foreignKey: 'post_id', as: 'external_reposts', onDelete: 'CASCADE' });
 
 Feeds.belongsToMany(Feeds, { as: 'feedConnections', through: Connections, foreignKey: 'feed1_id', otherKey: 'feed2_id' });
 Feeds.hasMany(ConnectRequests, { as: 'sentRequests', foreignKey: 'sender_id' });
@@ -132,6 +139,7 @@ export {
     PostNotes,
     PostVotes,
     Prompts,
+    Reposts,
     SavedPosts,
     SavedPostChannels,
     Users,

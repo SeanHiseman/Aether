@@ -32,7 +32,7 @@
     border-radius: calc(clamp(4px, 1vw, 10px) + var(--small-margin));
     border: 1px solid var(--light);
     cursor: pointer;
-    margin-top: var(--medium-margin);
+    margin-bottom: var(--medium-margin);
 }
 .content-item.reply {
     border-radius: 0;
@@ -163,6 +163,28 @@
     flex-direction: column;
     justify-content: center;
     width: 100%;
+}
+.repost-indicator {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	padding: 8px;
+	background-color: var(--darkest);
+	border-top: 1px solid var(--light);
+	font-size: var(--small-text);
+	color: var(--lightest);
+}
+.repost-icon {
+	color: #17bf63;
+	font-size: var(--medium-text);
+}
+.reposter-link {
+	color: var(--lightest);
+	text-decoration: none;
+	font-weight: 500;
+}
+.reposter-link:hover {
+	text-decoration: underline;
 }
 .result-info-options {
     align-items: center;

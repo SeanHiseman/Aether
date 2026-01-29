@@ -4,7 +4,8 @@
       "Bash(npm run build)",
       "Bash(node --check:*)",
       "Bash(npm install:*)",
-      "WebSearch"
+      "WebSearch",
+      "Bash(find:*)"
     ]
   }
 }

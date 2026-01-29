@@ -1,7 +1,7 @@
 import { ApplyAlgorithm } from '../custom_algorithms/applyAlgorithm.js';
 import authenticateCheck from '../functions/checks/authenticateCheck.js';
 import ConnectCheck from '../functions/checks/connectCheck.js';
-import { ConnectRequests, DeepFeeds, DeepFeedContent, Feeds, FeedChannels, FeedChannelMessages, Followers, FollowRequests, Posts, PostNotes, PostVotes, SavedPosts, SavedPostChannels, Users } from '../models/relationships.js';
+import { ConnectRequests, DeepFeeds, DeepFeedContent, ExternalPosts, ExternalPostVotes, Feeds, FeedChannels, FeedChannelMessages, Followers, FollowRequests, Posts, PostNotes, PostVotes, Reposts, SavedPosts, SavedPostChannels, Users } from '../models/relationships.js';
 import DeleteMedia from '../functions/media_handling/deleteMedia.js';
 import { DeleteFromS3, UploadToS3 } from '../functions/media_handling/s3Handling.js';
 import dotenv from 'dotenv';
@@ -872,6 +872,122 @@ router.get('/get_saved_posts', standardLimiter, authenticateCheck, async (req, r
         console.error(new Date().toISOString(), '/get_saved_posts error:', error);
         res.status(500).json({ posts: [], message: 'Error getting posts' });
     }
+});
+
+router.get('/user_reposts/:feedId', higherLimiter, async (req, res) => {
+	try {
+		const { feedId } = req.params;
+		const { limit = 20, offset = 0 } = req.query;
+		const viewerId = req.query.viewerId || req.session?.viewer_id;
+
+		// Fetch reposts chronologically
+		const reposts = await Reposts.findAll({
+			where: { reposter_id: feedId },
+			order: [['created_at', 'DESC']],
+			limit: parseInt(limit),
+			offset: parseInt(offset),
+			include: [
+				{
+					model: Posts,
+					required: false,
+					include: [
+						{ model: Feeds, as: 'poster' },
+						{ model: FeedChannels, as: 'parentChannel' }
+					]
+				}
+			]
+		});
+
+		// Separate native and external posts
+		const nativePostIds = [];
+		const externalPostIds = [];
+
+		reposts.forEach(repost => {
+			if (repost.is_external) {
+				externalPostIds.push(repost.post_id);
+			} else {
+				nativePostIds.push(repost.post_id);
+			}
+		});
+
+		// Fetch external posts separately
+		let externalPostsMap = new Map();
+		if (externalPostIds.length > 0) {
+			const externalPosts = await ExternalPosts.findAll({
+				where: { post_id: { [Op.in]: externalPostIds } }
+			});
+			externalPostsMap = new Map(externalPosts.map(ep => [ep.post_id, ep]));
+		}
+
+		// Fetch vote status for native posts
+		let voteMap = new Map();
+		if (viewerId && nativePostIds.length) {
+			const votes = await PostVotes.findAll({
+				where: {
+					post_id: { [Op.in]: nativePostIds },
+					voter_id: viewerId
+				}
+			});
+			voteMap = new Map(votes.map(v => [v.post_id, {
+				has_upvoted: v.upvotes > 0,
+				has_downvoted: v.downvotes > 0
+			}]));
+		}
+
+		// Fetch vote status for external posts
+		let externalVoteMap = new Map();
+		if (viewerId && externalPostIds.length) {
+			const externalVotes = await ExternalPostVotes.findAll({
+				where: {
+					post_id: { [Op.in]: externalPostIds },
+					user_id: viewerId
+				}
+			});
+			externalVoteMap = new Map(externalVotes.map(v => [v.post_id, {
+				has_upvoted: v.vote_type === 'upvote' || v.vote_type === 'like',
+				has_downvoted: v.vote_type === 'downvote'
+			}]));
+		}
+
+		// Fetch repost status
+		let repostMap = new Map();
+		if (viewerId) {
+			const allPostIds = [...nativePostIds, ...externalPostIds];
+			if (allPostIds.length > 0) {
+				const userReposts = await Reposts.findAll({
+					where: {
+						post_id: { [Op.in]: allPostIds },
+						reposter_id: viewerId
+					}
+				});
+				repostMap = new Map(userReposts.map(r => [r.post_id, true]));
+			}
+		}
+
+		// Format response
+		const formattedPosts = reposts.map(repost => {
+			const post = repost.is_external ? externalPostsMap.get(repost.post_id) : repost.Post;
+			if (!post) return null;
+
+			const votes = repost.is_external
+				? externalVoteMap.get(post.post_id)
+				: voteMap.get(post.post_id);
+
+			return {
+				...post.dataValues,
+				reposted_by: feedId,
+				reposted_at: repost.created_at,
+				is_external: repost.is_external,
+				has_reposted: repostMap.get(post.post_id) || false,
+				...votes
+			};
+		}).filter(Boolean);
+
+		return res.status(200).json({ posts: formattedPosts });
+	} catch (error) {
+		console.error(new Date().toISOString(), 'Error fetching reposts:', error);
+		return res.status(500).json({ message: 'Error fetching reposts' });
+	}
 });
 
 router.post('/remove_from_deep_feed', higherLimiter, authenticateCheck, async (req, res) => {

@@ -37,7 +37,8 @@ const ExternalPosts = sequelize.define('ExternalPosts', {
     author_photo: { type: TEXT, allowNull: true },
 	url: { type: TEXT, allowNull: true },
 	media: { type: DataTypes.JSON, allowNull: true },
-	cid: { type: STRING(128), allowNull: true }
+	cid: { type: STRING(128), allowNull: true },
+	repost_count: { type: INTEGER, defaultValue: 0 }
 }, {
 	tableName: 'external_posts',
     timestamps: false,
@@ -144,7 +145,8 @@ const Posts = sequelize.define('posts', {
     tokens: { type: DataTypes.JSON, allowNull: false },
     embeddings: { type: DataTypes.JSON, allowNull: true },
     is_private: { type: BOOLEAN, defaultValue: false },
-    boost_amount: { type: FLOAT, defaultValue: 1.0 }, 
+    boost_amount: { type: FLOAT, defaultValue: 1.0 },
+    repost_count: { type: INTEGER, defaultValue: 0 }
 }, {
     tableName: 'posts',
     timestamps: false,
@@ -218,6 +220,23 @@ const ExternalPostVotes = sequelize.define('external_post_votes', {
     ]
 });
 
+const Reposts = sequelize.define('reposts', {
+    repost_id: { type: STRING(36), primaryKey: true },
+    post_id: { type: STRING(36), allowNull: false },
+    reposter_id: { type: STRING(36), allowNull: false },
+    is_external: { type: BOOLEAN, defaultValue: false },
+    created_at: { type: DataTypes.DATE(3), defaultValue: sequelize.literal('CURRENT_TIMESTAMP(3)') }
+}, {
+    tableName: 'reposts',
+    timestamps: false,
+    indexes: [
+        { fields: ['post_id'] },
+        { fields: ['reposter_id'] },
+        { fields: ['created_at'] },
+        { unique: true, fields: ['post_id', 'reposter_id'] }
+    ]
+});
+
 const Prompts = sequelize.define('prompts', {
     prompt_id: { type: STRING(36), primaryKey: true },
     prompt_content: { type: STRING(100000), allowNull: false },
@@ -245,5 +264,6 @@ export {
     PostNotes,
     PostVotes,
     Prompts,
+    Reposts,
     ViewedPosts
 }

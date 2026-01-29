@@ -5,8 +5,9 @@ import ExternalFollowItem from '../components/channels/externalFollowItem';
 import ConfirmModal from '../components/modals/confirmModal';
 import ContentWidget from '../components/content/contentWidget';
 import ExternalPostWidget from '../socialConnect/externalPostWidget';
-import { FaEdit, FaGlobe, FaHome, FaMinus, FaRegWindowClose, FaSave, FaTrash } from 'react-icons/fa';
+import { FaEdit, FaGlobe, FaHome, FaMinus, FaRegWindowClose, FaRetweet, FaSave, FaTrash } from 'react-icons/fa';
 import FeedItem from '../components/channels/feedItem';
+import RepostIndicator from '../components/content/repostIndicator';
 import PlatformConnect from '../socialConnect/platformConnect';
 import SwipeableAside from '../components/swipeableAside';
 import { useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
@@ -41,11 +42,14 @@ const DeepFeed = () => {
     });
     const [includeExternal, setIncludeExternal] = useState(true);
     const [includeNative, setIncludeNative] = useState(true);
+    const [includeReposts, setIncludeReposts] = useState(true);
     const [isEditingName, setIsEditingName] = useState(false);
     const [isNewNameValid, setIsNewNameValid] = useState(false);
     const [newName, setNewName] = useState('');
     const [refreshTrigger, setRefreshTrigger] = useState(0);
     const scrollRef = useRef(null);
+    const lastFetchTimeRef = useRef(0);
+    const filterChangeTimeRef = useRef(0);
     const navigate = useNavigate();
     const queryClient = useQueryClient();
     const { rightClasses, updateFeeds, closeDrawers, mobileOpen } = useOutletContext();
@@ -353,22 +357,44 @@ const DeepFeed = () => {
             })
         : [];
 
-    const visiblePosts = allPosts.filter(p =>
-        (includeNative && !p.is_external) ||
-        (includeExternal && p.is_external)
-    );
+    // Track filter changes to prevent scroll spam
+    useEffect(() => {
+        filterChangeTimeRef.current = Date.now();
+    }, [includeNative, includeExternal, includeReposts]);
+
+    const visiblePosts = allPosts.filter(p => {
+        const isRepost = p.is_repost;
+        const isExternal = p.is_external || p.isExternal;
+
+        // First check native/external filters
+        const passesTypeFilter = (includeNative && !isExternal) || (includeExternal && isExternal);
+        if (!passesTypeFilter) return false;
+
+        // Then check repost filter
+        if (isRepost && !includeReposts) return false;
+
+        return true;
+    });
 
     const handleScroll = useCallback(() => {
         const element = scrollRef.current;
         if (!element || isFetchingNextPage || !hasNextPage) {
             return;
         }
+
+        const now = Date.now();
+        // Prevent fetching too frequently (debounce)
+        if (now - lastFetchTimeRef.current < 500) return;
+        // Don't fetch right after filter change (prevents spam when page height changes)
+        if (now - filterChangeTimeRef.current < 1000) return;
+
         const totalHeight = element.scrollHeight;
         const scrolledDistance = element.scrollTop;
         const visibleHeight = element.clientHeight;
         const distanceRemaining = totalHeight - scrolledDistance - visibleHeight;
         const threshold = window.innerHeight * 1.5;
         if (distanceRemaining <= threshold) {
+            lastFetchTimeRef.current = now;
             fetchNextPage();
         }
     }, [fetchNextPage, isFetchingNextPage, hasNextPage]);
@@ -404,17 +430,32 @@ const DeepFeed = () => {
                     <p className="large-text faded-text">All posts hidden</p>
                 ) : visiblePosts.length > 0 ? (
                     <div className="flex flex-col w-99">
-                        {visiblePosts.map((post) => (
-                            post ? (
+                        {visiblePosts.map((post) => {
+                            // Debug: Check repost data
+                            if (post?.is_repost) {
+                                console.log('Repost data (following):', {
+                                    is_repost: post.is_repost,
+                                    reposted_by: post.reposted_by,
+                                    reposted_by_name: post.reposted_by_name,
+                                    reposted_at: post.reposted_at
+                                });
+                            }
+                            return post ? (
                                 <div key={post?.post_id || Math.random()} className="bg-gray-800 rounded-xl">
+                                    {post.is_repost && (
+                                        <RepostIndicator
+                                            reposter={{ feed_id: post.reposted_by, feed_name: post.reposted_by_name || 'Unknown' }}
+                                            repostedAt={post.reposted_at}
+                                        />
+                                    )}
                                     {post.is_external ? (
                                         <ExternalPostWidget post={post} />
                                     ) : (
                                         <ContentWidget post={post} />
                                     )}
                                 </div>
-                            ) : null
-                        ))}
+                            ) : null;
+                        })}
                         {isFetchingNextPage && (
                             <div className="flex justify-center py-4">
                                 <p className="large-text faded-text">Loading more posts...</p>
@@ -497,6 +538,10 @@ const DeepFeed = () => {
                         <button onClick={() => setIncludeExternal(!includeExternal)} className="small-icon">
                             <FaGlobe />
                             <p className="icon-text">{includeExternal ? "Hide external" : "Show external"}</p>
+                        </button>
+                        <button onClick={() => setIncludeReposts(!includeReposts)} className="small-icon">
+                            <FaRetweet />
+                            <p className="icon-text">{includeReposts ? "Hide reposts" : "Show reposts"}</p>
                         </button>
                     </div>}
                     {sortedContents.length > 0 && (

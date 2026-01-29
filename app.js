@@ -166,6 +166,8 @@ io.on("connection", (socket) => {
     });
 });
 
+app.set('io', io);
+
 const PORT = process.env.APP_PORT;
 http.listen(PORT, () => {
     console.log(`Running on ${PORT}`)

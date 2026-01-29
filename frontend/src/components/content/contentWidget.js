@@ -3,7 +3,7 @@ import AskButton from '../askButton';
 import { AuthContext } from '../authContext';
 import ContentDisplay from './contentDisplay';
 import ConfirmModal from '../modals/confirmModal';
-import { FaArrowDown, FaArrowUp, FaBookmark, FaChevronDown, FaChevronUp, FaComments, FaCommentSlash, FaEdit, FaEllipsisV, FaCompress, FaExpand, FaQuoteRight, FaRegBookmark, FaReply, FaShare, FaTrash, FaTree, FaListUl } from 'react-icons/fa';
+import { FaArrowDown, FaArrowUp, FaBookmark, FaChevronDown, FaChevronUp, FaComments, FaCommentSlash, FaEdit, FaEllipsisV, FaCompress, FaExpand, FaQuoteRight, FaRegBookmark, FaReply, FaRetweet, FaShare, FaTrash, FaTree, FaListUl } from 'react-icons/fa';
 import { FormatNumber } from '../../functions/formatNumber';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import MembershipModal from '../modals/membershipModal';
@@ -27,6 +27,8 @@ const ContentWidget = ({ canRemove = false, display = false, feed, isDraft = fal
 	const [hasCodeOrApp, setHasCodeOrApp] = useState(false); //To prevent images and text having the fullscreen button
 	const [hasUpvoted, setHasUpvoted] = useState(post?.has_upvoted || false);
     const [hasDownvoted, setHasDownvoted] = useState(post?.has_downvoted || false);
+	const [hasReposted, setHasReposted] = useState(post?.has_reposted || false);
+	const [repostCount, setRepostCount] = useState(post?.repost_count || 0);
 	const [hasViewed, setHasViewed] = useState(false);
 	const [isFullscreenMode, setIsFullscreenMode] = useState(false);
 	const [isLoaded, setIsLoaded] = useState(false);
@@ -67,6 +69,8 @@ const ContentWidget = ({ canRemove = false, display = false, feed, isDraft = fal
 			setHasDownvoted(post.has_downvoted || false);
 			setIsSaved(post.is_saved);
 			setViews(post.views);
+			setHasReposted(post.has_reposted || false);
+			setRepostCount(post.repost_count || 0);
 		}
 	}, [post]);
 
@@ -220,6 +224,28 @@ const ContentWidget = ({ canRemove = false, display = false, feed, isDraft = fal
 			setTimeout(() => setPostErrorMessage(""), 3000);
         }
     };
+
+	const toggleRepost = async () => {
+		if (!isAuthenticated) {
+			setPostErrorMessage('Please log in to repost');
+			setTimeout(() => setPostErrorMessage(""), 3000);
+			return;
+		}
+		try {
+			const response = await api.post('/toggle_repost', {
+				postId: post?.post_id,
+				feedId: viewer?.feed_id,
+				isExternal: false
+			});
+			if (response.data?.success) {
+				setHasReposted(response.data.reposted);
+				setRepostCount(response.data.repost_count);
+			}
+		} catch (error) {
+			setPostErrorMessage(error.response?.data?.message || 'Error reposting');
+			setTimeout(() => setPostErrorMessage(""), 3000);
+		}
+	};
 
 	useEffect(() => {
 		let timeoutId;
@@ -456,7 +482,6 @@ const ContentWidget = ({ canRemove = false, display = false, feed, isDraft = fal
 						)}
 					</div>
 				)}
-				
 				{!readOnly && !isDraft && !display && !sharedPost && (
 					<div className="post-button-group reply-buttons">
 						<button className="large-icon" data-content-id={post?.post_id} onClick={toggleReplies} title={showReplies ? "Close Replies" : "Show Replies"}>
@@ -465,7 +490,6 @@ const ContentWidget = ({ canRemove = false, display = false, feed, isDraft = fal
 						</button>
 					</div>
 				)}
-				
 				{!sharedPost && isAuthenticated && (post?.poster_id === viewer?.feed_id || canRemoveState) && !readOnly && (
 					<div className="post-button-group options-buttons" style={{ position: 'relative' }} ref={dropdownRef}>
 						<button className="large-icon" onClick={() => setShowOptionsDropdown(!showOptionsDropdown)} title="Options">
@@ -533,12 +557,23 @@ const ContentWidget = ({ canRemove = false, display = false, feed, isDraft = fal
 						)}
 					</div>
 				)}
-				
 				{!sharedPost && !isDraft && isAuthenticated && (
 					<div className="post-button-group save-share-buttons">
 						<button className="large-icon" title={isSaved ? 'Unsave post' : 'Save post'} onClick={savePost}>
 							{isSaved ? <FaBookmark /> : <FaRegBookmark />}
 						</button>
+						{!display && (
+							<button
+								className="large-icon"
+								style={{
+									color: hasReposted ? '#17bf63' : undefined
+								}}
+								title={hasReposted ? 'Remove repost' : 'Repost'}
+								onClick={toggleRepost}
+							>
+								<FaRetweet />
+							</button>
+						)}
 						{!post?.is_private && (
 							<button className="large-icon" title="Quote post" onClick={() => setShowQuoteModal(true)}>
 								<FaQuoteRight />
