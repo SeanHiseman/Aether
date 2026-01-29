@@ -748,14 +748,14 @@ router.get('/feed_channel_messages', higherLimiter, async (req, res) => {
         const messages = await FeedChannelMessages.findAll({
             where: { channel_id: channelId },
             include: [{ model: Feeds }],
-            order: [['timestamp', 'ASC']],
+            order: [['created_at', 'ASC']],
             limit: parseInt(limit) || 100,
             offset: parseInt(offset) || 0,
         });
         res.status(200).json({ messages, success: true });
     } catch (error) {
         console.error(new Date().toISOString(), '/feed_channel_messages error:', error);
-        res.status(500).json({ success: false, message: 'Error getting messages' });   
+        res.status(500).json({ success: false, message: 'Error getting messages' });
     }
 });
 
@@ -1286,6 +1286,29 @@ export const feedChatChannelSocket = (socket) => {
         await FeedChannelMessages.destroy({ where: { message_id: data.message_id } });
         socket.to(channel_id).emit('delete_feed_message', { message_id });
     });
+    socket.on('edit_feed_message', async (data) => {
+        try {
+            const { message_id, content, channel_id } = data;
+            const validation = ValidateTextInput(content, 1, 1000, false);
+            if (!validation.valid) {
+                socket.emit('error_message', { error: validation.error });
+                return;
+            }
+            await FeedChannelMessages.update(
+                { content: content, updated_at: new Date() },
+                { where: { message_id } }
+            );
+            const updatedMessage = await FeedChannelMessages.findOne({
+                where: { message_id },
+                include: [{ model: Feeds }]
+            });
+            socket.to(channel_id).emit('message_edited', updatedMessage);
+            socket.emit('message_edited', updatedMessage);
+        } catch (error) {
+            console.error(new Date().toISOString(), 'edit_feed_message error:', error);
+            socket.emit('error_message', { error: 'Failed to edit message' });
+        }
+    });
     socket.on('send_feed_message', async (message) => {
         try {
             if (message.content.length === 0) {
@@ -1296,19 +1319,39 @@ export const feedChatChannelSocket = (socket) => {
                 socket.emit('error_message', { error: 'Message too long' });
                 return;
             }
+            //Check if sender is a follower of the feed
+            const channel = await FeedChannels.findByPk(message.channel_id);
+            if (!channel) {
+                socket.emit('error_message', { error: 'Channel not found' });
+                return;
+            }
+            const isFollower = await Followers.findOne({
+                where: {
+                    follower_id: message.sender_id,
+                    feed_id: channel.feed_id
+                }
+            });
+            if (!isFollower) {
+                socket.emit('error_message', { error: 'Only followers can send messages' });
+                return;
+            }
             const newMessage = await FeedChannelMessages.create({
                 message_id: message.message_id,
                 content: message.content,
                 channel_id: message.channel_id,
                 sender_id: message.sender_id,
-                timestamp: message.timestamp,
+            });
+            //Fetch the message with sender info to match the format from GET endpoint
+            const messageWithSender = await FeedChannelMessages.findOne({
+                where: { message_id: newMessage.message_id },
+                include: [{ model: Feeds }]
             });
             await FeedChannels.update(
-                { updated_at: message.timestamp || new Date() },  
+                { updated_at: new Date() },
                 { where: { channel_id: message.channel_id } }
             );
-            socket.emit('channel_message_confirmed', newMessage);
-            socket.to(message.channel_id).emit('channel_message_confirmed', newMessage);
+            socket.emit('channel_message_confirmed', messageWithSender);
+            socket.to(message.channel_id).emit('channel_message_confirmed', messageWithSender);
         } catch (error) {
             console.error(new Date().toISOString(), 'Error handling feed message:', error);
         }

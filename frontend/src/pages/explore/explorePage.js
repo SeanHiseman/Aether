@@ -218,7 +218,7 @@ const ExplorePage = () => {
 										)}
 									</div>
 								) : (
-									<div key={`feedtriplet-${idx}`} className="grid grid-cols-3 gap-3 w-full med-mar-top">
+									<div key={`feedtriplet-${idx}`} className="grid grid-cols-3 gap-3 w-full med-mar-bottom">
 										{item.data.map(feed => (
 											<FeedWidget key={feed?.feed_id} feed={feed} isAuthenticated={isAuthenticated} updateFeeds={updateFeeds} viewerId={viewer?.feed_id} />
 										))}
@@ -241,7 +241,7 @@ const ExplorePage = () => {
 							</div>
 						)}
 						{filter === "feeds" && (
-							<div className="flex flex-col gap-3 w-99 med-mar-top">
+							<div className="flex flex-col gap-3 w-99 med-mar-bottom">
 								<div className="grid grid-cols-3 gap-3 w-full">
 									{feeds.map(feed => (
 										<FeedWidget key={feed?.feed_id} feed={feed} isAuthenticated={isAuthenticated} updateFeeds={updateFeeds} viewerId={viewer?.feed_id} />

@@ -94,6 +94,7 @@ const App = () => {
 								<Route path="g/:feed_name" element={<FeedWrapper />}>
 									<Route index element={<Navigate to="Main" replace />} />
 										<Route path=":channel_name" element={<FeedHome />}>
+										<Route path="chat" element={<FeedHome />} />
 										<Route path="drafts" element={<FeedHome />} />
 										<Route path="create" element={<FeedHome />} />
 										<Route path=":post_id" element={<ContentWidget />} />
@@ -124,6 +125,7 @@ const App = () => {
 								<Route path="u/:feed_name" element={<FeedWrapper />}>
 									<Route index element={<Navigate to="Main" replace />} />
 										<Route path=":channel_name" element={<FeedHome />}>
+										<Route path="chat" element={<FeedHome />} />
 										<Route path="drafts" element={<FeedHome />} />
 										<Route path="create" element={<FeedHome />} />
 										<Route path=":post_id" element={<FeedHome />} />

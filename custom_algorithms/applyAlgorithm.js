@@ -441,7 +441,6 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
 				//Fetch reposts from followed users
 				if (followedFeedIdsSafe.length > 0) {
 					try {
-						console.log(`[Following] Looking for reposts from ${followedFeedIdsSafe.length} followed feeds:`, followedFeedIdsSafe);
 						const reposts = await Reposts.findAll({
 							where: { reposter_id: { [Op.in]: followedFeedIdsSafe } },
 							order: [['created_at', 'DESC']],
@@ -456,31 +455,18 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
 							],
 							raw: false
 						});
-						console.log(`[Following] Found ${reposts.length} total reposts from followed users`);
-						reposts.forEach(r => {
-							console.log(`  Repost by ${r.reposter_id}: post_id=${r.post_id}, is_external=${r.is_external}`);
-						});
-
 						//Separate native and external reposts
 						const nativeRepostIds = reposts.filter(r => !r.is_external).map(r => r.post_id);
 						const externalRepostIds = reposts.filter(r => r.is_external).map(r => r.post_id);
-						console.log(`[Following] Native reposts: ${nativeRepostIds.length}, External reposts: ${externalRepostIds.length}`);
-
 						//Fetch native posts for native reposts
 						let nativeRepostPosts = [];
 						if (nativeRepostIds.length > 0) {
-							console.log(`[Following] Attempting to fetch native posts with IDs:`, nativeRepostIds);
 							const nativePosts = await Posts.findAll({
 								where: { post_id: { [Op.in]: nativeRepostIds } },
 								include: includeOptions,
 								attributes: attrOption,
 								raw: false
 							});
-							console.log(`[Following] Fetched ${nativePosts.length} native posts for reposts`);
-							nativePosts.forEach(p => {
-								console.log(`  Post: ${p.post_id}, feed_id: ${p.feed_id}`);
-							});
-
 							//Map posts with repost data
 							nativeRepostPosts = nativePosts.map(post => {
 								const repostData = reposts.find(r => r.post_id === post.post_id);
@@ -517,10 +503,8 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
 								};
 							});
 						}
-						console.log(`[Following] Processed ${nativeRepostPosts.length} native repost posts, ${externalRepostPosts.length} external repost posts`);
 						//Merge reposts with regular posts
 						posts = [...posts, ...nativeRepostPosts, ...externalRepostPosts];
-						console.log(`[Following] Total posts after merging reposts: ${posts.length}`);
 						//Sort by creation/repost time
 						posts.sort((a, b) => {
 							const aTime = a.reposted_at || a.created_at || a.created_at_remote;
@@ -563,7 +547,6 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
 					offset,
 					limit
 				});
-				//console.log("scoreAndPaginateCandidates result:", { paginatedIds, scoreMap });
 				if (!paginatedIds.length) {
 					if (Object.keys(algorithmFilters).length > 0 || externalFiltersSQL) {
 						return { posts: [], status: "filtered", message: "Your algorithm settings filtered out all posts." };
@@ -1024,13 +1007,9 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
 						],
 						raw: false
 					});
-					console.log(`[Main Channel] Found ${reposts.length} total reposts for feed ${feedId}`);
-
 					//Separate native and external reposts
 					const nativeRepostIds = reposts.filter(r => !r.is_external).map(r => r.post_id);
 					const externalRepostIds = reposts.filter(r => r.is_external).map(r => r.post_id);
-					console.log(`[Main Channel] Native reposts: ${nativeRepostIds.length}, External reposts: ${externalRepostIds.length}`);
-
 					//Fetch native posts for native reposts
 					let nativeRepostPosts = [];
 					if (nativeRepostIds.length > 0) {
@@ -1040,8 +1019,6 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
 							attributes: attrOption,
 							raw: false
 						});
-						console.log(`[Main Channel] Fetched ${nativePosts.length} native posts for reposts`);
-
 						//Map posts with repost data
 						nativeRepostPosts = nativePosts.map(post => {
 							const repostData = reposts.find(r => r.post_id === post.post_id);
@@ -1055,7 +1032,6 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
 							};
 						});
 					}
-
 					//Fetch external posts for external reposts
 					let externalRepostPosts = [];
 					if (externalRepostIds.length > 0) {
@@ -1078,10 +1054,8 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
 							};
 						});
 					}
-					console.log(`[Main Channel] Processed ${nativeRepostPosts.length} native repost posts, ${externalRepostPosts.length} external repost posts`);
 					//Merge reposts with regular posts
 					posts = [...posts, ...nativeRepostPosts, ...externalRepostPosts];
-					console.log(`[Main Channel] Total posts after merging reposts: ${posts.length}`);
 					//Sort by creation/repost time
 					posts.sort((a, b) => {
 						const aTime = a.reposted_at || a.created_at || a.created_at_remote;

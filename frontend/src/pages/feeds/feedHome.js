@@ -51,6 +51,7 @@ const FeedHome = () => {
     const { isAuthenticated, user, viewer } = useContext(AuthContext);
     const location = useLocation();
     const { feed_name, channel_name, post_id } = useParams();
+    const isChatMode = location.pathname.endsWith('/chat');
     const isCreateMode = location.pathname.endsWith('/create');
     const isEditMode = location.pathname.endsWith('/edit');
     const isReplyMode = location.pathname.endsWith('/reply');
@@ -224,6 +225,23 @@ const FeedHome = () => {
             setIncludeReposts(true);
         }
     }, [channel_name]);
+
+    //Set channel mode based on URL
+    useEffect(() => {
+        const currentChannel = channels.find(c => c?.channel_name === channel_name);
+        if (currentChannel) {
+            //Check URL first - if it ends with /chat, set to chat mode
+            if (isChatMode && currentChannel.is_chat) {
+                setChannelMode('chat');
+            } else if (currentChannel.is_posts) {
+                //Default to 'post' if channel has posts
+                setChannelMode('post');
+            } else if (currentChannel.is_chat) {
+                //Fall back to 'chat' if channel only has chat
+                setChannelMode('chat');
+            }
+        }
+    }, [channel_name, channels, isChatMode]);
 
     const AddChannel = async (event) => {
         if (!isAuthenticated) return;
@@ -405,7 +423,16 @@ const FeedHome = () => {
     };
 
     //Toggles display of create channel form after button is pressed
-    const toggleChannelForm = () => { setShowChannelForm((prev) => !prev) };
+    const toggleChannelForm = () => {
+        setShowChannelForm((prev) => {
+            if (!prev && feed?.is_group) {
+                //Reset to both post and chat when opening form for group feeds
+                setIsPostChannel(true);
+                setIsChatChannel(true);
+            }
+            return !prev;
+        });
+    };
 
     //Decides contents of feed
     const renderContentForm = (isReply = false) => {
@@ -721,7 +748,7 @@ const FeedHome = () => {
                                                 placeholder="Channel name..."
                                                 type="text"
                                                 value={newChannelName} />
-                                            {/*{feed.is_group && (
+                                            {feed.is_group && (
                                                 <div className="channel-options">
                                                     <label>
                                                         <input checked={isPostChannel} onChange={handlePostClick} type="checkbox"/>
@@ -732,7 +759,7 @@ const FeedHome = () => {
                                                         Chat Channel
                                                     </label>
                                                 </div>
-                                            )}*/}
+                                            )}
                                             <button className="small-icon" title="Create channel" type="submit">
                                                 <FaPlus /><p className="icon-text">Create channel</p>
                                             </button>
@@ -756,12 +783,22 @@ const FeedHome = () => {
                         </button>
                     )}
                     <AlgorithmSelector display={false} isAuthenticated={isAuthenticated} locationId={channelRender?.channel_id} refreshPosts={refreshPosts} />
-                    {/*{channelRender && channelRender.is_posts && channelRender.is_chat && (
+                    {channelRender && channelRender.is_posts && channelRender.is_chat && (
                         <div className="option-toggle">
-                            <button className={channelMode === 'post' ? 'active-mode' : 'passive-mode'} onClick={() => setChannelMode('post')}>Posts</button>
-                            <button className={channelMode === 'chat' ? 'active-mode' : 'passive-mode'} onClick={() => setChannelMode('chat')}>Chat</button>
+                            <button
+                                className={channelMode === 'post' ? 'active-mode' : 'passive-mode'}
+                                onClick={() => navigate(`/${urlPrefix}/${feed_name}/${channel_name}`)}
+                            >
+                                Posts
+                            </button>
+                            <button
+                                className={channelMode === 'chat' ? 'active-mode' : 'passive-mode'}
+                                onClick={() => navigate(`/${urlPrefix}/${feed_name}/${channel_name}/chat`)}
+                            >
+                                Chat
+                            </button>
                         </div>
-                    )}*/}
+                    )}
                     <ChannelList canReorder={isAdmin} channels={channels} feedId={feed?.feed_id} feedName={feed?.feed_name} isChat={false} isGroup={feed?.is_group} setChannels={setChannels} />
                 </SwipeableAside>
             ) : (

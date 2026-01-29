@@ -15,7 +15,7 @@ const ChatChannel = ({ canAdd, canRemove, channelId, connection, isGroup, isLock
     const [isLoadingMore, setIsLoadingMore] = useState(false);
     const [message, setMessage] = useState('');
     const [offset, setOffset] = useState(0);
-    const { user, viewer } = useContext(AuthContext);
+    const { isAuthenticated, user, viewer } = useContext(AuthContext);
     const [validationError, setValidationError] = useState('');
     const maxLength = user?.has_membership ? 10000 : 1000;
     const messagesContainerRef = useRef(null);
@@ -62,7 +62,8 @@ const ChatChannel = ({ canAdd, canRemove, channelId, connection, isGroup, isLock
                 setTimeout(() => { setErrorMessage(''); }, 5000);
                 return;
             }
-            socketRef.current.emit('edit_direct_message', {
+            const route = isGroup ? 'edit_feed_message' : 'edit_direct_message';
+            socketRef.current.emit(route, {
                 message_id: messageId,
                 content: newContent,
                 channel_id: channelId,
@@ -73,7 +74,7 @@ const ChatChannel = ({ canAdd, canRemove, channelId, connection, isGroup, isLock
             setErrorMessage("Error editing message");
             setTimeout(() => { setErrorMessage(''); }, 5000);
         }
-    }, [channelId, setErrorMessage]);
+    }, [channelId, isGroup, setErrorMessage, maxLength]);
 
     const getChannelMessages = useCallback(async (channelId, currentOffset = 0) => {
         try {
@@ -395,7 +396,8 @@ const ChatChannel = ({ canAdd, canRemove, channelId, connection, isGroup, isLock
                         className="chat-message-bar"
                         type="text"
                         value={message}
-                        placeholder="Type a message..."
+                        placeholder={isAuthenticated ? "Type a message..." : "Login to chat"}
+                        disabled={!isAuthenticated}
                         onChange={(e) => {
                             const input = e.target.value;
                             const validation = ValidateTextInput(input, 0, maxLength, false);
@@ -409,9 +411,11 @@ const ChatChannel = ({ canAdd, canRemove, channelId, connection, isGroup, isLock
                             }
                             setMessage(input);
                         }}
-                        onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
+                        onKeyDown={(e) => e.key === 'Enter' && isAuthenticated && sendMessage()}
                     />
-                    <button className="chat-send-button" onClick={sendMessage}>Send</button>
+                    <button className={`chat-send-button${!isAuthenticated ? ' disabled' : ''}`} onClick={sendMessage} disabled={!isAuthenticated}>
+                        Send
+                    </button>
                 </div>
             )}
         </div>

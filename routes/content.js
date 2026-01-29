@@ -381,10 +381,6 @@ router.post("/create_post", standardLimiter, authenticateCheck, checkStorageLimi
         if (post_id === 'null' || post_id === 'undefined') post_id = null;
         if (quoted_post_id === 'null' || quoted_post_id === 'undefined') quoted_post_id = null;
         if (quoted_external_post_id === 'null' || quoted_external_post_id === 'undefined') quoted_external_post_id = null;
-
-        if (quoted_external_post_id) {
-            console.log('Received quoted_external_post_id:', quoted_external_post_id);
-        }
         content = content || "";
         //Parse HTML content
         const $ = cheerio.load(content, { decodeEntities: false });

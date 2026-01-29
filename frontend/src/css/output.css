@@ -327,6 +327,9 @@
   .w-100 {
     width: 100%;
   }
+  .med-mar-bottom {
+    margin-bottom: var(--medium-margin);
+  }
   .med-mar-top {
     margin-top: var(--medium-margin);
   }

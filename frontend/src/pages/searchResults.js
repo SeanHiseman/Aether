@@ -267,7 +267,7 @@ const SearchResults = () => {
 									item.type === 'post' ? (
 										renderPostWidget(item.data)
 									) : (
-										<div key={`feedtriplet-${idx}`} className="grid grid-cols-3 gap-3 med-mar-top w-full">
+										<div key={`feedtriplet-${idx}`} className="grid grid-cols-3 gap-3 med-mar-bottom w-full">
 											{item.data.map(feed => (
 												<FeedWidget key={feed.feed_id} feed={feed} isAuthenticated={isAuthenticated} updateFeeds={updateFeeds} viewerId={viewer?.feed_id} />
 											))}
@@ -283,7 +283,7 @@ const SearchResults = () => {
 						)}
 						{selectedView === 'feeds' && (
 							<div className="flex flex-col w-99">
-								<div className="grid grid-cols-3 gap-3 med-mar-top w-full">
+								<div className="grid grid-cols-3 gap-3 med-mar-bottom w-full">
 									{feeds.map(feed => (
 										<FeedWidget key={feed.feed_id} feed={feed} isAuthenticated={isAuthenticated} updateFeeds={updateFeeds} viewerId={viewer?.feed_id} />
 									))}
