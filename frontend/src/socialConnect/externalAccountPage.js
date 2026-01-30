@@ -111,13 +111,15 @@ export default function ExternalAccountPage() {
 			setLoadingMore(true);
 		}
 		try {
+			//Get fresh account info to avoid using stale state when switching profiles
+			const currentAccountInfo = getInitialAccountInfo();
 			const url = `/external/${platform}/account/${encodeURIComponent(accountId)}/posts`;
 			const params = {
 				limit: 50,
 				offset: isNextPage ? offset : 0,
-				//Pass handle and did from accountInfo for better lookup
-				...(accountInfo?.handle && { handle: accountInfo.handle }),
-				...(accountInfo?.did && { did: accountInfo.did })
+				//Pass handle and did from fresh accountInfo for better lookup
+				...(currentAccountInfo?.handle && { handle: currentAccountInfo.handle }),
+				...(currentAccountInfo?.did && { did: currentAccountInfo.did })
 			};
 			const response = await api.get(url, {
 				params,

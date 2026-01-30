@@ -553,67 +553,18 @@ router.get('/external/:platform/account/:accountId/posts', authenticateCheck, as
 		//Use provided handle/did or fall back to accountId
 		const authorHandle = handle || accountId;
 		const authorDid = did || accountId;
-		//Check when posts were last fetched
-		const accountMeta = await ExternalAccountMeta.findOne({
-			where: {
-				platform,
-				[Op.or]: [{ account_id: authorDid }, { handle: authorHandle }]
-			},
-			attributes: ['last_fetched_at', 'cursor'],
-			raw: true
-		});
-		const ONE_HOUR = 60 * 60 * 1000; //1 hour in milliseconds
-		const isStale = !accountMeta?.last_fetched_at ||
-			(Date.now() - new Date(accountMeta.last_fetched_at).getTime()) > ONE_HOUR;
-		//Check how many posts we have in DB
-		const dbPostCount = await ExternalPosts.count({
-			where: {
-				source: platform,
-				[Op.or]: [
-					{ author: authorHandle },
-					{ author_did: authorDid },
-					...(platform === 'mastodon' ? [{ author: accountId }] : [])
-				]
-			}
-		});
-		//If first page and (insufficient posts OR stale data), fetch from API
-		if (offset === 0 && (dbPostCount < limit || isStale)) {
-			await ensureExternalAccountPosts(req.user.user_id, platform, authorHandle, authorDid, null, instanceUrl);
-		}
-		//If we need more posts (paginating or not enough in DB), fetch from API
-		if (offset + limit > dbPostCount) {
-			const meta = await ExternalAccountMeta.findOne({
-				where: {
-					platform,
-					[Op.or]: [{ account_id: authorDid }, { handle: authorHandle }]
-				},
-				attributes: ['cursor'],
-				raw: true
-			});
-			if (meta?.cursor) {
-				await ensureExternalAccountPosts(req.user.user_id, platform, authorHandle, authorDid, meta.cursor, instanceUrl);
-			}
-		}
-		//Fetch posts in chronological order (latest first)
-		const posts = await ExternalPosts.findAll({
-			where: {
-				source: platform,
-				[Op.or]: [
-					{ author: authorHandle },
-					{ author_did: authorDid },
-					...(platform === 'mastodon' ? [{ author: accountId }] : [])
-				]
-			},
-			order: [['created_at_remote', 'DESC']],
+		//ApplyAlgorithm handles staleness check and API fetching
+		const locationId = `external_account_${platform}_${authorDid}`;
+		const algorithmResult = await ApplyAlgorithm({
+			locationId,
+			userId: req.user.user_id,
+			viewerId: req.session.viewer_id,
 			limit,
 			offset,
-			raw: true
+			isGroup: false
 		});
-		//Format posts for frontend
-		const config = FEED_CONFIG[platform];
-		const formattedPosts = posts.map(p => formatExternalPost(p, config));
 		//Determine hasMore
-		const totalCount = await ExternalPosts.count({
+		const newDbCount = await ExternalPosts.count({
 			where: {
 				source: platform,
 				[Op.or]: [
@@ -631,11 +582,13 @@ router.get('/external/:platform/account/:accountId/posts', authenticateCheck, as
 			attributes: ['cursor'],
 			raw: true
 		});
-		const hasMore = (offset + posts.length) < totalCount || !!meta?.cursor;
+		const hasMore = (offset + algorithmResult.posts.length) < newDbCount || !!meta?.cursor;
 		res.status(200).json({
 			success: true,
-			items: formattedPosts,
-			hasMore
+			items: algorithmResult.posts,
+			hasMore,
+			status: algorithmResult.status,
+			message: algorithmResult.message
 		});
 	} catch (error) {
 		console.error(new Date().toISOString(), '[ExternalAccountPosts] Route error:', error);
