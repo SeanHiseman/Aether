@@ -1,6 +1,6 @@
 import { ExternalPostsAccess, PaginationTokens } from "../../models/content.js";
 import { fetchAndProcessPosts } from "./fetchAndProcessPosts.js";
-import { GenerateBlueskyHTML } from "./generate_html/generateBlueskyHTMl.js";
+import { GenerateBlueskyHTML } from "./generate_html/generateBlueskyHTML.js";
 import { GenerateMastodonHTML } from "./generate_html/generateMastodonHTML.js";
 import { GenerateRedditHTML } from "./generate_html/generateRedditHTML.js";
 import { mapBlueskyToExternal } from "./map_to_external/mapBlueskyToExternal.js";
