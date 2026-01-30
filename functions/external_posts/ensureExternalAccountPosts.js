@@ -41,6 +41,13 @@ export async function ensureExternalAccountPosts(userId, platform, authorHandle,
 				const postAuthorDid = item.post?.author?.did;
 				return postAuthorHandle === authorHandle || postAuthorDid === authorDid;
 			});
+			//Extract actual handle from API response (don't store DIDs in handle column)
+			let actualHandle = authorHandle;
+			if (actualHandle?.startsWith('did:') && apiPosts.length > 0) {
+				actualHandle = apiPosts[0].post?.author?.handle || null;
+			} else if (actualHandle?.startsWith('did:')) {
+				actualHandle = null;
+			}
 			//Store posts and cursor
 			if (apiPosts.length > 0) {
 				await processQuick(platform, authorDid, apiPosts, GenerateBlueskyHTML);
@@ -49,7 +56,7 @@ export async function ensureExternalAccountPosts(userId, platform, authorHandle,
 			await ExternalAccountMeta.upsert({
 				account_id: authorDid,
 				platform,
-				handle: authorHandle,
+				handle: actualHandle,
 				cursor: data.cursor || null,
 				last_fetched_at: new Date(),
 				updated_at: new Date()
@@ -58,6 +65,13 @@ export async function ensureExternalAccountPosts(userId, platform, authorHandle,
 		} else if (platform === 'mastodon') {
 			const data = await fetchMastodonAccountPosts(authorDid, accessToken, instance, cursor, 40);
 			if (!Array.isArray(data) || data.length === 0) return { success: true, cursor: null };
+			//Extract actual handle from API response (don't store DIDs in handle column)
+			let actualHandle = authorHandle;
+			if (actualHandle?.startsWith('did:') && data.length > 0) {
+				actualHandle = data[0].account?.acct || data[0].account?.username || null;
+			} else if (actualHandle?.startsWith('did:')) {
+				actualHandle = null;
+			}
 			//Store posts
 			if (data.length > 0) {
 				await processQuick(platform, authorDid, data, GenerateMastodonHTML, instance);
@@ -68,7 +82,7 @@ export async function ensureExternalAccountPosts(userId, platform, authorHandle,
 			await ExternalAccountMeta.upsert({
 				account_id: authorDid,
 				platform,
-				handle: authorHandle,
+				handle: actualHandle,
 				cursor: nextCursor,
 				last_fetched_at: new Date(),
 				updated_at: new Date()

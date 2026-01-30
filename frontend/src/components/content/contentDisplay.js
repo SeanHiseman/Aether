@@ -361,8 +361,8 @@ const ContentDisplay = ({ post, isFullscreen = false, onCodeAppChange = () => {}
 				)}
 				{quotedExternalPostData?.text_body && (
 					<p style={{ margin: '8px 0', fontSize: '13px', color: '#666' }}>
-						{quotedExternalPostData.text_body.substring(0, 600)}
-						{quotedExternalPostData.text_body.length > 600 ? '...' : ''}
+						{quotedExternalPostData.text_body.substring(0, 2000)}
+						{quotedExternalPostData.text_body.length > 2000 ? '...' : ''}
 					</p>
 				)}
 				<span style={{ fontSize: '12px', color: '#e67e22', display: 'block', marginTop: '8px' }}>
