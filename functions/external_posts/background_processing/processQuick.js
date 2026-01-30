@@ -1,3 +1,4 @@
+import { computeHotness } from "../../postRanking.js"
 import { ExternalPosts } from "../../../models/content.js";
 import { mapBlueskyToExternal } from "../map_to_external/mapBlueskyToExternal.js";
 import { mapMastodonToExternal } from "../map_to_external/mapMastodonToExternal.js";
