@@ -10,7 +10,7 @@ import express from 'express';
 import fetch from 'node-fetch';
 import { fetchAndProcessPosts } from '../functions/external_posts/fetchAndProcessPosts.js';
 import { formatExternalPost } from '../functions/external_posts/formatExternalPost.js';
-import { GenerateBlueskyHTML } from '../functions/external_posts/generate_html/generateBlueskyHTMl.js';
+import { GenerateBlueskyHTML } from '../functions/external_posts/generate_html/generateBlueskyHTML.js';
 import { GenerateRedditHTML } from '../functions/external_posts/generate_html/generateRedditHTML.js';
 import { GenerateMastodonHTML } from '../functions/external_posts/generate_html/generateMastodonHTML.js';
 import { mapBlueskyToExternal } from '../functions/external_posts/map_to_external/mapBlueskyToExternal.js';
