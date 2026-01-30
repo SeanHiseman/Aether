@@ -53,14 +53,24 @@ export async function ensureExternalAccountPosts(userId, platform, authorHandle,
 				await processQuick(platform, authorDid, apiPosts, GenerateBlueskyHTML);
 			}
 			//Always update last_fetched_at timestamp
-			await ExternalAccountMeta.upsert({
-				account_id: authorDid,
-				platform,
-				handle: actualHandle,
-				cursor: data.cursor || null,
-				last_fetched_at: new Date(),
-				updated_at: new Date()
+			const [meta, created] = await ExternalAccountMeta.findOrCreate({
+				where: { account_id: authorDid, platform },
+				defaults: {
+					id: v4(),
+					handle: actualHandle,
+					cursor: data.cursor || null,
+					last_fetched_at: new Date(),
+					updated_at: new Date()
+				}
 			});
+			if (!created) {
+				await meta.update({
+					handle: actualHandle,
+					cursor: data.cursor || null,
+					last_fetched_at: new Date(),
+					updated_at: new Date()
+				});
+			}
 			return { success: true, cursor: data.cursor };
 		} else if (platform === 'mastodon') {
 			const data = await fetchMastodonAccountPosts(authorDid, accessToken, instance, cursor, 40);
@@ -79,14 +89,24 @@ export async function ensureExternalAccountPosts(userId, platform, authorHandle,
 			//Store cursor (maxId is the last post's ID)
 			const nextCursor = data.length > 0 ? data[data.length - 1].id : null;
 			//Always update last_fetched_at timestamp
-			await ExternalAccountMeta.upsert({
-				account_id: authorDid,
-				platform,
-				handle: actualHandle,
-				cursor: nextCursor,
-				last_fetched_at: new Date(),
-				updated_at: new Date()
+			const [meta2, created2] = await ExternalAccountMeta.findOrCreate({
+				where: { account_id: authorDid, platform },
+				defaults: {
+					id: v4(),
+					handle: actualHandle,
+					cursor: nextCursor,
+					last_fetched_at: new Date(),
+					updated_at: new Date()
+				}
 			});
+			if (!created2) {
+				await meta2.update({
+					handle: actualHandle,
+					cursor: nextCursor,
+					last_fetched_at: new Date(),
+					updated_at: new Date()
+				});
+			}
 			return { success: true, cursor: nextCursor };
 		}
 		return { success: false, cursor: null };
