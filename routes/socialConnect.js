@@ -553,6 +553,18 @@ router.get('/external/:platform/account/:accountId/posts', authenticateCheck, as
 		//Use provided handle/did or fall back to accountId
 		const authorHandle = handle || accountId;
 		const authorDid = did || accountId;
+		//Check when posts were last fetched
+		const accountMeta = await ExternalAccountMeta.findOne({
+			where: {
+				platform,
+				[Op.or]: [{ account_id: authorDid }, { handle: authorHandle }]
+			},
+			attributes: ['last_fetched_at', 'cursor'],
+			raw: true
+		});
+		const ONE_HOUR = 60 * 60 * 1000; //1 hour in milliseconds
+		const isStale = !accountMeta?.last_fetched_at ||
+			(Date.now() - new Date(accountMeta.last_fetched_at).getTime()) > ONE_HOUR;
 		//Check how many posts we have in DB
 		const dbPostCount = await ExternalPosts.count({
 			where: {
@@ -564,8 +576,8 @@ router.get('/external/:platform/account/:accountId/posts', authenticateCheck, as
 				]
 			}
 		});
-		//If first page and insufficient posts, fetch from API
-		if (offset === 0 && dbPostCount < limit) {
+		//If first page and (insufficient posts OR stale data), fetch from API
+		if (offset === 0 && (dbPostCount < limit || isStale)) {
 			await ensureExternalAccountPosts(req.user.user_id, platform, authorHandle, authorDid, null, instanceUrl);
 		}
 		//If we need more posts (paginating or not enough in DB), fetch from API

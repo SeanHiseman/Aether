@@ -45,17 +45,16 @@ export async function ensureExternalAccountPosts(userId, platform, authorHandle,
 			if (apiPosts.length > 0) {
 				await processQuick(platform, authorDid, apiPosts, GenerateBlueskyHTML);
 			}
-			if (data.cursor) {
-				await ExternalAccountMeta.upsert({
-					id: v4(),
-					account_id: authorDid,
-					platform,
-					handle: authorHandle,
-					cursor: data.cursor,
-					last_fetched_at: new Date(),
-					updated_at: new Date()
-				});
-			}
+			//Always update last_fetched_at timestamp
+			await ExternalAccountMeta.upsert({
+				id: v4(),
+				account_id: authorDid,
+				platform,
+				handle: authorHandle,
+				cursor: data.cursor || null,
+				last_fetched_at: new Date(),
+				updated_at: new Date()
+			});
 			return { success: true, cursor: data.cursor };
 		} else if (platform === 'mastodon') {
 			const data = await fetchMastodonAccountPosts(authorDid, accessToken, instance, cursor, 40);
@@ -66,17 +65,16 @@ export async function ensureExternalAccountPosts(userId, platform, authorHandle,
 			}
 			//Store cursor (maxId is the last post's ID)
 			const nextCursor = data.length > 0 ? data[data.length - 1].id : null;
-			if (nextCursor) {
-				await ExternalAccountMeta.upsert({
-					id: v4(),
-					account_id: authorDid,
-					platform,
-					handle: authorHandle,
-					cursor: nextCursor,
-					last_fetched_at: new Date(),
-					updated_at: new Date()
-				});
-			}
+			//Always update last_fetched_at timestamp
+			await ExternalAccountMeta.upsert({
+				id: v4(),
+				account_id: authorDid,
+				platform,
+				handle: authorHandle,
+				cursor: nextCursor,
+				last_fetched_at: new Date(),
+				updated_at: new Date()
+			});
 			return { success: true, cursor: nextCursor };
 		}
 		return { success: false, cursor: null };
