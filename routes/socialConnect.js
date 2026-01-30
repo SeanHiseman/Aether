@@ -604,7 +604,7 @@ router.get('/external/:platform/account/:accountId/posts', authenticateCheck, as
 					...(platform === 'mastodon' ? [{ author: accountId }] : [])
 				]
 			},
-			order: [['created_at', 'DESC']],
+			order: [['created_at_remote', 'DESC']],
 			limit,
 			offset,
 			raw: true
