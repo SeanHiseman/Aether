@@ -82,7 +82,7 @@ export async function processQuick(platform, accountId, posts, htmlGenerator, in
             const updateFields = [
                 'source_post_id', 'title', 'content', 'text_body', 'text_length', 'word_count',
                 'image_count', 'video_count', 'has_text', 'has_images', 'has_videos',
-                'score', 'replies', 'fetched_at', 'created_at_remote', 'expired',
+                'score', 'replies', 'fetched_at', 'expired',
                 'channel', 'author', 'author_did', 'author_photo', 'url', 'media', 'cid'
             ];
             await ExternalPosts.bulkCreate(quickInserts, {

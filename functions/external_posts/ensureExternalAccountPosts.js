@@ -47,7 +47,6 @@ export async function ensureExternalAccountPosts(userId, platform, authorHandle,
 			}
 			//Always update last_fetched_at timestamp
 			await ExternalAccountMeta.upsert({
-				id: v4(),
 				account_id: authorDid,
 				platform,
 				handle: authorHandle,
@@ -67,7 +66,6 @@ export async function ensureExternalAccountPosts(userId, platform, authorHandle,
 			const nextCursor = data.length > 0 ? data[data.length - 1].id : null;
 			//Always update last_fetched_at timestamp
 			await ExternalAccountMeta.upsert({
-				id: v4(),
 				account_id: authorDid,
 				platform,
 				handle: authorHandle,
