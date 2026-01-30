@@ -594,18 +594,26 @@ router.get('/external/:platform/account/:accountId/posts', authenticateCheck, as
 				await ensureExternalAccountPosts(req.user.user_id, platform, authorHandle, authorDid, meta.cursor, instanceUrl);
 			}
 		}
-		//Use ApplyAlgorithm for ranking
-		const locationId = `external_account_${platform}_${authorDid}`;
-		const algorithmResult = await ApplyAlgorithm({
-			locationId,
-			userId: req.user.user_id,
-			viewerId: req.session.viewer_id,
+		//Fetch posts in chronological order (latest first)
+		const posts = await ExternalPosts.findAll({
+			where: {
+				source: platform,
+				[Op.or]: [
+					{ author: authorHandle },
+					{ author_did: authorDid },
+					...(platform === 'mastodon' ? [{ author: accountId }] : [])
+				]
+			},
+			order: [['created_at', 'DESC']],
 			limit,
 			offset,
-			isGroup: false
+			raw: true
 		});
+		//Format posts for frontend
+		const config = FEED_CONFIG[platform];
+		const formattedPosts = posts.map(p => formatExternalPost(p, config));
 		//Determine hasMore
-		const newDbCount = await ExternalPosts.count({
+		const totalCount = await ExternalPosts.count({
 			where: {
 				source: platform,
 				[Op.or]: [
@@ -623,13 +631,11 @@ router.get('/external/:platform/account/:accountId/posts', authenticateCheck, as
 			attributes: ['cursor'],
 			raw: true
 		});
-		const hasMore = (offset + algorithmResult.posts.length) < newDbCount || !!meta?.cursor;
+		const hasMore = (offset + posts.length) < totalCount || !!meta?.cursor;
 		res.status(200).json({
 			success: true,
-			items: algorithmResult.posts,
-			hasMore,
-			status: algorithmResult.status,
-			message: algorithmResult.message
+			items: formattedPosts,
+			hasMore
 		});
 	} catch (error) {
 		console.error(new Date().toISOString(), '[ExternalAccountPosts] Route error:', error);
