@@ -2,6 +2,8 @@ import { ConnectedAccounts } from "../../models/users.js";
 import { ExternalAccountMeta } from "../../models/content.js";
 import { fetchBlueskyAccountPosts } from "./fetch_account_posts/fetchBlueskyAccountPosts.js";
 import { fetchMastodonAccountPosts } from "./fetch_account_posts/fetchMastodonAccountPosts.js";
+import { GenerateBlueskyHTML } from "./generate_html/generateBlueskyHTML.js";
+import { GenerateMastodonHTML } from "./generate_html/generateMastodonHTML.js";
 import { refreshBlueskyToken } from "./token_refresh/refreshBlueskyToken.js";
 import { processQuick } from "./background_processing/processQuick.js";
 import { v4 } from 'uuid';
