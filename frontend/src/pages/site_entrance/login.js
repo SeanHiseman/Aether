@@ -38,6 +38,14 @@ const Login = () => {
                 localStorage.setItem("followedFeeds", JSON.stringify(response.data?.followedFeeds));
                 localStorage.setItem("recentUpvotes", JSON.stringify(response.data?.recentUpvotes));
                 localStorage.setItem("user", JSON.stringify(response.data?.user));
+                //Store feed channels
+                const feedChannels = response.data?.feedChannels || {};
+                Object.keys(feedChannels).forEach(feedId => {
+                    localStorage.setItem(`feedChannels_${feedId}`, JSON.stringify(feedChannels[feedId]));
+                });
+                //Store channel view history for unread indicators
+                const channelViews = response.data?.channelViews || {};
+                localStorage.setItem('feedChannelViews', JSON.stringify(channelViews));
                 await refreshTheme();
                 const from = location.state?.from || '/explore';
                 navigate(from, { replace: true });
@@ -68,6 +76,14 @@ const Login = () => {
                 localStorage.setItem("followedFeeds", JSON.stringify(response.data?.followedFeeds || []));
                 localStorage.setItem("recentUpvotes", JSON.stringify(response.data?.recentUpvotes || []));
                 localStorage.setItem("user", JSON.stringify(response.data?.user));
+                // Store feed channels
+                const feedChannels = response.data?.feedChannels || {};
+                Object.keys(feedChannels).forEach(feedId => {
+                    localStorage.setItem(`feedChannels_${feedId}`, JSON.stringify(feedChannels[feedId]));
+                });
+                // Store channel view history for unread indicators
+                const channelViews = response.data?.channelViews || {};
+                localStorage.setItem('feedChannelViews', JSON.stringify(channelViews));
                 await refreshTheme();
                 const isNewUser = response.data?.user?.is_new_user;
                 const from = isNewUser ? '/help' : (location.state?.from || '/explore');

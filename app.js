@@ -144,6 +144,9 @@ app.use(history('index.html', { root }));
 sequelize.authenticate()
 
 io.on("connection", (socket) => {
+    // Track which handlers have been registered to prevent duplicates
+    socket._handlersRegistered = socket._handlersRegistered || {};
+
     socket.on('join_user_room', (userId) => {
         if (userId) {
             socket.join(userId.toString());
@@ -151,12 +154,20 @@ io.on("connection", (socket) => {
     });
     socket.on('join_channel_type', (channelType) => {
         try {
+            // Only register handlers once per socket connection
+            if (socket._handlersRegistered[channelType]) {
+                return; // Handlers already registered for this type
+            }
+
             if (channelType === 'direct_message') {
                 directMessagesSocket(socket);
+                socket._handlersRegistered[channelType] = true;
             } else if (channelType === 'feed_chat') {
                 feedChatChannelSocket(socket);
+                socket._handlersRegistered[channelType] = true;
             } else if (channelType === 'connect_requests') {
-                connectRequestsSocket(socket); 
+                connectRequestsSocket(socket);
+                socket._handlersRegistered[channelType] = true;
             } else {
                 console.error("Unknown channel type:", channelType);
             }

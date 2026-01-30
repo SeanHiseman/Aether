@@ -53,7 +53,7 @@ export const hasUnreadMessages = (channelId, channelUpdatedAt, isChat = true) =>
     if (!isChat) return false; // Don't show unread for non-chat channels
 
     const lastSeen = getChannelLastSeen(channelId);
-    if (!lastSeen) return true; // Never viewed = unread
+    if (!lastSeen) return false; //Shouldn't happen since it is initialised on login, but default to no indicator
 
     try {
         const lastSeenDate = new Date(lastSeen);

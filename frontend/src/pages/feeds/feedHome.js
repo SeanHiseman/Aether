@@ -243,6 +243,13 @@ const FeedHome = () => {
         }
     }, [channel_name, channels, isChatMode]);
 
+    //Update localStorage cache when channels change
+    useEffect(() => {
+        if (feed?.feed_id && channels.length > 0) {
+            localStorage.setItem(`feedChannels_${feed.feed_id}`, JSON.stringify(channels));
+        }
+    }, [channels, feed?.feed_id]);
+
     //Listen for new messages to trigger re-render for unread indicators
     useEffect(() => {
         const socket = window.socket;
@@ -256,9 +263,24 @@ const FeedHome = () => {
             if (newMessage.channel_id &&
                 newMessage.channel_id !== currentChannelId &&
                 messageChannel?.is_chat) {
-                //Trigger re-render by updating channels array reference
+                //Update the channel's updated_at timestamp and trigger re-render
                 //ChannelList will recalculate hasUnread from localStorage
-                setChannels(prevChannels => [...prevChannels]);
+                setChannels(prevChannels => {
+                    const updatedChannels = prevChannels.map(c =>
+                        c?.channel_id === newMessage.channel_id
+                            ? { ...c, updated_at: new Date().toISOString() }
+                            : c
+                    );
+                    // Update localStorage cache for unread indicator
+                    if (feed?.feed_id) {
+                        localStorage.setItem(`feedChannels_${feed.feed_id}`, JSON.stringify(updatedChannels));
+                        // Notify feedItems to update their unread indicators
+                        window.dispatchEvent(new CustomEvent('channelsUpdated', {
+                            detail: { feedId: feed.feed_id }
+                        }));
+                    }
+                    return updatedChannels;
+                });
             }
         };
 
@@ -320,12 +342,32 @@ const FeedHome = () => {
     const channelRender = channels.find(c => c?.channel_name === channel_name);
 
     useEffect(() => {
-        if (!channelRender && channels.length > 0) {
+        if (!channelRender && channels.length > 0 && channel_name !== 'Main') {
+            //Channel doesn't exist, redirect to Main and clean up localStorage
+            setFeedErrorMessage('Channel not found. Redirecting to Main channel...');
+            //Remove the deleted channel from localStorage cache
+            if (feed?.feed_id) {
+                const cachedChannels = localStorage.getItem(`feedChannels_${feed.feed_id}`);
+                if (cachedChannels) {
+                    try {
+                        const parsedChannels = JSON.parse(cachedChannels);
+                        const updatedChannels = parsedChannels.filter(c => c?.channel_name !== channel_name);
+                        localStorage.setItem(`feedChannels_${feed.feed_id}`, JSON.stringify(updatedChannels));
+                    } catch (error) {
+                        console.error('Error updating cached channels:', error);
+                    }
+                }
+            }
+            //Redirect to Main channel
+            setTimeout(() => {
+                navigate(`/${urlPrefix}/${feed_name}/Main`);
+            }, 1500);
+        } else if (!channelRender && channels.length > 0 && channel_name === 'Main') {
             setFeedErrorMessage('Channel not found. Please check the url.');
         } else {
             setFeedErrorMessage('');
         }
-    }, [channelRender, channels]);
+    }, [channelRender, channels, channel_name, feed?.feed_id, feed_name, navigate, urlPrefix]);
 
     //Auto open contentForm when /create is on the end of the url
     useEffect(() => {

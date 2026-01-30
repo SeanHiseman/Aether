@@ -307,7 +307,8 @@ const ChatChannel = ({ canAdd, canRemove, channelId, connection, isGroup, isLock
         if (channelId && isGroup) {
             //Update localStorage immediately for instant UI feedback
             updateChannelView(channelId);
-
+            //Notify other components that channel was viewed
+            window.dispatchEvent(new Event('channelViewed'));
             //Sync with backend asynchronously (only if authenticated)
             if (viewer?.feed_id && isAuthenticated) {
                 api.post('/mark_channel_seen', {

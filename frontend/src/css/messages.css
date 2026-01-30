@@ -170,6 +170,18 @@
     text-align: center;
 }
 
+.unread-indicator-large {
+    color: #ff4444;
+    font-size: 24px;
+    font-weight: bold;
+    line-height: 1;
+    margin-left: 4px;
+    position: absolute;
+    right: -8px;
+    top: 50%;
+    transform: translateY(-50%);
+}
+
 /* Share Post Modal */
 .share-modal {
     max-width: 600px;

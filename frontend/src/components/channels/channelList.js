@@ -35,7 +35,7 @@ const SortableFeedChannelItem = ({ channel, id, url }) => {
 				<div className={`channel-link ${isSelected ? 'selected' : ''}`}>
 					{channel?.channel_name}
 					{hasUnread && !isSelected && (
-						<span className="unread-indicator" style={{ marginLeft: '8px', color: '#ff4444', fontWeight: 'bold' }}>•</span>
+						<span className="unread-indicator" style={{ marginLeft: '8px', color: '#ff4444', fontWeight: 'bold', fontSize: '20px' }}>•</span>
 					)}
 				</div>
 			</Link>
@@ -53,9 +53,20 @@ const ChannelList = ({ canReorder = false, channels, feedId, feedName, isChat, i
 	const getFeedChannels = useCallback(async () => {
 		try {
 			if (!isChat) {
+				//Check localStorage first
+				const cached = localStorage.getItem(`feedChannels_${feedId}`);
+				if (cached) {
+					const channels = JSON.parse(cached);
+					setChannels(channels);
+					return; //Return so /get_feed_channels is not called
+				}
+				//Fetch from API as backup if localStorage is empty
 				const response = await api.get(`/get_feed_channels/${feedId}`);
 				if (response.data.success) {
-					setChannels(response.data?.channels || []);
+					const channels = response.data?.channels || [];
+					setChannels(channels);
+					//Cache channels in localStorage for next time
+					localStorage.setItem(`feedChannels_${feedId}`, JSON.stringify(channels));
 				} else {
 					setErrorMessage(response.data?.message || 'Error getting channels');
 					setChannels([]);
@@ -67,10 +78,10 @@ const ChannelList = ({ canReorder = false, channels, feedId, feedName, isChat, i
 					const storedConnections = localStorage.getItem('connections');
 					if (storedConnections) {
 						const connections = JSON.parse(storedConnections);
-						const conn = connections.find(c => c.feed_name === feedName);
+						const conn = connections.find(c => c?.feed_name === feedName);
 						if (conn && parsed[conn.feed_id]) {
 							setChannels(parsed[conn.feed_id]);
-							return;
+							return; //Return so /get_chats is not called
 						}
 					}
 				}
@@ -80,11 +91,10 @@ const ChannelList = ({ canReorder = false, channels, feedId, feedName, isChat, i
 				if (response.data?.success) {
 					const chats = response.data?.chats || [];
 					setChannels(chats);
-
 					const storedConnections = localStorage.getItem('connections');
 					if (storedConnections) {
 						const connections = JSON.parse(storedConnections);
-						const conn = connections.find(c => c.feed_name === feedName);
+						const conn = connections.find(c => c?.feed_name === feedName);
 						if (conn) {
 							const existingChats = localStorage.getItem('connectionChats');
 							const parsed = existingChats ? JSON.parse(existingChats) : {};
@@ -197,12 +207,15 @@ const ChannelList = ({ canReorder = false, channels, feedId, feedName, isChat, i
 					{orderedChannels.map(channel => {
 						const url = `/${urlLetter}/${feedName}/${channel?.channel_name}`;
 						const isSelected = location.pathname === url;
-
+						const hasUnread = hasUnreadMessages(channel?.channel_id, channel?.updated_at, channel?.is_chat);
 						return (
 							<li key={channel?.channel_id || channel?.channelId} className={`channel-item ${isSelected ? 'selected' : ''}`}>
 								<Link to={url}>
 									<div className={`channel-link ${isSelected ? 'selected' : ''}`}>
 										{channel?.channel_name}
+										{hasUnread && !isSelected && (
+											<span className="unread-indicator" style={{ marginLeft: '8px', color: '#ff4444', fontWeight: 'bold', fontSize: '20px' }}>•</span>
+										)}
 									</div>
 								</Link>
 							</li>

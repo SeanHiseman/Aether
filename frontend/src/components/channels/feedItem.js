@@ -1,15 +1,17 @@
 import ChannelList from './channelList';
 import { CSS } from '@dnd-kit/utilities';
 import { FaChevronDown, FaChevronUp } from 'react-icons/fa';
+import { hasUnreadMessages } from '../../functions/channelViewTracking';
 import { Link } from 'react-router-dom';
 import React from 'react';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useDraggable, useDroppable } from '@dnd-kit/core';
 
 const FeedItem = ({ dragged, feed, isChat, parentDeepFeedId, unreadCount }) => {
     const [dropdownOpen, setDropdownOpen] = useState(false);
     const [feedChannels, setFeedChannels] = useState([]);
+    const [hasUnreadChannels, setHasUnreadChannels] = useState(false);
     const [isDragIntent, setIsDragIntent] = useState(false);
     const linkType = feed?.is_group ? 'g' : 'u';
     const location = useLocation();
@@ -76,11 +78,68 @@ const FeedItem = ({ dragged, feed, isChat, parentDeepFeedId, unreadCount }) => {
         setIsDragIntent(true);
     }, []);
 
+    //Load cached channels from localStorage on mount
+    useEffect(() => {
+        if (feed?.feed_id && feed?.is_group) {
+            const cached = localStorage.getItem(`feedChannels_${feed.feed_id}`);
+            if (cached) {
+                const channels = JSON.parse(cached);
+                setFeedChannels(channels);
+            }
+        }
+    }, [feed?.feed_id, feed?.is_group]);
+
     React.useEffect(() => {
         if (!isDragging) {
             setIsDragIntent(false);
         }
     }, [isDragging]);
+
+    //Check for unread messages across all channels
+    useEffect(() => {
+        if (!feed?.is_group) {
+            setHasUnreadChannels(false);
+            return;
+        }
+        const checkUnread = () => {
+            if (feedChannels.length === 0) {
+                setHasUnreadChannels(false);
+                return;
+            }
+            const hasUnread = feedChannels.some(channel =>
+                hasUnreadMessages(channel?.channel_id, channel?.updated_at, channel?.is_chat)
+            );
+            setHasUnreadChannels(hasUnread);
+        };
+        checkUnread();
+        //Listen for storage changes (when channel is viewed in another tab/window)
+        const handleStorageChange = (e) => {
+            if (e.key === 'feedChannelViews') {
+                checkUnread();
+            }
+        };
+        //Listen for channel views in the same window
+        const handleChannelViewed = () => checkUnread();
+        //Listen for channel updates (new messages)
+        const handleChannelsUpdated = (e) => {
+            if (e.detail?.feedId === feed?.feed_id) {
+                //Reload channels from localStorage
+                const cached = localStorage.getItem(`feedChannels_${feed.feed_id}`);
+                if (cached) {
+                    const channels = JSON.parse(cached);
+                    setFeedChannels(channels);
+                }
+            }
+        };
+        window.addEventListener('storage', handleStorageChange);
+        window.addEventListener('channelViewed', handleChannelViewed);
+        window.addEventListener('channelsUpdated', handleChannelsUpdated);
+        return () => {
+            window.removeEventListener('storage', handleStorageChange);
+            window.removeEventListener('channelViewed', handleChannelViewed);
+            window.removeEventListener('channelsUpdated', handleChannelsUpdated);
+        };
+    }, [feedChannels, feed?.is_group, feed?.feed_id]);
 
     return (
         <li ref={setNodeRef} style={style} className={`feed-list-item ${isDragging ? 'dragging' : ''} ${isOver && !parentDeepFeedId ? 'drop-target' : ''}`} data-parent-deep-feed-id={parentDeepFeedId}>
@@ -107,6 +166,9 @@ const FeedItem = ({ dragged, feed, isChat, parentDeepFeedId, unreadCount }) => {
                 const dropdownButton = (
                     <div className="channel-dropdown" onClick={(e) => { e.stopPropagation(); e.preventDefault(); dropdownToggle(); }}>
                         {dropdownOpen ? <FaChevronUp /> : <FaChevronDown />}
+                        {!isChat && hasUnreadChannels && (
+                            <span className="unread-indicator-large" title="Unread messages">•</span>
+                        )}
                     </div>
                 );
                 return (

@@ -1,7 +1,7 @@
 import { Algorithms, AlgorithmLocations } from '../custom_algorithms/algorithmRelationships.js'
 import authenticateCheck from '../functions/checks/authenticateCheck.js';
 import { compare, hash } from 'bcrypt';
-import { Chats, Connections, ConnectRequests, DeepFeeds, ExternalFollows, ExternalPostsAccess, ExternalPostVotes, Feeds, FeedChannels, Followers, FeedChats, Messages, PaginationTokens, Posts, PostDrafts, PostNotes, PostVotes, SavedPostChannels, Users, ViewedPosts } from '../models/relationships.js'; 
+import { Chats, Connections, ConnectRequests, DeepFeeds, ExternalFollows, ExternalPostsAccess, ExternalPostVotes, Feeds, FeedChannels, FeedChannelViews, Followers, FeedChats, Messages, PaginationTokens, Posts, PostDrafts, PostNotes, PostVotes, SavedPostChannels, Users, ViewedPosts } from '../models/relationships.js'; 
 import { ConnectedAccounts } from '../models/users.js';
 import fetch from 'node-fetch';
 import crypto from 'crypto';
@@ -209,6 +209,40 @@ router.get('/auth/google/callback', passport.authenticate('google', { failureRed
                 order: [['display_name', 'ASC'], ['handle', 'ASC']]
             });
         }
+        //Fetch channels for all followed feeds
+        const feedChannelsMap = {};
+        for (const followedFeed of normalizedFollowedFeeds) {
+            const channels = await FeedChannels.findAll({
+                where: { feed_id: followedFeed.feed_id },
+                order: [['display_order', 'ASC'], ['created_at', 'ASC']]
+            });
+            feedChannelsMap[followedFeed.feed_id] = channels;
+        }
+        //Also fetch channels for user's own feed
+        const ownFeedChannels = await FeedChannels.findAll({
+            where: { feed_id: feed.feed_id },
+            order: [['display_order', 'ASC'], ['created_at', 'ASC']]
+        });
+        feedChannelsMap[feed.feed_id] = ownFeedChannels;
+        //Fetch channel view history for unread indicator accuracy
+        const channelViews = await FeedChannelViews.findAll({
+            where: { viewer_id: feed.feed_id },
+            attributes: ['channel_id', 'last_seen_at']
+        });
+        const channelViewsMap = {};
+        channelViews.forEach(view => {
+            channelViewsMap[view.channel_id] = view.last_seen_at;
+        });
+        //Initialize view records for channels without one (mark as "seen up to now")
+        const allChannelIds = [];
+        Object.values(feedChannelsMap).forEach(channels => {
+            channels.forEach(channel => allChannelIds.push(channel.channel_id));
+        });
+        const viewedChannelIds = channelViews.map(v => v.channel_id);
+        const unviewedChannelIds = allChannelIds.filter(id => !viewedChannelIds.includes(id));
+        for (const channelId of unviewedChannelIds) {
+            channelViewsMap[channelId] = loginTime;
+        }
         await Users.update(
             { last_active_at: loginTime },
             { where: { user_id: user.user_id } }
@@ -233,6 +267,8 @@ router.get('/auth/google/callback', passport.authenticate('google', { failureRed
             blueskyFollows,
             connectedAccounts,
             deepFeeds,
+            feedChannels: feedChannelsMap,
+            channelViews: channelViewsMap,
             followedFeeds: normalizedFollowedFeeds,
             recentUpvotes
         };
@@ -459,6 +495,40 @@ router.post('/auth/bluesky/login', loginLimiter, async (req, res) => {
             order: [['updated_at', 'DESC']],
             limit: 100
         });
+        //Fetch channels for all followed feeds
+        const feedChannelsMap = {};
+        for (const followedFeed of normalizedFollowedFeeds) {
+            const channels = await FeedChannels.findAll({
+                where: { feed_id: followedFeed.feed_id },
+                order: [['display_order', 'ASC'], ['created_at', 'ASC']]
+            });
+            feedChannelsMap[followedFeed.feed_id] = channels;
+        }
+        //Also fetch channels for user's own feed
+        const ownFeedChannels = await FeedChannels.findAll({
+            where: { feed_id: feed.feed_id },
+            order: [['display_order', 'ASC'], ['created_at', 'ASC']]
+        });
+        feedChannelsMap[feed.feed_id] = ownFeedChannels;
+        //Fetch channel view history for unread indicator accuracy
+        const channelViews = await FeedChannelViews.findAll({
+            where: { viewer_id: feed.feed_id },
+            attributes: ['channel_id', 'last_seen_at']
+        });
+        const channelViewsMap = {};
+        channelViews.forEach(view => {
+            channelViewsMap[view.channel_id] = view.last_seen_at;
+        });
+        //Initialize view records for channels without one (mark as "seen up to now")
+        const allChannelIds = [];
+        Object.values(feedChannelsMap).forEach(channels => {
+            channels.forEach(channel => allChannelIds.push(channel.channel_id));
+        });
+        const viewedChannelIds = channelViews.map(v => v.channel_id);
+        const unviewedChannelIds = allChannelIds.filter(id => !viewedChannelIds.includes(id));
+        for (const channelId of unviewedChannelIds) {
+            channelViewsMap[channelId] = loginTime;
+        }
         await Users.update(
             { last_active_at: loginTime },
             { where: { user_id: user.user_id } }
@@ -484,6 +554,8 @@ router.post('/auth/bluesky/login', loginLimiter, async (req, res) => {
             blueskyFollows,
             connectedAccounts,
             deepFeeds,
+            feedChannels: feedChannelsMap,
+            channelViews: channelViewsMap,
             followedFeeds: normalizedFollowedFeeds,
             recentUpvotes
         });
@@ -831,6 +903,40 @@ router.post('/login', loginLimiter, async (req, res) => {
                     order: [['display_name', 'ASC'], ['handle', 'ASC']]
                 });
             }
+            //Fetch channels for all followed feeds
+            const feedChannelsMap = {};
+            for (const followedFeed of normalizedFollowedFeeds) {
+                const channels = await FeedChannels.findAll({
+                    where: { feed_id: followedFeed.feed_id },
+                    order: [['display_order', 'ASC'], ['created_at', 'ASC']]
+                });
+                feedChannelsMap[followedFeed.feed_id] = channels;
+            }
+            //Also fetch channels for user's own feed
+            const ownFeedChannels = await FeedChannels.findAll({
+                where: { feed_id: feed.feed_id },
+                order: [['display_order', 'ASC'], ['created_at', 'ASC']]
+            });
+            feedChannelsMap[feed.feed_id] = ownFeedChannels;
+            //Fetch channel view history for unread indicator accuracy
+            const channelViews = await FeedChannelViews.findAll({
+                where: { viewer_id: feed.feed_id },
+                attributes: ['channel_id', 'last_seen_at']
+            });
+            const channelViewsMap = {};
+            channelViews.forEach(view => {
+                channelViewsMap[view.channel_id] = view.last_seen_at;
+            });
+            //Initialize view records for channels without one (mark as "seen up to now")
+            const allChannelIds = [];
+            Object.values(feedChannelsMap).forEach(channels => {
+                channels.forEach(channel => allChannelIds.push(channel.channel_id));
+            });
+            const viewedChannelIds = channelViews.map(v => v.channel_id);
+            const unviewedChannelIds = allChannelIds.filter(id => !viewedChannelIds.includes(id));
+            for (const channelId of unviewedChannelIds) {
+                channelViewsMap[channelId] = loginTime;
+            }
             await Users.update(
                 { last_active_at: loginTime },
                 { where: { user_id: user.user_id },
@@ -858,6 +964,8 @@ router.post('/login', loginLimiter, async (req, res) => {
                 connections: connectionFeeds, //Users that have been connected with
                 connectionChats: connectionChatsMap, //Chats with other users
                 deepFeeds,
+                feedChannels: feedChannelsMap, //Channels for all feeds
+                channelViews: channelViewsMap, //Channel view history for unread indicators
                 followedFeeds: normalizedFollowedFeeds,
                 recentUpvotes,
             });
