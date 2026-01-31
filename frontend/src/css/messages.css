@@ -54,7 +54,7 @@
     border-radius: var(--large-margin);
 }
 .message {
-    border-radius: var(--medium-margin);
+    border-radius: var(--small-margin);
     box-shadow: var(--shadow);
     cursor: default;
     margin: var(--small-margin);
@@ -92,6 +92,7 @@
     align-self: flex-end;
 }
 .message-date {
+    font-size: small;
     margin: 0;
 }
 .message-edit-container {
@@ -140,6 +141,7 @@
 }
 .read-status {
     color: var(--lightest);
+    font-size: small;
     margin: var(--small-margin);
 }
 .tab-titles {
@@ -393,6 +395,7 @@
     background-color: transparent;
 }
 .message-text {
+    font-size: large;
     white-space: pre-wrap;
     word-break: break-word;
 }

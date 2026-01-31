@@ -19,7 +19,7 @@ const Message = ({ canRemove, deleteMessage, editMessage, editingMessageId, setE
     };
 
     const confirmDelete = () => {
-        deleteMessage(message.message_id);
+        deleteMessage(message?.message_id);
         setShowConfirmDelete(false);
     };
 
@@ -29,8 +29,8 @@ const Message = ({ canRemove, deleteMessage, editMessage, editingMessageId, setE
     };
 
     const editClick = () => {
-        setEditingMessageId(message.message_id);
-        setEditContent(message.content);
+        setEditingMessageId(message?.message_id);
+        setEditContent(message?.content);
         setOptionsOpen(false);
     };
 
@@ -69,7 +69,7 @@ const Message = ({ canRemove, deleteMessage, editMessage, editingMessageId, setE
                             <FaEllipsisV />
                         </button>
                         {optionsOpen && (
-                            <div className="dropdown-menu" style={{ position: 'absolute', zIndex: 100, right: 0, top: '100%' }}>
+                            <div className="dropdown-menu" style={{ position: 'absolute', zIndex: 100, left: 'calc(var(--large-margin) * -4)', top: '100%' }}>
                                 <button className="small-icon" type="button" onClick={editClick}>
                                     <FaEdit /><span className="icon-text">Edit</span>
                                 </button>
@@ -80,7 +80,7 @@ const Message = ({ canRemove, deleteMessage, editMessage, editingMessageId, setE
                         )}
                     </div>
                 )}
-                {editingMessageId === message.message_id ? (
+                {editingMessageId === message?.message_id ? (
                     <div className="message-edit-container">
                         <textarea
                             value={editContent}
@@ -99,7 +99,7 @@ const Message = ({ canRemove, deleteMessage, editMessage, editingMessageId, setE
                                     e.preventDefault();
                                     const validation = ValidateTextInput(editContent, 0, maxLength, false);
                                     if (validation.valid) {
-                                        editMessage(message.message_id, editContent);
+                                        editMessage(message?.message_id, editContent);
                                     }
                                 }
                                 if (e.key === 'Escape') setEditingMessageId(null);
@@ -114,7 +114,7 @@ const Message = ({ canRemove, deleteMessage, editMessage, editingMessageId, setE
                                 onClick={() => {
                                     const validation = ValidateTextInput(editContent, 0, maxLength, false);
                                     if (validation.valid) {
-                                        editMessage(message.message_id, editContent);
+                                        editMessage(message?.message_id, editContent);
                                     }
                                 }}
                                 disabled={!!validationError}
@@ -126,22 +126,22 @@ const Message = ({ canRemove, deleteMessage, editMessage, editingMessageId, setE
                     <div className={`message ${isSharedPost || isSharedExternalPost ? 'shared-post' : (isOutgoing ? 'outgoing' : 'incoming')}`}>
                         {message?.content && (
                             <div className="message-text">
-                                {message.content}
-                                {message.edited_at && <span style={{ fontSize: 'small', opacity: 0.7 }}> (edited)</span>}
+                                {message?.content}
+                                {message?.edited_at && <span style={{ fontSize: 'small', opacity: 0.7 }}> (edited)</span>}
                             </div>
                         )}
                         {message.sharedPost ? (
                             <div className={`shared-post-wrapper ${isOutgoing ? 'outgoing' : 'incoming'}`}>
-                                <ContentWidget post={message.sharedPost} readOnly={false} display={false} sharedPost={true} />
+                                <ContentWidget post={message?.sharedPost} readOnly={false} display={false} sharedPost={true} />
                             </div>
                         ) : message.shared_post_id && (
                             <div className="deleted-post-notice">[Post deleted]</div>
                         )}
                         {message.sharedExternalPost ? (
                             <div className={`shared-post-wrapper ${isOutgoing ? 'outgoing' : 'incoming'}`}>
-                                <ExternalPostWidget post={message.sharedExternalPost} sharedPost={true} />
+                                <ExternalPostWidget post={message?.sharedExternalPost} sharedPost={true} />
                             </div>
-                        ) : message.shared_external_post_id && !message.sharedExternalPost && (
+                        ) : message.shared_external_post_id && !message?.sharedExternalPost && (
                             <div className="deleted-post-notice">[External post no longer available]</div>
                         )}
                     </div>
@@ -149,7 +149,7 @@ const Message = ({ canRemove, deleteMessage, editMessage, editingMessageId, setE
             </div>
             <div className={`message-info ${isSharedPost || isSharedExternalPost ? '' : (isOutgoing ? 'outgoing' : 'incoming')}`}>
                 <p className={`message-date ${isSharedPost || isSharedExternalPost ? '' : (isOutgoing ? 'outgoing' : 'incoming')}`}>
-                    {formatTimestamp(message.created_at)}
+                    {formatTimestamp(message?.created_at)}
                 </p>
                 {isOutgoing && !isGroup && (
                     <span className="read-status">
