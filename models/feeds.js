@@ -117,14 +117,24 @@ const FollowRequests = sequelize.define('follow_requests', {
 }, { tableName: 'follow_requests', timestamps: false });
 
 const SavedPosts = sequelize.define('saved_posts', {
-    post_id: { type: STRING(36), primaryKey: true },
+    save_id: { type: STRING(36), primaryKey: true },
+    post_id: { type: STRING(36), allowNull: false },
     saver_id: { type: STRING(36), allowNull: false },
     feed_id: { type: STRING(36), allowNull: false },
     channel_id: { type: STRING(36), allowNull: false },
     saved_channel_id: { type: STRING(36), allowNull: false },
     created_at: { type: DataTypes.DATE(3), defaultValue: sequelize.literal('CURRENT_TIMESTAMP(3)') },
     updated_at: { type: DataTypes.DATE(3), defaultValue: sequelize.literal('CURRENT_TIMESTAMP(3)'), onUpdate : sequelize.literal('CURRENT_TIMESTAMP(3)') },
-}, { tableName: 'saved_posts', timestamps: false });
+}, {
+    tableName: 'saved_posts',
+    timestamps: false,
+    indexes: [
+        { fields: ['post_id'] },
+        { fields: ['saver_id'] },
+        { fields: ['saved_channel_id'] },
+        { unique: true, fields: ['post_id', 'saver_id', 'saved_channel_id'] }
+    ]
+});
 
 const SavedPostChannels = sequelize.define('saved_post_channels', {
     channel_id: { type: DataTypes.STRING(36), primaryKey: true },

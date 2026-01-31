@@ -1349,6 +1349,7 @@ router.post('/save_post_to_channels', higherLimiter, authenticateCheck, async (r
 
 			if (channelIds.length > 0) {
 				const saves = channelIds.map(savedChannelId => ({
+					save_id: v4(),
 					post_id: postId,
 					saver_id: saverId,
 					feed_id: feedId,
