@@ -566,7 +566,7 @@ router.post('/send_shared_external_post', authenticateCheck, async (req, res) =>
         if (!externalPost) {
             return res.status(404).json({ success: false, message: 'External post not found' });
         }
-        const encryptedContent = message_text ? encrypt(message_text) : null;
+        const encryptedContent = message_text ? encrypt(message_text) : encrypt('');
         let sentCount = 0;
         for (const share of shares) {
             const { chat_id, receiver_id } = share;

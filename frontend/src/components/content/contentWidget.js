@@ -674,8 +674,8 @@ const ContentWidget = ({ canRemove = false, display = false, feed, isDraft = fal
 		</div>
 		<ConfirmModal isOpen={showDeleteConfirm} onConfirm={confirmDelete} onCancel={cancelDelete} title={`Delete ${pendingDeleteAction}`} message={`Are you sure you want to delete this ${pendingDeleteAction}?`} />
 		{showQuoteModal && <QuotePostModal post={post} onClose={() => setShowQuoteModal(false)} />}
-	{showSaveModal && <SaveToChannelModal post={post} isExternal={false} onClose={() => setShowSaveModal(false)} onSaveComplete={(saved) => { setIsSaved(saved); onSaveToggle?.(post?.post_id, saved); }} />}
-		{showShareModal && <SharePostModal post={post} onClose={() => setShowShareModal(false)} />}
+		{showSaveModal && <SaveToChannelModal post={post} isExternal={false} onClose={() => setShowSaveModal(false)} onSaveComplete={(saved) => { setIsSaved(saved); onSaveToggle?.(post?.post_id, saved); }} />}
+		{showShareModal && <SharePostModal post={post} isExternal={false} onClose={() => setShowShareModal(false)} />}
 		</>
 	);
 };

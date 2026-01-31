@@ -4,7 +4,7 @@ import { FaChevronDown, FaChevronUp, FaTimes } from 'react-icons/fa';
 import { useContext, useEffect, useState } from 'react';
 import { ValidateTextInput } from '../../functions/validateTextInput';
 
-const SharePostModal = ({ post, onClose }) => {
+const SharePostModal = ({ post, isExternal = false, onClose }) => {
     const [connections, setConnections] = useState([]);
     const [errorMessage, setErrorMessage] = useState('');
     const [expandedConnection, setExpandedConnection] = useState(null);
@@ -157,7 +157,8 @@ const SharePostModal = ({ post, onClose }) => {
                 chat_id: sc.chat_id,
                 receiver_id: sc.receiver_id
             }));
-            const response = await api.post('/send_shared_post', {
+            const endpoint = isExternal ? '/send_shared_external_post' : '/send_shared_post';
+            const response = await api.post(endpoint, {
                 post_id: post.post_id,
                 shares,
                 sender_id: viewer?.feed_id,

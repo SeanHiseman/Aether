@@ -5,7 +5,7 @@ import { FaArrowDown, FaArrowUp, FaBookmark, FaChevronDown, FaChevronUp, FaComme
 import { FormatNumber } from '../functions/formatNumber';
 import QuotePostModal from '../components/modals/quotePostModal';
 import SaveToChannelModal from '../components/modals/saveToChannelModal';
-import ShareExternalPostModal from '../components/modals/shareExternalPostModal';
+import SharePostModal from '../components/modals/sharePostModal';
 import { useParams } from 'react-router-dom';
 import { useContext, useEffect, useRef, useState } from 'react';
 import useTimeAgo from '../functions/useTimeAgo';
@@ -361,7 +361,7 @@ const ExternalPostWidget = ({ post, sharedPost = false }) => {
 				</div>
 			</div>
 			{showSaveModal && <SaveToChannelModal post={post} isExternal={true} onClose={() => setShowSaveModal(false)} onSaveComplete={handleSaveComplete} />}
-			{showShareModal && <ShareExternalPostModal post={post} onClose={() => setShowShareModal(false)} />}
+			{showShareModal && <SharePostModal post={post} isExternal={true} onClose={() => setShowShareModal(false)} />}
 			{showQuoteModal && <QuotePostModal externalPost={post} onClose={() => setShowQuoteModal(false)} />}
 		</div>
 	);
