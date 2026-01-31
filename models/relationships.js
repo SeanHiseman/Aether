@@ -1,5 +1,5 @@
 import { AppBuilds, ExternalAccountMeta, ExternalPosts, ExternalPostsAccess, ExternalPostVotes, PaginationTokens, Posts, PostDrafts, PostNotes, PostVotes, Prompts, Reposts, ViewedPosts } from "./content.js";
-import { DeepFeeds, DeepFeedContent, Feeds, FeedChannels, FeedChannelMessages, FeedChannelViews, Followers, ExternalFollows, FollowRequests, SavedPosts, SavedPostChannels } from "./feeds.js";
+import { DeepFeeds, DeepFeedContent, Feeds, FeedChannels, FeedChannelMessages, FeedChannelViews, Followers, ExternalFollows, FollowRequests, SavedPosts, SavedPostChannels, SavedExternalPosts } from "./feeds.js";
 import { AskChats, AskMessages, Chats, ConnectRequests, Connections, FeedChats, Messages } from "./messages.js";
 import { Feedback, Users } from "./users.js";
 
@@ -104,11 +104,17 @@ AskMessages.belongsTo(Users, { foreignKey: 'sender_id', as: 'sender' });
 PostNotes.belongsTo(Posts, { foreignKey: 'post_id', as: 'parentPost' });
 Posts.hasOne(PostNotes, { foreignKey: 'post_id', as: 'note', onDelete: 'CASCADE' });
 
-SavedPosts.belongsTo(Posts, { foreignKey: 'post_id' });
+SavedPosts.belongsTo(Posts, { foreignKey: 'post_id', as: 'post' });
+Posts.hasMany(SavedPosts, { foreignKey: 'post_id', as: 'saves' });
 SavedPosts.belongsTo(Feeds,	{ foreignKey: 'feed_id' });
-SavedPosts.belongsTo(SavedPostChannels, { foreignKey: 'channel_id' });
-SavedPostChannels.belongsTo(Feeds, { foreignKey: 'saver_id' });
-SavedPostChannels.hasMany(SavedPosts, { foreignKey: 'channel_id' });
+SavedPosts.belongsTo(SavedPostChannels, { foreignKey: 'saved_channel_id', as: 'savedChannel' });
+SavedPostChannels.belongsTo(Feeds, { foreignKey: 'saver_id', as: 'saver' });
+SavedPostChannels.hasMany(SavedPosts, { foreignKey: 'saved_channel_id', as: 'savedPosts' });
+
+SavedExternalPosts.belongsTo(ExternalPosts, { foreignKey: 'post_id', as: 'externalPost' });
+SavedExternalPosts.belongsTo(Feeds, { foreignKey: 'saver_id', as: 'saver' });
+SavedExternalPosts.belongsTo(SavedPostChannels, { foreignKey: 'saved_channel_id', as: 'savedChannel' });
+SavedPostChannels.hasMany(SavedExternalPosts, { foreignKey: 'saved_channel_id', as: 'savedExternalPosts' });
 
 PostDrafts.belongsTo(FeedChannels, { as: 'parentChannel', foreignKey: 'channel_id' });
 FeedChannels.hasMany(PostDrafts, { as: 'drafts', foreignKey: 'channel_id' });
@@ -148,6 +154,7 @@ export {
     Reposts,
     SavedPosts,
     SavedPostChannels,
+    SavedExternalPosts,
     Users,
     ViewedPosts
 }

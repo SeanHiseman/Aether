@@ -1,5 +1,5 @@
 import { Algorithms, AlgorithmLocations } from "./algorithms.js";
-import { DeepFeedContent, Feeds, Posts, PostVotes, Reposts, SavedPosts } from "../models/relationships.js";
+import { DeepFeedContent, Feeds, Posts, PostVotes, Reposts, SavedPosts, SavedExternalPosts } from "../models/relationships.js";
 import { excludedAttrs } from "./algorithmFunctions/stripExcludedAttributes.js";
 import { ExternalAccountMeta, ExternalPosts, ExternalPostVotes } from "../models/content.js";
 import { ensureExternalAccountPosts } from "../functions/external_posts/ensureExternalAccountPosts.js";
@@ -1124,7 +1124,7 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
 			const ids = posts.map(p => p.post_id);
 			const nativeIds = posts.filter(p => !p.isExternal).map(p => p.post_id);
 			const externalIds = posts.filter(p => p.isExternal).map(p => p.post_id);
-			const [userVotes, externalVotes, savedRows, repostRows] = viewerId
+			const [userVotes, externalVotes, savedNativeRows, savedExternalRows, repostRows] = viewerId
 				? await Promise.all([
 					nativeIds.length ? PostVotes.findAll({
 						attributes: ['post_id', 'upvotes', 'downvotes'],
@@ -1136,18 +1136,23 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
 						where: { post_id: { [Op.in]: externalIds }, user_id: userId },
 						raw: true
 					}) : Promise.resolve([]),
-					SavedPosts.findAll({
+					nativeIds.length ? SavedPosts.findAll({
 						attributes: ['post_id'],
-						where: { post_id: { [Op.in]: ids }, saver_id: viewerId },
+						where: { post_id: { [Op.in]: nativeIds }, saver_id: viewerId },
 						raw: true
-					}),
+					}) : Promise.resolve([]),
+					externalIds.length ? SavedExternalPosts.findAll({
+						attributes: ['post_id'],
+						where: { post_id: { [Op.in]: externalIds }, saver_id: viewerId },
+						raw: true
+					}) : Promise.resolve([]),
 					Reposts.findAll({
 						attributes: ['post_id'],
 						where: { post_id: { [Op.in]: ids }, reposter_id: viewerId },
 						raw: true
 					})
 				])
-				: [[], [], [], []];
+				: [[], [], [], [], []];
 			const voteMap = new Map(
 				userVotes.map(v => [v.post_id, { has_upvoted: v.upvotes > 0, has_downvoted: v.downvotes > 0 }])
 			);
@@ -1155,7 +1160,7 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
 				has_upvoted: v.vote_type === 'upvote' || v.vote_type === 'like',
 				has_downvoted: v.vote_type === 'downvote'
 			}]));
-			const savedSet = new Set(savedRows.map(s => s.post_id));
+			const savedSet = new Set([...savedNativeRows.map(s => s.post_id), ...savedExternalRows.map(s => s.post_id)]);
 			const repostSet = new Set(repostRows.map(r => r.post_id));
 			return {
 				posts: stripExcludedAttributes(
@@ -1179,7 +1184,7 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
 		//Separate native and external post IDs for vote lookup
 		const nativeIds = posts.filter(p => !p.isExternal).map(p => p.post_id);
 		const externalIds = posts.filter(p => p.isExternal).map(p => p.post_id);
-		const [userVotes, externalVotes, savedRows, repostRows] = viewerId
+		const [userVotes, externalVotes, savedNativeRows, savedExternalRows, repostRows] = viewerId
 			? await Promise.all([
 				nativeIds.length ? PostVotes.findAll({
 					attributes: ['post_id', 'upvotes', 'downvotes'],
@@ -1191,18 +1196,23 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
 					where: { post_id: { [Op.in]: externalIds }, user_id: userId },
 					raw: true
 				}) : Promise.resolve([]),
-				SavedPosts.findAll({
+				nativeIds.length ? SavedPosts.findAll({
 					attributes: ['post_id'],
-					where: { post_id: { [Op.in]: finalIds }, saver_id: viewerId },
+					where: { post_id: { [Op.in]: nativeIds }, saver_id: viewerId },
 					raw: true
-				}),
+				}) : Promise.resolve([]),
+				externalIds.length ? SavedExternalPosts.findAll({
+					attributes: ['post_id'],
+					where: { post_id: { [Op.in]: externalIds }, saver_id: viewerId },
+					raw: true
+				}) : Promise.resolve([]),
 				Reposts.findAll({
 					attributes: ['post_id'],
 					where: { post_id: { [Op.in]: finalIds }, reposter_id: viewerId },
 					raw: true
 				})
 			])
-			: [[], [], [], []];
+			: [[], [], [], [], []];
 		//Native post votes map
 		const voteMap = new Map(userVotes.map(v => [
 			v.post_id, { has_upvoted: v.upvotes > 0, has_downvoted: v.downvotes > 0 }
@@ -1216,7 +1226,7 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
 				has_downvoted: v.vote_type === 'downvote'
 			}];
 		}));
-		const savedSet = new Set(savedRows.map(s => s.post_id));
+		const savedSet = new Set([...savedNativeRows.map(s => s.post_id), ...savedExternalRows.map(s => s.post_id)]);
 		const repostSet = new Set(repostRows.map(r => r.post_id));
 		const postsWithVotes = posts.map(p => {
 			const isExternal = p.isExternal || p.is_external;

@@ -224,6 +224,11 @@ router.get('/auth/google/callback', passport.authenticate('google', { failureRed
             order: [['display_order', 'ASC'], ['created_at', 'ASC']]
         });
         feedChannelsMap[feed.feed_id] = ownFeedChannels;
+        //Fetch saved post channels
+        const savedChannels = await SavedPostChannels.findAll({
+            where: { saver_id: feed.feed_id },
+            order: [['display_order', 'ASC'], ['created_at', 'ASC']]
+        });
         //Fetch channel view history for unread indicator accuracy
         const channelViews = await FeedChannelViews.findAll({
             where: { viewer_id: feed.feed_id },
@@ -270,7 +275,8 @@ router.get('/auth/google/callback', passport.authenticate('google', { failureRed
             feedChannels: feedChannelsMap,
             channelViews: channelViewsMap,
             followedFeeds: normalizedFollowedFeeds,
-            recentUpvotes
+            recentUpvotes,
+            savedChannels
         };
         res.redirect(`${process.env.FRONTEND_URL}/auth/google/success`);
     }
@@ -510,6 +516,11 @@ router.post('/auth/bluesky/login', loginLimiter, async (req, res) => {
             order: [['display_order', 'ASC'], ['created_at', 'ASC']]
         });
         feedChannelsMap[feed.feed_id] = ownFeedChannels;
+        //Fetch saved post channels
+        const savedChannels = await SavedPostChannels.findAll({
+            where: { saver_id: feed.feed_id },
+            order: [['display_order', 'ASC'], ['created_at', 'ASC']]
+        });
         //Fetch channel view history for unread indicator accuracy
         const channelViews = await FeedChannelViews.findAll({
             where: { viewer_id: feed.feed_id },
@@ -557,7 +568,8 @@ router.post('/auth/bluesky/login', loginLimiter, async (req, res) => {
             feedChannels: feedChannelsMap,
             channelViews: channelViewsMap,
             followedFeeds: normalizedFollowedFeeds,
-            recentUpvotes
+            recentUpvotes,
+            savedChannels
         });
     } catch (error) {
         console.error(new Date().toISOString(), '/auth/bluesky/login error:', error);
@@ -918,6 +930,11 @@ router.post('/login', loginLimiter, async (req, res) => {
                 order: [['display_order', 'ASC'], ['created_at', 'ASC']]
             });
             feedChannelsMap[feed.feed_id] = ownFeedChannels;
+            //Fetch saved post channels
+            const savedChannels = await SavedPostChannels.findAll({
+                where: { saver_id: feed.feed_id },
+                order: [['display_order', 'ASC'], ['created_at', 'ASC']]
+            });
             //Fetch channel view history for unread indicator accuracy
             const channelViews = await FeedChannelViews.findAll({
                 where: { viewer_id: feed.feed_id },
@@ -968,6 +985,7 @@ router.post('/login', loginLimiter, async (req, res) => {
                 channelViews: channelViewsMap, //Channel view history for unread indicators
                 followedFeeds: normalizedFollowedFeeds,
                 recentUpvotes,
+                savedChannels, //Saved post channels
             });
         }
         else {

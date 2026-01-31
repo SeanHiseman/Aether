@@ -135,6 +135,24 @@ const SavedPostChannels = sequelize.define('saved_post_channels', {
     updated_at: { type: DataTypes.DATE(3), defaultValue: sequelize.literal('CURRENT_TIMESTAMP(3)'), onUpdate: sequelize.literal('CURRENT_TIMESTAMP(3)') }
 }, { tableName: 'saved_post_channels', timestamps: false });
 
+const SavedExternalPosts = sequelize.define('saved_external_posts', {
+    save_id: { type: DataTypes.STRING(36), primaryKey: true },
+    post_id: { type: STRING(255), allowNull: false },
+    saver_id: { type: STRING(36), allowNull: false },
+    saved_channel_id: { type: STRING(36), allowNull: false },
+    created_at: { type: DataTypes.DATE(3), defaultValue: sequelize.literal('CURRENT_TIMESTAMP(3)') },
+    updated_at: { type: DataTypes.DATE(3), defaultValue: sequelize.literal('CURRENT_TIMESTAMP(3)'), onUpdate: sequelize.literal('CURRENT_TIMESTAMP(3)') }
+}, {
+    tableName: 'saved_external_posts',
+    timestamps: false,
+    indexes: [
+        { fields: ['post_id'] },
+        { fields: ['saver_id'] },
+        { fields: ['saved_channel_id'] },
+        { unique: true, fields: ['post_id', 'saver_id', 'saved_channel_id'] }
+    ]
+});
+
 export {
     DeepFeeds,
     DeepFeedContent,
@@ -146,5 +164,6 @@ export {
     ExternalFollows,
     FollowRequests,
     SavedPosts,
-    SavedPostChannels
+    SavedPostChannels,
+    SavedExternalPosts
 }

@@ -4,6 +4,7 @@ import ContentDisplay from '../components/content/contentDisplay';
 import { FaArrowDown, FaArrowUp, FaBookmark, FaChevronDown, FaChevronUp, FaComments, FaHeart, FaQuoteRight, FaRegBookmark, FaRetweet, FaShare } from 'react-icons/fa';
 import { FormatNumber } from '../functions/formatNumber';
 import QuotePostModal from '../components/modals/quotePostModal';
+import SaveToChannelModal from '../components/modals/saveToChannelModal';
 import ShareExternalPostModal from '../components/modals/shareExternalPostModal';
 import { useParams } from 'react-router-dom';
 import { useContext, useEffect, useRef, useState } from 'react';
@@ -18,8 +19,10 @@ const ExternalPostWidget = ({ post, sharedPost = false }) => {
 	const isLike = post?.source === 'Bluesky' || post?.source === 'Mastodon';
 	const isVote = post?.source === 'Reddit';
 	const [isOverflowing, setIsOverflowing] = useState(false);
+	const [isSaved, setIsSaved] = useState(post?.is_saved || false);
 	const [showExpandButton, setShowExpandButton] = useState(false);
 	const [showFullContent, setShowFullContent] = useState(false);
+	const [showSaveModal, setShowSaveModal] = useState(false);
 	const [showShareModal, setShowShareModal] = useState(false);
 	const [showQuoteModal, setShowQuoteModal] = useState(false);
 	const [userVote, setUserVote] = useState(() => {
@@ -56,6 +59,7 @@ const ExternalPostWidget = ({ post, sharedPost = false }) => {
 		if (post) {
 			setIsLoaded(true);
 			setLocalScore(post?.score || 0);
+			setIsSaved(post?.is_saved || false);
 		} else {
 			timeoutId = setTimeout(() => setIsLoaded(true), 5000);
 		}
@@ -162,6 +166,31 @@ const ExternalPostWidget = ({ post, sharedPost = false }) => {
 		} catch (error) {
 			setVoteError('Error reposting');
 			setTimeout(() => setVoteError(''), 3000);
+		}
+	};
+
+	const handleSaveComplete = (saved) => {
+		setIsSaved(saved);
+	};
+
+	const handleBookmarkClick = async () => {
+		if (isSaved) {
+			//Unsave directly by sending empty channelIds
+			try {
+				const response = await api.post('/save_post_to_channels', {
+					postId: post.post_id,
+					channelIds: [],
+					isExternal: true
+				});
+				if (response.data?.success) {
+					setIsSaved(false);
+				}
+			} catch (error) {
+				console.error('Error unsaving post:', error);
+			}
+		} else {
+			//Show modal to select channels
+			setShowSaveModal(true);
 		}
 	};
 
@@ -304,6 +333,9 @@ const ExternalPostWidget = ({ post, sharedPost = false }) => {
 				)}
 				{!sharedPost && isAuthenticated && (
 					<div className="post-button-group save-share-buttons">
+						<button className="large-icon" title={isSaved ? 'Unsave post' : 'Save post'} onClick={handleBookmarkClick}>
+							{isSaved ? <FaBookmark /> : <FaRegBookmark />}
+						</button>
 						<button
 							className="large-icon"
 							style={{
@@ -328,6 +360,7 @@ const ExternalPostWidget = ({ post, sharedPost = false }) => {
 					</p>
 				</div>
 			</div>
+			{showSaveModal && <SaveToChannelModal post={post} isExternal={true} onClose={() => setShowSaveModal(false)} onSaveComplete={handleSaveComplete} />}
 			{showShareModal && <ShareExternalPostModal post={post} onClose={() => setShowShareModal(false)} />}
 			{showQuoteModal && <QuotePostModal externalPost={post} onClose={() => setShowQuoteModal(false)} />}
 		</div>

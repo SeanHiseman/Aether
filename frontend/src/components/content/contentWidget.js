@@ -9,6 +9,7 @@ import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import MembershipModal from '../modals/membershipModal';
 import ReplyTreeView from './replyTreeView';
 import QuotePostModal from '../modals/quotePostModal';
+import SaveToChannelModal from '../modals/saveToChannelModal';
 import SharePostModal from '../modals/sharePostModal';
 import { useCallback, useContext, useEffect, useRef, useState } from 'react';
 import useTimeAgo from '../../functions/useTimeAgo';
@@ -44,6 +45,7 @@ const ContentWidget = ({ canRemove = false, display = false, feed, isDraft = fal
 	const [showFullContent, setShowFullContent] = useState(false);
 	const [showNote, setShowNote] = useState(post?.note && post?.note?.is_misinfo);
 	const [showReplies, setShowReplies] = useState(readOnly ? false : (post_id ? (post?.replies > 0) : false));
+	const [showSaveModal, setShowSaveModal] = useState(false);
 	const [showShareModal, setShowShareModal] = useState(false);
 	const [showQuoteModal, setShowQuoteModal] = useState(false);
 	const [showOptionsDropdown, setShowOptionsDropdown] = useState(false);
@@ -244,6 +246,31 @@ const ContentWidget = ({ canRemove = false, display = false, feed, isDraft = fal
 		} catch (error) {
 			setPostErrorMessage(error.response?.data?.message || 'Error reposting');
 			setTimeout(() => setPostErrorMessage(""), 3000);
+		}
+	};
+
+	const handleBookmarkClick = async () => {
+		if (isSaved) {
+			//Unsave directly by sending empty channelIds
+			try {
+				const response = await api.post('/save_post_to_channels', {
+					postId: post.post_id,
+					channelIds: [],
+					isExternal: false,
+					feedId: viewer?.feed_id,
+					channelId: post.parentChannel?.channel_id || post.channel_id
+				});
+				if (response.data?.success) {
+					setIsSaved(false);
+					onSaveToggle?.(post?.post_id, false);
+				}
+			} catch (error) {
+				setPostErrorMessage(error.response?.data?.message || 'Error unsaving post');
+				setTimeout(() => setPostErrorMessage(""), 3000);
+			}
+		} else {
+			//Show modal to select channels
+			setShowSaveModal(true);
 		}
 	};
 
@@ -559,7 +586,7 @@ const ContentWidget = ({ canRemove = false, display = false, feed, isDraft = fal
 				)}
 				{!sharedPost && !isDraft && isAuthenticated && (
 					<div className="post-button-group save-share-buttons">
-						<button className="large-icon" title={isSaved ? 'Unsave post' : 'Save post'} onClick={savePost}>
+						<button className="large-icon" title={isSaved ? 'Unsave post' : 'Save post'} onClick={handleBookmarkClick}>
 							{isSaved ? <FaBookmark /> : <FaRegBookmark />}
 						</button>
 						{!display && (
@@ -647,6 +674,7 @@ const ContentWidget = ({ canRemove = false, display = false, feed, isDraft = fal
 		</div>
 		<ConfirmModal isOpen={showDeleteConfirm} onConfirm={confirmDelete} onCancel={cancelDelete} title={`Delete ${pendingDeleteAction}`} message={`Are you sure you want to delete this ${pendingDeleteAction}?`} />
 		{showQuoteModal && <QuotePostModal post={post} onClose={() => setShowQuoteModal(false)} />}
+	{showSaveModal && <SaveToChannelModal post={post} isExternal={false} onClose={() => setShowSaveModal(false)} onSaveComplete={(saved) => { setIsSaved(saved); onSaveToggle?.(post?.post_id, saved); }} />}
 		{showShareModal && <SharePostModal post={post} onClose={() => setShowShareModal(false)} />}
 		</>
 	);

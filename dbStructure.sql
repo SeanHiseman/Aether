@@ -347,14 +347,16 @@ CREATE TABLE saved_posts (
 	saver_id		CHAR(36)	NOT NULL,
 	feed_id			CHAR(36)	NOT NULL,
 	channel_id		CHAR(36)	NOT NULL,
-  saved_channel_id CHAR(36)	NOT NULL,
+	saved_channel_id CHAR(36)	NOT NULL,
 	created_at		DATETIME(3)	NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
 	updated_at		DATETIME(3)	NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
-	PRIMARY KEY (post_id, saver_id),
+	PRIMARY KEY (post_id, saver_id, saved_channel_id),
+	INDEX idx_saved_posts_channel (saved_channel_id),
 	FOREIGN KEY (post_id)	REFERENCES posts(post_id)			ON DELETE CASCADE,
 	FOREIGN KEY (saver_id)	REFERENCES feeds(feed_id)			ON DELETE CASCADE,
 	FOREIGN KEY (feed_id)	REFERENCES feeds(feed_id)			ON DELETE CASCADE,
-	FOREIGN KEY (channel_id)REFERENCES feed_channels(channel_id)	ON DELETE CASCADE
+	FOREIGN KEY (channel_id)REFERENCES feed_channels(channel_id)	ON DELETE CASCADE,
+	FOREIGN KEY (saved_channel_id) REFERENCES saved_post_channels(channel_id) ON DELETE CASCADE
 ) ENGINE = InnoDB;
 
 DROP TABLE IF EXISTS `saved_post_channels`;
@@ -367,6 +369,23 @@ CREATE TABLE saved_post_channels (
 	updated_at		DATETIME(3)	NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
 	UNIQUE KEY saver_channel (saver_id, channel_name),
 	FOREIGN KEY (saver_id) REFERENCES feeds(feed_id) ON DELETE CASCADE
+) ENGINE = InnoDB;
+
+DROP TABLE IF EXISTS `saved_external_posts`;
+CREATE TABLE saved_external_posts (
+	save_id			CHAR(36)	NOT NULL PRIMARY KEY,
+	post_id			VARCHAR(255) NOT NULL,
+	saver_id		CHAR(36)	NOT NULL,
+	saved_channel_id CHAR(36)	NOT NULL,
+	created_at		DATETIME(3)	NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+	updated_at		DATETIME(3)	NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
+	INDEX idx_post_id (post_id),
+	INDEX idx_saver_id (saver_id),
+	INDEX idx_saved_channel_id (saved_channel_id),
+	UNIQUE KEY unique_save (post_id, saver_id, saved_channel_id),
+	FOREIGN KEY (post_id) REFERENCES external_posts(post_id) ON DELETE CASCADE,
+	FOREIGN KEY (saver_id) REFERENCES feeds(feed_id) ON DELETE CASCADE,
+	FOREIGN KEY (saved_channel_id) REFERENCES saved_post_channels(channel_id) ON DELETE CASCADE
 ) ENGINE = InnoDB;
 
 DROP TABLE IF EXISTS `viewed_posts`;

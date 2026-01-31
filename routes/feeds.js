@@ -1,7 +1,7 @@
 import { ApplyAlgorithm } from '../custom_algorithms/applyAlgorithm.js';
 import authenticateCheck from '../functions/checks/authenticateCheck.js';
 import ConnectCheck from '../functions/checks/connectCheck.js';
-import { ConnectRequests, DeepFeeds, DeepFeedContent, ExternalPosts, ExternalPostVotes, Feeds, FeedChannels, FeedChannelMessages, FeedChannelViews, Followers, FollowRequests, Posts, PostNotes, PostVotes, Reposts, SavedPosts, SavedPostChannels, Users } from '../models/relationships.js';
+import { ConnectRequests, DeepFeeds, DeepFeedContent, ExternalPosts, ExternalPostVotes, Feeds, FeedChannels, FeedChannelMessages, FeedChannelViews, Followers, FollowRequests, Posts, PostNotes, PostVotes, Reposts, SavedPosts, SavedPostChannels, SavedExternalPosts, Users } from '../models/relationships.js';
 import DeleteMedia from '../functions/media_handling/deleteMedia.js';
 import { DeleteFromS3, UploadToS3 } from '../functions/media_handling/s3Handling.js';
 import dotenv from 'dotenv';
@@ -614,7 +614,7 @@ router.delete('/delete_feed_channel', higherLimiter, authenticateCheck, async (r
         await Posts.destroy({ where: { channel_id: channelId }, transaction });
         const deletedCount = await FeedChannels.destroy({ where: { channel_id: channelId }, transaction });
         if (deletedCount === 0) {
-            await transaction.rollback(); 
+            await transaction.rollback();
             return res.status(404).json({ success: false, message: 'Channel not found' });
         }
         await transaction.commit();
@@ -623,6 +623,72 @@ router.delete('/delete_feed_channel', higherLimiter, authenticateCheck, async (r
         if (transaction) await transaction.rollback();
         console.error(new Date().toISOString(), '/delete_feed_channel error:', error);
         res.status(500).json({ success: false, message: 'Failed to delete channel.' });
+    }
+});
+
+router.delete('/delete_saved_channel', higherLimiter, authenticateCheck, async (req, res) => {
+    let transaction;
+    try {
+        transaction = await sequelize.transaction();
+        const { channelId } = req.body;
+        if (!channelId) {
+            return res.status(400).json({ success: false, message: 'Channel ID is required' });
+        }
+
+        //Check if it's the Main channel
+        const channel = await SavedPostChannels.findByPk(channelId, { transaction });
+        if (!channel) {
+            await transaction.rollback();
+            return res.status(404).json({ success: false, message: 'Channel not found' });
+        }
+        if (channel.channel_name === 'Main') {
+            await transaction.rollback();
+            return res.status(400).json({ success: false, message: 'Cannot delete Main channel' });
+        }
+
+        //Delete all saved posts in this channel
+        await SavedPosts.destroy({ where: { saved_channel_id: channelId }, transaction });
+        await SavedExternalPosts.destroy({ where: { saved_channel_id: channelId }, transaction });
+
+        //Delete the channel
+        await SavedPostChannels.destroy({ where: { channel_id: channelId }, transaction });
+
+        await transaction.commit();
+        res.status(200).json({ success: true });
+    } catch (error) {
+        if (transaction) await transaction.rollback();
+        console.error(new Date().toISOString(), '/delete_saved_channel error:', error);
+        res.status(500).json({ success: false, message: 'Failed to delete channel' });
+    }
+});
+
+router.post('/change_saved_channel_name', standardLimiter, authenticateCheck, async (req, res) => {
+    try {
+        const { channelId, newChannelName } = req.body;
+        const nameCheck = ValidateTextInput(newChannelName, 1, 30);
+        if (!nameCheck.valid) {
+            return res.status(400).json({ message: nameCheck.error });
+        }
+
+        const channel = await SavedPostChannels.findByPk(channelId);
+        if (!channel) {
+            return res.status(404).json({ success: false, message: 'Channel not found' });
+        }
+        if (channel.channel_name === 'Main') {
+            return res.status(400).json({ success: false, message: 'Cannot rename Main channel' });
+        }
+        if (newChannelName === 'Main') {
+            return res.status(400).json({ success: false, message: "Channel can't be called Main" });
+        }
+
+        await SavedPostChannels.update(
+            { channel_name: newChannelName },
+            { where: { channel_id: channelId } }
+        );
+        res.status(200).json({ success: true });
+    } catch (error) {
+        console.error(new Date().toISOString(), '/change_saved_channel_name error:', error);
+        res.status(500).json({ success: false, message: 'Error changing name' });
     }
 });
 
@@ -824,7 +890,7 @@ router.get('/get_feed_channels/:feedId', standardLimiter, async (req, res) => {
                 where: { saver_id: viewerId },
                 include: [{
                     model: Feeds,
-                    as: 'feed',
+                    as: 'saver',
                 }],
                 order: [['display_order', 'ASC'], ['channel_name', 'ASC']]
             });
@@ -894,25 +960,97 @@ router.get('/get_feed_followers/:feedId', higherLimiter, authenticateCheck, asyn
 router.get('/get_saved_posts', standardLimiter, authenticateCheck, async (req, res) => {
     try {
         const saverId = req.session.viewer_id;
-        const { limit = 100, offset = 0 } = req.query;
-        const rows = await SavedPosts.findAll({
-            where: { saver_id: saverId },
+        const { limit = 100, offset = 0, channelId } = req.query;
+
+        //Build where clause
+        const whereClause = { saver_id: saverId };
+        if (channelId) {
+            whereClause.saved_channel_id = channelId;
+        }
+
+        //Fetch native posts
+        const nativeSavedPosts = await SavedPosts.findAll({
+            where: whereClause,
             include: [{
                 model: Posts,
+                as: 'post',
                 include: [
                     { model: Feeds, as: 'poster' },
                     { model: FeedChannels, as: 'parentChannel', include: [{ model: Feeds }] },
+                    { model: PostVotes, as: 'votes', required: false }
                 ]
             }],
-            order: [['created_at', 'DESC']], 
-            limit: parseInt(limit, 10),
-            offset: parseInt(offset, 10)
+            raw: false
         });
-        const posts = rows.map(r => {
-            const post = r.post.dataValues;
-            return { ...post, is_saved: true };
+
+        //Fetch external posts
+        const externalSavedPosts = await SavedExternalPosts.findAll({
+            where: whereClause,
+            include: [{
+                model: ExternalPosts,
+                as: 'externalPost'
+            }],
+            raw: false
         });
-        res.status(200).json({ posts });
+
+        //Format native posts
+        const nativePosts = nativeSavedPosts.map(r => {
+            const saved = r.toJSON ? r.toJSON() : r;
+            const post = saved.post;
+            if (!post) return null;
+
+            //Add vote information
+            const votes = post.votes?.[0];
+            return {
+                ...post,
+                is_saved: true,
+                is_external: false,
+                saved_at: saved.created_at,
+                has_upvoted: votes?.upvotes > 0 || false,
+                has_downvoted: votes?.downvotes > 0 || false
+            };
+        }).filter(Boolean);
+
+        //Format external posts
+        const externalPosts = externalSavedPosts.map(r => {
+            const saved = r.toJSON ? r.toJSON() : r;
+            const post = saved.externalPost;
+            if (!post) return null;
+
+            return {
+                ...post,
+                is_saved: true,
+                is_external: true,
+                saved_at: saved.created_at,
+                poster: {
+                    username: post.author,
+                    user_photo: post.author_photo,
+                    profile_url: post.url
+                }
+            };
+        }).filter(Boolean);
+
+        //Deduplicate posts by post_id (keep most recent save)
+        const postMap = new Map();
+        [...nativePosts, ...externalPosts].forEach(post => {
+            const existing = postMap.get(post.post_id);
+            if (!existing || new Date(post.saved_at) > new Date(existing.saved_at)) {
+                postMap.set(post.post_id, post);
+            }
+        });
+
+        //Merge and sort
+        const allPosts = Array.from(postMap.values()).sort((a, b) => {
+            return new Date(b.saved_at || b.created_at) - new Date(a.saved_at || a.created_at);
+        });
+
+        //Apply pagination
+        const paginatedPosts = allPosts.slice(
+            parseInt(offset, 10),
+            parseInt(offset, 10) + parseInt(limit, 10)
+        );
+
+        res.status(200).json({ posts: paginatedPosts });
     } catch (error) {
         console.error(new Date().toISOString(), '/get_saved_posts error:', error);
         res.status(500).json({ posts: [], message: 'Error getting posts' });
@@ -924,8 +1062,7 @@ router.get('/user_reposts/:feedId', higherLimiter, async (req, res) => {
 		const { feedId } = req.params;
 		const { limit = 20, offset = 0 } = req.query;
 		const viewerId = req.query.viewerId || req.session?.viewer_id;
-
-		// Fetch reposts chronologically
+		//Fetch reposts chronologically
 		const reposts = await Reposts.findAll({
 			where: { reposter_id: feedId },
 			order: [['created_at', 'DESC']],
@@ -942,11 +1079,9 @@ router.get('/user_reposts/:feedId', higherLimiter, async (req, res) => {
 				}
 			]
 		});
-
-		// Separate native and external posts
+		//Separate native and external posts
 		const nativePostIds = [];
 		const externalPostIds = [];
-
 		reposts.forEach(repost => {
 			if (repost.is_external) {
 				externalPostIds.push(repost.post_id);
@@ -954,8 +1089,7 @@ router.get('/user_reposts/:feedId', higherLimiter, async (req, res) => {
 				nativePostIds.push(repost.post_id);
 			}
 		});
-
-		// Fetch external posts separately
+		//Fetch external posts separately
 		let externalPostsMap = new Map();
 		if (externalPostIds.length > 0) {
 			const externalPosts = await ExternalPosts.findAll({
@@ -963,8 +1097,7 @@ router.get('/user_reposts/:feedId', higherLimiter, async (req, res) => {
 			});
 			externalPostsMap = new Map(externalPosts.map(ep => [ep.post_id, ep]));
 		}
-
-		// Fetch vote status for native posts
+		//Fetch vote status for native posts
 		let voteMap = new Map();
 		if (viewerId && nativePostIds.length) {
 			const votes = await PostVotes.findAll({
@@ -978,8 +1111,7 @@ router.get('/user_reposts/:feedId', higherLimiter, async (req, res) => {
 				has_downvoted: v.downvotes > 0
 			}]));
 		}
-
-		// Fetch vote status for external posts
+		//Fetch vote status for external posts
 		let externalVoteMap = new Map();
 		if (viewerId && externalPostIds.length) {
 			const externalVotes = await ExternalPostVotes.findAll({
@@ -993,8 +1125,7 @@ router.get('/user_reposts/:feedId', higherLimiter, async (req, res) => {
 				has_downvoted: v.vote_type === 'downvote'
 			}]));
 		}
-
-		// Fetch repost status
+		//Fetch repost status
 		let repostMap = new Map();
 		if (viewerId) {
 			const allPostIds = [...nativePostIds, ...externalPostIds];
@@ -1008,26 +1139,47 @@ router.get('/user_reposts/:feedId', higherLimiter, async (req, res) => {
 				repostMap = new Map(userReposts.map(r => [r.post_id, true]));
 			}
 		}
-
-		// Format response
+		//Fetch saved status
+		let savedMap = new Map();
+		if (viewerId) {
+			if (nativePostIds.length > 0) {
+				const savedNativePosts = await SavedPosts.findAll({
+					where: {
+						post_id: { [Op.in]: nativePostIds },
+						saver_id: viewerId
+					},
+					attributes: ['post_id']
+				});
+				savedNativePosts.forEach(sp => savedMap.set(sp.post_id, true));
+			}
+			if (externalPostIds.length > 0) {
+				const savedExternalPosts = await SavedExternalPosts.findAll({
+					where: {
+						post_id: { [Op.in]: externalPostIds },
+						saver_id: viewerId
+					},
+					attributes: ['post_id']
+				});
+				savedExternalPosts.forEach(sp => savedMap.set(sp.post_id, true));
+			}
+		}
+		//Format response
 		const formattedPosts = reposts.map(repost => {
 			const post = repost.is_external ? externalPostsMap.get(repost.post_id) : repost.Post;
 			if (!post) return null;
-
 			const votes = repost.is_external
 				? externalVoteMap.get(post.post_id)
 				: voteMap.get(post.post_id);
-
 			return {
 				...post.dataValues,
 				reposted_by: feedId,
 				reposted_at: repost.created_at,
 				is_external: repost.is_external,
 				has_reposted: repostMap.get(post.post_id) || false,
+				is_saved: savedMap.get(post.post_id) || false,
 				...votes
 			};
 		}).filter(Boolean);
-
 		return res.status(200).json({ posts: formattedPosts });
 	} catch (error) {
 		console.error(new Date().toISOString(), 'Error fetching reposts:', error);
@@ -1120,6 +1272,99 @@ router.post('/save_post', higherLimiter, authenticateCheck, async (req, res) => 
 	} catch (error) {
         console.error(new Date().toISOString(), '/save_post error:', error);
 		res.status(500).json({ success: false, message: 'Error saving post' });
+	}
+});
+
+router.get('/get_post_saved_channels', higherLimiter, authenticateCheck, async (req, res) => {
+	try {
+		const { postId, isExternal } = req.query;
+		const saverId = req.session.viewer_id;
+
+		let channelIds = [];
+		if (isExternal === 'true') {
+			const savedPosts = await SavedExternalPosts.findAll({
+				where: { post_id: postId, saver_id: saverId },
+				attributes: ['saved_channel_id']
+			});
+			channelIds = savedPosts.map(sp => sp.saved_channel_id);
+		} else {
+			const savedPosts = await SavedPosts.findAll({
+				where: { post_id: postId, saver_id: saverId },
+				attributes: ['saved_channel_id']
+			});
+			channelIds = savedPosts.map(sp => sp.saved_channel_id);
+		}
+
+		res.status(200).json({ success: true, channelIds });
+	} catch (error) {
+		console.error(new Date().toISOString(), '/get_post_saved_channels error:', error);
+		res.status(500).json({ success: false, message: 'Error getting saved channels' });
+	}
+});
+
+router.post('/save_post_to_channels', higherLimiter, authenticateCheck, async (req, res) => {
+	let transaction;
+	try {
+		transaction = await sequelize.transaction();
+		const { postId, channelIds = [], isExternal, feedId, channelId } = req.body;
+		const saverId = req.session.viewer_id;
+
+		//Ensure Main channel exists
+		let mainChannel = await SavedPostChannels.findOne({
+			where: { saver_id: saverId, channel_name: 'Main' },
+			transaction
+		});
+
+		if (!mainChannel) {
+			mainChannel = await SavedPostChannels.create({
+				channel_id: v4(),
+				channel_name: 'Main',
+				saver_id: saverId,
+				display_order: 0
+			}, { transaction });
+		}
+
+		if (isExternal) {
+			//Handle external posts
+			await SavedExternalPosts.destroy({
+				where: { post_id: postId, saver_id: saverId },
+				transaction
+			});
+
+			if (channelIds.length > 0) {
+				const saves = channelIds.map(savedChannelId => ({
+					save_id: v4(),
+					post_id: postId,
+					saver_id: saverId,
+					saved_channel_id: savedChannelId
+				}));
+				await SavedExternalPosts.bulkCreate(saves, { transaction });
+			}
+		} else {
+			//Handle native posts
+			await SavedPosts.destroy({
+				where: { post_id: postId, saver_id: saverId },
+				transaction
+			});
+
+			if (channelIds.length > 0) {
+				const saves = channelIds.map(savedChannelId => ({
+					post_id: postId,
+					saver_id: saverId,
+					feed_id: feedId,
+					channel_id: channelId,
+					saved_channel_id: savedChannelId
+				}));
+				await SavedPosts.bulkCreate(saves, { transaction });
+			}
+		}
+
+		await transaction.commit();
+		res.status(200).json({ success: true, saved: channelIds.length > 0 });
+	} catch (error) {
+		if (transaction) await transaction.rollback();
+		console.error(new Date().toISOString(), '/save_post_to_channels error:', error);
+		res.status(500).json({ success: false, message: 'Error saving post to channels' });
 	}
 });
 

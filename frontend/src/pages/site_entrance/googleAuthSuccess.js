@@ -29,6 +29,7 @@ const GoogleAuthSuccess = () => {
                     localStorage.setItem("deepFeeds", JSON.stringify(response.data?.deepFeeds || []));
                     localStorage.setItem("followedFeeds", JSON.stringify(response.data?.followedFeeds || []));
                     localStorage.setItem("recentUpvotes", JSON.stringify(response.data?.recentUpvotes || []));
+                    localStorage.setItem("savedChannels", JSON.stringify(response.data?.savedChannels || []));
                     localStorage.setItem("user", JSON.stringify(response.data?.user));
                     //Store feed channels
                     const feedChannels = response.data?.feedChannels || {};

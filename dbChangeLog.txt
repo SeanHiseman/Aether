@@ -563,3 +563,70 @@ CREATE TABLE feed_channel_views (
 	UNIQUE KEY unique_viewer_channel (viewer_id, channel_id),
 	KEY idx_channel (channel_id)
 );
+
+CREATE TABLE IF NOT EXISTS saved_external_posts (
+    save_id             CHAR(36)        NOT NULL PRIMARY KEY,
+    post_id             VARCHAR(255)    NOT NULL,
+    saver_id            CHAR(36)        NOT NULL,
+    saved_channel_id    CHAR(36)        NOT NULL,
+    created_at          DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+    updated_at          DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
+    INDEX idx_post_id (post_id),
+    INDEX idx_saver_id (saver_id),
+    INDEX idx_saved_channel_id (saved_channel_id),
+    UNIQUE KEY unique_save (post_id, saver_id, saved_channel_id),
+    FOREIGN KEY (post_id) REFERENCES external_posts(post_id) ON DELETE CASCADE,
+    FOREIGN KEY (saver_id) REFERENCES feeds(feed_id) ON DELETE CASCADE,
+    FOREIGN KEY (saved_channel_id) REFERENCES saved_post_channels(channel_id) ON DELETE CASCADE
+) ENGINE = InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+ALTER TABLE saved_posts DROP FOREIGN KEY saved_posts_ibfk_1;
+ALTER TABLE saved_posts DROP FOREIGN KEY saved_posts_ibfk_2;
+ALTER TABLE saved_posts DROP FOREIGN KEY saved_posts_ibfk_3;
+ALTER TABLE saved_posts DROP FOREIGN KEY saved_posts_ibfk_4;
+ALTER TABLE saved_posts
+ADD CONSTRAINT fk_saved_posts_post
+FOREIGN KEY (post_id) REFERENCES posts(post_id) ON DELETE CASCADE;
+
+ALTER TABLE saved_posts
+ADD CONSTRAINT fk_saved_posts_saver
+FOREIGN KEY (saver_id) REFERENCES feeds(feed_id) ON DELETE CASCADE;
+
+ALTER TABLE saved_posts
+ADD CONSTRAINT fk_saved_posts_feed
+FOREIGN KEY (feed_id) REFERENCES feeds(feed_id) ON DELETE CASCADE;
+
+ALTER TABLE saved_posts
+ADD CONSTRAINT fk_saved_posts_parent_channel
+FOREIGN KEY (channel_id) REFERENCES feed_channels(channel_id) ON DELETE CASCADE;
+
+ALTER TABLE saved_posts
+ADD CONSTRAINT fk_saved_posts_saved_channel
+FOREIGN KEY (saved_channel_id) REFERENCES saved_post_channels(channel_id) ON DELETE CASCADE;
+
+CREATE INDEX idx_saved_posts_channel ON saved_posts(saved_channel_id);
+
+SET SQL_SAFE_UPDATES = 0;
+INSERT INTO saved_post_channels (channel_id, saver_id, channel_name, display_order, created_at, updated_at)
+SELECT
+    UUID() as channel_id,
+    sp.saver_id,
+    'Main' as channel_name,
+    0 as display_order,
+    NOW(3) as created_at,
+    NOW(3) as updated_at
+FROM saved_posts sp
+LEFT JOIN saved_post_channels spc ON sp.saver_id = spc.saver_id AND spc.channel_name = 'Main'
+WHERE spc.channel_id IS NULL
+GROUP BY sp.saver_id;
+
+-- Update existing saved_posts to reference their user's Main channel
+-- This assumes saved_channel_id might be NULL or point to a non-existent channel
+UPDATE saved_posts sp
+INNER JOIN saved_post_channels spc
+    ON sp.saver_id = spc.saver_id
+    AND spc.channel_name = 'Main'
+SET sp.saved_channel_id = spc.channel_id
+WHERE sp.saved_channel_id IS NULL
+   OR sp.saved_channel_id NOT IN (SELECT channel_id FROM saved_post_channels);
+SET SQL_SAFE_UPDATES = 1;
