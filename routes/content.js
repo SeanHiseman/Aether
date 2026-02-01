@@ -561,9 +561,10 @@ router.post("/create_post", standardLimiter, authenticateCheck, checkStorageLimi
 
 router.post("/explore_posts", standardLimiter, async (req, res) => {
     try {
-        const { followedFeedIds, recentUpvotes, limit = 100, offset = 0 } = req.body;
+        const { followedFeedIds, recentUpvotes, excludePostIds = [], limit = 100, offset = 0 } = req.body;
 		const userId = req?.session?.user_id || null;
         const viewerId = req?.session?.viewer_id || null;
+		console.log(`[EXPLORE] Request: limit=${limit}, offset=${offset}, userId=${userId}, viewerId=${viewerId}`);
         const includeOptions = [{
             model: Feeds,
             as: "poster",
@@ -626,11 +627,15 @@ router.post("/explore_posts", standardLimiter, async (req, res) => {
 			recentUpvotes,
 			userId,
 			viewerId,
+			excludePostIds,
 		});
 		const posts = algorithmResult.posts;
 		const status = algorithmResult.status;
 		const message = algorithmResult.message;
-		res.status(200).json({ hasMore: posts.length >= limit, posts: posts, status: status, message: message });
+		// hasMore should be true if we got a full batch, indicating there might be more
+		const hasMore = posts.length === limit;
+		console.log(`[EXPLORE] Response: returned ${posts.length} posts, hasMore=${hasMore}, status=${status}`);
+		res.status(200).json({ hasMore, posts: posts, status: status, message: message });
     } catch (error) {
         console.error(new Date().toISOString(), '/explore_posts error:', error);
         res.status(500).json({ success: false, message: 'Error fetching explore posts.' });

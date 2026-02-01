@@ -12,7 +12,7 @@ import PlatformConnect from '../socialConnect/platformConnect';
 import SwipeableAside from '../components/swipeableAside';
 import { useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
-import { useNavigate, useOutletContext, useParams } from 'react-router-dom';
+import { useNavigate, useOutletContext, useLocation, useParams } from 'react-router-dom';
 import { ValidateTextInput } from '../functions/validateTextInput';
 
 const FETCH_LIMIT = 100;
@@ -25,7 +25,9 @@ const DeepFeed = () => {
         return Object.keys(accounts);
     });
     const [contents, setContents] = useState([]);
-    const { deep_feed_id } = useParams();
+    const { deep_feed_id: urlParam } = useParams();
+    const location = useLocation();
+    const deep_feed_id = location.pathname === '/following' ? 'following' : urlParam;
     const isFollowing = deep_feed_id === 'following' ? true : false;
     const [deepFeed, setDeepFeed] = useState(() => {
         if (isFollowing) {
@@ -189,7 +191,7 @@ const DeepFeed = () => {
                 deepFeedId: normalisedDeepFeedId,
                 followedFeedIds: followedFeedIds,
                 limit: FETCH_LIMIT,
-                offset: pageParam, 
+                offset: pageParam,
                 recentUpvotes
             });
             if (pageParam === 0 && response.data?.deepFeed) {
@@ -365,11 +367,9 @@ const DeepFeed = () => {
     const visiblePosts = allPosts.filter(p => {
         const isRepost = p.is_repost;
         const isExternal = p.is_external || p.isExternal;
-
-        // First check native/external filters
+        //First check native/external filters
         const passesTypeFilter = (includeNative && !isExternal) || (includeExternal && isExternal);
         if (!passesTypeFilter) return false;
-
         // Then check repost filter
         if (isRepost && !includeReposts) return false;
 

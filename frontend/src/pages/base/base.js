@@ -762,7 +762,7 @@ const BaseLayout = () => {
                                         <Link to="/explore" className={`channel-link ${location.pathname.startsWith('/explore') ? 'selected' : ''}`}>
                                             Explore
                                         </Link>
-                                        <Link to="/d/following" className={`channel-link ${location.pathname.startsWith('/d/following') ? 'selected' : ''}`}>
+                                        <Link to="/following" className={`channel-link ${location.pathname.startsWith('/following') ? 'selected' : ''}`}>
                                             Following
                                         </Link>
                                         <Link to="/saved/Main" className={`channel-link ${location.pathname.startsWith('/saved') ? 'selected' : ''}`}>

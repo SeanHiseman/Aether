@@ -14,7 +14,7 @@ import Sequelize, { QueryTypes } from 'sequelize';
 import sequelize from "../databaseSetup.js";
 import { stripExcludedAttributes } from "./algorithmFunctions/stripExcludedAttributes.js";
 
-async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOptions, isGroup = true, isMain, limit = 100, offset, recentUpvotes, viewerId, keyword = '', connectedAccounts = [], userId }) {
+async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOptions, isGroup = true, isMain, limit = 100, offset, recentUpvotes, viewerId, keyword = '', connectedAccounts = [], userId, excludePostIds = [] }) {
 	try {
         //Followed feeds are a received as a string
 		const followedFeedIdsSafe = (typeof followedFeedIds === "string")
@@ -703,6 +703,7 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
 				}));
 			}
         } else if (locationId === "explore") {
+			console.log(`[EXPLORE ALGORITHM] locationId=explore, offset=${offset}, limit=${limit}, hasActiveAlgorithm=${hasActiveAlgorithm}`);
 			if (hasActiveAlgorithm) {
 				//Algorithm path with external posts
 				const nativePostIds = await Posts.findAll({
@@ -745,11 +746,48 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
 				posts = await fetchPaginatedPostData({ paginatedIds, scoreMap, includeOptions, attrOption });
 			} else {
 				//Standard path with mixed native and external posts
-				//Soft 2:3 preference, interspersed, balanced external sources with graceful degradation
-				const nativeTarget = Math.ceil((backendFetchTotal / 5) * 2);
-				const externalTarget = Math.ceil((backendFetchTotal / 5) * 3);
-				const nativeOffset = Math.floor((offset / 5) * 2);
-				const externalOffset = Math.floor((offset / 5) * 3);
+				//Use proportional offsets but cap at a reasonable limit for performance
+				const idealExternalTarget = Math.ceil(limit * 0.6);
+				const idealNativeTarget = Math.ceil(limit * 0.4);
+				//Cap offsets at 10k for performance (with indexes, should be < 100ms)
+				//Beyond this, performance degrades significantly with OFFSET
+				const MAX_OFFSET = 10000;
+				const cappedOffset = Math.min(offset, MAX_OFFSET);
+				const nativeOffset = Math.floor(cappedOffset * 0.4);
+				const externalOffset = Math.floor(cappedOffset * 0.6);
+				if (offset > MAX_OFFSET) {
+					console.warn(`[EXPLORE ALGORITHM] Offset ${offset} exceeds MAX_OFFSET ${MAX_OFFSET}, capping to prevent performance degradation`);
+				}
+				//Fetch external posts from all platforms combined
+				console.log(`[EXPLORE ALGORITHM] Fetching external: limit=${idealExternalTarget}, offset=${externalOffset}`);
+				const perPlatformTarget = Math.ceil(idealExternalTarget / 3);
+				const perPlatformOffset = Math.floor(externalOffset / 3);
+				const platformQueries = ['bluesky', 'reddit', 'mastodon'].map(platform =>
+					sequelize.query(
+						`SELECT p.post_id, p.source FROM external_posts p
+						WHERE p.source = :platform AND p.expired = false ${externalFiltersSQL}
+						ORDER BY ${lowVoteImpact ? 'p.created_at_remote' : '(p.score * EXP(-0.0001 * TIMESTAMPDIFF(SECOND, p.created_at_remote, NOW())))'} DESC
+						LIMIT :limit OFFSET :offset`,
+						{ replacements: { platform, limit: perPlatformTarget, offset: perPlatformOffset }, type: QueryTypes.SELECT }
+					)
+				);
+				const platformResults = await Promise.all(platformQueries);
+				const externalAccesses = platformResults.flat();
+				console.log(`[EXPLORE ALGORITHM] Found ${externalAccesses.length} external post IDs across all platforms`);
+				const unifiedIds = externalAccesses.map(a => a.post_id);
+				let externalPosts = [];
+				if (unifiedIds.length) {
+					externalPosts = await ExternalPosts.findAll({
+						where: { post_id: unifiedIds, content: { [Op.ne]: null } },
+						raw: true
+					});
+				}
+				console.log(`[EXPLORE ALGORITHM] Loaded ${externalPosts.length} external posts with content`);
+				//Calculate how many native posts we need to reach the limit
+				//If external is limited, fetch more native to compensate
+				const externalShortfall = idealExternalTarget - externalPosts.length;
+				const nativeTarget = idealNativeTarget + externalShortfall;
+				console.log(`[EXPLORE ALGORITHM] External shortfall: ${externalShortfall}, fetching ${nativeTarget} native posts from offset ${nativeOffset}`);
 				const postIds = await Posts.findAll({
 					attributes: ['post_id'],
 					where: {
@@ -763,6 +801,7 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
 					offset: nativeOffset,
 					raw: true
 				});
+				console.log(`[EXPLORE ALGORITHM] Found ${postIds.length} native post IDs`);
 				const orderedIds = postIds.map(p => p.post_id);
 				let localPosts = [];
 				if (orderedIds.length) {
@@ -774,29 +813,6 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
 					});
 					const orderMap = new Map(orderedIds.map((id, i) => [id, i]));
 					localPosts.sort((a, b) => orderMap.get(a.post_id) - orderMap.get(b.post_id));
-				}
-				//Fetch equal amounts from each platform
-				const perPlatformTarget = Math.ceil(externalTarget / 3);
-				const perPlatformOffset = Math.floor(externalOffset / 3);
-				const platformQueries = ['bluesky', 'reddit', 'mastodon'].map(platform =>
-					sequelize.query(
-						`SELECT p.post_id, p.source FROM external_posts p
-						WHERE p.source = :platform AND p.expired = false
-						AND p.created_at_remote >= DATE_SUB(NOW(), INTERVAL 3 DAY) ${externalFiltersSQL}
-						ORDER BY ${lowVoteImpact ? 'p.created_at_remote' : '(p.score * EXP(-0.0001 * TIMESTAMPDIFF(SECOND, p.created_at_remote, NOW())))'} DESC
-						LIMIT :limit OFFSET :offset`,
-						{ replacements: { platform, limit: perPlatformTarget, offset: perPlatformOffset }, type: QueryTypes.SELECT }
-					)
-				);
-				const platformResults = await Promise.all(platformQueries);
-				const externalAccesses = platformResults.flat();
-				const unifiedIds = externalAccesses.map(a => a.post_id);
-				let externalPosts = [];
-				if (unifiedIds.length) {
-					externalPosts = await ExternalPosts.findAll({
-						where: { post_id: unifiedIds, content: { [Op.ne]: null } },
-						raw: true
-					});
 				}
 				const formattedExternal = externalPosts.map(p => formatExternalPost(p, FEED_CONFIG[p.source], p.source));
 				const localWithFlag = localPosts.map(p => ({ ...(p.dataValues || p), isExternal: false }));
@@ -853,7 +869,10 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
 						nativeScore += externalWeight;
 					}
 				}
+				// Take only the requested amount after mixing
 				posts = mixedPosts.slice(0, backendFetchTotal);
+				console.log(`[EXPLORE ALGORITHM] After mixing: ${mixedPosts.length} total, returning ${posts.length} posts`);
+				console.log(`[EXPLORE ALGORITHM] Mix breakdown: ${posts.filter(p => !p.isExternal).length} native, ${posts.filter(p => p.isExternal).length} external`);
 			}
         } else if (typeof locationId === 'string' && locationId.startsWith('deep_')) {
             const deepFeedId = locationId.replace(/^deep_/, '');
@@ -1240,7 +1259,7 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
 				has_reposted: repostSet.has(p.post_id)
 			};
 		});
-		return { posts: stripExcludedAttributes(postsWithVotes), status: "ok", message: "" };
+		return { posts: stripExcludedAttributes(filteredPosts), status: "ok", message: "" };
 	} catch (error) {
 		console.error(new Date().toISOString(), 'Error in ApplyAlgorithm:', error);
 		return { posts: [], status: "error", message: "" };

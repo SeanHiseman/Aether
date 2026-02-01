@@ -38,7 +38,7 @@ const ExplorePage = () => {
 
 	const fetchPosts = useCallback(async (page = 0) => {
 		try {
-			//console.log("Fetching posts for page", page);
+			console.log(`[EXPLORE FRONTEND] Fetching posts - page=${page}, offset=${page * FETCH_LIMIT}`);
 			const followedFeeds = JSON.parse(localStorage.getItem("followedFeeds") || "[]");
 			const recentUpvotes = JSON.parse(localStorage.getItem("recentUpvotes") || "[]");
 			const followedFeedIds = followedFeeds.map(f => f.feed_id);
@@ -48,11 +48,12 @@ const ExplorePage = () => {
 				followedFeedIds,
 				recentUpvotes
 			});
-			//console.log("Fetched posts response:", response.data);
 			const newPosts = Array.isArray(response.data?.posts) ? response.data.posts : [];
 			const status = response.data?.status;
 			const message = response.data?.message;
-			setHasMorePosts(response.data?.hasMore ?? false);
+			const hasMore = response.data?.hasMore ?? false;
+			console.log(`[EXPLORE FRONTEND] Received ${newPosts.length} posts, hasMore=${hasMore}, status=${status}`);
+			setHasMorePosts(hasMore);
 			if (page === 0 && message) {
 				setErrorMessage(message);
 			} else if (page === 0) {
@@ -61,14 +62,17 @@ const ExplorePage = () => {
 			if (page === 0) {
 				setPosts(newPosts);
 			} else {
-				setPosts(prev => [...prev, ...newPosts]);
+				setPosts(prev => {
+					console.log(`[EXPLORE FRONTEND] Appending ${newPosts.length} posts to existing ${prev.length} posts`);
+					return [...prev, ...newPosts];
+				});
 			}
 		} catch (error) {
-			//console.log("error fetching posts:", error);
+			console.error("[EXPLORE FRONTEND] Error fetching posts:", error);
 			setErrorMessage(error.response?.data?.message || "Failed to fetch posts");
 			setHasMorePosts(false);
 		}
-	}, []); 
+	}, []);
 
 	const fetchFeeds = useCallback(async (page = 0) => {
 		try {
@@ -98,14 +102,27 @@ const ExplorePage = () => {
 	}, []);
 
 	const loadMore = useCallback(async () => {
-		if (isLoading) return;
+		if (isLoading) {
+			console.log("[EXPLORE FRONTEND] loadMore skipped - already loading");
+			return;
+		}
 		if (filter === "all") {
-			if (!hasMorePosts && !hasMoreFeeds) return;
+			console.log(`[EXPLORE FRONTEND] loadMore - hasMorePosts=${hasMorePosts}, hasMoreFeeds=${hasMoreFeeds}, postPage=${postPage}, feedPage=${feedPage}`);
+			if (!hasMorePosts && !hasMoreFeeds) {
+				console.log("[EXPLORE FRONTEND] loadMore stopped - no more posts or feeds");
+				return;
+			}
 			setIsLoading(true);
 			const nextPostPage = postPage + 1;
 			const nextFeedPage = feedPage + 1;
-			if (hasMorePosts) await fetchPosts(nextPostPage);
-			if (hasMoreFeeds) await fetchFeeds(nextFeedPage);
+			if (hasMorePosts) {
+				console.log(`[EXPLORE FRONTEND] Fetching more posts - page ${nextPostPage}`);
+				await fetchPosts(nextPostPage);
+			}
+			if (hasMoreFeeds) {
+				console.log(`[EXPLORE FRONTEND] Fetching more feeds - page ${nextFeedPage}`);
+				await fetchFeeds(nextFeedPage);
+			}
 			if (hasMorePosts) setPostPage(nextPostPage);
 			if (hasMoreFeeds) setFeedPage(nextFeedPage);
 			setIsLoading(false);
@@ -133,7 +150,7 @@ const ExplorePage = () => {
 		}
 	}, [loadMore, isLoading]);
 
-	//Filter posts by native/external toggles
+	//Filter posts by native/external toggles (but keep viewed posts visible to prevent jumping)
 	const visiblePosts = useMemo(() => {
 		return posts.filter(p =>
 			(includeNative && !p.is_external) || (includeExternal && p.is_external)

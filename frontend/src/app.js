@@ -120,7 +120,8 @@ const App = () => {
 								</Route>
 								<Route path="connections/:connection_name" element={<ProtectedRoute><ChatPage /></ProtectedRoute>} />
 								<Route path="connections/:connection_name/:chat_id" element={<ProtectedRoute><ChatPage /></ProtectedRoute>} />
-								<Route path="d/:deep_feed_id" element={<ProtectedRoute><DeepFeed/></ProtectedRoute>} />
+								<Route path="following" element={<ProtectedRoute><DeepFeed/></ProtectedRoute>} />
+								<Route path="c/:deep_feed_id" element={<ProtectedRoute><DeepFeed/></ProtectedRoute>} />
 								<Route path="search" element={<SearchResults />} />
 								<Route path="u/:feed_name" element={<FeedWrapper />}>
 									<Route index element={<Navigate to="Main" replace />} />

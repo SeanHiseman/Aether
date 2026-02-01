@@ -463,7 +463,7 @@ router.get('/deep_feed_contents/:deepFeedId', standardLimiter, authenticateCheck
 
 router.post('/deep_feed_posts', standardLimiter, authenticateCheck, async (req, res) => {
     try {
-        const { connectedAccounts = [], deepFeedId, followedFeedIds: rawFollowedFeedIds, limit = 100, offset = 0, recentUpvotes } = req.body;
+        const { connectedAccounts = [], deepFeedId, excludePostIds = [], followedFeedIds: rawFollowedFeedIds, limit = 100, offset = 0, recentUpvotes } = req.body;
         let followedFeedIds = rawFollowedFeedIds || [];
         if (!Array.isArray(followedFeedIds)) {
             followedFeedIds = [followedFeedIds];
@@ -521,7 +521,8 @@ router.post('/deep_feed_posts', standardLimiter, authenticateCheck, async (req, 
             recentUpvotes,
             viewerId,
             connectedAccounts,
-            userId
+            userId,
+            excludePostIds
         });
         const posts = algorithmResult.posts;
         const status = algorithmResult.status;
