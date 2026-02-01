@@ -145,16 +145,24 @@ const ExplorePage = () => {
 		const element = scrollRef.current;
 		if (!element || isLoading) return;
 		const threshold = window.innerHeight * 2; //Fetch new content 2 vertical height away from bottom
-		if (element.scrollTop + element.clientHeight >= element.scrollHeight - threshold) {
+		const scrollTop = element.scrollTop;
+		const clientHeight = element.clientHeight;
+		const scrollHeight = element.scrollHeight;
+		const distanceFromBottom = scrollHeight - scrollTop - clientHeight;
+
+		if (distanceFromBottom <= threshold) {
+			console.log(`[EXPLORE FRONTEND] Scroll threshold reached - distance from bottom: ${distanceFromBottom}px, threshold: ${threshold}px`);
 			loadMore();
 		}
 	}, [loadMore, isLoading]);
 
 	//Filter posts by native/external toggles (but keep viewed posts visible to prevent jumping)
 	const visiblePosts = useMemo(() => {
-		return posts.filter(p =>
+		const filtered = posts.filter(p =>
 			(includeNative && !p.is_external) || (includeExternal && p.is_external)
 		);
+		console.log(`[EXPLORE FRONTEND] Posts filtered: ${posts.length} total, ${filtered.length} visible (native toggle: ${includeNative}, external toggle: ${includeExternal})`);
+		return filtered;
 	}, [posts, includeNative, includeExternal]);
 
 	const combinedItems = useMemo(() => {

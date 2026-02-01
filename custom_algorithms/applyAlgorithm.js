@@ -703,7 +703,7 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
 				}));
 			}
         } else if (locationId === "explore") {
-			console.log(`[EXPLORE ALGORITHM] locationId=explore, offset=${offset}, limit=${limit}, hasActiveAlgorithm=${hasActiveAlgorithm}`);
+			//console.log(`[EXPLORE ALGORITHM] locationId=explore, offset=${offset}, limit=${limit}, hasActiveAlgorithm=${hasActiveAlgorithm}`);
 			if (hasActiveAlgorithm) {
 				//Algorithm path with external posts
 				const nativePostIds = await Posts.findAll({
@@ -755,11 +755,11 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
 				const cappedOffset = Math.min(offset, MAX_OFFSET);
 				const nativeOffset = Math.floor(cappedOffset * 0.4);
 				const externalOffset = Math.floor(cappedOffset * 0.6);
-				if (offset > MAX_OFFSET) {
-					console.warn(`[EXPLORE ALGORITHM] Offset ${offset} exceeds MAX_OFFSET ${MAX_OFFSET}, capping to prevent performance degradation`);
-				}
+				//if (offset > MAX_OFFSET) {
+					//console.warn(`[EXPLORE ALGORITHM] Offset ${offset} exceeds MAX_OFFSET ${MAX_OFFSET}, capping to prevent performance degradation`);
+				//}
 				//Fetch external posts from all platforms combined
-				console.log(`[EXPLORE ALGORITHM] Fetching external: limit=${idealExternalTarget}, offset=${externalOffset}`);
+				//console.log(`[EXPLORE ALGORITHM] Fetching external: limit=${idealExternalTarget}, offset=${externalOffset}`);
 				const perPlatformTarget = Math.ceil(idealExternalTarget / 3);
 				const perPlatformOffset = Math.floor(externalOffset / 3);
 				const platformQueries = ['bluesky', 'reddit', 'mastodon'].map(platform =>
@@ -773,7 +773,7 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
 				);
 				const platformResults = await Promise.all(platformQueries);
 				const externalAccesses = platformResults.flat();
-				console.log(`[EXPLORE ALGORITHM] Found ${externalAccesses.length} external post IDs across all platforms`);
+				//console.log(`[EXPLORE ALGORITHM] Found ${externalAccesses.length} external post IDs across all platforms`);
 				const unifiedIds = externalAccesses.map(a => a.post_id);
 				let externalPosts = [];
 				if (unifiedIds.length) {
@@ -782,12 +782,12 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
 						raw: true
 					});
 				}
-				console.log(`[EXPLORE ALGORITHM] Loaded ${externalPosts.length} external posts with content`);
+				//console.log(`[EXPLORE ALGORITHM] Loaded ${externalPosts.length} external posts with content`);
 				//Calculate how many native posts we need to reach the limit
 				//If external is limited, fetch more native to compensate
 				const externalShortfall = idealExternalTarget - externalPosts.length;
 				const nativeTarget = idealNativeTarget + externalShortfall;
-				console.log(`[EXPLORE ALGORITHM] External shortfall: ${externalShortfall}, fetching ${nativeTarget} native posts from offset ${nativeOffset}`);
+				//console.log(`[EXPLORE ALGORITHM] External shortfall: ${externalShortfall}, fetching ${nativeTarget} native posts from offset ${nativeOffset}`);
 				const postIds = await Posts.findAll({
 					attributes: ['post_id'],
 					where: {
@@ -801,7 +801,7 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
 					offset: nativeOffset,
 					raw: true
 				});
-				console.log(`[EXPLORE ALGORITHM] Found ${postIds.length} native post IDs`);
+				//console.log(`[EXPLORE ALGORITHM] Found ${postIds.length} native post IDs`);
 				const orderedIds = postIds.map(p => p.post_id);
 				let localPosts = [];
 				if (orderedIds.length) {
@@ -871,8 +871,8 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
 				}
 				// Take only the requested amount after mixing
 				posts = mixedPosts.slice(0, backendFetchTotal);
-				console.log(`[EXPLORE ALGORITHM] After mixing: ${mixedPosts.length} total, returning ${posts.length} posts`);
-				console.log(`[EXPLORE ALGORITHM] Mix breakdown: ${posts.filter(p => !p.isExternal).length} native, ${posts.filter(p => p.isExternal).length} external`);
+				//console.log(`[EXPLORE ALGORITHM] After mixing: ${mixedPosts.length} total, returning ${posts.length} posts`);
+				//console.log(`[EXPLORE ALGORITHM] Mix breakdown: ${posts.filter(p => !p.isExternal).length} native, ${posts.filter(p => p.isExternal).length} external`);
 			}
         } else if (typeof locationId === 'string' && locationId.startsWith('deep_')) {
             const deepFeedId = locationId.replace(/^deep_/, '');

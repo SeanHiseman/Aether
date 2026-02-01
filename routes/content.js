@@ -632,8 +632,9 @@ router.post("/explore_posts", standardLimiter, async (req, res) => {
 		const posts = algorithmResult.posts;
 		const status = algorithmResult.status;
 		const message = algorithmResult.message;
-		// hasMore should be true if we got a full batch, indicating there might be more
-		const hasMore = posts.length === limit;
+		// hasMore should be true as long as we got posts, even if less than limit
+		// Only return false when we get 0 posts (truly exhausted)
+		const hasMore = posts.length > 0;
 		console.log(`[EXPLORE] Response: returned ${posts.length} posts, hasMore=${hasMore}, status=${status}`);
 		res.status(200).json({ hasMore, posts: posts, status: status, message: message });
     } catch (error) {
