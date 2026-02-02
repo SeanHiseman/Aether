@@ -14,6 +14,48 @@ import Sequelize, { QueryTypes } from 'sequelize';
 import sequelize from "../databaseSetup.js";
 import { stripExcludedAttributes } from "./algorithmFunctions/stripExcludedAttributes.js";
 
+/**
+ * Helper function to fetch parent posts for replies and attach them to the posts
+ * @param {Array} posts - Array of posts that may contain replies
+ * @param {Array} includeOptions - Sequelize include options for fetching posts
+ * @returns {Array} Posts with parent post data attached where applicable
+ */
+async function attachParentPosts(posts, includeOptions) {
+	if (!posts || posts.length === 0) return posts;
+
+	//Find posts that are replies (have a parent_id)
+	const postsWithParents = posts.filter(p => p.parent_id);
+	if (postsWithParents.length === 0) return posts;
+
+	//Get unique parent IDs
+	const parentIds = [...new Set(postsWithParents.map(p => p.parent_id))];
+
+	//Fetch parent posts
+	const parentPosts = await Posts.findAll({
+		where: { post_id: { [Op.in]: parentIds } },
+		include: includeOptions,
+		raw: false
+	});
+
+	//Create a map of parent posts by post_id
+	const parentMap = new Map();
+	parentPosts.forEach(parent => {
+		const parentData = parent.dataValues || parent;
+		parentMap.set(parentData.post_id, parentData);
+	});
+
+	//Attach parent post data to each reply
+	return posts.map(post => {
+		if (post.parent_id && parentMap.has(post.parent_id)) {
+			return {
+				...(post.dataValues || post),
+				parentPost: parentMap.get(post.parent_id)
+			};
+		}
+		return post;
+	});
+}
+
 async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOptions, isGroup = true, isMain, limit = 100, offset, recentUpvotes, viewerId, keyword = '', connectedAccounts = [], userId, excludePostIds = [] }) {
 	try {
         //Followed feeds are a received as a string
@@ -306,12 +348,12 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
 			const hasExternalSources = connectedAccounts.length > 0;
 			if (hasActiveAlgorithm) {
 				//Algorithm path: fetch all candidates, score, then paginate
+				//Include both top-level posts and replies from followed feeds
 				const nativePostIds = await Posts.findAll({
 					attributes: ['post_id'],
 					where: {
 						...algorithmFilters,
 						feed_id: { [Op.in]: followedFeedIdsSafe },
-						parent_id: null,
 						...(viewerId ? { poster_id: { [Op.not]: viewerId } } : {})
 					},
 					order: [['created_at', 'DESC']],
@@ -371,12 +413,12 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
 				//Standard path with source mixing
 				const halfLimit = Math.ceil(backendFetchTotal / 2);
 				const halfOffset = Math.floor(offset / 2);
+				//Include both top-level posts and replies from followed feeds
 				const postIds = await Posts.findAll({
 					attributes: ['post_id'],
 					where: {
 						...algorithmFilters,
 						feed_id: { [Op.in]: followedFeedIdsSafe },
-						parent_id: null,
 						...(viewerId ? { poster_id: { [Op.not]: viewerId } } : {})
 					},
 					order: orderMode,
@@ -998,7 +1040,8 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
 						...(feedId ? [{ feed_id: feedId }] : [])
 					]
 				} : {}),
-				parent_id: null,
+				//For main feed, include replies; for channels, only top-level posts
+				...(!isMain ? { parent_id: null } : {}),
 			};
 			if (hasActiveAlgorithm) {
 				//Algorithm path
@@ -1181,9 +1224,11 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
 			}]));
 			const savedSet = new Set([...savedNativeRows.map(s => s.post_id), ...savedExternalRows.map(s => s.post_id)]);
 			const repostSet = new Set(repostRows.map(r => r.post_id));
+			//Attach parent posts to replies
+			const postsWithParents = await attachParentPosts(posts, includeOptions);
 			return {
 				posts: stripExcludedAttributes(
-					posts.map(p => {
+					postsWithParents.map(p => {
 						const isExternal = p.isExternal || p.is_external;
 						const votes = isExternal
 							? (externalVoteMap.get(p.post_id) || { has_upvoted: false, has_downvoted: false })
@@ -1247,7 +1292,9 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
 		}));
 		const savedSet = new Set([...savedNativeRows.map(s => s.post_id), ...savedExternalRows.map(s => s.post_id)]);
 		const repostSet = new Set(repostRows.map(r => r.post_id));
-		const postsWithVotes = posts.map(p => {
+		//Attach parent posts to replies
+		const postsWithParents = await attachParentPosts(posts, includeOptions);
+		const postsWithVotes = postsWithParents.map(p => {
 			const isExternal = p.isExternal || p.is_external;
 			const votes = isExternal
 				? (externalVoteMap.get(p.post_id) || { has_upvoted: false, has_downvoted: false })
@@ -1259,7 +1306,7 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
 				has_reposted: repostSet.has(p.post_id)
 			};
 		});
-		return { posts: stripExcludedAttributes(filteredPosts), status: "ok", message: "" };
+		return { posts: stripExcludedAttributes(postsWithVotes), status: "ok", message: "" };
 	} catch (error) {
 		console.error(new Date().toISOString(), 'Error in ApplyAlgorithm:', error);
 		return { posts: [], status: "error", message: "" };

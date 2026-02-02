@@ -38,7 +38,6 @@ const ExplorePage = () => {
 
 	const fetchPosts = useCallback(async (page = 0) => {
 		try {
-			console.log(`[EXPLORE FRONTEND] Fetching posts - page=${page}, offset=${page * FETCH_LIMIT}`);
 			const followedFeeds = JSON.parse(localStorage.getItem("followedFeeds") || "[]");
 			const recentUpvotes = JSON.parse(localStorage.getItem("recentUpvotes") || "[]");
 			const followedFeedIds = followedFeeds.map(f => f.feed_id);
@@ -52,7 +51,6 @@ const ExplorePage = () => {
 			const status = response.data?.status;
 			const message = response.data?.message;
 			const hasMore = response.data?.hasMore ?? false;
-			console.log(`[EXPLORE FRONTEND] Received ${newPosts.length} posts, hasMore=${hasMore}, status=${status}`);
 			setHasMorePosts(hasMore);
 			if (page === 0 && message) {
 				setErrorMessage(message);
@@ -63,12 +61,10 @@ const ExplorePage = () => {
 				setPosts(newPosts);
 			} else {
 				setPosts(prev => {
-					console.log(`[EXPLORE FRONTEND] Appending ${newPosts.length} posts to existing ${prev.length} posts`);
 					return [...prev, ...newPosts];
 				});
 			}
 		} catch (error) {
-			console.error("[EXPLORE FRONTEND] Error fetching posts:", error);
 			setErrorMessage(error.response?.data?.message || "Failed to fetch posts");
 			setHasMorePosts(false);
 		}
@@ -103,24 +99,19 @@ const ExplorePage = () => {
 
 	const loadMore = useCallback(async () => {
 		if (isLoading) {
-			console.log("[EXPLORE FRONTEND] loadMore skipped - already loading");
 			return;
 		}
 		if (filter === "all") {
-			console.log(`[EXPLORE FRONTEND] loadMore - hasMorePosts=${hasMorePosts}, hasMoreFeeds=${hasMoreFeeds}, postPage=${postPage}, feedPage=${feedPage}`);
 			if (!hasMorePosts && !hasMoreFeeds) {
-				console.log("[EXPLORE FRONTEND] loadMore stopped - no more posts or feeds");
 				return;
 			}
 			setIsLoading(true);
 			const nextPostPage = postPage + 1;
 			const nextFeedPage = feedPage + 1;
 			if (hasMorePosts) {
-				console.log(`[EXPLORE FRONTEND] Fetching more posts - page ${nextPostPage}`);
 				await fetchPosts(nextPostPage);
 			}
 			if (hasMoreFeeds) {
-				console.log(`[EXPLORE FRONTEND] Fetching more feeds - page ${nextFeedPage}`);
 				await fetchFeeds(nextFeedPage);
 			}
 			if (hasMorePosts) setPostPage(nextPostPage);
@@ -235,11 +226,15 @@ const ExplorePage = () => {
 						{filter === "all" && (
 							<div className="flex flex-col w-99">
 								{combinedItems.map((item, idx) => item?.type === "post" ? (
-									<div key={`post-${item?.data?.post_id}`} className="bg-gray-800 rounded-xl">
+									<div key={`post-${item?.data?.post_id}`} className="med-mar-bottom">
+										{/* Display parent post above reply if this post is a reply */}
+										{item.data.parentPost && !item.data?.is_external && (
+											<ContentWidget post={item.data?.parentPost} showAsParent />
+										)}
 										{item.data.is_external ? (
 											<ExternalPostWidget post={item.data} />
 										) : (
-											<ContentWidget post={item.data} />
+											<ContentWidget post={item.data} parent={item.data?.parentPost || null} />
 										)}
 									</div>
 								) : (
@@ -255,11 +250,15 @@ const ExplorePage = () => {
 						{filter === "posts" && (
 							<div className="flex flex-col w-99">
 								{visiblePosts.map(post => (
-									<div key={post.post_id} className="bg-gray-800 rounded-xl">
-										{post.is_external ? (
+									<div key={post?.post_id} className="med-mar-bottom">
+										{/* Display parent post above reply if this post is a reply */}
+										{post?.parentPost && !post?.is_external && (
+											<ContentWidget post={post.parentPost} showAsParent />
+										)}
+										{post?.is_external ? (
 											<ExternalPostWidget post={post} />
 										) : (
-											<ContentWidget post={post} />
+											<ContentWidget post={post} parent={post?.parentPost || null} />
 										)}
 									</div>
 								))}

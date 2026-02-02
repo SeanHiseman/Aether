@@ -564,7 +564,7 @@ router.post("/explore_posts", standardLimiter, async (req, res) => {
         const { followedFeedIds, recentUpvotes, excludePostIds = [], limit = 100, offset = 0 } = req.body;
 		const userId = req?.session?.user_id || null;
         const viewerId = req?.session?.viewer_id || null;
-		console.log(`[EXPLORE] Request: limit=${limit}, offset=${offset}, userId=${userId}, viewerId=${viewerId}`);
+		//console.log(`[EXPLORE] Request: limit=${limit}, offset=${offset}, userId=${userId}, viewerId=${viewerId}`);
         const includeOptions = [{
             model: Feeds,
             as: "poster",
@@ -635,7 +635,7 @@ router.post("/explore_posts", standardLimiter, async (req, res) => {
 		// hasMore should be true as long as we got posts, even if less than limit
 		// Only return false when we get 0 posts (truly exhausted)
 		const hasMore = posts.length > 0;
-		console.log(`[EXPLORE] Response: returned ${posts.length} posts, hasMore=${hasMore}, status=${status}`);
+		//console.log(`[EXPLORE] Response: returned ${posts.length} posts, hasMore=${hasMore}, status=${status}`);
 		res.status(200).json({ hasMore, posts: posts, status: status, message: message });
     } catch (error) {
         console.error(new Date().toISOString(), '/explore_posts error:', error);

@@ -14,7 +14,7 @@ import SharePostModal from '../modals/sharePostModal';
 import { useCallback, useContext, useEffect, useRef, useState } from 'react';
 import useTimeAgo from '../../functions/useTimeAgo';
 
-const ContentWidget = ({ canRemove = false, display = false, feed, isDraft = false, onPostRemoved, onSaveToggle = () => {}, parent, post, readOnly = false, sharedPost = false }) => {
+const ContentWidget = ({ canRemove = false, display = false, feed, isDraft = false, onPostRemoved, parent, post, showAsParent = false, sharedPost = false }) => {
 	//console.log("ContentWidget post:", post);
 	const authContext = useContext(AuthContext);
 	const { isAuthenticated = false, viewer = null, user = null } = authContext || {};
@@ -44,7 +44,7 @@ const ContentWidget = ({ canRemove = false, display = false, feed, isDraft = fal
 	const [showExpandButton, setShowExpandButton] = useState(false);
 	const [showFullContent, setShowFullContent] = useState(false);
 	const [showNote, setShowNote] = useState(post?.note && post?.note?.is_misinfo);
-	const [showReplies, setShowReplies] = useState(readOnly ? false : (post_id ? (post?.replies > 0) : false));
+	const [showReplies, setShowReplies] = useState(showAsParent ? false : (post_id ? (post?.replies > 0) : false));
 	const [showSaveModal, setShowSaveModal] = useState(false);
 	const [showShareModal, setShowShareModal] = useState(false);
 	const [showQuoteModal, setShowQuoteModal] = useState(false);
@@ -55,7 +55,7 @@ const ContentWidget = ({ canRemove = false, display = false, feed, isDraft = fal
 	const [views, setViews] = useState(post?.views);
     const channelName = post?.parentChannel?.channel_name;
     const feedName = post?.parentChannel?.feed?.feed_name;
-	const isReply = readOnly ? false : post?.parent_id !== null; //Read only means not displaying widget as a reply
+	const isReply = showAsParent ? false : post?.parent_id !== null; //Read only means not displaying widget as a reply
 	const isViewingOwnPost = post?.poster_id === viewer?.feed_id;
 	const timeAgo = useTimeAgo(post?.created_at);
 	const urlPrefix = (post?.parentChannel?.feed?.is_group) ? 'g' : 'u';
@@ -219,7 +219,6 @@ const ContentWidget = ({ canRemove = false, display = false, feed, isDraft = fal
 				}
             }
             setIsSaved(!isSaved);
-			onSaveToggle?.(post?.post_id, !isSaved);
 			setTimeout(() => setPostErrorMessage(""), 3000);
         } catch (error) {
             setPostErrorMessage(error.response?.data?.message || 'Error saving post');
@@ -262,7 +261,6 @@ const ContentWidget = ({ canRemove = false, display = false, feed, isDraft = fal
 				});
 				if (response.data?.success) {
 					setIsSaved(false);
-					onSaveToggle?.(post?.post_id, false);
 				}
 			} catch (error) {
 				setPostErrorMessage(error.response?.data?.message || 'Error unsaving post');
@@ -394,7 +392,7 @@ const ContentWidget = ({ canRemove = false, display = false, feed, isDraft = fal
 	}
 
 	return (
-		<><div className={`content-item ${isReply ? 'reply' : ''}`}>
+		<><div className={`content-item ${isReply ? 'reply' : ''}`} style={showAsParent ? { borderBottomRightRadius: 0 } : {}}>
 			{postErrorMessage && <div className="small-text faded-text">{postErrorMessage}</div>}
 			{post?.title && <Link to={`/${urlPrefix}/${post?.parentChannel?.feed?.feed_name}/${post?.parentChannel?.channel_name}/${post?.post_id}`} className="title-container" onClick={() => incrementViews(post?.post_id)} style={{ display: 'block' }}>
 				<span className="large-text" style={{ marginLeft: 0 }}>
@@ -471,13 +469,11 @@ const ContentWidget = ({ canRemove = false, display = false, feed, isDraft = fal
 						</Link>
 					</div>
 				)}
-				
 				{!isDraft && !display && (
 					<Link to={`/${urlPrefix}/${post?.parentChannel?.feed?.feed_name}/${post?.parentChannel?.channel_name}/${post?.post_id}`} onClick={() => incrementViews(post?.post_id)}>
 						<p className="small-text feed-channel-link faded-text">{feedName}/{channelName}</p>
 					</Link>
 				)}
-				
 				{!isDraft && (
 					<div className="vote-container" style={{ marginRight: `${display && 0}` }}>
 						{sharedPost ? (
@@ -509,7 +505,7 @@ const ContentWidget = ({ canRemove = false, display = false, feed, isDraft = fal
 						)}
 					</div>
 				)}
-				{!readOnly && !isDraft && !display && !sharedPost && (
+				{!showAsParent && !isDraft && !display && !sharedPost && (
 					<div className="post-button-group reply-buttons">
 						<button className="large-icon" data-content-id={post?.post_id} onClick={toggleReplies} title={showReplies ? "Close Replies" : "Show Replies"}>
 							{showReplies ? <FaCommentSlash /> : <FaComments />}
@@ -517,7 +513,7 @@ const ContentWidget = ({ canRemove = false, display = false, feed, isDraft = fal
 						</button>
 					</div>
 				)}
-				{!sharedPost && isAuthenticated && (post?.poster_id === viewer?.feed_id || canRemoveState) && !readOnly && (
+				{!sharedPost && isAuthenticated && (post?.poster_id === viewer?.feed_id || canRemoveState) && !showAsParent && (
 					<div className="post-button-group options-buttons" style={{ position: 'relative' }} ref={dropdownRef}>
 						<button className="large-icon" onClick={() => setShowOptionsDropdown(!showOptionsDropdown)} title="Options">
 							<FaEllipsisV />
@@ -633,7 +629,7 @@ const ContentWidget = ({ canRemove = false, display = false, feed, isDraft = fal
 						<div>
 							<button
 								className="large-icon"
-								disabled={readOnly}
+								disabled={showAsParent}
 								onClick={() => navigate(
 									`/${urlPrefix}/${post?.parentChannel?.feed?.feed_name}/${post?.parentChannel?.channel_name}/${post?.post_id}/reply`,
 									{ state: { replyingTo: post } } 
@@ -656,7 +652,7 @@ const ContentWidget = ({ canRemove = false, display = false, feed, isDraft = fal
 									onPostRemoved={replyRemoved}
 									parent={post}
 									post={reply}
-									readOnly={readOnly} />
+									showAsParent={showAsParent} />
 							))
 						) : (
 							<p className="small-text faded-text" style={{ marginLeft: '5px' }}>No replies</p>
@@ -674,7 +670,7 @@ const ContentWidget = ({ canRemove = false, display = false, feed, isDraft = fal
 		</div>
 		<ConfirmModal isOpen={showDeleteConfirm} onConfirm={confirmDelete} onCancel={cancelDelete} title={`Delete ${pendingDeleteAction}`} message={`Are you sure you want to delete this ${pendingDeleteAction}?`} />
 		{showQuoteModal && <QuotePostModal post={post} onClose={() => setShowQuoteModal(false)} />}
-		{showSaveModal && <SaveToChannelModal post={post} isExternal={false} onClose={() => setShowSaveModal(false)} onSaveComplete={(saved) => { setIsSaved(saved); onSaveToggle?.(post?.post_id, saved); }} />}
+		{showSaveModal && <SaveToChannelModal post={post} isExternal={false} onClose={() => setShowSaveModal(false)} onSaveComplete={(saved) => { setIsSaved(saved); }} />}
 		{showShareModal && <SharePostModal post={post} isExternal={false} onClose={() => setShowShareModal(false)} />}
 		</>
 	);

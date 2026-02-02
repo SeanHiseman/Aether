@@ -4,10 +4,9 @@ import ChannelList from '../../components/channels/channelList';
 import ContentWidget from '../../components/content/contentWidget';
 import ExternalPostWidget from '../../socialConnect/externalPostWidget';
 import { FaEdit, FaMinus, FaPlus, FaRegWindowClose, FaSave, FaTrash } from 'react-icons/fa';
-import { Link, useNavigate, useOutletContext, useParams } from 'react-router-dom';
+import { useNavigate, useOutletContext, useParams } from 'react-router-dom';
 import SwipeableAside from '../../components/swipeableAside';
 import { useCallback, useContext, useEffect, useState, useRef } from 'react';
-import { v4 } from 'uuid';
 const FETCH_LIMIT = 50;
 
 const SavedPosts = () => {
@@ -79,7 +78,6 @@ const SavedPosts = () => {
 					//Invalid cache, ignore
 				}
 			}
-
 			//Fetch from server
 			const response = await api.get('/get_feed_channels/saved');
 			const fetchedChannels = response.data?.channels || [];
@@ -240,11 +238,6 @@ const SavedPosts = () => {
 
 	const toggleForm = () => setShowForm(!showForm);
 
-	const saveToggle = (postId, isSaved) => {
-		//Don't remove posts immediately - let them stay until page refresh
-		//This prevents accidental unsaves from immediately removing posts
-	};
-
 	const currentChannel = channels.find(c => c?.channel_name === channel_name);
 
 	return (
@@ -255,26 +248,29 @@ const SavedPosts = () => {
 						<>
 							<ul className="content-list">
 								{posts.map((post) => (
-									post.is_external ? (
-										<ExternalPostWidget
-											key={post.post_id}
-											post={post}
-											sharedPost={false}
-										/>
-									) : (
-										<ContentWidget
-											canRemove={false}
-											feed={post.parentChannel?.feed}
-											isDraft={false}
-											isGroup={false}
-											key={post.post_id}
-											onEditClick={() => {}}
-											onPostRemoved={() => {}}
-											onReplyClick={() => {}}
-											onSaveToggle={saveToggle}
-											post={post}
-										/>
-									)
+										post?.is_external ? (
+											<div className="med-mar-bottom">
+												<ExternalPostWidget
+													key={post?.post_id}
+													post={post}
+													sharedPost={false}
+												/>
+											</div>
+										) : (
+											<div className="med-mar-bottom">
+												<ContentWidget
+													canRemove={false}
+													feed={post.parentChannel?.feed}
+													isDraft={false}
+													isGroup={false}
+													key={post.post_id}
+													onEditClick={() => {}}
+													onPostRemoved={() => {}}
+													onReplyClick={() => {}}
+													post={post}
+												/>
+											</div>
+										)
 								))}
 							</ul>
 							{isLoading && <p className="large-text faded-text">Loading more posts...</p>}

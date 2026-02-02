@@ -431,27 +431,22 @@ const DeepFeed = () => {
                 ) : visiblePosts.length > 0 ? (
                     <div className="flex flex-col w-99">
                         {visiblePosts.map((post) => {
-                            // Debug: Check repost data
-                            if (post?.is_repost) {
-                                console.log('Repost data (following):', {
-                                    is_repost: post.is_repost,
-                                    reposted_by: post.reposted_by,
-                                    reposted_by_name: post.reposted_by_name,
-                                    reposted_at: post.reposted_at
-                                });
-                            }
                             return post ? (
-                                <div key={post?.post_id || Math.random()} className="bg-gray-800 rounded-xl">
-                                    {post.is_repost && (
+                                <div key={post?.post_id || Math.random()} className="med-mar-bottom">
+                                    {post?.is_repost && (
                                         <RepostIndicator
-                                            reposter={{ feed_id: post.reposted_by, feed_name: post.reposted_by_name || 'Unknown' }}
-                                            repostedAt={post.reposted_at}
+                                            reposter={{ feed_id: post?.reposted_by, feed_name: post?.reposted_by_name || 'Unknown' }}
+                                            repostedAt={post?.reposted_at}
                                         />
                                     )}
-                                    {post.is_external ? (
+                                    {/* Display parent post above reply if this post is a reply */}
+                                    {post?.parentPost && !post?.is_external && (
+                                        <ContentWidget post={post?.parentPost} showAsParent />
+                                    )}
+                                    {post?.is_external ? (
                                         <ExternalPostWidget post={post} />
                                     ) : (
-                                        <ContentWidget post={post} />
+                                        <ContentWidget post={post} parent={post?.parentPost || null} />
                                     )}
                                 </div>
                             ) : null;

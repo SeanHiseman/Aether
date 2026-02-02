@@ -161,13 +161,13 @@ const SearchResults = () => {
 	const renderPostWidget = (post) => {
 		if (post?.isExternal) {
 			return (
-				<div key={`external-${post?.post_id}`} className="bg-gray-800 rounded-xl w-full">
+				<div key={`external-${post?.post_id}`} className="med-mar-bottom">
 					<ExternalPostWidget post={post} />
 				</div>
 			);
 		}
 		return (
-			<div key={`post-${post?.post_id}`} className="bg-gray-800 rounded-xl w-full">
+			<div key={`post-${post?.post_id}`} className="med-mar-bottom">
 				<ContentWidget onPostRemoved={handlePostRemoved} post={post} />
 			</div>
 		);

@@ -204,13 +204,13 @@ const PostChannel = ({ channelId, channelName, feed, includeGroup, includeRepost
 				<p className="large-text faded-text">{channelMessage}</p>
 			) : (post_id && !isEditMode) ? (
 				<div className="flex flex-col w-99">
-					<div className="bg-gray-800 rounded-xl">
+					<div className="med-mar-bottom">
 						{singlePost?.parent && (
 							<ContentWidget
 								feed={feed}
 								isDraft={isDraft}
-								post={singlePost.parent}
-								readOnly
+								post={singlePost?.parent}
+								showAsParent
 							/>
 						)}
 						{singlePost?.post && (
@@ -228,7 +228,7 @@ const PostChannel = ({ channelId, channelName, feed, includeGroup, includeRepost
 				<div className="flex flex-col w-99">
 					<p className="large-text">Drafts</p>
 					{draftsData?.pages.flat().map((post) => (
-						<div key={post?.draft_id || Math.random()} className="bg-gray-800 rounded-xl">
+						<div key={post?.draft_id || Math.random()} className="med-mar-bottom">
 							<ContentWidget feed={feed} isDraft={isDraft} onPostRemoved={handlePostRemoved} post={post} />
 						</div>
 					))}
@@ -236,27 +236,27 @@ const PostChannel = ({ channelId, channelName, feed, includeGroup, includeRepost
 			) : (
 				<div className="flex flex-col w-99">
 					{filteredPosts.map((post) => {
-						// Debug: Check repost data
-						if (post.is_repost) {
-							console.log('Repost data:', {
-								is_repost: post.is_repost,
-								reposted_by: post.reposted_by,
-								reposted_by_name: post.reposted_by_name,
-								reposted_at: post.reposted_at
-							});
-						}
 						return (
-							<div key={post?.post_id || Math.random()} className="bg-gray-800 rounded-xl">
-								{post.is_repost && (
+							<div key={post?.post_id || Math.random()} className="med-mar-bottom">
+								{post?.is_repost && (
 									<RepostIndicator
-										reposter={{ feed_id: post.reposted_by, feed_name: post.reposted_by_name || 'Unknown' }}
+										reposter={{ feed_id: post?.reposted_by, feed_name: post?.reposted_by_name || 'Unknown' }}
 										repostedAt={post.reposted_at}
 									/>
 								)}
-								{post.isExternal || post.is_external ? (
+								{/* Display parent post above reply if this post is a reply */}
+								{post?.parentPost && !post?.isExternal && !post?.is_external && (
+									<ContentWidget
+										feed={feed}
+										isDraft={isDraft}
+										post={post.parentPost}
+										showAsParent
+									/>
+								)}
+								{post?.isExternal || post?.is_external ? (
 									<ExternalPostWidget post={post} />
 								) : (
-									<ContentWidget feed={feed} isDraft={isDraft} onPostRemoved={handlePostRemoved} post={post} />
+									<ContentWidget feed={feed} isDraft={isDraft} onPostRemoved={handlePostRemoved} parent={post?.parentPost || null} post={post} />
 								)}
 							</div>
 						);
