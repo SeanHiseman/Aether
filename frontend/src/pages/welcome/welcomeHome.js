@@ -3,9 +3,9 @@ import { useEffect, useState } from 'react';
 import '../../css/welcome.css';
 import AlgorithmSelector from '../../algorithms/algorithmSelector';
 import ContentWidget from '../../components/content/contentWidget';
-import { FaArrowRight } from 'react-icons/fa';
+import { FaArrowRight, FaComments, FaLayerGroup, FaPalette, FaQuoteRight, FaReply, FaRetweet, FaUserFriends } from 'react-icons/fa';
+import { SiBluesky, SiMastodon, SiReddit } from 'react-icons/si';
 import { loadWelcomeContent } from './welcomeContent';
-import PlatformConnect from '../../socialConnect/platformConnect';
 
 const WelcomeHome = () => {
     const [currentSlide, setCurrentSlide] = useState(0);
@@ -64,21 +64,84 @@ const WelcomeHome = () => {
                     <AlgorithmSelector display={true} locationId={'display'} />
                 </div>
                 <div style={{
-                    maxWidth: 'clamp(600px, 80vw, 1200px)',
+                    maxWidth: 'clamp(600px, 90vw, 1200px)',
                     width: '100%',
-                    marginTop: 'clamp(20px, 4vw, 32px)',
+                    marginTop: 'clamp(32px, 5vw, 48px)',
                     display: 'flex',
                     flexDirection: 'column',
                     alignItems: 'center'
                 }}>
-                    <p className="medium-text" style={{
-                        marginBottom: 'clamp(12px, 2.5vw, 20px)',
-                        fontSize: 'clamp(18px, 3.5vw, 28px)',
-                        fontWeight: '600',
-                        textAlign: 'center',
-                        letterSpacing: '-0.01em'
-                    }}>Apply custom algorithms to posts from other platforms</p>
-                    <PlatformConnect display={true} />
+                    <div style={{
+                        display: 'grid',
+                        gridTemplateColumns: 'repeat(3, 1fr)',
+                        gap: 'clamp(16px, 3vw, 24px)',
+                        width: '100%'
+                    }} className="features-grid">
+                        {/* Combined Feeds */}
+                        <div className="feature-box">
+                            <div className="feature-icon">
+                                <FaLayerGroup size={32} />
+                            </div>
+                            <h3 className="feature-title">Combined Feeds</h3>
+                            <p className="feature-description">
+                                Organise who you follow into different combined feeds
+                            </p>
+                        </div>
+                        {/* Post and Chat Channels */}
+                        <div className="feature-box">
+                            <div className="feature-icon">
+                                <FaComments size={32} />
+                            </div>
+                            <h3 className="feature-title">Post & Chat Channels</h3>
+                            <p className="feature-description">
+                                Split feeds into channels for chatting and posting. Like combining Subreddits and Discord servers
+                            </p>
+                        </div>
+                        {/* Multiple Chats */}
+                        <div className="feature-box">
+                            <div className="feature-icon">
+                                <FaUserFriends size={32} />
+                            </div>
+                            <h3 className="feature-title">Multiple Chats</h3>
+                            <p className="feature-description">
+                                Have multiple different chats with the same friend.
+                            </p>
+                        </div>
+                        {/* Platform Connections */}
+                        <div className="feature-box">
+                            <div className="feature-icon" style={{ display: 'flex', gap: '8px' }}>
+                                <SiBluesky size={26} />
+                                <SiMastodon size={26} />
+                                <SiReddit size={26} />
+                            </div>
+                            <h3 className="feature-title">Connect Accounts</h3>
+                            <p className="feature-description">
+                                Integrate your Bluesky, Mastodon, and Reddit accounts to view and interact with posts from other platforms
+                            </p>
+                        </div>
+                        {/* Repost, Quote, Reply */}
+                        <div className="feature-box">
+                            <div className="feature-icon" style={{ display: 'flex', gap: '8px' }}>
+                                <FaRetweet size={26} />
+                                <FaQuoteRight size={26} />
+                                <FaReply size={26} />
+                            </div>
+                            <h3 className="feature-title">Quote, reply, or repost</h3>
+                            <p className="feature-description">
+                                Share your thoughts about posts from different platforms
+                            </p>
+                        </div>
+                        {/* Custom Color Schemes */}
+                        <div className="feature-box">
+                            <div className="feature-icon">
+                                <FaPalette size={32} />
+                            </div>
+                            <h3 className="feature-title">Custom Themes</h3>
+                            <p className="feature-description">
+                                Finely adjust your colour scheme
+                            </p>
+                        </div>
+                    </div>
                 </div>
                 <div style={{
                     maxWidth: 'clamp(600px, 80vw, 1200px)',
@@ -152,9 +215,7 @@ const WelcomeHome = () => {
                                 </svg>
                             </a>
                             <a href="https://www.reddit.com/user/aether-social/" target="_blank" rel="noopener noreferrer" className="social-link" aria-label="Reddit">
-                                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                                    <path d="M12 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0zm5.01 4.744c.688 0 1.25.561 1.25 1.249a1.25 1.25 0 0 1-2.498.056l-2.597-.547-.8 3.747c1.824.07 3.48.632 4.674 1.488.308-.309.73-.491 1.207-.491.968 0 1.754.786 1.754 1.754 0 .716-.435 1.333-1.01 1.614a3.111 3.111 0 0 1 .042.52c0 2.694-3.13 4.87-7.004 4.87-3.874 0-7.004-2.176-7.004-4.87 0-.183.015-.366.043-.534A1.748 1.748 0 0 1 4.028 12c0-.968.786-1.754 1.754-1.754.463 0 .898.196 1.207.49 1.207-.883 2.878-1.43 4.744-1.487l.885-4.182a.342.342 0 0 1 .14-.197.35.35 0 0 1 .238-.042l2.906.617a1.214 1.214 0 0 1 1.108-.701zM9.25 12C8.561 12 8 12.562 8 13.25c0 .687.561 1.248 1.25 1.248.687 0 1.248-.561 1.248-1.249 0-.688-.561-1.249-1.249-1.249zm5.5 0c-.687 0-1.248.561-1.248 1.25 0 .687.561 1.248 1.249 1.248.688 0 1.249-.561 1.249-1.249 0-.687-.562-1.249-1.25-1.249zm-5.466 3.99a.327.327 0 0 0-.231.094.33.33 0 0 0 0 .463c.842.842 2.484.913 2.961.913.477 0 2.105-.056 2.961-.913a.361.361 0 0 0 .029-.463.33.33 0 0 0-.464 0c-.547.533-1.684.73-2.512.73-.828 0-1.979-.196-2.512-.73a.326.326 0 0 0-.232-.095z"/>
-                                </svg>
+                                <SiReddit />
                             </a>
                             <a href="https://x.com/AetherSocialApp" target="_blank" rel="noopener noreferrer" className="social-link" aria-label="X (Twitter)">
                                 <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
@@ -162,15 +223,10 @@ const WelcomeHome = () => {
                                 </svg>
                             </a>
                             <a href="https://mastodon.social/@aethersocial" target="_blank" rel="noopener noreferrer" className="social-link" aria-label="Mastodon">
-                                <svg width="20" height="20" viewBox="0 0 216.4144 232.00976" fill="currentColor">
-                                    <path d="M211.80734 139.0875c-3.18125 16.36625-28.4925 34.2775-57.5625 37.74875-15.15875 1.80875-30.08375 3.47125-45.99875 2.74125-26.0275-1.192125-46.565-6.2125-46.565-6.2125 0 2.53375.15625 4.94625.46875 7.2025 3.38375 25.68625 25.47 27.225 46.39125 27.9425 21.11625.7225 39.91875-5.20625 39.91875-5.20625l.8675 19.09s-14.77 7.93125-41.08125 9.39c-14.50875.7975-32.52375-.365-53.50625-5.91875C9.23234 213.82 1.40609 165.31125.20859 116.09125c-.365-14.61375-.14-28.39375-.14-39.91875 0-50.33 32.97625-65.0825 32.97625-65.0825C49.67234 3.45375 78.20359.2425 107.86484 0h.72875c29.66125.2425 58.21125 3.45375 74.8375 11.09 0 0 32.975 14.7525 32.975 65.0825 0 0 .41375 37.13375-4.59875 62.915"/>
-                                    <path d="M177.50984 80.077v60.94125h-24.14375v-59.15c0-12.46875-5.24625-18.7975-15.74-18.7975-11.6025 0-17.4175 7.5075-17.4175 22.3525v32.37625H96.20734V85.42325c0-14.845-5.81625-22.3525-17.41875-22.3525-10.49375 0-15.74 6.32875-15.74 18.7975v59.15H38.90484V80.077c0-12.455 3.17125-22.3525 9.54125-29.675 6.56875-7.3225 15.17125-11.07625 25.85-11.07625 12.355 0 21.71125 4.74875 27.8975 14.2475l6.01375 10.08125 6.015-10.08125c6.185-9.49875 15.54125-14.2475 27.8975-14.2475 10.6775 0 19.28 3.75375 25.85 11.07625 6.36875 7.3225 9.54 17.22 9.54 29.675"/>
-                                </svg>
+                                <SiMastodon />
                             </a>
                             <a href="https://bsky.app/profile/aethersocial.bsky.social" target="_blank" rel="noopener noreferrer" className="social-link" aria-label="Bluesky">
-                                <svg width="20" height="20" viewBox="0 0 568 501" fill="currentColor">
-                                    <path d="M123.121 33.664C188.241 82.553 258.281 181.68 284 234.873c25.719-53.192 95.759-152.32 160.879-201.21C491.866-1.611 568-28.906 568 57.947c0 17.346-9.945 145.713-15.778 166.555-20.275 72.453-94.155 90.933-159.875 79.748C507.222 323.8 536.444 388.56 473.333 453.32c-119.86 122.992-172.272-30.859-185.702-70.281-2.462-7.227-3.614-10.608-3.631-7.733-.017-2.875-1.169.506-3.631 7.733-13.43 39.422-65.842 193.273-185.702 70.281-63.111-64.76-33.89-129.52 80.986-149.071-65.72 11.185-139.6-7.295-159.875-79.748C9.945 203.659 0 75.291 0 57.946 0-28.906 76.135-1.612 123.121 33.664z"/>
-                                </svg>
+                                <SiBluesky />
                             </a>
                         </div>
                     </div>
