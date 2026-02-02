@@ -166,7 +166,10 @@ const PostChannel = ({ channelId, channelName, feed, includeGroup, includeReplie
 		const isRepost = post.is_repost;
 		const isReply = post.parent_id !== null && post.parent_id !== undefined;
 
-		// Check reply filter
+		// Always exclude replies from group main feeds
+		if (isReply && isMain && feed?.is_group) return false;
+
+		// Check reply filter for user main feeds
 		if (isReply && !includeReplies) return false;
 
 		// Reposts are a separate category - check them first

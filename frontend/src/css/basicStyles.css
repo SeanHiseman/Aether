@@ -60,7 +60,7 @@ input, textarea, select {
   position: absolute;
   right: 0;
   width: calc(10 * var(--large-margin));
-  z-index: 10;
+  z-index: 1000;
 }
 .dropdown-menu.dropdown-above {
   bottom: 100%;

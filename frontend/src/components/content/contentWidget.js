@@ -505,7 +505,7 @@ const ContentWidget = ({ canRemove = false, display = false, feed, isDraft = fal
 						)}
 					</div>
 				)}
-				{!showAsParent && !isDraft && !display && !sharedPost && (
+				{!isDraft && !display && !sharedPost && (
 					<div className="post-button-group reply-buttons">
 						<button className="large-icon" data-content-id={post?.post_id} onClick={toggleReplies} title={showReplies ? "Close Replies" : "Show Replies"}>
 							{showReplies ? <FaCommentSlash /> : <FaComments />}
@@ -514,7 +514,7 @@ const ContentWidget = ({ canRemove = false, display = false, feed, isDraft = fal
 					</div>
 				)}
 				{!sharedPost && isAuthenticated && (post?.poster_id === viewer?.feed_id || canRemoveState) && !showAsParent && (
-					<div className="post-button-group options-buttons" style={{ position: 'relative' }} ref={dropdownRef}>
+					<div className="post-button-group options-buttons" style={{ position: 'relative', zIndex: showOptionsDropdown ? 1001 : 'auto' }} ref={dropdownRef}>
 						<button className="large-icon" onClick={() => setShowOptionsDropdown(!showOptionsDropdown)} title="Options">
 							<FaEllipsisV />
 						</button>

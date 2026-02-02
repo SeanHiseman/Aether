@@ -121,6 +121,27 @@ router.post('/channel_posts', standardLimiter, async (req, res) => {
 						feed_id: feedId
 					}
 				});
+
+				// Add vote and bookmark information for parent post
+				if (parentPost && viewerId) {
+					const parentVoteRow = await PostVotes.findOne({
+						attributes: ['upvotes', 'downvotes'],
+						where: { post_id: parentPost.post_id, voter_id: viewerId },
+						raw: true
+					});
+					parentPost.dataValues.has_upvoted = parentVoteRow ? parentVoteRow.upvotes > 0 : false;
+					parentPost.dataValues.has_downvoted = parentVoteRow ? parentVoteRow.downvotes > 0 : false;
+
+					const parentSaved = await SavedPosts.findOne({
+						where: { post_id: parentPost.post_id, saver_id: viewerId }
+					});
+					parentPost.dataValues.is_saved = Boolean(parentSaved);
+
+					const parentRepost = await Reposts.findOne({
+						where: { post_id: parentPost.post_id, reposter_id: viewerId }
+					});
+					parentPost.dataValues.has_reposted = Boolean(parentRepost);
+				}
 			}
 			const voteRow = viewerId
 				? await PostVotes.findOne({
@@ -135,6 +156,10 @@ router.post('/channel_posts', standardLimiter, async (req, res) => {
 				? await SavedPosts.findOne({ where: { post_id: postId, saver_id: viewerId } })
 				: null;
 			singlePost.dataValues.is_saved = Boolean(existing);
+			const repostRow = viewerId
+				? await Reposts.findOne({ where: { post_id: postId, reposter_id: viewerId } })
+				: null;
+			singlePost.dataValues.has_reposted = Boolean(repostRow);
 			return res.status(200).json({ success: true, post: singlePost, parent: parentPost });
 		}
 		const algorithmResult = await ApplyAlgorithm({

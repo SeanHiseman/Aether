@@ -711,8 +711,8 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
 					attributes: ['post_id'],
 					where: {
 						...algorithmFilters,
-						parent_id: null,
-						...(viewerId ? { poster_id: { [Op.not]: viewerId } } : {}),
+					parent_id: null,
+							...(viewerId ? { poster_id: { [Op.not]: viewerId } } : {}),
 						is_private: false
 					},
 					order: [['created_at', 'DESC']],
@@ -793,8 +793,8 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
 					attributes: ['post_id'],
 					where: {
 						...algorithmFilters,
-						parent_id: null,
-						...(viewerId ? { poster_id: { [Op.not]: viewerId } } : {}),
+					parent_id: null,
+							...(viewerId ? { poster_id: { [Op.not]: viewerId } } : {}),
 						is_private: false
 					},
 					order: orderMode,
@@ -894,8 +894,7 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
 						where: {
 							...algorithmFilters,
 							feed_id: { [Op.in]: allFeedIds },
-							parent_id: null,
-							...(viewerId ? { poster_id: { [Op.not]: viewerId } } : {})
+									...(viewerId ? { poster_id: { [Op.not]: viewerId } } : {})
 						},
 						order: [['created_at', 'DESC']],
 						limit: MAX_ALGORITHM_CANDIDATES,
@@ -944,8 +943,7 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
 						where: {
 							...algorithmFilters,
 							feed_id: { [Op.in]: allFeedIds },
-							parent_id: null,
-							...(viewerId ? { poster_id: { [Op.not]: viewerId } } : {})
+									...(viewerId ? { poster_id: { [Op.not]: viewerId } } : {})
 						},
 						order: orderMode,
 						limit: halfLimit,
@@ -999,8 +997,8 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
 						...(feedId ? [{ feed_id: feedId }] : [])
 					]
 				} : {}),
-				//For main feed, include replies; for channels, only top-level posts
-				...(!isMain ? { parent_id: null } : {}),
+				//For user main feeds, include replies; for group main feeds and channels, only top-level posts
+				...(isMain && !isGroup ? {} : { parent_id: null }),
 			};
 			if (hasActiveAlgorithm) {
 				//Algorithm path
