@@ -233,14 +233,15 @@ const ContentWidget = ({ canRemove = false, display = false, feed, isDraft = fal
 			return;
 		}
 		try {
+			await incrementViews(post?.post_id);
 			const response = await api.post('/toggle_repost', {
 				postId: post?.post_id,
 				feedId: viewer?.feed_id,
 				isExternal: false
 			});
 			if (response.data?.success) {
-				setHasReposted(response.data.reposted);
-				setRepostCount(response.data.repost_count);
+				setHasReposted(response.data?.reposted);
+				setRepostCount(response.data?.repost_count);
 			}
 		} catch (error) {
 			setPostErrorMessage(error.response?.data?.message || 'Error reposting');
@@ -249,6 +250,7 @@ const ContentWidget = ({ canRemove = false, display = false, feed, isDraft = fal
 	};
 
 	const handleBookmarkClick = async () => {
+		await incrementViews(post?.post_id);
 		if (isSaved) {
 			//Unsave directly by sending empty channelIds
 			try {
@@ -598,18 +600,17 @@ const ContentWidget = ({ canRemove = false, display = false, feed, isDraft = fal
 							</button>
 						)}
 						{!post?.is_private && (
-							<button className="large-icon" title="Quote post" onClick={() => setShowQuoteModal(true)}>
+							<button className="large-icon" title="Quote post" onClick={async () => { await incrementViews(post?.post_id); setShowQuoteModal(true); }}>
 								<FaQuoteRight />
 							</button>
 						)}
 						{!post?.is_private && (
-							<button className="large-icon" title="Share post" onClick={() => setShowShareModal(true)}>
+							<button className="large-icon" title="Share post" onClick={async () => { await incrementViews(post?.post_id); setShowShareModal(true); }}>
 								<FaShare />
 							</button>
 						)}
 					</div>
 				)}
-				
 				<div className="view-date-container">
 					{!display && (
 						<p className="small-text faded-text" style={{ margin: '0px', textAlign: 'right' }}>
