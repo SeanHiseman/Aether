@@ -4,7 +4,7 @@ import { AuthContext } from '../components/authContext';
 import { ChunkFeeds } from '../functions/chunkFeeds';
 import ContentWidget from '../components/content/contentWidget';
 import ExternalPostWidget from '../socialConnect/externalPostWidget';
-import { FaChevronDown, FaChevronUp ,FaGlobe, FaHome } from 'react-icons/fa';
+import { FaChevronDown, FaChevronUp, FaFilter, FaGlobe, FaHome, FaReply } from 'react-icons/fa';
 import FeedWidget from '../components/content/feedWidget';
 import SwipeableAside from '../components/swipeableAside';
 import { useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
@@ -22,7 +22,9 @@ const SearchResults = () => {
 	const [hasMorePosts, setHasMorePosts] = useState(true);
 	const [includeExternal, setIncludeExternal] = useState(true);
 	const [includeNative, setIncludeNative] = useState(true);
+	const [includeReplies, setIncludeReplies] = useState(true);
 	const [isLoading, setIsLoading] = useState(false);
+	const [showFiltersDropdown, setShowFiltersDropdown] = useState(false);
 	const [postPage, setPostPage] = useState(0);
 	const [posts, setPosts] = useState([]); //Will contain both native and external posts
 	const [selectedView, setSelectedView] = useState('combined');
@@ -168,16 +170,24 @@ const SearchResults = () => {
 		}
 		return (
 			<div key={`post-${post?.post_id}`} className="med-mar-bottom">
-				<ContentWidget onPostRemoved={handlePostRemoved} post={post} />
+				{/* Display parent post above reply if this post is a reply */}
+				{post?.parentPost && !post?.is_external && (
+					<ContentWidget post={post.parentPost} showAsParent />
+				)}
+				<ContentWidget onPostRemoved={handlePostRemoved} post={post} parent={post?.parentPost || null} />
 			</div>
 		);
 	};
 
 	const visiblePosts = useMemo(() => {
-		return posts.filter(p =>
-			(includeNative && !p?.is_external) || (includeExternal && p?.is_external)
-		);
-	}, [posts, includeNative, includeExternal]);
+		return posts.filter(p => {
+			const isReply = p.parent_id !== null && p.parent_id !== undefined;
+			// Check reply filter
+			if (isReply && !includeReplies) return false;
+			// Check native/external filter
+			return (includeNative && !p?.is_external) || (includeExternal && p?.is_external);
+		});
+	}, [posts, includeNative, includeExternal, includeReplies]);
 
 	const combinedItems = useMemo(() => {
 		if (selectedView !== 'combined') return [];
@@ -317,15 +327,27 @@ const SearchResults = () => {
 					</ul>
 				</nav>
 				<AlgorithmSelector display={false} isAuthenticated={isAuthenticated} locationId={'search'} refreshPosts={refreshPosts} />
-				<div className="flex flex-col items-flex-start">
-					<button onClick={() => setIncludeNative(!includeNative)} className="small-icon">
-						<FaHome />
-						<p className="icon-text">{includeNative ? "Hide native" : "Show native"}</p>
+				<div className="dropdown" style={{ position: 'relative' }}>
+					<button className="small-icon" onClick={() => setShowFiltersDropdown(!showFiltersDropdown)} title="Filters">
+						<FaFilter />
+						<p className="icon-text">Filters</p>
 					</button>
-					<button onClick={() => setIncludeExternal(!includeExternal)} className="small-icon">
-						<FaGlobe />
-						<p className="icon-text">{includeExternal ? "Hide external" : "Show external"}</p>
-					</button>
+					{showFiltersDropdown && (
+						<div className="dropdown-menu" style={{ left: '-50%' }}>
+							<button onClick={() => setIncludeNative(!includeNative)} className="small-icon">
+								<FaHome />
+								<p className="icon-text">{includeNative ? "Hide native" : "Show native"}</p>
+							</button>
+							<button onClick={() => setIncludeExternal(!includeExternal)} className="small-icon">
+								<FaGlobe />
+								<p className="icon-text">{includeExternal ? "Hide external" : "Show external"}</p>
+							</button>
+							<button onClick={() => setIncludeReplies(!includeReplies)} className="small-icon">
+								<FaReply />
+								<p className="icon-text">{includeReplies ? "Hide replies" : "Show replies"}</p>
+							</button>
+						</div>
+					)}
 				</div>
 			</SwipeableAside>
 		</div>

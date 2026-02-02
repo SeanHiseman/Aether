@@ -12,7 +12,7 @@ const PlatformConnect = ({ display = false }) => {
     const hasBluesky = connected.some(a => a.platform === "bluesky");
     const hasMastodon = connected.some(a => a.platform === "mastodon");
     const hasReddit = connected.some(a => a.platform === "reddit");
-    const anyNotConnected = true;
+    const anyNotConnected = !hasBluesky || !hasMastodon || !hasReddit;
 
     const requestDisconnect = (platform, name) => {
         if (display) return;

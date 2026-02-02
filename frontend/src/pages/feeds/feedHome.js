@@ -5,7 +5,7 @@ import ChannelList from '../../components/channels/channelList';
 import ChatChannel from '../../components/channels/chatChannel';
 import ConfirmModal from '../../components/modals/confirmModal';
 import ContentForm from '../../components/content/contentForm';
-import { FaCog, FaEdit, FaFolder, FaFolderOpen, FaMinus, FaPlus, FaRegWindowClose, FaPen, FaRetweet, FaSave, FaTrash, FaUser, FaUsers } from 'react-icons/fa';
+import { FaCog, FaEdit, FaFilter, FaFolder, FaFolderOpen, FaMinus, FaPlus, FaRegWindowClose, FaPen, FaReply, FaRetweet, FaSave, FaTrash, FaUser, FaUsers } from 'react-icons/fa';
 import { FormatNumber } from '../../functions/formatNumber';
 import FollowerChangeButton from '../../components/followerChangeButton';
 import { Link, useLocation, useNavigate, useOutletContext, useParams } from 'react-router-dom';
@@ -27,8 +27,10 @@ const FeedHome = () => {
     const [feedNotFound, setFeedNotFound] = useState(false);
     const [loading, setLoading] = useState(true);
     const [includeGroup, setIncludeGroup] = useState(true);
+    const [includeReplies, setIncludeReplies] = useState(true);
     const [includeReposts, setIncludeReposts] = useState(true);
     const [includeUser, setIncludeUser] = useState(true);
+    const [showFiltersDropdown, setShowFiltersDropdown] = useState(false);
     const [isAdmin, setIsAdmin] = useState(false);
     const [isChatChannel, setIsChatChannel] = useState(false);
     const [isEdit, setIsEdit] = useState(false);
@@ -559,6 +561,7 @@ const FeedHome = () => {
             channelName={isDraft ? channel_name : channelRender?.channel_name}
             feed={feed}
             includeGroup={includeGroup}
+            includeReplies={includeReplies}
             includeReposts={includeReposts}
             includeUser={includeUser}
             isDraft={isDraft}
@@ -666,28 +669,6 @@ const FeedHome = () => {
                             <Link to={`/${urlPrefix}/${feed_name}/${channel_name}`} className="channel-header-text" style={{ margin: 0, width: '100%' }}>
                                 {channel_name}
                             </Link>
-                            {channel_name === 'Main' && !feed.is_group && (
-                                <div className="flex flex-col items-flex-start">
-                                    <button onClick={() => setIncludeUser(!includeUser)} className="small-icon">
-                                        <FaUser />
-                                        <p className="icon-text">
-                                            {includeUser ? "Hide user posts" : "Show user posts"}
-                                        </p>
-                                    </button>
-                                    <button onClick={() => setIncludeGroup(!includeGroup)} className="small-icon">
-                                        <FaUsers />
-                                        <p className="icon-text">
-                                            {includeGroup ? "Hide group posts" : "Show group posts"}
-                                        </p>
-                                    </button>
-                                    <button onClick={() => setIncludeReposts(!includeReposts)} className="small-icon">
-                                        <FaRetweet />
-                                        <p className="icon-text">
-                                            {includeReposts ? "Hide reposts" : "Show reposts"}
-                                        </p>
-                                    </button>
-                                </div>
-                            )}
                             {isEditingChannelName ? (
                                 <div className="change-name">
                                     <textarea
@@ -737,12 +718,7 @@ const FeedHome = () => {
                                         </Link>}
                                         {channel_name !== "Main" && isAdmin && (
                                             <div className="dropdown" style={{ position: 'relative' }}>
-                                                <button
-                                                    className="small-icon"
-                                                    type="button"
-                                                    onClick={() => setChannelSettingsDropdownOpen(!channelSettingsDropdownOpen)}
-                                                    title="Channel settings"
-                                                >
+                                                <button className="small-icon" type="button" onClick={() => setChannelSettingsDropdownOpen(!channelSettingsDropdownOpen)} title="Channel settings">
                                                     <FaCog />
                                                 </button>
                                                 {channelSettingsDropdownOpen && (
@@ -851,6 +827,42 @@ const FeedHome = () => {
                         </button>
                     )}
                     <AlgorithmSelector display={false} isAuthenticated={isAuthenticated} locationId={channelRender?.channel_id} refreshPosts={refreshPosts} />
+                    {channel_name === 'Main' && !feed.is_group && (
+                        <div className="dropdown" style={{ position: 'relative' }}>
+                            <button className="small-icon" onClick={() => setShowFiltersDropdown(!showFiltersDropdown)} title="Filters">
+                                <FaFilter />
+                                <p className="icon-text">Filters</p>
+                            </button>
+                            {showFiltersDropdown && (
+                                <div className="dropdown-menu" style={{ left: '-50%' }}>
+                                    <button onClick={() => setIncludeUser(!includeUser)} className="small-icon">
+                                        <FaUser />
+                                        <p className="icon-text">
+                                            {includeUser ? "Hide user posts" : "Show user posts"}
+                                        </p>
+                                    </button>
+                                    <button onClick={() => setIncludeGroup(!includeGroup)} className="small-icon">
+                                        <FaUsers />
+                                        <p className="icon-text">
+                                            {includeGroup ? "Hide group posts" : "Show group posts"}
+                                        </p>
+                                    </button>
+                                    <button onClick={() => setIncludeReposts(!includeReposts)} className="small-icon">
+                                        <FaRetweet />
+                                        <p className="icon-text">
+                                            {includeReposts ? "Hide reposts" : "Show reposts"}
+                                        </p>
+                                    </button>
+                                    <button onClick={() => setIncludeReplies(!includeReplies)} className="small-icon">
+                                        <FaReply />
+                                        <p className="icon-text">
+                                            {includeReplies ? "Hide replies" : "Show replies"}
+                                        </p>
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+                    )}
                     {channelRender && channelRender.is_posts && channelRender.is_chat && (
                         <div className="option-toggle">
                             <button

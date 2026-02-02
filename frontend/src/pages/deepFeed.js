@@ -5,7 +5,7 @@ import ExternalFollowItem from '../components/channels/externalFollowItem';
 import ConfirmModal from '../components/modals/confirmModal';
 import ContentWidget from '../components/content/contentWidget';
 import ExternalPostWidget from '../socialConnect/externalPostWidget';
-import { FaEdit, FaGlobe, FaHome, FaMinus, FaRegWindowClose, FaRetweet, FaSave, FaTrash } from 'react-icons/fa';
+import { FaEdit, FaFilter, FaGlobe, FaHome, FaMinus, FaRegWindowClose, FaReply, FaRetweet, FaSave, FaTrash } from 'react-icons/fa';
 import FeedItem from '../components/channels/feedItem';
 import RepostIndicator from '../components/content/repostIndicator';
 import PlatformConnect from '../socialConnect/platformConnect';
@@ -44,7 +44,9 @@ const DeepFeed = () => {
     });
     const [includeExternal, setIncludeExternal] = useState(true);
     const [includeNative, setIncludeNative] = useState(true);
+    const [includeReplies, setIncludeReplies] = useState(true);
     const [includeReposts, setIncludeReposts] = useState(true);
+    const [showFiltersDropdown, setShowFiltersDropdown] = useState(false);
     const [isEditingName, setIsEditingName] = useState(false);
     const [isNewNameValid, setIsNewNameValid] = useState(false);
     const [newName, setNewName] = useState('');
@@ -362,11 +364,16 @@ const DeepFeed = () => {
     // Track filter changes to prevent scroll spam
     useEffect(() => {
         filterChangeTimeRef.current = Date.now();
-    }, [includeNative, includeExternal, includeReposts]);
+    }, [includeNative, includeExternal, includeReposts, includeReplies]);
 
     const visiblePosts = allPosts.filter(p => {
         const isRepost = p.is_repost;
         const isExternal = p.is_external || p.isExternal;
+        const isReply = p.parent_id !== null && p.parent_id !== undefined;
+
+        // Check reply filter
+        if (isReply && !includeReplies) return false;
+
         //First check native/external filters
         const passesTypeFilter = (includeNative && !isExternal) || (includeExternal && isExternal);
         if (!passesTypeFilter) return false;
@@ -521,31 +528,48 @@ const DeepFeed = () => {
                                     </>
                                 )}
                             </div>
-                            <AlgorithmSelector display={false} isAuthenticated={isAuthenticated} locationId={deepFeed?.deep_feed_id} refreshPosts={refreshPosts} />
                         </div>
                     )}
+                    <AlgorithmSelector display={false} isAuthenticated={isAuthenticated} locationId={deepFeed?.deep_feed_id} refreshPosts={refreshPosts} />
                     <div className="small-text faded-text">{errorMessage}</div>
-                    {isFollowing && hasConnectedAccounts && <div className="flex flex-col items-flex-start">
-                        <button onClick={() => setIncludeNative(!includeNative)} className="small-icon">
-                            <FaHome />
-                            <p className="icon-text">{includeNative ? "Hide native" : "Show native"}</p>
-                        </button>
-                        <button onClick={() => setIncludeExternal(!includeExternal)} className="small-icon">
-                            <FaGlobe />
-                            <p className="icon-text">{includeExternal ? "Hide external" : "Show external"}</p>
-                        </button>
-                        <button onClick={() => setIncludeReposts(!includeReposts)} className="small-icon">
-                            <FaRetweet />
-                            <p className="icon-text">{includeReposts ? "Hide reposts" : "Show reposts"}</p>
-                        </button>
-                    </div>}
+                    {isFollowing && hasConnectedAccounts && (
+                        <div className="dropdown" style={{ position: 'relative' }}>
+                            <button
+                                className="small-icon"
+                                onClick={() => setShowFiltersDropdown(!showFiltersDropdown)}
+                                title="Filters"
+                            >
+                                <FaFilter />
+                                <p className="icon-text">Filters</p>
+                            </button>
+                            {showFiltersDropdown && (
+                                <div className="dropdown-menu" style={{ left: '-50%' }}>
+                                    <button onClick={() => setIncludeNative(!includeNative)} className="small-icon">
+                                        <FaHome />
+                                        <p className="icon-text">{includeNative ? "Hide native" : "Show native"}</p>
+                                    </button>
+                                    <button onClick={() => setIncludeExternal(!includeExternal)} className="small-icon">
+                                        <FaGlobe />
+                                        <p className="icon-text">{includeExternal ? "Hide external" : "Show external"}</p>
+                                    </button>
+                                    <button onClick={() => setIncludeReposts(!includeReposts)} className="small-icon">
+                                        <FaRetweet />
+                                        <p className="icon-text">{includeReposts ? "Hide reposts" : "Show reposts"}</p>
+                                    </button>
+                                    <button onClick={() => setIncludeReplies(!includeReplies)} className="small-icon">
+                                        <FaReply />
+                                        <p className="icon-text">{includeReplies ? "Hide replies" : "Show replies"}</p>
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+                    )}
                     {sortedContents.length > 0 && (
                         <ul className="feed-list">
                             {sortedContents.map(item => {
                                 if (item?.externalAccount || (item?.external_did && !item?.feed_id)) {
                                     let follow = item.externalAccount;
                                     let platform = item?.platform || 'bluesky'; //Default to bluesky for backward compatibility
-
                                     if (!follow || !follow.display_name) {
                                         //Try to find in blueskyFollows first
                                         const blueskyMatch = blueskyFollows.find(f => f.did === item.external_did);

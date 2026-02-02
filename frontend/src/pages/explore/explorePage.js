@@ -5,7 +5,7 @@ import { ChunkFeeds } from "../../functions/chunkFeeds";
 import ContentWidget from "../../components/content/contentWidget";
 import ExternalPostWidget from '../../socialConnect/externalPostWidget';
 import FeedWidget from "../../components/content/feedWidget";
-import { FaGlobe, FaHome } from 'react-icons/fa';
+import { FaFilter, FaGlobe, FaHome, FaReply } from 'react-icons/fa';
 import PlatformConnect from "../../socialConnect/platformConnect";
 import SwipeableAside from "../../components/swipeableAside";
 import { useMemo, useCallback, useContext, useEffect, useRef, useState } from "react";
@@ -21,6 +21,8 @@ const ExplorePage = () => {
 	const [hasMorePosts, setHasMorePosts] = useState(true);
 	const [includeExternal, setIncludeExternal] = useState(true);
 	const [includeNative, setIncludeNative] = useState(true);
+	const [includeReplies, setIncludeReplies] = useState(true);
+	const [showFiltersDropdown, setShowFiltersDropdown] = useState(false);
 	const [isLoading, setIsLoading] = useState(false);
 	const [postPage, setPostPage] = useState(0);
 	const [posts, setPosts] = useState([]);
@@ -147,14 +149,17 @@ const ExplorePage = () => {
 		}
 	}, [loadMore, isLoading]);
 
-	//Filter posts by native/external toggles (but keep viewed posts visible to prevent jumping)
+	//Filter posts by native/external toggles and replies
 	const visiblePosts = useMemo(() => {
-		const filtered = posts.filter(p =>
-			(includeNative && !p.is_external) || (includeExternal && p.is_external)
-		);
-		console.log(`[EXPLORE FRONTEND] Posts filtered: ${posts.length} total, ${filtered.length} visible (native toggle: ${includeNative}, external toggle: ${includeExternal})`);
+		const filtered = posts.filter(p => {
+			const isReply = p.parent_id !== null && p.parent_id !== undefined;
+			// Check reply filter
+			if (isReply && !includeReplies) return false;
+			// Check native/external filter
+			return (includeNative && !p.is_external) || (includeExternal && p.is_external);
+		});
 		return filtered;
-	}, [posts, includeNative, includeExternal]);
+	}, [posts, includeNative, includeExternal, includeReplies]);
 
 	const combinedItems = useMemo(() => {
 		if (filter !== "all") return [];
@@ -287,15 +292,27 @@ const ExplorePage = () => {
 				</nav>
 				<p className="small-text faded-text">{isAuthenticated ? errorMessage : ""}</p>
 				<AlgorithmSelector display={false} isAuthenticated={isAuthenticated} locationId={"explore"} refreshPosts={refreshPosts} />
-				<div className="flex flex-col items-flex-start">
-					<button onClick={() => setIncludeNative(!includeNative)} className="small-icon">
-						<FaHome />
-						<p className="icon-text">{includeNative ? "Hide native" : "Show native"}</p>
+				<div className="dropdown" style={{ position: 'relative' }}>
+					<button className="small-icon" onClick={() => setShowFiltersDropdown(!showFiltersDropdown)} title="Filters">
+						<FaFilter />
+						<p className="icon-text">Filters</p>
 					</button>
-					<button onClick={() => setIncludeExternal(!includeExternal)} className="small-icon">
-						<FaGlobe />
-						<p className="icon-text">{includeExternal ? "Hide external" : "Show external"}</p>
-					</button>
+					{showFiltersDropdown && (
+						<div className="dropdown-menu" style={{ left: '-50%' }}>
+							<button onClick={() => setIncludeNative(!includeNative)} className="small-icon">
+								<FaHome />
+								<p className="icon-text">{includeNative ? "Hide native" : "Show native"}</p>
+							</button>
+							<button onClick={() => setIncludeExternal(!includeExternal)} className="small-icon">
+								<FaGlobe />
+								<p className="icon-text">{includeExternal ? "Hide external" : "Show external"}</p>
+							</button>
+							<button onClick={() => setIncludeReplies(!includeReplies)} className="small-icon">
+								<FaReply />
+								<p className="icon-text">{includeReplies ? "Hide replies" : "Show replies"}</p>
+							</button>
+						</div>
+					)}
 				</div>
 				<PlatformConnect />
 			</SwipeableAside>

@@ -8,7 +8,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useInfiniteQuery, useQuery, useQueryClient } from '@tanstack/react-query';
 const FETCH_LIMIT = 100;
 
-const PostChannel = ({ channelId, channelName, feed, includeGroup, includeReposts, includeUser, isDraft, isEditMode, isGroup, refreshTrigger, setFeedErrorMessage }) => {
+const PostChannel = ({ channelId, channelName, feed, includeGroup, includeReplies = true, includeReposts, includeUser, isDraft, isEditMode, isGroup, refreshTrigger, setFeedErrorMessage }) => {
 	const { channel_name, post_id } = useParams();
 	const channelReady = !!channelId;
 	const feedId = feed?.feed_id;
@@ -164,6 +164,11 @@ const PostChannel = ({ channelId, channelName, feed, includeGroup, includeRepost
 	const allPosts = postsData?.pages.flat() || [];
 	const filteredPosts = allPosts.filter((post) => {
 		const isRepost = post.is_repost;
+		const isReply = post.parent_id !== null && post.parent_id !== undefined;
+
+		// Check reply filter
+		if (isReply && !includeReplies) return false;
+
 		// Reposts are a separate category - check them first
 		if (isRepost) {
 			return includeReposts;
