@@ -1,3 +1,5 @@
+import { Posts } from "../../models/content";
+
 export async function attachParentPosts(posts, includeOptions) {
 	if (!posts || posts.length === 0) return posts;
 	//Find posts that are replies (have a parent_id)
