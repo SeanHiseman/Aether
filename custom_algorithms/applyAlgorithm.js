@@ -892,7 +892,7 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
 						attributes: ['post_id'],
 						where: {
 							...algorithmFilters,
-							parent_id: null,
+						parent_id: null,
 							feed_id: { [Op.in]: allFeedIds },
 									...(viewerId ? { poster_id: { [Op.not]: viewerId } } : {})
 						},
@@ -942,6 +942,7 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
 						attributes: ['post_id'],
 						where: {
 							...algorithmFilters,
+						parent_id: null,
 							feed_id: { [Op.in]: allFeedIds },
 									...(viewerId ? { poster_id: { [Op.not]: viewerId } } : {})
 						},
