@@ -482,7 +482,6 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
 								};
 							});
 						}
-
 						//Fetch external posts for external reposts
 						let externalRepostPosts = [];
 						if (externalRepostIds.length > 0) {
@@ -893,6 +892,7 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
 						attributes: ['post_id'],
 						where: {
 							...algorithmFilters,
+							parent_id: null,
 							feed_id: { [Op.in]: allFeedIds },
 									...(viewerId ? { poster_id: { [Op.not]: viewerId } } : {})
 						},
