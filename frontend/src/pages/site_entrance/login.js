@@ -48,7 +48,11 @@ const Login = () => {
                 const channelViews = response.data?.channelViews || {};
                 localStorage.setItem('feedChannelViews', JSON.stringify(channelViews));
                 await refreshTheme();
-                const from = location.state?.from || '/explore';
+                const storedPath = localStorage.getItem('authRedirectPath');
+                localStorage.removeItem('authRedirectPath');
+                const excludedPaths = ['/login', '/join', '/register', '/welcome', '/auth', '/verify-email', '/forgot-password', '/reset-password'];
+                const isExcluded = excludedPaths.some(path => storedPath?.startsWith(path));
+                const from = (storedPath && !isExcluded) ? storedPath : (location.state?.from || '/explore');
                 navigate(from, { replace: true });
             }
         } catch (error) {
@@ -87,8 +91,11 @@ const Login = () => {
                 const channelViews = response.data?.channelViews || {};
                 localStorage.setItem('feedChannelViews', JSON.stringify(channelViews));
                 await refreshTheme();
-                const isNewUser = response.data?.user?.is_new_user;
-                const from = isNewUser ? '/help' : (location.state?.from || '/explore');
+                const storedPath = localStorage.getItem('authRedirectPath');
+                localStorage.removeItem('authRedirectPath');
+                const excludedPaths = ['/login', '/join', '/register', '/welcome', '/auth', '/verify-email', '/forgot-password', '/reset-password'];
+                const isExcluded = excludedPaths.some(path => storedPath?.startsWith(path));
+                const from = (storedPath && !isExcluded) ? storedPath : (location.state?.from || '/explore');
                 navigate(from, { replace: true });
             }
         } catch (error) {
@@ -101,12 +108,34 @@ const Login = () => {
     };
 
     const handleGoogleLogin = () => {
+        const from = location.state?.from || location.pathname;
+        localStorage.setItem('authRedirectPath', from);
         window.location.href = `${window.location.origin}/api/auth/google`;
     };
 
     const togglePasswordVisibility = () => {
         setShowPassword(!showPassword);
     };
+
+    //Store redirect path when login page loads
+    useEffect(() => {
+        if (location.state?.from) {
+            localStorage.setItem('authRedirectPath', location.state.from);
+        } else if (document.referrer) {
+            //Use referrer if no state.from is provided
+            const referrerUrl = new URL(document.referrer);
+            const currentUrl = new URL(window.location.href);
+            //Only use referrer if it's from the same origin
+            if (referrerUrl.origin === currentUrl.origin) {
+                const referrerPath = referrerUrl.pathname;
+                const excludedPaths = ['/login', '/join', '/register', '/welcome', '/auth', '/verify-email', '/forgot-password', '/reset-password'];
+                const isExcluded = excludedPaths.some(path => referrerPath.startsWith(path));
+                if (!isExcluded) {
+                    localStorage.setItem('authRedirectPath', referrerPath);
+                }
+            }
+        } 
+    }, [location.state]);
 
     //Helps with autofill
     useEffect(() => {

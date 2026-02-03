@@ -46,8 +46,11 @@ const Join = () => {
                 localStorage.setItem("recentUpvotes", JSON.stringify(response.data?.recentUpvotes || []));
                 localStorage.setItem("user", JSON.stringify(response.data?.user));
                 await refreshTheme();
-                const isNewUser = response.data?.user?.is_new_user;
-                const from = isNewUser ? '/help' : '/explore';
+                const storedPath = localStorage.getItem('authRedirectPath');
+                localStorage.removeItem('authRedirectPath');
+                const excludedPaths = ['/login', '/join', '/register', '/welcome', '/auth', '/verify-email', '/forgot-password', '/reset-password'];
+                const isExcluded = excludedPaths.some(path => storedPath?.startsWith(path));
+                const from = (storedPath && !isExcluded) ? storedPath : (location.state?.from || '/explore');
                 navigate(from, { replace: true });
             }
         } catch (error) {
@@ -60,6 +63,8 @@ const Join = () => {
     };
 
     const handleGoogleLogin = () => {
+        const from = location.state?.from || location.pathname;
+        localStorage.setItem('authRedirectPath', from);
         window.location.href = `${window.location.origin}/api/auth/google`;
     };
 
@@ -100,6 +105,26 @@ const Join = () => {
     const togglePasswordVisibility = (setter, currentState) => {
         setter(!currentState);
     };
+
+    //Store redirect path when join page loads
+    useEffect(() => {
+        if (location.state?.from) {
+            localStorage.setItem('authRedirectPath', location.state.from);
+        } else if (document.referrer) {
+            //Use referrer if no state.from is provided
+            const referrerUrl = new URL(document.referrer);
+            const currentUrl = new URL(window.location.href);
+            //Only use referrer if it's from the same origin
+            if (referrerUrl.origin === currentUrl.origin) {
+                const referrerPath = referrerUrl.pathname;
+                const excludedPaths = ['/login', '/join', '/register', '/welcome', '/auth', '/verify-email', '/forgot-password', '/reset-password'];
+                const isExcluded = excludedPaths.some(path => referrerPath.startsWith(path));
+                if (!isExcluded) {
+                    localStorage.setItem('authRedirectPath', referrerPath);
+                }
+            }
+        }
+    }, [location.state]);
 
     useEffect(() => {
         const params = new URLSearchParams(location.search);

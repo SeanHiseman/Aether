@@ -99,8 +99,13 @@ const ProfileSetup = () => {
                     return;
                 }
             }
-            //Navigate to help page on success
-            navigate('/help');
+            //Navigate to stored redirect path or explore
+            const storedPath = localStorage.getItem('authRedirectPath');
+            localStorage.removeItem('authRedirectPath');
+            const excludedPaths = ['/login', '/join', '/register', '/welcome', '/auth', '/verify-email', '/forgot-password', '/reset-password', '/profile-setup'];
+            const isExcluded = excludedPaths.some(path => storedPath?.startsWith(path));
+            const redirectPath = (storedPath && !isExcluded) ? storedPath : '/explore';
+            navigate(redirectPath);
         } catch (error) {
             if (error.response?.status === 413) {
                 setErrorMessage(error.response?.data?.message + (!user?.has_membership ? ". Get membership for more" : ""));
@@ -209,9 +214,20 @@ const ProfileSetup = () => {
                     >
                         {isUploading ? 'Saving...' : 'Continue'}
                     </button>
-                    <Link to="/help">
-                        <p className="small-text underline">Skip for now</p>
-                    </Link>
+                    <p
+                        className="small-text underline"
+                        style={{ cursor: 'pointer' }}
+                        onClick={() => {
+                            const storedPath = localStorage.getItem('authRedirectPath');
+                            localStorage.removeItem('authRedirectPath');
+                            const excludedPaths = ['/login', '/join', '/register', '/welcome', '/auth', '/verify-email', '/forgot-password', '/reset-password', '/profile-setup'];
+                            const isExcluded = excludedPaths.some(path => storedPath?.startsWith(path));
+                            const redirectPath = (storedPath && !isExcluded) ? storedPath : '/explore';
+                            navigate(redirectPath);
+                        }}
+                    >
+                        Skip for now
+                    </p>
                 </form>
             </div>
         </div>

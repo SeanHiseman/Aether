@@ -422,7 +422,7 @@ const BaseLayout = () => {
     };
 
     const handleGoogleLogin = () => {
-        sessionStorage.setItem('authRedirectPath', location.pathname);
+        localStorage.setItem('authRedirectPath', location.pathname);
         window.location.href = `${window.location.origin}/api/auth/google`;
     };
 
@@ -921,11 +921,11 @@ const BaseLayout = () => {
                                     <span className="divider-text">or</span>
                                     <div className="divider-line" />
                                 </div>
-                                <Link to="/join" className="large-icon">
+                                <Link to="/join" state={{ from: location.pathname }} className="large-icon">
                                     <FaArrowRight />
                                     <p className="icon-text">Join</p>
                                 </Link>
-                                <Link to="/login" className="large-icon">
+                                <Link to="/login" state={{ from: location.pathname }} className="large-icon">
                                     <FaSignInAlt />
                                     <p className="icon-text">Login</p>
                                 </Link>
