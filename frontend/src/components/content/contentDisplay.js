@@ -1,10 +1,11 @@
 import AppBlock from './appBlock'
 import AppWebContainer from './appWebContainer'
+import ContentWidget from './contentWidget'
+import ExternalPostWidget from '../../socialConnect/externalPostWidget'
 import { useEffect, useRef, useState } from 'react'
 
 const ContentDisplay = ({ post, isFullscreen = false, onCodeAppChange = () => {}, onHeightChange = () => {}, onOverflowChange = () => {}, redirect = true, showFullContent = false, showScrollBar = true }) => {
 	//console.log("post:", post);
-	const [activeIframeId, setActiveIframeId] = useState(null);
 	const [blocks, setBlocks] = useState([]);
 	const content = post?.content;
 	const contentRef = useRef(null);
@@ -181,37 +182,18 @@ const ContentDisplay = ({ post, isFullscreen = false, onCodeAppChange = () => {}
 					);
 				}
 				if (block.type === 'code') {
-					const iframeId = `iframe-${block.id || i}`;
-					const isActive = isFullscreen || activeIframeId === iframeId;
 					return (
 						<div
 							key={i}
 							data-iframe-wrapper
 							style={{ position: 'relative', width: '100%', height: isFullscreen ? '100%' : '70vh' }}
-							onClick={isFullscreen ? null : () => setActiveIframeId(iframeId)}
-							onMouseLeave={isFullscreen ? null : () => setActiveIframeId(null)}
 						>
 							<iframe
 								sandbox={"allow-scripts allow-downloads allow-popups allow-modals"}
 								srcDoc={block.code}
-								style={{ border: 'none', height: '100%', width: '100%', pointerEvents: isActive ? 'auto' : 'none' }}
+								style={{ border: 'none', height: '100%', width: '100%', pointerEvents: 'auto' }}
 								title={`code-block-${block.id}`}
 							/>
-							{!isActive && (
-								<div style={{
-									background: 'var(--darkest)',
-									borderRadius: 6,
-									bottom: 8,
-									color: 'white',
-									fontSize: 12,
-									position: 'absolute',
-									padding: '6px 12px',
-									pointerEvents: 'none',
-									right: 8,
-								}}>
-									{isMobile ? 'Tap' : 'Click'} to interact
-								</div>
-							)}
 						</div>
 					)
 				}
@@ -282,94 +264,26 @@ const ContentDisplay = ({ post, isFullscreen = false, onCodeAppChange = () => {}
 				return null
 			})}
 			{quotedPostData && (
-				<div
-					style={{
-						borderLeft: '3px solid #6b46c1',
-						paddingLeft: '12px',
-						margin: '12px 5px',
-						background: 'rgba(107, 70, 193, 0.05)',
-						borderRadius: '8px',
-						padding: '12px',
-						cursor: 'pointer'
-					}}
-					onClick={() => {
-						const qUrlPrefix = quotedPostData?.parentChannel?.feed?.is_group ? 'g' : 'u';
-						window.location.href = `/${qUrlPrefix}/${quotedPostData?.parentChannel?.feed?.feed_name}/${quotedPostData?.parentChannel?.channel_name}/${quotedPostData?.post_id}`;
-					}}
-				>
-					<div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-						{quotedPostData?.poster?.feed_photo && (
-							<img src={quotedPostData.poster.feed_photo} alt={quotedPostData.poster.feed_name} className="tiny-feed-photo" onError={(e) => e.currentTarget.src = '/media/site_images/blank-profile.png'} />
-						)}
-						<span style={{ fontWeight: 600, fontSize: '14px' }}>
-							{quotedPostData?.poster?.feed_name || 'Anonymous'}
-						</span>
-					</div>
-					{quotedPostData?.title && (
-						<p style={{ fontWeight: 600, margin: '8px 0', fontSize: '14px' }}>
-							{quotedPostData.title}
-						</p>
-					)}
-					{quotedPostData?.text_body && (
-						<p style={{ margin: '8px 0', fontSize: '13px', color: '#666' }}>
-							{quotedPostData.text_body.substring(0, 600)}
-							{quotedPostData.text_body.length > 600 ? '...' : ''}
-						</p>
-					)}
-					<span style={{ fontSize: '12px', color: '#1d9bf0', display: 'block', marginTop: '8px' }}>
-						View quoted post →
-					</span>
+				<div style={{ marginLeft: '20px', marginTop: '12px', marginBottom: '12px' }}>
+					<ContentWidget
+						post={quotedPostData}
+						readOnly={false}
+						display={false}
+						sharedPost={false}
+						isQuoted={true}
+						showAsParent={true}
+					/>
 				</div>
 			)}
-		{quotedExternalPostData && (
-			<div
-				style={{
-					borderLeft: '3px solid #e67e22',
-					paddingLeft: '12px',
-					margin: '12px 5px',
-					background: 'rgba(230, 126, 34, 0.05)',
-					borderRadius: '8px',
-					padding: '12px',
-					cursor: 'pointer'
-				}}
-				onClick={() => {
-					if (quotedExternalPostData?.url) {
-						window.open(quotedExternalPostData.url, '_blank');
-					}
-				}}
-			>
-				<div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-					{quotedExternalPostData?.author_photo && (
-						<img
-							src={quotedExternalPostData.author_photo}
-							alt={quotedExternalPostData.author}
-							style={{ width: '20px', height: '20px', borderRadius: '50%' }}
-							onError={(e) => e.currentTarget.src = '/media/site_images/blank-profile.png'}
-						/>
-					)}
-					<span style={{ fontWeight: 600, fontSize: '14px' }}>
-						{quotedExternalPostData?.author || 'Anonymous'}
-					</span>
-					<span style={{ fontSize: '12px', color: '#666' }}>
-						• {quotedExternalPostData?.source}
-					</span>
+			{quotedExternalPostData && (
+				<div style={{ marginLeft: '20px', marginTop: '12px', marginBottom: '12px' }}>
+					<ExternalPostWidget
+						post={quotedExternalPostData}
+						sharedPost={false}
+						isQuoted={true}
+					/>
 				</div>
-				{quotedExternalPostData?.title && (
-					<p style={{ fontWeight: 600, margin: '8px 0', fontSize: '14px' }}>
-						{quotedExternalPostData.title}
-					</p>
-				)}
-				{quotedExternalPostData?.text_body && (
-					<p style={{ margin: '8px 0', fontSize: '13px', color: '#666' }}>
-						{quotedExternalPostData.text_body.substring(0, 2000)}
-						{quotedExternalPostData.text_body.length > 2000 ? '...' : ''}
-					</p>
-				)}
-				<span style={{ fontSize: '12px', color: '#e67e22', display: 'block', marginTop: '8px' }}>
-					View external post →
-				</span>
-			</div>
-		)}
+			)}
 		</div>
 	)
 }

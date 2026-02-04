@@ -14,7 +14,7 @@ import SharePostModal from '../modals/sharePostModal';
 import { useCallback, useContext, useEffect, useRef, useState } from 'react';
 import useTimeAgo from '../../functions/useTimeAgo';
 
-const ContentWidget = ({ canRemove = false, display = false, feed, isDraft = false, onPostRemoved, parent, post, showAsParent = false, sharedPost = false }) => {
+const ContentWidget = ({ canRemove = false, display = false, feed, isDraft = false, isQuoted = false, onPostRemoved, parent, post, showAsParent = false, sharedPost = false }) => {
 	//console.log("ContentWidget post:", post);
 	const authContext = useContext(AuthContext);
 	const { isAuthenticated = false, viewer = null, user = null } = authContext || {};
@@ -394,7 +394,10 @@ const ContentWidget = ({ canRemove = false, display = false, feed, isDraft = fal
 	}
 
 	return (
-		<><div className={`content-item ${isReply ? 'reply' : ''}`} style={showAsParent ? { borderBottomRightRadius: 0 } : {}}>
+		<><div className={`content-item ${isReply ? 'reply' : ''}`} style={{
+			...(showAsParent ? { borderBottomRightRadius: 0 } : {}),
+			...(isQuoted ? { borderTopRightRadius: 0, borderBottomRightRadius: 0 } : {})
+		}}>
 			{postErrorMessage && <div className="small-text faded-text">{postErrorMessage}</div>}
 			{post?.title && <Link to={`/${urlPrefix}/${post?.parentChannel?.feed?.feed_name}/${post?.parentChannel?.channel_name}/${post?.post_id}`} className="title-container" onClick={() => incrementViews(post?.post_id)} style={{ display: 'block' }}>
 				<span className="large-text" style={{ marginLeft: 0 }}>

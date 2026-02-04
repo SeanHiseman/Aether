@@ -10,7 +10,7 @@ import { useParams } from 'react-router-dom';
 import { useContext, useEffect, useRef, useState } from 'react';
 import useTimeAgo from '../functions/useTimeAgo';
 
-const ExternalPostWidget = ({ post, sharedPost = false }) => {
+const ExternalPostWidget = ({ post, sharedPost = false, isQuoted = false }) => {
 	//console.log("ExternalPostWidget post:", post);
 	const authContext = useContext(AuthContext);
 	const { isAuthenticated = false } = authContext || {};
@@ -207,7 +207,7 @@ const ExternalPostWidget = ({ post, sharedPost = false }) => {
 		: (post?.source || 'Unknown site');
 
 	return (
-		<div className={'content-item'}>
+		<div className={'content-item'} style={isQuoted ? { borderTopRightRadius: 0, borderBottomRightRadius: 0 } : {}}>
 			{post?.title && <a href={post?.url} target="_blank" rel="noopener noreferrer" className="title-container" style={{ display: 'block' }}>
 				<span className="large-text" style={{ marginLeft: 0 }}>
 					{post?.title || '\u00A0'}
