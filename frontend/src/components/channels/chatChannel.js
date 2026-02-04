@@ -1,5 +1,6 @@
 import api from '../../api';
 import { AuthContext } from '../authContext';
+import { FaTimes, FaPaperclip } from 'react-icons/fa';
 import Message from '../messages/message';
 import { UnreadContext } from '../messages/unreadContext';
 import { useCallback, useContext, useEffect, useRef, useState } from 'react';
@@ -23,6 +24,10 @@ const ChatChannel = ({ canAdd, canRemove, channelId, connection, isGroup, isLock
     const messagesEndRef = useRef(null);
     const socketRef = useRef(null);
     const isInitialLoad = useRef(true);
+    const [attachedMedia, setAttachedMedia] = useState(null);
+    const [mediaPreview, setMediaPreview] = useState(null);
+    const [isUploadingMedia, setIsUploadingMedia] = useState(false);
+    const fileInputRef = useRef(null);
 
     //Use the global socket from SocketProvider
     useEffect(() => {
@@ -284,7 +289,7 @@ const ChatChannel = ({ canAdd, canRemove, channelId, connection, isGroup, isLock
             setTimeout(() => { setErrorMessage(''); }, 5000);
         }
     }, [channelId, isGroup, getChannelMessages, deleteMessage, setChats, setErrorMessage]);
-    
+
     useEffect(() => {
         if (socketRef.current) {
             socketRef.current.emit('join_channel_type', isGroup ? 'feed_chat' : 'direct_message');
@@ -337,14 +342,66 @@ const ChatChannel = ({ canAdd, canRemove, channelId, connection, isGroup, isLock
         return () => container.removeEventListener('scroll', handleScroll);
     }, [channelId, getChannelMessages, hasMore, offset, isLoadingMore]);
 
+    const handleFileSelect = useCallback((e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        //Validate file type
+        const validTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/avif', 'image/heic', 'image/heif', 'video/mp4', 'video/quicktime', 'video/webm', 'video/x-matroska'];
+        if (!validTypes.includes(file.type)) {
+            setErrorMessage('Invalid file type. Only images and videos are allowed.');
+            setTimeout(() => setErrorMessage(''), 5000);
+            return;
+        }
+        //Validate file size
+        const isVideo = file.type.startsWith('video/');
+        const maxSize = isVideo
+            ? (user?.has_membership ? 10000 : 100) * 1024 * 1024
+            : (user?.has_membership ? 500 : 5) * 1024 * 1024;
+
+        if (file.size > maxSize) {
+            const maxSizeMB = maxSize / (1024 * 1024);
+            setErrorMessage(`File size exceeds ${maxSizeMB}MB limit`);
+            setTimeout(() => setErrorMessage(''), 5000);
+            return;
+        }
+        //Store file and create blob URL for preview (like contentForm)
+        const blobUrl = URL.createObjectURL(file);
+        setAttachedMedia(file);
+        setMediaPreview({
+            url: blobUrl,
+            type: isVideo ? 'video' : 'image'
+        });
+    }, [user?.has_membership, setErrorMessage]);
+
+    const removeMedia = useCallback(() => {
+        //Revoke blob URL to free memory
+        if (mediaPreview?.url) {
+            URL.revokeObjectURL(mediaPreview.url);
+        }
+        setAttachedMedia(null);
+        setMediaPreview(null);
+        if (fileInputRef.current) {
+            fileInputRef.current.value = '';
+        }
+    }, [mediaPreview]);
+
     //Send message with connection checks
-    const sendMessage = useCallback(() => {
+    const sendMessage = useCallback(async () => {
         try {
-            const validation = ValidateTextInput(message, 0, maxLength, false);
-            if (!validation.valid) {
-                setErrorMessage(validation.error);
+            //Check if message has content or media
+            if (!message.trim() && !attachedMedia) {
+                setErrorMessage("Message cannot be empty");
                 setTimeout(() => { setErrorMessage(''); }, 5000);
                 return;
+            }
+            //Only validate text if there is text content
+            if (message.trim()) {
+                const validation = ValidateTextInput(message, 1, maxLength, false);
+                if (!validation.valid) {
+                    setErrorMessage(validation.error);
+                    setTimeout(() => { setErrorMessage(''); }, 5000);
+                    return;
+                }
             }
             if (!socketRef.current || !socketRef.current.connected) {
                 setErrorMessage("Error, please try again.");
@@ -352,17 +409,44 @@ const ChatChannel = ({ canAdd, canRemove, channelId, connection, isGroup, isLock
                 if (socketRef.current) socketRef.current.connect();
                 return;
             }
+            //Upload media first if attached (only at send time, like contentForm)
+            let mediaData = null;
+            if (attachedMedia) {
+                setIsUploadingMedia(true);
+                try {
+                    const formData = new FormData();
+                    formData.append('files', attachedMedia);
+                    formData.append('messageType', isGroup ? 'channel' : 'direct');
+                    const response = await api.post('/upload_message_media', formData, {
+                        headers: { 'Content-Type': 'multipart/form-data' }
+                    });
+                    if (response.data.success && response.data.media && response.data.media.length > 0) {
+                        mediaData = response.data.media;
+                    } else {
+                        throw new Error('Upload failed');
+                    }
+                } catch (error) {
+                    setErrorMessage('Failed to upload media');
+                    setTimeout(() => setErrorMessage(''), 5000);
+                    setIsUploadingMedia(false);
+                    return;
+                } finally {
+                    setIsUploadingMedia(false);
+                }
+            }
             const newMessage = {
                 message_id: v4(),
-                content: message, //Send plaintext
+                content: message, //Send plaintext (encryption happens server-side for private messages)
                 sender_id: viewer?.feed_id,
-                receiver_id: isGroup ? null: connection?.feed_id,
+                receiver_id: isGroup ? null : connection?.feed_id,
                 channel_id: channelId,
                 created_at: Date.now(),
+                media: mediaData,
             };
             const route = isGroup ? 'send_feed_message' : 'send_direct_message';
             socketRef.current.emit(route, newMessage);
             setMessage('');
+            removeMedia();
             //Move current chat to top of list (after Main)
             if (!isGroup && setChats) {
                 setChats(prevChats => {
@@ -371,7 +455,7 @@ const ChatChannel = ({ canAdd, canRemove, channelId, connection, isGroup, isLock
                     const otherChats = prevChats.filter(c => c?.title !== 'Main' && c?.chat_id !== channelId);
                     if (currentChat) {
                         const updatedChat = { ...currentChat, updated_at: new Date().toISOString() };
-                        return mainChat 
+                        return mainChat
                             ? [mainChat, updatedChat, ...otherChats]
                             : [updatedChat, ...otherChats];
                     }
@@ -380,9 +464,10 @@ const ChatChannel = ({ canAdd, canRemove, channelId, connection, isGroup, isLock
             }
         } catch (error) {
             setErrorMessage("Error sending message");
-            setTimeout(() => { setErrorMessage(''); }, 5000);   
+            setTimeout(() => { setErrorMessage(''); }, 5000);
+            setIsUploadingMedia(false);
         }
-    }, [channelId, isGroup, message, setChats, setErrorMessage, viewer?.feed_id]);
+    }, [channelId, isGroup, message, setChats, setErrorMessage, viewer?.feed_id, connection?.feed_id, attachedMedia, removeMedia, maxLength]);
 
     return (
         <div className="channel">
@@ -412,30 +497,63 @@ const ChatChannel = ({ canAdd, canRemove, channelId, connection, isGroup, isLock
             </div>
             {(!isLocked || canAdd) && (
                 <div className="messages-channel-footer">
-                    <input
-                        className="chat-message-bar"
-                        type="text"
-                        value={message}
-                        placeholder={isAuthenticated ? "Type a message..." : "Login to chat"}
-                        disabled={!isAuthenticated}
-                        onChange={(e) => {
-                            const input = e.target.value;
-                            const validation = ValidateTextInput(input, 0, maxLength, false);
-                            if (!validation.valid) {
-                                setValidationError(validation.error);
-                                if (input.length > maxLength) {
-                                    return;
+                    {mediaPreview && (
+                        <div className="media-preview-container">
+                            <button className="remove-media-button" onClick={removeMedia} title="Remove media">
+                                <FaTimes />
+                            </button>
+                            {mediaPreview.type === 'video' ? (
+                                <video src={mediaPreview.url} controls className="media-preview" />
+                            ) : (
+                                <img src={mediaPreview.url} alt="Preview" className="media-preview" />
+                            )}
+                        </div>
+                    )}
+                    <div className="message-input-row">
+                        <input
+                            type="file"
+                            ref={fileInputRef}
+                            onChange={handleFileSelect}
+                            accept="image/jpeg,image/png,image/gif,image/webp,image/avif,image/heic,image/heif,video/mp4,video/quicktime,video/webm,video/x-matroska"
+                            style={{ display: 'none' }}
+                        />
+                        <button
+                            className="attach-media-button"
+                            onClick={() => fileInputRef.current?.click()}
+                            disabled={!isAuthenticated || isUploadingMedia || !!attachedMedia}
+                            title="Attach media"
+                        >
+                            <FaPaperclip />
+                        </button>
+                        <input
+                            className="chat-message-bar"
+                            type="text"
+                            value={message}
+                            placeholder={isAuthenticated ? "Type a message..." : "Login to chat"}
+                            disabled={!isAuthenticated || isUploadingMedia}
+                            onChange={(e) => {
+                                const input = e.target.value;
+                                const validation = ValidateTextInput(input, 0, maxLength, false);
+                                if (!validation.valid) {
+                                    setValidationError(validation.error);
+                                    if (input.length > maxLength) {
+                                        return;
+                                    }
+                                } else {
+                                    setValidationError('');
                                 }
-                            } else {
-                                setValidationError('');
-                            }
-                            setMessage(input);
-                        }}
-                        onKeyDown={(e) => e.key === 'Enter' && isAuthenticated && sendMessage()}
-                    />
-                    <button className={`chat-send-button${!isAuthenticated ? ' disabled' : ''}`} onClick={sendMessage} disabled={!isAuthenticated}>
-                        Send
-                    </button>
+                                setMessage(input);
+                            }}
+                            onKeyDown={(e) => e.key === 'Enter' && isAuthenticated && !isUploadingMedia && sendMessage()}
+                        />
+                        <button
+                            className={`chat-send-button${!isAuthenticated || isUploadingMedia ? ' disabled' : ''}`}
+                            onClick={sendMessage}
+                            disabled={!isAuthenticated || isUploadingMedia}
+                        >
+                            {isUploadingMedia ? 'Uploading...' : 'Send'}
+                        </button>
+                    </div>
                 </div>
             )}
         </div>

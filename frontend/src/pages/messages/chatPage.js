@@ -74,11 +74,11 @@ const ChatPage = () => {
             if (data?.chat && connection?.feed_id) {
                 setChats(prev => {
                     //Avoid duplicates
-                    if (prev.some(c => c.chat_id === data.chat.chat_id)) {
+                    if (prev.some(c => c?.chat_id === data?.chat?.chat_id)) {
                         return prev;
                     }
                     const newChats = [data.chat, ...prev];
-                    updateLocalStorageChats(connection.feed_id, newChats);
+                    updateLocalStorageChats(connection?.feed_id, newChats);
                     return newChats;
                 });
             }
@@ -86,7 +86,7 @@ const ChatPage = () => {
         const handleChatRemoved = (data) => {
             setChats(prev => {
                 const newChats = prev.filter(chat => chat?.chat_id !== data?.chat_id);
-                updateLocalStorageChats(connection.feed_id, newChats);
+                updateLocalStorageChats(connection?.feed_id, newChats);
                 return newChats;
             });
             //If viewing deleted chat, redirect to Main
@@ -103,7 +103,7 @@ const ChatPage = () => {
                 const newChats = prevChats.map(chat =>
                     chat.chat_id === chat_id ? {...chat, title: new_title} : chat
                 );
-                updateLocalStorageChats(connection.feed_id, newChats);
+                updateLocalStorageChats(connection?.feed_id, newChats);
                 return newChats;
             });
             //Update current chat title if viewing the renamed chat
@@ -164,7 +164,7 @@ const ChatPage = () => {
                     const newChats = prevChats.map(chat =>
                         chat?.chat_id === selectedChatId ? {...chat, title: newChatName} : chat
                     );
-                    updateLocalStorageChats(connection.feed_id, newChats);
+                    updateLocalStorageChats(connection?.feed_id, newChats);
                     return newChats;
                 });
                 setCurrentChatTitle(newChatName);
@@ -232,7 +232,7 @@ const ChatPage = () => {
                 //Backend already returns decrypted title, no need to decrypt
                 const updatedChats = [newChat, ...chats];
                 setChats(updatedChats);
-                updateLocalStorageChats(connection.feed_id, updatedChats);
+                updateLocalStorageChats(connection?.feed_id, updatedChats);
                 setErrorMessage('');
                 setNewChatName('');
                 setShowForm(false);

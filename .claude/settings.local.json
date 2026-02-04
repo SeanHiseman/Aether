@@ -5,7 +5,8 @@
       "Bash(node --check:*)",
       "Bash(npm install:*)",
       "WebSearch",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "Bash(ls:*)"
     ]
   }
 }

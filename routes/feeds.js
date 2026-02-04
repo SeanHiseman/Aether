@@ -819,7 +819,20 @@ router.get('/feed_channel_messages', higherLimiter, async (req, res) => {
             limit: parseInt(limit) || 100,
             offset: parseInt(offset) || 0,
         });
-        res.status(200).json({ messages, success: true });
+        //Parse media if it's a string
+        const processedMessages = messages.map(message => {
+            const messageData = message.toJSON();
+            if (messageData.media && typeof messageData.media === 'string') {
+                try {
+                    messageData.media = JSON.parse(messageData.media);
+                } catch (e) {
+                    console.error('Failed to parse media JSON:', e);
+                    messageData.media = null;
+                }
+            }
+            return messageData;
+        });
+        res.status(200).json({ messages: processedMessages, success: true });
     } catch (error) {
         console.error(new Date().toISOString(), '/feed_channel_messages error:', error);
         res.status(500).json({ success: false, message: 'Error getting messages' });
@@ -1574,9 +1587,42 @@ export const feedChatChannelSocket = (socket) => {
         socket.leave(channel_id);
     });
     socket.on('delete_feed_message', async (data) => {
-        const { message_id, channel_id } = data;
-        await FeedChannelMessages.destroy({ where: { message_id: data.message_id } });
-        socket.to(channel_id).emit('delete_feed_message', { message_id });
+        try {
+            const { message_id, channel_id } = data;
+            //Find message first to check for media
+            const message = await FeedChannelMessages.findOne({ where: { message_id } });
+            if (message?.media && Array.isArray(message.media)) {
+                //Delete media from S3 in production
+                if (process.env.NODE_ENV === 'production') {
+                    for (const mediaItem of message.media) {
+                        try {
+                            const url = new URL(mediaItem.url);
+                            const s3Key = url.pathname.slice(1); //Remove leading slash
+                            await DeleteFromS3(s3Key);
+                        } catch (mediaError) {
+                            console.error('Error deleting media from S3:', mediaError);
+                        }
+                    }
+                } else {
+                    //Delete from local filesystem in development
+                    for (const mediaItem of message.media) {
+                        try {
+                            const localPath = path.join(__dirname, '..', mediaItem.url);
+                            if (fs.existsSync(localPath)) {
+                                fs.unlinkSync(localPath);
+                            }
+                        } catch (mediaError) {
+                            console.error('Error deleting media from filesystem:', mediaError);
+                        }
+                    }
+                }
+            }
+            await FeedChannelMessages.destroy({ where: { message_id } });
+            socket.to(channel_id).emit('delete_feed_message', { message_id });
+        } catch (error) {
+            console.error('delete_feed_message error:', error);
+            socket.emit('error_message', { error: 'Failed to delete message' });
+        }
     });
     socket.on('edit_feed_message', async (data) => {
         try {
@@ -1594,8 +1640,18 @@ export const feedChatChannelSocket = (socket) => {
                 where: { message_id },
                 include: [{ model: Feeds }]
             });
-            socket.to(channel_id).emit('message_edited', updatedMessage);
-            socket.emit('message_edited', updatedMessage);
+            //Parse media if it's a string
+            const messageData = updatedMessage.toJSON();
+            if (messageData.media && typeof messageData.media === 'string') {
+                try {
+                    messageData.media = JSON.parse(messageData.media);
+                } catch (e) {
+                    console.error('Failed to parse media JSON:', e);
+                    messageData.media = null;
+                }
+            }
+            socket.to(channel_id).emit('message_edited', messageData);
+            socket.emit('message_edited', messageData);
         } catch (error) {
             console.error(new Date().toISOString(), 'edit_feed_message error:', error);
             socket.emit('error_message', { error: 'Failed to edit message' });
@@ -1603,11 +1659,14 @@ export const feedChatChannelSocket = (socket) => {
     });
     socket.on('send_feed_message', async (message) => {
         try {
-            if (message.content.length === 0) {
-                socket.emit('error_message', { error: 'Message too short' });
+            //Allow empty content if media is present
+            const hasMedia = message.media && Array.isArray(message.media) && message.media.length > 0;
+            const hasContent = message.content && message.content.trim().length > 0;
+            if (!hasContent && !hasMedia) {
+                socket.emit('error_message', { error: 'Message must have content or media' });
                 return;
             }
-            if (message.content.length > 1000) {
+            if (hasContent && message.content.length > 1000) {
                 socket.emit('error_message', { error: 'Message too long' });
                 return;
             }
@@ -1629,9 +1688,10 @@ export const feedChatChannelSocket = (socket) => {
             }
             const newMessage = await FeedChannelMessages.create({
                 message_id: message.message_id,
-                content: message.content,
+                content: hasContent ? message.content : '',
                 channel_id: message.channel_id,
                 sender_id: message.sender_id,
+                media: message.media || null,
             });
             //Fetch the message with sender info to match the format from GET endpoint
             const messageWithSender = await FeedChannelMessages.findOne({
@@ -1642,8 +1702,18 @@ export const feedChatChannelSocket = (socket) => {
                 { updated_at: new Date() },
                 { where: { channel_id: message.channel_id } }
             );
-            socket.emit('channel_message_confirmed', messageWithSender);
-            socket.to(message.channel_id).emit('channel_message_confirmed', messageWithSender);
+            //Parse media if it's a string
+            const messageData = messageWithSender.toJSON();
+            if (messageData.media && typeof messageData.media === 'string') {
+                try {
+                    messageData.media = JSON.parse(messageData.media);
+                } catch (e) {
+                    console.error('Failed to parse media JSON:', e);
+                    messageData.media = null;
+                }
+            }
+            socket.emit('channel_message_confirmed', messageData);
+            socket.to(message.channel_id).emit('channel_message_confirmed', messageData);
         } catch (error) {
             console.error(new Date().toISOString(), 'Error handling feed message:', error);
         }

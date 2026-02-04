@@ -127,7 +127,30 @@ const Message = ({ canRemove, deleteMessage, editMessage, editingMessageId, setE
                         {message?.content && (
                             <div className="message-text">
                                 {message?.content}
-                                {message?.edited_at && <span style={{ fontSize: 'small', opacity: 0.7 }}> (edited)</span>}
+                            </div>
+                        )}
+                        {message?.media && Array.isArray(message.media) && message.media.length > 0 && (
+                            <div className="message-media-container">
+                                {message.media.map((mediaItem, index) => (
+                                    <div key={index} className="message-media">
+                                        {mediaItem.type === 'video' ? (
+                                            <video
+                                                src={mediaItem.url}
+                                                controls
+                                                className="message-media-video"
+                                                style={{ maxWidth: '100%', maxHeight: '400px', borderRadius: '8px' }}
+                                            />
+                                        ) : (
+                                            <img
+                                                src={mediaItem.url}
+                                                alt="Message attachment"
+                                                className="message-media-image"
+                                                style={{ maxWidth: '100%', maxHeight: '400px', borderRadius: '8px', cursor: 'pointer' }}
+                                                onClick={() => window.open(mediaItem.url, '_blank')}
+                                            />
+                                        )}
+                                    </div>
+                                ))}
                             </div>
                         )}
                         {message.sharedPost ? (

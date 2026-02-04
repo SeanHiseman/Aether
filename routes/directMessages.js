@@ -1,15 +1,158 @@
 import authenticateCheck from '../functions/checks/authenticateCheck.js';
-import { Chats, Connections, ConnectRequests, ExternalPosts, FeedChats, FeedChannels, Feeds, Followers, Messages, Posts, PostNotes, PostVotes, SavedPosts } from '../models/relationships.js';
+import { Chats, Connections, ConnectRequests, ExternalPosts, FeedChats, FeedChannels, FeedChannelMessages, Feeds, Followers, Messages, Posts, PostNotes, PostVotes, SavedPosts, Users } from '../models/relationships.js';
 import { decrypt, encrypt } from '../functions/encryptionUtil.js';
+import { DeleteFromS3, UploadToS3 } from '../functions/media_handling/s3Handling.js';
 import dotenv from 'dotenv';
+import fs from 'fs';
+import { GenerateFileName } from '../functions/media_handling/generateFileName.js';
+import multer from 'multer';
 import { Op, Sequelize } from 'sequelize';
+import path from 'path';
 import { Router } from 'express';
 import sequelize from '../databaseSetup.js';
+import { standardLimiter } from '../functions/checks/limiters.js';
 import { ValidateTextInput } from '../functions/validateTextInput.js';
 import { v4 } from 'uuid';
+import { fileURLToPath } from 'url';
 
 dotenv.config();
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const mediaDir = path.join(__dirname, '..', 'media', 'messages');
+if (!fs.existsSync(mediaDir)) fs.mkdirSync(mediaDir, { recursive: true });
 const router = Router();
+
+const checkStorageLimit = async (req, res, next) => {
+    try {
+        const user = await Users.findByPk(req.session.user_id);
+        if (!user) {
+            return res.status(404).json({ success: false, message: 'User not found' });
+        }
+        const maxStorage = user.has_membership ? 30 * 1024 : 300; //Weekly limit of 30GB for members, 300MB for non-members
+        if (user.storage_count >= maxStorage) {
+            return res.status(413).json({ success: false, message: `Weekly limit of ${maxStorage}MB exceeded` });
+        }
+        req.currentUser = user;
+        next();
+    } catch (error) {
+        console.error(new Date().toISOString(), 'Error checking storage limit:', error);
+        return res.status(500).json({ success: false, error: error.message });
+    }
+};
+
+const messageFilter = (req, file, cb) => {
+    const ALLOWED_MIME_TYPES = [
+        'image/jpeg',
+        'image/png',
+        'image/gif',
+        'image/webp',
+        'image/avif',
+        'image/heic',
+        'image/heif',
+        'video/mp4',
+        'video/quicktime',
+        'video/webm',
+        'video/x-matroska'
+    ];
+    const ALLOWED_EXTENSIONS = [
+        '.jpg',
+        '.jpeg',
+        '.png',
+        '.gif',
+        '.webp',
+        '.avif',
+        '.heic',
+        '.heif',
+        '.mp4',
+        '.mov',
+        '.webm',
+        '.mkv'
+    ];
+    const extname = path.extname(file.originalname).toLowerCase();
+    const isValidExtension = ALLOWED_EXTENSIONS.includes(extname);
+    const isValidMimeType = ALLOWED_MIME_TYPES.includes(file.mimetype);
+    if (!isValidExtension || !isValidMimeType) {
+        return cb(new Error('File type not allowed'));
+    }
+    const isVideo = file.mimetype.startsWith('video/');
+    const maxImageSize = (req.session?.user?.has_membership ? 500 : 5) * 1024 * 1024; //500MB vs 5MB
+    const maxVideoSize = (req.session?.user?.has_membership ? 10000 : 100) * 1024 * 1024; //10GB vs 100MB
+    const maxSize = isVideo ? maxVideoSize : maxImageSize;
+    if (file.size > maxSize) {
+        return cb(new Error(`File exceeds the limit of ${maxSize / (1024 * 1024)}MB`));
+    }
+    cb(null, true);
+};
+
+let messageUpload;
+if (process.env.NODE_ENV === 'production') {
+    messageUpload = multer({
+        fileFilter: messageFilter,
+        storage: multer.memoryStorage()
+    });
+} else {
+    const messageStorage = multer.diskStorage({
+        destination: (req, file, cb) => {
+            cb(null, mediaDir);
+        },
+        filename: (req, file, cb) => {
+            const uniqueFilename = `${v4()}${path.extname(file.originalname).toLowerCase()}`;
+            cb(null, uniqueFilename);
+        }
+    });
+    messageUpload = multer({
+        fileFilter: messageFilter,
+        storage: messageStorage
+    });
+}
+
+router.post('/upload_message_media', standardLimiter, authenticateCheck, checkStorageLimit, messageUpload.array('files', 10), async (req, res) => {
+    try {
+        const { messageType } = req.body; //'direct' or 'channel'
+        if (!req.files || req.files.length === 0) {
+            return res.status(400).json({ success: false, message: 'No files uploaded' });
+        }
+        const mediaFiles = [];
+        for (const file of req.files) {
+            const isVideo = file.mimetype.startsWith('video/');
+            let mediaUrl;
+            if (process.env.NODE_ENV === 'production') {
+                const fileName = GenerateFileName(file, 'message');
+                const s3Key = `message-media/${fileName}`;
+                await UploadToS3(s3Key, file.buffer, file.mimetype);
+                mediaUrl = `https://${process.env.CLOUDFRONT_DOMAIN}/${s3Key}`;
+            } else {
+                const fileName = file.filename;
+                mediaUrl = `/media/messages/${fileName}`;
+            }
+            mediaFiles.push({
+                url: mediaUrl,
+                type: isVideo ? 'video' : 'image',
+                mimetype: file.mimetype,
+                size: file.size
+            });
+        }
+        return res.status(200).json({ success: true, media: mediaFiles });
+    } catch (error) {
+        console.error(new Date().toISOString(), '/upload_message_media error:', error);
+        //Cleanup uploaded files on error
+        if (req.files?.length > 0) {
+            for (const file of req.files) {
+                try {
+                    if (process.env.NODE_ENV === 'production') {
+                        const fileName = GenerateFileName(file, 'message');
+                        await DeleteFromS3(`message-media/${fileName}`);
+                    } else if (fs.existsSync(file.path)) {
+                        fs.unlinkSync(file.path);
+                    }
+                } catch (cleanupErr) {
+                    console.error(new Date().toISOString(), 'Failed to cleanup file:', cleanupErr);
+                }
+            }
+        }
+        return res.status(500).json({ success: false, message: 'Error uploading media' });
+    }
+});
 
 router.post('/accept_connect_request', authenticateCheck, async (req, res) => {
     let transaction;
@@ -254,6 +397,15 @@ router.get('/get_chat_messages', authenticateCheck, async (req, res) => {
         const decryptedMessages = messages.map(message => {
             const messageData = message.toJSON();
             messageData.content = decrypt(messageData.content);
+            //Parse media if it's a string (shouldn't be, but handle it just in case)
+            if (messageData.media && typeof messageData.media === 'string') {
+                try {
+                    messageData.media = JSON.parse(messageData.media);
+                } catch (e) {
+                    console.error('Failed to parse media JSON:', e);
+                    messageData.media = null;
+                }
+            }
             return messageData;
         });
         for (const message of decryptedMessages) {
@@ -754,7 +906,35 @@ export const directMessagesSocket = (socket) => {
         socket.on('delete_direct_message', async (data) => {
             try {
                 const { message_id, channel_id } = data;
-                await Messages.destroy({ where: { message_id: data.message_id } });
+                //Find message first to check for media
+                const message = await Messages.findOne({ where: { message_id } });
+                if (message?.media && Array.isArray(message.media)) {
+                    //Delete media from S3 in production
+                    if (process.env.NODE_ENV === 'production') {
+                        for (const mediaItem of message.media) {
+                            try {
+                                const url = new URL(mediaItem.url);
+                                const s3Key = url.pathname.slice(1); //Remove leading slash
+                                await DeleteFromS3(s3Key);
+                            } catch (mediaError) {
+                                console.error('Error deleting media from S3:', mediaError);
+                            }
+                        }
+                    } else {
+                        //Delete from local filesystem in development
+                        for (const mediaItem of message.media) {
+                            try {
+                                const localPath = path.join(__dirname, '..', mediaItem.url);
+                                if (fs.existsSync(localPath)) {
+                                    fs.unlinkSync(localPath);
+                                }
+                            } catch (mediaError) {
+                                console.error('Error deleting media from filesystem:', mediaError);
+                            }
+                        }
+                    }
+                }
+                await Messages.destroy({ where: { message_id } });
                 socket.to(channel_id).emit('delete_direct_message', { message_id });
             } catch (error) {
                 console.error('delete_direct_message error:', error);
@@ -771,12 +951,22 @@ export const directMessagesSocket = (socket) => {
                 }
                 const encryptedContent = encrypt(content);
                 await Messages.update(
-                    { content: encryptedContent, edited_at: new Date() },
+                    { content: encryptedContent, updated_at: new Date() },
                     { where: { message_id } }
                 );
                 const updatedMessage = await Messages.findOne({ where: { message_id } });
+                const messageData = updatedMessage.toJSON();
+                //Parse media if it's a string
+                if (messageData.media && typeof messageData.media === 'string') {
+                    try {
+                        messageData.media = JSON.parse(messageData.media);
+                    } catch (e) {
+                        console.error('Failed to parse media JSON:', e);
+                        messageData.media = null;
+                    }
+                }
                 const messageToSend = {
-                    ...updatedMessage.toJSON(),
+                    ...messageData,
                     content: content
                 };
                 socket.to(channel_id).emit('message_edited', messageToSend);
@@ -788,18 +978,28 @@ export const directMessagesSocket = (socket) => {
         });
         socket.on('send_direct_message', async (message) => {
             try {
-                const validation = ValidateTextInput(message.content, 1, 1000, false);
-                if (!validation.valid) {
-                    socket.emit('error_message', { error: validation.error });
+                //Allow empty content if media is present
+                const hasMedia = message.media && Array.isArray(message.media) && message.media.length > 0;
+                const hasContent = message.content && message.content.trim().length > 0;
+                if (!hasContent && !hasMedia) {
+                    socket.emit('error_message', { error: 'Message must have content or media' });
                     return;
                 }
-                const encryptedContent = encrypt(message.content);
+                if (hasContent) {
+                    const validation = ValidateTextInput(message.content, 1, 1000, false);
+                    if (!validation.valid) {
+                        socket.emit('error_message', { error: validation.error });
+                        return;
+                    }
+                }
+                const encryptedContent = hasContent ? encrypt(message.content) : encrypt('');
                 const newMessage = await Messages.create({
                     message_id: message.message_id,
                     content: encryptedContent,
                     chat_id: message.channel_id,
                     sender_id: message.sender_id,
                     receiver_id: message.receiver_id,
+                    media: message.media || null,
                     is_read: false,
                     created_at: message.created_at
                 });
@@ -807,9 +1007,19 @@ export const directMessagesSocket = (socket) => {
                     { updated_at: message.created_at || new Date() },
                     { where: { chat_id: message.channel_id } }
                 );
+                const messageData = newMessage.toJSON();
+                //Parse media if it's a string
+                if (messageData.media && typeof messageData.media === 'string') {
+                    try {
+                        messageData.media = JSON.parse(messageData.media);
+                    } catch (e) {
+                        console.error('Failed to parse media JSON:', e);
+                        messageData.media = null;
+                    }
+                }
                 const messageToSend = {
-                    ...newMessage.toJSON(),
-                    content: message.content
+                    ...messageData,
+                    content: hasContent ? message.content : ''
                 };
                 socket.to(message.channel_id).emit('chat_message_confirmed', messageToSend);
                 socket.emit('chat_message_confirmed', messageToSend);

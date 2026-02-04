@@ -54,6 +54,7 @@ const Messages = sequelize.define('messages', {
     receiver_id: { type: STRING(36), allowNull: false, references: { model: Feeds, key: 'feed_id' }},
     shared_post_id: { type: STRING(36), allowNull: true },
     shared_external_post_id: { type: STRING(255), allowNull: true },
+    media: { type: DataTypes.JSON, allowNull: true },
     is_read: { type: BOOLEAN, defaultValue: false },
     created_at: { type: DataTypes.DATE(3), defaultValue: sequelize.literal('CURRENT_TIMESTAMP(3)') },
     updated_at: { type: DataTypes.DATE(3), defaultValue: sequelize.literal('CURRENT_TIMESTAMP(3)') }

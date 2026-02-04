@@ -2,6 +2,7 @@
 /media/content
 /media/posts
 /media/feed_images
+/media/messages
 /node_modules
 .env
 .qodo
