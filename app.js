@@ -180,8 +180,11 @@ io.on("connection", (socket) => {
 app.set('io', io);
 
 const PORT = process.env.APP_PORT;
+console.log(`[app.js] ===== STARTING SERVER =====`);
+console.log(`[app.js] Port: ${PORT}`);
+console.log(`[app.js] Environment: ${process.env.NODE_ENV}`);
 http.listen(PORT, () => {
-    console.log(`Running on ${PORT}`)
+    console.log(`[app.js] ===== SERVER RUNNING ON PORT ${PORT} =====`)
 });
 
 //export default redis;

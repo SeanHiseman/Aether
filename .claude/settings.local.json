@@ -6,7 +6,8 @@
       "Bash(npm install:*)",
       "WebSearch",
       "Bash(find:*)",
-      "Bash(ls:*)"
+      "Bash(ls:*)",
+      "Bash(dir:*)"
     ]
   }
 }

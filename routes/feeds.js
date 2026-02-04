@@ -1707,8 +1707,8 @@ export const feedChatChannelSocket = (socket) => {
             if (messageData.media && typeof messageData.media === 'string') {
                 try {
                     messageData.media = JSON.parse(messageData.media);
-                } catch (e) {
-                    console.error('Failed to parse media JSON:', e);
+                } catch (error) {
+                    console.error('Failed to parse media JSON:', error);
                     messageData.media = null;
                 }
             }

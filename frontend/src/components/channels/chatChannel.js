@@ -33,11 +33,20 @@ const ChatChannel = ({ canAdd, canRemove, channelId, connection, isGroup, isLock
     useEffect(() => {
         if (window.socket) {
             socketRef.current = window.socket;
+            //Emit join_channel_type immediately when socket is available
+            const channelType = isGroup ? 'feed_chat' : 'direct_message';
+            if (window.socket.connected) {
+                window.socket.emit('join_channel_type', channelType);
+            } else {
+                window.socket.once('connect', () => {
+                    window.socket.emit('join_channel_type', channelType);
+                });
+            }
         } else {
             setErrorMessage('Connection failed');
             setTimeout(() => { setErrorMessage(''); }, 5000);
         }
-    }, [setErrorMessage]); 
+    }, [setErrorMessage, isGroup]); 
 
     //Mark messages as read when entering a channel
     const deleteMessage = useCallback((messageId) => {
@@ -289,12 +298,6 @@ const ChatChannel = ({ canAdd, canRemove, channelId, connection, isGroup, isLock
             setTimeout(() => { setErrorMessage(''); }, 5000);
         }
     }, [channelId, isGroup, getChannelMessages, deleteMessage, setChats, setErrorMessage]);
-
-    useEffect(() => {
-        if (socketRef.current) {
-            socketRef.current.emit('join_channel_type', isGroup ? 'feed_chat' : 'direct_message');
-        }
-    }, [isGroup]);
 
     //Reset channel when channelId changes
     useEffect(() => {
