@@ -43,7 +43,14 @@ export async function fetchAndProcessPosts(platform, fetchConfig, user_id) {
 		switch (platform) {
 			case 'bluesky': {
 				if (!data || !data.feed) return [];
-				data.feed = data.feed.filter(item => !item.reply); //avoid replies
+				// Filter out replies and reposts (but keep quote posts)
+				data.feed = data.feed.filter(item => {
+					// Exclude replies
+					if (item.reply) return false;
+					// Exclude reposts (identified by reason field)
+					if (item.reason?.$type === 'app.bsky.feed.defs#reasonRepost') return false;
+					return true;
+				});
 				mappedPosts = data.feed.map(item => {
 					const p = mapper(item);
 					const rank_hotness = computeHotness({

@@ -20,21 +20,21 @@ export async function processAccount(account) {
 		}
 		const configs = {
 			bluesky: {
-				url: paginationToken?.cursor 
+				url: paginationToken?.cursor
 					? `https://bsky.social/xrpc/app.bsky.feed.getTimeline?limit=100&cursor=${paginationToken.cursor}`
 					: `https://bsky.social/xrpc/app.bsky.feed.getTimeline?limit=100`,
-				headers: { 
-					'Authorization': `Bearer ${access_token}`, 
-					'Content-Type': 'application/json' 
+				headers: {
+					'Authorization': `Bearer ${access_token}`,
+					'Content-Type': 'application/json'
 				},
 				mapper: mapBlueskyToExternal,
 				htmlGenerator: GenerateBlueskyHTML,
 				limit: 100
 			},
 			reddit: {
-				url: paginationToken?.after 
-					? `https://oauth.reddit.com/best?limit=100&after=${paginationToken.after}`
-					: `https://oauth.reddit.com/best?limit=100`,
+				url: paginationToken?.after
+					? `https://oauth.reddit.com/?limit=100&after=${paginationToken.after}` //Posts from followed subreddits only
+					: `https://oauth.reddit.com/?limit=100`,
 				headers: {
 					'Authorization': `bearer ${access_token}`,
 					'User-Agent': ua()
