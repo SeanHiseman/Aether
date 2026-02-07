@@ -6,6 +6,7 @@ import ConfirmModal from '../modals/confirmModal';
 import { FaArrowDown, FaArrowUp, FaBookmark, FaChevronDown, FaChevronUp, FaComments, FaCommentSlash, FaEdit, FaEllipsisV, FaCompress, FaExpand, FaQuoteRight, FaRegBookmark, FaReply, FaRetweet, FaShare, FaTrash, FaTree, FaListUl } from 'react-icons/fa';
 import { FormatNumber } from '../../functions/formatNumber';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
+import LoginModal from '../modals/loginModal';
 import MembershipModal from '../modals/membershipModal';
 import RecommendationInfo from '../recommendationInfo';
 import ReplyTreeView from './replyTreeView';
@@ -44,6 +45,7 @@ const ContentWidget = ({ canRemove = false, display = false, feed, isDraft = fal
 	const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 	const [showExpandButton, setShowExpandButton] = useState(false);
 	const [showFullContent, setShowFullContent] = useState(false);
+	const [showLoginModal, setShowLoginModal] = useState(false);
 	const [showNote, setShowNote] = useState(post?.note && post?.note?.is_misinfo);
 	const [showReplies, setShowReplies] = useState(showAsParent ? false : (post_id ? (post?.replies > 0) : false));
 	const [showSaveModal, setShowSaveModal] = useState(false);
@@ -140,9 +142,7 @@ const ContentWidget = ({ canRemove = false, display = false, feed, isDraft = fal
 	}, []);
 
 	const handleLoginRedirect = () => {
-		if (window.confirm ('Login to vote.')) {
-			navigate('/login', { state: {from: location.pathname} });
-		}
+		setShowLoginModal(true);
 	};
 
 	const incrementViews = useCallback(
@@ -684,6 +684,12 @@ const ContentWidget = ({ canRemove = false, display = false, feed, isDraft = fal
 			)}
 		</div>
 		<ConfirmModal isOpen={showDeleteConfirm} onConfirm={confirmDelete} onCancel={cancelDelete} title={`Delete ${pendingDeleteAction}`} message={`Are you sure you want to delete this ${pendingDeleteAction}?`} />
+		<LoginModal
+			isOpen={showLoginModal}
+			onClose={() => setShowLoginModal(false)}
+			message="Please log in to vote on posts."
+			title="Login Required"
+		/>
 		{showQuoteModal && <QuotePostModal post={post} onClose={() => setShowQuoteModal(false)} />}
 		{showSaveModal && <SaveToChannelModal post={post} isExternal={false} onClose={() => setShowSaveModal(false)} onSaveComplete={(saved) => { setIsSaved(saved); }} />}
 		{showShareModal && <SharePostModal post={post} isExternal={false} onClose={() => setShowShareModal(false)} />}

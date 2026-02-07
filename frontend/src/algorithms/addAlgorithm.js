@@ -4,7 +4,10 @@ import { AuthContext } from '../components/authContext';
 import { DualRangeSlider } from './dualRangeSlider';
 import { FaMicrophone, FaStop } from 'react-icons/fa';
 import { InfoIconWithTooltip } from './infoIconWithTooltip';
+import LoginModal from '../components/modals/loginModal';
+import MembershipModal from '../components/modals/membershipModal';
 import { useContext, useEffect, useRef, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { ValidateTextInput } from '../functions/validateTextInput';
 
 const AddAlgorithm = ({ algorithms = [], display, editingAlgorithm = null, isAuthenticated, locationId, onCreated, onUpdated, setEditingAlgorithm }) => {  
@@ -33,11 +36,15 @@ const AddAlgorithm = ({ algorithms = [], display, editingAlgorithm = null, isAut
 
     const [isRecording, setIsRecording] = useState(false);
     const [isTranscribing, setIsTranscribing] = useState(false);
+    const [showLoginModal, setShowLoginModal] = useState(false);
+    const [showMembershipModal, setShowMembershipModal] = useState(false);
     const mediaRecorderRef = useRef(null);
     const audioChunksRef = useRef([]);
     const recordingIntervalRef = useRef(null);
     const isRecordingRef = useRef(false);
 
+    const location = useLocation();
+    const navigate = useNavigate();
     const [learningRate, setLearningRate] = useState(0.5);
     const [interactionWeights, setInteractionWeights] = useState({ upvotes: 0.3, comments: 0.25, shares: 0.2, saves: 0.15, viewDuration: 0.1 });
     const [authorDiversity, setAuthorDiversity] = useState(0.5);
@@ -238,6 +245,18 @@ const AddAlgorithm = ({ algorithms = [], display, editingAlgorithm = null, isAut
     }
 
     const startVoiceRecording = async () => {
+        //Check authentication
+        if (!isAuthenticated) {
+            setShowLoginModal(true);
+            return;
+        }
+
+        //Check membership
+        if (!hasMembership) {
+            setShowMembershipModal(true);
+            return;
+        }
+
         try {
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
             const mediaRecorder = new MediaRecorder(stream, {
@@ -469,7 +488,7 @@ const AddAlgorithm = ({ algorithms = [], display, editingAlgorithm = null, isAut
                         className={`voice-input-button ${isRecording ? 'recording' : ''}`}
                         onClick={isRecording ? stopVoiceRecording : startVoiceRecording}
                         type="button"
-                        title={isRecording ? 'Stop recording' : 'Start voice input'}
+                        title={isRecording ? 'Stop recording' : (isAuthenticated ? (hasMembership ? 'Start voice input' : 'Premium feature') : 'Login required')}
                         disabled={isTranscribing}
                     >
                         {isRecording ? <FaStop /> : <FaMicrophone />}
@@ -987,6 +1006,18 @@ const AddAlgorithm = ({ algorithms = [], display, editingAlgorithm = null, isAut
                     </>
                 )}
             </div>
+            <LoginModal
+                isOpen={showLoginModal}
+                onClose={() => setShowLoginModal(false)}
+                message="Please log in to use voice input for algorithm descriptions."
+                title="Login Required"
+            />
+            <MembershipModal
+                isOpen={showMembershipModal}
+                onClose={() => setShowMembershipModal(false)}
+                message="Buy membership to describe an algorithm with voice input."
+                title="Get membership"
+            />
         </div>
     );
 };
