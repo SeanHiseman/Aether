@@ -8,10 +8,11 @@ const unreadReducer = (state, action) => {
     switch (action.type) {
         case 'SET_UNREAD_COUNTS':
             return {
-                total: action.payload.total + (action.payload.requestCount || 0),
+                total: action.payload.total + (action.payload.requestCount || 0) + (action.payload.notificationCount || 0),
                 feedCounts: action.payload.feedCounts,
                 chatCounts: action.payload.chatCounts,
-                requestCount: action.payload.requestCount || 0
+                requestCount: action.payload.requestCount || 0,
+                notificationCount: action.payload.notificationCount || 0
             };
         case 'INCREMENT_UNREAD':
             return {
@@ -61,6 +62,19 @@ const unreadReducer = (state, action) => {
                 requestCount: newRequestCount,
                 total: state.total - action.count
             };
+        case 'INCREMENT_NOTIFICATION_COUNT':
+            return {
+                ...state,
+                notificationCount: (state.notificationCount || 0) + 1,
+                total: state.total + 1
+            };
+        case 'DECREMENT_NOTIFICATION_COUNT':
+            const newNotificationCount = Math.max(0, (state.notificationCount || 0) - action.count);
+            return {
+                ...state,
+                notificationCount: newNotificationCount,
+                total: state.total - action.count
+            };
         default:
             return state;
     }
@@ -71,7 +85,8 @@ export const UnreadProvider = ({ children }) => {
         total: 0,
         chatCounts: {},
         feedCounts: {},
-        requestCount: 0
+        requestCount: 0,
+        notificationCount: 0
     });
     const { isAuthenticated, viewer } = useContext(AuthContext);
 
@@ -116,7 +131,8 @@ export const UnreadProvider = ({ children }) => {
                             total: messageResponse.data.total,
                             chatCounts: messageResponse.data.chatCounts,
                             feedCounts: messageResponse.data.feedCounts,
-                            requestCount: requestCount
+                            requestCount: requestCount,
+                            notificationCount: messageResponse.data.notificationCount || 0
                         }
                     });
                 }
@@ -186,6 +202,12 @@ export const UnreadProvider = ({ children }) => {
                     });
                 }
             });
+            socket.on('new_reply_notification', (data) => {
+                //Increment notification count when someone replies to user's post
+                if (data.parentPosterId === viewer.feed_id && data.replierId !== viewer.feed_id) {
+                    dispatch({ type: 'INCREMENT_NOTIFICATION_COUNT' });
+                }
+            });
         }
         return () => {
             window.removeEventListener('storage', handleStorageChange);
@@ -195,6 +217,7 @@ export const UnreadProvider = ({ children }) => {
                 socket.off('messages_marked_read');
                 socket.off('new_connect_request');
                 socket.off('connect_request_resolved');
+                socket.off('new_reply_notification');
             }
         };
     }, [viewer]);

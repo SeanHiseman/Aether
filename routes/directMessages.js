@@ -1,5 +1,5 @@
 import authenticateCheck from '../functions/checks/authenticateCheck.js';
-import { Chats, Connections, ConnectRequests, ExternalPosts, FeedChats, FeedChannels, FeedChannelMessages, Feeds, Followers, Messages, Posts, PostNotes, PostVotes, SavedPosts, Users } from '../models/relationships.js';
+import { Chats, Connections, ConnectRequests, ExternalPosts, FeedChats, FeedChannels, FeedChannelMessages, Feeds, Followers, Messages, Posts, PostNotes, PostVotes, Reposts, SavedPosts, Users } from '../models/relationships.js';
 import { decrypt, encrypt } from '../functions/encryptionUtil.js';
 import { DeleteFromS3, UploadToS3 } from '../functions/media_handling/s3Handling.js';
 import dotenv from 'dotenv';
@@ -822,16 +822,227 @@ router.get('/unread_messages_count/:feed_id', async (req, res) => {
         const requestCount = await ConnectRequests.count({
             where: { receiver_id: feed_id }
         });
+        //Get unseen notification count (replies to user's posts)
+        const userPosts = await Posts.findAll({
+            where: { poster_id: feed_id },
+            attributes: ['post_id']
+        });
+        const userPostIds = userPosts.map(p => p.post_id);
+        const unseenNotifications = await Posts.count({
+            where: {
+                parent_id: { [Op.in]: userPostIds },
+                notification_seen: false,
+                poster_id: { [Op.ne]: feed_id } //Don't count own replies
+            }
+        });
         res.status(200).json({
             success: true,
             total: totalCount,
             feedCounts: feedIdToUnreadCount,
             chatCounts: chatIdToUnreadCount,
-            requestCount: requestCount
+            requestCount: requestCount,
+            notificationCount: unseenNotifications
         });
     } catch (error) {
         console.error(new Date().toISOString(), '/unread_messages_count error:', error);
         res.status(500).json({ success: false, message: 'Failed to get unread counts' });
+    }
+});
+
+router.get('/get_notifications', authenticateCheck, async (req, res) => {
+    try {
+        const { feedId, limit, offset } = req.query;
+        const parsedLimit = parseInt(limit) || 50;
+        const parsedOffset = parseInt(offset) || 0;
+        //Find all posts by the user
+        const userPosts = await Posts.findAll({
+            where: { poster_id: feedId },
+            attributes: ['post_id']
+        });
+        const userPostIds = userPosts.map(p => p.post_id);
+
+        if (userPostIds.length === 0) {
+            return res.status(200).json({ success: true, notifications: [], hasMore: false });
+        }
+
+        //Find all replies to user's posts with full includes
+        const replies = await Posts.findAll({
+            where: {
+                parent_id: { [Op.in]: userPostIds },
+                poster_id: { [Op.ne]: feedId } //Exclude own replies
+            },
+            include: [
+                { model: PostNotes, as: 'note', required: false },
+                {
+                    model: FeedChannels,
+                    as: 'parentChannel',
+                    attributes: ['channel_id', 'channel_name', 'feed_id'],
+                    include: [{ model: Feeds }],
+                    required: false
+                },
+                { model: Feeds, as: 'poster' },
+                {
+                    model: Posts,
+                    as: 'quotedPost',
+                    required: false,
+                    include: [
+                        {
+                            model: Feeds,
+                            as: 'poster',
+                            attributes: ['feed_id', 'feed_name', 'feed_photo']
+                        },
+                        {
+                            model: FeedChannels,
+                            as: 'parentChannel',
+                            attributes: ['channel_id', 'channel_name'],
+                            include: [{
+                                model: Feeds,
+                                attributes: ['feed_id', 'feed_name', 'is_group']
+                            }]
+                        }
+                    ]
+                },
+                {
+                    model: ExternalPosts,
+                    as: 'quotedExternalPost',
+                    required: false,
+                    attributes: ['post_id', 'source', 'title', 'text_body', 'author', 'author_photo', 'url', 'created_at_remote', 'score', 'replies']
+                },
+                {
+                    model: PostVotes,
+                    as: 'votes',
+                    attributes: ['upvotes', 'downvotes'],
+                    required: false
+                },
+                {
+                    model: Posts,
+                    as: 'parentPost',
+                    include: [
+                        { model: PostNotes, as: 'note', required: false },
+                        {
+                            model: FeedChannels,
+                            as: 'parentChannel',
+                            attributes: ['channel_id', 'channel_name', 'feed_id'],
+                            include: [{ model: Feeds }],
+                            required: false
+                        },
+                        { model: Feeds, as: 'poster' },
+                        {
+                            model: Posts,
+                            as: 'quotedPost',
+                            required: false,
+                            include: [
+                                {
+                                    model: Feeds,
+                                    as: 'poster',
+                                    attributes: ['feed_id', 'feed_name', 'feed_photo']
+                                },
+                                {
+                                    model: FeedChannels,
+                                    as: 'parentChannel',
+                                    attributes: ['channel_id', 'channel_name'],
+                                    include: [{
+                                        model: Feeds,
+                                        attributes: ['feed_id', 'feed_name', 'is_group']
+                                    }]
+                                }
+                            ]
+                        },
+                        {
+                            model: ExternalPosts,
+                            as: 'quotedExternalPost',
+                            required: false,
+                            attributes: ['post_id', 'source', 'title', 'text_body', 'author', 'author_photo', 'url', 'created_at_remote', 'score', 'replies']
+                        },
+                        {
+                            model: PostVotes,
+                            as: 'votes',
+                            attributes: ['upvotes', 'downvotes'],
+                            required: false
+                        }
+                    ]
+                }
+            ],
+            order: [['created_at', 'DESC']],
+            limit: parsedLimit,
+            offset: parsedOffset
+        });
+        //Check if user has voted/saved/reposted these replies and their parent posts
+        for (const reply of replies) {
+            //Reply vote/save/repost status
+            const voteRow = await PostVotes.findOne({
+                where: { post_id: reply.post_id, voter_id: feedId },
+                raw: true
+            });
+            reply.dataValues.has_upvoted = voteRow?.upvotes > 0 || false;
+            reply.dataValues.has_downvoted = voteRow?.downvotes > 0 || false;
+            const savedRow = await SavedPosts.findOne({
+                where: { post_id: reply.post_id, saver_id: feedId }
+            });
+            reply.dataValues.is_saved = !!savedRow;
+            const repostRow = await Reposts.findOne({
+                where: { post_id: reply.post_id, reposter_id: feedId }
+            });
+            reply.dataValues.has_reposted = !!repostRow;
+            //Parent post vote/save/repost status
+            if (reply.parentPost) {
+                const parentVoteRow = await PostVotes.findOne({
+                    where: { post_id: reply.parentPost.post_id, voter_id: feedId },
+                    raw: true
+                });
+                reply.parentPost.dataValues.has_upvoted = parentVoteRow?.upvotes > 0 || false;
+                reply.parentPost.dataValues.has_downvoted = parentVoteRow?.downvotes > 0 || false;
+                const parentSavedRow = await SavedPosts.findOne({
+                    where: { post_id: reply.parentPost.post_id, saver_id: feedId }
+                });
+                reply.parentPost.dataValues.is_saved = !!parentSavedRow;
+                const parentRepostRow = await Reposts.findOne({
+                    where: { post_id: reply.parentPost.post_id, reposter_id: feedId }
+                });
+                reply.parentPost.dataValues.has_reposted = !!parentRepostRow;
+            }
+        }
+        const hasMore = replies.length === parsedLimit;
+        res.status(200).json({ success: true, notifications: replies, hasMore });
+    } catch (error) {
+        console.error(new Date().toISOString(), '/get_notifications error:', error);
+        res.status(500).json({ success: false, message: 'Error getting notifications' });
+    }
+});
+
+router.post('/mark_notification_seen', authenticateCheck, async (req, res) => {
+    try {
+        const { postId } = req.body;
+
+        await Posts.update(
+            { notification_seen: true },
+            { where: { post_id: postId } }
+        );
+
+        res.status(200).json({ success: true });
+    } catch (error) {
+        console.error(new Date().toISOString(), '/mark_notification_seen error:', error);
+        res.status(500).json({ success: false, message: 'Error marking notification as seen' });
+    }
+});
+
+router.post('/mark_notifications_seen', authenticateCheck, async (req, res) => {
+    try {
+        const { postIds } = req.body;
+
+        if (!Array.isArray(postIds) || postIds.length === 0) {
+            return res.status(400).json({ success: false, message: 'Invalid post IDs' });
+        }
+
+        await Posts.update(
+            { notification_seen: true },
+            { where: { post_id: { [Op.in]: postIds } } }
+        );
+
+        res.status(200).json({ success: true });
+    } catch (error) {
+        console.error(new Date().toISOString(), '/mark_notifications_seen error:', error);
+        res.status(500).json({ success: false, message: 'Error marking notifications as seen' });
     }
 });
 

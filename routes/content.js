@@ -515,6 +515,20 @@ router.post("/create_post", standardLimiter, authenticateCheck, checkStorageLimi
                 await Feeds.increment('post_count', { by: 1, where: { feed_id: poster_id } });
             }
             if (draft) await PostDrafts.destroy({ where: { draft_id } });
+            //Emit socket event for new reply notification
+            if (parent_id) {
+                const parentPost = await Posts.findOne({ where: { post_id: parent_id } });
+                if (parentPost && parentPost.poster_id !== poster_id) {
+                    const io = req.app.get('io');
+                    if (io) {
+                        io.to(parentPost.poster_id.toString()).emit('new_reply_notification', {
+                            postId: newPostId,
+                            replierId: poster_id,
+                            parentPosterId: parentPost.poster_id
+                        });
+                    }
+                }
+            }
         }
         //Create or update draft
         else if (draft_id) {
@@ -561,6 +575,17 @@ router.post("/create_post", standardLimiter, authenticateCheck, checkStorageLimi
                 if (parentPost) {
                     parentPost.replies += 1;
                     await parentPost.save();
+                    //Emit socket event for new reply notification
+                    if (parentPost.poster_id !== poster_id) {
+                        const io = req.app.get('io');
+                        if (io) {
+                            io.to(parentPost.poster_id.toString()).emit('new_reply_notification', {
+                                postId: newPostId,
+                                replierId: poster_id,
+                                parentPosterId: parentPost.poster_id
+                            });
+                        }
+                    }
                 }
             }
         }

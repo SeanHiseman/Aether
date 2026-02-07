@@ -661,3 +661,5 @@ ALTER TABLE external_account_meta
 ADD COLUMN follower_count INT DEFAULT 0 AFTER post_count;
 
 CREATE INDEX idx_external_account_follower_count ON external_account_meta(follower_count);
+
+ALTER TABLE Posts ADD COLUMN notification_seen BOOLEAN DEFAULT FALSE;

@@ -2,23 +2,29 @@ import api from '../../api';
 import { AuthContext } from '../../components/authContext';
 import ConfirmModal from '../../components/modals/confirmModal';
 import ConnectionWidget from './connectionWidget';
+import ContentWidget from '../../components/content/contentWidget';
 import FeedItem from '../../components/channels/feedItem';
 import SwipeableAside from '../../components/swipeableAside';
 import { useOutletContext } from 'react-router-dom';
 import { UnreadContext } from '../../components/messages/unreadContext';
-import { useContext, useEffect, useState } from 'react';
+import { useContext, useEffect, useRef, useState } from 'react';
 
 const MessagesPage = () => {
-    const [activeTab, setActiveTab] = useState('connections');
+    const [activeTab, setActiveTab] = useState('notifications');
     const [connections, setConnections] = useState([]);
     const [connectionsOffset, setConnectionsOffset] = useState(0);
     const [connectionToRemove, setConnectionToRemove] = useState(null);
     const [connectRequests, setConnectRequests] = useState([]);
     const [errorMessage, setErrorMessage] = useState('');
     const [hasMoreConnections, setHasMoreConnections] = useState(true);
+    const [hasMoreNotifications, setHasMoreNotifications] = useState(true);
     const [hasMoreRequests, setHasMoreRequests] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [notifications, setNotifications] = useState([]);
+    const [notificationsOffset, setNotificationsOffset] = useState(0);
     const [requestsOffset, setRequestsOffset] = useState(0);
+    const observerRef = useRef(null);
+    const seenNotificationsRef = useRef(new Set());
     const { rightClasses, updateFeeds, closeDrawers, mobileOpen } = useOutletContext();
     const { dispatch, state } = useContext(UnreadContext);
     const { viewer } = useContext(AuthContext);
@@ -66,9 +72,9 @@ const MessagesPage = () => {
                     return updated;
                 });
                 setRequestsOffset(prevOffset => prevOffset + newRequests.length);
-                dispatch({ 
+                dispatch({
                     type: 'SET_REQUEST_COUNT',
-                    count: newRequests.length 
+                    count: newRequests.length
                 });
             }
         } catch (error) {
@@ -77,15 +83,40 @@ const MessagesPage = () => {
         }
     };
 
+    const loadMoreNotifications = async () => {
+        try {
+            if (viewer?.feed_id) {
+                const response = await api.get('/get_notifications', {
+                    params: { feedId: viewer?.feed_id, limit, offset: notificationsOffset }
+                });
+                const newNotifications = response.data?.notifications || [];
+                const hasMore = response.data?.hasMore || false;
+
+                setHasMoreNotifications(hasMore);
+                setNotifications(prevNotifications => [...prevNotifications, ...newNotifications]);
+                setNotificationsOffset(prevOffset => prevOffset + newNotifications.length);
+            }
+        } catch (error) {
+            setErrorMessage(error.response?.data?.message || 'Error getting notifications');
+            setTimeout(() => { setErrorMessage(''); }, 5000);
+        }
+    };
+
     useEffect(() => {
         if (viewer?.feed_id) {
             setConnectionsOffset(0);
             setHasMoreConnections(true);
+            setNotificationsOffset(0);
+            setHasMoreNotifications(true);
             setRequestsOffset(0);
             setHasMoreRequests(true);
+
+            //Load notifications
+            loadMoreNotifications();
+
             //Check localStorage for connections
             const storedConnections = localStorage.getItem('connections');
-            if (storedConnections && storedConnections !== 'undefined' && storedConnections !== 'null') { //Undefined different to empty
+            if (storedConnections && storedConnections !== 'undefined' && storedConnections !== 'null') {
                 const parsed = JSON.parse(storedConnections);
                 setConnections(parsed);
                 setConnectionsOffset(parsed.length);
@@ -98,9 +129,9 @@ const MessagesPage = () => {
                 const parsed = JSON.parse(storedRequests);
                 setConnectRequests(parsed);
                 setRequestsOffset(parsed.length);
-                dispatch({ 
+                dispatch({
                     type: 'SET_REQUEST_COUNT',
-                    count: parsed.length 
+                    count: parsed.length
                 });
             } else {
                 loadMoreRequests();
@@ -158,11 +189,78 @@ const MessagesPage = () => {
                 if (activeTab === 'requests' && hasMoreRequests) {
                     loadMoreRequests();
                 }
+                if (activeTab === 'notifications' && hasMoreNotifications) {
+                    loadMoreNotifications();
+                }
             }
         };
         window.addEventListener('scroll', handleScroll);
         return () => window.removeEventListener('scroll', handleScroll);
-    }, [activeTab, hasMoreConnections, hasMoreRequests, connectionsOffset, requestsOffset, viewer?.feed_id]);
+    }, [activeTab, hasMoreConnections, hasMoreRequests, hasMoreNotifications, connectionsOffset, requestsOffset, notificationsOffset, viewer?.feed_id]);
+
+    //Intersection Observer to mark notifications as seen
+    useEffect(() => {
+        if (activeTab !== 'notifications') return;
+
+        observerRef.current = new IntersectionObserver(
+            (entries) => {
+                const seenPostIds = [];
+
+                entries.forEach((entry) => {
+                    if (entry.isIntersecting) {
+                        const postId = entry.target.dataset.postId;
+                        const notificationSeen = entry.target.dataset.notificationSeen === 'true';
+
+                        if (postId && !notificationSeen && !seenNotificationsRef.current.has(postId)) {
+                            seenPostIds.push(postId);
+                            seenNotificationsRef.current.add(postId);
+                        }
+                    }
+                });
+
+                if (seenPostIds.length > 0) {
+                    markNotificationsAsSeen(seenPostIds);
+                }
+            },
+            {
+                threshold: 0.5, //Mark as seen when 50% visible
+                rootMargin: '0px'
+            }
+        );
+
+        //Observe all notification elements
+        const notificationElements = document.querySelectorAll('[data-notification-item]');
+        notificationElements.forEach((el) => observerRef.current.observe(el));
+
+        return () => {
+            if (observerRef.current) {
+                observerRef.current.disconnect();
+            }
+        };
+    }, [activeTab, notifications]);
+
+    const markNotificationsAsSeen = async (postIds) => {
+        try {
+            await api.post('/mark_notifications_seen', { postIds });
+
+            //Update local state
+            setNotifications(prevNotifications =>
+                prevNotifications.map(notif =>
+                    postIds.includes(notif.post_id)
+                        ? { ...notif, notification_seen: true }
+                        : notif
+                )
+            );
+
+            //Update notification count in context
+            dispatch({
+                type: 'DECREMENT_NOTIFICATION_COUNT',
+                count: postIds.length
+            });
+        } catch (error) {
+            console.error('Error marking notifications as seen:', error);
+        }
+    };
 
     const handleConnectionAddition = newConnection => {
         if (newConnection) {
@@ -288,6 +386,9 @@ const MessagesPage = () => {
             <div className="channel-feed">
                 <div className="channel-content">
                     <div className="tab-titles">
+                        <span className={`tab-title ${activeTab === 'notifications' ? 'active' : ''}`} onClick={() => setActiveTab('notifications')}>
+                            {state.notificationCount > 0 ? <span className="unread-count">{state.notificationCount}</span> : null} Notifications
+                        </span>
                         <span className={`tab-title ${activeTab === 'connections' ? 'active' : ''}`} onClick={() => setActiveTab('connections')}>
                             {viewer?.connections} {viewer?.connections === 1 ? 'Connection' : 'Connections'}
                         </span>
@@ -296,7 +397,48 @@ const MessagesPage = () => {
                         </span>
                     </div>
                     <div className="error-message">{errorMessage}</div>
-                    {activeTab === 'connections' ? (
+                    {activeTab === 'notifications' ? (
+                        notifications.length === 0 ? (
+                            <p className="medium-text faded-text">No notifications yet</p>
+                        ) : (
+                            <div className="notifications-feed">
+                                {notifications.map(notification => (
+                                    <div
+                                        key={notification.post_id}
+                                        data-notification-item
+                                        data-post-id={notification.post_id}
+                                        data-notification-seen={notification.notification_seen}
+                                        className={`notification-wrapper ${!notification.notification_seen ? 'unread' : ''}`}
+                                    >
+                                        <div className="notification-header">
+                                            <span className="notification-text">
+                                                <strong>{notification.poster?.feed_name}</strong> replied to your post
+                                            </span>
+                                            {!notification.notification_seen && (
+                                                <span className="unread-indicator"></span>
+                                            )}
+                                        </div>
+                                        {notification.parentPost && (
+                                            <div className="notification-parent-post">
+                                                <ContentWidget
+                                                    post={notification.parentPost}
+                                                    parent={null}
+                                                    showAsParent={true}
+                                                />
+                                            </div>
+                                        )}
+                                        <div className="notification-reply">
+                                            <ContentWidget
+                                                post={notification}
+                                                parent={notification.parentPost}
+                                                showAsParent={false}
+                                            />
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )
+                    ) : activeTab === 'connections' ? (
                         connections.length === 0 ? (
                             <p className="medium-text faded-text">No connections</p>
                         ) : (
