@@ -656,3 +656,8 @@ ADD COLUMN media JSON DEFAULT NULL,
 
 ALTER TABLE feed_channel_messages
 ADD COLUMN media JSON DEFAULT NULL,
+
+ALTER TABLE external_account_meta
+ADD COLUMN follower_count INT DEFAULT 0 AFTER post_count;
+
+CREATE INDEX idx_external_account_follower_count ON external_account_meta(follower_count);

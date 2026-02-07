@@ -39,10 +39,13 @@ export async function fetchPaginatedPostData({ paginatedIds, scoreMap, includeOp
 		return b.post_id.localeCompare(a.post_id);
 	});
 	return allPosts.map(p => {
-		const algScore = scoreMap.get(p.post_id)?.algorithmScore || 0;
+		const scoreData = scoreMap.get(p.post_id) || {};
+		const algScore = scoreData.algorithmScore || 0;
+		const reasons = scoreData.recommendationReasons;
 		return {
 			...p,
-			algorithmScore: algScore
+			algorithmScore: algScore,
+			...(reasons ? { recommendationReasons: reasons } : {})
 			//score remains as the original platform score (likes) for display
 		};
 	});

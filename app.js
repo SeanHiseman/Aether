@@ -144,9 +144,8 @@ app.use(history('index.html', { root }));
 sequelize.authenticate()
 
 io.on("connection", (socket) => {
-    // Track which handlers have been registered to prevent duplicates
+    //Track which handlers have been registered to prevent duplicates
     socket._handlersRegistered = socket._handlersRegistered || {};
-
     socket.on('join_user_room', (userId) => {
         if (userId) {
             socket.join(userId.toString());
@@ -154,11 +153,10 @@ io.on("connection", (socket) => {
     });
     socket.on('join_channel_type', (channelType) => {
         try {
-            // Only register handlers once per socket connection
+            //Only register handlers once per socket connection
             if (socket._handlersRegistered[channelType]) {
-                return; // Handlers already registered for this type
+                return; //Handlers already registered for this type
             }
-
             if (channelType === 'direct_message') {
                 directMessagesSocket(socket);
                 socket._handlersRegistered[channelType] = true;
@@ -180,11 +178,8 @@ io.on("connection", (socket) => {
 app.set('io', io);
 
 const PORT = process.env.APP_PORT;
-console.log(`[app.js] ===== STARTING SERVER =====`);
-console.log(`[app.js] Port: ${PORT}`);
-console.log(`[app.js] Environment: ${process.env.NODE_ENV}`);
 http.listen(PORT, () => {
-    console.log(`[app.js] ===== SERVER RUNNING ON PORT ${PORT} =====`)
+    console.log(`===== SERVER RUNNING ON PORT ${PORT} =====`)
 });
 
 //export default redis;

@@ -90,11 +90,14 @@ router.post('/create_algorithm', authenticateCheck, async (req, res) => {
         await endpointLimiter.schedule(async () => {
             console.log('create_algorithm: start');
             console.time('create_algorithm_total');
-            const { 
-                algorithmId, algorithmName, activeDays, chronology, contentType, 
-                customInstruction, generateCode, locationId, minWords, 
-                maxWords, minVideo, maxVideo, sentiment, startTime, 
-                endTime, variety, voteImpact, wordBoost, wordSuppress 
+            const {
+                algorithmId, algorithmName, activeDays, chronology, contentType,
+                customInstruction, generateCode, locationId, minWords,
+                maxWords, minVideo, maxVideo, sentiment, startTime,
+                endTime, variety, voteImpact, wordBoost, wordSuppress,
+                learningRate, interactionWeights,
+                authorDiversity, controversyScore,
+                accountSizePreference, sourceDiversity
             } = req.body;
             const viewerId = req.session.viewer_id;
             const MAX_WORDS = 50;
@@ -142,7 +145,13 @@ router.post('/create_algorithm', authenticateCheck, async (req, res) => {
                     voteImpact,
                     wordBoost: sanitizedWordBoost,
                     wordSuppress: sanitizedWordSuppress
-                }
+                },
+                learningRate: typeof learningRate === 'number' ? learningRate : 0.5,
+                interactionWeights: interactionWeights || { upvotes: 0.3, comments: 0.25, shares: 0.2, saves: 0.15, viewDuration: 0.1 },
+                authorDiversity: typeof authorDiversity === 'number' ? authorDiversity : 0.5,
+                controversyScore: typeof controversyScore === 'number' ? controversyScore : 0,
+                accountSizePreference: typeof accountSizePreference === 'number' ? accountSizePreference : 0.5,
+                sourceDiversity: typeof sourceDiversity === 'number' ? sourceDiversity : 0.5
             };
 
             await new Promise(resolve => setImmediate(resolve));

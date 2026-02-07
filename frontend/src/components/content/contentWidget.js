@@ -7,6 +7,7 @@ import { FaArrowDown, FaArrowUp, FaBookmark, FaChevronDown, FaChevronUp, FaComme
 import { FormatNumber } from '../../functions/formatNumber';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import MembershipModal from '../modals/membershipModal';
+import RecommendationInfo from '../RecommendationInfo';
 import ReplyTreeView from './replyTreeView';
 import QuotePostModal from '../modals/quotePostModal';
 import SaveToChannelModal from '../modals/saveToChannelModal';
@@ -399,11 +400,21 @@ const ContentWidget = ({ canRemove = false, display = false, feed, isDraft = fal
 			...(isQuoted ? { borderTopRightRadius: 0, borderBottomRightRadius: 0 } : {})
 		}}>
 			{postErrorMessage && <div className="small-text faded-text">{postErrorMessage}</div>}
-			{post?.title && <Link to={`/${urlPrefix}/${post?.parentChannel?.feed?.feed_name}/${post?.parentChannel?.channel_name}/${post?.post_id}`} className="title-container" onClick={() => incrementViews(post?.post_id)} style={{ display: 'block' }}>
-				<span className="large-text" style={{ marginLeft: 0 }}>
-					{post?.title || '\u00A0'}
-				</span>
-			</Link>}
+			{post?.title && (
+				<div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+					<Link to={`/${urlPrefix}/${post?.parentChannel?.feed?.feed_name}/${post?.parentChannel?.channel_name}/${post?.post_id}`} className="title-container" onClick={() => incrementViews(post?.post_id)} style={{ display: 'block', flex: 1 }}>
+						<span className="large-text" style={{ marginLeft: 0 }}>
+							{post?.title || '\u00A0'}
+						</span>
+					</Link>
+					{post?.recommendationReasons && <RecommendationInfo reasons={post.recommendationReasons} />}
+				</div>
+			)}
+			{!post?.title && post?.recommendationReasons && (
+				<div style={{ display: 'flex', justifyContent: 'flex-end', padding: '8px 0' }}>
+					<RecommendationInfo reasons={post.recommendationReasons} />
+				</div>
+			)}
 			<div ref={fullscreenRef}
 				onClick={() => incrementViews(post?.post_id)}
 				style={{

@@ -83,6 +83,7 @@ const ExternalAccountMeta = sequelize.define('ExternalAccountMeta', {
     last_fetched_at: { type: DataTypes.DATE, allowNull: true },
     cursor: { type: TEXT, allowNull: true }, //For pagination
     post_count: { type: INTEGER, defaultValue: 0 },
+    follower_count: { type: INTEGER, defaultValue: 0 },
     created_at: { type: DataTypes.DATE, defaultValue: DataTypes.NOW },
     updated_at: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }
 }, {

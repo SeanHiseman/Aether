@@ -1,112 +1,10 @@
 import { ALGORITHM_TEMPLATES } from './algorithmTemplates';
 import api from '../api';
 import { AuthContext } from '../components/authContext';
-import React from 'react';
-import { FaInfoCircle } from 'react-icons/fa';
-import { useCallback, useContext, useEffect, useRef, useState } from 'react';
+import { DualRangeSlider } from './dualRangeSlider';
+import { InfoIconWithTooltip } from './infoIconWithTooltip';
+import { useContext, useEffect, useState } from 'react';
 import { ValidateTextInput } from '../functions/validateTextInput';
-
-function InfoIconWithTooltip({ info }) {
-    const [visible, setVisible] = useState(false);
-    return (
-        <div
-            className="info-icon"
-            onMouseEnter={() => setVisible(true)}
-            onMouseLeave={() => setVisible(false)}
-            style={{ position: 'relative', display: 'inline-block', cursor: 'pointer' }}
-        >
-            <FaInfoCircle />
-            {visible && (
-                <div className="custom-tooltip" style={{ zIndex: 9999 }}>
-                    {info}
-                </div>
-            )}
-        </div>
-    );
-}
-
-const DualRangeSlider = ({ min = 0, max = 100, value = [25, 75], onChange, formatValue = (val) => val }) => {
-    const [isDragging, setIsDragging] = useState(false);
-    const [activeHandle, setActiveHandle] = useState(null);
-    const trackRef = useRef(null);
-
-    const handleMouseDown = useCallback((e, handle) => {
-        e.preventDefault();
-        setIsDragging(true);
-        setActiveHandle(handle);
-    }, []);
-
-    const handleMouseMove = useCallback((e) => {
-        if (!isDragging || !activeHandle || !trackRef.current) return;
-        const rect = trackRef.current.getBoundingClientRect();
-        const x = e.clientX - rect.left;
-        const percentage = Math.max(0, Math.min(100, (x / rect.width) * 100));
-        const newValue = Math.round((percentage / 100) * (max - min) + min);
-        if (activeHandle === 'min') {
-            const newMin = Math.min(newValue, value[1] - 1);
-            onChange([newMin, value[1]]);
-        } else {
-            const newMax = Math.max(newValue, value[0] + 1);
-            onChange([value[0], newMax]);
-        }
-    }, [isDragging, activeHandle, min, max, value, onChange]);
-
-    const handleMouseUp = useCallback(() => {
-        setIsDragging(false);
-        setActiveHandle(null);
-    }, []);
-
-    const handleTrackClick = useCallback((e) => {
-        if (isDragging) return;
-        const rect = trackRef.current.getBoundingClientRect();
-        const x = e.clientX - rect.left;
-        const percentage = (x / rect.width) * 100;
-        const clickValue = Math.round((percentage / 100) * (max - min) + min);
-        const minDistance = Math.abs(clickValue - value[0]);
-        const maxDistance = Math.abs(clickValue - value[1]);
-        if (minDistance < maxDistance) {
-            const newMin = Math.min(clickValue, value[1] - 1);
-            onChange([newMin, value[1]]);
-        } else {
-            const newMax = Math.max(clickValue, value[0] + 1);
-            onChange([value[0], newMax]);
-        }
-    }, [isDragging, min, max, value, onChange]);
-
-    React.useEffect(() => {
-        if (isDragging) {
-            document.addEventListener('mousemove', handleMouseMove);
-            document.addEventListener('mouseup', handleMouseUp);
-            return () => {
-                document.removeEventListener('mousemove', handleMouseMove);
-                document.removeEventListener('mouseup', handleMouseUp);
-            };
-        }
-    }, [isDragging, handleMouseMove, handleMouseUp]);
-
-    const minPercent = ((value[0] - min) / (max - min)) * 100;
-    const maxPercent = ((value[1] - min) / (max - min)) * 100;
-
-    return (
-        <div className="dual-slider">
-            <div ref={trackRef} className="dual-slider__track" onClick={handleTrackClick}>
-                <div 
-                    className="dual-slider__range" 
-                    style={{ 
-                        left: `${minPercent}%`, 
-                        width: `${maxPercent - minPercent}%` 
-                    }} 
-                />
-                <div className="dual-slider__handle" style={{ left: `${minPercent}%` }} onMouseDown={(e) => handleMouseDown(e, 'min')} />
-                <div className="dual-slider__handle" style={{ left: `${maxPercent}%` }} onMouseDown={(e) => handleMouseDown(e, 'max')} />
-            </div>
-            <div className="dual-slider__values">
-                <span>{formatValue(value[0], 'min')}</span>
-                <span>{formatValue(value[1], 'max')}</span>
-            </div>
-        </div>
-    );
-};
 
 const AddAlgorithm = ({ algorithms = [], display, editingAlgorithm = null, isAuthenticated, locationId, onCreated, onUpdated, setEditingAlgorithm }) => {  
     const authContext = useContext(AuthContext);
@@ -131,6 +29,14 @@ const AddAlgorithm = ({ algorithms = [], display, editingAlgorithm = null, isAut
     const [wordBoost, setWordBoost] = useState('');
     const [wordRange, setWordRange] = useState([0, 100]);
     const [wordSuppress, setWordSuppress] = useState('');
+
+    const [learningRate, setLearningRate] = useState(0.5);
+    const [interactionWeights, setInteractionWeights] = useState({ upvotes: 0.3, comments: 0.25, shares: 0.2, saves: 0.15, viewDuration: 0.1 });
+    const [authorDiversity, setAuthorDiversity] = useState(0.5);
+    const [controversyScore, setControversyScore] = useState(0);
+    const [accountSizePreference, setAccountSizePreference] = useState(0.5);
+    const [sourceDiversity, setSourceDiversity] = useState(0.5);
+
     const hasMembership = user?.has_membership;
 
     const isDayActive = (day) => activeDays.includes(day);
@@ -182,6 +88,13 @@ const AddAlgorithm = ({ algorithms = [], display, editingAlgorithm = null, isAut
                 voteImpact,
                 wordBoost: wordBoost.split(',').map(w => w.trim()).filter(Boolean),
                 wordSuppress: wordSuppress.split(',').map(w => w.trim()).filter(Boolean),
+
+                learningRate,
+                interactionWeights,
+                authorDiversity,
+                controversyScore,
+                accountSizePreference,
+                sourceDiversity,
             };
             const { data } = await api.post('/create_algorithm', payload);
             if (data.success) {
@@ -212,7 +125,7 @@ const AddAlgorithm = ({ algorithms = [], display, editingAlgorithm = null, isAut
         setAlgorithmName('');
         setChronology(0.6);
         setContentType({ images: true, text: true, videos: true, interactive: true });
-        setCustomInstruction('');        
+        setCustomInstruction('');
         setEditingAlgorithm(null);
         setWordRange([0, 100]);
         setVideoRange([0, 100]);
@@ -224,6 +137,19 @@ const AddAlgorithm = ({ algorithms = [], display, editingAlgorithm = null, isAut
         setWordSuppress('');
         setVariety(0.5);
         setVoteImpact(0.6);
+
+        setLearningRate(0.5);
+        setInteractionWeights({
+            upvotes: 0.3,
+            comments: 0.25,
+            shares: 0.2,
+            saves: 0.15,
+            viewDuration: 0.1
+        });
+        setAuthorDiversity(0.5);
+        setControversyScore(0);
+        setAccountSizePreference(0.5);
+        setSourceDiversity(0.5);
     }
 
     const templateChange = (templateKey) => {
@@ -241,6 +167,19 @@ const AddAlgorithm = ({ algorithms = [], display, editingAlgorithm = null, isAut
             setWordRange([0, 100]);
             setVideoRange([0, 100]);
             setContentType({ images: true, text: true, videos: true, interactive: true });
+
+            setLearningRate(0.5);
+            setInteractionWeights({
+                upvotes: 0.3,
+                comments: 0.25,
+                shares: 0.2,
+                saves: 0.15,
+                viewDuration: 0.1
+            });
+            setAuthorDiversity(0.5);
+            setControversyScore(0);
+            setAccountSizePreference(0.5);
+            setSourceDiversity(0.5);
             return;
         }
         const templateConfig = ALGORITHM_TEMPLATES[templateKey];
@@ -266,6 +205,19 @@ const AddAlgorithm = ({ algorithms = [], display, editingAlgorithm = null, isAut
             if (!algorithmName || Object.values(ALGORITHM_TEMPLATES).some(t => t.name === algorithmName)) {
                 setAlgorithmName(templateConfig.name);
             }
+
+            setLearningRate(0.5);
+            setInteractionWeights({
+                upvotes: 0.3,
+                comments: 0.25,
+                shares: 0.2,
+                saves: 0.15,
+                viewDuration: 0.1
+            });
+            setAuthorDiversity(0.5);
+            setControversyScore(0);
+            setAccountSizePreference(0.5);
+            setSourceDiversity(0.5);
         }
     };
 
@@ -327,6 +279,19 @@ const AddAlgorithm = ({ algorithms = [], display, editingAlgorithm = null, isAut
             setWordBoost(wordBoostWords);
             setWordSuppress(wordSuppressWords);
             setVariety(parsedAlgorithmCode.variety ?? 1);
+
+            setLearningRate(parsedAlgorithmCode.learningRate ?? 0.5);
+            setInteractionWeights(parsedAlgorithmCode.interactionWeights ?? {
+                upvotes: 0.3,
+                comments: 0.25,
+                shares: 0.2,
+                saves: 0.15,
+                viewDuration: 0.1
+            });
+            setAuthorDiversity(parsedAlgorithmCode.authorDiversity ?? 0.5);
+            setControversyScore(parsedAlgorithmCode.controversyScore ?? 0);
+            setAccountSizePreference(parsedAlgorithmCode.accountSizePreference ?? 0.5);
+            setSourceDiversity(parsedAlgorithmCode.sourceDiversity ?? 0.5);
         } else {
             startCreatingNew();
         }
@@ -428,8 +393,9 @@ const AddAlgorithm = ({ algorithms = [], display, editingAlgorithm = null, isAut
                                     onChange={e => setChronology(parseFloat(e.target.value))}
                                 />
                                 <div className="slider-labels">
-                                    <span className="tiny-text">Neutral</span>
-                                    <span className="tiny-text">Newest</span>
+                                    <span className="tiny-text">Show Old</span>
+                                    <span className="tiny-text">Balanced</span>
+                                    <span className="tiny-text">Fresh Only</span>
                                 </div>
                             </div>
                             <div className="form-group">
@@ -471,7 +437,7 @@ const AddAlgorithm = ({ algorithms = [], display, editingAlgorithm = null, isAut
                                     onChange={e => setSentiment(parseFloat(e.target.value))}
                                 />
                                 <div className="slider-labels">
-                                    <span className="tiny-text">Negative</span>_
+                                    <span className="tiny-text">Negative</span>
                                     <span className="tiny-text">Neutral</span>
                                     <span className="tiny-text">Positive</span>
                                 </div>
@@ -526,7 +492,95 @@ const AddAlgorithm = ({ algorithms = [], display, editingAlgorithm = null, isAut
                                 />
                             </div>
                         </div>
-                        <div className="form-row border-bottom">
+                        <div className="form-row">
+                            <div className="form-group">
+                                <div className="form-label-with-info">
+                                    <label className="small-text">Controversy Score</label>
+                                    <InfoIconWithTooltip info="Controls exposure to divisive or debate-heavy content based on engagement patterns." />
+                                </div>
+                                <input
+                                    className="form-input"
+                                    required
+                                    step="0.1"
+                                    type="range"
+                                    min="-1"
+                                    max="1"
+                                    value={controversyScore}
+                                    onChange={e => setControversyScore(parseFloat(e.target.value))}
+                                />
+                                <div className="slider-labels">
+                                    <span className="tiny-text">Avoid</span>
+                                    <span className="tiny-text">Neutral</span>
+                                    <span className="tiny-text">Seek</span>
+                                </div>
+                            </div>
+                            <div className="form-group">
+                                <div className="form-label-with-info">
+                                    <label className="small-text">Account Size Preference</label>
+                                    <InfoIconWithTooltip info="Preference for small vs large accounts based on follower count." />
+                                </div>
+                                <input
+                                    className="form-input"
+                                    required
+                                    step="0.1"
+                                    type="range"
+                                    min="0"
+                                    max="1"
+                                    value={accountSizePreference}
+                                    onChange={e => setAccountSizePreference(parseFloat(e.target.value))}
+                                />
+                                <div className="slider-labels">
+                                    <span className="tiny-text">Small</span>
+                                    <span className="tiny-text">Mixed</span>
+                                    <span className="tiny-text">Popular</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div className="form-row">
+                            <div className="form-group">
+                                <div className="form-label-with-info">
+                                    <label className="small-text">Source Diversity</label>
+                                    <InfoIconWithTooltip info="Variety of communities and sources. Prevents echo chambers." />
+                                </div>
+                                <input
+                                    className="form-input"
+                                    required
+                                    step="0.1"
+                                    type="range"
+                                    min="0"
+                                    max="1"
+                                    value={sourceDiversity}
+                                    onChange={e => setSourceDiversity(parseFloat(e.target.value))}
+                                />
+                                <div className="slider-labels">
+                                    <span className="tiny-text">Focused</span>
+                                    <span className="tiny-text">Balanced</span>
+                                    <span className="tiny-text">Diverse</span>
+                                </div>
+                            </div>
+                            <div className="form-group">
+                                <div className="form-label-with-info">
+                                    <label className="small-text">Author Diversity</label>
+                                    <InfoIconWithTooltip info="Controls variety of content creators. Higher values prevent feed domination by few accounts." />
+                                </div>
+                                <input
+                                    className="form-input"
+                                    required
+                                    step="0.1"
+                                    type="range"
+                                    min="0"
+                                    max="1"
+                                    value={authorDiversity}
+                                    onChange={e => setAuthorDiversity(parseFloat(e.target.value))}
+                                />
+                                <div className="slider-labels">
+                                    <span className="tiny-text">Concentrated</span>
+                                    <span className="tiny-text">Balanced</span>
+                                    <span className="tiny-text">Diverse</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div className="form-row">
                             <div className="form-group">
                                 <div className="form-label-with-info">
                                     <label className="small-text">Video length</label>
@@ -667,6 +721,125 @@ const AddAlgorithm = ({ algorithms = [], display, editingAlgorithm = null, isAut
                                         onChange={() => toggleDay('sunday')} 
                                     /> Sun
                                 </label>
+                            </div>
+                        </div>
+                        <div className="form-row">
+                            <div className="form-label-with-info">
+                                <label className="small-text">Algorithm Insights</label>
+                                <InfoIconWithTooltip info="View what your algorithm has learned about your preferences and behavior patterns." />
+                            </div>
+                            <button className="button button--secondary" type="button" onClick={() => alert('Algorithm insights dashboard - Coming soon!')}>
+                                View Algorithm Insights
+                            </button>
+                        </div>
+                        <div className="form-row">
+                            <div className="form-group">
+                                <div className="form-label-with-info">
+                                    <label className="small-text">Learning Rate</label>
+                                    <InfoIconWithTooltip info="Controls how quickly the algorithm adapts to your recent behavior. Lower = more stable, Higher = more adaptive." />
+                                </div>
+                                <input
+                                    className="form-input"
+                                    required
+                                    step="0.1"
+                                    type="range"
+                                    min="0"
+                                    max="1"
+                                    value={learningRate}
+                                    onChange={e => setLearningRate(parseFloat(e.target.value))}
+                                />
+                                <div className="slider-labels">
+                                    <span className="tiny-text">Static</span>
+                                    <span className="tiny-text">Balanced</span>
+                                    <span className="tiny-text">Adaptive</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div className="form-row">
+                            <div className="form-label-with-info">
+                                <label className="small-text">Interaction Weighting</label>
+                                <InfoIconWithTooltip info="Define which actions tell the algorithm most about your preferences. All weights are relative to each other." />
+                            </div>
+                        </div>
+                        <div className="form-row">
+                            <div className="form-group" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                                <div>
+                                    <label className="tiny-text">Upvotes: {(interactionWeights.upvotes * 100).toFixed(0)}%</label>
+                                    <input
+                                        className="form-input"
+                                        type="range"
+                                        min="0"
+                                        max="1"
+                                        step="0.05"
+                                        value={interactionWeights.upvotes}
+                                        onChange={e => setInteractionWeights(prev => ({ ...prev, upvotes: parseFloat(e.target.value) }))}
+                                    />
+                                </div>
+                                <div>
+                                    <label className="tiny-text">Comments: {(interactionWeights.comments * 100).toFixed(0)}%</label>
+                                    <input
+                                        className="form-input"
+                                        type="range"
+                                        min="0"
+                                        max="1"
+                                        step="0.05"
+                                        value={interactionWeights.comments}
+                                        onChange={e => setInteractionWeights(prev => ({ ...prev, comments: parseFloat(e.target.value) }))}
+                                    />
+                                </div>
+                                <div>
+                                    <label className="tiny-text">Shares: {(interactionWeights.shares * 100).toFixed(0)}%</label>
+                                    <input
+                                        className="form-input"
+                                        type="range"
+                                        min="0"
+                                        max="1"
+                                        step="0.05"
+                                        value={interactionWeights.shares}
+                                        onChange={e => setInteractionWeights(prev => ({ ...prev, shares: parseFloat(e.target.value) }))}
+                                    />
+                                </div>
+                                <div>
+                                    <label className="tiny-text">Saves: {(interactionWeights.saves * 100).toFixed(0)}%</label>
+                                    <input
+                                        className="form-input"
+                                        type="range"
+                                        min="0"
+                                        max="1"
+                                        step="0.05"
+                                        value={interactionWeights.saves}
+                                        onChange={e => setInteractionWeights(prev => ({ ...prev, saves: parseFloat(e.target.value) }))}
+                                    />
+                                </div>
+                                <div style={{ gridColumn: '1 / -1' }}>
+                                    <label className="tiny-text">View Duration: {(interactionWeights.viewDuration * 100).toFixed(0)}%</label>
+                                    <input
+                                        className="form-input"
+                                        type="range"
+                                        min="0"
+                                        max="1"
+                                        step="0.05"
+                                        value={interactionWeights.viewDuration}
+                                        onChange={e => setInteractionWeights(prev => ({ ...prev, viewDuration: parseFloat(e.target.value) }))}
+                                    />
+                                </div>
+                            </div>
+                        </div>
+                        <div className="form-row border-bottom">
+                            <div className="form-label-with-info">
+                                <label className="small-text">Data Management</label>
+                                <InfoIconWithTooltip info="View, export, or reset your algorithm's learned preferences." />
+                            </div>
+                            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                                <button className="button button--secondary" type="button" onClick={() => alert('View data profile - Coming soon!')}>
+                                    View Data Profile
+                                </button>
+                                <button className="button button--secondary" type="button" onClick={() => alert('Export data - Coming soon!')}>
+                                    Export Data
+                                </button>
+                                <button className="button button--danger" type="button" onClick={() => window.confirm('Reset all learned preferences? This cannot be undone.') && alert('Reset learning - Coming soon!')}>
+                                    Reset Learning
+                                </button>
                             </div>
                         </div>
                         <div className="create-header" style={{ justifyContent: 'end' }}>

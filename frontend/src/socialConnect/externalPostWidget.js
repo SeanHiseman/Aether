@@ -4,6 +4,7 @@ import ContentDisplay from '../components/content/contentDisplay';
 import { FaArrowDown, FaArrowUp, FaBookmark, FaChevronDown, FaChevronUp, FaComments, FaHeart, FaQuoteRight, FaRegBookmark, FaRetweet, FaShare } from 'react-icons/fa';
 import { FormatNumber } from '../functions/formatNumber';
 import QuotePostModal from '../components/modals/quotePostModal';
+import RecommendationInfo from '../components/RecommendationInfo';
 import SaveToChannelModal from '../components/modals/saveToChannelModal';
 import SharePostModal from '../components/modals/sharePostModal';
 import { useParams } from 'react-router-dom';
@@ -208,11 +209,17 @@ const ExternalPostWidget = ({ post, sharedPost = false, isQuoted = false }) => {
 
 	return (
 		<div className={'content-item'} style={isQuoted ? { borderTopRightRadius: 0, borderBottomRightRadius: 0 } : {}}>
-			{post?.title && <a href={post?.url} target="_blank" rel="noopener noreferrer" className="title-container" style={{ display: 'block' }}>
+			{post?.title && <a href={post?.url} target="_blank" rel="noopener noreferrer" className="title-container" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
 				<span className="large-text" style={{ marginLeft: 0 }}>
 					{post?.title || '\u00A0'}
 				</span>
+				{post?.recommendationReasons && <RecommendationInfo reasons={post.recommendationReasons} />}
 			</a>}
+			{!post?.title && post?.recommendationReasons && (
+				<div style={{ display: 'flex', justifyContent: 'flex-end', padding: '8px 0' }}>
+					<RecommendationInfo reasons={post.recommendationReasons} />
+				</div>
+			)}
 			<div style={{ position: 'relative', width: '100%', display: 'flex', flexDirection: 'column', height: 'auto', overflow: 'visible' }}>
 				<div style={{ position: 'relative', flex: 'initial', display: 'flex', flexDirection: 'column', overflow: 'visible' }}>
 					<div ref={contentContainerRef} className="display-div">
