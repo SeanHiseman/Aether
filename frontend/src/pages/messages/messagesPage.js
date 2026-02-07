@@ -387,7 +387,7 @@ const MessagesPage = () => {
                 <div className="channel-content">
                     <div className="tab-titles">
                         <span className={`tab-title ${activeTab === 'notifications' ? 'active' : ''}`} onClick={() => setActiveTab('notifications')}>
-                            {state.notificationCount > 0 ? <span className="unread-count">{state.notificationCount}</span> : null} Notifications
+                            {(state.total - state.requestCount) ?? 0} {(state.total - state.requestCount) === 1 ? 'Notification' : 'Notifications'}
                         </span>
                         <span className={`tab-title ${activeTab === 'connections' ? 'active' : ''}`} onClick={() => setActiveTab('connections')}>
                             {viewer?.connections} {viewer?.connections === 1 ? 'Connection' : 'Connections'}
