@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import './RecommendationInfo.css';
+import '../css/recommendationInfo.css';
 
 const RecommendationInfo = ({ reasons }) => {
 	const [showPopup, setShowPopup] = useState(false);
@@ -22,7 +22,6 @@ const RecommendationInfo = ({ reasons }) => {
 					<text x="8" y="11" fontSize="10" textAnchor="middle" fill="currentColor">i</text>
 				</svg>
 			</button>
-
 			{showPopup && (
 				<>
 					<div className="recommendation-backdrop" onClick={() => setShowPopup(false)} />
