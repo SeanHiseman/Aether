@@ -679,39 +679,37 @@ const FeedHome = () => {
             {/* Mobile Header */}
             {!loading && isMobile() && mobileOpen !== "right" && (
                 <div className={`mobile-feed-header ${showMobileHeader ? 'visible' : 'hidden'}`}>
-                    <div className="mobile-header-actions">
-                        <Link to={`/${urlPrefix}/${feed_name}/Main`} className="feed-link">
-                            <img
-                                className="medium-feed-photo"
-                                src={`${feed?.feed_photo}`}
-                                onError={(e) => e.currentTarget.src = '/media/site_images/blank-profile.png'}
-                                alt={feed?.feed_name}
-                            />
-                            <div className="mobile-header-info">
-                                <p className="feed-list-text">{feed?.feed_name}</p>
-                                <p className="small-text faded-text">{feed?.is_group ? 'Group' : 'User'}</p>
-                            </div>
-                        </Link>
-                        {feed && user?.user_id !== feed?.feed_owner && isAuthenticated && viewer ? (
-                            <FollowerChangeButton
-                                feed={feed}
-                                showFollowers={false}
-                                showName={false}
-                                showVertical={false}
-                                updateFeeds={updateFeeds}
-                                viewerId={viewer?.feed_id}
-                            />
-                        ) : (
-                            <p className="icon-text">{FormatNumber(feed?.follower_count)} {(feed?.follower_count) === 1 ? 'follower' : 'followers'}</p>
-                        )}
-                        {!isViewingSelf && !feed?.is_group && isAuthenticated && (
-                            <ManageConnectionButton
-                                feed={feed}
-                                viewerId={viewer?.feed_id}
-                                updateFeeds={updateFeeds}
-                            />
-                        )}
-                    </div>
+                    <Link to={`/${urlPrefix}/${feed_name}/Main`} className="feed-link">
+                        <img
+                            className="medium-feed-photo"
+                            src={`${feed?.feed_photo}`}
+                            onError={(e) => e.currentTarget.src = '/media/site_images/blank-profile.png'}
+                            alt={feed?.feed_name}
+                        />
+                        <div className="mobile-header-info">
+                            <p className="feed-list-text">{feed?.feed_name}</p>
+                            <p className="small-text faded-text">{feed?.is_group ? 'Group' : 'User'}</p>
+                        </div>
+                    </Link>
+                    {feed && user?.user_id !== feed?.feed_owner && isAuthenticated && viewer ? (
+                        <FollowerChangeButton
+                            feed={feed}
+                            showFollowers={false}
+                            showName={false}
+                            showVertical={false}
+                            updateFeeds={updateFeeds}
+                            viewerId={viewer?.feed_id}
+                        />
+                    ) : (
+                        <p className="icon-text">{FormatNumber(feed?.follower_count)} {(feed?.follower_count) === 1 ? 'follower' : 'followers'}</p>
+                    )}
+                    {!isViewingSelf && !feed?.is_group && isAuthenticated && (
+                        <ManageConnectionButton
+                            feed={feed}
+                            viewerId={viewer?.feed_id}
+                            updateFeeds={updateFeeds}
+                        />
+                    )}
                 </div>
             )}
             <div className={`standard-container ${isMobile() && mobileOpen !== "right" && !loading ? 'has-mobile-header' : ''}`}>
