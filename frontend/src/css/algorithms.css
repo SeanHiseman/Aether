@@ -608,6 +608,55 @@
 	font-size: 14px;
 }
 
+/* Voice Input Button */
+.voice-input-button {
+	align-items: center;
+	background: var(--darkest);
+	border: 2px solid var(--light);
+	border-radius: 50%;
+	bottom: var(--medium-margin);
+	color: var(--lightest);
+	cursor: pointer;
+	display: flex;
+	font-size: var(--medium-text);
+	height: 40px;
+	justify-content: center;
+	position: absolute;
+	right: var(--medium-margin);
+	transition: all 0.3s ease;
+	width: 40px;
+}
+.voice-input-button:hover:not(:disabled) {
+	background: var(--light);
+	border-color: var(--lightest);
+	transform: scale(1.1);
+}
+.voice-input-button:disabled {
+	cursor: not-allowed;
+	opacity: 0.5;
+}
+.voice-input-button.recording {
+	animation: pulse 1.5s ease-in-out infinite;
+	background: var(--color-error);
+	border-color: var(--color-error);
+}
+@keyframes pulse {
+	0%, 100% {
+		opacity: 1;
+	}
+	50% {
+		opacity: 0.6;
+	}
+}
+.transcribing-text {
+	bottom: var(--medium-margin);
+	color: var(--light);
+	font-size: var(--tiny-text);
+	font-style: italic;
+	position: absolute;
+	right: calc(40px + var(--large-margin));
+}
+
 @media (max-width: 768px) {
 	.intensity-scale {
 		flex-wrap: wrap;

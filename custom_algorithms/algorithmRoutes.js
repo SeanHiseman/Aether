@@ -2,8 +2,11 @@ import { Algorithms, AlgorithmLocations } from './algorithmRelationships.js';
 import authenticateCheck from '../functions/checks/authenticateCheck.js';
 import Bottleneck from 'bottleneck';
 import { ContentAnalyser } from '../functions/contentAnalyser.js';
+import fs from 'fs';
+import multer from 'multer';
 import OpenAI from 'openai';
 import os from 'os';
+import path from 'path';
 import { Router } from 'express';
 import sequelize from '../databaseSetup.js';
 import { v4 } from 'uuid';
@@ -13,6 +16,14 @@ const openai = new OpenAI({
 	apiKey: process.env.OPENAI_API_KEY
 });
 const router = Router();
+
+//Configure multer for voice file uploads
+const upload = multer({
+	storage: multer.memoryStorage(),
+	limits: {
+		fileSize: 25 * 1024 * 1024 //25MB limit for OpenAI Whisper
+	}
+});
 
 router.post('/assign_algorithm', authenticateCheck, async (req, res) => {
 	try {
@@ -385,6 +396,49 @@ router.delete('/remove_algorithm', authenticateCheck, async (req, res) => {
 	} catch (error) {
 		console.error(new Date().toISOString(), "/remove_algorithm error:", error);
 		res.status(500).json({ success: false, message: 'Failed to remove algorithm.' });
+	}
+});
+
+router.post('/transcribe_voice', authenticateCheck, upload.single('audio'), async (req, res) => {
+	let tempFilePath = null;
+	try {
+		if (!req.file) {
+			return res.status(400).json({ success: false, message: 'No audio file provided.' });
+		}
+		//OpenAI Whisper requires a file, so we save the buffer temporarily
+		const tempDir = os.tmpdir();
+		const fileExtension = path.extname(req.file.originalname) || '.webm';
+		tempFilePath = path.join(tempDir, `${v4()}${fileExtension}`);
+		//Write buffer to temporary file
+		await fs.promises.writeFile(tempFilePath, req.file.buffer);
+		//Create a read stream for OpenAI
+		const audioStream = fs.createReadStream(tempFilePath);
+		//Transcribe using OpenAI Whisper
+		const transcription = await openai.audio.transcriptions.create({ //Autodetects language
+			file: audioStream,
+			model: 'whisper-1',
+			response_format: 'text'
+		});
+		res.status(200).json({ success: true, transcription: transcription });
+	} catch (error) {
+		console.error(new Date().toISOString(), '/transcribe_voice error:', error);
+		//Handle specific OpenAI errors
+		if (error.code === 'invalid_file_format') {
+			return res.status(400).json({
+				success: false,
+				message: 'Invalid audio format. Please use a supported format.'
+			});
+		}
+		res.status(500).json({ success: false, message: 'Failed to transcribe audio. Please try again.' });
+	} finally {
+		//Clean up temporary file
+		if (tempFilePath) {
+			try {
+				await fs.promises.unlink(tempFilePath);
+			} catch (cleanupError) {
+				console.error('Failed to delete temp file:', cleanupError);
+			}
+		}
 	}
 });
 

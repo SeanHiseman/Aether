@@ -10,7 +10,7 @@ import sequelize from "../../databaseSetup.js";
 
 export async function fetchExplorePosts({ viewerId, hasActiveAlgorithm, algorithmFilters, externalFiltersSQL, MAX_ALGORITHM_CANDIDATES, orderMode, backendFetchTotal, offset, limit, includeOptions, attrOption, lowVoteImpact, algorithmRow, scoringParams }) {
 	//console.log(`[EXPLORE ALGORITHM] locationId=explore, offset=${offset}, limit=${limit}, hasActiveAlgorithm=${hasActiveAlgorithm}`);
-	console.log("explore MAX_ALGORITHM_CANDIDATES:", MAX_ALGORITHM_CANDIDATES);
+	//console.log("explore MAX_ALGORITHM_CANDIDATES:", MAX_ALGORITHM_CANDIDATES);
 	if (hasActiveAlgorithm) {
 		//Algorithm path with external posts
 		const nativePostIds = await Posts.findAll({
@@ -25,7 +25,7 @@ export async function fetchExplorePosts({ viewerId, hasActiveAlgorithm, algorith
 			limit: MAX_ALGORITHM_CANDIDATES,
 			raw: true
 		});
-		console.log("nativePostIds length:", nativePostIds.length);
+		//console.log("nativePostIds length:", nativePostIds.length);
 		//Fetch hottest external posts from all platforms (same for all users)
 		//Use 3 day window with aggressive decay to heavily favor last 24 hours
 		const externalPostsQuery = await sequelize.query(
@@ -37,7 +37,7 @@ export async function fetchExplorePosts({ viewerId, hasActiveAlgorithm, algorith
 			{ replacements: { maxCandidates: MAX_ALGORITHM_CANDIDATES }, type: QueryTypes.SELECT }
 		);
 		const externalPostIds = externalPostsQuery.map(a => a.post_id);
-		console.log("explore externalPostIds length:", externalPostIds.length);
+		//console.log("explore externalPostIds length:", externalPostIds.length);
 		const { paginatedIds, scoreMap } = await scoreAndPaginateCandidates({
 			nativePostIds: nativePostIds.map(p => p.post_id),
 			externalPostIds,
@@ -46,7 +46,7 @@ export async function fetchExplorePosts({ viewerId, hasActiveAlgorithm, algorith
 			offset,
 			limit
 		});
-		console.log("explore paginatedIds.length:", paginatedIds.length);
+		//console.log("explore paginatedIds.length:", paginatedIds.length);
 		if (!paginatedIds.length) {
 			if (Object.keys(algorithmFilters).length > 0 || externalFiltersSQL) {
 				return { posts: [], status: "filtered", message: "Your algorithm settings filtered out all posts." };

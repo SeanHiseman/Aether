@@ -2,8 +2,9 @@ import { ALGORITHM_TEMPLATES } from './algorithmTemplates';
 import api from '../api';
 import { AuthContext } from '../components/authContext';
 import { DualRangeSlider } from './dualRangeSlider';
+import { FaMicrophone, FaStop } from 'react-icons/fa';
 import { InfoIconWithTooltip } from './infoIconWithTooltip';
-import { useContext, useEffect, useState } from 'react';
+import { useContext, useEffect, useRef, useState } from 'react';
 import { ValidateTextInput } from '../functions/validateTextInput';
 
 const AddAlgorithm = ({ algorithms = [], display, editingAlgorithm = null, isAuthenticated, locationId, onCreated, onUpdated, setEditingAlgorithm }) => {  
@@ -29,6 +30,13 @@ const AddAlgorithm = ({ algorithms = [], display, editingAlgorithm = null, isAut
     const [wordBoost, setWordBoost] = useState('');
     const [wordRange, setWordRange] = useState([0, 100]);
     const [wordSuppress, setWordSuppress] = useState('');
+
+    const [isRecording, setIsRecording] = useState(false);
+    const [isTranscribing, setIsTranscribing] = useState(false);
+    const mediaRecorderRef = useRef(null);
+    const audioChunksRef = useRef([]);
+    const recordingIntervalRef = useRef(null);
+    const isRecordingRef = useRef(false);
 
     const [learningRate, setLearningRate] = useState(0.5);
     const [interactionWeights, setInteractionWeights] = useState({ upvotes: 0.3, comments: 0.25, shares: 0.2, saves: 0.15, viewDuration: 0.1 });
@@ -222,12 +230,121 @@ const AddAlgorithm = ({ algorithms = [], display, editingAlgorithm = null, isAut
     };
 
     const toggleDay = (day) => {
-        setActiveDays(prev => 
-            prev.includes(day) 
+        setActiveDays(prev =>
+            prev.includes(day)
                 ? prev.filter(d => d !== day)  //Remove if active
                 : [...prev, day]               //Add if inactive
         );
     }
+
+    const startVoiceRecording = async () => {
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            const mediaRecorder = new MediaRecorder(stream, {
+                mimeType: 'audio/webm;codecs=opus'
+            });
+
+            mediaRecorderRef.current = mediaRecorder;
+            audioChunksRef.current = [];
+            isRecordingRef.current = true;
+            setIsRecording(true);
+
+            mediaRecorder.ondataavailable = (event) => {
+                if (event.data.size > 0) {
+                    audioChunksRef.current.push(event.data);
+                }
+            };
+
+            mediaRecorder.onstop = async () => {
+                const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+                await sendAudioForTranscription(audioBlob);
+
+                //Restart recording if still in recording mode
+                if (isRecordingRef.current && mediaRecorderRef.current) {
+                    audioChunksRef.current = [];
+                    try {
+                        mediaRecorderRef.current.start();
+                    } catch (e) {
+                        console.error('Failed to restart recording:', e);
+                    }
+                } else {
+                    //Stop all tracks to release microphone
+                    stream.getTracks().forEach(track => track.stop());
+                }
+            };
+
+            mediaRecorder.start();
+
+            //Auto-send audio every 3 seconds for near real-time transcription
+            recordingIntervalRef.current = setInterval(() => {
+                if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording' && isRecordingRef.current) {
+                    mediaRecorderRef.current.stop();
+                }
+            }, 3000);
+
+        } catch (error) {
+            setError('Microphone access denied or not available');
+            setTimeout(() => setError(''), 3000);
+            isRecordingRef.current = false;
+            setIsRecording(false);
+        }
+    };
+
+    const stopVoiceRecording = () => {
+        isRecordingRef.current = false;
+        setIsRecording(false);
+
+        if (recordingIntervalRef.current) {
+            clearInterval(recordingIntervalRef.current);
+            recordingIntervalRef.current = null;
+        }
+
+        if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
+            mediaRecorderRef.current.stop();
+        }
+    };
+
+    const sendAudioForTranscription = async (audioBlob) => {
+        try {
+            setIsTranscribing(true);
+
+            const formData = new FormData();
+            formData.append('audio', audioBlob, 'recording.webm');
+
+            const response = await api.post('/transcribe_voice', formData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data',
+                },
+            });
+
+            if (response.data.success && response.data.transcription) {
+                //Replace the entire text with new transcription
+                const newText = response.data.transcription.trim();
+                if (newText) {
+                    setCustomInstruction(newText);
+                    setTemplate('none');
+                }
+            }
+        } catch (error) {
+            console.error('Transcription error:', error);
+            setError('Failed to transcribe audio');
+            setTimeout(() => setError(''), 3000);
+        } finally {
+            setIsTranscribing(false);
+        }
+    };
+
+    //Cleanup on unmount
+    useEffect(() => {
+        return () => {
+            if (recordingIntervalRef.current) {
+                clearInterval(recordingIntervalRef.current);
+            }
+            if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
+                mediaRecorderRef.current.stop();
+            }
+        };
+    }, []);
 
     useEffect(() => {
         if (customInstruction.trim()) {
@@ -331,11 +448,11 @@ const AddAlgorithm = ({ algorithms = [], display, editingAlgorithm = null, isAut
                         }}
                     />
                 </div>
-                <div className="form-row">
+                <div className="form-row" style={{ position: 'relative' }}>
                     <textarea
                         className="form-textarea tiny-text"
                         placeholder="Describe your algorithm..."
-                        style={{ margin: 0 }}
+                        style={{ margin: 0, paddingRight: '50px' }}
                         type="text"
                         value={customInstruction}
                         onChange={(e) => {
@@ -346,7 +463,18 @@ const AddAlgorithm = ({ algorithms = [], display, editingAlgorithm = null, isAut
                             setError(r.valid ? '' : r.error);
                             setTemplate('none');
                         }}
+                        disabled={isRecording}
                     />
+                    <button
+                        className={`voice-input-button ${isRecording ? 'recording' : ''}`}
+                        onClick={isRecording ? stopVoiceRecording : startVoiceRecording}
+                        type="button"
+                        title={isRecording ? 'Stop recording' : 'Start voice input'}
+                        disabled={isTranscribing}
+                    >
+                        {isRecording ? <FaStop /> : <FaMicrophone />}
+                    </button>
+                    {isTranscribing && <span className="transcribing-text">Transcribing...</span>}
                 </div>
                 <div className="form-row border-bottom">
                     <div className="form-group">
