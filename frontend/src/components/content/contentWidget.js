@@ -7,7 +7,7 @@ import { FaArrowDown, FaArrowUp, FaBookmark, FaChevronDown, FaChevronUp, FaComme
 import { FormatNumber } from '../../functions/formatNumber';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import MembershipModal from '../modals/membershipModal';
-import RecommendationInfo from '../RecommendationInfo';
+import RecommendationInfo from '../recommendationInfo';
 import ReplyTreeView from './replyTreeView';
 import QuotePostModal from '../modals/quotePostModal';
 import SaveToChannelModal from '../modals/saveToChannelModal';

@@ -196,11 +196,6 @@
     align-items: center;
     display: flex;
 }
-.follow-container.horizontal {
-    flex-direction: row;
-    justify-content: space-between;
-    width: 100%;
-}
 .follow-container.vertical {
     flex-direction: column;
 }
@@ -321,6 +316,40 @@
     margin: var(--medium-margin);
     max-height: calc(10 * var(--large-margin));
 }
+/* Mobile Feed Header */
+.mobile-feed-header {
+    position: fixed;
+    top: var(--header-height);
+    left: 0;
+    right: 0;
+    background-color: var(--dark);
+    border-bottom: 1px solid var(--light);
+    padding: var(--medium-margin);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    z-index: 900;
+}
+.mobile-feed-header.hidden {
+    transform: translateY(-100%);
+    opacity: 0;
+    pointer-events: none;
+}
+.mobile-header-info {
+    display: flex;
+    flex-direction: column;
+    margin-left: var(--medium-margin);
+    min-width: 0;
+}
+.mobile-header-actions {
+    align-items: center;
+    display: flex;
+    flex-shrink: 0;
+    gap: var(--small-margin);
+    justify-content: space-between;
+    padding-right: var(--small-margin);
+    width: 100vw;
+}
 @media (max-width: 768px) {
     .feed-settings {
         width: 100%;
@@ -331,5 +360,9 @@
     }
     .feed-wiget-type {
         margin-left: 0;
+    }
+    /* Add padding for mobile header only when it's present */
+    .has-mobile-header .channel-feed {
+        padding-top: calc(var(--header-height) + var(--large-margin));
     }
 }

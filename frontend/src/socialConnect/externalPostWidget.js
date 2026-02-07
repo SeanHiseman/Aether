@@ -4,7 +4,7 @@ import ContentDisplay from '../components/content/contentDisplay';
 import { FaArrowDown, FaArrowUp, FaBookmark, FaChevronDown, FaChevronUp, FaComments, FaHeart, FaQuoteRight, FaRegBookmark, FaRetweet, FaShare } from 'react-icons/fa';
 import { FormatNumber } from '../functions/formatNumber';
 import QuotePostModal from '../components/modals/quotePostModal';
-import RecommendationInfo from '../components/RecommendationInfo';
+import RecommendationInfo from '../components/recommendationInfo';
 import SaveToChannelModal from '../components/modals/saveToChannelModal';
 import SharePostModal from '../components/modals/sharePostModal';
 import { useParams } from 'react-router-dom';

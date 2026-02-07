@@ -39,17 +39,20 @@ const FeedHome = () => {
     const [isModerator, setIsModerator] = useState(false);
     const [isNewNameValid, setIsNewNameValid] = useState(false);
     const [isPostChannel, setIsPostChannel] = useState(true);
-    const [newChannelName, setNewChannelName] = useState(''); 
+    const [newChannelName, setNewChannelName] = useState('');
     const [parentPostForEdit, setParentPostForEdit] = useState(null);
     const [postErrorMessage, setPostErrorMessage] = useState('');
     const [postToEdit, setPostToEdit] = useState(null);
     const [refreshTrigger, setRefreshTrigger] = useState(0);
-    const [replyingToPost, setReplyingToPost] = useState(null); 
+    const [replyingToPost, setReplyingToPost] = useState(null);
     const { rightClasses, updateFeeds, closeDrawers, mobileOpen } = useOutletContext();
     const [showChannelForm, setShowChannelForm] = useState(false);
     const [showPostForm, setShowPostForm] = useState(false);
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
     const [pendingDeleteAction, setPendingDeleteAction] = useState(null)
+    const [showMobileHeader, setShowMobileHeader] = useState(true);
+    const lastScrollY = useRef(0);
+    const channelFeedRef = useRef(null);
     const { isAuthenticated, user, viewer } = useContext(AuthContext);
     const location = useLocation();
     const { feed_name, channel_name, post_id } = useParams();
@@ -64,11 +67,51 @@ const FeedHome = () => {
     const urlPrefix = feed?.is_group ? 'g' : 'u';
 
     const isMobile = () => window.matchMedia("(max-width:768px)").matches;
-    
+
     const computedRightClasses = [
         rightClasses,
         isMobile() && mobileOpen === "right" ? "open" : ""
     ].filter(Boolean).join(" ");
+
+    //Handle scroll behavior for mobile header
+    useEffect(() => {
+        if (!isMobile()) return;
+
+        //Find the channel-feed element
+        const channelFeed = document.querySelector('.channel-feed');
+        if (!channelFeed) return;
+
+        channelFeedRef.current = channelFeed;
+
+        const handleScroll = (e) => {
+            const currentScrollY = e.target.scrollTop;
+
+            //Show header when scrolling up or at the top
+            if (currentScrollY < lastScrollY.current || currentScrollY < 10) {
+                setShowMobileHeader(true);
+            }
+            //Hide header when scrolling down (and not at the top)
+            else if (currentScrollY > lastScrollY.current && currentScrollY > 10) {
+                setShowMobileHeader(false);
+            }
+
+            lastScrollY.current = currentScrollY;
+        };
+
+        channelFeed.addEventListener('scroll', handleScroll, { passive: true });
+        return () => {
+            if (channelFeedRef.current) {
+                channelFeedRef.current.removeEventListener('scroll', handleScroll);
+            }
+        };
+    }, [loading, feed_name, channel_name]);
+
+    //Show mobile header when sidebar closes
+    useEffect(() => {
+        if (isMobile() && mobileOpen !== "right") {
+            setShowMobileHeader(true);
+        }
+    }, [mobileOpen]);
 
     useEffect(() => {
         const fetchFeedData = async () => {
@@ -631,8 +674,47 @@ const FeedHome = () => {
             </div>
         );
     }
-    return (    
-        <><div className="standard-container">
+    return (
+        <>
+            {/* Mobile Header */}
+            {!loading && isMobile() && mobileOpen !== "right" && (
+                <div className={`mobile-feed-header ${showMobileHeader ? 'visible' : 'hidden'}`}>
+                    <div className="mobile-header-actions">
+                        <Link to={`/${urlPrefix}/${feed_name}/Main`} className="feed-link">
+                            <img
+                                className="medium-feed-photo"
+                                src={`${feed?.feed_photo}`}
+                                onError={(e) => e.currentTarget.src = '/media/site_images/blank-profile.png'}
+                                alt={feed?.feed_name}
+                            />
+                            <div className="mobile-header-info">
+                                <p className="feed-list-text">{feed?.feed_name}</p>
+                                <p className="small-text faded-text">{feed?.is_group ? 'Group' : 'User'}</p>
+                            </div>
+                        </Link>
+                        {feed && user?.user_id !== feed?.feed_owner && isAuthenticated && viewer ? (
+                            <FollowerChangeButton
+                                feed={feed}
+                                showFollowers={false}
+                                showName={false}
+                                showVertical={false}
+                                updateFeeds={updateFeeds}
+                                viewerId={viewer?.feed_id}
+                            />
+                        ) : (
+                            <p className="icon-text">{FormatNumber(feed?.follower_count)} {(feed?.follower_count) === 1 ? 'follower' : 'followers'}</p>
+                        )}
+                        {!isViewingSelf && !feed?.is_group && isAuthenticated && (
+                            <ManageConnectionButton
+                                feed={feed}
+                                viewerId={viewer?.feed_id}
+                                updateFeeds={updateFeeds}
+                            />
+                        )}
+                    </div>
+                </div>
+            )}
+            <div className={`standard-container ${isMobile() && mobileOpen !== "right" && !loading ? 'has-mobile-header' : ''}`}>
             {renderChannelContent()}
             {!loading ? (
                 <SwipeableAside className={computedRightClasses} position="right" isOpen={mobileOpen === "right"} onClose={closeDrawers}>
