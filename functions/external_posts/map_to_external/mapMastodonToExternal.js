@@ -48,6 +48,16 @@ export function mapMastodonToExternal(toot, instance) {
 		quotedPost: quotedPost
 	};
 	const postInstance = toot.url ? new URL(toot.url).origin : instance;
+	// Ensure we're using the Mastodon post URL, not the card URL
+	let postUrl = toot.url || null;
+	// If URL is missing but we have instance and ID, construct it
+	if (!postUrl && instance && toot.id && toot.account?.acct) {
+		// Extract instance from account if format is user@instance
+		const accountInstance = toot.account.acct.includes('@')
+			? toot.account.acct.split('@')[1]
+			: instance.replace(/^https?:\/\//, '');
+		postUrl = `https://${accountInstance}/@${toot.account.acct.split('@')[0]}/${toot.id}`;
+	}
 	return {
 		post_id: `mastodon:${toot.id}`,
 		author: toot.account?.acct || null,
@@ -64,7 +74,7 @@ export function mapMastodonToExternal(toot, instance) {
 		text_body: rawText,
 		title: null,
 		content: htmlContent,
-		url: toot.url || null,
+		url: postUrl,
 		text_length: rawText.length,
 		word_count: rawText ? rawText.replace(/<[^>]*>/g, '').split(/\s+/).length : 0,
 		image_count: Array.isArray(media) ? media.filter(m => m && m.url && (!m.type || m.type !== 'video')).length : 0,

@@ -12,6 +12,7 @@ const AppBuilds = sequelize.define('app_builds', {
 
 const ExternalPosts = sequelize.define('ExternalPosts', {
 	post_id: { type: STRING(255), primaryKey: true },
+	parent_id: { type: STRING(255), allowNull: true },
 	source: { type: STRING(32), allowNull: true },
 	source_post_id: { type: STRING(128), allowNull: true },
 	title: { type: TEXT, allowNull: true },
@@ -48,6 +49,7 @@ const ExternalPosts = sequelize.define('ExternalPosts', {
         { fields: ['source'] },
         { fields: ['expired'] },
         { fields: ['fetched_at'] },
+        { fields: ['parent_id'] },
         { name: 'idx_ext_posts_word_count', fields: ['word_count'] },
         { name: 'idx_ext_posts_author_did', fields: ['author_did'] },
         { name: 'idx_fulltext_external_posts', type: 'FULLTEXT', fields: ['title', 'text_body'] },

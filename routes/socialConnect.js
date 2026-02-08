@@ -9,7 +9,9 @@ import { ExternalAccountMeta, ExternalFollows, ExternalPosts, ExternalPostsAcces
 import express from 'express';
 import fetch from 'node-fetch';
 import { fetchAndProcessPosts } from '../functions/external_posts/fetchAndProcessPosts.js';
+import { fetchAndStoreReplies } from '../functions/external_posts/fetchReplies.js';
 import { formatExternalPost } from '../functions/external_posts/formatExternalPost.js';
+import { refreshBlueskyToken } from '../functions/external_posts/refreshBlueskyToken.js';
 import { GenerateBlueskyHTML } from '../functions/external_posts/generate_html/generateBlueskyHTML.js';
 import { GenerateRedditHTML } from '../functions/external_posts/generate_html/generateRedditHTML.js';
 import { GenerateMastodonHTML } from '../functions/external_posts/generate_html/generateMastodonHTML.js';
@@ -487,11 +489,9 @@ router.get('/:platform/feed', authenticateCheck, async (req, res) => {
 		const items = algorithmResult.posts;
 		const status = algorithmResult.status;
 		const message = algorithmResult.message;
-		//Check total posts available to determine hasMore
-		const totalCount = await ExternalPostsAccess.count({
-			where: { user_id: req.user.user_id, source: platform }
-		});
-		const hasMore = (offset + items.length) < totalCount;
+		// For external platforms, keep fetching as long as we got any posts
+		// Only stop when we get 0 posts (both DB and API exhausted)
+		const hasMore = items.length > 0;
         const extraPayload = platform === 'reddit' ? { after: null, before: null } : {};
         res.status(200).json({ success: true, items, status, message, hasMore, ...extraPayload });
     } catch (error) {
@@ -620,12 +620,105 @@ router.get('/get_external_post/:post_id', async (req, res) => {
 		if (!post) {
 			return res.status(404).json({ success: false, message: 'Post not found' });
 		}
+		// Don't return posts with null/empty content
+		if (!post.content || post.content.trim() === '') {
+			console.error('[get_external_post] Post has null/empty content:', {
+				post_id,
+				source: post.source,
+				has_text_body: !!post.text_body
+			});
+			return res.status(404).json({ success: false, message: 'Post content unavailable' });
+		}
 		//Format the post with vote information if viewer is authenticated
-		const formattedPost = await formatExternalPost(post, viewerId);
+		const platform = post.source.toLowerCase();
+		const config = FEED_CONFIG[platform];
+		const formattedPost = await formatExternalPost(post, config, platform);
 		return res.status(200).json({ success: true, post: formattedPost });
 	} catch (error) {
 		console.error(new Date().toISOString(), '/get_external_post error:', error);
 		res.status(500).json({ success: false, message: 'Error fetching post' });
+	}
+});
+
+router.get('/external_post_replies/:post_id', async (req, res) => {
+	try {
+		const post_id = req.params.post_id;
+		const viewerId = req.session?.viewer_id;
+		const userId = req.session?.user_id;
+		const parentPost = await ExternalPosts.findOne({
+			where: { post_id },
+			raw: true // Get plain object instead of Sequelize instance
+		});
+		if (!parentPost) {
+			return res.status(404).json({ success: false, message: 'Parent post not found' });
+		}
+		//Check if we have cached replies in the database
+		let replies = await ExternalPosts.findAll({
+			where: { parent_id: post_id },
+			order: [['created_at_remote', 'DESC']],
+			raw: true // Get plain objects instead of Sequelize instances
+		});
+		// Check if replies are stale (fetched more than 10 minutes ago)
+		const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000);
+		const shouldRefetch = replies.length === 0 ||
+			(replies.length > 0 && new Date(parentPost.fetched_at) < tenMinutesAgo);
+		//If no cached replies or stale, and user is authenticated, fetch from platform
+		if (shouldRefetch && userId) {
+			const platform = parentPost.source.toLowerCase();
+			const connectedAccount = await ConnectedAccounts.findOne({
+				where: { user_id: userId, platform }
+			});
+			if (connectedAccount) {
+				let accessToken = connectedAccount.access_token;
+				// Try fetching replies
+				let fetchedReplies = await fetchAndStoreReplies({
+					post: parentPost,
+					accessToken,
+					instanceUrl: connectedAccount.instance_url
+				});
+				// If Bluesky and no replies, token might be expired - try refreshing
+				if (fetchedReplies.length === 0 && platform === 'bluesky') {
+					const refreshResult = await refreshBlueskyToken(userId);
+					if (refreshResult) {
+						// Retry with new token
+						fetchedReplies = await fetchAndStoreReplies({
+							post: parentPost,
+							accessToken: refreshResult.accessToken,
+							instanceUrl: connectedAccount.instance_url
+						});
+					} else {
+						console.log("Token refresh failed");
+					}
+				}
+				// Convert Sequelize instances to plain objects
+				replies = fetchedReplies.map(r => r.toJSON ? r.toJSON() : r);
+				// Update parent post's fetched_at timestamp and reply count
+				await ExternalPosts.update(
+					{
+						fetched_at: new Date(),
+						replies: replies.length
+					},
+					{ where: { post_id } }
+				);
+			}
+		}
+		// Filter out replies with null/empty content
+		replies = replies.filter(reply => {
+			if (!reply.content || reply.content.trim() === '') {
+				return false;
+			}
+			return true;
+		});
+		//Format each reply with vote information
+		const platform = parentPost.source.toLowerCase();
+		const config = FEED_CONFIG[platform];
+		const formattedReplies = await Promise.all(
+			replies.map(reply => formatExternalPost(reply, config, platform))
+		);
+		return res.status(200).json({ success: true, replies: formattedReplies });
+	} catch (error) {
+		console.error(new Date().toISOString(), '/external_post_replies error:', error);
+		return res.status(500).json({ success: false, message: 'Error fetching replies' });
 	}
 });
 
@@ -863,7 +956,10 @@ router.post('/vote_external_post', authenticateCheck, async (req, res) => {
 					delta = 1; //Removing downvote increases score
 				}
 				await ExternalPosts.update(
-					{ score: sequelize.literal(`score + ${delta}`) },
+					{
+						score: sequelize.literal(`score + ${delta}`),
+						fetched_at: new Date() // Update timestamp to keep data fresh
+					},
 					{ where: { post_id: postId } }
 				);
 			}
@@ -887,7 +983,10 @@ router.post('/vote_external_post', authenticateCheck, async (req, res) => {
 					}
 					if (delta !== 0) {
 						await ExternalPosts.update(
-							{ score: sequelize.literal(`score + ${delta}`) },
+							{
+								score: sequelize.literal(`score + ${delta}`),
+								fetched_at: new Date() // Update timestamp to keep data fresh
+							},
 							{ where: { post_id: postId } }
 						);
 					}
@@ -911,7 +1010,10 @@ router.post('/vote_external_post', authenticateCheck, async (req, res) => {
 						delta = -1;
 					}
 					await ExternalPosts.update(
-						{ score: sequelize.literal(`score + ${delta}`) },
+						{
+							score: sequelize.literal(`score + ${delta}`),
+							fetched_at: new Date() // Update timestamp to keep data fresh
+						},
 						{ where: { post_id: postId } }
 					);
 				}

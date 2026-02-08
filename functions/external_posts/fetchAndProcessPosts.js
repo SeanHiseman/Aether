@@ -168,6 +168,10 @@ export async function fetchAndProcessPosts(platform, fetchConfig, user_id) {
 				const html = platform === 'mastodon'
 					? await htmlGenerator(mapped.content, mapped.media)
 					: await htmlGenerator(mapped.text_body, mapped.media);
+				//Log if HTML generation failed
+				if (!html || html.trim() === '') {
+					return null; //Mark for filtering
+				}
 				const details = await contentAnalyser.analyseContent(html, mapped.title, embedder);
 				const sentiment_score = details?.sentiment_score ?? 0;
 				const embeddings = details?.embeddings ?? null;
@@ -201,6 +205,8 @@ export async function fetchAndProcessPosts(platform, fetchConfig, user_id) {
 					cid: mapped.cid || null
 				};
 			}));
+			//Filter out posts with failed HTML generation
+			enriched = enriched.filter(p => p !== null);
 			const updateFields = [
 				'source_post_id', 'title', 'content', 'text_body', 'text_length', 'word_count',
 				'image_count', 'video_count', 'has_text', 'has_images', 'has_videos',
@@ -233,7 +239,7 @@ export async function fetchAndProcessPosts(platform, fetchConfig, user_id) {
 			}));
 			await ExternalPostsAccess.bulkCreate(accessRows, { ignoreDuplicates: true });
 		}
-		// Persist pagination token
+		//Persist pagination token
 		if (nextToken) {
 			const existingToken = await PaginationTokens.findOne({ where: { user_id, platform } });
 			const tokenId = existingToken?.id || v4();

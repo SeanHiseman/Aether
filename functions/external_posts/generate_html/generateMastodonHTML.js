@@ -25,18 +25,27 @@ export async function GenerateMastodonHTML(htmlContent, media) {
         //Create card (link preview)
         if (media?.card) {
             const card = media.card;
-            out += `
-                <div class="content-block link-preview" data-blockid="${crypto.randomUUID()}" data-align="center" data-trusted="false" data-embed-preview="true">
-                    <a href="${escapeHtml(card.url)}" target="_blank" rel="noopener noreferrer">
-                        ${card.image ? `<div class="preview-image"><img src="${escapeHtml(card.image)}" alt="${escapeHtml(card.title || card.hostname)}" /></div>` : ''}
-                        <div class="preview-meta">
-                            <h4>${escapeHtml(card.title || card.hostname || card.url)}</h4>
-                            ${card.description ? `<p>${escapeHtml(card.description)}</p>` : ''}
-                            <span class="preview-host">${escapeHtml(card.hostname || new URL(card.url).hostname)}</span>
-                        </div>
-                    </a>
-                </div>
-            `;
+            try {
+                const hostname = card.hostname || new URL(card.url).hostname;
+                out += `
+                    <div class="content-block link-preview" data-blockid="${crypto.randomUUID()}" data-align="center" data-trusted="false" data-embed-preview="true">
+                        <a href="${escapeHtml(card.url)}" target="_blank" rel="noopener noreferrer">
+                            ${card.image ? `<div class="preview-image"><img src="${escapeHtml(card.image)}" alt="${escapeHtml(card.title || hostname)}" /></div>` : ''}
+                            <div class="preview-meta">
+                                <h4>${escapeHtml(card.title || hostname || card.url)}</h4>
+                                ${card.description ? `<p>${escapeHtml(card.description)}</p>` : ''}
+                                <span class="preview-host">${escapeHtml(hostname)}</span>
+                            </div>
+                        </a>
+                    </div>
+                `;
+            } catch (urlError) {
+                console.error('[GenerateMastodonHTML] Error processing card URL:', {
+                    url: card.url,
+                    error: urlError.message
+                });
+                // Skip card if URL is invalid
+            }
         }
         //Quoted post
         if (media?.quotedPost) {
@@ -85,9 +94,27 @@ export async function GenerateMastodonHTML(htmlContent, media) {
                 </div>
             `;
         }
-        return out.trim();
+        const result = out.trim();
+
+        // Log warning if content is empty
+        if (!result) {
+            console.warn('[GenerateMastodonHTML] Generated empty HTML:', {
+                hasHtmlContent: !!htmlContent,
+                htmlContentLength: htmlContent?.length || 0,
+                hasAttachments: !!(media?.attachments && media.attachments.length > 0),
+                hasCard: !!media?.card,
+                hasQuotedPost: !!media?.quotedPost
+            });
+        }
+
+        return result;
     } catch (error) {
-        console.error(new Date().toISOString(), 'generateMastodonContentHTML error:', error);
+        console.error('[GenerateMastodonHTML] Error generating HTML:', {
+            error: error.message,
+            stack: error.stack,
+            htmlContentLength: htmlContent?.length || 0,
+            hasMedia: !!media
+        });
         return '';
     }
 }

@@ -24,7 +24,8 @@ export async function fetchPlatformPosts({ locationId, userId, connectedAccounts
 				{ replacements: { userId, platform, maxCandidates: MAX_ALGORITHM_CANDIDATES }, type: QueryTypes.SELECT }
 			);
 			externalPostIds = accesses.map(a => a.post_id);
-			if (!externalPostIds.length && connectedAccounts?.length) {
+			// Fetch from API if we don't have enough candidates
+			if (externalPostIds.length < MAX_ALGORITHM_CANDIDATES && connectedAccounts?.length) {
 				const account = connectedAccounts.find(a => a.platform === platform);
 				if (account) {
 					await processAccount({
@@ -58,6 +59,8 @@ export async function fetchPlatformPosts({ locationId, userId, connectedAccounts
 	} else {
 		//Standard path
 		let accesses = [];
+		let fetchedFromApi = false;
+
 		if (userId) {
 			accesses = await sequelize.query(
 				`SELECT p.post_id FROM external_posts_access a
@@ -69,24 +72,45 @@ export async function fetchPlatformPosts({ locationId, userId, connectedAccounts
 				{ replacements: { limit: backendFetchTotal, offset, platform, userId }, type: QueryTypes.SELECT }
 			);
 		}
-		if (!accesses.length && connectedAccounts?.length) {
+
+		// Fetch from API when we got less than requested (database is running out)
+		if (accesses.length < backendFetchTotal && connectedAccounts?.length) {
 			const account = connectedAccounts.find(a => a.platform === platform);
 			if (account) {
+				const countBefore = await sequelize.query(
+					`SELECT COUNT(*) as count FROM external_posts_access WHERE user_id = :userId AND source = :platform`,
+					{ replacements: { userId, platform }, type: QueryTypes.SELECT }
+				);
+				const beforeCount = countBefore[0].count;
+
 				await processAccount({
 					platform,
 					user_id: userId,
 					access_token: account.access_token,
 					instance_url: account.instance_url
 				}).catch(() => null);
-				accesses = await sequelize.query(
+
+				const countAfter = await sequelize.query(
+					`SELECT COUNT(*) as count FROM external_posts_access WHERE user_id = :userId AND source = :platform`,
+					{ replacements: { userId, platform }, type: QueryTypes.SELECT }
+				);
+				const afterCount = countAfter[0].count;
+
+				fetchedFromApi = afterCount > beforeCount;
+
+				// After fetching, query again from offset 0 to get all posts, then slice
+				// This handles newly fetched posts being sorted into the list
+				const allAccesses = await sequelize.query(
 					`SELECT p.post_id FROM external_posts_access a
 					JOIN external_posts p ON p.post_id = a.post_id
 					WHERE a.user_id = :userId AND a.source = :platform AND p.expired = false
 					AND p.created_at_remote >= DATE_SUB(NOW(), INTERVAL 7 DAY) ${externalFiltersSQL}
 					ORDER BY (p.score * EXP(-0.00002 * TIMESTAMPDIFF(SECOND, p.created_at_remote, NOW()))) DESC
-					LIMIT :limit OFFSET :offset`,
-					{ replacements: { limit: backendFetchTotal, offset, platform, userId }, type: QueryTypes.SELECT }
+					LIMIT :limit OFFSET 0`,
+					{ replacements: { limit: offset + backendFetchTotal, platform, userId }, type: QueryTypes.SELECT }
 				);
+				// Slice to get the current page
+				accesses = allAccesses.slice(offset, offset + backendFetchTotal);
 			}
 		}
 		const unifiedIds = accesses.map(a => a.post_id).filter(Boolean);

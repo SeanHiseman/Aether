@@ -753,9 +753,9 @@ const BaseLayout = () => {
                             <DndContext sensors={sensors} collisionDetection={customCollisionDetection} onDragStart={dragStart} onDragEnd={dragEnd}>
                                 <nav id="personal-feeds">
                                     <ul>
-                                        <Link to="/messages">
-                                            <div className={`channel-link ${location.pathname.startsWith('/messages') ? 'selected' : ''}`}>
-                                                Messages
+                                        <Link to="/notifications">
+                                            <div className={`channel-link ${location.pathname.startsWith('/notifications') ? 'selected' : ''}`}>
+                                                Notifications
                                                 {state.total > 0 && <span className="unread-count">{state.total}</span>}
                                             </div>
                                         </Link>
@@ -1032,11 +1032,7 @@ const BaseLayout = () => {
                         <FaArrowRight />
                         <p className="icon-text">Join</p>
                     </Link>
-                    <button 
-                        className="large-icon" 
-                        onClick={() => navigate("/login", { state: { from: location.pathname } })}
-                        style={{ background: "none", border: "none", cursor: "pointer" }}
-                    >
+                    <button className="large-icon" onClick={() => navigate("/login", { state: { from: location.pathname } })} style={{ background: "none", border: "none", cursor: "pointer" }}>
                         <FaSignInAlt />
                         <p className="icon-text">Login</p>
                     </button>

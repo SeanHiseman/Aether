@@ -9,7 +9,7 @@ import { useOutletContext } from 'react-router-dom';
 import { UnreadContext } from '../../components/messages/unreadContext';
 import { useContext, useEffect, useRef, useState } from 'react';
 
-const MessagesPage = () => {
+const NotificationsPage = () => {
     const [activeTab, setActiveTab] = useState('notifications');
     const [connections, setConnections] = useState([]);
     const [connectionsOffset, setConnectionsOffset] = useState(0);
@@ -495,4 +495,4 @@ const MessagesPage = () => {
     );
 };
 
-export default MessagesPage;
+export default NotificationsPage;

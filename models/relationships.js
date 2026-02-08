@@ -68,6 +68,9 @@ Reposts.belongsTo(Feeds, { foreignKey: 'reposter_id', as: 'reposter' });
 
 ExternalPosts.hasMany(Reposts, { foreignKey: 'post_id', as: 'external_reposts', onDelete: 'CASCADE' });
 
+ExternalPosts.hasMany(ExternalPosts, { as: 'childPosts', foreignKey: 'parent_id', onDelete: 'CASCADE' });
+ExternalPosts.belongsTo(ExternalPosts, { as: 'parentPost', foreignKey: 'parent_id' });
+
 Feeds.belongsToMany(Feeds, { as: 'feedConnections', through: Connections, foreignKey: 'feed1_id', otherKey: 'feed2_id' });
 Feeds.hasMany(ConnectRequests, { as: 'sentRequests', foreignKey: 'sender_id' });
 Feeds.hasMany(ConnectRequests, { as: 'receivedConnectRequests', foreignKey: 'receiver_id' });

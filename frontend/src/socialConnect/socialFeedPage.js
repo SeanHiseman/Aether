@@ -45,6 +45,7 @@ export default function SocialFeedPage({ platform }) {
 			const response = await api.get(`/get_external_post/${encodedPostId}`);
 			if (response.data?.success && response.data?.post) {
 				setPosts([response.data.post]);
+				hasLoadedRef.current = true; // Mark as loaded to prevent feed from loading
 			} else {
 				setErrorMessage('Post not found');
 			}
@@ -126,7 +127,7 @@ export default function SocialFeedPage({ platform }) {
 		setPosts([]);
 		setLoading(true);
 		loadFeed();
-	}, [refreshTrigger, isAuthenticated, justConnected]);
+	}, [refreshTrigger, isAuthenticated, justConnected, platform]);
 
 	useEffect(() => {
 		//Always reset state when platform changes
@@ -136,6 +137,13 @@ export default function SocialFeedPage({ platform }) {
 		setPosts([]);
 		setLoading(true);
 		isFetchingRef.current = false;
+		// Only trigger feed load if not viewing a single post
+		if (isAuthenticated && !post_id && !justConnected) {
+			loadFeed();
+		} else if (post_id) {
+			// If viewing single post, load it instead
+			loadSinglePost();
+		}
 	}, [platform]);
 
 	useEffect(() => {
@@ -216,24 +224,29 @@ export default function SocialFeedPage({ platform }) {
 
 	document.title = capitalise(platform) + " feed";
 	
+	// When viewing a single post, only show that post
+	const displayPosts = post_id && posts.length > 0 ? [posts[0]] : posts;
+
 	return (
 		<><div className="standard-container">
 			<div ref={scrollRef} className="channel-feed">
-				{loading ? (
+				{!post_id && !isAuthenticated ? (
+					<p className="large-text faded-text">Log in to view your {capitalise(platform)} feed</p>
+				) : loading ? (
 					<p className="large-text faded-text">Loading {capitalise(platform)} feed...</p>
-				) : posts.length === 0 ? (
+				) : displayPosts.length === 0 ? (
 					<p className="large-text faded-text">No {capitalise(platform)} posts found</p>
 				) : (
 					<div className="flex flex-col w-99">
-						{posts.map((post) => (
-							<div key={post.post_id || Math.random()} className="bg-gray-800 rounded-xl">
+						{displayPosts.map((post) => (
+							<div key={post.post_id || Math.random()} className="bg-gray-800 rounded-xl med-mar-bottom">
 								<ExternalPostWidget post={post} />
 							</div>
 						))}
-						{loadingMore && (
+						{!post_id && loadingMore && (
 							<p className="large-text faded-text">Loading more posts...</p>
 						)}
-						{!hasMore && posts.length > 0 && (
+						{!post_id && !hasMore && displayPosts.length > 0 && (
 							<p className="large-text faded-text">No more posts to load</p>
 						)}
 					</div>

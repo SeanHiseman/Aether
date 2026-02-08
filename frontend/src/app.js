@@ -26,7 +26,7 @@ import Help from './pages/base/help';
 import Join from './pages/site_entrance/join';
 import Login from './pages/site_entrance/login';
 import MembershipSettings from './pages/feeds/settings/membershipSettings';
-import MessagesPage from './pages/messages/messagesPage';
+import NotificationsPage from './pages/messages/notificationsPage';
 import NotFound from './notFound';
 import Placeholder from './pages/welcome/placeholder';
 import Privacy from './pages/welcome/privacy';
@@ -110,7 +110,7 @@ const App = () => {
 									<Route path=":channel_name" element={<ProtectedRoute><SavedPosts /></ProtectedRoute>} />
 								</Route>
 								<Route path="explore" element={<ExplorePage/>} />
-								<Route path="messages" element={<ProtectedRoute><MessagesPage /></ProtectedRoute>} />
+								<Route path="notifications" element={<ProtectedRoute><NotificationsPage /></ProtectedRoute>} />
 								<Route path="settings/:feed_name" element={<ProtectedRoute><FeedSettings /></ProtectedRoute>}>
 									<Route index element={<Navigate to="info" replace />} />
 									<Route path="deletion" element={<FeedDeletion />} />

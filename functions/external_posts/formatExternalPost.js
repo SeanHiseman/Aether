@@ -10,6 +10,8 @@ export function formatExternalPost(p, config, platform) {
     const sourceLabel = p.source === 'reddit' ? 'Reddit' : p.source === 'bluesky' ? 'Bluesky' : config.sourceName;
     return {
         ...p,
+        post_id: p.post_id, // Explicitly preserve post_id
+        parent_id: p.parent_id, // Explicitly preserve parent_id for replies
         channel: p.channel || config.getChannel(p),
         content: p.content,
         created_at: p.created_at_remote,

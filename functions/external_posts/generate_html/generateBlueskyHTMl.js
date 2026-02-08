@@ -128,9 +128,24 @@ export async function GenerateBlueskyHTML(textBody, media) {
 				}
 			}
 		}
-		return html.trim();
+		const result = html.trim();
+		// Log warning if content is empty
+		if (!result) {
+			console.warn('[GenerateBlueskyHTML] Generated empty HTML:', {
+				hasTextBody: !!textBody,
+				textBodyLength: textBody?.length || 0,
+				hasMedia: !!media,
+				mediaType: Array.isArray(media) ? 'array' : typeof media
+			});
+		}
+		return result;
 	} catch (error) {
-		console.error(new Date().toISOString(), 'generateBlueskyContentHTML error:', error);
+		console.error('[GenerateBlueskyHTML] Error generating HTML:', {
+			error: error.message,
+			stack: error.stack,
+			textBodyLength: textBody?.length || 0,
+			hasMedia: !!media
+		});
 		return '';
 	}
 }

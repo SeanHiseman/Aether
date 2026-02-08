@@ -11,7 +11,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useContext, useEffect, useRef, useState } from 'react';
 import useTimeAgo from '../functions/useTimeAgo';
 
-const ExternalPostWidget = ({ post, sharedPost = false, isQuoted = false }) => {
+const ExternalPostWidget = ({ post, sharedPost = false, isQuoted = false, showAsParent = false }) => {
 	//console.log("ExternalPostWidget post:", post);
 	const authContext = useContext(AuthContext);
 	const { isAuthenticated = false } = authContext || {};
@@ -27,6 +27,9 @@ const ExternalPostWidget = ({ post, sharedPost = false, isQuoted = false }) => {
 	const [showSaveModal, setShowSaveModal] = useState(false);
 	const [showShareModal, setShowShareModal] = useState(false);
 	const [showQuoteModal, setShowQuoteModal] = useState(false);
+	const [replies, setReplies] = useState([]);
+	const [showReplies, setShowReplies] = useState(showAsParent ? false : (post_id ? (post?.replies > 0) : false));
+	const [loadingReplies, setLoadingReplies] = useState(false);
 	const [userVote, setUserVote] = useState(() => {
 		if (post?.has_upvoted) return post.source === 'Reddit' ? 'upvote' : 'like';
 		if (post?.has_downvoted) return 'downvote';
@@ -47,6 +50,30 @@ const ExternalPostWidget = ({ post, sharedPost = false, isQuoted = false }) => {
 	const handleOverflowChange = (overflowing) => {
 		setIsOverflowing(overflowing);
 		setShowExpandButton(overflowing);
+	};
+
+	const fetchReplies = async () => {
+		if (!post?.post_id || replies.length > 0) return;
+		try {
+			setLoadingReplies(true);
+			const encodedPostId = encodeURIComponent(post.post_id);
+			const response = await api.get(`/external_post_replies/${encodedPostId}`);
+			if (response.data?.success && response.data?.replies) {
+				setReplies(response.data.replies);
+			}
+		} catch (error) {
+			console.error('Error fetching replies:', error);
+		} finally {
+			setLoadingReplies(false);
+		}
+	};
+
+	const toggleReplies = () => {
+		const newShowReplies = !showReplies;
+		setShowReplies(newShowReplies);
+		if (newShowReplies && replies.length === 0) {
+			fetchReplies();
+		}
 	};
 
 	function normaliseAvatar(url) {
@@ -81,6 +108,13 @@ const ExternalPostWidget = ({ post, sharedPost = false, isQuoted = false }) => {
 			return;
 		}
 	}, [isAuthenticated, post?.post_id, post?.has_upvoted, post?.has_downvoted, post?.source]);
+
+	//Auto-fetch replies when showReplies becomes true and no replies are loaded
+	useEffect(() => {
+		if (showReplies && replies.length === 0 && !loadingReplies) {
+			fetchReplies();
+		}
+	}, [showReplies]);
 
 	const handleVote = async (voteType) => {
 		if (!isAuthenticated) {
@@ -229,12 +263,15 @@ const ExternalPostWidget = ({ post, sharedPost = false, isQuoted = false }) => {
 		? `r/${subreddit} on Reddit`
 		: (post?.source || 'Unknown site');
 
+	const isReply = showAsParent ? false : post?.parent_id !== null;
+
 	return (
 		<div
-			className={'content-item'}
+			className={`content-item ${isReply ? 'reply' : ''}`}
 			onClick={handlePostClick}
 			style={{
 				...(isQuoted ? { borderTopRightRadius: 0, borderBottomRightRadius: 0 } : {}),
+				...(showAsParent ? { borderBottomRightRadius: 0 } : {}),
 				cursor: (!sharedPost && !isQuoted && !post_id) ? 'pointer' : 'default'
 			}}
 		>
@@ -361,10 +398,15 @@ const ExternalPostWidget = ({ post, sharedPost = false, isQuoted = false }) => {
 				)}
 				{!sharedPost && (
 					<div className="post-button-group reply-buttons">
-						<a href={post?.url} className="large-icon" title={"Replies"} rel="noopener noreferrer" target="_blank">
+						<button
+							className="large-icon"
+							title={showReplies ? "Hide replies" : "Show replies"}
+							onClick={toggleReplies}
+							style={{ cursor: 'pointer' }}
+						>
 							<FaComments />
-							<p className="small-text">{post?.replies}</p>
-						</a>
+							<p className="small-text">{post?.replies || 0}</p>
+						</button>
 					</div>
 				)}
 				{!sharedPost && isAuthenticated && (
@@ -399,6 +441,36 @@ const ExternalPostWidget = ({ post, sharedPost = false, isQuoted = false }) => {
 			{showSaveModal && <SaveToChannelModal post={post} isExternal={true} onClose={() => setShowSaveModal(false)} onSaveComplete={handleSaveComplete} />}
 			{showShareModal && <SharePostModal post={post} isExternal={true} onClose={() => setShowShareModal(false)} />}
 			{showQuoteModal && <QuotePostModal externalPost={post} onClose={() => setShowQuoteModal(false)} />}
+			{showReplies && !isQuoted && !sharedPost && (
+				<div className="reply-section">
+					{loadingReplies ? (
+						<p className="small-text faded-text">Loading replies...</p>
+					) : replies.length > 0 ? (
+						<>
+							{replies.map((reply) => (
+								<ExternalPostWidget
+									key={reply.post_id}
+									post={reply}
+									showAsParent={showAsParent}
+								/>
+							))}
+							<div className="replies-footer">
+								<button className="small-icon" onClick={toggleReplies} title="Close Replies">
+									<FaChevronUp />
+								</button>
+							</div>
+						</>
+					) : (
+						<p className="small-text faded-text">
+							{!isAuthenticated
+								? 'Log in to see replies'
+								: !hasConnectedPlatform
+									? `Connect your ${post?.source} account to see replies`
+									: 'No replies'}
+						</p>
+					)}
+				</div>
+			)}
 		</div>
 	);
 };
