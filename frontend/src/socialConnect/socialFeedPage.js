@@ -8,9 +8,10 @@ import ExternalPostWidget from "./externalPostWidget";
 import { refreshConnectedAccounts } from "../functions/refreshConnectedAccounts";
 import SwipeableAside from "../components/swipeableAside";
 import { useContext, useEffect, useState, useRef } from 'react';
-import { useLocation, useNavigate, useOutletContext } from "react-router-dom";
+import { useLocation, useNavigate, useOutletContext, useParams } from "react-router-dom";
 
 export default function SocialFeedPage({ platform }) {
+	const { post_id } = useParams();
 	const [errorMessage, setErrorMessage] = useState('');
 	const { isAuthenticated } = useContext(AuthContext);
 	const [hasMore, setHasMore] = useState(true);
@@ -35,6 +36,24 @@ export default function SocialFeedPage({ platform }) {
         rightClasses,
         isMobile() && mobileOpen === "right" ? "open" : ""
     ].filter(Boolean).join(" ");
+
+	async function loadSinglePost() {
+		if (!post_id) return;
+		try {
+			setLoading(true);
+			const encodedPostId = encodeURIComponent(post_id); //Handled automatically by express
+			const response = await api.get(`/get_external_post/${encodedPostId}`);
+			if (response.data?.success && response.data?.post) {
+				setPosts([response.data.post]);
+			} else {
+				setErrorMessage('Post not found');
+			}
+		} catch (error) {
+			setErrorMessage('Failed to load post');
+		} finally {
+			setLoading(false);
+		}
+	}
 
 	async function loadFeed(isNextPage = false) {
 		if (!isAuthenticated) {
@@ -90,7 +109,15 @@ export default function SocialFeedPage({ platform }) {
 		setModalOpen(true);
 	};
 
+	// Load single post if post_id is in the URL
 	useEffect(() => {
+		if (post_id) {
+			loadSinglePost();
+		}
+	}, [post_id]);
+
+	useEffect(() => {
+		if (post_id) return; // Skip feed loading if viewing single post
 		if (!isAuthenticated) return;
 		if (hasLoadedRef.current) return;
 		if (justConnected) return;
@@ -112,6 +139,7 @@ export default function SocialFeedPage({ platform }) {
 	}, [platform]);
 
 	useEffect(() => {
+		if (post_id) return; // Skip feed loading if viewing single post
 		if (!isAuthenticated) return;
 		if (hasLoadedRef.current) return;
 		try {
@@ -148,6 +176,7 @@ export default function SocialFeedPage({ platform }) {
 	}, [platform, location.search, isAuthenticated, justConnected]);
 
 	useEffect(() => {
+		if (post_id) return; // Skip infinite scroll if viewing single post
 		const element = scrollRef.current;
 		if (!element) return;
 		const handleScroll = () => {
@@ -168,6 +197,7 @@ export default function SocialFeedPage({ platform }) {
 	}, [hasMore, platform, isAuthenticated, offset]);
 
 	useEffect(() => {
+		if (post_id) return; // Skip refresh if viewing single post
 		if (refreshTrigger === 0) return;
 		if (!isAuthenticated) return;
 		loadFeed();
@@ -185,18 +215,6 @@ export default function SocialFeedPage({ platform }) {
 	};
 
 	document.title = capitalise(platform) + " feed";
-	if (!isAuthenticated) {
-		return (
-			<div className="standard-container">	
-				<div className="channel-feed">
-					<p className="large-text faded-text">Log in to view your {capitalise(platform)} feed.</p>
-				</div>
-				<SwipeableAside className={computedRightClasses} position="right" isOpen={mobileOpen === "right"} onClose={closeDrawers}>
-					<p className="large-text bold">{platform || "Site not found"}</p>
-				</SwipeableAside>
-			</div>
-		);
-	}
 	
 	return (
 		<><div className="standard-container">
@@ -225,8 +243,8 @@ export default function SocialFeedPage({ platform }) {
 				<p className="large-text bold">{capitalise(platform) || "Site not found"}</p>
 				<p className="small-text faded-text">{errorMessage}</p>
 				<AlgorithmSelector display={false} isAuthenticated={isAuthenticated} locationId={platform} refreshPosts={refreshPosts} />
-				<p className="tiny-text faded-text">Click to disconnect</p>
-				<DisconnectSocialButton socialIcon={`/media/site_images/social_sites/${platform}-logo.png`} socialName={capitalise(platform)} platform={platform} onRequestDisconnect={requestDisconnect} />
+				{isAuthenticated && <p className="tiny-text faded-text">Click to disconnect</p>}
+				{isAuthenticated && <DisconnectSocialButton socialIcon={`/media/site_images/social_sites/${platform}-logo.png`} socialName={capitalise(platform)} platform={platform} onRequestDisconnect={requestDisconnect} />}
 			</SwipeableAside>
 		</div>
 		<ConfirmModal

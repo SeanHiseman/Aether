@@ -88,6 +88,9 @@ const App = () => {
 								<Route path="/feed/bluesky" element={<SocialFeedPage platform="bluesky" />} />
 								<Route path="/feed/mastodon" element={<SocialFeedPage platform="mastodon" />} />
 								<Route path="/external/:platform/:accountId" element={<ExternalAccountPage />} />
+								<Route path="/reddit/:post_id" element={<SocialFeedPage platform="reddit" />} />
+								<Route path="/bluesky/:post_id" element={<SocialFeedPage platform="bluesky" />} />
+								<Route path="/mastodon/:post_id" element={<SocialFeedPage platform="mastodon" />} />
 								{/*<Route path="ask" element={<AskChannel />} >
 									<Route path=":chatId" element={<AskChannel />} />
 								</Route>*/}

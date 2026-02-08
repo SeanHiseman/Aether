@@ -609,6 +609,26 @@ router.get('/connected-accounts', authenticateCheck, async (req, res) => {
 	}
 });
 
+router.get('/get_external_post/:post_id', async (req, res) => {
+	try {
+		// Express automatically decodes URL parameters
+		const post_id = req.params.post_id;
+		const viewerId = req.session?.viewer_id;
+		const post = await ExternalPosts.findOne({
+			where: { post_id }
+		});
+		if (!post) {
+			return res.status(404).json({ success: false, message: 'Post not found' });
+		}
+		//Format the post with vote information if viewer is authenticated
+		const formattedPost = await formatExternalPost(post, viewerId);
+		return res.status(200).json({ success: true, post: formattedPost });
+	} catch (error) {
+		console.error(new Date().toISOString(), '/get_external_post error:', error);
+		res.status(500).json({ success: false, message: 'Error fetching post' });
+	}
+});
+
 router.post('/disconnect_external_account', authenticateCheck, async (req, res) => {
 	let transaction;
     try {

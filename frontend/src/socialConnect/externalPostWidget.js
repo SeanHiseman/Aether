@@ -7,7 +7,7 @@ import QuotePostModal from '../components/modals/quotePostModal';
 import RecommendationInfo from '../components/recommendationInfo';
 import SaveToChannelModal from '../components/modals/saveToChannelModal';
 import SharePostModal from '../components/modals/sharePostModal';
-import { useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { useContext, useEffect, useRef, useState } from 'react';
 import useTimeAgo from '../functions/useTimeAgo';
 
@@ -16,6 +16,7 @@ const ExternalPostWidget = ({ post, sharedPost = false, isQuoted = false }) => {
 	const authContext = useContext(AuthContext);
 	const { isAuthenticated = false } = authContext || {};
 	const { post_id } = useParams();
+	const navigate = useNavigate();
 	const [isLoaded, setIsLoaded] = useState(false);
 	const isLike = post?.source === 'Bluesky' || post?.source === 'Mastodon';
 	const isVote = post?.source === 'Reddit';
@@ -195,6 +196,27 @@ const ExternalPostWidget = ({ post, sharedPost = false, isQuoted = false }) => {
 		}
 	};
 
+	const handlePostClick = (e) => {
+		//Don't navigate if clicking on interactive elements
+		if (
+			e.target.tagName === 'BUTTON' ||
+			e.target.tagName === 'A' ||
+			e.target.closest('button') ||
+			e.target.closest('a') ||
+			e.target.closest('.large-icon') ||
+			e.target.closest('.small-icon') ||
+			sharedPost ||
+			isQuoted ||
+			post_id //Already on single post page
+		) {
+			return;
+		}
+		//Navigate to internal post page
+		if (post?.source && post?.post_id) {
+			navigate(`/${post.source.toLowerCase()}/${encodeURIComponent(post.post_id)}`);
+		}
+	};
+
 	if (!isLoaded) {
 		return <p className="small-text faded-text">Loading content…</p>;
 	}
@@ -208,7 +230,14 @@ const ExternalPostWidget = ({ post, sharedPost = false, isQuoted = false }) => {
 		: (post?.source || 'Unknown site');
 
 	return (
-		<div className={'content-item'} style={isQuoted ? { borderTopRightRadius: 0, borderBottomRightRadius: 0 } : {}}>
+		<div
+			className={'content-item'}
+			onClick={handlePostClick}
+			style={{
+				...(isQuoted ? { borderTopRightRadius: 0, borderBottomRightRadius: 0 } : {}),
+				cursor: (!sharedPost && !isQuoted && !post_id) ? 'pointer' : 'default'
+			}}
+		>
 			{post?.title && <a href={post?.url} target="_blank" rel="noopener noreferrer" className="title-container" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
 				<span className="large-text" style={{ marginLeft: 0 }}>
 					{post?.title || '\u00A0'}
