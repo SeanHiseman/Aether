@@ -811,10 +811,10 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
                 formData.append('publish_draft', 'true');
             }
             //Edit existing post if post_id exists
-            if (!isReply && postId) formData.append('post_id', postId);
+            if (isEdit && postId) formData.append('post_id', postId);
             if (!isReply) formData.append('title', title);
             if (channelId) formData.append('channel_id', channelId);
-            if (isReply && post) formData.append('parent_id', post.post_id);
+            if (isReply && !isEdit && post) formData.append('parent_id', post.post_id);
             if (quotedPost) formData.append('quoted_post_id', quotedPost.post_id);
             if (quotedExternalPost) formData.append('quoted_external_post_id', quotedExternalPost.post_id);
             blocks
@@ -836,7 +836,7 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
             setPostErrorMessage(error.response?.data?.message || 'Error submitting the form.');
             setTimeout(() => { setPostErrorMessage(''); }, 5000);
         }
-    }, [blocks, channelId, compileFinalHTML, draftId, feed?.feed_id, isContentEmpty, isReply, onPostSubmit, post, quotedPost, quotedExternalPost, title]);
+    }, [blocks, channelId, compileFinalHTML, draftId, feed?.feed_id, isContentEmpty, isEdit, isReply, onPostSubmit, post, quotedPost, quotedExternalPost, title]);
 
     const toggleMediaAlignment = useCallback(block => {
         let newAlign;
@@ -917,7 +917,11 @@ const ContentForm = ({ channelId, feed, isEdit = false, isGroup, isReply, onPost
                                     <FaTrash /><p className="icon-text">Delete</p>
                                 </button>
                             )}
-                            {isReply ? (
+                            {isEdit && isReply ? (
+                                <button className="small-icon" form="post-form" type="submit" title="Save reply" disabled={isSubmitting}>
+                                    {isSubmitting ? <FaCircleNotch className="spinner" /> : <><FaSave /><p className="icon-text">Save reply</p></>}
+                                </button>
+                            ) : isReply ? (
                                 <button className="small-icon" form="post-form" type="submit" title="Reply" disabled={isSubmitting}>
                                     {isSubmitting ? <FaCircleNotch className="spinner" /> : <><FaReply /><p className="icon-text">Reply</p></>}
                                 </button>
