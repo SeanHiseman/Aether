@@ -1,4 +1,4 @@
-import { DeepFeedContent, Posts } from "../../models/relationships.js";
+import { DeepFeedContent, Feeds, Posts } from "../../models/relationships.js";
 import { ExternalPosts } from "../../models/content.js";
 import { fetchPaginatedPostData } from "../algorithmFunctions/fetchPaginatedPostData.js";
 import { FEED_CONFIG } from "../../routes/socialConnect.js";
@@ -17,17 +17,33 @@ export async function fetchDeepFeedPosts({ locationId, viewerId, hasActiveAlgori
 	const allFeedIds = contents.map(c => c.feed_id).filter(Boolean);
 	const externalDids = contents.map(c => c.external_did).filter(Boolean);
 	const hasExternalAccounts = externalDids.length > 0;
+	//Identify user feeds (is_group=false) to fetch their posts/replies on any feed
+	let userFeedIds = [];
+	if (allFeedIds.length > 0) {
+		const feedInfo = await Feeds.findAll({
+			attributes: ['feed_id'],
+			where: { feed_id: { [Op.in]: allFeedIds }, is_group: false },
+			raw: true
+		});
+		userFeedIds = feedInfo.map(f => f.feed_id);
+	}
+	//Top-level posts on contained feeds + all posts/replies by contained users on any feed
+	let feedFilter = null;
+	const conditions = [];
+	if (allFeedIds.length > 0) conditions.push({ feed_id: { [Op.in]: allFeedIds }, parent_id: null });
+	if (userFeedIds.length > 0) conditions.push({ poster_id: { [Op.in]: userFeedIds } });
+	if (conditions.length === 1) feedFilter = conditions[0];
+	else if (conditions.length > 1) feedFilter = { [Op.or]: conditions };
 	if (hasActiveAlgorithm) {
 		//Algorithm path
 		let nativePostIds = [];
-		if (allFeedIds.length > 0) {
+		if (feedFilter) {
 			nativePostIds = await Posts.findAll({
 				attributes: ['post_id'],
 				where: {
 					...algorithmFilters,
-				parent_id: null,
-					feed_id: { [Op.in]: allFeedIds },
-							...(viewerId ? { poster_id: { [Op.not]: viewerId } } : {})
+					...feedFilter,
+					...(viewerId ? { poster_id: { [Op.not]: viewerId } } : {})
 				},
 				order: [['created_at', 'DESC']],
 				limit: MAX_ALGORITHM_CANDIDATES,
@@ -70,14 +86,13 @@ export async function fetchDeepFeedPosts({ locationId, viewerId, hasActiveAlgori
 		const halfLimit = hasExternalAccounts ? Math.ceil(backendFetchTotal / 2) : backendFetchTotal;
 		const halfOffset = hasExternalAccounts ? Math.floor(offset / 2) : offset;
 		let localPosts = [];
-		if (allFeedIds.length > 0) {
+		if (feedFilter) {
 			const postIds = await Posts.findAll({
 				attributes: ['post_id'],
 				where: {
 					...algorithmFilters,
-				parent_id: null,
-					feed_id: { [Op.in]: allFeedIds },
-							...(viewerId ? { poster_id: { [Op.not]: viewerId } } : {})
+					...feedFilter,
+					...(viewerId ? { poster_id: { [Op.not]: viewerId } } : {})
 				},
 				order: orderMode,
 				limit: halfLimit,

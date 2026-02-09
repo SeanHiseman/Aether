@@ -11,14 +11,28 @@ import sequelize from "../../databaseSetup.js";
 
 export async function fetchFollowingPosts({ followedFeedIdsSafe, viewerId, userId, connectedAccounts, hasActiveAlgorithm, algorithmFilters, externalFiltersSQL, MAX_ALGORITHM_CANDIDATES, orderMode, backendFetchTotal, offset, limit, includeOptions, attrOption, lowVoteImpact, algorithmRow, scoringParams }) {
 	const hasExternalSources = connectedAccounts.length > 0;
+	//Identify followed user feeds to fetch their posts/replies on any feed
+	let followedUserFeedIds = [];
+	if (followedFeedIdsSafe.length > 0) {
+		const feedInfo = await Feeds.findAll({
+			attributes: ['feed_id'],
+			where: { feed_id: { [Op.in]: followedFeedIdsSafe }, is_group: false },
+			raw: true
+		});
+		followedUserFeedIds = feedInfo.map(f => f.feed_id);
+	}
+	//Top-level posts on followed feeds + all posts/replies by followed users on any feed
+	const feedConditions = [];
+	if (followedFeedIdsSafe.length > 0) feedConditions.push({ feed_id: { [Op.in]: followedFeedIdsSafe }, parent_id: null });
+	if (followedUserFeedIds.length > 0) feedConditions.push({ poster_id: { [Op.in]: followedUserFeedIds } });
+	const feedFilter = feedConditions.length === 1 ? feedConditions[0] : { [Op.or]: feedConditions };
 	if (hasActiveAlgorithm) {
 		//Algorithm path: fetch all candidates, score, then paginate
-		//Include both top-level posts and replies from followed feeds
 		const nativePostIds = await Posts.findAll({
 			attributes: ['post_id'],
 			where: {
 				...algorithmFilters,
-				feed_id: { [Op.in]: followedFeedIdsSafe },
+				...feedFilter,
 				...(viewerId ? { poster_id: { [Op.not]: viewerId } } : {})
 			},
 			order: [['created_at', 'DESC']],
@@ -78,12 +92,11 @@ export async function fetchFollowingPosts({ followedFeedIdsSafe, viewerId, userI
 		//Standard path with source mixing
 		const halfLimit = Math.ceil(backendFetchTotal / 2);
 		const halfOffset = Math.floor(offset / 2);
-		//Include both top-level posts and replies from followed feeds
 		const postIds = await Posts.findAll({
 			attributes: ['post_id'],
 			where: {
 				...algorithmFilters,
-				feed_id: { [Op.in]: followedFeedIdsSafe },
+				...feedFilter,
 				...(viewerId ? { poster_id: { [Op.not]: viewerId } } : {})
 			},
 			order: orderMode,
@@ -210,8 +223,10 @@ export async function fetchFollowingPosts({ followedFeedIdsSafe, viewerId, userI
 						};
 					});
 				}
-				//Merge reposts with regular posts
-				posts = [...posts, ...nativeRepostPosts, ...externalRepostPosts];
+				//Merge reposts with regular posts, skipping duplicates
+				const existingPostIds = new Set(posts.map(p => p.post_id));
+				const uniqueReposts = [...nativeRepostPosts, ...externalRepostPosts].filter(p => !existingPostIds.has(p.post_id));
+				posts = [...posts, ...uniqueReposts];
 				//Sort by creation/repost time
 				posts.sort((a, b) => {
 					const aTime = a.reposted_at || a.created_at || a.created_at_remote;
