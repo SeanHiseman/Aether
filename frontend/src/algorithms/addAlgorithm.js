@@ -250,34 +250,41 @@ const AddAlgorithm = ({ algorithms = [], display, editingAlgorithm = null, isAut
             setShowLoginModal(true);
             return;
         }
-
         //Check membership
         if (!hasMembership) {
             setShowMembershipModal(true);
             return;
         }
-
+        let stream;
         try {
-            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            const mediaRecorder = new MediaRecorder(stream, {
-                mimeType: 'audio/webm;codecs=opus'
-            });
-
+            stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        } catch (error) {
+            setError('Microphone access denied or not available');
+            setTimeout(() => setError(''), 3000);
+            return;
+        }
+        try {
+            //Use a supported mimeType with fallback
+            let options = {};
+            for (const type of ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4']) {
+                if (MediaRecorder.isTypeSupported(type)) {
+                    options = { mimeType: type };
+                    break;
+                }
+            }
+            const mediaRecorder = new MediaRecorder(stream, options);
             mediaRecorderRef.current = mediaRecorder;
             audioChunksRef.current = [];
             isRecordingRef.current = true;
             setIsRecording(true);
-
             mediaRecorder.ondataavailable = (event) => {
                 if (event.data.size > 0) {
                     audioChunksRef.current.push(event.data);
                 }
             };
-
             mediaRecorder.onstop = async () => {
-                const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+                const audioBlob = new Blob(audioChunksRef.current, { type: mediaRecorder.mimeType });
                 await sendAudioForTranscription(audioBlob);
-
                 //Restart recording if still in recording mode
                 if (isRecordingRef.current && mediaRecorderRef.current) {
                     audioChunksRef.current = [];
@@ -291,18 +298,16 @@ const AddAlgorithm = ({ algorithms = [], display, editingAlgorithm = null, isAut
                     stream.getTracks().forEach(track => track.stop());
                 }
             };
-
             mediaRecorder.start();
-
             //Auto-send audio every 3 seconds for near real-time transcription
             recordingIntervalRef.current = setInterval(() => {
                 if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording' && isRecordingRef.current) {
                     mediaRecorderRef.current.stop();
                 }
             }, 3000);
-
         } catch (error) {
-            setError('Microphone access denied or not available');
+            stream.getTracks().forEach(track => track.stop());
+            setError('Failed to start recording');
             setTimeout(() => setError(''), 3000);
             isRecordingRef.current = false;
             setIsRecording(false);
@@ -312,12 +317,10 @@ const AddAlgorithm = ({ algorithms = [], display, editingAlgorithm = null, isAut
     const stopVoiceRecording = () => {
         isRecordingRef.current = false;
         setIsRecording(false);
-
         if (recordingIntervalRef.current) {
             clearInterval(recordingIntervalRef.current);
             recordingIntervalRef.current = null;
         }
-
         if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
             mediaRecorderRef.current.stop();
         }
@@ -326,16 +329,14 @@ const AddAlgorithm = ({ algorithms = [], display, editingAlgorithm = null, isAut
     const sendAudioForTranscription = async (audioBlob) => {
         try {
             setIsTranscribing(true);
-
             const formData = new FormData();
-            formData.append('audio', audioBlob, 'recording.webm');
-
+            const ext = audioBlob.type?.includes('mp4') ? '.mp4' : '.webm';
+            formData.append('audio', audioBlob, `recording${ext}`);
             const response = await api.post('/transcribe_voice', formData, {
                 headers: {
                     'Content-Type': 'multipart/form-data',
                 },
             });
-
             if (response.data.success && response.data.transcription) {
                 //Replace the entire text with new transcription
                 const newText = response.data.transcription.trim();
