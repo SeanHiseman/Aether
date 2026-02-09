@@ -17,6 +17,8 @@ import sequelize from '../databaseSetup.js';
 import { standardLimiter, higherLimiter } from '../functions/checks/limiters.js';
 import unzipper from 'unzipper';
 import { computeHotness } from '../functions/postRanking.js';
+import { FEED_CONFIG } from './socialConnect.js';
+import { formatExternalPost } from '../functions/external_posts/formatExternalPost.js';
 import UpdateMediaFiles from '../functions/media_handling/updateMediaFiles.js';
 import { v4 } from 'uuid';
 import yauzl from 'yauzl';
@@ -50,6 +52,16 @@ const checkStorageLimit = async (req, res, next) => {
         return res.status(500).json({ success: false, error: error.message });
     }
 };
+
+function formatPostQuotedExternal(post) {
+	const data = post?.dataValues || post;
+	if (data?.quotedExternalPost) {
+		const raw = data.quotedExternalPost?.dataValues || data.quotedExternalPost;
+		if (raw?.source) {
+			data.quotedExternalPost = formatExternalPost(raw, FEED_CONFIG[raw.source], raw.source);
+		}
+	}
+}
 
 router.post('/channel_posts', standardLimiter, async (req, res) => {
 	try {
@@ -92,8 +104,7 @@ router.post('/channel_posts', standardLimiter, async (req, res) => {
 		},{
 			as: 'quotedExternalPost',
 			model: ExternalPosts,
-			required: false,
-			attributes: ['post_id', 'source', 'title', 'text_body', 'author', 'author_photo', 'url', 'created_at_remote', 'score', 'replies']
+			required: false
 		},{
 			as: 'votes',
 			attributes: ['downvotes', 'upvotes'],
@@ -160,6 +171,8 @@ router.post('/channel_posts', standardLimiter, async (req, res) => {
 				? await Reposts.findOne({ where: { post_id: postId, reposter_id: viewerId } })
 				: null;
 			singlePost.dataValues.has_reposted = Boolean(repostRow);
+			formatPostQuotedExternal(singlePost);
+			if (parentPost) formatPostQuotedExternal(parentPost);
 			return res.status(200).json({ success: true, post: singlePost, parent: parentPost });
 		}
 		const algorithmResult = await ApplyAlgorithm({
@@ -897,12 +910,14 @@ router.get('/post_replies/:postId', standardLimiter, async (req, res) => {
         const formattedReplies = replies.map(reply => {
             const votes = reply.votes?.dataValues || { upvotes: 0, downvotes: 0 };
             const viewerVote = voteMap.get(reply.post_id) || { has_upvoted: false, has_downvoted: false };
+            const rawQEP = reply.quotedExternalPost?.dataValues || reply.quotedExternalPost;
             return {
                 ...reply.dataValues,
 				upvotes: reply.dataValues.upvotes || 0,
 				downvotes: reply.dataValues.downvotes || 0,
                 ...viewerVote,
-                has_viewed: false
+                has_viewed: false,
+                ...(rawQEP?.source ? { quotedExternalPost: formatExternalPost(rawQEP, FEED_CONFIG[rawQEP.source], rawQEP.source) } : {})
             };
         });
         return res.status(200).json(formattedReplies);

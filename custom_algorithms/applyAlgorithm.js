@@ -10,9 +10,71 @@ import { fetchExternalAccountPosts } from "./fetchHandlers/fetchExternalAccountP
 import { fetchFollowingPosts } from "./fetchHandlers/fetchFollowingPosts.js";
 import { fetchPlatformPosts } from "./fetchHandlers/fetchPlatformPosts.js";
 import { fetchSearchPosts } from "./fetchHandlers/fetchSearchPosts.js";
+import { FEED_CONFIG } from "../routes/socialConnect.js";
+import { formatExternalPost } from "../functions/external_posts/formatExternalPost.js";
 import { IntermixArrays } from "../functions/intermixArrays.js";
 import { Op } from 'sequelize';
 import { stripExcludedAttributes } from "./algorithmFunctions/stripExcludedAttributes.js";
+
+async function attachParentAndQuotedData(posts, includeOptions, viewerId, voteMap, externalVoteMap, savedSet, repostSet) {
+	const postsWithParents = await attachParentPosts(posts, includeOptions);
+	const parentPostIds = postsWithParents.filter(p => p.parentPost).map(p => p.parentPost.post_id);
+	const quotedPostIds = postsWithParents.filter(p => p.quotedPost).map(p => (p.quotedPost.dataValues || p.quotedPost).post_id).filter(Boolean);
+	const relatedNativeIds = [...new Set([...parentPostIds, ...quotedPostIds])];
+	let relatedVotes = [], relatedSaved = [], relatedReposts = [];
+	if (viewerId && relatedNativeIds.length > 0) {
+		[relatedVotes, relatedSaved, relatedReposts] = await Promise.all([
+			PostVotes.findAll({
+				attributes: ['post_id', 'upvotes', 'downvotes'],
+				where: { post_id: { [Op.in]: relatedNativeIds }, voter_id: viewerId },
+				raw: true
+			}),
+			SavedPosts.findAll({
+				attributes: ['post_id'],
+				where: { post_id: { [Op.in]: relatedNativeIds }, saver_id: viewerId },
+				raw: true
+			}),
+			Reposts.findAll({
+				attributes: ['post_id'],
+				where: { post_id: { [Op.in]: relatedNativeIds }, reposter_id: viewerId },
+				raw: true
+			})
+		]);
+	}
+	const relatedVoteMap = new Map(relatedVotes.map(v => [v.post_id, { has_upvoted: v.upvotes > 0, has_downvoted: v.downvotes > 0 }]));
+	const relatedSavedSet = new Set(relatedSaved.map(s => s.post_id));
+	const relatedRepostSet = new Set(relatedReposts.map(r => r.post_id));
+	return postsWithParents.map(p => {
+		const isExternal = p.isExternal || p.is_external;
+		const votes = isExternal
+			? (externalVoteMap.get(p.post_id) || { has_upvoted: false, has_downvoted: false })
+			: (voteMap.get(p.post_id) || { has_upvoted: false, has_downvoted: false });
+		const parentPost = p.parentPost ? {
+			...p.parentPost,
+			...(relatedVoteMap.get(p.parentPost.post_id) || { has_upvoted: false, has_downvoted: false }),
+			is_saved: relatedSavedSet.has(p.parentPost.post_id),
+			has_reposted: relatedRepostSet.has(p.parentPost.post_id)
+		} : undefined;
+		const rawQuoted = p.quotedPost?.dataValues || p.quotedPost;
+		const quotedPost = rawQuoted ? {
+			...rawQuoted,
+			...(relatedVoteMap.get(rawQuoted.post_id) || { has_upvoted: false, has_downvoted: false }),
+			is_saved: relatedSavedSet.has(rawQuoted.post_id),
+			has_reposted: relatedRepostSet.has(rawQuoted.post_id)
+		} : undefined;
+		const rawQEP = p.quotedExternalPost?.dataValues || p.quotedExternalPost;
+		const quotedExternalPost = rawQEP ? formatExternalPost(rawQEP, FEED_CONFIG[rawQEP.source], rawQEP.source) : undefined;
+		return {
+			...(p.dataValues || p),
+			...votes,
+			is_saved: savedSet.has(p.post_id),
+			has_reposted: repostSet.has(p.post_id),
+			...(parentPost ? { parentPost } : {}),
+			...(quotedPost ? { quotedPost } : {}),
+			...(quotedExternalPost ? { quotedExternalPost } : {})
+		};
+	});
+}
 
 async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOptions, isGroup = true, isMain, limit = 100, offset, recentUpvotes, viewerId, keyword = '', connectedAccounts = [], userId, excludePostIds = [] }) {
 	try {
@@ -204,6 +266,14 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
 			return { posts: [], status: "ok", message: "" };
 		}
 
+		//Deduplicate posts by post_id
+		const seenIds = new Set();
+		posts = posts.filter(p => {
+			if (seenIds.has(p.post_id)) return false;
+			seenIds.add(p.post_id);
+			return true;
+		});
+
 		//Check if posts already have algorithmScore (from algorithm path)
 		const postsAlreadyScored = posts.length > 0 && typeof posts[0].algorithmScore === 'number';
 
@@ -256,58 +326,8 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
 			}]));
 			const savedSet = new Set([...savedNativeRows.map(s => s.post_id), ...savedExternalRows.map(s => s.post_id)]);
 			const repostSet = new Set(repostRows.map(r => r.post_id));
-			//Attach parent posts to replies
-			const postsWithParents = await attachParentPosts(posts, includeOptions);
-			//Fetch vote/bookmark/repost info for parent posts
-			const parentPostIds = postsWithParents.filter(p => p.parentPost).map(p => p.parentPost.post_id);
-			let parentVotes = [], parentSaved = [], parentReposts = [];
-			if (viewerId && parentPostIds.length > 0) {
-				[parentVotes, parentSaved, parentReposts] = await Promise.all([
-					PostVotes.findAll({
-						attributes: ['post_id', 'upvotes', 'downvotes'],
-						where: { post_id: { [Op.in]: parentPostIds }, voter_id: viewerId },
-						raw: true
-					}),
-					SavedPosts.findAll({
-						attributes: ['post_id'],
-						where: { post_id: { [Op.in]: parentPostIds }, saver_id: viewerId },
-						raw: true
-					}),
-					Reposts.findAll({
-						attributes: ['post_id'],
-						where: { post_id: { [Op.in]: parentPostIds }, reposter_id: viewerId },
-						raw: true
-					})
-				]);
-			}
-			const parentVoteMap = new Map(parentVotes.map(v => [v.post_id, { has_upvoted: v.upvotes > 0, has_downvoted: v.downvotes > 0 }]));
-			const parentSavedSet = new Set(parentSaved.map(s => s.post_id));
-			const parentRepostSet = new Set(parentReposts.map(r => r.post_id));
-			return {
-				posts: stripExcludedAttributes(
-					postsWithParents.map(p => {
-						const isExternal = p.isExternal || p.is_external;
-						const votes = isExternal
-							? (externalVoteMap.get(p.post_id) || { has_upvoted: false, has_downvoted: false })
-							: (voteMap.get(p.post_id) || { has_upvoted: false, has_downvoted: false });
-						//Add vote info to parent post if it exists
-						const parentPost = p.parentPost ? {
-							...p.parentPost,
-							...(parentVoteMap.get(p.parentPost.post_id) || { has_upvoted: false, has_downvoted: false }),
-							is_saved: parentSavedSet.has(p.parentPost.post_id),
-							has_reposted: parentRepostSet.has(p.parentPost.post_id)
-						} : undefined;
-						return {
-							...(p.dataValues || p),
-							...votes,
-							is_saved: savedSet.has(p.post_id),
-							has_reposted: repostSet.has(p.post_id),
-							...(parentPost ? { parentPost } : {})
-						};
-					})
-				),
-				status: "ok"
-			};
+			const postsWithVotes = await attachParentAndQuotedData(posts, includeOptions, viewerId, voteMap, externalVoteMap, savedSet, repostSet);
+			return { posts: stripExcludedAttributes(postsWithVotes), status: "ok" };
 		}
 		const finalIds = posts.map(p => p.post_id);
 		//Separate native and external post IDs for vote lookup
@@ -357,53 +377,7 @@ async function ApplyAlgorithm({ locationId, feedId, followedFeedIds, includeOpti
 		}));
 		const savedSet = new Set([...savedNativeRows.map(s => s.post_id), ...savedExternalRows.map(s => s.post_id)]);
 		const repostSet = new Set(repostRows.map(r => r.post_id));
-		//Attach parent posts to replies
-		const postsWithParents = await attachParentPosts(posts, includeOptions);
-		//Fetch vote/bookmark/repost info for parent posts
-		const parentPostIds = postsWithParents.filter(p => p.parentPost).map(p => p.parentPost.post_id);
-		let parentVotes = [], parentSaved = [], parentReposts = [];
-		if (viewerId && parentPostIds.length > 0) {
-			[parentVotes, parentSaved, parentReposts] = await Promise.all([
-				PostVotes.findAll({
-					attributes: ['post_id', 'upvotes', 'downvotes'],
-					where: { post_id: { [Op.in]: parentPostIds }, voter_id: viewerId },
-					raw: true
-				}),
-				SavedPosts.findAll({
-					attributes: ['post_id'],
-					where: { post_id: { [Op.in]: parentPostIds }, saver_id: viewerId },
-					raw: true
-				}),
-				Reposts.findAll({
-					attributes: ['post_id'],
-					where: { post_id: { [Op.in]: parentPostIds }, reposter_id: viewerId },
-					raw: true
-				})
-			]);
-		}
-		const parentVoteMap = new Map(parentVotes.map(v => [v.post_id, { has_upvoted: v.upvotes > 0, has_downvoted: v.downvotes > 0 }]));
-		const parentSavedSet = new Set(parentSaved.map(s => s.post_id));
-		const parentRepostSet = new Set(parentReposts.map(r => r.post_id));
-		const postsWithVotes = postsWithParents.map(p => {
-			const isExternal = p.isExternal || p.is_external;
-			const votes = isExternal
-				? (externalVoteMap.get(p.post_id) || { has_upvoted: false, has_downvoted: false })
-				: (voteMap.get(p.post_id) || { has_upvoted: false, has_downvoted: false });
-			//Add vote info to parent post if it exists
-			const parentPost = p.parentPost ? {
-				...p.parentPost,
-				...(parentVoteMap.get(p.parentPost.post_id) || { has_upvoted: false, has_downvoted: false }),
-				is_saved: parentSavedSet.has(p.parentPost.post_id),
-				has_reposted: parentRepostSet.has(p.parentPost.post_id)
-			} : undefined;
-			return {
-				...(p.dataValues || p),
-				...votes,
-				is_saved: savedSet.has(p.post_id),
-				has_reposted: repostSet.has(p.post_id),
-				...(parentPost ? { parentPost } : {})
-			};
-		});
+		const postsWithVotes = await attachParentAndQuotedData(posts, includeOptions, viewerId, voteMap, externalVoteMap, savedSet, repostSet);
 		return { posts: stripExcludedAttributes(postsWithVotes), status: "ok", message: "" };
 	} catch (error) {
 		console.error(new Date().toISOString(), 'Error in ApplyAlgorithm:', error);

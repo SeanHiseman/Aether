@@ -8,7 +8,7 @@ import RecommendationInfo from '../components/recommendationInfo';
 import SaveToChannelModal from '../components/modals/saveToChannelModal';
 import SharePostModal from '../components/modals/sharePostModal';
 import { useNavigate, useParams } from 'react-router-dom';
-import { useContext, useEffect, useRef, useState } from 'react';
+import { useCallback, useContext, useEffect, useRef, useState } from 'react';
 import useTimeAgo from '../functions/useTimeAgo';
 
 const ExternalPostWidget = ({ post, sharedPost = false, isQuoted = false, showAsParent = false }) => {
@@ -47,10 +47,10 @@ const ExternalPostWidget = ({ post, sharedPost = false, isQuoted = false, showAs
 	const platformName = post?.source?.toLowerCase(); //Convert 'Bluesky' -> 'bluesky'
 	const hasConnectedPlatform = connectedAccounts.some(a => a.platform === platformName);
 
-	const handleOverflowChange = (overflowing) => {
+	const handleOverflowChange = useCallback((overflowing) => {
 		setIsOverflowing(overflowing);
 		setShowExpandButton(overflowing);
-	};
+	}, []);
 
 	const fetchReplies = async () => {
 		if (!post?.post_id || replies.length > 0) return;

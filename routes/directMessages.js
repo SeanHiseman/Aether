@@ -12,6 +12,8 @@ import { Router } from 'express';
 import sequelize from '../databaseSetup.js';
 import { standardLimiter } from '../functions/checks/limiters.js';
 import { ValidateTextInput } from '../functions/validateTextInput.js';
+import { FEED_CONFIG } from './socialConnect.js';
+import { formatExternalPost } from '../functions/external_posts/formatExternalPost.js';
 import { v4 } from 'uuid';
 import { fileURLToPath } from 'url';
 
@@ -905,8 +907,7 @@ router.get('/get_notifications', authenticateCheck, async (req, res) => {
                 {
                     model: ExternalPosts,
                     as: 'quotedExternalPost',
-                    required: false,
-                    attributes: ['post_id', 'source', 'title', 'text_body', 'author', 'author_photo', 'url', 'created_at_remote', 'score', 'replies']
+                    required: false
                 },
                 {
                     model: PostVotes,
@@ -951,8 +952,7 @@ router.get('/get_notifications', authenticateCheck, async (req, res) => {
                         {
                             model: ExternalPosts,
                             as: 'quotedExternalPost',
-                            required: false,
-                            attributes: ['post_id', 'source', 'title', 'text_body', 'author', 'author_photo', 'url', 'created_at_remote', 'score', 'replies']
+                            required: false
                         },
                         {
                             model: PostVotes,
@@ -984,6 +984,11 @@ router.get('/get_notifications', authenticateCheck, async (req, res) => {
                 where: { post_id: reply.post_id, reposter_id: feedId }
             });
             reply.dataValues.has_reposted = !!repostRow;
+            //Format quoted external posts
+            if (reply.quotedExternalPost) {
+                const rawQEP = reply.quotedExternalPost.dataValues || reply.quotedExternalPost;
+                if (rawQEP?.source) reply.dataValues.quotedExternalPost = formatExternalPost(rawQEP, FEED_CONFIG[rawQEP.source], rawQEP.source);
+            }
             //Parent post vote/save/repost status
             if (reply.parentPost) {
                 const parentVoteRow = await PostVotes.findOne({
@@ -1000,6 +1005,10 @@ router.get('/get_notifications', authenticateCheck, async (req, res) => {
                     where: { post_id: reply.parentPost.post_id, reposter_id: feedId }
                 });
                 reply.parentPost.dataValues.has_reposted = !!parentRepostRow;
+                if (reply.parentPost.quotedExternalPost) {
+                    const rawQEP = reply.parentPost.quotedExternalPost.dataValues || reply.parentPost.quotedExternalPost;
+                    if (rawQEP?.source) reply.parentPost.dataValues.quotedExternalPost = formatExternalPost(rawQEP, FEED_CONFIG[rawQEP.source], rawQEP.source);
+                }
             }
         }
         const hasMore = replies.length === parsedLimit;

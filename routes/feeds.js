@@ -505,6 +505,30 @@ router.post('/deep_feed_posts', standardLimiter, authenticateCheck, async (req, 
             as: 'poster',
             model: Feeds
         },{
+            as: 'quotedPost',
+            model: Posts,
+            required: false,
+            include: [
+                {
+                    as: 'poster',
+                    model: Feeds,
+                    attributes: ['feed_id', 'feed_name', 'feed_photo']
+                },
+                {
+                    as: 'parentChannel',
+                    model: FeedChannels,
+                    attributes: ['channel_id', 'channel_name'],
+                    include: [{
+                        model: Feeds,
+                        attributes: ['feed_id', 'feed_name', 'is_group']
+                    }]
+                }
+            ]
+        },{
+            as: 'quotedExternalPost',
+            model: ExternalPosts,
+            required: false
+        },{
             as: 'votes',
             attributes: ['downvotes', 'upvotes'],
             model: PostVotes,
